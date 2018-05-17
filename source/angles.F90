@@ -131,7 +131,7 @@ Contains
 
   End Subroutine allocate_angl_dst_arrays
   
-  Subroutine angles_compute(temp,comm)
+  Subroutine angles_compute(thermo%temp,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -144,7 +144,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Real( Kind = wp ),  Intent( In    ) :: temp
+  Real( Kind = wp ),  Intent( In    ) :: thermo%temp
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: zero
@@ -167,7 +167,7 @@ Contains
 
 ! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc)
 
-  kT2engo = boltz*temp/engunit
+  kT2engo = boltz*thermo%temp/engunit
 
 ! conversion: radians <-> degrees (affects not only angle units but also force units!)
 

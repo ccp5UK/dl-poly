@@ -28,7 +28,7 @@ Module deport_data
   Use statistics
 
   Use minimise,     Only : l_x,oxx,oyy,ozz
-  Use langevin,     Only : l_lan,fxl,fyl,fzl
+  Use langevin,     Only : thermo%l_langevin,fxl,fyl,fzl
 
   Use ewald,               Only : ewald_type
   Use mpole ,              Only : keyind,ltpatm,lchatm, &
@@ -302,7 +302,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
 
 ! pack Langevin forces arrays
 
-        If (l_lan) Then
+        If (thermo%l_langevin) Then
            If (imove+3 <= iblock) Then
               buffer(imove+1)=fxl(i)
               buffer(imove+2)=fyl(i)
@@ -823,7 +823,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
      yto(keep)=yto(i)
      zto(keep)=zto(i)
 
-     If (l_lan) Then
+     If (thermo%l_langevin) Then
         fxl(keep)=fxl(i)
         fyl(keep)=fyl(i)
         fzl(keep)=fzl(i)
@@ -984,7 +984,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
 
 ! unpack Langevin forces arrays
 
-     If (l_lan) Then
+     If (thermo%l_langevin) Then
         fxl(newatm)=buffer(kmove+1)
         fyl(newatm)=buffer(kmove+2)
         fzl(newatm)=buffer(kmove+3)

@@ -5,7 +5,7 @@
 ! One-off application for first order splitting and symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stress due to random and drag forces
 
-        If (keydpd > 0 .and. keydpd*isw == 0) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
+        If (thermo%key_dpd > 0 .and. thermo%key_dpd*isw == 0) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
 
 ! Integrate equations of motion - velocity verlet
 ! first (isw == 0) or second (isw == 1) stage
@@ -40,7 +40,7 @@
 
               Call nvt_l0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,chi,                    &
+           nstep,thermo%temp,thermo%chi,                    &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
@@ -52,7 +52,7 @@
 
               Call nvt_a0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,keyshl,taut,soft,       &
+           nstep,thermo%temp,keyshl,thermo%tau_t,thermo%soft,       &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
@@ -64,7 +64,7 @@
 
               Call nvt_b0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
+           sigma,thermo%tau_t,chit,                   &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
@@ -76,7 +76,7 @@
 
               Call nvt_h0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
+           sigma,thermo%tau_t,chit,cint,              &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
@@ -89,8 +89,8 @@
 
               Call nvt_g0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,degfre,                 &
-           sigma,taut,gama,chit,cint,         &
+           nstep,thermo%temp,degfre,                 &
+           sigma,thermo%tau_t,thermo%gama,chit,cint,         &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
@@ -104,7 +104,7 @@
 
               Call nvt_l2_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,chi_ep,chi_es,vel_es2,  &
+           nstep,thermo%temp,thermo%chi_ep,thermo%chi_es,vel_es2,  &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
@@ -116,8 +116,8 @@
 
               Call npt_l0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chi,                         &
-           press,tai,nstep,chip,eta,          &
+           sigma,thermo%chi,                         &
+           thermo%press,thermo%tai,nstep,chip,eta,          &
            degfre,virtot,                     &
            consv,                             &
            strkin,engke,                      &
@@ -132,8 +132,8 @@
 
               Call npt_b0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
-           press,taup,chip,eta,               &
+           sigma,thermo%tau_t,chit,                   &
+           thermo%press,thermo%tau_p,chip,eta,               &
            virtot,                            &
            strkin,engke,                      &
            mxshak,tolnce,                     &
@@ -147,8 +147,8 @@
 
               Call npt_h0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,taup,chip,eta,               &
+           sigma,thermo%tau_t,chit,cint,              &
+           thermo%press,thermo%tau_p,chip,eta,               &
            degfre,virtot,                     &
            consv,                             &
            strkin,engke,                      &
@@ -163,8 +163,8 @@
 
               Call npt_m0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,taup,chip,eta,               &
+           sigma,thermo%tau_t,chit,cint,              &
+           thermo%press,thermo%tau_p,chip,eta,               &
            degfre,virtot,                     &
            consv,                             &
            strkin,engke,                      &
@@ -179,9 +179,9 @@
 
               Call nst_l0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chi,                         &
-           press,strext,tai,nstep,chip,eta,   &
-           degfre,iso,ten,stress,             &
+           sigma,thermo%chi,                         &
+           thermo%press,thermo%stress,thermo%tai,nstep,chip,eta,   &
+           degfre,thermo%iso,thermo%tension,stress,             &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
@@ -195,9 +195,9 @@
 
               Call nst_b0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
-           press,strext,taup,chip,eta,        &
-           iso,ten,stress,                    &
+           sigma,thermo%tau_t,chit,                   &
+           thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
+           thermo%iso,thermo%tension,stress,                    &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
@@ -210,9 +210,9 @@
 
               Call nst_h0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,strext,taup,chip,eta,        &
-           degfre,iso,ten,stress,             &
+           sigma,thermo%tau_t,chit,cint,              &
+           thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
+           degfre,thermo%iso,thermo%tension,stress,             &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
@@ -226,9 +226,9 @@
 
               Call nst_m0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,strext,taup,chip,eta,        &
-           degfre,iso,ten,stress,             &
+           sigma,thermo%tau_t,chit,cint,              &
+           thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
+           degfre,thermo%iso,thermo%tension,stress,             &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
@@ -275,7 +275,7 @@
 
               Call nvt_l1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,chi,                    &
+           nstep,thermo%temp,thermo%chi,                    &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
@@ -288,7 +288,7 @@
 
               Call nvt_a1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,keyshl,taut,soft,       &
+           nstep,thermo%temp,keyshl,thermo%tau_t,thermo%soft,       &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
@@ -301,7 +301,7 @@
 
               Call nvt_b1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
+           sigma,thermo%tau_t,chit,                   &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
@@ -314,7 +314,7 @@
 
               Call nvt_h1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
+           sigma,thermo%tau_t,chit,cint,              &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
@@ -328,8 +328,8 @@
 
               Call nvt_g1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,degfre,                 &
-           sigma,taut,gama,chit,cint,         &
+           nstep,thermo%temp,degfre,                 &
+           sigma,thermo%tau_t,thermo%gama,chit,cint,         &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
@@ -343,8 +343,8 @@
 
               Call npt_l1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chi,                         &
-           press,tai,nstep,chip,eta,          &
+           sigma,thermo%chi,                         &
+           thermo%press,thermo%tai,nstep,chip,eta,          &
            degfre,degrot,virtot,              &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
@@ -360,8 +360,8 @@
 
               Call npt_b1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
-           press,taup,chip,eta,               &
+           sigma,thermo%tau_t,chit,                   &
+           thermo%press,thermo%tau_p,chip,eta,               &
            virtot,                            &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
@@ -376,8 +376,8 @@
 
               Call npt_h1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,taup,chip,eta,               &
+           sigma,thermo%tau_t,chit,cint,              &
+           thermo%press,thermo%tau_p,chip,eta,               &
            degfre,degrot,virtot,              &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
@@ -393,8 +393,8 @@
 
               Call npt_m1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,taup,chip,eta,               &
+           sigma,thermo%tau_t,chit,cint,              &
+           thermo%press,thermo%tau_p,chip,eta,               &
            degfre,degrot,virtot,              &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
@@ -410,9 +410,9 @@
 
               Call nst_l1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chi,                         &
-           press,strext,tai,nstep,chip,eta,   &
-           degfre,degrot,iso,ten,stress,      &
+           sigma,thermo%chi,                         &
+           thermo%press,thermo%stress,thermo%tai,nstep,chip,eta,   &
+           degfre,degrot,thermo%iso,thermo%tension,stress,      &
            strkin,strknf,strknt,engke,engrot, &
            consv,                             &
            mxshak,tolnce,                     &
@@ -427,9 +427,9 @@
 
               Call nst_b1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
-           press,strext,taup,chip,eta,        &
-           iso,ten,stress,                    &
+           sigma,thermo%tau_t,chit,                   &
+           thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
+           thermo%iso,thermo%tension,stress,                    &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
@@ -443,9 +443,9 @@
 
               Call nst_h1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,strext,taup,chip,eta,        &
-           degfre,degrot,iso,ten,stress,      &
+           sigma,thermo%tau_t,chit,cint,              &
+           thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
+           degfre,degrot,thermo%iso,thermo%tension,stress,      &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
@@ -460,9 +460,9 @@
 
               Call nst_m1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,strext,taup,chip,eta,        &
-           degfre,degrot,iso,ten,stress,      &
+           sigma,thermo%tau_t,chit,cint,              &
+           thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
+           degfre,degrot,thermo%iso,thermo%tension,stress,      &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
@@ -484,7 +484,7 @@
 ! Symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stress due to random and drag forces
 
-        If (keydpd > 0 .and. keydpd*isw == 2) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
+        If (thermo%key_dpd > 0 .and. thermo%key_dpd*isw == 2) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
 
 
 !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

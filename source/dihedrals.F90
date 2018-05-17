@@ -279,7 +279,7 @@ Contains
 
 End Subroutine dihedrals_14_check
 
-Subroutine dihedrals_compute(temp,comm)
+Subroutine dihedrals_compute(thermo%temp,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -292,7 +292,7 @@ Subroutine dihedrals_compute(temp,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Real( Kind = wp ), Intent( In    ) :: temp
+  Real( Kind = wp ), Intent( In    ) :: thermo%temp
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: zero
@@ -315,7 +315,7 @@ Subroutine dihedrals_compute(temp,comm)
 
 ! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc)
 
-  kT2engo = boltz*temp/engunit
+  kT2engo = boltz*thermo%temp/engunit
 
 ! conversion: radians <-> degrees (affects not only dihedral units but also force units!)
 

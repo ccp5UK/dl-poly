@@ -46,10 +46,10 @@ Module plumed
 
 Contains
 
-  Subroutine plumed_init(megatm,tstep,temp,comm)
+  Subroutine plumed_init(megatm,tstep,thermo%temp,comm)
 
     Integer,           Intent( In    ) :: megatm
-    Real( Kind = wp ), Intent( In    ) :: tstep,temp
+    Real( Kind = wp ), Intent( In    ) :: tstep,thermo%temp
     Type(comms_type),  Intent( InOut ) :: comm
 
 #ifdef PLUMED
@@ -71,7 +71,7 @@ Contains
 ! The name should be updated when there are new releases of dlpoly
        Call plumed_f_gcmd("setMDEngine"//sn,"DL_POLY "//DLP_VERSION//sn)
        Call plumed_f_gcmd("setTimestep"//sn,tstep)
-       Call plumed_f_gcmd("setKbT"//sn,temp*boltz)
+       Call plumed_f_gcmd("setKbT"//sn,thermo%temp*boltz)
        Call plumed_f_gcmd("init"//sn,0)
     Else
        Call error(0,'internal PLUMED library failure',.true.)

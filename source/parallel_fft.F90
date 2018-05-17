@@ -168,7 +168,7 @@ Contains
     Integer, Dimension( 1:max_factor ) :: factors
     Integer                            :: comms_error
     Integer                            :: error
-    Integer                            :: temp
+    Integer                            :: thermo%temp
     Integer                            :: i, j
 
     ! Do some error checking on the input
@@ -178,9 +178,9 @@ Contains
        ! Check that each processor will get an equal number
        ! of blocks
 
-       temp = lengths( i ) / ( proc_grid( i ) * Block( i ) )
-       temp = temp * proc_grid( i ) * Block( i )
-       If ( temp /= lengths( i ) ) Then
+       thermo%temp = lengths( i ) / ( proc_grid( i ) * Block( i ) )
+       thermo%temp = thermo%temp * proc_grid( i ) * Block( i )
+       If ( thermo%temp /= lengths( i ) ) Then
           Call fft_error( -3, 'INITIALIZE_FFT', &
                message = 'The blocks are not evenly divided amongst ' // &
                'the processors.' )

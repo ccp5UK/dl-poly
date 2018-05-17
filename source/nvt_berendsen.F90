@@ -29,7 +29,7 @@ Contains
 
   Subroutine nvt_b0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,                   &
+             sigma,thermo%tau_t,chit,                   &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
@@ -52,7 +52,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t
     Real( Kind = wp ), Intent(   Out ) :: chit
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
@@ -391,7 +391,7 @@ Contains
 
   ! integrate and apply nvt_b0_scl thermostat - full step
 
-       Call nvt_b0_scl(1,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
+       Call nvt_b0_scl(1,tstep,sigma,thermo%tau_t,vxx,vyy,vzz,chit,strkin,engke,comm)
 
   ! remove system centre of mass velocity
 
@@ -407,7 +407,7 @@ Contains
 
   ! update kinetic energy and stress
 
-       Call nvt_b0_scl(0,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
+       Call nvt_b0_scl(0,tstep,sigma,thermo%tau_t,vxx,vyy,vzz,chit,strkin,engke,comm)
 
     End If
 
@@ -435,7 +435,7 @@ Contains
 
   Subroutine nvt_b1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,                   &
+             sigma,thermo%tau_t,chit,                   &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
@@ -460,7 +460,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t
     Real( Kind = wp ), Intent(   Out ) :: chit
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
@@ -1194,7 +1194,7 @@ Contains
   ! integrate and apply nvt_b1_scl thermostat - full step
 
        Call nvt_b1_scl &
-             (1,tstep,sigma,taut,vxx,vyy,vzz,           &
+             (1,tstep,sigma,thermo%tau_t,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
              chit,strkin,strknf,strknt,engke,engrot,comm)
 
@@ -1236,7 +1236,7 @@ Contains
   ! update kinetic energy and stress
 
        Call nvt_b1_scl &
-             (0,tstep,sigma,taut,vxx,vyy,vzz,           &
+             (0,tstep,sigma,thermo%tau_t,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
              chit,strkin,strknf,strknt,engke,engrot,comm)
 
@@ -1269,7 +1269,7 @@ Contains
 
   End Subroutine nvt_b1_vv
 
-  Subroutine nvt_b0_scl(isw,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
+  Subroutine nvt_b0_scl(isw,tstep,sigma,thermo%tau_t,vxx,vyy,vzz,chit,strkin,engke,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1282,7 +1282,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: isw
-    Real( Kind = wp ),                        Intent( In    ) :: tstep,sigma,taut
+    Real( Kind = wp ),                        Intent( In    ) :: tstep,sigma,thermo%tau_t
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ),      Intent(   Out ) :: strkin
     Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
@@ -1296,9 +1296,9 @@ Contains
     Call kinstress(vxx,vyy,vzz,strkin,comm)
     engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
-  ! temperature scaling coefficient - taut is the decay constant
+  ! temperature scaling coefficient - thermo%tau_t is the decay constant
 
-    chit=Sqrt(1.0_wp+tstep/taut*(sigma/engke-1.0_wp))
+    chit=Sqrt(1.0_wp+tstep/thermo%tau_t*(sigma/engke-1.0_wp))
 
     If (isw == 0) Return
 
@@ -1320,7 +1320,7 @@ Contains
   End Subroutine nvt_b0_scl
 
   Subroutine nvt_b1_scl &
-             (isw,tstep,sigma,taut,vxx,vyy,vzz,         &
+             (isw,tstep,sigma,thermo%tau_t,vxx,vyy,vzz,         &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
              chit,strkin,strknf,strknt,engke,engrot,comm)
 
@@ -1335,7 +1335,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: isw
-    Real( Kind = wp ),                        Intent( In    ) :: tstep,sigma,taut
+    Real( Kind = wp ),                        Intent( In    ) :: tstep,sigma,thermo%tau_t
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:mxrgd  ), Intent( InOut ) :: rgdvxx,rgdvyy,rgdvzz, &
                                                                  rgdoxx,rgdoyy,rgdozz
@@ -1358,9 +1358,9 @@ Contains
 
     engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
 
-  ! temperature scaling coefficient - taut is the decay constant
+  ! temperature scaling coefficient - thermo%tau_t is the decay constant
 
-    chit=Sqrt(1.0_wp+tstep/taut*(sigma/(engke+engrot)-1.0_wp))
+    chit=Sqrt(1.0_wp+tstep/thermo%tau_t*(sigma/(engke+engrot)-1.0_wp))
 
     If (isw == 0) Return
 

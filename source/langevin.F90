@@ -22,7 +22,7 @@ Module langevin
   Use errors_warnings, Only : error
   Implicit None
 
-  Logical,                        Save :: l_lan    = .false.
+  Logical,                        Save :: thermo%l_langevin    = .false.
 
   Real( Kind = wp ),              Save :: fpl(1:9) = 0.0_wp
 
@@ -46,7 +46,7 @@ Contains
 
   End Subroutine langevin_allocate_arrays
   
-  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
+  Subroutine langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -68,7 +68,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer          , Intent( In    ) :: nstep
-  Real( Kind = wp ), Intent( In    ) :: temp,tstep,chi
+  Real( Kind = wp ), Intent( In    ) :: thermo%temp,tstep,thermo%chi
   Real( Kind = wp ), Intent(   Out ) :: fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms)
 
   Integer           :: i,ia,ja,ka,ijk
@@ -76,14 +76,14 @@ Contains
 
   If (l_ttm .and. nstep>nstepcpl) Then
 
-! Rescale chi for average electronic temperature if using
+! Rescale thermo%chi for average electronic temperature if using
 ! homogeneous electron-phonon coupling
 
     Select Case (gvar)
     Case (0,1)
-    ! constant electron-phonon chi parameter and homogeneous
+    ! constant electron-phonon thermo%chi parameter and homogeneous
     ! e-p coupling cases
-      scale = Sqrt(2.0_wp * chi * boltz / tstep)
+      scale = Sqrt(2.0_wp * thermo%chi * boltz / tstep)
       Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
           Call box_mueller_saru3(ltg(i),nstep,fxr(i),fyr(i),fzr(i))
@@ -105,7 +105,7 @@ Contains
 
     Case (2)
     ! heterogeneous electron-phonon coupling case: calculate individual
-    ! chi value for each ionic temperature voxel (ignore input value)
+    ! thermo%chi value for each ionic temperature voxel (ignore input value)
       scale = Sqrt(2.0_wp * boltz / tstep)
       Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
@@ -133,7 +133,7 @@ Contains
 
 ! Get scaler to target variance*Sqrt(weight)
 
-    scale = Sqrt(2.0_wp * chi * boltz * temp / tstep)
+    scale = Sqrt(2.0_wp * thermo%chi * boltz * thermo%temp / tstep)
 
 ! Make variance = target variance and nullify the rest
 

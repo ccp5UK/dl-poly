@@ -52,11 +52,9 @@ msd.F90
 kinetics.F90
 ewald.F90
 mpoles_container.F90
-
 ttm.F90
 ttm_utils.F90
 ttm_track.F90
-
 angles.F90
 bonds.F90
 constraints.F90
@@ -76,6 +74,7 @@ greenkubo.F90
 gpfa235.F90
 parallel_fft.F90
 drivers.F90
+thermostat.F90
 )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY

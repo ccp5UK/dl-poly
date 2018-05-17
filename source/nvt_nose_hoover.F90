@@ -29,7 +29,7 @@ Contains
 
   Subroutine nvt_h0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,cint,              &
+             sigma,thermo%tau_t,chit,cint,              &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
@@ -56,7 +56,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
     Real( Kind = wp ), Intent(   Out ) :: consv
@@ -121,7 +121,7 @@ Contains
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        ceng  = 2.0_wp*sigma
 
   ! set number of constraint+pmf shake iterations
@@ -463,7 +463,7 @@ Contains
 
   Subroutine nvt_h1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,cint,              &
+             sigma,thermo%tau_t,chit,cint,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
@@ -492,7 +492,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
     Real( Kind = wp ), Intent(   Out ) :: consv
@@ -579,7 +579,7 @@ Contains
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        ceng  = 2.0_wp*sigma
 
   ! set number of constraint+pmf shake iterations
@@ -1330,7 +1330,7 @@ Contains
     qstep  = 0.5_wp*hstep
     factor = pmass*chip**2
 
-  ! update chi(=cint) to 1/4*tstep
+  ! update thermo%chi(=cint) to 1/4*tstep
 
     cint=cint + qstep*chit
 
@@ -1342,7 +1342,7 @@ Contains
 
     chit=chit + hstep*(2.0_wp*engke + factor - ceng)/qmass
 
-  ! update chi(=cint) to 3/4*tstep
+  ! update thermo%chi(=cint) to 3/4*tstep
 
     cint=cint + hstep*chit
 
@@ -1363,7 +1363,7 @@ Contains
 
     chit=chit + hstep*(2.0_wp*engke + factor - ceng)/qmass
 
-  ! update chi(=cint) to 4/4*tstep
+  ! update thermo%chi(=cint) to 4/4*tstep
 
     cint=cint + qstep*chit
 
@@ -1408,7 +1408,7 @@ Contains
     qstep  = 0.5_wp*hstep
     factor = pmass*chip**2
 
-  ! update chi(=cint) to 1/4*tstep
+  ! update thermo%chi(=cint) to 1/4*tstep
 
     cint=cint + qstep*chit
 
@@ -1425,7 +1425,7 @@ Contains
 
     chit=chit + hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
-  ! update chi(=cint) to 3/4*tstep
+  ! update thermo%chi(=cint) to 3/4*tstep
 
     cint=cint + hstep*chit
 
@@ -1459,7 +1459,7 @@ Contains
 
     chit=chit + hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
-  ! update chi(=cint) to 4/4*tstep
+  ! update thermo%chi(=cint) to 4/4*tstep
 
     cint=cint + qstep*chit
 

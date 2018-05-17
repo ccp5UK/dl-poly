@@ -129,7 +129,7 @@ Contains
 
   Subroutine statistics_collect             &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,iso,intsta,      &
+           keyres,keyens,thermo%iso,intsta,      &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -141,7 +141,7 @@ Contains
            engbnd,virbnd,engang,virang,   &
            engdih,virdih,enginv,virinv,   &
            engke,engrot,consv,vircom,     &
-           strtot,press,strext,           &
+           strtot,thermo%press,thermo%stress,           &
            stpeng,stpvir,stpcfg,stpeth,   &
            stptmp,stpprs,stpvol,comm,virdpd)
 
@@ -159,7 +159,7 @@ Contains
 
   Logical,           Intent( In    ) :: lsim,leql,lzdn
   Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
-                                        keyens,iso,intsta,nstep
+                                        keyens,thermo%iso,intsta,nstep
 
   Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
 
@@ -173,7 +173,7 @@ Contains
                                         engbnd,virbnd,engang,virang, &
                                         engdih,virdih,enginv,virinv, &
                                         engke,engrot,consv,vircom,   &
-                                        strtot(1:9),press,strext(1:9)
+                                        strtot(1:9),thermo%press,thermo%stress(1:9)
 
   Real( Kind = wp ), Intent( InOut ) :: tmst
   Real( Kind = wp ), Intent(   Out ) :: stpeng,stpvir,stpcfg,stpeth, &
@@ -284,7 +284,7 @@ Contains
 ! system enthalpy
 
   If (keyens >= 20) Then             ! P_target*V_instantaneous
-     stpeth = stpeng + press*stpvol
+     stpeth = stpeng + thermo%press*stpvol
   Else                               ! for keyens < 20 V_instantaneous=V_target
      stpeth = stpeng + stpipv        ! and there is only P_instantaneous
   End If
@@ -425,16 +425,16 @@ Contains
      stpval(iadd+1)=stpipv/engunit
      iadd = iadd + 1
 
-     If (iso > 0) Then
+     If (thermo%iso > 0) Then
         h_z=celprp(9)
 
         stpval(iadd+1)=h_z
         stpval(iadd+2)=stpvol/h_z
         iadd = iadd + 2
 
-        If (iso > 1) Then
-           stpval(iadd+1)= -h_z*(strtot(1)-(press+strext(1)))*tenunt
-           stpval(iadd+2)= -h_z*(strtot(5)-(press+strext(5)))*tenunt
+        If (thermo%iso > 1) Then
+           stpval(iadd+1)= -h_z*(strtot(1)-(thermo%press+thermo%stress(1)))*tenunt
+           stpval(iadd+2)= -h_z*(strtot(5)-(thermo%press+thermo%stress(5)))*tenunt
            iadd = iadd + 2
         End If
      End If
@@ -1301,8 +1301,8 @@ End Subroutine statistics_connect_spread
 
 Subroutine statistics_result                                    &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
-           nstrun,keyens,keyshl,megcon,megpmf,iso,              &
-           press,strext,nstep,tstep,time,tmst,comm,passmin)
+           nstrun,keyens,keyshl,megcon,megpmf,thermo%iso,              &
+           thermo%press,thermo%stress,nstep,tstep,time,tmst,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1316,13 +1316,13 @@ Subroutine statistics_result                                    &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf
-  Integer,           Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,iso,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,press,strext(1:9),tstep,time,tmst
+  Integer,           Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,thermo%iso,nstep
+  Real( Kind = wp ), Intent( In    ) :: rcut,thermo%press,thermo%stress(1:9),tstep,time,tmst
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
   Logical           :: check
   Integer           :: i,iadd
-  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,temp
+  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,thermo%temp
   Character( Len = 256 ) :: message
   Character( Len = 256 ), Dimension(5) :: messages
 
@@ -1490,7 +1490,7 @@ Subroutine statistics_result                                    &
   Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
    'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
   Write(messages(4), '(5x,a8,6x,a6,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
-    'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
+    'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','thermo%press'
   Write(messages(5),'(a)') Repeat('-',130)
   Call info(messages,5,.true.)
 
@@ -1599,7 +1599,7 @@ Subroutine statistics_result                                    &
 
      iadd = iadd+1
 
-     If (iso > 0) Then
+     If (thermo%iso > 0) Then
         h_z=sumval(iadd+1)
 
         Write(message,"('Average surface area, fluctuations & mean estimate (Angs^2)')")
@@ -1609,9 +1609,9 @@ Subroutine statistics_result                                    &
 
         iadd = iadd+2
 
-        If (iso > 1) Then
-           tx= -h_z * ( sumval(iadd-9-8-2)/prsunt - (press+strext(1)) ) * tenunt
-           ty= -h_z * ( sumval(iadd-9-7-2)/prsunt - (press+strext(5)) ) * tenunt
+        If (thermo%iso > 1) Then
+           tx= -h_z * ( sumval(iadd-9-8-2)/prsunt - (thermo%press+thermo%stress(1)) ) * tenunt
+           ty= -h_z * ( sumval(iadd-9-7-2)/prsunt - (thermo%press+thermo%stress(5)) ) * tenunt
            Write(message,"('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
            Call info(message,.true.)
            Write(message,'(1p,3e12.4)') sumval(iadd+1),ssqval(iadd+1),tx
@@ -1657,23 +1657,23 @@ Subroutine statistics_result                                    &
      dens(i)=dens(i)*(volm/avvol)
   End Do
 
-! volm and cell become the averaged ones, as is the local temp
+! volm and cell become the averaged ones, as is the local thermo%temp
 
   volm = avvol
   cell = avcel
-  temp = sumval(2)
+  thermo%temp = sumval(2)
 
 ! calculate and print radial distribution functions
 
 !If block average errors, output that, else if jackknife errors output those, else just RDF.
   If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_block) Then
-    Call calculate_errors(temp, rcut, nstep, comm)
+    Call calculate_errors(thermo%temp, rcut, nstep, comm)
   End If
   If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) Then
-    Call calculate_errors_jackknife(temp, rcut, nstep, comm)
+    Call calculate_errors_jackknife(thermo%temp, rcut, nstep, comm)
   End If
   If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_errors_block .or. l_errors_jack)) Then
-    Call rdf_compute(lpana,rcut,temp,comm)
+    Call rdf_compute(lpana,rcut,thermo%temp,comm)
   End IF
   If (ncfusr > 0) Call usr_compute(comm)
 
@@ -1689,10 +1689,10 @@ Subroutine statistics_result                                    &
 
 ! Calculate and print PDFs
   If (lpana) Then
-     If (mxgbnd1 > 0 .and. ncfbnd > 0) Call bonds_compute(temp,comm)
-     If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(temp,comm)
-     If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp,comm)
-     If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp,comm)
+     If (mxgbnd1 > 0 .and. ncfbnd > 0) Call bonds_compute(thermo%temp,comm)
+     If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(thermo%temp,comm)
+     If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(thermo%temp,comm)
+     If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(thermo%temp,comm)
   End If
 
 20 Continue

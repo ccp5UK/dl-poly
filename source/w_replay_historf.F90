@@ -84,7 +84,7 @@
 ! CHECK MD CONFIGURATION
 
            Call check_config &
-           (levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
+           (levcfg,l_str,thermo%l_pseudo,keyens,thermo%iso,keyfce,keyres,megatm,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -131,10 +131,10 @@
 ! Evaluate kinetics if available
 
            If (levcfg > 0 .and. levcfg < 3) Then
-              If (lzero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,nstzero) == 0) &
+              If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,thermo%freq_zero) == 0) &
                  Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
-              If (lzero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
+              If (thermo%l_zero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! Calculate kinetic stress and energy if available
 
@@ -179,7 +179,7 @@
 
            Call statistics_collect        &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,iso,intsta,      &
+           keyres,keyens,thermo%iso,intsta,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -191,7 +191,7 @@
            engbnd,virbnd,engang,virang,   &
            engdih,virdih,enginv,virinv,   &
            engke,engrot,consv,vircom,     &
-           strtot,press,strext,           &
+           strtot,thermo%press,thermo%stress,           &
            stpeng,stpvir,stpcfg,stpeth,   &
            stptmp,stpprs,stpvol,comm,virdpd)
 
@@ -206,7 +206,7 @@
              Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
               'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
              Write(messages(4), '(5x,a8,6x,a6,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
-               'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
+               'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','thermo%press'
              Write(messages(5),'(a)') Repeat('-',130)
              Call info(messages,5,.true.)
            End If
@@ -303,7 +303,7 @@
      cell=clin
 
      Call set_temperature            &
-           (levcfg,temp,keyres,      &
+           (levcfg,thermo%temp,keyres,      &
            lmin,nstep,nstrun,nstmin, &
            mxshak,tolnce,keyshl,     &
            atmfre,atmfrz,            &

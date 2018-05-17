@@ -376,17 +376,17 @@ program dl_poly
   Call read_control                                    &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
     rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
-    l_exp,lecx,lfcap,l_top,lzero,lmin,          &
-    ltgaus,ltscal,lvar,leql,lpse,               &
+    l_exp,lecx,lfcap,l_top,thermo%l_zero,lmin,          &
+    thermo%l_tgaus,thermo%l_tscale,lvar,leql,thermo%l_pseudo,               &
     lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
     lvafav,lpvaf,ltraj,ldef,lrsd,               &
     nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
-    temp,press,strext,keyres,                   &
+    thermo%temp,thermo%press,thermo%stress,keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     keymin,nstmin,min_tol,                      &
-    nstzero,nstgaus,nstscal,                    &
-    keyens,iso,taut,chi,chi_ep,chi_es,soft,gama,&
-    taup,tai,ten,vel_es2,keypse,wthpse,tmppse,  &
+    thermo%freq_zero,thermo%freq_tgaus,thermo%nstscal,                    &
+    keyens,thermo%iso,thermo%tau_t,thermo%chi,thermo%chi_ep,thermo%chi_es,thermo%soft,thermo%gama,&
+    thermo%tau_p,thermo%tai,thermo%tension,vel_es2,thermo%key_pseudo,thermo%width_pseudo,thermo%temp_pseudo,  &
     fmax,nstbpo,intsta,keyfce,epsq,             &
     rlx_tol,mxshak,tolnce,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
@@ -398,7 +398,7 @@ program dl_poly
 
   Call read_field                          &
     (l_str,l_top,l_n_v,             &
-    rcut,rvdw,rmet,width,temp,epsq, &
+    rcut,rvdw,rmet,width,thermo%temp,epsq, &
     keyens,keyfce,keyshl,           &
     lecx,lbook,lexcl,               &
     rcter,rctbp,rcfbp,              &
@@ -417,7 +417,7 @@ program dl_poly
 
   ! CHECK MD CONFIGURATION
 
-  Call check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
+  Call check_config(levcfg,l_str,thermo%l_pseudo,keyens,thermo%iso,keyfce,keyres,megatm,comm)
 
   Call gtime(timelp)
   Call info('',.true.)
@@ -552,7 +552,7 @@ program dl_poly
   ! SET initial system temperature
 
   Call set_temperature               &
-    (levcfg,temp,keyres,      &
+    (levcfg,thermo%temp,keyres,      &
     lmin,nstep,nstrun,nstmin, &
     mxshak,tolnce,keyshl,     &
     atmfre,atmfrz,            &
@@ -570,7 +570,7 @@ program dl_poly
 
   If (l_ttm) Then
     Call ttm_table_read(comm)
-    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,temp,comm)
+    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,thermo%temp,comm)
   End If
 
   ! Frozen atoms option
@@ -579,11 +579,11 @@ program dl_poly
 
   ! Cap forces in equilibration mode
 
-  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,temp,comm)
+  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,comm)
 
   ! PLUMED initialisation or information message
 
-  If (l_plumed) Call plumed_init(megatm,tstep,temp,comm)
+  If (l_plumed) Call plumed_init(megatm,tstep,thermo%temp,comm)
 
   ! Print out sample of initial configuration on node zero
 
@@ -754,8 +754,8 @@ program dl_poly
   ! (final)
 
   If (l_ttm) Then
-    Call ttm_ion_temperature (chi_ep,chi_es,vel_es2,comm)
-    Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep, ttmstats,comm)
+    Call ttm_ion_temperature (thermo%chi_ep,thermo%chi_es,vel_es2,comm)
+    Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep, ttmstats,comm)
     Call peakProfilerElec('LATS_E', nstep, ttmtraj,comm)
     Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats,comm)
     Call peakProfiler(tempion, 'LATS_I', nstep, ttmtraj,comm)
@@ -774,8 +774,8 @@ program dl_poly
 
   Call statistics_result                                        &
     (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
-    nstrun,keyens,keyshl,megcon,megpmf,iso,              &
-    press,strext,nstep,tstep,time,tmst,comm,passmin)
+    nstrun,keyens,keyshl,megcon,megpmf,thermo%iso,              &
+    thermo%press,thermo%stress,nstep,tstep,time,tmst,comm,passmin)
 
   10 Continue
 

@@ -31,7 +31,7 @@ Contains
 
   Subroutine nvt_a0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,temp,keyshl,taut,soft,       &
+             nstep,thermo%temp,keyshl,thermo%tau_t,thermo%soft,       &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
@@ -61,7 +61,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
     Integer,            Intent( In    ) :: nstep,keyshl
-    Real( Kind = wp ),  Intent( In    ) :: temp,taut,soft
+    Real( Kind = wp ),  Intent( In    ) :: thermo%temp,thermo%tau_t,thermo%soft
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
@@ -425,7 +425,7 @@ Contains
        j = 0
        tkin = 0.0_wp
        mxdr = 0.0_wp
-       scale = tstep/taut
+       scale = tstep/thermo%tau_t
        Do i=1,natms
           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
              If (sarurnd(ltg(i),0,nstep) <= scale) Then
@@ -464,19 +464,19 @@ Contains
 
   ! Scale to target temperature and apply thermostat
 
-       scale = Sqrt(mxdr * boltz * temp / tkin)
-       tmp = Sqrt(1.0_wp-soft**2)*scale
+       scale = Sqrt(mxdr * boltz * thermo%temp / tkin)
+       tmp = Sqrt(1.0_wp-thermo%soft**2)*scale
 
        Do i=1,natms
           If (qn(i) == 1) Then
-             If (soft <= zero_plus) Then ! New target velocity
+             If (thermo%soft <= zero_plus) Then ! New target velocity
                 vxx(i) = xxt(i)*scale
                 vyy(i) = yyt(i)*scale
                 vzz(i) = zzt(i)*scale
              Else ! Softened velocity (mixture between old & new)
-                vxx(i) = soft*vxx(i) + tmp*xxt(i)
-                vyy(i) = soft*vyy(i) + tmp*yyt(i)
-                vzz(i) = soft*vzz(i) + tmp*zzt(i)
+                vxx(i) = thermo%soft*vxx(i) + tmp*xxt(i)
+                vyy(i) = thermo%soft*vyy(i) + tmp*yyt(i)
+                vzz(i) = thermo%soft*vzz(i) + tmp*zzt(i)
              End If
           End If
        End Do
@@ -579,7 +579,7 @@ Contains
 
   Subroutine nvt_a1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,temp,keyshl,taut,soft,       &
+             nstep,thermo%temp,keyshl,thermo%tau_t,thermo%soft,       &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
@@ -611,7 +611,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
     Integer,            Intent( In    ) :: nstep,keyshl
-    Real( Kind = wp ),  Intent( In    ) :: temp,taut,soft
+    Real( Kind = wp ),  Intent( In    ) :: thermo%temp,thermo%tau_t,thermo%soft
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
@@ -1362,7 +1362,7 @@ Contains
        qr(1:ntrgd)     = 0 ! unqualified RB
 
        j = 0
-       scale = tstep/taut
+       scale = tstep/thermo%tau_t
        Do i=1,natms
           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
              If (sarurnd(ltg(i),0,nstep) <= scale) Then
@@ -1527,20 +1527,20 @@ Contains
 
   ! Scale to target temperature and apply thermostat
 
-       scale = Sqrt(mxdr * boltz * temp / tkin)
-       tmp = Sqrt(1.0_wp-soft**2)*scale
+       scale = Sqrt(mxdr * boltz * thermo%temp / tkin)
+       tmp = Sqrt(1.0_wp-thermo%soft**2)*scale
 
        j = 0
        Do i=1,natms
           If (qn(i) == 1 .and. lfree(i) == 0) Then
-             If (soft <= zero_plus) Then ! New target velocity
+             If (thermo%soft <= zero_plus) Then ! New target velocity
                 vxx(i) = xxt(i)*scale
                 vyy(i) = yyt(i)*scale
                 vzz(i) = zzt(i)*scale
              Else ! Softened velocity (mixture between old & new)
-                vxx(i) = soft*vxx(i) + tmp*xxt(i)
-                vyy(i) = soft*vyy(i) + tmp*yyt(i)
-                vzz(i) = soft*vzz(i) + tmp*zzt(i)
+                vxx(i) = thermo%soft*vxx(i) + tmp*xxt(i)
+                vyy(i) = thermo%soft*vyy(i) + tmp*yyt(i)
+                vzz(i) = thermo%soft*vzz(i) + tmp*zzt(i)
              End If
           End If
        End Do
@@ -1561,25 +1561,25 @@ Contains
                 i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
 
                 If (rgdfrz(0,rgdtyp) == 0) Then
-                   If (soft <= zero_plus) Then ! New target velocity
+                   If (thermo%soft <= zero_plus) Then ! New target velocity
                       rgdvxx(irgd) = xxt(i1)*scale
                       rgdvyy(irgd) = yyt(i1)*scale
                       rgdvzz(irgd) = zzt(i1)*scale
                    Else ! Softened velocity (mixture between old & new)
-                      rgdvxx(irgd) = soft*rgdvxx(irgd) + tmp*xxt(i1)
-                      rgdvyy(irgd) = soft*rgdvyy(irgd) + tmp*yyt(i1)
-                      rgdvzz(irgd) = soft*rgdvzz(irgd) + tmp*zzt(i1)
+                      rgdvxx(irgd) = thermo%soft*rgdvxx(irgd) + tmp*xxt(i1)
+                      rgdvyy(irgd) = thermo%soft*rgdvyy(irgd) + tmp*yyt(i1)
+                      rgdvzz(irgd) = thermo%soft*rgdvzz(irgd) + tmp*zzt(i1)
                    End If
                 End If
 
-                If (soft <= zero_plus) Then ! New target velocity
+                If (thermo%soft <= zero_plus) Then ! New target velocity
                    rgdoxx(irgd) = xxt(i2)*scale
                    rgdoyy(irgd) = yyt(i2)*scale
                    rgdozz(irgd) = zzt(i2)*scale
                 Else ! Softened velocity (mixture between old & new)
-                   rgdoxx(irgd) = soft*rgdoxx(irgd) + tmp*xxt(i2)
-                   rgdoyy(irgd) = soft*rgdoyy(irgd) + tmp*yyt(i2)
-                   rgdozz(irgd) = soft*rgdozz(irgd) + tmp*zzt(i2)
+                   rgdoxx(irgd) = thermo%soft*rgdoxx(irgd) + tmp*xxt(i2)
+                   rgdoyy(irgd) = thermo%soft*rgdoyy(irgd) + tmp*yyt(i2)
+                   rgdozz(irgd) = thermo%soft*rgdozz(irgd) + tmp*zzt(i2)
                 End If
 
   ! get new rotation matrix

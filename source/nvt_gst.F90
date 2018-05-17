@@ -28,8 +28,8 @@ Contains
 
   Subroutine nvt_g0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,temp,degfre,                 &
-             sigma,taut,gama,chit,cint,         &
+             nstep,thermo%temp,degfre,                 &
+             sigma,thermo%tau_t,thermo%gama,chit,cint,         &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
@@ -61,10 +61,10 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: temp
+    Real( Kind = wp ), Intent( In    ) :: thermo%temp
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut,gama
+    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t,thermo%gama
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
     Real( Kind = wp ), Intent(   Out ) :: consv
@@ -129,7 +129,7 @@ Contains
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        ceng  = 2.0_wp*sigma
 
   ! set number of constraint+pmf shake iterations
@@ -207,7 +207,7 @@ Contains
   ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
        Call nvt_g0_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,temp,gama,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! update velocity and position
@@ -434,7 +434,7 @@ Contains
   ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
        Call nvt_g0_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,temp,gama,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,chit,cint,engke,comm)
 
   ! conserved quantity less kinetic and potential energy terms
@@ -471,8 +471,8 @@ Contains
 
   Subroutine nvt_g1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,temp,degfre,                 &
-             sigma,taut,gama,chit,cint,         &
+             nstep,thermo%temp,degfre,                 &
+             sigma,thermo%tau_t,thermo%gama,chit,cint,         &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
@@ -506,10 +506,10 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: temp
+    Real( Kind = wp ), Intent( In    ) :: thermo%temp
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut,gama
+    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t,thermo%gama
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
     Real( Kind = wp ), Intent(   Out ) :: consv
@@ -596,7 +596,7 @@ Contains
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        ceng  = 2.0_wp*sigma
 
   ! set number of constraint+pmf shake iterations
@@ -730,7 +730,7 @@ Contains
   ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
        Call nvt_g1_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,temp,gama,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                                                &
              rgdvxx,rgdvyy,rgdvzz,                                       &
              rgdoxx,rgdoyy,rgdozz,                                       &
@@ -1282,7 +1282,7 @@ Contains
   ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
        Call nvt_g1_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,temp,gama,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                                                &
              rgdvxx,rgdvyy,rgdvzz,                                       &
              rgdoxx,rgdoyy,rgdozz,                                       &
@@ -1329,7 +1329,7 @@ Contains
   End Subroutine nvt_g1_vv
 
   Subroutine nvt_g0_scl &
-             (tstep,degfre,isw,nstep,ceng,qmass,temp,gama,pmass,chip, &
+             (tstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,pmass,chip, &
              vxx,vyy,vzz,chit,cint,engke,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1346,7 +1346,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-                                                                 temp,gama,pmass,chip
+                                                                 thermo%temp,thermo%gama,pmass,chip
     Integer(Kind=li),                         Intent( In    ) :: degfre
     Integer,                                  Intent( In    ) :: isw,nstep
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
@@ -1364,7 +1364,7 @@ Contains
     qstep  = 0.5_wp*hstep
     factor = pmass*chip**2
 
-  ! update chi(=cint) to 1/4*tstep
+  ! update thermo%chi(=cint) to 1/4*tstep
 
     cint=cint + qstep*chit
 
@@ -1372,7 +1372,7 @@ Contains
 
     engke=getkin(vxx,vyy,vzz,comm)
 
-    fex=Exp(-gama*hstep)
+    fex=Exp(-thermo%gama*hstep)
 
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
@@ -1381,10 +1381,10 @@ Contains
 
   ! update chit to 1/2*tstep
 
-    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
          hstep*(2.0_wp*engke + factor - ceng)/qmass
 
-  ! update chi(=cint) to 3/4*tstep
+  ! update thermo%chi(=cint) to 3/4*tstep
 
     cint=cint + hstep*chit
 
@@ -1408,17 +1408,17 @@ Contains
 
   ! update chit to full (2/2)*tstep
 
-    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
          hstep*(2.0_wp*engke + factor - ceng)/qmass
 
-  ! update chi(=cint) to 4/4*tstep
+  ! update thermo%chi(=cint) to 4/4*tstep
 
     cint=cint + qstep*chit
 
   End Subroutine nvt_g0_scl
 
   Subroutine nvt_g1_scl &
-             (tstep,degfre,isw,nstep,ceng,qmass,temp,gama,pmass,chip, &
+             (tstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,pmass,chip, &
              vxx,vyy,vzz,                                             &
              rgdvxx,rgdvyy,rgdvzz,                                    &
              rgdoxx,rgdoyy,rgdozz,                                    &
@@ -1438,7 +1438,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-                                                                 temp,gama,pmass,chip
+                                                                 thermo%temp,thermo%gama,pmass,chip
     Integer(Kind=li),                         Intent( In    ) :: degfre
     Integer,                                  Intent( In    ) :: isw,nstep
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
@@ -1458,7 +1458,7 @@ Contains
     qstep  = 0.5_wp*hstep
     factor = pmass*chip**2
 
-  ! update chi(=cint) to 1/4*tstep
+  ! update thermo%chi(=cint) to 1/4*tstep
 
     cint=cint + qstep*chit
 
@@ -1471,7 +1471,7 @@ Contains
 
     engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
 
-    fex=Exp(-gama*hstep)
+    fex=Exp(-thermo%gama*hstep)
 
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
@@ -1480,10 +1480,10 @@ Contains
 
   ! update chit to 1/2*tstep
 
-    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
          hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
-  ! update chi(=cint) to 3/4*tstep
+  ! update thermo%chi(=cint) to 3/4*tstep
 
     cint=cint + hstep*chit
 
@@ -1520,10 +1520,10 @@ Contains
 
   ! update chit to full (2/2)*tstep
 
-    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*temp/qmass)*r_0 + &
+    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
          hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
-  ! update chi(=cint) to 4/4*tstep
+  ! update thermo%chi(=cint) to 4/4*tstep
 
     cint=cint + qstep*chit
 

@@ -168,7 +168,7 @@ Subroutine allocate_block_average_array(nstrun)
 
 End Subroutine rdf_collect
 
-Subroutine rdf_compute(lpana,rcut,temp,comm)
+Subroutine rdf_compute(lpana,rcut,thermo%temp,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -183,7 +183,7 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 
 
   Logical          , Intent( In    ) :: lpana
-  Real( Kind = wp ), Intent( In    ) :: rcut,temp
+  Real( Kind = wp ), Intent( In    ) :: rcut,thermo%temp
   Type(comms_type), Intent( InOut )  :: comm
 
   Logical           :: zero
@@ -208,7 +208,7 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 
 ! conversion: internal units -> in/out units (kJ/mol, kcal/mol, eV etc)
 
-  kT2engo = boltz*temp/engunit
+  kT2engo = boltz*thermo%temp/engunit
 
 ! grid interval for rdf tables
 
@@ -484,16 +484,16 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 
 End Subroutine rdf_compute
 
-Subroutine calculate_block(temp, rcut)
+Subroutine calculate_block(thermo%temp, rcut)
 
-  Real( Kind = wp ), Intent(in)            :: temp, rcut
+  Real( Kind = wp ), Intent(in)            :: thermo%temp, rcut
   Real( Kind = wp ), Dimension( 1:mxlist ) :: rrt, xxt, yyt, zzt
   Real( Kind = wp )                        :: kT2engo, delr, rdlr, dgrid, pdfzero, factor1, rrr,dvol,gofr,gofr1
 
   Integer :: i, loopend, j, ia, ib, ngrid, kk, k, limit, jj
   Logical :: zero
 
-  kT2engo = boltz*temp/engunit
+  kT2engo = boltz*thermo%temp/engunit
 ! grid interval for rdf tables
   delr = rcut/Real(mxgrdf,wp)
   rdlr = 1.0_wp/delr
@@ -532,9 +532,9 @@ Subroutine calculate_block(temp, rcut)
 
 End Subroutine calculate_block
 
-Subroutine calculate_errors(temp, rcut, num_steps, comm)
+Subroutine calculate_errors(thermo%temp, rcut, num_steps, comm)
 
-  Real( Kind = wp ), Intent( In )                      :: temp, rcut
+  Real( Kind = wp ), Intent( In )                      :: thermo%temp, rcut
   Type(comms_type), Intent( InOut )                    :: comm
   Real( Kind = wp )                                    :: test1, delr
   Real( kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
@@ -565,7 +565,7 @@ Subroutine calculate_errors(temp, rcut, num_steps, comm)
 
 !Compute the rdf for each of the blocks
   Do block_number=1, num_blocks+1
-     Call calculate_block(temp, rcut)
+     Call calculate_block(thermo%temp, rcut)
   End Do
   nr_blocks = num_blocks+1
 
@@ -626,9 +626,9 @@ Subroutine calculate_errors(temp, rcut, num_steps, comm)
   Deallocate(averages, errors)
 End Subroutine calculate_errors
 
-Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
+Subroutine calculate_errors_jackknife(thermo%temp, rcut, num_steps,comm)
 
-  Real( Kind = wp ), Intent(In)                        :: temp, rcut
+  Real( Kind = wp ), Intent(In)                        :: thermo%temp, rcut
   Type(comms_type), Intent( InOut )                    :: comm
   Real( Kind = wp )                                    :: test1
   Real( Kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
@@ -659,7 +659,7 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
 
 !Compute the rdf for each of the blocks
   Do block_number=1,num_blocks+1
-     Call calculate_block(temp, rcut)
+     Call calculate_block(thermo%temp, rcut)
   End Do
   nr_blocks = num_blocks+1
   i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)

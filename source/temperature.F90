@@ -6,7 +6,7 @@ Module temperature
   Use configuration,   Only : imcon,natms,nlast,nfree,lsite,  &
                               lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                               weight,vxx,vyy,vzz,xxx,yyy,zzz
-  Use dpd,             Only : keydpd
+  Use dpd,             Only : thermo%key_dpd
   Use rigid_bodies,    Only : rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
                               rgdxxx,rgdyyy,rgdzzz,rgdx,rgdy,rgdz, &
                               rgdrix,rgdriy,rgdriz,rgdwgt,q0,q1,q2,q3, &
@@ -30,7 +30,7 @@ Module temperature
 Contains
 
   Subroutine set_temperature           &
-             (levcfg,temp,keyres,      &
+             (levcfg,thermo%temp,keyres,      &
              lmin,nstep,nstrun,nstmin, &
              mxshak,tolnce,keyshl,     &
              atmfre,atmfrz,            &
@@ -54,7 +54,7 @@ Contains
                                            megshl,              &
                                            megcon,megpmf,       &
                                            megrgd
-    Real( Kind = wp ),  Intent( In    ) :: temp,tolnce
+    Real( Kind = wp ),  Intent( In    ) :: thermo%temp,tolnce
 
     Integer,            Intent( InOut ) :: keyres,levcfg
     Integer(Kind=li),   Intent( InOut ) :: degtra,degrot
@@ -98,7 +98,7 @@ Contains
 
   ! 3 lost for fixing COM translation
 
-    If (l_vom .and. keydpd == 0) Then
+    If (l_vom .and. thermo%key_dpd == 0) Then
        com=Int(3,li)
     Else
        com=Int(0,li)
@@ -155,7 +155,7 @@ Contains
 
   ! desired kinetic energy
 
-    sigma=0.5_wp*Real(degfre,wp)*boltz*temp
+    sigma=0.5_wp*Real(degfre,wp)*boltz*thermo%temp
 
   ! avoid user defined 0K field to break up anything
 
@@ -531,7 +531,7 @@ Contains
        If (megshl > 0 .and. keyshl == 1 .and. no_min_0) Then
           Do
              Call scale_temperature(sigma,degtra,degrot,degfre,comm)
-             Call core_shell_quench(safe,temp,comm)
+             Call core_shell_quench(safe,thermo%temp,comm)
              If (megcon > 0) Then
                Call constraints_quench(mxshak,tolnce,comm)
              End If

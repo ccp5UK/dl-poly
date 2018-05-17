@@ -104,7 +104,7 @@
 ! CHECK MD CONFIGURATION
 
            Call check_config &
-           (levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
+           (levcfg,l_str,thermo%l_pseudo,keyens,thermo%iso,keyfce,keyres,megatm,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -230,7 +230,7 @@
 
            Call statistics_collect        &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,iso,intsta,      &
+           keyres,keyens,thermo%iso,intsta,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -242,7 +242,7 @@
            engbnd,virbnd,engang,virang,   &
            engdih,virdih,enginv,virinv,   &
            engke,engrot,consv,vircom,     &
-           strtot,press,strext,           &
+           strtot,thermo%press,thermo%stress,           &
            stpeng,stpvir,stpcfg,stpeth,   &
            stptmp,stpprs,stpvol,comm,virdpd)
 
@@ -333,7 +333,7 @@
      cell=clin
 
      Call set_temperature            &
-           (levcfg,temp,keyres,      &
+           (levcfg,thermo%temp,keyres,      &
            lmin,nstep,nstrun,nstmin, &
            mxshak,tolnce,keyshl,     &
            atmfre,atmfrz,            &

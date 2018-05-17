@@ -27,9 +27,9 @@ Contains
 
   Subroutine nst_h0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,cint,              &
-             press,strext,taup,chip,eta,        &
-             degfre,iso,ten,stress,             &
+             sigma,thermo%tau_t,chit,cint,              &
+             thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
+             degfre,thermo%iso,thermo%tension,stress,             &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
@@ -45,11 +45,11 @@ Contains
   !
   ! Parrinello-Rahman type: changing cell shape
   !
-  ! iso=0 fully anisotropic barostat
-  ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (ten=0.0_wp)
-  ! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! Note: (1) this ensemble is modified from its original form as in
   !           reference1 to that shown in reference2, and now there is
@@ -73,16 +73,16 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
-    Real( Kind = wp ), Intent( In    ) :: press,strext(1:9),taup
+    Real( Kind = wp ), Intent( In    ) :: thermo%press,thermo%stress(1:9),thermo%tau_p
     Real( Kind = wp ), Intent(   Out ) :: chip
     Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),  Intent( In    ) :: degfre
-    Integer,           Intent( In    ) :: iso
-    Real( Kind = wp ), Intent( In    ) :: ten,stress(1:9)
+    Integer,           Intent( In    ) :: thermo%iso
+    Real( Kind = wp ), Intent( In    ) :: thermo%tension,stress(1:9)
 
     Real( Kind = wp ), Intent(   Out ) :: consv
 
@@ -171,13 +171,13 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for iso>=1
-  ! Initialise and get h_z for iso>1
+  ! Sort eta for thermo%iso>=1
+  ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
-       If      (iso == 1) Then
+       If      (thermo%iso == 1) Then
           eta(1:8) = 0.0_wp
-       Else If (iso >  1) Then
+       Else If (thermo%iso >  1) Then
           eta(2:4) = 0.0_wp
           eta(6:8) = 0.0_wp
 
@@ -187,18 +187,18 @@ Contains
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-       If      (iso == 0) Then
+       If      (thermo%iso == 0) Then
           ceng  = 2.0_wp*sigma + 3.0_wp**2*boltz*tmp
-       Else If (iso == 1) Then
+       Else If (thermo%iso == 1) Then
           ceng  = 2.0_wp*sigma + 1.0_wp*boltz*tmp
-       Else If (iso == 2) Then
+       Else If (thermo%iso == 2) Then
           ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
-       Else If (iso == 3) Then
+       Else If (thermo%iso == 3) Then
           ceng  = 2.0_wp*sigma + 2.0_wp*boltz*tmp
        End If
-       pmass = ((2.0_wp*sigma + 3.0_wp*boltz*tmp)/3.0_wp)*taup**2
+       pmass = ((2.0_wp*sigma + 3.0_wp*boltz*tmp)/3.0_wp)*thermo%tau_p**2
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -305,8 +305,8 @@ Contains
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
           Call nst_h0_scl &
-             (0,hstep,degfre,pmass,chit,volm,press, &
-             iso,ten,h_z,strext,str,stress,         &
+             (0,hstep,degfre,pmass,chit,volm,thermo%press, &
+             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,         &
              vxx,vyy,vzz,eta,strkin,engke,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
@@ -565,9 +565,9 @@ Contains
           dens(i)=dens0(i)*tmp
        End Do
 
-  ! get h_z for iso>1
+  ! get h_z for thermo%iso>1
 
-       If (iso > 1) Then
+       If (thermo%iso > 1) Then
           Call dcell(cell,celprp)
           h_z=celprp(9)
        End If
@@ -626,8 +626,8 @@ Contains
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
        Call nst_h0_scl &
-             (0,hstep,degfre,pmass,chit,volm,press, &
-             iso,ten,h_z,strext,str,stress,         &
+             (0,hstep,degfre,pmass,chit,volm,thermo%press, &
+             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,         &
              vxx,vyy,vzz,eta,strkin,engke,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
@@ -642,7 +642,7 @@ Contains
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip0**2 + ceng*cint + press*volm
+       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip0**2 + ceng*cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -687,9 +687,9 @@ Contains
 
   Subroutine nst_h1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,cint,              &
-             press,strext,taup,chip,eta,        &
-             degfre,degrot,iso,ten,stress,      &
+             sigma,thermo%tau_t,chit,cint,              &
+             thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
+             degfre,degrot,thermo%iso,thermo%tension,stress,      &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
@@ -707,11 +707,11 @@ Contains
   !
   ! Parrinello-Rahman type: changing cell shape
   !
-  ! iso=0 fully anisotropic barostat
-  ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (ten=0.0_wp)
-  ! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! Note: (1) this ensemble is modified from its original form as in
   !           reference1 to that shown in reference2, and now there is
@@ -735,16 +735,16 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
-    Real( Kind = wp ), Intent( In    ) :: press,strext(1:9),taup
+    Real( Kind = wp ), Intent( In    ) :: thermo%press,thermo%stress(1:9),thermo%tau_p
     Real( Kind = wp ), Intent(   Out ) :: chip
     Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),  Intent( In    ) :: degfre,degrot
-    Integer,           Intent( In    ) :: iso
-    Real( Kind = wp ), Intent( In    ) :: ten,stress(1:9)
+    Integer,           Intent( In    ) :: thermo%iso
+    Real( Kind = wp ), Intent( In    ) :: thermo%tension,stress(1:9)
 
     Real( Kind = wp ), Intent(   Out ) :: consv
 
@@ -855,13 +855,13 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for iso>=1
-  ! Initialise and get h_z for iso>1
+  ! Sort eta for thermo%iso>=1
+  ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
-       If      (iso == 1) Then
+       If      (thermo%iso == 1) Then
           eta(1:8) = 0.0_wp
-       Else If (iso >  1) Then
+       Else If (thermo%iso >  1) Then
           eta(2:4) = 0.0_wp
           eta(6:8) = 0.0_wp
 
@@ -871,18 +871,18 @@ Contains
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-       If      (iso == 0) Then
+       If      (thermo%iso == 0) Then
           ceng  = 2.0_wp*sigma + 3.0_wp**2*boltz*tmp
-       Else If (iso == 1) Then
+       Else If (thermo%iso == 1) Then
           ceng  = 2.0_wp*sigma + 1.0_wp*boltz*tmp
-       Else If (iso == 2) Then
+       Else If (thermo%iso == 2) Then
           ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
-       Else If (iso == 3) Then
+       Else If (thermo%iso == 3) Then
           ceng  = 2.0_wp*sigma + 2.0_wp*boltz*tmp
        End If
-       pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*taup**2
+       pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*thermo%tau_p**2
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -1049,8 +1049,8 @@ Contains
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
           Call nst_h1_scl &
-             (0,hstep,degfre,degrot,pmass,chit,volm,press, &
-             iso,ten,h_z,strext,str,stress,strcom,         &
+             (0,hstep,degfre,degrot,pmass,chit,volm,thermo%press, &
+             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,strcom,         &
              vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
@@ -1555,9 +1555,9 @@ Contains
           dens(i)=dens0(i)*tmp
        End Do
 
-  ! get h_z for iso>1
+  ! get h_z for thermo%iso>1
 
-       If (iso > 1) Then
+       If (thermo%iso > 1) Then
           Call dcell(cell,celprp)
           h_z=celprp(9)
        End If
@@ -1756,8 +1756,8 @@ Contains
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
        Call nst_h1_scl &
-             (0,hstep,degfre,degrot,pmass,chit,volm,press, &
-             iso,ten,h_z,strext,str,stress,strcom,         &
+             (0,hstep,degfre,degrot,pmass,chit,volm,thermo%press, &
+             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,strcom,         &
              vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
@@ -1775,7 +1775,7 @@ Contains
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip0**2 + ceng*cint + press*volm
+       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip0**2 + ceng*cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -1850,8 +1850,8 @@ Contains
   End Subroutine nst_h1_vv
 
   Subroutine nst_h0_scl &
-             (sw,tstep,degfre,pmass,chit,volm,press, &
-             iso,ten,h_z,strext,strcon,stress,       &
+             (sw,tstep,degfre,pmass,chit,volm,thermo%press, &
+             thermo%iso,thermo%tension,h_z,thermo%stress,strcon,stress,       &
              vxx,vyy,vzz,eta,strkin,engke,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1864,11 +1864,11 @@ Contains
   ! sw=0 coupling to NVT thermostat for nst_h ensemble and
   !                                     no additional scaling factor
   !
-  ! iso=0 fully anisotropic barostat
-  ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (ten=0.0_wp)
-  ! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
   !
@@ -1878,11 +1878,11 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: sw,iso
+    Integer,           Intent( In    ) :: sw,thermo%iso
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,press,ten,h_z
-    Real( Kind = wp ), Intent( In    ) :: strext(1:9),strcon(1:9),stress(1:9)
+    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,thermo%press,thermo%tension,h_z
+    Real( Kind = wp ), Intent( In    ) :: thermo%stress(1:9),strcon(1:9),stress(1:9)
     Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
     Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
     Real( Kind = wp ), Intent(   Out ) :: strkin(1:9)
@@ -1937,21 +1937,21 @@ Contains
 
     If (sw == 1) factor = 2.0_wp*engke*rf
 
-  ! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
+  ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
 
-    If (iso == 0) Then
-       eta=eta + hstep*(strcon+stress+strkin + factor*uni - (press*uni+strext)*volm)/pmass
+    If (thermo%iso == 0) Then
+       eta=eta + hstep*(strcon+stress+strkin + factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
-       If      (iso == 2) Then
-          eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (press+strext(1)-ten/h_z)*volm)/pmass
-          eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (press+strext(5)-ten/h_z)*volm)/pmass
-       Else If (iso == 3) Then
+       If      (thermo%iso == 2) Then
+          eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+       Else If (thermo%iso == 3) Then
           eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                        &
                  (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
-                 factor - (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm ) / pmass
+                 factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
           eta(5)=eta(1)
        End If
-       eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + factor - (press+strext(9))*volm)/pmass
+       eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + factor - (thermo%press+thermo%stress(9))*volm)/pmass
     End If
 
   ! thermostat eta to 2/4*tstep
@@ -2008,21 +2008,21 @@ Contains
 
     If (sw == 1) factor = 2.0_wp*engke*rf
 
-  ! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
+  ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
 
-    If (iso == 0) Then
-       eta=eta + hstep*(strcon+stress+strkin + factor*uni - (press*uni+strext)*volm)/pmass
+    If (thermo%iso == 0) Then
+       eta=eta + hstep*(strcon+stress+strkin + factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
-       If      (iso == 2) Then
-          eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (press+strext(1)-ten/h_z)*volm)/pmass
-          eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (press+strext(5)-ten/h_z)*volm)/pmass
-       Else If (iso == 3) Then
+       If      (thermo%iso == 2) Then
+          eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+       Else If (thermo%iso == 3) Then
           eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                        &
                  (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
-                 factor - (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm ) / pmass
+                 factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
           eta(5)=eta(1)
        End If
-       eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + factor - (press+strext(9))*volm)/pmass
+       eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + factor - (thermo%press+thermo%stress(9))*volm)/pmass
     End If
 
   ! thermostat eta to full (4/4)*tstep
@@ -2032,8 +2032,8 @@ Contains
   End Subroutine nst_h0_scl
 
   Subroutine nst_h1_scl &
-             (sw,tstep,degfre,degrot,pmass,chit,volm,press,  &
-             iso,ten,h_z,strext,strcon,stress,strcom,        &
+             (sw,tstep,degfre,degrot,pmass,chit,volm,thermo%press,  &
+             thermo%iso,thermo%tension,h_z,thermo%stress,strcon,stress,strcom,        &
              vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2047,11 +2047,11 @@ Contains
   ! sw=0 coupling to NVT thermostat for nst_h ensemble and
   !                                     no additional scaling factor
   !
-  ! iso=0 fully anisotropic barostat
-  ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (ten=0.0_wp)
-  ! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
   !
@@ -2060,11 +2060,11 @@ Contains
   ! contrib   - a.m.elena december 2017
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: sw,iso
+    Integer,           Intent( In    ) :: sw,thermo%iso
     Integer(Kind=li),  Intent( In    ) :: degfre,degrot
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,press,ten,h_z
-    Real( Kind = wp ), Intent( In    ) :: strext(1:9),strcon(1:9),stress(1:9),strcom(1:9)
+    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,thermo%press,thermo%tension,h_z
+    Real( Kind = wp ), Intent( In    ) :: thermo%stress(1:9),strcon(1:9),stress(1:9),strcom(1:9)
     Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
     Real( Kind = wp ), Intent( InOut ) :: rgdvxx(1:mxrgd),rgdvyy(1:mxrgd),rgdvzz(1:mxrgd)
     Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
@@ -2125,21 +2125,21 @@ Contains
 
     If (sw == 1) factor = 2.0_wp*engke*rf
 
-  ! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
+  ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
 
-    If (iso == 0) Then
-       eta=eta + hstep*(strcom+strcon+stress+strkin + factor*uni - (press*uni+strext)*volm)/pmass
+    If (thermo%iso == 0) Then
+       eta=eta + hstep*(strcom+strcon+stress+strkin + factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
-       If      (iso == 2) Then
-          eta(1)=eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + factor - (press+strext(1)-ten/h_z)*volm)/pmass
-          eta(5)=eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + factor - (press+strext(5)-ten/h_z)*volm)/pmass
-       Else If (iso == 3) Then
+       If      (thermo%iso == 2) Then
+          eta(1)=eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          eta(5)=eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+       Else If (thermo%iso == 3) Then
           eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                                            &
                  (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
-                 factor - (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm ) / pmass
+                 factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
           eta(5)=eta(1)
        End If
-       eta(9)=eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + factor - (press+strext(9))*volm)/pmass
+       eta(9)=eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + factor - (thermo%press+thermo%stress(9))*volm)/pmass
     End If
 
   ! thermostat eta to 2/4*tstep
@@ -2211,21 +2211,21 @@ Contains
 
     If (sw == 1) factor = 2.0_wp*engke*rf
 
-  ! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
+  ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
 
-    If (iso == 0) Then
-       eta=eta + hstep*(strcom+strcon+stress+strkin + factor*uni - (press*uni+strext)*volm)/pmass
+    If (thermo%iso == 0) Then
+       eta=eta + hstep*(strcom+strcon+stress+strkin + factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
-       If      (iso == 2) Then
-          eta(1)=eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + factor - (press+strext(1)-ten/h_z)*volm)/pmass
-          eta(5)=eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + factor - (press+strext(5)-ten/h_z)*volm)/pmass
-       Else If (iso == 3) Then
+       If      (thermo%iso == 2) Then
+          eta(1)=eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          eta(5)=eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+       Else If (thermo%iso == 3) Then
           eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                                            &
                  (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
-                 factor - (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm ) / pmass
+                 factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
           eta(5)=eta(1)
        End If
-       eta(9)=eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + factor - (press+strext(9))*volm)/pmass
+       eta(9)=eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + factor - (thermo%press+thermo%stress(9))*volm)/pmass
     End If
 
   ! thermostat eta to full (4/4)*tstep

@@ -458,7 +458,7 @@ Contains
 
   End Subroutine core_shell_on_top
 
-  Subroutine core_shell_quench(safe,temp,comm)
+  Subroutine core_shell_quench(safe,thermo%temp,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -472,7 +472,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Logical,           Intent(   Out ) :: safe
-    Real( Kind = wp ), Intent( In    ) :: temp
+    Real( Kind = wp ), Intent( In    ) :: thermo%temp
     Type( comms_type), Intent( InOut ) :: comm
 
     Logical           :: safek
@@ -491,7 +491,7 @@ Contains
 
     ! permitted core-shell internal kinetic energy
 
-    pke=boltz*temp*1.0e-4_wp
+    pke=boltz*thermo%temp*1.0e-4_wp
 
     ! amend core and shell velocities preserving total momentum
 

@@ -13,7 +13,7 @@ If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(shlke,comm)
 
 Call statistics_collect           &
   (lsim,leql,nsteql,lzdn,nstzdn, &
-  keyres,keyens,iso,intsta,      &
+  keyres,keyens,thermo%iso,intsta,      &
   degfre,degshl,degrot,          &
   nstep,tstep,time,tmst,         &
   engcpe,vircpe,engsrp,virsrp,   &
@@ -25,7 +25,7 @@ Call statistics_collect           &
   engbnd,virbnd,engang,virang,   &
   engdih,virdih,enginv,virinv,   &
   engke,engrot,consv,vircom,     &
-  strtot,press,strext,           &
+  strtot,thermo%press,thermo%stress,           &
   stpeng,stpvir,stpcfg,stpeth,   &
   stptmp,stpprs,stpvol,comm,virdpd)
 
@@ -51,7 +51,7 @@ If (lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
     Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
      'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
     Write(messages(4), '(5x,a8,6x,a7,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
-      'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
+      'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','thermo%press'
     Write(messages(5),'(a)') Repeat('-',130)
     Call info(messages,5,.true.)
   End If
@@ -78,8 +78,8 @@ If (nstep == nsteql) Then
 
   If (nstep > 0) Then
     Call info(repeat('-',130),.true.)
-    If (lzero) Then
-      lzero=.false.
+    If (thermo%l_zero) Then
+      thermo%l_zero=.false.
       Write(message,'(a,i10)') 'switching off zero Kelvin optimiser at step ',nstep
       Call info(message,.true.)
     End If
@@ -90,14 +90,14 @@ If (nstep == nsteql) Then
       Call info(message,.true.)
     End If
 
-    If (ltscal) Then
-      ltscal=.false.
+    If (thermo%l_tscale) Then
+      thermo%l_tscale=.false.
       Write(message,'(a,i10)') 'switching off temperature scaling at step ',nstep
       Call info(message,.true.)
     End If
 
-    If (ltgaus) Then
-      ltgaus=.false.
+    If (thermo%l_tgaus) Then
+      thermo%l_tgaus=.false.
       Write(message,'(a,i10)') 'switching off temperature regaussing at step ',nstep
       Call info(message,.true.)
     End If
