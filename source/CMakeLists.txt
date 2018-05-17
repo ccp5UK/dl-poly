@@ -23,7 +23,8 @@ ffield.F90
 )
 
 set(dlpoly_CORE_SRCS
-external_field.F90
+  timer.F90
+  external_field.F90
 four_body.F90
 langevin.F90
 coul_spole.F90

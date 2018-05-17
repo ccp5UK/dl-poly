@@ -198,7 +198,7 @@
 ! line-printer output
 ! Update cpu time
 
-           Call gtime(timelp)
+           Call gtime(tmr%timelp)
            If (Mod(lines,npage) == 0) Then
              Write(messages(1),'(a)') Repeat('-',130)
              Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
@@ -213,7 +213,7 @@
 
            Write(messages(1),'(i13,1p,9e12.4)')nstep,stpval(1:9)
            Write(messages(2),'(f13.5,1p,9e12.4)')time,stpval(10:18)
-           Write(messages(3),'(0p,f13.3,1p,9e12.4)') timelp,stpval(19:27)
+           Write(messages(3),'(0p,f13.3,1p,9e12.4)') tmr%timelp,stpval(19:27)
            Write(messages(4),'(a)')''
            Call info(messages,4,.true.)
 
@@ -249,9 +249,9 @@
 
            i=20
            If ( Mod(nstph,i) == 0 .or.                               &
-                (timelp > Real(i*60,wp) .and.                        &
-                 timelp-Real( ((Int(timelp)/(i*60)) * i*60) , wp ) < &
-                 timelp/Real( nstph , wp) ) ) Then
+                (tmr%timelp > Real(i*60,wp) .and.                        &
+                 tmr%timelp-Real( ((Int(tmr%timelp)/(i*60)) * i*60) , wp ) < &
+                 tmr%timelp/Real( nstph , wp) ) ) Then
 
               If (comm%idnode == 0) Then
                  Inquire(File=Trim(output), Exist=l_out, Position=c_out)
