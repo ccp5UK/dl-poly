@@ -4,7 +4,7 @@ Module kontrol
   Use configuration,     Only : sysname
   Use mpole,     Only : thole
   Use dpd,        Only : keydpd,gamdpd
-  Use langevin,   Only : l_lan,l_gst,langevin_allocate_arrays
+  Use langevin,   Only : l_lan,langevin_allocate_arrays
   Use bonds,      Only : rcbnd
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : ld_met,ls_met,tabmet
@@ -1259,7 +1259,6 @@ Subroutine read_control                                &
            Else If (word(1:3) == 'gst') Then
 
               keyens = 14
-              l_gst = .true.
 
               Call get_word(record,word)
               taut = Abs(word_2_real(word))

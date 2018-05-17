@@ -146,21 +146,23 @@ program dl_poly
   Use bounds, Only : set_bounds
   Use build_tplg, Only : build_tplg_intra
   use build_chrm, Only : build_chrm_intra
-Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
-Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
-Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
-Use nvt_gst, Only : nvt_g0_vv, nvt_g1_vv, nvt_g0_scl, nvt_g1_scl
-Use nvt_langevin, Only : nvt_l0_vv, nvt_l1_vv, nvt_l2_vv
-Use nvt_nose_hoover, Only : nvt_h0_vv, nvt_h1_vv, nvt_h0_scl, nvt_h1_scl
-Use nst_berendsen, Only : nst_b0_vv,nst_b1_vv
-Use nst_langevin, Only : nst_l0_vv,nst_l1_vv
-Use nst_mtk, Only : nst_m0_vv,nst_m1_vv
-Use nst_nose_hoover, Only : nst_h0_vv,nst_h1_vv, nst_h0_scl, nst_h1_scl
-Use npt_berendsen, Only : npt_b0_vv,npt_b1_vv
-Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
-Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
-Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
-Use nve, Only : nve_0_vv, nve_1_vv 
+
+  Use thermostat, Only : thermostat_type
+  Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
+  Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
+  Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
+  Use nvt_gst, Only : nvt_g0_vv, nvt_g1_vv, nvt_g0_scl, nvt_g1_scl
+  Use nvt_langevin, Only : nvt_l0_vv, nvt_l1_vv, nvt_l2_vv
+  Use nvt_nose_hoover, Only : nvt_h0_vv, nvt_h1_vv, nvt_h0_scl, nvt_h1_scl
+  Use nst_berendsen, Only : nst_b0_vv,nst_b1_vv
+  Use nst_langevin, Only : nst_l0_vv,nst_l1_vv
+  Use nst_mtk, Only : nst_m0_vv,nst_m1_vv
+  Use nst_nose_hoover, Only : nst_h0_vv,nst_h1_vv, nst_h0_scl, nst_h1_scl
+  Use npt_berendsen, Only : npt_b0_vv,npt_b1_vv
+  Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
+  Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
+  Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
+  Use nve, Only : nve_0_vv, nve_1_vv 
     ! MAIN PROGRAM VARIABLES
 
   Implicit None
@@ -186,9 +188,9 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Logical           :: ltmp,l_vv,l_n_e,l_n_v,       &
     l_ind,l_str,l_top,           &
-    l_exp,lecx,lfcap,lzero,      &
-    lmin,ltgaus,ltscal,          &
-    lvar,leql,lpse,lsim,lfce,    &
+    l_exp,lecx,lfcap,      &
+    lmin,          &
+    lvar,leql,lsim,lfce,    &
     lpana,lrdf,lprdf,lzdn,lpzdn, &
     lvafav,lpvaf,                &
     ltraj,ldef,lrsd,             &
@@ -200,8 +202,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
     nx,ny,nz,imd,tmd,                   &
     keyres,nstrun,nsteql,               &
     keymin,nstmin,                      &
-    nstzero,nstgaus,nstscal,            &
-    keyens,iso,intsta,keypse,nstbpo,    &
+    keyens,intsta,nstbpo,    &
     keyfce,mxshak,mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
     nstrdf,nstzdn,                      &
@@ -224,12 +225,10 @@ Use nve, Only : nve_0_vv, nve_1_vv
     dvar,rcut,rpad,rlnk,                       &
     rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
     alpha,epsq,fmax,                           &
-    width,mndis,mxdis,mxstp,wthpse,tmppse,     &
+    width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),min_tol(1:2),                 &
     tolnce,quattol,rdef,rrsd,                  &
-    pdplnc,emd,vmx,vmy,vmz,temp,sigma,         &
-    press,strext(1:9),ten,                     &
-    taut,chi,chi_ep,chi_es,soft,gama,taup,tai, &
+    pdplnc,emd,vmx,vmy,vmz,sigma,         &
     chit,vel_es2,eta(1:9),chip,cint,consv,     &
     strtot(1:9),virtot,                        &
     strkin(1:9),engke,strknf(1:9),strknt(1:9), &
@@ -246,6 +245,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
+  Type(themorstat_type) :: thermo
   Type(ewald_type) :: ewld
 
   Character( Len = 256 ) :: message,messages(5)

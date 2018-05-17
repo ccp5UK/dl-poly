@@ -22,8 +22,7 @@ Module langevin
   Use errors_warnings, Only : error
   Implicit None
 
-  Logical,                        Save :: l_lan    = .false., &
-                                          l_gst    = .false.
+  Logical,                        Save :: l_lan    = .false.
 
   Real( Kind = wp ),              Save :: fpl(1:9) = 0.0_wp
 
