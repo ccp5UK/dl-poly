@@ -46,7 +46,7 @@
 ! START OF MOLECULAR DYNAMICS CALCULATIONS
 
   Do While ( (nstep < nstrun .or. (nstep == nstrun .and. newjob)) .and. &
-             (tmr%timjob-tmr%timelp) > tmr%timcls )
+             (tmr%job-tmr%elapsed) > tmr%clear_screen )
 
 ! Apply impact
 
@@ -149,7 +149,7 @@
 
 ! Complete time check
 
-     Call gtime(tmr%timelp)
+     Call gtime(tmr%elapsed)
 
 ! Change levcfg appropriately
 

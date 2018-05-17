@@ -261,11 +261,11 @@
 
 ! Complete time check
 
-           Call gtime(tmr%timelp)
+           Call gtime(tmr%elapsed)
            Write(messages(1),'(2(a,i10),a)') &
              'HISTORY step ',nstep,' (',nstph,' entry) processed'
            Write(messages(2),'(a,f12.3,a)') &
-             'time elapsed since job start: ',tmr%timelp,' sec'
+             'time elapsed since job start: ',tmr%elapsed,' sec'
            Call info(messages,2,.true.)
 
 ! Save restart data in event of system crash
@@ -279,9 +279,9 @@
 
            i=20
            If ( Mod(nstph,i) == 0 .or.                               &
-                (tmr%timelp > Real(i*60,wp) .and.                        &
-                 tmr%timelp-Real( ((Int(tmr%timelp)/(i*60)) * i*60) , wp ) < &
-                 tmr%timelp/Real( nstph , wp) ) ) Then
+                (tmr%elapsed > Real(i*60,wp) .and.                        &
+                 tmr%elapsed-Real( ((Int(tmr%elapsed)/(i*60)) * i*60) , wp ) < &
+                 tmr%elapsed/Real( nstph , wp) ) ) Then
 
               If (comm%idnode == 0) Then
                  Inquire(File=Trim(output), Exist=l_out, Position=c_out)

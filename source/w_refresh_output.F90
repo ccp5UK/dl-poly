@@ -6,9 +6,9 @@
      i=20
      If (nstep > 0) Then
         If ( Mod(nstep,i*nstbpo) == 0 .or.                        &
-             (tmr%timelp > Real(i*60,wp) .and.                        &
-              tmr%timelp-Real( ((Int(tmr%timelp)/(i*60)) * i*60) , wp ) < &
-              tmr%timelp/Real( nstep , wp) ) ) Then
+             (tmr%elapsed > Real(i*60,wp) .and.                        &
+              tmr%elapsed-Real( ((Int(tmr%elapsed)/(i*60)) * i*60) , wp ) < &
+              tmr%elapsed/Real( nstep , wp) ) ) Then
 
            If (comm%idnode == 0) Then
               Inquire(File=Trim(output), Exist=l_out, Position=c_out)

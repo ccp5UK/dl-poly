@@ -6,7 +6,7 @@ Module timer
 
   Private
   Type, Public :: timer_type
-    Real( Kind = wp) :: timelp,timjob,timcls
+    Real( Kind = wp) :: elapsed,job,clear_screen
     Real( Kind = wp) :: t_shortrange(4) = 0.0_wp
     Real( Kind = wp) :: t_longrange(4) = 0.0_wp
     Real( Kind = wp) :: t_linkcell(4) = 0.0_wp
@@ -72,10 +72,10 @@ Module timer
       buffer(3) = tmr%t_linkcell(4)
      Do i =1,3
         write(message(i+1),'(1x,a11,i12,es12.5,es12.5,es12.5,f6.2)')routine(i),Int(buffer(i)),mins(i),maxs(i),avg(i)/comm%mxnode,&
-          avg(i)/comm%mxnode/tmr%timelp*100.0_wp
+          avg(i)/comm%mxnode/tmr%elapsed*100.0_wp
      End Do 
-     write(message(5),'(1x,a11,36x,es12.5,f6.2)')"Other",tmr%timelp-sum(avg(1:3)/comm%mxnode),&
-          100.0_wp-sum(avg(1:3)/comm%mxnode)/tmr%timelp*100.0_wp
+     write(message(5),'(1x,a11,36x,es12.5,f6.2)')"Other",tmr%elapsed-sum(avg(1:3)/comm%mxnode),&
+          100.0_wp-sum(avg(1:3)/comm%mxnode)/tmr%elapsed*100.0_wp
     Call info(message,5,.true.)
 
   End Subroutine timer_report

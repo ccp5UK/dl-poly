@@ -486,8 +486,8 @@ Subroutine read_control                                &
 
 ! default times for job execution and output dump
 
-  tmr%timjob = 0.0_wp ; l_timjob=.false.
-  tmr%timcls = 0.0_wp ; l_timcls=.false.
+  tmr%job = 0.0_wp ; l_timjob=.false.
+  tmr%clear_screen = 0.0_wp ; l_timcls=.false.
 
 ! major cutoff, padding and vdw cutoff defaults
 
@@ -2856,7 +2856,7 @@ Subroutine read_control                                &
            l_timjob=.true.
 
            Call get_word(record,word)
-           tmr%timjob = word_2_real(word)
+           tmr%job = word_2_real(word)
 
         Else
 
@@ -2877,7 +2877,7 @@ Subroutine read_control                                &
            l_timcls=.true.
 
            Call get_word(record,word)
-           tmr%timcls = word_2_real(word)
+           tmr%clear_screen = word_2_real(word)
 
         Else
 
@@ -3346,8 +3346,8 @@ Subroutine read_control                                &
 
   Write(messages(1),'(a,i10)') 'data dumping interval (steps) ',ndump
   Write(messages(2),'(a,1p,e12.4)') 'subcelling threshold density ',pdplnc
-  Write(messages(3),'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%timjob
-  Write(messages(4),'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%timcls
+  Write(messages(3),'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%job
+  Write(messages(4),'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%clear_screen
   Call info(messages,4,.true.)
 
 ! report replay history
@@ -3406,18 +3406,18 @@ Subroutine read_control                                &
      End If
 
      If ((.not.l_timjob) .and. (.not.l_timcls)) Then ! Job times
-        tmr%timjob=1.0e8_wp
-        tmr%timcls=1.0e7_wp
-        Write(messages(1),'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%timjob
-        Write(messages(1),'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%timcls
+        tmr%job=1.0e8_wp
+        tmr%clear_screen=1.0e7_wp
+        Write(messages(1),'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%job
+        Write(messages(1),'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%clear_screen
         Call info(messages,2,.true.)
      Else If ((.not.l_timjob) .and. l_timcls) Then
-        tmr%timjob=100.0_wp*tmr%timcls
-        Write(message,'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%timjob
+        tmr%job=100.0_wp*tmr%clear_screen
+        Write(message,'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%job
         Call info(message,.true.)
      Else If (l_timjob .and. (.not.l_timcls)) Then
-        tmr%timcls=0.01_wp*tmr%timjob
-        Write(message,'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%timcls
+        tmr%clear_screen=0.01_wp*tmr%job
+        Write(message,'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%clear_screen
         Call info(message,.true.)
      End If
 
