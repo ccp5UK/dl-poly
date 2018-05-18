@@ -787,7 +787,7 @@ Subroutine read_control                                &
 
 ! read temperature
 
-     Else If (word(1:4) == 'thermo%temp') Then
+     Else If (word(1:4) == 'temp') Then
 
         ltemp = .true.
         Call get_word(record,word)
