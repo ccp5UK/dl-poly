@@ -12,6 +12,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 ! contrib   - a.m.elena september 2017 (rydberg)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
 ! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena may 2018 (mdf)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -22,7 +23,8 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
   Use config_module, Only : imcon,volm,natms,ltype,lfrzn
   Use vdw_module,    Only : ls_vdw,lstvdw,ltpvdw,prmvdw
   Use mm3_module
-  Use m_zbl,         Only : ab, intRadZBL, intdRadZBL
+  Use m_zbl,         Only : ab, intRadZBL, intdRadZBL, &
+                            intRadMDF,intdRadMDF
 
   Implicit None
 
@@ -273,6 +275,37 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
               eadd = (rvdw**2+2*r0*rvdw+2*r0**2)*t*r0-c/(3.0_wp*rvdw**3)
               padd = (rvdw**3+3*r0*rvdw**2+6*r0**2*rvdw+6*r0**3)*t -2.0_wp*c/(rvdw**3)
+
+           Else If (keypot == 18) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+               a = prmvdw(1,k)
+               b = prmvdw(2,k)
+               c = prmvdw(3,k)
+               eadd = intRadMDF("mlj",a,b,0.0_wp,c,rvdw,1e-12_wp)
+               padd = intdRadMDF("mlj",a,b,0.0_wp,c,rvdw,1e-12_wp)
+
+           Else If (keypot == 19) Then
+
+! Buckingham tappered with MDF:: u=f(r)Buck(r)
+
+               a = prmvdw(1,k)
+               b = prmvdw(2,k)
+               c = prmvdw(3,k)
+               r0 = prmvdw(3,k)
+               eadd = intRadMDF("mbuc",a,b,c,r0,rvdw,1e-12_wp)
+               padd = intdRadMDF("mbuc",a,b,c,r0,rvdw,1e-12_wp)
+
+           Else If (keypot == 20) Then
+
+! LJ tappered with MDF:: u=f(r)LJ12-6(r)
+
+               a = prmvdw(1,k)
+               b = prmvdw(2,k)
+               c = prmvdw(3,k)
+               eadd = intRadMDF("m126",a,b,0.0_wp,c,rvdw,1e-12_wp)
+               padd = intdRadMDF("m126",a,b,0.0_wp,c,rvdw,1e-12_wp)
 
            End If
 

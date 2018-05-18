@@ -6,6 +6,7 @@ Module m_zbl
   ! copyright - daresbury laboratory
   ! author    - a.m.elena october 2017
   ! contrib   - a.m.elena december 2017
+  ! contrib   - a.m.elena may 2018 (mdf)
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -20,7 +21,12 @@ Module m_zbl
   Public :: zbls
   Public :: zblb
   Public :: intRadZBL
+  Public :: intRadMDF
   Public :: intdRadZBL
+  Public :: intdRadMDF
+  Public :: mlj
+  Public :: mbuck
+  Public :: mlj126
 
 Contains
 
@@ -134,20 +140,20 @@ Contains
     j=1
 
     Do While (Abs(s-sold)*h/3.0_wp > prec)
-       sold = s
+      sold = s
 
-       Do i = (j-1)*n, j*n, 2
+      Do i = (j-1)*n, j*n, 2
 
-          x = is + i*h
-          Call zbl(x,kk,a,f0,df0)
-          Call zbl(x+h,kk,a,f1,df0)
-          Call zbl(x+2.0_wp*h,kk,a,f2,df0)
-          s = s  +             x*x * f0 + &
-                   4.0_wp*(x+h)**2 * f1 + &
-                   (x+2.0_wp*h)**2 * f2
-       End Do
+        x = is + i*h
+        Call zbl(x,kk,a,f0,df0)
+        Call zbl(x+h,kk,a,f1,df0)
+        Call zbl(x+2.0_wp*h,kk,a,f2,df0)
+        s = s  +             x*x * f0 + &
+          4.0_wp*(x+h)**2 * f1 + &
+          (x+2.0_wp*h)**2 * f2
+      End Do
 
-       j=j+1
+      j=j+1
     End Do
     intRadZBL=s*h/3.0_wp   
   End Function intRadZBL
@@ -168,22 +174,194 @@ Contains
     j=1
 
     Do While (Abs(s-sold)*h/3.0_wp > prec)
-       sold = s
+      sold = s
 
-       Do i = (j-1)*n, j*n, 2
+      Do i = (j-1)*n, j*n, 2
 
-          x = is + i*h
-          Call zbl(x,kk,a,f0,df0)
-          Call zbl(x+h,kk,a,f0,df1)
-          Call zbl(x+2.0_wp*h,kk,a,f0,df1)
-          s = s  +             x*x * df0 + &
-                   4.0_wp*(x+h)**2 * df1 + &
-                   (x+2.0_wp*h)**2 * df2
-       End Do
+        x = is + i*h
+        Call zbl(x,kk,a,f0,df0)
+        Call zbl(x+h,kk,a,f0,df1)
+        Call zbl(x+2.0_wp*h,kk,a,f0,df1)
+        s = s  +             x*x * df0 + &
+          4.0_wp*(x+h)**2 * df1 + &
+          (x+2.0_wp*h)**2 * df2
+      End Do
 
-       j=j+1
+      j=j+1
     End Do
     intdRadZBL=s*h/3.0_wp
   End Function intdRadZBL
 
+  Pure Subroutine LJ(r,eps,sig,e,v)
+    Real(wp), Intent( In    ) :: r,eps,sig
+    Real(wp), Intent(   Out ) :: e,v
+
+    Real(wp) :: sor6
+
+    sor6=(sig/r)**6
+    e = 4.0_wp*eps*sor6*(sor6-1.0_wp)                                                                                 
+    v = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
+
+  End Subroutine LJ
+
+  Pure Subroutine LJ126(r,A,B,e,v)
+    Real(wp), Intent( In    ) :: r,A,B
+    Real(wp), Intent(   Out ) :: e,v
+    Real(wp) :: sor6
+
+    sor6=(1.0_wp/r)**6
+    e = (A*sor6-B)*sor6
+    v = 6.0_wp*sor6*(2.0_wp*a*sor6-b)
+
+  End Subroutine LJ126
+
+  Pure Subroutine MDF(r,ri,rc,e,v)
+    Real(wp), Intent( In    ) :: r,ri,rc
+    Real(wp), Intent(   Out ) :: e,v
+
+    Real(wp) :: rci
+
+    If (r<ri) Then
+      e = 1.0_wp
+      v = 0.0_wp
+    Else IF(r>rc) Then
+      e = 0.0_wp
+      v = 0.0_wp
+    Else
+      rci=(rc-ri)**5
+      e = (rc-r)**3*(10*ri**2-5*rc*ri-15*r*ri+rc**2+3*r*rc+6*r**2)/rci
+      v = 30.0_wp*r*(r-rc)**2*(r-ri)**2/rci
+    End If
+
+  End Subroutine MDF
+
+  Pure Subroutine mlj(r,eps,sig,ri,rc,e,v)
+    Real(wp), Intent( In    ) :: r,eps,sig,ri,rc
+    Real(wp), Intent(   Out ) :: e,v
+
+    Real(wp) :: el,vl,em,vm
+
+    Call LJ(r,eps,sig,el,vl)
+    Call MDF(r,ri,rc,em,vm)
+    e = el*em
+    v = vl*em+vm*el
+
+  End Subroutine mlj
+
+  Pure Subroutine mbuck(r,A,r0,c,ri,rc,e,v)
+    Real(wp), Intent( In    ) :: r,A,r0,c,ri,rc
+    Real(wp), Intent(   Out ) :: e,v
+
+    Real(wp) :: eb,vb,em,vm
+
+    Call buckingham(r,A,r0,c,eb,vb)
+    Call MDF(r,ri,rc,em,vm)
+    e = eb*em
+    v = vb*em+vm*eb
+
+  End Subroutine mbuck
+
+  Pure Subroutine mlj126(r,A,B,ri,rc,e,v)
+    Real(wp), Intent( In    ) :: r,A,B,ri,rc
+    Real(wp), Intent(   Out ) :: e,v
+
+    Real(wp) :: el,vl,em,vm
+
+    Call LJ126(r,A,B,el,vl)
+    Call MDF(r,ri,rc,em,vm)
+    e = el*em
+    v = vl*em+vm*el
+  End Subroutine mlj126
+
+  Pure Real(wp) Function intRadMDF(pot,a,b,c,ri,rw,prec)
+    Real(wp), Intent( In    )             :: a,b,c,ri,rw,prec
+    Character( Len = 4 ), Intent( In    ) :: pot
+
+    Real(wp) :: is,ie,h,s,x,sold,f1,f0,f2,df0
+
+    Integer           :: i,n,j
+
+    n=10000
+    is=rw
+    ie=2*is
+    h=(ie-is)/Real(n,wp)
+    s=0.0_wp
+    sold=Huge(1.0_wp)
+    j=1
+
+    Do While (Abs(s-sold)*h/3.0_wp > prec)
+      sold = s
+
+      Do i = (j-1)*n, j*n, 2
+
+        x = is + i*h
+        ! this is stupid by remember we do it only once
+        If (pot == 'm126' ) Then
+          Call mlj126(x,a,b,ri,rw,f0,df0)
+          Call mlj126(x+h,a,b,ri,rw,f1,df0)
+          Call mlj126(x+2.0_wp*h,a,b,ri,rw,f2,df0)
+        Else If (pot == 'mbuc' ) Then
+          Call mbuck(x,a,b,c,ri,rw,f0,df0)
+          Call mbuck(x+h,a,b,c,ri,rw,f1,df0)
+          Call mbuck(x+2.0_wp*h,a,b,c,ri,rw,f2,df0)
+        Else If (pot == 'mlj' ) Then
+          Call mlj(x,a,b,ri,rw,f0,df0)
+          Call mlj(x+h,a,b,ri,rw,f1,df0)
+          Call mlj(x+2.0_wp*h,a,b,ri,rw,f2,df0)
+        End If
+
+        s = s  +             x*x * f0 + &
+          4.0_wp*(x+h)**2 * f1 + &
+          (x+2.0_wp*h)**2 * f2
+      End Do
+
+      j=j+1
+    End Do
+    intRadMDF=s*h/3.0_wp   
+  End Function intRadMDF
+
+  Pure Real(wp) Function intdRadMDF(pot,a,b,c,ri,rw,prec)
+    Real(wp), Intent( In    )             :: a,b,c,ri,rw,prec
+    Character( Len = 4 ), Intent( In    ) :: pot
+
+    Real(wp) :: is,ie,h,s,x,sold,df1,df0,df2,f0
+
+    Integer           :: i,n,j
+
+    n=10000
+    is=rw
+    ie=2*is
+    h=(ie-is)/Real(n,wp)
+    s=0.0_wp
+    sold=Huge(1.0_wp)
+    j=1
+
+    Do While (Abs(s-sold)*h/3.0_wp > prec)
+      sold = s
+
+      Do i = (j-1)*n, j*n, 2
+
+        x = is + i*h
+        If (pot == 'm126' ) Then
+          Call mlj126(x,a,b,ri,rw,f0,df0)
+          Call mlj126(x+h,a,b,ri,rw,f0,df1)
+          Call mlj126(x+2.0_wp*h,a,b,ri,rw,f0,df2)
+        Else If (pot == 'mbuc' ) Then
+          Call mbuck(x,a,b,c,ri,rw,f0,df0)
+          Call mbuck(x+h,a,b,c,ri,rw,f0,df1)
+          Call mbuck(x+2.0_wp*h,a,b,c,ri,rw,f0,df2)
+        Else If (pot == 'mlj' ) Then
+          Call mlj(x,a,b,ri,rw,f0,df0)
+          Call mlj(x+h,a,b,ri,rw,f0,df1)
+          Call mlj(x+2.0_wp*h,a,b,ri,rw,f0,df2)
+        End If
+        s = s  +             x*x * df0 + &
+          4.0_wp*(x+h)**2 * df1 + &
+          (x+2.0_wp*h)**2 * df2
+      End Do
+
+      j=j+1
+    End Do
+    intdRadMDF=s*h/3.0_wp
+  End Function intdRadMDF
 End Module m_zbl

@@ -23,7 +23,9 @@ Subroutine read_field                      &
 ! contrib   - a.m.elena august 2017 (mstw)
 ! contrib   - a.m.elena september 2017 (ryd)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
-! contrib   - a.m.elena december 2017 (blb)
+! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena april 2018 (mlj/mbuc)
+! contrib   - a.m.elena may 2018 (m126)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3269,6 +3271,12 @@ Subroutine read_field                      &
               keypot=16
            Else If (keyword == 'zblb') Then
               keypot=17
+           Else If (keyword == 'mlj') Then
+              keypot=18
+           Else If (keyword == 'mbuc') Then
+              keypot=19
+           Else If (keyword == 'm126') Then
+              keypot=20
            Else
 
               If (idnode == 0) Write(nrite,'(/,1x,a)') keyword
@@ -3325,6 +3333,10 @@ Subroutine read_field                      &
               Else If (keypot == 17) Then
                  parpot(1)=parpot(1)/engunit
                  parpot(5)=parpot(5)*engunit
+              Else If (keypot == 19) Then
+                 parpot(3)=parpot(3)*engunit
+              Else If (keypot == 20) Then
+                 parpot(2)=parpot(2)*engunit
               End If
            End If
 
@@ -3391,6 +3403,10 @@ Subroutine read_field                      &
                  gamdpd(keyvdw)=Abs(parpot(8))
               Else If (keypot == 17) Then
                  gamdpd(keyvdw)=Abs(parpot(8))
+              Else If (keypot == 18) Then
+                 gamdpd(keyvdw)=Abs(parpot(4))
+              Else If (keypot == 19) Then
+                 gamdpd(keyvdw)=Abs(parpot(5))
               End If
               If (gamdpd(0) > zero_plus) gamdpd(keyvdw)=gamdpd(0) ! override
            End If
@@ -3547,11 +3563,14 @@ Subroutine read_field                      &
                                 eps(2)=prmvdw(2,ja)**2/(4.0_wp*prmvdw(1,ja))
                                 sig(2)=(prmvdw(1,ja)/prmvdw(2,ja))**(1.0_wp/6.0_wp)
                              Else If (keypot == 2  .or. keypot == 10 .or. &
-                                      keypot == 11 .or. keypot == 12) Then ! LJ, DPD, 14-7, LJC
+                                      keypot == 11 .or. keypot == 12 .or. keypot == 18 .or. &
+                                      keypot == 20 ) Then ! LJ, DPD, 14-7, LJC, MLJ, Mlj126
                                 If (keypot == 2 ) keyword='lj  '
                                 If (keypot == 10) keyword='dpd '
                                 If (keypot == 11) keyword='14-7'
                                 If (keypot == 12) keyword='ljc '
+                                If (keypot == 18) keyword='mlj '
+                                If (keypot == 18) keyword='m126'
 
                                 eps(1)=prmvdw(1,ia)
                                 sig(1)=prmvdw(2,ia)

@@ -12,13 +12,15 @@ Subroutine vdw_generate(rvdw)
 ! contrib   - a.m.elena september 2017 (rydberg)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
 ! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena april 2018 (mlj/mbuc)
+! contrib   - a.m.elena may 2018 (m126)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use setup_module, Only : mxgvdw,zero_plus,r4pie0
   Use vdw_module
-  Use m_zbl, Only : ab,zbl,zbls,zblb
+  Use m_zbl, Only : ab,zbl,zbls,zblb,mlj,mbuck,mlj126
 
   Implicit None
 
@@ -28,7 +30,7 @@ Subroutine vdw_generate(rvdw)
   Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6,  &
                        rho,a,b,c,d,e0,kk,nr,mr,rc,sig,eps, &
                        alpha,beta,t1,t2,t3,t,z1,z2,dphi,phi, &
-                       rm,k
+                       rm,k,ri
 
 ! allocate arrays for tabulating
 
@@ -580,6 +582,103 @@ Subroutine vdw_generate(rvdw)
         If (.not.ls_vdw) Then
            sigeps(1,ivdw)=0.0_wp
            sigeps(2,ivdw)=0.0_wp
+        End If
+
+     Else If (keypot == 18) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+        eps=prmvdw(1,ivdw)
+        sig=prmvdw(2,ivdw)
+        ri=prmvdw(3,ivdw)
+
+        Do i=1,mxgvdw
+           r=Real(i,wp)*dlrpot
+
+           Call mlj(r,eps,sig,ri,rvdw,phi,dphi)
+           vvdw(i,ivdw)=phi
+           gvdw(i,ivdw)=dphi
+        End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=sig
+           sigeps(2,ivdw)=eps
+        End If
+
+     Else If (keypot == 19) Then
+
+! Buckingham tappered with MDF:: u=f(r)Buck(r)
+
+        a  =prmvdw(1,ivdw)
+        rho=prmvdw(2,ivdw)
+        c  =prmvdw(3,ivdw)
+        ri  =prmvdw(4,ivdw)
+
+        If (Abs(rho) <= zero_plus) Then
+           If (Abs(a) <= zero_plus) Then
+              rho=1.0_wp
+           Else
+              Call error(467)
+           End If
+        End If
+
+! Sigma-epsilon initialisation
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=-1.0_wp
+           sigeps(2,ivdw)= 0.0_wp
+        End If
+
+        Do i=1,mxgvdw
+           r=Real(i,wp)*dlrpot
+
+           Call mbuck(r,A,rho,c,ri,rvdw,phi,dphi)
+
+           vvdw(i,ivdw)=phi
+           gvdw(i,ivdw)=dphi
+
+! Sigma-epsilon search
+
+           If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
+              If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                 If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
+                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+              Else                                           ! find epsilon
+                 If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
+                       vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
+                      (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
+                       vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
+                       vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
+                    sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+              End If
+           End If
+        End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+
+     Else If (keypot == 20) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+         a = prmvdw(1,ivdw)
+         b = prmvdw(2,ivdw)
+        ri = prmvdw(3,ivdw)
+
+        Do i=1,mxgvdw
+           r=Real(i,wp)*dlrpot
+
+           Call mlj126(r,A,B,ri,rvdw,phi,dphi)
+           vvdw(i,ivdw)=phi
+           gvdw(i,ivdw)=dphi
+        End Do
+        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
+        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+
+        If (.not.ls_vdw) Then
+           sigeps(1,ivdw)=sig
+           sigeps(2,ivdw)=eps
         End If
 
      Else
