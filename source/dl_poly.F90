@@ -131,6 +131,8 @@ program dl_poly
   Use two_body, Only : two_body_forces
   Use ewald, Only : ewald_type
 
+  Use impacts, Only : impact_type
+
   Use halo, Only : refresh_halo_positions,set_halo_particles
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
   Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
@@ -247,6 +249,8 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(ewald_type) :: ewld
+
+  Type(impact_type) :: imptyp
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
