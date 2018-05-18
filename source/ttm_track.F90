@@ -737,7 +737,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,li
   redtstepmx = 1
 
 ! Initialise temp
-  temp = temp
+  temp = thermo%temp
 
 ! deposition stage 1 (initialization):
 ! nstep-nsteql offsets equilibration time
