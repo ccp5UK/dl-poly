@@ -1,6 +1,7 @@
 Module kontrol
   Use kinds, only : wp
   Use comms,      Only : comms_type,gcheck
+  Use timer,      Only : timer_type
   Use configuration,     Only : sysname
   Use mpole,     Only : thole
   Use dpd,        Only : keydpd,gamdpd
@@ -74,7 +75,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,timjob,timcls,comm)
+           ndump,pdplnc,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -137,8 +138,8 @@ Subroutine read_control                                &
                                              wthpse,tmppse,min_tol(1:2), &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
-                                             rdef,rrsd,pdplnc,           &
-                                             timjob,timcls
+                                             rdef,rrsd,pdplnc           
+  Type( timer_type ),     Intent( InOut)   :: tmr
   Type( comms_type ),     Intent( InOut )  :: comm
 
 
@@ -485,8 +486,8 @@ Subroutine read_control                                &
 
 ! default times for job execution and output dump
 
-  timjob = 0.0_wp ; l_timjob=.false.
-  timcls = 0.0_wp ; l_timcls=.false.
+  tmr%job = 0.0_wp ; l_timjob=.false.
+  tmr%clear_screen = 0.0_wp ; l_timcls=.false.
 
 ! major cutoff, padding and vdw cutoff defaults
 
@@ -2855,7 +2856,7 @@ Subroutine read_control                                &
            l_timjob=.true.
 
            Call get_word(record,word)
-           timjob = word_2_real(word)
+           tmr%job = word_2_real(word)
 
         Else
 
@@ -2876,7 +2877,7 @@ Subroutine read_control                                &
            l_timcls=.true.
 
            Call get_word(record,word)
-           timcls = word_2_real(word)
+           tmr%clear_screen = word_2_real(word)
 
         Else
 
@@ -3345,8 +3346,8 @@ Subroutine read_control                                &
 
   Write(messages(1),'(a,i10)') 'data dumping interval (steps) ',ndump
   Write(messages(2),'(a,1p,e12.4)') 'subcelling threshold density ',pdplnc
-  Write(messages(3),'(a,1p,e12.4)') 'allocated job run time (s) ',timjob
-  Write(messages(4),'(a,1p,e12.4)') 'allocated job close time (s) ',timcls
+  Write(messages(3),'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%job
+  Write(messages(4),'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%clear_screen
   Call info(messages,4,.true.)
 
 ! report replay history
@@ -3405,18 +3406,18 @@ Subroutine read_control                                &
      End If
 
      If ((.not.l_timjob) .and. (.not.l_timcls)) Then ! Job times
-        timjob=1.0e8_wp
-        timcls=1.0e7_wp
-        Write(messages(1),'(a,1p,e12.4)') 'allocated job run time (s) ',timjob
-        Write(messages(1),'(a,1p,e12.4)') 'allocated job close time (s) ',timcls
+        tmr%job=1.0e8_wp
+        tmr%clear_screen=1.0e7_wp
+        Write(messages(1),'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%job
+        Write(messages(1),'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%clear_screen
         Call info(messages,2,.true.)
      Else If ((.not.l_timjob) .and. l_timcls) Then
-        timjob=100.0_wp*timcls
-        Write(message,'(a,1p,e12.4)') 'allocated job run time (s) ',timjob
+        tmr%job=100.0_wp*tmr%clear_screen
+        Write(message,'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%job
         Call info(message,.true.)
      Else If (l_timjob .and. (.not.l_timcls)) Then
-        timcls=0.01_wp*timjob
-        Write(message,'(a,1p,e12.4)') 'allocated job close time (s) ',timcls
+        tmr%clear_screen=0.01_wp*tmr%job
+        Write(message,'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%clear_screen
         Call info(message,.true.)
      End If
 

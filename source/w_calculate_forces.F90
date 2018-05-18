@@ -31,7 +31,7 @@
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress,ewld,comm)
+           engcpe,vircpe,engsrp,virsrp,stress,ewld,tmr,comm)
 
 ! Calculate tersoff forces
 

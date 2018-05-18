@@ -20,9 +20,11 @@ Module two_body
                       rdf_collect,rdf_excl_collect,rdf_frzn_collect
   Use errors_warnings, Only : error
   Use link_cells, Only : link_cell_pairs
- Use ewald_spole, Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces, ewald_excl_forces
+  Use ewald_spole, Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces, ewald_excl_forces
   Use ewald_mpole, Only : ewald_spme_mforces, ewald_real_mforces,ewald_frzn_mforces,ewald_excl_mforces, &
                          ewald_spme_mforces_d,ewald_real_mforces_d,ewald_excl_mforces_d,ewald_excl_mforces
+
+  Use timer,  Only : timer_type,start_timer,stop_timer
   Implicit None
   Private
   Public :: two_body_forces
@@ -32,7 +34,7 @@ Subroutine two_body_forces                        &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress,ewld,comm)
+           engcpe,vircpe,engsrp,virsrp,stress,ewld,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -79,6 +81,7 @@ Subroutine two_body_forces                        &
                                                                engsrp,virsrp
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Type( ewald_type ),                       Intent( InOut ) :: ewld
+  Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( comms_type ),                       Intent( InOut ) :: comm
 
 
@@ -160,9 +163,7 @@ Subroutine two_body_forces                        &
   vircpe    = 0.0_wp
 
 ! Set up non-bonded interaction (verlet) list using link cells
-
-  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
-
+  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,tmr,comm)
 ! Calculate all contributions from KIM
 
   If (kimim /= ' ') Then
@@ -184,6 +185,9 @@ Subroutine two_body_forces                        &
   End If
 
 ! calculate coulombic forces, Ewald sum - fourier contribution
+#ifdef CHRONO
+  Call start_timer(tmr%t_longrange)
+#endif
 
   If (keyfce == 2 .and. ewld%l_fce) Then
      If (mximpl > 0) Then
@@ -196,7 +200,13 @@ Subroutine two_body_forces                        &
         Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
      End If
   End If
+#ifdef CHRONO
+  Call stop_timer(tmr%t_longrange)
+#endif
 
+#ifdef CHRONO
+  Call start_timer(tmr%t_shortrange)
+#endif
 ! outer loop over atoms
 
   Do i=1,natms
@@ -628,6 +638,9 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
   stress(5) = stress(5) + tmp
   stress(9) = stress(9) + tmp
 
+#ifdef CHRONO
+  Call stop_timer(tmr%t_shortrange)
+#endif
 
 End Subroutine two_body_forces
 End Module two_body

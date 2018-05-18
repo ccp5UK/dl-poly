@@ -13,6 +13,7 @@ Module link_cells
 
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : dcell, invert,match
+  Use timer,  Only : timer_type,start_timer,stop_timer
   Implicit None
 
   Private
@@ -20,7 +21,7 @@ Module link_cells
 
 Contains
 
-Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
+Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -37,6 +38,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: megfrz
   Real( Kind = wp ) , Intent( In    ) :: rcut,rlnk,rvdw,rmet,pdplnc
+  Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -63,6 +65,9 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,comm)
   Character( Len = 256 ) :: message,messages(3)
 ! Get the dimensional properties of the MD cell
 
+#ifdef CHRONO
+  Call start_timer(tmr%t_linkcell)
+#endif
   Call dcell(cell,celprp)
 
 ! halt program if potential cutoff exceeds the minimum half-cell width
@@ -1032,6 +1037,9 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
      Write(message,'(a)') 'link_cell_pairs deallocation failure'
      Call error(0,message)
   End If
+#ifdef CHRONO
+  Call stop_timer(tmr%t_linkcell)
+#endif
 
 End Subroutine link_cell_pairs
 

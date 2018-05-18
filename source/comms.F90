@@ -101,7 +101,7 @@ Module comms
   Public :: init_comms, exit_comms, abort_comms, &
             gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
             gscatter, gscatterv, gscatter_columns, gallgather, galltoall, &
-            galltoallv, gallreduce
+            galltoallv, gallreduce,mtime
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -979,6 +979,12 @@ Contains
     Call MPI_BCAST(vec(n_l:n_u), n_s,MPI_CHARACTER, root, comm%comm, comm%ierr)
   End Subroutine gbcast_char
 
+
+  Subroutine mtime(time)
+    Real( Kind = wp ), Intent(   Out )                 :: time
+
+    time = MPI_WTIME()
+  End Subroutine mtime
 
   Subroutine gtime(time)
 

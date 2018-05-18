@@ -42,7 +42,7 @@ If (lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
 
   ! Update cpu time
 
-  Call gtime(timelp)
+  Call gtime(tmr%elapsed)
 
   If (Mod(lines,npage) == 0) Then
     Write(messages(1),'(a)') Repeat('-',130)
@@ -58,7 +58,7 @@ If (lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
 
   Write(messages(1),'(i13,1p,9e12.4)')nstep,stpval(1:9)
   Write(messages(2),'(f13.5,1p,9e12.4)')time,stpval(10:18)
-  Write(messages(3),'(0p,f13.3,1p,9e12.4)') timelp,stpval(19:27)
+  Write(messages(3),'(0p,f13.3,1p,9e12.4)') tmr%elapsed,stpval(19:27)
   Write(messages(4),'(a)')''
   Call info(messages,4,.true.)
 
