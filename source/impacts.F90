@@ -15,11 +15,16 @@ Module impacts
   Implicit None
   
   Private
+  Type, Public :: impact_type
+    Integer          :: imd, tmd
+    Real( Kind = wp) :: emd, vmx, vmy, vmz
+  End Type 
+
   Public :: impact
   
   Contains
 
-Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd,comm)
+Subroutine impact(megrgd,impa,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -30,10 +35,9 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-  Integer,           Intent( In    ) :: imd,megrgd
-  Real( Kind = wp ), Intent( In    ) :: emd,vmx,vmy,vmz
-  Type( comms_type ), Intent( InOut ) :: comm
+  Integer,             Intent( In    ) :: megrgd
+  Type( impact_type ), Intent( In    ) :: impa 
+  Type( comms_type ) , Intent( InOut ) :: comm
   Logical           :: safe = .true.
 
   Integer           :: i,j,irgd,jrgd,lrgd,rgdtyp
@@ -42,13 +46,13 @@ Subroutine impact(imd,emd,vmx,vmy,vmz,megrgd,comm)
 
 ! Apply impact to the selected non-frozen, non-massless and non-shell particle
 
-  i=local_index(imd,nlast,lsi,lsa)
+  i=local_index(impa%imd,nlast,lsi,lsa)
   If (i > 0 .and. i <= natms) Then
-     If (lfrzn(i) == 0 .and. lfree(i) == 0 .and. All(listshl(2,1:ntshl) /= imd)) Then
-        tmp=Sqrt(2000.0_wp*emd*eu_ev/weight(i)/(vmx**2+vmy**2+vmz**2)) !emd is in keV=1000*eu_ev
-        vxx(i)=tmp*vmx
-        vyy(i)=tmp*vmy
-        vzz(i)=tmp*vmz
+     If (lfrzn(i) == 0 .and. lfree(i) == 0 .and. All(listshl(2,1:ntshl) /= impa%imd)) Then
+        tmp=Sqrt(2000.0_wp*impa%emd*eu_ev/weight(i)/(impa%vmx**2+impa%vmy**2+impa%vmz**2)) !impa%emd is in keV=1000*eu_ev
+        vxx(i)=tmp*impa%vmx
+        vyy(i)=tmp*impa%vmy
+        vzz(i)=tmp*impa%vmz
      Else
         safe=.false.
      End If

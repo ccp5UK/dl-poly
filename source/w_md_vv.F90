@@ -50,8 +50,7 @@
 
 ! Apply impact
 
-     Call w_impact_option(imd,tmd,levcfg,nstep,nsteql,engke,engrot,emd,vmx,vmy,vmz,megrgd,&
-      strkin,strknf,strknt,comm)
+     Call w_impact_option(levcfg,nstep,nsteql,engke,engrot,megrgd,strkin,strknf,strknt,impa,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 ! levcfg == 2 avoids application twice when forces are calculated at (re)start

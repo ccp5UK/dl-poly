@@ -17,7 +17,7 @@ Module drivers
   Use site,        Only : dofsit
   Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 
-  Use impacts, Only : impact
+  Use impacts, Only : impact_type, impact
   Use errors_warnings, Only : error,warning,info
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
@@ -29,14 +29,13 @@ Module drivers
 
   Contains 
 
-  Subroutine w_impact_option(imd,tmd,levcfg,nstep,nsteql,engke,engrot,emd,vmx,vmy,vmz,megrgd,&
-      strkin,strknf,strknt,comm)
+  Subroutine w_impact_option(levcfg,nstep,nsteql,engke,engrot,megrgd,strkin,strknf,strknt,impa,comm)
 
-
-    Integer( Kind = wi ),   Intent( InOut ) :: imd, tmd,megrgd,levcfg,nstep,nsteql
-    Real( Kind = wp ),      Intent(   Out ) :: engke,engrot,emd,vmx,vmy,vmz
-    Real ( Kind = wp), Intent( InOut ) :: strkin(:),strknf(:),strknt(:)
-    Type(comms_type), Intent(InOut)    :: comm
+    Integer( Kind = wi ),   Intent( InOut ) :: levcfg,nstep,nsteql,megrgd
+    Real( Kind = wp )   ,   Intent(   Out ) :: engke,engrot
+    Real ( Kind = wp)   ,   Intent( InOut ) :: strkin(:),strknf(:),strknt(:)
+    Type(impact_type)   ,   Intent( InOut ) :: impa
+    Type(comms_type)    ,   Intent( InOut ) :: comm
 
     Character( Len = 256 ) :: messages(6)
 
@@ -45,18 +44,18 @@ Module drivers
 ! Apply impact
 ! levcfg == 2 avoids application twice when tmd happens at (re)start for VV
 
-     If (nstep == tmd .and. levcfg == 2) Then
+     If (nstep == impa%tmd .and. levcfg == 2) Then
        Write(messages(1),'(a)') ''
        Write(messages(2),'(a)') 'initiating IMPACT:'
-       Write(messages(3),'(a,i10)') 'particle (index): ', imd
-       Write(messages(4),'(a,i10)') 'timestep (steps): ', tmd
-       Write(messages(5),'(a,1p,e12.5)') 'energy   (keV):   ', emd
-       Write(messages(6),'(a,1p,3e12.4)') 'v-r(x,y,z):       ', vmx, vmy, vmz
+       Write(messages(3),'(a,i10)') 'particle (index): ', impa%imd
+       Write(messages(4),'(a,i10)') 'timestep (steps): ', impa%tmd
+       Write(messages(5),'(a,1p,e12.5)') 'energy   (keV):   ', impa%emd
+       Write(messages(6),'(a,1p,3e12.4)') 'v-r(x,y,z):       ', impa%vmx, impa%vmy, impa%vmz
        Call info(messages,6,.true.)
 
         If (nstep+1 <= nsteql) Call warning(380,Real(nsteql,wp),0.0_wp,0.0_wp)
 
-        Call impact(imd,emd,vmx,vmy,vmz,megrgd,comm)
+        Call impact(megrgd,impa,comm)
 
 ! Correct kinetic stress and energy
 

@@ -131,6 +131,8 @@ program dl_poly
   Use two_body, Only : two_body_forces
   Use ewald, Only : ewald_type
 
+  Use impacts, Only : impact_type
+
   Use halo, Only : refresh_halo_positions,set_halo_particles
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
   Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
@@ -197,7 +199,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
     relaxed_min = .true.
 
   Integer           :: i,j,isw,levcfg,nstfce,              &
-    nx,ny,nz,imd,tmd,                   &
+    nx,ny,nz,                           &
     keyres,nstrun,nsteql,               &
     keymin,nstmin,                      &
     nstzero,nstgaus,nstscal,            &
@@ -227,7 +229,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
     width,mndis,mxdis,mxstp,wthpse,tmppse,     &
     rlx_tol(1:2),min_tol(1:2),                 &
     tolnce,quattol,rdef,rrsd,                  &
-    pdplnc,emd,vmx,vmy,vmz,temp,sigma,         &
+    pdplnc,temp,sigma,                         &
     press,strext(1:9),ten,                     &
     taut,chi,chi_ep,chi_es,soft,gama,taup,tai, &
     chit,vel_es2,eta(1:9),chip,cint,consv,     &
@@ -248,6 +250,8 @@ Use nve, Only : nve_0_vv, nve_1_vv
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(ewald_type) :: ewld
   Type(timer_type) :: tmr
+
+  Type(impact_type) :: impa
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -381,7 +385,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
     ltgaus,ltscal,lvar,leql,lpse,               &
     lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
     lvafav,lpvaf,ltraj,ldef,lrsd,               &
-    nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
+    nx,ny,nz,impa,                            &
     temp,press,strext,keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     keymin,nstmin,min_tol,                      &
