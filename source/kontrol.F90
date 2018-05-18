@@ -26,8 +26,10 @@ Module kontrol
                           l_his,l_scl,l_rin,l_org,xorg,yorg,zorg,&
                           lvcforg,lvcfscl,cels
   Use ttm
+  Use impacts,     Only : impact_type
+
   
-    Use io,     Only : io_set_parameters,        &
+  Use io,     Only : io_set_parameters,        &
                             io_get_parameters,        &
                             io_nc_set_real_precision, &
                             io_nc_compiled,           &
@@ -62,7 +64,7 @@ Subroutine read_control                                &
            ltgaus,ltscal,lvar,leql,lpse,               &
            lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
            lvafav,lpvaf,ltraj,ldef,lrsd,               &
-           nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
+           nx,ny,nz,imptyp,                            &
            temp,press,strext,keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
@@ -111,7 +113,7 @@ Subroutine read_control                                &
                                              ltraj,ldef,lrsd
 
 
-  Integer,                Intent(   Out ) :: nx,ny,nz,imd,tmd,     &
+  Integer,                Intent(   Out ) :: nx,ny,nz,             &
                                              keyres,nstrun,        &
                                              nsteql,nstzero,       &
                                              keymin,nstmin,        &
@@ -129,8 +131,7 @@ Subroutine read_control                                &
                                              nsrsd,isrsd,          &
                                              ndump
 
-  Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,            &
-                                             temp,press,strext(1:9),     &
+  Real( Kind = wp ),      Intent(   Out ) :: temp,press,strext(1:9),     &
                                              tstep,mndis,mxdis,mxstp,    &
                                              taut,chi,chi_ep,chi_es,soft,&
                                              gama,taup,tai,ten,vel_es2,  &
@@ -139,7 +140,9 @@ Subroutine read_control                                &
                                              tolnce,quattol,             &
                                              rdef,rrsd,pdplnc,           &
                                              timjob,timcls
-  Type( comms_type ),     Intent( InOut )  :: comm
+
+  Type( impact_type ),    Intent(   Out)  :: imptyp
+  Type( comms_type ),     Intent( InOut ) :: comm
 
 
   Logical                                 :: limp,lvv,lens,lforc,     &
@@ -183,12 +186,12 @@ Subroutine read_control                                &
 ! timestep of impact, energy of impact, (3) direction of impact
 
   limp = .false.
-  imd  = 0
-  tmd  = -1
-  emd  = 0.0_wp
-  vmx  = 0.0_wp
-  vmy  = 0.0_wp
-  vmz  = 0.0_wp
+  imptyp%imd  = 0
+  imptyp%tmd  = -1
+  imptyp%emd  = 0.0_wp
+  imptyp%vmx  = 0.0_wp
+  imptyp%vmy  = 0.0_wp
+  imptyp%vmz  = 0.0_wp
 
 ! temperature & pressure (stress) switches and default values
 
@@ -744,30 +747,30 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'impact') Then
 
         Call get_word(record,word)
-        imd = Max(1,Nint(Abs(word_2_real(word))))
+        imptyp%imd = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
-        tmd = Nint(Abs(word_2_real(word)))
+        imptyp%tmd = Nint(Abs(word_2_real(word)))
 
         Call get_word(record,word)
-        emd = Abs(word_2_real(word))
+        imptyp%emd = Abs(word_2_real(word))
         Call get_word(record,word)
-        vmx = word_2_real(word)
+        imptyp%vmx = word_2_real(word)
         Call get_word(record,word)
-        vmy = word_2_real(word)
+        imptyp%vmy = word_2_real(word)
         Call get_word(record,word)
-        vmz = word_2_real(word)
+        imptyp%vmz = word_2_real(word)
 
-        If (Sqrt(vmx**2+vmy**2+vmz**2) <= zero_plus) Then
-           vmx = 1.0_wp
-           vmy = 1.0_wp
-           vmz = 1.0_wp
+        If (Sqrt(imptyp%vmx**2+imptyp%vmy**2+imptyp%vmz**2) <= zero_plus) Then
+           imptyp%vmx = 1.0_wp
+           imptyp%vmy = 1.0_wp
+           imptyp%vmz = 1.0_wp
         End If
 
         Write(messages(1),'(a)') ''
-        Write(messages(2),'(a,i10)') 'particle (index)',imd
-        Write(messages(3),'(a,i10)') 'timestep (steps)',tmd
-        Write(messages(4),'(a,1p,e12.4)') 'energy   (keV)  ',emd
-        Write(messages(5),'(a,1p,3e12.4)') 'v-r(x,y,z)      ',vmx,vmy,vmz
+        Write(messages(2),'(a,i10)') 'particle (index)',imptyp%imd
+        Write(messages(3),'(a,i10)') 'timestep (steps)',imptyp%tmd
+        Write(messages(4),'(a,1p,e12.4)') 'energy   (keV)  ',imptyp%emd
+        Write(messages(5),'(a,1p,3e12.4)') 'v-r(x,y,z)      ',imptyp%vmx,imptyp%vmy,imptyp%vmz
         Call info(messages,5,.true.)
 
         If (limp) Call error(600)
