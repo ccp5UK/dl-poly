@@ -251,7 +251,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
   Type(ewald_type) :: ewld
   Type(timer_type) :: tmr
 
-  Type(impact_type) :: imptyp
+  Type(impact_type) :: impa
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -385,7 +385,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
     ltgaus,ltscal,lvar,leql,lpse,               &
     lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
     lvafav,lpvaf,ltraj,ldef,lrsd,               &
-    nx,ny,nz,imptyp,                            &
+    nx,ny,nz,impa,                            &
     temp,press,strext,keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     keymin,nstmin,min_tol,                      &

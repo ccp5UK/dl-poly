@@ -65,7 +65,7 @@ Subroutine read_control                                &
            ltgaus,ltscal,lvar,leql,lpse,               &
            lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
            lvafav,lpvaf,ltraj,ldef,lrsd,               &
-           nx,ny,nz,imptyp,                            &
+           nx,ny,nz,impa,                            &
            temp,press,strext,keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
@@ -140,7 +140,7 @@ Subroutine read_control                                &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
                                              rdef,rrsd,pdplnc 
-  Type( impact_type ),    Intent(   Out)  :: imptyp
+  Type( impact_type ),    Intent(   Out)  :: impa
   Type( timer_type ),     Intent( InOut)   :: tmr
   Type( comms_type ),     Intent( InOut )  :: comm
 
@@ -186,12 +186,12 @@ Subroutine read_control                                &
 ! timestep of impact, energy of impact, (3) direction of impact
 
   limp = .false.
-  imptyp%imd  = 0
-  imptyp%tmd  = -1
-  imptyp%emd  = 0.0_wp
-  imptyp%vmx  = 0.0_wp
-  imptyp%vmy  = 0.0_wp
-  imptyp%vmz  = 0.0_wp
+  impa%imd  = 0
+  impa%tmd  = -1
+  impa%emd  = 0.0_wp
+  impa%vmx  = 0.0_wp
+  impa%vmy  = 0.0_wp
+  impa%vmz  = 0.0_wp
 
 ! temperature & pressure (stress) switches and default values
 
@@ -747,30 +747,30 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'impact') Then
 
         Call get_word(record,word)
-        imptyp%imd = Max(1,Nint(Abs(word_2_real(word))))
+        impa%imd = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
-        imptyp%tmd = Nint(Abs(word_2_real(word)))
+        impa%tmd = Nint(Abs(word_2_real(word)))
 
         Call get_word(record,word)
-        imptyp%emd = Abs(word_2_real(word))
+        impa%emd = Abs(word_2_real(word))
         Call get_word(record,word)
-        imptyp%vmx = word_2_real(word)
+        impa%vmx = word_2_real(word)
         Call get_word(record,word)
-        imptyp%vmy = word_2_real(word)
+        impa%vmy = word_2_real(word)
         Call get_word(record,word)
-        imptyp%vmz = word_2_real(word)
+        impa%vmz = word_2_real(word)
 
-        If (Sqrt(imptyp%vmx**2+imptyp%vmy**2+imptyp%vmz**2) <= zero_plus) Then
-           imptyp%vmx = 1.0_wp
-           imptyp%vmy = 1.0_wp
-           imptyp%vmz = 1.0_wp
+        If (Sqrt(impa%vmx**2+impa%vmy**2+impa%vmz**2) <= zero_plus) Then
+           impa%vmx = 1.0_wp
+           impa%vmy = 1.0_wp
+           impa%vmz = 1.0_wp
         End If
 
         Write(messages(1),'(a)') ''
-        Write(messages(2),'(a,i10)') 'particle (index)',imptyp%imd
-        Write(messages(3),'(a,i10)') 'timestep (steps)',imptyp%tmd
-        Write(messages(4),'(a,1p,e12.4)') 'energy   (keV)  ',imptyp%emd
-        Write(messages(5),'(a,1p,3e12.4)') 'v-r(x,y,z)      ',imptyp%vmx,imptyp%vmy,imptyp%vmz
+        Write(messages(2),'(a,i10)') 'particle (index)',impa%imd
+        Write(messages(3),'(a,i10)') 'timestep (steps)',impa%tmd
+        Write(messages(4),'(a,1p,e12.4)') 'energy   (keV)  ',impa%emd
+        Write(messages(5),'(a,1p,3e12.4)') 'v-r(x,y,z)      ',impa%vmx,impa%vmy,impa%vmz
         Call info(messages,5,.true.)
 
         If (limp) Call error(600)
