@@ -118,15 +118,15 @@ Contains
   End Function Ke
   
   
-  Function KeD(Te, thermo%temp)
+  Function KeD(Te, temp)
 
 ! Temperature-dependent Drude-like lattice thermal conductivity: given as kB/(ps A)
 ! (Ka0 = thermal conductivity at system temperature)
 
-    Real ( Kind = wp ), Intent ( In ) :: Te, thermo%temp
+    Real ( Kind = wp ), Intent ( In ) :: Te, temp
     Real ( Kind = wp )                :: KeD
 
-    KeD = Ka0 * Ce(Te) / Ce(thermo%temp)
+    KeD = Ka0 * Ce(Te) / Ce(temp)
     
   End Function KeD
   
@@ -160,13 +160,13 @@ Contains
 
   End Function alp
 
-  Subroutine calcchies(thermo%chi_ep,comm)
+  Subroutine calcchies(chi,comm)
 
-! Calculate electron-phonon coupling friction term (thermo%chi_ep)
+! Calculate electron-phonon coupling friction term (chi:
 ! for homogeneously coupled system: uses mean electronic temperature
 ! and interpolates from tabulated values given in g.dat file
 
-    Real ( Kind = wp ), Intent ( Inout ) :: thermo%chi_ep
+    Real ( Kind = wp ), Intent (   Out ) :: chi
     Type (comms_type), Intent ( InOut )     :: comm
     Real ( Kind = wp )                   :: eltempav = 0.0_wp
     Real ( Kind = wp )                   :: epc = 0.0_wp
@@ -175,7 +175,7 @@ Contains
 
     Call interpolate (gel, gtable, eltempav, epc)
 
-    thermo%chi_ep = epc*Merge(rcellrho, 1.0_wp, ttmdyndens)
+    chi = epc*Merge(rcellrho, 1.0_wp, ttmdyndens)
 
   End Subroutine calcchies
 

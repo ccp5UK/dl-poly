@@ -19,6 +19,7 @@ Module ttm_track
   Use comms, Only : comms_type,Grid4_tag,Grid3_tag,gsum
   Use configuration
   Use errors_warnings, Only : error,warning,info
+  Use thermostat, Only : thermostat_type
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -243,7 +244,7 @@ Contains
 
   End Subroutine depoevolve
 
-  Subroutine ttm_ion_temperature(thermo%chi_ep,thermo%chi_es,vel_es2,comm)
+  Subroutine ttm_ion_temperature(vel_es2,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -257,7 +258,8 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real ( Kind = wp ), Intent ( In ) :: thermo%chi_ep,thermo%chi_es,vel_es2
+  Real ( Kind = wp ), Intent ( In ) :: vel_es2
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type ( comms_type ), Intent( InOut) :: comm
   Integer :: ia,ja,ka,ijk,ijk1,ijk2,i,ii,jj,kk
   Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz,crho
@@ -691,7 +693,7 @@ Contains
 
 End Subroutine ttm_ion_temperature
 
-Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndump,nstrun,lines,npage,comm)
+Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,lines,npage,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -708,13 +710,15 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
 
 
   Integer, Intent( In ) :: ndump,nstbpo,nsteql,nstep,nstrun,lines,npage
-  Real ( Kind = wp ), Intent( In ) :: thermo%temp,tstep,time
+  Real ( Kind = wp ), Intent( In ) :: tstep,time
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type), Intent( InOut ) :: comm
 
   Real ( Kind = wp ), Allocatable :: eltemp1(:,:,:,:)
   Real ( Kind = wp ) :: fomAx,fomAy,fomAz,mintstep,maxtstep,opttstep,delx2,dely2,delz2
   Real ( Kind = wp ) :: fopttstep,del2av,eltempmax,eltempmin,eltempmean,eltempKe,eltempmaxKe,eltempminKe
   Real ( Kind = wp ) :: actsite, actxm, actxp, actym, actyp, actzm, actzp, alploc
+  Real ( Kind = wp ) :: temp
   Integer :: i,j,k,ii,jj,kk,ijk
   Logical :: safe
   Integer :: fail,redtstepmx,redtstep
@@ -731,6 +735,9 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
   If (fail>0) Call error(1087)
   eltemp1 = 0.0_wp
   redtstepmx = 1
+
+! Initialise temp
+  temp = temp
 
 ! deposition stage 1 (initialization):
 ! nstep-nsteql offsets equilibration time
@@ -766,13 +773,13 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
     redtstepmx = Max(Ceiling(tstep/opttstep),2)
   Case (2)
 ! Drude-type thermal conductivity
-    mintstep = 0.5_wp*del2av*Ce(eltempmax)/KeD(eltempmax,thermo%temp)
-    maxtstep = 0.5_wp*del2av*Ce(eltempmin)/KeD(eltempmin,thermo%temp)
+    mintstep = 0.5_wp*del2av*Ce(eltempmax)/KeD(eltempmax,temp)
+    maxtstep = 0.5_wp*del2av*Ce(eltempmin)/KeD(eltempmin,temp)
     opttstep = fopttstep*Min(mintstep,maxtstep)
     redtstepmx = Max(Ceiling(tstep/opttstep),2)
   Case (3)
-  Call eltemp_maxKe (thermo%temp, eltempmaxKe,comm)
-  Call eltemp_minKe (thermo%temp, eltempminKe,comm)
+  Call eltemp_maxKe (temp, eltempmaxKe,comm)
+  Call eltemp_minKe (temp, eltempminKe,comm)
 ! tabulated thermal conductivity
     mintstep = 0.5_wp*del2av*Ce(eltempmax)/Ke(eltempmaxKe)
     maxtstep = 0.5_wp*del2av*Ce(eltempmin)/Ke(eltempminKe)
@@ -816,13 +823,13 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
 ! apply boundary conditions
 
   Call boundaryHalo (comm)
-  Call boundaryCond (bcTypeE, thermo%temp,comm)
+  Call boundaryCond (bcTypeE, temp,comm)
 
 ! print statistics to files: electronic and ionic temperatures
 ! (note timestep is subtracted by 1, as these are values at
 !  beginning of MD timestep)
 
-  Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep-1, ttmstats,comm)
+  Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep-1, ttmstats,comm)
   Call peakProfilerElec('LATS_E', nstep-1, ttmtraj,comm)
 
   Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep-1, ttmstats,comm)
@@ -842,7 +849,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
 
 ! determine energy redistribution from deactivated ionic temperature voxels for slab geometry
 
-  If (redistribute) Call redistribute_Te (thermo%temp,comm)
+  If (redistribute) Call redistribute_Te (temp,comm)
 
 ! Adaptive timestep
 
@@ -852,7 +859,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
 
     If (trackInit) Then
       Call depoevolve(time, tstep, redtstep, redtstepmx,comm)
-      Call boundaryCond(bcTypeE, thermo%temp,comm)
+      Call boundaryCond(bcTypeE, temp,comm)
     End If
 
 ! MAIN LOOP
@@ -872,7 +879,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
       Call eltemp_mean(eltempmean,comm)
       eltemp1 = eltempmean
       Do ijk=1,numcell
-        If(act_ele_cell(ijk,0,0,0)<=zero_plus) eltemp1(ijk,0,0,0) = thermo%temp
+        If(act_ele_cell(ijk,0,0,0)<=zero_plus) eltemp1(ijk,0,0,0) = temp
       End Do
 
     Case (1)
@@ -984,17 +991,17 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
                       actzm = actsite*act_ele_cell (ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)
                       actzp = actsite*act_ele_cell (ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)
                       eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
-                        fomAx*actxm*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-1,ii,jj,kk)),thermo%temp)*&
+                        fomAx*actxm*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-1,ii,jj,kk)),temp)*&
                         (eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                        fomAx*actxp*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+1,ii,jj,kk)),thermo%temp)*&
+                        fomAx*actxp*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+1,ii,jj,kk)),temp)*&
                         (eltemp(ijk+1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                        fomAy*actym*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2),ii,jj,kk)),thermo%temp)*&
+                        fomAy*actym*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2),ii,jj,kk)),temp)*&
                         (eltemp(ijk-(ntcell(1)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                        fomAy*actyp*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2),ii,jj,kk)),thermo%temp)*&
+                        fomAy*actyp*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2),ii,jj,kk)),temp)*&
                         (eltemp(ijk+(ntcell(1)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                        fomAz*actzm*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),thermo%temp)*&
+                        fomAz*actzm*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),temp)*&
                         (eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                        fomAz*actzp*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),thermo%temp)*&
+                        fomAz*actzp*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),temp)*&
                         (eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))
                     End Do
                   End Do
@@ -1006,17 +1013,17 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
                     Do i=1,ntcell(1)
                       ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
                       eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
-                        fomAx*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-1,ii,jj,kk)),thermo%temp)*&
+                        fomAx*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-1,ii,jj,kk)),temp)*&
                         (eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk)) +&
-                        fomAx*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+1,ii,jj,kk)),thermo%temp)*&
+                        fomAx*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+1,ii,jj,kk)),temp)*&
                         (eltemp(ijk+1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                        fomAy*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2),ii,jj,kk)),thermo%temp)*&
+                        fomAy*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2),ii,jj,kk)),temp)*&
                         (eltemp(ijk-(ntcell(1)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                        fomAy*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2),ii,jj,kk)),thermo%temp)*&
+                        fomAy*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2),ii,jj,kk)),temp)*&
                         (eltemp(ijk+(ntcell(1)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                        fomAz*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),thermo%temp)*&
+                        fomAz*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),temp)*&
                         (eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                        fomAz*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),thermo%temp)*&
+                        fomAz*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),temp)*&
                         (eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))
                     End Do
                   End Do
@@ -1037,17 +1044,17 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
                   Do i=1,ntcell(1)
                     ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
                     eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
-                      fomAx*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-1,ii,jj,kk)),thermo%temp)*&
+                      fomAx*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-1,ii,jj,kk)),temp)*&
                       (eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                      fomAx*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+1,ii,jj,kk)),thermo%temp)*&
+                      fomAx*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+1,ii,jj,kk)),temp)*&
                       (eltemp(ijk+1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                      fomAy*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2),ii,jj,kk)),thermo%temp)*&
+                      fomAy*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2),ii,jj,kk)),temp)*&
                       (eltemp(ijk-(ntcell(1)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                      fomAy*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2),ii,jj,kk)),thermo%temp)*&
+                      fomAy*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2),ii,jj,kk)),temp)*&
                       (eltemp(ijk+(ntcell(1)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                      fomAz*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),thermo%temp)*&
+                      fomAz*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),temp)*&
                       (eltemp(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))+&
-                      fomAz*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),thermo%temp)*&
+                      fomAz*KeD(0.5_wp*(eltemp(ijk,ii,jj,kk)+eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)),temp)*&
                       (eltemp(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)-eltemp(ijk,ii,jj,kk))/Ce(eltemp(ijk,ii,jj,kk))
                   End Do
                 End Do
@@ -1082,7 +1089,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
                       actyp = actsite*act_ele_cell(ijk+(ntcell(1)+2),ii,jj,kk)
                       actzm = actsite*act_ele_cell(ijk-(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)
                       actzp = actsite*act_ele_cell(ijk+(ntcell(1)+2)*(ntcell(2)+2),ii,jj,kk)
-                      eltempKe = Merge(tempion(ijk),thermo%temp,(ii==0 .and. jj==0 .and. kk==0))
+                      eltempKe = Merge(tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
                       alploc = Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))
                       eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
                         fomAx*actxm*alploc*(eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
@@ -1102,7 +1109,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
                       ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
                       ! note that temperature for thermal conductivity is always system
                       ! temperature for electronic cells away from ionic cells
-                      alploc = Ke(thermo%temp)/Ce(eltemp(ijk,ii,jj,kk))
+                      alploc = Ke(temp)/Ce(eltemp(ijk,ii,jj,kk))
                       eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
                         fomAx*alploc*(eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
                         fomAx*alploc*(eltemp(ijk+1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
@@ -1127,7 +1134,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
                 Do j=1,ntcell(2)
                   Do i=1,ntcell(1)
                     ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
-                    eltempKe = Merge(tempion(ijk),thermo%temp,(ii==0 .and. jj==0 .and. kk==0))
+                    eltempKe = Merge(tempion(ijk),temp,(ii==0 .and. jj==0 .and. kk==0))
                     eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
                       fomAx*Ke(eltempKe)/Ce(eltemp(ijk,ii,jj,kk))*&
                       (eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&
@@ -1223,7 +1230,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndu
 ! update boundary halo values and apply boundary conditions
 
     Call boundaryHalo (comm)
-    Call boundaryCond (bcTypeE, thermo%temp,comm)
+    Call boundaryCond (bcTypeE, temp,comm)
 
 ! simple stability check for simulation
 

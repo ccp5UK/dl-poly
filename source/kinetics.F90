@@ -497,7 +497,7 @@ Contains
   End Subroutine getvom_rgd
 
 
-  Subroutine cap_forces(fmax,thermo%temp,comm)
+  Subroutine cap_forces(fmax,temp,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -510,7 +510,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    Real( Kind = wp ), Intent( In    ) :: fmax,thermo%temp
+    Real( Kind = wp ), Intent( In    ) :: fmax,temp
     Type(comms_type), Intent ( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -534,7 +534,7 @@ Contains
 
 ! maximum force permitted
 
-    fmax2 = (boltz*thermo%temp*fmax)**2
+    fmax2 = (boltz*temp*fmax)**2
 
 ! cap forces and conserve linear momentum
 ! for non-frozen&non-massless particles

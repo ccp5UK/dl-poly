@@ -18,6 +18,7 @@ Module nvt_gst
                               no_squish,rigid_bodies_stress
   Use numerics, Only : images,box_mueller_saru2
   Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -28,13 +29,13 @@ Contains
 
   Subroutine nvt_g0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,thermo%temp,degfre,                 &
-             sigma,thermo%tau_t,thermo%gama,chit,cint,         &
+             nstep,degfre,                 &
+             sigma,chit,cint,         &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
-             megpmf,strpmf,virpmf,comm)
+             megpmf,strpmf,virpmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -61,10 +62,9 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: thermo%temp
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t,thermo%gama
+    Real( Kind = wp ), Intent( In    ) :: sigma
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
     Real( Kind = wp ), Intent(   Out ) :: consv
@@ -76,6 +76,7 @@ Contains
     Integer,           Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -207,8 +208,8 @@ Contains
   ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
        Call nvt_g0_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,0.0_wp,0.0_wp, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
+             vxx,vyy,vzz,chit,cint,engke,thermo,comm)
 
   ! update velocity and position
 
@@ -434,8 +435,8 @@ Contains
   ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
        Call nvt_g0_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,0.0_wp,0.0_wp, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
+             vxx,vyy,vzz,chit,cint,engke,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
@@ -471,14 +472,14 @@ Contains
 
   Subroutine nvt_g1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,thermo%temp,degfre,                 &
-             sigma,thermo%tau_t,thermo%gama,chit,cint,         &
+             nstep,degfre,                 &
+             sigma,chit,cint,         &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             strcom,vircom,comm)
+             strcom,vircom,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -506,10 +507,9 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: thermo%temp
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t,thermo%gama
+    Real( Kind = wp ), Intent( In    ) :: sigma
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
     Real( Kind = wp ), Intent(   Out ) :: consv
@@ -524,6 +524,7 @@ Contains
                                           strpmf(1:9),virpmf
 
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -730,11 +731,11 @@ Contains
   ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
        Call nvt_g1_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                                                &
              rgdvxx,rgdvyy,rgdvzz,                                       &
              rgdoxx,rgdoyy,rgdozz,                                       &
-             chit,cint,engke,engrot,comm)
+             chit,cint,engke,engrot,thermo,comm)
 
   ! update velocity and position of FPs
 
@@ -1282,11 +1283,11 @@ Contains
   ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
        Call nvt_g1_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                                                &
              rgdvxx,rgdvyy,rgdvzz,                                       &
              rgdoxx,rgdoyy,rgdozz,                                       &
-             chit,cint,engke,engrot,comm)
+             chit,cint,engke,engrot,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
@@ -1329,8 +1330,8 @@ Contains
   End Subroutine nvt_g1_vv
 
   Subroutine nvt_g0_scl &
-             (tstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             (tstep,degfre,isw,nstep,ceng,qmass,pmass,chip, &
+             vxx,vyy,vzz,chit,cint,engke,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1346,12 +1347,13 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-                                                                 thermo%temp,thermo%gama,pmass,chip
+                                                                 pmass,chip
     Integer(Kind=li),                         Intent( In    ) :: degfre
     Integer,                                  Intent( In    ) :: isw,nstep
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent( InOut ) :: chit,cint
     Real( Kind = wp ),                        Intent(   Out ) :: engke
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: i
@@ -1418,11 +1420,11 @@ Contains
   End Subroutine nvt_g0_scl
 
   Subroutine nvt_g1_scl &
-             (tstep,degfre,isw,nstep,ceng,qmass,thermo%temp,thermo%gama,pmass,chip, &
+             (tstep,degfre,isw,nstep,ceng,qmass,pmass,chip, &
              vxx,vyy,vzz,                                             &
              rgdvxx,rgdvyy,rgdvzz,                                    &
              rgdoxx,rgdoyy,rgdozz,                                    &
-             chit,cint,engke,engrot,comm)
+             chit,cint,engke,engrot,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1438,7 +1440,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-                                                                 thermo%temp,thermo%gama,pmass,chip
+                                                                 pmass,chip
     Integer(Kind=li),                         Intent( In    ) :: degfre
     Integer,                                  Intent( In    ) :: isw,nstep
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
@@ -1446,6 +1448,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:mxrgd ),  Intent( InOut ) :: rgdoxx,rgdoyy,rgdozz
     Real( Kind = wp ),                        Intent( InOut ) :: chit,cint
     Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ),                       Intent( InOut ) :: comm
 
     Integer           :: i,j,irgd

@@ -16,6 +16,7 @@ Module npt_mtk
   Use nvt_nose_hoover, Only : nvt_h0_scl, nvt_h1_scl 
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h1_scl 
   Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -26,15 +27,15 @@ Contains
 
   Subroutine npt_m0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,thermo%tau_t,chit,cint,              &
-             thermo%press,thermo%tau_p,chip,eta,               &
+             sigma,chit,cint,              &
+             chip,eta,               &
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -58,10 +59,9 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,thermo%tau_t
+    Real( Kind = wp ),  Intent( In    ) :: sigma
     Real( Kind = wp ),  Intent( InOut ) :: chit,cint
 
-    Real( Kind = wp ),  Intent( In    ) :: thermo%press,thermo%tau_p
     Real( Kind = wp ),  Intent( InOut ) :: chip
     Real( Kind = wp ),  Intent(   Out ) :: eta(1:9)
 
@@ -79,6 +79,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -249,8 +250,8 @@ Contains
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
           Call npt_h0_scl &
-             (1,hstep,degfre,pmass,chit,volm,thermo%press,vir,virtot, &
-             vxx,vyy,vzz,chip,engke)
+             (1,hstep,degfre,pmass,chit,volm,vir,virtot, &
+             vxx,vyy,vzz,chip,engke,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
@@ -545,8 +546,8 @@ Contains
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
        Call npt_h0_scl &
-             (1,hstep,degfre,pmass,chit,volm,thermo%press,vir,virtot, &
-             vxx,vyy,vzz,chip,engke)
+             (1,hstep,degfre,pmass,chit,volm,vir,virtot, &
+             vxx,vyy,vzz,chip,engke,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
@@ -609,8 +610,8 @@ Contains
 
   Subroutine npt_m1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,thermo%tau_t,chit,cint,              &
-             thermo%press,thermo%tau_p,chip,eta,               &
+             sigma,chit,cint,              &
+             chip,eta,               &
              degfre,degrot,virtot,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
@@ -618,7 +619,7 @@ Contains
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -644,10 +645,9 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,thermo%tau_t
+    Real( Kind = wp ),  Intent( In    ) :: sigma
     Real( Kind = wp ),  Intent( InOut ) :: chit,cint
 
-    Real( Kind = wp ),  Intent( In    ) :: thermo%press,thermo%tau_p
     Real( Kind = wp ),  Intent( InOut ) :: chip
     Real( Kind = wp ),  Intent(   Out ) :: eta(1:9)
 
@@ -668,6 +668,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true. , &
@@ -916,8 +917,8 @@ Contains
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
           Call npt_h1_scl &
-             (1,hstep,degfre,degrot,pmass,chit,volm,thermo%press,vir,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
+             (1,hstep,degfre,degrot,pmass,chit,volm,vir,virtot,vircom, &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
@@ -1590,8 +1591,8 @@ Contains
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
        Call npt_h1_scl &
-             (1,hstep,degfre,degrot,pmass,chit,volm,thermo%press,vir,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
+             (1,hstep,degfre,degrot,pmass,chit,volm,vir,virtot,vircom, &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 

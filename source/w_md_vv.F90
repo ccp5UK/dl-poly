@@ -108,8 +108,8 @@
 ! Evolve electronic temperature for two-temperature model
 
         If (l_ttm) Then
-          Call ttm_ion_temperature(thermo%chi_ep,thermo%chi_es,vel_es2,comm)
-          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,thermo%temp,nstbpo,ndump,nstrun,lines,npage,comm)
+          Call ttm_ion_temperature(vel_es2,thermo,comm)
+          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,lines,npage,thermo,comm)
         End If
 
 ! Integrate equations of motion - velocity verlet second stage

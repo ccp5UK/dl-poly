@@ -479,7 +479,7 @@ Contains
 
   End Subroutine eltemp_mean
 
-  Subroutine eltemp_maxKe (thermo%temp, eltempmax, comm)
+  Subroutine eltemp_maxKe (temp, eltempmax, comm)
 
 ! Find maximum temperature for calculating tabulated
 ! thermal conductivities (ionic or system) over all 
@@ -487,7 +487,7 @@ Contains
 ! applies over all CET voxels that do not overlap
 ! CIT voxels)
 
-    Real ( Kind = wp ), Intent ( In )  :: thermo%temp
+    Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
     Type( comms_type ), Intent ( InOut )  :: comm
     Real ( Kind = wp )                 :: eltempKe
@@ -504,7 +504,7 @@ Contains
         End Do
       End Do
     End Do
-    eltempmax = Max (eltempmax, thermo%temp)
+    eltempmax = Max (eltempmax, temp)
 
     Call gmax (comm,eltempmax)
 
@@ -580,7 +580,7 @@ Contains
 
   End Subroutine eltemp_max
 
-  Subroutine eltemp_minKe (thermo%temp, eltempmin, comm)
+  Subroutine eltemp_minKe (temp, eltempmin, comm)
 
 ! Find minimum temperature for calculating tabulated
 ! thermal conductivities (ionic or system) over all 
@@ -589,7 +589,7 @@ Contains
 ! CIT voxels)
 
     Type( comms_type ), Intent ( InOut )  :: comm
-    Real ( Kind = wp ), Intent ( In )  :: thermo%temp
+    Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmin
     Real ( Kind = wp )                 :: eltempKe
     Integer                            :: i,j,k,ijk
@@ -606,7 +606,7 @@ Contains
       End Do
     End Do
 
-    eltempmin = Min (eltempmin, thermo%temp)
+    eltempmin = Min (eltempmin, temp)
 
     Call gmin (comm,eltempmin)
 
@@ -754,7 +754,7 @@ Contains
 
   End Subroutine depoinit
   
-  Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,thermo%temp,comm)
+  Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -767,7 +767,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,             Intent ( In ) :: keyres,nstep,nsteql
-  Real ( Kind = wp ),  Intent ( In ) :: thermo%temp,time
+  Real ( Kind = wp ),  Intent ( In ) :: temp,time
   Character (Len = *), Intent ( In ) :: dumpfile
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -828,7 +828,7 @@ Contains
     End Do
     ! fill boundary halo values and deal with required boundary conditions
     Call boundaryHalo (comm)
-    Call boundaryCond (bcTypeE, thermo%temp, comm)
+    Call boundaryCond (bcTypeE, temp, comm)
     ! check whether or not energy deposition has happened yet
     If(nstep>nsteql .and. time>=depostart .and. time<depoend) Then
       Call depoinit(time,comm)
@@ -857,7 +857,7 @@ Contains
 ! if not restarting simulation, set electronic temperature grid
 ! to system temperature
 
-    eltemp = thermo%temp
+    eltemp = temp
 
   End If
 
@@ -1602,12 +1602,12 @@ Subroutine boundaryHalo (comm)
 
 End Subroutine boundaryHalo
 
-Subroutine boundaryCond (key, thermo%temp,comm)
+Subroutine boundaryCond (key, temp,comm)
 
 ! appends halo regions of entire electronic temperature lattice with appropriate boundary conditions
 
 
-  Real ( Kind = wp ), Intent ( In ) :: thermo%temp
+  Real ( Kind = wp ), Intent ( In ) :: temp
   Integer,            Intent ( In ) :: key
   Type(comms_type),   Intent ( In ) :: comm
 
@@ -1745,7 +1745,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do k = 1, ntcell(3)
             Do j = 1, ntcell(2)
               ijk2 = 1 + (ttmbc(1)-1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
-              eltemp(ijk2,-eltcell(1),jj,kk) = thermo%temp
+              eltemp(ijk2,-eltcell(1),jj,kk) = temp
             End Do
           End Do
         End Do
@@ -1758,7 +1758,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do k = 1, ntcell(3)
             Do j = 1, ntcell(2)
               ijk2 = 1 + (ttmbc(2)+1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
-              eltemp(ijk2,eltcell(1),jj,kk) = thermo%temp
+              eltemp(ijk2,eltcell(1),jj,kk) = temp
             End Do
           End Do
         End Do
@@ -1771,7 +1771,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do k = 1, ntcell(3)
             Do i = 0, ntcell(1)+1
               ijk2 = 1 + i + (ntcell(1)+2) * ((ttmbc(3)-1) + k * (ntcell(2)+2))
-              eltemp(ijk2,ii,-eltcell(2),kk) = thermo%temp
+              eltemp(ijk2,ii,-eltcell(2),kk) = temp
             End Do
           End Do
         End Do
@@ -1784,7 +1784,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do k = 1, ntcell(3)
             Do i = 0, ntcell(1)+1
               ijk2 = 1 + i + (ntcell(1)+2) * ((ttmbc(4)+1) + k * (ntcell(2)+2))
-              eltemp(ijk2,ii,eltcell(2),kk) = thermo%temp
+              eltemp(ijk2,ii,eltcell(2),kk) = temp
             End Do
           End Do
         End Do
@@ -1797,7 +1797,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do j = 0, ntcell(2)+1
             Do i = 0, ntcell(1)+1
               ijk2 = 1 + i + (ntcell(1)+2) * (j + (ttmbc(5)-1) * (ntcell(2)+2))
-              eltemp(ijk2,ii,jj,-eltcell(3)) = thermo%temp
+              eltemp(ijk2,ii,jj,-eltcell(3)) = temp
             End Do
           End Do
         End Do
@@ -1810,7 +1810,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do j = 0, ntcell(2)+1
             Do i = 0, ntcell(1)+1
               ijk2 = 1 + i + (ntcell(1)+2) * (j + (ttmbc(6)+1) * (ntcell(2)+2))
-              eltemp(ijk2,ii,jj,eltcell(3)) = thermo%temp
+              eltemp(ijk2,ii,jj,eltcell(3)) = temp
             End Do
           End Do
         End Do
@@ -1912,7 +1912,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do k = 1, ntcell(3)
             Do j = 1, ntcell(2)
               ijk2 = 1 + (ttmbc(1)-1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
-              eltemp(ijk2,-eltcell(1),jj,kk) = thermo%temp
+              eltemp(ijk2,-eltcell(1),jj,kk) = temp
             End Do
           End Do
         End Do
@@ -1925,7 +1925,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do k = 1, ntcell(3)
             Do j = 1, ntcell(2)
               ijk2 = 1 + (ttmbc(2)+1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
-              eltemp(ijk2,eltcell(1),jj,kk) = thermo%temp
+              eltemp(ijk2,eltcell(1),jj,kk) = temp
             End Do
           End Do
         End Do
@@ -1938,7 +1938,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do k = 1, ntcell(3)
             Do i = 0, ntcell(1)+1
               ijk2 = 1 + i + (ntcell(1)+2) * ((ttmbc(3)-1) + k * (ntcell(2)+2))
-              eltemp(ijk2,ii,-eltcell(2),kk) = thermo%temp
+              eltemp(ijk2,ii,-eltcell(2),kk) = temp
             End Do
           End Do
         End Do
@@ -1951,7 +1951,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
           Do k = 1, ntcell(3)
             Do i = 0, ntcell(1)+1
               ijk2 = 1 + i + (ntcell(1)+2) * ((ttmbc(4)+1) + k * (ntcell(2)+2))
-              eltemp(ijk2,ii,eltcell(2),kk) = thermo%temp
+              eltemp(ijk2,ii,eltcell(2),kk) = temp
             End Do
           End Do
         End Do
@@ -1995,7 +1995,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do j = 1, ntcell(2)
               ijk1 = 1 + ttmbc(1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
               ijk2 = ijk1 - 1
-              eltemp(ijk2,-eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,-eltcell(1),jj,kk)-thermo%temp) + thermo%temp
+              eltemp(ijk2,-eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,-eltcell(1),jj,kk)-temp) + temp
             End Do
           End Do
         End Do
@@ -2009,7 +2009,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do j = 1, ntcell(2)
               ijk1 = 1 + ttmbc(2) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
               ijk2 = ijk1 + 1
-              eltemp(ijk2,eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,eltcell(1),jj,kk)-thermo%temp) + thermo%temp
+              eltemp(ijk2,eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,eltcell(1),jj,kk)-temp) + temp
             End Do
           End Do
         End Do
@@ -2023,7 +2023,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do i = 0, ntcell(1)+1
               ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(3) + k * (ntcell(2)+2))
               ijk2 = ijk1 - (ntcell(1)+2)
-              eltemp(ijk2,ii,-eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,-eltcell(2),kk)-thermo%temp) + thermo%temp
+              eltemp(ijk2,ii,-eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,-eltcell(2),kk)-temp) + temp
             End Do
           End Do
         End Do
@@ -2037,7 +2037,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do i = 0, ntcell(1)+1
               ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(4) + k * (ntcell(2)+2))
               ijk2 = ijk1 + (ntcell(1)+2)
-              eltemp(ijk2,ii,eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,eltcell(2),kk)-thermo%temp) + thermo%temp
+              eltemp(ijk2,ii,eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,eltcell(2),kk)-temp) + temp
             End Do
           End Do
         End Do
@@ -2051,7 +2051,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do i = 0, ntcell(1)+1
               ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(5) * (ntcell(2)+2))
               ijk2 = ijk1 - (ntcell(1)+2)*(ntcell(2)+2)
-              eltemp(ijk2,ii,jj,-eltcell(3)) = fluxout*(eltemp(ijk1,ii,jj,-eltcell(3))-thermo%temp) + thermo%temp
+              eltemp(ijk2,ii,jj,-eltcell(3)) = fluxout*(eltemp(ijk1,ii,jj,-eltcell(3))-temp) + temp
             End Do
           End Do
         End Do
@@ -2065,7 +2065,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do i = 0, ntcell(1)+1
               ijk1 = 1 + i + (ntcell(1)+2) * (j + ttmbc(6) * (ntcell(2)+2))
               ijk2 = ijk1 + (ntcell(1)+2)*(ntcell(2)+2)
-              eltemp(ijk2,ii,jj,eltcell(3)) = fluxout*(eltemp(ijk1,ii,jj,eltcell(3))-thermo%temp) + thermo%temp
+              eltemp(ijk2,ii,jj,eltcell(3)) = fluxout*(eltemp(ijk1,ii,jj,eltcell(3))-temp) + temp
             End Do
           End Do
         End Do
@@ -2082,7 +2082,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do j = 1, ntcell(2)
               ijk1 = 1 + ttmbc(1) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
               ijk2 = ijk1 - 1
-              eltemp(ijk2,-eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,-eltcell(1),jj,kk)-thermo%temp) + thermo%temp
+              eltemp(ijk2,-eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,-eltcell(1),jj,kk)-temp) + temp
             End Do
           End Do
         End Do
@@ -2096,7 +2096,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do j = 1, ntcell(2)
               ijk1 = 1 + ttmbc(2) + (ntcell(1)+2) * (j + k * (ntcell(2)+2))
               ijk2 = ijk1 + 1
-              eltemp(ijk2,eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,eltcell(1),jj,kk)-thermo%temp) + thermo%temp
+              eltemp(ijk2,eltcell(1),jj,kk) = fluxout*(eltemp(ijk1,eltcell(1),jj,kk)-temp) + temp
             End Do
           End Do
         End Do
@@ -2110,7 +2110,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do i = 0, ntcell(1)+1
               ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(3) + k * (ntcell(2)+2))
               ijk2 = ijk1 - (ntcell(1)+2)
-              eltemp(ijk2,ii,-eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,-eltcell(2),kk)-thermo%temp) + thermo%temp
+              eltemp(ijk2,ii,-eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,-eltcell(2),kk)-temp) + temp
             End Do
           End Do
         End Do
@@ -2124,7 +2124,7 @@ Subroutine boundaryCond (key, thermo%temp,comm)
             Do i = 0, ntcell(1)+1
               ijk1 = 1 + i + (ntcell(1)+2) * (ttmbc(4) + k * (ntcell(2)+2))
               ijk2 = ijk1 + (ntcell(1)+2)
-              eltemp(ijk2,ii,eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,eltcell(2),kk)-thermo%temp) + thermo%temp
+              eltemp(ijk2,ii,eltcell(2),kk) = fluxout*(eltemp(ijk1,ii,eltcell(2),kk)-temp) + temp
             End Do
           End Do
         End Do

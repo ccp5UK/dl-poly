@@ -1,26 +1,27 @@
 Module nvt_anderson
-    Use kinds,         Only : wp
-    Use comms,         Only : comms_type,gsum,gmax
-    Use domains,       Only : map
-    Use setup,         Only : boltz,mxcons,mxpmf,mxshl,mxtpmf,zero_plus
-    Use site,          Only : dofsit
-    Use configuration, Only : imcon,cell,natms,nlast,nfree,lsite, &
-                              lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
-                              weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-    Use kinetics,      Only : getvom,getknr,kinstress,kinstresf,kinstrest
-    Use core_shell,    Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
-    Use constraints,   Only : passcon,constraints_tags,constraints_shake_vv, &
-                              constraints_rattle
-    Use pmf,           Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
-    Use rigid_bodies,  Only : lashp_rgd,lishp_rgd,lshmv_rgd,mxatms,mxlrgd, &
-                              ntrgd,rgdx,rgdy,rgdz,rgdxxx,rgdyyy,rgdzzz, &
-                              rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz, &
-                              q0,q1,q2,q3,indrgd,listrgd,rgdfrz,rgdwgt, &
-                              rgdrix,rgdriy,rgdriz,mxrgd,rgdind,getrotmat, &
-                              no_squish,rigid_bodies_stress
-    Use numerics, Only : images,local_index,box_mueller_saru3,sarurnd
-    Use shared_units, Only : update_shared_units,update_shared_units_int
-    Use errors_warnings, Only : error,info
+  Use kinds,         Only : wp
+  Use comms,         Only : comms_type,gsum,gmax
+  Use domains,       Only : map
+  Use setup,         Only : boltz,mxcons,mxpmf,mxshl,mxtpmf,zero_plus
+  Use site,          Only : dofsit
+  Use configuration, Only : imcon,cell,natms,nlast,nfree,lsite, &
+                            lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
+                            weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use kinetics,      Only : getvom,getknr,kinstress,kinstresf,kinstrest
+  Use core_shell,    Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
+  Use constraints,   Only : passcon,constraints_tags,constraints_shake_vv, &
+                            constraints_rattle
+  Use pmf,           Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
+  Use rigid_bodies,  Only : lashp_rgd,lishp_rgd,lshmv_rgd,mxatms,mxlrgd, &
+                            ntrgd,rgdx,rgdy,rgdz,rgdxxx,rgdyyy,rgdzzz, &
+                            rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz, &
+                            q0,q1,q2,q3,indrgd,listrgd,rgdfrz,rgdwgt, &
+                            rgdrix,rgdriy,rgdriz,mxrgd,rgdind,getrotmat, &
+                            no_squish,rigid_bodies_stress
+  Use numerics, Only : images,local_index,box_mueller_saru3,sarurnd
+  Use shared_units, Only : update_shared_units,update_shared_units_int
+  Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -31,11 +32,11 @@ Contains
 
   Subroutine nvt_a0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,thermo%temp,keyshl,thermo%tau_t,thermo%soft,       &
+             nstep,keyshl,       &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
-             megpmf,strpmf,virpmf,comm)
+             megpmf,strpmf,virpmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -61,7 +62,6 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
     Integer,            Intent( In    ) :: nstep,keyshl
-    Real( Kind = wp ),  Intent( In    ) :: thermo%temp,thermo%tau_t,thermo%soft
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
@@ -70,6 +70,7 @@ Contains
     Integer,            Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ),  Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -579,12 +580,12 @@ Contains
 
   Subroutine nvt_a1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,thermo%temp,keyshl,thermo%tau_t,thermo%soft,       &
+             nstep,keyshl,       &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             strcom,vircom,comm)
+             strcom,vircom,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -611,7 +612,6 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
     Integer,            Intent( In    ) :: nstep,keyshl
-    Real( Kind = wp ),  Intent( In    ) :: thermo%temp,thermo%tau_t,thermo%soft
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
@@ -623,6 +623,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 

@@ -15,6 +15,7 @@ Module nst_mtk
   Use nvt_nose_hoover,    Only : nvt_h0_scl,nvt_h1_scl
   Use nst_nose_hoover,    ONly : nst_h0_scl,nst_h1_scl
   Use numerics,           Only : dcell, mat_mul
+  Use thermostat, Only : thermostat_type
 
   Implicit None
 
@@ -26,15 +27,15 @@ Contains
 
   Subroutine nst_m0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,thermo%tau_t,chit,cint,              &
-             thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
-             degfre,thermo%iso,thermo%tension,stress,             &
+             sigma,chit,cint,              &
+             chip,eta,        &
+             degfre,stress,             &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -65,18 +66,16 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,thermo%tau_t
+    Real( Kind = wp ),  Intent( In    ) :: sigma
     Real( Kind = wp ),  Intent( InOut ) :: chit,cint
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
-    Real( Kind = wp ),  Intent( In    ) :: thermo%press,thermo%stress(1:9),thermo%tau_p
     Real( Kind = wp ),  Intent(   Out ) :: chip
     Real( Kind = wp ),  Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),   Intent( In    ) :: degfre
-    Integer,            Intent( In    ) :: thermo%iso
-    Real( Kind = wp ),  Intent( In    ) :: thermo%tension,stress(1:9)
+    Real( Kind = wp ),  Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ),  Intent(   Out ) :: consv
 
@@ -87,6 +86,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -293,9 +293,9 @@ Contains
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
           Call nst_h0_scl &
-             (1,hstep,degfre,pmass,chit,volm,thermo%press, &
-             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,         &
-             vxx,vyy,vzz,eta,strkin,engke,comm)
+             (1,hstep,degfre,pmass,chit,volm, &
+             h_z,str,stress,         &
+             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -608,9 +608,9 @@ Contains
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
        Call nst_h0_scl &
-             (1,hstep,degfre,pmass,chit,volm,thermo%press, &
-             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,         &
-             vxx,vyy,vzz,eta,strkin,engke,comm)
+             (1,hstep,degfre,pmass,chit,volm, &
+             h_z,str,stress,         &
+             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -669,16 +669,16 @@ Contains
 
   Subroutine nst_m1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,thermo%tau_t,chit,cint,              &
-             thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
-             degfre,degrot,thermo%iso,thermo%tension,stress,      &
+             sigma,chit,cint,              &
+             chip,eta,        &
+             degfre,degrot,stress,      &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -710,16 +710,14 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,thermo%tau_t
+    Real( Kind = wp ),  Intent( In    ) :: sigma
     Real( Kind = wp ),  Intent( InOut ) :: chit,cint
 
-    Real( Kind = wp ),  Intent( In    ) :: thermo%press,thermo%stress(1:9),thermo%tau_p
     Real( Kind = wp ),  Intent(   Out ) :: chip
     Real( Kind = wp ),  Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),   Intent( In    ) :: degfre,degrot
-    Integer,            Intent( In    ) :: thermo%iso
-    Real( Kind = wp ),  Intent( In    ) :: thermo%tension,stress(1:9)
+    Real( Kind = wp ),  Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ),  Intent(   Out ) :: consv
 
@@ -735,6 +733,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true. , &
@@ -1018,9 +1017,9 @@ Contains
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
           Call nst_h1_scl &
-             (1,hstep,degfre,degrot,pmass,chit,volm,thermo%press, &
-             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,strcom,         &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
+             (1,hstep,degfre,degrot,pmass,chit,volm, &
+             h_z,str,stress,strcom,         &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -1711,9 +1710,9 @@ Contains
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
        Call nst_h1_scl &
-             (1,hstep,degfre,degrot,pmass,chit,volm,thermo%press, &
-             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,strcom,         &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
+             (1,hstep,degfre,degrot,pmass,chit,volm, &
+             h_z,str,stress,strcom,         &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 

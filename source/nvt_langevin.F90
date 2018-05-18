@@ -24,6 +24,7 @@ Module nvt_langevin
   Use langevin,        Only : langevin_forces
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -34,11 +35,11 @@ Contains
 
   Subroutine nvt_l0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,thermo%temp,thermo%chi,                    &
+             nstep,                    &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
-             megpmf,strpmf,virpmf,comm)
+             megpmf,strpmf,virpmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -66,7 +67,6 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: thermo%temp,thermo%chi
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
@@ -75,6 +75,7 @@ Contains
     Integer,           Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -523,12 +524,12 @@ Contains
 
   Subroutine nvt_l1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,thermo%temp,thermo%chi,                    &
+             nstep,                    &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             strcom,vircom,comm)
+             strcom,vircom,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -557,7 +558,6 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: thermo%temp,thermo%chi
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                           strknf(1:9),strknt(1:9),engrot
@@ -569,6 +569,7 @@ Contains
                                           strpmf(1:9),virpmf
 
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -1534,11 +1535,11 @@ Contains
 
   Subroutine nvt_l2_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,thermo%temp,thermo%chi_ep,thermo%chi_es,vel_es2,  &
+             nstep,vel_es2,  &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
-             megpmf,strpmf,virpmf,comm)
+             megpmf,strpmf,virpmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1567,15 +1568,16 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: thermo%temp,thermo%chi_es,vel_es2
+    Real( Kind = wp ), Intent( In    ) :: vel_es2
 
-    Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke,thermo%chi_ep
+    Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
     Integer,           Intent( In    ) :: mxshak
     Real( Kind = wp ), Intent( In    ) :: tolnce
     Integer,           Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -1583,7 +1585,7 @@ Contains
     Logical                 :: safe,lcol,lfst,lv_up,lv_dn,lrand,lvel
     Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:9),i,ia,ja,ka,ijk
-    Real( Kind = wp )       :: hstep,rstep,thermo%chi
+    Real( Kind = wp )       :: hstep,rstep,chi
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,vom(1:3), &
                                t0,t1,t2,scr1,scl1,scv1,                 &
                                t0a,t1a,t2a,t0b,t1b,t2b,scr1a,scl1a,     &
@@ -1657,7 +1659,7 @@ Contains
     lv_up = .false.
     lv_dn = .false.
 
-  ! Rescale thermo%chi to match average electronic temperature if
+  ! Rescale chi to match average electronic temperature if
   ! using homogeneous electron-phonon coupling
     If (l_ttm .and. gvar==1) Then
       Call calcchies(thermo%chi_ep,comm)
@@ -1723,15 +1725,15 @@ Contains
 
        Select Case (gvar)
        Case (0,1)
-         thermo%chi = Max (thermo%chi_ep, thermo%chi_ep+thermo%chi_es)
+         chi = Max (thermo%chi_ep, thermo%chi_ep+thermo%chi_es)
        Case (2)
          Call eltemp_max (eltempmax,comm)
-         thermo%chi = Gep(eltempmax)
-         thermo%chi = Max (thermo%chi, thermo%chi+thermo%chi_es)
+         chi = Gep(eltempmax)
+         chi = Max (chi, chi+thermo%chi_es)
        End Select
-       t0 = Exp(-thermo%chi*tstep)
-       t1 = (1.0_wp-t0   )/(  thermo%chi)
-       t2 = (1.0_wp-t0**2)/(2*thermo%chi)
+       t0 = Exp(-chi*tstep)
+       t1 = (1.0_wp-t0   )/(  chi)
+       t2 = (1.0_wp-t0**2)/(2*chi)
 
        safe=.true.
        Do
@@ -1746,9 +1748,9 @@ Contains
           Else
              safe=.false.
              tstep=tmp+1.0e-10_wp
-             t0 = Exp(-thermo%chi*tstep)
-             t1 = (1.0_wp-t0   )/(  thermo%chi)
-             t2 = (1.0_wp-t0**2)/(2*thermo%chi)
+             t0 = Exp(-chi*tstep)
+             t1 = (1.0_wp-t0   )/(  chi)
+             t2 = (1.0_wp-t0**2)/(2*chi)
           End If
        End Do
 
@@ -1757,13 +1759,13 @@ Contains
 
        Select Case (gvar)
        Case (0,1)
-         thermo%chi = Merge(thermo%chi_ep,0.0_wp,l_epcp)+thermo%chi_es
-         t0a = Exp(-thermo%chi*tstep)
-         If (thermo%chi>zero_plus) Then
-           t1a = (1.0_wp-t0a   )/(  thermo%chi)
-           t2a = (1.0_wp-t0a**2)/(2*thermo%chi)
-           scr1a = (t1a-t2a)/Sqrt(t2a*tstep)/thermo%chi
-           scl1a = Sqrt(1.0_wp-(t1a**2)/(t2a*tstep))/thermo%chi
+         chi = Merge(thermo%chi_ep,0.0_wp,l_epcp)+thermo%chi_es
+         t0a = Exp(-chi*tstep)
+         If (chi>zero_plus) Then
+           t1a = (1.0_wp-t0a   )/(  chi)
+           t2a = (1.0_wp-t0a**2)/(2*chi)
+           scr1a = (t1a-t2a)/Sqrt(t2a*tstep)/chi
+           scl1a = Sqrt(1.0_wp-(t1a**2)/(t2a*tstep))/chi
            scv1a = Sqrt(t2a/tstep)
          Else
            t1a = tstep
@@ -1814,13 +1816,13 @@ Contains
                      scl1 = Merge(scl1a,scl1b,lvel)
                      scv1 = Merge(scv1a,scv1b,lvel)
                    Case (2)
-                     thermo%chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
+                     chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
                      If (l_epcp) Then
-                       t0 = Exp(-tstep*thermo%chi)
-                       t1 = (1.0_wp-t0)/thermo%chi
-                       t2 = (1.0_wp-t0**2)/(2*thermo%chi)
-                       scr1 = (t1-t2)/Sqrt(t2*tstep)/thermo%chi
-                       scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/thermo%chi
+                       t0 = Exp(-tstep*chi)
+                       t1 = (1.0_wp-t0)/chi
+                       t2 = (1.0_wp-t0**2)/(2*chi)
+                       scr1 = (t1-t2)/Sqrt(t2*tstep)/chi
+                       scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/chi
                        scv1 = Sqrt(t2/tstep)
                      Else
                        t0 = 1.0_wp
@@ -1882,13 +1884,13 @@ Contains
                      scl1 = Merge(scl1a,scl1b,lvel)
                      scv1 = Merge(scv1a,scv1b,lvel)
                    Case (2)
-                     thermo%chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
+                     chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
                      If (l_epcp) Then
-                       t0 = Exp(-tstep*thermo%chi)
-                       t1 = (1.0_wp-t0)/thermo%chi
-                       t2 = (1.0_wp-t0**2)/(2*thermo%chi)
-                       scr1 = (t1-t2)/Sqrt(t2*tstep)/thermo%chi
-                       scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/thermo%chi
+                       t0 = Exp(-tstep*chi)
+                       t1 = (1.0_wp-t0)/chi
+                       t2 = (1.0_wp-t0**2)/(2*chi)
+                       scr1 = (t1-t2)/Sqrt(t2*tstep)/chi
+                       scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/chi
                        scv1 = Sqrt(t2/tstep)
                      Else
                        t0 = 1.0_wp
@@ -1958,7 +1960,7 @@ Contains
 
   ! Full time fluctuations on positions using half-kick velocity
   ! (time multipler adjusted to increase random forces when
-  ! electron stopping is required due to increase in thermo%chi)
+  ! electron stopping is required due to increase in chi)
 
                xxx(i)=xxt(i)+vxx(i)*t1+tmp*(fxr(i)*scr1+fxl(i)*scl1)
                yyy(i)=yyt(i)+vyy(i)*t1+tmp*(fyr(i)*scr1+fyl(i)*scl1)

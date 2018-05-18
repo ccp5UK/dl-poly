@@ -5286,7 +5286,7 @@ Module mpoles_container
   ! Local variables
 
     Integer           :: i,j,k,m,n,numnbh,idi,fail
-    Real( Kind = wp ) :: a(9),thermo%temp(1:mximpl),mpole(1:mximpl) !(1:(3**(mxompl+1)-1)/2),thermo%temp(1:mximpl)
+    Real( Kind = wp ) :: a(9),temp(1:mximpl),mpole(1:mximpl) !(1:(3**(mxompl+1)-1)/2),temp(1:mximpl)
     Real( Kind = wp ) :: ai,ai3,ai6,aj3,aj6,ak3,ak6,am3,am6,                &
                          tmp,t1,t2,t3,t4,t5,t6,p1x,p1y,p1z,p2x,p2y,p2z,dpu, &
                          rrp1,rrp2,rrp3,rrp12,rrp22,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10
@@ -5566,19 +5566,19 @@ Module mpoles_container
 
     mpole(:)=mpllfr(:,lsite(iatm))
 
-    thermo%temp=0.0_wp
+    temp=0.0_wp
 
   ! rotate monopole
 
-    thermo%temp(1)=mpole(1)
+    temp(1)=mpole(1)
 
     If (mxompl >= 1) Then
 
   ! rotate dipoles
 
-       thermo%temp(2)=a(1)*mpole(2) + a(2)*mpole(3) + a(3)*mpole(4)
-       thermo%temp(3)=a(4)*mpole(2) + a(5)*mpole(3) + a(6)*mpole(4)
-       thermo%temp(4)=a(7)*mpole(2) + a(8)*mpole(3) + a(9)*mpole(4)
+       temp(2)=a(1)*mpole(2) + a(2)*mpole(3) + a(3)*mpole(4)
+       temp(3)=a(4)*mpole(2) + a(5)*mpole(3) + a(6)*mpole(4)
+       temp(4)=a(7)*mpole(2) + a(8)*mpole(3) + a(9)*mpole(4)
 
     End If
 
@@ -5596,23 +5596,23 @@ Module mpoles_container
 
              tmp = mpole(mplltg(k))
 
-             thermo%temp(5)  = thermo%temp(5)  + ai  * a(j) * tmp !Q_xx
-             thermo%temp(6)  = thermo%temp(6)  + ai  * aj3  * tmp !Q_xy
-             thermo%temp(7)  = thermo%temp(7)  + ai  * aj6  * tmp !Q_xz
+             temp(5)  = temp(5)  + ai  * a(j) * tmp !Q_xx
+             temp(6)  = temp(6)  + ai  * aj3  * tmp !Q_xy
+             temp(7)  = temp(7)  + ai  * aj6  * tmp !Q_xz
 
-             thermo%temp(8)  = thermo%temp(8)  + ai3 * aj3  * tmp !Q_yy
-             thermo%temp(9)  = thermo%temp(9)  + ai3 * aj6  * tmp !Q_yz
+             temp(8)  = temp(8)  + ai3 * aj3  * tmp !Q_yy
+             temp(9)  = temp(9)  + ai3 * aj6  * tmp !Q_yz
 
-             thermo%temp(10) = thermo%temp(10) + ai6 * aj6  * tmp !Q_zz
+             temp(10) = temp(10) + ai6 * aj6  * tmp !Q_zz
           End Do
        End Do
 
   ! Q_xy, Q_xz and Q_yz have to be doubled to account for
   ! Q_yx, Q_zx and Q_yz
 
-       thermo%temp(6) = 2.0_wp*thermo%temp(6)
-       thermo%temp(7) = 2.0_wp*thermo%temp(7)
-       thermo%temp(9) = 2.0_wp*thermo%temp(9)
+       temp(6) = 2.0_wp*temp(6)
+       temp(7) = 2.0_wp*temp(7)
+       temp(9) = 2.0_wp*temp(9)
 
     End If
 
@@ -5637,21 +5637,21 @@ Module mpoles_container
 
                 tmp = mpole(mplltg(m))
 
-                thermo%temp(11) = thermo%temp(11) + t1 * a(k) * tmp !O_xxx
-                thermo%temp(12) = thermo%temp(12) + t1 * ak3  * tmp !O_xxy
-                thermo%temp(13) = thermo%temp(13) + t1 * ak6  * tmp !O_xxz
+                temp(11) = temp(11) + t1 * a(k) * tmp !O_xxx
+                temp(12) = temp(12) + t1 * ak3  * tmp !O_xxy
+                temp(13) = temp(13) + t1 * ak6  * tmp !O_xxz
 
-                thermo%temp(14) = thermo%temp(14) + t2 * ak3  * tmp !O_xyy
-                thermo%temp(15) = thermo%temp(15) + t2 * ak6  * tmp !O_xyz
+                temp(14) = temp(14) + t2 * ak3  * tmp !O_xyy
+                temp(15) = temp(15) + t2 * ak6  * tmp !O_xyz
 
-                thermo%temp(16) = thermo%temp(16) + t3 * ak6  * tmp !O_xzz
+                temp(16) = temp(16) + t3 * ak6  * tmp !O_xzz
 
-                thermo%temp(17) = thermo%temp(17) + t4 * ak3  * tmp !O_yyy
-                thermo%temp(18) = thermo%temp(18) + t4 * ak6  * tmp !O_yyz
+                temp(17) = temp(17) + t4 * ak3  * tmp !O_yyy
+                temp(18) = temp(18) + t4 * ak6  * tmp !O_yyz
 
-                thermo%temp(19) = thermo%temp(19) + t5 * ak6  * tmp !O_yzz
+                temp(19) = temp(19) + t5 * ak6  * tmp !O_yzz
 
-                thermo%temp(20) = thermo%temp(20) + t6 * ak6  * tmp !O_zzz
+                temp(20) = temp(20) + t6 * ak6  * tmp !O_zzz
              End Do
           End Do
        End Do
@@ -5659,10 +5659,10 @@ Module mpoles_container
   ! O_xxy,O_xxz,O_xyy,O_xzz,O_yyz,O_yzz have to be tripled
   ! to account for permutations.  O_xyz has to be multiplied by six
 
-       thermo%temp(12) = 3.0_wp*thermo%temp(12) ; thermo%temp(13) = 3.0_wp*thermo%temp(13)
-       thermo%temp(14) = 3.0_wp*thermo%temp(14) ; thermo%temp(15) = 6.0_wp*thermo%temp(15)
-       thermo%temp(16) = 3.0_wp*thermo%temp(16) ; thermo%temp(18) = 3.0_wp*thermo%temp(18)
-       thermo%temp(19) = 3.0_wp*thermo%temp(19)
+       temp(12) = 3.0_wp*temp(12) ; temp(13) = 3.0_wp*temp(13)
+       temp(14) = 3.0_wp*temp(14) ; temp(15) = 6.0_wp*temp(15)
+       temp(16) = 3.0_wp*temp(16) ; temp(18) = 3.0_wp*temp(18)
+       temp(19) = 3.0_wp*temp(19)
 
     End If
 
@@ -5696,30 +5696,30 @@ Module mpoles_container
 
                    tmp = mpole(mplltg(n))
 
-                   thermo%temp(21) = thermo%temp(21) + s1  * a(m) * tmp !H_xxxx
-                   thermo%temp(22) = thermo%temp(22) + s1  * am3  * tmp !H_xxxy
-                   thermo%temp(23) = thermo%temp(23) + s1  * am6  * tmp !H_xxxz
+                   temp(21) = temp(21) + s1  * a(m) * tmp !H_xxxx
+                   temp(22) = temp(22) + s1  * am3  * tmp !H_xxxy
+                   temp(23) = temp(23) + s1  * am6  * tmp !H_xxxz
 
-                   thermo%temp(24) = thermo%temp(24) + s2  * am3  * tmp !H_xxyy
-                   thermo%temp(25) = thermo%temp(25) + s2  * am6  * tmp !H_xxyz
+                   temp(24) = temp(24) + s2  * am3  * tmp !H_xxyy
+                   temp(25) = temp(25) + s2  * am6  * tmp !H_xxyz
 
-                   thermo%temp(26) = thermo%temp(26) + s3  * am6  * tmp !H_xxzz
+                   temp(26) = temp(26) + s3  * am6  * tmp !H_xxzz
 
-                   thermo%temp(27) = thermo%temp(27) + s4  * am3  * tmp !H_xyyy
-                   thermo%temp(28) = thermo%temp(28) + s4  * am6  * tmp !H_xyyz
+                   temp(27) = temp(27) + s4  * am3  * tmp !H_xyyy
+                   temp(28) = temp(28) + s4  * am6  * tmp !H_xyyz
 
-                   thermo%temp(29) = thermo%temp(29) + s5  * am6  * tmp !H_xyzz
+                   temp(29) = temp(29) + s5  * am6  * tmp !H_xyzz
 
-                   thermo%temp(30) = thermo%temp(30) + s6  * am6  * tmp !H_xzzz
+                   temp(30) = temp(30) + s6  * am6  * tmp !H_xzzz
 
-                   thermo%temp(31) = thermo%temp(31) + s7  * am3  * tmp !H_yyyy
-                   thermo%temp(32) = thermo%temp(32) + s7  * am6  * tmp !H_yyyz
+                   temp(31) = temp(31) + s7  * am3  * tmp !H_yyyy
+                   temp(32) = temp(32) + s7  * am6  * tmp !H_yyyz
 
-                   thermo%temp(33) = thermo%temp(33) + s8  * am6  * tmp !H_yyzz
+                   temp(33) = temp(33) + s8  * am6  * tmp !H_yyzz
 
-                   thermo%temp(34) = thermo%temp(34) + s9  * am6  * tmp !H_yzzz
+                   temp(34) = temp(34) + s9  * am6  * tmp !H_yzzz
 
-                   thermo%temp(35) = thermo%temp(35) + s10 * am6  * tmp !H_zzzz
+                   temp(35) = temp(35) + s10 * am6  * tmp !H_zzzz
                 End Do
              End Do
           End Do
@@ -5728,16 +5728,16 @@ Module mpoles_container
   ! Account for permutations of H_xxxy, H_xxxz, H_xxyy, H_xxyz,
   ! H_xxzz, H_xyyy, H_xyyz, H_xyzz, H_xzzz, H_yyyz, H_yyzz, H_yzzz
 
-       thermo%temp(22) =  4.0_wp * thermo%temp(22) ; thermo%temp(23) =  4.0_wp * thermo%temp(23)
-       thermo%temp(24) =  6.0_wp * thermo%temp(24) ; thermo%temp(25) = 12.0_wp * thermo%temp(25)
-       thermo%temp(26) =  6.0_wp * thermo%temp(26) ; thermo%temp(27) =  4.0_wp * thermo%temp(27)
-       thermo%temp(28) = 12.0_wp * thermo%temp(28) ; thermo%temp(29) = 12.0_wp * thermo%temp(29)
-       thermo%temp(30) =  4.0_wp * thermo%temp(30) ; thermo%temp(32) =  4.0_wp * thermo%temp(32)
-       thermo%temp(33) =  6.0_wp * thermo%temp(33) ; thermo%temp(34) =  4.0_wp * thermo%temp(34)
+       temp(22) =  4.0_wp * temp(22) ; temp(23) =  4.0_wp * temp(23)
+       temp(24) =  6.0_wp * temp(24) ; temp(25) = 12.0_wp * temp(25)
+       temp(26) =  6.0_wp * temp(26) ; temp(27) =  4.0_wp * temp(27)
+       temp(28) = 12.0_wp * temp(28) ; temp(29) = 12.0_wp * temp(29)
+       temp(30) =  4.0_wp * temp(30) ; temp(32) =  4.0_wp * temp(32)
+       temp(33) =  6.0_wp * temp(33) ; temp(34) =  4.0_wp * temp(34)
 
     End If
 
-    mplgfr(:,iatm) = thermo%temp
+    mplgfr(:,iatm) = temp
 
   ! Find infinitesimal rotation of global multipoles
   !==================================================
@@ -5777,7 +5777,7 @@ Module mpoles_container
 
     Integer          :: i,j,k,m,n,ll
     Real( Kind = wp) :: uni(1:9),irotdir(1:9,1:3),irot(1:9), &
-                        mpole(1:mximpl),thermo%temp(1:mximpl)
+                        mpole(1:mximpl),temp(1:mximpl)
     Real( Kind = wp) :: tmp,ai,ai3,ai6,aj3,aj6,ak3,ak6,am3,am6,           &
                         bi,bi3,bi6,bj3,bj6,bk3,bk6,bm3,bm6,               &
                         t1,t2,t3,t4,t5,t6,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10, &
@@ -5799,17 +5799,17 @@ Module mpoles_container
 
        irot = irotdir(:,ll)
 
-       thermo%temp=0.0_wp
+       temp=0.0_wp
 
-  ! infinitesimal rotation has no effect on charge/monopole => thermo%temp(1)=0.0_wp
+  ! infinitesimal rotation has no effect on charge/monopole => temp(1)=0.0_wp
 
        If (mxompl >= 1) Then
 
   ! rotate dipoles
 
-          thermo%temp(2) = irot(1)*mpole(2) + irot(2)*mpole(3) + irot(3)*mpole(4)
-          thermo%temp(3) = irot(4)*mpole(2) + irot(5)*mpole(3) + irot(6)*mpole(4)
-          thermo%temp(4) = irot(7)*mpole(2) + irot(8)*mpole(3) + irot(9)*mpole(4)
+          temp(2) = irot(1)*mpole(2) + irot(2)*mpole(3) + irot(3)*mpole(4)
+          temp(3) = irot(4)*mpole(2) + irot(5)*mpole(3) + irot(6)*mpole(4)
+          temp(4) = irot(7)*mpole(2) + irot(8)*mpole(3) + irot(9)*mpole(4)
 
        End If
 
@@ -5831,14 +5831,14 @@ Module mpoles_container
 
                 tmp = mpole(mplltg(k))
 
-                thermo%temp(5)  = thermo%temp(5)  + (ai  * irot(j) + bi  * uni(j)) * tmp !Q_xx
-                thermo%temp(6)  = thermo%temp(6)  + (ai  * aj3     + bi  * bj3   ) * tmp !Q_xy
-                thermo%temp(7)  = thermo%temp(7)  + (ai  * aj6     + bi  * bj6   ) * tmp !Q_xz
+                temp(5)  = temp(5)  + (ai  * irot(j) + bi  * uni(j)) * tmp !Q_xx
+                temp(6)  = temp(6)  + (ai  * aj3     + bi  * bj3   ) * tmp !Q_xy
+                temp(7)  = temp(7)  + (ai  * aj6     + bi  * bj6   ) * tmp !Q_xz
 
-                thermo%temp(8)  = thermo%temp(8)  + (ai3 * aj3     + bi3 * bj3   ) * tmp !Q_yy
-                thermo%temp(9)  = thermo%temp(9)  + (ai3 * aj6     + bi3 * bj6   ) * tmp !Q_yz
+                temp(8)  = temp(8)  + (ai3 * aj3     + bi3 * bj3   ) * tmp !Q_yy
+                temp(9)  = temp(9)  + (ai3 * aj6     + bi3 * bj6   ) * tmp !Q_yz
 
-                thermo%temp(10) = thermo%temp(10) + (ai6 * aj6     + bi6 * bj6   ) * tmp !Q_zz
+                temp(10) = temp(10) + (ai6 * aj6     + bi6 * bj6   ) * tmp !Q_zz
              End Do
           End Do
 
@@ -5874,20 +5874,20 @@ Module mpoles_container
 
                    tmp = mpole(mplltg(m))
 
-                   thermo%temp(11) = thermo%temp(11) + (t1 * irot(k) + s1 * uni(k)) * tmp !O_xxx
-                   thermo%temp(12) = thermo%temp(12) + (t1 * ak3     + s1 * bk3   ) * tmp !O_xxy
-                   thermo%temp(13) = thermo%temp(13) + (t1 * ak6     + s1 * bk6   ) * tmp !O_xxz
-                   thermo%temp(14) = thermo%temp(14) + (t2 * ak3     + s2 * bk3   ) * tmp !O_xyy
-                   thermo%temp(15) = thermo%temp(15) + (t2 * ak6     + s2 * bk6   ) * tmp !O_xyz
+                   temp(11) = temp(11) + (t1 * irot(k) + s1 * uni(k)) * tmp !O_xxx
+                   temp(12) = temp(12) + (t1 * ak3     + s1 * bk3   ) * tmp !O_xxy
+                   temp(13) = temp(13) + (t1 * ak6     + s1 * bk6   ) * tmp !O_xxz
+                   temp(14) = temp(14) + (t2 * ak3     + s2 * bk3   ) * tmp !O_xyy
+                   temp(15) = temp(15) + (t2 * ak6     + s2 * bk6   ) * tmp !O_xyz
 
-                   thermo%temp(16) = thermo%temp(16) + (t3 * ak6     + s3 * bk6   ) * tmp !O_xzz
+                   temp(16) = temp(16) + (t3 * ak6     + s3 * bk6   ) * tmp !O_xzz
 
-                   thermo%temp(17) = thermo%temp(17) + (t4 * ak3     + s4 * bk3   ) * tmp !O_yyy
-                   thermo%temp(18) = thermo%temp(18) + (t4 * ak6     + s4 * bk6   ) * tmp !O_yyz
+                   temp(17) = temp(17) + (t4 * ak3     + s4 * bk3   ) * tmp !O_yyy
+                   temp(18) = temp(18) + (t4 * ak6     + s4 * bk6   ) * tmp !O_yyz
 
-                   thermo%temp(19) = thermo%temp(19) + (t5 * ak6     + s5 * bk6   ) * tmp !O_yzz
+                   temp(19) = temp(19) + (t5 * ak6     + s5 * bk6   ) * tmp !O_yzz
 
-                   thermo%temp(20) = thermo%temp(20) + (t6 * ak6     + s6 * bk6   ) * tmp !O_zzz
+                   temp(20) = temp(20) + (t6 * ak6     + s6 * bk6   ) * tmp !O_zzz
                 End Do
              End Do
           End Do
@@ -5942,30 +5942,30 @@ Module mpoles_container
 
                       tmp = mpole(mplltg(n))
 
-                      thermo%temp(21) = thermo%temp(21) + (s1  * irot(m) + r1  * uni(m)) * tmp !H_xxxx
-                      thermo%temp(22) = thermo%temp(22) + (s1  * am3     + r1  * bm3   ) * tmp !H_xxxy
-                      thermo%temp(23) = thermo%temp(23) + (s1  * am6     + r1  * bm6   ) * tmp !H_xxxz
+                      temp(21) = temp(21) + (s1  * irot(m) + r1  * uni(m)) * tmp !H_xxxx
+                      temp(22) = temp(22) + (s1  * am3     + r1  * bm3   ) * tmp !H_xxxy
+                      temp(23) = temp(23) + (s1  * am6     + r1  * bm6   ) * tmp !H_xxxz
 
-                      thermo%temp(24) = thermo%temp(24) + (s2  * am3     + r2  * bm3   ) * tmp !H_xxyy
-                      thermo%temp(25) = thermo%temp(25) + (s2  * am6     + r2  * bm6   ) * tmp !H_xxyz
+                      temp(24) = temp(24) + (s2  * am3     + r2  * bm3   ) * tmp !H_xxyy
+                      temp(25) = temp(25) + (s2  * am6     + r2  * bm6   ) * tmp !H_xxyz
 
-                      thermo%temp(26) = thermo%temp(26) + (s3  * am6     + r3  * bm6   ) * tmp !H_xxzz
+                      temp(26) = temp(26) + (s3  * am6     + r3  * bm6   ) * tmp !H_xxzz
 
-                      thermo%temp(27) = thermo%temp(27) + (s4  * am3     + r4  * bm3   ) * tmp !H_xyyy
-                      thermo%temp(28) = thermo%temp(28) + (s4  * am6     + r4  * bm6   ) * tmp !H_xyyz
+                      temp(27) = temp(27) + (s4  * am3     + r4  * bm3   ) * tmp !H_xyyy
+                      temp(28) = temp(28) + (s4  * am6     + r4  * bm6   ) * tmp !H_xyyz
 
-                      thermo%temp(29) = thermo%temp(29) + (s5  * am6     + r5  * bm6   ) * tmp !H_xyzz
+                      temp(29) = temp(29) + (s5  * am6     + r5  * bm6   ) * tmp !H_xyzz
 
-                      thermo%temp(30) = thermo%temp(30) + (s6  * am6     + r6  * bm6   ) * tmp !H_xzzz
+                      temp(30) = temp(30) + (s6  * am6     + r6  * bm6   ) * tmp !H_xzzz
 
-                      thermo%temp(31) = thermo%temp(31) + (s7  * am3     + r7  * bm3   ) * tmp !H_yyyy
-                      thermo%temp(32) = thermo%temp(32) + (s7  * am6     + r7  * bm6   ) * tmp !H_yyyz
+                      temp(31) = temp(31) + (s7  * am3     + r7  * bm3   ) * tmp !H_yyyy
+                      temp(32) = temp(32) + (s7  * am6     + r7  * bm6   ) * tmp !H_yyyz
 
-                      thermo%temp(33) = thermo%temp(33) + (s8  * am6     + r8  * bm6   ) * tmp !H_yyzz
+                      temp(33) = temp(33) + (s8  * am6     + r8  * bm6   ) * tmp !H_yyzz
 
-                      thermo%temp(34) = thermo%temp(34) + (s9  * am6     + r9  * bm6   ) * tmp !H_yzzz
+                      temp(34) = temp(34) + (s9  * am6     + r9  * bm6   ) * tmp !H_yzzz
 
-                      thermo%temp(35) = thermo%temp(35) + (s10 * am6     + r10 * bm6   ) * tmp !H_zzzz
+                      temp(35) = temp(35) + (s10 * am6     + r10 * bm6   ) * tmp !H_zzzz
                    End Do
                 End Do
              End Do
@@ -5973,9 +5973,9 @@ Module mpoles_container
 
        End If
 
-       If (ll == 1) mprotx(:,iatm) = thermo%temp
-       If (ll == 2) mproty(:,iatm) = thermo%temp
-       If (ll == 3) mprotz(:,iatm) = thermo%temp
+       If (ll == 1) mprotx(:,iatm) = temp
+       If (ll == 2) mproty(:,iatm) = temp
+       If (ll == 3) mprotz(:,iatm) = temp
 
     End Do
 

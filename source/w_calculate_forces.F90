@@ -106,8 +106,8 @@
 
      If (thermo%l_pseudo) Then
            Call pseudo_vv                               &
-           (0,keyshl,keyens,thermo%key_pseudo,thermo%width_pseudo,thermo%temp_pseudo,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot,comm)
+           (0,keyshl,keyens,tstep, &
+           nstep,strkin,strknf,strknt,engke,engrot,thermo,comm)
      End If
 
 ! Cap forces in equilibration mode

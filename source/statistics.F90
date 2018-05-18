@@ -42,6 +42,7 @@ Module statistics
   Use inversions,  Only : inversions_compute
   Use errors_warnings, Only : error,warning,info
   Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
+  Use thermostat, Only : thermostat_type
 
   Implicit None
 
@@ -129,7 +130,7 @@ Contains
 
   Subroutine statistics_collect             &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,thermo%iso,intsta,      &
+           keyres,keyens,intsta,      &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -141,9 +142,9 @@ Contains
            engbnd,virbnd,engang,virang,   &
            engdih,virdih,enginv,virinv,   &
            engke,engrot,consv,vircom,     &
-           strtot,thermo%press,thermo%stress,           &
+           strtot,           &
            stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,comm,virdpd)
+           stptmp,stpprs,stpvol,thermo,comm,virdpd)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -159,7 +160,7 @@ Contains
 
   Logical,           Intent( In    ) :: lsim,leql,lzdn
   Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
-                                        keyens,thermo%iso,intsta,nstep
+                                        keyens,intsta,nstep
 
   Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
 
@@ -173,11 +174,12 @@ Contains
                                         engbnd,virbnd,engang,virang, &
                                         engdih,virdih,enginv,virinv, &
                                         engke,engrot,consv,vircom,   &
-                                        strtot(1:9),thermo%press,thermo%stress(1:9)
+                                        strtot(1:9)
 
   Real( Kind = wp ), Intent( InOut ) :: tmst
   Real( Kind = wp ), Intent(   Out ) :: stpeng,stpvir,stpcfg,stpeth, &
                                         stptmp,stpprs,stpvol
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In ) :: virdpd
 
@@ -1301,8 +1303,8 @@ End Subroutine statistics_connect_spread
 
 Subroutine statistics_result                                    &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
-           nstrun,keyens,keyshl,megcon,megpmf,thermo%iso,              &
-           thermo%press,thermo%stress,nstep,tstep,time,tmst,comm,passmin)
+           nstrun,keyens,keyshl,megcon,megpmf,              &
+           nstep,tstep,time,tmst,thermo,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1316,13 +1318,14 @@ Subroutine statistics_result                                    &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf
-  Integer,           Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,thermo%iso,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,thermo%press,thermo%stress(1:9),tstep,time,tmst
+  Integer,           Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,nstep
+  Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
   Logical           :: check
   Integer           :: i,iadd
-  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,thermo%temp
+  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,temp
   Character( Len = 256 ) :: message
   Character( Len = 256 ), Dimension(5) :: messages
 
@@ -1490,7 +1493,7 @@ Subroutine statistics_result                                    &
   Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
    'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
   Write(messages(4), '(5x,a8,6x,a6,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
-    'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','thermo%press'
+    'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
   Write(messages(5),'(a)') Repeat('-',130)
   Call info(messages,5,.true.)
 
@@ -1657,23 +1660,23 @@ Subroutine statistics_result                                    &
      dens(i)=dens(i)*(volm/avvol)
   End Do
 
-! volm and cell become the averaged ones, as is the local thermo%temp
+! volm and cell become the averaged ones, as is the local temp
 
   volm = avvol
   cell = avcel
-  thermo%temp = sumval(2)
+  temp = sumval(2)
 
 ! calculate and print radial distribution functions
 
 !If block average errors, output that, else if jackknife errors output those, else just RDF.
   If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_block) Then
-    Call calculate_errors(thermo%temp, rcut, nstep, comm)
+    Call calculate_errors(temp, rcut, nstep, comm)
   End If
   If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) Then
-    Call calculate_errors_jackknife(thermo%temp, rcut, nstep, comm)
+    Call calculate_errors_jackknife(temp, rcut, nstep, comm)
   End If
   If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_errors_block .or. l_errors_jack)) Then
-    Call rdf_compute(lpana,rcut,thermo%temp,comm)
+    Call rdf_compute(lpana,rcut,temp,comm)
   End IF
   If (ncfusr > 0) Call usr_compute(comm)
 
@@ -1689,10 +1692,10 @@ Subroutine statistics_result                                    &
 
 ! Calculate and print PDFs
   If (lpana) Then
-     If (mxgbnd1 > 0 .and. ncfbnd > 0) Call bonds_compute(thermo%temp,comm)
-     If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(thermo%temp,comm)
-     If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(thermo%temp,comm)
-     If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(thermo%temp,comm)
+     If (mxgbnd1 > 0 .and. ncfbnd > 0) Call bonds_compute(temp,comm)
+     If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(temp,comm)
+     If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp,comm)
+     If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp,comm)
   End If
 
 20 Continue

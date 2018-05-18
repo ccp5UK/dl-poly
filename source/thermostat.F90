@@ -19,7 +19,7 @@ Module thermostat
     Real( Kind = wp ) :: tau_p
 
     !> Surface tensionsionsion
-    Real( Kind = wp ) :: tensionsionsion
+    Real( Kind = wp ) :: tension
 
     !> Constraint type for anisotropic barostats
     Integer :: iso
@@ -28,7 +28,7 @@ Module thermostat
     Real( Kind = wp ) :: soft
 
     !> Langevin switch
-    Logical :: l_langevingevingevin
+    Logical :: l_langevin
 
     !> Gentle Stochastic dynamics (Langevin) thermostat friction
     Real( Kind = wp ) :: gama

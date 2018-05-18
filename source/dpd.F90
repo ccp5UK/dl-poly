@@ -23,21 +23,21 @@ Module dpd
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error, warning
   Use numerics,        Only : box_mueller_saru2
+  Use thermostat, Only : thermostat_type
 
   Implicit None
-
-  Integer,           Save :: thermo%key_dpd = 0 ! no DPD
 
   Real( Kind = wp ), Save :: virdpd      = 0.0_wp , &
                              strdpd(1:9) = 0.0_wp
 
-  Real( Kind = wp ), Allocatable, Save :: thermo%gamdpd(:),sigdpd(:)
+  Real( Kind = wp ), Allocatable, Save :: sigdpd(:)
 
   Public :: allocate_dpd_arrays
 
 Contains
 
-  Subroutine allocate_dpd_arrays()
+  Subroutine allocate_dpd_arrays(thermo)
+    Type( thermostat_type ), Intent( InOut ) :: thermo
 
     Integer :: fail
 
@@ -53,7 +53,7 @@ Contains
 
   End Subroutine allocate_dpd_arrays
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
+  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,thermo,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -72,6 +72,7 @@ Contains
     Logical,           Intent( In    ) :: l_str
     Integer,           Intent( In    ) :: isw,nstep
     Real( Kind = wp ), Intent( In    ) :: rcut,tstep
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 

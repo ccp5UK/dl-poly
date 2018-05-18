@@ -16,6 +16,7 @@ Module nst_nose_hoover
   Use numerics,        Only : dcell, mat_mul
   Use nvt_nose_hoover, Only : nvt_h0_scl, nvt_h1_scl
   Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
 
   Implicit None
 
@@ -27,15 +28,15 @@ Contains
 
   Subroutine nst_h0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,thermo%tau_t,chit,cint,              &
-             thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
-             degfre,thermo%iso,thermo%tension,stress,             &
+             sigma,chit,cint,              &
+             chip,eta,        &
+             degfre,stress,             &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -73,16 +74,14 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t
+    Real( Kind = wp ), Intent( In    ) :: sigma
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
-    Real( Kind = wp ), Intent( In    ) :: thermo%press,thermo%stress(1:9),thermo%tau_p
     Real( Kind = wp ), Intent(   Out ) :: chip
     Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),  Intent( In    ) :: degfre
-    Integer,           Intent( In    ) :: thermo%iso
-    Real( Kind = wp ), Intent( In    ) :: thermo%tension,stress(1:9)
+    Real( Kind = wp ), Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ), Intent(   Out ) :: consv
 
@@ -95,6 +94,7 @@ Contains
                                           strpmf(1:9),virpmf
 
     Real( Kind = wp ), Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -305,9 +305,9 @@ Contains
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
           Call nst_h0_scl &
-             (0,hstep,degfre,pmass,chit,volm,thermo%press, &
-             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,         &
-             vxx,vyy,vzz,eta,strkin,engke,comm)
+             (0,hstep,degfre,pmass,chit,volm, &
+             h_z,str,stress,         &
+             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -626,9 +626,9 @@ Contains
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
        Call nst_h0_scl &
-             (0,hstep,degfre,pmass,chit,volm,thermo%press, &
-             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,         &
-             vxx,vyy,vzz,eta,strkin,engke,comm)
+             (0,hstep,degfre,pmass,chit,volm, &
+             h_z,str,stress,         &
+             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -687,16 +687,16 @@ Contains
 
   Subroutine nst_h1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,thermo%tau_t,chit,cint,              &
-             thermo%press,thermo%stress,thermo%tau_p,chip,eta,        &
-             degfre,degrot,thermo%iso,thermo%tension,stress,      &
+             sigma,chit,cint,              &
+             chip,eta,        &
+             degfre,degrot,stress,      &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -735,16 +735,14 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,thermo%tau_t
+    Real( Kind = wp ), Intent( In    ) :: sigma
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
-    Real( Kind = wp ), Intent( In    ) :: thermo%press,thermo%stress(1:9),thermo%tau_p
     Real( Kind = wp ), Intent(   Out ) :: chip
     Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),  Intent( In    ) :: degfre,degrot
-    Integer,           Intent( In    ) :: thermo%iso
-    Real( Kind = wp ), Intent( In    ) :: thermo%tension,stress(1:9)
+    Real( Kind = wp ), Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ), Intent(   Out ) :: consv
 
@@ -760,6 +758,7 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ), Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -1049,9 +1048,9 @@ Contains
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
           Call nst_h1_scl &
-             (0,hstep,degfre,degrot,pmass,chit,volm,thermo%press, &
-             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,strcom,         &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
+             (0,hstep,degfre,degrot,pmass,chit,volm, &
+             h_z,str,stress,strcom,         &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -1756,9 +1755,9 @@ Contains
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
        Call nst_h1_scl &
-             (0,hstep,degfre,degrot,pmass,chit,volm,thermo%press, &
-             thermo%iso,thermo%tension,h_z,thermo%stress,str,stress,strcom,         &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
+             (0,hstep,degfre,degrot,pmass,chit,volm, &
+             h_z,str,stress,strcom,         &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
 
   ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
 
@@ -1850,9 +1849,9 @@ Contains
   End Subroutine nst_h1_vv
 
   Subroutine nst_h0_scl &
-             (sw,tstep,degfre,pmass,chit,volm,thermo%press, &
-             thermo%iso,thermo%tension,h_z,thermo%stress,strcon,stress,       &
-             vxx,vyy,vzz,eta,strkin,engke,comm)
+             (sw,tstep,degfre,pmass,chit,volm, &
+             h_z,strcon,stress,       &
+             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1878,15 +1877,16 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: sw,thermo%iso
+    Integer,           Intent( In    ) :: sw
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,thermo%press,thermo%tension,h_z
-    Real( Kind = wp ), Intent( In    ) :: thermo%stress(1:9),strcon(1:9),stress(1:9)
+    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,h_z
+    Real( Kind = wp ), Intent( In    ) :: strcon(1:9),stress(1:9)
     Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
     Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
     Real( Kind = wp ), Intent(   Out ) :: strkin(1:9)
     Real( Kind = wp ), Intent(   Out ) :: engke
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -1943,15 +1943,18 @@ Contains
        eta=eta + hstep*(strcon+stress+strkin + factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
        If      (thermo%iso == 2) Then
-          eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
-          eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
+            factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
+            factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
        Else If (thermo%iso == 3) Then
           eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                        &
                  (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
                  factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
           eta(5)=eta(1)
        End If
-       eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + factor - (thermo%press+thermo%stress(9))*volm)/pmass
+       eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + &
+         factor - (thermo%press+thermo%stress(9))*volm)/pmass
     End If
 
   ! thermostat eta to 2/4*tstep
@@ -2014,15 +2017,18 @@ Contains
        eta=eta + hstep*(strcon+stress+strkin + factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
        If      (thermo%iso == 2) Then
-          eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
-          eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          eta(1)=eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
+            factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          eta(5)=eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
+            factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
        Else If (thermo%iso == 3) Then
           eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                        &
                  (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
                  factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
           eta(5)=eta(1)
        End If
-       eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + factor - (thermo%press+thermo%stress(9))*volm)/pmass
+       eta(9)=eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + &
+         factor - (thermo%press+thermo%stress(9))*volm)/pmass
     End If
 
   ! thermostat eta to full (4/4)*tstep
@@ -2032,9 +2038,9 @@ Contains
   End Subroutine nst_h0_scl
 
   Subroutine nst_h1_scl &
-             (sw,tstep,degfre,degrot,pmass,chit,volm,thermo%press,  &
-             thermo%iso,thermo%tension,h_z,thermo%stress,strcon,stress,strcom,        &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
+             (sw,tstep,degfre,degrot,pmass,chit,volm,  &
+             h_z,strcon,stress,strcom,        &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2060,16 +2066,17 @@ Contains
   ! contrib   - a.m.elena december 2017
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: sw,thermo%iso
+    Integer,           Intent( In    ) :: sw
     Integer(Kind=li),  Intent( In    ) :: degfre,degrot
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,thermo%press,thermo%tension,h_z
-    Real( Kind = wp ), Intent( In    ) :: thermo%stress(1:9),strcon(1:9),stress(1:9),strcom(1:9)
+    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,h_z
+    Real( Kind = wp ), Intent( In    ) :: strcon(1:9),stress(1:9),strcom(1:9)
     Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
     Real( Kind = wp ), Intent( InOut ) :: rgdvxx(1:mxrgd),rgdvyy(1:mxrgd),rgdvzz(1:mxrgd)
     Real( Kind = wp ), Intent( InOut ) :: eta(1:9)
     Real( Kind = wp ), Intent(   Out ) :: strkin(1:9),strknf(1:9),strknt(1:9)
     Real( Kind = wp ), Intent(   Out ) :: engke
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -2131,15 +2138,18 @@ Contains
        eta=eta + hstep*(strcom+strcon+stress+strkin + factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
        If      (thermo%iso == 2) Then
-          eta(1)=eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
-          eta(5)=eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          eta(1)=eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
+            factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          eta(5)=eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
+            factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
        Else If (thermo%iso == 3) Then
           eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                                            &
                  (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
                  factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
           eta(5)=eta(1)
        End If
-       eta(9)=eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + factor - (thermo%press+thermo%stress(9))*volm)/pmass
+       eta(9)=eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + &
+         factor - (thermo%press+thermo%stress(9))*volm)/pmass
     End If
 
   ! thermostat eta to 2/4*tstep
@@ -2217,15 +2227,18 @@ Contains
        eta=eta + hstep*(strcom+strcon+stress+strkin + factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
        If      (thermo%iso == 2) Then
-          eta(1)=eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
-          eta(5)=eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          eta(1)=eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
+            factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          eta(5)=eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
+            factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
        Else If (thermo%iso == 3) Then
           eta(1)=0.5_wp*(eta(1)+eta(5)) + hstep*( 0.5_wp*                                            &
                  (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
                  factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
           eta(5)=eta(1)
        End If
-       eta(9)=eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + factor - (thermo%press+thermo%stress(9))*volm)/pmass
+       eta(9)=eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + &
+         factor - (thermo%press+thermo%stress(9))*volm)/pmass
     End If
 
   ! thermostat eta to full (4/4)*tstep

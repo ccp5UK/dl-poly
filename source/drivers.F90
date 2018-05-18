@@ -22,6 +22,7 @@ Module drivers
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
   Use rigid_bodies, Only : getrotmat
+  Use thermostat, Only : thermostat_type
   Implicit None
   Private
   Public :: w_impact_option
@@ -129,8 +130,8 @@ Module drivers
 !  End Subroutine w_replay_historf
 
 Subroutine pseudo_vv                                      &
-           (isw,keyshl,keyens,thermo%key_pseudo,thermo%width_pseudo,thermo%temp_pseudo,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot,comm)
+           (isw,keyshl,keyens,tstep, &
+           nstep,strkin,strknf,strknt,engke,engrot,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -152,10 +153,11 @@ Subroutine pseudo_vv                                      &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: isw,keyshl,keyens,thermo%key_pseudo,nstep
-  Real( Kind = wp ), Intent( In    ) :: tstep,thermo%width_pseudo,thermo%temp_pseudo
+  Integer,           Intent( In    ) :: isw,keyshl,keyens,nstep
+  Real( Kind = wp ), Intent( In    ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.

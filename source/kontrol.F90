@@ -3,8 +3,7 @@ Module kontrol
   Use comms,      Only : comms_type,gcheck
   Use configuration,     Only : sysname
   Use mpole,     Only : thole
-  Use dpd,        Only : thermo%key_dpd,thermo%gamdpd
-  Use langevin,   Only : thermo%l_langevin,langevin_allocate_arrays
+  Use langevin,   Only : langevin_allocate_arrays
   Use bonds,      Only : rcbnd
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : ld_met,ls_met,tabmet
@@ -42,8 +41,9 @@ Module kontrol
                             IO_WRITE_SORTED_DIRECT,   &
                             IO_WRITE_SORTED_NETCDF,   &
                             IO_WRITE_SORTED_MASTER
-  
   Use numerics, Only : dcell, invert
+  Use thermostat, Only : thermostat_type
+
   Implicit None
   Private
   Public :: read_control
@@ -58,23 +58,22 @@ Module kontrol
 Subroutine read_control                                &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
            rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
-           l_exp,lecx,lfcap,l_top,thermo%l_zero,lmin,          &
-           thermo%l_tgaus,thermo%l_tscale,lvar,leql,thermo%l_pseudo,               &
+           l_exp,lecx,lfcap,l_top,lmin,          &
+           lvar,leql,               &
            lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
            lvafav,lpvaf,ltraj,ldef,lrsd,               &
            nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
-           thermo%temp,thermo%press,thermo%stress,keyres,                   &
+           keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
-           thermo%freq_zero,thermo%freq_tgaus,thermo%nstscal,                    &
-           keyens,thermo%iso,thermo%tau_t,thermo%chi,thermo%chi_ep,thermo%chi_es,thermo%soft,thermo%gama,&
-           thermo%tau_p,thermo%tai,thermo%tension,vel_es2,thermo%key_pseudo,thermo%width_pseudo,thermo%temp_pseudo,  &
+           keyens,&
+           vel_es2,  &
            fmax,nstbpo,intsta,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,timjob,timcls,comm)
+           ndump,pdplnc,timjob,timcls,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -102,9 +101,8 @@ Subroutine read_control                                &
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
                                              lfcap,l_top,           &
-                                             lmin,thermo%l_zero,            &
-                                             thermo%l_tgaus,thermo%l_tscale,         &
-                                             lvar,leql,thermo%l_pseudo,lfce,   &
+                                             lmin, &
+                                             lvar,leql,lfce,   &
                                              lpana,                 &
                                              lrdf,lprdf,lzdn,lpzdn, &
                                              lvafav,lpvaf,          &
@@ -113,11 +111,10 @@ Subroutine read_control                                &
 
   Integer,                Intent(   Out ) :: nx,ny,nz,imd,tmd,     &
                                              keyres,nstrun,        &
-                                             nsteql,thermo%freq_zero,       &
+                                             nsteql,       &
                                              keymin,nstmin,        &
-                                             thermo%freq_tgaus,thermo%nstscal,      &
-                                             keyens,thermo%iso,           &
-                                             thermo%key_pseudo,nstbpo,        &
+                                             keyens,           &
+                                             nstbpo,        &
                                              intsta,keyfce,        &
                                              mxshak,mxquat,        &
                                              nstbnd,nstang,        &
@@ -130,15 +127,14 @@ Subroutine read_control                                &
                                              ndump
 
   Real( Kind = wp ),      Intent(   Out ) :: emd,vmx,vmy,vmz,            &
-                                             thermo%temp,thermo%press,thermo%stress(1:9),     &
                                              tstep,mndis,mxdis,mxstp,    &
-                                             thermo%tau_t,thermo%chi,thermo%chi_ep,thermo%chi_es,thermo%soft,&
-                                             thermo%gama,thermo%tau_p,thermo%tai,thermo%tension,vel_es2,  &
-                                             thermo%width_pseudo,thermo%temp_pseudo,min_tol(1:2), &
+                                             vel_es2,  &
+                                             min_tol(1:2), &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
                                              rdef,rrsd,pdplnc,           &
                                              timjob,timcls
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( comms_type ),     Intent( InOut )  :: comm
 
 
@@ -253,7 +249,7 @@ Subroutine read_control                                &
 ! steps when to be applied
 
   thermo%l_tscale  = .false.
-  thermo%nstscal = 0
+  thermo%freq_tscale = 0
 
 ! default switch for zero temperature optimisation and default number of
 ! steps when to be applied
@@ -1104,11 +1100,11 @@ Subroutine read_control                                &
         Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record,word)
         If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record,word)
-        thermo%nstscal = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
+        thermo%freq_tscale = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         thermo%l_tscale =.true.
         Call info('temperature scaling on (during equilibration)',.true.)
-        Write(message,'(a,i10)') 'temperature scaling interval ',thermo%nstscal
+        Write(message,'(a,i10)') 'temperature scaling interval ',thermo%freq_tscale
         Call info(message,.true.)
 
 ! read polarisation option
@@ -2967,7 +2963,7 @@ Subroutine read_control                                &
   If (nstmin  == 0) nstmin  = nsteql+1
   If (thermo%freq_zero == 0) thermo%freq_zero = nsteql+1
   If (thermo%freq_tgaus == 0) thermo%freq_tgaus = nsteql+1
-  If (thermo%nstscal == 0) thermo%nstscal = nsteql+1
+  If (thermo%freq_tscale == 0) thermo%freq_tscale = nsteql+1
 
 !!! REPORTS !!!
 ! report restart
@@ -3604,7 +3600,7 @@ Subroutine scan_control                                    &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3631,6 +3627,7 @@ Subroutine scan_control                                    &
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: rvdw,rmet,rcbnd,cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &

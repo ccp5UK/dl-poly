@@ -245,7 +245,7 @@ program dl_poly
 
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
-  Type(themorstat_type) :: thermo
+  Type(thermostat_type) :: thermo
   Type(ewald_type) :: ewld
 
   Character( Len = 256 ) :: message,messages(5)
@@ -315,7 +315,7 @@ program dl_poly
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,comm)
+    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,thermo,comm)
 
   Call gtime(timelp)
   Call info('',.true.)
@@ -329,7 +329,7 @@ program dl_poly
 
   ! ALLOCATE DPD ARRAYS
 
-  Call allocate_dpd_arrays()
+  Call allocate_dpd_arrays(thermo)
 
   ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
 
@@ -376,35 +376,34 @@ program dl_poly
   Call read_control                                    &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
     rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
-    l_exp,lecx,lfcap,l_top,thermo%l_zero,lmin,          &
-    thermo%l_tgaus,thermo%l_tscale,lvar,leql,thermo%l_pseudo,               &
+    l_exp,lecx,lfcap,l_top,lmin,          &
+    lvar,leql,               &
     lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
     lvafav,lpvaf,ltraj,ldef,lrsd,               &
     nx,ny,nz,imd,tmd,emd,vmx,vmy,vmz,           &
-    thermo%temp,thermo%press,thermo%stress,keyres,                   &
+    keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     keymin,nstmin,min_tol,                      &
-    thermo%freq_zero,thermo%freq_tgaus,thermo%nstscal,                    &
-    keyens,thermo%iso,thermo%tau_t,thermo%chi,thermo%chi_ep,thermo%chi_es,thermo%soft,thermo%gama,&
-    thermo%tau_p,thermo%tai,thermo%tension,vel_es2,thermo%key_pseudo,thermo%width_pseudo,thermo%temp_pseudo,  &
+    keyens,&
+    vel_es2,  &
     fmax,nstbpo,intsta,keyfce,epsq,             &
     rlx_tol,mxshak,tolnce,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstmsd,istmsd,nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,timjob,timcls,comm)
+    ndump,pdplnc,timjob,timcls,thermo,comm)
 
   ! READ SIMULATION FORCE FIELD
 
   Call read_field                          &
     (l_str,l_top,l_n_v,             &
-    rcut,rvdw,rmet,width,thermo%temp,epsq, &
+    rcut,rvdw,rmet,width,epsq, &
     keyens,keyfce,keyshl,           &
     lecx,lbook,lexcl,               &
     rcter,rctbp,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megcon,megpmf,megrgd,    &
-    megtet,megbnd,megang,megdih,meginv,comm)
+    megtet,megbnd,megang,megdih,meginv,thermo,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -417,7 +416,7 @@ program dl_poly
 
   ! CHECK MD CONFIGURATION
 
-  Call check_config(levcfg,l_str,thermo%l_pseudo,keyens,thermo%iso,keyfce,keyres,megatm,comm)
+  Call check_config(levcfg,l_str,keyens,keyfce,keyres,megatm,thermo,comm)
 
   Call gtime(timelp)
   Call info('',.true.)
@@ -552,13 +551,13 @@ program dl_poly
   ! SET initial system temperature
 
   Call set_temperature               &
-    (levcfg,thermo%temp,keyres,      &
+    (levcfg,keyres,      &
     lmin,nstep,nstrun,nstmin, &
     mxshak,tolnce,keyshl,     &
     atmfre,atmfrz,            &
     megshl,megcon,megpmf,     &
     megrgd,degtra,degrot,     &
-    degfre,degshl,sigma,engrot,comm)
+    degfre,degshl,sigma,engrot,thermo,comm)
 
   Call gtime(timelp)
   Call info('',.true.)
@@ -754,7 +753,7 @@ program dl_poly
   ! (final)
 
   If (l_ttm) Then
-    Call ttm_ion_temperature (thermo%chi_ep,thermo%chi_es,vel_es2,comm)
+    Call ttm_ion_temperature (vel_es2,thermo,comm)
     Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep, ttmstats,comm)
     Call peakProfilerElec('LATS_E', nstep, ttmtraj,comm)
     Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats,comm)
@@ -774,8 +773,8 @@ program dl_poly
 
   Call statistics_result                                        &
     (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
-    nstrun,keyens,keyshl,megcon,megpmf,thermo%iso,              &
-    thermo%press,thermo%stress,nstep,tstep,time,tmst,comm,passmin)
+    nstrun,keyens,keyshl,megcon,megpmf,              &
+    nstep,tstep,time,tmst,thermo,comm,passmin)
 
   10 Continue
 

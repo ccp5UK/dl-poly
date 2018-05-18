@@ -20,6 +20,7 @@ Module bounds
   Use ffield,          Only : scan_field
   Use errors_warnings, Only : error,warning,info
   Use parallel_fft,    Only : adjust_kmax
+  Use thermostat, Only : thermostat_type
 
   Implicit None
   Private
@@ -29,7 +30,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce, &
-           alpha,width,comm)
+           alpha,width,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -48,6 +49,7 @@ Subroutine set_bounds                                 &
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -106,7 +108,7 @@ Subroutine set_bounds                                 &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)

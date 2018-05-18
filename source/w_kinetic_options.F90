@@ -9,8 +9,8 @@
 
         If (thermo%l_pseudo) Then
               Call pseudo_vv                            &
-           (1,keyshl,keyens,thermo%key_pseudo,thermo%width_pseudo,thermo%temp_pseudo,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot,comm)
+           (1,keyshl,keyens,tstep, &
+           nstep,strkin,strknf,strknt,engke,engrot,thermo,comm)
         End If
 
 ! Apply temperature regaussing
@@ -60,7 +60,7 @@
 
 ! Apply temperature scaling
 
-        If (thermo%l_tscale .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%nstscal) == 0) Then
+        If (thermo%l_tscale .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_tscale) == 0) Then
            chit = 0.0_wp
            chip = 0.0_wp
            eta  = 0.0_wp

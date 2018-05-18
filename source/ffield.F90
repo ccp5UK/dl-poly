@@ -16,7 +16,7 @@ Module ffield
 
 ! DPD module
 
-  Use dpd,    Only : thermo%key_dpd,thermo%gamdpd,sigdpd
+  Use dpd,    Only : sigdpd
 
 ! INTERACTION MODULES
 
@@ -55,6 +55,7 @@ Module ffield
 
   Use numerics, Only : factorial, shellsort
   Use errors_warnings, Only : error,warning,info
+  Use thermostat, Only : thermostat_type
 
   Implicit None
 
@@ -66,14 +67,14 @@ Module ffield
 Contains
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
-           rcut,rvdw,rmet,width,thermo%temp,epsq, &
+           rcut,rvdw,rmet,width,epsq, &
            keyens,keyfce,keyshl,           &
            lecx,lbook,lexcl,               &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
            megtet,megbnd,megang,megdih,    &
-           meginv,comm)
+           meginv,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -100,7 +101,7 @@ Subroutine read_field                      &
   Logical,           Intent( In    ) :: l_str,l_top,l_n_v
   Integer,           Intent( In    ) :: keyens
   Integer,           Intent( InOut ) :: keyfce
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,thermo%temp,epsq
+  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,epsq
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
@@ -109,6 +110,7 @@ Subroutine read_field                      &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megcon,megpmf,megrgd,        &
                                         megtet,megbnd,megang,megdih,meginv
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -3682,10 +3684,12 @@ Subroutine read_field                      &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*(del(1)+del(2))
 
-                                If (thermo%key_dpd > 0) Then
-                                   If (thermo%gamdpd(isite)+thermo%gamdpd(jsite) > zero_plus) &
-                                thermo%gamdpd(ksite) = 2.0_wp*thermo%gamdpd(isite)*thermo%gamdpd(jsite) / (thermo%gamdpd(isite)+thermo%gamdpd(jsite))
-                                End If
+                              If (thermo%key_dpd > 0) Then
+                                If (thermo%gamdpd(isite)+thermo%gamdpd(jsite) > zero_plus) &
+                                  thermo%gamdpd(ksite) = &
+                                  2.0_wp*thermo%gamdpd(isite)*thermo%gamdpd(jsite) / &
+                                  (thermo%gamdpd(isite)+thermo%gamdpd(jsite))
+                              End If
 
                              Else If (mxtvdw == 3) Then
 
@@ -3712,12 +3716,15 @@ Subroutine read_field                      &
                                 If (Any(del > zero_plus)) &
                                 del(0) = (del(1)**3+del(2)**3) / (del(1)**2+del(2)**2)
 
-                                If (thermo%key_dpd > 0) Then
-                                   If (thermo%gamdpd(isite) >= zero_plus .and. thermo%gamdpd(jsite) >= zero_plus) Then
-                                      If (Sqrt(thermo%gamdpd(isite))+Sqrt(thermo%gamdpd(jsite)) > zero_plus) &
-                                thermo%gamdpd(ksite) = 4.0_wp*thermo%gamdpd(isite)*thermo%gamdpd(jsite) / (Sqrt(thermo%gamdpd(isite))+Sqrt(thermo%gamdpd(jsite)))**2
-                                   End If
+                              If (thermo%key_dpd > 0) Then
+                                If (thermo%gamdpd(isite) >= zero_plus .and. thermo%gamdpd(jsite) >= zero_plus) Then
+                                  If (Sqrt(thermo%gamdpd(isite))+Sqrt(thermo%gamdpd(jsite)) > zero_plus) Then
+                                    thermo%gamdpd(ksite) = &
+                                      4.0_wp*thermo%gamdpd(isite)*thermo%gamdpd(jsite) / &
+                                      (Sqrt(thermo%gamdpd(isite))+Sqrt(thermo%gamdpd(jsite)))**2
+                                  End If
                                 End If
+                              End If
 
                              Else If (mxtvdw == 5) Then
 
