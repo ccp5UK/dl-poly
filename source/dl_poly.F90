@@ -164,7 +164,7 @@ Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
 Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
 Use nve, Only : nve_0_vv, nve_1_vv 
     ! MAIN PROGRAM VARIABLES
-
+  Use timer, Only  : timer_type, time_elapsed,timer_report
   Implicit None
 
   ! newjob used for trajectory_write &
@@ -222,7 +222,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
   ! elrcm,vlrcm - metal energy and virial are array-like and in metal_module
 
   Real( Kind = wp ) :: tsths,                                     &
-    timelp,timjob,timcls,tstep,time,tmst,      &
+    tstep,time,tmst,      &
     dvar,rcut,rpad,rlnk,                       &
     rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
     alpha,epsq,fmax,                           &
@@ -249,6 +249,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(ewald_type) :: ewld
+  Type(timer_type) :: tmr
 
   Type(impact_type) :: imptyp
 
@@ -267,7 +268,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
   Call init_error_system(nrite,dlp_world(0))
   comm=dlp_world(0) ! this shall vanish asap w_ are proper things
   If (dlp_world(0)%mxnode > 1) Call gsync(dlp_world(0))
-  Call gtime(timelp)
+  Call gtime(tmr%elapsed)
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() == 1 ) Then
       Call get_command_argument(1, control)
@@ -321,10 +322,10 @@ Use nve, Only : nve_0_vv, nve_1_vv
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,comm)
 
-  Call gtime(timelp)
+  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
-  Call time_elapsed(timelp)
+  Call time_elapsed(tmr%elapsed)
 
   ! ALLOCATE SITE & CONFIG
 
@@ -396,7 +397,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstmsd,istmsd,nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,timjob,timcls,comm)
+    ndump,pdplnc,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -423,43 +424,43 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Call check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
 
-  Call gtime(timelp)
+  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** all reading and connectivity checks DONE ***",.true.)
-  Call time_elapsed(timelp)
+  Call time_elapsed(tmr%elapsed)
 
   ! l_org: translate CONFIG into CFGORG and exit gracefully
 
   If (l_org) Then
-    Call gtime(timelp)
+    Call gtime(tmr%elapsed)
     Call info('',.true.)
     Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
 
     Call origin_config(megatm,comm)
 
-    Call gtime(timelp)
+    Call gtime(tmr%elapsed)
     Call info("*** ALL DONE ***",.true.)
-    Call time_elapsed(timelp)
+    Call time_elapsed(tmr%elapsed)
   End If
 
   ! l_scl: rescale CONFIG to CFGSCL and exit gracefully
 
   If (l_scl) Then
-    Call gtime(timelp)
+    Call gtime(tmr%elapsed)
     Call info('',.true.)
     Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
 
     Call scale_config(megatm,comm)
 
-    Call gtime(timelp)
+    Call gtime(tmr%elapsed)
     Call info("*** ALL DONE ***",.true.)
-    Call time_elapsed(timelp)
+    Call time_elapsed(tmr%elapsed)
   End If
 
   ! l_his: generate HISTORY and exit gracefully
 
   If (l_his) Then
-    Call gtime(timelp)
+    Call gtime(tmr%elapsed)
     Call info('',.true.)
     Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
 
@@ -470,9 +471,9 @@ Use nve, Only : nve_0_vv, nve_1_vv
     time   = 0.0_wp                       ! time is not relevant
     Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,comm)
 
-    Call gtime(timelp)
+    Call gtime(tmr%elapsed)
     Call info("*** ALL DONE ***",.true.)
-    Call time_elapsed(timelp)
+    Call time_elapsed(tmr%elapsed)
   End If
 
   ! Expand current system if opted for
@@ -499,10 +500,10 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Call set_halo_particles(rlnk,keyfce,comm)
 
-  Call gtime(timelp)
+  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
-  Call time_elapsed(timelp)
+  Call time_elapsed(tmr%elapsed)
 
   ! For any intra-like interaction, construct book keeping arrays and
   ! exclusion arrays for overlapped two-body inter-like interactions
@@ -544,10 +545,10 @@ Use nve, Only : nve_0_vv, nve_1_vv
     End If
   End If
 
-  Call gtime(timelp)
+  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** bookkeeping DONE ***",.true.)
-  Call time_elapsed(timelp)
+  Call time_elapsed(tmr%elapsed)
 
   ! set and halo rotational matrices and their infinitesimal rotations
 
@@ -564,10 +565,10 @@ Use nve, Only : nve_0_vv, nve_1_vv
     megrgd,degtra,degrot,     &
     degfre,degshl,sigma,engrot,comm)
 
-  Call gtime(timelp)
+  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
-  Call time_elapsed(timelp)
+  Call time_elapsed(tmr%elapsed)
 
   ! Read ttm table file and initialise electronic temperature
   ! grid from any available restart file
@@ -693,8 +694,8 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! start-up time when forces are not recalculated
 
-  Call gtime(timelp)
-  Call time_elapsed(timelp)
+  Call gtime(tmr%elapsed)
+  Call time_elapsed(tmr%elapsed)
 
   ! Now you can run fast, boy
 
@@ -725,7 +726,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
   ! Report termination of the MD simulation
 
   Write(message,'(3(a,f12.3),a)') 'run terminating... elapsed  cpu time: ', &
-    timelp , ' sec, job time: ', timjob, ' sec, close time: ', timcls, ' sec'
+    tmr%elapsed , ' sec, job time: ', tmr%job, ' sec, close time: ', tmr%clear_screen, ' sec'
   Call info(message,.true.)
 
   ! Print out sample of final configuration on node zero
@@ -787,6 +788,9 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   If (l_plumed) Call plumed_finalize()
 
+#ifdef CHRONO
+  Call timer_report(tmr,comm)
+#endif
   ! Ask for reference in publications
 
   Call info('',.true.)
@@ -886,13 +890,5 @@ Contains
     Include 'w_replay_historf.F90'
   End Subroutine w_replay_historf
 
-  Subroutine time_elapsed(time)
-    Real( Kind = wp ), Intent( In    ) :: time
-
-    Character( Len = 256 ) :: message
-
-    Write(message,'(a,f12.3,a)') "time elapsed since job start: ", time, " sec"
-    Call info(message,.true.)
-  End Subroutine time_elapsed
 
 End Program dl_poly

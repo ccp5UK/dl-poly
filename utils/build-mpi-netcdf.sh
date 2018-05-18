@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
 
-module load openmpi/gcc
-module load netcdf/gcc
-
+module load gnu/7 openmpi/3.0.0 netcdf-fortran/4.4.4  pnetcdf/4.6.1 
 mkdir build-mpi-netcdf
 pushd build-mpi-netcdf
 cmake ../ -DWITH_NETCDF=ON
