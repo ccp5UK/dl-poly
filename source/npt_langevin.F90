@@ -21,6 +21,7 @@ Module npt_langevin
   Use pmf,             Only : pmf_tags, pmf_shake_vv, pmf_rattle
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h0_scl,npt_h1_scl
   Use langevin,        Only : langevin_forces
+  Use thermostat, Only : thermostat_type
 
   Implicit None
 
@@ -32,15 +33,15 @@ Contains
 
   Subroutine npt_l0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chi,                         &
-             press,tai,nstep,chip,eta,          &
+             sigma,                         &
+             nstep,chip,eta,          &
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -64,9 +65,8 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,chi
+    Real( Kind = wp ),  Intent( In    ) :: sigma
 
-    Real( Kind = wp ),  Intent( In    ) :: press,tai
     Integer,            Intent( In    ) :: nstep
     Real( Kind = wp ),  Intent( InOut ) :: chip
     Real( Kind = wp ),  Intent(   Out ) :: eta(1:9)
@@ -85,6 +85,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -167,7 +168,7 @@ Contains
   ! inertia parameter for barostat
 
        temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-       pmass = (2.0_wp*sigma + 3.0_wp*boltz*temp) / (2.0_wp*pi*tai)**2
+       pmass = (2.0_wp*sigma + 3.0_wp*boltz*temp) / (2.0_wp*pi*thermo%tai)**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -183,7 +184,7 @@ Contains
 
        fpl=0.0_wp
        Call box_mueller_saru1(Int(degfre/3_li),nstep-1,tmp)
-       tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
+       tmp=tmp*Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)/3.0_wp
        fpl(1)=tmp
        fpl(5)=tmp
        fpl(9)=tmp
@@ -249,7 +250,7 @@ Contains
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-          scale=Exp(-qstep*chi)
+          scale=Exp(-qstep*thermo%chi)
           Do i=1,natms
              vxx(i)=scale*vxx(i)
              vyy(i)=scale*vyy(i)
@@ -267,12 +268,12 @@ Contains
 
           vir1=vir-3.0_wp*fpl(1)
           Call npt_h0_scl &
-             (1,hstep,degfre,pmass,tai,volm,press,vir1,virtot, &
-             vxx,vyy,vzz,chip,engke)
+             (1,hstep,degfre,pmass,thermo%tai,volm,vir1,virtot, &
+             vxx,vyy,vzz,chip,engke,thermo)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-          scale=Exp(-qstep*chi)
+          scale=Exp(-qstep*thermo%chi)
           Do i=1,natms
              vxx(i)=scale*vxx(i)
              vyy(i)=scale*vyy(i)
@@ -537,11 +538,11 @@ Contains
   ! Generate Langevin forces for particles and
   ! Langevin pseudo-tensor force for barostat piston
 
-       Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl)
 
        fpl=0.0_wp
        Call box_mueller_saru1(Int(degfre/3_li),nstep,tmp)
-       tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
+       tmp=tmp*Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)/3.0_wp
        fpl(1)=tmp
        fpl(5)=tmp
        fpl(9)=tmp
@@ -587,7 +588,7 @@ Contains
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-       scale=Exp(-qstep*chi)
+       scale=Exp(-qstep*thermo%chi)
        Do i=1,natms
           vxx(i)=scale*vxx(i)
           vyy(i)=scale*vyy(i)
@@ -605,12 +606,12 @@ Contains
 
        vir1=vir-3.0_wp*fpl(1)
        Call npt_h0_scl &
-             (1,hstep,degfre,pmass,tai,volm,press,vir1,virtot, &
-             vxx,vyy,vzz,chip,engke)
+             (1,hstep,degfre,pmass,thermo%tai,volm,vir1,virtot, &
+             vxx,vyy,vzz,chip,engke,thermo)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-       scale=Exp(-qstep*chi)
+       scale=Exp(-qstep*thermo%chi)
        Do i=1,natms
           vxx(i)=scale*vxx(i)
           vyy(i)=scale*vyy(i)
@@ -620,7 +621,7 @@ Contains
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*pmass*chip**2 + press*volm
+       consv = 0.5_wp*pmass*chip**2 + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -673,8 +674,8 @@ Contains
 
   Subroutine npt_l1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chi,                         &
-             press,tai,nstep,chip,eta,          &
+             sigma,                         &
+             nstep,chip,eta,          &
              degfre,degrot,virtot,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
@@ -682,7 +683,7 @@ Contains
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -707,9 +708,8 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,chi
+    Real( Kind = wp ),  Intent( In    ) :: sigma
 
-    Real( Kind = wp ),  Intent( In    ) :: press,tai
     Integer,            Intent( In    ) :: nstep
     Real( Kind = wp ),  Intent( InOut ) :: chip
     Real( Kind = wp ),  Intent(   Out ) :: eta(1:9)
@@ -731,6 +731,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -837,7 +838,7 @@ Contains
   ! inertia parameter for barostat
 
        temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-       pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*temp / (2.0_wp*pi*tai)**2
+       pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*temp / (2.0_wp*pi*thermo%tai)**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -857,7 +858,7 @@ Contains
 
        fpl=0.0_wp
        Call box_mueller_saru1(Int(degfre/3_li),nstep-1,tmp)
-       tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
+       tmp=tmp*Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)/3.0_wp
        fpl(1)=tmp
        fpl(5)=tmp
        fpl(9)=tmp
@@ -984,7 +985,7 @@ Contains
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-          scale=Exp(-qstep*chi)
+          scale=Exp(-qstep*thermo%chi)
           Do j=1,nfree
              i=lstfre(j)
 
@@ -1015,12 +1016,12 @@ Contains
 
           vir1=vir-3.0_wp*fpl(1)
           Call npt_h1_scl &
-             (1,hstep,degfre,degrot,pmass,tai,volm,press,vir1,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
+             (1,hstep,degfre,degrot,pmass,thermo%tai,volm,vir1,virtot,vircom, &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke,thermo)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-          scale=Exp(-qstep*chi)
+          scale=Exp(-qstep*thermo%chi)
           Do j=1,nfree
              i=lstfre(j)
 
@@ -1559,14 +1560,14 @@ Contains
   ! Generate Langevin forces for particles and
   ! Langevin pseudo-tensor force for barostat piston
 
-       Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl)
        If (lshmv_rgd)Then
          Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
        EndIf
 
        fpl=0.0_wp
        Call box_mueller_saru1(Int(degfre/3_li),nstep,tmp)
-       tmp=tmp*Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)/3.0_wp
+       tmp=tmp*Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)/3.0_wp
        fpl(1)=tmp
        fpl(5)=tmp
        fpl(9)=tmp
@@ -1784,7 +1785,7 @@ Contains
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-       scale=Exp(-qstep*chi)
+       scale=Exp(-qstep*thermo%chi)
        Do j=1,nfree
           i=lstfre(j)
 
@@ -1815,12 +1816,12 @@ Contains
 
        vir1=vir-3.0_wp*fpl(1)
        Call npt_h1_scl &
-             (1,hstep,degfre,degrot,pmass,tai,volm,press,vir1,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
+             (1,hstep,degfre,degrot,pmass,thermo%tai,volm,vir1,virtot,vircom, &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke,thermo)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-       scale=Exp(-qstep*chi)
+       scale=Exp(-qstep*thermo%chi)
        Do j=1,nfree
           i=lstfre(j)
 
@@ -1843,7 +1844,7 @@ Contains
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*pmass*chip**2 + press*volm
+       consv = 0.5_wp*pmass*chip**2 + thermo%press*volm
 
   ! remove system centre of mass velocity
 

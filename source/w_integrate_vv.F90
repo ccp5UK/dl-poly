@@ -5,7 +5,7 @@
 ! One-off application for first order splitting and symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stress due to random and drag forces
 
-        If (keydpd > 0 .and. keydpd*isw == 0) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
+        If (thermo%key_dpd > 0 .and. thermo%key_dpd*isw == 0) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,thermo,comm)
 
 ! Integrate equations of motion - velocity verlet
 ! first (isw == 0) or second (isw == 1) stage
@@ -40,11 +40,11 @@
 
               Call nvt_l0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,chi,                    &
+           nstep,                    &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,comm)
+           megpmf,strpmf,virpmf,thermo,comm)
 
            Else If (keyens == 11) Then
 
@@ -52,11 +52,11 @@
 
               Call nvt_a0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,keyshl,taut,soft,       &
+           nstep,keyshl,       &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,comm)
+           megpmf,strpmf,virpmf,thermo,comm)
 
            Else If (keyens == 12) Then
 
@@ -64,11 +64,11 @@
 
               Call nvt_b0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
+           sigma,chit,                   &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,comm)
+           megpmf,strpmf,virpmf,thermo,comm)
 
            Else If (keyens == 13) Then
 
@@ -76,12 +76,12 @@
 
               Call nvt_h0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
+           sigma,chit,cint,              &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,comm)
+           megpmf,strpmf,virpmf,thermo,comm)
 
            Else If (keyens == 14) Then
 
@@ -89,13 +89,13 @@
 
               Call nvt_g0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,degfre,                 &
-           sigma,taut,gama,chit,cint,         &
+           nstep,degfre,                 &
+           sigma,chit,cint,         &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,comm)
+           megpmf,strpmf,virpmf,thermo,comm)
 
            Else If (keyens == 15) Then
 
@@ -104,11 +104,11 @@
 
               Call nvt_l2_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,chi_ep,chi_es,vel_es2,  &
+           nstep,vel_es2,  &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
-           megpmf,strpmf,virpmf,comm)
+           megpmf,strpmf,virpmf,thermo,comm)
 
            Else If (keyens == 20) Then
 
@@ -116,15 +116,15 @@
 
               Call npt_l0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chi,                         &
-           press,tai,nstep,chip,eta,          &
+           sigma,                         &
+           nstep,chip,eta,          &
            degfre,virtot,                     &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 21) Then
 
@@ -132,14 +132,14 @@
 
               Call npt_b0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
-           press,taup,chip,eta,               &
+           sigma,chit,                   &
+           chip,eta,               &
            virtot,                            &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 22) Then
 
@@ -147,15 +147,15 @@
 
               Call npt_h0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,taup,chip,eta,               &
+           sigma,chit,cint,              &
+           chip,eta,               &
            degfre,virtot,                     &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 23) Then
 
@@ -163,15 +163,15 @@
 
               Call npt_m0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,taup,chip,eta,               &
+           sigma,chit,cint,              &
+           chip,eta,               &
            degfre,virtot,                     &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 30) Then
 
@@ -179,15 +179,15 @@
 
               Call nst_l0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chi,                         &
-           press,strext,tai,nstep,chip,eta,   &
-           degfre,iso,ten,stress,             &
+           sigma,                         &
+           nstep,chip,eta,   &
+           degfre,stress,             &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 31) Then
 
@@ -195,14 +195,14 @@
 
               Call nst_b0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
-           press,strext,taup,chip,eta,        &
-           iso,ten,stress,                    &
+           sigma,chit,                   &
+           chip,eta,        &
+           stress,                    &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 32) Then
 
@@ -210,15 +210,15 @@
 
               Call nst_h0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,strext,taup,chip,eta,        &
-           degfre,iso,ten,stress,             &
+           sigma,chit,cint,              &
+           chip,eta,        &
+           degfre,stress,             &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 33) Then
 
@@ -226,15 +226,15 @@
 
               Call nst_m0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,strext,taup,chip,eta,        &
-           degfre,iso,ten,stress,             &
+           sigma,chit,cint,              &
+           chip,eta,        &
+           degfre,stress,             &
            consv,                             &
            strkin,engke,                      &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else
 
@@ -275,12 +275,12 @@
 
               Call nvt_l1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,chi,                    &
+           nstep,                    &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom,comm)
+           strcom,vircom,thermo,comm)
 
            Else If (keyens == 11) Then
 
@@ -288,12 +288,12 @@
 
               Call nvt_a1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,keyshl,taut,soft,       &
+           nstep,keyshl,       &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom,comm)
+           strcom,vircom,thermo,comm)
 
            Else If (keyens == 12) Then
 
@@ -301,12 +301,12 @@
 
               Call nvt_b1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
+           sigma,chit,                   &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom,comm)
+           strcom,vircom,thermo,comm)
 
            Else If (keyens == 13) Then
 
@@ -314,13 +314,13 @@
 
               Call nvt_h1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
+           sigma,chit,cint,              &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom,comm)
+           strcom,vircom,thermo,comm)
 
            Else If (keyens == 14) Then
 
@@ -328,14 +328,14 @@
 
               Call nvt_g1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,temp,degfre,                 &
-           sigma,taut,gama,chit,cint,         &
+           nstep,degfre,                 &
+           sigma,chit,cint,         &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
-           strcom,vircom,comm)
+           strcom,vircom,thermo,comm)
 
            Else If (keyens == 20) Then
 
@@ -343,8 +343,8 @@
 
               Call npt_l1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chi,                         &
-           press,tai,nstep,chip,eta,          &
+           sigma,                         &
+           nstep,chip,eta,          &
            degfre,degrot,virtot,              &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
@@ -352,7 +352,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 21) Then
 
@@ -360,15 +360,15 @@
 
               Call npt_b1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
-           press,taup,chip,eta,               &
+           sigma,chit,                   &
+           chip,eta,               &
            virtot,                            &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 22) Then
 
@@ -376,8 +376,8 @@
 
               Call npt_h1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,taup,chip,eta,               &
+           sigma,chit,cint,              &
+           chip,eta,               &
            degfre,degrot,virtot,              &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
@@ -385,7 +385,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 23) Then
 
@@ -393,8 +393,8 @@
 
               Call npt_m1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,taup,chip,eta,               &
+           sigma,chit,cint,              &
+           chip,eta,               &
            degfre,degrot,virtot,              &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
@@ -402,7 +402,7 @@
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 30) Then
 
@@ -410,16 +410,16 @@
 
               Call nst_l1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chi,                         &
-           press,strext,tai,nstep,chip,eta,   &
-           degfre,degrot,iso,ten,stress,      &
+           sigma,                         &
+           nstep,chip,eta,   &
+           degfre,degrot,stress,      &
            strkin,strknf,strknt,engke,engrot, &
            consv,                             &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 31) Then
 
@@ -427,15 +427,15 @@
 
               Call nst_b1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,                   &
-           press,strext,taup,chip,eta,        &
-           iso,ten,stress,                    &
+           sigma,chit,                   &
+           chip,eta,        &
+           stress,                    &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 32) Then
 
@@ -443,16 +443,16 @@
 
               Call nst_h1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,strext,taup,chip,eta,        &
-           degfre,degrot,iso,ten,stress,      &
+           sigma,chit,cint,              &
+           chip,eta,        &
+           degfre,degrot,stress,      &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else If (keyens == 33) Then
 
@@ -460,16 +460,16 @@
 
               Call nst_m1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,taut,chit,cint,              &
-           press,strext,taup,chip,eta,        &
-           degfre,degrot,iso,ten,stress,      &
+           sigma,chit,cint,              &
+           chip,eta,        &
+           degfre,degrot,stress,      &
            consv,                             &
            strkin,strknf,strknt,engke,engrot, &
            mxshak,tolnce,                     &
            megcon,strcon,vircon,              &
            megpmf,strpmf,virpmf,              &
            strcom,vircom,                     &
-           elrc,virlrc,comm)
+           elrc,virlrc,thermo,comm)
 
            Else
 
@@ -484,7 +484,7 @@
 ! Symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stress due to random and drag forces
 
-        If (keydpd > 0 .and. keydpd*isw == 2) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
+        If (thermo%key_dpd > 0 .and. thermo%key_dpd*isw == 2) Call dpd_thermostat(isw,l_str,rcut,nstep,tstep,thermo,comm)
 
 
 !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

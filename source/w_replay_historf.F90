@@ -84,7 +84,7 @@
 ! CHECK MD CONFIGURATION
 
            Call check_config &
-           (levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
+           (levcfg,l_str,keyens,keyfce,keyres,megatm,thermo,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -131,10 +131,10 @@
 ! Evaluate kinetics if available
 
            If (levcfg > 0 .and. levcfg < 3) Then
-              If (lzero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,nstzero) == 0) &
+              If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,thermo%freq_zero) == 0) &
                  Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
-              If (lzero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
+              If (thermo%l_zero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! Calculate kinetic stress and energy if available
 
@@ -179,7 +179,7 @@
 
            Call statistics_collect        &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,iso,intsta,      &
+           keyres,keyens,intsta,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -191,9 +191,9 @@
            engbnd,virbnd,engang,virang,   &
            engdih,virdih,enginv,virinv,   &
            engke,engrot,consv,vircom,     &
-           strtot,press,strext,           &
+           strtot,           &
            stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,comm,virdpd)
+           stptmp,stpprs,stpvol,thermo,comm,virdpd)
 
 ! line-printer output
 ! Update cpu time
@@ -303,13 +303,13 @@
      cell=clin
 
      Call set_temperature            &
-           (levcfg,temp,keyres,      &
+           (levcfg,keyres,      &
            lmin,nstep,nstrun,nstmin, &
            mxshak,tolnce,keyshl,     &
            atmfre,atmfrz,            &
            megshl,megcon,megpmf,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,sigma,engrot,comm)
+           degfre,degshl,sigma,engrot,thermo,comm)
 
   End If
   Call deallocate_statistics_connect()

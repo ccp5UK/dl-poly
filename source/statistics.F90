@@ -42,6 +42,7 @@ Module statistics
   Use inversions,  Only : inversions_compute
   Use errors_warnings, Only : error,warning,info
   Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
+  Use thermostat, Only : thermostat_type
 
   Implicit None
 
@@ -129,7 +130,7 @@ Contains
 
   Subroutine statistics_collect             &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,iso,intsta,      &
+           keyres,keyens,intsta,      &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -141,9 +142,9 @@ Contains
            engbnd,virbnd,engang,virang,   &
            engdih,virdih,enginv,virinv,   &
            engke,engrot,consv,vircom,     &
-           strtot,press,strext,           &
+           strtot,           &
            stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,comm,virdpd)
+           stptmp,stpprs,stpvol,thermo,comm,virdpd)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -159,7 +160,7 @@ Contains
 
   Logical,           Intent( In    ) :: lsim,leql,lzdn
   Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
-                                        keyens,iso,intsta,nstep
+                                        keyens,intsta,nstep
 
   Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
 
@@ -173,11 +174,12 @@ Contains
                                         engbnd,virbnd,engang,virang, &
                                         engdih,virdih,enginv,virinv, &
                                         engke,engrot,consv,vircom,   &
-                                        strtot(1:9),press,strext(1:9)
+                                        strtot(1:9)
 
   Real( Kind = wp ), Intent( InOut ) :: tmst
   Real( Kind = wp ), Intent(   Out ) :: stpeng,stpvir,stpcfg,stpeth, &
                                         stptmp,stpprs,stpvol
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In ) :: virdpd
 
@@ -284,7 +286,7 @@ Contains
 ! system enthalpy
 
   If (keyens >= 20) Then             ! P_target*V_instantaneous
-     stpeth = stpeng + press*stpvol
+     stpeth = stpeng + thermo%press*stpvol
   Else                               ! for keyens < 20 V_instantaneous=V_target
      stpeth = stpeng + stpipv        ! and there is only P_instantaneous
   End If
@@ -425,16 +427,16 @@ Contains
      stpval(iadd+1)=stpipv/engunit
      iadd = iadd + 1
 
-     If (iso > 0) Then
+     If (thermo%iso > 0) Then
         h_z=celprp(9)
 
         stpval(iadd+1)=h_z
         stpval(iadd+2)=stpvol/h_z
         iadd = iadd + 2
 
-        If (iso > 1) Then
-           stpval(iadd+1)= -h_z*(strtot(1)-(press+strext(1)))*tenunt
-           stpval(iadd+2)= -h_z*(strtot(5)-(press+strext(5)))*tenunt
+        If (thermo%iso > 1) Then
+           stpval(iadd+1)= -h_z*(strtot(1)-(thermo%press+thermo%stress(1)))*tenunt
+           stpval(iadd+2)= -h_z*(strtot(5)-(thermo%press+thermo%stress(5)))*tenunt
            iadd = iadd + 2
         End If
      End If
@@ -1301,8 +1303,8 @@ End Subroutine statistics_connect_spread
 
 Subroutine statistics_result                                    &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
-           nstrun,keyens,keyshl,megcon,megpmf,iso,              &
-           press,strext,nstep,tstep,time,tmst,comm,passmin)
+           nstrun,keyens,keyshl,megcon,megpmf,              &
+           nstep,tstep,time,tmst,thermo,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1316,8 +1318,9 @@ Subroutine statistics_result                                    &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf
-  Integer,           Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,iso,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,press,strext(1:9),tstep,time,tmst
+  Integer,           Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,nstep
+  Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
   Logical           :: check
@@ -1599,7 +1602,7 @@ Subroutine statistics_result                                    &
 
      iadd = iadd+1
 
-     If (iso > 0) Then
+     If (thermo%iso > 0) Then
         h_z=sumval(iadd+1)
 
         Write(message,"('Average surface area, fluctuations & mean estimate (Angs^2)')")
@@ -1609,9 +1612,9 @@ Subroutine statistics_result                                    &
 
         iadd = iadd+2
 
-        If (iso > 1) Then
-           tx= -h_z * ( sumval(iadd-9-8-2)/prsunt - (press+strext(1)) ) * tenunt
-           ty= -h_z * ( sumval(iadd-9-7-2)/prsunt - (press+strext(5)) ) * tenunt
+        If (thermo%iso > 1) Then
+           tx= -h_z * ( sumval(iadd-9-8-2)/prsunt - (thermo%press+thermo%stress(1)) ) * tenunt
+           ty= -h_z * ( sumval(iadd-9-7-2)/prsunt - (thermo%press+thermo%stress(5)) ) * tenunt
            Write(message,"('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
            Call info(message,.true.)
            Write(message,'(1p,3e12.4)') sumval(iadd+1),ssqval(iadd+1),tx

@@ -6,7 +6,6 @@ Module temperature
   Use configuration,   Only : imcon,natms,nlast,nfree,lsite,  &
                               lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                               weight,vxx,vyy,vzz,xxx,yyy,zzz
-  Use dpd,             Only : keydpd
   Use rigid_bodies,    Only : rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
                               rgdxxx,rgdyyy,rgdzzz,rgdx,rgdy,rgdz, &
                               rgdrix,rgdriy,rgdriz,rgdwgt,q0,q1,q2,q3, &
@@ -20,6 +19,7 @@ Module temperature
   Use numerics,        Only : invert,uni,local_index,box_mueller_saru3
   use shared_units,    Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,warning,info
+  Use thermostat,      Only : thermostat_type
 
   Implicit None
 
@@ -30,13 +30,13 @@ Module temperature
 Contains
 
   Subroutine set_temperature           &
-             (levcfg,temp,keyres,      &
+             (levcfg,keyres,      &
              lmin,nstep,nstrun,nstmin, &
              mxshak,tolnce,keyshl,     &
              atmfre,atmfrz,            &
              megshl,megcon,megpmf,     &
              megrgd,degtra,degrot,     &
-             degfre,degshl,sigma,engrot,comm)
+             degfre,degshl,sigma,engrot,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -54,13 +54,14 @@ Contains
                                            megshl,              &
                                            megcon,megpmf,       &
                                            megrgd
-    Real( Kind = wp ),  Intent( In    ) :: temp,tolnce
+    Real( Kind = wp ),  Intent( In    ) :: tolnce
 
     Integer,            Intent( InOut ) :: keyres,levcfg
     Integer(Kind=li),   Intent( InOut ) :: degtra,degrot
 
     Integer(Kind=li),   Intent(   Out ) :: degfre,degshl
     Real( Kind = wp ),  Intent(   Out ) :: sigma,engrot
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: no_min_0,safe
@@ -98,7 +99,7 @@ Contains
 
   ! 3 lost for fixing COM translation
 
-    If (l_vom .and. keydpd == 0) Then
+    If (l_vom .and. thermo%key_dpd == 0) Then
        com=Int(3,li)
     Else
        com=Int(0,li)
@@ -155,7 +156,7 @@ Contains
 
   ! desired kinetic energy
 
-    sigma=0.5_wp*Real(degfre,wp)*boltz*temp
+    sigma=0.5_wp*Real(degfre,wp)*boltz*thermo%temp
 
   ! avoid user defined 0K field to break up anything
 
@@ -531,7 +532,7 @@ Contains
        If (megshl > 0 .and. keyshl == 1 .and. no_min_0) Then
           Do
              Call scale_temperature(sigma,degtra,degrot,degfre,comm)
-             Call core_shell_quench(safe,temp,comm)
+             Call core_shell_quench(safe,thermo%temp,comm)
              If (megcon > 0) Then
                Call constraints_quench(mxshak,tolnce,comm)
              End If

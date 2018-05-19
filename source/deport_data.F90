@@ -28,7 +28,7 @@ Module deport_data
   Use statistics
 
   Use minimise,     Only : l_x,oxx,oyy,ozz
-  Use langevin,     Only : l_lan,fxl,fyl,fzl
+  Use langevin,     Only : fxl,fyl,fzl
 
   Use ewald,               Only : ewald_type
   Use mpole ,              Only : keyind,ltpatm,lchatm, &
@@ -51,6 +51,7 @@ Module deport_data
   Use pmf, Only : pmf_units_set
   Use build_book, Only : compress_book_intra
   Use shared_units, Only : pass_shared_units, tag_legend
+  Use thermostat, Only : thermostat_type
   Implicit None
   
   Public :: deport_atomic_data, export_atomic_data
@@ -58,7 +59,7 @@ Module deport_data
   Contains 
   
 
-Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
+Subroutine deport_atomic_data(mdir,lbook,ewld,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -77,6 +78,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: mdir
   Type( ewald_type ), Intent( InOut ) :: ewld
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -302,7 +304,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
 
 ! pack Langevin forces arrays
 
-        If (l_lan) Then
+        If (thermo%l_langevin) Then
            If (imove+3 <= iblock) Then
               buffer(imove+1)=fxl(i)
               buffer(imove+2)=fyl(i)
@@ -823,7 +825,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
      yto(keep)=yto(i)
      zto(keep)=zto(i)
 
-     If (l_lan) Then
+     If (thermo%l_langevin) Then
         fxl(keep)=fxl(i)
         fyl(keep)=fyl(i)
         fzl(keep)=fzl(i)
@@ -984,7 +986,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,comm)
 
 ! unpack Langevin forces arrays
 
-     If (l_lan) Then
+     If (thermo%l_langevin) Then
         fxl(newatm)=buffer(kmove+1)
         fyl(newatm)=buffer(kmove+2)
         fzl(newatm)=buffer(kmove+3)
@@ -2521,7 +2523,7 @@ Subroutine relocate_particles       &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
            megbnd,megang,megdih,    &
-           meginv,ewld,comm)
+           meginv,ewld,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2542,6 +2544,7 @@ Subroutine relocate_particles       &
                                         megbnd,megang,megdih,meginv
   Real( Kind = wp ), Intent( In    ) :: dvar,rlnk
   Type( ewald_type ), Intent( InOut ) :: ewld
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2657,18 +2660,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,ewld,comm)
-     Call deport_atomic_data( 1,lbook,ewld,comm)
+     Call deport_atomic_data(-1,lbook,ewld,thermo,comm)
+     Call deport_atomic_data( 1,lbook,ewld,thermo,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,ewld,comm)
-     Call deport_atomic_data( 2,lbook,ewld,comm)
+     Call deport_atomic_data(-2,lbook,ewld,thermo,comm)
+     Call deport_atomic_data( 2,lbook,ewld,thermo,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,ewld,comm)
-     Call deport_atomic_data( 3,lbook,ewld,comm)
+     Call deport_atomic_data(-3,lbook,ewld,thermo,comm)
+     Call deport_atomic_data( 3,lbook,ewld,thermo,comm)
 
 ! check system for loss of atoms
 

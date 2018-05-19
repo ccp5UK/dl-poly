@@ -352,7 +352,7 @@ Contains
      End If
 
 ! If in mxpass iterations we are not there, give up but
-! allow for ten-fold boost in iteration cycle length
+! allow for thermo%tension-fold boost in iteration cycle length
 ! for the very first MD step
 
      If (Nint(passmin(2)) == 0) Then

@@ -14,6 +14,7 @@ Module npt_nose_hoover
   Use nvt_nose_hoover, Only : nvt_h0_scl,nvt_h1_scl 
   Use rigid_bodies
   Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -24,15 +25,15 @@ Contains
 
   Subroutine npt_h0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,cint,              &
-             press,taup,chip,eta,               &
+             sigma,chit,cint,              &
+             chip,eta,               &
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -63,10 +64,9 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,taut
+    Real( Kind = wp ),  Intent( In    ) :: sigma
     Real( Kind = wp ),  Intent( InOut ) :: chit,cint
 
-    Real( Kind = wp ),  Intent( In    ) :: press,taup
     Real( Kind = wp ),  Intent( InOut ) :: chip
     Real( Kind = wp ),  Intent(   Out ) :: eta(1:9)
 
@@ -84,6 +84,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -158,10 +159,10 @@ Contains
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
        ceng  = 2.0_wp*sigma + boltz*tmp
-       pmass = (2.0_wp*sigma + 3.0_wp*boltz*tmp)*taup**2
+       pmass = (2.0_wp*sigma + 3.0_wp*boltz*tmp)*thermo%tau_p**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -261,8 +262,8 @@ Contains
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
           Call npt_h0_scl &
-             (0,hstep,degfre,pmass,chit,volm,press,vir,virtot, &
-             vxx,vyy,vzz,chip,engke)
+             (0,hstep,degfre,pmass,chit,volm,vir,virtot, &
+             vxx,vyy,vzz,chip,engke,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
@@ -561,8 +562,8 @@ Contains
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
        Call npt_h0_scl &
-             (0,hstep,degfre,pmass,chit,volm,press,vir,virtot, &
-             vxx,vyy,vzz,chip,engke)
+             (0,hstep,degfre,pmass,chit,volm,vir,virtot, &
+             vxx,vyy,vzz,chip,engke,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
@@ -572,7 +573,7 @@ Contains
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip**2 + ceng*cint + press*volm
+       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip**2 + ceng*cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -626,8 +627,8 @@ Contains
 
   Subroutine npt_h1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,cint,              &
-             press,taup,chip,eta,               &
+             sigma,chit,cint,              &
+             chip,eta,               &
              degfre,degrot,virtot,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
@@ -635,7 +636,7 @@ Contains
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -667,10 +668,9 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,taut
+    Real( Kind = wp ),  Intent( In    ) :: sigma
     Real( Kind = wp ),  Intent( InOut ) :: chit,cint
 
-    Real( Kind = wp ),  Intent( In    ) :: press,taup
     Real( Kind = wp ),  Intent( InOut ) :: chip
     Real( Kind = wp ),  Intent(   Out ) :: eta(1:9)
 
@@ -691,6 +691,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -784,10 +785,10 @@ Contains
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
        ceng  = 2.0_wp*sigma + boltz*tmp
-       pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*tmp*taup**2
+       pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*tmp*thermo%tau_p**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -947,8 +948,8 @@ Contains
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
           Call npt_h1_scl &
-             (0,hstep,degfre,degrot,pmass,chit,volm,press,vir,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
+             (0,hstep,degfre,degrot,pmass,chit,volm,vir,virtot,vircom, &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
@@ -1625,8 +1626,8 @@ Contains
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
        Call npt_h1_scl &
-             (0,hstep,degfre,degrot,pmass,chit,volm,press,vir,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
+             (0,hstep,degfre,degrot,pmass,chit,volm,vir,virtot,vircom, &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
@@ -1639,7 +1640,7 @@ Contains
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip**2 + ceng*cint + press*volm
+       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip**2 + ceng*cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -1723,8 +1724,8 @@ Contains
   End Subroutine npt_h1_vv
 
   Subroutine npt_h0_scl &
-             (sw,tstep,degfre,pmass,chit,volm,press,vircon,virtot, &
-             vxx,vyy,vzz,chip,engke)
+             (sw,tstep,degfre,pmass,chit,volm,vircon,virtot, &
+             vxx,vyy,vzz,chip,engke,thermo)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1744,9 +1745,10 @@ Contains
     Integer,           Intent( In    ) :: sw
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,press,vircon,virtot
+    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,vircon,virtot
     Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
     Real( Kind = wp ), Intent( InOut ) :: chip,engke
+    Type( thermostat_type ), Intent( In    ) :: thermo
 
 
     Logical,           Save :: newjob = .true.
@@ -1776,7 +1778,7 @@ Contains
 
   ! barostat chip to 1/2*tstep
 
-    chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot) - 3.0_wp*press*volm ) / pmass
+    chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot) - 3.0_wp*thermo%press*volm ) / pmass
 
   ! thermostat chip to 2/4*tstep
 
@@ -1801,7 +1803,7 @@ Contains
 
   ! barostat chip to full (1/2 + 1/2)*tstep
 
-    chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot) - 3.0_wp*press*volm ) / pmass
+    chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot) - 3.0_wp*thermo%press*volm ) / pmass
 
   ! thermostat chip to full (4/4)*tstep
 
@@ -1810,8 +1812,8 @@ Contains
   End Subroutine npt_h0_scl
 
   Subroutine npt_h1_scl &
-             (sw,tstep,degfre,degrot,pmass,chit,volm,press,vircon,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke)
+             (sw,tstep,degfre,degrot,pmass,chit,volm,vircon,virtot,vircom, &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke,thermo)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1832,10 +1834,11 @@ Contains
     Integer,           Intent( In    ) :: sw
     Integer(Kind=li),  Intent( In    ) :: degfre,degrot
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,press,vircon,virtot,vircom
+    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,vircon,virtot,vircom
     Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
     Real( Kind = wp ), Intent( InOut ) :: rgdvxx(1:mxrgd),rgdvyy(1:mxrgd),rgdvzz(1:mxrgd)
     Real( Kind = wp ), Intent( InOut ) :: chip,engke
+    Type( thermostat_type ), Intent( In    ) :: thermo
 
 
     Logical,           Save :: newjob = .true.
@@ -1866,7 +1869,7 @@ Contains
 
   ! barostat chip to 1/2*tstep
 
-    chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot-vircom) - 3.0_wp*press*volm ) / pmass
+    chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot-vircom) - 3.0_wp*thermo%press*volm ) / pmass
 
   ! thermostat chip to 2/4*tstep
 
@@ -1899,7 +1902,7 @@ Contains
 
   ! barostat chip to full (1/2 + 1/2)*tstep
 
-    chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot-vircom) - 3.0_wp*press*volm ) / pmass
+    chip = chip + hstep*( (2.0_wp*(1.0_wp+factor)*engke-vircon-virtot-vircom) - 3.0_wp*thermo%press*volm ) / pmass
 
   ! thermostat chip to full (4/4)*tstep
 

@@ -27,8 +27,8 @@
      If (megrgd > 0) Then
         If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz,comm)
 
-        If (l_lan) Then
-           Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
+        If (thermo%l_langevin) Then
+           Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl)
            If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
            Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
         Else
@@ -75,7 +75,7 @@
 
 ! zero Kelvin structure optimisation
 
-        If (lzero .and. nstep <= nsteql .and. Mod(nstep-nsteql,nstzero) == 0) &
+        If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_zero) == 0) &
            Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! Switch on electron-phonon coupling only after time offset
@@ -107,8 +107,8 @@
 ! Evolve electronic temperature for two-temperature model
 
         If (l_ttm) Then
-          Call ttm_ion_temperature(chi_ep,chi_es,vel_es2,comm)
-          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstrun,lines,npage,comm)
+          Call ttm_ion_temperature(vel_es2,thermo,comm)
+          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,lines,npage,thermo,comm)
         End If
 
 ! Integrate equations of motion - velocity verlet second stage

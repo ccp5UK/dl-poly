@@ -104,15 +104,15 @@
      End If
 ! Apply pseudo thermostat - force cycle (0)
 
-     If (lpse) Then
+     If (thermo%l_pseudo) Then
            Call pseudo_vv                               &
-           (0,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot,comm)
+           (0,keyshl,keyens,tstep, &
+           nstep,strkin,strknf,strknt,engke,engrot,thermo,comm)
      End If
 
 ! Cap forces in equilibration mode
 
-     If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,temp,comm)
+     If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,comm)
 
 ! Frozen atoms option
 
@@ -156,8 +156,8 @@
 
      If (newjob) Then
         If (megrgd > 0) Then
-           If (l_lan) Then
-              Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
+           If (thermo%l_langevin) Then
+              Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl)
               If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
               Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
            Else

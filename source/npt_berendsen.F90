@@ -15,6 +15,7 @@ Module npt_berendsen
   Use constraints,     Only : constraints_tags,constraints_shake_vv
   Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
   Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -25,14 +26,14 @@ Contains
 
   Subroutine npt_b0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,                   &
-             press,taup,chip,eta,               &
+             sigma,chit,                   &
+             chip,eta,               &
              virtot,                            &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -54,10 +55,9 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,taut
+    Real( Kind = wp ),  Intent( In    ) :: sigma
     Real( Kind = wp ),  Intent(   Out ) :: chit
 
-    Real( Kind = wp ),  Intent( In    ) :: press,taup
     Real( Kind = wp ),  Intent(   Out ) :: chip,eta(1:9)
 
     Real( Kind = wp ),  Intent( In    ) :: virtot
@@ -71,6 +71,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -229,7 +230,7 @@ Contains
 
   ! pressure control variable
 
-          chip = 1.0_wp + beta*tstep*(pr-press)/taup
+          chip = 1.0_wp + beta*tstep*(pr-thermo%press)/thermo%tau_p
           scale = chip**(1.0_wp/3.0_wp)
 
   ! update velocity and position
@@ -486,7 +487,7 @@ Contains
 
   ! integrate and apply nvt_b0_scl thermostat - full step
 
-       Call nvt_b0_scl(1,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
+       Call nvt_b0_scl(1,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -502,7 +503,7 @@ Contains
 
   ! update kinetic energy and stress
 
-       Call nvt_b0_scl(0,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
+       Call nvt_b0_scl(0,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
 
     End If
 
@@ -530,15 +531,15 @@ Contains
 
   Subroutine npt_b1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,                   &
-             press,taup,chip,eta,               &
+             sigma,chit,                   &
+             chip,eta,               &
              virtot,                            &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -561,10 +562,9 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,taut
+    Real( Kind = wp ),  Intent( In    ) :: sigma
     Real( Kind = wp ),  Intent(   Out ) :: chit
 
-    Real( Kind = wp ),  Intent( In    ) :: press,taup
     Real( Kind = wp ),  Intent(   Out ) :: chip,eta(1:9)
 
     Real( Kind = wp ),  Intent( In    ) :: virtot
@@ -580,6 +580,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -907,7 +908,7 @@ Contains
 
   ! pressure control variable
 
-          chip = 1.0_wp + beta*tstep*(pr-press)/taup
+          chip = 1.0_wp + beta*tstep*(pr-thermo%press)/thermo%tau_p
           scale = chip**(1.0_wp/3.0_wp)
 
   ! update cell parameters: isotropic
@@ -1427,9 +1428,9 @@ Contains
   ! integrate and apply nvt_b1_scl thermostat - full step
 
        Call nvt_b1_scl &
-             (1,tstep,sigma,taut,vxx,vyy,vzz,           &
+             (1,tstep,sigma,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,comm)
+             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -1469,9 +1470,9 @@ Contains
   ! update kinetic energy and stress
 
        Call nvt_b1_scl &
-             (0,tstep,sigma,taut,vxx,vyy,vzz,           &
+             (0,tstep,sigma,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,comm)
+             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
 
     End If
 

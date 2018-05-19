@@ -22,6 +22,7 @@ Module drivers
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
   Use rigid_bodies, Only : getrotmat
+  Use thermostat, Only : thermostat_type
   Implicit None
   Private
   Public :: w_impact_option
@@ -128,8 +129,8 @@ Module drivers
 !  End Subroutine w_replay_historf
 
 Subroutine pseudo_vv                                      &
-           (isw,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot,comm)
+           (isw,keyshl,keyens,tstep, &
+           nstep,strkin,strknf,strknt,engke,engrot,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -139,7 +140,7 @@ Subroutine pseudo_vv                                      &
 ! velocity verlet version
 !
 ! Note: (1) This algorithm breaks true ensembles!!!
-! Additionally, for Langevin temperature control (keypse=1):
+! Additionally, for Langevin temperature control (thermo%key_pseudo=1):
 !       (2) Random forces do not contribute to the stress and virial
 !           of the system (but are picked up in the pressure).
 !       (3) Random forces do not apply to frozen and massless particles
@@ -151,10 +152,11 @@ Subroutine pseudo_vv                                      &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: isw,keyshl,keyens,keypse,nstep
-  Real( Kind = wp ), Intent( In    ) :: tstep,wthpse,tmppse
+  Integer,           Intent( In    ) :: isw,keyshl,keyens,nstep
+  Real( Kind = wp ), Intent( In    ) :: tstep
   Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                         strknf(1:9),strknt(1:9),engrot
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -221,9 +223,9 @@ Subroutine pseudo_vv                                      &
 ! Get the real coordinates of the close end edge of the thermostat as if the
 ! origin of the Coordinate System was in the left-most corner of the MD box
 
-        ssx=wthpse*celprp(1)/celprp(7)
-        ssy=wthpse*celprp(2)/celprp(8)
-        ssz=wthpse*celprp(3)/celprp(9)
+        ssx=thermo%width_pseudo*celprp(1)/celprp(7)
+        ssy=thermo%width_pseudo*celprp(2)/celprp(8)
+        ssz=thermo%width_pseudo*celprp(3)/celprp(9)
 
 ! 1. Get the boundary thermostat thicknesses in fractional coordinates
 ! 2. sx,sy,sz are intervalled as [-0.5,+0.5) {as by construction are (0,+0.25]}
@@ -271,7 +273,7 @@ Subroutine pseudo_vv                                      &
      ntp = Sum(tpn)
 
      If (ntp == 0) Return
-     If (chit < 1.0e-6_wp .or. keypse > 1) Return ! Avoid thermostat overheating
+     If (chit < 1.0e-6_wp .or. thermo%key_pseudo > 1) Return ! Avoid thermostat overheating
 
 ! Allocate random force array of length j
 
@@ -285,7 +287,7 @@ Subroutine pseudo_vv                                      &
 ! Get gaussian distribution
 ! Get scaler to target variance*Sqrt(weight)
 
-     scale = Sqrt(2.0_wp * chit * boltz * tmppse / tstep)
+     scale = Sqrt(2.0_wp * chit * boltz * thermo%temp_pseudo / tstep)
 
      vom = 0.0_wp
      Do i=1,natms
@@ -439,7 +441,7 @@ Subroutine pseudo_vv                                      &
 ! Velocity scaling cycle - thermostatting.  k = local, ntp = global
 ! number of particles within thermostat layers
 
-     If (keypse < 3)  Then ! Apply LANGEVIN temperature scaling
+     If (thermo%key_pseudo < 3)  Then ! Apply LANGEVIN temperature scaling
 
 ! Allocate random velocities array of length k
 
@@ -537,7 +539,7 @@ Subroutine pseudo_vv                                      &
 
 ! Scale to target temperature and apply thermostat
 
-        scale = Sqrt(mxdr * boltz * tmppse / tkin)
+        scale = Sqrt(mxdr * boltz * thermo%temp_pseudo / tkin)
 
 ! Scale velocity within the thermostat layer to the gaussian velocities
 ! scaled with the variance for the target temperature
@@ -937,11 +939,11 @@ Subroutine pseudo_vv                                      &
 
      End If
 
-     If (keypse == 0 .or. keypse == 3) Then ! Apply DIRECT temperature scaling
+     If (thermo%key_pseudo == 0 .or. thermo%key_pseudo == 3) Then ! Apply DIRECT temperature scaling
 
 ! Targeted energy
 
-        scale = boltz * tmppse
+        scale = boltz * thermo%temp_pseudo
 
 ! Scale velocity within the thermostat layer
 

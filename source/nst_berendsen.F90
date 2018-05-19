@@ -21,6 +21,7 @@ Module nst_berendsen
   Use numerics,        Only : dcell,images,mat_mul
   Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
   Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -31,14 +32,14 @@ Contains
 
   Subroutine nst_b0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,                   &
-             press,strext,taup,chip,eta,        &
-             iso,ten,stress,                    &
+             sigma,chit,                   &
+             chip,eta,        &
+             stress,                    &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -49,11 +50,11 @@ Contains
   ! isothermal compressibility (beta) set to that of liquid water
   ! = 0.007372 dl_poly units
   !
-  ! iso=0 fully anisotropic barostat
-  ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (ten=0.0_wp)
-  ! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
   !
@@ -69,14 +70,12 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma
     Real( Kind = wp ), Intent(   Out ) :: chit
 
-    Real( Kind = wp ), Intent( In    ) :: press,strext(1:9),taup
     Real( Kind = wp ), Intent(   Out ) :: chip,eta(1:9)
 
-    Integer,           Intent( In    ) :: iso
-    Real( Kind = wp ), Intent( In    ) :: ten,stress(1:9)
+    Real( Kind = wp ), Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
@@ -87,6 +86,7 @@ Contains
                                           strpmf(1:9),virpmf
 
     Real( Kind = wp ), Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -162,14 +162,14 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for iso>=1
-  ! Initialise and get h_z for iso>1
+  ! Sort eta for thermo%iso>=1
+  ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
-       If      (iso == 1) Then
+       If      (thermo%iso == 1) Then
           eta(1) = 1.0_wp ; eta(2:4) = 0.0_wp
           eta(5) = 1.0_wp ; eta(6:8) = 0.0_wp
-       Else If (iso >  1) Then
+       Else If (thermo%iso >  1) Then
           eta(2:4) = 0.0_wp
           eta(6:8) = 0.0_wp
 
@@ -259,21 +259,26 @@ Contains
   ! Berendsen barostat and thermostat are not coupled
   ! calculate Berendsen barostat: eta, iterate strcon and strpmf
 
-  ! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
+  ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
 
-          If (iso == 0) Then
-             eta=uni + tstep*beta*(strcon+strpmf+stress+strkin-(press*uni+strext)*volm)/(taup*volm)
+          If (thermo%iso == 0) Then
+             eta=uni + tstep*beta*(strcon+strpmf+stress+strkin- &
+               (thermo%press*uni+thermo%stress)*volm)/(thermo%tau_p*volm)
           Else
-             If      (iso == 2) Then
-                eta(1)=1.0_wp + tstep*beta*(strcon(1)+strpmf(1)+stress(1)+strkin(1)-(press+strext(1)-ten/h_z)*volm)/(taup*volm)
-                eta(5)=1.0_wp + tstep*beta*(strcon(5)+strpmf(5)+stress(5)+strkin(5)-(press+strext(5)-ten/h_z)*volm)/(taup*volm)
-             Else If (iso == 3) Then
+             If      (thermo%iso == 2) Then
+                eta(1)=1.0_wp + tstep*beta*(strcon(1)+strpmf(1)+stress(1)+strkin(1)- &
+                  (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/(thermo%tau_p*volm)
+                eta(5)=1.0_wp + tstep*beta*(strcon(5)+strpmf(5)+stress(5)+strkin(5)- &
+                  (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/(thermo%tau_p*volm)
+             Else If (thermo%iso == 3) Then
                 eta(1)=1.0_wp + tstep*beta*( 0.5_wp*                                                       &
                        (strcon(1)+strpmf(1)+stress(1)+strkin(1)+strcon(5)+strpmf(5)+stress(5)+strkin(5)) - &
-                       (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm ) / (taup*volm)
+                       (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) &
+                       / (thermo%tau_p*volm)
                 eta(5)=eta(1)
              End If
-             eta(9)=1.0_wp + tstep*beta*(strcon(9)+strpmf(9)+stress(9)+strkin(9)-(press+strext(9))*volm)/(taup*volm)
+             eta(9)=1.0_wp + tstep*beta*(strcon(9)+strpmf(9)+stress(9)+strkin(9)- &
+               (thermo%press+thermo%stress(9))*volm)/(thermo%tau_p*volm)
           End If
 
   ! update velocity and position
@@ -482,9 +487,9 @@ Contains
           dens(i)=dens0(i)*tmp
        End Do
 
-  ! get h_z for iso>1
+  ! get h_z for thermo%iso>1
 
-       If (iso > 1) Then
+       If (thermo%iso > 1) Then
           h_z=celprp(9)
        End If
 
@@ -529,7 +534,7 @@ Contains
 
   ! integrate and apply nvt_b0_scl thermostat - full step
 
-       Call nvt_b0_scl(1,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
+       Call nvt_b0_scl(1,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -545,7 +550,7 @@ Contains
 
   ! update kinetic energy and stress
 
-       Call nvt_b0_scl(0,tstep,sigma,taut,vxx,vyy,vzz,chit,strkin,engke,comm)
+       Call nvt_b0_scl(0,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
 
     End If
 
@@ -573,15 +578,15 @@ Contains
 
   Subroutine nst_b1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,                   &
-             press,strext,taup,chip,eta,        &
-             iso,ten,stress,                    &
+             sigma,chit,                   &
+             chip,eta,        &
+             stress,                    &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -593,11 +598,11 @@ Contains
   ! isothermal compressibility (beta) set to that of liquid water
   ! = 0.007372 dl_poly units
   !
-  ! iso=0 fully anisotropic barostat
-  ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (ten=0.0_wp)
-  ! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
   !
@@ -613,14 +618,12 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma
     Real( Kind = wp ), Intent(   Out ) :: chit
 
-    Real( Kind = wp ), Intent( In    ) :: press,strext(1:9),taup
     Real( Kind = wp ), Intent(   Out ) :: chip,eta(1:9)
 
-    Integer,           Intent( In    ) :: iso
-    Real( Kind = wp ), Intent( In    ) :: ten,stress(1:9)
+    Real( Kind = wp ), Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                           strknf(1:9),strknt(1:9),engrot
@@ -634,6 +637,7 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ), Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
     Logical,           Save :: newjob = .true. , &
@@ -730,14 +734,14 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for iso>=1
-  ! Initialise and get h_z for iso>1
+  ! Sort eta for thermo%iso>=1
+  ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
-       If      (iso == 1) Then
+       If      (thermo%iso == 1) Then
           eta(1) = 1.0_wp ; eta(2:4) = 0.0_wp
           eta(5) = 1.0_wp ; eta(6:8) = 0.0_wp
-       Else If (iso >  1) Then
+       Else If (thermo%iso >  1) Then
           eta(2:4) = 0.0_wp
           eta(6:8) = 0.0_wp
 
@@ -977,24 +981,27 @@ Contains
   ! Berendsen barostat and thermostat are not coupled
   ! calculate Berendsen barostat: eta, iterate strcon and strpmf
 
-  ! split anisotropic from semi-isotropic barostats (iso=0,1,2,3)
+  ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
 
-          If (iso == 0) Then
-             eta=uni + tstep*beta*(strcom+strcon+strpmf+stress+strkin-(press*uni+strext)*volm)/(taup*volm)
+          If (thermo%iso == 0) Then
+             eta=uni + tstep*beta*(strcom+strcon+strpmf+stress+strkin- &
+               (thermo%press*uni+thermo%stress)*volm)/(thermo%tau_p*volm)
           Else
-             If      (iso == 2) Then
+             If      (thermo%iso == 2) Then
                 eta(1)=1.0_wp + tstep*beta*(strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1) - &
-                                            (press+strext(1)-ten/h_z)*volm)/(taup*volm)
+                  (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/(thermo%tau_p*volm)
                 eta(5)=1.0_wp + tstep*beta*(strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5) - &
-                                            (press+strext(5)-ten/h_z)*volm)/(taup*volm)
-             Else If (iso == 3) Then
-                eta(1)=1.0_wp + tstep*beta*( 0.5_wp*                         &
-                       (strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1)  + &
-                        strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5)) - &
-                       (press+0.5_wp*(strext(1)+strext(5))-ten/h_z)*volm ) / (taup*volm)
+                  (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/(thermo%tau_p*volm)
+             Else If (thermo%iso == 3) Then
+                eta(1)=1.0_wp + tstep*beta*( 0.5_wp* &
+                  (strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1)  + &
+                   strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5)) - &
+                  (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) &
+                  / (thermo%tau_p*volm)
                 eta(5)=eta(1)
              End If
-             eta(9)=1.0_wp + tstep*beta*(strcom(9)+strcon(9)+strpmf(9)+stress(9)+strkin(9)-(press+strext(9))*volm)/(taup*volm)
+             eta(9)=1.0_wp + tstep*beta*(strcom(9)+strcon(9)+strpmf(9)+stress(9)+strkin(9)- &
+               (thermo%press+thermo%stress(9))*volm)/(thermo%tau_p*volm)
           End If
 
   ! update cell parameters: anisotropic
@@ -1323,9 +1330,9 @@ Contains
           dens(i)=dens0(i)*tmp
        End Do
 
-  ! get h_z for iso>1
+  ! get h_z for thermo%iso>1
 
-       If (iso > 1) Then
+       If (thermo%iso > 1) Then
           h_z=celprp(9)
        End If
 
@@ -1509,9 +1516,9 @@ Contains
   ! integrate and apply nvt_b1_scl thermostat - full step
 
        Call nvt_b1_scl &
-             (1,tstep,sigma,taut,vxx,vyy,vzz,           &
+             (1,tstep,sigma,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,comm)
+             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -1551,9 +1558,9 @@ Contains
   ! update kinetic energy and stress
 
        Call nvt_b1_scl &
-             (0,tstep,sigma,taut,vxx,vyy,vzz,           &
+             (0,tstep,sigma,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,comm)
+             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
 
     End If
 

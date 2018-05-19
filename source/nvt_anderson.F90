@@ -1,26 +1,27 @@
 Module nvt_anderson
-    Use kinds,         Only : wp
-    Use comms,         Only : comms_type,gsum,gmax
-    Use domains,       Only : map
-    Use setup,         Only : boltz,mxcons,mxpmf,mxshl,mxtpmf,zero_plus
-    Use site,          Only : dofsit
-    Use configuration, Only : imcon,cell,natms,nlast,nfree,lsite, &
-                              lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
-                              weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-    Use kinetics,      Only : getvom,getknr,kinstress,kinstresf,kinstrest
-    Use core_shell,    Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
-    Use constraints,   Only : passcon,constraints_tags,constraints_shake_vv, &
-                              constraints_rattle
-    Use pmf,           Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
-    Use rigid_bodies,  Only : lashp_rgd,lishp_rgd,lshmv_rgd,mxatms,mxlrgd, &
-                              ntrgd,rgdx,rgdy,rgdz,rgdxxx,rgdyyy,rgdzzz, &
-                              rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz, &
-                              q0,q1,q2,q3,indrgd,listrgd,rgdfrz,rgdwgt, &
-                              rgdrix,rgdriy,rgdriz,mxrgd,rgdind,getrotmat, &
-                              no_squish,rigid_bodies_stress
-    Use numerics, Only : images,local_index,box_mueller_saru3,sarurnd
-    Use shared_units, Only : update_shared_units,update_shared_units_int
-    Use errors_warnings, Only : error,info
+  Use kinds,         Only : wp
+  Use comms,         Only : comms_type,gsum,gmax
+  Use domains,       Only : map
+  Use setup,         Only : boltz,mxcons,mxpmf,mxshl,mxtpmf,zero_plus
+  Use site,          Only : dofsit
+  Use configuration, Only : imcon,cell,natms,nlast,nfree,lsite, &
+                            lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
+                            weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+  Use kinetics,      Only : getvom,getknr,kinstress,kinstresf,kinstrest
+  Use core_shell,    Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
+  Use constraints,   Only : passcon,constraints_tags,constraints_shake_vv, &
+                            constraints_rattle
+  Use pmf,           Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
+  Use rigid_bodies,  Only : lashp_rgd,lishp_rgd,lshmv_rgd,mxatms,mxlrgd, &
+                            ntrgd,rgdx,rgdy,rgdz,rgdxxx,rgdyyy,rgdzzz, &
+                            rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz, &
+                            q0,q1,q2,q3,indrgd,listrgd,rgdfrz,rgdwgt, &
+                            rgdrix,rgdriy,rgdriz,mxrgd,rgdind,getrotmat, &
+                            no_squish,rigid_bodies_stress
+  Use numerics, Only : images,local_index,box_mueller_saru3,sarurnd
+  Use shared_units, Only : update_shared_units,update_shared_units_int
+  Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -31,11 +32,11 @@ Contains
 
   Subroutine nvt_a0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,temp,keyshl,taut,soft,       &
+             nstep,keyshl,       &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
-             megpmf,strpmf,virpmf,comm)
+             megpmf,strpmf,virpmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -61,7 +62,6 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
     Integer,            Intent( In    ) :: nstep,keyshl
-    Real( Kind = wp ),  Intent( In    ) :: temp,taut,soft
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
@@ -70,6 +70,7 @@ Contains
     Integer,            Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ),  Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -425,7 +426,7 @@ Contains
        j = 0
        tkin = 0.0_wp
        mxdr = 0.0_wp
-       scale = tstep/taut
+       scale = tstep/thermo%tau_t
        Do i=1,natms
           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
              If (sarurnd(ltg(i),0,nstep) <= scale) Then
@@ -464,19 +465,19 @@ Contains
 
   ! Scale to target temperature and apply thermostat
 
-       scale = Sqrt(mxdr * boltz * temp / tkin)
-       tmp = Sqrt(1.0_wp-soft**2)*scale
+       scale = Sqrt(mxdr * boltz * thermo%temp / tkin)
+       tmp = Sqrt(1.0_wp-thermo%soft**2)*scale
 
        Do i=1,natms
           If (qn(i) == 1) Then
-             If (soft <= zero_plus) Then ! New target velocity
+             If (thermo%soft <= zero_plus) Then ! New target velocity
                 vxx(i) = xxt(i)*scale
                 vyy(i) = yyt(i)*scale
                 vzz(i) = zzt(i)*scale
              Else ! Softened velocity (mixture between old & new)
-                vxx(i) = soft*vxx(i) + tmp*xxt(i)
-                vyy(i) = soft*vyy(i) + tmp*yyt(i)
-                vzz(i) = soft*vzz(i) + tmp*zzt(i)
+                vxx(i) = thermo%soft*vxx(i) + tmp*xxt(i)
+                vyy(i) = thermo%soft*vyy(i) + tmp*yyt(i)
+                vzz(i) = thermo%soft*vzz(i) + tmp*zzt(i)
              End If
           End If
        End Do
@@ -579,12 +580,12 @@ Contains
 
   Subroutine nvt_a1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,temp,keyshl,taut,soft,       &
+             nstep,keyshl,       &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             strcom,vircom,comm)
+             strcom,vircom,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -611,7 +612,6 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
     Integer,            Intent( In    ) :: nstep,keyshl
-    Real( Kind = wp ),  Intent( In    ) :: temp,taut,soft
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
@@ -623,6 +623,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -1362,7 +1363,7 @@ Contains
        qr(1:ntrgd)     = 0 ! unqualified RB
 
        j = 0
-       scale = tstep/taut
+       scale = tstep/thermo%tau_t
        Do i=1,natms
           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
              If (sarurnd(ltg(i),0,nstep) <= scale) Then
@@ -1527,20 +1528,20 @@ Contains
 
   ! Scale to target temperature and apply thermostat
 
-       scale = Sqrt(mxdr * boltz * temp / tkin)
-       tmp = Sqrt(1.0_wp-soft**2)*scale
+       scale = Sqrt(mxdr * boltz * thermo%temp / tkin)
+       tmp = Sqrt(1.0_wp-thermo%soft**2)*scale
 
        j = 0
        Do i=1,natms
           If (qn(i) == 1 .and. lfree(i) == 0) Then
-             If (soft <= zero_plus) Then ! New target velocity
+             If (thermo%soft <= zero_plus) Then ! New target velocity
                 vxx(i) = xxt(i)*scale
                 vyy(i) = yyt(i)*scale
                 vzz(i) = zzt(i)*scale
              Else ! Softened velocity (mixture between old & new)
-                vxx(i) = soft*vxx(i) + tmp*xxt(i)
-                vyy(i) = soft*vyy(i) + tmp*yyt(i)
-                vzz(i) = soft*vzz(i) + tmp*zzt(i)
+                vxx(i) = thermo%soft*vxx(i) + tmp*xxt(i)
+                vyy(i) = thermo%soft*vyy(i) + tmp*yyt(i)
+                vzz(i) = thermo%soft*vzz(i) + tmp*zzt(i)
              End If
           End If
        End Do
@@ -1561,25 +1562,25 @@ Contains
                 i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
 
                 If (rgdfrz(0,rgdtyp) == 0) Then
-                   If (soft <= zero_plus) Then ! New target velocity
+                   If (thermo%soft <= zero_plus) Then ! New target velocity
                       rgdvxx(irgd) = xxt(i1)*scale
                       rgdvyy(irgd) = yyt(i1)*scale
                       rgdvzz(irgd) = zzt(i1)*scale
                    Else ! Softened velocity (mixture between old & new)
-                      rgdvxx(irgd) = soft*rgdvxx(irgd) + tmp*xxt(i1)
-                      rgdvyy(irgd) = soft*rgdvyy(irgd) + tmp*yyt(i1)
-                      rgdvzz(irgd) = soft*rgdvzz(irgd) + tmp*zzt(i1)
+                      rgdvxx(irgd) = thermo%soft*rgdvxx(irgd) + tmp*xxt(i1)
+                      rgdvyy(irgd) = thermo%soft*rgdvyy(irgd) + tmp*yyt(i1)
+                      rgdvzz(irgd) = thermo%soft*rgdvzz(irgd) + tmp*zzt(i1)
                    End If
                 End If
 
-                If (soft <= zero_plus) Then ! New target velocity
+                If (thermo%soft <= zero_plus) Then ! New target velocity
                    rgdoxx(irgd) = xxt(i2)*scale
                    rgdoyy(irgd) = yyt(i2)*scale
                    rgdozz(irgd) = zzt(i2)*scale
                 Else ! Softened velocity (mixture between old & new)
-                   rgdoxx(irgd) = soft*rgdoxx(irgd) + tmp*xxt(i2)
-                   rgdoyy(irgd) = soft*rgdoyy(irgd) + tmp*yyt(i2)
-                   rgdozz(irgd) = soft*rgdozz(irgd) + tmp*zzt(i2)
+                   rgdoxx(irgd) = thermo%soft*rgdoxx(irgd) + tmp*xxt(i2)
+                   rgdoyy(irgd) = thermo%soft*rgdoyy(irgd) + tmp*yyt(i2)
+                   rgdozz(irgd) = thermo%soft*rgdozz(irgd) + tmp*zzt(i2)
                 End If
 
   ! get new rotation matrix

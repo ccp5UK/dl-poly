@@ -24,6 +24,7 @@ Module nvt_langevin
   Use langevin,        Only : langevin_forces
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -34,11 +35,11 @@ Contains
 
   Subroutine nvt_l0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,temp,chi,                    &
+             nstep,                    &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
-             megpmf,strpmf,virpmf,comm)
+             megpmf,strpmf,virpmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -66,7 +67,6 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: temp,chi
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
@@ -75,6 +75,7 @@ Contains
     Integer,           Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -181,8 +182,8 @@ Contains
           Call error(0,message)
        End If
 
-       Call langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
-       Call langevin_forces(-nstep,temp,tstep,chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr)
+       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl)
 
   100  Continue
 
@@ -203,9 +204,9 @@ Contains
   ! Create primitive scalers and adjust/increase timestep if need be
   ! when Cholesky factorisation is compromised
 
-       t0 = Exp(-chi*tstep)
-       t1 = (1.0_wp-t0   )/(  chi)
-       t2 = (1.0_wp-t0**2)/(2*chi)
+       t0 = Exp(-thermo%chi*tstep)
+       t1 = (1.0_wp-t0   )/(  thermo%chi)
+       t2 = (1.0_wp-t0**2)/(2*thermo%chi)
 
        safe=.true.
        Do
@@ -221,9 +222,9 @@ Contains
           Else
              safe=.false.
              tstep=tmp+1.0e-10_wp
-             t0 = Exp(-chi*tstep)
-             t1 = (1.0_wp-t0   )/(  chi)
-             t2 = (1.0_wp-t0**2)/(2*chi)
+             t0 = Exp(-thermo%chi*tstep)
+             t1 = (1.0_wp-t0   )/(  thermo%chi)
+             t2 = (1.0_wp-t0**2)/(2*thermo%chi)
           End If
        End Do
 
@@ -233,8 +234,8 @@ Contains
        scl = Sqrt(tstep-(t1**2)/t2)
        scv = Sqrt(t2)
 
-       scr1 = (t1-t2)/Sqrt(t2*tstep)/chi
-       scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/chi
+       scr1 = (t1-t2)/Sqrt(t2*tstep)/thermo%chi
+       scl1 = Sqrt(1.0_wp-(t1**2)/(t2*tstep))/thermo%chi
        scv1 = Sqrt(t2/tstep)
 
   ! update velocity and position
@@ -523,12 +524,12 @@ Contains
 
   Subroutine nvt_l1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,temp,chi,                    &
+             nstep,                    &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             strcom,vircom,comm)
+             strcom,vircom,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -557,7 +558,6 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: temp,chi
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                           strknf(1:9),strknt(1:9),engrot
@@ -569,6 +569,7 @@ Contains
                                           strpmf(1:9),virpmf
 
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -762,8 +763,8 @@ Contains
           Call error(0,message)
        End If
 
-       Call langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
-       Call langevin_forces(-nstep,temp,tstep,chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr)
+       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl)
        If (lshmv_rgd) Then
           Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxr,fyr,fzr,comm)
           Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
@@ -788,9 +789,9 @@ Contains
   ! Create primitive scalers and adjust/increase timestep if need be
   ! when Cholesky factorisation is compromised
 
-       t0 = Exp(-chi*tstep)
-       t1 = (1.0_wp-t0   )/(  chi)
-       t2 = (1.0_wp-t0**2)/(2*chi)
+       t0 = Exp(-thermo%chi*tstep)
+       t1 = (1.0_wp-t0   )/(  thermo%chi)
+       t2 = (1.0_wp-t0**2)/(2*thermo%chi)
 
        safe=.true.
        Do
@@ -805,9 +806,9 @@ Contains
           Else
              safe=.false.
              tstep=tmp+1.0e-10_wp
-             t0 = Exp(-chi*tstep)
-             t1 = (1.0_wp-t0   )/(  chi)
-             t2 = (1.0_wp-t0**2)/(2*chi)
+             t0 = Exp(-thermo%chi*tstep)
+             t1 = (1.0_wp-t0   )/(  thermo%chi)
+             t2 = (1.0_wp-t0**2)/(2*thermo%chi)
           End If
        End Do
 
@@ -817,8 +818,8 @@ Contains
        scl = Sqrt(tstep-(t1**2)/t2)
        scv = Sqrt(t2)
 
-       scr1 = (t1-t2)/Sqrt(t2*tstep)/chi
-       scl1 = Sqrt(Max(1.0_wp-(t1**2)/(t2*tstep),0.0_wp))/chi
+       scr1 = (t1-t2)/Sqrt(t2*tstep)/thermo%chi
+       scl1 = Sqrt(Max(1.0_wp-(t1**2)/(t2*tstep),0.0_wp))/thermo%chi
        scv1 = Sqrt(t2/tstep)
 
   ! update velocity and position of FPs
@@ -1534,11 +1535,11 @@ Contains
 
   Subroutine nvt_l2_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,temp,chi_ep,chi_es,vel_es2,  &
+             nstep,vel_es2,  &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
-             megpmf,strpmf,virpmf,comm)
+             megpmf,strpmf,virpmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1567,15 +1568,16 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: temp,chi_es,vel_es2
+    Real( Kind = wp ), Intent( In    ) :: vel_es2
 
-    Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke,chi_ep
+    Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
     Integer,           Intent( In    ) :: mxshak
     Real( Kind = wp ), Intent( In    ) :: tolnce
     Integer,           Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -1660,13 +1662,13 @@ Contains
   ! Rescale chi to match average electronic temperature if
   ! using homogeneous electron-phonon coupling
     If (l_ttm .and. gvar==1) Then
-      Call calcchies(chi_ep,comm)
+      Call calcchies(thermo%chi_ep,comm)
     End If
 
   ! check whether or not Langevin forces are needed: if electron-phonon
   ! friction coefficient is/will be greater than zero and coupling is 
   ! switched on after time offset
-    lrand = ((chi_ep>zero_plus .or. gvar==2) .and. l_epcp)
+    lrand = ((thermo%chi_ep>zero_plus .or. gvar==2) .and. l_epcp)
 
   ! first pass of velocity verlet algorithm
     If (isw == 0) Then
@@ -1695,8 +1697,8 @@ Contains
        End If
 
        If (lrand) Then
-         Call langevin_forces(nstep,temp,tstep,chi_ep,fxr,fyr,fzr)
-         Call langevin_forces(-nstep,temp,tstep,chi_ep,fxl,fyl,fzl)
+         Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi_ep,fxr,fyr,fzr)
+         Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi_ep,fxl,fyl,fzl)
        Else
          fxr = 0.0_wp; fyr = 0.0_wp; fzr = 0.0_wp
          fxl = 0.0_wp; fyl = 0.0_wp; fzl = 0.0_wp
@@ -1723,11 +1725,11 @@ Contains
 
        Select Case (gvar)
        Case (0,1)
-         chi = Max (chi_ep, chi_ep+chi_es)
+         chi = Max (thermo%chi_ep, thermo%chi_ep+thermo%chi_es)
        Case (2)
          Call eltemp_max (eltempmax,comm)
          chi = Gep(eltempmax)
-         chi = Max (chi, chi+chi_es)
+         chi = Max (chi, chi+thermo%chi_es)
        End Select
        t0 = Exp(-chi*tstep)
        t1 = (1.0_wp-t0   )/(  chi)
@@ -1757,7 +1759,7 @@ Contains
 
        Select Case (gvar)
        Case (0,1)
-         chi = Merge(chi_ep,0.0_wp,l_epcp)+chi_es
+         chi = Merge(thermo%chi_ep,0.0_wp,l_epcp)+thermo%chi_es
          t0a = Exp(-chi*tstep)
          If (chi>zero_plus) Then
            t1a = (1.0_wp-t0a   )/(  chi)
@@ -1773,11 +1775,11 @@ Contains
            scv1a = 0.0_wp
          End If
          If (lrand) Then
-           t0b = Exp(-chi_ep*tstep)
-           t1b = (1.0_wp-t0b)/chi_ep
-           t2b = (1.0_wp-t0b**2)/(2*chi_ep)
-           scr1b = (t1b-t2b)/Sqrt(t2b*tstep)/chi_ep
-           scl1b = Sqrt(1.0_wp-(t1b**2)/(t2b*tstep))/chi_ep
+           t0b = Exp(-thermo%chi_ep*tstep)
+           t1b = (1.0_wp-t0b)/thermo%chi_ep
+           t2b = (1.0_wp-t0b**2)/(2*thermo%chi_ep)
+           scr1b = (t1b-t2b)/Sqrt(t2b*tstep)/thermo%chi_ep
+           scl1b = Sqrt(1.0_wp-(t1b**2)/(t2b*tstep))/thermo%chi_ep
            scv1b = Sqrt(t2b/tstep)
          Else
            t0b = 0.0_wp
@@ -1797,7 +1799,7 @@ Contains
          ! one-way electron-phonon coupling
            Do i=1,natms
               velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
-              lvel = (velsq>vel_es2 .and. chi_es>zero_plus)
+              lvel = (velsq>vel_es2 .and. thermo%chi_es>zero_plus)
               If (weight(i) > 1.0e-6_wp) Then
                  ! check for active cell and electronic temperature is
                  ! higher than ionic tmeperature: if not, switch off thermostat
@@ -1814,7 +1816,7 @@ Contains
                      scl1 = Merge(scl1a,scl1b,lvel)
                      scv1 = Merge(scv1a,scv1b,lvel)
                    Case (2)
-                     chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel)
+                     chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
                      If (l_epcp) Then
                        t0 = Exp(-tstep*chi)
                        t1 = (1.0_wp-t0)/chi
@@ -1866,7 +1868,7 @@ Contains
 
            Do i=1,natms
               velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
-              lvel = (velsq>vel_es2 .and. chi_es>zero_plus)
+              lvel = (velsq>vel_es2 .and. thermo%chi_es>zero_plus)
               If (weight(i) > 1.0e-6_wp) Then
                  ! check for active cell: if not, switch off thermostat
                  ia = Floor((xxx(i)+zerocell(1))/delx) + 1
@@ -1882,7 +1884,7 @@ Contains
                      scl1 = Merge(scl1a,scl1b,lvel)
                      scv1 = Merge(scv1a,scv1b,lvel)
                    Case (2)
-                     chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(chi_es,0.0_wp,lvel)
+                     chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
                      If (l_epcp) Then
                        t0 = Exp(-tstep*chi)
                        t1 = (1.0_wp-t0)/chi
@@ -1939,7 +1941,7 @@ Contains
 
          Do i=1,natms
             velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
-            lvel = (velsq>vel_es2 .and. chi_es>zero_plus)
+            lvel = (velsq>vel_es2 .and. thermo%chi_es>zero_plus)
             If (weight(i) > 1.0e-6_wp) Then
 
   ! Half-kick velocity
@@ -1954,7 +1956,7 @@ Contains
                scr1 = Merge(scr1a,scr1b,lvel)
                scl1 = Merge(scl1a,scl1b,lvel)
                scv1 = Merge(scv1a,scv1b,lvel)
-               tmp=tstep/weight(i)*(1.0_wp+Merge(chi_es/chi_ep,0.0_wp,lvel))
+               tmp=tstep/weight(i)*(1.0_wp+Merge(thermo%chi_es/thermo%chi_ep,0.0_wp,lvel))
 
   ! Full time fluctuations on positions using half-kick velocity
   ! (time multipler adjusted to increase random forces when

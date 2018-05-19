@@ -18,6 +18,7 @@ Module nvt_nose_hoover
   Use pmf,         Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
   Use numerics,        Only : images
   Use errors_warnings, Only : error,info
+  Use thermostat, Only : thermostat_type
 
   Implicit None
 
@@ -29,12 +30,12 @@ Contains
 
   Subroutine nvt_h0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,cint,              &
+             sigma,chit,cint,              &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
-             megpmf,strpmf,virpmf,comm)
+             megpmf,strpmf,virpmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -56,7 +57,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
     Real( Kind = wp ), Intent(   Out ) :: consv
@@ -68,6 +69,7 @@ Contains
     Integer,           Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -121,7 +123,7 @@ Contains
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        ceng  = 2.0_wp*sigma
 
   ! set number of constraint+pmf shake iterations
@@ -463,13 +465,13 @@ Contains
 
   Subroutine nvt_h1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,taut,chit,cint,              &
+             sigma,chit,cint,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             strcom,vircom,comm)
+             strcom,vircom,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -492,7 +494,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma,taut
+    Real( Kind = wp ), Intent( In    ) :: sigma
     Real( Kind = wp ), Intent( InOut ) :: chit,cint
 
     Real( Kind = wp ), Intent(   Out ) :: consv
@@ -507,6 +509,7 @@ Contains
                                           strpmf(1:9),virpmf
 
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -579,7 +582,7 @@ Contains
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*sigma*taut**2
+       qmass = 2.0_wp*sigma*thermo%tau_t**2
        ceng  = 2.0_wp*sigma
 
   ! set number of constraint+pmf shake iterations
