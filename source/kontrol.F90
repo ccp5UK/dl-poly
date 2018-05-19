@@ -4,8 +4,7 @@ Module kontrol
   Use timer,      Only : timer_type
   Use configuration,     Only : sysname
   Use mpole,     Only : thole
-  Use dpd,        Only : keydpd,gamdpd
-  Use langevin,   Only : l_lan,l_gst,langevin_allocate_arrays
+  Use langevin,   Only : langevin_allocate_arrays
   Use bonds,      Only : rcbnd
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : ld_met,ls_met,tabmet
@@ -45,8 +44,9 @@ Module kontrol
                             IO_WRITE_SORTED_DIRECT,   &
                             IO_WRITE_SORTED_NETCDF,   &
                             IO_WRITE_SORTED_MASTER
-  
   Use numerics, Only : dcell, invert
+  Use thermostat, Only : thermostat_type
+
   Implicit None
   Private
   Public :: read_control
@@ -61,23 +61,22 @@ Module kontrol
 Subroutine read_control                                &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
            rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
-           l_exp,lecx,lfcap,l_top,lzero,lmin,          &
-           ltgaus,ltscal,lvar,leql,lpse,               &
+           l_exp,lecx,lfcap,l_top,lmin,          &
+           lvar,leql,               &
            lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
            lvafav,lpvaf,ltraj,ldef,lrsd,               &
            nx,ny,nz,impa,                            &
-           temp,press,strext,keyres,                   &
+           keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
-           nstzero,nstgaus,nstscal,                    &
-           keyens,iso,taut,chi,chi_ep,chi_es,soft,gama,&
-           taup,tai,ten,vel_es2,keypse,wthpse,tmppse,  &
+           keyens,&
+           vel_es2,  &
            fmax,nstbpo,intsta,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,tmr,comm)
+           ndump,pdplnc,thermo,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -105,9 +104,8 @@ Subroutine read_control                                &
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
                                              lfcap,l_top,           &
-                                             lmin,lzero,            &
-                                             ltgaus,ltscal,         &
-                                             lvar,leql,lpse,lfce,   &
+                                             lmin, &
+                                             lvar,leql,lfce,   &
                                              lpana,                 &
                                              lrdf,lprdf,lzdn,lpzdn, &
                                              lvafav,lpvaf,          &
@@ -116,11 +114,10 @@ Subroutine read_control                                &
 
   Integer,                Intent(   Out ) :: nx,ny,nz,             &
                                              keyres,nstrun,        &
-                                             nsteql,nstzero,       &
+                                             nsteql,       &
                                              keymin,nstmin,        &
-                                             nstgaus,nstscal,      &
-                                             keyens,iso,           &
-                                             keypse,nstbpo,        &
+                                             keyens,           &
+                                             nstbpo,        &
                                              intsta,keyfce,        &
                                              mxshak,mxquat,        &
                                              nstbnd,nstang,        &
@@ -132,16 +129,15 @@ Subroutine read_control                                &
                                              nsrsd,isrsd,          &
                                              ndump
 
-  Real( Kind = wp ),      Intent(   Out ) :: temp,press,strext(1:9),     &
-                                             tstep,mndis,mxdis,mxstp,    &
-                                             taut,chi,chi_ep,chi_es,soft,&
-                                             gama,taup,tai,ten,vel_es2,  &
-                                             wthpse,tmppse,min_tol(1:2), &
+  Real( Kind = wp ),      Intent(   Out ) :: tstep,mndis,mxdis,mxstp,    &
+                                             vel_es2,  &
+                                             min_tol(1:2), &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
                                              rdef,rrsd,pdplnc 
-  Type( impact_type ),    Intent(   Out)  :: impa
-  Type( timer_type ),     Intent( InOut)   :: tmr
+  Type( impact_type ),     Intent(   Out ) :: impa
+  Type ( thermostat_type), Intent( InOut ) :: thermo
+  Type( timer_type ),      Intent( InOut ) :: tmr
   Type( comms_type ),     Intent( InOut )  :: comm
 
 
@@ -198,9 +194,9 @@ Subroutine read_control                                &
   ltemp   = .false.
   lpres   = .false.
   lstrext = .false.
-  temp    = 0.0_wp
-  press   = 0.0_wp
-  strext  = 0.0_wp
+  thermo%temp    = 0.0_wp
+  thermo%press   = 0.0_wp
+  thermo%stress  = 0.0_wp
 
 ! default restart key (general)
 
@@ -234,10 +230,10 @@ Subroutine read_control                                &
 ! and minimum width of the thermostatted boundaries in Angs
 ! minimum temperature of the thermostat
 
-  lpse   = .false.
-  keypse = 0
-  wthpse = 2.0_wp
-  tmppse = 1.0_wp
+  thermo%l_pseudo   = .false.
+  thermo%key_pseudo = 0
+  thermo%width_pseudo = 2.0_wp
+  thermo%temp_pseudo = 1.0_wp
 
 ! default switch for conjugate gradient minimisation during equilibration
 
@@ -249,20 +245,20 @@ Subroutine read_control                                &
 ! default switch for regaussing temperature and default number of
 ! steps when to be applied
 
-  ltgaus  = .false.
-  nstgaus = 0
+  thermo%l_tgaus  = .false.
+  thermo%freq_tgaus = 0
 
 ! default switch for temperature scaling and default number of
 ! steps when to be applied
 
-  ltscal  = .false.
-  nstscal = 0
+  thermo%l_tscale  = .false.
+  thermo%freq_tscale = 0
 
 ! default switch for zero temperature optimisation and default number of
 ! steps when to be applied
 
-  lzero   = .false.
-  nstzero = 0
+  thermo%l_zero   = .false.
+  thermo%freq_zero = 0
   l_0     = .false. ! T/=10K
 
 ! default integration type (VV), ensemble switch (not defined) and key
@@ -273,18 +269,18 @@ Subroutine read_control                                &
 
 ! default thermostat and barostat friction time constants
 
-  taut   = 0.0_wp ! thermostat relaxation time
-  chi    = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
-  chi_ep = 0.5_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin) 
+  thermo%tau_t   = 0.0_wp ! thermostat relaxation time
+  thermo%chi    = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
+  thermo%chi_ep = 0.5_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin) 
                   ! thermostat/electron-phonon friction
-  chi_es = 0.0_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
+  thermo%chi_es = 0.0_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
                   ! thermostat/electronic stopping friction
-  soft   = 0.0_wp ! Softness for Andersen thermostat
-  gama   = 0.0_wp ! Stochastic (Langevin) friction on a thermostat
-  taup   = 0.0_wp ! barostat relaxation time
-  tai    = 0.0_wp ! Stochastic Dynamics (SD Langevin) barostat friction
-  iso    = 0      ! no semi-isotropic feature
-  ten    = 0.0_wp ! surface tension
+  thermo%soft   = 0.0_wp ! Softness for Andersen thermostat
+  thermo%gama   = 0.0_wp ! Stochastic (Langevin) friction on a thermostat
+  thermo%tau_p   = 0.0_wp ! barostat relaxation time
+  thermo%tai    = 0.0_wp ! Stochastic Dynamics (SD Langevin) barostat friction
+  thermo%iso    = 0      ! no semi-isotropic feature
+  thermo%tension    = 0.0_wp ! surface tension
 
 ! default value for inhomogeneous Langevin thermostat/
 ! two-temperature model source term cutoff velocity
@@ -798,34 +794,34 @@ Subroutine read_control                                &
 
         ltemp = .true.
         Call get_word(record,word)
-        temp = Abs(word_2_real(word))
-        Write(message,'(a,1p,e12.4)') 'simulation temperature (K)  ',temp
+        thermo%temp = Abs(word_2_real(word))
+        Write(message,'(a,1p,e12.4)') 'simulation temperature (K)  ',thermo%temp
         Call info(message,.true.)
 
 ! read zero temperature optimisation
 
      Else If (word(1:4) == 'zero') Then
 
-        lzero = .true.
+        thermo%l_zero = .true.
 
 ! Check defaults
 
         Call get_word(record,word)
         l_0 = (word(1:4) == 'fire')
-        nstzero = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
+        thermo%freq_zero = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         If (word(1:5) == 'every') Call get_word(record,word)
-        nstzero = Max(nstzero,Abs(Nint(word_2_real(word,0.0_wp))))
+        thermo%freq_zero = Max(thermo%freq_zero,Abs(Nint(word_2_real(word,0.0_wp))))
 
         Call info('zero K optimisation on (during equilibration)',.true.)
-        Write(message,'(a,i10)') 'temperature regaussing interval',nstzero
+        Write(message,'(a,i10)') 'temperature regaussing interval',thermo%freq_zero
 
         If (l_0) Then
            If (comm%idnode == 0) &
            Call info('fire option on - actual temperature will reset to 10 Kelvin if no target tempreature is specified',.true.)
         Else
            ltemp  = .true.
-           temp = 10.0_wp
+           thermo%temp = 10.0_wp
            Call info('fire option off - actual temperature reset to 10 Kelvin',.true.)
         End If
 
@@ -841,40 +837,40 @@ Subroutine read_control                                &
            lstrext=.true.
 
            Call get_word(record,word)
-           strext(1) = word_2_real(word)
+           thermo%stress(1) = word_2_real(word)
            Call get_word(record,word)
-           strext(5) = word_2_real(word)
+           thermo%stress(5) = word_2_real(word)
            Call get_word(record,word)
-           strext(9) = word_2_real(word)
+           thermo%stress(9) = word_2_real(word)
            Call get_word(record,word)
-           strext(2) = word_2_real(word)
-           strext(4) = strext(2)
+           thermo%stress(2) = word_2_real(word)
+           thermo%stress(4) = thermo%stress(2)
            Call get_word(record,word)
-           strext(3) = word_2_real(word)
-           strext(7) = strext(3)
+           thermo%stress(3) = word_2_real(word)
+           thermo%stress(7) = thermo%stress(3)
            Call get_word(record,word)
-           strext(6) = word_2_real(word)
-           strext(8) = strext(6)
+           thermo%stress(6) = word_2_real(word)
+           thermo%stress(8) = thermo%stress(6)
 
            Call info('simulation pressure tensor (katms):',.true.)
-           Write(messages(1),'(3f20.10)') strext(1:3)
-           Write(messages(2),'(3f20.10)') strext(4:6)
-           Write(messages(3),'(3f20.10)') strext(7:9)
+           Write(messages(1),'(3f20.10)') thermo%stress(1:3)
+           Write(messages(2),'(3f20.10)') thermo%stress(4:6)
+           Write(messages(3),'(3f20.10)') thermo%stress(7:9)
            Call info(messages,3,.true.)
 
 ! convert from katms to internal units of pressure
 
-           strext = strext/prsunt
+           thermo%stress = thermo%stress/prsunt
         Else
            lpres=.true.
 
-           press = word_2_real(word)
+           thermo%press = word_2_real(word)
 
-           Write(message,'(a,1p,e12.4)') 'simulation pressure (katms) ',press
+           Write(message,'(a,1p,e12.4)') 'simulation pressure (katms) ',thermo%press
 
 ! convert from katms to internal units of pressure
 
-           press = press/prsunt
+           thermo%press = thermo%press/prsunt
         End If
 
 ! read restart
@@ -957,53 +953,53 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         If      (word(1:4) == 'lang'  ) Then
-           keypse = 1
+           thermo%key_pseudo = 1
            Call get_word(record,word)
         Else If (word(1:5) == 'gauss') Then
-           keypse = 2
+           thermo%key_pseudo = 2
            Call get_word(record,word)
         Else If (word(1:6) == 'direct') Then
-           keypse = 3
+           thermo%key_pseudo = 3
            Call get_word(record,word)
         End If
 
-! wthpse = 2 Angs by default
+! thermo%width_pseudo = 2 Angs by default
 
         tmp = Abs(word_2_real(word))
-        If (width/4.0_wp > wthpse) Then
-           lpse = .true.
+        If (width/4.0_wp > thermo%width_pseudo) Then
+           thermo%l_pseudo = .true.
            If (comm%idnode == 0) Then
               Call info('pseudo thermostat attached to MD cell boundary',.true.)
-              If      (keypse == 0) Then
+              If      (thermo%key_pseudo == 0) Then
                 Call info('thermostat control: Langevin + direct temperature scaling',.true.)
-              Else If (keypse == 1) Then
+              Else If (thermo%key_pseudo == 1) Then
                 Call info('thermostat control: Langevin temperature scaling',.true.)
-              Else If (keypse == 2) Then
+              Else If (thermo%key_pseudo == 2) Then
                 Call info('thermostat control: gaussian temperature scaling',.true.)
-              Else If (keypse == 3) Then
+              Else If (thermo%key_pseudo == 3) Then
                 Call info('thermostat control: direct temperature scaling',.true.)
               End If
               Write(message,'(a,1p,e12.4)') 'thermostat thickness (Angs) ',tmp
            End If
 
-           If (width/4.0_wp > tmp .and. tmp >= wthpse) Then
-              wthpse = tmp
+           If (width/4.0_wp > tmp .and. tmp >= thermo%width_pseudo) Then
+              thermo%width_pseudo = tmp
            Else
               Call info('thermostat thickness insufficient - reset to 2 Angs',.true.)
            End If
         Else
-           Call warning(280,wthpse,width,0.0_wp)
+           Call warning(280,thermo%width_pseudo,width,0.0_wp)
            Call error(530)
         End If
 
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
         If (tmp <= zero_plus) Then
-           tmppse = temp
+           thermo%temp_pseudo = thermo%temp
         Else
-           tmppse = Max(tmppse,tmp)
+           thermo%temp_pseudo = Max(thermo%temp_pseudo,tmp)
         End If
-        Write(message,'(a,1p,e12.4)') 'thermostat temperature (K) ',tmppse
+        Write(message,'(a,1p,e12.4)') 'thermostat temperature (K) ',thermo%temp_pseudo
         Call info(message,.true.)
 
 ! read minimiser option
@@ -1092,12 +1088,12 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'regaus') Then
 
         Call get_word(record,word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstgaus = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
+        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record,word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record,word)
+        thermo%freq_tgaus = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
-        ltgaus =.true.
-        Write(message,'(a,i10)') 'temperature regaussing interval ', nstgaus
+        thermo%l_tgaus =.true.
+        Write(message,'(a,i10)') 'temperature regaussing interval ', thermo%freq_tgaus
         Call info(message,.true.)
 
 ! read temperature scaling option
@@ -1105,13 +1101,13 @@ Subroutine read_control                                &
      Else If (word(1:5) == 'scale') Then
 
         Call get_word(record,word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        If (word(1:5) == 'every' .or. word(1:4) == 'temp') Call get_word(record,word)
-        nstscal = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
+        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record,word)
+        If (word(1:5) == 'every' .or. word(1:4) == 'thermo%temp') Call get_word(record,word)
+        thermo%freq_tscale = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
-        ltscal =.true.
+        thermo%l_tscale =.true.
         Call info('temperature scaling on (during equilibration)',.true.)
-        Write(message,'(a,i10)') 'temperature scaling interval ',nstscal
+        Write(message,'(a,i10)') 'temperature scaling interval ',thermo%freq_tscale
         Call info(message,.true.)
 
 ! read polarisation option
@@ -1157,9 +1153,9 @@ Subroutine read_control                                &
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
         If (word(1:8) == 'leapfrog') lvv=.false.
 
-! keydpd detected in scan_control
+! thermo%key_dpd detected in scan_control
 
-        If (keydpd > 0 .and. (lvv .neqv. l_vv)) Then
+        If (thermo%key_dpd > 0 .and. (lvv .neqv. l_vv)) Then
           Call warning('Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats',.true.)
         End If
 
@@ -1201,13 +1197,13 @@ Subroutine read_control                                &
            Else If (word(1:4) == 'lang') Then
 
               keyens = 10
-              If (.not.l_vv) l_lan = .true.
+              If (.not.l_vv) thermo%l_langevin = .true.
 
               Call get_word(record,word)
-              chi = Abs(word_2_real(word))
+              thermo%chi = Abs(word_2_real(word))
 
               Call info('Ensemble : NVT Langevin (Stochastic Dynamics)',.true.)
-              Write(message,'(a,1p,e12.4)') 'thermostat friction ', chi
+              Write(message,'(a,1p,e12.4)') 'thermostat friction ', thermo%chi
               Call info(message,.true.)
 
               If (lens) Call error(414)
@@ -1218,14 +1214,14 @@ Subroutine read_control                                &
               keyens = 11
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
               Call get_word(record,word)
-              soft = Abs(word_2_real(word))
-              If (soft > 1.0_wp) soft=1.0_wp/soft
+              thermo%soft = Abs(word_2_real(word))
+              If (thermo%soft > 1.0_wp) thermo%soft=1.0_wp/thermo%soft
 
               Write(messages(1),'(a)') 'Ensemble : NVT Andersen'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
-              Write(messages(3),'(a,1p,e12.4)') 'softness (dimensionless)',soft
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+              Write(messages(3),'(a,1p,e12.4)') 'softness (dimensionless)',thermo%soft
               Call info(messages,3,.true.)
 
               If (lens) Call error(414)
@@ -1236,10 +1232,10 @@ Subroutine read_control                                &
               keyens = 12
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
 
               Call info('Ensemble : NVT Berendsen',.true.)
-              Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
               Call info(message,.true.)
 
               If (lens) Call error(414)
@@ -1250,10 +1246,10 @@ Subroutine read_control                                &
               keyens = 13
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
 
               Call info('Ensemble : NVT Nose-Hoover',.true.)
-              Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
+              Write(message,'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
               Call info(message,.true.)
 
               If (lens) Call error(414)
@@ -1262,17 +1258,16 @@ Subroutine read_control                                &
            Else If (word(1:3) == 'gst') Then
 
               keyens = 14
-              l_gst = .true.
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
 
               Call get_word(record,word)
-              gama = Abs(word_2_real(word))
+              thermo%gama = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NVT gentle stochastic thermostat'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
-              Write(messages(3),'(a,1p,e12.4)') 'friction on thermostat  (ps^-1) ',gama
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+              Write(messages(3),'(a,1p,e12.4)') 'friction on thermostat  (ps^-1) ',thermo%gama
               Call info(messages,3,.true.)
 
               If (lens) Call error(414)
@@ -1281,18 +1276,18 @@ Subroutine read_control                                &
            Else If (word(1:4) == 'ttm' .or. word(1:6) == 'inhomo') Then
 
               keyens = 15
-              If (.not.l_vv) l_lan = .true.
+              If (.not.l_vv) thermo%l_langevin = .true.
 
               Call get_word(record,word)
-              chi_ep  = Abs(word_2_real(word))
+              thermo%chi_ep  = Abs(word_2_real(word))
               Call get_word(record,word)
-              chi_es  = Abs(word_2_real(word))
+              thermo%chi_es  = Abs(word_2_real(word))
               Call get_word(record,word)
               vel_es2 = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
-              Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',chi_ep
-              Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',chi_es
+              Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',thermo%chi_ep
+              Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',thermo%chi_es
               Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ',vel_es2
               Call info(messages,4,.true.)
 
@@ -1303,12 +1298,12 @@ Subroutine read_control                                &
 
               Call info('Ensemble : NVT dpd (Dissipative Particle Dynamics)',.true.)
 
-! keydpd determined in scan_control
+! thermo%key_dpd determined in scan_control
 
-              If      (keydpd == 1) Then
+              If      (thermo%key_dpd == 1) Then
                  keyens = 0 ! equivalence to doing NVE with some extra fiddling before VV(0)
                  Call info("Ensemble type : Shardlow's first order splitting (S1)",.true.)
-              Else If (keydpd == 2) Then
+              Else If (thermo%key_dpd == 2) Then
                  keyens = 0 ! equivalence to doing NVE with some extra fiddling before VV(0) and after VV(1)
                  Call info("Ensemble type : Shardlow's second order splitting (S2)",.true.)
               Else
@@ -1319,10 +1314,10 @@ Subroutine read_control                                &
               End If
 
               Call get_word(record,word)
-              gamdpd(0) = Abs(word_2_real(word,0.0_wp))
+              thermo%gamdpd(0) = Abs(word_2_real(word,0.0_wp))
 
-              If (gamdpd(0) > zero_plus) Then
-                 Write(message,'(a,1p,e12.4)') 'drag coefficient (Dalton/ps) ', gamdpd(0)
+              If (thermo%gamdpd(0) > zero_plus) Then
+                 Write(message,'(a,1p,e12.4)') 'drag coefficient (Dalton/ps) ', thermo%gamdpd(0)
                  Call info(message,.true.)
               End If
 
@@ -1345,20 +1340,20 @@ Subroutine read_control                                &
            If (word(1:4) == 'lang') Then
 
               keyens = 20
-              l_lan = .true.
+              thermo%l_langevin = .true.
 
               Call get_word(record,word)
-              chi = Abs(word_2_real(word))
+              thermo%chi = Abs(word_2_real(word))
               Call get_word(record,word)
-              tai = Abs(word_2_real(word))
+              thermo%tai = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NPT isotropic Langevin (Stochastic Dynamics)'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',chi
-              Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',tai
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
+              Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
               Call info(messages,3,.true.)
 
-!                 taut=1/(2.0_wp*pi*chi)
-!                 taup=1/(2.0_wp*pi*tai)
+!                 thermo%tau_t=1/(2.0_wp*pi*thermo%chi)
+!                 thermo%tau_p=1/(2.0_wp*pi*thermo%tai)
 
               If (lens) Call error(414)
               lens=.true.
@@ -1368,13 +1363,13 @@ Subroutine read_control                                &
               keyens = 21
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word))
+              thermo%tau_p = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NPT isotropic Berendsen'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
-              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
               Call info(messages,3,.true.)
 
               If (lens) Call error(414)
@@ -1385,13 +1380,13 @@ Subroutine read_control                                &
               keyens = 22
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word))
+              thermo%tau_p = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NPT isotropic Nose-Hoover (Melchionna)'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
-              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
               Call info(messages,3,.true.)
 
               If (lens) Call error(414)
@@ -1402,13 +1397,13 @@ Subroutine read_control                                &
               keyens = 23
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word))
+              thermo%tau_p = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NPT isotropic Martyna-Tuckerman-Klein'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
-              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
               Call info(messages,3,.true.)
 
               If (lens) Call error(414)
@@ -1430,39 +1425,39 @@ Subroutine read_control                                &
            If (word(1:4) == 'lang') Then
 
               keyens = 30
-              l_lan = .true.
+              thermo%l_langevin = .true.
 
               Call get_word(record,word)
-              chi = Abs(word_2_real(word))
+              thermo%chi = Abs(word_2_real(word))
               Call get_word(record,word)
-              tai = Abs(word_2_real(word))
+              thermo%tai = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Langevin (Stochastic Dynamics)'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',chi
-              Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',tai
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat friction (ps^-1)',thermo%chi
+              Write(messages(3),'(a,1p,e12.4)') 'barostat friction (ps^-1)',thermo%tai
               Call info(messages,3,.true.)
 
-!                 taut=chi
-!                 taup=2.0_wp*pi/tai
+!                 thermo%tau_t=thermo%chi
+!                 thermo%tau_p=2.0_wp*pi/thermo%tai
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
-                 iso=1
+                 thermo%iso=1
                  Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
                  Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
-                 iso=2
+                 thermo%iso=2
                  Call get_word(record,word)
-                 ten = Abs(word_2_real(word))
+                 thermo%tension = Abs(word_2_real(word))
                  Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
                  Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
-                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', ten
+                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
                  Call info(messages,3,.true.)
-                 ten=ten/tenunt
+                 thermo%tension=thermo%tension/tenunt
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
-                    iso=3
+                    thermo%iso=3
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
@@ -1473,10 +1468,10 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
-                    iso=2
+                    thermo%iso=2
                     Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
-                    iso=3
+                    thermo%iso=3
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
@@ -1490,7 +1485,7 @@ Subroutine read_control                                &
                  Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso >= 1 .and. iso <= 2) Then
+              If (thermo%iso >= 1 .and. thermo%iso <= 2) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
                    //'interfaces placed perpendicularly to the z axis',.true.)
               End If
@@ -1503,33 +1498,33 @@ Subroutine read_control                                &
               keyens = 31
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word))
+              thermo%tau_p = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Berendsen'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
-              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
               Call info(messages,3,.true.)
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
-                 iso=1
+                 thermo%iso=1
                  Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
                  Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
-                 iso=2
+                 thermo%iso=2
                  Call get_word(record,word)
-                 ten = Abs(word_2_real(word))
+                 thermo%tension = Abs(word_2_real(word))
                  Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
                  Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
-                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', ten
+                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
                  Call info(messages,3,.true.)
-                 ten=ten/tenunt
+                 thermo%tension=thermo%tension/tenunt
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
-                    iso=3
+                    thermo%iso=3
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
@@ -1540,10 +1535,10 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
-                    iso=2
+                    thermo%iso=2
                     Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
-                    iso=3
+                    thermo%iso=3
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
@@ -1557,7 +1552,7 @@ Subroutine read_control                                &
                  Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso >= 1 .and. iso <= 2) Then
+              If (thermo%iso >= 1 .and. thermo%iso <= 2) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
                    //'interfaces placed perpendicularly to the z axis')
               End If
@@ -1570,33 +1565,33 @@ Subroutine read_control                                &
               keyens = 32
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word))
+              thermo%tau_p = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Nose-Hoover (Melchionna)'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
-              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
               Call info(messages,3,.true.)
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
-                 iso=1
+                 thermo%iso=1
                  Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
                  Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
-                 iso=2
+                 thermo%iso=2
                  Call get_word(record,word)
-                 ten = Abs(word_2_real(word))
+                 thermo%tension = Abs(word_2_real(word))
                  Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
                  Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
-                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', ten
+                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
                  Call info(messages,3,.true.)
-                 ten=ten/tenunt
+                 thermo%tension=thermo%tension/tenunt
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
-                    iso=3
+                    thermo%iso=3
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
@@ -1607,10 +1602,10 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
-                    iso=2
+                    thermo%iso=2
                     Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
-                    iso=3
+                    thermo%iso=3
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
@@ -1624,7 +1619,7 @@ Subroutine read_control                                &
                  Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso >= 1 .and. iso <= 2) Then
+              If (thermo%iso >= 1 .and. thermo%iso <= 2) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
                    //'interfaces placed perpendicularly to the z axis',.true.)
               End If
@@ -1637,33 +1632,33 @@ Subroutine read_control                                &
               keyens = 33
 
               Call get_word(record,word)
-              taut = Abs(word_2_real(word))
+              thermo%tau_t = Abs(word_2_real(word))
               Call get_word(record,word)
-              taup = Abs(word_2_real(word))
+              thermo%tau_p = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NPT anisotropic Martyna-Tuckerman-Klein'
-              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',taut
-              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',taup
+              Write(messages(2),'(a,1p,e12.4)') 'thermostat relaxation time (ps) ',thermo%tau_t
+              Write(messages(3),'(a,1p,e12.4)') 'barostat relaxation time (ps) ',thermo%tau_p
               Call info(messages,3,.true.)
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
-                 iso=1
+                 thermo%iso=1
                  Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
                  Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
-                 iso=2
+                 thermo%iso=2
                  Call get_word(record,word)
-                 ten = Abs(word_2_real(word))
+                 thermo%tension = Abs(word_2_real(word))
                  Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
                  Write(messages(2),'(a)') '     (N-Pn-gamma-T)     : constant surface tension (gamma)'
-                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', ten
+                 Write(messages(3),'(a,1p,e11.4)') 'sumulation surface tension (dyn/cm)', thermo%tension
                  Call info(messages,3,.true.)
-                 ten=ten/tenunt
+                 thermo%tension=thermo%tension/tenunt
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
-                    iso=3
+                    thermo%iso=3
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
@@ -1674,10 +1669,10 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
-                    iso=2
+                    thermo%iso=2
                     Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
-                    iso=3
+                    thermo%iso=3
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
@@ -1691,7 +1686,7 @@ Subroutine read_control                                &
                  Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (iso >= 1 .and. iso <= 2) Then
+              If (thermo%iso >= 1 .and. thermo%iso <= 2) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
                    //'interfaces placed perpendicularly to the z axis',.true.)
               End If
@@ -1719,7 +1714,7 @@ Subroutine read_control                                &
 
 ! For Langevin ensembles that require arrays
 
-        If (l_lan) Call langevin_allocate_arrays()
+        If (thermo%l_langevin) Call langevin_allocate_arrays()
 
 ! read density variation option
 
@@ -2226,7 +2221,7 @@ Subroutine read_control                                &
           Call get_word(record,word)
           Ka0 = word_2_real(word)
           Write(messages(1),'(a)') 'electronic thermal conductivity set to drude model'
-          Write(messages(2),'(a,1p,e12.4)') 't.c. at system temp. (W m^-1 K^-1) ',Ka0
+          Write(messages(2),'(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ',Ka0
           Call info(messages,2,.true.)
 
         Else If (word1(1:5) == 'ketab') Then
@@ -2431,7 +2426,7 @@ Subroutine read_control                                &
 
         Else If (word1(1:4) == 'varg') Then
 
-        ! variable electron-phonon coupling constant (chi_ep) based on
+        ! variable electron-phonon coupling constant (thermo%chi_ep) based on
         ! tabular electronic stopping terms (in g.dat file): option to
         ! apply value homogeneously across system (based on average 
         ! electronic temperature) or heterogeneously (using local 
@@ -2969,9 +2964,9 @@ Subroutine read_control                                &
 ! fix on step-dependent options
 
   If (nstmin  == 0) nstmin  = nsteql+1
-  If (nstzero == 0) nstzero = nsteql+1
-  If (nstgaus == 0) nstgaus = nsteql+1
-  If (nstscal == 0) nstscal = nsteql+1
+  If (thermo%freq_zero == 0) thermo%freq_zero = nsteql+1
+  If (thermo%freq_tgaus == 0) thermo%freq_tgaus = nsteql+1
+  If (thermo%freq_tscale == 0) thermo%freq_tscale = nsteql+1
 
 !!! REPORTS !!!
 ! report restart
@@ -2996,8 +2991,8 @@ Subroutine read_control                                &
     End If
     If (l_ttm) Then
       Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
-      Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',chi_ep
-      Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',chi_es
+      Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',thermo%chi_ep
+      Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',thermo%chi_es
       Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',vel_es2
       Call info(messages,4,.true.)
     Else
@@ -3009,19 +3004,19 @@ Subroutine read_control                                &
 
 ! report replacement of specified ensemble with inhomogeneous
 ! Langevin if two-temperature model is in use, replacing
-! default electron-phonon friction value with chi from
+! default electron-phonon friction value with thermo%chi from
 ! standard Langevin thermostat (if supplied), and use of
 ! thermal velocities only for thermostat
 
   If (l_ttm .and. keyens/=15) Then
     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
-    If (keyens==10 .or. keyens==20 .or. keyens==30 .and. chi>zero_plus) Then
-      chi_ep = chi
+    If (keyens==10 .or. keyens==20 .or. keyens==30 .and. thermo%chi>zero_plus) Then
+      thermo%chi_ep = thermo%chi
     End If
 
     Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
-    Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',chi_ep
-    Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',chi_es
+    Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',thermo%chi_ep
+    Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',thermo%chi_es
     Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',vel_es2
     Call info(messages,4,.true.)
 
@@ -3096,7 +3091,7 @@ Subroutine read_control                                &
 
   If (lvar) Then
 
-     If (keydpd > 0) Then
+     If (thermo%key_dpd > 0) Then
         lvar=.false.
         Call warning('variable timestep unavalable in DPD themostats',.true.)
         Write(message,'(a,1p,e12.4)') 'fixed simulation timestep (ps) ',tstep
@@ -3388,15 +3383,15 @@ Subroutine read_control                                &
   Else If (.not.l_str) Then !!! NO STRICT
      If (.not.ltemp) Then ! Simulation temperature
         ltemp=.true.
-        temp=300.0_wp
-        Write(message,'(a,1p,e12.4)') 'default simulation temperature (K) ',temp
+        thermo%temp=300.0_wp
+        Write(message,'(a,1p,e12.4)') 'default simulation temperature (K) ',thermo%temp
         Call info(message,.true.)
      End If
 
      If (.not.lpres) Then ! Simulation pressure
         lpres=.true.
-        press=0.0_wp
-        Write(message,'(a,1p,e12.4)') 'default simulation pressure (katms) ',press*prsunt
+        thermo%press=0.0_wp
+        Write(message,'(a,1p,e12.4)') 'default simulation pressure (katms) ',thermo%press*prsunt
         Call info(message,.true.)
      End If
 
@@ -3426,8 +3421,8 @@ Subroutine read_control                                &
   End If
 
   If (l_0 .and. (.not. ltemp)) Then ! zero K over zero fire
-     temp = 10.0_wp
-     Write(message,'(a,1p,e12.4)') 'default simulation temperature (K) ',temp
+     thermo%temp = 10.0_wp
+     Write(message,'(a,1p,e12.4)') 'default simulation temperature (K) ',thermo%temp
      Call info(message,.true.)
   End If
 
@@ -3437,7 +3432,7 @@ Subroutine read_control                                &
 !!! ERROR CHECKS !!!
 ! Temperature
 
-  If ((.not.ltemp) .or. (nstrun > 0 .and. temp < 1.0_wp)) Call error(380)
+  If ((.not.ltemp) .or. (nstrun > 0 .and. thermo%temp < 1.0_wp)) Call error(380)
 
 ! Timestep
 
@@ -3446,45 +3441,45 @@ Subroutine read_control                                &
 ! check settings in Langevin ensembles
 
   If ((keyens == 10 .or. keyens == 20 .or. keyens == 30) .and. &
-      chi <= zero_plus) Call error(462)
+      thermo%chi <= zero_plus) Call error(462)
 
   If (keyens == 15 ) Then
-    If (gvar==0 .and. chi_ep <= zero_plus) Call error(462)
-    If (Abs(chi_es) <= zero_plus) Then
+    If (gvar==0 .and. thermo%chi_ep <= zero_plus) Call error(462)
+    If (Abs(thermo%chi_es) <= zero_plus) Then
       Call info('assuming no electronic stopping in inhomogeneous Langevin thermostat',.true.)
     End If
   End If
 
   If ((keyens == 20 .or. keyens == 30) .and. &
-      tai <= zero_plus) Call error(463)
+      thermo%tai <= zero_plus) Call error(463)
 
-! check settings in ensembles with taut
+! check settings in ensembles with thermo%tau_t
 
   If (((keyens >= 11 .and. keyens <= 13) .or. &
        (keyens >= 21 .and. keyens <= 23) .or. &
-       (keyens >= 31 .and. keyens <= 33)) .and. taut <= 0.0_wp) Call error(464)
+       (keyens >= 31 .and. keyens <= 33)) .and. thermo%tau_t <= 0.0_wp) Call error(464)
 
-! check settings in ensembles with press
+! check settings in ensembles with thermo%press
 
   If ((keyens >= 20 .and. keyens <= 23) .or. &
       (keyens >= 30 .and. keyens <= 33)) Then
      If      (keyens >= 20 .and. keyens <= 23) Then
         If (.not.lpres) Then
            If (lstrext) Then
-              press=(strext(1)+strext(5)+strext(9))/3.0_wp
-              strext=0.0_wp
+              thermo%press=(thermo%stress(1)+thermo%stress(5)+thermo%stress(9))/3.0_wp
+              thermo%stress=0.0_wp
 
               Write(messages(1),'(a)') 'tensorial system pressure specified for an npt ensemble simulation'
               Write(messages(2),'(a)') 'scalar pressure derived from pressure tensor as p = Trace[P]/3'
               Write(messages(3),'(a)') 'tensorial pressure to be zeroed (discarded)'
-              Write(messages(4),'(a,1p,e12.4)') 'simulation pressure (katms) ',press*prsunt
+              Write(messages(4),'(a,1p,e12.4)') 'simulation pressure (katms) ',thermo%press*prsunt
               Call info(messages,4,.true.)
            Else
               Call error(387)
            End If
         Else
            If (lstrext) Then
-              strext=0.0_wp
+              thermo%stress=0.0_wp
 
               Write(messages(1),'(a)') 'both tensorial and scalar system pressure specified for an npt ensemble simulation'
               Write(messages(2),'(a)') 'tensorial pressure directive is ignored'
@@ -3503,19 +3498,19 @@ Subroutine read_control                                &
 
 ! Define new scalar pressure and zero trace pressure tensor
 
-              press=(strext(1)+strext(5)+strext(9))/3.0_wp
-              strext(1)=strext(1)-press
-              strext(5)=strext(5)-press
-              strext(9)=strext(9)-press
+              thermo%press=(thermo%stress(1)+thermo%stress(5)+thermo%stress(9))/3.0_wp
+              thermo%stress(1)=thermo%stress(1)-thermo%press
+              thermo%stress(5)=thermo%stress(5)-thermo%press
+              thermo%stress(9)=thermo%stress(9)-thermo%press
            End If
         End If
      End If
-     If (keyens /= 20 .and. keyens /= 30 .and. taup <= 0.0_wp) Call error(466)
+     If (keyens /= 20 .and. keyens /= 30 .and. thermo%tau_p <= 0.0_wp) Call error(466)
   End If
 
 ! Two-temperature model: calculate atomic density (if not
 ! already specified and electron-phonon friction
-! conversion factor (to calculate chi_ep from G_ep values)
+! conversion factor (to calculate thermo%chi_ep from G_ep values)
 
   If (cellrho<=zero_plus) cellrho = sysrho
   If (cellrho>zero_plus) Then
@@ -3578,7 +3573,7 @@ Subroutine read_control                                &
   ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
   ! and Diff0 scaled with system temperature
     If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(673)
-    Diff0 = Diff0*temp*1.0e8_wp
+    Diff0 = Diff0*thermo%temp*1.0e8_wp
   End Select
 
   ! spatial deposition (gaussian) standard deviation: convert from nm to A
@@ -3608,7 +3603,7 @@ Subroutine scan_control                                    &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3635,6 +3630,7 @@ Subroutine scan_control                                    &
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: rvdw,rmet,rcbnd,cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3847,9 +3843,9 @@ Subroutine scan_control                                    &
            Call get_word(record,word)
            If (word(1:3) == 'dpd') Then
               If      (word(1:5) == 'dpds1') Then
-                 keydpd = 1
+                 thermo%key_dpd = 1
               Else If (word(1:5) == 'dpds2') Then
-                 keydpd = 2
+                 thermo%key_dpd = 2
               End If
            End If
         End If
@@ -4230,7 +4226,7 @@ Subroutine scan_control                                    &
 
         Else If (word(1:4) == 'varg') Then
 
-        ! variable electron-phonon coupling constant (chi_ep) based on
+        ! variable electron-phonon coupling constant (thermo%chi_ep) based on
         ! tabular electronic stopping terms (in g.dat file): option to
         ! apply value homogeneously across system (based on average 
         ! electronic temperature) or heterogeneously (using local 
@@ -4688,7 +4684,7 @@ Subroutine scan_control                                    &
 
 ! Enforce VV for DPD thermostat
 
-  If (keydpd > 0) l_vv = .true.
+  If (thermo%key_dpd > 0) l_vv = .true.
 
 ! When not having dynamics or prepared to terminate
 ! expanding and not running the small system prepare to exit gracefully

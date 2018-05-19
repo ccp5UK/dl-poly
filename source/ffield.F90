@@ -16,7 +16,7 @@ Module ffield
 
 ! DPD module
 
-  Use dpd,    Only : keydpd,gamdpd,sigdpd
+  Use dpd,    Only : sigdpd
 
 ! INTERACTION MODULES
 
@@ -55,6 +55,7 @@ Module ffield
 
   Use numerics, Only : factorial, shellsort
   Use errors_warnings, Only : error,warning,info
+  Use thermostat, Only : thermostat_type
 
   Implicit None
 
@@ -66,14 +67,14 @@ Module ffield
 Contains
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
-           rcut,rvdw,rmet,width,temp,epsq, &
+           rcut,rvdw,rmet,width,epsq, &
            keyens,keyfce,keyshl,           &
            lecx,lbook,lexcl,               &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
            megtet,megbnd,megang,megdih,    &
-           meginv,comm)
+           meginv,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -100,7 +101,7 @@ Subroutine read_field                      &
   Logical,           Intent( In    ) :: l_str,l_top,l_n_v
   Integer,           Intent( In    ) :: keyens
   Integer,           Intent( InOut ) :: keyfce
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,temp,epsq
+  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,epsq
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
@@ -109,6 +110,7 @@ Subroutine read_field                      &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megcon,megpmf,megrgd,        &
                                         megtet,megbnd,megang,megdih,meginv
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -3344,7 +3346,7 @@ Subroutine read_field                      &
            End If
 
            If (keypot == 0) Then
-              If (keydpd > 0) Then ! make sure gamdpd is read and reported for DPD
+              If (thermo%key_dpd > 0) Then ! make sure thermo%gamdpd is read and reported for DPD
                  Call get_word(record,word)
                  parpot(1)=word_2_real(word)
                  If (l_top) Then
@@ -3360,8 +3362,8 @@ Subroutine read_field                      &
                  End If
               End If
            Else
-              itmp=Merge(mxpvdw+1,mxpvdw,keydpd > 0)
-              Do i=1,itmp ! make sure gamdpd is read and reported for DPD
+              itmp=Merge(mxpvdw+1,mxpvdw,thermo%key_dpd > 0)
+              Do i=1,itmp ! make sure thermo%gamdpd is read and reported for DPD
                  Call get_word(record,word)
                  parpot(i)=word_2_real(word)
               End Do
@@ -3430,45 +3432,45 @@ Subroutine read_field                      &
               prmvdw(i,itpvdw)=parpot(i)
            End Do
 
-           If (keydpd > 0) Then ! store possible specification of DPD's gamma_ij
+           If (thermo%key_dpd > 0) Then ! store possible specification of DPD's gamma_ij
               If      (keypot ==  0) Then
-                 gamdpd(keyvdw)=Abs(parpot(1))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(1))
               Else If (keypot ==  1) Then
-                 gamdpd(keyvdw)=Abs(parpot(3))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(3))
               Else If (keypot ==  2) Then
-                 gamdpd(keyvdw)=Abs(parpot(3))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(3))
               Else If (keypot ==  3) Then
-                 gamdpd(keyvdw)=Abs(parpot(5))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(5))
               Else If (keypot ==  4) Then
-                 gamdpd(keyvdw)=Abs(parpot(4))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(4))
               Else If (keypot ==  5) Then
-                 gamdpd(keyvdw)=Abs(parpot(6))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(6))
               Else If (keypot ==  6) Then
-                 gamdpd(keyvdw)=Abs(parpot(3))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(3))
               Else If (keypot ==  7) Then
-                 gamdpd(keyvdw)=Abs(parpot(6))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(6))
               Else If (keypot ==  8) Then
-                 gamdpd(keyvdw)=Abs(parpot(4))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(4))
               Else If (keypot ==  9) Then
-                 gamdpd(keyvdw)=Abs(parpot(4))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(4))
               Else If (keypot == 10) Then
-                 gamdpd(keyvdw)=Abs(parpot(3))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(3))
               Else If (keypot == 11) Then
-                 gamdpd(keyvdw)=Abs(parpot(3))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(3))
               Else If (keypot == 12) Then
-                 gamdpd(keyvdw)=Abs(parpot(4))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(4))
               Else If (keypot == 13) Then
-                 gamdpd(keyvdw)=Abs(parpot(5))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(5))
               Else If (keypot == 14) Then
-                 gamdpd(keyvdw)=Abs(parpot(4))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(4))
               Else If (keypot == 15) Then
-                 gamdpd(keyvdw)=Abs(parpot(5))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(5))
               Else If (keypot == 16) Then
-                 gamdpd(keyvdw)=Abs(parpot(8))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(8))
               Else If (keypot == 17) Then
-                 gamdpd(keyvdw)=Abs(parpot(8))
+                 thermo%gamdpd(keyvdw)=Abs(parpot(8))
               End If
-              If (gamdpd(0) > zero_plus) gamdpd(keyvdw)=gamdpd(0) ! override
+              If (thermo%gamdpd(0) > zero_plus) thermo%gamdpd(keyvdw)=thermo%gamdpd(0) ! override
            End If
         End Do
 
@@ -3492,22 +3494,22 @@ Subroutine read_field                      &
                  ltpvdw(i) = -1
               End Do
 
-              If (keydpd > 0) Then
-                 If (All(gamdpd(1:mxvdw) <= zero_plus)) Then ! So gamdpd(0) <= zero_plus too
-                    keydpd = 0
+              If (thermo%key_dpd > 0) Then
+                 If (All(thermo%gamdpd(1:mxvdw) <= zero_plus)) Then ! So thermo%gamdpd(0) <= zero_plus too
+                    thermo%key_dpd = 0
                     Call info( &
                       'Ensemble NVT dpd defaulting to NVE (Microcanonical) ' &
                       //'due to all drag coefficients equal to zero',.true.)
 
                  Else
-                    If (gamdpd(0) > zero_plus) Then
+                    If (thermo%gamdpd(0) > zero_plus) Then
                       Call warning('all defined interactions have their drag coefficient overridden',.true.)
                     End If
 
                     If (mxtvdw == 0) Then
                       Call info('vdw/dpd cross terms mixing (for undefined mixed potentials) may be required',.true.)
 
-                       If (gamdpd(0) > zero_plus .and. (.not.l_str)) Then
+                       If (thermo%gamdpd(0) > zero_plus .and. (.not.l_str)) Then
                           mxtvdw = 1
                           Write(messages(1),'(a)') &
                             'type of mixing defaulted - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2'
@@ -3525,8 +3527,8 @@ Subroutine read_field                      &
 
               If (mxtvdw > 0) Then
 
-                If (l_top .or. keydpd > 0) Then
-                  If (keydpd > 0) Then
+                If (l_top .or. thermo%key_dpd > 0) Then
+                  If (thermo%key_dpd > 0) Then
                     Call info('vdw potential mixing under testing...',.true.)
                   Else
                     Call info('dpd potential mixing under testing...',.true.)
@@ -3556,8 +3558,8 @@ Subroutine read_field                      &
                                 End If
                              Else
                                 If (lstvdw(ksite) > ntpvdw) Then
-                                  If (keydpd > 0) Then
-                                    If (gamdpd(0) <= zero_plus) Then
+                                  If (thermo%key_dpd > 0) Then
+                                    If (thermo%gamdpd(0) <= zero_plus) Then
                                       If (l_str) Then
                                         ldpd_safe = .false. ! test for non-definable interactions
                                         Call warning('the interaction between bead types: ' &
@@ -3592,8 +3594,8 @@ Subroutine read_field                      &
 
                  If (nsite > 0) Then
 
-                   If (l_top .or. keydpd > 0) Then
-                     If (keydpd > 0) Then
+                   If (l_top .or. thermo%key_dpd > 0) Then
+                     If (thermo%key_dpd > 0) Then
                        Call info('vdw potential mixing underway...',.true.)
                      Else
                        Call info('dpd potential mixing underway...',.true.)
@@ -3668,8 +3670,8 @@ Subroutine read_field                      &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*(del(1)+del(2))
 
-                                If (keydpd > 0) &
-                                gamdpd(ksite) = Sqrt(gamdpd(isite)*gamdpd(jsite))
+                                If (thermo%key_dpd > 0) &
+                                thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite)*thermo%gamdpd(jsite))
 
                              Else If (mxtvdw == 2) Then
 
@@ -3682,10 +3684,12 @@ Subroutine read_field                      &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*(del(1)+del(2))
 
-                                If (keydpd > 0) Then
-                                   If (gamdpd(isite)+gamdpd(jsite) > zero_plus) &
-                                gamdpd(ksite) = 2.0_wp*gamdpd(isite)*gamdpd(jsite) / (gamdpd(isite)+gamdpd(jsite))
-                                End If
+                              If (thermo%key_dpd > 0) Then
+                                If (thermo%gamdpd(isite)+thermo%gamdpd(jsite) > zero_plus) &
+                                  thermo%gamdpd(ksite) = &
+                                  2.0_wp*thermo%gamdpd(isite)*thermo%gamdpd(jsite) / &
+                                  (thermo%gamdpd(isite)+thermo%gamdpd(jsite))
+                              End If
 
                              Else If (mxtvdw == 3) Then
 
@@ -3698,8 +3702,8 @@ Subroutine read_field                      &
                                 If (Any(del > zero_plus)) &
                                 del(0) = Sqrt(del(1)*del(2))
 
-                                If (keydpd > 0) &
-                                gamdpd(ksite) = Sqrt(gamdpd(isite)*gamdpd(jsite))
+                                If (thermo%key_dpd > 0) &
+                                thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite)*thermo%gamdpd(jsite))
 
                              Else If (mxtvdw == 4) Then
 
@@ -3712,12 +3716,15 @@ Subroutine read_field                      &
                                 If (Any(del > zero_plus)) &
                                 del(0) = (del(1)**3+del(2)**3) / (del(1)**2+del(2)**2)
 
-                                If (keydpd > 0) Then
-                                   If (gamdpd(isite) >= zero_plus .and. gamdpd(jsite) >= zero_plus) Then
-                                      If (Sqrt(gamdpd(isite))+Sqrt(gamdpd(jsite)) > zero_plus) &
-                                gamdpd(ksite) = 4.0_wp*gamdpd(isite)*gamdpd(jsite) / (Sqrt(gamdpd(isite))+Sqrt(gamdpd(jsite)))**2
-                                   End If
+                              If (thermo%key_dpd > 0) Then
+                                If (thermo%gamdpd(isite) >= zero_plus .and. thermo%gamdpd(jsite) >= zero_plus) Then
+                                  If (Sqrt(thermo%gamdpd(isite))+Sqrt(thermo%gamdpd(jsite)) > zero_plus) Then
+                                    thermo%gamdpd(ksite) = &
+                                      4.0_wp*thermo%gamdpd(isite)*thermo%gamdpd(jsite) / &
+                                      (Sqrt(thermo%gamdpd(isite))+Sqrt(thermo%gamdpd(jsite)))**2
+                                  End If
                                 End If
+                              End If
 
                              Else If (mxtvdw == 5) Then
 
@@ -3732,8 +3739,8 @@ Subroutine read_field                      &
                                 If (Any(del > zero_plus)) &
                                 del(0) = (0.5_wp*(del(1)**6+del(2)**6))**(1.0_wp/6.0_wp)
 
-                                If (keydpd > 0) &
-                                gamdpd(ksite) = Sqrt(gamdpd(isite)*gamdpd(jsite)) * ((sig(1)*sig(2))**3) / tmp
+                                If (thermo%key_dpd > 0) &
+                                thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite)*thermo%gamdpd(jsite)) * ((sig(1)*sig(2))**3) / tmp
 
                              Else If (mxtvdw == 6) Then
 
@@ -3750,8 +3757,8 @@ Subroutine read_field                      &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*sig(0)*(del(1)/sig(1) + del(2)/sig(2))
 
-                                If (keydpd > 0) &
-                                gamdpd(ksite) = 0.5_wp*eps(0)*(gamdpd(isite)/eps(1) + gamdpd(jsite)/eps(2))
+                                If (thermo%key_dpd > 0) &
+                                thermo%gamdpd(ksite) = 0.5_wp*eps(0)*(thermo%gamdpd(isite)/eps(1) + thermo%gamdpd(jsite)/eps(2))
 
                              Else If (mxtvdw == 7) Then
 
@@ -3774,8 +3781,8 @@ Subroutine read_field                      &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*sig(0)*(del(1)/sig(1) + del(2)/sig(2))
 
-                                If (keydpd > 0) &
-                                gamdpd(ksite) = 0.5_wp*eps(0)*(gamdpd(isite)/eps(1) + gamdpd(jsite)/eps(2))
+                                If (thermo%key_dpd > 0) &
+                                thermo%gamdpd(ksite) = 0.5_wp*eps(0)*(thermo%gamdpd(isite)/eps(1) + thermo%gamdpd(jsite)/eps(2))
 
                              End If
 
@@ -3795,7 +3802,7 @@ Subroutine read_field                      &
                              End If
 
                              If (l_top) Then
-                               If (keydpd > 0) Then
+                               If (thermo%key_dpd > 0) Then
                                  Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',mxpvdw+1,'f20.6)'
                                  Write(message,rfmt) ntpvdw,unqatm(i),unqatm(j),keyword,parpot(1:mxpvdw+1)
                                Else
@@ -3818,18 +3825,18 @@ Subroutine read_field                      &
 
            End If
 
-           If (keydpd > 0) Then
-             If      (All(gamdpd(1:mxvdw) <= zero_plus)) Then
-               keydpd = 0
+           If (thermo%key_dpd > 0) Then
+             If      (All(thermo%gamdpd(1:mxvdw) <= zero_plus)) Then
+               thermo%key_dpd = 0
 
                Call info('Ensemble NVT dpd defaulting to NVE (Microcanonical)' &
                  //'due to all drag coefficients equal to zero',.true.)
-             Else If (Any(gamdpd(1:mxvdw) <= zero_plus)) Then ! in principle we should come up with the error before here
+             Else If (Any(thermo%gamdpd(1:mxvdw) <= zero_plus)) Then ! in principle we should come up with the error before here
                Call warning('there is a two-body interaction with a' &
                  //'non-zero mutual drag coefficient',.true.)
-               sigdpd(1:mxvdw) = Sqrt(2.0_wp*boltz*temp*gamdpd(1:mxvdw)) ! define sigdpd
+               sigdpd(1:mxvdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:mxvdw)) ! define sigdpd
              Else
-               sigdpd(1:mxvdw) = Sqrt(2.0_wp*boltz*temp*gamdpd(1:mxvdw)) ! define sigdpd
+               sigdpd(1:mxvdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:mxvdw)) ! define sigdpd
              End If
            End If
 

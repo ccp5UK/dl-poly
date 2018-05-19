@@ -7,15 +7,15 @@
 
 ! Apply pseudo thermostat - velocity cycle (1)
 
-        If (lpse) Then
+        If (thermo%l_pseudo) Then
               Call pseudo_vv                            &
-           (1,keyshl,keyens,keypse,wthpse,tmppse,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot,comm)
+           (1,keyshl,keyens,tstep, &
+           nstep,strkin,strknf,strknt,engke,engrot,thermo,comm)
         End If
 
 ! Apply temperature regaussing
 
-        If (ltgaus .and. nstep <= nsteql .and. Mod(nstep-nsteql,nstgaus) == 0) Then
+        If (thermo%l_tgaus .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_tgaus) == 0) Then
            chit = 0.0_wp
            chip = 0.0_wp
            eta  = 0.0_wp
@@ -60,7 +60,7 @@
 
 ! Apply temperature scaling
 
-        If (ltscal .and. nstep <= nsteql .and. Mod(nstep-nsteql,nstscal) == 0) Then
+        If (thermo%l_tscale .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_tscale) == 0) Then
            chit = 0.0_wp
            chip = 0.0_wp
            eta  = 0.0_wp

@@ -104,7 +104,7 @@
 ! CHECK MD CONFIGURATION
 
            Call check_config &
-           (levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
+           (levcfg,l_str,keyens,keyfce,keyres,megatm,thermo,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -230,7 +230,7 @@
 
            Call statistics_collect        &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,iso,intsta,      &
+           keyres,keyens,intsta,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -242,9 +242,9 @@
            engbnd,virbnd,engang,virang,   &
            engdih,virdih,enginv,virinv,   &
            engke,engrot,consv,vircom,     &
-           strtot,press,strext,           &
+           strtot,           &
            stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,comm,virdpd)
+           stptmp,stpprs,stpvol,thermo,comm,virdpd)
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
@@ -333,13 +333,13 @@
      cell=clin
 
      Call set_temperature            &
-           (levcfg,temp,keyres,      &
+           (levcfg,keyres,      &
            lmin,nstep,nstrun,nstmin, &
            mxshak,tolnce,keyshl,     &
            atmfre,atmfrz,            &
            megshl,megcon,megpmf,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,sigma,engrot,comm)
+           degfre,degshl,sigma,engrot,thermo,comm)
 
   End If
   Call deallocate_statistics_connect()

@@ -20,10 +20,8 @@ Module langevin
   Use ttm_utils,         Only : Gep
   Use numerics, Only : box_mueller_saru3
   Use errors_warnings, Only : error
+  Use thermostat, Only : thermostat_type
   Implicit None
-
-  Logical,                        Save :: l_lan    = .false., &
-                                          l_gst    = .false.
 
   Real( Kind = wp ),              Save :: fpl(1:9) = 0.0_wp
 

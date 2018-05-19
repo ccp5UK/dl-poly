@@ -18,7 +18,7 @@ Module core_shell
                               weight,vxx,vyy,vzz,lfrzn,freeze_atoms
   Use parse,           Only : strip_blanks,lower_case
   Use shared_units,    Only : update_shared_units
-  use numerics,        Only : local_index,images
+  Use numerics,        Only : local_index,images
   Use errors_warnings, Only : error,warning,info
 
   Implicit None

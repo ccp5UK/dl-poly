@@ -19,6 +19,7 @@ Module ttm_track
   Use comms, Only : comms_type,Grid4_tag,Grid3_tag,gsum
   Use configuration
   Use errors_warnings, Only : error,warning,info
+  Use thermostat, Only : thermostat_type
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -243,7 +244,7 @@ Contains
 
   End Subroutine depoevolve
 
-  Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2,comm)
+  Subroutine ttm_ion_temperature(vel_es2,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -257,7 +258,8 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real ( Kind = wp ), Intent ( In ) :: chi_ep,chi_es,vel_es2
+  Real ( Kind = wp ), Intent ( In ) :: vel_es2
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type ( comms_type ), Intent( InOut) :: comm
   Integer :: ia,ja,ka,ijk,ijk1,ijk2,i,ii,jj,kk
   Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz,crho
@@ -289,7 +291,7 @@ Contains
 
   Select Case (gvar)
   Case (0,1)
-    gsadd = chi_ep
+    gsadd = thermo%chi_ep
   Case (2)
     gsadd = 1.0_wp
   End Select
@@ -447,7 +449,7 @@ Contains
 
     nat(2*ijk-1) = nat(2*ijk-1) + 1
 
-    If ((velsq > vel_es2) .and. (chi_es > zero_plus)) Then
+    If ((velsq > vel_es2) .and. (thermo%chi_es > zero_plus)) Then
       asource(ijk) = asource(ijk) + tmp*velsq
       nat(2*ijk) = nat(2*ijk) + 1
     End If
@@ -557,7 +559,7 @@ Contains
         End If
         ! calculate electronic stopping terms (if more than one atom with speed > vel_cs)
         If (nat(2*ijk)>0) Then
-          asource(ijk) = asource(ijk)*chi_es/boltz
+          asource(ijk) = asource(ijk)*thermo%chi_es/boltz
         Else
           asource(ijk) = 0.0_wp
         End If
@@ -655,7 +657,7 @@ Contains
   If (ttmdyndens .and. findepo) Then
     Select Case (gvar)
     Case (0,1)
-      cellrho = crho / (Real(acell,Kind=wp)*chi_ep*volume)
+      cellrho = crho / (Real(acell,Kind=wp)*thermo%chi_ep*volume)
     Case (2)
       cellrho = crho / (Real(acell,Kind=wp)*volume)
     End Select
@@ -691,7 +693,7 @@ Contains
 
 End Subroutine ttm_ion_temperature
 
-Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstrun,lines,npage,comm)
+Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,lines,npage,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -708,13 +710,15 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
 
 
   Integer, Intent( In ) :: ndump,nstbpo,nsteql,nstep,nstrun,lines,npage
-  Real ( Kind = wp ), Intent( In ) :: temp,tstep,time
+  Real ( Kind = wp ), Intent( In ) :: tstep,time
+  Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type), Intent( InOut ) :: comm
 
   Real ( Kind = wp ), Allocatable :: eltemp1(:,:,:,:)
   Real ( Kind = wp ) :: fomAx,fomAy,fomAz,mintstep,maxtstep,opttstep,delx2,dely2,delz2
   Real ( Kind = wp ) :: fopttstep,del2av,eltempmax,eltempmin,eltempmean,eltempKe,eltempmaxKe,eltempminKe
   Real ( Kind = wp ) :: actsite, actxm, actxp, actym, actyp, actzm, actzp, alploc
+  Real ( Kind = wp ) :: temp
   Integer :: i,j,k,ii,jj,kk,ijk
   Logical :: safe
   Integer :: fail,redtstepmx,redtstep
@@ -731,6 +735,9 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
   If (fail>0) Call error(1087)
   eltemp1 = 0.0_wp
   redtstepmx = 1
+
+! Initialise temp
+  temp = thermo%temp
 
 ! deposition stage 1 (initialization):
 ! nstep-nsteql offsets equilibration time

@@ -130,9 +130,7 @@ program dl_poly
   Use minimise, Only : passmin, minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
   Use ewald, Only : ewald_type
-
   Use impacts, Only : impact_type
-
   Use halo, Only : refresh_halo_positions,set_halo_particles
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
   Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
@@ -148,21 +146,23 @@ program dl_poly
   Use bounds, Only : set_bounds
   Use build_tplg, Only : build_tplg_intra
   use build_chrm, Only : build_chrm_intra
-Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
-Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
-Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
-Use nvt_gst, Only : nvt_g0_vv, nvt_g1_vv, nvt_g0_scl, nvt_g1_scl
-Use nvt_langevin, Only : nvt_l0_vv, nvt_l1_vv, nvt_l2_vv
-Use nvt_nose_hoover, Only : nvt_h0_vv, nvt_h1_vv, nvt_h0_scl, nvt_h1_scl
-Use nst_berendsen, Only : nst_b0_vv,nst_b1_vv
-Use nst_langevin, Only : nst_l0_vv,nst_l1_vv
-Use nst_mtk, Only : nst_m0_vv,nst_m1_vv
-Use nst_nose_hoover, Only : nst_h0_vv,nst_h1_vv, nst_h0_scl, nst_h1_scl
-Use npt_berendsen, Only : npt_b0_vv,npt_b1_vv
-Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
-Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
-Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
-Use nve, Only : nve_0_vv, nve_1_vv 
+
+  Use thermostat, Only : thermostat_type
+  Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
+  Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
+  Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
+  Use nvt_gst, Only : nvt_g0_vv, nvt_g1_vv, nvt_g0_scl, nvt_g1_scl
+  Use nvt_langevin, Only : nvt_l0_vv, nvt_l1_vv, nvt_l2_vv
+  Use nvt_nose_hoover, Only : nvt_h0_vv, nvt_h1_vv, nvt_h0_scl, nvt_h1_scl
+  Use nst_berendsen, Only : nst_b0_vv,nst_b1_vv
+  Use nst_langevin, Only : nst_l0_vv,nst_l1_vv
+  Use nst_mtk, Only : nst_m0_vv,nst_m1_vv
+  Use nst_nose_hoover, Only : nst_h0_vv,nst_h1_vv, nst_h0_scl, nst_h1_scl
+  Use npt_berendsen, Only : npt_b0_vv,npt_b1_vv
+  Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
+  Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
+  Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
+  Use nve, Only : nve_0_vv, nve_1_vv 
     ! MAIN PROGRAM VARIABLES
   Use timer, Only  : timer_type, time_elapsed,timer_report
   Implicit None
@@ -188,9 +188,9 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Logical           :: ltmp,l_vv,l_n_e,l_n_v,       &
     l_ind,l_str,l_top,           &
-    l_exp,lecx,lfcap,lzero,      &
-    lmin,ltgaus,ltscal,          &
-    lvar,leql,lpse,lsim,lfce,    &
+    l_exp,lecx,lfcap,      &
+    lmin,          &
+    lvar,leql,lsim,lfce,    &
     lpana,lrdf,lprdf,lzdn,lpzdn, &
     lvafav,lpvaf,                &
     ltraj,ldef,lrsd,             &
@@ -202,8 +202,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
     nx,ny,nz,                           &
     keyres,nstrun,nsteql,               &
     keymin,nstmin,                      &
-    nstzero,nstgaus,nstscal,            &
-    keyens,iso,intsta,keypse,nstbpo,    &
+    keyens,intsta,nstbpo,    &
     keyfce,mxshak,mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
     nstrdf,nstzdn,                      &
@@ -226,12 +225,10 @@ Use nve, Only : nve_0_vv, nve_1_vv
     dvar,rcut,rpad,rlnk,                       &
     rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
     alpha,epsq,fmax,                           &
-    width,mndis,mxdis,mxstp,wthpse,tmppse,     &
+    width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),min_tol(1:2),                 &
     tolnce,quattol,rdef,rrsd,                  &
-    pdplnc,temp,sigma,                         &
-    press,strext(1:9),ten,                     &
-    taut,chi,chi_ep,chi_es,soft,gama,taup,tai, &
+    pdplnc,sigma,         &
     chit,vel_es2,eta(1:9),chip,cint,consv,     &
     strtot(1:9),virtot,                        &
     strkin(1:9),engke,strknf(1:9),strknt(1:9), &
@@ -248,9 +245,9 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
+  Type(thermostat_type) :: thermo
   Type(ewald_type) :: ewld
   Type(timer_type) :: tmr
-
   Type(impact_type) :: impa
 
   Character( Len = 256 ) :: message,messages(5)
@@ -320,7 +317,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,comm)
+    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,thermo,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -334,7 +331,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! ALLOCATE DPD ARRAYS
 
-  Call allocate_dpd_arrays()
+  Call allocate_dpd_arrays(thermo)
 
   ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
 
@@ -381,35 +378,34 @@ Use nve, Only : nve_0_vv, nve_1_vv
   Call read_control                                    &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
     rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
-    l_exp,lecx,lfcap,l_top,lzero,lmin,          &
-    ltgaus,ltscal,lvar,leql,lpse,               &
+    l_exp,lecx,lfcap,l_top,lmin,          &
+    lvar,leql,               &
     lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
     lvafav,lpvaf,ltraj,ldef,lrsd,               &
     nx,ny,nz,impa,                            &
-    temp,press,strext,keyres,                   &
+    keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     keymin,nstmin,min_tol,                      &
-    nstzero,nstgaus,nstscal,                    &
-    keyens,iso,taut,chi,chi_ep,chi_es,soft,gama,&
-    taup,tai,ten,vel_es2,keypse,wthpse,tmppse,  &
+    keyens,&
+    vel_es2,  &
     fmax,nstbpo,intsta,keyfce,epsq,             &
     rlx_tol,mxshak,tolnce,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstmsd,istmsd,nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,tmr,comm)
+    ndump,pdplnc,thermo,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
   Call read_field                          &
     (l_str,l_top,l_n_v,             &
-    rcut,rvdw,rmet,width,temp,epsq, &
+    rcut,rvdw,rmet,width,epsq, &
     keyens,keyfce,keyshl,           &
     lecx,lbook,lexcl,               &
     rcter,rctbp,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megcon,megpmf,megrgd,    &
-    megtet,megbnd,megang,megdih,meginv,comm)
+    megtet,megbnd,megang,megdih,meginv,thermo,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -422,7 +418,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! CHECK MD CONFIGURATION
 
-  Call check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
+  Call check_config(levcfg,l_str,keyens,keyfce,keyres,megatm,thermo,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -557,13 +553,13 @@ Use nve, Only : nve_0_vv, nve_1_vv
   ! SET initial system temperature
 
   Call set_temperature               &
-    (levcfg,temp,keyres,      &
+    (levcfg,keyres,      &
     lmin,nstep,nstrun,nstmin, &
     mxshak,tolnce,keyshl,     &
     atmfre,atmfrz,            &
     megshl,megcon,megpmf,     &
     megrgd,degtra,degrot,     &
-    degfre,degshl,sigma,engrot,comm)
+    degfre,degshl,sigma,engrot,thermo,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -575,7 +571,7 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   If (l_ttm) Then
     Call ttm_table_read(comm)
-    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,temp,comm)
+    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,thermo%temp,comm)
   End If
 
   ! Frozen atoms option
@@ -584,11 +580,11 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   ! Cap forces in equilibration mode
 
-  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,temp,comm)
+  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,comm)
 
   ! PLUMED initialisation or information message
 
-  If (l_plumed) Call plumed_init(megatm,tstep,temp,comm)
+  If (l_plumed) Call plumed_init(megatm,tstep,thermo%temp,comm)
 
   ! Print out sample of initial configuration on node zero
 
@@ -759,8 +755,8 @@ Use nve, Only : nve_0_vv, nve_1_vv
   ! (final)
 
   If (l_ttm) Then
-    Call ttm_ion_temperature (chi_ep,chi_es,vel_es2,comm)
-    Call printElecLatticeStatsToFile('PEAK_E', time, temp, nstep, ttmstats,comm)
+    Call ttm_ion_temperature (vel_es2,thermo,comm)
+    Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep, ttmstats,comm)
     Call peakProfilerElec('LATS_E', nstep, ttmtraj,comm)
     Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats,comm)
     Call peakProfiler(tempion, 'LATS_I', nstep, ttmtraj,comm)
@@ -779,8 +775,8 @@ Use nve, Only : nve_0_vv, nve_1_vv
 
   Call statistics_result                                        &
     (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
-    nstrun,keyens,keyshl,megcon,megpmf,iso,              &
-    press,strext,nstep,tstep,time,tmst,comm,passmin)
+    nstrun,keyens,keyshl,megcon,megpmf,              &
+    nstep,tstep,time,tmst,thermo,comm,passmin)
 
   10 Continue
 

@@ -55,6 +55,7 @@ Module configuration
 
   Use errors_warnings, Only : error,warning,info
   use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Character( Len = 72 ), Save :: cfgname = ' ' , &
@@ -282,7 +283,7 @@ Contains
 
   End Subroutine allocate_config_arrays
 
-  Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm,comm)
+  Subroutine check_config(levcfg,l_str,keyens,keyfce,keyres,megatm,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -296,9 +297,10 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical, Intent( In    ) :: l_str,lpse
-  Integer, Intent( In    ) :: levcfg,keyens,iso,keyfce,keyres,megatm
+  Logical, Intent( In    ) :: l_str
+  Integer, Intent( In    ) :: levcfg,keyens,keyfce,keyres,megatm
   Type( comms_type ), Intent( InOut ) :: comm
+  Type( thermostat_type ), Intent( In    ) :: thermo
 
   Logical, Save     :: newjob = .true.
   Logical           :: safe
@@ -343,12 +345,12 @@ Contains
 ! Check image conditions for nst ensembles
 
   If (keyens >= 30) Then
-     If (iso == 0) Then
+     If (thermo%iso == 0) Then
         If (imcon == 1 .or. imcon == 2) Then
            Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)
            imcon = 3
         End If
-     Else ! iso > 0
+     Else ! thermo%iso > 0
         If (imcon == 1) Then
            Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)
            imcon = 2
@@ -358,7 +360,7 @@ Contains
 
 ! Check image condition for pseudo
 
-  If (lpse .and. (imcon == 0 .or. imcon == 6)) Call error(540)
+  If (thermo%l_pseudo .and. (imcon == 0 .or. imcon == 6)) Call error(540)
 
   Call invert(cell,rcell,det)
 

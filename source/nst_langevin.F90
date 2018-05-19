@@ -19,6 +19,7 @@ Module nst_langevin
   Use numerics,        Only : dcell, mat_mul,box_mueller_saru6    
   Use langevin,        Only : langevin_forces
   Use nst_nose_hoover, Only : nst_h0_scl,nst_h1_scl
+  Use thermostat, Only : thermostat_type
 
   Implicit None
 
@@ -30,15 +31,15 @@ Contains
 
   Subroutine nst_l0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chi,                         &
-             press,strext,tai,nstep,chip,eta,   &
-             degfre,iso,ten,stress,             &
+             sigma,                         &
+             nstep,chip,eta,   &
+             degfre,stress,             &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -48,11 +49,11 @@ Contains
   !
   ! Parrinello-Rahman type: changing cell shape
   !
-  ! iso=0 fully anisotropic barostat
-  ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (ten=0.0_wp)
-  ! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! reference1: D. Quigley and M.I.J. Probert
   !             J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
@@ -69,16 +70,14 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,chi
+    Real( Kind = wp ),  Intent( In    ) :: sigma
 
-    Real( Kind = wp ),  Intent( In    ) :: press,strext(1:9),tai
     Integer,            Intent( In    ) :: nstep
     Real( Kind = wp ),  Intent(   Out ) :: chip
     Real( Kind = wp ),  Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),   Intent( In    ) :: degfre
-    Integer,            Intent( In    ) :: iso
-    Real( Kind = wp ),  Intent( In    ) :: ten,stress(1:9)
+    Real( Kind = wp ),  Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ),  Intent(   Out ) :: consv
 
@@ -91,6 +90,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -175,13 +175,13 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for iso>=1
-  ! Initialise and get h_z for iso>1
+  ! Sort eta for thermo%iso>=1
+  ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
-       If      (iso == 1) Then
+       If      (thermo%iso == 1) Then
           eta(1:8) = 0.0_wp
-       Else If (iso >  1) Then
+       Else If (thermo%iso >  1) Then
           eta(2:4) = 0.0_wp
           eta(6:8) = 0.0_wp
 
@@ -192,7 +192,7 @@ Contains
   ! inertia parameter for barostat
 
        temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-       pmass = ((2.0_wp*sigma + 3.0_wp*boltz*temp)/3.0_wp) / (2.0_wp*pi*tai)**2
+       pmass = ((2.0_wp*sigma + 3.0_wp*boltz*temp)/3.0_wp) / (2.0_wp*pi*thermo%tai)**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -208,7 +208,7 @@ Contains
 
        fpl=0.0_wp
        Call box_mueller_saru6(Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
-       tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
+       tmp=Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
@@ -280,7 +280,7 @@ Contains
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-          scale=Exp(-qstep*chi)
+          scale=Exp(-qstep*thermo%chi)
           Do i=1,natms
              vxx(i)=scale*vxx(i)
              vyy(i)=scale*vyy(i)
@@ -298,13 +298,13 @@ Contains
 
           str1=str+fpl
           Call nst_h0_scl &
-             (1,hstep,degfre,pmass,tai,volm,press, &
-             iso,ten,h_z,strext,str1,stress,       &
-             vxx,vyy,vzz,eta,strkin,engke,comm)
+             (1,hstep,degfre,pmass,thermo%tai,volm, &
+             h_z,str1,stress,       &
+             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-          scale=Exp(-qstep*chi)
+          scale=Exp(-qstep*thermo%chi)
           Do i=1,natms
              vxx(i)=scale*vxx(i)
              vyy(i)=scale*vyy(i)
@@ -565,9 +565,9 @@ Contains
           dens(i)=dens0(i)*tmp
        End Do
 
-  ! get h_z for iso>1
+  ! get h_z for thermo%iso>1
 
-       If (iso > 1) Then
+       If (thermo%iso > 1) Then
           Call dcell(cell,celprp)
           h_z=celprp(9)
        End If
@@ -579,11 +579,11 @@ Contains
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl)
 
        fpl=0.0_wp
        Call box_mueller_saru6(Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
-       tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
+       tmp=Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
@@ -629,7 +629,7 @@ Contains
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-       scale=Exp(-qstep*chi)
+       scale=Exp(-qstep*thermo%chi)
        Do i=1,natms
           vxx(i)=scale*vxx(i)
           vyy(i)=scale*vyy(i)
@@ -647,13 +647,13 @@ Contains
 
        str1=str+fpl
        Call nst_h0_scl &
-             (1,hstep,degfre,pmass,tai,volm,press, &
-             iso,ten,h_z,strext,str1,stress,       &
-             vxx,vyy,vzz,eta,strkin,engke,comm)
+             (1,hstep,degfre,pmass,thermo%tai,volm, &
+             h_z,str1,stress,       &
+             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-       scale=Exp(-qstep*chi)
+       scale=Exp(-qstep*thermo%chi)
        Do i=1,natms
           vxx(i)=scale*vxx(i)
           vyy(i)=scale*vyy(i)
@@ -666,7 +666,7 @@ Contains
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*pmass*tmp + press*volm
+       consv = 0.5_wp*pmass*tmp + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -711,16 +711,16 @@ Contains
 
   Subroutine nst_l1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chi,                         &
-             press,strext,tai,nstep,chip,eta,   &
-             degfre,degrot,iso,ten,stress,      &
+             sigma,                         &
+             nstep,chip,eta,   &
+             degfre,degrot,stress,      &
              strkin,strknf,strknt,engke,engrot, &
              consv,                             &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,comm)
+             elrc,virlrc,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -731,11 +731,11 @@ Contains
   !
   ! Parrinello-Rahman type: changing cell shape
   !
-  ! iso=0 fully anisotropic barostat
-  ! iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (ten=0.0_wp)
-  ! iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! reference1: D. Quigley and M.I.J. Probert
   !             J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
@@ -752,16 +752,14 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma,chi
+    Real( Kind = wp ),  Intent( In    ) :: sigma
 
-    Real( Kind = wp ),  Intent( In    ) :: press,strext(1:9),tai
     Integer,            Intent( In    ) :: nstep
     Real( Kind = wp ),  Intent(   Out ) :: chip
     Real( Kind = wp ),  Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),   Intent( In    ) :: degfre,degrot
-    Integer,            Intent( In    ) :: iso
-    Real( Kind = wp ),  Intent( In    ) :: ten,stress(1:9)
+    Real( Kind = wp ),  Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ),  Intent(   Out ) :: consv
 
@@ -777,6 +775,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -884,13 +883,13 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for iso>=1
-  ! Initialise and get h_z for iso>1
+  ! Sort eta for thermo%iso>=1
+  ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
-       If      (iso == 1) Then
+       If      (thermo%iso == 1) Then
           eta(1:8) = 0.0_wp
-       Else If (iso >  1) Then
+       Else If (thermo%iso >  1) Then
           eta(2:4) = 0.0_wp
           eta(6:8) = 0.0_wp
 
@@ -901,7 +900,7 @@ Contains
   ! inertia parameter for barostat
 
        temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-       pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*temp / (2.0_wp*pi*tai)**2
+       pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*temp / (2.0_wp*pi*thermo%tai)**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -921,7 +920,7 @@ Contains
 
        fpl=0.0_wp
        Call box_mueller_saru6(Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
-       tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
+       tmp=Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
@@ -1053,7 +1052,7 @@ Contains
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-          scale=Exp(-qstep*chi)
+          scale=Exp(-qstep*thermo%chi)
           Do j=1,nfree
              i=lstfre(j)
 
@@ -1084,13 +1083,13 @@ Contains
 
           str1=str+fpl
           Call nst_h1_scl &
-             (1,hstep,degfre,degrot,pmass,tai,volm,press,  &
-             iso,ten,h_z,strext,str1,stress,strcom,        &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
+             (1,hstep,degfre,degrot,pmass,thermo%tai,volm,  &
+             h_z,str1,stress,strcom,        &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-          scale=Exp(-qstep*chi)
+          scale=Exp(-qstep*thermo%chi)
           Do j=1,nfree
              i=lstfre(j)
 
@@ -1625,9 +1624,9 @@ Contains
           dens(i)=dens0(i)*tmp
        End Do
 
-  ! get h_z for iso>1
+  ! get h_z for thermo%iso>1
 
-       If (iso > 1) Then
+       If (thermo%iso > 1) Then
           Call dcell(cell,celprp)
           h_z=celprp(9)
        End If
@@ -1639,14 +1638,14 @@ Contains
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       Call langevin_forces(nstep,temp,tstep,chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl)
        If (lshmv_rgd)Then
          Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
        EndIf
 
        fpl=0.0_wp
        Call box_mueller_saru6(Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
-       tmp=Sqrt(2.0_wp*tai*boltz*temp*pmass*rstep)
+       tmp=Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
@@ -1864,7 +1863,7 @@ Contains
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-       scale=Exp(-qstep*chi)
+       scale=Exp(-qstep*thermo%chi)
        Do j=1,nfree
           i=lstfre(j)
 
@@ -1895,13 +1894,13 @@ Contains
 
        str1=str+fpl
        Call nst_h1_scl &
-             (1,hstep,degfre,degrot,pmass,tai,volm,press,  &
-             iso,ten,h_z,strext,str1,stress,strcom,        &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,comm)
+             (1,hstep,degfre,degrot,pmass,thermo%tai,volm,  &
+             h_z,str1,stress,strcom,        &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
-       scale=Exp(-qstep*chi)
+       scale=Exp(-qstep*thermo%chi)
        Do j=1,nfree
           i=lstfre(j)
 
@@ -1928,7 +1927,7 @@ Contains
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*pmass*tmp + press*volm
+       consv = 0.5_wp*pmass*tmp + thermo%press*volm
 
   ! remove system centre of mass velocity
 

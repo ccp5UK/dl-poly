@@ -23,37 +23,37 @@ Module dpd
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error, warning
   Use numerics,        Only : box_mueller_saru2
+  Use thermostat, Only : thermostat_type
 
   Implicit None
-
-  Integer,           Save :: keydpd = 0 ! no DPD
 
   Real( Kind = wp ), Save :: virdpd      = 0.0_wp , &
                              strdpd(1:9) = 0.0_wp
 
-  Real( Kind = wp ), Allocatable, Save :: gamdpd(:),sigdpd(:)
+  Real( Kind = wp ), Allocatable, Save :: sigdpd(:)
 
   Public :: allocate_dpd_arrays
 
 Contains
 
-  Subroutine allocate_dpd_arrays()
+  Subroutine allocate_dpd_arrays(thermo)
+    Type( thermostat_type ), Intent( InOut ) :: thermo
 
     Integer :: fail
 
-    If (keydpd == 0) Return
+    If (thermo%key_dpd == 0) Return
 
     fail = 0
 
-    Allocate (gamdpd(0:mxvdw),sigdpd(1:mxvdw), Stat = fail)
+    Allocate (thermo%gamdpd(0:mxvdw),sigdpd(1:mxvdw), Stat = fail)
 
     If (fail > 0) Call error(1081)
 
-    gamdpd = 0.0_wp ; sigdpd = 0.0_wp
+    thermo%gamdpd = 0.0_wp ; sigdpd = 0.0_wp
 
   End Subroutine allocate_dpd_arrays
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,comm)
+  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,thermo,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -61,8 +61,8 @@ Contains
     ! using the verlet neighbour list
     !
     ! isw=isw(VV) : by stages 0 for VV1 and 1 for VV2
-    ! keydpd = 1 for first order splitting
-    ! keydpd = 2 for second order splitting
+    ! thermo%key_dpd = 1 for first order splitting
+    ! thermo%key_dpd = 2 for second order splitting
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov march 2016
@@ -72,6 +72,7 @@ Contains
     Logical,           Intent( In    ) :: l_str
     Integer,           Intent( In    ) :: isw,nstep
     Real( Kind = wp ), Intent( In    ) :: rcut,tstep
+    Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -86,7 +87,7 @@ Contains
     Character ( len = 256 ) :: message
 
 
-    If (keydpd /= 1 .or. keydpd /= 2 .or. keydpd*isw == 1) Return
+    If (thermo%key_dpd /= 1 .or. thermo%key_dpd /= 2 .or. thermo%key_dpd*isw == 1) Return
 
     fail=0
     Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat = fail(1))
@@ -98,7 +99,7 @@ Contains
 
     ! set tstep and nstep wrt to order of splitting
 
-    If (keydpd == 1) Then
+    If (thermo%key_dpd == 1) Then
       nst_p = nstep
       tst_p = tstep
     Else
@@ -219,7 +220,7 @@ Contains
 
           rgamma =  sigdpd(key) * scrn      * gauss * rstsq
 
-          tmp    =  gamdpd(key) * (scrn**2)
+          tmp    =  thermo%gamdpd(key) * (scrn**2)
           dgamma = -tmp * ( xxt(k)*(vxx(i)-vxx(j)) + yyt(k)*(vyy(i)-vyy(j)) + zzt(k)*(vzz(i)-vzz(j)) )
 
           gamma=rgamma+dgamma
@@ -397,7 +398,7 @@ Contains
 
           rgamma =  sigdpd(key) * scrn      * gauss * rstsq
 
-          tmp    =  gamdpd(key) * (scrn**2)
+          tmp    =  thermo%gamdpd(key) * (scrn**2)
           scl    =  tmp / (1.0_wp+tmp*tst_p)
           dgamma = -tmp * ( xxt(k)*(vxx(i)-vxx(j)) + yyt(k)*(vyy(i)-vyy(j)) + zzt(k)*(vzz(i)-vzz(j)) )
 
