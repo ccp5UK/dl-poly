@@ -27,36 +27,59 @@ Module development
 
   Private
 
-  Logical, Save, Public :: l_scr  = .false. ! OUTPUT redirection to the default output (screen)
-  Logical, Save, Public :: l_fast = .false. ! avoid global safety checks (no elegant parallel failures)
-  Logical, Save, Public :: l_eng  = .false. ! OUTPUT inclusion of an extra last line with E_tot
-  Logical, Save, Public :: l_rout = .false. ! REVIVE writing in ASCII (default is binary)
-  Logical, Save, Public :: l_rin  = .false. ! REVOLD reading in ASCII (default is binary)
-  Logical, Save, Public :: l_org  = .false. ! translate CONFIG along a vector to CFGORG
-  Logical, Save, Public :: l_scl  = .false. ! CONFIG rescaling to CFGSCL after reading with termination
-  Logical, Save, Public :: l_his  = .false. ! HISTORY generation after reading with termination
-  Logical, Save, Public :: l_trm  = .false. ! termination flag
-  Logical, Save         :: l_tim  = .false. ! detailed timing
-  Logical, Save, Public :: l_tor  = .false. ! no production of REVCON & REVIVE
-  Logical, Save, Public :: l_dis  = .false. ! check on minimum separation distance between VNL pairs at re/start
+  !> Type containing development module variables
+  Type, Public :: development_type
+    Private
+
+    !> OUTPUT redirection to the default output (screen)
+    Logical, Public :: l_scr  = .false.
+    !> avoid global safety checks (no elegant parallel failures)
+    Logical, Public :: l_fast = .false.
+    !> OUTPUT inclusion of an extra last line with E_tot
+    Logical, Public :: l_eng  = .false.
+    !> REVIVE writing in ASCII (default is binary)
+    Logical, Public :: l_rout = .false.
+    !> REVOLD reading in ASCII (default is binary)
+    Logical, Public :: l_rin  = .false.
+    !> translate CONFIG along a vector to CFGORG
+    Logical, Public :: l_org  = .false.
+    !> CONFIG rescaling to CFGSCL after reading with termination
+    Logical, Public :: l_scl  = .false.
+    !> HISTORY generation after reading with termination
+    Logical, Public :: l_his  = .false.
+    !> termination flag
+    Logical, Public :: l_trm  = .false.
+    !> detailed timing
+    Logical         :: l_tim  = .false.
+    !> no production of REVCON & REVIVE
+    Logical, Public :: l_tor  = .false.
+    !> check on minimum separation distance between VNL pairs at re/start
+    Logical, Public :: l_dis  = .false.
 
 
-  Integer, Save, Public           :: lvcforg = -1                                ! CFGORG levcfg
-  Real( Kind = wp ), Save, Public :: xorg = 0.0_wp, yorg = 0.0_wp, zorg = 0.0_wp ! reorigin vector
+    !> CFGORG levcfg
+    Integer, Public           :: lvcforg = -1
+    !> reorigin vector
+    Real( Kind = wp ), Public :: xorg = 0.0_wp, yorg = 0.0_wp, zorg = 0.0_wp
 
-  Integer, Save, Public           :: lvcfscl = -1       ! CFGSCL levcfg
-  Real( Kind = wp ), Save, Public :: cels(1:9) = 0.0_wp ! CFGSCL lattice parameters
+    !> CFGSCL levcfg
+    Integer, Public           :: lvcfscl = -1
+    !> CFGSCL lattice parameters
+    Real( Kind = wp ), Public :: cels(1:9) = 0.0_wp
 
-  Real( Kind = wp ), Save, Public :: r_dis = 0.5_wp ! l_dis default check condition
+    !> l_dis default check condition
+    Real( Kind = wp ), Public :: r_dis = 0.5_wp
 
-  Real( Kind = wp ), Save, Public :: t_zero
+    !> Devel start time
+    Real( Kind = wp ), Public :: t_zero
+  End Type development_type
 
   Public :: scan_development
   Public :: build_info
 
 Contains
 
-  Subroutine scan_development(comm)
+  Subroutine scan_development(devel,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -68,6 +91,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type( development_type ), Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm
     Logical                :: carry,safe
     Character( Len = 200 ) :: record
@@ -88,7 +112,7 @@ Contains
     End If
 
     Call get_line(safe,nread,record,comm)
-    If (safe) Then 
+    If (safe) Then
 
       carry = .true.
       Do While (carry)
@@ -103,15 +127,15 @@ Contains
 
         If      (word(1:5) == 'l_scr') Then
 
-          l_scr = .true.
+          devel%l_scr = .true.
 
         Else If (word(1:6) == 'l_fast') Then
 
-          l_fast=.true.
+          devel%l_fast=.true.
 
         Else If (word(1:5) == 'l_tim') Then
 
-          l_tim=.true.
+          devel%l_tim=.true.
 
         Else If (word(1:6) == 'finish') Then
 
@@ -125,7 +149,7 @@ Contains
 
   End Subroutine scan_development
 
-  Subroutine start_devel_time(name,comm)
+  Subroutine start_devel_time(name,devel,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -137,16 +161,17 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Character( Len = * ), Intent( In    ) :: name
+    Type( development_type ), Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm
 
-    If (l_tim) Then
+    If (devel%l_tim) Then
       Call gsync(comm)
-      Call gtime(t_zero)
+      Call gtime(devel%t_zero)
     End If
 
   End Subroutine start_devel_time
 
-  Subroutine end_devel_time(name,comm)
+  Subroutine end_devel_time(name,devel,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -158,16 +183,17 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Character( Len = * ), Intent( In    ) :: name
+    Type( development_type ), Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm
 
     Real( Kind = wp ) :: t
     Character( Len = 256 ) :: message
 
-    If (l_tim) Then
+    If (devel%l_tim) Then
       Call gsync(comm)
       Call gtime(t)
 
-      Write(message,'(2(a,3x),f0.3)') 'DEVEL TIME: Time in', name, t-t_zero
+      Write(message,'(2(a,3x),f0.3)') 'DEVEL TIME: Time in', name, t-devel%t_zero
       Call info(message,.true.)
 
     End If
@@ -200,7 +226,7 @@ Contains
 #define __VERSION__ 'XYZ'
 #endif
 
-  Subroutine build_info()
+  Subroutine build_info(devel)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -210,6 +236,8 @@ Contains
     ! author    - a.m.elena & i.t.todorov april 2016
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( development_type ), Intent( In    ) :: devel
 
     Character( Len =  8 ) :: date
     Character( Len = 10 ) :: time

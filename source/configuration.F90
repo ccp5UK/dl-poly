@@ -22,7 +22,7 @@ Module configuration
   Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line
   Use domains, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r,idx,idy,idz
-  Use development, Only : lvcfscl,cels,lvcforg,xorg,yorg,zorg
+  Use development, Only : development_type
 
   Use io,     Only : io_set_parameters,         &
                             io_get_parameters,         &
@@ -2307,7 +2307,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
 
 End Subroutine scan_config
 
-Subroutine scale_config(megatm,comm)
+Subroutine scale_config(megatm,devel,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2324,7 +2324,8 @@ Subroutine scale_config(megatm,comm)
   Character ( Len = 6 ) :: name
   Integer               :: i,nstep
   Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
-  Type( comms_type )    :: comm
+  Type( development_type ), Intent( In    ) :: devel
+  Type( comms_type ), Intent( InOut ) :: comm
 
 ! Get the inverse cell matrix
 
@@ -2345,9 +2346,9 @@ Subroutine scale_config(megatm,comm)
      vvv=yyy(i)
      www=zzz(i)
 
-     xxx(i)=cels(1)*uuu+cels(4)*vvv+cels(7)*www
-     yyy(i)=cels(2)*uuu+cels(5)*vvv+cels(8)*www
-     zzz(i)=cels(3)*uuu+cels(6)*vvv+cels(9)*www
+     xxx(i)=devel%cels(1)*uuu+devel%cels(4)*vvv+devel%cels(7)*www
+     yyy(i)=devel%cels(2)*uuu+devel%cels(5)*vvv+devel%cels(8)*www
+     zzz(i)=devel%cels(3)*uuu+devel%cels(6)*vvv+devel%cels(9)*www
   End Do
 
 ! Write REVCON
@@ -2357,8 +2358,8 @@ Subroutine scale_config(megatm,comm)
   tstep  = 0.0_wp   ! no step exists
   time   = 0.0_wp   ! time is not relevant
 
-  rcell = cell ; cell = cels
-  Call write_config(name,lvcfscl,megatm,nstep,tstep,time,comm)
+  rcell = cell ; cell = devel%cels
+  Call write_config(name,devel%lvcfscl,megatm,nstep,tstep,time,comm)
   cell = rcell
 
 End Subroutine scale_config
@@ -3188,12 +3189,12 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
 
   End Subroutine freeze_atoms
 
-  Subroutine origin_config(megatm,comm)
+  Subroutine origin_config(megatm,devel,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for translating the origin of the MD box as
-  ! defined in CONFIG by the (xorg,yorg,zorg) vector and saving it in
+  ! defined in CONFIG by the (devel%xorg,devel%yorg,devel%zorg) vector and saving it in
   ! CFGORG
   !
   ! copyright - daresbury laboratory
@@ -3202,6 +3203,7 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: megatm
+    Type( development_type ), Intent( In    ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm
 
     Character ( Len = 6 ) :: name
@@ -3211,9 +3213,9 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
   ! Translate
 
     Do i=1,natms
-       xxx(i)=xxx(i)+xorg
-       yyy(i)=yyy(i)+yorg
-       zzz(i)=zzz(i)+zorg
+       xxx(i)=xxx(i)+devel%xorg
+       yyy(i)=yyy(i)+devel%yorg
+       zzz(i)=zzz(i)+devel%zorg
     End Do
 
   ! Restore periodic boundaries
@@ -3227,7 +3229,7 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
     tstep  = 0.0_wp   ! no step exists
     time   = 0.0_wp   ! time is not relevant
 
-    Call write_config(name,lvcforg,megatm,nstep,tstep,time,comm)
+    Call write_config(name,devel%lvcforg,megatm,nstep,tstep,time,comm)
 
   End Subroutine origin_config
 End Module configuration

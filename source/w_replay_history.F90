@@ -152,7 +152,7 @@
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstph,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress,ewld,tmr,comm)
+           engcpe,vircpe,engsrp,virsrp,stress,ewld,devel,tmr,comm)
 
 ! Calculate bond forces
 
@@ -270,10 +270,10 @@
 
 ! Save restart data in event of system crash
 
-           If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.l_tor)) &
+           If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -346,9 +346,9 @@
 
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
-  If (.not. l_tor) Call system_revive                         &
+  If (.not. devel%l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

@@ -9,8 +9,7 @@ Module link_cells
                             xxx,yyy,zzz,lexatm,list
   Use core_shell,    Only : listshl,legshl
   Use mpole,         Only : keyind,lchatm
-  Use development,   Only : l_dis,r_dis
-
+  Use development,   Only : development_type
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : dcell, invert,match
   Use timer,  Only : timer_type,start_timer,stop_timer
@@ -21,7 +20,7 @@ Module link_cells
 
 Contains
 
-Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,tmr,comm)
+Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,devel,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -38,6 +37,7 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,tmr,comm)
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: megfrz
   Real( Kind = wp ) , Intent( In    ) :: rcut,rlnk,rvdw,rmet,pdplnc
+  Type( development_type ), Intent( In    ) :: devel
   Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -944,8 +944,8 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
 
 ! check on minimum separation distance between VNL pairs at re/start
 
-  If (l_dis) Then
-!     l_dis=.false. ! at re/start ONLY
+  If (devel%l_dis) Then
+!     devel%l_dis=.false. ! at re/start ONLY
 
      cnt=0.0_wp
      Do i=1,natms
@@ -985,7 +985,7 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
 
               det=Sqrt((xxx(i)-xxx(j))**2+(yyy(i)-yyy(j))**2+(zzz(i)-zzz(j))**2)
 
-              If (det < r_dis) Then
+              If (det < devel%r_dis) Then
                  safe=.false.
                  Write(message,'(a,2(i10,a),f5.3,a)') &
                       ' the pair with global indeces: ', ii,'  &',jj, &
@@ -1009,7 +1009,7 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
      If (.not.safe) Then
        Write(message,'(i20,2a,f7.3,a)') &
          Int(cnt(0),li), ' pair(s) of particles in CONFIG ', &
-         'violate(s) the minimum separation distance of ',r_dis,' Angs'
+         'violate(s) the minimum separation distance of ',devel%r_dis,' Angs'
        Call warning(message,.true.)
      End If
 
