@@ -134,7 +134,7 @@ Subroutine read_control                                &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
                                              rdef,rrsd,pdplnc 
-      Type( stats_type ), Intent (   Out ) :: stats                                         
+  Type( stats_type ), Intent (   InOut )   :: stats                                         
   Type( impact_type ),     Intent(   Out ) :: impa
   Type ( thermostat_type), Intent( InOut ) :: thermo
   Type( timer_type ),      Intent( InOut ) :: tmr

@@ -77,8 +77,8 @@ End Type
 Contains
 
   Subroutine allocate_statistics_arrays(mxatdm,stats)
-    Integer, Intent( InOut ) ::           mxatdm
-    Type( stats_type ), Intent( Out ) ::  stats
+    Integer, Intent( In ) ::           mxatdm
+    Type( stats_type ), Intent( InOut ) ::  stats
 
     Integer, Dimension( 1:4 ) :: fail
     Integer ::  mxnstk ,mxstak
@@ -87,12 +87,11 @@ Contains
 
     mxnstk = stats%mxnstk
     mxstak = stats%mxstak
-
+    
     Allocate (stats%xin(1:mxatdm),stats%yin(1:mxatdm),stats%zin(1:mxatdm),                           Stat = fail(1))
     Allocate (stats%xto(1:mxatdm),stats%yto(1:mxatdm),stats%zto(1:mxatdm),stats%rsd(1:mxatdm),             Stat = fail(2))
     Allocate (stats%stpval(0:mxnstk),stats%stpvl0(0:mxnstk),stats%sumval(0:mxnstk),stats%ssqval(0:mxnstk), Stat = fail(3))
     Allocate (stats%zumval(0:mxnstk),stats%ravval(0:mxnstk),stats%stkval(1:mxstak,0:mxnstk),         Stat = fail(4))
-
     If (Any(fail > 0)) Call error(1016)
 
     stats%xin = 0.0_wp ; stats%yin = 0.0_wp ; stats%zin = 0.0_wp
@@ -105,7 +104,7 @@ Contains
 
   Subroutine allocate_statistics_connect(mxatdm,stats)
     Integer, Intent( InOut ) ::           mxatdm
-    Type( stats_type ), Intent( Out ) ::  stats
+    Type( stats_type ), Intent( InOut ) ::  stats
 
     Integer, Dimension( 1:6 ) :: fail
     Integer :: mxstak
