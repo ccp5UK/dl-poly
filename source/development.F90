@@ -27,29 +27,52 @@ Module development
 
   Private
 
-  Logical, Save, Public :: l_scr  = .false. ! OUTPUT redirection to the default output (screen)
-  Logical, Save, Public :: l_fast = .false. ! avoid global safety checks (no elegant parallel failures)
-  Logical, Save, Public :: l_eng  = .false. ! OUTPUT inclusion of an extra last line with E_tot
-  Logical, Save, Public :: l_rout = .false. ! REVIVE writing in ASCII (default is binary)
-  Logical, Save, Public :: l_rin  = .false. ! REVOLD reading in ASCII (default is binary)
-  Logical, Save, Public :: l_org  = .false. ! translate CONFIG along a vector to CFGORG
-  Logical, Save, Public :: l_scl  = .false. ! CONFIG rescaling to CFGSCL after reading with termination
-  Logical, Save, Public :: l_his  = .false. ! HISTORY generation after reading with termination
-  Logical, Save, Public :: l_trm  = .false. ! termination flag
-  Logical, Save         :: l_tim  = .false. ! detailed timing
-  Logical, Save, Public :: l_tor  = .false. ! no production of REVCON & REVIVE
-  Logical, Save, Public :: l_dis  = .false. ! check on minimum separation distance between VNL pairs at re/start
+  !> Type containing development module variables
+  Public, Type :: developement_type
+    Private
+
+    !> OUTPUT redirection to the default output (screen)
+    Logical, Public :: l_scr  = .false.
+    !> avoid global safety checks (no elegant parallel failures)
+    Logical, Public :: l_fast = .false.
+    !> OUTPUT inclusion of an extra last line with E_tot
+    Logical, Public :: l_eng  = .false.
+    !> REVIVE writing in ASCII (default is binary)
+    Logical, Public :: l_rout = .false.
+    !> REVOLD reading in ASCII (default is binary)
+    Logical, Public :: l_rin  = .false.
+    !> translate CONFIG along a vector to CFGORG
+    Logical, Public :: l_org  = .false.
+    !> CONFIG rescaling to CFGSCL after reading with termination
+    Logical, Public :: l_scl  = .false.
+    !> HISTORY generation after reading with termination
+    Logical, Public :: l_his  = .false.
+    !> termination flag
+    Logical, Public :: l_trm  = .false.
+    !> detailed timing
+    Logical         :: l_tim  = .false.
+    !> no production of REVCON & REVIVE
+    Logical, Public :: l_tor  = .false.
+    !> check on minimum separation distance between VNL pairs at re/start
+    Logical, Public :: l_dis  = .false.
 
 
-  Integer, Save, Public           :: lvcforg = -1                                ! CFGORG levcfg
-  Real( Kind = wp ), Save, Public :: xorg = 0.0_wp, yorg = 0.0_wp, zorg = 0.0_wp ! reorigin vector
+    !> CFGORG levcfg
+    Integer, Public           :: lvcforg = -1
+    !> reorigin vector
+    Real( Kind = wp ), Public :: xorg = 0.0_wp, yorg = 0.0_wp, zorg = 0.0_wp
 
-  Integer, Save, Public           :: lvcfscl = -1       ! CFGSCL levcfg
-  Real( Kind = wp ), Save, Public :: cels(1:9) = 0.0_wp ! CFGSCL lattice parameters
+    !> CFGSCL levcfg
+    Integer, Public           :: lvcfscl = -1
+    !> CFGSCL lattice parameters
+    Real( Kind = wp ), Public :: cels(1:9) = 0.0_wp
 
-  Real( Kind = wp ), Save, Public :: r_dis = 0.5_wp ! l_dis default check condition
+    !> l_dis default check condition
+    Real( Kind = wp ), Public :: r_dis = 0.5_wp
 
-  Real( Kind = wp ), Save, Public :: t_zero
+    !> Devel start time
+    Real( Kind = wp ), Public :: t_zero
+  End Type development_type
 
   Public :: scan_development
   Public :: build_info
