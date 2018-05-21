@@ -17,7 +17,7 @@
            (dvar,rlnk,lbook,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           megbnd,megang,megdih,meginv,ewld,thermo,comm)
+           megbnd,megang,megdih,meginv,ewld,thermo,green,comm)
 
 ! Exchange atomic data in border regions
 
