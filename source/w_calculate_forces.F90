@@ -9,7 +9,7 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings()
+        Call w_refresh_mappings(stat)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -51,7 +51,7 @@
 
 ! Calculate tethered atom forces
 
-     If (megtet > 0) Call tethers_forces(engtet,virtet,stress,comm)
+     If (megtet > 0) Call tethers_forces(engtet,virtet,stress,stats,comm)
 
 ! Calculate bond forces
 
@@ -146,7 +146,7 @@
 ! Refresh mappings
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
-           Call w_refresh_mappings()
+           Call w_refresh_mappings(stat)
 
            Go To 100
         End If

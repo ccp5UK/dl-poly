@@ -14,7 +14,7 @@ Module tethers
   Use comms,      Only : comms_type,gsum,gcheck
   Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
-  Use statistics, Only : xin,yin,zin
+  Use statistics, Only : stats_type
   Use setup, Only : mxtmls,mxtteth,mxteth,mxftet,mxpteth,mxatdm,nrite
   Use errors_warnings, Only : error, warning
   Use numerics, Only : images,local_index
@@ -71,7 +71,7 @@ Contains
 
   End Subroutine deallocate_tethers_arrays
 
-  Subroutine tethers_forces(engtet,virtet,stress,comm)
+  Subroutine tethers_forces(engtet,virtet,stress,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -86,6 +86,7 @@ Contains
 
   Real( Kind = wp ),                   Intent(   Out ) :: engtet,virtet
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+  Type( stats_type ), Intent( InOut ) :: stats
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe
@@ -127,9 +128,9 @@ Contains
 ! components of tether vector
 
      If (lstopt(0,i) > 0) Then
-        xdab(i) = xxx(ia)-xin(ia)
-        ydab(i) = yyy(ia)-yin(ia)
-        zdab(i) = zzz(ia)-zin(ia)
+        xdab(i) = xxx(ia)-stats%xin(ia)
+        ydab(i) = yyy(ia)-stats%yin(ia)
+        zdab(i) = zzz(ia)-stats%zin(ia)
 !     Else ! (DEBUG)
 !        xdab(i)=0.0_wp
 !        ydab(i)=0.0_wp

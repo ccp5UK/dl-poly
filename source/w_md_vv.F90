@@ -59,7 +59,7 @@
         If (levcfg == 2) Then
            newjob = .false.
 
-           If (keyres /= 1) Call w_write_options()
+           If (keyres /= 1) Call w_write_options(stat)
 
            If (nstep == 0 .and. nstep == nstrun) Go To 1000
         End If
@@ -88,17 +88,17 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings()
+        Call w_refresh_mappings(stat)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
 ! Evaluate forces
 
-     Call w_calculate_forces()
+     Call w_calculate_forces(stat)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-     If (nstep == 0) Call w_statistics_report()
+     If (nstep == 0) Call w_statistics_report(stat)
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
@@ -125,18 +125,18 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report()
+        Call w_statistics_report(stat)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options()
+        Call w_write_options(stat)
 
 ! Save restart data in event of system crash
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,stat,devel,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 

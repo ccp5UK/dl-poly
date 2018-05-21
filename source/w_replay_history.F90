@@ -74,9 +74,9 @@
   nstpe = nstep
   nstph = 0 ! trajectory points counter
   Do
-     Call allocate_statistics_connect()
+     Call allocate_statistics_connect(mxatdm,stat)
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(rlnk,comm)
+     If (nstph > nstpe) Call statistics_connect_set(rlnk,stat,comm)
 
 ! Make a move - Read a frame
 
@@ -96,7 +96,7 @@
 
 ! Deal with restarts but remember the old cell parameters
 
-           clin=cell
+           stat%clin=cell
            Go To 10
 
         Else
@@ -110,21 +110,21 @@
 
            If (nstph == 1) Then
               Do i=1,natms
-                 xin(i)=xxx(i)
-                 yin(i)=yyy(i)
-                 zin(i)=zzz(i)
+                 stat%xin(i)=xxx(i)
+                 stat%yin(i)=yyy(i)
+                 stat%zin(i)=zzz(i)
               End Do
-              clin=cell
+              stat%clin=cell
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(rlnk,comm)
+              Call statistics_connect_set(rlnk,stat,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
 
-           Call statistics_connect_frames(megatm,comm)
-           Call deallocate_statistics_connect()
+           Call statistics_connect_frames(megatm,stat,comm)
+           Call deallocate_statistics_connect(stat)
 
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
@@ -230,7 +230,7 @@
 
            Call statistics_collect        &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,intsta,      &
+           keyres,keyens,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -244,18 +244,18 @@
            engke,engrot,consv,vircom,     &
            strtot,           &
            stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,thermo,comm,virdpd)
+           stptmp,stpprs,stpvol,stat,thermo,comm,virdpd)
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
            If (ltraj) Call trajectory_write &
-           (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,comm)
+           (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,comm)
            If (ldef) Call defects_write &
            (rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time,comm)
            If (l_msd) Call msd_write &
-           (keyres,nstmsd,istmsd,megatm,nstep,tstep,time,stpval,comm)
+           (keyres,nstmsd,istmsd,megatm,nstep,tstep,time,stat%stpval,comm)
            If (lrsd) Call rsd_write &
-           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
+           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,stat%rsd,comm)
            If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (lvafav,keyres,nstph,tsths,comm)
 
@@ -273,7 +273,7 @@
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,stat,devel,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -299,11 +299,11 @@
 ! Save last frame positions (for estimates of MSD when levcfg==0)
 
         Do i=1,natms
-           xin(i)=xxx(i)
-           yin(i)=yyy(i)
-           zin(i)=zzz(i)
+           stat%xin(i)=xxx(i)
+           stat%yin(i)=yyy(i)
+           stat%zin(i)=zzz(i)
         End Do
-        clin=cell
+        stat%clin=cell
      Else
         Exit
      End If
@@ -316,9 +316,9 @@
 ! recover connectivity arrays for REVCON, REVIVE and printing purposes
 ! read_history MUST NOT initialise R,V,F arrays!!!
 
-     ltg(1:natms) = ltg0(1:natms)
-     lsa(1:natms) = lsa0(1:natms)
-     lsi(1:natms) = lsi0(1:natms)
+     ltg(1:natms) = stat%ltg0(1:natms)
+     lsa(1:natms) = stat%lsa0(1:natms)
+     lsi(1:natms) = stat%lsi0(1:natms)
 
   Else If (exout < 0) Then ! abnormal exit
 
@@ -326,11 +326,11 @@
 ! recover positions and generate kinetics
 
      Do i=1,natms
-        xxx(i)=xin(i)
-        yyy(i)=yin(i)
-        zzz(i)=zin(i)
+        xxx(i)=stat%xin(i)
+        yyy(i)=stat%yin(i)
+        zzz(i)=stat%zin(i)
      End Do
-     cell=clin
+     cell=stat%clin
 
      Call set_temperature            &
            (levcfg,keyres,      &
@@ -342,13 +342,13 @@
            degfre,degshl,sigma,engrot,thermo,comm)
 
   End If
-  Call deallocate_statistics_connect()
+  Call deallocate_statistics_connect(stat)
 
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
   If (.not. devel%l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,stat,devel,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

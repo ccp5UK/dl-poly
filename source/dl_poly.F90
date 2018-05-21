@@ -104,7 +104,10 @@ program dl_poly
 
   Use rdfs
   Use z_density
-  Use statistics
+  Use statistics, Only : stats_type,allocate_statistics_arrays,&
+    statistics_result,statistics_collect,deallocate_statistics_connect, &
+    allocate_statistics_connect,statistics_connect_set, &
+    statistics_connect_frames
   Use greenkubo
 
   ! MSD MODULE
@@ -202,7 +205,7 @@ program dl_poly
     nx,ny,nz,                           &
     keyres,nstrun,nsteql,               &
     keymin,nstmin,                      &
-    keyens,intsta,nstbpo,    &
+    keyens,nstbpo,    &
     keyfce,mxshak,mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
     nstrdf,nstzdn,                      &
@@ -250,6 +253,7 @@ program dl_poly
   Type(timer_type) :: tmr
   Type(impact_type) :: impa
   Type(development_type) :: devel
+  Type(stats_type) :: stats
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -318,7 +322,7 @@ program dl_poly
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,thermo,devel,comm)
+    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,stats,thermo,devel,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -366,7 +370,7 @@ program dl_poly
 
   Call allocate_rdf_arrays()
   Call allocate_z_density_arrays()
-  Call allocate_statistics_arrays()
+  Call allocate_statistics_arrays(mxatdm,stats)
   Call allocate_greenkubo_arrays()
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
@@ -389,12 +393,12 @@ program dl_poly
     keymin,nstmin,min_tol,                      &
     keyens,&
     vel_es2,  &
-    fmax,nstbpo,intsta,keyfce,epsq,             &
+    fmax,nstbpo,keyfce,epsq,             &
     rlx_tol,mxshak,tolnce,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstmsd,istmsd,nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,thermo,devel,tmr,comm)
+    ndump,pdplnc,stats,thermo,devel,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -466,7 +470,7 @@ program dl_poly
     nstraj = 0 ; istraj = 1 ; keytrj = 0  ! default trajectory
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,comm)
+    Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stats%rsd,comm)
 
     Call gtime(tmr%elapsed)
     Call info("*** ALL DONE ***",.true.)
@@ -490,7 +494,7 @@ program dl_poly
   Call system_init                                                 &
     (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
     time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
-    vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,devel,comm)
+    vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,stats,devel,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -704,17 +708,17 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv()
+    Call w_md_vv(stats)
   Else
     If (lfce) Then
-      Call w_replay_historf()
+      Call w_replay_historf(stats)
     Else
-      Call w_replay_history()
+      Call w_replay_history(stats)
     End If
   End If
 
   !Close the statis file if we used it.
-  If (statis_file_open) Close(Unit=nstats)
+  If (stats%statis_file_open) Close(Unit=nstats)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -768,7 +772,7 @@ program dl_poly
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
       (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-      chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
+      chit,cint,chip,eta,strcon,strpmf,stress,stats,devel,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -777,7 +781,7 @@ program dl_poly
   Call statistics_result                                        &
     (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
     nstrun,keyens,keyshl,megcon,megpmf,              &
-    nstep,tstep,time,tmst,thermo,comm,passmin)
+    nstep,tstep,time,tmst,stats,thermo,comm,passmin)
 
   10 Continue
 
@@ -817,7 +821,7 @@ program dl_poly
   ! Get just the one number to compare against
 
   If (devel%l_eng) Then
-    Write(message,'(a,1p,e20.10)') "TOTAL ENERGY: ", stpval(1)
+    Write(message,'(a,1p,e20.10)') "TOTAL ENERGY: ", stats%stpval(1)
     Call info('',.true.)
     Call info(message,.true.)
   End If
@@ -835,11 +839,14 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces()
+  Subroutine w_calculate_forces(stat)
+    Type(stats_type), Intent(InOut) :: stat
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings()
+  Subroutine w_refresh_mappings(stat)
+    Type(stats_type), Intent(InOut) :: stat
+
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
@@ -853,11 +860,13 @@ Contains
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
-  Subroutine w_statistics_report()
+  Subroutine w_statistics_report(stat)
+    Type(stats_type), Intent(InOut) :: stat
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
-  Subroutine w_write_options()
+  Subroutine w_write_options(stat)
+    Type(stats_type), Intent(InOut) :: stat
     Include 'w_write_options.F90'
   End Subroutine w_write_options
 
@@ -865,11 +874,14 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv()
+  Subroutine w_md_vv(stat)
+    Type(stats_type), Intent(InOut) :: stat
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history()
+  Subroutine w_replay_history(stat)
+
+    Type(stats_type), Intent(InOut) :: stat
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements
@@ -878,7 +890,8 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf()
+  Subroutine w_replay_historf(stat)
+    Type(stats_type), Intent(InOut) :: stat
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements

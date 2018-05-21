@@ -68,7 +68,7 @@ Module statistics
   Real( Kind = wp ), Allocatable :: zumval0(:),ravval0(:),stkval0(:,:)
 
   Logical                        :: statis_file_open = .false.
-  Integer                        :: mxnstk,mxstak,intsta
+  Integer                        :: mxnstk,mxstak
 End Type
 
   Public :: allocate_statistics_arrays, allocate_statistics_connect, &
@@ -144,7 +144,7 @@ Contains
 
   Subroutine statistics_collect             &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,      &
+           keyres,keyens,intsta,      &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -174,7 +174,7 @@ Contains
 
   Logical,           Intent( In    ) :: lsim,leql,lzdn
   Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
-                                        keyens,nstep
+                                        keyens,intsta,nstep
 
   Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
 
@@ -459,7 +459,7 @@ Contains
 
 ! write statistics file
 
-  If (comm%idnode == 0 .and. Mod(nstep,stats%intsta) == 0) Then
+  If (comm%idnode == 0 .and. Mod(nstep,intsta) == 0) Then
      If (.not. stats%statis_file_open) Then
          Open(Unit=nstats, File=Trim(STATIS), Position='append')
          stats%statis_file_open = .true.
@@ -1568,7 +1568,7 @@ Subroutine statistics_result                                    &
              (3.0_wp*Real(stats%numacc-Min(stats%mxstak,stats%numacc-1),wp)*tstep)
         If (dc < 1.0e-10_wp) dc = 0.0_wp
 
-        srmsd = Sqrt(stats%ravval(iadd+i))
+        srmsd = Sqrt(ravval(iadd+i))
         Write(message,'(2x,a8,1p,2(8x,e13.4))') unqatm(i),dc,srmsd
      Else
         Write(message,'(2x,a8,1p,2(8x,e13.4))') unqatm(i),0.0_wp,0.0_wp
@@ -1669,7 +1669,7 @@ Subroutine statistics_result                                    &
    If (comm%idnode == 0) Then
      Do i=iadd+1,mxnstk
        If (Abs(stats%sumval(i)) > zero_plus .or. Abs(stats%ssqval(i)) > zero_plus) Then
-         Write(message,'(2x,i10,2f20.10)') i,stats%sumval(i),stats%ssqval(i)
+         Write(message,'(2x,i10,2f20.10)') i,sumval(i),ssqval(i)
          Call info(message,.true.)
        End If
      End Do

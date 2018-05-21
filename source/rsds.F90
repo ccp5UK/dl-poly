@@ -6,7 +6,7 @@ Module rsds
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
   Use core_shell, Only : legshl
-  Use statistics, Only : rsd
+  ! this is assymetric with respect to the rest. will need probably rsd defined in this type
 
   Use parse,      Only : tabs_2_blanks, get_word, word_2_real
   Use io,         Only : io_set_parameters,        &
@@ -29,7 +29,7 @@ Module rsds
 Contains
 
 
-Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
+Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,rsd,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -43,6 +43,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
 
   Integer,           Intent( In    ) :: keyres,nsrsd,isrsd,nstep
   Real( Kind = wp ), Intent( In    ) :: rrsd,tstep,time
+  Real( Kind = wp ), Intent( InOut ) :: rsd(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter :: recsz = 73 ! default record size

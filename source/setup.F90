@@ -213,7 +213,7 @@ Module setup
     mxtana,mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,              &
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                    &
     mxpfld,mxgusr,                                              &
-    mxstak,mxnstk,mxlist,mxcell,mxatms,mxatdm,                  &
+    mxlist,mxcell,mxatms,mxatdm,                  &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
 
 ! zero+ and half+/- :: defined in set_bounds

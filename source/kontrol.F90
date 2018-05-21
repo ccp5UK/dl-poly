@@ -44,6 +44,7 @@ Module kontrol
                             IO_WRITE_SORTED_MASTER
   Use numerics, Only : dcell, invert
   Use thermostat, Only : thermostat_type
+  Use statistics, Only : stats_type
 
   Implicit None
   Private
@@ -69,12 +70,12 @@ Subroutine read_control                                &
            keymin,nstmin,min_tol,                      &
            keyens,&
            vel_es2,  &
-           fmax,nstbpo,intsta,keyfce,epsq,             &
+           fmax,nstbpo,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,thermo,devel,tmr,comm)
+           ndump,pdplnc,stats,thermo,devel,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -116,7 +117,7 @@ Subroutine read_control                                &
                                              keymin,nstmin,        &
                                              keyens,           &
                                              nstbpo,        &
-                                             intsta,keyfce,        &
+                                             keyfce,        &
                                              mxshak,mxquat,        &
                                              nstbnd,nstang,        &
                                              nstdih,nstinv,        &
@@ -133,6 +134,7 @@ Subroutine read_control                                &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
                                              rdef,rrsd,pdplnc 
+      Type( stats_type ), Intent (   Out ) :: stats                                         
   Type( impact_type ),     Intent(   Out ) :: impa
   Type ( thermostat_type), Intent( InOut ) :: thermo
   Type( timer_type ),      Intent( InOut ) :: tmr
@@ -437,7 +439,7 @@ Subroutine read_control                                &
 
 ! default for statistics file interval
 
-  intsta = 100
+  stats%intsta = 100
 
 ! default switch for MSD outputing and defaults for
 ! (i) step to start at, (ii) every step after to be collected
@@ -2665,7 +2667,7 @@ Subroutine read_control                                &
 
      Else If (word(1:5) == 'stack') Then
 
-        Write(message,'(a,i10)') 'data stacking interval (steps) ',mxstak
+        Write(message,'(a,i10)') 'data stacking interval (steps) ',stats%mxstak
         Call info(message,.true.)
 
 ! read statistics printing option
@@ -2676,8 +2678,8 @@ Subroutine read_control                                &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        intsta = Nint(word_2_real(word))
-        Write(message,'(a,i10)') 'statistics file interval ',intsta
+        stats%intsta = Nint(word_2_real(word))
+        Write(message,'(a,i10)') 'statistics file interval ',stats%intsta
         Call info(message,.true.)
 
 ! read MSDTMP printing option
@@ -3600,9 +3602,9 @@ Subroutine scan_control                                    &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rcut,rpad,rbin,mxstak,                          &
+           rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,devel,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,devel,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3625,10 +3627,11 @@ Subroutine scan_control                                    &
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon,mxshl
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
   Integer,           Intent(   Out ) :: mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1, &
-                                        mxstak,nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
+                                        nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: rvdw,rmet,rcbnd,cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
+  Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
   Type( comms_type ), Intent( InOut ) :: comm
@@ -3723,7 +3726,7 @@ Subroutine scan_control                                    &
 
 ! default stack size
 
-  mxstak = 1
+  stats%mxstak = 1
 
 ! default switch for two-temperature model (ttm)
 
@@ -3876,7 +3879,7 @@ Subroutine scan_control                                    &
         Call get_word(record,word)
         If (word(1:4) == 'size') Call get_word(record,word)
 
-        mxstak = Nint(Abs(word_2_real(word)))
+        stats%mxstak = Nint(Abs(word_2_real(word)))
 
 ! read MSD option
 
