@@ -25,6 +25,7 @@ Module two_body
                          ewald_spme_mforces_d,ewald_real_mforces_d,ewald_excl_mforces_d,ewald_excl_mforces
 
   Use timer,  Only : timer_type,start_timer,stop_timer
+  Use development, Only : development_type
   Implicit None
   Private
   Public :: two_body_forces
@@ -34,7 +35,7 @@ Subroutine two_body_forces                        &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress,ewld,tmr,comm)
+           engcpe,vircpe,engsrp,virsrp,stress,ewld,devel,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -81,6 +82,7 @@ Subroutine two_body_forces                        &
                                                                engsrp,virsrp
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Type( ewald_type ),                       Intent( InOut ) :: ewld
+  Type( development_type ),                 Intent( In    ) :: devel
   Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( comms_type ),                       Intent( InOut ) :: comm
 
@@ -163,7 +165,7 @@ Subroutine two_body_forces                        &
   vircpe    = 0.0_wp
 
 ! Set up non-bonded interaction (verlet) list using link cells
-  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,tmr,comm)
+  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,devel,tmr,comm)
 ! Calculate all contributions from KIM
 
   If (kimim /= ' ') Then

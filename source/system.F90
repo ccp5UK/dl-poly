@@ -10,7 +10,7 @@ Module system
                                  cfgname,imcon,cell,lsi,lsa,atmnam, &
                                  write_config
   Use statistics
-  Use rdfs,         Only : ncfrdf,rdf,ncfusr,rusr,usr
+  Use rdfs,        Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density,   Only : ncfzdn,zdens
   Use bonds,       Only : ldfbnd,ncfbnd,dstbnd,numbonds,lstbnd,keybnd
   Use angles,      Only : ldfang,ncfang,dstang,numang,lstang,keyang
@@ -20,8 +20,7 @@ Module system
   Use metal,       Only : ntpmet
   Use greenkubo,   Only : nsvaf,vafsamp,vafcount,vafstep, &
                                  vxi,vyi,vzi,vafdata,vaf,vaftime
-
-  Use development, Only : l_rin, l_rout
+  Use development,  Only : development_type
   Use core_shell,   Only : numshl,lstshl
   Use constraints,  Only : numcon,lstcon
   Use rigid_bodies, Only : numrgd,lstrgd
@@ -61,7 +60,7 @@ Module system
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
            time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
-           vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,comm)
+           vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,devel,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -85,6 +84,7 @@ Module system
                                         virtot,stress(1:9),vircon,strcon(1:9), &
                                         virpmf,strpmf(1:9),elrc,virlrc,        &
                                         elrcm(0:mxatyp),vlrcm(0:mxatyp)
+  Type( development_type ), Intent( In    ) :: devel
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -97,7 +97,7 @@ Module system
 
 ! Define format for REVOLD reading in ASCII
 
-  If (l_rin) Then
+  If (devel%l_rin) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
      j = Max(mxstak*mxnstk,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
 
@@ -212,7 +212,7 @@ Module system
 
      xyz(1:3)=0.0_wp
      If (comm%idnode == 0) Then
-        If (l_rin) Then
+        If (devel%l_rin) Then
            Open(Unit=nrest, file=Trim(revold), form='formatted', IOStat=keyio)
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) xyz(1),xyz(2),xyz(3)
         Else
@@ -227,7 +227,7 @@ Module system
 ! read the rest of the accumulator data from dump file
 
      If (comm%idnode == 0) Then
-        If (l_rin) Then
+        If (devel%l_rin) Then
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) &
                dnstep,dtstep,time,tmst,dnumacc,chit,chip,cint
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) eta
@@ -479,7 +479,7 @@ Module system
         xyz=0.0_wp
 
         If (comm%idnode == 0) Then
-           If (l_rin) Then
+           If (devel%l_rin) Then
               Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) &
                   xyz(0),xyz(1),xyz(2),xyz(3),xyz(4),xyz(5),xyz(6)
            Else
@@ -531,7 +531,7 @@ Module system
             xyz=0.0_wp
 
             If (comm%idnode == 0) Then
-               If (l_rin) Then
+               If (devel%l_rin) Then
                   Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) &
                       xyz(0),xyz(1),xyz(2),xyz(3)
                Else
@@ -1796,7 +1796,7 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1815,6 +1815,7 @@ Subroutine system_revive                                      &
   Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst, &
                                         chit,cint,chip,eta(1:9),   &
                                         strcon(1:9),strpmf(1:9),stress(1:9)
+  Type( development_type ), Intent( In    ) :: devel
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready
@@ -1841,7 +1842,7 @@ Subroutine system_revive                                      &
 
 ! Define format for REVIVE printing in ASCII
 
-  If (l_rout) Then
+  If (devel%l_rout) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
      j = Max(mxstak*mxnstk+1,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
 
@@ -1978,7 +1979,7 @@ Subroutine system_revive                                      &
 
 ! Write accumulator data to dump file
 
-     If (l_rout) Then
+     If (devel%l_rout) Then
         Open(Unit=nrest, File=Trim(revive), Form='formatted', Status='replace')
 
         Write(Unit=nrest, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
@@ -2080,7 +2081,7 @@ Subroutine system_revive                                      &
            Call grecv(comm,bzz(1:jatms),jdnode,Revive_tag)
         End If
 
-        If (l_rout) Then
+        If (devel%l_rout) Then
            Do i=1,jatms
               Write(Unit=nrest, Fmt=forma, Advance='No') &
                    Real(iwrk(i),wp),axx(i),ayy(i),azz(i),bxx(i),byy(i),bzz(i)
@@ -2140,7 +2141,7 @@ Subroutine system_revive                                      &
             End If
 
 
-            If (l_rout) Then
+            If (devel%l_rout) Then
                Do i=1,jatms
                   Write(Unit=nrest, Fmt=forma, Advance='No') &
                        Real(iwrk(i),wp),axx(i),ayy(i),azz(i)

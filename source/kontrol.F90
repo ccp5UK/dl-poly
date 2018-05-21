@@ -22,9 +22,7 @@ Module kontrol
   Use kim,         Only : kimim,rkim
   Use greenkubo,   Only : isvaf,nsvaf,vafsamp
   Use rdfs,         Only : l_errors_jack, l_errors_block
-  Use development, Only : l_trm,l_eng, l_rout,l_dis,r_dis,l_tor,&
-                          l_his,l_scl,l_rin,l_org,xorg,yorg,zorg,&
-                          lvcforg,lvcfscl,cels
+  Use development, Only : development_type
   Use ttm
   Use impacts,     Only : impact_type
 
@@ -76,7 +74,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,thermo,tmr,comm)
+           ndump,pdplnc,thermo,devel,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -138,6 +136,7 @@ Subroutine read_control                                &
   Type( impact_type ),     Intent(   Out ) :: impa
   Type ( thermostat_type), Intent( InOut ) :: thermo
   Type( timer_type ),      Intent( InOut ) :: tmr
+  Type( development_type ), Intent( InOut ) :: devel
   Type( comms_type ),     Intent( InOut )  :: comm
 
 
@@ -536,43 +535,43 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'l_fast') Then
 !        l_fast = .true. ! done in scan_development
         Call info('%%% speed up by avoiding global safety checks !!! %%%',.true.)
-     Else If (word(1:5) == 'l_eng') Then
-        l_eng = .true.
+     Else If (word(1:5) == 'devel%l_eng') Then
+        devel%l_eng = .true.
         Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%',.true.)
-     Else If (word(1:6) == 'l_rout') Then
-        l_rout = .true.
+     Else If (word(1:6) == 'devel%l_rout') Then
+        devel%l_rout = .true.
         Call info('%%% REVIVE writing in ASCII opted !!! %%%',.true.)
-     Else If (word(1:5) == 'l_rin') Then
-        l_rin = .true.
+     Else If (word(1:5) == 'devel%l_rin') Then
+        devel%l_rin = .true.
         Call info('%%% REVOLD reading in ASCII opted !!! %%%',.true.)
-     Else If (word(1:5) == 'l_org') Then
-        l_org = .true.
-        l_trm  = .true.
+     Else If (word(1:5) == 'devel%l_org') Then
+        devel%l_org = .true.
+        devel%l_trm  = .true.
 
         Call info('%%% translate CONFIG along a vector into CFGORG after reading input & terminate !!! %%%',.true.)
         Call info('%%% vector and config level read as follows: %%%',.true.)
 
         Call get_word(record,word)
-        xorg = word_2_real(word)
+        devel%xorg = word_2_real(word)
         Call get_word(record,word)
-        yorg = word_2_real(word)
+        devel%yorg = word_2_real(word)
         Call get_word(record,word)
-        zorg = word_2_real(word)
+        devel%zorg = word_2_real(word)
 
         Call get_word(record,word)
-        lvcforg = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
+        devel%lvcforg = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
 
         Write(messages(1),'(a)') '%%%'
-        Write(messages(2),'(a,3f10.3,a)') '%%% vector(x,y,x) ', xorg, yorg, zorg, ' %%%'
-        Write(messages(3),'(a,i0,a)') '%%% CFGORG level ', lvcforg, ' %%%'
+        Write(messages(2),'(a,3f10.3,a)') '%%% vector(x,y,x) ', devel%xorg, devel%yorg, devel%zorg, ' %%%'
+        Write(messages(3),'(a,i0,a)') '%%% CFGORG level ', devel%lvcforg, ' %%%'
         Call info(messages,3,.true.)
 
-     Else If (word(1:5) == 'l_scl') Then
+     Else If (word(1:5) == 'devel%l_scl') Then
         Call info('%%% rescale CONFIG to CFGSCL, after reading input & terminate !!! %%%',.true.)
         Call info('%%% config level and new cell vectors to rescale to (read in a CONFIG-like manner): %%%',.true.)
 
         Call get_word(record,word)
-        lvcfscl = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
+        devel%lvcfscl = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
 
         itmp=0
         Do i=1,3
@@ -580,46 +579,46 @@ Subroutine read_control                                &
            Do j=1,3
               Call get_word(record,word)
               itmp=itmp+1
-              cels(itmp)=word_2_real(word)
+              devel%cels(itmp)=word_2_real(word)
            End Do
         End Do
 
-        Call invert(cels,rcell,tmp)
+        Call invert(devel%cels,rcell,tmp)
 
         Write(messages(1),'(a)') '%%%'
-        Write(messages(2),'(1x,a,i0,a)')        '%%% CFGSCL level ', lvcfscl, ' %%%'
-        Write(messages(3),'(1x,a,3f20.10,a)')   '%%% ', cels(1:3), ' %%%'
-        Write(messages(4),'(1x,a,3f20.10,a)')   '%%% ', cels(4:6), ' %%%'
-        Write(messages(5),'(1x,a,3f20.10,a)')   '%%% ', cels(7:9), ' %%%'
+        Write(messages(2),'(1x,a,i0,a)')        '%%% CFGSCL level ', devel%lvcfscl, ' %%%'
+        Write(messages(3),'(1x,a,3f20.10,a)')   '%%% ', devel%cels(1:3), ' %%%'
+        Write(messages(4),'(1x,a,3f20.10,a)')   '%%% ', devel%cels(4:6), ' %%%'
+        Write(messages(5),'(1x,a,3f20.10,a)')   '%%% ', devel%cels(7:9), ' %%%'
         Write(messages(6),'(1x,a)')             '%%%'
         Write(messages(7),'(1x,a,1p,g22.12,a)') '%%% CFGSCL volume ', tmp, '%%%'
         Call info(messages,7,.true.)
 
         If (tmp > zero_plus) Then
-           l_scl = .true.
-           l_trm  = .true.
+           devel%l_scl = .true.
+           devel%l_trm  = .true.
         Else
            Call info('%%% OPTION ABORTED DUE TO ZERO VOLUME !!! %%%',.true.)
-           l_trm  = .true.
+           devel%l_trm  = .true.
         End If
-     Else If (word(1:5) == 'l_his') Then
-        l_his = .true.
-        l_trm = .true.
+     Else If (word(1:5) == 'devel%l_his') Then
+        devel%l_his = .true.
+        devel%l_trm = .true.
         Call info('%%% generate HISTORY after reading input & terminate !!! %%%',.true.)
      Else If (word(1:5) == 'l_tim') Then
 !        l_tim = .true.  ! done in scan_development
         Call info('%%% generate detailed timing !!! %%%',.true.)
-     Else If (word(1:5) == 'l_tor') Then
-        l_tor = .true.
+     Else If (word(1:5) == 'devel%l_tor') Then
+        devel%l_tor = .true.
         Call info('%%% Turn off production of REVCON & REVIVE !!! %%%',.true.)
-     Else If (word(1:5) == 'l_trm') Then
-        l_trm = .true.
+     Else If (word(1:5) == 'devel%l_trm') Then
+        devel%l_trm = .true.
         Call info('%%% Terminate gracefully before initialisation !!! %%%',.true.)
-     Else If (word(1:5) == 'l_dis') Then
-        l_dis = .true.
-        r_dis = Min( r_dis , word_2_real(word,0.1_wp) )
+     Else If (word(1:5) == 'devel%l_dis') Then
+        devel%l_dis = .true.
+        devel%r_dis = Min( devel%r_dis , word_2_real(word,0.1_wp) )
         Call info('%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%',.true.)
-        Write(message,'(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', r_dis
+        Write(message,'(a,1p,e12.4)') '%%% separation criterion (Angstroms) %%%', devel%r_dis
         Call info(message,.true.)
 
 ! read VDW options
@@ -3603,7 +3602,7 @@ Subroutine scan_control                                    &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,devel,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3631,6 +3630,7 @@ Subroutine scan_control                                    &
   Real( Kind = wp ), Intent( InOut ) :: rvdw,rmet,rcbnd,cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
   Type( thermostat_type ), Intent( InOut ) :: thermo
+  Type( development_type ), Intent( InOut ) :: devel
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -4689,8 +4689,8 @@ Subroutine scan_control                                    &
 ! When not having dynamics or prepared to terminate
 ! expanding and not running the small system prepare to exit gracefully
 
-  l_trm = (l_exp .and. nstrun == 0)
-  If (((.not.lsim) .or. l_trm) .and. lrpad) rpad=0.0_wp
+  devel%l_trm = (l_exp .and. nstrun == 0)
+  If (((.not.lsim) .or. devel%l_trm) .and. lrpad) rpad=0.0_wp
 
   l_errors_block = l_errors_block .and. lrdf
   l_errors_jack = l_errors_jack .and. lrdf

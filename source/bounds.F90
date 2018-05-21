@@ -10,7 +10,7 @@ Module bounds
   Use kim,             Only : kimim
   Use bonds,           Only : rcbnd
   Use tersoff,         Only : potter
-  Use development,     Only : l_trm
+  Use development,     Only : development_type
   Use greenkubo,       Only : vafsamp
   Use mpole,           Only : keyind,induce
   Use ttm,             Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
@@ -30,7 +30,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce, &
-           alpha,width,thermo,comm)
+           alpha,width,thermo,devel,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -50,6 +50,7 @@ Subroutine set_bounds                                 &
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
   Type( thermostat_type ), Intent( InOut ) :: thermo
+  Type( development_type ), Intent( InOut ) :: devel
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -108,7 +109,7 @@ Subroutine set_bounds                                 &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,devel,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -571,7 +572,7 @@ Subroutine set_bounds                                 &
   cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp ! domain size
 
   If (ilx*ily*ilz == 0) Then
-     If (l_trm) Then ! we are prepared to exit gracefully(-:
+     If (devel%l_trm) Then ! we are prepared to exit gracefully(-:
         rcut = cut   ! - rpad (was zeroed in scan_control)
         Write(message,'(a)') &
           "real space cutoff reset has occurred, early run termination is due"

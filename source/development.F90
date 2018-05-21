@@ -28,7 +28,7 @@ Module development
   Private
 
   !> Type containing development module variables
-  Public, Type :: developement_type
+  Type, Public :: development_type
     Private
 
     !> OUTPUT redirection to the default output (screen)
@@ -79,7 +79,7 @@ Module development
 
 Contains
 
-  Subroutine scan_development(comm)
+  Subroutine scan_development(devel,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -91,6 +91,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type( development_type ), Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm
     Logical                :: carry,safe
     Character( Len = 200 ) :: record
@@ -111,7 +112,7 @@ Contains
     End If
 
     Call get_line(safe,nread,record,comm)
-    If (safe) Then 
+    If (safe) Then
 
       carry = .true.
       Do While (carry)
@@ -126,15 +127,15 @@ Contains
 
         If      (word(1:5) == 'l_scr') Then
 
-          l_scr = .true.
+          devel%l_scr = .true.
 
         Else If (word(1:6) == 'l_fast') Then
 
-          l_fast=.true.
+          devel%l_fast=.true.
 
         Else If (word(1:5) == 'l_tim') Then
 
-          l_tim=.true.
+          devel%l_tim=.true.
 
         Else If (word(1:6) == 'finish') Then
 
@@ -148,7 +149,7 @@ Contains
 
   End Subroutine scan_development
 
-  Subroutine start_devel_time(name,comm)
+  Subroutine start_devel_time(name,devel,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -160,16 +161,17 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Character( Len = * ), Intent( In    ) :: name
+    Type( development_type ), Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm
 
-    If (l_tim) Then
+    If (devel%l_tim) Then
       Call gsync(comm)
-      Call gtime(t_zero)
+      Call gtime(devel%t_zero)
     End If
 
   End Subroutine start_devel_time
 
-  Subroutine end_devel_time(name,comm)
+  Subroutine end_devel_time(name,devel,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -181,16 +183,17 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Character( Len = * ), Intent( In    ) :: name
+    Type( development_type ), Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm
 
     Real( Kind = wp ) :: t
     Character( Len = 256 ) :: message
 
-    If (l_tim) Then
+    If (devel%l_tim) Then
       Call gsync(comm)
       Call gtime(t)
 
-      Write(message,'(2(a,3x),f0.3)') 'DEVEL TIME: Time in', name, t-t_zero
+      Write(message,'(2(a,3x),f0.3)') 'DEVEL TIME: Time in', name, t-devel%t_zero
       Call info(message,.true.)
 
     End If
@@ -223,7 +226,7 @@ Contains
 #define __VERSION__ 'XYZ'
 #endif
 
-  Subroutine build_info()
+  Subroutine build_info(devel)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -233,6 +236,8 @@ Contains
     ! author    - a.m.elena & i.t.todorov april 2016
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( development_type ), Intent( In    ) :: devel
 
     Character( Len =  8 ) :: date
     Character( Len = 10 ) :: time

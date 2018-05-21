@@ -50,7 +50,7 @@ program dl_poly
 
   ! DEVELOPMENT MODULE
 
-  Use development
+  Use development, Only : development_type,scan_development,build_info
 
   ! IO & DOMAINS MODULES
 
@@ -249,6 +249,7 @@ program dl_poly
   Type(ewald_type) :: ewld
   Type(timer_type) :: tmr
   Type(impact_type) :: impa
+  Type(development_type) :: devel
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -272,14 +273,14 @@ program dl_poly
     End If
   End If
 
-  Call scan_development(comm)
+  Call scan_development(devel,comm)
 
   ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
 
   Call scan_control_output(comm)
 
   If (dlp_world(0)%idnode == 0) Then
-    If (.not.l_scr) Then
+    If (.not.devel%l_scr) Then
       Open(Unit=nrite, File=Trim(output), Status='replace')
     End If
   End If
@@ -299,7 +300,7 @@ program dl_poly
   Write(banner(13),fmt1) "******************************************************************"
   Call info(banner,13,.true.)
 
-  Call build_info()
+  Call build_info(devel)
 
   Call info('',.true.)
   Write(banner(1),fmt1) Repeat("*",66)
@@ -317,7 +318,7 @@ program dl_poly
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,thermo,comm)
+    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,thermo,devel,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -393,7 +394,7 @@ program dl_poly
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstmsd,istmsd,nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,thermo,tmr,comm)
+    ndump,pdplnc,thermo,devel,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -425,37 +426,37 @@ program dl_poly
   Call info("*** all reading and connectivity checks DONE ***",.true.)
   Call time_elapsed(tmr%elapsed)
 
-  ! l_org: translate CONFIG into CFGORG and exit gracefully
+  ! devel%l_org: translate CONFIG into CFGORG and exit gracefully
 
-  If (l_org) Then
+  If (devel%l_org) Then
     Call gtime(tmr%elapsed)
     Call info('',.true.)
     Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
 
-    Call origin_config(megatm,comm)
+    Call origin_config(megatm,devel,comm)
 
     Call gtime(tmr%elapsed)
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
   End If
 
-  ! l_scl: rescale CONFIG to CFGSCL and exit gracefully
+  ! devel%l_scl: rescale CONFIG to CFGSCL and exit gracefully
 
-  If (l_scl) Then
+  If (devel%l_scl) Then
     Call gtime(tmr%elapsed)
     Call info('',.true.)
     Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
 
-    Call scale_config(megatm,comm)
+    Call scale_config(megatm,devel,comm)
 
     Call gtime(tmr%elapsed)
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
   End If
 
-  ! l_his: generate HISTORY and exit gracefully
+  ! devel%l_his: generate HISTORY and exit gracefully
 
-  If (l_his) Then
+  If (devel%l_his) Then
     Call gtime(tmr%elapsed)
     Call info('',.true.)
     Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
@@ -478,7 +479,7 @@ program dl_poly
 
   ! EXIT gracefully
 
-  If (l_trm) Then
+  If (devel%l_trm) Then
     Call info('',.true.)
     Call info("*** Exiting gracefully ***",.true.)
     Go To 10
@@ -489,7 +490,7 @@ program dl_poly
   Call system_init                                                 &
     (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
     time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
-    vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,comm)
+    vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,devel,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -695,7 +696,7 @@ program dl_poly
 
   ! Now you can run fast, boy
 
-  If (l_fast) Call gsync(comm,l_fast)
+  If (devel%l_fast) Call gsync(comm,devel%l_fast)
 
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -764,10 +765,10 @@ program dl_poly
 
   ! Save restart data for real simulations only (final)
 
-  If (lsim .and. (.not.l_tor)) Then
+  If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
       (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-      chit,cint,chip,eta,strcon,strpmf,stress,comm)
+      chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -815,7 +816,7 @@ program dl_poly
 
   ! Get just the one number to compare against
 
-  If (l_eng) Then
+  If (devel%l_eng) Then
     Write(message,'(a,1p,e20.10)') "TOTAL ENERGY: ", stpval(1)
     Call info('',.true.)
     Call info(message,.true.)
@@ -823,7 +824,7 @@ program dl_poly
 
   ! Close output channel
 
-  If (dlp_world(0)%idnode == 0 .and. (.not.l_scr)) Close(Unit=nrite)
+  If (dlp_world(0)%idnode == 0 .and. (.not.devel%l_scr)) Close(Unit=nrite)
 
   ! Terminate job
 
