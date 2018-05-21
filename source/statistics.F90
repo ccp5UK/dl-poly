@@ -117,7 +117,8 @@ Contains
     Allocate (stats%lsi0(1:mxatdm),stats%lsa0(1:mxatdm),stats%ltg0(1:mxatdm),                                    Stat = fail(2))
     Allocate (stats%xin0(1:mxatdm),stats%yin0(1:mxatdm),stats%zin0(1:mxatdm),                                    Stat = fail(3))
     Allocate (stats%xto0(1:mxatdm),stats%yto0(1:mxatdm),stats%zto0(1:mxatdm),                                    Stat = fail(4))
-    Allocate (stats%stpval0(1:2*mxatdm),stats%stpvl00(1:2*mxatdm),stats%sumval0(1:2*mxatdm),stats%ssqval0(1:2*mxatdm), Stat = fail(5))
+    Allocate (stats%stpval0(1:2*mxatdm),stats%stpvl00(1:2*mxatdm),stats%sumval0(1:2*mxatdm),stats%ssqval0(1:2*mxatdm), &
+      Stat = fail(5))
     Allocate (stats%zumval0(1:2*mxatdm),stats%ravval0(1:2*mxatdm),stats%stkval0(1:mxstak,1:2*mxatdm),            Stat = fail(6))
 
     If (Any(fail > 0)) Call error(1060)
