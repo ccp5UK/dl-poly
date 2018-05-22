@@ -105,7 +105,8 @@ program dl_poly
   Use rdfs
   Use z_density
   Use statistics
-  Use greenkubo
+  Use greenkubo, Only : greenkubo_type,allocate_greenkubo_arrays,vaf_compute, &
+                        vaf_collect,vaf_write
 
   ! MSD MODULE
 
@@ -250,6 +251,7 @@ program dl_poly
   Type(timer_type) :: tmr
   Type(impact_type) :: impa
   Type(development_type) :: devel
+  Type(greenkubo_type) :: green
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -318,7 +320,7 @@ program dl_poly
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,thermo,devel,comm)
+    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,thermo,devel,green,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -367,7 +369,7 @@ program dl_poly
   Call allocate_rdf_arrays()
   Call allocate_z_density_arrays()
   Call allocate_statistics_arrays()
-  Call allocate_greenkubo_arrays()
+  Call allocate_greenkubo_arrays(green)
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
@@ -394,7 +396,7 @@ program dl_poly
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstmsd,istmsd,nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,thermo,devel,tmr,comm)
+    ndump,pdplnc,thermo,devel,green,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -490,7 +492,7 @@ program dl_poly
   Call system_init                                                 &
     (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
     time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
-    vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,devel,comm)
+    vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,devel,green,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -768,7 +770,7 @@ program dl_poly
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
       (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-      chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
+      chit,cint,chip,eta,strcon,strpmf,stress,devel,green,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -777,7 +779,7 @@ program dl_poly
   Call statistics_result                                        &
     (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
     nstrun,keyens,keyshl,megcon,megpmf,              &
-    nstep,tstep,time,tmst,thermo,comm,passmin)
+    nstep,tstep,time,tmst,thermo,green,comm,passmin)
 
   10 Continue
 

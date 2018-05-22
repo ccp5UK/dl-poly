@@ -11,7 +11,7 @@ Module bounds
   Use bonds,           Only : rcbnd
   Use tersoff,         Only : potter
   Use development,     Only : development_type
-  Use greenkubo,       Only : vafsamp
+  Use greenkubo,       Only : greenkubo_type
   Use mpole,           Only : keyind,induce
   Use ttm,             Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
   Use numerics,        Only : dcell
@@ -30,7 +30,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce, &
-           alpha,width,thermo,devel,comm)
+           alpha,width,thermo,devel,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -51,6 +51,7 @@ Subroutine set_bounds                                 &
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
+  Type( greenkubo_type ), Intent( InOut ) :: green
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -109,7 +110,7 @@ Subroutine set_bounds                                 &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,mxstak,                          &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,devel,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,devel,green,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -787,7 +788,7 @@ Subroutine set_bounds                                 &
   mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real(                          &
            mxatdm*(18+12 + Merge(3,0,llvnl) + (mxexcl+1)                 + &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
-           Merge(2*(6+mxstak), 0, l_msd)) + 3*vafsamp                    + &
+           Merge(2*(6+mxstak), 0, l_msd)) + 3*green%samp                 + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
            3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 

@@ -175,7 +175,7 @@
 
 ! Collect VAF if kinetics is available
 
-           Call vaf_collect(lvafav,leql,nsteql,nstph-1,time,comm)
+           Call vaf_collect(lvafav,leql,nsteql,nstph-1,time,green,comm)
 
            Call statistics_collect        &
            (lsim,leql,nsteql,lzdn,nstzdn, &
@@ -235,15 +235,15 @@
            (keyres,nstmsd,istmsd,megatm,nstep,tstep,time,stpval,comm)
            If (lrsd) Call rsd_write &
            (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,comm)
-           If (vafsamp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
-           (lvafav,keyres,nstph,tsths,comm)
+           If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
+           (lvafav,keyres,nstph,tsths,green,comm)
 
 ! Save restart data in event of system crash
 
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,devel,green,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -318,7 +318,7 @@
 
   If (.not. devel%l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,devel,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,devel,green,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 
