@@ -22,7 +22,8 @@ Module external_field
   Use errors_warnings, Only : error
   use numerics, Only : local_index,images
   Use rdfs, Only : usr_compute, usr_collect
-  use shared_units, Only : update_shared_units
+  Use shared_units, Only : update_shared_units
+  Use statistics, Only : stats_type
   Implicit None
 
 ! Only one type of field can be applied on the system (keyfld is a scalar)
@@ -53,7 +54,7 @@ Contains
   End Subroutine allocate_external_field_arrays
   
   
-  Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,engfld,virfld,comm)
+  Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -64,14 +65,14 @@ Contains
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov november 2016
 ! amended   - i.t.todorov september 2017 :: zres, zrs+ and zrs- fields
-!                                           gsum engfld and virfld
+!                                           gsum stats%engfld and stats%virfld
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: leql
   Integer,           Intent( In    ) :: keyshl,nsteql,nstep
   Real( Kind = wp ), Intent( In    ) :: time ! for oscillating fields
-  Real( Kind = wp ), Intent(   Out ) :: engfld,virfld
+  Type( stats_type ), Intent( Inout ) :: stats
   Type( comms_type ), Intent( Inout ) :: comm
 
   Logical, Save     :: newjob = .true.
@@ -91,8 +92,8 @@ Contains
 
 ! energy and virial accumulators
 
-  engfld=0.0_wp
-  virfld=0.0_wp
+  stats%engfld=0.0_wp
+  stats%virfld=0.0_wp
 
   If (keyfld == 1) Then
 
@@ -331,7 +332,7 @@ Contains
               If (rrr < 0.0_wp) rrr=0.1_wp
 
               gamma=prmfld(1)*rrr**(-prmfld(3))
-              engfld=engfld + gamma
+              stats%engfld=stats%engfld + gamma
               gamma=-prmfld(3)*gamma/(rrr*rrr)
 
               fxx(i)=fxx(i) + gamma*xxx(i)
@@ -341,7 +342,7 @@ Contains
         End If
      End Do
 
-     virfld=-9.0_wp*engfld
+     stats%virfld=-9.0_wp*stats%engfld
 
   Else If (keyfld == 7) Then
 
@@ -353,11 +354,11 @@ Contains
            gamma=-prmfld(1)*zdif
 
            fzz(i)=fzz(i) + gamma
-           engfld=engfld - gamma*zdif
+           stats%engfld=stats%engfld - gamma*zdif
         End If
      End Do
 
-     engfld=0.5_wp*engfld
+     stats%engfld=0.5_wp*stats%engfld
 
   Else If (keyfld == 8) Then
 
@@ -405,13 +406,13 @@ Contains
 
      Do i=1,natms
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
-           engfld=weight(i)*(rtmp(1)-vxx(i))**2 ! must change E_kin to reflect solidity
+           stats%engfld=weight(i)*(rtmp(1)-vxx(i))**2 ! must change E_kin to reflect solidity
            vxx(i)=rtmp(1)
            fxx(i)=rtmp(2)*weight(i) ! force per particle
         End If
      End Do
 
-     engfld=0.5_wp*engfld
+     stats%engfld=0.5_wp*stats%engfld
 
   Else If (keyfld == 9) Then
 
@@ -440,12 +441,12 @@ Contains
 
               gamma=-prmfld(3)*zdif*weight(i)/cmm(0)
               fzz(i)=fzz(i) + gamma
-              engfld=engfld - gamma*zdif
+              stats%engfld=stats%engfld - gamma*zdif
            End If
         End If
      End Do
 
-     engfld=0.5_wp*engfld
+     stats%engfld=0.5_wp*stats%engfld
 
   Else If (keyfld == 10) Then
 
@@ -474,12 +475,12 @@ Contains
 
                gamma=-prmfld(3)*zdif
                fzz(i)=fzz(i) + gamma
-               engfld=engfld - gamma*zdif
+               stats%engfld=stats%engfld - gamma*zdif
             End If
          End If
       End Do
 
-      engfld=0.5_wp*engfld
+      stats%engfld=0.5_wp*stats%engfld
 
   Else If (keyfld == 11) Then
 
@@ -502,12 +503,12 @@ Contains
 
               gamma=-prmfld(3)*zdif
               fzz(i)=fzz(i) + gamma
-              engfld=engfld - gamma*zdif
+              stats%engfld=stats%engfld - gamma*zdif
            End If
         End If
      End Do
 
-     engfld=0.5_wp*engfld
+     stats%engfld=0.5_wp*stats%engfld
 
   Else If (keyfld == 12) Then
 
@@ -568,7 +569,7 @@ Contains
 ! get force magnitude
 
      zdif  =rrr-prmfld(6)
-     engfld=-prmfld(5)*zdif/rrr
+     stats%engfld=-prmfld(5)*zdif/rrr
 
 ! Apply force corrections
 
@@ -577,7 +578,7 @@ Contains
         l2=(ltg(i) >= ic .and. ltg(i) <= id)
 
         If ((l1 .or. l2) .and. lfrzn(i) == 0) Then
-           tmp=engfld*weight(i)
+           tmp=stats%engfld*weight(i)
 
            If (l2) Then
               tmp=tmp/cm2(0)
@@ -591,8 +592,8 @@ Contains
         End If
      End Do
 
-     virfld=-prmfld(5)*zdif*rrr
-     engfld=0.5_wp*prmfld(5)*zdif**2
+     stats%virfld=-prmfld(5)*zdif*rrr
+     stats%engfld=0.5_wp*prmfld(5)*zdif**2
 
   Else
 
@@ -605,13 +606,13 @@ Contains
 ! sum up energy and virial contributions
 
   
-     rtmp(1) = engfld
-     rtmp(2) = virfld
+     rtmp(1) = stats%engfld
+     rtmp(2) = stats%virfld
 
      Call gsum(comm,rtmp)
 
-     engfld = rtmp(1)
-     virfld = rtmp(2)
+     stats%engfld = rtmp(1)
+     stats%virfld = rtmp(2)
   
 
 End Subroutine external_field_apply
@@ -626,7 +627,7 @@ Subroutine external_field_correct(engfld,comm)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov february 2015
-! amnded    - i.t.todorov september 2015 : gsum engfld
+! amnded    - i.t.todorov september 2015 : gsum stats%engfld
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

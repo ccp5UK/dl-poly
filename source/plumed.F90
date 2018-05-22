@@ -15,6 +15,7 @@ Module plumed
   Use setup,  Only : boltz, mxatms, DLP_VERSION
   Use configuration, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
   Use errors_warnings, Only : error,warning,info
+  Use statistics, Only : stats_type
 
   Implicit None
 
@@ -121,14 +122,13 @@ Contains
 
   End Subroutine plumed_print_about
 
-  Subroutine plumed_apply(xxx,yyy,zzz,nstrun,nstep,stpcfg,stress,comm)
+  Subroutine plumed_apply(xxx,yyy,zzz,nstrun,nstep,stats,comm)
 
     Integer,           Intent( In    ) :: nstep
     Integer,           Intent(   Out ) :: nstrun
 
     Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
-    Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
-    Real( Kind = wp ), Intent( In    ) :: stpcfg
+    Type(stats_type), Intent( InOut )  :: stats
     Type(comms_type), Intent( InOut )  :: comm
 
 #ifdef PLUMED
@@ -143,14 +143,14 @@ Contains
     Call plumed_f_gcmd("setPositionsY"//sn,yyy)
     Call plumed_f_gcmd("setPositionsZ"//sn,zzz)
     Call plumed_f_gcmd("setBox"//sn,cell)
-    plumed_eng = stpcfg / real(comm%mxnode)
+    plumed_eng = stats%stpcfg / real(comm%mxnode)
     Call plumed_f_gcmd("setEnergy"//sn,plumed_eng)
     Call plumed_f_gcmd("setForcesX"//sn,fxx)
     Call plumed_f_gcmd("setForcesY"//sn,fyy)
     Call plumed_f_gcmd("setForcesZ"//sn,fzz)
-    plumed_virial = -stress
+    plumed_virial = -stats%stress
     Call plumed_f_gcmd("setVirial"//sn,plumed_virial)
-    stress = -plumed_virial
+    stats%stress = -plumed_virial
     Call plumed_f_gcmd("setStopFlag"//sn,plumed_stop)
     Call plumed_f_gcmd("calc"//sn )
 

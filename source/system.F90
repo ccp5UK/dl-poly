@@ -60,8 +60,7 @@ Module system
   
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
-           time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
-           vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,stats,devel,green,comm)
+           time,tmst,nstep,tstep,chit,cint,chip,eta,elrc,virlrc,elrcm,vlrcm,stats,devel,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -82,8 +81,7 @@ Module system
   Integer,           Intent(   Out ) :: nstep
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent(   Out ) :: time,tmst,chit,cint,chip,eta(1:9),     &
-                                        virtot,stress(1:9),vircon,strcon(1:9), &
-                                        virpmf,strpmf(1:9),elrc,virlrc,        &
+                                        elrc,virlrc,        &
                                         elrcm(0:mxatyp),vlrcm(0:mxatyp)
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
@@ -130,14 +128,14 @@ Module system
      chip = 0.0_wp
      eta  = 0.0_wp
 
-! initialise strcon,stress,virtot and vircon
+! initialise stats%strcon,stats%stress,stats%virtot and stats%vircon
 
-     virtot = 0.0_wp
-     stress = 0.0_wp
-     vircon = 0.0_wp
-     strcon = 0.0_wp
-     virpmf = 0.0_wp
-     strpmf = 0.0_wp
+     stats%virtot = 0.0_wp
+     stats%stress = 0.0_wp
+     stats%vircon = 0.0_wp
+     stats%strcon = 0.0_wp
+     stats%virpmf = 0.0_wp
+     stats%strpmf = 0.0_wp
 
 ! initialise accumulator arrays if reading failure occurred
 
@@ -241,9 +239,9 @@ Module system
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%zumval
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%ravval
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stkval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) strcon
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) strpmf
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stress
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%strcon
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%strpmf
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stress
 
            If (lrdf) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf
            If (mxgusr > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
@@ -271,9 +269,9 @@ Module system
            Read(Unit=nrest, IOStat=keyio, End=100) stats%zumval
            Read(Unit=nrest, IOStat=keyio, End=100) stats%ravval
            Read(Unit=nrest, IOStat=keyio, End=100) stats%stkval
-           Read(Unit=nrest, IOStat=keyio, End=100) strcon
-           Read(Unit=nrest, IOStat=keyio, End=100) strpmf
-           Read(Unit=nrest, IOStat=keyio, End=100) stress
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%strcon
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%strpmf
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%stress
 
            If (lrdf) Read(Unit=nrest, IOStat=keyio, End=100) dncfrdf,rdf
            If (mxgusr > 0) Read(Unit=nrest, IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
@@ -310,11 +308,11 @@ Module system
         If (mxgdih1 > 0) ncfdih=Nint(dncfdih)
         If (mxginv1 > 0) ncfinv=Nint(dncfinv)
 
-! calculate virtot = virtot-vircon-virpmf
+! calculate stats%virtot = stats%virtot-stats%vircon-stats%virpmf
 
-        vircon = stats%stpval(17) * engunit
-        virpmf = stats%stpval(26) * engunit
-        virtot = (stats%stpval(12)-stats%stpval(17)-stats%stpval(26)) * engunit
+        stats%vircon = stats%stpval(17) * engunit
+        stats%virpmf = stats%stpval(26) * engunit
+        stats%virtot = (stats%stpval(12)-stats%stpval(17)-stats%stpval(26)) * engunit
      End If
 
 100  Continue
@@ -353,12 +351,12 @@ Module system
         Do k=0,stats%mxnstk
            Call gbcast(comm,stats%stkval(:,k),0)
         End Do
-        Call gbcast(comm,strcon,0)
-        Call gbcast(comm,strpmf,0)
-        Call gbcast(comm,stress,0)
-        Call gbcast(comm,vircon,0)
-        Call gbcast(comm,virpmf,0)
-        Call gbcast(comm,virtot,0)
+        Call gbcast(comm,stats%strcon,0)
+        Call gbcast(comm,stats%strpmf,0)
+        Call gbcast(comm,stats%stress,0)
+        Call gbcast(comm,stats%vircon,0)
+        Call gbcast(comm,stats%virpmf,0)
+        Call gbcast(comm,stats%virtot,0)
 
 ! Reset timestep
 
@@ -577,7 +575,7 @@ Module system
 
   Else
 
-! force force and stress recalculation when 'restart' is not on
+! force force and stats%stress recalculation when 'restart' is not on
 
      levcfg=1
 
@@ -1799,7 +1797,7 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,stats,devel,green,comm)
+           chit,cint,chip,eta,stats,devel,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1816,8 +1814,7 @@ Subroutine system_revive                                      &
   Integer,           Intent( In    ) :: megatm,nstep
   Logical,           Intent( In    ) :: lrdf,lzdn
   Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst, &
-                                        chit,cint,chip,eta(1:9),   &
-                                        strcon(1:9),strpmf(1:9),stress(1:9)
+                                        chit,cint,chip,eta(1:9)
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
@@ -1998,9 +1995,9 @@ Subroutine system_revive                                      &
         Write(Unit=nrest, Fmt=forma, Advance='No') stats%zumval
         Write(Unit=nrest, Fmt=forma, Advance='No') stats%ravval
         Write(Unit=nrest, Fmt=forma, Advance='No') stats%stkval
-        Write(Unit=nrest, Fmt=forma, Advance='No') strcon
-        Write(Unit=nrest, Fmt=forma, Advance='No') strpmf
-        Write(Unit=nrest, Fmt=forma, Advance='No') stress
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%strcon
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%strpmf
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%stress
 
         If (lrdf) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfrdf,wp),rdf
         If (mxgusr > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(mxgusr),rusr,Real(ncfusr,wp),usr
@@ -2031,9 +2028,9 @@ Subroutine system_revive                                      &
         Write(Unit=nrest) stats%zumval
         Write(Unit=nrest) stats%ravval
         Write(Unit=nrest) stats%stkval
-        Write(Unit=nrest) strcon
-        Write(Unit=nrest) strpmf
-        Write(Unit=nrest) stress
+        Write(Unit=nrest) stats%strcon
+        Write(Unit=nrest) stats%strpmf
+        Write(Unit=nrest) stats%stress
 
         If (lrdf) Write(Unit=nrest) Real(ncfrdf,wp),rdf
         If (mxgusr > 0) Write(Unit=nrest) Real(mxgusr),rusr,Real(ncfusr,wp),usr

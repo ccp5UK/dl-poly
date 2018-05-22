@@ -233,20 +233,7 @@ program dl_poly
     rlx_tol(1:2),min_tol(1:2),                 &
     tolnce,quattol,rdef,rrsd,                  &
     pdplnc,sigma,         &
-    chit,vel_es2,eta(1:9),chip,cint,consv,     &
-    strtot(1:9),virtot,                        &
-    strkin(1:9),engke,strknf(1:9),strknt(1:9), &
-    engrot,strcom(1:9),vircom,                 &
-    engcpe,vircpe,engsrp,virsrp,               &
-    engter,virter,engtbp,virtbp,engfbp,virfbp, &
-    engshl,shlke,virshl,                       &
-    strcon(1:9),vircon,strpmf(1:9),virpmf,     &
-    stress(1:9),engtet,virtet,                 &
-    engbnd,virbnd,engang,virang,               &
-    engdih,virdih,enginv,virinv,               &
-    engfld,virfld,                             &
-    stptmp,stpprs,stpvol,stpcfg,stpeng,stpeth,stpvir
-
+    chit,vel_es2,eta(1:9),chip,cint
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(thermostat_type) :: thermo
@@ -495,8 +482,7 @@ program dl_poly
 
   Call system_init                                                 &
     (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
-    time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
-    vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,stats,devel,green,comm)
+    time,tmst,nstep,tstep,chit,cint,chip,eta,elrc,virlrc,elrcm,vlrcm,stats,devel,green,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -566,7 +552,7 @@ program dl_poly
     atmfre,atmfrz,            &
     megshl,megcon,megpmf,     &
     megrgd,degtra,degrot,     &
-    degfre,degshl,sigma,engrot,thermo,comm)
+    degfre,degshl,sigma,stats%engrot,thermo,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -636,64 +622,6 @@ program dl_poly
   End If
   Call gsum(comm,j)
   If (j > 0) Call warning(2,Real(j,wp),Real(comm%mxnode,wp),0.0_wp)
-
-  ! Initialise kinetic stress and energy contributions,
-  ! energy(or stress) and virial accumulators for rigid bodies,
-  ! electrostatics, short-range potentials, tersoff potentials
-  ! three- and four-body potentials, core-shell and tether
-  ! units, bonds, angles, dihedrals, inversions and field terms
-
-  strkin = 0.0_wp ; engke  = 0.0_wp
-  strknf = 0.0_wp ; strknt = 0.0_wp
-
-
-  strcom = 0.0_wp
-  vircom = 0.0_wp
-
-
-  engcpe = 0.0_wp
-  vircpe = 0.0_wp
-
-  engsrp = 0.0_wp
-  virsrp = 0.0_wp
-
-  engter = 0.0_wp
-  virter = 0.0_wp
-
-  engtbp = 0.0_wp
-  virtbp = 0.0_wp
-
-  engfbp = 0.0_wp
-  virfbp = 0.0_wp
-
-
-  shlke  = 0.0_wp
-  engshl = 0.0_wp
-  virshl = 0.0_wp
-
-  engtet = 0.0_wp
-  virtet = 0.0_wp
-
-
-  engbnd = 0.0_wp
-  virbnd = 0.0_wp
-
-  engang = 0.0_wp
-  virang = 0.0_wp
-
-  engdih = 0.0_wp
-  virdih = 0.0_wp
-
-  enginv = 0.0_wp
-  virinv = 0.0_wp
-
-
-  engfld = 0.0_wp
-  virfld = 0.0_wp
-
-  ! Initialise conserved quantity (other than K + U)
-
-  consv = 0.0_wp
 
   ! start-up time when forces are not recalculated
 
@@ -774,7 +702,7 @@ program dl_poly
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
       (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-      chit,cint,chip,eta,strcon,strpmf,stress,stats,devel,green,comm)
+      chit,cint,chip,eta,stats,devel,green,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -852,13 +780,15 @@ Contains
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw)
+  Subroutine w_integrate_vv(isw,stat)
     Integer, Intent( In    ) :: isw ! used for vv stage control
+    Type(stats_type), Intent(InOut) :: stat
 
     Include 'w_integrate_vv.F90'
   End Subroutine w_integrate_vv
 
-  Subroutine w_kinetic_options()
+  Subroutine w_kinetic_options(stat)
+    Type(stats_type), Intent(InOut) :: stat
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 

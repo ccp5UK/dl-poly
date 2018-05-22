@@ -23,6 +23,7 @@ Module statistics
   Use domains,    Only : nprx,npry,nprz,map,r_nprx,r_npry,r_nprz,&
                                 nprx_r,npry_r,nprz_r,idx,idy,idz
   Use vnl
+
   Use core_shell,  Only : passshl
   Use constraints, Only : passcon
   Use pmf,         Only : passpmf
@@ -30,6 +31,7 @@ Module statistics
   Use angles,      Only : ncfang,mxgang1
   Use dihedrals,   Only : ncfdih,mxgdih1
   Use inversions,  Only : ncfinv,mxginv1
+
   Use rdfs,         Only : ncfrdf,l_errors_jack,l_errors_block,ncfusr, &
                            calculate_errors,calculate_errors_jackknife, &
                            rdf_compute,usr_compute
@@ -47,9 +49,33 @@ Module statistics
   Implicit None
   Type, Public :: stats_type
 
-  Integer                        :: numacc = 0 , &
+  Integer( Kind = wi )           :: numacc = 0 , &
                                     natms0 = 0
+  Integer( Kind = wi )           :: mxnstk,mxstak,intsta
+  Logical                        :: statis_file_open = .false.
 
+  Real( Kind = wp )              :: consv = 0.0_wp,shlke = 0.0_wp,engke = 0.0_wp,&
+                                    engrot = 0.0_wp,engcpe = 0.0_wp,engsrp = 0.0_wp,&
+                                    engter  = 0.0_wp,engtbp = 0.0_wp,engfbp = 0.0_wp,&
+                                    engshl = 0.0_wp,engtet = 0.0_wp,engbnd = 0.0_wp,&
+                                    engang = 0.0_wp,engdih = 0.0_wp,enginv = 0.0_wp,&
+                                    engfld = 0.0_wp
+
+  Real( Kind = wp )              :: stptmp = 0.0_wp,stpprs = 0.0_wp,stpvol = 0.0_wp,&
+                                    stpcfg = 0.0_wp,stpeng = 0.0_wp,stpeth = 0.0_wp,&
+                                    stpvir = 0.0_wp
+
+  Real( Kind = wp )              :: virtot = 0.0_wp,vircom = 0.0_wp,vircpe = 0.0_wp,&
+                                    virsrp = 0.0_wp,virshl = 0.0_wp,virter = 0.0_wp,&
+                                    virtbp = 0.0_wp,virfbp = 0.0_wp,vircon = 0.0_wp,&
+                                    virpmf = 0.0_wp,virtet = 0.0_wp,virbnd = 0.0_wp,&
+                                    virang = 0.0_wp,virdih = 0.0_wp,virinv = 0.0_wp,&
+                                    virfld = 0.0_wp,virdpd = 0.0_wp
+
+  Real( Kind = wp )              :: strtot(1:9) = 0.0_wp,strkin(1:9) = 0.0_wp,strknf(1:9) = 0.0_wp,&
+                                    strknt(1:9) = 0.0_wp,strcom(1:9) = 0.0_wp,strcon(1:9) = 0.0_wp,&
+                                    strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp,strdpd(1:9) = 0.0_wp
+                                     
   Real( Kind = wp )              :: clin(1:9) = 0.0_wp
 
   Real( Kind = wp ), Allocatable :: xin(:),yin(:),zin(:)
@@ -67,8 +93,6 @@ Module statistics
   Real( Kind = wp ), Allocatable :: stpval0(:),stpvl00(:),sumval0(:),ssqval0(:)
   Real( Kind = wp ), Allocatable :: zumval0(:),ravval0(:),stkval0(:,:)
 
-  Logical                        :: statis_file_open = .false.
-  Integer                        :: mxnstk,mxstak,intsta
 End Type
 
   Public :: allocate_statistics_arrays, allocate_statistics_connect, &
@@ -147,19 +171,7 @@ Contains
            keyres,keyens,                 &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
-           engcpe,vircpe,engsrp,virsrp,   &
-           engter,virter,                 &
-           engtbp,virtbp,engfbp,virfbp,   &
-           engshl,virshl,shlke,           &
-           vircon,virpmf,                 &
-           engtet,virtet,engfld,virfld,   &
-           engbnd,virbnd,engang,virang,   &
-           engdih,virdih,enginv,virinv,   &
-           engke,engrot,consv,vircom,     &
-           strtot,                        &
-           stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,          &
-           mxatdm,stats,thermo,comm,virdpd)
+           mxatdm,stats,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -179,26 +191,13 @@ Contains
 
   Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
 
-  Real( Kind = wp ), Intent( In    ) :: tstep,time,                  &
-                                        engcpe,vircpe,engsrp,virsrp, &
-                                        engter,virter,               &
-                                        engtbp,virtbp,engfbp,virfbp, &
-                                        engshl,virshl,shlke,         &
-                                        vircon,virpmf,               &
-                                        engtet,virtet,engfld,virfld, &
-                                        engbnd,virbnd,engang,virang, &
-                                        engdih,virdih,enginv,virinv, &
-                                        engke,engrot,consv,vircom,   &
-                                        strtot(1:9)
+  Real( Kind = wp ), Intent( In    ) :: tstep,time                
 
   Real( Kind = wp ), Intent( InOut ) :: tmst
-  Real( Kind = wp ), Intent(   Out ) :: stpeng,stpvir,stpcfg,stpeth, &
-                                        stptmp,stpprs,stpvol
   Integer( Kind = wi),Intent( In    ) :: mxatdm
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
-  Real( Kind = wp ), Intent( In ) :: virdpd
 
   Logical,           Save :: newjob = .true.
 
@@ -256,90 +255,90 @@ Contains
 
 ! configurational energy
 
-  stpcfg = engcpe + engsrp + engter + engtbp + engfbp + &
-           engfld + engshl +                            &
-           engtet + engbnd + engang + engdih + enginv
+  stats%stpcfg = stats%engcpe + stats%engsrp + stats%engter + stats%engtbp + stats%engfbp + &
+           stats%engfld + stats%engshl +                            &
+           stats%engtet + stats%engbnd + stats%engang + stats%engdih + stats%enginv
 
 ! system energy
 
-  stpeng = stpcfg + engke + engrot
+  stats%stpeng = stats%stpcfg + stats%engke + stats%engrot
 
 ! energy + conserved quantity (for true ensembles)
 
-  stpcns = stpeng + consv
+  stpcns = stats%stpeng + stats%consv
 
 ! rotational temperature
 
-  stprot = 2.0_wp*(engrot) / (boltz*Max(1.0_wp,Real(degrot,wp)))
+  stprot = 2.0_wp*(stats%engrot) / (boltz*Max(1.0_wp,Real(degrot,wp)))
 
 ! core-shell units temperature
 
-  stpshl = 2.0_wp*(shlke) / (boltz*Max(1.0_wp,Real(degshl,wp)))
+  stpshl = 2.0_wp*(stats%shlke) / (boltz*Max(1.0_wp,Real(degshl,wp)))
 
 ! system temperature
 
-  stptmp = 2.0_wp*(engke+engrot) / (boltz*Real(degfre,wp))
+  stats%stptmp = 2.0_wp*(stats%engke+stats%engrot) / (boltz*Real(degfre,wp))
 
 ! system virial
 ! Note: originally, purely angle dependent interactions have zero virial!!!
-! So, virfbp, virinv and virdih are allegedly always zero!  virdih has an exception!
+! So, stats%virfbp, stats%virinv and stats%virdih are allegedly always zero!  virdih has an exception!
 
-  stpvir = vircpe + virsrp + virter + virtbp + virfbp + &
-           virfld + virshl + vircon + virpmf + vircom + &
-           virtet + virbnd + virang + virdih + virinv + virdpd
+  stats%stpvir = stats%vircpe + stats%virsrp + stats%virter + stats%virtbp + stats%virfbp + &
+           stats%virfld + stats%virshl + stats%vircon + stats%virpmf + stats%vircom + &
+           stats%virtet + stats%virbnd + stats%virang + stats%virdih + stats%virinv + stats%virdpd
 
 ! system volume
 
-  stpvol = volm
+  stats%stpvol = volm
 
 ! system pressure
 
-  stpprs = (2.0_wp*engke-stpvir) / (3.0_wp*stpvol)
+  stats%stpprs = (2.0_wp*stats%engke-stats%stpvir) / (3.0_wp*stats%stpvol)
 
 ! system PV
 
-  stpipv = stpprs*stpvol
+  stpipv = stats%stpprs*stats%stpvol
 
 ! system enthalpy
 
   If (keyens >= 20) Then             ! P_target*V_instantaneous
-     stpeth = stpeng + thermo%press*stpvol
+     stats%stpeth = stats%stpeng + thermo%press*stats%stpvol
   Else                               ! for keyens < 20 V_instantaneous=V_target
-     stpeth = stpeng + stpipv        ! and there is only P_instantaneous
+     stats%stpeth = stats%stpeng + stpipv        ! and there is only P_instantaneous
   End If
 
   Call dcell(cell,celprp)
 
 ! store current values in statistics array
 
-  stats%stpval(0) =consv/engunit
+  stats%stpval(0) =stats%consv/engunit
   stats%stpval(1) =stpcns/engunit
-  stats%stpval(2) =stptmp
-  stats%stpval(3) =stpcfg/engunit
-  stats%stpval(4) =(engsrp+engter)/engunit
-  stats%stpval(5) =engcpe/engunit
-  stats%stpval(6) =engbnd/engunit
-  stats%stpval(7) =(engang+engtbp)/engunit
-  stats%stpval(8) =(engdih+enginv+engfbp)/engunit
-  stats%stpval(9) =engtet/engunit
-  stats%stpval(10)=stpeth/engunit
+  stats%stpval(2) =stats%stptmp
+  stats%stpval(3) =stats%stpcfg/engunit
+  stats%stpval(4) =(stats%engsrp+stats%engter)/engunit
+  stats%stpval(5) =stats%engcpe/engunit
+  stats%stpval(6) =stats%engbnd/engunit
+  stats%stpval(7) =(stats%engang+stats%engtbp)/engunit
+  stats%stpval(8) =(stats%engdih+stats%enginv+stats%engfbp)/engunit
+  stats%stpval(9) =stats%engtet/engunit
+  stats%stpval(10)=stats%stpeth/engunit
   stats%stpval(11)=stprot
-  stats%stpval(12)=stpvir/engunit
-  stats%stpval(13)=(virsrp+virter)/engunit
-  stats%stpval(14)=vircpe/engunit
-  stats%stpval(15)=virbnd/engunit
-  stats%stpval(16)=(virtbp+virang)/engunit
-  stats%stpval(17)=vircon/engunit
-  stats%stpval(18)=virtet/engunit
-  stats%stpval(19)=stpvol
+  stats%stpval(12)=stats%stpvir/engunit
+  stats%stpval(13)=(stats%virsrp+stats%virter)/engunit
+  stats%stpval(14)=stats%vircpe/engunit
+  stats%stpval(15)=stats%virbnd/engunit
+  stats%stpval(16)=(stats%virtbp+stats%virang)/engunit
+  stats%stpval(17)=stats%vircon/engunit
+  stats%stpval(18)=stats%virtet/engunit
+  stats%stpval(19)=stats%stpvol
   stats%stpval(20)=stpshl
-  stats%stpval(21)=engshl/engunit
-  stats%stpval(22)=virshl/engunit
+  stats%stpval(21)=stats%engshl/engunit
+  stats%stpval(22)=stats%virshl/engunit
   stats%stpval(23)=Acos(celprp(6))*180.0_wp/pi
   stats%stpval(24)=Acos(celprp(5))*180.0_wp/pi
   stats%stpval(25)=Acos(celprp(4))*180.0_wp/pi
-  stats%stpval(26)=virpmf/engunit
-  stats%stpval(27)=stpprs*prsunt
+  stats%stpval(26)=stats%virpmf/engunit
+  stats%stpval(27)=stats%stpprs*prsunt
 
   iadd = 27
 
@@ -426,7 +425,7 @@ Contains
 ! pressure tensor (derived for the stress tensor)
 
   Do i=1,9
-     stats%stpval(iadd+i)=strtot(i)*prsunt/stpvol
+     stats%stpval(iadd+i)=stats%strtot(i)*prsunt/stats%stpvol
   End Do
   iadd = iadd + 9
 
@@ -448,12 +447,12 @@ Contains
         h_z=celprp(9)
 
         stats%stpval(iadd+1)=h_z
-        stats%stpval(iadd+2)=stpvol/h_z
+        stats%stpval(iadd+2)=stats%stpvol/h_z
         iadd = iadd + 2
 
         If (thermo%iso > 1) Then
-           stats%stpval(iadd+1)= -h_z*(strtot(1)-(thermo%press+thermo%stress(1)))*tenunt
-           stats%stpval(iadd+2)= -h_z*(strtot(5)-(thermo%press+thermo%stress(5)))*tenunt
+           stats%stpval(iadd+1)= -h_z*(stats%strtot(1)-(thermo%press+thermo%stress(1)))*tenunt
+           stats%stpval(iadd+2)= -h_z*(stats%strtot(5)-(thermo%press+thermo%stress(5)))*tenunt
            iadd = iadd + 2
         End If
      End If

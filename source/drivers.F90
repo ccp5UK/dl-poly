@@ -23,6 +23,7 @@ Module drivers
   Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
   Use rigid_bodies, Only : getrotmat
   Use thermostat, Only : thermostat_type
+  Use statistics, Only : stats_type
   Implicit None
   Private
   Public :: w_impact_option
@@ -30,11 +31,10 @@ Module drivers
 
   Contains 
 
-  Subroutine w_impact_option(levcfg,nstep,nsteql,engke,engrot,megrgd,strkin,strknf,strknt,impa,comm)
+  Subroutine w_impact_option(levcfg,nstep,nsteql,megrgd,stats,impa,comm)
 
     Integer( Kind = wi ),   Intent( InOut ) :: levcfg,nstep,nsteql,megrgd
-    Real( Kind = wp )   ,   Intent(   Out ) :: engke,engrot
-    Real ( Kind = wp)   ,   Intent( InOut ) :: strkin(:),strknf(:),strknt(:)
+    Type(stats_type)   ,   Intent( InOut ) :: stats
     Type(impact_type)   ,   Intent( InOut ) :: impa
     Type(comms_type)    ,   Intent( InOut ) :: comm
 
@@ -61,16 +61,16 @@ Module drivers
 ! Correct kinetic stress and energy
 
         If (megrgd > 0) Then
-           Call kinstresf(vxx,vyy,vzz,strknf,comm)
-           Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+           Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
+           Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stats%strknt,comm)
 
-           strkin=strknf+strknt
+           stats%strkin=stats%strknf+stats%strknt
 
-           engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+           stats%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
         Else
-           Call kinstress(vxx,vyy,vzz,strkin,comm)
+           Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
         End If
-        engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+        stats%engke = 0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
      End If
 
 !!!!!!!!!!!!!!!!!!!!!  W_IMPACT_OPTION INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -130,7 +130,7 @@ Module drivers
 
 Subroutine pseudo_vv                                      &
            (isw,keyshl,keyens,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot,thermo,comm)
+           nstep,stats,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -154,8 +154,7 @@ Subroutine pseudo_vv                                      &
 
   Integer,           Intent( In    ) :: isw,keyshl,keyens,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep
-  Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
-                                        strknf(1:9),strknt(1:9),engrot
+  Type( stats_type), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -1102,18 +1101,18 @@ Subroutine pseudo_vv                                      &
 ! Update total kinetic stress and energy
 
      If (megrgd > 0) Then
-        Call kinstresf(vxx,vyy,vzz,strknf,comm)
-        Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+        Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
+        Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stats%strknt,comm)
 
-        strkin=strknf+strknt
+        stats%strkin=stats%strknf+stats%strknt
 
 ! update rotational energy
 
-        engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+        stats%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
      Else
-        Call kinstress(vxx,vyy,vzz,strkin,comm)
+        Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
      End If
-     engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+     stats%engke = 0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
 
   End If
 

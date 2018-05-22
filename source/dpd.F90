@@ -24,11 +24,9 @@ Module dpd
   Use errors_warnings, Only : error, warning
   Use numerics,        Only : box_mueller_saru2
   Use thermostat, Only : thermostat_type
+  Use statistics, Only : stats_type
 
   Implicit None
-
-  Real( Kind = wp ), Save :: virdpd      = 0.0_wp , &
-                             strdpd(1:9) = 0.0_wp
 
   Real( Kind = wp ), Allocatable, Save :: sigdpd(:)
 
@@ -53,7 +51,7 @@ Contains
 
   End Subroutine allocate_dpd_arrays
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,thermo,comm)
+  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -72,6 +70,7 @@ Contains
     Logical,           Intent( In    ) :: l_str
     Integer,           Intent( In    ) :: isw,nstep
     Real( Kind = wp ), Intent( In    ) :: rcut,tstep
+    Type( stats_type ), Intent( InOut ) :: stats
     Type( thermostat_type ), Intent( In    ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -119,8 +118,8 @@ Contains
     ! initialise DPD virial and stress contributions
 
     If (isw == 0) Then
-      virdpd = 0.0_wp
-      strdpd = 0.0_wp
+      stats%virdpd = 0.0_wp
+      stats%strdpd = 0.0_wp
     End If
 
     ! FIRST PASS
@@ -247,7 +246,7 @@ Contains
 
             ! add virial
 
-            virdpd = virdpd - gamma*rrr*rrr
+            stats%virdpd = stats%virdpd - gamma*rrr*rrr
 
             ! add stress tensor
 
@@ -272,15 +271,15 @@ Contains
 
       ! complete stress tensor
 
-      strdpd(1) = strdpd(1) + strs1
-      strdpd(2) = strdpd(2) + strs2
-      strdpd(3) = strdpd(3) + strs3
-      strdpd(4) = strdpd(4) + strs2
-      strdpd(5) = strdpd(5) + strs5
-      strdpd(6) = strdpd(6) + strs6
-      strdpd(7) = strdpd(7) + strs3
-      strdpd(8) = strdpd(8) + strs6
-      strdpd(9) = strdpd(9) + strs9
+      stats%strdpd(1) = stats%strdpd(1) + strs1
+      stats%strdpd(2) = stats%strdpd(2) + strs2
+      stats%strdpd(3) = stats%strdpd(3) + strs3
+      stats%strdpd(4) = stats%strdpd(4) + strs2
+      stats%strdpd(5) = stats%strdpd(5) + strs5
+      stats%strdpd(6) = stats%strdpd(6) + strs6
+      stats%strdpd(7) = stats%strdpd(7) + strs3
+      stats%strdpd(8) = stats%strdpd(8) + strs6
+      stats%strdpd(9) = stats%strdpd(9) + strs9
 
     End Do
 
@@ -426,7 +425,7 @@ Contains
 
             ! add virial
 
-            virdpd = virdpd - gamma*rrr*rrr
+            stats%virdpd = stats%virdpd - gamma*rrr*rrr
 
             ! add stress tensor
 
@@ -451,15 +450,15 @@ Contains
 
       ! complete stress tensor
 
-      strdpd(1) = strdpd(1) + strs1
-      strdpd(2) = strdpd(2) + strs2
-      strdpd(3) = strdpd(3) + strs3
-      strdpd(4) = strdpd(4) + strs2
-      strdpd(5) = strdpd(5) + strs5
-      strdpd(6) = strdpd(6) + strs6
-      strdpd(7) = strdpd(7) + strs3
-      strdpd(8) = strdpd(8) + strs6
-      strdpd(9) = strdpd(9) + strs9
+      stats%strdpd(1) = stats%strdpd(1) + strs1
+      stats%strdpd(2) = stats%strdpd(2) + strs2
+      stats%strdpd(3) = stats%strdpd(3) + strs3
+      stats%strdpd(4) = stats%strdpd(4) + strs2
+      stats%strdpd(5) = stats%strdpd(5) + strs5
+      stats%strdpd(6) = stats%strdpd(6) + strs6
+      stats%strdpd(7) = stats%strdpd(7) + strs3
+      stats%strdpd(8) = stats%strdpd(8) + strs6
+      stats%strdpd(9) = stats%strdpd(9) + strs9
 
     End Do
 
@@ -484,9 +483,9 @@ Contains
 
     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz,comm)
 
-    ! globalise virdpd
+    ! globalise stats%virdpd
 
-    Call gsum(comm,virdpd)
+    Call gsum(comm,stats%virdpd)
 
     Deallocate (xxt,yyt,zzt,rrt,   Stat = fail(1))
     Deallocate (fdpdx,fdpdy,fdpdz, Stat = fail(2))

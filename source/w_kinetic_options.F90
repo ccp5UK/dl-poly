@@ -3,14 +3,14 @@
 
 ! Apply external field
 
-        If (keyfld > 0) Call external_field_correct(engfld,comm)
+        If (keyfld > 0) Call external_field_correct(stat%engfld,comm)
 
 ! Apply pseudo thermostat - velocity cycle (1)
 
         If (thermo%l_pseudo) Then
               Call pseudo_vv                            &
            (1,keyshl,keyens,tstep, &
-           nstep,strkin,strknf,strknt,engke,engrot,thermo,comm)
+           nstep,stat,thermo,comm)
         End If
 
 ! Apply temperature regaussing
@@ -30,32 +30,32 @@
 ! quench core-shell units in adiabatic model
 
            If (megshl > 0 .and. keyshl == 1) Then
-              stptmp = 2.0_wp*(engke+engrot) / (boltz*Real(degfre,wp))
+              stat%stptmp = 2.0_wp*(stat%engke+stat%engrot) / (boltz*Real(degfre,wp))
               Do
-                 Call scale_temperature(engke+engrot,degtra,degrot,degfre,comm)
-                 Call core_shell_quench(safe,stptmp,comm)
+                 Call scale_temperature(stat%engke+stat%engrot,degtra,degrot,degfre,comm)
+                 Call core_shell_quench(safe,stat%stptmp,comm)
                  If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
                  If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
                  If (megrgd > 0) Call rigid_bodies_quench(comm)
                  If (safe) Exit
               End Do
            Else
-              Call scale_temperature(engke+engrot,degtra,degrot,degfre,comm)
+              Call scale_temperature(stat%engke+stat%engrot,degtra,degrot,degfre,comm)
            End If
 
 ! Correct kinetic stress and energy
 
            If (megrgd > 0) Then
-              Call kinstresf(vxx,vyy,vzz,strknf,comm)
-              Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+              Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+              Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
 
-              strkin=strknf+strknt
+              stat%strkin=stat%strknf+stat%strknt
 
-              engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+              stat%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
            Else
-              Call kinstress(vxx,vyy,vzz,strkin,comm)
+              Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
            End If
-           engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+           stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
         End If
 
 ! Apply temperature scaling
@@ -75,7 +75,7 @@
            If (megshl > 0 .and. keyshl == 1) Then
               Do
                  Call scale_temperature(sigma,degtra,degrot,degfre,comm)
-                 Call core_shell_quench(safe,stptmp,comm)
+                 Call core_shell_quench(safe,stat%stptmp,comm)
                  If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
                  If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
                  If (megrgd > 0) Call rigid_bodies_quench(comm)
@@ -88,16 +88,16 @@
 ! Correct kinetic stress and energy
 
            If (megrgd > 0) Then
-              Call kinstresf(vxx,vyy,vzz,strknf,comm)
-              Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+              Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+              Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
 
-              strkin=strknf+strknt
+              stat%strkin=stat%strknf+stat%strknt
 
-              engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+              stat%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
            Else
-              Call kinstress(vxx,vyy,vzz,strkin,comm)
+              Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
            End If
-           engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+           stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
         End If
 
 

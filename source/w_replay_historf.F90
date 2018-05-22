@@ -42,14 +42,14 @@
 ! Calculate kinetic tensor and energy at restart as it may not exists later
 
   If (megrgd > 0) Then
-     Call kinstresf(vxx,vyy,vzz,strknf,comm)
-     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+     Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
 
-     strkin=strknf+strknt
+     stat%strkin=stat%strknf+stat%strknt
   Else
-     Call kinstress(vxx,vyy,vzz,strkin,comm)
+     Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
   End If
-  engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+  stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
   nstpe = nstep
   nstph = 0 ! HISTORF trajectory points counter
@@ -132,40 +132,40 @@
 
            If (levcfg > 0 .and. levcfg < 3) Then
               If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,thermo%freq_zero) == 0) &
-                 Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
+                 Call zero_k_optimise(stat,comm)
 
-              If (thermo%l_zero .and. nstep <= nsteql) Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
+              If (thermo%l_zero .and. nstep <= nsteql) Call zero_k_optimise(stat,comm)
 
 ! Calculate kinetic stress and energy if available
 
               If (megrgd > 0) Then
                  Call rigid_bodies_quench(comm)
 
-                 Call kinstresf(vxx,vyy,vzz,strknf,comm)
-                 Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+                 Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+                 Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
 
-                 strkin=strknf+strknt
+                 stat%strkin=stat%strknf+stat%strknt
 
-                 engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
-                 Call rigid_bodies_str_ss(strcom,comm)
-                 vircom=-(strcom(1)+strcom(5)+strcom(9))
+                 stat%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+                 Call rigid_bodies_str_ss(stat%strcom,comm)
+                 stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
               Else
-                 Call kinstress(vxx,vyy,vzz,strkin,comm)
+                 Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
               End If
-              engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+              stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
 ! Apply kinetic options
 
-              Call w_kinetic_options()
+              Call w_kinetic_options(stat)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
-              If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(shlke,comm)
+              If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(stat%shlke,comm)
            End If
 
 ! Get complete stress tensor
 
-           strtot = strcon + strpmf + stress + strkin + strcom + strdpd
+           stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strcom + stat%strdpd
 
 ! Calculate physical quantities and collect statistics,
 ! accumulate z-density if needed
@@ -182,19 +182,7 @@
            keyres,keyens,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
-           engcpe,vircpe,engsrp,virsrp,   &
-           engter,virter,                 &
-           engtbp,virtbp,engfbp,virfbp,   &
-           engshl,virshl,shlke,           &
-           vircon,virpmf,                 &
-           engtet,virtet,engfld,virfld,   &
-           engbnd,virbnd,engang,virang,   &
-           engdih,virdih,enginv,virinv,   &
-           engke,engrot,consv,vircom,     &
-           strtot,           &
-           stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,          &
-           mxatdm_,stat,thermo,comm,virdpd)
+           mxatdm_,stat,thermo,comm)
 
 ! line-printer output
 ! Update cpu time
@@ -244,7 +232,7 @@
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,stat,devel,green,comm)
+           chit,cint,chip,eta,stat,devel,green,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -310,7 +298,7 @@
            atmfre,atmfrz,            &
            megshl,megcon,megpmf,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,sigma,engrot,thermo,comm)
+           degfre,degshl,sigma,stat%engrot,thermo,comm)
 
   End If
   Call deallocate_statistics_connect(stat)
@@ -319,7 +307,7 @@
 
   If (.not. devel%l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,stat,devel,green,comm)
+           chit,cint,chip,eta,stat,devel,green,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

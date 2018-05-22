@@ -3,11 +3,11 @@
 
 ! Get complete stress tensor
 
-strtot = strcon + strpmf + stress + strkin + strcom + strdpd
+stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strcom + stat%strdpd
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
-If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(shlke,comm)
+If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(stat%shlke,comm)
 
 ! Calculate physical quantities and collect statistics
 
@@ -16,18 +16,7 @@ Call statistics_collect           &
   keyres,keyens,      &
   degfre,degshl,degrot,          &
   nstep,tstep,time,tmst,         &
-  engcpe,vircpe,engsrp,virsrp,   &
-  engter,virter,                 &
-  engtbp,virtbp,engfbp,virfbp,   &
-  engshl,virshl,shlke,           &
-  vircon,virpmf,                 &
-  engtet,virtet,engfld,virfld,   &
-  engbnd,virbnd,engang,virang,   &
-  engdih,virdih,enginv,virinv,   &
-  engke,engrot,consv,vircom,     &
-  strtot,           &
-  stpeng,stpvir,stpcfg,stpeth,   &
-  stptmp,stpprs,stpvol,mxatdm_,stat,thermo,comm,virdpd)
+  mxatdm_,stat,thermo,comm)
 
 ! VV forces evaluation report for 0th or weird restart
 
