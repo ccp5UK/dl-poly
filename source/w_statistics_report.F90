@@ -13,7 +13,7 @@ If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(shlke,comm)
 
 Call statistics_collect           &
   (lsim,leql,nsteql,lzdn,nstzdn, &
-  keyres,keyens,intsta,      &
+  keyres,keyens,      &
   degfre,degshl,degrot,          &
   nstep,tstep,time,tmst,         &
   engcpe,vircpe,engsrp,virsrp,   &
@@ -27,7 +27,7 @@ Call statistics_collect           &
   engke,engrot,consv,vircom,     &
   strtot,           &
   stpeng,stpvir,stpcfg,stpeth,   &
-  stptmp,stpprs,stpvol,thermo,comm,virdpd)
+  stptmp,stpprs,stpvol,mxatdm_,stat,thermo,comm,virdpd)
 
 ! VV forces evaluation report for 0th or weird restart
 
@@ -50,21 +50,21 @@ If (lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
      'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
     Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
      'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
-    Write(messages(4), '(5x,a8,6x,a7,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
+    Write(messages(4), '(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
       'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
     Write(messages(5),'(a)') Repeat('-',130)
     Call info(messages,5,.true.)
   End If
 
-  Write(messages(1),'(i13,1p,9e12.4)')nstep,stpval(1:9)
-  Write(messages(2),'(f13.5,1p,9e12.4)')time,stpval(10:18)
-  Write(messages(3),'(0p,f13.3,1p,9e12.4)') tmr%elapsed,stpval(19:27)
+  Write(messages(1),'(i13,1p,9e12.4)')nstep,stat%stpval(1:9)
+  Write(messages(2),'(f13.5,1p,9e12.4)')time,stat%stpval(10:18)
+  Write(messages(3),'(0p,f13.3,1p,9e12.4)') tmr%elapsed,stat%stpval(19:27)
   Write(messages(4),'(a)')''
   Call info(messages,4,.true.)
 
-  Write(messages(1),'(6x,a7,1p,9e12.4)') 'rolling',ravval(1:9)
-  Write(messages(2),'(5x,a8,1p,9e12.4)') 'averages',ravval(10:18)
-  Write(messages(3),'(13x,9e12.4)') ravval(19:27)
+  Write(messages(1),'(6x,a7,1p,9e12.4)') 'rolling',stat%ravval(1:9)
+  Write(messages(2),'(5x,a8,1p,9e12.4)') 'averages',stat%ravval(10:18)
+  Write(messages(3),'(13x,9e12.4)') stat%ravval(19:27)
   Write(messages(4),'(a)') Repeat('-',130)
   Call info(messages,4,.true.)
 

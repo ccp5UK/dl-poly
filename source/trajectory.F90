@@ -12,7 +12,6 @@ Module trajectory
                             ltg,atmnam,chge,weight,   &
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,&
                             lsa,lsi,ltg,nlast
-  Use statistics,    Only : rsd
   Use io,            Only : io_set_parameters,             &
                             io_get_parameters,             &
                             io_init, io_nc_create,         &
@@ -686,7 +685,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
 
 End Subroutine read_history
 
-Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,comm)
+Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,rsd,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -705,6 +704,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
                                         nstraj,istraj,keytrj, &
                                         megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time
+  Real( Kind = wp ), Intent( In    ) :: rsd(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
 

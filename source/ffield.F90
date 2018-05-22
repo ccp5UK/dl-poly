@@ -378,7 +378,7 @@ Subroutine read_field                      &
            l_shl=.true. ; l_con=.true. ; l_rgd=.true. ; l_tet=.true.
            l_bnd=.true. ; l_ang=.true. ; l_dih=.true. ; l_inv=.true.
 
-           Write(message,'(a,9xi10)') 'molecular species type', itmols
+           Write(message,'(a,9x,i10)') 'molecular species type', itmols
            Call info(message,.true.)
 
 ! name of molecular species

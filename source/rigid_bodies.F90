@@ -16,7 +16,7 @@ Module rigid_bodies
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
                               ltg,lsite,lfrzn,fxx,fyy,fzz,nfree,lstfre,getcom
   Use vnl,             Only : llvnl,l_vnl,xbg,ybg,zbg
-  Use statistics,      Only : xin,yin,zin
+  Use statistics,      Only : stats_type
   Use numerics,        Only : images, jacobi, invert
   Use shared_units,    Only : update_shared_units
   Use numerics,        Only : images,local_index,pbcshift
@@ -2264,7 +2264,7 @@ Contains
     End If
   End Subroutine rigid_bodies_widths
 
-  Subroutine xscale(m_rgd,keyens,tstep,eta,comm)
+  Subroutine xscale(m_rgd,keyens,tstep,eta,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2278,6 +2278,7 @@ Contains
 
   Integer,           Intent( In    ) :: m_rgd,keyens
   Real( Kind = wp ), Intent( In    ) :: tstep,eta(1:9)
+  Type( stats_type), Intent( InOut ) :: stats
   Type( comms_type), Intent( InOut ) :: comm
 
   Integer           :: fail,i,j,irgd,jrgd,lrgd
@@ -2300,21 +2301,21 @@ Contains
            scale = eta(1)
 
            Do i=1,natms
-              xin(i) = scale*xin(i)
-              yin(i) = scale*yin(i)
-              zin(i) = scale*zin(i)
+              stats%xin(i) = scale*stats%xin(i)
+              stats%yin(i) = scale*stats%yin(i)
+              stats%zin(i) = scale*stats%zin(i)
            End Do
 
         Else
 
            Do i=1,natms
-              xa = xin(i)*eta(1)+yin(i)*eta(2)+zin(i)*eta(3)
-              ya = xin(i)*eta(4)+yin(i)*eta(5)+zin(i)*eta(6)
-              za = xin(i)*eta(7)+yin(i)*eta(8)+zin(i)*eta(9)
+              xa = stats%xin(i)*eta(1)+stats%yin(i)*eta(2)+stats%zin(i)*eta(3)
+              ya = stats%xin(i)*eta(4)+stats%yin(i)*eta(5)+stats%zin(i)*eta(6)
+              za = stats%xin(i)*eta(7)+stats%yin(i)*eta(8)+stats%zin(i)*eta(9)
 
-              xin(i) = xa
-              yin(i) = ya
-              zin(i) = za
+              stats%xin(i) = xa
+              stats%yin(i) = ya
+              stats%zin(i) = za
            End Do
 
         End If
@@ -2323,16 +2324,16 @@ Contains
 
 ! hoover npt/nst
 
-        Call getcom(xin,yin,zin,com,comm)
+        Call getcom(stats%xin,stats%yin,stats%zin,com,comm)
 
         If (keyens == 22) Then
 
            scale = Exp(tstep*eta(1))
 
            Do i=1,natms
-              xin(i) = scale*(xin(i)-com(1))+com(1)
-              yin(i) = scale*(yin(i)-com(2))+com(2)
-              zin(i) = scale*(zin(i)-com(3))+com(3)
+              stats%xin(i) = scale*(stats%xin(i)-com(1))+com(1)
+              stats%yin(i) = scale*(stats%yin(i)-com(2))+com(2)
+              stats%zin(i) = scale*(stats%zin(i)-com(3))+com(3)
            End Do
 
         Else
@@ -2354,13 +2355,13 @@ Contains
            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
            Do i=1,natms
-              xa = xin(i)-com(1)
-              ya = yin(i)-com(2)
-              za = zin(i)-com(3)
+              xa = stats%xin(i)-com(1)
+              ya = stats%yin(i)-com(2)
+              za = stats%zin(i)-com(3)
 
-              xin(i) = xa*b1 + ya*b2 + za*b3 + com(1)
-              yin(i) = xa*b2 + ya*b5 + za*b6 + com(2)
-              zin(i) = xa*b3 + ya*b6 + za*b9 + com(3)
+              stats%xin(i) = xa*b1 + ya*b2 + za*b3 + com(1)
+              stats%yin(i) = xa*b2 + ya*b5 + za*b6 + com(2)
+              stats%zin(i) = xa*b3 + ya*b6 + za*b9 + com(3)
            End Do
 
         End If
@@ -2375,9 +2376,9 @@ Contains
            scale = Exp(tstep*eta(1))
 
            Do i=1,natms
-              xin(i) = scale*xin(i)
-              yin(i) = scale*yin(i)
-              zin(i) = scale*zin(i)
+              stats%xin(i) = scale*stats%xin(i)
+              stats%yin(i) = scale*stats%yin(i)
+              stats%zin(i) = scale*stats%zin(i)
            End Do
 
         Else
@@ -2399,13 +2400,13 @@ Contains
            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
            Do i=1,natms
-              xa = xin(i)
-              ya = yin(i)
-              za = zin(i)
+              xa = stats%xin(i)
+              ya = stats%yin(i)
+              za = stats%zin(i)
 
-              xin(i) = xa*b1 + ya*b2 + za*b3
-              yin(i) = xa*b2 + ya*b5 + za*b6
-              zin(i) = xa*b3 + ya*b6 + za*b9
+              stats%xin(i) = xa*b1 + ya*b2 + za*b3
+              stats%yin(i) = xa*b2 + ya*b5 + za*b6
+              stats%zin(i) = xa*b3 + ya*b6 + za*b9
            End Do
 
         End If
@@ -2549,8 +2550,8 @@ Contains
 ! Halo initial RB members positions across onto neighbouring domains
 ! to get initial COMs
 
-     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xin,yin,zin,comm)
-     Call rigid_bodies_coms(xin,yin,zin,rgdxin,rgdyin,rgdzin,comm)
+     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,stats%xin,stats%yin,stats%zin,comm)
+     Call rigid_bodies_coms(stats%xin,stats%yin,stats%zin,rgdxin,rgdyin,rgdzin,comm)
 
      If (keyens == 21 .or. keyens == 31) Then
 
@@ -2563,9 +2564,9 @@ Contains
            Do j=1,nfree
               i=lstfre(j)
 
-              xin(i) = scale*xin(i)
-              yin(i) = scale*yin(i)
-              zin(i) = scale*zin(i)
+              stats%xin(i) = scale*stats%xin(i)
+              stats%yin(i) = scale*stats%yin(i)
+              stats%zin(i) = scale*stats%zin(i)
            End Do
 
            Do irgd=1,ntrgd
@@ -2582,9 +2583,9 @@ Contains
                  i=indrgd(jrgd,irgd)
 
                  If (i <= natms) Then
-                    xin(i) = xin(i) - x + rgdxin(irgd)
-                    yin(i) = yin(i) - y + rgdyin(irgd)
-                    zin(i) = zin(i) - z + rgdzin(irgd)
+                    stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
+                    stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
+                    stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
                  End If
               End Do
            End Do
@@ -2594,13 +2595,13 @@ Contains
            Do j=1,nfree
               i=lstfre(j)
 
-              xa = xin(i)*eta(1)+yin(i)*eta(2)+zin(i)*eta(3)
-              ya = xin(i)*eta(4)+yin(i)*eta(5)+zin(i)*eta(6)
-              za = xin(i)*eta(7)+yin(i)*eta(8)+zin(i)*eta(9)
+              xa = stats%xin(i)*eta(1)+stats%yin(i)*eta(2)+stats%zin(i)*eta(3)
+              ya = stats%xin(i)*eta(4)+stats%yin(i)*eta(5)+stats%zin(i)*eta(6)
+              za = stats%xin(i)*eta(7)+stats%yin(i)*eta(8)+stats%zin(i)*eta(9)
 
-              xin(i) = xa
-              yin(i) = ya
-              zin(i) = za
+              stats%xin(i) = xa
+              stats%yin(i) = ya
+              stats%zin(i) = za
            End Do
 
            Do irgd=1,ntrgd
@@ -2621,9 +2622,9 @@ Contains
                  i=indrgd(jrgd,irgd)
 
                  If (i <= natms) Then
-                    xin(i) = xin(i) - x + rgdxin(irgd)
-                    yin(i) = yin(i) - y + rgdyin(irgd)
-                    zin(i) = zin(i) - z + rgdzin(irgd)
+                    stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
+                    stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
+                    stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
                  End If
               End Do
            End Do
@@ -2634,7 +2635,7 @@ Contains
 
 ! hoover npt/nst
 
-        Call getcom(xin,yin,zin,com,comm)
+        Call getcom(stats%xin,stats%yin,stats%zin,com,comm)
 
         If (keyens == 22) Then
 
@@ -2643,9 +2644,9 @@ Contains
            Do j=1,nfree
               i=lstfre(j)
 
-              xin(i) = scale*(xin(i)-com(1))+com(1)
-              yin(i) = scale*(yin(i)-com(2))+com(2)
-              zin(i) = scale*(zin(i)-com(3))+com(3)
+              stats%xin(i) = scale*(stats%xin(i)-com(1))+com(1)
+              stats%yin(i) = scale*(stats%yin(i)-com(2))+com(2)
+              stats%zin(i) = scale*(stats%zin(i)-com(3))+com(3)
            End Do
 
            Do irgd=1,ntrgd
@@ -2662,9 +2663,9 @@ Contains
                  i=indrgd(jrgd,irgd)
 
                  If (i <= natms) Then
-                    xin(i) = xin(i) - x + rgdxin(irgd)
-                    yin(i) = yin(i) - y + rgdyin(irgd)
-                    zin(i) = zin(i) - z + rgdzin(irgd)
+                    stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
+                    stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
+                    stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
                  End If
               End Do
            End Do
@@ -2690,13 +2691,13 @@ Contains
            Do j=1,nfree
               i=lstfre(j)
 
-              xa = xin(i)-com(1)
-              ya = yin(i)-com(2)
-              za = zin(i)-com(3)
+              xa = stats%xin(i)-com(1)
+              ya = stats%yin(i)-com(2)
+              za = stats%zin(i)-com(3)
 
-              xin(i) = xa*b1 + ya*b2 + za*b3 + com(1)
-              yin(i) = xa*b2 + ya*b5 + za*b6 + com(2)
-              zin(i) = xa*b3 + ya*b6 + za*b9 + com(3)
+              stats%xin(i) = xa*b1 + ya*b2 + za*b3 + com(1)
+              stats%yin(i) = xa*b2 + ya*b5 + za*b6 + com(2)
+              stats%zin(i) = xa*b3 + ya*b6 + za*b9 + com(3)
            End Do
 
            Do irgd=1,ntrgd
@@ -2717,9 +2718,9 @@ Contains
                  i=indrgd(jrgd,irgd)
 
                  If (i <= natms) Then
-                    xin(i) = xin(i) - x + rgdxin(irgd)
-                    yin(i) = yin(i) - y + rgdyin(irgd)
-                    zin(i) = zin(i) - z + rgdzin(irgd)
+                    stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
+                    stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
+                    stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
                  End If
               End Do
            End Do
@@ -2738,9 +2739,9 @@ Contains
            Do j=1,nfree
               i=lstfre(j)
 
-              xin(i) = scale*xin(i)
-              yin(i) = scale*yin(i)
-              zin(i) = scale*zin(i)
+              stats%xin(i) = scale*stats%xin(i)
+              stats%yin(i) = scale*stats%yin(i)
+              stats%zin(i) = scale*stats%zin(i)
            End Do
 
            Do irgd=1,ntrgd
@@ -2757,9 +2758,9 @@ Contains
                  i=indrgd(jrgd,irgd)
 
                  If (i <= natms) Then
-                    xin(i) = xin(i) - x + rgdxin(irgd)
-                    yin(i) = yin(i) - y + rgdyin(irgd)
-                    zin(i) = zin(i) - z + rgdzin(irgd)
+                    stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
+                    stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
+                    stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
                  End If
               End Do
            End Do
@@ -2785,13 +2786,13 @@ Contains
            Do j=1,nfree
               i=lstfre(j)
 
-              xa = xin(i)
-              ya = yin(i)
-              za = zin(i)
+              xa = stats%xin(i)
+              ya = stats%yin(i)
+              za = stats%zin(i)
 
-              xin(i) = xa*b1 + ya*b2 + za*b3
-              yin(i) = xa*b2 + ya*b5 + za*b6
-              zin(i) = xa*b3 + ya*b6 + za*b9
+              stats%xin(i) = xa*b1 + ya*b2 + za*b3
+              stats%yin(i) = xa*b2 + ya*b5 + za*b6
+              stats%zin(i) = xa*b3 + ya*b6 + za*b9
            End Do
 
            Do irgd=1,ntrgd
@@ -2812,9 +2813,9 @@ Contains
                     i=indrgd(jrgd,irgd)
 
                  If (i <= natms) Then
-                    xin(i) = xin(i) - x + rgdxin(irgd)
-                    yin(i) = yin(i) - y + rgdyin(irgd)
-                    zin(i) = zin(i) - z + rgdzin(irgd)
+                    stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
+                    stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
+                    stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
                  End If
               End Do
            End Do
@@ -3112,7 +3113,7 @@ Contains
 
   End If
 
-  Call pbcshift(imcon,cell,natms,xin,yin,zin)
+  Call pbcshift(imcon,cell,natms,stats%xin,stats%yin,stats%zin)
   If (llvnl) Call pbcshift(imcon,cell,natms,xbg,ybg,zbg)
 
 End Subroutine xscale

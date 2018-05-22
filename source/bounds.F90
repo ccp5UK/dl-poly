@@ -21,6 +21,7 @@ Module bounds
   Use errors_warnings, Only : error,warning,info
   Use parallel_fft,    Only : adjust_kmax
   Use thermostat, Only : thermostat_type
+  Use statistics, Only : stats_type
 
   Implicit None
   Private
@@ -30,7 +31,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce, &
-           alpha,width,thermo,devel,green,comm)
+           alpha,width,stats,thermo,green,devel,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -49,6 +50,7 @@ Subroutine set_bounds                                 &
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
+  Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
@@ -108,9 +110,9 @@ Subroutine set_bounds                                 &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rcut,rpad,rbin,mxstak,                          &
+           rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,thermo,devel,green,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -767,13 +769,13 @@ Subroutine set_bounds                                 &
 
 ! maximum number of timesteps in stack arrays
 
-  mxstak = Max(100,mxstak)
+  stats%mxstak = Max(100,stats%mxstak)
 
 ! maximum number of variables in stack arrays
 ! update number if the MSD option is used, 51=1+27+...+9+9+1+2+2
 ! consult statistic_collect for more information
 
-  mxnstk = 51 + mxatyp + Merge(2*mxatdm,0,l_msd)
+  stats%mxnstk = 51 + mxatyp + Merge(2*mxatdm,0,l_msd)
 
 ! maximum dimension of principal transfer buffer
 
@@ -788,7 +790,7 @@ Subroutine set_bounds                                 &
   mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real(                          &
            mxatdm*(18+12 + Merge(3,0,llvnl) + (mxexcl+1)                 + &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
-           Merge(2*(6+mxstak), 0, l_msd)) + 3*green%samp                 + &
+           Merge(2*(6+stats%mxstak), 0, l_msd)) + 3*green%samp        + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
            3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 
@@ -796,7 +798,7 @@ Subroutine set_bounds                                 &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfss = Merge( 4, 0, comm%mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+mxstak), 0, l_msd)),wp) * dens0)
+  mxbfss = Merge( 4, 0, comm%mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+stats%mxstak), 0, l_msd)),wp) * dens0)
 
 ! exporting single per atom (times 13 up to 35)
 
@@ -811,7 +813,7 @@ Subroutine set_bounds                                 &
   mxbfsh = Merge( 1, 0, comm%mxnode > 1) * Nint(Real(Max(2*mxshl,2*mxcons,mxlrgd*mxrgd),wp) * dens0)
 
   mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
-                mxnstk*mxstak , mxgrid , mxgrdf , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )
+                stats%mxnstk*stats%mxstak , mxgrid , mxgrdf , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )
 
 ! reset (increase) link-cell maximum (mxcell)
 ! if tersoff or three- or four-body potentials exist

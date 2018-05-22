@@ -20,7 +20,8 @@ Module kinds
   Integer, Parameter :: qp = real128 
   !! quadrupole real
 
-  Integer, Parameter :: wp = dp                          
+  Integer, Parameter :: wp = dp
+  
   !! working real
   
   Integer, Parameter :: ni = int32       

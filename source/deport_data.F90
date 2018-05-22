@@ -25,7 +25,7 @@ Module deport_data
   Use dihedrals,    Only : ntdihd,listdih,legdih,lx_dih
   Use inversions,   Only : ntinv,listinv,leginv
 
-  Use statistics
+  Use statistics, Only : stats_type
 
   Use minimise,     Only : l_x,oxx,oyy,ozz
   Use langevin,     Only : fxl,fyl,fzl
@@ -59,7 +59,7 @@ Module deport_data
   Contains 
   
 
-Subroutine deport_atomic_data(mdir,lbook,ewld,thermo,green,comm)
+Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -77,6 +77,7 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,thermo,green,comm)
 
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: mdir
+  Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( InOut ) :: green
@@ -286,15 +287,15 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,thermo,green,comm)
 
 ! pack initial positions
 
-           buffer(imove+13)=xin(i)
-           buffer(imove+14)=yin(i)
-           buffer(imove+15)=zin(i)
+           buffer(imove+13)=stats%xin(i)
+           buffer(imove+14)=stats%yin(i)
+           buffer(imove+15)=stats%zin(i)
 
 ! pack final displacements
 
-           buffer(imove+16)=xto(i)
-           buffer(imove+17)=yto(i)
-           buffer(imove+18)=zto(i)
+           buffer(imove+16)=stats%xto(i)
+           buffer(imove+17)=stats%yto(i)
+           buffer(imove+18)=stats%zto(i)
 
         Else
 
@@ -374,29 +375,29 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,thermo,green,comm)
 ! pack MSD arrays
 
         If (l_msd) Then
-           If (imove+2*(6+mxstak) <= iblock) Then
+           If (imove+2*(6+stats%mxstak) <= iblock) Then
               jj=27+2*i
-              buffer(imove+ 1)=stpvl0(jj-1)
-              buffer(imove+ 2)=stpvl0(jj  )
-              buffer(imove+ 3)=stpval(jj-1)
-              buffer(imove+ 4)=stpval(jj  )
-              buffer(imove+ 5)=zumval(jj-1)
-              buffer(imove+ 6)=zumval(jj  )
-              buffer(imove+ 7)=ravval(jj-1)
-              buffer(imove+ 8)=ravval(jj  )
-              buffer(imove+ 9)=ssqval(jj-1)
-              buffer(imove+10)=ssqval(jj  )
-              buffer(imove+11)=sumval(jj-1)
-              buffer(imove+12)=sumval(jj  )
-              Do kk=1,mxstak
+              buffer(imove+ 1)=stats%stpvl0(jj-1)
+              buffer(imove+ 2)=stats%stpvl0(jj  )
+              buffer(imove+ 3)=stats%stpval(jj-1)
+              buffer(imove+ 4)=stats%stpval(jj  )
+              buffer(imove+ 5)=stats%zumval(jj-1)
+              buffer(imove+ 6)=stats%zumval(jj  )
+              buffer(imove+ 7)=stats%ravval(jj-1)
+              buffer(imove+ 8)=stats%ravval(jj  )
+              buffer(imove+ 9)=stats%ssqval(jj-1)
+              buffer(imove+10)=stats%ssqval(jj  )
+              buffer(imove+11)=stats%sumval(jj-1)
+              buffer(imove+12)=stats%sumval(jj  )
+              Do kk=1,stats%mxstak
                  l=2*kk   +12
-                 buffer(imove+l-1)=stkval(kk,jj-1)
-                 buffer(imove+l  )=stkval(kk,jj  )
+                 buffer(imove+l-1)=stats%stkval(kk,jj-1)
+                 buffer(imove+l  )=stats%stkval(kk,jj  )
               End Do
            Else
               safe=.false.
            End If
-           imove=imove+2*(6+mxstak)
+           imove=imove+2*(6+stats%mxstak)
         End If
 
 ! If intra-molecular entities exist in the system
@@ -818,13 +819,13 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,thermo,green,comm)
      lsite(keep)=lsite(i)
      ixyz(keep)=ixyz(i)
 
-     xin(keep)=xin(i)
-     yin(keep)=yin(i)
-     zin(keep)=zin(i)
+     stats%xin(keep)=stats%xin(i)
+     stats%yin(keep)=stats%yin(i)
+     stats%zin(keep)=stats%zin(i)
 
-     xto(keep)=xto(i)
-     yto(keep)=yto(i)
-     zto(keep)=zto(i)
+     stats%xto(keep)=stats%xto(i)
+     stats%yto(keep)=stats%yto(i)
+     stats%zto(keep)=stats%zto(i)
 
      If (thermo%l_langevin) Then
         fxl(keep)=fxl(i)
@@ -859,21 +860,21 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,thermo,green,comm)
      If (l_msd) Then
         jj=27+2*i
         j =27+2*keep
-        stpvl0(j-1)=stpvl0(jj-1)
-        stpvl0(j  )=stpvl0(jj  )
-        stpval(j-1)=stpval(jj-1)
-        stpval(j  )=stpval(jj  )
-        zumval(j-1)=zumval(jj-1)
-        zumval(j  )=zumval(jj  )
-        ravval(j-1)=ravval(jj-1)
-        ravval(j  )=ravval(jj  )
-        ssqval(j-1)=ssqval(jj-1)
-        ssqval(j  )=ssqval(jj  )
-        sumval(j-1)=sumval(jj-1)
-        sumval(j  )=sumval(jj  )
-        Do kk=1,mxstak
-           stkval(kk,j-1)=stkval(kk,jj-1)
-           stkval(kk,j  )=stkval(kk,jj  )
+        stats%stpvl0(j-1)=stats%stpvl0(jj-1)
+        stats%stpvl0(j  )=stats%stpvl0(jj  )
+        stats%stpval(j-1)=stats%stpval(jj-1)
+        stats%stpval(j  )=stats%stpval(jj  )
+        stats%zumval(j-1)=stats%zumval(jj-1)
+        stats%zumval(j  )=stats%zumval(jj  )
+        stats%ravval(j-1)=stats%ravval(jj-1)
+        stats%ravval(j  )=stats%ravval(jj  )
+        stats%ssqval(j-1)=stats%ssqval(jj-1)
+        stats%ssqval(j  )=stats%ssqval(jj  )
+        stats%sumval(j-1)=stats%sumval(jj-1)
+        stats%sumval(j  )=stats%sumval(jj  )
+        Do kk=1,stats%mxstak
+           stats%stkval(kk,j-1)=stats%stkval(kk,jj-1)
+           stats%stkval(kk,j  )=stats%stkval(kk,jj  )
         End Do
      End If
 
@@ -973,15 +974,15 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,thermo,green,comm)
 
 ! unpack initial positions arrays
 
-     xin(newatm)=buffer(kmove+13)
-     yin(newatm)=buffer(kmove+14)
-     zin(newatm)=buffer(kmove+15)
+     stats%xin(newatm)=buffer(kmove+13)
+     stats%yin(newatm)=buffer(kmove+14)
+     stats%zin(newatm)=buffer(kmove+15)
 
 ! unpack initial positions arrays
 
-     xto(newatm)=buffer(kmove+16)
-     yto(newatm)=buffer(kmove+17)
-     zto(newatm)=buffer(kmove+18)
+     stats%xto(newatm)=buffer(kmove+16)
+     stats%yto(newatm)=buffer(kmove+17)
+     stats%zto(newatm)=buffer(kmove+18)
 
      kmove=kmove+18
 
@@ -1041,25 +1042,25 @@ Subroutine deport_atomic_data(mdir,lbook,ewld,thermo,green,comm)
 
      If (l_msd) Then
         jj=27+2*newatm
-        stpvl0(jj-1)=buffer(kmove+1 )
-        stpvl0(jj  )=buffer(kmove+2 )
-        stpval(jj-1)=buffer(kmove+3 )
-        stpval(jj  )=buffer(kmove+4 )
-        zumval(jj-1)=buffer(kmove+5 )
-        zumval(jj  )=buffer(kmove+6 )
-        ravval(jj-1)=buffer(kmove+7 )
-        ravval(jj  )=buffer(kmove+8 )
-        ssqval(jj-1)=buffer(kmove+9 )
-        ssqval(jj  )=buffer(kmove+10)
-        sumval(jj-1)=buffer(kmove+11)
-        sumval(jj  )=buffer(kmove+12)
-        Do kk=1,mxstak
+        stats%stpvl0(jj-1)=buffer(kmove+1 )
+        stats%stpvl0(jj  )=buffer(kmove+2 )
+        stats%stpval(jj-1)=buffer(kmove+3 )
+        stats%stpval(jj  )=buffer(kmove+4 )
+        stats%zumval(jj-1)=buffer(kmove+5 )
+        stats%zumval(jj  )=buffer(kmove+6 )
+        stats%ravval(jj-1)=buffer(kmove+7 )
+        stats%ravval(jj  )=buffer(kmove+8 )
+        stats%ssqval(jj-1)=buffer(kmove+9 )
+        stats%ssqval(jj  )=buffer(kmove+10)
+        stats%sumval(jj-1)=buffer(kmove+11)
+        stats%sumval(jj  )=buffer(kmove+12)
+        Do kk=1,stats%mxstak
            l=2*kk                +12
-           stkval(kk,jj-1)=buffer(kmove+l-1)
-           stkval(kk,jj  )=buffer(kmove+l  )
+           stats%stkval(kk,jj-1)=buffer(kmove+l-1)
+           stats%stkval(kk,jj  )=buffer(kmove+l  )
         End Do
 
-        kmove=kmove+2*(6+mxstak)
+        kmove=kmove+2*(6+stats%mxstak)
      End If
 
      If (lbook) Then
@@ -2524,7 +2525,7 @@ Subroutine relocate_particles       &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
            megbnd,megang,megdih,    &
-           meginv,ewld,thermo,green,comm)
+           meginv,stats,ewld,thermo,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2544,6 +2545,7 @@ Subroutine relocate_particles       &
                                         m_rgd,megtet,        &
                                         megbnd,megang,megdih,meginv
   Real( Kind = wp ), Intent( In    ) :: dvar,rlnk
+  Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( InOut ) :: green
@@ -2662,18 +2664,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,ewld,thermo,green,comm)
-     Call deport_atomic_data( 1,lbook,ewld,thermo,green,comm)
+     Call deport_atomic_data(-1,lbook,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data( 1,lbook,stats,ewld,thermo,green,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,ewld,thermo,green,comm)
-     Call deport_atomic_data( 2,lbook,ewld,thermo,green,comm)
+     Call deport_atomic_data(-2,lbook,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data( 2,lbook,stats,ewld,thermo,green,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,ewld,thermo,green,comm)
-     Call deport_atomic_data( 3,lbook,ewld,thermo,green,comm)
+     Call deport_atomic_data(-3,lbook,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data( 3,lbook,stats,ewld,thermo,green,comm)
 
 ! check system for loss of atoms
 

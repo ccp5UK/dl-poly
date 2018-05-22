@@ -2,14 +2,15 @@ Module system
 
   Use kinds, Only : wp,li
   Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi,gsync, &
-                    gsend,grecv,offset_kind,mode_wronly,comm_self,mode_create
+                    gsend,grecv,offset_kind,mode_wronly,comm_self,mode_create, &
+                    gtime,gsum,gcheck
   Use setup
   Use site,        Only : ntpatm,numtyp,numtypnf,dens,ntpmls,numsit,&
                                  nummols
   Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz, &
                                  cfgname,imcon,cell,lsi,lsa,atmnam, &
                                  write_config
-  Use statistics
+  Use statistics, Only : stats_type
   Use rdfs,        Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density,   Only : ncfzdn,zdens
   Use bonds,       Only : ldfbnd,ncfbnd,dstbnd,numbonds,lstbnd,keybnd
@@ -48,7 +49,8 @@ Module system
                                   IO_WRITE_SORTED_MASTER
   Use vdw,             Only : vdw_lrc
   Use metal,           Only : metal_lrc
-  Use errors_warnings, Only : error, info
+  Use errors_warnings, Only : error, info, warning
+  Use numerics, Only : dcell, images
   Implicit None
   Private
   Public :: system_revive
@@ -59,7 +61,7 @@ Module system
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
            time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
-           vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,devel,green,comm)
+           vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,stats,devel,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -83,6 +85,7 @@ Module system
                                         virtot,stress(1:9),vircon,strcon(1:9), &
                                         virpmf,strpmf(1:9),elrc,virlrc,        &
                                         elrcm(0:mxatyp),vlrcm(0:mxatyp)
+  Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( comms_type ), Intent( InOut ) :: comm
@@ -99,7 +102,7 @@ Module system
 
   If (devel%l_rin) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(mxstak*mxnstk,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
+     j = Max(stats%mxstak*stats%mxnstk,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -140,14 +143,14 @@ Module system
 
      If (keyio > 0) Then
 
-        numacc=0
-        stpval=0.0_wp
-        stpvl0=0.0_wp
-        sumval=0.0_wp
-        ssqval=0.0_wp
-        zumval=0.0_wp
-        ravval=0.0_wp
-        stkval=0.0_wp
+        stats%numacc=0
+        stats%stpval=0.0_wp
+        stats%stpvl0=0.0_wp
+        stats%sumval=0.0_wp
+        stats%ssqval=0.0_wp
+        stats%zumval=0.0_wp
+        stats%ravval=0.0_wp
+        stats%stkval=0.0_wp
 
         If (lrdf) Then
            ncfrdf=0
@@ -231,13 +234,13 @@ Module system
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) &
                dnstep,dtstep,time,tmst,dnumacc,chit,chip,cint
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) eta
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stpval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stpvl0
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) sumval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) ssqval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) zumval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) ravval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stkval
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stpval
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stpvl0
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%sumval
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%ssqval
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%zumval
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%ravval
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stkval
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) strcon
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) strpmf
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stress
@@ -261,13 +264,13 @@ Module system
            Read(Unit=nrest, IOStat=keyio, End=100) &
                dnstep,dtstep,time,tmst,dnumacc,chit,chip,cint
            Read(Unit=nrest, IOStat=keyio, End=100) eta
-           Read(Unit=nrest, IOStat=keyio, End=100) stpval
-           Read(Unit=nrest, IOStat=keyio, End=100) stpvl0
-           Read(Unit=nrest, IOStat=keyio, End=100) sumval
-           Read(Unit=nrest, IOStat=keyio, End=100) ssqval
-           Read(Unit=nrest, IOStat=keyio, End=100) zumval
-           Read(Unit=nrest, IOStat=keyio, End=100) ravval
-           Read(Unit=nrest, IOStat=keyio, End=100) stkval
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%stpval
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%stpvl0
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%sumval
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%ssqval
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%zumval
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%ravval
+           Read(Unit=nrest, IOStat=keyio, End=100) stats%stkval
            Read(Unit=nrest, IOStat=keyio, End=100) strcon
            Read(Unit=nrest, IOStat=keyio, End=100) strpmf
            Read(Unit=nrest, IOStat=keyio, End=100) stress
@@ -291,7 +294,7 @@ Module system
 
         nstep =Nint(dnstep)
 
-        numacc=Nint(dnumacc)
+        stats%numacc=Nint(dnumacc)
 
         If (lrdf) ncfrdf=Nint(dncfrdf)
         If (mxgusr > 0) Then
@@ -309,9 +312,9 @@ Module system
 
 ! calculate virtot = virtot-vircon-virpmf
 
-        vircon = stpval(17) * engunit
-        virpmf = stpval(26) * engunit
-        virtot = (stpval(12)-stpval(17)-stpval(26)) * engunit
+        vircon = stats%stpval(17) * engunit
+        virpmf = stats%stpval(26) * engunit
+        virtot = (stats%stpval(12)-stats%stpval(17)-stats%stpval(26)) * engunit
      End If
 
 100  Continue
@@ -336,19 +339,19 @@ Module system
         Call gbcast(comm,dtstep,0)
         Call gbcast(comm,time,0)
         Call gbcast(comm,tmst,0)
-        Call gbcast(comm,numacc,0)
+        Call gbcast(comm,stats%numacc,0)
         Call gbcast(comm,chit,0)
         Call gbcast(comm,chip,0)
         Call gbcast(comm,cint,0)
         Call gbcast(comm,eta,0)
-        Call gbcast(comm,stpval,0)
-        Call gbcast(comm,stpvl0,0)
-        Call gbcast(comm,sumval,0)
-        Call gbcast(comm,ssqval,0)
-        Call gbcast(comm,zumval,0)
-        Call gbcast(comm,ravval,0)
-        Do k=0,mxnstk
-           Call gbcast(comm,stkval(:,k),0)
+        Call gbcast(comm,stats%stpval,0)
+        Call gbcast(comm,stats%stpvl0,0)
+        Call gbcast(comm,stats%sumval,0)
+        Call gbcast(comm,stats%ssqval,0)
+        Call gbcast(comm,stats%zumval,0)
+        Call gbcast(comm,stats%ravval,0)
+        Do k=0,stats%mxnstk
+           Call gbcast(comm,stats%stkval(:,k),0)
         End Do
         Call gbcast(comm,strcon,0)
         Call gbcast(comm,strpmf,0)
@@ -460,13 +463,13 @@ Module system
 ! and final displacements to zero
 
   Do i=1,natms
-     xin(i)=xxx(i)
-     yin(i)=yyy(i)
-     zin(i)=zzz(i)
+     stats%xin(i)=xxx(i)
+     stats%yin(i)=yyy(i)
+     stats%zin(i)=zzz(i)
 
-     xto(i)=0.0_wp
-     yto(i)=0.0_wp
-     zto(i)=0.0_wp
+     stats%xto(i)=0.0_wp
+     stats%yto(i)=0.0_wp
+     stats%zto(i)=0.0_wp
   End Do
 
   If (keyres == 1) Then
@@ -497,13 +500,13 @@ Module system
 
         Do i=1,natms
            If (ltg(i) == gidx) Then
-              xin(i)=xyz(1)
-              yin(i)=xyz(2)
-              zin(i)=xyz(3)
+              stats%xin(i)=xyz(1)
+              stats%yin(i)=xyz(2)
+              stats%zin(i)=xyz(3)
 
-              xto(i)=xyz(4)
-              yto(i)=xyz(5)
-              zto(i)=xyz(6)
+              stats%xto(i)=xyz(4)
+              stats%yto(i)=xyz(5)
+              stats%zto(i)=xyz(6)
            End If
         End Do
      End Do
@@ -1796,7 +1799,7 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,devel,green,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,stats,devel,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1815,6 +1818,7 @@ Subroutine system_revive                                      &
   Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst, &
                                         chit,cint,chip,eta(1:9),   &
                                         strcon(1:9),strpmf(1:9),stress(1:9)
+  Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( comms_type ), Intent( InOut ) :: comm
@@ -1845,7 +1849,7 @@ Subroutine system_revive                                      &
 
   If (devel%l_rout) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(mxstak*mxnstk+1,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
+     j = Max(stats%mxstak*stats%mxnstk+1,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -1985,15 +1989,15 @@ Subroutine system_revive                                      &
 
         Write(Unit=nrest, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest, Fmt=forma, Advance='No') &
-             Real(nstep,wp),tstep,time,tmst,Real(numacc,wp),chit,chip,cint
+             Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),chit,chip,cint
         Write(Unit=nrest, Fmt=forma, Advance='No') eta
-        Write(Unit=nrest, Fmt=forma, Advance='No') stpval
-        Write(Unit=nrest, Fmt=forma, Advance='No') stpvl0
-        Write(Unit=nrest, Fmt=forma, Advance='No') sumval
-        Write(Unit=nrest, Fmt=forma, Advance='No') ssqval
-        Write(Unit=nrest, Fmt=forma, Advance='No') zumval
-        Write(Unit=nrest, Fmt=forma, Advance='No') ravval
-        Write(Unit=nrest, Fmt=forma, Advance='No') stkval
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%stpval
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%stpvl0
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%sumval
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%ssqval
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%zumval
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%ravval
+        Write(Unit=nrest, Fmt=forma, Advance='No') stats%stkval
         Write(Unit=nrest, Fmt=forma, Advance='No') strcon
         Write(Unit=nrest, Fmt=forma, Advance='No') strpmf
         Write(Unit=nrest, Fmt=forma, Advance='No') stress
@@ -2018,15 +2022,15 @@ Subroutine system_revive                                      &
 
         Write(Unit=nrest) rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest) &
-             Real(nstep,wp),tstep,time,tmst,Real(numacc,wp),chit,chip,cint
+             Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),chit,chip,cint
         Write(Unit=nrest) eta
-        Write(Unit=nrest) stpval
-        Write(Unit=nrest) stpvl0
-        Write(Unit=nrest) sumval
-        Write(Unit=nrest) ssqval
-        Write(Unit=nrest) zumval
-        Write(Unit=nrest) ravval
-        Write(Unit=nrest) stkval
+        Write(Unit=nrest) stats%stpval
+        Write(Unit=nrest) stats%stpvl0
+        Write(Unit=nrest) stats%sumval
+        Write(Unit=nrest) stats%ssqval
+        Write(Unit=nrest) stats%zumval
+        Write(Unit=nrest) stats%ravval
+        Write(Unit=nrest) stats%stkval
         Write(Unit=nrest) strcon
         Write(Unit=nrest) strpmf
         Write(Unit=nrest) stress
@@ -2055,13 +2059,13 @@ Subroutine system_revive                                      &
      Do i=1,natms
         iwrk(i)=ltg(i)
 
-        axx(i)=xin(i)
-        ayy(i)=yin(i)
-        azz(i)=zin(i)
+        axx(i)=stats%xin(i)
+        ayy(i)=stats%yin(i)
+        azz(i)=stats%zin(i)
 
-        bxx(i)=xto(i)
-        byy(i)=yto(i)
-        bzz(i)=zto(i)
+        bxx(i)=stats%xto(i)
+        byy(i)=stats%yto(i)
+        bzz(i)=stats%zto(i)
      End Do
 
      ready=.true.
@@ -2102,13 +2106,13 @@ Subroutine system_revive                                      &
 
      Call gsend(comm,ltg(1:natms),0,Revive_tag)
 
-     Call gsend(comm,xin(1:natms),0,Revive_tag)
-     Call gsend(comm,yin(1:natms),0,Revive_tag)
-     Call gsend(comm,zin(1:natms),0,Revive_tag)
+     Call gsend(comm,stats%xin(1:natms),0,Revive_tag)
+     Call gsend(comm,stats%yin(1:natms),0,Revive_tag)
+     Call gsend(comm,stats%zin(1:natms),0,Revive_tag)
 
-     Call gsend(comm,xto(1:natms),0,Revive_tag)
-     Call gsend(comm,yto(1:natms),0,Revive_tag)
-     Call gsend(comm,zto(1:natms),0,Revive_tag)
+     Call gsend(comm,stats%xto(1:natms),0,Revive_tag)
+     Call gsend(comm,stats%yto(1:natms),0,Revive_tag)
+     Call gsend(comm,stats%zto(1:natms),0,Revive_tag)
 
   End If
 

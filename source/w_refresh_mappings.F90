@@ -3,7 +3,7 @@
 
 ! Scale t=0 reference positions
 
-        If (nstep > 0) Call xscale(m_rgd,keyens,tstep,eta,comm)
+        If (nstep > 0) Call xscale(m_rgd,keyens,tstep,eta,stat,comm)
 
 ! Check VNL conditioning
 
@@ -17,7 +17,7 @@
            (dvar,rlnk,lbook,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           megbnd,megang,megdih,meginv,ewld,thermo,green,comm)
+           megbnd,megang,megdih,meginv,stat,ewld,thermo,green,comm)
 
 ! Exchange atomic data in border regions
 
