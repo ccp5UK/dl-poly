@@ -36,7 +36,7 @@ Module deport_data
                                  mplgfr,mprotx,mproty,mprotz, mplflg
 
   Use msd
-  Use greenkubo,    Only : vxi,vyi,vzi,vafsamp
+  Use greenkubo,    Only : greenkubo_type
 
   Use kim,    Only : kimim,idhalo
 
@@ -59,7 +59,7 @@ Module deport_data
   Contains 
   
 
-Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,comm)
+Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -80,6 +80,7 @@ Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,comm)
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( greenkubo_type ), Intent( InOut ) :: green
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -357,12 +358,12 @@ Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,comm)
 
 ! pack initial velocities for VAF calculations
 
-        If (vafsamp > 0) Then
+        If (green%samp > 0) Then
            If (imove+3 <= iblock) Then
-              Do k=1,vafsamp
-                buffer(imove+1)=vxi(i,k)
-                buffer(imove+2)=vyi(i,k)
-                buffer(imove+3)=vzi(i,k)
+              Do k=1,green%samp
+                buffer(imove+1)=green%vxi(i,k)
+                buffer(imove+2)=green%vyi(i,k)
+                buffer(imove+3)=green%vzi(i,k)
 
                 imove=imove+3
               End Do
@@ -850,10 +851,10 @@ Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,comm)
         ewld%fcz(keep)=ewld%fcz(i)
      End If
 
-     If (vafsamp > 0) Then
-        vxi(keep,1:vafsamp)=vxi(i,1:vafsamp)
-        vyi(keep,1:vafsamp)=vyi(i,1:vafsamp)
-        vzi(keep,1:vafsamp)=vzi(i,1:vafsamp)
+     If (green%samp > 0) Then
+        green%vxi(keep,1:green%samp)=green%vxi(i,1:green%samp)
+        green%vyi(keep,1:green%samp)=green%vyi(i,1:green%samp)
+        green%vzi(keep,1:green%samp)=green%vzi(i,1:green%samp)
      End If
 
      If (l_msd) Then
@@ -1027,11 +1028,11 @@ Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,comm)
 
 ! unpack initial velocities for VAF calculations
 
-     If (vafsamp > 0) Then
-        Do k=1,vafsamp
-          vxi(newatm,k)=buffer(kmove+1)
-          vyi(newatm,k)=buffer(kmove+2)
-          vzi(newatm,k)=buffer(kmove+3)
+     If (green%samp > 0) Then
+        Do k=1,green%samp
+          green%vxi(newatm,k)=buffer(kmove+1)
+          green%vyi(newatm,k)=buffer(kmove+2)
+          green%vzi(newatm,k)=buffer(kmove+3)
 
           kmove=kmove+3
         End Do
@@ -2524,7 +2525,7 @@ Subroutine relocate_particles       &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
            megbnd,megang,megdih,    &
-           meginv,stats,ewld,thermo,comm)
+           meginv,stats,ewld,thermo,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2547,6 +2548,7 @@ Subroutine relocate_particles       &
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( greenkubo_type ), Intent( InOut ) :: green
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2662,18 +2664,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,stats,ewld,thermo,comm)
-     Call deport_atomic_data( 1,lbook,stats,ewld,thermo,comm)
+     Call deport_atomic_data(-1,lbook,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data( 1,lbook,stats,ewld,thermo,green,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,stats,ewld,thermo,comm)
-     Call deport_atomic_data( 2,lbook,stats,ewld,thermo,comm)
+     Call deport_atomic_data(-2,lbook,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data( 2,lbook,stats,ewld,thermo,green,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,stats,ewld,thermo,comm)
-     Call deport_atomic_data( 3,lbook,stats,ewld,thermo,comm)
+     Call deport_atomic_data(-3,lbook,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data( 3,lbook,stats,ewld,thermo,green,comm)
 
 ! check system for loss of atoms
 

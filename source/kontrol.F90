@@ -20,7 +20,7 @@ Module kontrol
   Use parse,       Only : get_line,get_word,lower_case,word_2_real
   
   Use kim,         Only : kimim,rkim
-  Use greenkubo,   Only : isvaf,nsvaf,vafsamp
+  Use greenkubo,   Only : greenkubo_type
   Use rdfs,         Only : l_errors_jack, l_errors_block
   Use development, Only : development_type
   Use ttm
@@ -75,7 +75,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,stats,thermo,devel,tmr,comm)
+           ndump,pdplnc,stats,thermo,green,devel,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -137,8 +137,9 @@ Subroutine read_control                                &
   Type( stats_type ), Intent (   InOut )   :: stats                                         
   Type( impact_type ),     Intent(   Out ) :: impa
   Type ( thermostat_type), Intent( InOut ) :: thermo
-  Type( timer_type ),      Intent( InOut ) :: tmr
   Type( development_type ), Intent( InOut ) :: devel
+  Type( greenkubo_type ), Intent( InOut ) :: green
+  Type( timer_type ),      Intent( InOut ) :: tmr
   Type( comms_type ),     Intent( InOut )  :: comm
 
 
@@ -3307,11 +3308,11 @@ Subroutine read_control                                &
 
 ! report vaf
 
-  If (vafsamp > 0 .or. lpvaf) Then
-     If (vafsamp > 0) Then
+  If (green%samp > 0 .or. lpvaf) Then
+     If (green%samp > 0) Then
         Write(messages(1),'(a)') 'vaf profiles requested:'
-        Write(messages(2),'(2x,a,i10)') 'vaf collection interval ',isvaf
-        Write(messages(3),'(2x,a,i10)') 'vaf binsize  ',nsvaf
+        Write(messages(2),'(2x,a,i10)') 'vaf collection interval ',green%freq
+        Write(messages(3),'(2x,a,i10)') 'vaf binsize  ',green%binsize
         Call info(messages,3,.true.)
      Else
         Call info('no vaf collection requested',.true.)
@@ -3604,7 +3605,8 @@ Subroutine scan_control                                    &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,devel,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
+           thermo,green,devel,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3634,6 +3636,7 @@ Subroutine scan_control                                    &
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
+  Type( greenkubo_type ), Intent( InOut ) :: green
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3895,16 +3898,16 @@ Subroutine scan_control                                    &
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        isvaf = Abs(Nint(word_2_real(word,0.0_wp)))
-        If (isvaf == 0) isvaf=50
+        green%freq = Abs(Nint(word_2_real(word,0.0_wp)))
+        If (green%freq == 0) green%freq=50
 
         Call get_word(record,word)
         If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
         If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
-        nsvaf = Abs(Nint(word_2_real(word,0.0_wp)))
+        green%binsize = Abs(Nint(word_2_real(word,0.0_wp)))
 
-        If (nsvaf == 0) nsvaf=Merge(2*isvaf,100,isvaf >= 100)
-        vafsamp = Ceiling(Real(nsvaf,wp)/Real(isvaf,wp))
+        If (green%binsize == 0) green%binsize=Merge(2*green%freq,100,green%freq >= 100)
+        green%samp = Ceiling(Real(green%binsize,wp)/Real(green%freq,wp))
 
 ! read DL_POLY_2/Classic delr Verlet shell strip cutoff option (compatibility)
 ! as DL_POLY_4 real space cutoff padding option

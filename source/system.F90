@@ -19,8 +19,7 @@ Module system
   Use inversions,  Only : ldfinv,ncfinv,dstinv,numinv,lstinv
   Use vdw,         Only : ls_vdw,ntpvdw
   Use metal,       Only : ntpmet
-  Use greenkubo,   Only : nsvaf,vafsamp,vafcount,vafstep, &
-                                 vxi,vyi,vzi,vafdata,vaf,vaftime
+  Use greenkubo,   Only : greenkubo_type
   Use development,  Only : development_type
   Use core_shell,   Only : numshl,lstshl
   Use constraints,  Only : numcon,lstcon
@@ -62,7 +61,7 @@ Module system
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
            time,tmst,nstep,tstep,chit,cint,chip,eta,virtot,stress, &
-           vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,stats,devel,comm)
+           vircon,strcon,virpmf,strpmf,elrc,virlrc,elrcm,vlrcm,stats,devel,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -88,6 +87,7 @@ Module system
                                         elrcm(0:mxatyp),vlrcm(0:mxatyp)
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
+  Type( greenkubo_type ), Intent( InOut ) :: green
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -95,7 +95,7 @@ Module system
   Logical               :: l_tmp
   Integer               :: i,j,k,l,keyio,i_tmp,gidx
   Real( Kind = wp )     :: dnstep,dtstep,dnumacc,dncfrdf,dmxgusr,drusr,dncfusr,dncfzdn, &
-                           dncfbnd,dncfang,dncfdih,dncfinv,r_mxnode,xyz(0:6),dvafstep(1:vafsamp)
+                           dncfbnd,dncfang,dncfdih,dncfinv,r_mxnode,xyz(0:6),dvafstep(1:green%samp)
 
 
 ! Define format for REVOLD reading in ASCII
@@ -168,12 +168,12 @@ Module system
            zdens =0.0_wp
         End If
 
-        If (vafsamp > 0) Then
-           vafcount=0.0_wp
-           vafstep =0
-           vafdata =0.0_wp
-           vaf     =0.0_wp
-           vaftime =0.0_wp
+        If (green%samp > 0) Then
+           green%vafcount=0.0_wp
+           green%step =0
+           green%vafdata =0.0_wp
+           green%vaf     =0.0_wp
+           green%time =0.0_wp
         End If
 
         If (mxgbnd1 > 0) Then
@@ -248,12 +248,12 @@ Module system
            If (lrdf) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf
            If (mxgusr > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
            If (lzdn) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfzdn,zdens
-           If (vafsamp > 0) Then
-             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) vafcount
+           If (green%samp > 0) Then
+             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vafcount
              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dvafstep
-             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) vafdata
-             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) vaf
-             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) vaftime
+             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vafdata
+             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vaf
+             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%time
            End If
 
            If (mxgbnd1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,dstbnd
@@ -278,12 +278,12 @@ Module system
            If (lrdf) Read(Unit=nrest, IOStat=keyio, End=100) dncfrdf,rdf
            If (mxgusr > 0) Read(Unit=nrest, IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
            If (lzdn) Read(Unit=nrest, IOStat=keyio, End=100) dncfzdn,zdens
-           If (vafsamp > 0) Then
-             Read(Unit=nrest, IOStat=keyio, End=100) vafcount
+           If (green%samp > 0) Then
+             Read(Unit=nrest, IOStat=keyio, End=100) green%vafcount
              Read(Unit=nrest, IOStat=keyio, End=100) dvafstep
-             Read(Unit=nrest, IOStat=keyio, End=100) vafdata
-             Read(Unit=nrest, IOStat=keyio, End=100) vaf
-             Read(Unit=nrest, IOStat=keyio, End=100) vaftime
+             Read(Unit=nrest, IOStat=keyio, End=100) green%vafdata
+             Read(Unit=nrest, IOStat=keyio, End=100) green%vaf
+             Read(Unit=nrest, IOStat=keyio, End=100) green%time
            End If
 
            If (mxgbnd1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfbnd,dstbnd
@@ -303,7 +303,7 @@ Module system
            ncfusr=Nint(dncfusr)
         End If
         If (lzdn) ncfzdn=Nint(dncfzdn)
-        If (vafsamp > 0) vafstep=Nint(dvafstep)
+        If (green%samp > 0) green%step=Nint(dvafstep)
 
         If (mxgbnd1 > 0) ncfbnd=Nint(dncfbnd)
         If (mxgang1 > 0) ncfang=Nint(dncfang)
@@ -396,18 +396,18 @@ Module system
            End Do
         End If
 
-! vafdata table - broadcast and normalise
+! green%vafdata table - broadcast and normalise
 
-        If (vafsamp > 0) Then
-           Do j=1,vafsamp
+        If (green%samp > 0) Then
+           Do j=1,green%samp
               l=(j-1)*(mxatyp+1)
               Do k=1,mxatyp+1
-                 Call gbcast(comm,vafdata(:,l+k),0)
+                 Call gbcast(comm,green%vafdata(:,l+k),0)
 
 
 ! avoid normalising timing information
 
-                 If (k /= mxatyp+1) vafdata(:,l+k) = vafdata(:,l+k) * r_mxnode
+                 If (k /= mxatyp+1) green%vafdata(:,l+k) = green%vafdata(:,l+k) * r_mxnode
               End Do
            End Do
         End If
@@ -525,11 +525,11 @@ Module system
 
 ! Read velocities for VAF calculations if needed
 
-     If (vafsamp > 0) Then
+     If (green%samp > 0) Then
 
        i_tmp=0
 
-       Do j=1,vafsamp
+       Do j=1,green%samp
          Do k=1,megatm
             xyz=0.0_wp
 
@@ -551,9 +551,9 @@ Module system
 
             Do i=1,natms
                If (ltg(i) == gidx) Then
-                  vxi(i,j)=xyz(1)
-                  vyi(i,j)=xyz(2)
-                  vzi(i,j)=xyz(3)
+                  green%vxi(i,j)=xyz(1)
+                  green%vyi(i,j)=xyz(2)
+                  green%vzi(i,j)=xyz(3)
                End If
             End Do
          End Do
@@ -1799,7 +1799,7 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,stats,devel,comm)
+           chit,cint,chip,eta,strcon,strpmf,stress,stats,devel,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1820,6 +1820,7 @@ Subroutine system_revive                                      &
                                         strcon(1:9),strpmf(1:9),stress(1:9)
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
+  Type( greenkubo_type ), Intent( InOut ) :: green
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready
@@ -1890,19 +1891,19 @@ Subroutine system_revive                                      &
 
      End If
 
-! globally sum vafdata information before saving
+! globally sum green%vafdata information before saving
 
-     If (vafsamp > 0) Then
+     If (green%samp > 0) Then
 
-! maximum vafdata that can be summed in each step
+! maximum green%vafdata that can be summed in each step
 
-        nsum = mxbuff/(nsvaf+1)
+        nsum = mxbuff/(green%binsize+1)
         If (nsum == 0) Call error(200)
 
-        Do j=1,vafsamp
+        Do j=1,green%samp
            l=(j-1)*(mxatyp+1) ! avoid summing up timing information
            Do i=1,mxatyp,nsum
-              Call gsum(comm,vafdata(:,l+i:l+Min(i+nsum-1,mxatyp)))
+              Call gsum(comm,green%vafdata(:,l+i:l+Min(i+nsum-1,mxatyp)))
            End Do
         End Do
 
@@ -2004,12 +2005,12 @@ Subroutine system_revive                                      &
         If (lrdf) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfrdf,wp),rdf
         If (mxgusr > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(mxgusr),rusr,Real(ncfusr,wp),usr
         If (lzdn) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfzdn,wp),zdens
-        If (vafsamp > 0) Then
-          Write(Unit=nrest, Fmt=forma, Advance='No') vafcount
-          Write(Unit=nrest, Fmt=forma, Advance='No') Real(vafstep,wp)
-          Write(Unit=nrest, Fmt=forma, Advance='No') vafdata
-          Write(Unit=nrest, Fmt=forma, Advance='No') vaf
-          Write(Unit=nrest, Fmt=forma, Advance='No') vaftime
+        If (green%samp > 0) Then
+          Write(Unit=nrest, Fmt=forma, Advance='No') green%vafcount
+          Write(Unit=nrest, Fmt=forma, Advance='No') Real(green%step,wp)
+          Write(Unit=nrest, Fmt=forma, Advance='No') green%vafdata
+          Write(Unit=nrest, Fmt=forma, Advance='No') green%vaf
+          Write(Unit=nrest, Fmt=forma, Advance='No') green%time
         End If
 
         If (mxgbnd1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfbnd,wp),dstbnd
@@ -2037,12 +2038,12 @@ Subroutine system_revive                                      &
         If (lrdf) Write(Unit=nrest) Real(ncfrdf,wp),rdf
         If (mxgusr > 0) Write(Unit=nrest) Real(mxgusr),rusr,Real(ncfusr,wp),usr
         If (lzdn) Write(Unit=nrest) Real(ncfzdn,wp),zdens
-        If (vafsamp > 0) Then
-          Write(Unit=nrest) vafcount
-          Write(Unit=nrest) Real(vafstep,wp)
-          Write(Unit=nrest) vafdata
-          Write(Unit=nrest) vaf
-          Write(Unit=nrest) vaftime
+        If (green%samp > 0) Then
+          Write(Unit=nrest) green%vafcount
+          Write(Unit=nrest) Real(green%step,wp)
+          Write(Unit=nrest) green%vafdata
+          Write(Unit=nrest) green%vaf
+          Write(Unit=nrest) green%time
         End If
 
         If (mxgbnd1 > 0) Write(Unit=nrest) Real(ncfbnd,wp),dstbnd
@@ -2117,17 +2118,17 @@ Subroutine system_revive                                      &
 
 ! Write initial velocities for VAF calculations if needed
 
-  If (vafsamp > 0) Then
+  If (green%samp > 0) Then
 
     If (comm%idnode == 0) Then
 
        jatms=natms
-       Do j=1,vafsamp
+       Do j=1,green%samp
          Do i=1,natms
             iwrk(i)=ltg(i)
-            axx(i)=vxi(i,j)
-            ayy(i)=vyi(i,j)
-            azz(i)=vzi(i,j)
+            axx(i)=green%vxi(i,j)
+            ayy(i)=green%vyi(i,j)
+            azz(i)=green%vzi(i,j)
          End Do
 
          ready=.true.
@@ -2160,16 +2161,16 @@ Subroutine system_revive                                      &
 
     Else
 
-       Do j=1,vafsamp
+       Do j=1,green%samp
          Call grecv(comm,ready,0,Revive_tag)
 
          Call gsend(comm,natms,0,Revive_tag)
 
          Call gsend(comm,ltg(1:natms),0,Revive_tag)
 
-         Call gsend(comm,vxi(1,j),0,Revive_tag)
-         Call gsend(comm,vyi(1,j),0,Revive_tag)
-         Call gsend(comm,vzi(1,j),0,Revive_tag)
+         Call gsend(comm,green%vxi(1,j),0,Revive_tag)
+         Call gsend(comm,green%vyi(1,j),0,Revive_tag)
+         Call gsend(comm,green%vzi(1,j),0,Revive_tag)
        End Do
 
     End If

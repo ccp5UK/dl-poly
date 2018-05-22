@@ -35,7 +35,7 @@ Module statistics
                            rdf_compute,usr_compute
   Use z_density,   Only : ncfzdn,z_density_compute,z_density_collect
   Use msd
-  Use greenkubo,   Only : vafsamp,vafcount,vaf_compute
+  Use greenkubo,   Only : greenkubo_type,vaf_compute
   Use bonds,       Only : bonds_compute
   Use angles,      Only : angles_compute
   Use dihedrals,   Only : dihedrals_compute
@@ -1329,7 +1329,7 @@ Subroutine statistics_result                                    &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
            nstrun,keyens,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
-           mxatdm,stats,thermo,comm,passmin)
+           mxatdm,stats,thermo,green,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1348,6 +1348,7 @@ Subroutine statistics_result                                    &
   Integer( Kind = wi ),    Intent( In    ) :: mxatdm 
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( greenkubo_type ), Intent( In    ) :: green
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
   Logical           :: check
@@ -1717,8 +1718,8 @@ Subroutine statistics_result                                    &
   End If
 
 ! calculate and print velocity autocorrelation function
-  If (vafsamp > 0 .and. lpvaf .and. vafcount > zero_plus) Then
-    Call vaf_compute(lvafav,tstep,comm)
+  If (green%samp > 0 .and. lpvaf .and. green%vafcount > zero_plus) Then
+    Call vaf_compute(lvafav,tstep,green,comm)
   End If
 
 ! Calculate and print PDFs
