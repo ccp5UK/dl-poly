@@ -98,7 +98,7 @@
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-     If (nstep == 0) Call w_statistics_report(stat)
+     If (nstep == 0) Call w_statistics_report(mxatdm_,stat)
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
@@ -125,7 +125,7 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(stat)
+        Call w_statistics_report(mxatdm_,stat)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 

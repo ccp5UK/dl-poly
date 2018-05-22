@@ -40,7 +40,7 @@ program dl_poly
 
   ! SETUP MODULES
 
-  Use kinds, Only : wp,li
+  Use kinds, Only : wp,li,wi
   Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime 
   Use setup
 
@@ -708,12 +708,12 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(stats)
+    Call w_md_vv(mxatdm,stats)
   Else
     If (lfce) Then
-      Call w_replay_historf(stats)
+      Call w_replay_historf(mxatdm,stats)
     Else
-      Call w_replay_history(stats)
+      Call w_replay_history(mxatdm,stats)
     End If
   End If
 
@@ -781,7 +781,7 @@ program dl_poly
   Call statistics_result                                        &
     (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
     nstrun,keyens,keyshl,megcon,megpmf,              &
-    nstep,tstep,time,tmst,stats,thermo,comm,passmin)
+    nstep,tstep,time,tmst,mxatdm,stats,thermo,comm,passmin)
 
   10 Continue
 
@@ -860,7 +860,8 @@ Contains
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
-  Subroutine w_statistics_report(stat)
+  Subroutine w_statistics_report(mxatdm_,stat)
+    Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
@@ -874,23 +875,26 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(stat)
+  Subroutine w_md_vv(mxatdm_,stat)
+    Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(stat)
+  Subroutine w_replay_history(mxatdm_,stat)
+    Integer( Kind = wi ), Intent( In  )  :: mxatdm_ 
 
     Type(stats_type), Intent(InOut) :: stat
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
-    Integer           :: nstpe,nstph ! nstep replacements
+    Integer( Kind = wi )           :: nstpe,nstph ! nstep replacements
     Integer           :: exout       ! exit indicator for reading
 
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(stat)
+  Subroutine w_replay_historf(mxatdm_,stat)
+    Integer( Kind = wi ), Intent( In  )  :: mxatdm_ 
     Type(stats_type), Intent(InOut) :: stat
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

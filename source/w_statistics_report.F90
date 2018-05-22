@@ -27,7 +27,7 @@ Call statistics_collect           &
   engke,engrot,consv,vircom,     &
   strtot,           &
   stpeng,stpvir,stpcfg,stpeth,   &
-  stptmp,stpprs,stpvol,stat,thermo,comm,virdpd)
+  stptmp,stpprs,stpvol,mxatdm_,stat,thermo,comm,virdpd)
 
 ! VV forces evaluation report for 0th or weird restart
 

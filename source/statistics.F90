@@ -10,10 +10,10 @@ Module statistics
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp,li
-  Use setup, Only : mxatdm,mxbfss,zero_plus,&
-                   prsunt,nstats,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
-                   eu_kjpm,mxatyp,statis,pi
+  Use kinds, Only : wp,wi,li
+  Use setup, Only : mxbfss,nstats,statis,zero_plus,&
+                   prsunt,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
+                   eu_kjpm,mxatyp,pi
 
   Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend, &
                       gwait,girecv
@@ -142,9 +142,9 @@ Contains
 
   End Subroutine deallocate_statistics_connect
 
-  Subroutine statistics_collect             &
+  Subroutine statistics_collect           &
            (lsim,leql,nsteql,lzdn,nstzdn, &
-           keyres,keyens,      &
+           keyres,keyens,                 &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
            engcpe,vircpe,engsrp,virsrp,   &
@@ -156,9 +156,10 @@ Contains
            engbnd,virbnd,engang,virang,   &
            engdih,virdih,enginv,virinv,   &
            engke,engrot,consv,vircom,     &
-           strtot,           &
+           strtot,                        &
            stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,stats,thermo,comm,virdpd)
+           stptmp,stpprs,stpvol,          &
+           mxatdm,stats,thermo,comm,virdpd)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -193,6 +194,7 @@ Contains
   Real( Kind = wp ), Intent( InOut ) :: tmst
   Real( Kind = wp ), Intent(   Out ) :: stpeng,stpvir,stpcfg,stpeth, &
                                         stptmp,stpprs,stpvol
+  Integer( Kind = wi),Intent( In    ) :: mxatdm
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
@@ -553,7 +555,7 @@ Contains
 End Subroutine statistics_collect
 
 
-Subroutine statistics_connect_frames(megatm,stats,comm)
+Subroutine statistics_connect_frames(megatm,mxatdm,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -567,7 +569,8 @@ Subroutine statistics_connect_frames(megatm,stats,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer, Intent ( In    ) :: megatm
+  Integer( Kind = wi ), Intent ( In    ) :: megatm
+  Integer( Kind = wi ), Intent ( In    ) :: mxatdm
   Type( stats_type ), Intent( InOut ) :: stats
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -576,16 +579,16 @@ Subroutine statistics_connect_frames(megatm,stats,comm)
 
   stats%found = 0 ; icyc = 0 ; nres = 1
   Do While (icyc <= Max(nprx,npry,nprz)/2 .and. nres > 0)
-     Call match_compress_spread_sort(-1) ! -x direction spread
-     Call match_compress_spread_sort( 1) ! +x direction spread
+     Call match_compress_spread_sort(-1,mxatdm) ! -x direction spread
+     Call match_compress_spread_sort( 1,mxatdm) ! +x direction spread
 
-     Call match_compress_spread_sort(-2) ! -y direction spread
-     Call match_compress_spread_sort( 2) ! +y direction spread
+     Call match_compress_spread_sort(-2,mxatdm) ! -y direction spread
+     Call match_compress_spread_sort( 2,mxatdm) ! +y direction spread
 
-     Call match_compress_spread_sort(-3) ! -z direction spread
-     Call match_compress_spread_sort( 3) ! +z direction spread
+     Call match_compress_spread_sort(-3,mxatdm) ! -z direction spread
+     Call match_compress_spread_sort( 3,mxatdm) ! +z direction spread
 
-     Call match_compress_spread_sort( 0) ! no spreading
+     Call match_compress_spread_sort( 0,mxatdm) ! no spreading
 
      nres=stats%natms0
      Call gsum(comm,nres)
@@ -603,7 +606,7 @@ Subroutine statistics_connect_frames(megatm,stats,comm)
 
 Contains
 
-  Subroutine match_compress_spread_sort(mdir)
+  Subroutine match_compress_spread_sort(mdir,mxatdm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -615,11 +618,12 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    Integer, Intent( In    ) :: mdir ! +/-1,+/-2,+/-3,0 is the direction of spread
+    Integer( Kind = wi ), Intent( In    ) :: mdir ! +/-1,+/-2,+/-3,0 is the direction of spread
+    Integer( Kind = wi ), Intent( In    ) :: mxatdm
 
-    Integer :: fail,i,i0,j,j0,kk
+    Integer( Kind = wi ) :: fail,i,i0,j,j0,kk
 
-    Integer, Allocatable, Save :: lsa00(:)
+    Integer( Kind = wi ), Allocatable, Save :: lsa00(:)
 
 ! Search for matches
     
@@ -835,7 +839,7 @@ Contains
 
 ! Spread atom data in the mdir direction
 
-    If (mdir /= 0) Call statistics_connect_spread(mdir,stats,comm)
+    If (mdir /= 0) Call statistics_connect_spread(mdir,mxatdm,stats,comm)
 
 ! Sort past frame remainder of global atom indices
 
@@ -850,7 +854,7 @@ Contains
 
 End Subroutine statistics_connect_frames
 
-  Subroutine statistics_connect_set(rcut,stats,comm)
+  Subroutine statistics_connect_set(rcut,mxatdm,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -865,6 +869,7 @@ End Subroutine statistics_connect_frames
 
 
   Real( Kind = wp ), Intent( In    ) :: rcut
+  Integer( Kind = wi), Intent( In   ) :: mxatdm
   Type( stats_type ), Intent( InOut ) :: stats
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -966,7 +971,7 @@ End Subroutine statistics_connect_frames
 
 End Subroutine statistics_connect_set
 
-Subroutine statistics_connect_spread(mdir,stats,comm)
+Subroutine statistics_connect_spread(mdir,mxatdm,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -982,7 +987,8 @@ Subroutine statistics_connect_spread(mdir,stats,comm)
 
 
 
-  Integer, Intent( In    ) :: mdir
+  Integer( Kind = wi ), Intent( In    ) :: mdir
+  Integer( Kind = wi ), Intent( In    ) :: mxatdm
   Type( stats_type ), Intent( InOut ) :: stats 
   Type( comms_type ), Intent( InOut ) :: comm
   Logical           :: safe,stay,move
@@ -1322,7 +1328,8 @@ End Subroutine statistics_connect_spread
 Subroutine statistics_result                                    &
            (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
            nstrun,keyens,keyshl,megcon,megpmf,              &
-           nstep,tstep,time,tmst,stats,thermo,comm,passmin)
+           nstep,tstep,time,tmst, &
+           mxatdm,stats,thermo,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1336,8 +1343,9 @@ Subroutine statistics_result                                    &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf
-  Integer,           Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,nstep
+  Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
+  Integer( Kind = wi ),    Intent( In    ) :: mxatdm 
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm

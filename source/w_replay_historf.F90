@@ -56,7 +56,7 @@
   Do
      Call allocate_statistics_connect(mxatdm,stat)
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(rlnk,stat,comm)
+     If (nstph > nstpe) Call statistics_connect_set(rlnk,mxatdm_,stat,comm)
 
 ! Make a move - Read a frame
 
@@ -98,12 +98,12 @@
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(rlnk,stat,comm)
+              Call statistics_connect_set(rlnk,mxatdm_,stat,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
 
-           Call statistics_connect_frames(megatm,stat,comm)
+           Call statistics_connect_frames(megatm,mxatdm_,stat,comm)
            Call deallocate_statistics_connect(stat)
 
 ! SET domain borders and link-cells as default for new jobs
@@ -193,7 +193,8 @@
            engke,engrot,consv,vircom,     &
            strtot,           &
            stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,stat,thermo,comm,virdpd)
+           stptmp,stpprs,stpvol,          &
+           mxatdm_,stat,thermo,comm,virdpd)
 
 ! line-printer output
 ! Update cpu time
