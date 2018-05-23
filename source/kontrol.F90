@@ -69,7 +69,6 @@ Subroutine read_control                                &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
            keyens,&
-           vel_es2,  &
            fmax,nstbpo,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
@@ -129,7 +128,6 @@ Subroutine read_control                                &
                                              ndump
 
   Real( Kind = wp ),      Intent(   Out ) :: tstep,mndis,mxdis,mxstp,    &
-                                             vel_es2,  &
                                              min_tol(1:2), &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
@@ -287,7 +285,7 @@ Subroutine read_control                                &
 ! default value for inhomogeneous Langevin thermostat/
 ! two-temperature model source term cutoff velocity
 
-  vel_es2 = 50.0_wp
+  thermo%vel_es2 = 50.0_wp
 
 ! default value for accounting extended coulombic exclusion
 ! (not accounted)
@@ -1285,12 +1283,12 @@ Subroutine read_control                                &
               Call get_word(record,word)
               thermo%chi_es  = Abs(word_2_real(word))
               Call get_word(record,word)
-              vel_es2 = Abs(word_2_real(word))
+              thermo%vel_es2 = Abs(word_2_real(word))
 
               Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
               Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',thermo%chi_ep
               Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',thermo%chi_es
-              Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ',vel_es2
+              Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1) ',thermo%vel_es2
               Call info(messages,4,.true.)
 
               If (lens) Call error(414)
@@ -2317,7 +2315,7 @@ Subroutine read_control                                &
           Write(message,'(a,1p,e12.4)') 'elec. stopping power (eV/nm) ',dEdX
           Call info(message,.true.)
 
-        Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'sigma') Then
+        Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'thermo%sigma') Then
 
         ! gaussian spatial distribution for initial energy deposition into
         ! electronic system
@@ -2328,7 +2326,7 @@ Subroutine read_control                                &
           Call get_word(record,word)
           sigmax = word_2_real(word)
           Write(messages(1),'(a)') 'initial gaussian spatial energy deposition in electronic system'
-          Write(messages(2),'(a,1p,e12.4)') 'sigma of distribution (nm) ',sig
+          Write(messages(2),'(a,1p,e12.4)') 'thermo%sigma of distribution (nm) ',sig
           Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (nm) ',sigmax*sig
           Call info(messages,3,.true.)
 
@@ -2380,7 +2378,7 @@ Subroutine read_control                                &
           Call get_word(record,word)
           tcdepo = word_2_real(word)
           Write(messages(1),'(a)') 'gaussian temporal energy deposition in electronic system'
-          Write(messages(2),'(a,1p,e12.4)') 'sigma of distribution (ps) ',tdepo
+          Write(messages(2),'(a,1p,e12.4)') 'thermo%sigma of distribution (ps) ',tdepo
           Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (ps) ',2.0_wp*tcdepo*tdepo
           Call info(messages,3,.true.)
 
@@ -2995,7 +2993,7 @@ Subroutine read_control                                &
       Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
       Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',thermo%chi_ep
       Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',thermo%chi_es
-      Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',vel_es2
+      Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',thermo%vel_es2
       Call info(messages,4,.true.)
     Else
       Call info('Ensemble : NVE (Microcanonical)',.true.)
@@ -3019,7 +3017,7 @@ Subroutine read_control                                &
     Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
     Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',thermo%chi_ep
     Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',thermo%chi_es
-    Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',vel_es2
+    Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',thermo%vel_es2
     Call info(messages,4,.true.)
 
     If (ttmthvel) Then
@@ -3428,7 +3426,7 @@ Subroutine read_control                                &
      Call info(message,.true.)
   End If
 
-  vel_es2 = vel_es2 * vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
+  thermo%vel_es2 = thermo%vel_es2 * thermo%vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
   amin = Max (amin, 1)        ! minimum number of atoms for ttm ionic temperature cell
 
 !!! ERROR CHECKS !!!

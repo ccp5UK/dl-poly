@@ -1535,7 +1535,7 @@ Contains
 
   Subroutine nvt_l2_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,vel_es2,  &
+             nstep,  &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
@@ -1568,7 +1568,6 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
     Integer,           Intent( In    ) :: nstep
-    Real( Kind = wp ), Intent( In    ) :: vel_es2
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
@@ -1799,7 +1798,7 @@ Contains
          ! one-way electron-phonon coupling
            Do i=1,natms
               velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
-              lvel = (velsq>vel_es2 .and. thermo%chi_es>zero_plus)
+              lvel = (velsq>thermo%vel_es2 .and. thermo%chi_es>zero_plus)
               If (weight(i) > 1.0e-6_wp) Then
                  ! check for active cell and electronic temperature is
                  ! higher than ionic tmeperature: if not, switch off thermostat
@@ -1868,7 +1867,7 @@ Contains
 
            Do i=1,natms
               velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
-              lvel = (velsq>vel_es2 .and. thermo%chi_es>zero_plus)
+              lvel = (velsq>thermo%vel_es2 .and. thermo%chi_es>zero_plus)
               If (weight(i) > 1.0e-6_wp) Then
                  ! check for active cell: if not, switch off thermostat
                  ia = Floor((xxx(i)+zerocell(1))/delx) + 1
@@ -1941,7 +1940,7 @@ Contains
 
          Do i=1,natms
             velsq = vxx(i)*vxx(i)+vyy(i)*vyy(i)+vzz(i)*vzz(i)
-            lvel = (velsq>vel_es2 .and. thermo%chi_es>zero_plus)
+            lvel = (velsq>thermo%vel_es2 .and. thermo%chi_es>zero_plus)
             If (weight(i) > 1.0e-6_wp) Then
 
   ! Half-kick velocity

@@ -244,7 +244,7 @@ Contains
 
   End Subroutine depoevolve
 
-  Subroutine ttm_ion_temperature(vel_es2,thermo,comm)
+  Subroutine ttm_ion_temperature(thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -258,7 +258,6 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real ( Kind = wp ), Intent ( In ) :: vel_es2
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type ( comms_type ), Intent( InOut) :: comm
   Integer :: ia,ja,ka,ijk,ijk1,ijk2,i,ii,jj,kk
@@ -449,7 +448,7 @@ Contains
 
     nat(2*ijk-1) = nat(2*ijk-1) + 1
 
-    If ((velsq > vel_es2) .and. (thermo%chi_es > zero_plus)) Then
+    If ((velsq > thermo%vel_es2) .and. (thermo%chi_es > zero_plus)) Then
       asource(ijk) = asource(ijk) + tmp*velsq
       nat(2*ijk) = nat(2*ijk) + 1
     End If

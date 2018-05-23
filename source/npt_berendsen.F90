@@ -26,8 +26,6 @@ Contains
 
   Subroutine npt_b0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,                   &
-             chip,eta,               &
              virtot,                            &
              strkin,engke,                      &
              mxshak,tolnce,                     &
@@ -55,11 +53,6 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma
-    Real( Kind = wp ),  Intent(   Out ) :: chit
-
-    Real( Kind = wp ),  Intent(   Out ) :: chip,eta(1:9)
-
     Real( Kind = wp ),  Intent( In    ) :: virtot
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
@@ -71,7 +64,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -219,7 +212,7 @@ Contains
           strpmf=0.0_wp
        End If
 
-  ! iterate forces, vircon and chip
+  ! iterate forces, vircon and thermo%chi_p
 
        Do iter=1,mxiter
 
@@ -230,8 +223,8 @@ Contains
 
   ! pressure control variable
 
-          chip = 1.0_wp + beta*tstep*(pr-thermo%press)/thermo%tau_p
-          scale = chip**(1.0_wp/3.0_wp)
+          thermo%chi_p = 1.0_wp + beta*tstep*(pr-thermo%press)/thermo%tau_p
+          scale = thermo%chi_p**(1.0_wp/3.0_wp)
 
   ! update velocity and position
 
@@ -424,9 +417,9 @@ Contains
 
        If (megcon == 0 .and. megpmf == 0) cell=scale*czero
 
-  ! update volume: chip=scale^3
+  ! update volume: thermo%chi_p=scale^3
 
-       volm=chip*volm
+       volm=thermo%chi_p*volm
 
   ! adjust long range corrections and number density
 
@@ -440,11 +433,11 @@ Contains
   ! construct a 'mock' scaling tensor for xscale
 
        Do i=2,8
-          eta(i)=0.0_wp
+          thermo%eta(i)=0.0_wp
        End Do
-       eta(1)=scale
-       eta(5)=scale
-       eta(9)=scale
+       thermo%eta(1)=scale
+       thermo%eta(5)=scale
+       thermo%eta(9)=scale
 
   ! second pass of velocity verlet algorithm
 
@@ -487,7 +480,7 @@ Contains
 
   ! integrate and apply nvt_b0_scl thermostat - full step
 
-       Call nvt_b0_scl(1,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
+       Call nvt_b0_scl(1,tstep,vxx,vyy,vzz,strkin,engke,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -503,7 +496,7 @@ Contains
 
   ! update kinetic energy and stress
 
-       Call nvt_b0_scl(0,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
+       Call nvt_b0_scl(0,tstep,vxx,vyy,vzz,strkin,engke,thermo,comm)
 
     End If
 
@@ -531,8 +524,6 @@ Contains
 
   Subroutine npt_b1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,                   &
-             chip,eta,               &
              virtot,                            &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
@@ -562,11 +553,6 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma
-    Real( Kind = wp ),  Intent(   Out ) :: chit
-
-    Real( Kind = wp ),  Intent(   Out ) :: chip,eta(1:9)
-
     Real( Kind = wp ),  Intent( In    ) :: virtot
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
@@ -580,7 +566,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -897,7 +883,7 @@ Contains
           End If
        End Do
 
-  ! iterate forces, vircon and chip
+  ! iterate forces, vircon and thermo%chi_p
 
        Do iter=1,mxiter
 
@@ -908,8 +894,8 @@ Contains
 
   ! pressure control variable
 
-          chip = 1.0_wp + beta*tstep*(pr-thermo%press)/thermo%tau_p
-          scale = chip**(1.0_wp/3.0_wp)
+          thermo%chi_p = 1.0_wp + beta*tstep*(pr-thermo%press)/thermo%tau_p
+          scale = thermo%chi_p**(1.0_wp/3.0_wp)
 
   ! update cell parameters: isotropic
 
@@ -1226,9 +1212,9 @@ Contains
           End If
        End If
 
-  ! update volume: chip=scale^3
+  ! update volume: thermo%chi_p=scale^3
 
-       volm=chip*volm
+       volm=thermo%chi_p*volm
 
   ! adjust long range corrections and number density
 
@@ -1242,11 +1228,11 @@ Contains
   ! construct a 'mock' scaling tensor for xscale
 
        Do i=2,8
-          eta(i)=0.0_wp
+          thermo%eta(i)=0.0_wp
        End Do
-       eta(1)=scale
-       eta(5)=scale
-       eta(9)=scale
+       thermo%eta(1)=scale
+       thermo%eta(5)=scale
+       thermo%eta(9)=scale
 
   ! second pass of velocity verlet algorithm
 
@@ -1428,9 +1414,9 @@ Contains
   ! integrate and apply nvt_b1_scl thermostat - full step
 
        Call nvt_b1_scl &
-             (1,tstep,sigma,vxx,vyy,vzz,           &
+             (1,tstep,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
+             strkin,strknf,strknt,engke,engrot,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -1470,9 +1456,9 @@ Contains
   ! update kinetic energy and stress
 
        Call nvt_b1_scl &
-             (0,tstep,sigma,vxx,vyy,vzz,           &
+             (0,tstep,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
+             strkin,strknf,strknt,engke,engrot,thermo,comm)
 
     End If
 

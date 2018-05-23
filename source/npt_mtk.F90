@@ -27,8 +27,6 @@ Contains
 
   Subroutine npt_m0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,cint,              &
-             chip,eta,               &
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
@@ -59,12 +57,6 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma
-    Real( Kind = wp ),  Intent( InOut ) :: chit,cint
-
-    Real( Kind = wp ),  Intent( InOut ) :: chip
-    Real( Kind = wp ),  Intent(   Out ) :: eta(1:9)
-
     Integer(Kind=li),   Intent( In    ) :: degfre
     Real( Kind = wp ),  Intent( In    ) :: virtot
 
@@ -79,7 +71,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -154,10 +146,10 @@ Contains
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*sigma*thermo%tau_t**2
-       tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-       ceng  = 2.0_wp*sigma + boltz*tmp
-       pmass = (2.0_wp*sigma + 3.0_wp*boltz*tmp)*thermo%tau_p**2
+       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
+       ceng  = 2.0_wp*thermo%sigma + boltz*tmp
+       pmass = (2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp)*thermo%tau_p**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -214,9 +206,9 @@ Contains
   ! store current integration variables
 
        vzero=volm
-       chit0=chit
-       cint0=cint
-       chip0=chip
+       chit0=thermo%chi_t
+       cint0=thermo%cint
+       chip0=thermo%chi_p
 
   100  Continue
 
@@ -239,8 +231,8 @@ Contains
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
           Call nvt_h0_scl &
-             (qstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! constraint+pmf virial and stress
 
@@ -250,14 +242,14 @@ Contains
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
           Call npt_h0_scl &
-             (1,hstep,degfre,pmass,chit,volm,vir,virtot, &
-             vxx,vyy,vzz,chip,engke,thermo)
+             (1,hstep,degfre,pmass,thermo%chi_t,volm,vir,virtot, &
+             vxx,vyy,vzz,engke,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
           Call nvt_h0_scl &
-             (qstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! update velocities
 
@@ -272,7 +264,7 @@ Contains
 
   ! update volume
 
-          volm=volm*Exp(3.0_wp*tstep*chip)
+          volm=volm*Exp(3.0_wp*tstep*thermo%chi_p)
 
   ! scale cell vectors - isotropic
 
@@ -281,7 +273,7 @@ Contains
 
   ! update positions
 
-          scale=Exp(tstep*chip)
+          scale=Exp(tstep*thermo%chi_p)
           Do i=1,natms
              If (weight(i) > 1.0e-6_wp) Then
                 xxx(i)=scale*xxt(i)+tstep*vxx(i)
@@ -398,9 +390,9 @@ Contains
 
           If (iter < mxiter) Then
              volm=vzero
-             chit=chit0
-             cint=cint0
-             chip=chip0
+             thermo%chi_t=chit0
+             thermo%cint=cint0
+             thermo%chi_p=chip0
 
              Do i=1,natms
                 vxx(i) = vxt(i)
@@ -468,9 +460,9 @@ Contains
   ! restore initial conditions
 
              volm=vzero
-             chit=chit0
-             cint=cint0
-             chip=chip0
+             thermo%chi_t=chit0
+             thermo%cint=cint0
+             thermo%chi_p=chip0
 
              Do i=1,natms
                 vxx(i) = vxt(i)
@@ -535,8 +527,8 @@ Contains
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
        Call nvt_h0_scl &
-             (qstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! constraint+pmf virial and stress
 
@@ -546,18 +538,18 @@ Contains
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
        Call npt_h0_scl &
-             (1,hstep,degfre,pmass,chit,volm,vir,virtot, &
-             vxx,vyy,vzz,chip,engke,thermo)
+             (1,hstep,degfre,pmass,thermo%chi_t,volm,vir,virtot, &
+             vxx,vyy,vzz,engke,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
        Call nvt_h0_scl &
-             (qstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip**2 + ceng*cint + thermo%press*volm
+       consv = 0.5_wp*qmass*thermo%chi_t**2 + 0.5_wp*pmass*thermo%chi_p**2 + ceng*thermo%cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -581,11 +573,11 @@ Contains
   ! construct a 'mock' scaling tensor for xscale
 
     Do i=2,8
-       eta(i)=0.0_wp
+       thermo%eta(i)=0.0_wp
     End Do
-    eta(1)=chip
-    eta(5)=chip
-    eta(9)=chip
+    thermo%eta(1)=thermo%chi_p
+    thermo%eta(5)=thermo%chi_p
+    thermo%eta(9)=thermo%chi_p
 
     If (megcon > 0 .or. megpmf > 0) Then
        Deallocate (lstitr,           Stat=fail(1))
@@ -610,8 +602,6 @@ Contains
 
   Subroutine npt_m1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,cint,              &
-             chip,eta,               &
              degfre,degrot,virtot,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
@@ -645,12 +635,6 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma
-    Real( Kind = wp ),  Intent( InOut ) :: chit,cint
-
-    Real( Kind = wp ),  Intent( InOut ) :: chip
-    Real( Kind = wp ),  Intent(   Out ) :: eta(1:9)
-
     Integer(Kind=li),   Intent( In    ) :: degfre,degrot
     Real( Kind = wp ),  Intent( In    ) :: virtot
 
@@ -668,7 +652,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true. , &
@@ -761,9 +745,9 @@ Contains
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*sigma*thermo%tau_t**2
-       tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-       ceng  = 2.0_wp*sigma + boltz*tmp
+       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
+       ceng  = 2.0_wp*thermo%sigma + boltz*tmp
        pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*tmp*thermo%tau_p**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
@@ -878,9 +862,9 @@ Contains
 
        czero=cell
        vzero=volm
-       chit0=chit
-       cint0=cint
-       chip0=chip
+       chit0=thermo%chi_t
+       cint0=thermo%cint
+       chip0=thermo%chi_p
 
   100  Continue
 
@@ -903,11 +887,11 @@ Contains
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
           Call nvt_h1_scl &
-             (qstep,ceng,qmass,pmass,chip, &
+             (qstep,ceng,qmass,pmass,thermo%chi_p, &
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot,comm)
+             engke,engrot,thermo,comm)
 
   ! constraint+pmf virial and stress
 
@@ -917,17 +901,17 @@ Contains
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
           Call npt_h1_scl &
-             (1,hstep,degfre,degrot,pmass,chit,volm,vir,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke,thermo)
+             (1,hstep,degfre,degrot,pmass,thermo%chi_t,volm,vir,virtot,vircom, &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,engke,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
           Call nvt_h1_scl &
-             (qstep,ceng,qmass,pmass,chip, &
+             (qstep,ceng,qmass,pmass,thermo%chi_p, &
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot,comm)
+             engke,engrot,thermo,comm)
 
   ! update velocity of FPs
 
@@ -944,7 +928,7 @@ Contains
 
   ! update volume
 
-          volm=volm*Exp(3.0_wp*tstep*chip)
+          volm=volm*Exp(3.0_wp*tstep*thermo%chi_p)
 
   ! scale cell vectors - isotropic
 
@@ -953,7 +937,7 @@ Contains
 
   ! update position of FPs
 
-          scale=Exp(tstep*chip)
+          scale=Exp(tstep*thermo%chi_p)
           Do j=1,nfree
              i=lstfre(j)
 
@@ -1076,9 +1060,9 @@ Contains
 
           If (iter < mxiter) Then
              volm=vzero
-             chit=chit0
-             cint=cint0
-             chip=chip0
+             thermo%chi_t=chit0
+             thermo%cint=cint0
+             thermo%chi_p=chip0
 
              Do j=1,nfree
                 i=lstfre(j)
@@ -1357,9 +1341,9 @@ Contains
   ! restore initial conditions
 
              volm=vzero
-             chit=chit0
-             cint=cint0
-             chip=chip0
+             thermo%chi_t=chit0
+             thermo%cint=cint0
+             thermo%chi_p=chip0
 
              Do i=1,matms
                 vxx(i) = vxt(i)
@@ -1577,11 +1561,11 @@ Contains
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
        Call nvt_h1_scl &
-             (qstep,ceng,qmass,pmass,chip, &
+             (qstep,ceng,qmass,pmass,thermo%chi_p, &
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot,comm)
+             engke,engrot,thermo,comm)
 
   ! constraint+pmf virial and stress
 
@@ -1591,21 +1575,21 @@ Contains
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
        Call npt_h1_scl &
-             (1,hstep,degfre,degrot,pmass,chit,volm,vir,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,chip,engke,thermo)
+             (1,hstep,degfre,degrot,pmass,thermo%chi_t,volm,vir,virtot,vircom, &
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,engke,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
        Call nvt_h1_scl &
-             (qstep,ceng,qmass,pmass,chip, &
+             (qstep,ceng,qmass,pmass,thermo%chi_p, &
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot,comm)
+             engke,engrot,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip**2 + ceng*cint + thermo%press*volm
+       consv = 0.5_wp*qmass*thermo%chi_t**2 + 0.5_wp*pmass*thermo%chi_p**2 + ceng*thermo%cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -1655,11 +1639,11 @@ Contains
   ! construct a 'mock' scaling tensor for xscale
 
     Do i=2,8
-       eta(i)=0.0_wp
+       thermo%eta(i)=0.0_wp
     End Do
-    eta(1)=chip
-    eta(5)=chip
-    eta(9)=chip
+    thermo%eta(1)=thermo%chi_p
+    thermo%eta(5)=thermo%chi_p
+    thermo%eta(9)=thermo%chi_p
 
     If (megcon > 0 .or. megpmf > 0) Then
        Deallocate (lstitr,            Stat=fail( 1))

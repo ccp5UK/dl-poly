@@ -232,8 +232,7 @@ program dl_poly
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),min_tol(1:2),                 &
     tolnce,quattol,rdef,rrsd,                  &
-    pdplnc,sigma,         &
-    chit,vel_es2,eta(1:9),chip,cint
+    pdplnc
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(thermostat_type) :: thermo
@@ -381,7 +380,6 @@ program dl_poly
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     keymin,nstmin,min_tol,                      &
     keyens,&
-    vel_es2,  &
     fmax,nstbpo,keyfce,epsq,             &
     rlx_tol,mxshak,tolnce,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
@@ -482,7 +480,7 @@ program dl_poly
 
   Call system_init                                                 &
     (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
-    time,tmst,nstep,tstep,chit,cint,chip,eta,elrc,virlrc,elrcm,vlrcm,stats,devel,green,comm)
+    time,tmst,nstep,tstep,elrc,virlrc,elrcm,vlrcm,stats,devel,green,thermo,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -552,7 +550,7 @@ program dl_poly
     atmfre,atmfrz,            &
     megshl,megcon,megpmf,     &
     megrgd,degtra,degrot,     &
-    degfre,degshl,sigma,stats%engrot,thermo,comm)
+    degfre,degshl,stats%engrot,thermo,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -638,12 +636,12 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,stats)
+    Call w_md_vv(mxatdm,stats,thermo)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,stats)
+      Call w_replay_historf(mxatdm,stats,thermo)
     Else
-      Call w_replay_history(mxatdm,stats)
+      Call w_replay_history(mxatdm,stats,thermo)
     End If
   End If
 
@@ -690,7 +688,7 @@ program dl_poly
   ! (final)
 
   If (l_ttm) Then
-    Call ttm_ion_temperature (vel_es2,thermo,comm)
+    Call ttm_ion_temperature (thermo,comm)
     Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep, ttmstats,comm)
     Call peakProfilerElec('LATS_E', nstep, ttmtraj,comm)
     Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats,comm)
@@ -702,7 +700,7 @@ program dl_poly
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
       (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-      chit,cint,chip,eta,stats,devel,green,comm)
+      stats,devel,green,thermo,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -780,9 +778,10 @@ Contains
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw,stat)
+  Subroutine w_integrate_vv(isw,stat,thermo)
     Integer, Intent( In    ) :: isw ! used for vv stage control
     Type(stats_type), Intent(InOut) :: stat
+    Type(thermostat_type), Intent(InOut) :: thermo
 
     Include 'w_integrate_vv.F90'
   End Subroutine w_integrate_vv
@@ -807,16 +806,18 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,stat)
+  Subroutine w_md_vv(mxatdm_,stat,thermo)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
+    Type(thermostat_type), Intent(InOut) :: thermo
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,stat)
+  Subroutine w_replay_history(mxatdm_,stat,thermo)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_ 
-
     Type(stats_type), Intent(InOut) :: stat
+    Type(thermostat_type), Intent(InOut) :: thermo
+
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer( Kind = wi )           :: nstpe,nstph ! nstep replacements
@@ -825,9 +826,11 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,stat)
+  Subroutine w_replay_historf(mxatdm_,stat,thermo)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_ 
     Type(stats_type), Intent(InOut) :: stat
+    Type(thermostat_type), Intent(InOut) :: thermo
+
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements

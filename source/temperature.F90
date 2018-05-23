@@ -36,7 +36,7 @@ Contains
              atmfre,atmfrz,            &
              megshl,megcon,megpmf,     &
              megrgd,degtra,degrot,     &
-             degfre,degshl,sigma,engrot,thermo,comm)
+             degfre,degshl,engrot,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -60,7 +60,7 @@ Contains
     Integer(Kind=li),   Intent( InOut ) :: degtra,degrot
 
     Integer(Kind=li),   Intent(   Out ) :: degfre,degshl
-    Real( Kind = wp ),  Intent(   Out ) :: sigma,engrot
+    Real( Kind = wp ),  Intent(   Out ) :: engrot
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -156,7 +156,7 @@ Contains
 
   ! desired kinetic energy
 
-    sigma=0.5_wp*Real(degfre,wp)*boltz*thermo%temp
+    thermo%sigma=0.5_wp*Real(degfre,wp)*boltz*thermo%temp
 
   ! avoid user defined 0K field to break up anything
 
@@ -169,7 +169,7 @@ Contains
     Else
        engk=getkin(vxx,vyy,vzz,comm)/Real(Max(1_li,degfre),wp)
     End If
-    If (sigma > 1.0e-6_wp .and. engk < 1.0e-6_wp .and. (keyres /= 0 .and. nstrun /= 0)) Then
+    If (thermo%sigma > 1.0e-6_wp .and. engk < 1.0e-6_wp .and. (keyres /= 0 .and. nstrun /= 0)) Then
        Call warning('0K velocity field detected in CONFIG with a restart at non 0K temperature in CONTROL',.true.)
        Call info('*** clean start enforced ***',.true.)
 
@@ -531,7 +531,7 @@ Contains
 
        If (megshl > 0 .and. keyshl == 1 .and. no_min_0) Then
           Do
-             Call scale_temperature(sigma,degtra,degrot,degfre,comm)
+             Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
              Call core_shell_quench(safe,thermo%temp,comm)
              If (megcon > 0) Then
                Call constraints_quench(mxshak,tolnce,comm)
@@ -545,7 +545,7 @@ Contains
              If (safe) Exit
           End Do
        Else
-          Call scale_temperature(sigma,degtra,degrot,degfre,comm)
+          Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
        End If
 
     End If

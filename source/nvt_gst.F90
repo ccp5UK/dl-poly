@@ -30,7 +30,6 @@ Contains
   Subroutine nvt_g0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,degfre,                 &
-             sigma,chit,cint,         &
              consv,                             &
              strkin,engke,                      &
              mxshak,tolnce,                     &
@@ -64,9 +63,6 @@ Contains
     Integer,           Intent( In    ) :: nstep
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: sigma
-    Real( Kind = wp ), Intent( InOut ) :: chit,cint
-
     Real( Kind = wp ), Intent(   Out ) :: consv
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
@@ -76,7 +72,7 @@ Contains
     Integer,           Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -130,8 +126,8 @@ Contains
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*sigma*thermo%tau_t**2
-       ceng  = 2.0_wp*sigma
+       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       ceng  = 2.0_wp*thermo%sigma
 
   ! set number of constraint+pmf shake iterations
 
@@ -186,8 +182,8 @@ Contains
 
   ! store initial values of integration variables
 
-       chitdr=chit
-       cintdr=cint
+       chitdr=thermo%chi_t
+       cintdr=thermo%cint
 
   100  Continue
 
@@ -209,7 +205,7 @@ Contains
 
        Call nvt_g0_scl &
              (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
-             vxx,vyy,vzz,chit,cint,engke,thermo,comm)
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! update velocity and position
 
@@ -378,8 +374,8 @@ Contains
 
   ! restore initial conditions
 
-             chit=chitdr
-             cint=cintdr
+             thermo%chi_t=chitdr
+             thermo%cint=cintdr
 
              Do i=1,natms
                 vxx(i) = vxt(i)
@@ -436,11 +432,11 @@ Contains
 
        Call nvt_g0_scl &
              (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
-             vxx,vyy,vzz,chit,cint,engke,thermo,comm)
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + ceng*cint
+       consv = 0.5_wp*qmass*thermo%chi_t**2 + ceng*thermo%cint
 
   ! kinetic contribution to stress tensor
 
@@ -473,7 +469,6 @@ Contains
   Subroutine nvt_g1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,degfre,                 &
-             sigma,chit,cint,         &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
@@ -509,9 +504,6 @@ Contains
     Integer,           Intent( In    ) :: nstep
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: sigma
-    Real( Kind = wp ), Intent( InOut ) :: chit,cint
-
     Real( Kind = wp ), Intent(   Out ) :: consv
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
@@ -524,7 +516,7 @@ Contains
                                           strpmf(1:9),virpmf
 
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -597,8 +589,8 @@ Contains
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*sigma*thermo%tau_t**2
-       ceng  = 2.0_wp*sigma
+       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       ceng  = 2.0_wp*thermo%sigma
 
   ! set number of constraint+pmf shake iterations
 
@@ -709,8 +701,8 @@ Contains
 
   ! store initial values of integration variables
 
-       chitdr=chit
-       cintdr=cint
+       chitdr=thermo%chi_t
+       cintdr=thermo%cint
 
   100  Continue
 
@@ -735,7 +727,7 @@ Contains
              vxx,vyy,vzz,                                                &
              rgdvxx,rgdvyy,rgdvzz,                                       &
              rgdoxx,rgdoyy,rgdozz,                                       &
-             chit,cint,engke,engrot,thermo,comm)
+             engke,engrot,thermo,comm)
 
   ! update velocity and position of FPs
 
@@ -1073,8 +1065,8 @@ Contains
 
   ! restore initial conditions
 
-             chit=chitdr
-             cint=cintdr
+             thermo%chi_t=chitdr
+             thermo%cint=cintdr
 
              Do i=1,matms
                 vxx(i) = vxt(i)
@@ -1287,11 +1279,11 @@ Contains
              vxx,vyy,vzz,                                                &
              rgdvxx,rgdvyy,rgdvzz,                                       &
              rgdoxx,rgdoyy,rgdozz,                                       &
-             chit,cint,engke,engrot,thermo,comm)
+             engke,engrot,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + ceng*cint
+       consv = 0.5_wp*qmass*thermo%chi_t**2 + ceng*thermo%cint
 
   ! update kinetic energy and stress
 
@@ -1331,7 +1323,7 @@ Contains
 
   Subroutine nvt_g0_scl &
              (tstep,degfre,isw,nstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,chit,cint,engke,thermo,comm)
+             vxx,vyy,vzz,engke,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1351,9 +1343,8 @@ Contains
     Integer(Kind=li),                         Intent( In    ) :: degfre
     Integer,                                  Intent( In    ) :: isw,nstep
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
-    Real( Kind = wp ),                        Intent( InOut ) :: chit,cint
     Real( Kind = wp ),                        Intent(   Out ) :: engke
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: i
@@ -1366,9 +1357,9 @@ Contains
     qstep  = 0.5_wp*hstep
     factor = pmass*chip**2
 
-  ! update thermo%chi(=cint) to 1/4*tstep
+  ! update thermo%chi(=thermo%cint) to 1/4*tstep
 
-    cint=cint + qstep*chit
+    thermo%cint=thermo%cint + qstep*thermo%chi_t
 
   ! calculate kinetic energy
 
@@ -1381,18 +1372,18 @@ Contains
 
     Call box_mueller_saru2(Int(degfre/3_li),nstep-1,2*isw+1,r_0,.true.)
 
-  ! update chit to 1/2*tstep
+  ! update thermo%chi_t to 1/2*tstep
 
-    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
+    thermo%chi_t=fex*thermo%chi_t + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
          hstep*(2.0_wp*engke + factor - ceng)/qmass
 
-  ! update thermo%chi(=cint) to 3/4*tstep
+  ! update thermo%chi(=thermo%cint) to 3/4*tstep
 
-    cint=cint + hstep*chit
+    thermo%cint=thermo%cint + hstep*thermo%chi_t
 
   ! thermostat the velocities to 1*tstep
 
-    scale=Exp(-tstep*chit)
+    scale=Exp(-tstep*thermo%chi_t)
     Do i=1,natms
        vxx(i)=scale*vxx(i)
        vyy(i)=scale*vyy(i)
@@ -1408,14 +1399,14 @@ Contains
 
     Call box_mueller_saru2(Int(degfre/3_li),nstep-1,2*isw+2,r_0,.true.)
 
-  ! update chit to full (2/2)*tstep
+  ! update thermo%chi_t to full (2/2)*tstep
 
-    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
+    thermo%chi_t=fex*thermo%chi_t + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
          hstep*(2.0_wp*engke + factor - ceng)/qmass
 
-  ! update thermo%chi(=cint) to 4/4*tstep
+  ! update thermo%chi(=thermo%cint) to 4/4*tstep
 
-    cint=cint + qstep*chit
+    thermo%cint=thermo%cint + qstep*thermo%chi_t
 
   End Subroutine nvt_g0_scl
 
@@ -1424,7 +1415,7 @@ Contains
              vxx,vyy,vzz,                                             &
              rgdvxx,rgdvyy,rgdvzz,                                    &
              rgdoxx,rgdoyy,rgdozz,                                    &
-             chit,cint,engke,engrot,thermo,comm)
+             engke,engrot,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1446,9 +1437,8 @@ Contains
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:mxrgd ),  Intent( InOut ) :: rgdvxx,rgdvyy,rgdvzz
     Real( Kind = wp ), Dimension( 1:mxrgd ),  Intent( InOut ) :: rgdoxx,rgdoyy,rgdozz
-    Real( Kind = wp ),                        Intent( InOut ) :: chit,cint
     Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ),                       Intent( InOut ) :: comm
 
     Integer           :: i,j,irgd
@@ -1461,9 +1451,9 @@ Contains
     qstep  = 0.5_wp*hstep
     factor = pmass*chip**2
 
-  ! update thermo%chi(=cint) to 1/4*tstep
+  ! update thermo%chi(=thermo%cint) to 1/4*tstep
 
-    cint=cint + qstep*chit
+    thermo%cint=thermo%cint + qstep*thermo%chi_t
 
   ! calculate kinetic energy contributions and rotational energy
 
@@ -1481,18 +1471,18 @@ Contains
 
     Call box_mueller_saru2(Int(degfre/3_li),nstep-1,2*isw+1,r_0,.true.)
 
-  ! update chit to 1/2*tstep
+  ! update thermo%chi_t to 1/2*tstep
 
-    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
+    thermo%chi_t=fex*thermo%chi_t + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
          hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
-  ! update thermo%chi(=cint) to 3/4*tstep
+  ! update thermo%chi(=thermo%cint) to 3/4*tstep
 
-    cint=cint + hstep*chit
+    thermo%cint=thermo%cint + hstep*thermo%chi_t
 
   ! thermostat the velocities to 1*tstep
 
-    scale=Exp(-tstep*chit)
+    scale=Exp(-tstep*thermo%chi_t)
     Do j=1,nfree
        i=lstfre(j)
 
@@ -1521,14 +1511,14 @@ Contains
 
     Call box_mueller_saru2(Int(degfre/3_li),nstep-1,2*isw+2,r_0,.true.)
 
-  ! update chit to full (2/2)*tstep
+  ! update thermo%chi_t to full (2/2)*tstep
 
-    chit=fex*chit + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
+    thermo%chi_t=fex*thermo%chi_t + Sqrt((1.0_wp-fex**2) * boltz*thermo%temp/qmass)*r_0 + &
          hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
-  ! update thermo%chi(=cint) to 4/4*tstep
+  ! update thermo%chi(=thermo%cint) to 4/4*tstep
 
-    cint=cint + qstep*chit
+    thermo%cint=thermo%cint + qstep*thermo%chi_t
 
   End Subroutine nvt_g1_scl
 End Module nvt_gst

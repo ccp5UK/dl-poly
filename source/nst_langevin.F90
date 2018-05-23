@@ -31,8 +31,7 @@ Contains
 
   Subroutine nst_l0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,                         &
-             nstep,chip,eta,   &
+             nstep,   &
              degfre,stress,             &
              consv,                             &
              strkin,engke,                      &
@@ -70,11 +69,7 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma
-
     Integer,            Intent( In    ) :: nstep
-    Real( Kind = wp ),  Intent(   Out ) :: chip
-    Real( Kind = wp ),  Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),   Intent( In    ) :: degfre
     Real( Kind = wp ),  Intent( In    ) :: stress(1:9)
@@ -90,7 +85,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -175,15 +170,15 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for thermo%iso>=1
+  ! Sort thermo%eta for thermo%iso>=1
   ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
        If      (thermo%iso == 1) Then
-          eta(1:8) = 0.0_wp
+          thermo%eta(1:8) = 0.0_wp
        Else If (thermo%iso >  1) Then
-          eta(2:4) = 0.0_wp
-          eta(6:8) = 0.0_wp
+          thermo%eta(2:4) = 0.0_wp
+          thermo%eta(6:8) = 0.0_wp
 
           Call dcell(cell,celprp)
           h_z=celprp(9)
@@ -191,8 +186,8 @@ Contains
 
   ! inertia parameter for barostat
 
-       temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
-       pmass = ((2.0_wp*sigma + 3.0_wp*boltz*temp)/3.0_wp) / (2.0_wp*pi*thermo%tai)**2
+       temp  = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
+       pmass = ((2.0_wp*thermo%sigma + 3.0_wp*boltz*temp)/3.0_wp) / (2.0_wp*pi*thermo%tai)**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -257,7 +252,7 @@ Contains
 
        cell0=cell
        vzero=volm
-       eta0 =eta
+       eta0 =thermo%eta
        engke0=engke
 
   100  Continue
@@ -300,7 +295,7 @@ Contains
           Call nst_h0_scl &
              (1,hstep,degfre,pmass,thermo%tai,volm, &
              h_z,str1,stress,       &
-             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
+             vxx,vyy,vzz,strkin,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -323,20 +318,20 @@ Contains
              End If
           End Do
 
-  ! scale cell vectors: second order taylor expansion of Exp(tstep*eta)
+  ! scale cell vectors: second order taylor expansion of Exp(tstep*thermo%eta)
 
-          aaa=tstep*eta
+          aaa=tstep*thermo%eta
           Call mat_mul(aaa,aaa,bbb)
           aaa=uni1+aaa+0.5_wp*bbb
           Call mat_mul(aaa,cell0,cell)
 
-  ! update volume and construct a 'mock' chip=Tr[eta]/3
+  ! update volume and construct a 'mock' thermo%chi_p=Tr[thermo%eta]/3
 
-          chip = eta(1)+eta(5)+eta(9)
-          volm = volm*Exp(tstep*chip)
-          chip = chip / 3.0_wp
+          thermo%chi_p = thermo%eta(1)+thermo%eta(5)+thermo%eta(9)
+          volm = volm*Exp(tstep*thermo%chi_p)
+          thermo%chi_p = thermo%chi_p / 3.0_wp
 
-  ! update positions: second order taylor expansion of Exp(tstep*eta)
+  ! update positions: second order taylor expansion of Exp(tstep*thermo%eta)
 
           Do i=1,natms
              If (weight(i) > 1.0e-6_wp) Then
@@ -454,7 +449,7 @@ Contains
 
           If (iter < mxiter) Then
              volm=vzero
-             eta =eta0
+             thermo%eta =eta0
              engke=engke0
 
              Do i=1,natms
@@ -537,7 +532,7 @@ Contains
   ! restore initial conditions
 
              volm=vzero
-             eta =eta0
+             thermo%eta =eta0
              engke=engke0
 
              Do i=1,natms
@@ -649,7 +644,7 @@ Contains
        Call nst_h0_scl &
              (1,hstep,degfre,pmass,thermo%tai,volm, &
              h_z,str1,stress,       &
-             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
+             vxx,vyy,vzz,strkin,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -660,9 +655,10 @@ Contains
           vzz(i)=scale*vzz(i)
        End Do
 
-  ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
+  ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
-       tmp = ( eta(1)**2 + 2*eta(2)**2 + 2*eta(3)**2 + eta(5)**2 + 2*eta(6)**2 + eta(9)**2 )
+       tmp = ( thermo%eta(1)**2 + 2*thermo%eta(2)**2 + 2*thermo%eta(3)**2 + &
+         thermo%eta(5)**2 + 2*thermo%eta(6)**2 + thermo%eta(9)**2 )
 
   ! conserved quantity less kinetic and potential energy terms
 
@@ -711,8 +707,7 @@ Contains
 
   Subroutine nst_l1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,                         &
-             nstep,chip,eta,   &
+             nstep,   &
              degfre,degrot,stress,      &
              strkin,strknf,strknt,engke,engrot, &
              consv,                             &
@@ -752,11 +747,7 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma
-
     Integer,            Intent( In    ) :: nstep
-    Real( Kind = wp ),  Intent(   Out ) :: chip
-    Real( Kind = wp ),  Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),   Intent( In    ) :: degfre,degrot
     Real( Kind = wp ),  Intent( In    ) :: stress(1:9)
@@ -775,7 +766,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -883,15 +874,15 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for thermo%iso>=1
+  ! Sort thermo%eta for thermo%iso>=1
   ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
        If      (thermo%iso == 1) Then
-          eta(1:8) = 0.0_wp
+          thermo%eta(1:8) = 0.0_wp
        Else If (thermo%iso >  1) Then
-          eta(2:4) = 0.0_wp
-          eta(6:8) = 0.0_wp
+          thermo%eta(2:4) = 0.0_wp
+          thermo%eta(6:8) = 0.0_wp
 
           Call dcell(cell,celprp)
           h_z=celprp(9)
@@ -899,7 +890,7 @@ Contains
 
   ! inertia parameter for barostat
 
-       temp  = 2.0_wp*sigma / (boltz*Real(degfre,wp))
+       temp  = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
        pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*temp / (2.0_wp*pi*thermo%tai)**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
@@ -1028,7 +1019,7 @@ Contains
 
        cell0=cell
        vzero=volm
-       eta0 =eta
+       eta0 =thermo%eta
        engke0=engke
        engrot0=engrot
 
@@ -1085,7 +1076,7 @@ Contains
           Call nst_h1_scl &
              (1,hstep,degfre,degrot,pmass,thermo%tai,volm,  &
              h_z,str1,stress,strcom,        &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,strkin,strknf,strknt,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -1123,20 +1114,20 @@ Contains
              End If
           End Do
 
-  ! scale cell vectors: second order taylor expansion of Exp(tstep*eta)
+  ! scale cell vectors: second order taylor expansion of Exp(tstep*thermo%eta)
 
-          aaa=tstep*eta
+          aaa=tstep*thermo%eta
           Call mat_mul(aaa,aaa,bbb)
           aaa=uni1+aaa+0.5_wp*bbb
           Call mat_mul(aaa,cell0,cell)
 
-  ! update volume and construct a 'mock' chip=Tr[eta]/3
+  ! update volume and construct a 'mock' thermo%chi_p=Tr[thermo%eta]/3
 
-          chip = eta(1)+eta(5)+eta(9)
-          volm = volm*Exp(tstep*chip)
-          chip = chip / 3.0_wp
+          thermo%chi_p = thermo%eta(1)+thermo%eta(5)+thermo%eta(9)
+          volm = volm*Exp(tstep*thermo%chi_p)
+          thermo%chi_p = thermo%chi_p / 3.0_wp
 
-  ! update position of FPs: second order taylor expansion of Exp(tstep*eta)
+  ! update position of FPs: second order taylor expansion of Exp(tstep*thermo%eta)
 
           Do j=1,nfree
              i=lstfre(j)
@@ -1260,7 +1251,7 @@ Contains
 
           If (iter < mxiter) Then
              volm=vzero
-             eta =eta0
+             thermo%eta =eta0
              engke=engke0
              engrot=engrot0
 
@@ -1580,7 +1571,7 @@ Contains
   ! restore initial conditions
 
              volm=vzero
-             eta =eta0
+             thermo%eta =eta0
              engke=engke0
              engrot=engrot0
 
@@ -1896,7 +1887,7 @@ Contains
        Call nst_h1_scl &
              (1,hstep,degfre,degrot,pmass,thermo%tai,volm,  &
              h_z,str1,stress,strcom,        &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,strkin,strknf,strknt,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -1921,9 +1912,10 @@ Contains
        engke=engke*scale**2
        engrot=engrot*scale**2
 
-  ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
+  ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
-       tmp = ( eta(1)**2 + 2*eta(2)**2 + 2*eta(3)**2 + eta(5)**2 + 2*eta(6)**2 + eta(9)**2 )
+       tmp = ( thermo%eta(1)**2 + 2*thermo%eta(2)**2 + 2*thermo%eta(3)**2 + &
+         thermo%eta(5)**2 + 2*thermo%eta(6)**2 + thermo%eta(9)**2 )
 
   ! conserved quantity less kinetic and potential energy terms
 

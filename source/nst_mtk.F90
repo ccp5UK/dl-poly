@@ -27,8 +27,6 @@ Contains
 
   Subroutine nst_m0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,cint,              &
-             chip,eta,        &
              degfre,stress,             &
              consv,                             &
              strkin,engke,                      &
@@ -66,13 +64,7 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma
-    Real( Kind = wp ),  Intent( InOut ) :: chit,cint
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
-
-    Real( Kind = wp ),  Intent(   Out ) :: chip
-    Real( Kind = wp ),  Intent( InOut ) :: eta(1:9)
 
     Integer(Kind=li),   Intent( In    ) :: degfre
     Real( Kind = wp ),  Intent( In    ) :: stress(1:9)
@@ -86,7 +78,7 @@ Contains
                                            strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -163,15 +155,15 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for thermo%iso>=1
+  ! Sort thermo%eta for thermo%iso>=1
   ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
        If      (thermo%iso == 1) Then
-          eta(1:8) = 0.0_wp
+          thermo%eta(1:8) = 0.0_wp
        Else If (thermo%iso >  1) Then
-          eta(2:4) = 0.0_wp
-          eta(6:8) = 0.0_wp
+          thermo%eta(2:4) = 0.0_wp
+          thermo%eta(6:8) = 0.0_wp
 
           Call dcell(cell,celprp)
           h_z=celprp(9)
@@ -179,22 +171,23 @@ Contains
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*sigma*thermo%tau_t**2
-       tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
+       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
        If      (thermo%iso == 0) Then
-          ceng  = 2.0_wp*sigma + 3.0_wp**2*boltz*tmp
+          ceng  = 2.0_wp*thermo%sigma + 3.0_wp**2*boltz*tmp
        Else If (thermo%iso == 1) Then
-          ceng  = 2.0_wp*sigma + 1.0_wp*boltz*tmp
+          ceng  = 2.0_wp*thermo%sigma + 1.0_wp*boltz*tmp
        Else If (thermo%iso == 2) Then
-          ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
+          ceng  = 2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp
        Else If (thermo%iso == 3) Then
-          ceng  = 2.0_wp*sigma + 2.0_wp*boltz*tmp
+          ceng  = 2.0_wp*thermo%sigma + 2.0_wp*boltz*tmp
        End If
-       pmass = ((2.0_wp*sigma + 3.0_wp*boltz*tmp)/3.0_wp)*thermo%tau_p**2
+       pmass = ((2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp)/3.0_wp)*thermo%tau_p**2
 
-  ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
+  ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
-       chip0 = Sqrt( eta(1)**2 + 2*eta(2)**2 + 2*eta(3)**2 + eta(5)**2 + 2*eta(6)**2 + eta(9)**2 )
+       chip0 = Sqrt( thermo%eta(1)**2 + 2*thermo%eta(2)**2 + 2*thermo%eta(3)**2 &
+         + thermo%eta(5)**2 + 2*thermo%eta(6)**2 + thermo%eta(9)**2 )
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -256,9 +249,9 @@ Contains
 
        cell0=cell
        vzero=volm
-       chit0=chit
-       cint0=cint
-       eta0 =eta
+       chit0=thermo%chi_t
+       cint0=thermo%cint
+       eta0 =thermo%eta
        chpzr=chip0
 
   100  Continue
@@ -283,7 +276,7 @@ Contains
 
           Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip0, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! constraint+pmf virial and stress
 
@@ -293,19 +286,20 @@ Contains
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
           Call nst_h0_scl &
-             (1,hstep,degfre,pmass,chit,volm, &
+             (1,hstep,degfre,pmass,thermo%chi_t,volm, &
              h_z,str,stress,         &
-             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
+             vxx,vyy,vzz,strkin,engke,thermo,comm)
 
-  ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
+  ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
-          chip0 = Sqrt( eta(1)**2 + 2*eta(2)**2 + 2*eta(3)**2 + eta(5)**2 + 2*eta(6)**2 + eta(9)**2 )
+          chip0 = Sqrt( thermo%eta(1)**2 + 2*thermo%eta(2)**2 + 2*thermo%eta(3)**2 + &
+            thermo%eta(5)**2 + 2*thermo%eta(6)**2 + thermo%eta(9)**2 )
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
           Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip0, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! update velocities
 
@@ -318,20 +312,20 @@ Contains
              End If
           End Do
 
-  ! scale cell vectors: second order taylor expansion of Exp(tstep*eta)
+  ! scale cell vectors: second order taylor expansion of Exp(tstep*thermo%eta)
 
-          aaa=tstep*eta
+          aaa=tstep*thermo%eta
           Call mat_mul(aaa,aaa,bbb)
           aaa=uni+aaa+0.5_wp*bbb
           Call mat_mul(aaa,cell0,cell)
 
-  ! update volume and construct a 'mock' chip=Tr[eta]/3
+  ! update volume and construct a 'mock' thermo%chi_p=Tr[thermo%eta]/3
 
-          chip = eta(1)+eta(5)+eta(9)
-          volm = volm*Exp(tstep*chip)
-          chip = chip / 3.0_wp
+          thermo%chi_p = thermo%eta(1)+thermo%eta(5)+thermo%eta(9)
+          volm = volm*Exp(tstep*thermo%chi_p)
+          thermo%chi_p = thermo%chi_p / 3.0_wp
 
-  ! update positions: second order taylor expansion of Exp(tstep*eta)
+  ! update positions: second order taylor expansion of Exp(tstep*thermo%eta)
 
           Do i=1,natms
              If (weight(i) > 1.0e-6_wp) Then
@@ -449,9 +443,9 @@ Contains
 
           If (iter < mxiter) Then
              volm=vzero
-             chit=chit0
-             cint=cint0
-             eta =eta0
+             thermo%chi_t=chit0
+             thermo%cint=cint0
+             thermo%eta =eta0
              chip0=chpzr
 
              Do i=1,natms
@@ -518,9 +512,9 @@ Contains
   ! restore initial conditions
 
              volm=vzero
-             chit=chit0
-             cint=cint0
-             eta =eta0
+             thermo%chi_t=chit0
+             thermo%cint=cint0
+             thermo%eta =eta0
              chip0=chpzr
 
              Do i=1,natms
@@ -598,7 +592,7 @@ Contains
 
        Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip0, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! constraint+pmf virial and stress
 
@@ -608,23 +602,24 @@ Contains
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
        Call nst_h0_scl &
-             (1,hstep,degfre,pmass,chit,volm, &
+             (1,hstep,degfre,pmass,thermo%chi_t,volm, &
              h_z,str,stress,         &
-             vxx,vyy,vzz,eta,strkin,engke,thermo,comm)
+             vxx,vyy,vzz,strkin,engke,thermo,comm)
 
-  ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
+  ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
-       chip0 = Sqrt( eta(1)**2 + 2*eta(2)**2 + 2*eta(3)**2 + eta(5)**2 + 2*eta(6)**2 + eta(9)**2 )
+       chip0 = Sqrt( thermo%eta(1)**2 + 2*thermo%eta(2)**2 + 2*thermo%eta(3)**2 + &
+         thermo%eta(5)**2 + 2*thermo%eta(6)**2 + thermo%eta(9)**2 )
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
        Call nvt_h0_scl &
              (qstep,ceng,qmass,pmass,chip0, &
-             vxx,vyy,vzz,chit,cint,engke,comm)
+             vxx,vyy,vzz,engke,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip0**2 + ceng*cint + thermo%press*volm
+       consv = 0.5_wp*qmass*thermo%chi_t**2 + 0.5_wp*pmass*chip0**2 + ceng*thermo%cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -669,8 +664,6 @@ Contains
 
   Subroutine nst_m1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,cint,              &
-             chip,eta,        &
              degfre,degrot,stress,      &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
@@ -710,12 +703,6 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Real( Kind = wp ),  Intent( In    ) :: sigma
-    Real( Kind = wp ),  Intent( InOut ) :: chit,cint
-
-    Real( Kind = wp ),  Intent(   Out ) :: chip
-    Real( Kind = wp ),  Intent( InOut ) :: eta(1:9)
-
     Integer(Kind=li),   Intent( In    ) :: degfre,degrot
     Real( Kind = wp ),  Intent( In    ) :: stress(1:9)
 
@@ -733,7 +720,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true. , &
@@ -828,15 +815,15 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for thermo%iso>=1
+  ! Sort thermo%eta for thermo%iso>=1
   ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
        If      (thermo%iso == 1) Then
-          eta(1:8) = 0.0_wp
+          thermo%eta(1:8) = 0.0_wp
        Else If (thermo%iso >  1) Then
-          eta(2:4) = 0.0_wp
-          eta(6:8) = 0.0_wp
+          thermo%eta(2:4) = 0.0_wp
+          thermo%eta(6:8) = 0.0_wp
 
           Call dcell(cell,celprp)
           h_z=celprp(9)
@@ -844,22 +831,23 @@ Contains
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*sigma*thermo%tau_t**2
-       tmp   = 2.0_wp*sigma / (boltz*Real(degfre,wp))
+       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
        If      (thermo%iso == 0) Then
-          ceng  = 2.0_wp*sigma + 3.0_wp**2*boltz*tmp
+          ceng  = 2.0_wp*thermo%sigma + 3.0_wp**2*boltz*tmp
        Else If (thermo%iso == 1) Then
-          ceng  = 2.0_wp*sigma + 1.0_wp*boltz*tmp
+          ceng  = 2.0_wp*thermo%sigma + 1.0_wp*boltz*tmp
        Else If (thermo%iso == 2) Then
-          ceng  = 2.0_wp*sigma + 3.0_wp*boltz*tmp
+          ceng  = 2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp
        Else If (thermo%iso == 3) Then
-          ceng  = 2.0_wp*sigma + 2.0_wp*boltz*tmp
+          ceng  = 2.0_wp*thermo%sigma + 2.0_wp*boltz*tmp
        End If
        pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*thermo%tau_p**2
 
-  ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
+  ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
-       chip0 = Sqrt( eta(1)**2 + 2*eta(2)**2 + 2*eta(3)**2 + eta(5)**2 + 2*eta(6)**2 + eta(9)**2 )
+       chip0 = Sqrt( thermo%eta(1)**2 + 2*thermo%eta(2)**2 + 2*thermo%eta(3)**2 + &
+         thermo%eta(5)**2 + 2*thermo%eta(6)**2 + thermo%eta(9)**2 )
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
@@ -977,9 +965,9 @@ Contains
 
        cell0=cell
        vzero=volm
-       chit0=chit
-       cint0=cint
-       eta0 =eta
+       chit0=thermo%chi_t
+       cint0=thermo%cint
+       eta0 =thermo%eta
        chpzr=chip0
 
   100  Continue
@@ -1007,7 +995,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot,comm)
+             engke,engrot,thermo,comm)
 
   ! constraint+pmf virial and stress
 
@@ -1017,13 +1005,14 @@ Contains
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
           Call nst_h1_scl &
-             (1,hstep,degfre,degrot,pmass,chit,volm, &
+             (1,hstep,degfre,degrot,pmass,thermo%chi_t,volm, &
              h_z,str,stress,strcom,         &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,strkin,strknf,strknt,engke,thermo,comm)
 
-  ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
+  ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
-          chip0 = Sqrt( eta(1)**2 + 2*eta(2)**2 + 2*eta(3)**2 + eta(5)**2 + 2*eta(6)**2 + eta(9)**2 )
+          chip0 = Sqrt( thermo%eta(1)**2 + 2*thermo%eta(2)**2 + 2*thermo%eta(3)**2 + &
+            thermo%eta(5)**2 + 2*thermo%eta(6)**2 + thermo%eta(9)**2 )
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
@@ -1032,7 +1021,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot,comm)
+             engke,engrot,thermo,comm)
 
   ! update velocity of FPs
 
@@ -1047,20 +1036,20 @@ Contains
              End If
           End Do
 
-  ! scale cell vectors: second order taylor expansion of Exp(tstep*eta)
+  ! scale cell vectors: second order taylor expansion of Exp(tstep*thermo%eta)
 
-          aaa=tstep*eta
+          aaa=tstep*thermo%eta
           Call mat_mul(aaa,aaa,bbb)
           aaa=uni+aaa+0.5_wp*bbb
           Call mat_mul(aaa,cell0,cell)
 
-  ! update volume and construct a 'mock' chip=Tr[eta]/3
+  ! update volume and construct a 'mock' thermo%chi_p=Tr[thermo%eta]/3
 
-          chip = eta(1)+eta(5)+eta(9)
-          volm = volm*Exp(tstep*chip)
-          chip = chip / 3.0_wp
+          thermo%chi_p = thermo%eta(1)+thermo%eta(5)+thermo%eta(9)
+          volm = volm*Exp(tstep*thermo%chi_p)
+          thermo%chi_p = thermo%chi_p / 3.0_wp
 
-  ! update position of FPs: second order taylor expansion of Exp(tstep*eta)
+  ! update position of FPs: second order taylor expansion of Exp(tstep*thermo%eta)
 
           Do j=1,nfree
              i=lstfre(j)
@@ -1184,9 +1173,9 @@ Contains
 
           If (iter < mxiter) Then
              volm=vzero
-             chit=chit0
-             cint=cint0
-             eta =eta0
+             thermo%chi_t=chit0
+             thermo%cint=cint0
+             thermo%eta =eta0
              chip0=chpzr
 
              Do j=1,nfree
@@ -1464,9 +1453,9 @@ Contains
   ! restore initial conditions
 
              volm=vzero
-             chit=chit0
-             cint=cint0
-             eta =eta0
+             thermo%chi_t=chit0
+             thermo%cint=cint0
+             thermo%eta =eta0
              chip0=chpzr
 
              Do i=1,matms
@@ -1700,7 +1689,7 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot,comm)
+             engke,engrot,thermo,comm)
 
   ! constraint+pmf virial and stress
 
@@ -1710,13 +1699,14 @@ Contains
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
        Call nst_h1_scl &
-             (1,hstep,degfre,degrot,pmass,chit,volm, &
+             (1,hstep,degfre,degrot,pmass,thermo%chi_t,volm, &
              h_z,str,stress,strcom,         &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,eta,strkin,strknf,strknt,engke,thermo,comm)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,strkin,strknf,strknt,engke,thermo,comm)
 
-  ! trace[eta*transpose(eta)] = trace[eta*eta]: eta is symmetric
+  ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
-       chip0 = Sqrt( eta(1)**2 + 2*eta(2)**2 + 2*eta(3)**2 + eta(5)**2 + 2*eta(6)**2 + eta(9)**2 )
+       chip0 = Sqrt( thermo%eta(1)**2 + 2*thermo%eta(2)**2 + 2*thermo%eta(3)**2 + &
+         thermo%eta(5)**2 + 2*thermo%eta(6)**2 + thermo%eta(9)**2 )
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
@@ -1725,11 +1715,11 @@ Contains
              vxx,vyy,vzz,                  &
              rgdvxx,rgdvyy,rgdvzz,         &
              rgdoxx,rgdoyy,rgdozz,         &
-             chit,cint,engke,engrot,comm)
+             engke,engrot,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*chit**2 + 0.5_wp*pmass*chip0**2 + ceng*cint + thermo%press*volm
+       consv = 0.5_wp*qmass*thermo%chi_t**2 + 0.5_wp*pmass*chip0**2 + ceng*thermo%cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
