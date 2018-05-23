@@ -84,7 +84,7 @@
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,stat)
+        Call w_integrate_vv(0,stat,thermo)
 
 ! Refresh mappings
 
@@ -107,13 +107,13 @@
 ! Evolve electronic temperature for two-temperature model
 
         If (l_ttm) Then
-          Call ttm_ion_temperature(vel_es2,thermo,comm)
+          Call ttm_ion_temperature(thermo,comm)
           Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,lines,npage,thermo,comm)
         End If
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,stat)
+        Call w_integrate_vv(1,stat,thermo)
 
 ! Apply kinetic options
 
@@ -136,7 +136,7 @@
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,stat,devel,green,comm)
+           stat,devel,green,thermo,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 

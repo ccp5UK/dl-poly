@@ -32,8 +32,6 @@ Contains
 
   Subroutine nst_b0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,                   &
-             chip,eta,        &
              stress,                    &
              strkin,engke,                      &
              mxshak,tolnce,                     &
@@ -70,11 +68,6 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma
-    Real( Kind = wp ), Intent(   Out ) :: chit
-
-    Real( Kind = wp ), Intent(   Out ) :: chip,eta(1:9)
-
     Real( Kind = wp ), Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
@@ -86,7 +79,7 @@ Contains
                                           strpmf(1:9),virpmf
 
     Real( Kind = wp ), Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -162,16 +155,16 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for thermo%iso>=1
+  ! Sort thermo%eta for thermo%iso>=1
   ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
        If      (thermo%iso == 1) Then
-          eta(1) = 1.0_wp ; eta(2:4) = 0.0_wp
-          eta(5) = 1.0_wp ; eta(6:8) = 0.0_wp
+          thermo%eta(1) = 1.0_wp ; thermo%eta(2:4) = 0.0_wp
+          thermo%eta(5) = 1.0_wp ; thermo%eta(6:8) = 0.0_wp
        Else If (thermo%iso >  1) Then
-          eta(2:4) = 0.0_wp
-          eta(6:8) = 0.0_wp
+          thermo%eta(2:4) = 0.0_wp
+          thermo%eta(6:8) = 0.0_wp
 
           Call dcell(cell,celprp)
           h_z=celprp(9)
@@ -252,32 +245,32 @@ Contains
           strpmf=0.0_wp
        End If
 
-  ! iterate forces, strcon and eta
+  ! iterate forces, strcon and thermo%eta
 
        Do iter=1,mxiter
 
   ! Berendsen barostat and thermostat are not coupled
-  ! calculate Berendsen barostat: eta, iterate strcon and strpmf
+  ! calculate Berendsen barostat: thermo%eta, iterate strcon and strpmf
 
   ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
 
           If (thermo%iso == 0) Then
-             eta=uni + tstep*beta*(strcon+strpmf+stress+strkin- &
+             thermo%eta=uni + tstep*beta*(strcon+strpmf+stress+strkin- &
                (thermo%press*uni+thermo%stress)*volm)/(thermo%tau_p*volm)
           Else
              If      (thermo%iso == 2) Then
-                eta(1)=1.0_wp + tstep*beta*(strcon(1)+strpmf(1)+stress(1)+strkin(1)- &
+                thermo%eta(1)=1.0_wp + tstep*beta*(strcon(1)+strpmf(1)+stress(1)+strkin(1)- &
                   (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/(thermo%tau_p*volm)
-                eta(5)=1.0_wp + tstep*beta*(strcon(5)+strpmf(5)+stress(5)+strkin(5)- &
+                thermo%eta(5)=1.0_wp + tstep*beta*(strcon(5)+strpmf(5)+stress(5)+strkin(5)- &
                   (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/(thermo%tau_p*volm)
              Else If (thermo%iso == 3) Then
-                eta(1)=1.0_wp + tstep*beta*( 0.5_wp*                                                       &
+                thermo%eta(1)=1.0_wp + tstep*beta*( 0.5_wp*                                                       &
                        (strcon(1)+strpmf(1)+stress(1)+strkin(1)+strcon(5)+strpmf(5)+stress(5)+strkin(5)) - &
                        (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) &
                        / (thermo%tau_p*volm)
-                eta(5)=eta(1)
+                thermo%eta(5)=thermo%eta(1)
              End If
-             eta(9)=1.0_wp + tstep*beta*(strcon(9)+strpmf(9)+stress(9)+strkin(9)- &
+             thermo%eta(9)=1.0_wp + tstep*beta*(strcon(9)+strpmf(9)+stress(9)+strkin(9)- &
                (thermo%press+thermo%stress(9))*volm)/(thermo%tau_p*volm)
           End If
 
@@ -290,9 +283,9 @@ Contains
                 vyy(i)=vyt(i)+tmp*fyy(i)
                 vzz(i)=vzt(i)+tmp*fzz(i)
 
-                xxx(i)=tstep*vxx(i)+xxt(i)*eta(1)+yyt(i)*eta(2)+zzt(i)*eta(3)
-                yyy(i)=tstep*vyy(i)+xxt(i)*eta(2)+yyt(i)*eta(5)+zzt(i)*eta(6)
-                zzz(i)=tstep*vzz(i)+xxt(i)*eta(3)+yyt(i)*eta(6)+zzt(i)*eta(9)
+                xxx(i)=tstep*vxx(i)+xxt(i)*thermo%eta(1)+yyt(i)*thermo%eta(2)+zzt(i)*thermo%eta(3)
+                yyy(i)=tstep*vyy(i)+xxt(i)*thermo%eta(2)+yyt(i)*thermo%eta(5)+zzt(i)*thermo%eta(6)
+                zzz(i)=tstep*vzz(i)+xxt(i)*thermo%eta(3)+yyt(i)*thermo%eta(6)+zzt(i)*thermo%eta(9)
              End If
           End Do
 
@@ -304,7 +297,7 @@ Contains
 
   ! update cell parameters: anisotropic
 
-             Call mat_mul(eta,czero,cell)
+             Call mat_mul(thermo%eta,czero,cell)
 
   ! store integrated positions
 
@@ -470,12 +463,12 @@ Contains
 
   ! update cell parameters: anisotropic
 
-       If (megcon == 0 .and. megpmf == 0) Call mat_mul(eta,czero,cell)
+       If (megcon == 0 .and. megpmf == 0) Call mat_mul(thermo%eta,czero,cell)
 
-  ! update volume and construct a 'mock' chip
+  ! update volume and construct a 'mock' thermo%chi_p
 
        Call dcell(cell,celprp)
-       chip=celprp(10)/volm
+       thermo%chi_p=celprp(10)/volm
        volm=celprp(10)
 
   ! adjust long range corrections and number density
@@ -534,7 +527,7 @@ Contains
 
   ! integrate and apply nvt_b0_scl thermostat - full step
 
-       Call nvt_b0_scl(1,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
+       Call nvt_b0_scl(1,tstep,vxx,vyy,vzz,strkin,engke,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -550,7 +543,7 @@ Contains
 
   ! update kinetic energy and stress
 
-       Call nvt_b0_scl(0,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
+       Call nvt_b0_scl(0,tstep,vxx,vyy,vzz,strkin,engke,thermo,comm)
 
     End If
 
@@ -578,8 +571,6 @@ Contains
 
   Subroutine nst_b1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,                   &
-             chip,eta,        &
              stress,                    &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
@@ -618,11 +609,6 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma
-    Real( Kind = wp ), Intent(   Out ) :: chit
-
-    Real( Kind = wp ), Intent(   Out ) :: chip,eta(1:9)
-
     Real( Kind = wp ), Intent( In    ) :: stress(1:9)
 
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
@@ -637,7 +623,7 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ), Intent( InOut ) :: elrc,virlrc
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut) :: comm
 
     Logical,           Save :: newjob = .true. , &
@@ -734,16 +720,16 @@ Contains
           dens0(i) = dens(i)
        End Do
 
-  ! Sort eta for thermo%iso>=1
+  ! Sort thermo%eta for thermo%iso>=1
   ! Initialise and get h_z for thermo%iso>1
 
        h_z=0
        If      (thermo%iso == 1) Then
-          eta(1) = 1.0_wp ; eta(2:4) = 0.0_wp
-          eta(5) = 1.0_wp ; eta(6:8) = 0.0_wp
+          thermo%eta(1) = 1.0_wp ; thermo%eta(2:4) = 0.0_wp
+          thermo%eta(5) = 1.0_wp ; thermo%eta(6:8) = 0.0_wp
        Else If (thermo%iso >  1) Then
-          eta(2:4) = 0.0_wp
-          eta(6:8) = 0.0_wp
+          thermo%eta(2:4) = 0.0_wp
+          thermo%eta(6:8) = 0.0_wp
 
           Call dcell(cell,celprp)
           h_z=celprp(9)
@@ -974,39 +960,39 @@ Contains
           End If
        End Do
 
-  ! iterate forces, strcon and eta
+  ! iterate forces, strcon and thermo%eta
 
        Do iter=1,mxiter
 
   ! Berendsen barostat and thermostat are not coupled
-  ! calculate Berendsen barostat: eta, iterate strcon and strpmf
+  ! calculate Berendsen barostat: thermo%eta, iterate strcon and strpmf
 
   ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
 
           If (thermo%iso == 0) Then
-             eta=uni + tstep*beta*(strcom+strcon+strpmf+stress+strkin- &
+             thermo%eta=uni + tstep*beta*(strcom+strcon+strpmf+stress+strkin- &
                (thermo%press*uni+thermo%stress)*volm)/(thermo%tau_p*volm)
           Else
              If      (thermo%iso == 2) Then
-                eta(1)=1.0_wp + tstep*beta*(strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1) - &
+                thermo%eta(1)=1.0_wp + tstep*beta*(strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1) - &
                   (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/(thermo%tau_p*volm)
-                eta(5)=1.0_wp + tstep*beta*(strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5) - &
+                thermo%eta(5)=1.0_wp + tstep*beta*(strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5) - &
                   (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/(thermo%tau_p*volm)
              Else If (thermo%iso == 3) Then
-                eta(1)=1.0_wp + tstep*beta*( 0.5_wp* &
+                thermo%eta(1)=1.0_wp + tstep*beta*( 0.5_wp* &
                   (strcom(1)+strcon(1)+strpmf(1)+stress(1)+strkin(1)  + &
                    strcom(5)+strcon(5)+strpmf(5)+stress(5)+strkin(5)) - &
                   (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) &
                   / (thermo%tau_p*volm)
-                eta(5)=eta(1)
+                thermo%eta(5)=thermo%eta(1)
              End If
-             eta(9)=1.0_wp + tstep*beta*(strcom(9)+strcon(9)+strpmf(9)+stress(9)+strkin(9)- &
+             thermo%eta(9)=1.0_wp + tstep*beta*(strcom(9)+strcon(9)+strpmf(9)+stress(9)+strkin(9)- &
                (thermo%press+thermo%stress(9))*volm)/(thermo%tau_p*volm)
           End If
 
   ! update cell parameters: anisotropic
 
-          Call mat_mul(eta,czero,cell)
+          Call mat_mul(thermo%eta,czero,cell)
 
   ! update velocity and position
 
@@ -1019,9 +1005,9 @@ Contains
                 vyy(i)=vyt(i)+tmp*fyy(i)
                 vzz(i)=vzt(i)+tmp*fzz(i)
 
-                xxx(i)=tstep*vxx(i)+xxt(i)*eta(1)+yyt(i)*eta(2)+zzt(i)*eta(3)
-                yyy(i)=tstep*vyy(i)+xxt(i)*eta(2)+yyt(i)*eta(5)+zzt(i)*eta(6)
-                zzz(i)=tstep*vzz(i)+xxt(i)*eta(3)+yyt(i)*eta(6)+zzt(i)*eta(9)
+                xxx(i)=tstep*vxx(i)+xxt(i)*thermo%eta(1)+yyt(i)*thermo%eta(2)+zzt(i)*thermo%eta(3)
+                yyy(i)=tstep*vyy(i)+xxt(i)*thermo%eta(2)+yyt(i)*thermo%eta(5)+zzt(i)*thermo%eta(6)
+                zzz(i)=tstep*vzz(i)+xxt(i)*thermo%eta(3)+yyt(i)*thermo%eta(6)+zzt(i)*thermo%eta(9)
              End If
           End Do
 
@@ -1159,9 +1145,9 @@ Contains
 
   ! update RB COM to full step
 
-             rgdxxx(irgd)=tstep*rgdvxx(irgd)+rgdxxt(irgd)*eta(1)+rgdyyt(irgd)*eta(2)+rgdzzt(irgd)*eta(3)
-             rgdyyy(irgd)=tstep*rgdvyy(irgd)+rgdxxt(irgd)*eta(2)+rgdyyt(irgd)*eta(5)+rgdzzt(irgd)*eta(6)
-             rgdzzz(irgd)=tstep*rgdvzz(irgd)+rgdxxt(irgd)*eta(3)+rgdyyt(irgd)*eta(6)+rgdzzt(irgd)*eta(9)
+             rgdxxx(irgd)=tstep*rgdvxx(irgd)+rgdxxt(irgd)*thermo%eta(1)+rgdyyt(irgd)*thermo%eta(2)+rgdzzt(irgd)*thermo%eta(3)
+             rgdyyy(irgd)=tstep*rgdvyy(irgd)+rgdxxt(irgd)*thermo%eta(2)+rgdyyt(irgd)*thermo%eta(5)+rgdzzt(irgd)*thermo%eta(6)
+             rgdzzz(irgd)=tstep*rgdvzz(irgd)+rgdxxt(irgd)*thermo%eta(3)+rgdyyt(irgd)*thermo%eta(6)+rgdzzt(irgd)*thermo%eta(9)
 
   ! update RB members positions and halfstep velocities
 
@@ -1189,9 +1175,9 @@ Contains
   ! DD bound positions
 
                       If (unsafe) Then
-                         vxx(i)=xxt(i)*eta(1)+yyt(i)*eta(2)+zzt(i)*eta(3)
-                         vyy(i)=xxt(i)*eta(2)+yyt(i)*eta(5)+zzt(i)*eta(6)
-                         vzz(i)=xxt(i)*eta(3)+yyt(i)*eta(6)+zzt(i)*eta(9)
+                         vxx(i)=xxt(i)*thermo%eta(1)+yyt(i)*thermo%eta(2)+zzt(i)*thermo%eta(3)
+                         vyy(i)=xxt(i)*thermo%eta(2)+yyt(i)*thermo%eta(5)+zzt(i)*thermo%eta(6)
+                         vzz(i)=xxt(i)*thermo%eta(3)+yyt(i)*thermo%eta(6)+zzt(i)*thermo%eta(9)
 
                          x(1)=xxx(i)-vxx(i)
                          y(1)=yyy(i)-vyy(i)
@@ -1223,9 +1209,9 @@ Contains
 
   ! update RB COM to full step
 
-             rgdxxx(irgd)=rgdxxt(irgd)*eta(1)+rgdyyt(irgd)*eta(2)+rgdzzt(irgd)*eta(3)
-             rgdyyy(irgd)=rgdxxt(irgd)*eta(2)+rgdyyt(irgd)*eta(5)+rgdzzt(irgd)*eta(6)
-             rgdzzz(irgd)=rgdxxt(irgd)*eta(3)+rgdyyt(irgd)*eta(6)+rgdzzt(irgd)*eta(9)
+             rgdxxx(irgd)=rgdxxt(irgd)*thermo%eta(1)+rgdyyt(irgd)*thermo%eta(2)+rgdzzt(irgd)*thermo%eta(3)
+             rgdyyy(irgd)=rgdxxt(irgd)*thermo%eta(2)+rgdyyt(irgd)*thermo%eta(5)+rgdzzt(irgd)*thermo%eta(6)
+             rgdzzz(irgd)=rgdxxt(irgd)*thermo%eta(3)+rgdyyt(irgd)*thermo%eta(6)+rgdzzt(irgd)*thermo%eta(9)
 
              Do jrgd=1,lrgd
                 i=indrgd(jrgd,irgd) ! local index of particle/site
@@ -1315,10 +1301,10 @@ Contains
           End If
        End If
 
-  ! update volume and construct a 'mock' chip
+  ! update volume and construct a 'mock' thermo%chi_p
 
        Call dcell(cell,celprp)
-       chip=celprp(10)/volm
+       thermo%chi_p=celprp(10)/volm
        volm=celprp(10)
 
   ! adjust long range corrections and number density
@@ -1516,9 +1502,9 @@ Contains
   ! integrate and apply nvt_b1_scl thermostat - full step
 
        Call nvt_b1_scl &
-             (1,tstep,sigma,vxx,vyy,vzz,           &
+             (1,tstep,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
+             strkin,strknf,strknt,engke,engrot,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -1558,9 +1544,9 @@ Contains
   ! update kinetic energy and stress
 
        Call nvt_b1_scl &
-             (0,tstep,sigma,vxx,vyy,vzz,           &
+             (0,tstep,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
+             strkin,strknf,strknt,engke,engrot,thermo,comm)
 
     End If
 

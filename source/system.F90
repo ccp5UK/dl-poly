@@ -51,6 +51,7 @@ Module system
   Use metal,           Only : metal_lrc
   Use errors_warnings, Only : error, info, warning
   Use numerics, Only : dcell, images
+  Use thermostat, Only : thermostat_type
   Implicit None
   Private
   Public :: system_revive
@@ -60,7 +61,7 @@ Module system
   
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
-           time,tmst,nstep,tstep,chit,cint,chip,eta,elrc,virlrc,elrcm,vlrcm,stats,devel,green,comm)
+           time,tmst,nstep,tstep,elrc,virlrc,elrcm,vlrcm,stats,devel,green,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -80,12 +81,13 @@ Module system
 
   Integer,           Intent(   Out ) :: nstep
   Real( Kind = wp ), Intent( InOut ) :: tstep
-  Real( Kind = wp ), Intent(   Out ) :: time,tmst,chit,cint,chip,eta(1:9),     &
+  Real( Kind = wp ), Intent(   Out ) :: time,tmst,     &
                                         elrc,virlrc,        &
                                         elrcm(0:mxatyp),vlrcm(0:mxatyp)
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -123,10 +125,10 @@ Module system
 ! initialise temperature and pressure coupling parameters
 ! and integral for conserved quantity
 
-     chit = 0.0_wp
-     cint = 0.0_wp
-     chip = 0.0_wp
-     eta  = 0.0_wp
+     thermo%chi_t = 0.0_wp
+     thermo%cint = 0.0_wp
+     thermo%chi_p = 0.0_wp
+     thermo%eta  = 0.0_wp
 
 ! initialise stats%strcon,stats%stress,stats%virtot and stats%vircon
 
@@ -230,8 +232,8 @@ Module system
      If (comm%idnode == 0) Then
         If (devel%l_rin) Then
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) &
-               dnstep,dtstep,time,tmst,dnumacc,chit,chip,cint
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) eta
+               dnstep,dtstep,time,tmst,dnumacc,thermo%chi_t,thermo%chi_p,thermo%cint
+           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) thermo%eta
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stpval
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stpvl0
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%sumval
@@ -260,8 +262,8 @@ Module system
            If (mxginv1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfinv,dstinv
         Else
            Read(Unit=nrest, IOStat=keyio, End=100) &
-               dnstep,dtstep,time,tmst,dnumacc,chit,chip,cint
-           Read(Unit=nrest, IOStat=keyio, End=100) eta
+               dnstep,dtstep,time,tmst,dnumacc,thermo%chi_t,thermo%chi_p,thermo%cint
+           Read(Unit=nrest, IOStat=keyio, End=100) thermo%eta
            Read(Unit=nrest, IOStat=keyio, End=100) stats%stpval
            Read(Unit=nrest, IOStat=keyio, End=100) stats%stpvl0
            Read(Unit=nrest, IOStat=keyio, End=100) stats%sumval
@@ -338,10 +340,10 @@ Module system
         Call gbcast(comm,time,0)
         Call gbcast(comm,tmst,0)
         Call gbcast(comm,stats%numacc,0)
-        Call gbcast(comm,chit,0)
-        Call gbcast(comm,chip,0)
-        Call gbcast(comm,cint,0)
-        Call gbcast(comm,eta,0)
+        Call gbcast(comm,thermo%chi_t,0)
+        Call gbcast(comm,thermo%chi_p,0)
+        Call gbcast(comm,thermo%cint,0)
+        Call gbcast(comm,thermo%eta,0)
         Call gbcast(comm,stats%stpval,0)
         Call gbcast(comm,stats%stpvl0,0)
         Call gbcast(comm,stats%sumval,0)
@@ -1797,7 +1799,7 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,stats,devel,green,comm)
+           stats,devel,green,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1813,11 +1815,11 @@ Subroutine system_revive                                      &
 
   Integer,           Intent( In    ) :: megatm,nstep
   Logical,           Intent( In    ) :: lrdf,lzdn
-  Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst, &
-                                        chit,cint,chip,eta(1:9)
+  Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready
@@ -1986,8 +1988,8 @@ Subroutine system_revive                                      &
 
         Write(Unit=nrest, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest, Fmt=forma, Advance='No') &
-             Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),chit,chip,cint
-        Write(Unit=nrest, Fmt=forma, Advance='No') eta
+             Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
+        Write(Unit=nrest, Fmt=forma, Advance='No') thermo%eta
         Write(Unit=nrest, Fmt=forma, Advance='No') stats%stpval
         Write(Unit=nrest, Fmt=forma, Advance='No') stats%stpvl0
         Write(Unit=nrest, Fmt=forma, Advance='No') stats%sumval
@@ -2019,8 +2021,8 @@ Subroutine system_revive                                      &
 
         Write(Unit=nrest) rcut,rbin,Real(megatm,wp)
         Write(Unit=nrest) &
-             Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),chit,chip,cint
-        Write(Unit=nrest) eta
+             Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
+        Write(Unit=nrest) thermo%eta
         Write(Unit=nrest) stats%stpval
         Write(Unit=nrest) stats%stpvl0
         Write(Unit=nrest) stats%sumval

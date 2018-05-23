@@ -1,5 +1,5 @@
 Module thermostat
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Implicit None
 
   Private

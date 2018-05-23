@@ -30,7 +30,6 @@ Contains
 
   Subroutine nvt_b0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,                   &
              strkin,engke,                      &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
@@ -53,9 +52,6 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma
-    Real( Kind = wp ), Intent(   Out ) :: chit
-
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
     Integer,           Intent( In    ) :: mxshak
@@ -63,7 +59,7 @@ Contains
     Integer,           Intent( In    ) :: megcon,megpmf
     Real( Kind = wp ), Intent( InOut ) :: strcon(1:9),vircon, &
                                           strpmf(1:9),virpmf
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -393,7 +389,7 @@ Contains
 
   ! integrate and apply nvt_b0_scl thermostat - full step
 
-       Call nvt_b0_scl(1,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
+       Call nvt_b0_scl(1,tstep,vxx,vyy,vzz,strkin,engke,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -409,7 +405,7 @@ Contains
 
   ! update kinetic energy and stress
 
-       Call nvt_b0_scl(0,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
+       Call nvt_b0_scl(0,tstep,vxx,vyy,vzz,strkin,engke,thermo,comm)
 
     End If
 
@@ -437,7 +433,6 @@ Contains
 
   Subroutine nvt_b1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             sigma,chit,                   &
              strkin,strknf,strknt,engke,engrot, &
              mxshak,tolnce,                     &
              megcon,strcon,vircon,              &
@@ -462,9 +457,6 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
 
-    Real( Kind = wp ), Intent( In    ) :: sigma
-    Real( Kind = wp ), Intent(   Out ) :: chit
-
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                           strknf(1:9),strknt(1:9),engrot
 
@@ -475,7 +467,7 @@ Contains
                                           strpmf(1:9),virpmf
 
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -1197,9 +1189,9 @@ Contains
   ! integrate and apply nvt_b1_scl thermostat - full step
 
        Call nvt_b1_scl &
-             (1,tstep,sigma,vxx,vyy,vzz,           &
+             (1,tstep,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
+             strkin,strknf,strknt,engke,engrot,thermo,comm)
 
   ! remove system centre of mass velocity
 
@@ -1239,9 +1231,9 @@ Contains
   ! update kinetic energy and stress
 
        Call nvt_b1_scl &
-             (0,tstep,sigma,vxx,vyy,vzz,           &
+             (0,tstep,vxx,vyy,vzz,           &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
+             strkin,strknf,strknt,engke,engrot,thermo,comm)
 
     End If
 
@@ -1272,7 +1264,7 @@ Contains
 
   End Subroutine nvt_b1_vv
 
-  Subroutine nvt_b0_scl(isw,tstep,sigma,vxx,vyy,vzz,chit,strkin,engke,thermo,comm)
+  Subroutine nvt_b0_scl(isw,tstep,vxx,vyy,vzz,strkin,engke,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1285,11 +1277,11 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: isw
-    Real( Kind = wp ),                        Intent( In    ) :: tstep,sigma
+    Real( Kind = wp ),                        Intent( In    ) :: tstep
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ),      Intent(   Out ) :: strkin
-    Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Real( Kind = wp ),                        Intent(   Out ) :: engke
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type), Intent ( InOut ) :: comm
 
     Integer           :: i
@@ -1302,21 +1294,21 @@ Contains
 
   ! temperature scaling coefficient - thermo%tau_t is the decay constant
 
-    chit=Sqrt(1.0_wp+tstep/thermo%tau_t*(sigma/engke-1.0_wp))
+    thermo%chi_t=Sqrt(1.0_wp+tstep/thermo%tau_t*(thermo%sigma/engke-1.0_wp))
 
     If (isw == 0) Return
 
   ! thermostat velocities
 
     Do i=1,natms
-       vxx(i)=vxx(i)*chit
-       vyy(i)=vyy(i)*chit
-       vzz(i)=vzz(i)*chit
+       vxx(i)=vxx(i)*thermo%chi_t
+       vyy(i)=vyy(i)*thermo%chi_t
+       vzz(i)=vzz(i)*thermo%chi_t
     End Do
 
   ! thermostat kinetic stress and energy
 
-    tmp=chit**2
+    tmp=thermo%chi_t**2
 
     strkin=strkin*tmp
     engke=engke*tmp
@@ -1324,9 +1316,9 @@ Contains
   End Subroutine nvt_b0_scl
 
   Subroutine nvt_b1_scl &
-             (isw,tstep,sigma,vxx,vyy,vzz,         &
+             (isw,tstep,vxx,vyy,vzz,         &
              rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,strkin,strknf,strknt,engke,engrot,thermo,comm)
+             strkin,strknf,strknt,engke,engrot,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1339,13 +1331,13 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: isw
-    Real( Kind = wp ),                        Intent( In    ) :: tstep,sigma
+    Real( Kind = wp ),                        Intent( In    ) :: tstep
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:mxrgd  ), Intent( InOut ) :: rgdvxx,rgdvyy,rgdvzz, &
                                                                  rgdoxx,rgdoyy,rgdozz
     Real( Kind = wp ), Dimension( 1:9 ),      Intent(   Out ) :: strkin,strknf,strknt
-    Real( Kind = wp ),                        Intent(   Out ) :: chit,engke,engrot
-    Type( thermostat_type ), Intent( In    ) :: thermo
+    Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type), Intent ( InOut ) :: comm
 
     Integer           :: i,j,irgd
@@ -1365,7 +1357,7 @@ Contains
 
   ! temperature scaling coefficient - thermo%tau_t is the decay constant
 
-    chit=Sqrt(1.0_wp+tstep/thermo%tau_t*(sigma/(engke+engrot)-1.0_wp))
+    thermo%chi_t=Sqrt(1.0_wp+tstep/thermo%tau_t*(thermo%sigma/(engke+engrot)-1.0_wp))
 
     If (isw == 0) Return
 
@@ -1374,24 +1366,24 @@ Contains
     Do j=1,nfree
        i=lstfre(j)
 
-       vxx(i)=vxx(i)*chit
-       vyy(i)=vyy(i)*chit
-       vzz(i)=vzz(i)*chit
+       vxx(i)=vxx(i)*thermo%chi_t
+       vyy(i)=vyy(i)*thermo%chi_t
+       vzz(i)=vzz(i)*thermo%chi_t
     End Do
 
     Do irgd=1,ntrgd
-       rgdvxx(irgd)=rgdvxx(irgd)*chit
-       rgdvyy(irgd)=rgdvyy(irgd)*chit
-       rgdvzz(irgd)=rgdvzz(irgd)*chit
+       rgdvxx(irgd)=rgdvxx(irgd)*thermo%chi_t
+       rgdvyy(irgd)=rgdvyy(irgd)*thermo%chi_t
+       rgdvzz(irgd)=rgdvzz(irgd)*thermo%chi_t
 
-       rgdoxx(irgd)=rgdoxx(irgd)*chit
-       rgdoyy(irgd)=rgdoyy(irgd)*chit
-       rgdozz(irgd)=rgdozz(irgd)*chit
+       rgdoxx(irgd)=rgdoxx(irgd)*thermo%chi_t
+       rgdoyy(irgd)=rgdoyy(irgd)*thermo%chi_t
+       rgdozz(irgd)=rgdozz(irgd)*thermo%chi_t
     End Do
 
   ! thermostat kinetic stress and energy
 
-    tmp=chit**2
+    tmp=thermo%chi_t**2
 
     strknf=strknf*tmp
     strknt=strknt*tmp

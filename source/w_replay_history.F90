@@ -262,7 +262,7 @@
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,stat,devel,green,comm)
+           stat,devel,green,thermo,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -328,7 +328,7 @@
            atmfre,atmfrz,            &
            megshl,megcon,megpmf,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,sigma,stat%engrot,thermo,comm)
+           degfre,degshl,stat%engrot,thermo,comm)
 
   End If
   Call deallocate_statistics_connect(stat)
@@ -337,7 +337,7 @@
 
   If (.not. devel%l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,stat,devel,green,comm)
+           stat,devel,green,thermo,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

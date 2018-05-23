@@ -28,7 +28,7 @@
 
               Call nvt_e0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           chit,                              &
+           thermo%chi_t,                              &
            stat%strkin,stat%engke,                      &
            mxshak,tolnce,                     &
            megcon,stat%strcon,stat%vircon,              &
@@ -64,7 +64,6 @@
 
               Call nvt_b0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,                   &
            stat%strkin,stat%engke,                      &
            mxshak,tolnce,                     &
            megcon,stat%strcon,stat%vircon,              &
@@ -76,7 +75,6 @@
 
               Call nvt_h0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
            mxshak,tolnce,                     &
@@ -90,7 +88,6 @@
               Call nvt_g0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
            nstep,degfre,                 &
-           sigma,chit,cint,         &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
            mxshak,tolnce,                     &
@@ -104,7 +101,7 @@
 
               Call nvt_l2_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           nstep,vel_es2,  &
+           nstep,  &
            stat%strkin,stat%engke,                      &
            mxshak,tolnce,                     &
            megcon,stat%strcon,stat%vircon,              &
@@ -116,8 +113,7 @@
 
               Call npt_l0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,                         &
-           nstep,chip,eta,          &
+           nstep,          &
            degfre,stat%virtot,                     &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -132,8 +128,6 @@
 
               Call npt_b0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,                   &
-           chip,eta,               &
            stat%virtot,                            &
            stat%strkin,stat%engke,                      &
            mxshak,tolnce,                     &
@@ -147,8 +141,6 @@
 
               Call npt_h0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
-           chip,eta,               &
            degfre,stat%virtot,                     &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -163,8 +155,6 @@
 
               Call npt_m0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
-           chip,eta,               &
            degfre,stat%virtot,                     &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -179,8 +169,7 @@
 
               Call nst_l0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,                         &
-           nstep,chip,eta,   &
+           nstep,   &
            degfre,stat%stress,             &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -195,8 +184,6 @@
 
               Call nst_b0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,                   &
-           chip,eta,        &
            stat%stress,                    &
            stat%strkin,stat%engke,                      &
            mxshak,tolnce,                     &
@@ -210,8 +197,6 @@
 
               Call nst_h0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
-           chip,eta,        &
            degfre,stat%stress,             &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -226,8 +211,6 @@
 
               Call nst_m0_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
-           chip,eta,        &
            degfre,stat%stress,             &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -262,7 +245,7 @@
 
               Call nvt_e1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           chit,                              &
+           thermo%chi_t,                              &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            mxshak,tolnce,                     &
            megcon,stat%strcon,stat%vircon,              &
@@ -301,7 +284,6 @@
 
               Call nvt_b1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,                   &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            mxshak,tolnce,                     &
            megcon,stat%strcon,stat%vircon,              &
@@ -314,7 +296,6 @@
 
               Call nvt_h1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            mxshak,tolnce,                     &
@@ -329,7 +310,6 @@
               Call nvt_g1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
            nstep,degfre,                 &
-           sigma,chit,cint,         &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            mxshak,tolnce,                     &
@@ -343,8 +323,7 @@
 
               Call npt_l1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,                         &
-           nstep,chip,eta,          &
+           nstep,          &
            degfre,degrot,stat%virtot,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
@@ -360,8 +339,6 @@
 
               Call npt_b1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,                   &
-           chip,eta,               &
            stat%virtot,                            &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            mxshak,tolnce,                     &
@@ -376,8 +353,6 @@
 
               Call npt_h1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
-           chip,eta,               &
            degfre,degrot,stat%virtot,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
@@ -393,8 +368,6 @@
 
               Call npt_m1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
-           chip,eta,               &
            degfre,degrot,stat%virtot,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
@@ -410,8 +383,7 @@
 
               Call nst_l1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,                         &
-           nstep,chip,eta,   &
+           nstep,   &
            degfre,degrot,stat%stress,      &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%consv,                             &
@@ -427,8 +399,6 @@
 
               Call nst_b1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,                   &
-           chip,eta,        &
            stat%stress,                    &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            mxshak,tolnce,                     &
@@ -443,8 +413,6 @@
 
               Call nst_h1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
-           chip,eta,        &
            degfre,degrot,stat%stress,      &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
@@ -460,8 +428,6 @@
 
               Call nst_m1_vv                  &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
-           sigma,chit,cint,              &
-           chip,eta,        &
            degfre,degrot,stat%stress,      &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &

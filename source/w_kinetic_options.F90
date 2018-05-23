@@ -16,9 +16,9 @@
 ! Apply temperature regaussing
 
         If (thermo%l_tgaus .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_tgaus) == 0) Then
-           chit = 0.0_wp
-           chip = 0.0_wp
-           eta  = 0.0_wp
+           thermo%chi_t = 0.0_wp
+           thermo%chi_p = 0.0_wp
+           thermo%eta  = 0.0_wp
 
            Call regauss_temperature(megrgd,comm)
 
@@ -61,9 +61,9 @@
 ! Apply temperature scaling
 
         If (thermo%l_tscale .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_tscale) == 0) Then
-           chit = 0.0_wp
-           chip = 0.0_wp
-           eta  = 0.0_wp
+           thermo%chi_t = 0.0_wp
+           thermo%chi_p = 0.0_wp
+           thermo%eta  = 0.0_wp
 
 ! quench constraints & PMFs
 
@@ -74,7 +74,7 @@
 
            If (megshl > 0 .and. keyshl == 1) Then
               Do
-                 Call scale_temperature(sigma,degtra,degrot,degfre,comm)
+                 Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
                  Call core_shell_quench(safe,stat%stptmp,comm)
                  If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
                  If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
@@ -82,7 +82,7 @@
                  If (safe) Exit
               End Do
            Else
-              Call scale_temperature(sigma,degtra,degrot,degfre,comm)
+              Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
            End If
 
 ! Correct kinetic stress and energy
