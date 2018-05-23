@@ -12,6 +12,9 @@ Module thermostat
     Real( Kind = wp ) :: press
     !> Simulation stress
     Real( Kind = wp ) :: stress(1:9)
+    !> Average total energy due to equipartition
+    Real( Kind = wp ) :: sigma
+
 
     !> Thermostat relaxation time
     Real( Kind = wp ) :: tau_t
@@ -22,7 +25,7 @@ Module thermostat
     Real( Kind = wp ) :: tension
 
     !> Constraint type for anisotropic barostats
-    Integer :: iso
+    Integer( Kind = wi ) :: iso
 
     !> Andersen thermostat softness
     Real( Kind = wp ) :: soft
@@ -43,6 +46,18 @@ Module thermostat
     Real( Kind = wp ) :: chi_es
     !> Stochastic Dynamics (SD Langevin) barostat friction
     Real( Kind = wp ) :: tai
+    !> Square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
+    Real( Kind = wp ) :: vel_es2
+
+    !> Instantaneous thermostat friction
+    Real( Kind = wp ) :: chi_t
+    !> Instantaneous barostat friction
+    Real( Kind = wp ) :: chi_p
+    !> Friction integral for thermostat/barostat
+    Real( Kind = wp ) :: cint
+    !> Cell parameter scaling factor for barostats
+    Real( Kind = wp ) :: eta(1:9)
+
 
     !> DPD switch
     !>
@@ -81,5 +96,6 @@ Module thermostat
     Logical :: l_zero
     !> Zero temperature regaussing frequency
     Integer :: freq_zero
+
   End Type thermostat_type
 End Module thermostat

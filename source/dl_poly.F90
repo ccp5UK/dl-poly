@@ -232,8 +232,7 @@ program dl_poly
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),min_tol(1:2),                 &
     tolnce,quattol,rdef,rrsd,                  &
-    pdplnc,sigma,         &
-    chit,vel_es2,eta(1:9),chip,cint
+    pdplnc
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(thermostat_type) :: thermo
