@@ -20,6 +20,7 @@ Module tersoff
 
   Use errors_warnings, Only : error,warning
   use numerics, Only : dcell, invert
+  Use statistics, Only : stats_type
   Implicit None
 
   Integer,                        Save :: ntpter = 0, &
@@ -68,7 +69,7 @@ Contains
 
   End Subroutine allocate_tersoff_arrays
   
-  Subroutine tersoff_forces(rcter,engter,virter,stress,comm)
+  Subroutine tersoff_forces(rcter,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -92,8 +93,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Real( Kind = wp ),                   Intent( In    ) :: rcter
-  Real( Kind = wp ),                   Intent(   Out ) :: engter,virter
-  Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+  Type( stats_type ), Intent( InOut )  :: stats
   Type( comms_type ), Intent( InOut )  :: comm
 
 ! flag for undefined potentials NOT NEEDED HERE YET
@@ -333,8 +333,8 @@ Contains
 
 ! initialise potential energy and virial
 
-  engter=0.0_wp
-  virter=0.0_wp
+  stats%engter=0.0_wp
+  stats%virter=0.0_wp
 
 ! initialise stress tensor accumulators
 
@@ -694,8 +694,8 @@ Contains
 
   If (iatm <= natms) Then
 
-     engter = engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj))    ! energy_ij
-     virter = virter + 0.5_wp*(gamma*vterm + gterm*rtf(jj)) ! virial_ij
+     stats%engter = stats%engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj))    ! energy_ij
+     stats%virter = stats%virter + 0.5_wp*(gamma*vterm + gterm*rtf(jj)) ! virial_ij
 
      fxx(iatm)=fxx(iatm)+0.5_wp*gterm*xtf(jj)
      fyy(iatm)=fyy(iatm)+0.5_wp*gterm*ytf(jj)
@@ -840,24 +840,24 @@ Contains
 ! global sum of tersoff potential and virial
 
 
-     buffer(1)=engter
-     buffer(2)=virter
+     buffer(1)=stats%engter
+     buffer(2)=stats%virter
      Call gsum(comm,buffer(1:2))
-     engter=buffer(1)
-     virter=buffer(2)
+     stats%engter=buffer(1)
+     stats%virter=buffer(2)
 
 
 ! complete stress tensor
 
-  stress(1) = stress(1) + strs1
-  stress(2) = stress(2) + strs2
-  stress(3) = stress(3) + strs3
-  stress(4) = stress(4) + strs2
-  stress(5) = stress(5) + strs5
-  stress(6) = stress(6) + strs6
-  stress(7) = stress(7) + strs3
-  stress(8) = stress(8) + strs6
-  stress(9) = stress(9) + strs9
+  stats%stress(1) = stats%stress(1) + strs1
+  stats%stress(2) = stats%stress(2) + strs2
+  stats%stress(3) = stats%stress(3) + strs3
+  stats%stress(4) = stats%stress(4) + strs2
+  stats%stress(5) = stats%stress(5) + strs5
+  stats%stress(6) = stats%stress(6) + strs6
+  stats%stress(7) = stats%stress(7) + strs3
+  stats%stress(8) = stats%stress(8) + strs6
+  stats%stress(9) = stats%stress(9) + strs9
 
   Deallocate (link,listin,lct,lst,      Stat=fail(1))
   Deallocate (xxt,yyt,zzt,              Stat=fail(2))

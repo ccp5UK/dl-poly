@@ -26,6 +26,7 @@ Module two_body
 
   Use timer,  Only : timer_type,start_timer,stop_timer
   Use development, Only : development_type
+  Use statistics, Only : stats_type
   Implicit None
   Private
   Public :: two_body_forces
@@ -35,7 +36,7 @@ Subroutine two_body_forces                        &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress,ewld,devel,tmr,comm)
+           stats,ewld,devel,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -78,9 +79,7 @@ Subroutine two_body_forces                        &
                                                                pdplnc,alpha,epsq
   Real( Kind = wp ),                        Intent( In    ) :: elrc,virlrc
   Real( Kind = wp ), Dimension( 0:mxatyp ), Intent( InOut ) :: elrcm,vlrcm
-  Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe, &
-                                                               engsrp,virsrp
-  Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+  Type( stats_type ), Intent( InOut )                       :: stats
   Type( ewald_type ),                       Intent( InOut ) :: ewld
   Type( development_type ),                 Intent( In    ) :: devel
   Type( timer_type ),                       Intent( InOut ) :: tmr
@@ -137,8 +136,8 @@ Subroutine two_body_forces                        &
   engvdw    = 0.0_wp
   virvdw    = 0.0_wp
 
-  engsrp    = 0.0_wp
-  virsrp    = 0.0_wp
+  stats%engsrp    = 0.0_wp
+  stats%virsrp    = 0.0_wp
 
 
   engcpe_rc = 0.0_wp
@@ -161,8 +160,8 @@ Subroutine two_body_forces                        &
 
   vircpe_dt = 0.0_wp
 
-  engcpe    = 0.0_wp
-  vircpe    = 0.0_wp
+  stats%engcpe    = 0.0_wp
+  stats%vircpe    = 0.0_wp
 
 ! Set up non-bonded interaction (verlet) list using link cells
   If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,devel,tmr,comm)
@@ -170,7 +169,7 @@ Subroutine two_body_forces                        &
 
   If (kimim /= ' ') Then
      Call kim_setup(ntpatm,unqatm,kimim,comm)
-     Call kim_forces(engkim,virkim,stress,comm)
+     Call kim_forces(engkim,virkim,stats%stress,comm)
      Call kim_cleanup(comm)
   End If
 
@@ -182,7 +181,7 @@ Subroutine two_body_forces                        &
 
 ! calculate local density in metals
 
-     Call metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stress,comm)
+     Call metal_ld_compute(rmet,elrcm,vlrcm,engden,virden,stats%stress,comm)
 
   End If
 
@@ -194,12 +193,12 @@ Subroutine two_body_forces                        &
   If (keyfce == 2 .and. ewld%l_fce) Then
      If (mximpl > 0) Then
         If (mxompl <= 2) Then
-           Call ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
+           Call ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stats%stress,ewld,comm)
         Else
-           Call ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
+           Call ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stats%stress,ewld,comm)
         End If
      Else
-        Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
+        Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stats%stress,ewld,comm)
      End If
   End If
 #ifdef CHRONO
@@ -240,7 +239,7 @@ Subroutine two_body_forces                        &
 ! calculate metal forces and potential
 
      If (ntpmet > 0) Then
-        Call metal_forces(i,rmet,xxt,yyt,zzt,rrt,engacc,viracc,stress,safe)
+        Call metal_forces(i,rmet,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,safe)
 
         engmet=engmet+engacc
         virmet=virmet+viracc
@@ -249,7 +248,7 @@ Subroutine two_body_forces                        &
 ! calculate short-range force and potential terms
 
      If (ntpvdw > 0) Then
-        Call vdw_forces(i,rvdw,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+        Call vdw_forces(i,rvdw,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
         engvdw=engvdw+engacc
         virvdw=virvdw+viracc
@@ -268,9 +267,9 @@ Subroutine two_body_forces                        &
 ! calculate coulombic forces, Ewald sum - real space contribution
 
            If (mxompl <= 2) Then
-              Call ewald_real_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,ewld,comm)
+              Call ewald_real_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,ewld,comm)
            Else
-              Call ewald_real_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
+              Call ewald_real_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
            End If
 
            engcpe_rl=engcpe_rl+engacc
@@ -280,7 +279,7 @@ Subroutine two_body_forces                        &
 
 ! distance dependant dielectric potential
 
-           Call coul_dddp_mforces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_dddp_mforces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -289,7 +288,7 @@ Subroutine two_body_forces                        &
 
 ! coulombic 1/r potential with no truncation or damping
 
-           Call coul_cp_mforces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_cp_mforces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -298,7 +297,7 @@ Subroutine two_body_forces                        &
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
+           Call coul_fscp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -307,7 +306,7 @@ Subroutine two_body_forces                        &
 
 ! reaction field potential
 
-           Call coul_rfp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
+           Call coul_rfp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -320,7 +319,7 @@ Subroutine two_body_forces                        &
 
 ! calculate coulombic forces, Ewald sum - real space contribution
 
-           Call ewald_real_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
+           Call ewald_real_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -329,7 +328,7 @@ Subroutine two_body_forces                        &
 
 ! distance dependant dielectric potential
 
-           Call coul_dddp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_dddp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -338,7 +337,7 @@ Subroutine two_body_forces                        &
 
 ! coulombic 1/r potential with no truncation or damping
 
-           Call coul_cp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+           Call coul_cp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -347,7 +346,7 @@ Subroutine two_body_forces                        &
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
+           Call coul_fscp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -356,7 +355,7 @@ Subroutine two_body_forces                        &
 
 ! reaction field potential
 
-           Call coul_rfp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress,comm)
+           Call coul_rfp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -374,7 +373,7 @@ Subroutine two_body_forces                        &
 ! Poisson solver alternative to Ewald
 
   If (keyfce == 12) Then
-     Call poisson_forces(alpha,epsq,engacc,viracc,stress,comm)
+     Call poisson_forces(alpha,epsq,engacc,viracc,stats%stress,comm)
 
      engcpe_rl=engcpe_rl+engacc
      vircpe_rl=vircpe_rl+viracc
@@ -426,12 +425,12 @@ Subroutine two_body_forces                        &
            If (keyfce == 2) Then ! Ewald corrections
               If (mximpl > 0) Then
                  If (mxompl <= 2) Then
-                    Call ewald_excl_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+                    Call ewald_excl_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
                  Else
-                    Call ewald_excl_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+                    Call ewald_excl_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
                  End If
               Else
-                 Call ewald_excl_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+                 Call ewald_excl_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
               End If
 
               engcpe_ex=engcpe_ex+engacc
@@ -442,7 +441,7 @@ Subroutine two_body_forces                        &
 
            If (keyind == 1) Then
               If (list(-3,i)-list(0,i) > 0) Then
-                 Call coul_chrm_forces(i,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stress)
+                 Call coul_chrm_forces(i,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
                  engcpe_ch=engcpe_ch+engacc
                  vircpe_ch=vircpe_ch+viracc
@@ -519,12 +518,12 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
         If (megfrz /= 0) Then
            If (keyfce == 2) Then ! Ewald
               If (mximpl > 0) Then
-                 Call ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
+                 Call ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,comm)
               Else
-                 Call ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
+                 Call ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,comm)
               End If
            Else !If (keyfce == 12) Then ! Poisson Solver
-              Call poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
+              Call poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,comm)
            End If
         End If
 
@@ -532,7 +531,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 
 ! Refresh all Ewald k-space contributions
 
-        Call ewld%refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress)
+        Call ewld%refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stats%stress)
 
      End If
 
@@ -553,7 +552,7 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 ! Find the change of energy produced by the torques on multipoles
 ! under infinitesimal rotations & convert to Cartesian coordinates
 
-  If (mximpl > 0) Call d_ene_trq_mpoles(vircpe_dt,stress)
+  If (mximpl > 0) Call d_ene_trq_mpoles(vircpe_dt,stats%stress)
 
 ! sum up contributions to potentials
 
@@ -616,29 +615,29 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 
 ! Globalise coulombic contributions: cpe
 
-  engcpe = engcpe_rc + engcpe_rl + engcpe_ch + engcpe_ex + engcpe_fr + engcpe_nz
-  vircpe = vircpe_rc + vircpe_rl + vircpe_ch + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
+  stats%engcpe = engcpe_rc + engcpe_rl + engcpe_ch + engcpe_ex + engcpe_fr + engcpe_nz
+  stats%vircpe = vircpe_rc + vircpe_rl + vircpe_ch + vircpe_ex + vircpe_fr + vircpe_nz + vircpe_dt
 
 ! Add non-zero total system charge correction to
 ! diagonal terms of stress tensor (per node)
 
   tmp = - vircpe_nz/(3.0_wp*Real(comm%mxnode,wp))
-  stress(1) = stress(1) + tmp
-  stress(5) = stress(5) + tmp
-  stress(9) = stress(9) + tmp
+  stats%stress(1) = stats%stress(1) + tmp
+  stats%stress(5) = stats%stress(5) + tmp
+  stats%stress(9) = stats%stress(9) + tmp
 
 ! Globalise short-range, KIM and metal interactions with
 ! their long-range corrections contributions: srp
 
-  engsrp = engkim + (engden + engmet + elrcm(0)) + (engvdw + elrc)
-  virsrp = virkim + (virden + virmet + vlrcm(0)) + (virvdw + virlrc)
+  stats%engsrp = engkim + (engden + engmet + elrcm(0)) + (engvdw + elrc)
+  stats%virsrp = virkim + (virden + virmet + vlrcm(0)) + (virvdw + virlrc)
 
 ! Add long-range corrections to diagonal terms of stress tensor (per node)
 
   tmp = - (virlrc+vlrcm(0))/(3.0_wp*Real(comm%mxnode,wp))
-  stress(1) = stress(1) + tmp
-  stress(5) = stress(5) + tmp
-  stress(9) = stress(9) + tmp
+  stats%stress(1) = stats%stress(1) + tmp
+  stats%stress(5) = stats%stress(5) + tmp
+  stats%stress(9) = stats%stress(9) + tmp
 
 #ifdef CHRONO
   Call stop_timer(tmr%t_shortrange)

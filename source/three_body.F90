@@ -20,6 +20,7 @@ Module three_body
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use errors_warnings, Only : error,warning
   Use numerics, Only : dcell, invert
+  Use statistics, Only : stats_type
   Implicit None
 
   Integer,                        Save :: ntptbp = 0
@@ -59,7 +60,7 @@ Contains
 
   End Subroutine allocate_three_body_arrays
   
-  Subroutine three_body_forces(rctbp,engtbp,virtbp,stress,comm)
+  Subroutine three_body_forces(rctbp,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -79,8 +80,7 @@ Contains
 
 
   Real( Kind = wp ),                   Intent( In    ) :: rctbp
-  Real( Kind = wp ),                   Intent(   Out ) :: engtbp,virtbp
-  Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+  Type(stats_type), Intent( InOut ) :: stats
   Type(comms_type), Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -315,8 +315,8 @@ Contains
 
 ! initialise potential energy and virial
 
-  engtbp=0.0_wp
-  virtbp=0.0_wp
+  stats%engtbp=0.0_wp
+  stats%virtbp=0.0_wp
 
 ! initialise stress tensor accumulators
 
@@ -679,8 +679,8 @@ Contains
 
 ! energy and virial (associated to the head atom)
 
-     engtbp=engtbp+pterm
-     virtbp=virtbp+vterm
+     stats%engtbp=stats%engtbp+pterm
+     stats%virtbp=stats%virtbp+vterm
 
 ! calculate stress tensor (associated to the head atom)
 
@@ -737,23 +737,23 @@ Contains
 ! global sum of three-body potential and virial
 
 
-     buffer(1)=engtbp
-     buffer(2)=virtbp
+     buffer(1)=stats%engtbp
+     buffer(2)=stats%virtbp
      Call gsum(comm,buffer(1:2))
-     engtbp=buffer(1)
-     virtbp=buffer(2)
+     stats%engtbp=buffer(1)
+     stats%virtbp=buffer(2)
 
 ! complete stress tensor
 
-  stress(1) = stress(1) + strs1
-  stress(2) = stress(2) + strs2
-  stress(3) = stress(3) + strs3
-  stress(4) = stress(4) + strs2
-  stress(5) = stress(5) + strs5
-  stress(6) = stress(6) + strs6
-  stress(7) = stress(7) + strs3
-  stress(8) = stress(8) + strs6
-  stress(9) = stress(9) + strs9
+  stats%stress(1) = stats%stress(1) + strs1
+  stats%stress(2) = stats%stress(2) + strs2
+  stats%stress(3) = stats%stress(3) + strs3
+  stats%stress(4) = stats%stress(4) + strs2
+  stats%stress(5) = stats%stress(5) + strs5
+  stats%stress(6) = stats%stress(6) + strs6
+  stats%stress(7) = stats%stress(7) + strs3
+  stats%stress(8) = stats%stress(8) + strs6
+  stats%stress(9) = stats%stress(9) + strs9
 
   Deallocate (link,listin,lct,lst, Stat=fail(1))
   Deallocate (xxt,yyt,zzt,         Stat=fail(2))

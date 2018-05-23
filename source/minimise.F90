@@ -34,7 +34,7 @@ Module minimise
   Use shared_units,    Only : update_shared_units
   Use rigid_bodies,    Only : rigid_bodies_split_torque,rigid_bodies_move
   Use errors_warnings, Only : error,warning,info
-
+  Use statistics, Only : stats_type
 
   Implicit None
 
@@ -609,7 +609,7 @@ Contains
 
 End Subroutine minimise_relax
 
-Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
+Subroutine zero_k_optimise(stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -637,8 +637,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
-                                        strknf(1:9),strknt(1:9),engrot
+  Type( stats_type ), Intent( InOut ) :: stats
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer           :: fail,i,j,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp,megrgd
@@ -655,9 +654,9 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! preserve magnitudes of old instantaneous energies in order to scale back to them
 
-  e_t=0.5_wp*(strknt(1)+strknt(5)+strknt(9)) ! RBs translational
-  e_r=engrot                                 ! RBs rotational
-  e_f=engke-e_t                              ! FPs (free particles)
+  e_t=0.5_wp*(stats%strknt(1)+stats%strknt(5)+stats%strknt(9)) ! RBs translational
+  e_r=stats%engrot                                 ! RBs rotational
+  e_f=stats%engke-e_t                              ! FPs (free particles)
 
 ! initialise RB energy components
 
@@ -901,15 +900,15 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! update kinetic energy and stress
 
-     Call kinstresf(vxx,vyy,vzz,strknf,comm)
-     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+     Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
+     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stats%strknt,comm)
 
-     strkin=strknf+strknt
-     engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+     stats%strkin=stats%strknf+stats%strknt
+     stats%engke=0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
 
 ! update rotational energy
 
-     engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+     stats%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
 
      Deallocate (ggx,ggy,ggz, Stat=fail)
      If (fail > 0) Then
@@ -954,8 +953,8 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! Update kinetic stress and energy
 
-     Call kinstress(vxx,vyy,vzz,strkin,comm)
-     engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+     Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
+     stats%engke=0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
   End If
 
 ! zero angular momentum about centre of mass - non-periodic system
@@ -1129,7 +1128,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
         engkf=getknf(vxx,vyy,vzz,comm)
         engkt=getknt(rgdvxx,rgdvyy,rgdvzz,comm)
-        engke=engkf+engkt
+        stats%engke=engkf+engkt
 
 ! reset positions to original reference frame
 
@@ -1239,7 +1238,7 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! get kinetic energy
 
-        engke=getkin(vxx,vyy,vzz,comm)
+        stats%engke=getkin(vxx,vyy,vzz,comm)
 
 ! reset positions to original reference frame
 
@@ -1267,10 +1266,10 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! apply temperature components scaling
 
-  engkf=engke-engkt
-  If (engkf+engkt+engrot > 1.0e-6_wp .and. e_f+e_t+e_r > 1.0e-6_wp) Then
+  engkf=stats%engke-engkt
+  If (engkf+engkt+stats%engrot > 1.0e-6_wp .and. e_f+e_t+e_r > 1.0e-6_wp) Then
      If (megrgd > 0) Then
-        tmp=Sqrt((e_f+e_t+e_r)/(engkf+engkt+engrot))
+        tmp=Sqrt((e_f+e_t+e_r)/(engkf+engkt+stats%engrot))
         Do j=1,nfree
            i=lstfre(j)
 
@@ -1333,17 +1332,17 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! update kinetic energy and stress
 
-        Call kinstresf(vxx,vyy,vzz,strknf,comm)
-        Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+        Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
+        Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stats%strknt,comm)
 
-        strkin=strknf+strknt
-        engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+        stats%strkin=stats%strknf+stats%strknt
+        stats%engke=0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
 
 ! update rotational energy
 
-        engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+        stats%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
      Else
-        tmp=Sqrt(e_f/engke)
+        tmp=Sqrt(e_f/stats%engke)
         Do i=1,natms
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
               vxx(i)=vxx(i)*tmp
@@ -1354,8 +1353,8 @@ Subroutine zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
 
 ! Update kinetic stress and energy
 
-        Call kinstress(vxx,vyy,vzz,strkin,comm)
-        engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+        Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
+        stats%engke=0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
      End If
   Else ! zero them and let's see if we can crash
      Do i=1,natms

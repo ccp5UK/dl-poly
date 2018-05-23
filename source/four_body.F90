@@ -21,7 +21,8 @@ Module four_body
                           mxcell, mxatms,nrite
 
   Use errors_warnings, Only : error, warning
-  use numerics, Only : invert, dcell
+  Use numerics, Only : invert, dcell
+  Use statistics, Only : stats_type
   Implicit None
 
   Integer,                        Save :: ntpfbp = 0
@@ -62,7 +63,7 @@ Contains
   End Subroutine allocate_four_body_arrays
   
   
-  Subroutine four_body_forces(rcfbp,engfbp,virfbp,stress,comm)
+  Subroutine four_body_forces(rcfbp,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -82,8 +83,7 @@ Contains
 
 
   Real( Kind = wp ),                   Intent( In    ) :: rcfbp
-  Real( Kind = wp ),                   Intent(   Out ) :: engfbp,virfbp
-  Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+  Type( stats_type ),                  Intent( InOut ) :: stats
   Type( comms_type ),                  Intent( InOut ) :: comm
   
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -322,8 +322,8 @@ Contains
 
 ! initialise potential energy and virial
 
-  engfbp=0.0_wp
-  virfbp=0.0_wp
+  stats%engfbp=0.0_wp
+  stats%virfbp=0.0_wp
 
 ! initialise stress tensor accumulators
 
@@ -708,7 +708,7 @@ Contains
 
 ! sum inversion energy
 
-        engfbp=engfbp+potfbp
+        stats%engfbp=stats%engfbp+potfbp
 
 ! stress tensor calculation for inversion terms
 
@@ -785,19 +785,19 @@ Contains
 
 ! global sum of four-body potential: virial is zero!!!
 
-  Call gsum(comm,engfbp)
+  Call gsum(comm,stats%engfbp)
 
 ! complete stress tensor
 
-  stress(1) = stress(1) + strs1
-  stress(2) = stress(2) + strs2
-  stress(3) = stress(3) + strs3
-  stress(4) = stress(4) + strs2
-  stress(5) = stress(5) + strs5
-  stress(6) = stress(6) + strs6
-  stress(7) = stress(7) + strs3
-  stress(8) = stress(8) + strs6
-  stress(9) = stress(9) + strs9
+  stats%stress(1) = stats%stress(1) + strs1
+  stats%stress(2) = stats%stress(2) + strs2
+  stats%stress(3) = stats%stress(3) + strs3
+  stats%stress(4) = stats%stress(4) + strs2
+  stats%stress(5) = stats%stress(5) + strs5
+  stats%stress(6) = stats%stress(6) + strs6
+  stats%stress(7) = stats%stress(7) + strs3
+  stats%stress(8) = stats%stress(8) + strs6
+  stats%stress(9) = stats%stress(9) + strs9
 
   Deallocate (link,listin,lct,lst, Stat=fail(1))
   Deallocate (xxt,yyt,zzt,         Stat=fail(2))

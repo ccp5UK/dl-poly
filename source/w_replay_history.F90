@@ -62,14 +62,14 @@
 ! Calculate kinetic tensor and energy at restart as it may not exists later
 
   If (megrgd > 0) Then
-     Call kinstresf(vxx,vyy,vzz,strknf,comm)
-     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+     Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
 
-     strkin=strknf+strknt
+     stat%strkin=stat%strknf+stat%strknt
   Else
-     Call kinstress(vxx,vyy,vzz,strkin,comm)
+     Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
   End If
-  engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+  stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
   nstpe = nstep
   nstph = 0 ! trajectory points counter
@@ -152,36 +152,36 @@
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstph,         &
            elrc,virlrc,elrcm,vlrcm,               &
-           engcpe,vircpe,engsrp,virsrp,stress,ewld,devel,tmr,comm)
+           stat,ewld,devel,tmr,comm)
 
 ! Calculate bond forces
 
            If (megbnd > 0 .and. mxgbnd1 > 0) Then
               isw = 0
-              Call bonds_forces(isw,engbnd,virbnd,stress, &
-              rcut,keyfce,alpha,epsq,engcpe,vircpe,comm)
+              Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress, &
+              rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,comm)
            End If
 
 ! Calculate valence angle forces
 
            If (megang > 0 .and. mxgang1 > 0) Then
               isw = 0
-              Call angles_forces(isw,engang,virang,stress,comm)
+              Call angles_forces(isw,stat%engang,stat%virang,stat%stress,comm)
            End If
 
 ! Calculate dihedral forces
 
            If (megdih > 0 .and. mxgdih1 > 0) Then
               isw = 0
-              Call dihedrals_forces(isw,engdih,virdih,stress, &
-           rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp,comm)
+              Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
+           rcut,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,comm)
            End If
 
 ! Calculate inversion forces
 
            If (meginv > 0 .and. mxginv1 > 0) Then
               isw = 0
-              Call inversions_forces(isw,enginv,virinv,stress,comm)
+              Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,comm)
            End If
 
 ! Calculate kinetic stress and energy if available
@@ -190,33 +190,33 @@
               If (megrgd > 0) Then
                  Call rigid_bodies_quench(comm)
 
-                 Call kinstresf(vxx,vyy,vzz,strknf,comm)
-                 Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+                 Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+                 Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
 
-                 strkin=strknf+strknt
+                 stat%strkin=stat%strknf+stat%strknt
 
-                 engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+                 stat%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
                  If (levcfg == 2) Then
-                    Call rigid_bodies_str_ss(strcom,comm)
-                    vircom=-(strcom(1)+strcom(5)+strcom(9))
+                    Call rigid_bodies_str_ss(stat%strcom,comm)
+                    stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
                  End If
               Else
-                 Call kinstress(vxx,vyy,vzz,strkin,comm)
+                 Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
               End If
-              engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+              stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
 ! Apply kinetic options
 
-              Call w_kinetic_options()
+              Call w_kinetic_options(stat)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
-              If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(shlke,comm)
+              If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(stat%shlke,comm)
            End If
 
 ! Get complete stress tensor
 
-           strtot = strcon + strpmf + stress + strkin + strcom + strdpd
+           stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strcom + stat%strdpd
 
 ! Calculate physical quantities and collect statistics,
 ! accumulate z-density if needed
@@ -233,19 +233,7 @@
            keyres,keyens,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
-           engcpe,vircpe,engsrp,virsrp,   &
-           engter,virter,                 &
-           engtbp,virtbp,engfbp,virfbp,   &
-           engshl,virshl,shlke,           &
-           vircon,virpmf,                 &
-           engtet,virtet,engfld,virfld,   &
-           engbnd,virbnd,engang,virang,   &
-           engdih,virdih,enginv,virinv,   &
-           engke,engrot,consv,vircom,     &
-           strtot,           &
-           stpeng,stpvir,stpcfg,stpeth,   &
-           stptmp,stpprs,stpvol,          &
-           mxatdm_,stat,thermo,comm,virdpd)
+           mxatdm_,stat,thermo,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
@@ -274,7 +262,7 @@
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,stat,devel,green,comm)
+           chit,cint,chip,eta,stat,devel,green,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -340,7 +328,7 @@
            atmfre,atmfrz,            &
            megshl,megcon,megpmf,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,sigma,engrot,thermo,comm)
+           degfre,degshl,sigma,stat%engrot,thermo,comm)
 
   End If
   Call deallocate_statistics_connect(stat)
@@ -349,7 +337,7 @@
 
   If (.not. devel%l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,stat,devel,green,comm)
+           chit,cint,chip,eta,stat,devel,green,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

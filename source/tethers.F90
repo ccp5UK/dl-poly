@@ -21,16 +21,18 @@ Module tethers
 
 
   Implicit None
+  Private
 
-  Integer,                        Save :: ntteth = 0
+  Integer, Public,                   Save :: ntteth = 0
 
 
-  Integer,           Allocatable, Save :: numteth(:),keytet(:)
-  Integer,           Allocatable, Save :: lsttet(:),listtet(:,:),legtet(:,:)
+  Integer,Public,       Allocatable, Save :: numteth(:),keytet(:)
+  Integer,Public,       Allocatable, Save :: lsttet(:),listtet(:,:),legtet(:,:)
 
-  Real( Kind = wp ), Allocatable, Save :: prmtet(:,:)
+  Real( Kind = wp ),Public, Allocatable, Save :: prmtet(:,:)
 
   Public :: allocate_tethers_arrays , deallocate_tethers_arrays
+  Public :: tethers_forces
 
 Contains
 
@@ -71,7 +73,7 @@ Contains
 
   End Subroutine deallocate_tethers_arrays
 
-  Subroutine tethers_forces(engtet,virtet,stress,stats,comm)
+  Subroutine tethers_forces(stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -84,8 +86,6 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Real( Kind = wp ),                   Intent(   Out ) :: engtet,virtet
-  Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
   Type( stats_type ), Intent( InOut ) :: stats
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -154,8 +154,8 @@ Contains
 
 ! zero tether energy and virial accumulators
 
-  engtet=0.0_wp
-  virtet=0.0_wp
+  stats%engtet=0.0_wp
+  stats%virtet=0.0_wp
 
 ! loop over all specified tethered atoms
 
@@ -237,8 +237,8 @@ Contains
 
 ! calculate tether energy and virial
 
-        engtet=engtet+omega
-        virtet=virtet+gamma*rab*rab
+        stats%engtet=stats%engtet+omega
+        stats%virtet=stats%virtet+gamma*rab*rab
 
 ! calculate stress tensor
 
@@ -254,15 +254,15 @@ Contains
 
 ! complete stress tensor
 
-  stress(1) = stress(1) + strs1
-  stress(2) = stress(2) + strs2
-  stress(3) = stress(3) + strs3
-  stress(4) = stress(4) + strs2
-  stress(5) = stress(5) + strs5
-  stress(6) = stress(6) + strs6
-  stress(7) = stress(7) + strs3
-  stress(8) = stress(8) + strs6
-  stress(9) = stress(9) + strs9
+  stats%stress(1) = stats%stress(1) + strs1
+  stats%stress(2) = stats%stress(2) + strs2
+  stats%stress(3) = stats%stress(3) + strs3
+  stats%stress(4) = stats%stress(4) + strs2
+  stats%stress(5) = stats%stress(5) + strs5
+  stats%stress(6) = stats%stress(6) + strs6
+  stats%stress(7) = stats%stress(7) + strs3
+  stats%stress(8) = stats%stress(8) + strs6
+  stats%stress(9) = stats%stress(9) + strs9
 
 ! check for undefined potentials
 
@@ -271,11 +271,11 @@ Contains
 
 ! sum contributions to potential and virial
 
-     buffer(1)=engtet
-     buffer(2)=virtet
+     buffer(1)=stats%engtet
+     buffer(2)=stats%virtet
      Call gsum(comm,buffer(1:2))
-     engtet=buffer(1)
-     virtet=buffer(2)
+     stats%engtet=buffer(1)
+     stats%virtet=buffer(2)
 
   Deallocate (lstopt,         Stat=fail(1))
   Deallocate (xdab,ydab,zdab, Stat=fail(2))

@@ -10,14 +10,14 @@
 ! Calculate kinetic tensor and energy at restart
 
   If (megrgd > 0) Then
-     Call kinstresf(vxx,vyy,vzz,strknf,comm)
-     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+     Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
 
-     strkin=strknf+strknt
+     stat%strkin=stat%strknf+stat%strknt
   Else
-     Call kinstress(vxx,vyy,vzz,strkin,comm)
+     Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
   End If
-  engke = 0.5_wp*(strkin(1)+strkin(5)+strkin(9))
+  stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
 ! If levcfg=2 and RBs are present, update forces on shared ones
 ! and get RB COM stress and virial at restart.  If levcfg<2
@@ -30,12 +30,12 @@
         If (thermo%l_langevin) Then
            Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl)
            If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
-           Call rigid_bodies_str__s(strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
+           Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
         Else
-           Call rigid_bodies_str_ss(strcom,comm)
+           Call rigid_bodies_str_ss(stat%strcom,comm)
         End If
 
-        vircom=-(strcom(1)+strcom(5)+strcom(9))
+        stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
      End If
   End If
 
@@ -50,7 +50,7 @@
 
 ! Apply impact
 
-     Call w_impact_option(levcfg,nstep,nsteql,engke,engrot,megrgd,strkin,strknf,strknt,impa,comm)
+     Call w_impact_option(levcfg,nstep,nsteql,megrgd,stat,impa,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 ! levcfg == 2 avoids application twice when forces are calculated at (re)start
@@ -76,7 +76,7 @@
 ! zero Kelvin structure optimisation
 
         If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_zero) == 0) &
-           Call zero_k_optimise(strkin,strknf,strknt,engke,engrot,comm)
+           Call zero_k_optimise(stat,comm)
 
 ! Switch on electron-phonon coupling only after time offset
 
@@ -84,7 +84,7 @@
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0)
+        Call w_integrate_vv(0,stat)
 
 ! Refresh mappings
 
@@ -113,11 +113,11 @@
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1)
+        Call w_integrate_vv(1,stat)
 
 ! Apply kinetic options
 
-        Call w_kinetic_options()
+        Call w_kinetic_options(stat)
 
 ! Update total time of simulation
 
@@ -136,7 +136,7 @@
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           chit,cint,chip,eta,strcon,strpmf,stress,stat,devel,green,comm)
+           chit,cint,chip,eta,stat,devel,green,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
