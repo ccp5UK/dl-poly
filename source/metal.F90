@@ -10,7 +10,7 @@ Module metal
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use setup
   Use site,   Only : ntpatm,unqatm,dens
   Use configuration, Only : natms,ltg,ltype,list,fxx,fyy,fzz,&
@@ -25,33 +25,47 @@ Module metal
   Use numerics, Only : erfgen_met
   Implicit None
 
-  Logical,                        Save :: ld_met = .false., & ! no direct calculations are opted
-                                          ls_met = .false., & ! no embedding over Sqrt(rho) but over rho
-                                          l2bmet = .false.    ! no 2B(EAM or EEAM)
+  Private
 
-  Integer,                        Save :: ntpmet = 0 , & ! number of different metal interactions
-                                          tabmet = -1    ! undefined, 0 - no TABEAM, 1 - EAM, 2 - EEAM, 3- 2BEAM, 4 - 2BEEAM
+  !> Type to contain metal interaction variables
+  Type, Public :: metal_type
+    Private
 
+    !> Direct calculations switch
+    Logical, Public :: l_direct = .false.
+    !> Embedding over Sqrt(rho) but over rho switch
+    Logical, Public :: l_emb = .false.
+    !> 2B(EAM or EEAM) switch
+    Logical, Public :: l_2b = .false.
 
-  Integer,           Allocatable, Save :: lstmet(:),ltpmet(:)
+    !> number of different metal interactions
+    Integer( Kind = wi ), Public :: n_potentials = 0
+    !> - 0 = no TABEAM
+    !> - 1 = EAM
+    !> - 2 = EEAM
+    !> - 3 = 2BEAM
+    !> - 4 = 2BEEAM
+    Integer( Kind = wi ), Public :: tab = -1
 
-  Real( Kind = wp ), Allocatable, Save :: prmmet(:,:)
+    Integer( Kind = wi ), Allocatable, Public :: list(:),ltp(:)
 
-  Real( Kind = wp ), Allocatable, Save :: elrcm(:),vlrcm(:)
+    Real( Kind = wp ), Allocatable, Public :: prm(:,:)
 
-! Possible tabulated calculation arrays
+    Real( Kind = wp ), Allocatable, Public :: elrcm(:),vlrcm(:)
 
-  Real( Kind = wp ), Allocatable, Save :: vmet(:,:,:), dmet(:,:,:),dmes(:,:,:), &
-                                          fmet(:,:,:),fmes(:,:,:)
+    !> Possible tabulated calculation arrays
+    Real( Kind = wp ), Allocatable, Dimension(:,:,:), Public :: vmet,dmet,dmes, &
+                                                                fmet,fmes
+    ! Atomic density [reused as embedding derivative(s)] helper array(s)
+    Real( Kind = wp ), Allocatable, Dimension(:), Public :: rho,rhs
 
-! Atomic density [reused as embedding derivative(s)] helper array(s)
+    ! Many-body perturbation potential error function and derivative arrays
+    Real( Kind = wp ), Allocatable, Dimension(:), Public :: merf,mfer
+  Contains
+    Private
 
-  Real( Kind = wp ), Dimension( : ), Allocatable, Save :: rho,rhs
-
-! Many-body perturbation potential error function and derivative arrays
-
-  Real( Kind = wp ), Dimension( : ), Allocatable, Save :: merf,mfer
-
+    Final :: cleanup
+  End Type metal_Type
 
   Public :: allocate_metal_arrays, &
             allocate_metal_table_arrays
@@ -3015,5 +3029,54 @@ Subroutine metal_ld_set_halo(comm)
 
 End Subroutine metal_ld_set_halo
 
+Subroutine cleanup(met)
+  Type(metal_type) :: met
 
+  If (Allocated(met%list)) Then
+    Deallocate(met%list)
+  End If
+  If (Allocated(met%ltp)) Then
+    Deallocate(met%ltp)
+  End If
+  If (Allocated(met%prm)) Then
+    Deallocate(met%prm)
+  End If
+
+  If (Allocated(met%elrcm)) Then
+    Deallocate(met%elrcm)
+  End If
+  If (Allocated(met%vlrcm)) Then
+    Deallocate(met%vlrcm)
+  End If
+
+  If (Allocated(met%vmet)) Then
+    Deallocate(met%vmet)
+  End If
+  If (Allocated(met%dmet)) Then
+    Deallocate(met%dmet)
+  End If
+  If (Allocated(met%dmes)) Then
+    Deallocate(met%dmes)
+  End If
+  If (Allocated(met%fmet)) Then
+    Deallocate(met%fmet)
+  End If
+  If (Allocated(met%fmes)) Then
+    Deallocate(met%fmes)
+  End If
+
+  If (Allocated(met%rho)) Then
+    Deallocate(met%rho)
+  End If
+  If (Allocated(met%rhs)) Then
+    Deallocate(met%rhs)
+  End If
+
+  If (Allocated(met%merf)) Then
+    Deallocate(met%merf)
+  End If
+  If (Allocated(met%mfer)) Then
+    Deallocate(met%mfer)
+  End If
+End Subroutine cleanup
 End Module metal
