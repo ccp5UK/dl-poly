@@ -96,7 +96,7 @@
 
 ! Apply PLUMED driven dynamics
 
-     If (l_plumed) Then
+     If (plume%l_plumed) Then
         stat%stpcfg =stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
                  stat%engshl + stat%engtet + stat%engfld +                   &
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv

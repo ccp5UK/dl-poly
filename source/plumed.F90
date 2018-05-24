@@ -30,6 +30,8 @@ Module plumed
     Character( Len = 125 ), Public :: input    = "PLUMED"
     Character( Len = 125 ), Public :: logfile  = "OUTPUT.PLUMED"
 
+    !> DL_POLY precision
+    Integer, Public :: prec = wp
     !> default no
     Integer( Kind = wi ),   Public :: restart     = 0
 
@@ -44,8 +46,6 @@ Module plumed
   End Type plumed_type
 
   ! PLUMED parameters
-  !> DL_POLY precision
-  Integer, Parameter, Public :: plumed_precision = wp
   !> DLPOLY_Internal(10J/mol) /kJ/mol
   Real( Kind = wp ), Parameter, Public :: plumed_energyUnits = 0.01_wp
   !> Angstrtom/nanometer
@@ -70,11 +70,11 @@ Contains
     Type(comms_type),  Intent( InOut ) :: comm
 
 #ifdef PLUMED
-    Call plumed_f_installed(has_plumed)
+    Call plumed_f_installed(plume%has_plumed)
 
-    If (has_plumed > 0) Then
+    If (plume%has_plumed > 0) Then
        Call plumed_f_gcreate()
-       Call plumed_f_gcmd("getApiVersion"//sn,plumed_version)
+       Call plumed_f_gcmd("getApiVersion"//sn,plume%version)
        Call plumed_f_gcmd("setRealPrecision"//sn,plumed_precision)
        Call plumed_f_gcmd("setMDEnergyUnits"//sn,plumed_energyUnits)
        Call plumed_f_gcmd("setMDLengthUnits"//sn,plumed_lengthUnits)
@@ -82,8 +82,8 @@ Contains
        Call plumed_f_gcmd("setMPIFComm"//sn,comm%comm)
 ! Ideally would change file names here into names that can be controlled by user
 ! from control
-       Call plumed_f_gcmd("setPlumedDat"//sn,Trim(plumed_input)//sn)
-       Call plumed_f_gcmd("setLogFile"//sn,Trim(plumed_log)//sn)
+       Call plumed_f_gcmd("setPlumedDat"//sn,Trim(plume%input)//sn)
+       Call plumed_f_gcmd("setLogFile"//sn,Trim(plume%logfile)//sn)
        Call plumed_f_gcmd("setNatoms"//sn,megatm)
 ! The name should be updated when there are new releases of dlpoly
        Call plumed_f_gcmd("setMDEngine"//sn,"DL_POLY "//DLP_VERSION//sn)
@@ -123,14 +123,14 @@ Contains
     Call info(banner,15,.true.)
 
     Write(messages(1),'(a)')        "*** Activating PLUMED Extension. ***"
-    Write(messages(2),'(a)')        "*** Using PLUMED input file: "//Trim(plumed_input)
-    Write(messages(3),'(a)')        "*** Using PLUMED log file: "//Trim(plumed_log)
-    Write(messages(4),'(a,i0)')     "*** Using PLUMED API version: ",plumed_version
+    Write(messages(2),'(a)')        "*** Using PLUMED input file: "//Trim(plume%input)
+    Write(messages(3),'(a)')        "*** Using PLUMED log file: "//Trim(plume%logfile)
+    Write(messages(4),'(a,i0)')     "*** Using PLUMED API version: ",plume%version
     Write(messages(5),'(a,i0)')     "*** Using PLUMED Real precision: ", plumed_precision
     Write(messages(6),'(a,es15.6)') "*** Using PLUMED energy conversion factor: ", plumed_energyUnits
     Write(messages(7),'(a,es15.6)') "*** Using PLUMED length conversion factor: ", plumed_lengthUnits
     Write(messages(8),'(a,es15.6)') "*** Using PLUMED time conversion factor: ", plumed_timeUnits
-    Write(messages(9),'(a,i0)')     "*** Using PLUMED restart (0: no, 1: yes): ", plumed_restart
+    Write(messages(9),'(a,i0)')     "*** Using PLUMED restart (0: no, 1: yes): ", plume%restart
     Call info(messages,9,.true.)
 #else
     Call plumed_message()
@@ -159,18 +159,18 @@ Contains
     Call plumed_f_gcmd("setPositionsY"//sn,yyy)
     Call plumed_f_gcmd("setPositionsZ"//sn,zzz)
     Call plumed_f_gcmd("setBox"//sn,cell)
-    plumed_eng = stats%stpcfg / real(comm%mxnode)
-    Call plumed_f_gcmd("setEnergy"//sn,plumed_eng)
+    plume%eng = stats%stpcfg / real(comm%mxnode)
+    Call plumed_f_gcmd("setEnergy"//sn,plume%eng)
     Call plumed_f_gcmd("setForcesX"//sn,fxx)
     Call plumed_f_gcmd("setForcesY"//sn,fyy)
     Call plumed_f_gcmd("setForcesZ"//sn,fzz)
-    plumed_virial = -stats%stress
-    Call plumed_f_gcmd("setVirial"//sn,plumed_virial)
-    stats%stress = -plumed_virial
-    Call plumed_f_gcmd("setStopFlag"//sn,plumed_stop)
+    plume%plumed_virial = -stats%stress
+    Call plumed_f_gcmd("setVirial"//sn,plume%plumed_virial)
+    stats%stress = -plume%plumed_virial
+    Call plumed_f_gcmd("setStopFlag"//sn,plume%stop)
     Call plumed_f_gcmd("calc"//sn )
 
-    If (plumed_stop /= 0) Then
+    If (plume%stop /= 0) Then
        Write(message,'(a,i0)') 'DL_POLY was stopped cleanly by PLUMED at step: ',nstep
        Call warning(message,.true.)
        nstrun=nstep

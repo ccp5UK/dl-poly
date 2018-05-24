@@ -12,8 +12,7 @@ Module kontrol
   Use msd,        Only : l_msd
   Use defects,   Only : l_dfx
   Use kinetics,  Only : l_vom
-  Use plumed,   Only : l_plumed, plumed_input, plumed_log, &
-                              plumed_precision, plumed_restart
+  Use plumed,   Only : plumed_type
   Use setup,       Only : nread,control,pi,zero_plus,seed, &
                                             output,field,config,statis, &
                                   history,historf,revive,revcon,revold
@@ -74,7 +73,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstmsd,istmsd,nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,stats,thermo,green,devel,tmr,comm)
+           ndump,pdplnc,stats,thermo,green,devel,plume,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -131,12 +130,13 @@ Subroutine read_control                                &
                                              min_tol(1:2), &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
-                                             rdef,rrsd,pdplnc 
-  Type( stats_type ), Intent (   InOut )   :: stats                                         
+                                             rdef,rrsd,pdplnc
+  Type( stats_type ), Intent (   InOut )   :: stats
   Type( impact_type ),     Intent(   Out ) :: impa
   Type ( thermostat_type), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
+  Type( plumed_type ), Intent( InOut ) :: plume
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( comms_type ),     Intent( InOut )  :: comm
 
@@ -2894,40 +2894,40 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'plumed') Then
 
         If (lplumed) Then
-           l_plumed=.true.
+           plume%l_plumed=.true.
 
            Call get_word(record,word)
            If (word(1:3) == 'off') Then
-              l_plumed=.false.
+              plume%l_plumed=.false.
               lplumed=.false.
            End If
 
            If (word(1:5) == 'input') Then
               Call get_word(record,word)
-              plumed_input=Trim(word)
+              plume%input=Trim(word)
            End If
 
            If (word(1:3) == 'log') Then
               Call get_word(record,word)
-              plumed_log=Trim(word)
+              plume%logfile=Trim(word)
            End If
 
            If (word(1:9) == 'precision') Then
               Call get_word(record,word)
-              plumed_precision=Abs(Nint(word_2_real(word,1.0_wp)))
+              plume%prec=Abs(Nint(word_2_real(word,1.0_wp)))
            End If
 
            If (word(1:7) == 'restart') Then
-              plumed_restart=1
+              plume%restart=1
 
               Call get_word(record,word)
 
               If ((word(1:3) == 'yes') .or. (word(1:1) == 'y')) Then
-                 plumed_restart=1
+                 plume%restart=1
               End If
 
               If ((word(1:2) == 'no') .or. (word(1:1) == 'n')) Then
-                 plumed_restart=0
+                 plume%restart=0
               End If
            End If
         End If
