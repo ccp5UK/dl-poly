@@ -10,46 +10,64 @@ stages:
 
 build-serial:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-serial.sh
 
 build-openmp-pure:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-openmp-pure.sh
 
 build-mpi-pure:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-mpi-pure.sh
 
 build-mpi-netcdf:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-mpi-netcdf.sh
 
 build-mpi-plumed:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-mpi-plumed.sh
 
 build-mpi-kim:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-mpi-kim.sh
 
 build-mpi-all:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-mpi-all.sh
 
 build-intel:
   stage: build
+  tags: 
+    - intel
   script:
     - sh utils/build-intel.sh
 
 build-old-hpc:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-old.sh
   only:
@@ -57,37 +75,51 @@ build-old-hpc:
 
 build-win32-serial:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-win32-serial.sh
 
 build-win64-serial:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-win64-serial.sh
 
 build-win32-msmpi:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-win32-msmpi.sh
 
 build-win64-msmpi:
   stage: build
+  tags: 
+    - gcc
   script:
     - sh utils/build-win64-msmpi.sh
 
 testing-mpi-gcc:
   stage: test
+  tags: 
+    - gcc
   script:
     - sh utils/mpi-testing.sh
 
-testing-mpi-gcc-paranoid:
-  stage: test
-  script:
-    - sh utils/mpi-testing-paranoid.sh
+#testing-mpi-gcc-paranoid:
+#  stage: test
+#  tags: 
+#    - gcc
+#  script:
+#    - sh utils/mpi-testing-paranoid.sh
+#  only:
+#    - master
 
 testing-mpi-intel:
   stage: test
-  only:
-    - master
+  tags: 
+    - intel
   script:
     - sh utils/intel-testing.sh
