@@ -210,7 +210,7 @@ program dl_poly
     keyfce,mxshak,mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
     nstrdf,nstzdn,                      &
-    nstmsd,istmsd,nstraj,istraj,keytrj, &
+    nstraj,istraj,keytrj, &
     nsdef,isdef,nsrsd,isrsd,            &
     ndump,nstep,keyshl,                 &
     atmfre,atmfrz,megatm,megfrz,        &

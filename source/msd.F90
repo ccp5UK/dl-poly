@@ -38,9 +38,22 @@ Module msd
                                 IO_WRITE_SORTED_MASTER
   Use errors_warnings, Only : error
   Implicit None
+
   Private
 
-  Logical, Public, Save :: l_msd = .false.
+  Type, Public :: msd_type
+    Private
+
+    !> MSD recording switch
+    Logical, Public :: l_msd = .false.
+
+    !> Step to begin recording MSD
+    Integer( Kind = wi ), Public :: start
+    !> Frequency to record MSD (steps)
+    Integer( Kind = wi ), Public :: freq
+  End Type msd_type
+
+
   Public :: msd_write
   Contains
 
