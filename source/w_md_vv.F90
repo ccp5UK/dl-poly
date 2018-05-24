@@ -94,7 +94,7 @@
 
 ! Evaluate forces
 
-     Call w_calculate_forces(stat)
+     Call w_calculate_forces(stat,plume)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 

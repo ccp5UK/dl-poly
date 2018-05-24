@@ -63,10 +63,11 @@ Module plumed
 
 Contains
 
-  Subroutine plumed_init(megatm,tstep,temp,comm)
+  Subroutine plumed_init(megatm,tstep,temp,plume,comm)
 
     Integer,           Intent( In    ) :: megatm
     Real( Kind = wp ), Intent( In    ) :: tstep,temp
+    Type(plumed_type), Intent( InOut ) :: plume
     Type(comms_type),  Intent( InOut ) :: comm
 
 #ifdef PLUMED
@@ -75,7 +76,7 @@ Contains
     If (plume%has_plumed > 0) Then
        Call plumed_f_gcreate()
        Call plumed_f_gcmd("getApiVersion"//sn,plume%version)
-       Call plumed_f_gcmd("setRealPrecision"//sn,plumed_precision)
+       Call plumed_f_gcmd("setRealPrecision"//sn,plume%prec)
        Call plumed_f_gcmd("setMDEnergyUnits"//sn,plumed_energyUnits)
        Call plumed_f_gcmd("setMDLengthUnits"//sn,plumed_lengthUnits)
        Call plumed_f_gcmd("setMDTimeUnits"//sn,plumed_timeUnits)
@@ -95,13 +96,13 @@ Contains
     End If
 #endif
 
-    Call plumed_print_about(comm)
+    Call plumed_print_about(plume,comm)
 
   End Subroutine plumed_init
 
-  Subroutine plumed_print_about(comm)
-
-    Type(comms_type), Intent( InOut ) :: comm
+  Subroutine plumed_print_about(plume,comm)
+    Type(plumed_type), Intent( In    ) :: plume
+    Type(comms_type),  Intent( InOut ) :: comm
 #ifdef PLUMED
     Character( Len = 256 ) :: message,messages(9),banner(15)
 
@@ -126,7 +127,7 @@ Contains
     Write(messages(2),'(a)')        "*** Using PLUMED input file: "//Trim(plume%input)
     Write(messages(3),'(a)')        "*** Using PLUMED log file: "//Trim(plume%logfile)
     Write(messages(4),'(a,i0)')     "*** Using PLUMED API version: ",plume%version
-    Write(messages(5),'(a,i0)')     "*** Using PLUMED Real precision: ", plumed_precision
+    Write(messages(5),'(a,i0)')     "*** Using PLUMED Real precision: ", plume%prec
     Write(messages(6),'(a,es15.6)') "*** Using PLUMED energy conversion factor: ", plumed_energyUnits
     Write(messages(7),'(a,es15.6)') "*** Using PLUMED length conversion factor: ", plumed_lengthUnits
     Write(messages(8),'(a,es15.6)') "*** Using PLUMED time conversion factor: ", plumed_timeUnits
@@ -138,14 +139,15 @@ Contains
 
   End Subroutine plumed_print_about
 
-  Subroutine plumed_apply(xxx,yyy,zzz,nstrun,nstep,stats,comm)
+  Subroutine plumed_apply(xxx,yyy,zzz,nstrun,nstep,stats,plume,comm)
 
     Integer,           Intent( In    ) :: nstep
     Integer,           Intent(   Out ) :: nstrun
 
     Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
-    Type(stats_type), Intent( InOut )  :: stats
-    Type(comms_type), Intent( InOut )  :: comm
+    Type(stats_type),  Intent( InOut ) :: stats
+    Type(plumed_type), Intent( InOut ) :: plume
+    Type(comms_type),  Intent( InOut ) :: comm
 
 #ifdef PLUMED
     Character( Len = 256 ) :: message
@@ -164,9 +166,9 @@ Contains
     Call plumed_f_gcmd("setForcesX"//sn,fxx)
     Call plumed_f_gcmd("setForcesY"//sn,fyy)
     Call plumed_f_gcmd("setForcesZ"//sn,fzz)
-    plume%plumed_virial = -stats%stress
-    Call plumed_f_gcmd("setVirial"//sn,plume%plumed_virial)
-    stats%stress = -plume%plumed_virial
+    plume%virial = -stats%stress
+    Call plumed_f_gcmd("setVirial"//sn,plume%virial)
+    stats%stress = -plume%virial
     Call plumed_f_gcmd("setStopFlag"//sn,plume%stop)
     Call plumed_f_gcmd("calc"//sn )
 
