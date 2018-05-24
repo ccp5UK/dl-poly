@@ -10,7 +10,7 @@ Module plumed
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,  Only : comms_type
   Use setup,  Only : boltz, mxatms, DLP_VERSION
   Use configuration, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
@@ -21,23 +21,39 @@ Module plumed
 
   Private
 
-  Logical,                Public :: l_plumed           = .false.
-  Character( Len = 125 ), Public :: plumed_input       = "PLUMED"
-  Character( Len = 125 ), Public :: plumed_log         = "OUTPUT.PLUMED"
+  !> Type to store PLUMED variables
+  Type, Public :: plumed_type
+    Private
 
-  Real( Kind = wp ),      Public :: plumed_energyUnits = 0.01_wp ! DLPOLY_Internal(10J/mol) /kJ/mol
-  Real( Kind = wp ),      Public :: plumed_lengthUnits = 0.1_wp  ! Angstrtom/nanometer
-  Real( Kind = wp ),      Public :: plumed_timeUnits   = 1.0_wp  ! picosecond
-  Integer,                Public :: plumed_precision   = wp      ! DL_POLY precision
-  Integer,                Public :: plumed_restart     = 0       ! default no
+    !> PLUMED switch
+    Logical,                Public :: l_plumed = .false.
+    Character( Len = 125 ), Public :: input    = "PLUMED"
+    Character( Len = 125 ), Public :: logfile  = "OUTPUT.PLUMED"
+
+    !> default no
+    Integer( Kind = wi ),   Public :: restart     = 0
+
+    !> PLUMED energy
+    Real( Kind = wp ) :: eng
+    !> PLUMED virial
+    Real( Kind = wp ) :: virial(1:9)
+
+    Integer( Kind = wi ) :: version    = 0, &
+                            stop       = 0, &
+                            has_plumed = 0
+  End Type plumed_type
+
+  ! PLUMED parameters
+  !> DL_POLY precision
+  Integer, Parameter, Public :: plumed_precision = wp
+  !> DLPOLY_Internal(10J/mol) /kJ/mol
+  Real( Kind = wp ), Parameter, Public :: plumed_energyUnits = 0.01_wp
+  !> Angstrtom/nanometer
+  Real( Kind = wp ), Parameter, Public :: plumed_lengthUnits = 0.1_wp
+  !> picosecond
+  Real( Kind = wp ), Parameter, Public :: plumed_timeUnits   = 1.0_wp
 
   Character( Len =   1 ), Parameter  :: sn=Char(0)
-
-  Integer           :: plumed_version = 0, &
-                       plumed_stop    = 0, &
-                       has_plumed     = 0
-
-  Real( Kind = wp ) :: plumed_eng,plumed_virial(1:9)
 
   Private :: plumed_print_about
   Private :: plumed_message
