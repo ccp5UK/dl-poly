@@ -113,7 +113,7 @@ program dl_poly
 
   ! MSD MODULE
 
-  Use msd
+  Use msd, Only : msd_type,msd_write
 
   ! KINETIC MODULE
 
@@ -243,6 +243,7 @@ program dl_poly
   Type(stats_type) :: stats
   Type(greenkubo_type) :: green
   Type(plumed_type) :: plume
+  Type(msd_type) :: msd_data
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -311,7 +312,7 @@ program dl_poly
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,stats,thermo,green,devel,comm)
+    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,stats,thermo,green,devel,msd_data,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -384,9 +385,9 @@ program dl_poly
     fmax,nstbpo,keyfce,epsq,             &
     rlx_tol,mxshak,tolnce,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
-    nstmsd,istmsd,nstraj,istraj,keytrj,         &
+    nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,stats,thermo,green,devel,plume,tmr,comm)
+    ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -640,9 +641,9 @@ program dl_poly
     Call w_md_vv(mxatdm,stats,thermo,plume)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,stats,thermo,plume)
+      Call w_replay_historf(mxatdm,stats,thermo,plume,msd_data)
     Else
-      Call w_replay_history(mxatdm,stats,thermo)
+      Call w_replay_history(mxatdm,stats,thermo,msd_data)
     End If
   End If
 
@@ -708,7 +709,7 @@ program dl_poly
   ! Produce summary of simulation
 
   Call statistics_result                                        &
-    (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
+    (rcut,lmin,lpana,lrdf,lprdf,lzdn,msd_data%l_msd,lpzdn,lvafav,lpvaf, &
     nstrun,keyens,keyshl,megcon,megpmf,              &
     nstep,tstep,time,tmst,mxatdm,stats,thermo,green,comm,passmin)
 
@@ -774,9 +775,9 @@ Contains
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings(stat)
+  Subroutine w_refresh_mappings(stat,msd_data)
     Type(stats_type), Intent(InOut) :: stat
-
+    Type(msd_type), Intent(InOut) :: msd_data
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
@@ -793,9 +794,10 @@ Contains
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
-  Subroutine w_statistics_report(mxatdm_,stat)
+  Subroutine w_statistics_report(mxatdm_,stat,msd_data)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
+    Type(msd_type), Intent(InOut) :: msd_data
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
@@ -816,10 +818,11 @@ Contains
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,stat,thermo)
-    Integer( Kind = wi ), Intent( In  )  :: mxatdm_ 
+  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data)
+    Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
+    Type(msd_type), Intent(InOut) :: msd_data
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -829,11 +832,12 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,stat,thermo,plume)
+  Subroutine w_replay_historf(mxatdm_,stat,thermo,plume,msd_data)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_ 
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(plumed_type), Intent(InOut) :: plume
+    Type(msd_type), Intent(InOut) :: msd_data
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

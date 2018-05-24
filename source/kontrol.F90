@@ -9,7 +9,7 @@ Module kontrol
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : ld_met,ls_met,tabmet
   Use poisson,    Only : eps,mxitcg,mxitjb
-  Use msd,        Only : l_msd
+  Use msd,        Only : msd_type
   Use defects,   Only : l_dfx
   Use kinetics,  Only : l_vom
   Use plumed,   Only : plumed_type
@@ -71,9 +71,9 @@ Subroutine read_control                                &
            fmax,nstbpo,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
-           nstmsd,istmsd,nstraj,istraj,keytrj,         &
+           nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,stats,thermo,green,devel,plume,tmr,comm)
+           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -120,7 +120,6 @@ Subroutine read_control                                &
                                              nstbnd,nstang,        &
                                              nstdih,nstinv,        &
                                              nstrdf,nstzdn,        &
-                                             nstmsd,istmsd,        &
                                              nstraj,istraj,keytrj, &
                                              nsdef,isdef,          &
                                              nsrsd,isrsd,          &
@@ -137,6 +136,7 @@ Subroutine read_control                                &
   Type( development_type ), Intent( InOut ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( plumed_type ), Intent( InOut ) :: plume
+  Type( msd_type ), Intent( InOut ) :: msd_data
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( comms_type ),     Intent( InOut )  :: comm
 
@@ -443,8 +443,8 @@ Subroutine read_control                                &
 ! default switch for MSD outputing and defaults for
 ! (i) step to start at, (ii) every step after to be collected
 
-  nstmsd = 0
-  istmsd = 1
+  msd_data%start = 0
+  msd_data%freq = 1
 
 ! default switch for trajectory outputting and defaults for
 ! (i) step to start at, (ii) every step after to be collected,
@@ -2687,15 +2687,15 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         itmp = Abs(Nint(word_2_real(word)))
-        nstmsd = Max(nstmsd,itmp)
+        msd_data%start = Max(msd_data%start,itmp)
 
         Call get_word(record,word)
         itmp = Abs(Nint(word_2_real(word)))
-        istmsd = Max(istmsd,itmp)
+        msd_data%freq = Max(msd_data%freq,itmp)
 
         Write(messages(1),'(a)') 'MSDTMP file option on'
-        Write(messages(2),'(2x,a,i10)') 'MSDTMP file start ',nstmsd
-        Write(messages(3),'(2x,a,i10)') 'MSDTMP file interval ',istmsd
+        Write(messages(2),'(2x,a,i10)') 'MSDTMP file start ',msd_data%start
+        Write(messages(3),'(2x,a,i10)') 'MSDTMP file interval ',msd_data%freq
         Call info(messages,3,.true.)
 
 ! read trajectory printing option
@@ -3359,7 +3359,7 @@ Subroutine read_control                                &
         Write(messages(2),'(a)') '*** with structural properties will be recalculated ***'
         Call info(messages,2,.true.)
 ! abort if there's no structural property to recalculate
-        If (.not.(lrdf .or. lzdn .or. ldef .or. l_msd .or. lrsd .or. (mxgana > 0))) Call error(580)
+        If (.not.(lrdf .or. lzdn .or. ldef .or. msd_data%l_msd .or. lrsd .or. (mxgana > 0))) Call error(580)
      End If
 
      If (keyres /= 0) Then
@@ -3604,7 +3604,7 @@ Subroutine scan_control                                    &
            rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
-           thermo,green,devel,comm)
+           thermo,green,devel,msd_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3635,6 +3635,7 @@ Subroutine scan_control                                    &
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
+  Type( msd_type ), Intent( InOut ) :: msd_data
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3886,7 +3887,7 @@ Subroutine scan_control                                    &
 
      Else If (word(1:6) == 'msdtmp') Then
 
-        l_msd = .true.
+        msd_data%l_msd = .true.
 
 ! read VAF option and sample frequency and binsize - defaults in greenkubo_module
 

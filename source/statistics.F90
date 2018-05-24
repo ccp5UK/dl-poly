@@ -36,7 +36,7 @@ Module statistics
                            calculate_errors,calculate_errors_jackknife, &
                            rdf_compute,usr_compute
   Use z_density,   Only : ncfzdn,z_density_compute,z_density_collect
-  Use msd
+  Use msd,         Only : msd_type
   Use greenkubo,   Only : greenkubo_type,vaf_compute
   Use bonds,       Only : bonds_compute
   Use angles,      Only : angles_compute
@@ -167,7 +167,7 @@ Contains
   End Subroutine deallocate_statistics_connect
 
   Subroutine statistics_collect           &
-           (lsim,leql,nsteql,lzdn,nstzdn, &
+           (lsim,leql,nsteql,lzdn,lmsd,nstzdn, &
            keyres,keyens,                 &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
@@ -185,7 +185,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: lsim,leql,lzdn
+  Logical,           Intent( In    ) :: lsim,leql,lzdn,lmsd
   Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
                                         keyens,nstep
 
@@ -404,7 +404,7 @@ Contains
      Call gsum(comm,amsd(1:ntpatm))
   End If
 
-  If (l_msd) Then
+  If (lmsd) Then
      Do i=1,natms
         j=2*i
         stats%stpval(iadd+j-1)=stats%rsd(i)**2
@@ -466,7 +466,7 @@ Contains
          stats%statis_file_open = .true.
      End If
 
-     If (l_msd) Then
+     If (lmsd) Then
         Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
              nstep,time,iadd+1-2*mxatdm,stats%stpval(1:  27),stats%stpval(0),stats%stpval(28+2*mxatdm:iadd)
      Else
@@ -554,7 +554,7 @@ Contains
 End Subroutine statistics_collect
 
 
-Subroutine statistics_connect_frames(megatm,mxatdm,stats,comm)
+Subroutine statistics_connect_frames(megatm,mxatdm,lmsd,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -570,6 +570,7 @@ Subroutine statistics_connect_frames(megatm,mxatdm,stats,comm)
 
   Integer( Kind = wi ), Intent ( In    ) :: megatm
   Integer( Kind = wi ), Intent ( In    ) :: mxatdm
+  Logical,            Intent( In    ) :: lmsd
   Type( stats_type ), Intent( InOut ) :: stats
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -647,7 +648,7 @@ Contains
                    stats%yto(lsi(i)) = stats%yto0(stats%lsi0(i0))
                    stats%zto(lsi(i)) = stats%zto0(stats%lsi0(i0))
 
-                   If (l_msd) Then
+                   If (lmsd) Then
                       j =27+2*lsi(i)
                       j0=2*stats%lsi0(i0)
                       stats%stpvl0(j-1)=stats%stpvl00(j0-1)
@@ -754,7 +755,7 @@ Contains
              stats%yto0(i0) = stats%yto0(stats%natms0)
              stats%zto0(i0) = stats%zto0(stats%natms0)
 
-             If (l_msd) Then
+             If (lmsd) Then
                 j =2*i0
                 j0=2*stats%natms0
                 stats%stpvl00(j-1)=stats%stpvl00(j0-1)
@@ -791,7 +792,7 @@ Contains
 !         stats%yto0(stats%natms0) = 0
 !         stats%zto0(stats%natms0) = 0
 !
-!          If (l_msd) Then
+!          If (lmsd) Then
 !             j0=2*stats%natms0
 !            stats%stpvl00(j0-1)=0.0_wp
 !            stats%stpvl00(j0  )=0.0_wp
@@ -838,7 +839,7 @@ Contains
 
 ! Spread atom data in the mdir direction
 
-    If (mdir /= 0) Call statistics_connect_spread(mdir,mxatdm,stats,comm)
+    If (mdir /= 0) Call statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
 
 ! Sort past frame remainder of global atom indices
 
@@ -853,7 +854,7 @@ Contains
 
 End Subroutine statistics_connect_frames
 
-  Subroutine statistics_connect_set(rcut,mxatdm,stats,comm)
+  Subroutine statistics_connect_set(rcut,mxatdm,lmsd,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -869,6 +870,7 @@ End Subroutine statistics_connect_frames
 
   Real( Kind = wp ), Intent( In    ) :: rcut
   Integer( Kind = wi), Intent( In   ) :: mxatdm
+  Logical,            Intent( In    ) :: lmsd
   Type( stats_type ), Intent( InOut ) :: stats
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -954,7 +956,7 @@ End Subroutine statistics_connect_frames
     stats%yto0(1:stats%natms0) =stats%yto(1:stats%natms0) !;stats%yto0(stats%natms0+1: ) = 0
     stats%zto0(1:stats%natms0) =stats%zto(1:stats%natms0) !;stats%zto0(stats%natms0+1: ) = 0
 
-     If (l_msd) Then
+     If (lmsd) Then
         i0=2*stats%natms0
        stats%stpvl00(1:i0)=stats%stpvl0(28:27+i0) !;stats%stpvl00(i0+1: )=0.0_wp
        stats%stpval0(1:i0)=stats%stpval(28:27+i0) !;stats%stpval0(i0+1: )=0.0_wp
@@ -970,7 +972,7 @@ End Subroutine statistics_connect_frames
 
 End Subroutine statistics_connect_set
 
-Subroutine statistics_connect_spread(mdir,mxatdm,stats,comm)
+Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -988,7 +990,8 @@ Subroutine statistics_connect_spread(mdir,mxatdm,stats,comm)
 
   Integer( Kind = wi ), Intent( In    ) :: mdir
   Integer( Kind = wi ), Intent( In    ) :: mxatdm
-  Type( stats_type ), Intent( InOut ) :: stats 
+  Logical,            Intent( In    ) :: lmsd
+  Type( stats_type ), Intent( InOut ) :: stats
   Type( comms_type ), Intent( InOut ) :: comm
   Logical           :: safe,stay,move
   Integer           :: fail,iblock,jdnode,kdnode,   &
@@ -1133,7 +1136,7 @@ Subroutine statistics_connect_spread(mdir,mxatdm,stats,comm)
        stats%yto0(keep)=stats%yto0(i)
        stats%zto0(keep)=stats%zto0(i)
 
-        If (l_msd) Then
+        If (lmsd) Then
            jj=2*i
            j =2*keep
           stats%stpvl00(j-1)=stats%stpvl00(jj-1)
@@ -1182,7 +1185,7 @@ Subroutine statistics_connect_spread(mdir,mxatdm,stats,comm)
 
 ! pack MSD arrays
 
-        If (l_msd) Then
+        If (lmsd) Then
            If (imove+2*(6+stats%mxstak) <= iblock) Then
               jj=2*i
               buffer(imove+ 1)=stats%stpvl00(jj-1)
@@ -1244,7 +1247,7 @@ Subroutine statistics_connect_spread(mdir,mxatdm,stats,comm)
      l=Nint(buffer(kmove+1))
      If (All(stats%ltg0(1:stats%natms0) /= l)) imove=imove+1
      kmove=kmove+8
-     If (l_msd) kmove=kmove+2*(6+stats%mxstak)
+     If (lmsd) kmove=kmove+2*(6+stats%mxstak)
   End Do
 
   stats%natms0=keep+imove
@@ -1264,7 +1267,7 @@ Subroutine statistics_connect_spread(mdir,mxatdm,stats,comm)
         l=Nint(buffer(kmove+1))
         If (Any(stats%ltg0(1:keep) == l)) Then
            kmove=kmove+8
-           If (l_msd) kmove=kmove+2*(6+stats%mxstak)
+           If (lmsd) kmove=kmove+2*(6+stats%mxstak)
            Cycle
         End If
      End If
@@ -1292,7 +1295,7 @@ Subroutine statistics_connect_spread(mdir,mxatdm,stats,comm)
 
 ! unpack MSD arrays
 
-     If (l_msd) Then
+     If (lmsd) Then
         jj=2*newatm
        stats%stpvl00(jj-1)=buffer(kmove+1 )
        stats%stpvl00(jj  )=buffer(kmove+2 )
@@ -1325,7 +1328,7 @@ Subroutine statistics_connect_spread(mdir,mxatdm,stats,comm)
 End Subroutine statistics_connect_spread
 
 Subroutine statistics_result                                    &
-           (rcut,lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
+           (rcut,lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
            nstrun,keyens,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
            mxatdm,stats,thermo,green,comm,passmin)
@@ -1341,7 +1344,7 @@ Subroutine statistics_result                                    &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: lmin,lpana,lrdf,lprdf,lzdn,lpzdn,lvafav,lpvaf
+  Logical,           Intent( In    ) :: lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn,lvafav,lpvaf
   Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
   Integer( Kind = wi ),    Intent( In    ) :: mxatdm 
@@ -1479,7 +1482,7 @@ Subroutine statistics_result                                    &
 ! Print pressure tensor and jump to possible RDF and Z-Density
 
   If (nstep == 0 .and. nstrun == 0) Then
-     iadd = 27+2*Merge(mxatdm,0,l_msd)+ntpatm
+     iadd = 27+2*Merge(mxatdm,0,lmsd)+ntpatm
 
      If (comm%idnode == 0) Then
         Write(message,'(a)') 'pressure tensor  (katms):'
@@ -1550,8 +1553,8 @@ Subroutine statistics_result                                    &
   ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
   If (keyens >= 20) Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
-    "<P*V> term:            ",stats%sumval(37+ntpatm+2*Merge(mxatdm,0,l_msd)), &
-    " r.m.s. fluctuations:  ",stats%ssqval(37+ntpatm+2*Merge(mxatdm,0,l_msd))
+    "<P*V> term:            ",stats%sumval(37+ntpatm+2*Merge(mxatdm,0,lmsd)), &
+    " r.m.s. fluctuations:  ",stats%ssqval(37+ntpatm+2*Merge(mxatdm,0,lmsd))
   Call info(message,.true.)
 
   Write(messages(1),"(130('-'))")
@@ -1562,7 +1565,7 @@ Subroutine statistics_result                                    &
 
   iadd = 27
 
-  If (l_msd) iadd = iadd+2*mxatdm
+  If (lmsd) iadd = iadd+2*mxatdm
 
 ! Write out estimated diffusion coefficients
 

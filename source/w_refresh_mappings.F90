@@ -14,7 +14,7 @@
 ! Relocate atoms to new domains and restore bonding description
 
            Call relocate_particles  &
-           (dvar,rlnk,lbook,megatm, &
+           (dvar,rlnk,lbook,msd_data%l_msd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
            megbnd,megang,megdih,meginv,stat,ewld,thermo,green,comm)

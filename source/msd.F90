@@ -8,7 +8,7 @@ Module msd
 ! author    - i.t.todorov march 2008
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Use kinds, Only : wp, li
+  Use kinds, Only : wp,li,wi
   Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync,gbcast, &
                     gsend,grecv,offset_kind,comm_self,mode_wronly
   Use setup
@@ -57,7 +57,7 @@ Module msd
   Public :: msd_write
   Contains
 
-  Subroutine msd_write(keyres,nstmsd,istmsd,megatm,nstep,tstep,time,stpval,comm)
+  Subroutine msd_write(keyres,megatm,nstep,tstep,time,stpval,msd_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -70,10 +70,11 @@ Module msd
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( In    ) :: keyres,nstmsd,istmsd, &
+  Integer,           Intent( In    ) :: keyres, &
                                         megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time
   Real( Kind = wp ), Intent( InOut ) :: stpval(:)
+  Type( msd_type ), Intent( Inout ) :: msd_data
   Type( comms_type), Intent( InOut ) :: comm
 
   Integer, Parameter :: recsz = 53 ! default record size
@@ -103,7 +104,7 @@ Module msd
   Integer :: ierr
   Character( Len = 256 ) :: message
 
-  If (.not.(nstep >= nstmsd .and. Mod(nstep-nstmsd,istmsd) == 0)) Return
+  If (.not.(nstep >= msd_data%start .and. Mod(nstep-msd_data%start,msd_data%freq) == 0)) Return
 
 ! Get write buffer size and line feed character
 
@@ -629,6 +630,4 @@ Module msd
   Call gsync(comm)
 
 End Subroutine msd_write
-
-  
 End Module msd

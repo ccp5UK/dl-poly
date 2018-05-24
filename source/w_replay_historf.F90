@@ -16,8 +16,8 @@
 
 ! MSDTMP option for every entry in HISTORF
 
-  nstmsd = 0
-  istmsd = 1
+  msd_data%start = 0
+  msd_data%freq = 1
 
 ! displacement detection for every entry in HISTORF
 
@@ -56,7 +56,7 @@
   Do
      Call allocate_statistics_connect(mxatdm,stat)
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(rlnk,mxatdm_,stat,comm)
+     If (nstph > nstpe) Call statistics_connect_set(rlnk,mxatdm_,msd_data%l_msd,stat,comm)
 
 ! Make a move - Read a frame
 
@@ -98,12 +98,12 @@
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(rlnk,mxatdm_,stat,comm)
+              Call statistics_connect_set(rlnk,mxatdm_,msd_data%l_msd,stat,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
 
-           Call statistics_connect_frames(megatm,mxatdm_,stat,comm)
+           Call statistics_connect_frames(megatm,mxatdm_,msd_data%l_msd,stat,comm)
            Call deallocate_statistics_connect(stat)
 
 ! SET domain borders and link-cells as default for new jobs
@@ -178,7 +178,7 @@
            Call vaf_collect(lvafav,leql,nsteql,nstph-1,time,green,comm)
 
            Call statistics_collect        &
-           (lsim,leql,nsteql,lzdn,nstzdn, &
+           (lsim,leql,nsteql,lzdn,msd_data%l_msd,nstzdn, &
            keyres,keyens,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
@@ -220,8 +220,8 @@
            (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,comm)
            If (ldef) Call defects_write &
            (rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time,comm)
-           If (l_msd) Call msd_write &
-           (keyres,nstmsd,istmsd,megatm,nstep,tstep,time,stat%stpval,comm)
+           If (msd_data%l_msd) Call msd_write &
+           (keyres,megatm,nstep,tstep,time,stat%stpval,msd_data,comm)
            If (lrsd) Call rsd_write &
            (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,stat%rsd,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
