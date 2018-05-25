@@ -9,7 +9,7 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(stat)
+        Call w_refresh_mappings(stat,msd_data)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -146,7 +146,7 @@
 ! Refresh mappings
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
-           Call w_refresh_mappings(stat)
+           Call w_refresh_mappings(stat,msd_data)
 
            Go To 100
         End If

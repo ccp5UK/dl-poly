@@ -12,7 +12,7 @@ If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(stat%shlke,comm)
 ! Calculate physical quantities and collect statistics
 
 Call statistics_collect           &
-  (lsim,leql,nsteql,lzdn,nstzdn, &
+  (lsim,leql,nsteql,lzdn,msd_data%l_msd,nstzdn, &
   keyres,keyens,      &
   degfre,degshl,degrot,          &
   nstep,tstep,time,tmst,         &

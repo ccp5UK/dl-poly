@@ -35,7 +35,7 @@ Module deport_data
                                  induce,indipx,indipy,indipz,rsdx,rsdy,rsdz, &
                                  mplgfr,mprotx,mproty,mprotz, mplflg
 
-  Use msd
+  Use msd, Only : msd_type
   Use greenkubo,    Only : greenkubo_type
 
   Use kim,    Only : kimim,idhalo
@@ -59,7 +59,7 @@ Module deport_data
   Contains 
   
 
-Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,green,comm)
+Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -75,8 +75,9 @@ Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,green,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
 
-  Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: mdir
+  Logical,            Intent( In    ) :: lbook
+  Logical,            Intent( In    ) :: lmsd
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -374,7 +375,7 @@ Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,green,comm)
 
 ! pack MSD arrays
 
-        If (l_msd) Then
+        If (lmsd) Then
            If (imove+2*(6+stats%mxstak) <= iblock) Then
               jj=27+2*i
               buffer(imove+ 1)=stats%stpvl0(jj-1)
@@ -857,7 +858,7 @@ Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,green,comm)
         green%vzi(keep,1:green%samp)=green%vzi(i,1:green%samp)
      End If
 
-     If (l_msd) Then
+     If (lmsd) Then
         jj=27+2*i
         j =27+2*keep
         stats%stpvl0(j-1)=stats%stpvl0(jj-1)
@@ -1040,7 +1041,7 @@ Subroutine deport_atomic_data(mdir,lbook,stats,ewld,thermo,green,comm)
 
 ! unpack MSD arrays
 
-     If (l_msd) Then
+     If (lmsd) Then
         jj=27+2*newatm
         stats%stpvl0(jj-1)=buffer(kmove+1 )
         stats%stpvl0(jj  )=buffer(kmove+2 )
@@ -2521,7 +2522,7 @@ Subroutine mpoles_rotmat_set_halo(comm)
 End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles       &
-           (dvar,rlnk,lbook,megatm, &
+           (dvar,rlnk,lbook,lmsd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
            megbnd,megang,megdih,    &
@@ -2539,12 +2540,13 @@ Subroutine relocate_particles       &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Real( Kind = wp ), Intent( In    ) :: dvar,rlnk
   Logical,           Intent( In    ) :: lbook
+  Logical,           Intent( In    ) :: lmsd
   Integer,           Intent( In    ) :: megatm,              &
                                         megshl,m_con,megpmf, &
                                         m_rgd,megtet,        &
                                         megbnd,megang,megdih,meginv
-  Real( Kind = wp ), Intent( In    ) :: dvar,rlnk
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2664,18 +2666,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,stats,ewld,thermo,green,comm)
-     Call deport_atomic_data( 1,lbook,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,stats,ewld,thermo,green,comm)
-     Call deport_atomic_data( 2,lbook,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,stats,ewld,thermo,green,comm)
-     Call deport_atomic_data( 3,lbook,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,comm)
 
 ! check system for loss of atoms
 

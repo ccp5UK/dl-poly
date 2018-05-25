@@ -5,7 +5,7 @@ Module bounds
   Use domains,         Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
   Use configuration,   Only : imcon,imc_n,cfgname,cell,volm
   Use vnl,             Only : llvnl ! Depends on l_str,lsim & rpad
-  Use msd
+  Use msd,             Only : msd_type
   Use rdfs,            Only : rusr
   Use kim,             Only : kimim
   Use bonds,           Only : rcbnd
@@ -20,8 +20,8 @@ Module bounds
   Use ffield,          Only : scan_field
   Use errors_warnings, Only : error,warning,info
   Use parallel_fft,    Only : adjust_kmax
-  Use thermostat, Only : thermostat_type
-  Use statistics, Only : stats_type
+  Use thermostat,      Only : thermostat_type
+  Use statistics,      Only : stats_type
 
   Implicit None
   Private
@@ -31,7 +31,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce, &
-           alpha,width,stats,thermo,green,devel,comm)
+           alpha,width,stats,thermo,green,devel,msd_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -54,6 +54,7 @@ Subroutine set_bounds                                 &
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
+  Type( msd_type ), Intent( InOut ) :: msd_data
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -112,7 +113,7 @@ Subroutine set_bounds                                 &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,msd_data,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -775,7 +776,7 @@ Subroutine set_bounds                                 &
 ! update number if the MSD option is used, 51=1+27+...+9+9+1+2+2
 ! consult statistic_collect for more information
 
-  stats%mxnstk = 51 + mxatyp + Merge(2*mxatdm,0,l_msd)
+  stats%mxnstk = 51 + mxatyp + Merge(2*mxatdm,0,msd_data%l_msd)
 
 ! maximum dimension of principal transfer buffer
 
@@ -790,7 +791,7 @@ Subroutine set_bounds                                 &
   mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real(                          &
            mxatdm*(18+12 + Merge(3,0,llvnl) + (mxexcl+1)                 + &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
-           Merge(2*(6+stats%mxstak), 0, l_msd)) + 3*green%samp        + &
+           Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp        + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
            3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 
@@ -798,7 +799,7 @@ Subroutine set_bounds                                 &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfss = Merge( 4, 0, comm%mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+stats%mxstak), 0, l_msd)),wp) * dens0)
+  mxbfss = Merge( 4, 0, comm%mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)),wp) * dens0)
 
 ! exporting single per atom (times 13 up to 35)
 

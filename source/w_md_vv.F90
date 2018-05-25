@@ -88,7 +88,7 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(stat)
+        Call w_refresh_mappings(stat,msd_data)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
@@ -98,7 +98,7 @@
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-     If (nstep == 0) Call w_statistics_report(mxatdm_,stat)
+     If (nstep == 0) Call w_statistics_report(mxatdm_,stat,msd_data)
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
@@ -125,7 +125,7 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(mxatdm_,stat)
+        Call w_statistics_report(mxatdm_,stat,msd_data)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
