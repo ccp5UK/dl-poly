@@ -21,7 +21,8 @@ Module rigid_bodies
   Use shared_units,    Only : update_shared_units
   Use numerics,        Only : images,local_index,pbcshift
   Use errors_warnings, Only : info, error, warning
-  Use thermostat,      Only : ENS_NPT_BERENDSEN, ENS_NPT_BERENDSEN_ANISO, &
+  Use thermostat,      Only : thermostat_type, &
+                              ENS_NPT_BERENDSEN, ENS_NPT_BERENDSEN_ANISO, &
                               ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, &
                               ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, &
                               ENS_NPT_MTK, ENS_NPT_MTK_ANISO
@@ -2268,7 +2269,7 @@ Contains
     End If
   End Subroutine rigid_bodies_widths
 
-  Subroutine xscale(m_rgd,ensemble,tstep,eta,stats,comm)
+  Subroutine xscale(m_rgd,tstep,thermo,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2281,8 +2282,8 @@ Contains
 
 
   Integer,           Intent( In    ) :: m_rgd
-  Real( Kind = wp ), Intent( In    ) :: tstep,eta(1:9)
-  Integer( Kind = wi ), Intent( In    ) :: ensemble
+  Real( Kind = wp ), Intent( In    ) :: tstep
+  Type( thermostat_type), Intent( InOut ) :: thermo
   Type( stats_type), Intent( InOut ) :: stats
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -2293,17 +2294,17 @@ Contains
   Real( Kind = wp ), Allocatable :: rgdxin(:),rgdyin(:),rgdzin(:)
   Character ( Len = 256 )        :: message
 
-  If (ensemble < 20) Return
+  If (thermo%ensemble < 20) Return
 
   If (m_rgd == 0) Then
 
-     If (ensemble == ENS_NPT_BERENDSEN .or. ensemble == ENS_NPT_BERENDSEN_ANISO) Then
+     If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! berendsen npt/nst
 
-        If (ensemble == ENS_NPT_BERENDSEN) Then
+        If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
 
-           scale = eta(1)
+           scale = thermo%eta(1)
 
            Do i=1,natms
               stats%xin(i) = scale*stats%xin(i)
@@ -2314,9 +2315,9 @@ Contains
         Else
 
            Do i=1,natms
-              xa = stats%xin(i)*eta(1)+stats%yin(i)*eta(2)+stats%zin(i)*eta(3)
-              ya = stats%xin(i)*eta(4)+stats%yin(i)*eta(5)+stats%zin(i)*eta(6)
-              za = stats%xin(i)*eta(7)+stats%yin(i)*eta(8)+stats%zin(i)*eta(9)
+              xa = stats%xin(i)*thermo%eta(1)+stats%yin(i)*thermo%eta(2)+stats%zin(i)*thermo%eta(3)
+              ya = stats%xin(i)*thermo%eta(4)+stats%yin(i)*thermo%eta(5)+stats%zin(i)*thermo%eta(6)
+              za = stats%xin(i)*thermo%eta(7)+stats%yin(i)*thermo%eta(8)+stats%zin(i)*thermo%eta(9)
 
               stats%xin(i) = xa
               stats%yin(i) = ya
@@ -2325,15 +2326,15 @@ Contains
 
         End If
 
-     Else If (ensemble == ENS_NPT_NOSE_HOOVER .or. ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
+     Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER .or. thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! hoover npt/nst
 
         Call getcom(stats%xin,stats%yin,stats%zin,com,comm)
 
-        If (ensemble == ENS_NPT_NOSE_HOOVER) Then
+        If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
-           scale = Exp(tstep*eta(1))
+           scale = Exp(tstep*thermo%eta(1))
 
            Do i=1,natms
               stats%xin(i) = scale*(stats%xin(i)-com(1))+com(1)
@@ -2343,14 +2344,14 @@ Contains
 
         Else
 
-! second order taylor expansion of Exp(tstep*eta)
+! second order taylor expansion of Exp(tstep*thermo%eta)
 
-           a1 = tstep*eta(1)
-           a2 = tstep*eta(2)
-           a3 = tstep*eta(3)
-           a5 = tstep*eta(5)
-           a6 = tstep*eta(6)
-           a9 = tstep*eta(9)
+           a1 = tstep*thermo%eta(1)
+           a2 = tstep*thermo%eta(2)
+           a3 = tstep*thermo%eta(3)
+           a5 = tstep*thermo%eta(5)
+           a6 = tstep*thermo%eta(6)
+           a9 = tstep*thermo%eta(9)
 
            b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
            b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
@@ -2371,16 +2372,16 @@ Contains
 
         End If
 
-     Else If (ensemble == ENS_NPT_LANGEVIN .or. &
-              ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-              ensemble == ENS_NPT_MTK .or. &
-              ensemble == ENS_NPT_MTK_ANISO) Then
+     Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
+              thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+              thermo%ensemble == ENS_NPT_MTK .or. &
+              thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! Langevin and MTK npt/nst
 
-        If (ensemble == ENS_NPT_LANGEVIN .or. ensemble == ENS_NPT_MTK) Then
+        If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
 
-           scale = Exp(tstep*eta(1))
+           scale = Exp(tstep*thermo%eta(1))
 
            Do i=1,natms
               stats%xin(i) = scale*stats%xin(i)
@@ -2390,14 +2391,14 @@ Contains
 
         Else
 
-! second order taylor expansion of Exp(tstep*eta)
+! second order taylor expansion of Exp(tstep*thermo%eta)
 
-           a1 = tstep*eta(1)
-           a2 = tstep*eta(2)
-           a3 = tstep*eta(3)
-           a5 = tstep*eta(5)
-           a6 = tstep*eta(6)
-           a9 = tstep*eta(9)
+           a1 = tstep*thermo%eta(1)
+           a2 = tstep*thermo%eta(2)
+           a3 = tstep*thermo%eta(3)
+           a5 = tstep*thermo%eta(5)
+           a6 = tstep*thermo%eta(6)
+           a9 = tstep*thermo%eta(9)
 
            b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
            b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
@@ -2422,13 +2423,13 @@ Contains
 
      If (.not.l_vnl) Then
 
-        If (ensemble == ENS_NPT_BERENDSEN .or. ensemble == ENS_NPT_BERENDSEN_ANISO) Then
+        If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! berendsen npt/nst
 
-           If (ensemble == ENS_NPT_BERENDSEN) Then
+           If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
 
-              scale = eta(1)
+              scale = thermo%eta(1)
 
               Do i=1,natms
                  xbg(i) = scale*xbg(i)
@@ -2439,9 +2440,9 @@ Contains
            Else
 
               Do i=1,natms
-                 xa = xbg(i)*eta(1)+ybg(i)*eta(2)+zbg(i)*eta(3)
-                 ya = xbg(i)*eta(4)+ybg(i)*eta(5)+zbg(i)*eta(6)
-                 za = xbg(i)*eta(7)+ybg(i)*eta(8)+zbg(i)*eta(9)
+                 xa = xbg(i)*thermo%eta(1)+ybg(i)*thermo%eta(2)+zbg(i)*thermo%eta(3)
+                 ya = xbg(i)*thermo%eta(4)+ybg(i)*thermo%eta(5)+zbg(i)*thermo%eta(6)
+                 za = xbg(i)*thermo%eta(7)+ybg(i)*thermo%eta(8)+zbg(i)*thermo%eta(9)
 
                  xbg(i) = xa
                  ybg(i) = ya
@@ -2450,15 +2451,15 @@ Contains
 
            End If
 
-        Else If (ensemble == ENS_NPT_NOSE_HOOVER .or. ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
+        Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER .or. thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! hoover npt/nst
 
            Call getcom(xbg,ybg,zbg,com,comm)
 
-           If (ensemble == ENS_NPT_NOSE_HOOVER) Then
+           If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
-              scale = Exp(tstep*eta(1))
+              scale = Exp(tstep*thermo%eta(1))
 
               Do i=1,natms
                  xbg(i) = scale*(xbg(i)-com(1))+com(1)
@@ -2468,14 +2469,14 @@ Contains
 
            Else
 
-! second order taylor expansion of Exp(tstep*eta)
+! second order taylor expansion of Exp(tstep*thermo%eta)
 
-              a1 = tstep*eta(1)
-              a2 = tstep*eta(2)
-              a3 = tstep*eta(3)
-              a5 = tstep*eta(5)
-              a6 = tstep*eta(6)
-              a9 = tstep*eta(9)
+              a1 = tstep*thermo%eta(1)
+              a2 = tstep*thermo%eta(2)
+              a3 = tstep*thermo%eta(3)
+              a5 = tstep*thermo%eta(5)
+              a6 = tstep*thermo%eta(6)
+              a9 = tstep*thermo%eta(9)
 
               b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
               b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
@@ -2496,16 +2497,16 @@ Contains
 
            End If
 
-        Else If (ensemble == ENS_NPT_LANGEVIN .or. &
-                 ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-                 ensemble == ENS_NPT_MTK .or. &
-                 ensemble == ENS_NPT_MTK_ANISO) Then
+        Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
+                 thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+                 thermo%ensemble == ENS_NPT_MTK .or. &
+                 thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! Langevin and MTK npt/nst
 
-           If (ensemble == ENS_NPT_LANGEVIN .or. ensemble == ENS_NPT_MTK) Then
+           If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
 
-              scale = Exp(tstep*eta(1))
+              scale = Exp(tstep*thermo%eta(1))
 
               Do i=1,natms
                  xbg(i) = scale*xbg(i)
@@ -2515,14 +2516,14 @@ Contains
 
            Else
 
-! second order taylor expansion of Exp(tstep*eta)
+! second order taylor expansion of Exp(tstep*thermo%eta)
 
-              a1 = tstep*eta(1)
-              a2 = tstep*eta(2)
-              a3 = tstep*eta(3)
-              a5 = tstep*eta(5)
-              a6 = tstep*eta(6)
-              a9 = tstep*eta(9)
+              a1 = tstep*thermo%eta(1)
+              a2 = tstep*thermo%eta(2)
+              a3 = tstep*thermo%eta(3)
+              a5 = tstep*thermo%eta(5)
+              a6 = tstep*thermo%eta(6)
+              a9 = tstep*thermo%eta(9)
 
               b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
               b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
@@ -2562,13 +2563,13 @@ Contains
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,stats%xin,stats%yin,stats%zin,comm)
      Call rigid_bodies_coms(stats%xin,stats%yin,stats%zin,rgdxin,rgdyin,rgdzin,comm)
 
-     If (ensemble == ENS_NPT_BERENDSEN .or. ensemble == ENS_NPT_BERENDSEN_ANISO) Then
+     If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! berendsen npt/nst
 
-        If (ensemble == ENS_NPT_BERENDSEN) Then
+        If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
 
-           scale = eta(1)
+           scale = thermo%eta(1)
 
            Do j=1,nfree
               i=lstfre(j)
@@ -2604,9 +2605,9 @@ Contains
            Do j=1,nfree
               i=lstfre(j)
 
-              xa = stats%xin(i)*eta(1)+stats%yin(i)*eta(2)+stats%zin(i)*eta(3)
-              ya = stats%xin(i)*eta(4)+stats%yin(i)*eta(5)+stats%zin(i)*eta(6)
-              za = stats%xin(i)*eta(7)+stats%yin(i)*eta(8)+stats%zin(i)*eta(9)
+              xa = stats%xin(i)*thermo%eta(1)+stats%yin(i)*thermo%eta(2)+stats%zin(i)*thermo%eta(3)
+              ya = stats%xin(i)*thermo%eta(4)+stats%yin(i)*thermo%eta(5)+stats%zin(i)*thermo%eta(6)
+              za = stats%xin(i)*thermo%eta(7)+stats%yin(i)*thermo%eta(8)+stats%zin(i)*thermo%eta(9)
 
               stats%xin(i) = xa
               stats%yin(i) = ya
@@ -2618,9 +2619,9 @@ Contains
               y = rgdyin(irgd)
               z = rgdzin(irgd)
 
-              xa = rgdxin(irgd)*eta(1)+rgdyin(irgd)*eta(2)+rgdzin(irgd)*eta(3)
-              ya = rgdxin(irgd)*eta(4)+rgdyin(irgd)*eta(5)+rgdzin(irgd)*eta(6)
-              za = rgdxin(irgd)*eta(7)+rgdyin(irgd)*eta(8)+rgdzin(irgd)*eta(9)
+              xa = rgdxin(irgd)*thermo%eta(1)+rgdyin(irgd)*thermo%eta(2)+rgdzin(irgd)*thermo%eta(3)
+              ya = rgdxin(irgd)*thermo%eta(4)+rgdyin(irgd)*thermo%eta(5)+rgdzin(irgd)*thermo%eta(6)
+              za = rgdxin(irgd)*thermo%eta(7)+rgdyin(irgd)*thermo%eta(8)+rgdzin(irgd)*thermo%eta(9)
 
               rgdxin(irgd) = xa
               rgdyin(irgd) = ya
@@ -2640,15 +2641,15 @@ Contains
 
         End If
 
-     Else If (ensemble == ENS_NPT_NOSE_HOOVER .or. ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
+     Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER .or. thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! hoover npt/nst
 
         Call getcom(stats%xin,stats%yin,stats%zin,com,comm)
 
-        If (ensemble == ENS_NPT_NOSE_HOOVER) Then
+        If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
-           scale = Exp(tstep*eta(1))
+           scale = Exp(tstep*thermo%eta(1))
 
            Do j=1,nfree
               i=lstfre(j)
@@ -2681,14 +2682,14 @@ Contains
 
         Else
 
-! second order taylor expansion of Exp(tstep*eta)
+! second order taylor expansion of Exp(tstep*thermo%eta)
 
-           a1 = tstep*eta(1)
-           a2 = tstep*eta(2)
-           a3 = tstep*eta(3)
-           a5 = tstep*eta(5)
-           a6 = tstep*eta(6)
-           a9 = tstep*eta(9)
+           a1 = tstep*thermo%eta(1)
+           a2 = tstep*thermo%eta(2)
+           a3 = tstep*thermo%eta(3)
+           a5 = tstep*thermo%eta(5)
+           a6 = tstep*thermo%eta(6)
+           a9 = tstep*thermo%eta(9)
 
            b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
            b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
@@ -2736,16 +2737,16 @@ Contains
 
         End If
 
-     Else If (ensemble == ENS_NPT_LANGEVIN .or. &
-              ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-              ensemble == ENS_NPT_MTK .or. &
-              ensemble == ENS_NPT_MTK_ANISO) Then
+     Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
+              thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+              thermo%ensemble == ENS_NPT_MTK .or. &
+              thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! Langevin and MTK npt/nst
 
-        If (ensemble == ENS_NPT_LANGEVIN .or. ensemble == ENS_NPT_MTK) Then
+        If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
 
-           scale = Exp(tstep*eta(1))
+           scale = Exp(tstep*thermo%eta(1))
 
            Do j=1,nfree
               i=lstfre(j)
@@ -2778,14 +2779,14 @@ Contains
 
         Else
 
-! second order taylor expansion of Exp(tstep*eta)
+! second order taylor expansion of Exp(tstep*thermo%eta)
 
-           a1 = tstep*eta(1)
-           a2 = tstep*eta(2)
-           a3 = tstep*eta(3)
-           a5 = tstep*eta(5)
-           a6 = tstep*eta(6)
-           a9 = tstep*eta(9)
+           a1 = tstep*thermo%eta(1)
+           a2 = tstep*thermo%eta(2)
+           a3 = tstep*thermo%eta(3)
+           a5 = tstep*thermo%eta(5)
+           a6 = tstep*thermo%eta(6)
+           a9 = tstep*thermo%eta(9)
 
            b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
            b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
@@ -2839,13 +2840,13 @@ Contains
 
         Call rigid_bodies_coms(xbg,ybg,zbg,rgdxin,rgdyin,rgdzin,comm)
 
-        If (ensemble == ENS_NPT_BERENDSEN .or. ensemble == ENS_NPT_BERENDSEN_ANISO) Then
+        If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! berendsen npt/nst
 
-           If (ensemble == ENS_NPT_BERENDSEN) Then
+           If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
 
-              scale = eta(1)
+              scale = thermo%eta(1)
 
               Do j=1,nfree
                  i=lstfre(j)
@@ -2881,9 +2882,9 @@ Contains
               Do j=1,nfree
                  i=lstfre(j)
 
-                 xa = xbg(i)*eta(1)+ybg(i)*eta(2)+zbg(i)*eta(3)
-                 ya = xbg(i)*eta(4)+ybg(i)*eta(5)+zbg(i)*eta(6)
-                 za = xbg(i)*eta(7)+ybg(i)*eta(8)+zbg(i)*eta(9)
+                 xa = xbg(i)*thermo%eta(1)+ybg(i)*thermo%eta(2)+zbg(i)*thermo%eta(3)
+                 ya = xbg(i)*thermo%eta(4)+ybg(i)*thermo%eta(5)+zbg(i)*thermo%eta(6)
+                 za = xbg(i)*thermo%eta(7)+ybg(i)*thermo%eta(8)+zbg(i)*thermo%eta(9)
 
                  xbg(i) = xa
                  ybg(i) = ya
@@ -2895,9 +2896,9 @@ Contains
                  y = rgdyin(irgd)
                  z = rgdzin(irgd)
 
-                 xa = rgdxin(irgd)*eta(1)+rgdyin(irgd)*eta(2)+rgdzin(irgd)*eta(3)
-                 ya = rgdxin(irgd)*eta(4)+rgdyin(irgd)*eta(5)+rgdzin(irgd)*eta(6)
-                 za = rgdxin(irgd)*eta(7)+rgdyin(irgd)*eta(8)+rgdzin(irgd)*eta(9)
+                 xa = rgdxin(irgd)*thermo%eta(1)+rgdyin(irgd)*thermo%eta(2)+rgdzin(irgd)*thermo%eta(3)
+                 ya = rgdxin(irgd)*thermo%eta(4)+rgdyin(irgd)*thermo%eta(5)+rgdzin(irgd)*thermo%eta(6)
+                 za = rgdxin(irgd)*thermo%eta(7)+rgdyin(irgd)*thermo%eta(8)+rgdzin(irgd)*thermo%eta(9)
 
                  rgdxin(irgd) = xa
                  rgdyin(irgd) = ya
@@ -2917,15 +2918,15 @@ Contains
 
            End If
 
-        Else If (ensemble == ENS_NPT_NOSE_HOOVER .or. ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
+        Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER .or. thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! hoover npt/nst
 
            Call getcom(xbg,ybg,zbg,com,comm)
 
-           If (ensemble == ENS_NPT_NOSE_HOOVER) Then
+           If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
-              scale = Exp(tstep*eta(1))
+              scale = Exp(tstep*thermo%eta(1))
 
               Do j=1,nfree
                  i=lstfre(j)
@@ -2958,14 +2959,14 @@ Contains
 
            Else
 
-! second order taylor expansion of Exp(tstep*eta)
+! second order taylor expansion of Exp(tstep*thermo%eta)
 
-              a1 = tstep*eta(1)
-              a2 = tstep*eta(2)
-              a3 = tstep*eta(3)
-              a5 = tstep*eta(5)
-              a6 = tstep*eta(6)
-              a9 = tstep*eta(9)
+              a1 = tstep*thermo%eta(1)
+              a2 = tstep*thermo%eta(2)
+              a3 = tstep*thermo%eta(3)
+              a5 = tstep*thermo%eta(5)
+              a6 = tstep*thermo%eta(6)
+              a9 = tstep*thermo%eta(9)
 
               b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
               b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2
@@ -3013,16 +3014,16 @@ Contains
 
            End If
 
-        Else If (ensemble == ENS_NPT_LANGEVIN .or. &
-                 ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
-                 ensemble == ENS_NPT_MTK .or. &
-                 ensemble == ENS_NPT_MTK_ANISO) Then
+        Else If (thermo%ensemble == ENS_NPT_LANGEVIN .or. &
+                 thermo%ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+                 thermo%ensemble == ENS_NPT_MTK .or. &
+                 thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! Langevin and MTK npt/nst
 
-           If (ensemble == ENS_NPT_LANGEVIN .or. ensemble == ENS_NPT_MTK) Then
+           If (thermo%ensemble == ENS_NPT_LANGEVIN .or. thermo%ensemble == ENS_NPT_MTK) Then
 
-              scale = Exp(tstep*eta(1))
+              scale = Exp(tstep*thermo%eta(1))
 
               Do j=1,nfree
                  i=lstfre(j)
@@ -3055,14 +3056,14 @@ Contains
 
            Else
 
-! second order taylor expansion of Exp(tstep*eta)
+! second order taylor expansion of Exp(tstep*thermo%eta)
 
-              a1 = tstep*eta(1)
-              a2 = tstep*eta(2)
-              a3 = tstep*eta(3)
-              a5 = tstep*eta(5)
-              a6 = tstep*eta(6)
-              a9 = tstep*eta(9)
+              a1 = tstep*thermo%eta(1)
+              a2 = tstep*thermo%eta(2)
+              a3 = tstep*thermo%eta(3)
+              a5 = tstep*thermo%eta(5)
+              a6 = tstep*thermo%eta(6)
+              a9 = tstep*thermo%eta(9)
 
               b1 = (a1*a1 + a2*a2 + a3*a3)*0.5_wp + a1 + 1.0_wp
               b2 = (a1*a2 + a2*a5 + a3*a6)*0.5_wp + a2

@@ -84,7 +84,7 @@
 ! CHECK MD CONFIGURATION
 
            Call check_config &
-           (levcfg,l_str,keyens,keyfce,keyres,megatm,thermo,comm)
+           (levcfg,l_str,keyfce,keyres,megatm,thermo,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -179,7 +179,7 @@
 
            Call statistics_collect        &
            (lsim,leql,nsteql,lzdn,msd_data%l_msd,nstzdn, &
-           keyres,keyens,      &
+           keyres,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
            mxatdm_,stat,thermo,comm)
@@ -219,7 +219,7 @@
            If (ltraj) Call trajectory_write &
            (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,comm)
            If (ldef) Call defects_write &
-           (rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time,comm)
+           (rcut,keyres,thermo%ensemble,nsdef,isdef,rdef,nstep,tstep,time,comm)
            If (msd_data%l_msd) Call msd_write &
            (keyres,megatm,nstep,tstep,time,stat%stpval,msd_data,comm)
            If (lrsd) Call rsd_write &

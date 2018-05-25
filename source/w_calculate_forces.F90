@@ -27,7 +27,7 @@
 
      If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) &
         Call two_body_forces                      &
-           (rcut,rlnk,rvdw,pdplnc,keyens,    &
+           (rcut,rlnk,rvdw,pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,               &
@@ -106,7 +106,7 @@
 
      If (thermo%l_pseudo) Then
            Call pseudo_vv                               &
-           (0,keyshl,keyens,tstep, &
+           (0,keyshl,tstep, &
            nstep,stat,thermo,comm)
      End If
 

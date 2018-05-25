@@ -283,7 +283,7 @@ Contains
 
   End Subroutine allocate_config_arrays
 
-  Subroutine check_config(levcfg,l_str,keyens,keyfce,keyres,megatm,thermo,comm)
+  Subroutine check_config(levcfg,l_str,keyfce,keyres,megatm,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -298,7 +298,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical, Intent( In    ) :: l_str
-  Integer, Intent( In    ) :: levcfg,keyens,keyfce,keyres,megatm
+  Integer, Intent( In    ) :: levcfg,keyfce,keyres,megatm
   Type( comms_type ), Intent( InOut ) :: comm
   Type( thermostat_type ), Intent( In    ) :: thermo
 
@@ -339,12 +339,12 @@ Contains
 
      Call warning(260,0.0_wp,0.0_wp,0.0_wp)
 
-     If (keyens >= 20) Call error(390)
+     If (thermo%ensemble >= 20) Call error(390)
   End If
 
 ! Check image conditions for nst ensembles
 
-  If (keyens >= 30) Then
+  If (thermo%ensemble >= 30) Then
      If (thermo%iso == 0) Then
         If (imcon == 1 .or. imcon == 2) Then
            Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)

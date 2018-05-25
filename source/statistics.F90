@@ -168,7 +168,7 @@ Contains
 
   Subroutine statistics_collect           &
            (lsim,leql,nsteql,lzdn,lmsd,nstzdn, &
-           keyres,keyens,                 &
+           keyres,                 &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
            mxatdm,stats,thermo,comm)
@@ -187,7 +187,7 @@ Contains
 
   Logical,           Intent( In    ) :: lsim,leql,lzdn,lmsd
   Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
-                                        keyens,nstep
+                                        nstep
 
   Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
 
@@ -301,9 +301,9 @@ Contains
 
 ! system enthalpy
 
-  If (keyens >= 20) Then             ! P_target*V_instantaneous
+  If (thermo%ensemble >= 20) Then             ! P_target*V_instantaneous
      stats%stpeth = stats%stpeng + thermo%press*stats%stpvol
-  Else                               ! for keyens < 20 V_instantaneous=V_target
+  Else                               ! for thermo%ensemble < 20 V_instantaneous=V_target
      stats%stpeth = stats%stpeng + stpipv        ! and there is only P_instantaneous
   End If
 
@@ -429,7 +429,7 @@ Contains
   End Do
   iadd = iadd + 9
 
-  If (keyens >= 20) Then
+  If (thermo%ensemble >= 20) Then
 
 ! cell parameters
 
@@ -1329,7 +1329,7 @@ End Subroutine statistics_connect_spread
 
 Subroutine statistics_result                                    &
            (rcut,lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
-           nstrun,keyens,keyshl,megcon,megpmf,              &
+           nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
            mxatdm,stats,thermo,green,comm,passmin)
 
@@ -1345,7 +1345,7 @@ Subroutine statistics_result                                    &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn,lvafav,lpvaf
-  Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyens,keyshl,megcon,megpmf,nstep
+  Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
   Integer( Kind = wi ),    Intent( In    ) :: mxatdm 
   Type( stats_type ), Intent( InOut ) :: stats
@@ -1552,7 +1552,7 @@ Subroutine statistics_result                                    &
 
   ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
-  If (keyens >= 20) Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
+  If (thermo%ensemble >= 20) Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
     "<P*V> term:            ",stats%sumval(37+ntpatm+2*Merge(mxatdm,0,lmsd)), &
     " r.m.s. fluctuations:  ",stats%ssqval(37+ntpatm+2*Merge(mxatdm,0,lmsd))
   Call info(message,.true.)
@@ -1611,7 +1611,7 @@ Subroutine statistics_result                                    &
 
 ! Write out mean cell vectors for npt/nst
 
-  If (keyens >= 20) Then
+  If (thermo%ensemble >= 20) Then
 
 ! average cell (again)
 

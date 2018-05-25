@@ -13,7 +13,7 @@ If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(stat%shlke,comm)
 
 Call statistics_collect           &
   (lsim,leql,nsteql,lzdn,msd_data%l_msd,nstzdn, &
-  keyres,keyens,      &
+  keyres,      &
   degfre,degshl,degrot,          &
   nstep,tstep,time,tmst,         &
   mxatdm_,stat,thermo,comm)

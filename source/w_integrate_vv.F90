@@ -11,7 +11,7 @@
 ! first (isw == 0) or second (isw == 1) stage
 
         If (m_rgd == 0) Then
-           If      (keyens == ENS_NVE) Then
+           If      (thermo%ensemble == ENS_NVE) Then
 
 ! Microcanonical ensemble
 
@@ -22,7 +22,7 @@
            megcon,stat%strcon,stat%vircon,              &
            megpmf,stat%strpmf,stat%virpmf,comm)
 
-           Else If (keyens == ENS_NVT_EVANS) Then
+           Else If (thermo%ensemble == ENS_NVT_EVANS) Then
 
 ! Evans thermostat (Gaussian temperature constraints)
 
@@ -227,7 +227,7 @@
 
            End If
         Else
-           If      (keyens == ENS_NVE) Then
+           If      (thermo%ensemble == ENS_NVE) Then
 
 ! Microcanonical ensemble
 
@@ -239,7 +239,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            stat%strcom,stat%vircom,comm)
 
-           Else If (keyens == ENS_NVT_EVANS) Then
+           Else If (thermo%ensemble == ENS_NVT_EVANS) Then
 
 ! Evans thermostat (Gaussian temperature constraints)
 

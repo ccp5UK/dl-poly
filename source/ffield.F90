@@ -69,7 +69,7 @@ Contains
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
            rcut,rvdw,width,epsq, &
-           keyens,keyfce,keyshl,           &
+           keyfce,keyshl,           &
            lecx,lbook,lexcl,               &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
@@ -100,7 +100,6 @@ Subroutine read_field                      &
 
 
   Logical,           Intent( In    ) :: l_str,l_top,l_n_v
-  Integer,           Intent( In    ) :: keyens
   Integer,           Intent( InOut ) :: keyfce
   Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,width,epsq
   Logical,           Intent( InOut ) :: lecx
@@ -4661,7 +4660,7 @@ Subroutine read_field                      &
           Call warning('external field is ignored as only applicable for imcon=6 (SLAB geometry)',.true.)
         End If
 
-        If (keyfld == 8 .and. keyens /= 0) Call error(7)
+        If (keyfld == 8 .and. thermo%ensemble /= 0) Call error(7)
 
 ! close force field file
 

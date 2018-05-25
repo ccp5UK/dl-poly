@@ -211,7 +211,7 @@ program dl_poly
     nx,ny,nz,                           &
     keyres,nstrun,nsteql,               &
     keymin,nstmin,                      &
-    keyens,nstbpo,    &
+    nstbpo,    &
     keyfce,mxshak,mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
     nstrdf,nstzdn,                      &
@@ -386,7 +386,6 @@ program dl_poly
     keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     keymin,nstmin,min_tol,                      &
-    keyens,&
     fmax,nstbpo,keyfce,epsq,             &
     rlx_tol,mxshak,tolnce,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
@@ -399,7 +398,7 @@ program dl_poly
   Call read_field                          &
     (l_str,l_top,l_n_v,             &
     rcut,rvdw,width,epsq, &
-    keyens,keyfce,keyshl,           &
+    keyfce,keyshl,           &
     lecx,lbook,lexcl,               &
     rcter,rctbp,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
@@ -417,7 +416,7 @@ program dl_poly
 
   ! CHECK MD CONFIGURATION
 
-  Call check_config(levcfg,l_str,keyens,keyfce,keyres,megatm,thermo,comm)
+  Call check_config(levcfg,l_str,keyfce,keyres,megatm,thermo,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -715,7 +714,7 @@ program dl_poly
 
   Call statistics_result                                        &
     (rcut,lmin,lpana,lrdf,lprdf,lzdn,msd_data%l_msd,lpzdn,lvafav,lpvaf, &
-    nstrun,keyens,keyshl,megcon,megpmf,              &
+    nstrun,keyshl,megcon,megpmf,              &
     nstep,tstep,time,tmst,mxatdm,stats,thermo,green,comm,passmin)
 
   10 Continue

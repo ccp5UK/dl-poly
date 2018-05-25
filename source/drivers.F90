@@ -129,7 +129,7 @@ Module drivers
 !  End Subroutine w_replay_historf
 
 Subroutine pseudo_vv                                      &
-           (isw,keyshl,keyens,tstep, &
+           (isw,keyshl,tstep, &
            nstep,stats,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -152,7 +152,7 @@ Subroutine pseudo_vv                                      &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: isw,keyshl,keyens,nstep
+  Integer,           Intent( In    ) :: isw,keyshl,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep
   Type( stats_type), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -198,7 +198,7 @@ Subroutine pseudo_vv                                      &
 ! Random forces cycle - thermostat-system decoupling
 ! Recalculate the following for NPT and NST integration
 
-     If (keyens >= 20 .or. newjob) Then
+     If (thermo%ensemble >= 20 .or. newjob) Then
         If (newjob) Then
            newjob = .false.
 

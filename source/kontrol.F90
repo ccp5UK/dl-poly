@@ -73,7 +73,6 @@ Subroutine read_control                                &
            keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
-           keyens,&
            fmax,nstbpo,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
@@ -119,7 +118,6 @@ Subroutine read_control                                &
                                              keyres,nstrun,        &
                                              nsteql,       &
                                              keymin,nstmin,        &
-                                             keyens,           &
                                              nstbpo,        &
                                              keyfce,        &
                                              mxshak,mxquat,        &
@@ -3015,7 +3013,7 @@ Subroutine read_control                                &
 ! standard Langevin thermostat (if supplied), and use of
 ! thermal velocities only for thermostat
 
-  If (l_ttm .and. keyens/=15) Then
+  If (l_ttm .and. thermo%ensemble/=15) Then
     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
     If (thermo%ensemble==ENS_NVT_LANGEVIN .or. &
         thermo%ensemble==ENS_NPT_LANGEVIN .or. &
@@ -3469,15 +3467,15 @@ Subroutine read_control                                &
 
 ! check settings in ensembles with thermo%tau_t
 
-  If (((keyens >= 11 .and. keyens <= 13) .or. &
-       (keyens >= 21 .and. keyens <= 23) .or. &
-       (keyens >= 31 .and. keyens <= 33)) .and. thermo%tau_t <= 0.0_wp) Call error(464)
+  If (((thermo%ensemble >= 11 .and. thermo%ensemble <= 13) .or. &
+       (thermo%ensemble >= 21 .and. thermo%ensemble <= 23) .or. &
+       (thermo%ensemble >= 31 .and. thermo%ensemble <= 33)) .and. thermo%tau_t <= 0.0_wp) Call error(464)
 
 ! check settings in ensembles with thermo%press
 
-  If ((keyens >= 20 .and. keyens <= 23) .or. &
-      (keyens >= 30 .and. keyens <= 33)) Then
-     If      (keyens >= 20 .and. keyens <= 23) Then
+  If ((thermo%ensemble >= 20 .and. thermo%ensemble <= 23) .or. &
+      (thermo%ensemble >= 30 .and. thermo%ensemble <= 33)) Then
+     If      (thermo%ensemble >= 20 .and. thermo%ensemble <= 23) Then
         If (.not.lpres) Then
            If (lstrext) Then
               thermo%press=(thermo%stress(1)+thermo%stress(5)+thermo%stress(9))/3.0_wp
@@ -3501,7 +3499,7 @@ Subroutine read_control                                &
               Call info(messages,3,.true.)
            End If
         End If
-     Else If (keyens >= 30 .and. keyens <= 33) Then
+     Else If (thermo%ensemble >= 30 .and. thermo%ensemble <= 33) Then
         If (.not.lstrext) Then
            If (.not.lpres) Call error(387)
         Else
@@ -3519,7 +3517,7 @@ Subroutine read_control                                &
            End If
         End If
      End If
-     If (keyens /= 20 .and. keyens /= 30 .and. thermo%tau_p <= 0.0_wp) Call error(466)
+     If (thermo%ensemble /= 20 .and. thermo%ensemble /= 30 .and. thermo%tau_p <= 0.0_wp) Call error(466)
   End If
 
 ! Two-temperature model: calculate atomic density (if not

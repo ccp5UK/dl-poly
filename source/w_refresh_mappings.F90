@@ -3,7 +3,7 @@
 
 ! Scale t=0 reference positions
 
-        If (nstep > 0) Call xscale(m_rgd,keyens,tstep,thermo%eta,stat,comm)
+        If (nstep > 0) Call xscale(m_rgd,tstep,thermo,stat,comm)
 
 ! Check VNL conditioning
 
