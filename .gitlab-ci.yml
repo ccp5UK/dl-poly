@@ -124,9 +124,9 @@ testing-mpi-intel:
   script:
     - sh utils/intel-testing.sh
 
-testing-mpi-intel-paranoid:
-  stage: test
-  tags: 
-    - intel
-  script:
-    - sh utils/intel-testing-paranoid.sh
+#testing-mpi-intel-paranoid:
+#  stage: test
+#  tags: 
+#    - intel
+#  script:
+#    - sh utils/intel-testing-paranoid.sh
