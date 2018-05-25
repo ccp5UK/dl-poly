@@ -36,7 +36,8 @@ Module ffield
   Use inversions
 
   Use vdw
-  Use metal
+  Use metal, Only : metal_type,allocate_metal_arrays,allocate_metal_table_arrays, &
+                    metal_generate_erf,metal_table_read,metal_generate
   Use tersoff
   Use three_body
   Use four_body
@@ -74,7 +75,7 @@ Subroutine read_field                      &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
            megtet,megbnd,megang,megdih,    &
-           meginv,thermo,comm)
+           meginv,thermo,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -111,6 +112,7 @@ Subroutine read_field                      &
                                         megshl,megcon,megpmf,megrgd,        &
                                         megtet,megbnd,megang,megdih,meginv
   Type( thermostat_type ), Intent( InOut ) :: thermo
+  Type( metal_type ), Intent( InOut ) :: met
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -3855,9 +3857,9 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'met') Then
 
         Call get_word(record,word)
-        ntpmet=Nint(word_2_real(word))
+        met%n_potentials=Nint(word_2_real(word))
 
-        Write(message,'(a,i10)') 'number of specified metal potentials ',ntpmet
+        Write(message,'(a,i10)') 'number of specified metal potentials ',met%n_potentials
         Call info(message,.true.)
         If (l_top) Then
           Write(message,'(8x,a4,5x,a6,2x,a6,5x,a3,5x,a10)') &
@@ -3865,12 +3867,12 @@ Subroutine read_field                      &
           Call info(message,.true.)
         End If
 
-        If (ntpmet > mxmet) Call error(71)
+        If (met%n_potentials > mxmet) Call error(71)
         If (.not.lunits) Call error(6)
         If (.not.lmols) Call error(13)
 
         lmet_safe=.true.
-        Do itpmet=1,ntpmet
+        Do itpmet=1,met%n_potentials
 
            parpot=0.0_wp
 
@@ -3890,17 +3892,17 @@ Subroutine read_field                      &
            keyword=word(1:4)
 
            If      (keyword(1:3) == 'eam' ) Then
-              keypot=0 ! tabmet=1 set in scan_field
-              lmet_safe=(tabmet == 1)
+              keypot=0 ! met%tab=1 set in scan_field
+              lmet_safe=(met%tab == 1)
            Else If (keyword(1:4) == 'eeam' ) Then
-              keypot=0 ! tabmet=2 set in scan_field
-              lmet_safe=(tabmet == 2)
+              keypot=0 ! met%tab=2 set in scan_field
+              lmet_safe=(met%tab == 2)
            Else If (keyword(1:4) == '2bea' ) Then
-              keypot=0 ! tabmet=3 set in scan_field
-              lmet_safe=(tabmet == 3)
+              keypot=0 ! met%tab=3 set in scan_field
+              lmet_safe=(met%tab == 3)
            Else If (keyword(1:4) == '2bee' ) Then
-              keypot=0 ! tabmet=4 set in scan_field
-              lmet_safe=(tabmet == 4)
+              keypot=0 ! met%tab=4 set in scan_field
+              lmet_safe=(met%tab == 4)
            Else If (keyword(1:4) == 'fnsc') Then
               keypot=1
            Else If (keyword(1:4) == 'exfs') Then
@@ -3959,13 +3961,13 @@ Subroutine read_field                      &
            keymet=(ka1*(ka1-1))/2+ka2
 
            If (keymet > mxmet) Call error(82)
-           If (lstmet(keymet) /= 0) Call error(141)
+           If (met%list(keymet) /= 0) Call error(141)
 
-           lstmet(keymet)=itpmet
-           ltpmet(itpmet)=keypot
+           met%list(keymet)=itpmet
+           met%ltp(itpmet)=keypot
 
            If (itpmet > 1) Then
-              If (keypot /= ltpmet(itpmet-1)) lmet_safe=.false.
+              If (keypot /= met%ltp(itpmet-1)) lmet_safe=.false.
            End If
 
 ! convert energies to internal unit
@@ -3988,13 +3990,13 @@ Subroutine read_field                      &
               End If
 
               Do i=1,mxpmet
-                 prmmet(i,itpmet)=parpot(i)
+                 met%prm(i,itpmet)=parpot(i)
               End Do
            End If
 
         End Do
 
-        If (ntpmet /= 0) Then
+        If (met%n_potentials /= 0) Then
 
 ! test metal potentials mix-up
 
@@ -4003,31 +4005,31 @@ Subroutine read_field                      &
 ! test for unspecified atom-atom potentials
 
            ntab=(ntpatm*(ntpatm+1))/2
-           If (ntpmet < ntab) Then
+           If (met%n_potentials < ntab) Then
               Call warning(120,0.0_wp,0.0_wp,0.0_wp)
 
-              If (ntpmet > mxmet) Call error(71)
+              If (met%n_potentials > mxmet) Call error(71)
 
 ! put undefined potentials outside range
 
               Do i=1,ntab
-                 If (lstmet(i) == 0) lstmet(i)=ntpmet+1
+                 If (met%list(i) == 0) met%list(i)=met%n_potentials+1
               End Do
 
-              Do i=ntpmet+1,ntab
-                 ltpmet(i) = -1
+              Do i=met%n_potentials+1,ntab
+                 met%ltp(i) = -1
               End Do
            End If
 
 ! generate metal force arrays
 
-           Call metal_generate_erf(rmet)
-           If (.not.ld_met) Then
-              Call allocate_metal_table_arrays()
-              If (tabmet > 0) Then ! keypot == 0
-                 Call metal_table_read(l_top,comm)
-              Else ! If (tabmet == 0) Then
-                 Call metal_generate(rmet)
+           Call metal_generate_erf(rmet,met)
+           If (.not.met%l_direct) Then
+              Call allocate_metal_table_arrays(met)
+              If (met%tab > 0) Then ! keypot == 0
+                 Call metal_table_read(l_top,met,comm)
+              Else ! If (met%tab == 0) Then
+                 Call metal_generate(rmet,met)
               End If
            End If
 
@@ -4675,7 +4677,7 @@ Subroutine read_field                      &
                  keyrdf=(ja*(ja-1))/2+ia
                  i=0
                  If (ntpvdw > 0) i=Max(i,lstvdw(keyrdf))
-                 If (ntpmet > 0) i=Max(i,lstmet(keyrdf))
+                 If (met%n_potentials > 0) i=Max(i,met%list(keyrdf))
                  If (i > 0) Then
                     ntprdf = ntprdf+1
                     lstrdf(keyrdf) = ntprdf
@@ -4697,12 +4699,12 @@ Subroutine read_field                      &
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
         If ( keyfce == 0 .and. ntpvdw == 0 .and. &
-             ntpmet == 0 .and. ntpter == 0 .and. kimim == ' ') Call error(145)
+             met%n_potentials == 0 .and. ntpter == 0 .and. kimim == ' ') Call error(145)
 
 ! test for mixing KIM model with external interactions
 
         If ( (keyfce /= 0 .or. ntpvdw /= 0 .or. &
-              ntpmet /= 0 .or. ntpter /= 0) .and. kimim /= ' ') Then
+              met%n_potentials /= 0 .or. ntpter /= 0) .and. kimim /= ' ') Then
           Call warning('open KIM model in use together with extra intermolecular interactions',.true.)
         End If
 
@@ -4947,7 +4949,7 @@ Subroutine scan_field                                &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,rmet,mxgmet,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4964,6 +4966,7 @@ Subroutine scan_field                                &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( metal_type ), Intent( InOut ) :: met
   Type( comms_type ), Intent( InOut ) :: comm
 ! Max number of different atom types
 
@@ -5601,7 +5604,7 @@ Subroutine scan_field                                &
 
      Else If (word(1:3) == 'met') Then
 
-!        tabmet=-1 ! initialised in metal_module
+!        met%tab=-1 ! initialised in metal_module
 
         Call get_word(record,word)
         mxmet=Nint(word_2_real(word))
@@ -5617,15 +5620,15 @@ Subroutine scan_field                                &
 
            Call get_word(record,word)
            Call get_word(record,word)
-           tabmet=0 ! for FST metal potentials
+           met%tab=0 ! for FST metal potentials
            If      (word(1:3) ==  'eam') Then
-              tabmet=1
+              met%tab=1
            Else If (word(1:4) == 'eeam') Then
-              tabmet=2
+              met%tab=2
            Else If (word(1:4) == '2bea') Then
-              tabmet=3
+              met%tab=3
            Else If (word(1:4) == '2bee') Then
-              tabmet=4
+              met%tab=4
            Else If (word(1:4) == 'fnsc') Then
               Call get_word(record,word) ; Call get_word(record,word)
               Call get_word(record,word) ; Call get_word(record,word)
@@ -5645,21 +5648,21 @@ Subroutine scan_field                                &
         If (mxmet > 0) Then
            mxmet=Max(mxmet,(mxatyp*(mxatyp+1))/2)
 
-           If      (tabmet == 0) Then
+           If      (met%tab == 0) Then
               mxmed=mxmet
-           Else If (tabmet == 1) Then
+           Else If (met%tab == 1) Then
               mxmed=mxatyp
-           Else If (tabmet == 2) Then
+           Else If (met%tab == 2) Then
               mxmed=mxatyp**2
-           Else If (tabmet == 3) Then
+           Else If (met%tab == 3) Then
               mxmed=mxatyp
               mxmds=mxatyp*(mxatyp+1)/2
-           Else If (tabmet == 4) Then
+           Else If (met%tab == 4) Then
               mxmed=mxatyp**2
               mxmds=mxatyp**2
            End If
 
-           If (tabmet > 0) Then
+           If (met%tab > 0) Then
               If (comm%idnode == 0) Open(Unit=ntable, File='TABEAM')
 
               Call get_line(safe,ntable,record,comm)
@@ -5676,8 +5679,8 @@ Subroutine scan_field                                &
                  j=0 ! assume rmet is specified
                  If (word(1:4) == 'embe' .or. & ! 2-band embedding functionals
                      word(1:4) == 'demb' .or. word(1:4) == 'semb') j=1 ! no rmet is specified
-                 If ((word(1:4) == 'dens' .and. tabmet == 2) .or. & ! EEAM
-                     (word(2:4) == 'den' .and. (tabmet == 3 .or. tabmet == 4)) .or. & ! sden & dden for 2B extensions
+                 If ((word(1:4) == 'dens' .and. met%tab == 2) .or. & ! EEAM
+                     (word(2:4) == 'den' .and. (met%tab == 3 .or. met%tab == 4)) .or. & ! sden & dden for 2B extensions
                      word(1:4) == 'pair') Call get_word(record,word) ! skip over one species
                  Call get_word(record,word)                          ! skip over one species
 

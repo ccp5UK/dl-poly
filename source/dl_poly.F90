@@ -90,7 +90,7 @@ program dl_poly
   Use mpole
 
   Use vdw
-  Use metal
+  Use metal, Only : metal_type,allocate_metal_arrays
   Use tersoff
   Use three_body
   Use four_body
@@ -222,7 +222,6 @@ program dl_poly
   Integer(Kind=li)  :: degfre,degshl,degtra,degrot
 
   ! elrc,virlrc - vdw energy and virial are scalars and in vdw
-  ! elrcm,vlrcm - metal energy and virial are array-like and in metal_module
 
   Real( Kind = wp ) :: tsths,                                     &
     tstep,time,tmst,      &
@@ -244,6 +243,7 @@ program dl_poly
   Type(greenkubo_type) :: green
   Type(plumed_type) :: plume
   Type(msd_type) :: msd_data
+  Type(metal_type) :: met
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -312,7 +312,7 @@ program dl_poly
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,stats,thermo,green,devel,msd_data,comm)
+    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,stats,thermo,green,devel,msd_data,met,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -349,7 +349,7 @@ program dl_poly
   ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
 
   Call allocate_vdw_arrays()
-  Call allocate_metal_arrays()
+  Call allocate_metal_arrays(met)
   Call allocate_tersoff_arrays()
   Call allocate_three_body_arrays()
   Call allocate_four_body_arrays()
@@ -387,7 +387,7 @@ program dl_poly
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,tmr,comm)
+    ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -399,7 +399,7 @@ program dl_poly
     rcter,rctbp,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megcon,megpmf,megrgd,    &
-    megtet,megbnd,megang,megdih,meginv,thermo,comm)
+    megtet,megbnd,megang,megdih,meginv,thermo,met,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -482,7 +482,7 @@ program dl_poly
 
   Call system_init                                                 &
     (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
-    time,tmst,nstep,tstep,elrc,virlrc,elrcm,vlrcm,stats,devel,green,thermo,comm)
+    time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -643,7 +643,7 @@ program dl_poly
     If (lfce) Then
       Call w_replay_historf(mxatdm,stats,thermo,plume,msd_data)
     Else
-      Call w_replay_history(mxatdm,stats,thermo,msd_data)
+      Call w_replay_history(mxatdm,stats,thermo,msd_data,met)
     End If
   End If
 
@@ -818,11 +818,12 @@ Contains
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data)
+  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data,met)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(msd_type), Intent(InOut) :: msd_data
+    Type( metal_type ), Intent( InOut ) :: met
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

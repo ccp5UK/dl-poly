@@ -30,8 +30,8 @@
            (rcut,rlnk,rvdw,rmet,pdplnc,keyens,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
-           elrc,virlrc,elrcm,vlrcm,               &
-           stat,ewld,devel,tmr,comm)
+           elrc,virlrc,               &
+           stat,ewld,devel,met,tmr,comm)
 
 ! Calculate tersoff forces
 

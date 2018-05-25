@@ -22,6 +22,7 @@ Module bounds
   Use parallel_fft,    Only : adjust_kmax
   Use thermostat,      Only : thermostat_type
   Use statistics,      Only : stats_type
+  Use metal,           Only : metal_type
 
   Implicit None
   Private
@@ -31,7 +32,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce, &
-           alpha,width,stats,thermo,green,devel,msd_data,comm)
+           alpha,width,stats,thermo,green,devel,msd_data,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -55,6 +56,7 @@ Subroutine set_bounds                                 &
   Type( development_type ), Intent( InOut ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( msd_type ), Intent( InOut ) :: msd_data
+  Type( metal_type ), Intent( InOut ) :: met
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -89,7 +91,7 @@ Subroutine set_bounds                                 &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,rmet,mxgmet,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,comm)
 
 ! Get imc_r & set dvar
 

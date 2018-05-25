@@ -7,7 +7,7 @@ Module kontrol
   Use langevin,   Only : langevin_allocate_arrays
   Use bonds,      Only : rcbnd
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
-  Use metal,      Only : ld_met,ls_met,tabmet
+  Use metal,      Only : metal_type
   Use poisson,    Only : eps,mxitcg,mxitjb
   Use msd,        Only : msd_type
   Use defects,   Only : l_dfx
@@ -73,7 +73,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,tmr,comm)
+           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -137,6 +137,7 @@ Subroutine read_control                                &
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( plumed_type ), Intent( InOut ) :: plume
   Type( msd_type ), Intent( InOut ) :: msd_data
+  Type( metal_type ), Intent( InOut ) :: met
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( comms_type ),     Intent( InOut )  :: comm
 
@@ -176,7 +177,7 @@ Subroutine read_control                                &
 !
 ! defaults for direct evaluation of metal interactions
 !
-! ld_met = .false. ! (initialised in metal_module)
+! met%l_direct = .false. ! (initialised in metal_module)
 
 ! default impact option: option applied, particle index,
 ! timestep of impact, energy of impact, (3) direction of impact
@@ -698,16 +699,16 @@ Subroutine read_control                                &
         If      (word(1:6) == 'direct') Then
 ! read metal direct evaluation option
            Call info('metal direct option on',.true.)
-           If (tabmet > 0) Then
+           If (met%tab > 0) Then
               Call warning(480,0.0_wp,0.0_wp,0.0_wp)
            Else
-              ld_met = .true.
+              met%l_direct = .true.
            End If
         Else If (word(1:7) == 'sqrtrho') Then
 ! read metal sqrtrho interpolation option for EAM embeding function in TABEAM
            Call info('metal sqrtrho option on',.true.)
-           If (tabmet > 0) Then
-              ls_met = .true.
+           If (met%tab > 0) Then
+              met%l_emb = .true.
            Else
               Call warning(490,0.0_wp,0.0_wp,0.0_wp)
            End If
