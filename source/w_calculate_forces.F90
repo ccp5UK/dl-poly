@@ -96,11 +96,11 @@
 
 ! Apply PLUMED driven dynamics
 
-     If (l_plumed) Then
+     If (plume%l_plumed) Then
         stat%stpcfg =stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
                  stat%engshl + stat%engtet + stat%engfld +                   &
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
-        Call plumed_apply(xxx,yyy,zzz,nstrun,nstep,stat,comm)
+        Call plumed_apply(xxx,yyy,zzz,nstrun,nstep,stat,plume,comm)
      End If
 ! Apply pseudo thermostat - force cycle (0)
 

@@ -96,7 +96,7 @@ program dl_poly
   Use four_body
 
   Use kim
-  Use plumed
+  Use plumed, Only : plumed_type,plumed_init,plumed_finalize,plumed_apply
 
   Use external_field
 
@@ -242,6 +242,7 @@ program dl_poly
   Type(development_type) :: devel
   Type(stats_type) :: stats
   Type(greenkubo_type) :: green
+  Type(plumed_type) :: plume
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -385,7 +386,7 @@ program dl_poly
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstmsd,istmsd,nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,stats,thermo,green,devel,tmr,comm)
+    ndump,pdplnc,stats,thermo,green,devel,plume,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -575,7 +576,7 @@ program dl_poly
 
   ! PLUMED initialisation or information message
 
-  If (l_plumed) Call plumed_init(megatm,tstep,thermo%temp,comm)
+  If (plume%l_plumed) Call plumed_init(megatm,tstep,thermo%temp,plume,comm)
 
   ! Print out sample of initial configuration on node zero
 
@@ -636,10 +637,10 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,stats,thermo)
+    Call w_md_vv(mxatdm,stats,thermo,plume)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,stats,thermo)
+      Call w_replay_historf(mxatdm,stats,thermo,plume)
     Else
       Call w_replay_history(mxatdm,stats,thermo)
     End If
@@ -715,7 +716,7 @@ program dl_poly
 
   ! PLUMED finalisation
 
-  If (l_plumed) Call plumed_finalize()
+  If (plume%l_plumed) Call plumed_finalize()
 
 #ifdef CHRONO
   Call timer_report(tmr,comm)
@@ -767,8 +768,9 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(stat)
+  Subroutine w_calculate_forces(stat,plume)
     Type(stats_type), Intent(InOut) :: stat
+    Type(plumed_type), Intent(InOut) :: plume
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
@@ -806,10 +808,11 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,stat,thermo)
+  Subroutine w_md_vv(mxatdm_,stat,thermo,plume)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
+    Type(plumed_type), Intent(InOut) :: plume
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
@@ -826,10 +829,11 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,stat,thermo)
+  Subroutine w_replay_historf(mxatdm_,stat,thermo,plume)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_ 
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
+    Type(plumed_type), Intent(InOut) :: plume
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
