@@ -7,7 +7,7 @@ Module kontrol
   Use langevin,   Only : langevin_allocate_arrays
   Use bonds,      Only : rcbnd
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
-  Use metal,      Only : ld_met,ls_met,tabmet
+  Use metal,      Only : metal_type
   Use poisson,    Only : eps,mxitcg,mxitjb
   Use msd,        Only : msd_type
   Use defects,   Only : l_dfx
@@ -73,7 +73,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,tmr,comm)
+           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -137,6 +137,7 @@ Subroutine read_control                                &
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( plumed_type ), Intent( InOut ) :: plume
   Type( msd_type ), Intent( InOut ) :: msd_data
+  Type( metal_type ), Intent( InOut ) :: met
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( comms_type ),     Intent( InOut )  :: comm
 
@@ -176,7 +177,7 @@ Subroutine read_control                                &
 !
 ! defaults for direct evaluation of metal interactions
 !
-! ld_met = .false. ! (initialised in metal_module)
+! met%l_direct = .false. ! (initialised in metal_module)
 
 ! default impact option: option applied, particle index,
 ! timestep of impact, energy of impact, (3) direction of impact
@@ -698,16 +699,16 @@ Subroutine read_control                                &
         If      (word(1:6) == 'direct') Then
 ! read metal direct evaluation option
            Call info('metal direct option on',.true.)
-           If (tabmet > 0) Then
+           If (met%tab > 0) Then
               Call warning(480,0.0_wp,0.0_wp,0.0_wp)
            Else
-              ld_met = .true.
+              met%l_direct = .true.
            End If
         Else If (word(1:7) == 'sqrtrho') Then
 ! read metal sqrtrho interpolation option for EAM embeding function in TABEAM
            Call info('metal sqrtrho option on',.true.)
-           If (tabmet > 0) Then
-              ls_met = .true.
+           If (met%tab > 0) Then
+              met%l_emb = .true.
            Else
               Call warning(490,0.0_wp,0.0_wp,0.0_wp)
            End If
@@ -3597,14 +3598,14 @@ Subroutine read_control                                &
 End Subroutine read_control
 
 Subroutine scan_control                                    &
-           (rcbnd,mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
+           (rcbnd,mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
-           thermo,green,devel,msd_data,comm)
+           thermo,green,devel,msd_data,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3629,13 +3630,14 @@ Subroutine scan_control                                    &
   Integer,           Intent(   Out ) :: mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
-  Real( Kind = wp ), Intent( InOut ) :: rvdw,rmet,rcbnd,cell(1:9)
+  Real( Kind = wp ), Intent( InOut ) :: rvdw,rcbnd,cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( msd_type ), Intent( InOut ) :: msd_data
+  Type( metal_type ), Intent( InOut ) :: met
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3695,7 +3697,7 @@ Subroutine scan_control                                    &
 
   lmet  = (mxmet > 0)
   l_n_m = .not.lmet
-  lrmet = (rmet > 1.0e-6_wp)
+  lrmet = (met%rcut > 1.0e-6_wp)
 
   lter  = (mxter > 0)
 
@@ -4347,7 +4349,7 @@ Subroutine scan_control                                    &
 
 ! Sort rcut as the maximum of all valid cutoffs
 
-  rcut=Max(rcut,rvdw,rmet,rkim,2.0_wp*Max(rcter,rcbnd)+1.0e-6_wp)
+  rcut=Max(rcut,rvdw,met%rcut,rkim,2.0_wp*Max(rcter,rcbnd)+1.0e-6_wp)
 
   If (comm%idnode == 0) Rewind(nread)
 
@@ -4549,12 +4551,12 @@ Subroutine scan_control                                    &
            End If
         End If
 
-! Sort rmet
+! Sort met%rcut
 
         If ((.not.lrmet) .and. lmet) Then
            If (lrcut .or. lrvdw) Then
               lrmet=.true.
-              rmet=Max(rcut,rvdw)
+              met%rcut=Max(rcut,rvdw)
            Else
               Call error(382)
            End If
@@ -4582,11 +4584,11 @@ Subroutine scan_control                                    &
                                     itmp == 0) )
            End If
 
-! Reset rvdw, rmet and rcut when only tersoff potentials are opted for
+! Reset rvdw, met%rcut and rcut when only tersoff potentials are opted for
 
            If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r) Then
               rvdw=0.0_wp
-              rmet=0.0_wp
+              met%rcut=0.0_wp
               If (.not.l_str) Then
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
                     rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
@@ -4612,18 +4614,18 @@ Subroutine scan_control                                    &
                 (lrvdw .or. lrmet .or. lter .or. kimim /= ' ') ) Then
               lrcut=.true.
               If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                 rcut=Max(rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                 rcut=Max(rvdw,met%rcut,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
               Else
-                 rcut=Max(rcut,rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                 rcut=Max(rcut,rvdw,met%rcut,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
               End If
            End If
 
-! Reset rvdw and rmet when only tersoff potentials are opted for and
+! Reset rvdw and met%rcut when only tersoff potentials are opted for and
 ! possibly reset rcut to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
            If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. kimim == ' ') Then
               rvdw=0.0_wp
-              rmet=0.0_wp
+              met%rcut=0.0_wp
               If (.not.l_str) Then
                  lrcut=.true.
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
@@ -4665,11 +4667,11 @@ Subroutine scan_control                                    &
 
         End If
 
-! Sort rmet=rcut if metal interactions are in play, even if
-! they are defined by EAM since rmet can be /= rcut in such
+! Sort met%rcut=rcut if metal interactions are in play, even if
+! they are defined by EAM since met%rcut can be /= rcut in such
 ! instances, this can break the NLAST check in metal_ld_set_halo
 
-        If (lmet) rmet = rcut
+        If (lmet) met%rcut = rcut
 
 ! Sort rvdw=rcut if VDW interactions are in play
 

@@ -208,7 +208,7 @@ Module setup
     mxtinv, mxinv, mxfinv,mxpinv,mxginv,                        &
     mxrdf,mxgrdf,mxgele,                                        &
     mxvdw,mxpvdw,mxgvdw,                                        &
-    mxmet,mxmed,mxmds,mxpmet,mxgmet,                            &
+    mxmet,mxmed,mxmds,mxpmet,                            &
     mxter,mxpter,mxgter,mxgrid,                                 &
     mxtana,mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,              &
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                    &

@@ -18,7 +18,7 @@ Module system
   Use dihedrals,   Only : ldfdih,ncfdih,dstdih,numdih,lstdih
   Use inversions,  Only : ldfinv,ncfinv,dstinv,numinv,lstinv
   Use vdw,         Only : ls_vdw,ntpvdw
-  Use metal,       Only : ntpmet
+  Use metal,       Only : metal_type,metal_lrc
   Use greenkubo,   Only : greenkubo_type
   Use development,  Only : development_type
   Use core_shell,   Only : numshl,lstshl
@@ -48,7 +48,6 @@ Module system
                                   IO_WRITE_SORTED_NETCDF,   &
                                   IO_WRITE_SORTED_MASTER
   Use vdw,             Only : vdw_lrc
-  Use metal,           Only : metal_lrc
   Use errors_warnings, Only : error, info, warning
   Use numerics, Only : dcell, images
   Use thermostat, Only : thermostat_type
@@ -60,8 +59,8 @@ Module system
   Contains
   
   Subroutine system_init                                             &
-           (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
-           time,tmst,nstep,tstep,elrc,virlrc,elrcm,vlrcm,stats,devel,green,thermo,comm)
+           (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
+           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -77,17 +76,17 @@ Module system
   Logical,           Intent( In    ) :: lrdf,lzdn
   Integer,           Intent( InOut ) :: levcfg,keyres
   Integer,           Intent( In    ) :: megatm
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rbin,rmet
+  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rbin
 
   Integer,           Intent(   Out ) :: nstep
   Real( Kind = wp ), Intent( InOut ) :: tstep
   Real( Kind = wp ), Intent(   Out ) :: time,tmst,     &
-                                        elrc,virlrc,        &
-                                        elrcm(0:mxatyp),vlrcm(0:mxatyp)
+                                        elrc,virlrc
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( thermostat_type ), Intent( InOut ) :: thermo
+  Type( metal_type ), Intent( InOut ) :: met
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -614,9 +613,9 @@ Module system
 
   If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(rvdw,elrc,virlrc,comm)
 
-! elrcm & vlrcm arrays are zeroed in metal_module
+! met%elrc & met%vlrc arrays are zeroed in metal_module
 
-  If (ntpmet > 0) Call metal_lrc(rmet,elrcm,vlrcm,comm)
+  If (met%n_potentials > 0) Call metal_lrc(met,comm)
 
 End Subroutine system_init
 

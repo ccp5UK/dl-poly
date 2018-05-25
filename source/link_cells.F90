@@ -1020,11 +1020,11 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
         Call info(message,.true.)
       End If
       Write(messages(1),'(2x,a,i20,a,f7.3)') &
-        'electrostatics -  ', Int(cnt(2),li), '  within rcut = ', rcut
+        'electrostatics -  ', Int(cnt(2),li), '  within r = ', rcut
       Write(messages(2),'(2x,a,i20,a,f7.3)') &
-        'van der Waals  -  ', Int(cnt(3),li), '  within rvdw = ', rvdw
+        'van der Waals  -  ', Int(cnt(3),li), '  within r = ', rvdw
       Write(messages(3),'(2x,a,i20,a,f7.3)') &
-        'metal          -  ', Int(cnt(4),li), '  within rmet = ', rmet
+        'metal          -  ', Int(cnt(4),li), '  within r = ', rmet
       Call info(messages,3,.true.)
   End If
 

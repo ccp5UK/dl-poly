@@ -22,6 +22,7 @@ Module bounds
   Use parallel_fft,    Only : adjust_kmax
   Use thermostat,      Only : thermostat_type
   Use statistics,      Only : stats_type
+  Use metal,           Only : metal_type
 
   Implicit None
   Private
@@ -30,8 +31,8 @@ Contains
 
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-           dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce, &
-           alpha,width,stats,thermo,green,devel,msd_data,comm)
+           dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce, &
+           alpha,width,stats,thermo,green,devel,msd_data,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -49,12 +50,13 @@ Subroutine set_bounds                                 &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_e,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
-  Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
+  Real( Kind = wp ), Intent(   Out ) :: rvdw,rbin,alpha,width
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( msd_type ), Intent( InOut ) :: msd_data
+  Type( metal_type ), Intent( InOut ) :: met
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -88,8 +90,8 @@ Subroutine set_bounds                                 &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
-           mxmet,mxmed,mxmds,rmet,mxgmet,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,comm)
+           mxmet,mxmed,mxmds,            &
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,comm)
 
 ! Get imc_r & set dvar
 
@@ -107,13 +109,13 @@ Subroutine set_bounds                                 &
 ! scan CONTROL file data
 
   Call scan_control                                        &
-           (rcbnd,mxrdf,mxvdw,rvdw,mxmet,rmet,mxter,rcter, &
+           (rcbnd,mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,msd_data,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,msd_data,met,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -374,7 +376,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgana,mxgvdw,mxgmet,mxgrdf,mxgusr,1004,Nint(rcut/delr_max)+4)
+  mxgrid = Max(mxgana,mxgvdw,met%maxgrid,mxgrdf,mxgusr,1004,Nint(rcut/delr_max)+4)
 
 ! grids setting and overrides
 
@@ -404,7 +406,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for metal interactions
 
-  mxgmet = Max(mxgmet,1004,Nint(rmet/delr_max)+4)
+  met%maxgrid = Max(met%maxgrid,1004,Nint(met%rcut/delr_max)+4)
 
 ! maximum number of grid points for tersoff interaction arrays
 
@@ -412,7 +414,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgrid,mxgbnd,mxgang,mxgdih,mxginv,mxgele,mxgvdw,mxgmet,mxgter)
+  mxgrid = Max(mxgrid,mxgbnd,mxgang,mxgdih,mxginv,mxgele,mxgvdw,met%maxgrid,mxgter)
 
 
 

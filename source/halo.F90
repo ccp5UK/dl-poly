@@ -29,7 +29,7 @@ Module halo
 ! neighbouring domains/nodes when VNL is skipped
 !
 ! Note: all depends on the ixyz halo array set in set_halo, this assumes
-!       that (i) rmet=rcut! as well as (ii) all the error checks in there
+!       that (i) met%rcut=rcut! as well as (ii) all the error checks in there
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov & i.j.bush february 2014
