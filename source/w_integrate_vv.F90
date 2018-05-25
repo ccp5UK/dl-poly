@@ -11,7 +11,7 @@
 ! first (isw == 0) or second (isw == 1) stage
 
         If (m_rgd == 0) Then
-           If      (keyens ==  0) Then
+           If      (keyens == ENS_NVE) Then
 
 ! Microcanonical ensemble
 
@@ -22,7 +22,7 @@
            megcon,stat%strcon,stat%vircon,              &
            megpmf,stat%strpmf,stat%virpmf,comm)
 
-           Else If (keyens ==  1) Then
+           Else If (keyens == ENS_NVT_EVANS) Then
 
 ! Evans thermostat (Gaussian temperature constraints)
 
@@ -34,7 +34,7 @@
            megcon,stat%strcon,stat%vircon,              &
            megpmf,stat%strpmf,stat%virpmf,comm)
 
-           Else If (keyens == 10) Then
+           Else If (thermo%ensemble == ENS_NVT_LANGEVIN) Then
 
 ! Langevin thermostat (Stochastic Dynamics)
 
@@ -46,7 +46,7 @@
            megcon,stat%strcon,stat%vircon,              &
            megpmf,stat%strpmf,stat%virpmf,thermo,comm)
 
-           Else If (keyens == 11) Then
+           Else If (thermo%ensemble == ENS_NVT_ANDERSON) Then
 
 ! Andersen thermostat (Stochastic Dynamics)
 
@@ -58,7 +58,7 @@
            megcon,stat%strcon,stat%vircon,              &
            megpmf,stat%strpmf,stat%virpmf,thermo,comm)
 
-           Else If (keyens == 12) Then
+           Else If (thermo%ensemble == ENS_NVT_BERENDSEN) Then
 
 ! Berendsen thermostat
 
@@ -69,7 +69,7 @@
            megcon,stat%strcon,stat%vircon,              &
            megpmf,stat%strpmf,stat%virpmf,thermo,comm)
 
-           Else If (keyens == 13) Then
+           Else If (thermo%ensemble == ENS_NVT_NOSE_HOOVER) Then
 
 ! Nose-Hoover thermostat
 
@@ -81,7 +81,7 @@
            megcon,stat%strcon,stat%vircon,              &
            megpmf,stat%strpmf,stat%virpmf,thermo,comm)
 
-           Else If (keyens == 14) Then
+           Else If (thermo%ensemble == ENS_NVT_GENTLE) Then
 
 ! Gentle-Stochastic thermostat
 
@@ -94,7 +94,7 @@
            megcon,stat%strcon,stat%vircon,              &
            megpmf,stat%strpmf,stat%virpmf,thermo,comm)
 
-           Else If (keyens == 15) Then
+           Else If (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) Then
 
 ! Inhomogeneous (two-temperature)
 ! Langevin thermostat (Stochastic Dynamics)
@@ -107,7 +107,7 @@
            megcon,stat%strcon,stat%vircon,              &
            megpmf,stat%strpmf,stat%virpmf,thermo,comm)
 
-           Else If (keyens == 20) Then
+           Else If (thermo%ensemble == ENS_NPT_LANGEVIN) Then
 
 ! Langevin thermostat and isotropic barostat
 
@@ -122,7 +122,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 21) Then
+           Else If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
 
 ! Berendsen thermostat and isotropic barostat
 
@@ -135,7 +135,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 22) Then
+           Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
 ! Nose-Hoover thermostat and isotropic barostat
 
@@ -149,7 +149,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 23) Then
+           Else If (thermo%ensemble == ENS_NPT_MTK) Then
 
 ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
@@ -163,7 +163,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 30) Then
+           Else If (thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) Then
 
 ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
@@ -178,7 +178,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 31) Then
+           Else If (thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
@@ -191,7 +191,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 32) Then
+           Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
@@ -205,7 +205,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 33) Then
+           Else If (thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! MTK thermostat and anisotropic barostat (cell shape varying)
 
@@ -227,7 +227,7 @@
 
            End If
         Else
-           If      (keyens ==  0) Then
+           If      (keyens == ENS_NVE) Then
 
 ! Microcanonical ensemble
 
@@ -239,7 +239,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            stat%strcom,stat%vircom,comm)
 
-           Else If (keyens ==  1) Then
+           Else If (keyens == ENS_NVT_EVANS) Then
 
 ! Evans thermostat (Gaussian temperature constraints)
 
@@ -252,7 +252,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            stat%strcom,stat%vircom,comm)
 
-           Else If (keyens == 10) Then
+           Else If (thermo%ensemble == ENS_NVT_LANGEVIN) Then
 
 ! Langevin thermostat (Stochastic Dynamics)
 
@@ -265,7 +265,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            stat%strcom,stat%vircom,thermo,comm)
 
-           Else If (keyens == 11) Then
+           Else If (thermo%ensemble == ENS_NVT_ANDERSON) Then
 
 ! Andersen thermostat (Stochastic Dynamics)
 
@@ -278,7 +278,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            stat%strcom,stat%vircom,thermo,comm)
 
-           Else If (keyens == 12) Then
+           Else If (thermo%ensemble == ENS_NVT_BERENDSEN) Then
 
 ! Berendsen thermostat
 
@@ -290,7 +290,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            stat%strcom,stat%vircom,thermo,comm)
 
-           Else If (keyens == 13) Then
+           Else If (thermo%ensemble == ENS_NVT_NOSE_HOOVER) Then
 
 ! Nose-Hoover thermostat
 
@@ -303,7 +303,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            stat%strcom,stat%vircom,thermo,comm)
 
-           Else If (keyens == 14) Then
+           Else If (thermo%ensemble == ENS_NVT_GENTLE) Then
 
 ! Gentle-Stochastic thermostat
 
@@ -317,7 +317,7 @@
            megpmf,stat%strpmf,stat%virpmf,              &
            stat%strcom,stat%vircom,thermo,comm)
 
-           Else If (keyens == 20) Then
+           Else If (thermo%ensemble == ENS_NPT_LANGEVIN) Then
 
 ! Langevin thermostat and isotropic barostat
 
@@ -333,7 +333,7 @@
            stat%strcom,stat%vircom,                     &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 21) Then
+           Else If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
 
 ! Berendsen thermostat and isotropic barostat
 
@@ -347,7 +347,7 @@
            stat%strcom,stat%vircom,                     &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 22) Then
+           Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
 ! Nose-Hoover thermostat and isotropic barostat
 
@@ -362,7 +362,7 @@
            stat%strcom,stat%vircom,                     &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 23) Then
+           Else If (thermo%ensemble == ENS_NPT_MTK) Then
 
 ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
@@ -377,7 +377,7 @@
            stat%strcom,stat%vircom,                     &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 30) Then
+           Else If (thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) Then
 
 ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
@@ -393,7 +393,7 @@
            stat%strcom,stat%vircom,                     &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 31) Then
+           Else If (thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
@@ -407,7 +407,7 @@
            stat%strcom,stat%vircom,                     &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 32) Then
+           Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
@@ -422,7 +422,7 @@
            stat%strcom,stat%vircom,                     &
            elrc,virlrc,thermo,comm)
 
-           Else If (keyens == 33) Then
+           Else If (thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! MTK thermostat and anisotropic barostat (cell shape varying)
 

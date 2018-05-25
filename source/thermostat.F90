@@ -135,7 +135,7 @@ Module thermostat
   !> Isobaric isothermal ensemble anisotropic Berendsen
   Integer( Kind = wi ), Parameter, Public :: ENS_NPT_BERENDSEN_ANISO = 31
   !> Isobaric isothermal ensemble anisotropic Nosé-Hoover (Melchionna)
-  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_NOSE_HOOVER_ANSIO = 32
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_NOSE_HOOVER_ANISO = 32
   !> Isobaric isothermal ensemble anistropic Martyna-Tuckerman-Klein
-  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_MTK_ANSIO = 33
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_MTK_ANISO = 33
 End Module thermostat

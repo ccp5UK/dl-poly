@@ -8,7 +8,7 @@ Module rigid_bodies
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,           Only : wp,li
+  Use kinds,           Only : wp,wi,li
   Use comms,           Only : comms_type,gsum,gmin,gmax,gsync,gcheck
   Use setup,           Only : mxtmls,mxtrgd,mxrgd,mxlrgd,mxfrgd,mxlshp,mxproc,mxatdm, &
                               mxatms,zero_plus
@@ -21,6 +21,10 @@ Module rigid_bodies
   Use shared_units,    Only : update_shared_units
   Use numerics,        Only : images,local_index,pbcshift
   Use errors_warnings, Only : info, error, warning
+  Use thermostat,      Only : ENS_NPT_BERENDSEN, ENS_NPT_BERENDSEN_ANISO, &
+                              ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, &
+                              ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, &
+                              ENS_NPT_MTK, ENS_NPT_MTK_ANISO
 
   Implicit None
 
@@ -2264,7 +2268,7 @@ Contains
     End If
   End Subroutine rigid_bodies_widths
 
-  Subroutine xscale(m_rgd,keyens,tstep,eta,stats,comm)
+  Subroutine xscale(m_rgd,ensemble,tstep,eta,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2276,8 +2280,9 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: m_rgd,keyens
+  Integer,           Intent( In    ) :: m_rgd
   Real( Kind = wp ), Intent( In    ) :: tstep,eta(1:9)
+  Integer( Kind = wi ), Intent( In    ) :: ensemble
   Type( stats_type), Intent( InOut ) :: stats
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -2288,15 +2293,15 @@ Contains
   Real( Kind = wp ), Allocatable :: rgdxin(:),rgdyin(:),rgdzin(:)
   Character ( Len = 256 )        :: message
 
-  If (keyens < 20) Return
+  If (ensemble < 20) Return
 
   If (m_rgd == 0) Then
 
-     If (keyens == 21 .or. keyens == 31) Then
+     If (ensemble == ENS_NPT_BERENDSEN .or. ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! berendsen npt/nst
 
-        If (keyens == 21) Then
+        If (ensemble == ENS_NPT_BERENDSEN) Then
 
            scale = eta(1)
 
@@ -2320,13 +2325,13 @@ Contains
 
         End If
 
-     Else If (keyens == 22 .or. keyens == 32) Then
+     Else If (ensemble == ENS_NPT_NOSE_HOOVER .or. ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! hoover npt/nst
 
         Call getcom(stats%xin,stats%yin,stats%zin,com,comm)
 
-        If (keyens == 22) Then
+        If (ensemble == ENS_NPT_NOSE_HOOVER) Then
 
            scale = Exp(tstep*eta(1))
 
@@ -2366,12 +2371,14 @@ Contains
 
         End If
 
-     Else If (keyens == 20 .or. keyens == 30 .or. &
-              keyens == 23 .or. keyens == 33) Then
+     Else If (ensemble == ENS_NPT_LANGEVIN .or. &
+              ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+              ensemble == ENS_NPT_MTK .or. &
+              ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! Langevin and MTK npt/nst
 
-        If (keyens == 20 .or. keyens == 23) Then
+        If (ensemble == ENS_NPT_LANGEVIN .or. ensemble == ENS_NPT_MTK) Then
 
            scale = Exp(tstep*eta(1))
 
@@ -2415,11 +2422,11 @@ Contains
 
      If (.not.l_vnl) Then
 
-        If (keyens == 21 .or. keyens == 31) Then
+        If (ensemble == ENS_NPT_BERENDSEN .or. ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! berendsen npt/nst
 
-           If (keyens == 21) Then
+           If (ensemble == ENS_NPT_BERENDSEN) Then
 
               scale = eta(1)
 
@@ -2443,13 +2450,13 @@ Contains
 
            End If
 
-        Else If (keyens == 22 .or. keyens == 32) Then
+        Else If (ensemble == ENS_NPT_NOSE_HOOVER .or. ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! hoover npt/nst
 
            Call getcom(xbg,ybg,zbg,com,comm)
 
-           If (keyens == 22) Then
+           If (ensemble == ENS_NPT_NOSE_HOOVER) Then
 
               scale = Exp(tstep*eta(1))
 
@@ -2489,12 +2496,14 @@ Contains
 
            End If
 
-        Else If (keyens == 20 .or. keyens == 30 .or. &
-                 keyens == 23 .or. keyens == 33) Then
+        Else If (ensemble == ENS_NPT_LANGEVIN .or. &
+                 ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+                 ensemble == ENS_NPT_MTK .or. &
+                 ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! Langevin and MTK npt/nst
 
-           If (keyens == 20 .or. keyens == 23) Then
+           If (ensemble == ENS_NPT_LANGEVIN .or. ensemble == ENS_NPT_MTK) Then
 
               scale = Exp(tstep*eta(1))
 
@@ -2553,11 +2562,11 @@ Contains
      If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,stats%xin,stats%yin,stats%zin,comm)
      Call rigid_bodies_coms(stats%xin,stats%yin,stats%zin,rgdxin,rgdyin,rgdzin,comm)
 
-     If (keyens == 21 .or. keyens == 31) Then
+     If (ensemble == ENS_NPT_BERENDSEN .or. ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! berendsen npt/nst
 
-        If (keyens == 21) Then
+        If (ensemble == ENS_NPT_BERENDSEN) Then
 
            scale = eta(1)
 
@@ -2631,13 +2640,13 @@ Contains
 
         End If
 
-     Else If (keyens == 22 .or. keyens == 32) Then
+     Else If (ensemble == ENS_NPT_NOSE_HOOVER .or. ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! hoover npt/nst
 
         Call getcom(stats%xin,stats%yin,stats%zin,com,comm)
 
-        If (keyens == 22) Then
+        If (ensemble == ENS_NPT_NOSE_HOOVER) Then
 
            scale = Exp(tstep*eta(1))
 
@@ -2727,12 +2736,14 @@ Contains
 
         End If
 
-     Else If (keyens == 20 .or. keyens == 30 .or. &
-              keyens == 23 .or. keyens == 33) Then
+     Else If (ensemble == ENS_NPT_LANGEVIN .or. &
+              ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+              ensemble == ENS_NPT_MTK .or. &
+              ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! Langevin and MTK npt/nst
 
-        If (keyens == 20 .or. keyens == 23) Then
+        If (ensemble == ENS_NPT_LANGEVIN .or. ensemble == ENS_NPT_MTK) Then
 
            scale = Exp(tstep*eta(1))
 
@@ -2828,11 +2839,11 @@ Contains
 
         Call rigid_bodies_coms(xbg,ybg,zbg,rgdxin,rgdyin,rgdzin,comm)
 
-        If (keyens == 21 .or. keyens == 31) Then
+        If (ensemble == ENS_NPT_BERENDSEN .or. ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
 ! berendsen npt/nst
 
-           If (keyens == 21) Then
+           If (ensemble == ENS_NPT_BERENDSEN) Then
 
               scale = eta(1)
 
@@ -2906,13 +2917,13 @@ Contains
 
            End If
 
-        Else If (keyens == 22 .or. keyens == 32) Then
+        Else If (ensemble == ENS_NPT_NOSE_HOOVER .or. ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
 ! hoover npt/nst
 
            Call getcom(xbg,ybg,zbg,com,comm)
 
-           If (keyens == 22) Then
+           If (ensemble == ENS_NPT_NOSE_HOOVER) Then
 
               scale = Exp(tstep*eta(1))
 
@@ -3002,12 +3013,14 @@ Contains
 
            End If
 
-        Else If (keyens == 20 .or. keyens == 30 .or. &
-                 keyens == 23 .or. keyens == 33) Then
+        Else If (ensemble == ENS_NPT_LANGEVIN .or. &
+                 ensemble == ENS_NPT_LANGEVIN_ANISO .or. &
+                 ensemble == ENS_NPT_MTK .or. &
+                 ensemble == ENS_NPT_MTK_ANISO) Then
 
 ! Langevin and MTK npt/nst
 
-           If (keyens == 20 .or. keyens == 23) Then
+           If (ensemble == ENS_NPT_LANGEVIN .or. ensemble == ENS_NPT_MTK) Then
 
               scale = Exp(tstep*eta(1))
 

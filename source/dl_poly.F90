@@ -150,8 +150,13 @@ program dl_poly
   Use bounds, Only : set_bounds
   Use build_tplg, Only : build_tplg_intra
   use build_chrm, Only : build_chrm_intra
-
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type, &
+                         ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
+                         ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
+                         ENS_NVT_GENTLE, ENS_NVT_LANGEVIN_INHOMO, &
+                         ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
+                         ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
+                         ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
   Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
   Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
   Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
