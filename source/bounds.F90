@@ -90,7 +90,7 @@ Subroutine set_bounds                                 &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
-           mxmet,mxmed,mxmds,mxgmet,            &
+           mxmet,mxmed,mxmds,            &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,comm)
 
 ! Get imc_r & set dvar
@@ -376,7 +376,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgana,mxgvdw,mxgmet,mxgrdf,mxgusr,1004,Nint(rcut/delr_max)+4)
+  mxgrid = Max(mxgana,mxgvdw,met%maxgrid,mxgrdf,mxgusr,1004,Nint(rcut/delr_max)+4)
 
 ! grids setting and overrides
 
@@ -406,7 +406,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for metal interactions
 
-  mxgmet = Max(mxgmet,1004,Nint(met%rcut/delr_max)+4)
+  met%maxgrid = Max(met%maxgrid,1004,Nint(met%rcut/delr_max)+4)
 
 ! maximum number of grid points for tersoff interaction arrays
 
@@ -414,7 +414,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgrid,mxgbnd,mxgang,mxgdih,mxginv,mxgele,mxgvdw,mxgmet,mxgter)
+  mxgrid = Max(mxgrid,mxgbnd,mxgang,mxgdih,mxginv,mxgele,mxgvdw,met%maxgrid,mxgter)
 
 
 

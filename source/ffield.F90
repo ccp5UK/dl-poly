@@ -4948,7 +4948,7 @@ Subroutine scan_field                                &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
-           mxmet,mxmed,mxmds,mxgmet,            &
+           mxmet,mxmed,mxmds,            &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4995,7 +4995,7 @@ Subroutine scan_field                                &
                        numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,mxgdih,         &
                        numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,mxginv,           &
                        mxrdf,itprdf,mxvdw,itpvdw,mxgvdw,                       &
-                       mxmet,mxmed,mxmds,itpmet,mxgmet,                        &
+                       mxmet,mxmed,mxmds,itpmet,                        &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
   Real( Kind = wp ) :: rcbnd,rvdw,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
@@ -5082,7 +5082,7 @@ Subroutine scan_field                                &
   mxmed =0
   mxmds =0
   met%rcut  =0.0_wp
-  mxgmet=0
+  met%maxgrid=0
 
   mxter=0
   rcter=0.0_wp
@@ -5686,7 +5686,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  k=Nint(word_2_real(word))
-                 mxgmet=Max(mxgmet,k+4)
+                 met%maxgrid=Max(met%maxgrid,k+4)
 
                  Call get_word(record,word)
                  Call get_word(record,word)

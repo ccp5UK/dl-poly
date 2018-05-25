@@ -33,9 +33,6 @@ Module numerics
 ! Subroutine erfcgen - generates interpolation tables for erfc and erfc/r
 !                      derivative
 !
-! Subroutine erfgen_met - generates interpolation tables for erf and its
-!                         true derivative
-!
 ! Function match - determines a match between integer value 'n' and an
 !                  array of integers in ascending order
 !
@@ -97,7 +94,6 @@ Public :: box_mueller_uni
 Public :: gauss_1
 Public :: gauss_2
 Public :: erfcgen
-Public :: erfgen_met
 Public :: shellsort
 Public :: shellsort2
 Public :: dcell
@@ -849,79 +845,6 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
   fer(0) = Huge(1.0_wp+2.0_wp*(alpha/sqrpi))
 
 End Subroutine erfcgen
-
-Subroutine erfgen_met(rmet,alpha,beta,mxgmet,merf,mfer)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine for generating interpolation tables for a magnified
-! offset error function and its true derivative - for use with MBPC type
-! of metal-like potentials
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov december 2014
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-  Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
-  Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
-  Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
-  Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
-  Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
-  Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
-
-  Integer,                                  Intent( In    ) :: mxgmet
-  Real( Kind = wp ),                        Intent( In    ) :: rmet,alpha,beta
-  Real( Kind = wp ), Dimension( 1:mxgmet ), Intent(   Out ) :: merf,mfer
-
-  Integer           :: i,offset
-  Real( Kind = wp ) :: drmet,exp1,rrr,rsq,tt
-
-! look-up tables for mbpc metal interaction
-
-  drmet = rmet/Real(mxgmet-1,wp)
-
-! store array specification parameters
-
-  merf(1) = Real(mxgmet,wp)
-  merf(2) = 0.0_wp          ! l_int(min) >= 1
-  merf(3) = rmet            ! rmet=rcut
-  merf(4) = drmet
-
-! offset
-
-  offset = Nint(beta/drmet)+1
-
-  Do i=1,4
-     mfer(i)=merf(i)
-  End Do
-
-  Do i=5,offset-1
-     rrr = -Real(i-offset,wp)*drmet ! make positive
-     rsq = rrr*rrr
-
-     tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
-     exp1 = Exp(-(alpha*rrr)**2)
-
-     merf(i) = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr - 1.0_wp
-     mfer(i) = -2.0_wp*(alpha/sqrpi)*exp1
-  End Do
-
-  merf(offset) = 0.0_wp
-  mfer(offset) = 2.0_wp*(alpha/sqrpi)
-
-  Do i=offset+1,mxgmet
-     rrr = Real(i-offset,wp)*drmet
-
-     tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
-     exp1 = Exp(-(alpha*rrr)**2)
-
-     merf(i) = 1.0_wp - tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr
-     mfer(i) = 2.0_wp*(alpha/sqrpi)*exp1
-  End Do
-
-End Subroutine erfgen_met
 
 Function match(n,ind_top,list)
 

@@ -22,7 +22,6 @@ Module metal
   Use domains, Only : map
 
   Use errors_warnings, Only : error,warning,info
-  Use numerics, Only : erfgen_met
   Implicit None
 
   Private
@@ -65,6 +64,9 @@ Module metal
     ! Atomic density [reused as embedding derivative(s)] helper array(s)
     Real( Kind = wp ), Allocatable, Dimension(:), Public :: rho,rhs
 
+    !> Maximum number of grid points
+    Integer( Kind = wi ), Public :: maxgrid
+
     ! Many-body perturbation potential error function and derivative arrays
     Real( Kind = wp ), Allocatable, Dimension(:), Public :: merf,mfer
   Contains
@@ -75,7 +77,7 @@ Module metal
 
   Public :: allocate_metal_arrays, allocate_metal_table_arrays, &
             metal_generate, metal_generate_erf, metal_table_read, &
-            metal_lrc, metal_forces, metal_ld_compute
+            metal_lrc, metal_forces, metal_ld_compute, erfgen_met
 
 Contains
 
@@ -117,12 +119,12 @@ Contains
 
     fail = 0
 
-    Allocate (met%vmet(1:mxgmet,1:mxmet, 1:2),    Stat = fail(1))
-    Allocate (met%dmet(1:mxgmet,1:mxmed, 1:2),    Stat = fail(2))
-    Allocate (met%fmet(1:mxgmet,1:mxatyp,1:2),    Stat = fail(3))
+    Allocate (met%vmet(1:met%maxgrid,1:mxmet, 1:2),    Stat = fail(1))
+    Allocate (met%dmet(1:met%maxgrid,1:mxmed, 1:2),    Stat = fail(2))
+    Allocate (met%fmet(1:met%maxgrid,1:mxatyp,1:2),    Stat = fail(3))
     If (met%tab == 3 .or. met%tab == 4) Then ! the new S-band density and embedding
-       Allocate (met%dmes(1:mxgmet,1:mxmds, 1:2), Stat = fail(4))
-       Allocate (met%fmes(1:mxgmet,1:mxatyp,1:2), Stat = fail(5))
+       Allocate (met%dmes(1:met%maxgrid,1:mxmds, 1:2), Stat = fail(4))
+       Allocate (met%fmes(1:met%maxgrid,1:mxatyp,1:2), Stat = fail(5))
     End If
 
     If (Any(fail > 0)) Call error(1069)
@@ -143,7 +145,7 @@ Contains
 
     fail = 0
 
-    Allocate (met%merf(1:mxgmet),met%mfer(1:mxgmet), Stat = fail)
+    Allocate (met%merf(1:met%maxgrid),met%mfer(1:met%maxgrid), Stat = fail)
 
     If (fail > 0) Call error(1082)
 
@@ -1456,7 +1458,7 @@ Subroutine metal_table_read(l_top,met,comm)
       cembed(1:met%n_potentials), &
       cembds(1:met%n_potentials), Stat=fail(1))
   End If
-  Allocate (buffer(1:mxgmet), Stat=fail(2))
+  Allocate (buffer(1:met%maxgrid), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'metal_table_read allocation failure'
      Call error(0,message)
@@ -1559,8 +1561,8 @@ Subroutine metal_table_read(l_top,met,comm)
 
 ! check array dimensions
 
-     If (ngrid+4 > mxgmet) Then
-        Call warning(270,Real(ngrid+4,wp),Real(mxgmet,wp),0.0_wp)
+     If (ngrid+4 > met%maxgrid) Then
+        Call warning(270,Real(ngrid+4,wp),Real(met%maxgrid,wp),0.0_wp)
         Call error(48)
      End If
 
@@ -1606,7 +1608,7 @@ Subroutine metal_table_read(l_top,met,comm)
         met%vmet(3,k0,1)=buffer(3)
         met%vmet(4,k0,1)=buffer(4)
 
-        Do i=5,mxgmet
+        Do i=5,met%maxgrid
            If (i-4 > ngrid) Then
              met%vmet(i,k0,1)=0.0_wp
            Else
@@ -1617,7 +1619,7 @@ Subroutine metal_table_read(l_top,met,comm)
 
 ! calculate derivative of pair potential function
 
-        Call metal_table_derivatives(k0,buffer,Size(met%vmet,2),met%vmet)
+        Call metal_table_derivatives(k0,buffer,Size(met%vmet,2),met%vmet,met)
 
 ! adapt derivatives for use in interpolation
 
@@ -1651,7 +1653,7 @@ Subroutine metal_table_read(l_top,met,comm)
         met%dmet(3,k0,1)=buffer(3)
         met%dmet(4,k0,1)=buffer(4)
 
-        Do i=5,mxgmet
+        Do i=5,met%maxgrid
            If (i-4 > ngrid) Then
              met%dmet(i,k0,1)=0.0_wp
            Else
@@ -1661,7 +1663,7 @@ Subroutine metal_table_read(l_top,met,comm)
 
 ! calculate derivative of density function
 
-        Call metal_table_derivatives(k0,buffer,Size(met%dmet,2),met%dmet)
+        Call metal_table_derivatives(k0,buffer,Size(met%dmet,2),met%dmet,met)
 
 ! adapt derivatives for use in interpolation
 
@@ -1696,7 +1698,7 @@ Subroutine metal_table_read(l_top,met,comm)
         met%fmet(3,k0,1)=buffer(3)
         met%fmet(4,k0,1)=buffer(4)
 
-        Do i=5,mxgmet
+        Do i=5,met%maxgrid
            If (i-4 > ngrid) Then
              met%fmet(i,k0,1)=0.0_wp
            Else
@@ -1707,7 +1709,7 @@ Subroutine metal_table_read(l_top,met,comm)
 
 ! calculate derivative of embedding function
 
-        Call metal_table_derivatives(k0,buffer,Size(met%fmet,2),met%fmet)
+        Call metal_table_derivatives(k0,buffer,Size(met%fmet,2),met%fmet,met)
 
      Else If (ktype == 4) Then
 
@@ -1740,7 +1742,7 @@ Subroutine metal_table_read(l_top,met,comm)
 
         If (Nint(buffer(1)) > 5) Then
 
-           Do i=5,mxgmet
+           Do i=5,met%maxgrid
               If (i-4 > ngrid) Then
                  met%dmes(i,k0,1)=0.0_wp
               Else
@@ -1749,7 +1751,7 @@ Subroutine metal_table_read(l_top,met,comm)
            End Do
 ! calculate derivative of density function
 
-           Call metal_table_derivatives(k0,buffer,Size(met%dmes,2),met%dmes)
+           Call metal_table_derivatives(k0,buffer,Size(met%dmes,2),met%dmes,met)
 
 ! adapt derivatives for use in interpolation
 
@@ -1784,7 +1786,7 @@ Subroutine metal_table_read(l_top,met,comm)
         met%fmes(3,k0,1)=buffer(3)
         met%fmes(4,k0,1)=buffer(4)
 
-        Do i=5,mxgmet
+        Do i=5,met%maxgrid
            If (i-4 > ngrid) Then
              met%fmes(i,k0,1)=0.0_wp
            Else
@@ -1795,7 +1797,7 @@ Subroutine metal_table_read(l_top,met,comm)
 
 ! calculate derivative of embedding function
 
-        Call metal_table_derivatives(k0,buffer,Size(met%fmes,2),met%fmes)
+        Call metal_table_derivatives(k0,buffer,Size(met%fmes,2),met%fmes,met)
 
      End If
 
@@ -1855,7 +1857,7 @@ Subroutine metal_generate(met)
 
 ! define grid resolution for potential arrays
 
-  dlrpot=met%rcut/Real(mxgmet-1,wp)
+  dlrpot=met%rcut/Real(met%maxgrid-1,wp)
 
 ! construct arrays for metal potentials
 
@@ -1872,7 +1874,7 @@ Subroutine metal_generate(met)
 
 ! store array specification parameters
 
-           met%vmet(1,imet,1)=Real(mxgmet,wp)
+           met%vmet(1,imet,1)=Real(met%maxgrid,wp)
            met%vmet(2,imet,1)=0.0_wp          ! l_int(min) >= 1
            met%vmet(3,imet,1)=met%rcut            ! met%rcut=rcut
            met%vmet(4,imet,1)=dlrpot
@@ -1899,7 +1901,7 @@ Subroutine metal_generate(met)
               met%vmet(3,imet,1:2)=cut1
               met%dmet(3,imet,1)=cut2
 
-              Do i=5,mxgmet
+              Do i=5,met%maxgrid
                  rrr=Real(i,wp)*dlrpot
 
                  If (rrr <= cut1) Then
@@ -1942,7 +1944,7 @@ Subroutine metal_generate(met)
               met%vmet(3,imet,1:2)=cut1
               met%dmet(3,imet,1)=cut2
 
-              Do i=5,mxgmet
+              Do i=5,met%maxgrid
                  rrr=Real(i,wp)*dlrpot
 
                  If (rrr <= cut1) Then
@@ -1976,7 +1978,7 @@ Subroutine metal_generate(met)
               nnn=Nint(met%prm(3,imet)) ; nnnr=Real(nnn,wp)
               mmm=Nint(met%prm(4,imet)) ; mmmr=Real(mmm,wp)
 
-              Do i=5,mxgmet
+              Do i=5,met%maxgrid
                  rrr=Real(i,wp)*dlrpot
                  met%vmet(i,imet,1)=eps*(sig/rrr)**nnn
                  met%vmet(i,imet,2)=nnnr*eps*(sig/rrr)**nnn
@@ -2003,7 +2005,7 @@ Subroutine metal_generate(met)
               ppp=met%prm(3,imet)
               qqq=met%prm(5,imet)
 
-              Do i=5,mxgmet
+              Do i=5,met%maxgrid
                  rrr=Real(i,wp)*dlrpot
 
                  cut1=(rrr-rr0)/rr0
@@ -2026,7 +2028,7 @@ Subroutine metal_generate(met)
               sig=met%prm(2,imet)
               mmm=Nint(met%prm(3,imet)) ; mmmr=Real(mmm,wp)
 
-              Do i=5,mxgmet
+              Do i=5,met%maxgrid
                  rrr=Real(i,wp)*dlrpot
 !                 met%vmet(i,imet,1)=0.0_wp
 !                 met%vmet(i,imet,2)=0.0_wp
@@ -2094,12 +2096,12 @@ Subroutine metal_generate_erf(met)
 
 ! Generate error function and derivative arrays
 
-     Call erfgen_met(met%rcut,alpha,beta,mxgmet,met%merf,met%mfer)
+     Call erfgen_met(alpha,beta,met)
 
 ! Translate met%merf and met%mfer to the functional form 0.5*{1+erf[alpha(r-beta)]}
 
-     met%merf(5:mxgmet)=0.5_wp*(1.0_wp+met%merf(5:mxgmet))
-     met%mfer(5:mxgmet)=0.5_wp*met%mfer(5:mxgmet)
+     met%merf(5:met%maxgrid)=0.5_wp*(1.0_wp+met%merf(5:met%maxgrid))
+     met%mfer(5:met%maxgrid)=0.5_wp*met%mfer(5:met%maxgrid)
   End If
 End Subroutine metal_generate_erf
 
@@ -2649,7 +2651,7 @@ Subroutine metal_ld_collect_fst(iatm,rrt,safe,met)
   End Do
 End Subroutine metal_ld_collect_fst
 
-Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv)
+Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv,met)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2663,8 +2665,9 @@ Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,           Intent( In    ) :: ityp,v2d
-  Real( Kind = wp ), Intent( In    ) :: buffer(1:mxgmet)
-  Real( Kind = wp ), Intent( InOut ) :: vvv(1:mxgmet,1:v2d,1:2)
+  Type( metal_type ), Intent( InOut ) :: met
+  Real( Kind = wp ), Intent( In    ) :: buffer(1:met%maxgrid)
+  Real( Kind = wp ), Intent( InOut ) :: vvv(1:met%maxgrid,1:v2d,1:2)
 
   Integer           :: i,v_end,i_start,i_end
   Real( Kind = wp ) :: delmet,aa0,aa1,aa2,aa3,aa4, &
@@ -2731,7 +2734,7 @@ Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv)
 
 ! set derivatives to zero beyond end point of function
 
-  Do i=v_end+3,mxgmet
+  Do i=v_end+3,met%maxgrid
      vvv(i,ityp,2)=0.0_wp
   End Do
 End Subroutine metal_table_derivatives
@@ -3039,6 +3042,78 @@ Subroutine metal_ld_set_halo(met,comm)
      Call error(0,message)
   End If
 End Subroutine metal_ld_set_halo
+
+Subroutine erfgen_met(alpha,beta,met)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine for generating interpolation tables for a magnified
+! offset error function and its true derivative - for use with MBPC type
+! of metal-like potentials
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov december 2014
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
+  Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
+  Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
+  Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
+  Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
+  Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
+
+  Real( Kind = wp ),  Intent( In    ) :: alpha,beta
+  Type( metal_type ), Intent( InOut ) :: met
+
+  Integer           :: i,offset
+  Real( Kind = wp ) :: drmet,exp1,rrr,rsq,tt
+
+! look-up tables for mbpc metal interaction
+
+  drmet = met%rcut/Real(met%maxgrid-1,wp)
+
+! store array specification parameters
+
+  met%merf(1) = Real(met%maxgrid,wp)
+  met%merf(2) = 0.0_wp          ! l_int(min) >= 1
+  met%merf(3) = met%rcut            ! met%rcut=rcut
+  met%merf(4) = drmet
+
+! offset
+
+  offset = Nint(beta/drmet)+1
+
+  Do i=1,4
+     met%mfer(i)=met%merf(i)
+  End Do
+
+  Do i=5,offset-1
+     rrr = -Real(i-offset,wp)*drmet ! make positive
+     rsq = rrr*rrr
+
+     tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
+     exp1 = Exp(-(alpha*rrr)**2)
+
+     met%merf(i) = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr - 1.0_wp
+     met%mfer(i) = -2.0_wp*(alpha/sqrpi)*exp1
+  End Do
+
+  met%merf(offset) = 0.0_wp
+  met%mfer(offset) = 2.0_wp*(alpha/sqrpi)
+
+  Do i=offset+1,met%maxgrid
+     rrr = Real(i-offset,wp)*drmet
+
+     tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
+     exp1 = Exp(-(alpha*rrr)**2)
+
+     met%merf(i) = 1.0_wp - tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr
+     met%mfer(i) = 2.0_wp*(alpha/sqrpi)*exp1
+  End Do
+End Subroutine erfgen_met
+
 
 Subroutine cleanup(met)
   Type(metal_type) :: met
