@@ -6,6 +6,9 @@ Module thermostat
 
   !> Type containing thermostat and barostat variables
   Type, Public :: thermostat_type
+    !> Ensemble key
+    Integer( Kind = wi ) :: ensemble
+
     !> Simulation temperature
     Real( Kind = wp ) :: temp
     !> Simulation pressure
@@ -98,4 +101,41 @@ Module thermostat
     Integer :: freq_zero
 
   End Type thermostat_type
+
+  ! Thermostat keys
+  !> Microcannonical ensemble
+  Integer( Kind = wi ), Parameter, Public :: ENS_NVE = 0
+
+  !> Cannonical ensemble Evans
+  Integer( Kind = wi ), Parameter, Public :: ENS_NVT_EVANS = 1
+  !> Cannonical ensemble Langevin (stochastic dynamics)
+  Integer( Kind = wi ), Parameter, Public :: ENS_NVT_LANGEVIN = 10
+  !> Cannonical ensemble Anderson
+  Integer( Kind = wi ), Parameter, Public :: ENS_NVT_ANDERSON = 11
+  !> Cannonical ensemble Berendsen
+  Integer( Kind = wi ), Parameter, Public :: ENS_NVT_BERENDSEN = 12
+  !> Cannonical ensemble Nosé-Hoover
+  Integer( Kind = wi ), Parameter, Public :: ENS_NVT_NOSE_HOOVER = 13
+  !> Cannonical ensemble gentle stocastic
+  Integer( Kind = wi ), Parameter, Public :: ENS_NVT_GENTLE = 14
+  !> Cannonical ensemble inhomogeneous Langevin (stocastic dynamics)
+  Integer( Kind = wi ), Parameter, Public :: ENS_NVT_LANGEVIN_INHOMO = 15
+
+  !> Isobaric ensemble isothermal Langevin (stochastic dynamics) (isotropic)
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_LANGEVIN = 20
+  !> Isobaric isothermal ensemble Berendsen
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_BERENDSEN = 21
+  !> Isobaric isothermal ensemble Nosé-Hoover (isotropic) (Melchionna)
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_NOSE_HOOVER = 22
+  !> Isobaric isothermal ensemble Martyna-Tuckerman-Klein (isotropic)
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_MTK = 23
+
+  !> Isobaric isothermal ensemble anisotropic Langvein (stochastic dynamics)
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_LANGEVIN_ANISO = 30
+  !> Isobaric isothermal ensemble anisotropic Berendsen
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_BERENDSEN_ANISO = 31
+  !> Isobaric isothermal ensemble anisotropic Nosé-Hoover (Melchionna)
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_NOSE_HOOVER_ANSIO = 32
+  !> Isobaric isothermal ensemble anistropic Martyna-Tuckerman-Klein
+  Integer( Kind = wi ), Parameter, Public :: ENS_NPT_MTK_ANSIO = 33
 End Module thermostat
