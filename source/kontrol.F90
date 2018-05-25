@@ -3517,7 +3517,11 @@ Subroutine read_control                                &
            End If
         End If
      End If
-     If (thermo%ensemble /= 20 .and. thermo%ensemble /= 30 .and. thermo%tau_p <= 0.0_wp) Call error(466)
+     If (thermo%ensemble /= ENS_NPT_LANGEVIN .and. &
+         thermo%ensemble /= ENS_NPT_LANGEVIN_ANISO .and. &
+         thermo%tau_p <= 0.0_wp) Then
+       Call error(466)
+     End If
   End If
 
 ! Two-temperature model: calculate atomic density (if not

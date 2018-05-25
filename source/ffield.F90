@@ -4660,7 +4660,7 @@ Subroutine read_field                      &
           Call warning('external field is ignored as only applicable for imcon=6 (SLAB geometry)',.true.)
         End If
 
-        If (keyfld == 8 .and. thermo%ensemble /= 0) Call error(7)
+        If (keyfld == 8 .and. thermo%ensemble /= ENS_NVE) Call error(7)
 
 ! close force field file
 
