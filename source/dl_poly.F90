@@ -226,7 +226,7 @@ program dl_poly
   Real( Kind = wp ) :: tsths,                                     &
     tstep,time,tmst,      &
     dvar,rcut,rpad,rlnk,                       &
-    rvdw,rmet,rbin,rcter,rctbp,rcfbp,          &
+    rvdw,rbin,rcter,rctbp,rcfbp,          &
     alpha,epsq,fmax,                           &
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),min_tol(1:2),                 &
@@ -312,7 +312,7 @@ program dl_poly
 
   Call set_bounds                                     &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rmet,rbin,nstfce,alpha,width,stats,thermo,green,devel,msd_data,met,comm)
+    dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats,thermo,green,devel,msd_data,met,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -393,7 +393,7 @@ program dl_poly
 
   Call read_field                          &
     (l_str,l_top,l_n_v,             &
-    rcut,rvdw,rmet,width,epsq, &
+    rcut,rvdw,width,epsq, &
     keyens,keyfce,keyshl,           &
     lecx,lbook,lexcl,               &
     rcter,rctbp,rcfbp,              &
@@ -481,7 +481,7 @@ program dl_poly
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
   Call system_init                                                 &
-    (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
+    (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
     time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,comm)
 
   ! SET domain borders and link-cells as default for new jobs

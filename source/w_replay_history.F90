@@ -148,7 +148,7 @@
 ! Make sure RDFs are complete (lbook=.false. - no exclusion lists)
 
            If (lrdf) Call two_body_forces         &
-           (rcut,rlnk,rvdw,rmet,pdplnc,keyens,    &
+           (rcut,rlnk,rvdw,pdplnc,keyens,    &
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstph,         &
            elrc,virlrc,               &

@@ -68,7 +68,7 @@ Module ffield
 Contains
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
-           rcut,rvdw,rmet,width,epsq, &
+           rcut,rvdw,width,epsq, &
            keyens,keyfce,keyshl,           &
            lecx,lbook,lexcl,               &
            rcter,rctbp,rcfbp,              &
@@ -102,7 +102,7 @@ Subroutine read_field                      &
   Logical,           Intent( In    ) :: l_str,l_top,l_n_v
   Integer,           Intent( In    ) :: keyens
   Integer,           Intent( InOut ) :: keyfce
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rmet,width,epsq
+  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,width,epsq
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
@@ -4023,13 +4023,13 @@ Subroutine read_field                      &
 
 ! generate metal force arrays
 
-           Call metal_generate_erf(rmet,met)
+           Call metal_generate_erf(met)
            If (.not.met%l_direct) Then
               Call allocate_metal_table_arrays(met)
               If (met%tab > 0) Then ! keypot == 0
                  Call metal_table_read(l_top,met,comm)
               Else ! If (met%tab == 0) Then
-                 Call metal_generate(rmet,met)
+                 Call metal_generate(met)
               End If
            End If
 
@@ -4948,7 +4948,7 @@ Subroutine scan_field                                &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
-           mxmet,mxmed,mxmds,rmet,mxgmet,            &
+           mxmet,mxmed,mxmds,mxgmet,            &
            mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4998,7 +4998,7 @@ Subroutine scan_field                                &
                        mxmet,mxmed,mxmds,itpmet,mxgmet,                        &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
-  Real( Kind = wp ) :: rcbnd,rvdw,rmet,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
+  Real( Kind = wp ) :: rcbnd,rvdw,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
   mxompl=0      ! default of maximum order of poles (charges)
@@ -5081,7 +5081,7 @@ Subroutine scan_field                                &
   mxmet =0
   mxmed =0
   mxmds =0
-  rmet  =0.0_wp
+  met%rcut  =0.0_wp
   mxgmet=0
 
   mxter=0
@@ -5632,16 +5632,16 @@ Subroutine scan_field                                &
            Else If (word(1:4) == 'fnsc') Then
               Call get_word(record,word) ; Call get_word(record,word)
               Call get_word(record,word) ; Call get_word(record,word)
-              rmet=Max(rmet,word_2_real(word))
+              met%rcut=Max(met%rcut,word_2_real(word))
               Call get_word(record,word) ; Call get_word(record,word)
-              rmet=Max(rmet,word_2_real(word))
+              met%rcut=Max(met%rcut,word_2_real(word))
            Else If (word(1:4) == 'exfs') Then
               Call get_word(record,word) ; Call get_word(record,word)
               Call get_word(record,word) ; Call get_word(record,word)
               Call get_word(record,word) ; Call get_word(record,word)
-              rmet=Max(rmet,word_2_real(word))
+              met%rcut=Max(met%rcut,word_2_real(word))
               Call get_word(record,word) ; Call get_word(record,word)
-              rmet=Max(rmet,word_2_real(word))
+              met%rcut=Max(met%rcut,word_2_real(word))
            End If
         End Do
 
@@ -5676,9 +5676,9 @@ Subroutine scan_field                                &
                  If (.not.safe) Go To 40
                  Call get_word(record,word)
                  Call lower_case(word)
-                 j=0 ! assume rmet is specified
+                 j=0 ! assume met%rcut is specified
                  If (word(1:4) == 'embe' .or. & ! 2-band embedding functionals
-                     word(1:4) == 'demb' .or. word(1:4) == 'semb') j=1 ! no rmet is specified
+                     word(1:4) == 'demb' .or. word(1:4) == 'semb') j=1 ! no met%rcut is specified
                  If ((word(1:4) == 'dens' .and. met%tab == 2) .or. & ! EEAM
                      (word(2:4) == 'den' .and. (met%tab == 3 .or. met%tab == 4)) .or. & ! sden & dden for 2B extensions
                      word(1:4) == 'pair') Call get_word(record,word) ! skip over one species
@@ -5690,7 +5690,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  Call get_word(record,word)
-                 If (j == 0) rmet=Max(rmet,word_2_real(word))
+                 If (j == 0) met%rcut=Max(met%rcut,word_2_real(word))
 
                  Do j=1,(k+3)/4
                     Call get_line(safe,ntable,record,comm)

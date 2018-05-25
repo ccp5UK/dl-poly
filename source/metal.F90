@@ -31,6 +31,9 @@ Module metal
   Type, Public :: metal_type
     Private
 
+    !> Metal potential cut off
+    Real( Kind = wp ), Public :: rcut
+
     !> Direct calculations switch
     Logical, Public :: l_direct = .false.
     !> Embedding over Sqrt(rho) but over rho switch
@@ -149,7 +152,7 @@ Contains
   End Subroutine allocate_metal_erf_arrays
 
   Subroutine metal_forces &
-          (iatm,rmet,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,met)
+          (iatm,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,met)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -164,7 +167,6 @@ Contains
 
   
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
   Real( Kind = wp ),                        Intent(   Out ) :: engmet,virmet
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
@@ -254,7 +256,7 @@ Contains
 ! truncation and validity of metal interaction
 
      keypot=met%ltp(k0)
-     If (keypot >= 0 .and. rrr <= rmet) Then
+     If (keypot >= 0 .and. rrr <= met%rcut) Then
 
 ! Squared distance
 
@@ -824,7 +826,7 @@ Contains
   stress(9) = stress(9) + strs9
 End Subroutine metal_forces
 
-Subroutine metal_ld_compute(rmet,engden,virden,stress,met,comm)
+Subroutine metal_ld_compute(engden,virden,stress,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -841,7 +843,6 @@ Subroutine metal_ld_compute(rmet,engden,virden,stress,met,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Type( metal_type ), Intent( InOut ) :: met
@@ -907,7 +908,7 @@ Subroutine metal_ld_compute(rmet,engden,virden,stress,met,comm)
      If (met%tab > 0) Then         ! EAM contributions
         Call metal_ld_collect_eam(i,rrt,safe,met)
      Else ! If (met%tab == 0) Then ! FST contributions
-        Call metal_ld_collect_fst(i,rmet,rrt,safe,met)
+        Call metal_ld_collect_fst(i,rrt,safe,met)
      End If
   End Do
 
@@ -1172,7 +1173,7 @@ Subroutine metal_ld_compute(rmet,engden,virden,stress,met,comm)
   Call metal_ld_set_halo(met,comm)
 End Subroutine metal_ld_compute
 
-Subroutine metal_lrc(rmet,met,comm)
+Subroutine metal_lrc(met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1185,7 +1186,6 @@ Subroutine metal_lrc(rmet,met,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real( Kind = wp ),                        Intent( In    ) :: rmet
   Type( metal_type ), Intent( InOut ) :: met
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -1232,7 +1232,7 @@ Subroutine metal_lrc(rmet,met,comm)
               mmm=Nint(met%prm(4,k0)) ; mmmr=Real(mmm,wp)
               ccc=met%prm(5,k0)
 
-              elrc0=eps*sig**3*(sig/rmet)**(nnn-3)/(nnnr-3.0_wp)
+              elrc0=eps*sig**3*(sig/met%rcut)**(nnn-3)/(nnnr-3.0_wp)
               vlrc0=nnnr*elrc0
 
 ! Self-interaction accounted once, interaction between different species
@@ -1246,7 +1246,7 @@ Subroutine metal_lrc(rmet,met,comm)
               met%elrc(0) = met%elrc(0) + twopi*volm*dens(i)*dens(j)*elrc0
               met%vlrc(0) = met%vlrc(0) - twopi*volm*dens(i)*dens(j)*vlrc0
 
-              tmp=sig**3*(sig/rmet)**(mmm-3)/(mmmr-3.0_wp)
+              tmp=sig**3*(sig/met%rcut)**(mmm-3)/(mmmr-3.0_wp)
               If (i == j) Then
                  elrc1=tmp*(eps*ccc)**2
                  met%elrc(i)=met%elrc(i)+fourpi*dens(i)*elrc1
@@ -1279,10 +1279,10 @@ Subroutine metal_lrc(rmet,met,comm)
               ppp=met%prm(3,k0)
               zet=met%prm(4,k0)
               qqq=met%prm(5,k0)
-              eee=Exp(-ppp*(rmet-rr0)/rr0)
+              eee=Exp(-ppp*(met%rcut-rr0)/rr0)
 
-              elrc0=2.0_wp*aaa*(rr0/ppp)*(rmet**2+2.0_wp*rmet*(rr0/ppp)+2.0_wp*(rr0/ppp)**2)*eee
-              vlrc0=2.0_wp*aaa*rmet**3*eee+3.0_wp*elrc0
+              elrc0=2.0_wp*aaa*(rr0/ppp)*(met%rcut**2+2.0_wp*met%rcut*(rr0/ppp)+2.0_wp*(rr0/ppp)**2)*eee
+              vlrc0=2.0_wp*aaa*met%rcut**3*eee+3.0_wp*elrc0
 
 ! Self-interaction accounted once, interaction between different species
 ! MUST be accounted twice!!
@@ -1295,23 +1295,27 @@ Subroutine metal_lrc(rmet,met,comm)
               met%elrc(0)=met%elrc(0)+twopi*volm*dens(i)*dens(j)*elrc0
               met%vlrc(0)=met%vlrc(0)-twopi*volm*dens(i)*dens(j)*vlrc0
 
-              eee=Exp(-2.0_wp*qqq*(rmet-rr0)/rr0)
+              eee=Exp(-2.0_wp*qqq*(met%rcut-rr0)/rr0)
 
               If (i == j) Then
-                 elrc1=(rmet**2+2.0_wp*rmet*(0.5_wp*rr0/qqq)+2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
+                 elrc1=(met%rcut**2+2.0_wp*met%rcut*(0.5_wp*rr0/qqq)+ &
+                   2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
                  met%elrc(i)=met%elrc(i)+fourpi*dens(i)*elrc1
                  elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
 
-                 vlrc1=(rmet**3+3.0_wp*rmet**2*(0.5_wp*rr0/qqq)+6.0_wp*rmet*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
+                 vlrc1=(met%rcut**3+3.0_wp*met%rcut**2*(0.5_wp*rr0/qqq)+ &
+                   6.0_wp*met%rcut*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
                  met%vlrc(i)=met%vlrc(i)+twopi*dens(i)*vlrc1
               Else
-                 elrc1=(rmet**2+2.0_wp*rmet*(0.5_wp*rr0/qqq)+2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
+                 elrc1=(met%rcut**2+2.0_wp*met%rcut*(0.5_wp*rr0/qqq)+ &
+                   2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
                  elrc2=elrc2
                  met%elrc(i)=met%elrc(i)+fourpi*dens(j)*elrc1
                  met%elrc(j)=met%elrc(j)+fourpi*dens(i)*elrc2
                  elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
 
-                 vlrc1=(rmet**3+3.0_wp*rmet**2*(0.5_wp*rr0/qqq)+6.0_wp*rmet*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
+                 vlrc1=(met%rcut**3+3.0_wp*met%rcut**2*(0.5_wp*rr0/qqq)+ &
+                   6.0_wp*met%rcut*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
                  vlrc2=vlrc1
                  met%vlrc(i)=met%vlrc(i)+twopi*dens(j)*vlrc1
                  met%vlrc(j)=met%vlrc(j)+twopi*dens(i)*vlrc2
@@ -1341,7 +1345,7 @@ Subroutine metal_lrc(rmet,met,comm)
 !              met%elrc(0) = met%elrc(0) + twopi*volm*dens(i)*dens(j)*elrc0
 !              met%vlrc(0) = met%vlrc(0) - twopi*volm*dens(i)*dens(j)*vlrc0
 
-              tmp=sig/((mmmr-3.0_wp)*rmet**(mmm-3))
+              tmp=sig/((mmmr-3.0_wp)*met%rcut**(mmm-3))
               If (i == j) Then
                  elrc1=tmp*eps**2
                  met%elrc(i)=met%elrc(i)+fourpi*dens(i)*elrc1
@@ -1826,7 +1830,7 @@ Subroutine metal_table_read(l_top,met,comm)
 End Subroutine metal_table_read
 
 
-Subroutine metal_generate(rmet,met)
+Subroutine metal_generate(met)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1839,7 +1843,6 @@ Subroutine metal_generate(rmet,met)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real( Kind = wp ), Intent( In    ) :: rmet
   Type( metal_type ), Intent( InOut ) :: met
 
   Integer           :: i,imet,kmet,keypot,katom1,katom2, &
@@ -1852,7 +1855,7 @@ Subroutine metal_generate(rmet,met)
 
 ! define grid resolution for potential arrays
 
-  dlrpot=rmet/Real(mxgmet-1,wp)
+  dlrpot=met%rcut/Real(mxgmet-1,wp)
 
 ! construct arrays for metal potentials
 
@@ -1871,7 +1874,7 @@ Subroutine metal_generate(rmet,met)
 
            met%vmet(1,imet,1)=Real(mxgmet,wp)
            met%vmet(2,imet,1)=0.0_wp          ! l_int(min) >= 1
-           met%vmet(3,imet,1)=rmet            ! rmet=rcut
+           met%vmet(3,imet,1)=met%rcut            ! met%rcut=rcut
            met%vmet(4,imet,1)=dlrpot
 
            Do i=1,4
@@ -2053,7 +2056,7 @@ Subroutine metal_generate(rmet,met)
   End Do
 End Subroutine metal_generate
 
-Subroutine metal_generate_erf(rmet,met)
+Subroutine metal_generate_erf(met)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2065,7 +2068,6 @@ Subroutine metal_generate_erf(rmet,met)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real( Kind = wp ), Intent( In    ) :: rmet
   Type( metal_type ), Intent( InOut ) :: met
 
   Integer           :: imet
@@ -2084,7 +2086,7 @@ Subroutine metal_generate_erf(rmet,met)
 ! If unset then set to defaults
 
      If (alpha <= zero_plus) alpha=20.0_wp
-     If (beta  <= zero_plus) beta =Min(1.5_wp,0.2_wp*rmet)
+     If (beta  <= zero_plus) beta =Min(1.5_wp,0.2_wp*met%rcut)
 
 ! Allocate arrays: met%merf,met%mfer
 
@@ -2092,7 +2094,7 @@ Subroutine metal_generate_erf(rmet,met)
 
 ! Generate error function and derivative arrays
 
-     Call erfgen_met(rmet,alpha,beta,mxgmet,met%merf,met%mfer)
+     Call erfgen_met(met%rcut,alpha,beta,mxgmet,met%merf,met%mfer)
 
 ! Translate met%merf and met%mfer to the functional form 0.5*{1+erf[alpha(r-beta)]}
 
@@ -2383,7 +2385,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,met)
   End Do
 End Subroutine metal_ld_collect_eam
 
-Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe,met)
+Subroutine metal_ld_collect_fst(iatm,rrt,safe,met)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2399,7 +2401,6 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe,met)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ),                        Intent( In    ) :: rmet
   Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
   Logical,                                  Intent( InOut ) :: safe
   Type( metal_type ), Intent( InOut ) :: met
@@ -2451,7 +2452,7 @@ Subroutine metal_ld_collect_fst(iatm,rmet,rrt,safe,met)
 ! validity and truncation of analytic potential
 
      keypot=met%ltp(k0)
-     If (keypot > 0 .and. rrr <= rmet) Then
+     If (keypot > 0 .and. rrr <= met%rcut) Then
 
 ! Abs(met%dmet(1,k0,1)) > zero_plus, as potentials are analytic
 
@@ -2983,7 +2984,7 @@ Subroutine metal_ld_set_halo(met,comm)
 ! neighbouring domains/nodes
 !
 ! Note: all depends on the ixyz halo array set in set_halo, this assumes
-!       that (i) rmet=rcut! as well as (ii) all the error checks in there
+!       that (i) met%rcut=rcut! as well as (ii) all the error checks in there
 !
 ! copyright - daresbury laboratory
 ! amended   - i.t.todorov february 2014

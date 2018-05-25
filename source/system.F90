@@ -59,7 +59,7 @@ Module system
   Contains
   
   Subroutine system_init                                             &
-           (levcfg,rcut,rvdw,rbin,rmet,lrdf,lzdn,keyres,megatm,    &
+           (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
            time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -76,7 +76,7 @@ Module system
   Logical,           Intent( In    ) :: lrdf,lzdn
   Integer,           Intent( InOut ) :: levcfg,keyres
   Integer,           Intent( In    ) :: megatm
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rbin,rmet
+  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rbin
 
   Integer,           Intent(   Out ) :: nstep
   Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -615,7 +615,7 @@ Module system
 
 ! met%elrc & met%vlrc arrays are zeroed in metal_module
 
-  If (met%n_potentials > 0) Call metal_lrc(rmet,met,comm)
+  If (met%n_potentials > 0) Call metal_lrc(met,comm)
 
 End Subroutine system_init
 
