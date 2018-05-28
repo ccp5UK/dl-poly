@@ -56,7 +56,7 @@ Module ffield
 
   Use numerics, Only : factorial, shellsort
   Use errors_warnings, Only : error,warning,info
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type,ENS_NVE
 
   Implicit None
 
