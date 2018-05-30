@@ -201,7 +201,6 @@ program dl_poly
     lmin,          &
     lvar,leql,lsim,lfce,    &
     lpana,lrdf,lprdf,lzdn,lpzdn, &
-    lvafav,lpvaf,                &
     ltraj,ldef,lrsd,             &
     safe,lbook,lexcl,            &
     relaxed_shl = .true.,        &
@@ -381,7 +380,7 @@ program dl_poly
     l_exp,lecx,lfcap,l_top,lmin,          &
     lvar,leql,               &
     lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
-    lvafav,lpvaf,ltraj,ldef,lrsd,               &
+    ltraj,ldef,lrsd,               &
     nx,ny,nz,impa,                            &
     keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
@@ -713,7 +712,7 @@ program dl_poly
   ! Produce summary of simulation
 
   Call statistics_result                                        &
-    (rcut,lmin,lpana,lrdf,lprdf,lzdn,msd_data%l_msd,lpzdn,lvafav,lpvaf, &
+    (rcut,lmin,lpana,lrdf,lprdf,lzdn,msd_data%l_msd,lpzdn, &
     nstrun,keyshl,megcon,megpmf,              &
     nstep,tstep,time,tmst,mxatdm,stats,thermo,green,comm,passmin)
 

@@ -12,7 +12,7 @@
         If (lrsd) Call rsd_write &
            (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,stat%rsd,comm)
         If (green%samp > 0) Call vaf_write &
-           (lvafav,keyres,nstep,tstep,green,comm)
+           (keyres,nstep,tstep,green,comm)
 
 
 !!!!!!!!!!!!!!!!!!!!!  W_WRITE_OPTIONS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

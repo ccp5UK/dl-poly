@@ -1328,7 +1328,7 @@ Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
 End Subroutine statistics_connect_spread
 
 Subroutine statistics_result                                    &
-           (rcut,lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn,lvafav,lpvaf, &
+           (rcut,lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
            mxatdm,stats,thermo,green,comm,passmin)
@@ -1344,7 +1344,7 @@ Subroutine statistics_result                                    &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn,lvafav,lpvaf
+  Logical,           Intent( In    ) :: lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn
   Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
   Integer( Kind = wi ),    Intent( In    ) :: mxatdm 
@@ -1720,8 +1720,8 @@ Subroutine statistics_result                                    &
   End If
 
 ! calculate and print velocity autocorrelation function
-  If (green%samp > 0 .and. lpvaf .and. green%vafcount > zero_plus) Then
-    Call vaf_compute(lvafav,tstep,green,comm)
+  If (green%samp > 0 .and. green%l_print .and. green%vafcount > zero_plus) Then
+    Call vaf_compute(tstep,green,comm)
   End If
 
 ! Calculate and print PDFs

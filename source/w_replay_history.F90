@@ -226,7 +226,7 @@
 
 ! Collect VAF if kinetics is available
 
-           Call vaf_collect(lvafav,leql,nsteql,nstph-1,time,green,comm)
+           Call vaf_collect(leql,nsteql,nstph-1,time,green,comm)
 
            Call statistics_collect        &
            (lsim,leql,nsteql,lzdn,msd_data%l_msd,nstzdn, &
@@ -246,7 +246,7 @@
            If (lrsd) Call rsd_write &
            (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,stat%rsd,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
-           (lvafav,keyres,nstph,tsths,green,comm)
+           (keyres,nstph,tsths,green,comm)
 
 ! Complete time check
 

@@ -27,6 +27,8 @@ Module greenkubo
     Private
     !> VAF printing switch
     Logical, Public :: l_print
+    !> VAF time averaging switch
+    Logical, Public :: l_average
 
     !> VAF sampling frequency in steps
     Integer, Public :: freq = 1
@@ -91,7 +93,7 @@ Contains
 
   End Subroutine allocate_greenkubo_arrays
 
-  Subroutine vaf_collect(lvafav,leql,nsteql,nstep,time,green,comm)
+  Subroutine vaf_collect(leql,nsteql,nstep,time,green,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -104,7 +106,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,           Intent( In    ) :: lvafav,leql
+    Logical,           Intent( In    ) :: leql
     Integer,           Intent( In    ) :: nsteql,nstep
     Real( Kind = wp ), Intent( In    ) :: time
     Type( greenkubo_Type ), Intent( InOut ) :: green
@@ -171,7 +173,7 @@ Contains
           End Do
         End If
 
-        If (lvafav) Then ! if time-averaging, add green%vaf data to sampling array
+        If (green%l_average) Then ! if time-averaging, add green%vaf data to sampling array
           Do i=0,green%binsize
             green%time(i) = green%vafdata(i,j*(mxatyp+1))
             Do l=1,mxatyp
@@ -219,7 +221,7 @@ Contains
 
   End Subroutine vaf_collect
 
-  Subroutine vaf_compute(lvafav,tstep,green,comm)
+  Subroutine vaf_compute(tstep,green,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -233,7 +235,6 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    Logical,           Intent( In    ) :: lvafav
     Real( Kind = wp ), Intent( In    ) :: tstep
     Type( greenkubo_type), Intent( In    ) :: green
     Type( comms_type ), Intent( InOut ) :: comm
@@ -244,7 +245,7 @@ Contains
     Character( Len = 256 ) :: message
 
     Call info('velocity autocorrelation functions',.true.)
-    If (lvafav) Then
+    If (green%l_average) Then
       Write(message,'(a,i8,a)') 'calculated using ', Nint(green%vafcount), ' samples'
     Else
       Write(message,'(a,i8,a,f10.4,a)') 'calculated using sample ', &
@@ -256,7 +257,7 @@ Contains
     numt = Sum(numtypnf(1:mxatyp))
     factor = 1.0_wp/Sum(green%vaf(0,1:mxatyp))
     ovaf = Sum(green%vaf(0,1:mxatyp))/Real(numt,Kind=wp)
-    If (lvafav) ovaf = ovaf/green%vafcount
+    If (green%l_average) ovaf = ovaf/green%vafcount
 
     Write(message,'(a,1p,e16.8)') 'absolute value at origin (3kT/m) = ', ovaf
     Call info(message,.true.)
@@ -267,7 +268,7 @@ Contains
 
       ! determine time
 
-      If (lvafav) Then
+      If (green%l_average) Then
         timei = tstep*Real(i,Kind=wp)
       Else
         timei = green%time(i)-time0
@@ -290,7 +291,7 @@ Contains
 
   End Subroutine vaf_compute
 
-  Subroutine vaf_write(lvafav,keyres,nstep,tstep,green,comm)
+  Subroutine vaf_write(keyres,nstep,tstep,green,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -302,7 +303,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,           Intent( In    ) :: lvafav
     Integer,           Intent( In    ) :: keyres,nstep
     Real( Kind = wp ), Intent( In    ) :: tstep
     Type( greenkubo_type), Intent( In    ) :: green
@@ -334,7 +334,7 @@ Contains
 
         ! Generate file if non-existent or replace it if outputting time-averaged VAF
 
-        If ((.not.lexist) .or. lvafav) Then
+        If ((.not.lexist) .or. green%l_average) Then
           If (comm%idnode == 0) Then
             Open(Unit=nvafdt, File='VAFDAT_'//unqatm(i), Status='replace')
             Write(nvafdt,'(a)') cfgname
@@ -353,12 +353,12 @@ Contains
       factor = 1.0_wp
       If (Abs(green%vaf(0,j)) > 0.0e-6_wp) factor = 1.0_wp/green%vaf(0,j)
       ovaf = green%vaf(0,j)/Real(numt,Kind=wp)
-      If (lvafav) ovaf=ovaf/green%vafcount
+      If (green%l_average) ovaf=ovaf/green%vafcount
 
       ! replace file (if outputting time-averaged VAF); prepare for data set
 
       If (comm%idnode == 0) Then
-        If (lvafav) Then
+        If (green%l_average) Then
           Open(Unit=nvafdt, File='VAFDAT_'//unqatm(j), Status='replace')
           Write(nvafdt,'(a)') cfgname
           Close(Unit=nvafdt)
@@ -373,7 +373,7 @@ Contains
 
         ! determine time
 
-        If (lvafav) Then
+        If (green%l_average) Then
           timei = tstep*Real(i,Kind=wp)
         Else
           timei = green%time(i)-time0
@@ -394,11 +394,10 @@ Contains
       End Do
 
       If (comm%idnode == 0) Then
-        If (.not. lvafav) Write(nvafdt,'(2/)')
+        If (.not. green%l_average) Write(nvafdt,'(2/)')
         Close(Unit=nvafdt)
       End If
     End Do
-
   End Subroutine vaf_write
 
   !> Deallocate greenkubo arrays
