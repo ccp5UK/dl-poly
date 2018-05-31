@@ -23,6 +23,7 @@ Module bounds
   Use thermostat,      Only : thermostat_type
   Use statistics,      Only : stats_type
   Use metal,           Only : metal_type
+  Use poisson,         Only : poisson_type
 
   Implicit None
   Private
@@ -32,7 +33,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce, &
-           alpha,width,stats,thermo,green,devel,msd_data,met,comm)
+           alpha,width,stats,thermo,green,devel,msd_data,met,pois,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -57,6 +58,7 @@ Subroutine set_bounds                                 &
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( msd_type ), Intent( InOut ) :: msd_data
   Type( metal_type ), Intent( InOut ) :: met
+  Type( poisson_type ), Intent( InOut ) :: pois
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -115,7 +117,7 @@ Subroutine set_bounds                                 &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,msd_data,met,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,msd_data,met,pois,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)

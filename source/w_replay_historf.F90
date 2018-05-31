@@ -126,7 +126,7 @@
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(stat,plume)
+           Call w_calculate_forces(stat,plume,pois)
 
 ! Evaluate kinetics if available
 

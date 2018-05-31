@@ -8,7 +8,7 @@ Module kontrol
   Use bonds,      Only : rcbnd
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : metal_type
-  Use poisson,    Only : eps,mxitcg,mxitjb
+  Use poisson,    Only : poisson_type
   Use msd,        Only : msd_type
   Use defects,   Only : l_dfx
   Use kinetics,  Only : l_vom
@@ -78,7 +78,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstraj,istraj,keytrj,         &
            nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,tmr,comm)
+           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -141,6 +141,7 @@ Subroutine read_control                                &
   Type( plumed_type ), Intent( InOut ) :: plume
   Type( msd_type ), Intent( InOut ) :: msd_data
   Type( metal_type ), Intent( InOut ) :: met
+  Type( poisson_type ), Intent( InOut ) :: pois
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( comms_type ),     Intent( InOut )  :: comm
 
@@ -1939,13 +1940,13 @@ Subroutine read_control                                &
         Write(messages(4),'(a,1p,i5)') 'max # of Jacobi  iterations ',Nint(prmps(4))
         Call info(messages,4,.true.)
 
-        If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-eps) > 1.0e-6_wp .or. &
+        If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-pois%eps) > 1.0e-6_wp .or. &
              Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0 ) Then
            Call warning('parameters reset to safe defaults occurred',.true.)
            Write(messages(1),'(a,1p,e12.4)') 'gridspacing parameter (A) ',1.0_wp/alpha
-           Write(messages(2),'(a,1p,e12.4)') 'convergance epsilon ',eps
-           Write(messages(3),'(a,1p,i5)') 'max # of Psolver iterations ',mxitcg
-           Write(messages(4),'(a,1p,i5)') 'max # of Jacobi  iterations ',mxitjb
+           Write(messages(2),'(a,1p,e12.4)') 'convergance epsilon ',pois%eps
+           Write(messages(3),'(a,1p,i5)') 'max # of Psolver iterations ',pois%mxitcg
+           Write(messages(4),'(a,1p,i5)') 'max # of Jacobi  iterations ',pois%mxitjb
            Call info(messages,4,.true.)
         End If
 
@@ -3619,7 +3620,7 @@ Subroutine scan_control                                    &
            rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
-           thermo,green,devel,msd_data,met,comm)
+           thermo,green,devel,msd_data,met,pois,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3652,6 +3653,7 @@ Subroutine scan_control                                    &
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( msd_type ), Intent( InOut ) :: msd_data
   Type( metal_type ), Intent( InOut ) :: met
+  Type( poisson_type ), Intent( InOut ) :: pois
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -4512,17 +4514,17 @@ Subroutine scan_control                                    &
 
                  If (word(1:3) == 'eps') Then     ! tolerance
                     Call get_word(record,word)
-                    eps=Abs(word_2_real(word))
+                    pois%eps=Abs(word_2_real(word))
                  End If
 
                  If (word(1:6) == 'maxits') Then  ! max number of iteration
                     Call get_word(record,word)
-                    mxitcg=Nint(Abs(word_2_real(word)))
+                    pois%mxitcg=Nint(Abs(word_2_real(word)))
                  End If
 
                  If (word(1:7) == 'jmaxits') Then ! max number Jacobian iterations
                     Call get_word(record,word)
-                    mxitjb=Nint(Abs(word_2_real(word)))
+                    pois%mxitjb=Nint(Abs(word_2_real(word)))
                  End If
 
                  Call get_word(record,word)
@@ -4534,8 +4536,8 @@ Subroutine scan_control                                    &
               If (alpha > 10.0_wp)                       alpha = 10.0_wp
               If (alpha < 1.0_wp/Min(3.0_wp,cut/3.0_wp)) alpha = 1.0_wp/Min(3.0_wp,cut/3.0_wp)
 
-              If (mxitcg == 0) mxitcg = 1000 ! default
-              If (mxitjb == 0) mxitjb = 1000 ! default
+              If (pois%mxitcg == 0) pois%mxitcg = 1000 ! default
+              If (pois%mxitjb == 0) pois%mxitjb = 1000 ! default
 
 ! Derive grid spacing represented as a k-vector
 
