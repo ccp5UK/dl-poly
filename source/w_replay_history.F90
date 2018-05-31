@@ -156,7 +156,7 @@
 
 ! Calculate bond forces
 
-           If (megbnd > 0 .and. mxgbnd1 > 0) Then
+           If (megbnd > 0 .and. bond%bin_pdf > 0) Then
               isw = 0
               Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress, &
               rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,comm)

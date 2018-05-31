@@ -56,7 +56,7 @@
 ! Calculate bond forces
 
      If (megbnd > 0) Then
-        ltmp = (mxgbnd1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
+        ltmp = (bond%bin_pdf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
         Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,comm)

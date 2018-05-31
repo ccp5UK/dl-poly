@@ -8,7 +8,7 @@ Module bounds
   Use msd,             Only : msd_type
   Use rdfs,            Only : rusr
   Use kim,             Only : kimim
-  Use bonds,           Only : rcbnd
+  Use bonds,           Only : bond%rcut
   Use tersoff,         Only : potter
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
@@ -87,7 +87,7 @@ Subroutine set_bounds                                 &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,mxtteth,mxteth,mxftet,             &
-           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd, &
+           mtbond,bond%max_types,bond%max_bonds,bond%max_legend,bond%rcut,bond%bin_tab, &
            mtangl,mxtang,mxangl,mxfang,mxgang,       &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
@@ -111,9 +111,9 @@ Subroutine set_bounds                                 &
 ! scan CONTROL file data
 
   Call scan_control                                        &
-           (rcbnd,mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
+           (bond%rcut,mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
+           mxgana,bond%bin_pdf,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
@@ -262,14 +262,14 @@ Subroutine set_bounds                                 &
 
 ! maximum number of chemical bonds per node and bond potential parameters
 
-  If (mxbond > 0) Then
+  If (bond%max_bonds > 0) Then
      If (comm%mxnode > 1) Then
-        mxbond = Max(mxbond,comm%mxnode*mtbond)
-        mxbond = (3*(Nint(fdvar*Real(mxbond,wp))+comm%mxnode-1))/comm%mxnode
+        bond%max_bonds = Max(bond%max_bonds,comm%mxnode*mtbond)
+        bond%max_bonds = (3*(Nint(fdvar*Real(bond%max_bonds,wp))+comm%mxnode-1))/comm%mxnode
      End If
-     mxpbnd = 4
+     bond%max_param = 4
   Else
-     mxpbnd = 0
+     bond%max_param = 0
   End If
 
 
@@ -322,11 +322,11 @@ Subroutine set_bounds                                 &
 ! SO THEY ARE SWITCHES FOR EXISTENCE TOO
 
   If (mxgana > 0) Then
-     If (mxgbnd1 == -1) Then
-        If (mxgbnd > 0) Then
-           mxgbnd1 = mxgbnd-4
+     If (bond%bin_pdf == -1) Then
+        If (bond%bin_tab > 0) Then
+           bond%bin_pdf = bond%bin_tab-4
         Else
-           mxgbnd1 = Nint(rcbnd/delr_max)
+           bond%bin_pdf = Nint(bond%rcut/delr_max)
         End If
      End If
      If (mxgang1 == -1) Then
@@ -350,7 +350,7 @@ Subroutine set_bounds                                 &
            mxgdih1 = Nint(180.0_wp/delth_max)
         End If
      End If
-     mxgana = Max(mxgbnd1,mxgang1,mxgdih1,mxginv1)
+     mxgana = Max(bond%bin_pdf,mxgang1,mxgdih1,mxginv1)
   End If
   mxtana = 0 ! initialise for buffer size purposes, set in read_field
 
@@ -384,7 +384,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for bonds
 
-  mxgbnd = Merge(mxgbnd,Min(mxgbnd,Max(1004,Nint(rcbnd/delr_max)+4)),mxgbnd < 0)
+  bond%bin_tab = Merge(bond%bin_tab,Min(bond%bin_tab,Max(1004,Nint(bond%rcut/delr_max)+4)),bond%bin_tab < 0)
 
 ! maximum number of grid points for angles
 
@@ -416,7 +416,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgrid,mxgbnd,mxgang,mxgdih,mxginv,mxgele,mxgvdw,met%maxgrid,mxgter)
+  mxgrid = Max(mxgrid,bond%bin_tab,mxgang,mxgdih,mxginv,mxgele,mxgvdw,met%maxgrid,mxgter)
 
 
 
@@ -797,7 +797,7 @@ Subroutine set_bounds                                 &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp        + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
-           3*mxteth+4*mxbond+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
+           3*mxteth+4*bond%max_bonds+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
 
 ! statistics connect deporting total per atom
 

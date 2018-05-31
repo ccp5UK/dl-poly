@@ -187,7 +187,7 @@ Subroutine read_field                      &
 ! Allocate auxiliary identity arrays for intramolecular TPs and PDFs
 
   fail = 0
-  If (lt_bnd .or. mxgbnd1 > 0) Allocate (bond_name(1:mxtbnd), Stat=fail(1))
+  If (bond%l_tab .or. bond%bin_pdf > 0) Allocate (bond_name(1:bond%max_types), Stat=fail(1))
   If (lt_ang .or. mxgang1 > 0) Allocate (angl_name(1:mxtang), Stat=fail(2))
   If (lt_dih .or. mxgdih1 > 0) Allocate (dihd_name(1:mxtdih), Stat=fail(3))
   If (lt_inv .or. mxginv1 > 0) Allocate (invr_name(1:mxtinv), Stat=fail(4))
@@ -199,7 +199,7 @@ Subroutine read_field                      &
 ! Initialise number of selected unique intramolecular TPs
 ! and corresponding identity arrays
 
-  If (lt_bnd) Then
+  If (bond%l_tab) Then
      ntpbnd = 0 ! TABBND
      bond_name = ' '
   End If
@@ -1188,7 +1188,7 @@ Subroutine read_field                      &
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  ntmp=Nint(word_2_real(word))
-                 numbonds(itmols)=numbonds(itmols)+ntmp
+                 bond%num(itmols)=bond%num(itmols)+ntmp
 
                  Write(message,'(a,i10)') 'number of chemical bonds ',ntmp
                  Call info(message,.true.)
@@ -1199,9 +1199,9 @@ Subroutine read_field                      &
                    Call info(message,.true.)
                  End If
 
-                 Do ibond=1,numbonds(itmols)
+                 Do ibond=1,bond%num(itmols)
                     nbonds=nbonds+1
-                    If (nbonds > mxtbnd) Call error(30)
+                    If (nbonds > bond%max_types) Call error(30)
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -1218,49 +1218,49 @@ Subroutine read_field                      &
                     If (keyword(1:1) /= '-') lexcl=.true.
 
                     If      (keyword == 'tab' ) Then
-                       keybnd(nbonds)=20
+                       bond%key(nbonds)=20
                     Else If (keyword == '-tab') Then
-                       keybnd(nbonds)=-20
+                       bond%key(nbonds)=-20
                     Else If (keyword == 'harm') Then
-                       keybnd(nbonds)=1
+                       bond%key(nbonds)=1
                     Else If (keyword == '-hrm') Then
-                       keybnd(nbonds)=-1
+                       bond%key(nbonds)=-1
                     Else If (keyword == 'mors') Then
-                       keybnd(nbonds)=2
+                       bond%key(nbonds)=2
                     Else If (keyword == '-mrs') Then
-                       keybnd(nbonds)=-2
+                       bond%key(nbonds)=-2
                     Else If (keyword == '12-6') Then
-                       keybnd(nbonds)=3
+                       bond%key(nbonds)=3
                     Else If (keyword == '-126') Then
-                       keybnd(nbonds)=-3
+                       bond%key(nbonds)=-3
                     Else If (keyword == 'lj'  ) Then
-                       keybnd(nbonds)=4
+                       bond%key(nbonds)=4
                     Else If (keyword == '-lj' ) Then
-                       keybnd(nbonds)=-4
+                       bond%key(nbonds)=-4
                     Else If (keyword == 'rhrm') Then
-                       keybnd(nbonds)=5
+                       bond%key(nbonds)=5
                     Else If (keyword == '-rhm') Then
-                       keybnd(nbonds)=-5
+                       bond%key(nbonds)=-5
                     Else If (keyword == 'quar') Then
-                       keybnd(nbonds)=6
+                       bond%key(nbonds)=6
                     Else If (keyword == '-qur') Then
-                       keybnd(nbonds)=-6
+                       bond%key(nbonds)=-6
                     Else If (keyword == 'buck') Then
-                       keybnd(nbonds)=7
+                       bond%key(nbonds)=7
                     Else If (keyword == '-bck') Then
-                       keybnd(nbonds)=-7
+                       bond%key(nbonds)=-7
                     Else If (keyword == 'coul') Then
-                       keybnd(nbonds)=8
+                       bond%key(nbonds)=8
                     Else If (keyword == '-cul') Then
-                       keybnd(nbonds)=-8
+                       bond%key(nbonds)=-8
                     Else If (keyword == 'fene') Then
-                       keybnd(nbonds)=9
+                       bond%key(nbonds)=9
                     Else If (keyword == '-fne') Then
-                       keybnd(nbonds)=-9
+                       bond%key(nbonds)=-9
                     Else If (keyword == 'mmst') Then
-                       keybnd(nbonds)=10
+                       bond%key(nbonds)=10
                     Else If (keyword == '-mst') Then
-                       keybnd(nbonds)=-10
+                       bond%key(nbonds)=-10
                     Else
                        Call info(keyword,.true.)
                        Call error(444)
@@ -1273,62 +1273,62 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     iatm2=Nint(word_2_real(word))
 
-                    lstbnd(1,nbonds)=iatm1
-                    lstbnd(2,nbonds)=iatm2
+                    bond%lst(1,nbonds)=iatm1
+                    bond%lst(2,nbonds)=iatm2
 
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
 
-                    If (Abs(keybnd(nbonds)) /= 20) Then
+                    If (Abs(bond%key(nbonds)) /= 20) Then
 
                        Call get_word(record,word)
-                       prmbnd(1,nbonds)=word_2_real(word)
+                       bond%param(1,nbonds)=word_2_real(word)
                        Call get_word(record,word)
-                       prmbnd(2,nbonds)=word_2_real(word)
+                       bond%param(2,nbonds)=word_2_real(word)
                        Call get_word(record,word)
-                       prmbnd(3,nbonds)=word_2_real(word)
+                       bond%param(3,nbonds)=word_2_real(word)
                        Call get_word(record,word)
-                       prmbnd(4,nbonds)=word_2_real(word)
+                       bond%param(4,nbonds)=word_2_real(word)
 
-                       If (Abs(keybnd(nbonds)) == 9) Then
-                          prmbnd(2,nbonds)=Abs(prmbnd(2,nbonds))
-                          If (Abs(prmbnd(3,nbonds)) > prmbnd(2,nbonds)/2.0_wp) &
-                             prmbnd(3,nbonds)=Sign(1.0_wp,prmbnd(3,nbonds))*prmbnd(2,nbonds)/2.0_wp
+                       If (Abs(bond%key(nbonds)) == 9) Then
+                          bond%param(2,nbonds)=Abs(bond%param(2,nbonds))
+                          If (Abs(bond%param(3,nbonds)) > bond%param(2,nbonds)/2.0_wp) &
+                             bond%param(3,nbonds)=Sign(1.0_wp,bond%param(3,nbonds))*bond%param(2,nbonds)/2.0_wp
                        End If
 
 ! test for frozen atoms and print unit
 
                        If (l_top) Then
                           If (frzsit(isite1)*frzsit(isite2) /= 0) Then
-                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,2i10,',mxpbnd,'f15.6,2x,a8)'
-                            Write(message,rfmt) ibond,keyword,lstbnd(1,nbonds), &
-                              lstbnd(2,nbonds),prmbnd(1:mxpbnd,nbonds),'*frozen*'
+                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,2i10,',bond%max_param,'f15.6,2x,a8)'
+                            Write(message,rfmt) ibond,keyword,bond%lst(1,nbonds), &
+                              bond%lst(2,nbonds),bond%param(1:bond%max_param,nbonds),'*frozen*'
                             Call info(message,.true.)
                           Else
-                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,2i10,',mxpbnd,'f15.6)'
-                            Write(message,rfmt) ibond,keyword,lstbnd(1,nbonds), &
-                              lstbnd(2,nbonds),prmbnd(1:mxpbnd,nbonds)
+                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,2i10,',bond%max_param,'f15.6)'
+                            Write(message,rfmt) ibond,keyword,bond%lst(1,nbonds), &
+                              bond%lst(2,nbonds),bond%param(1:bond%max_param,nbonds)
                             Call info(message,.true.)
                           End If
                        End If
 
 ! convert energy units to internal units
 
-                       If (Abs(keybnd(nbonds)) /= 8) Then
-                          prmbnd(1,nbonds)=prmbnd(1,nbonds)*engunit
+                       If (Abs(bond%key(nbonds)) /= 8) Then
+                          bond%param(1,nbonds)=bond%param(1,nbonds)*engunit
                        End If
 
-                       If (Abs(keybnd(nbonds)) == 3) Then
-                          prmbnd(2,nbonds)=prmbnd(2,nbonds)*engunit
+                       If (Abs(bond%key(nbonds)) == 3) Then
+                          bond%param(2,nbonds)=bond%param(2,nbonds)*engunit
                        End If
 
-                       If (Abs(keybnd(nbonds)) == 6) Then
-                          prmbnd(3,nbonds)=prmbnd(3,nbonds)*engunit
-                          prmbnd(4,nbonds)=prmbnd(4,nbonds)*engunit
+                       If (Abs(bond%key(nbonds)) == 6) Then
+                          bond%param(3,nbonds)=bond%param(3,nbonds)*engunit
+                          bond%param(4,nbonds)=bond%param(4,nbonds)*engunit
                        End If
 
-                       If (Abs(keybnd(nbonds)) == 7) Then
-                          prmbnd(3,nbonds)=prmbnd(3,nbonds)*engunit
+                       If (Abs(bond%key(nbonds)) == 7) Then
+                          bond%param(3,nbonds)=bond%param(3,nbonds)*engunit
                        End If
 
                     Else ! TABBND to read
@@ -1350,28 +1350,28 @@ Subroutine read_field                      &
 
                        Do i=1,ntpbnd
                           If (bond_name(i) == idbond) Then
-                             ltpbnd(nbonds)=i ! Re-point from zero to type
+                             bond%ltp(nbonds)=i ! Re-point from zero to type
                              Exit
                           End If
                        End Do
 
-                       If (ltpbnd(nbonds) == 0) Then
+                       If (bond%ltp(nbonds) == 0) Then
                           ntpbnd=ntpbnd+1
                           bond_name(ntpbnd)=idbond
 
-                          ltpbnd(0)=ntpbnd      ! NUTBP
-                          ltpbnd(nbonds)=ntpbnd ! Re-point from zero to type
+                          bond%ltp(0)=ntpbnd      ! NUTBP
+                          bond%ltp(nbonds)=ntpbnd ! Re-point from zero to type
                        End If
 
                        If (l_top) Then
                           If (frzsit(isite1)*frzsit(isite2) /= 0) Then
                             Write(message,'(2x,i10,a8,2i10,2x,a9,2x,a8)') &
-                              ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds), &
+                              ibond,keyword,bond%lst(1,nbonds),bond%lst(2,nbonds), &
                               "tabulated",'*frozen*'
                             Call info(message,.true.)
                           Else
                             Write(message,'(2x,i10,a8,2i10,2x,a9)') &
-                              ibond,keyword,lstbnd(1,nbonds),lstbnd(2,nbonds), &
+                              ibond,keyword,bond%lst(1,nbonds),bond%lst(2,nbonds), &
                               "tabulated"
                             Call info(message,.true.)
                           End If
@@ -1381,7 +1381,7 @@ Subroutine read_field                      &
 
 ! catch unidentified entry
 
-                    If (Any(lstbnd(1:2,nbonds) < 1) .or. Any(lstbnd(1:2,nbonds) > numsit(itmols))) Call error(27)
+                    If (Any(bond%lst(1:2,nbonds) < 1) .or. Any(bond%lst(1:2,nbonds) > numsit(itmols))) Call error(27)
 
 ! test for mistyped chemical bond unit
 
@@ -1390,15 +1390,15 @@ Subroutine read_field                      &
 
 ! Check for multiple chemical bond entries
 
-                 Do i=nbonds-numbonds(itmols)+1,nbonds
-                    is(0)=keybnd(i)
-                    is(1)=Min(lstbnd(1,i),lstbnd(2,i))
-                    is(2)=Max(lstbnd(1,i),lstbnd(2,i))
+                 Do i=nbonds-bond%num(itmols)+1,nbonds
+                    is(0)=bond%key(i)
+                    is(1)=Min(bond%lst(1,i),bond%lst(2,i))
+                    is(2)=Max(bond%lst(1,i),bond%lst(2,i))
 
                     Do j=i+1,nbonds
-                       js(0)=keybnd(j)
-                       js(1)=Min(lstbnd(1,j),lstbnd(2,j))
-                       js(2)=Max(lstbnd(1,j),lstbnd(2,j))
+                       js(0)=bond%key(j)
+                       js(1)=Min(bond%lst(1,j),bond%lst(2,j))
+                       js(2)=Max(bond%lst(1,j),bond%lst(2,j))
 
                        If (js(1) == is(1) .and. js(2) == is(2)) Then
                           If (l_str .and. l_top) Call warning(420,Real(i,wp),Real(j,wp),0.0_wp)
@@ -2136,7 +2136,7 @@ Subroutine read_field                      &
 
                  megtet=megtet+nummols(itmols)*numteth(itmols)
 
-                 megbnd=megbnd+nummols(itmols)*numbonds(itmols)
+                 megbnd=megbnd+nummols(itmols)*bond%num(itmols)
                  megang=megang+nummols(itmols)*numang(itmols)
                  megdih=megdih+nummols(itmols)*numdih(itmols)
                  meginv=meginv+nummols(itmols)*numinv(itmols)
@@ -2171,7 +2171,7 @@ Subroutine read_field                      &
 ! Deal with intarmolecular potential tables:
 ! read & generate intramolecular potential & virial arrays
 
-        If (lt_bnd) Call bonds_table_read(bond_name,comm)
+        If (bond%l_tab) Call bonds_table_read(bond_name,comm)
         If (lt_ang) Call angles_table_read(angl_name,comm)
         If (lt_dih) Call dihedrals_table_read(dihd_name,comm)
         If (lt_inv) Call inversions_table_read(invr_name,comm)
@@ -2183,7 +2183,7 @@ Subroutine read_field                      &
 ! Only for the requested types of PDFs (re)initialise:
 ! number of unique intramolecular PDFs and auxiliary identity arrays
 
-           If (mxgbnd1 > 0) Then
+           If (bond%bin_pdf > 0) Then
               ntpbnd = 0 ! for bonds
               bond_name = ' '
            End If
@@ -2206,11 +2206,11 @@ Subroutine read_field                      &
            ndihed=0
            ninver=0
            Do itmols=1,ntpmls
-              Do ibond=1,numbonds(itmols)*Merge(1,0,mxgbnd1 > 0)
+              Do ibond=1,bond%num(itmols)*Merge(1,0,bond%bin_pdf > 0)
                  nbonds=nbonds+1
 
-                 iatm1=lstbnd(1,nbonds)
-                 iatm2=lstbnd(2,nbonds)
+                 iatm1=bond%lst(1,nbonds)
+                 iatm2=bond%lst(2,nbonds)
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
@@ -2232,17 +2232,17 @@ Subroutine read_field                      &
 
                  Do i=1,ntpbnd
                     If (bond_name(i) == idbond) Then
-                       ldfbnd(nbonds)=i ! Re-point from zero to type
+                       bond%ldf(nbonds)=i ! Re-point from zero to type
                        Exit
                     End If
                  End Do
 
-                 If (ldfbnd(nbonds) == 0) Then
+                 If (bond%ldf(nbonds) == 0) Then
                     ntpbnd=ntpbnd+1
 
                     bond_name(ntpbnd)=idbond
-                    ldfbnd(0)=ntpbnd      ! NUTBPDF
-                    ldfbnd(nbonds)=ntpbnd ! Re-point from zero to type
+                    bond%ldf(0)=ntpbnd      ! NUTBPDF
+                    bond%ldf(nbonds)=ntpbnd ! Re-point from zero to type
                  End If
               End Do
 
@@ -2407,10 +2407,10 @@ Subroutine read_field                      &
 ! Only for the requested types of PDFs (re)initialise number of unique intramolecular PDFs
 ! and allocate PDFs arrays and record species and presence(frozen and non-frozen)
 
-           If (mxgbnd1 > 0) Then
+           If (bond%bin_pdf > 0) Then
               ntpbnd = 0 ! for bonds
-              Call allocate_bond_dst_arrays() ! as it depends on ldfbnd(0)
-!             typbnd = 0 ! initialised in bonds_module
+              Call allocate_bond_dst_arrays() ! as it depends on bond%ldf(0)
+!             bond%typ = 0 ! initialised in bonds_module
            End If
            If (mxgang1 > 0) Then
               ntpang = 0 ! for angles
@@ -2434,18 +2434,18 @@ Subroutine read_field                      &
            ndihed=0
            ninver=0
            Do itmols=1,ntpmls
-              Do ibond=1,numbonds(itmols)*Merge(1,0,mxgbnd1 > 0)
+              Do ibond=1,bond%num(itmols)*Merge(1,0,bond%bin_pdf > 0)
                  nbonds=nbonds+1
 
-                 iatm1=lstbnd(1,nbonds)
-                 iatm2=lstbnd(2,nbonds)
+                 iatm1=bond%lst(1,nbonds)
+                 iatm2=bond%lst(2,nbonds)
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
 
 ! ntpbnd total number of unique BPDFs
 
-                 j=ldfbnd(nbonds)
+                 j=bond%ldf(nbonds)
                  If (j > ntpbnd) Then
 
 ! record species and presence(frozen and non-frozen)
@@ -2458,17 +2458,17 @@ Subroutine read_field                      &
                     End Do
 
                     If (katom1 <= katom2) Then
-                       typbnd(1,ntpbnd)=katom1
-                       typbnd(2,ntpbnd)=katom2
+                       bond%typ(1,ntpbnd)=katom1
+                       bond%typ(2,ntpbnd)=katom2
                     Else
-                       typbnd(1,ntpbnd)=katom2
-                       typbnd(2,ntpbnd)=katom1
+                       bond%typ(1,ntpbnd)=katom2
+                       bond%typ(2,ntpbnd)=katom1
                     End If
 
                     If (frzsit(isite1)*frzsit(isite2) == 0) Then
-                       typbnd(0,ntpbnd)=typbnd(0,ntpbnd)+nummols(itmols)
+                       bond%typ(0,ntpbnd)=bond%typ(0,ntpbnd)+nummols(itmols)
                     Else
-                       typbnd(-1,ntpbnd)=typbnd(-1,ntpbnd)+nummols(itmols)
+                       bond%typ(-1,ntpbnd)=bond%typ(-1,ntpbnd)+nummols(itmols)
                     End If
 
                  Else If (j > 0) Then
@@ -2476,9 +2476,9 @@ Subroutine read_field                      &
 ! accumulate the existing type and presence(frozen and non-frozen)
 
                     If (frzsit(isite1)*frzsit(isite2) == 0) Then
-                       typbnd(0,j)=typbnd(0,j)+nummols(itmols)
+                       bond%typ(0,j)=bond%typ(0,j)+nummols(itmols)
                     Else
-                       typbnd(-1,j)=typbnd(-1,j)+nummols(itmols)
+                       bond%typ(-1,j)=bond%typ(-1,j)+nummols(itmols)
                     End If
 
                  End If
@@ -2686,7 +2686,7 @@ Subroutine read_field                      &
               nsite=nsite+numsit(itmols)
            End Do
 
-           mxtana = Max(ntpbnd*Merge(1,0,mxgbnd1 > 0), &
+           mxtana = Max(ntpbnd*Merge(1,0,bond%bin_pdf > 0), &
                         ntpang*Merge(1,0,mxgang1 > 0), &
                         ntpdih*Merge(1,0,mxgdih1 > 0), &
                         ntpinv*Merge(1,0,mxginv1 > 0))
@@ -2694,7 +2694,7 @@ Subroutine read_field                      &
 
 ! Deallocate possibly allocated auxiliary intramolecular TPs/PDFs arrays
 
-        If (lt_bnd .or. mxgbnd1 > 0) Deallocate (bond_name, Stat=fail(1))
+        If (bond%l_tab .or. bond%bin_pdf > 0) Deallocate (bond_name, Stat=fail(1))
         If (lt_ang .or. mxgang1 > 0) Deallocate (angl_name, Stat=fail(2))
         If (lt_dih .or. mxgdih1 > 0) Deallocate (dihd_name, Stat=fail(3))
         If (lt_inv .or. mxginv1 > 0) Deallocate (invr_name, Stat=fail(4))
@@ -4835,11 +4835,11 @@ Subroutine report_topology               &
      End Do
 
      frzbnd=0
-     Do ibond=1,numbonds(itmols)
+     Do ibond=1,bond%num(itmols)
         nbonds=nbonds+1
 
-        iatm1=lstbnd(1,nbonds)
-        iatm2=lstbnd(2,nbonds)
+        iatm1=bond%lst(1,nbonds)
+        iatm2=bond%lst(2,nbonds)
 
         isite1 = nsite + iatm1
         isite2 = nsite + iatm2
@@ -4942,7 +4942,7 @@ Subroutine scan_field                                &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,mxtteth,mxteth,mxftet,             &
-           mtbond,mxtbnd,mxbond,mxfbnd,rcbnd,mxgbnd, &
+           mtbond,bond%max_types,bond%max_bonds,bond%max_legend,bond%rcut,bond%bin_tab, &
            mtangl,mxtang,mxangl,mxfang,mxgang,       &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
@@ -4989,7 +4989,7 @@ Subroutine scan_field                                &
                        mxtpmf(1:2),mxpmf,ipmf,jpmf,mxfpmf,                     &
                        numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
                        numteth,mtteth,mxtteth,mxteth,iteth,mxftet,             &
-                       numbonds,mtbond,mxtbnd,mxbond,ibonds,mxfbnd,mxgbnd,     &
+                       bond%num,mtbond,bond%max_types,bond%max_bonds,ibonds,bond%max_legend,bond%bin_tab,     &
                        numang,mtangl,mxtang,mxangl,iang,mxfang,mxgang,         &
                        numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,mxgdih,         &
                        numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,mxginv,           &
@@ -4997,7 +4997,7 @@ Subroutine scan_field                                &
                        mxmet,mxmed,mxmds,itpmet,                        &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
-  Real( Kind = wp ) :: rcbnd,rvdw,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
+  Real( Kind = wp ) :: bond%rcut,rvdw,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
   mxompl=0      ! default of maximum order of poles (charges)
@@ -5042,13 +5042,13 @@ Subroutine scan_field                                &
   mxtteth=0
   mxftet =0
 
-  numbonds=0
+  bond%num=0
   mtbond=0
-  mxbond=0
-  mxtbnd=0
-  mxfbnd=0
-  rcbnd =0.0_wp
-  mxgbnd=-2
+  bond%max_bonds=0
+  bond%max_types=0
+  bond%max_legend=0
+  bond%rcut =0.0_wp
+  bond%bin_tab=-2
 
   numang=0
   mtangl=0
@@ -5341,16 +5341,16 @@ Subroutine scan_field                                &
 
               Else If (word(1:5) == 'bonds') Then
 
-!                 lt_bnd=.false. ! initialised in bonds_module.f90
+!                 bond%l_tab=.false. ! initialised in bonds_module.f90
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 numbonds=Nint(word_2_real(word))
-                 mtbond=Max(mtbond,numbonds)
-                 mxtbnd=mxtbnd+numbonds
-                 mxbond=mxbond+nummols*numbonds
+                 bond%num=Nint(word_2_real(word))
+                 mtbond=Max(mtbond,bond%num)
+                 bond%max_types=bond%max_types+bond%num
+                 bond%max_bonds=bond%max_bonds+nummols*bond%num
 
-                 Do ibonds=1,numbonds
+                 Do ibonds=1,bond%num
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                        Call get_line(safe,nfield,record,comm)
@@ -5358,10 +5358,10 @@ Subroutine scan_field                                &
                        Call get_word(record,word)
                     End Do
 
-                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) lt_bnd=.true.
+                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) bond%l_tab=.true.
                  End Do
 
-                 If (lt_bnd) Then
+                 If (bond%l_tab) Then
                     If (comm%idnode == 0) Open(Unit=ntable, File='TABBND')
 
                     Call get_line(safe,ntable,record,comm)
@@ -5374,11 +5374,11 @@ Subroutine scan_field                                &
                     If (i > 0) record(i:i)=' ' ! TABBND if it's in .xvg format
 
                     Call get_word(record,word)
-                    rcbnd=Max(rcbnd,word_2_real(word))
+                    bond%rcut=Max(bond%rcut,word_2_real(word))
 
                     Call get_word(record,word)
                     k=Nint(word_2_real(word))
-                    mxgbnd=Max(mxgbnd,k+4)
+                    bond%bin_tab=Max(bond%bin_tab,k+4)
 
                     If (comm%idnode == 0) Close(Unit=ntable)
                  End If
@@ -5850,8 +5850,8 @@ Subroutine scan_field                                &
   If (mxteth > 0) mxftet=1+1 ! One tether per particle
   mxf(5)=mxftet
 
-  If (mxbond > 0) mxfbnd=(mxb*(mxb+1))+1
-  mxf(6)=mxfbnd
+  If (bond%max_bonds > 0) bond%max_legend=(mxb*(mxb+1))+1
+  mxf(6)=bond%max_legend
 
   If (mxangl > 0) mxfang=(mxb+1)**2/2+1
   mxf(7)=mxfang

@@ -13,7 +13,7 @@ Module system
   Use statistics, Only : stats_type
   Use rdfs,        Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density,   Only : ncfzdn,zdens
-  Use bonds,       Only : ldfbnd,ncfbnd,dstbnd,numbonds,lstbnd,keybnd
+  Use bonds,       Only : bond%ldf,bond%n_frames,bond%dst,bond%num,bond%lst,bond%key
   Use angles,      Only : ldfang,ncfang,dstang,numang,lstang,keyang
   Use dihedrals,   Only : ldfdih,ncfdih,dstdih,numdih,lstdih
   Use inversions,  Only : ldfinv,ncfinv,dstinv,numinv,lstinv
@@ -175,9 +175,9 @@ Module system
            green%time =0.0_wp
         End If
 
-        If (mxgbnd1 > 0) Then
-           ncfbnd=0
-           dstbnd=0.0_wp
+        If (bond%bin_pdf > 0) Then
+           bond%n_frames=0
+           bond%dst=0.0_wp
         End If
 
         If (mxgang1 > 0) Then
@@ -255,7 +255,7 @@ Module system
              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%time
            End If
 
-           If (mxgbnd1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,dstbnd
+           If (bond%bin_pdf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,bond%dst
            If (mxgang1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfang,dstang
            If (mxgdih1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfdih,dstdih
            If (mxginv1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfinv,dstinv
@@ -285,7 +285,7 @@ Module system
              Read(Unit=nrest, IOStat=keyio, End=100) green%time
            End If
 
-           If (mxgbnd1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfbnd,dstbnd
+           If (bond%bin_pdf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfbnd,bond%dst
            If (mxgang1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfang,dstang
            If (mxgdih1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfdih,dstdih
            If (mxginv1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfinv,dstinv
@@ -304,7 +304,7 @@ Module system
         If (lzdn) ncfzdn=Nint(dncfzdn)
         If (green%samp > 0) green%step=Nint(dvafstep)
 
-        If (mxgbnd1 > 0) ncfbnd=Nint(dncfbnd)
+        If (bond%bin_pdf > 0) bond%n_frames=Nint(dncfbnd)
         If (mxgang1 > 0) ncfang=Nint(dncfang)
         If (mxgdih1 > 0) ncfdih=Nint(dncfdih)
         If (mxginv1 > 0) ncfinv=Nint(dncfinv)
@@ -413,12 +413,12 @@ Module system
 
 ! bonds table - broadcast and normalise
 
-        If (mxgbnd1 > 0) Then
-           Call gbcast(comm,ncfbnd,0)
-           Do k=1,ldfbnd(0)
-              Call gbcast(comm,dstbnd(:,k),0)
+        If (bond%bin_pdf > 0) Then
+           Call gbcast(comm,bond%n_frames,0)
+           Do k=1,bond%ldf(0)
+              Call gbcast(comm,bond%dst(:,k),0)
 
-              dstbnd(:,k) = dstbnd(:,k) * r_mxnode
+              bond%dst(:,k) = bond%dst(:,k) * r_mxnode
            End Do
         End If
 
@@ -1166,11 +1166,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
            safe=(safe .and. safel)
 
            safel=.true.
-           Do ibond=1,numbonds(itmols)
+           Do ibond=1,bond%num(itmols)
               nbonds=nbonds+1
 
-              iatm=lstbnd(1,nbonds)-indatm1
-              jatm=lstbnd(2,nbonds)-indatm1
+              iatm=bond%lst(1,nbonds)-indatm1
+              jatm=bond%lst(2,nbonds)-indatm1
 
               safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
               safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
@@ -1189,7 +1189,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
               x=Abs(xm(jatm)-xm(iatm))
               y=Abs(ym(jatm)-ym(iatm))
               z=Abs(zm(jatm)-zm(iatm))
-              If (keybnd(nbonds) > 0) Then
+              If (bond%key(nbonds) > 0) Then
                  t=c2
               Else
                  t=3.0_wp*c1
@@ -1208,7 +1208,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
                    'possible distance violation: ', r, ' > ', t, ' Angstroms'
                  Call info(message,.true.)
 
-                 If (keybnd(nbonds) > 0) Then
+                 If (bond%key(nbonds) > 0) Then
                     t=c3
                  Else
                     t=3.0_wp*c2
@@ -1453,7 +1453,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
               nshels=nshels-numshl(itmols)
               nconst=nconst-numcon(itmols)
               nrigid=nrigid-numrgd(itmols)
-              nbonds=nbonds-numbonds(itmols)
+              nbonds=nbonds-bond%num(itmols)
               nangle=nangle-numang(itmols)
               ndihed=ndihed-numdih(itmols)
               ninver=ninver-numinv(itmols)
@@ -1909,15 +1909,15 @@ Subroutine system_revive                                      &
 
 ! globally sum bonds' distributions information before saving
 
-     If (mxgbnd1 > 0) Then
+     If (bond%bin_pdf > 0) Then
 
-! maximum dstbnd that can be summed in each step
+! maximum bond%dst that can be summed in each step
 
-        nsum = mxbuff/(mxgbnd1+1)
+        nsum = mxbuff/(bond%bin_pdf+1)
         If (nsum == 0) Call error(200)
 
-        Do i=1,ldfbnd(0),nsum
-           Call gsum(comm,dstbnd(:,i:Min(i+nsum-1,ldfbnd(0))))
+        Do i=1,bond%ldf(0),nsum
+           Call gsum(comm,bond%dst(:,i:Min(i+nsum-1,bond%ldf(0))))
         End Do
 
      End If
@@ -2011,7 +2011,7 @@ Subroutine system_revive                                      &
           Write(Unit=nrest, Fmt=forma, Advance='No') green%time
         End If
 
-        If (mxgbnd1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfbnd,wp),dstbnd
+        If (bond%bin_pdf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(bond%n_frames,wp),bond%dst
         If (mxgang1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfang,wp),dstang
         If (mxgdih1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfdih,wp),dstdih
         If (mxginv1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfinv,wp),dstinv
@@ -2044,7 +2044,7 @@ Subroutine system_revive                                      &
           Write(Unit=nrest) green%time
         End If
 
-        If (mxgbnd1 > 0) Write(Unit=nrest) Real(ncfbnd,wp),dstbnd
+        If (bond%bin_pdf > 0) Write(Unit=nrest) Real(bond%n_frames,wp),bond%dst
         If (mxgang1 > 0) Write(Unit=nrest) Real(ncfang,wp),dstang
         If (mxgdih1 > 0) Write(Unit=nrest) Real(ncfdih,wp),dstdih
         If (mxginv1 > 0) Write(Unit=nrest) Real(ncfinv,wp),dstinv
@@ -2196,7 +2196,7 @@ Subroutine system_revive                                      &
 
 ! globally divide bonds' distributions data between nodes
 
-     If (mxgbnd1 > 0) dstbnd = dstbnd * r_mxnode
+     If (bond%bin_pdf > 0) bond%dst = bond%dst * r_mxnode
 
 ! globally divide angles' distributions data between nodes
 

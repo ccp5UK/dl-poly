@@ -20,7 +20,7 @@ Module deport_data
 
   Use tethers,      Only : ntteth,listtet,legtet
 
-  Use bonds,        Only : ntbond,listbnd,legbnd
+  Use bonds,        Only : bond%n_types,bond%list,bond%legend
   Use angles,       Only : ntangl,listang,legang
   Use dihedrals,    Only : ntdihd,listdih,legdih,lx_dih
   Use inversions,   Only : ntinv,listinv,leginv
@@ -678,15 +678,15 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
 
 ! pack bond details
 
-           jj=legbnd(0,i)
+           jj=bond%legend(0,i)
            If (jj > 0) Then
               Do ll=1,jj
                  If (imove+3 <= iblock) Then
-                    kk=legbnd(ll,i)
+                    kk=bond%legend(ll,i)
 
                     Do k=0,2
                        imove=imove+1
-                       buffer(imove)=Real(listbnd(k,kk),wp)
+                       buffer(imove)=Real(bond%list(k,kk),wp)
                     End Do
                  Else
                     imove=imove+3
@@ -896,7 +896,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
 
         legtet(:,keep)=legtet(:,i)
 
-        legbnd(:,keep)=legbnd(:,i)
+        bond%legend(:,keep)=bond%legend(:,i)
         legang(:,keep)=legang(:,i)
         legdih(:,keep)=legdih(:,i)
         leginv(:,keep)=leginv(:,i)
@@ -1114,7 +1114,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
 
         jteths=ntteth
 
-        jbonds=ntbond
+        jbonds=bond%n_types
         jangle=ntangl
         jdihed=ntdihd
         jinver=ntinv
@@ -1434,7 +1434,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
 
 ! unpack bond details
 
-        legbnd(:,newatm) = 0
+        bond%legend(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
            jj=Nint(buffer(kmove+1))
            iatm=Nint(buffer(kmove+2))
@@ -1445,11 +1445,11 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
 
            kbonds=0
            check=.true.
-           Do While (check .and. kbonds < Min(jbonds,mxbond))
+           Do While (check .and. kbonds < Min(jbonds,bond%max_bonds))
               kbonds=kbonds+1
-              check=.not.( jj   == listbnd(0,kbonds) .and. &
-                           iatm == listbnd(1,kbonds) .and. &
-                           jatm == listbnd(2,kbonds) )
+              check=.not.( jj   == bond%list(0,kbonds) .and. &
+                           iatm == bond%list(1,kbonds) .and. &
+                           jatm == bond%list(2,kbonds) )
            End Do
 
 ! insert new bond details
@@ -1457,18 +1457,18 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
            If (check) Then
               jbonds=jbonds+1
 
-              If (jbonds <= mxbond) Then
-                 listbnd(0,jbonds)=jj
-                 listbnd(1,jbonds)=iatm
-                 listbnd(2,jbonds)=jatm
+              If (jbonds <= bond%max_bonds) Then
+                 bond%list(0,jbonds)=jj
+                 bond%list(1,jbonds)=iatm
+                 bond%list(2,jbonds)=jatm
 
-                 Call tag_legend(safe1,newatm,jbonds,legbnd,mxfbnd)
+                 Call tag_legend(safe1,newatm,jbonds,bond%legend,bond%max_legend)
               Else
                  safe=.false.
                  Call warning('too many bond units')
               End If
            Else
-              Call tag_legend(safe1,newatm,kbonds,legbnd,mxfbnd)
+              Call tag_legend(safe1,newatm,kbonds,bond%legend,bond%max_legend)
            End If
         End Do
         kmove=kmove+1
@@ -1632,7 +1632,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
 
         ntteth=jteths
 
-        ntbond=jbonds
+        bond%n_types=jbonds
         ntangl=jangle
         ntdihd=jdihed
         ntinv =jinver
@@ -2720,7 +2720,7 @@ Subroutine relocate_particles       &
         If (megpmf > 0) safe(3)=(ntpmf  <= mxpmf )
         If (m_rgd  > 0) safe(4)=(ntrgd  <= mxrgd )
         If (megtet > 0) safe(5)=(ntteth <= mxteth)
-        If (megbnd > 0) safe(6)=(ntbond <= mxbond)
+        If (megbnd > 0) safe(6)=(bond%n_types <= bond%max_bonds)
         If (megang > 0) safe(7)=(ntangl <= mxangl)
         If (megdih > 0) safe(8)=(ntdihd <= mxdihd)
         If (meginv > 0) safe(9)=(ntinv  <= mxinv )
@@ -2733,7 +2733,7 @@ Subroutine relocate_particles       &
            itmp(3)=ntpmf  ; jtmp(3)=mxpmf
            itmp(4)=ntrgd  ; jtmp(4)=mxrgd
            itmp(5)=ntteth ; jtmp(5)=mxteth
-           itmp(6)=ntbond ; jtmp(6)=mxbond
+           itmp(6)=bond%n_types ; jtmp(6)=bond%max_bonds
            itmp(7)=ntangl ; jtmp(7)=mxangl
            itmp(8)=ntdihd ; jtmp(8)=mxdihd
            itmp(9)=ntinv  ; jtmp(9)=mxinv
@@ -2783,7 +2783,7 @@ Subroutine relocate_particles       &
            (mxteth,ntteth,Ubound(listtet,Dim=1),listtet,mxftet,legtet,comm)
 
         If (megbnd > 0) Call compress_book_intra &
-           (mxbond,ntbond,Ubound(listbnd,Dim=1),listbnd,mxfbnd,legbnd,comm)
+           (bond%max_bonds,bond%n_types,Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,comm)
         If (megang > 0) Call compress_book_intra &
            (mxangl,ntangl,Ubound(listang,Dim=1),listang,mxfang,legang,comm)
         If (megdih > 0) Call compress_book_intra &

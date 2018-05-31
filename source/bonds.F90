@@ -103,32 +103,32 @@ Contains
 
     fail = 0
 
-    Allocate (numbonds(1:mxtmls),        Stat = fail(1))
-    Allocate (keybnd(1:mxtbnd),          Stat = fail(2))
-    Allocate (lstbnd(1:2,1:mxtbnd),      Stat = fail(3))
-    Allocate (listbnd(0:2,1:mxbond),     Stat = fail(4))
-    Allocate (legbnd(0:mxfbnd,1:mxatdm), Stat = fail(5))
-    Allocate (prmbnd(1:mxpbnd,1:mxtbnd), Stat = fail(6))
-    If (lt_bnd) &
-    Allocate (ltpbnd(0:mxtbnd),          Stat = fail(7))
-    If (mxgbnd1 > 0) &
-    Allocate (ldfbnd(0:mxtbnd),          Stat = fail(8))
+    Allocate (bond%num(1:mxtmls),        Stat = fail(1))
+    Allocate (bond%key(1:bond%max_types),          Stat = fail(2))
+    Allocate (bond%lst(1:2,1:bond%max_types),      Stat = fail(3))
+    Allocate (bond%list(0:2,1:bond%max_bonds),     Stat = fail(4))
+    Allocate (bond%legend(0:bond%max_legend,1:mxatdm), Stat = fail(5))
+    Allocate (bond%param(1:bond%max_param,1:bond%max_types), Stat = fail(6))
+    If (bond%l_tab) &
+    Allocate (bond%ltp(0:bond%max_types),          Stat = fail(7))
+    If (bond%bin_pdf > 0) &
+    Allocate (bond%ldf(0:bond%max_types),          Stat = fail(8))
 
     If (Any(fail > 0)) Call error(1014)
 
-    numbonds = 0
-    keybnd   = 0
-    lstbnd   = 0
-    listbnd  = 0
-    legbnd   = 0
+    bond%num = 0
+    bond%key   = 0
+    bond%lst   = 0
+    bond%list  = 0
+    bond%legend   = 0
 
-    prmbnd   = 0.0_wp
+    bond%param   = 0.0_wp
 
-    If (lt_bnd) &
-    ltpbnd   = 0
+    If (bond%l_tab) &
+    bond%ltp   = 0
 
-    If (mxgbnd1 > 0) &
-    ldfbnd   = 0
+    If (bond%bin_pdf > 0) &
+    bond%ldf   = 0
 
   End Subroutine allocate_bonds_arrays
 
@@ -139,13 +139,13 @@ Contains
 
     fail = 0
 
-    Allocate (vbnd(-1:mxgbnd,1:ltpbnd(0)), Stat = fail(1))
-    Allocate (gbnd(-1:mxgbnd,1:ltpbnd(0)), Stat = fail(2))
+    Allocate (bond%tab_potential(-1:bond%bin_tab,1:bond%ltp(0)), Stat = fail(1))
+    Allocate (bond%tab_force(-1:bond%bin_tab,1:bond%ltp(0)), Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1072)
 
-    vbnd = 0.0_wp
-    gbnd = 0.0_wp
+    bond%tab_potential = 0.0_wp
+    bond%tab_force = 0.0_wp
 
   End Subroutine allocate_bond_pot_arrays
 
@@ -155,12 +155,12 @@ Contains
 
     fail = 0
 
-    Allocate (typbnd(-1:2,1:ldfbnd(0)),dstbnd(1:mxgbnd1,1:ldfbnd(0)), Stat = fail)
+    Allocate (bond%typ(-1:2,1:bond%ldf(0)),bond%dst(1:bond%bin_pdf,1:bond%ldf(0)), Stat = fail)
 
     If (fail > 0) Call error(1073)
 
-    typbnd = 0
-    dstbnd = 0.0_wp
+    bond%typ = 0
+    bond%dst = 0.0_wp
 
   End Subroutine allocate_bond_dst_arrays
 
@@ -193,7 +193,7 @@ Contains
   Character ( Len = 256 )  :: messages(2)
 
   fail = 0
-  Allocate (dstdbnd(0:mxgbnd1,1:ldfbnd(0)),pmf(0:mxgbnd1+2),vir(0:mxgbnd1+2), Stat = fail)
+  Allocate (dstdbnd(0:bond%bin_pdf,1:bond%ldf(0)),pmf(0:bond%bin_pdf+2),vir(0:bond%bin_pdf+2), Stat = fail)
   If (fail > 0) Then
      Write(message,'(a)') 'bonds_compute - allocation failure'
      Call error(0,message)
@@ -205,28 +205,28 @@ Contains
 
 ! grid interval for pdf tables
 
-  delr = rcbnd/Real(mxgbnd1,wp)
+  delr = bond%rcut/Real(bond%bin_pdf,wp)
   rdlr = 1.0_wp/delr
 
 ! resampling grid and grid interval for pmf tables
 
-  ngrid = Max(Nint(rcbnd/delr_max),mxgbnd1,mxgbnd-4)
-  dgrid = rcbnd/Real(ngrid,wp)
+  ngrid = Max(Nint(bond%rcut/delr_max),bond%bin_pdf,bond%bin_tab-4)
+  dgrid = bond%rcut/Real(ngrid,wp)
 
 ! loop over all valid PDFs to get valid totals
 
   kk=0
   ll=0
-  Do i=1,ldfbnd(0)
-     If (typbnd(0,i) > 0) Then
+  Do i=1,bond%ldf(0)
+     If (bond%typ(0,i) > 0) Then
         kk=kk+1
-        ll=ll+typbnd(0,i)
+        ll=ll+bond%typ(0,i)
      End If
   End Do
 
 ! normalisation factor
 
-  factor = 1.0_wp/Real(ncfbnd,wp)
+  factor = 1.0_wp/Real(bond%n_frames,wp)
 
 ! the lower bound to nullify the nearly-zero histogram (PDF) values
 
@@ -234,7 +234,7 @@ Contains
 
   Call info('',.true.)
   Call info('BONDS : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)',.true.)
-  Write(message,'(a,i10,1x,f8.3,3(1x,i10))') '# bins, cutoff, frames, types: ',mxgbnd1,rcbnd,ncfbnd,kk,ll
+  Write(message,'(a,i10,1x,f8.3,3(1x,i10))') '# bins, cutoff, frames, types: ',bond%bin_pdf,bond%rcut,bond%n_frames,kk,ll
   Call info(message,.true.)
 
 ! open RDF file and write headers
@@ -243,7 +243,7 @@ Contains
      Open(Unit=npdfdt, File='BNDDAT', Status='replace')
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a)') '# BONDS: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dr_bin'
-     Write(npdfdt,'(a,i10,1x,f8.3,2(1x,i10))') '# bins, cutoff, frames, types: ',mxgbnd1,rcbnd,ncfbnd,kk
+     Write(npdfdt,'(a,i10,1x,f8.3,2(1x,i10))') '# bins, cutoff, frames, types: ',bond%bin_pdf,bond%rcut,bond%n_frames,kk
      Write(npdfdt,'(a)') '#'
      Write(npdfdt,'(a,f8.5)') '# r(Angstroms)  PDF_norm(r)  PDF_norm(r)/dVol(r)   @   dr_bin = ',delr
      Write(npdfdt,'(a)') '#'
@@ -252,26 +252,26 @@ Contains
 ! loop over all valid PDFs
 
   j=0
-  Do i=1,ldfbnd(0)
-     If (typbnd(0,i) > 0) Then
+  Do i=1,bond%ldf(0)
+     If (bond%typ(0,i) > 0) Then
         j=j+1
 
         Write(messages(1),'(a,2(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-          unqatm(typbnd(1,i)),unqatm(typbnd(2,i)),j,typbnd(0,i)
+          unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i)
         Write(messages(2),'(a,f8.5)') 'r(Angstroms)  P_bond(r)  Sum_P_bond(r)   @   dr_bin = ',delr
         Call info(messages,2,.true.)
         If (comm%idnode == 0) Then
            Write(npdfdt,'(/,a,2(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-                unqatm(typbnd(1,i)),unqatm(typbnd(2,i)),j,typbnd(0,i)
+                unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i)
         End If
 
 ! global sum of data on all nodes
 
-        Call gsum(comm,dstbnd(1:mxgbnd1,i))
+        Call gsum(comm,bond%dst(1:bond%bin_pdf,i))
 
 ! factor in instances (first, pdfbnd is normalised to unity)
 
-        factor1=factor/Real(typbnd(0,i),wp)
+        factor1=factor/Real(bond%typ(0,i),wp)
 
 ! running integration of pdf
 
@@ -280,10 +280,10 @@ Contains
 ! loop over distances
 
         zero=.true.
-        Do ig=1,mxgbnd1
-           If (zero .and. ig < (mxgbnd1-3)) zero=(dstbnd(ig+2,i) <= 0.0_wp)
+        Do ig=1,bond%bin_pdf
+           If (zero .and. ig < (bond%bin_pdf-3)) zero=(bond%dst(ig+2,i) <= 0.0_wp)
 
-           pdfbnd= dstbnd(ig,i)*factor1
+           pdfbnd= bond%dst(ig,i)*factor1
            sum = sum + pdfbnd
 
 ! null it if < pdfzero
@@ -336,7 +336,7 @@ Contains
   If (comm%idnode == 0) Then
      Open(Unit=npdgdt, File='BNDPMF', Status='replace')
      Write(npdgdt,'(a)') '# '//cfgname
-     Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*Real(mxgbnd1,wp),mxgbnd1,delr,kk, &
+     Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*Real(bond%bin_pdf,wp),bond%bin_pdf,delr,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
 
      Open(Unit=npdfdt, File='BNDTAB', Status='replace')
@@ -348,16 +348,16 @@ Contains
 ! loop over all valid PDFs
 
   j=0
-  Do i=1,ldfbnd(0)
-     If (typbnd(0,i) > 0) Then
+  Do i=1,bond%ldf(0)
+     If (bond%typ(0,i) > 0) Then
         j=j+1
 
         If (comm%idnode == 0)  Then
            Write(npdgdt,'(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(typbnd(1,i)),unqatm(typbnd(2,i)),j,typbnd(0,i), &
+                unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i), &
                 ' (type, index, instances)'
            Write(npdfdt,'(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(typbnd(1,i)),unqatm(typbnd(2,i)),j,typbnd(0,i), &
+                unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i), &
                 ' (type, index, instances)'
         End If
 
@@ -367,7 +367,7 @@ Contains
         dfed0 = 10.0_wp
         dfed  = 10.0_wp
 
-        Do ig=1,mxgbnd1
+        Do ig=1,bond%bin_pdf
            tmp = Real(ig,wp)-0.5_wp
            rrr = tmp*delr
 
@@ -378,7 +378,7 @@ Contains
                  fed  = 0.0_wp
               End If
 
-              If (ig < mxgbnd1-1) Then
+              If (ig < bond%bin_pdf-1) Then
                  If (dstdbnd(ig+1,i) <= zero_plus .and. dstdbnd(ig+2,i) > zero_plus) &
                     dstdbnd(ig+1,i) = 0.5_wp*(dstdbnd(ig,i)+dstdbnd(ig+2,i))
               End If
@@ -394,7 +394,7 @@ Contains
               Else
                  dfed =-dfed0
               End If
-           Else If (ig == mxgbnd1) Then
+           Else If (ig == bond%bin_pdf) Then
               If      (dstdbnd(ig,i) > zero_plus .and. dstdbnd(ig-1,i) > zero_plus) Then
                  dfed = Log(dstdbnd(ig,i)/dstdbnd(ig-1,i))
               Else If (dfed > 0.0_wp) Then
@@ -429,10 +429,10 @@ Contains
 
         pmf(0)         = 2.0_wp*pmf(1)        -pmf(2)
         vir(0)         = 2.0_wp*vir(1)        -vir(2)
-        pmf(mxgbnd1+1) = 2.0_wp*pmf(mxgbnd1)  -pmf(mxgbnd1-1)
-        vir(mxgbnd1+1) = 2.0_wp*vir(mxgbnd1)  -vir(mxgbnd1-1)
-        pmf(mxgbnd1+2) = 2.0_wp*pmf(mxgbnd1+1)-pmf(mxgbnd1)
-        vir(mxgbnd1+2) = 2.0_wp*vir(mxgbnd1+1)-vir(mxgbnd1)
+        pmf(bond%bin_pdf+1) = 2.0_wp*pmf(bond%bin_pdf)  -pmf(bond%bin_pdf-1)
+        vir(bond%bin_pdf+1) = 2.0_wp*vir(bond%bin_pdf)  -vir(bond%bin_pdf-1)
+        pmf(bond%bin_pdf+2) = 2.0_wp*pmf(bond%bin_pdf+1)-pmf(bond%bin_pdf)
+        vir(bond%bin_pdf+2) = 2.0_wp*vir(bond%bin_pdf+1)-vir(bond%bin_pdf)
 
 ! resample using 3pt interpolation
 
@@ -523,8 +523,8 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
   Character ( Len = 256 )        :: message
 
   fail=0
-  Allocate (lunsafe(1:mxbond),lstopt(0:2,1:mxbond),       Stat=fail(1))
-  Allocate (xdab(1:mxbond),ydab(1:mxbond),zdab(1:mxbond), Stat=fail(2))
+  Allocate (lunsafe(1:bond%max_bonds),lstopt(0:2,1:bond%max_bonds),       Stat=fail(1))
+  Allocate (xdab(1:bond%max_bonds),ydab(1:bond%max_bonds),zdab(1:bond%max_bonds), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'bond_forces allocation failure'
      Call error(0,message)
@@ -533,13 +533,13 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! calculate atom separation vectors
 
-  Do i=1,ntbond
+  Do i=1,bond%n_types
      lunsafe(i)=.false.
 
 ! indices of bonded atoms
 
-     ia=local_index(listbnd(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
-     ib=local_index(listbnd(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
+     ia=local_index(bond%list(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
+     ib=local_index(bond%list(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
 
      lstopt(0,i)=0
      If (ia > 0 .and. ib > 0) Then ! Tag
@@ -569,15 +569,15 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! Check for uncompressed units
 
-  safe(1) = .not. Any(lunsafe(1:ntbond))
+  safe(1) = .not. Any(lunsafe(1:bond%n_types))
   Call gcheck(comm,safe(1))
   If (.not.safe(1)) Then
      Do j=0,comm%mxnode-1
         If (comm%idnode == j) Then
-           Do i=1,ntbond
+           Do i=1,bond%n_types
               If (lunsafe(i)) Then
-                Write(message,'(a,2(i10,a))') 'global unit number', listbnd(0,1), &
-                 ' , with a head particle number', listbnd(1,i), &
+                Write(message,'(a,2(i10,a))') 'global unit number', bond%list(0,1), &
+                 ' , with a head particle number', bond%list(1,i), &
                  ' contributes towards next error'
                 Call warning(message)
               End If
@@ -590,7 +590,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! periodic boundary condition
 
-  Call images(imcon,cell,ntbond,xdab,ydab,zdab)
+  Call images(imcon,cell,bond%n_types,xdab,ydab,zdab)
 
 ! Initialise safety flag
 
@@ -624,13 +624,13 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 ! Recover bin size and increment counter
 
   If (Mod(isw,2) == 0) Then
-     rdelr  = Real(mxgbnd1,wp)/rcbnd
-     ncfbnd = ncfbnd + 1
+     rdelr  = Real(bond%bin_pdf,wp)/bond%rcut
+     bond%n_frames = bond%n_frames + 1
   End If
 
 ! loop over all specified chemical bond potentials
 
-  Do i=1,ntbond
+  Do i=1,bond%n_types
      If (lstopt(0,i) > 0) Then
 
 ! indices of bonded atoms
@@ -645,18 +645,18 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! index of potential function parameters
 
-        kk=listbnd(0,i)
-        keyb = Abs(keybnd(kk))
+        kk=bond%list(0,i)
+        keyb = Abs(bond%key(kk))
 
 ! accumulate the histogram (distribution)
 
         If (Mod(isw,2) == 0 .and. ia <= natms) Then
-           j = ldfbnd(kk)
-           l = Min(1+Int(rab*rdelr),mxgbnd1)
+           j = bond%ldf(kk)
+           l = Min(1+Int(rab*rdelr),bond%bin_pdf)
 
-           dstbnd(l,j) = dstbnd(l,j) + 1.0_wp
+           bond%dst(l,j) = bond%dst(l,j) + 1.0_wp
 
-           If (rab > rcbnd) safe(3)=.false. ! catch bondbreaking
+           If (rab > bond%rcut) safe(3)=.false. ! catch bondbreaking
         End If
         If (isw == 0) Cycle
 
@@ -673,8 +673,8 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! harmonic potential
 
-           k =prmbnd(1,kk)
-           r0=prmbnd(2,kk)
+           k =bond%param(1,kk)
+           r0=bond%param(2,kk)
            dr=rab-r0
 
            term=k*dr
@@ -686,9 +686,9 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! Morse potential
 
-           e0=prmbnd(1,kk)
-           r0=prmbnd(2,kk)
-           k =prmbnd(3,kk)
+           e0=bond%param(1,kk)
+           r0=bond%param(2,kk)
+           k =bond%param(3,kk)
 
            term=Exp(-k*(rab-r0))
 
@@ -699,8 +699,8 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! 12-6 potential
 
-           a=prmbnd(1,kk)
-           b=prmbnd(2,kk)
+           a=bond%param(1,kk)
+           b=bond%param(2,kk)
 
            term=rab**(-6)
 
@@ -711,8 +711,8 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! Lennard-Jones potential
 
-           eps=prmbnd(1,kk)
-           sig=prmbnd(2,kk)
+           eps=bond%param(1,kk)
+           sig=bond%param(2,kk)
 
            term=(sig/rab)**6
 
@@ -723,11 +723,11 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! restrained harmonic
 
-           k =prmbnd(1,kk)
-           r0=prmbnd(2,kk)
+           k =bond%param(1,kk)
+           r0=bond%param(2,kk)
            dr=rab-r0
            dra=Abs(dr)
-           rc=prmbnd(3,kk)
+           rc=bond%param(3,kk)
 
            omega=k*(0.5_wp*Min(dra,rc)**2 + rc*Max(dra-rc,0.0_wp))
            gamma=-k*Sign(Min(dra,rc),dr)/rab
@@ -736,11 +736,11 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! quartic potential
 
-           k2=prmbnd(1,kk)
-           r0=prmbnd(2,kk)
+           k2=bond%param(1,kk)
+           r0=bond%param(2,kk)
            dr=rab-r0
-           k3=prmbnd(3,kk)
-           k4=prmbnd(4,kk)
+           k3=bond%param(3,kk)
+           k4=bond%param(4,kk)
 
            dr2=dr**2
 
@@ -751,9 +751,9 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! Buckingham exp-6 potential
 
-           a  =prmbnd(1,kk)
-           rho=prmbnd(2,kk)
-           c  =prmbnd(3,kk)
+           a  =bond%param(1,kk)
+           rho=bond%param(2,kk)
+           c  =bond%param(3,kk)
 
            term1=a*Exp(-rab/rho)
            term2=-c/rab**6
@@ -768,7 +768,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! scaled charge product times dielectric constants
 
-           chgprd=prmbnd(1,kk)*chge(ia)*chge(ib)*r4pie0/epsq
+           chgprd=bond%param(1,kk)*chge(ia)*chge(ib)*r4pie0/epsq
            If ((Abs(chgprd) > zero_plus .or. mximpl > 0) .and. keyfce > 0) Then
               If (mximpl > 0) Then
                  Call intra_mcoul(keyfce,rcut,alpha,epsq,ia,ib,chgprd, &
@@ -795,9 +795,9 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! extended FENE (Finite Extensive Non-linear Elastic) potential
 
-           k    =prmbnd(1,kk)
-           r0   =prmbnd(2,kk)
-           delta=prmbnd(3,kk)
+           k    =bond%param(1,kk)
+           r0   =bond%param(2,kk)
+           delta=bond%param(3,kk)
            dr   =rab-delta
 
            term =1.0_wp-(dr/r0)**2
@@ -814,8 +814,8 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! MM3-bond-stretch potential
 
-           k =prmbnd(1,kk)
-           r0=prmbnd(2,kk)
+           k =bond%param(1,kk)
+           r0=bond%param(2,kk)
            dr=rab-r0
 
            e0=2.55_wp*dr
@@ -827,25 +827,25 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 ! TABBND potential
 
-           j = ltpbnd(kk)
-           If (rab <= vbnd(-1,j)) Then ! rab <= cutpot
-              rdr = gbnd(-1,j) ! 1.0_wp/delpot
+           j = bond%ltp(kk)
+           If (rab <= bond%tab_potential(-1,j)) Then ! rab <= cutpot
+              rdr = bond%tab_force(-1,j) ! 1.0_wp/delpot
 
               l   = Int(rab*rdr)
               ppp = rab*rdr - Real(l,wp)
 
-              vk  = vbnd(l,j)
-              vk1 = vbnd(l+1,j)
-              vk2 = vbnd(l+2,j)
+              vk  = bond%tab_potential(l,j)
+              vk1 = bond%tab_potential(l+1,j)
+              vk2 = bond%tab_potential(l+2,j)
 
               t1 = vk  + (vk1 - vk)*ppp
               t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
               omega = t1 + (t2-t1)*ppp*0.5_wp
 
-              vk  = gbnd(l,j) ; If (l == 0) vk = vk*rab
-              vk1 = gbnd(l+1,j)
-              vk2 = gbnd(l+2,j)
+              vk  = bond%tab_force(l,j) ; If (l == 0) vk = vk*rab
+              vk1 = bond%tab_force(l+1,j)
+              vk2 = bond%tab_force(l+2,j)
 
               t1 = vk  + (vk1 - vk)*ppp
               t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -976,7 +976,7 @@ Subroutine bonds_table_read(bond_name,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Character( Len = 16 ), Intent( In    ) :: bond_name(1:mxtbnd)
+  Character( Len = 16 ), Intent( In    ) :: bond_name(1:bond%max_types)
   Type( comms_type),     Intent( InOut ) :: comm
   Logical                :: safe,remake
   Character( Len = 200 ) :: record
@@ -1017,7 +1017,7 @@ Subroutine bonds_table_read(bond_name,comm)
 
   delpot = cutpot/Real(ngrid,wp)
 
-  dlrpot = rcbnd/Real(mxgbnd-4,wp)
+  dlrpot = bond%rcut/Real(bond%bin_tab-4,wp)
 
 ! check grid spacing
 
@@ -1029,7 +1029,7 @@ Subroutine bonds_table_read(bond_name,comm)
   If (delpot > delr_max .and. (.not.safe)) Then
     Write(messages(1),'(a,1p,e15.7)') 'expected (maximum) radial increment : ', delr_max
     Write(messages(2),'(a,1p,e15.7)') 'TABBND file actual radial increment : ', delpot
-    Write(messages(3),'(a,0p,i10)') ' expected (minimum) number of grid points : ', mxgbnd-4
+    Write(messages(3),'(a,0p,i10)') ' expected (minimum) number of grid points : ', bond%bin_tab-4
     Write(messages(4),'(a,0p,i10)') ' TABBND file actual number of grid points : ', ngrid
     Call info(messages,4,.true.)
 
@@ -1041,19 +1041,19 @@ Subroutine bonds_table_read(bond_name,comm)
   If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
-     Write(message,'(a,i10)') ' TABBND arrays resized for mxgrid = ', mxgbnd-4
+     Write(message,'(a,i10)') ' TABBND arrays resized for mxgrid = ', bond%bin_tab-4
      Call info(message,.true.)
   End If
 
 ! compare grids dimensions
 
-  If (ngrid < mxgbnd-4) Then
-     Call warning(270,Real(ngrid,wp),Real(mxgbnd-4,wp),0.0_wp)
+  If (ngrid < bond%bin_tab-4) Then
+     Call warning(270,Real(ngrid,wp),Real(bond%bin_tab-4,wp),0.0_wp)
      Call error(48)
   End If
 
   fail=0
-  Allocate (read_type(1:ltpbnd(0)),          Stat=fail(1))
+  Allocate (read_type(1:bond%ltp(0)),          Stat=fail(1))
   Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'error - bonds_table_read allocation failure'
@@ -1062,7 +1062,7 @@ Subroutine bonds_table_read(bond_name,comm)
   Call allocate_bond_pot_arrays()
 
   read_type=0 ! initialise read_type
-  Do rtbnd=1,ltpbnd(0)
+  Do rtbnd=1,bond%ltp(0)
      Call get_line(safe,ntable,record,comm)
      If (.not.safe) Go To 100
 
@@ -1100,10 +1100,10 @@ Subroutine bonds_table_read(bond_name,comm)
 ! read potential arrays if potential is defined
 
      itbnd=0
-     Do jtbnd=1,ltpbnd(0)
+     Do jtbnd=1,bond%ltp(0)
         If (bond_name(jtbnd) == idbond) Then
-           Do itbnd=1,mxtbnd
-              If (ltpbnd(itbnd) == jtbnd) Exit
+           Do itbnd=1,bond%max_types
+              If (bond%ltp(itbnd) == jtbnd) Exit
            End Do
            Exit
         End If
@@ -1201,7 +1201,7 @@ Subroutine bonds_table_read(bond_name,comm)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=1,mxgbnd-4
+        Do i=1,bond%bin_tab-4
            rrr = Real(i,wp)*dlrpot
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)
@@ -1225,8 +1225,8 @@ Subroutine bonds_table_read(bond_name,comm)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-           vbnd(i,jtbnd) = t1 + (t2-t1)*ppp*0.5_wp
-           vbnd(i,jtbnd) = vbnd(i,jtbnd)*engunit ! convert to internal units
+           bond%tab_potential(i,jtbnd) = t1 + (t2-t1)*ppp*0.5_wp
+           bond%tab_potential(i,jtbnd) = bond%tab_potential(i,jtbnd)*engunit ! convert to internal units
 
            vk  = bufvir(l)
 
@@ -1247,34 +1247,34 @@ Subroutine bonds_table_read(bond_name,comm)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-           gbnd(i,jtbnd) = t1 + (t2-t1)*ppp*0.5_wp
-           gbnd(i,jtbnd) = gbnd(i,jtbnd)*engunit ! convert to internal units
+           bond%tab_force(i,jtbnd) = t1 + (t2-t1)*ppp*0.5_wp
+           bond%tab_force(i,jtbnd) = bond%tab_force(i,jtbnd)*engunit ! convert to internal units
         End Do
 
-        vbnd(-1,jtbnd) = cutpot
-        gbnd(-1,jtbnd) = 1.0_wp/delpot
+        bond%tab_potential(-1,jtbnd) = cutpot
+        bond%tab_force(-1,jtbnd) = 1.0_wp/delpot
      Else
-        Do i=1,mxgbnd-4
-           vbnd(i,jtbnd) = bufpot(i)*engunit ! convert to internal units
-           gbnd(i,jtbnd) = bufvir(i)*engunit ! convert to internal units
+        Do i=1,bond%bin_tab-4
+           bond%tab_potential(i,jtbnd) = bufpot(i)*engunit ! convert to internal units
+           bond%tab_force(i,jtbnd) = bufvir(i)*engunit ! convert to internal units
         End Do
 
 ! linear extrapolation for the grid point just beyond the cutoff
 
-        vbnd(mxgbnd-3,jtbnd) = 2.0_wp*vbnd(mxgbnd-4,jtbnd) - vbnd(mxgbnd-5,jtbnd)
-        gbnd(mxgbnd-3,jtbnd) = 2.0_wp*gbnd(mxgbnd-4,jtbnd) - gbnd(mxgbnd-5,jtbnd)
+        bond%tab_potential(bond%bin_tab-3,jtbnd) = 2.0_wp*bond%tab_potential(bond%bin_tab-4,jtbnd) - bond%tab_potential(bond%bin_tab-5,jtbnd)
+        bond%tab_force(bond%bin_tab-3,jtbnd) = 2.0_wp*bond%tab_force(bond%bin_tab-4,jtbnd) - bond%tab_force(bond%bin_tab-5,jtbnd)
 
-        vbnd(-1,jtbnd) = cutpot
-        gbnd(-1,jtbnd) = 1.0_wp/delpot
+        bond%tab_potential(-1,jtbnd) = cutpot
+        bond%tab_force(-1,jtbnd) = 1.0_wp/delpot
      End If
 
-! grid point at 0 and linear extrapolation for the grid point at mxgbnd-2
+! grid point at 0 and linear extrapolation for the grid point at bond%bin_tab-2
 
-     vbnd(0,jtbnd) = bufpot(0)
-     gbnd(0,jtbnd) = bufvir(0)
+     bond%tab_potential(0,jtbnd) = bufpot(0)
+     bond%tab_force(0,jtbnd) = bufvir(0)
 
-     vbnd(mxgbnd-2,jtbnd) = 2.0_wp*vbnd(mxgbnd-3,jtbnd) - vbnd(mxgbnd-4,jtbnd)
-     gbnd(mxgbnd-2,jtbnd) = 2.0_wp*gbnd(mxgbnd-3,jtbnd) - gbnd(mxgbnd-4,jtbnd)
+     bond%tab_potential(bond%bin_tab-2,jtbnd) = 2.0_wp*bond%tab_potential(bond%bin_tab-3,jtbnd) - bond%tab_potential(bond%bin_tab-4,jtbnd)
+     bond%tab_force(bond%bin_tab-2,jtbnd) = 2.0_wp*bond%tab_force(bond%bin_tab-3,jtbnd) - bond%tab_force(bond%bin_tab-4,jtbnd)
   End Do
 
   If (comm%idnode == 0) Then
@@ -1309,45 +1309,45 @@ End Subroutine bonds_table_read
   Subroutine cleanup(bond)
     Type(bonds_type) :: bond
 
-    If (Allocated(bond%numbonds)) Then
-      Deallocate(bond%numbonds)
+    If (Allocated(bond%num)) Then
+      Deallocate(bond%num)
     End If
-    If (Allocated(bond%keybnd)) Then
-      Deallocate(bond%keybnd)
-    End If
-
-    If (Allocated(bond%lstbnd)) Then
-      Deallocate(bond%lstbnd)
-    End If
-    If (Allocated(bond%listbnd)) Then
-      Deallocate(bond%listbnd)
-    End If
-    If (Allocated(bond%legbnd)) Then
-      Deallocate(bond%legbnd)
+    If (Allocated(bond%key)) Then
+      Deallocate(bond%key)
     End If
 
-    If (Allocated(bond%prmbnd)) Then
-      Deallocate(bond%prmbnd)
+    If (Allocated(bond%lst)) Then
+      Deallocate(bond%lst)
+    End If
+    If (Allocated(bond%list)) Then
+      Deallocate(bond%list)
+    End If
+    If (Allocated(bond%legend)) Then
+      Deallocate(bond%legend)
     End If
 
-    If (Allocated(bond%ltpbnd)) Then
-      Deallocate(bond%ltpbnd)
-    End If
-    If (Allocated(bond%vbnd)) Then
-      Deallocate(bond%vbnd)
-    End If
-    If (Allocated(bond%gbnd)) Then
-      Deallocate(bond%gbnd)
+    If (Allocated(bond%param)) Then
+      Deallocate(bond%param)
     End If
 
-    If (Allocated(bond%ldfbnd)) Then
-      Deallocate(bond%ldfbnd)
+    If (Allocated(bond%ltp)) Then
+      Deallocate(bond%ltp)
     End If
-    If (Allocated(bond%typbnd)) Then
-      Deallocate(bond%typbnd)
+    If (Allocated(bond%tab_potential)) Then
+      Deallocate(bond%tab_potential)
     End If
-    If (Allocated(bond%dstbnd)) Then
-      Deallocate(bond%dstbnd)
+    If (Allocated(bond%tab_force)) Then
+      Deallocate(bond%tab_force)
+    End If
+
+    If (Allocated(bond%ldf)) Then
+      Deallocate(bond%ldf)
+    End If
+    If (Allocated(bond%typ)) Then
+      Deallocate(bond%typ)
+    End If
+    If (Allocated(bond%dst)) Then
+      Deallocate(bond%dst)
     End If
     End Subroutine cleanup
 End Module bonds

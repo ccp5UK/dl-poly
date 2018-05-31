@@ -11,7 +11,7 @@ Module drivers
                            rgdxxx,rgdmeg,ntrgd,lshmv_rgd,lishp_rgd,lashp_rgd
   Use setup, Only : boltz,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
   Use angles, Only : mxgang1
-  Use bonds, Only : mxgbnd1
+  Use bonds, Only : bond%bin_pdf
   Use dihedrals, Only : mxgdih1
   Use inversions, Only : mxginv1 
   Use site,        Only : dofsit

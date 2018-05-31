@@ -54,10 +54,10 @@ Contains
 
     ! include sites on basis of chemical bonds
 
-    Do i=1,ntbond
-      If (Abs(keybnd(listbnd(0,i))) > 0) Then
-        ia=listbnd(1,i)
-        ib=listbnd(2,i)
+    Do i=1,bond%n_types
+      If (Abs(bond%key(bond%list(0,i))) > 0) Then
+        ia=bond%list(1,i)
+        ib=bond%list(2,i)
 
         ia0=local_index(ia,nlast,lsi,lsa)
         ib0=local_index(ib,nlast,lsi,lsa)

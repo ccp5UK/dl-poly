@@ -5,7 +5,7 @@ Module kontrol
   Use configuration,     Only : sysname
   Use mpole,     Only : thole
   Use langevin,   Only : langevin_allocate_arrays
-  Use bonds,      Only : rcbnd
+  Use bonds,      Only : bond%rcut
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : metal_type
   Use poisson,    Only : poisson_type
@@ -3157,7 +3157,7 @@ Subroutine read_control                                &
      If (mxgana == 0) Then
         Call info('no intramolecular distribution collection requested',.true.)
      Else
-        If (mxgbnd1 > 0 .and. mxgang1 > 0 .and. &
+        If (bond%bin_pdf > 0 .and. mxgang1 > 0 .and. &
             mxgdih1 > 0 .and. mxginv1 > 0) Then
            Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):',.true.)
         Else
@@ -3171,18 +3171,18 @@ Subroutine read_control                                &
                        Merge(nstdih , i , nstdih > 0), &
                        Merge(nstinv , i , nstinv > 0))
 
-        If (mxgbnd1 > 0) Then
+        If (bond%bin_pdf > 0) Then
            If (nstbnd == 0 .or. (nstbnd > nstana .and. nstana > 0)) Then
               nstbnd = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
            End If
-           j=Merge(1, 0, grdbnd /= mxgbnd1)
-           k=Merge(1, 0, Abs(rcbnd-rcb_d) > 1.0e-3_wp)
+           j=Merge(1, 0, grdbnd /= bond%bin_pdf)
+           k=Merge(1, 0, Abs(bond%rcut-rcb_d) > 1.0e-3_wp)
            Write(message,'(2(a,i10),a,f7.2,a)') &
              'bonds      - collection every ',nstbnd,' step(s); ngrid = ', &
-             mxgbnd1,' points; cutoff = ',rcbnd, ' Angs'
+             bond%bin_pdf,' points; cutoff = ',bond%rcut, ' Angs'
            Call info(message,.true.)
            If (i+j+k > 1) Then
              Write(message,'(3(a,i10))') &
@@ -3623,9 +3623,9 @@ Subroutine read_control                                &
 End Subroutine read_control
 
 Subroutine scan_control                                    &
-           (rcbnd,mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
+           (bond%rcut,mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
+           mxgana,bond%bin_pdf,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
@@ -3652,10 +3652,10 @@ Subroutine scan_control                                    &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon,mxshl
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
-  Integer,           Intent(   Out ) :: mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1, &
+  Integer,           Intent(   Out ) :: mxgana,bond%bin_pdf,mxgang1,mxgdih1,mxginv1, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
-  Real( Kind = wp ), Intent( InOut ) :: rvdw,rcbnd,cell(1:9)
+  Real( Kind = wp ), Intent( InOut ) :: rvdw,bond%rcut,cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -3702,7 +3702,7 @@ Subroutine scan_control                                    &
 ! default switches for intramolecular analysis grids
 
   la_ana = .false. ; mxgana  = 0
-  la_bnd = .false. ; mxgbnd1 = 0
+  la_bnd = .false. ; bond%bin_pdf = 0
   la_ang = .false. ; mxgang1 = 0
   la_dih = .false. ; mxgdih1 = 0
   la_inv = .false. ; mxginv1 = 0
@@ -4089,22 +4089,22 @@ Subroutine scan_control                                    &
            la_inv = .true.
 
            mxgana = Abs(Nint(word_2_real(word)))
-           mxgbnd1 = Max(mxgbnd1,mxgana)
+           bond%bin_pdf = Max(bond%bin_pdf,mxgana)
            mxgang1 = Max(mxgang1,mxgana)
            mxgdih1 = Max(mxgdih1,mxgana)
            mxginv1 = Max(mxginv1,mxgana)
 
            Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-           rcbnd=Max(rcbnd,word_2_real(word,0.0_wp))
+           bond%rcut=Max(bond%rcut,word_2_real(word,0.0_wp))
         Else If (akey == 'bon') Then
            la_bnd = .true.
 
-           mxgbnd1 = Max(mxgbnd1,Abs(Nint(word_2_real(word))))
+           bond%bin_pdf = Max(bond%bin_pdf,Abs(Nint(word_2_real(word))))
 
            Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-           rcbnd=Max(rcbnd,word_2_real(word,0.0_wp))
+           bond%rcut=Max(bond%rcut,word_2_real(word,0.0_wp))
         Else If (akey == 'ang') Then
            la_ang = .true.
 
@@ -4322,7 +4322,7 @@ Subroutine scan_control                                    &
 
   If (la_ana) Then
      If (mxgana > 0) Then
-        mxgbnd1 = Max(mxgbnd1,mxgana)
+        bond%bin_pdf = Max(bond%bin_pdf,mxgana)
         mxgang1 = Max(mxgang1,mxgana)
         mxgdih1 = Max(mxgdih1,mxgana)
         mxginv1 = Max(mxginv1,mxgana)
@@ -4331,8 +4331,8 @@ Subroutine scan_control                                    &
 ! switch indicators for set_bounds
 
      If (la_bnd) Then
-        If (mxgbnd1 == 0) mxgbnd1 = -1
-        rcbnd=Max(rcbnd,rcbnd_def)
+        If (bond%bin_pdf == 0) bond%bin_pdf = -1
+        bond%rcut=Max(bond%rcut,rcbnd_def)
      End If
      If (la_ang .and. mxgang1 == 0) mxgang1 = -1
      If (la_dih .and. mxgdih1 == 0) mxgdih1 = -1
@@ -4341,7 +4341,7 @@ Subroutine scan_control                                    &
 ! mxgana by construction equals the largest possible grid
 ! or 1 (positive) as an indicator for analysis
 
-     mxgana=Max(1,mxgbnd1,mxgang1,mxgdih1,mxginv1)
+     mxgana=Max(1,bond%bin_pdf,mxgang1,mxgdih1,mxginv1)
   End If
 
 ! Sort electrostatics
@@ -4375,7 +4375,7 @@ Subroutine scan_control                                    &
 
 ! Sort rcut as the maximum of all valid cutoffs
 
-  rcut=Max(rcut,rvdw,met%rcut,rkim,2.0_wp*Max(rcter,rcbnd)+1.0e-6_wp)
+  rcut=Max(rcut,rvdw,met%rcut,rkim,2.0_wp*Max(rcter,bond%rcut)+1.0e-6_wp)
 
   If (comm%idnode == 0) Rewind(nread)
 
@@ -4617,9 +4617,9 @@ Subroutine scan_control                                    &
               met%rcut=0.0_wp
               If (.not.l_str) Then
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                    rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
+                    rcut=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
                  Else
-                    rcut=Max(rcut,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                    rcut=Max(rcut,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
                  End If
               End If
            End If
@@ -4640,9 +4640,9 @@ Subroutine scan_control                                    &
                 (lrvdw .or. lrmet .or. lter .or. kimim /= ' ') ) Then
               lrcut=.true.
               If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                 rcut=Max(rvdw,met%rcut,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                 rcut=Max(rvdw,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
               Else
-                 rcut=Max(rcut,rvdw,met%rcut,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                 rcut=Max(rcut,rvdw,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
               End If
            End If
 
@@ -4655,9 +4655,9 @@ Subroutine scan_control                                    &
               If (.not.l_str) Then
                  lrcut=.true.
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                    rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
+                    rcut=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
                  Else
-                    rcut=Max(rcut,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                    rcut=Max(rcut,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
                  End If
               End If
            End If
