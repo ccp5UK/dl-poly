@@ -235,16 +235,62 @@ Contains
     Call invert(cell,rcell,det)
     If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-    pois%b=0.0_wp
+#ifdef __OPENMP
+    Block
+      Real( Kind = wp ), Dimension(:,:,:), Allocatable :: b
+      Real( Kind = wp ) :: ccsum
+      Real( Kind = wp ) :: ccxxx,ccyyy,cczzz
 
-    pois%ccsum=0.0_wp
-    pois%ccxxx=0.0_wp
-    pois%ccyyy=0.0_wp
-    pois%cczzz=0.0_wp
+      Allocate(b(Lbound(pois%b,1):Ubound(pois%b,1), &
+                 Lbound(pois%b,2):Ubound(pois%b,2), &
+                 Lbound(pois%b,3):Ubound(pois%b,3)))
+      b=0.0_wp
 
-    pois%normb=0.0_wp
+      ccsum=0.0_wp
+      ccxxx=0.0_wp
+      ccyyy=0.0_wp
+      cczzz=0.0_wp
 
-    !$omp paralleldo default(shared) private(n) reduction(+:pois%normb,pois%b,pois%ccsum,pois%ccxxx,pois%ccyyy,pois%cczzz)
+      !$omp paralleldo default(shared) private(n) reduction(+:b,ccsum,ccxxx,ccyyy,cczzz)
+      Do n=1,natms !nlast
+         txx=pois%kmaxa_r*(rcell(1)*xxx(n)+rcell(4)*yyy(n)+rcell(7)*zzz(n)+0.5_wp)
+         tyy=pois%kmaxb_r*(rcell(2)*xxx(n)+rcell(5)*yyy(n)+rcell(8)*zzz(n)+0.5_wp)
+         tzz=pois%kmaxc_r*(rcell(3)*xxx(n)+rcell(6)*yyy(n)+rcell(9)*zzz(n)+0.5_wp)
+
+  ! global indeces
+
+         i=Int(txx)
+         j=Int(tyy)
+         k=Int(tzz)
+
+  ! get local indces
+
+         i = i - pois%ixb + 2
+         j = j - pois%iyb + 2
+         k = k - pois%izb + 2
+
+         If ( (i < 1 .or. i > pois%block_x) .or. &
+              (j < 1 .or. j > pois%block_y) .or. &
+              (k < 1 .or. k > pois%block_z) .or. &
+              (Abs(chge(n)) <= zero_plus) ) Cycle
+
+         b(i,j,k)=b(i,j,k)+chge(n)*reps0dv
+
+         ccsum=ccsum+Abs(chge(n))
+         ccxxx=ccxxx+Abs(chge(n))*xxx(n)
+         ccyyy=ccyyy+Abs(chge(n))*yyy(n)
+         cczzz=cczzz+Abs(chge(n))*zzz(n)
+      End Do
+      !$omp End paralleldo
+
+      pois%b=b
+
+      pois%ccsum=ccsum
+      pois%ccxxx=ccxxx
+      pois%ccyyy=ccyyy
+      pois%cczzz=cczzz
+    End Block
+#else
     Do n=1,natms !nlast
        txx=pois%kmaxa_r*(rcell(1)*xxx(n)+rcell(4)*yyy(n)+rcell(7)*zzz(n)+0.5_wp)
        tyy=pois%kmaxb_r*(rcell(2)*xxx(n)+rcell(5)*yyy(n)+rcell(8)*zzz(n)+0.5_wp)
@@ -274,7 +320,8 @@ Contains
        pois%ccyyy=pois%ccyyy+Abs(chge(n))*yyy(n)
        pois%cczzz=pois%cczzz+Abs(chge(n))*zzz(n)
     End Do
-    !$omp End paralleldo
+
+#endif
 
     pois%normb=Sum(pois%b**2)
     Call gsum(comm,pois%normb)
@@ -291,6 +338,7 @@ Contains
     Type( poisson_type ), Intent( InOut ) :: pois
     Type(comms_type), Intent( InOut )   :: comm
 
+    Real( Kind = wp ) :: normphi0_local, normphi1_local
     Real( Kind = wp ) :: Totstart, Totend, dphi
     Integer           :: mmm, i,j,k
     Real( Kind = wp ) :: element,  sm1,sm2,sm3,sm4 ! SM stands for Stoyan Markov (long live!!!)
@@ -298,14 +346,15 @@ Contains
 
     Call gtime(Totstart)
     pois%converged=.false.
-    pois%normphi0=0.0_wp
+    normphi0_local=0.0_wp
 
-    !$omp paralleldo default(shared) private(k) reduction(+:pois%normphi0)
+    !$omp paralleldo default(shared) private(k) reduction(+:normphi0_local)
     Do k=1,pois%block_z
-       pois%normphi0 = pois%normphi0 + Sum(pois%phi(1:pois%block_x,1:pois%block_y,k)**2)
+       normphi0_local = normphi0_local + Sum(pois%phi(1:pois%block_x,1:pois%block_y,k)**2)
     End Do
     !$omp End paralleldo
 
+    pois%normphi0=normphi0_local
     Call gsum(comm,pois%normphi0)
 
     Do mmm=1,pois%mxitjb+3 ! Za seki sluchaj, proverka sa stabilno shozhdane
@@ -354,14 +403,15 @@ Contains
        End Do
        !$omp End paralleldo
 
-       pois%normphi1=0.0_wp
-       !$omp paralleldo default(shared) private(k) reduction(+:pois%normphi1)
+       normphi1_local=0.0_wp
+       !$omp paralleldo default(shared) private(k) reduction(+:normphi1_local)
        Do k=1,pois%block_z
           pois%phi(:,:,k)=pois%phi0(:,:,k)
-          pois%normphi1=pois%normphi1+Sum(pois%phi(1:pois%block_x,1:pois%block_y,k)**2)
+          normphi1_local=normphi1_local+Sum(pois%phi(1:pois%block_x,1:pois%block_y,k)**2)
        End Do
        !$omp End paralleldo
 
+       pois%normphi1=normphi1_local
        Call gsum(comm, pois%normphi1)
 
        dphi=Abs(pois%normphi1-pois%normphi0)
@@ -392,6 +442,7 @@ Contains
     Type( poisson_type ), Intent( InOut ) :: pois
     Type(comms_type), Intent( InOut )  :: comm
 
+    Real( Kind = wp ) :: normphi0_local,normphi1_local
     Real( Kind = wp ) :: alfa, beta, omega, rho1,rho0,rv,tt,ts
     Real( Kind = wp ) :: Totstart,Totend
 
@@ -425,13 +476,14 @@ Contains
     End Do
     !$omp End paralleldo
 
-    pois%normphi0=0.0_wp
-    !$omp paralleldo reduction(+:pois%normphi0)
+    normphi0_local=0.0_wp
+    !$omp paralleldo reduction(+:normphi0_local)
     Do kk=1,pois%block_z
-       pois%normphi0 = pois%normphi0 + Sum(pois%phi(1:pois%block_x,1:pois%block_y,kk)**2)
+       normphi0_local = normphi0_local + Sum(pois%phi(1:pois%block_x,1:pois%block_y,kk)**2)
     End Do
     !$omp End parallel
 
+    pois%normphi0=normphi0_local
     Call gsum(comm,pois%normphi0)
     Do mmm=1,pois%mxitcg
        rho0 = rho1
@@ -501,12 +553,13 @@ Contains
        End Do
        !$omp End paralleldo
 
-       pois%normphi1=0.0_wp
-       !$omp paralleldo default(shared) private(kk) reduction(+:pois%normphi1)
+       normphi1_local=0.0_wp
+       !$omp paralleldo default(shared) private(kk) reduction(+:normphi1_local)
        Do kk=1,pois%block_z
-          pois%normphi1 = pois%normphi1 + Sum(pois%phi(1:pois%block_x,1:pois%block_y,kk)**2)
+          normphi1_local = normphi1_local + Sum(pois%phi(1:pois%block_x,1:pois%block_y,kk)**2)
        End Do
        !$omp End paralleldo
+       pois%normphi1=normphi1_local
        Call gsum(comm,pois%normphi1)
 
        If (pois%maxbicgst > 0 .and. mmm > pois%maxbicgst) Then
