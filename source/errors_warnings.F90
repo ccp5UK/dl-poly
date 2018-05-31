@@ -1973,10 +1973,6 @@ Subroutine info_sl(message,master_only)
 
         Write(ounit,'(/,1x,a)') 'error - deallocation failure in angles_module -> deallocate_angles_arrays'
 
-     Else If (kode == 1029) Then
-
-        Write(ounit,'(/,1x,a)') 'error - deallocation failure in bonds_module -> deallocate_bonds_arrays'
-
      Else If (kode == 1030) Then
 
         Write(ounit,'(/,1x,a)') 'error - deallocation failure in core_shell -> deallocate_core_shell_arrays'

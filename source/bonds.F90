@@ -12,47 +12,85 @@ Module bonds
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp
-  Use setup,           Only : mxtmls,mxtbnd,mxbond,mxfbnd,mxpbnd,mxgbnd1,mxatdm, &
-                           mxgbnd, fourpi,boltz,delr_max,nrite,npdfdt,npdgdt, &
-                           engunit,zero_plus,r4pie0,mximpl,ntable,delr_max,nrite, &
-                           mxtbnd,mxgbnd,zero_plus,engunit
+  Use setup,           Only : mxtmls,mxatdm, &
+                              fourpi,boltz,delr_max,nrite,npdfdt,npdgdt, &
+                              engunit,zero_plus,r4pie0,mximpl,ntable,delr_max,nrite, &
+                              zero_plus,engunit
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
-                            chge,xxx,yyy,zzz,fxx,fyy,fzz, cfgname
+                              chge,xxx,yyy,zzz,fxx,fyy,fzz, cfgname
   Use site,            Only : ntpatm,unqatm
   Use parse,           Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info
-  Use numerics,        Only : images, local_index 
-  Use coul_mpole,     Only : intra_mcoul 
-  Use coul_spole,      Only : intra_coul 
-
+  Use numerics,        Only : images, local_index
+  Use coul_mpole,      Only : intra_mcoul
+  Use coul_spole,      Only : intra_coul
   Implicit None
 
-  Logical,                        Save :: lt_bnd = .false. ! no tabulated potentials opted
+  Private
 
-  Integer,                        Save :: ntbond  = 0 , &
-                                          ntbond1 = 0 , &
-                                          ncfbnd  = 0
+  Type, Public :: bonds_type
+    Private
 
-  Real( Kind = wp ),              Save :: rcbnd = 0.0_wp
+    !> Tabulated potential
+    Logical, Public :: l_tab = .false. ! no tabulated potentials opted
+
+    !> Number of bond types (potentials)
+    Integer, Public :: n_types  = 0
+    Integer, Public :: n_types1 = 0
+    !> Number of frames
+    Integer, Public :: n_frames  = 0
+
+    !> Cut off
+    Real( Kind = wp ), Public :: rcut = 0.0_wp
 
 
-  Integer,           Allocatable, Save :: numbonds(:),keybnd(:)
-  Integer,           Allocatable, Save :: lstbnd(:,:),listbnd(:,:),legbnd(:,:)
+    Integer, Allocatable, Public :: num(:),key(:)
 
-  Real( Kind = wp ), Allocatable, Save :: prmbnd(:,:)
+    !> Atom indices (local)
+    Integer, Allocatable, Public :: lst(:,:)
+    !> Atom indices
+    Integer, Allocatable, Public :: list(:,:)
+    !> Legend
+    Integer, Allocatable, Public :: legend(:,:)
 
-! Possible tabulated calculation arrays
+    !> Bonded parameters (force constant, etc.)
+    Real( Kind = wp ), Allocatable, Public :: param(:,:)
 
-  Integer,           Allocatable, Save :: ltpbnd(:)
-  Real( Kind = wp ), Allocatable, Save :: vbnd(:,:),gbnd(:,:)
+    ! Possible tabulated calculation arrays
+    Integer,           Allocatable, Public :: ltp(:)
+    !> Tabulated potential
+    Real( Kind = wp ), Allocatable, Public :: tab_potential(:,:)
+    !> Tabulated force
+    Real( Kind = wp ), Allocatable, Public :: tab_force(:,:)
 
-! Possible distribution arrays
+    ! Possible distribution arrays
+    Integer,           Allocatable, Public :: ldf(:),typ(:,:)
+    Real( Kind = wp ), Allocatable, Public :: dst(:,:)
 
-  Integer,           Allocatable, Save :: ldfbnd(:),typbnd(:,:)
-  Real( Kind = wp ), Allocatable, Save :: dstbnd(:,:)
+    ! Maximums
+    !> Maximum number of bond types
+    Integer( Kind = wi ), Public :: max_types
+    !> Maximum number of bonds per node
+    Integer( Kind = wi ), Public :: max_bonds
+    !> Length of legend array
+    Integer( Kind = wi ), Public :: max_legend
+    !> Maximum number of bonds parameters
+    Integer( Kind = wi ), Public :: max_param
 
-  Public :: allocate_bonds_arrays , deallocate_bonds_arrays , &
+    ! Number of bins
+    !> pdf bins
+    Integer( Kind = wi ), Public :: bin_pdf
+    !> Tabulated potential bins
+    Integer( Kind = wi ), Public :: bin_tab
+
+  Contains
+    Private
+
+    Final :: cleanup
+  End Type bonds_type
+
+  Public :: allocate_bonds_arrays , &
             allocate_bond_pot_arrays , allocate_bond_dst_arrays, &
             bonds_compute, bonds_forces, bonds_table_read
 
@@ -93,18 +131,6 @@ Contains
     ldfbnd   = 0
 
   End Subroutine allocate_bonds_arrays
-
-  Subroutine deallocate_bonds_arrays()
-
-    Integer :: fail
-
-    fail = 0
-
-    Deallocate (numbonds,lstbnd, Stat = fail)
-
-    If (fail > 0) Call error(1029)
-
-  End Subroutine deallocate_bonds_arrays
 
   Subroutine allocate_bond_pot_arrays()
 
@@ -1280,5 +1306,48 @@ Subroutine bonds_table_read(bond_name,comm)
 
 End Subroutine bonds_table_read
 
+  Subroutine cleanup(bond)
+    Type(bonds_type) :: bond
 
+    If (Allocated(bond%numbonds)) Then
+      Deallocate(bond%numbonds)
+    End If
+    If (Allocated(bond%keybnd)) Then
+      Deallocate(bond%keybnd)
+    End If
+
+    If (Allocated(bond%lstbnd)) Then
+      Deallocate(bond%lstbnd)
+    End If
+    If (Allocated(bond%listbnd)) Then
+      Deallocate(bond%listbnd)
+    End If
+    If (Allocated(bond%legbnd)) Then
+      Deallocate(bond%legbnd)
+    End If
+
+    If (Allocated(bond%prmbnd)) Then
+      Deallocate(bond%prmbnd)
+    End If
+
+    If (Allocated(bond%ltpbnd)) Then
+      Deallocate(bond%ltpbnd)
+    End If
+    If (Allocated(bond%vbnd)) Then
+      Deallocate(bond%vbnd)
+    End If
+    If (Allocated(bond%gbnd)) Then
+      Deallocate(bond%gbnd)
+    End If
+
+    If (Allocated(bond%ldfbnd)) Then
+      Deallocate(bond%ldfbnd)
+    End If
+    If (Allocated(bond%typbnd)) Then
+      Deallocate(bond%typbnd)
+    End If
+    If (Allocated(bond%dstbnd)) Then
+      Deallocate(bond%dstbnd)
+    End If
+    End Subroutine cleanup
 End Module bonds
