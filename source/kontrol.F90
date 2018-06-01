@@ -68,7 +68,7 @@ Subroutine read_control                                &
            l_exp,lecx,lfcap,l_top,lmin,          &
            lvar,leql,               &
            lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
-           lvafav,lpvaf,ltraj,ldef,lrsd,               &
+           ltraj,ldef,lrsd,               &
            nx,ny,nz,impa,                            &
            keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
@@ -110,7 +110,6 @@ Subroutine read_control                                &
                                              lvar,leql,lfce,   &
                                              lpana,                 &
                                              lrdf,lprdf,lzdn,lpzdn, &
-                                             lvafav,lpvaf,          &
                                              ltraj,ldef,lrsd
 
 
@@ -434,8 +433,8 @@ Subroutine read_control                                &
 ! default switches for calculation of velocity autocorrelation functions:
 ! time-averaging and printing
 
-  lvafav = .true.
-  lpvaf  = .false.
+  green%l_average = .true.
+  green%l_print  = .false.
 
 ! default for data printing interval
 
@@ -2042,7 +2041,7 @@ Subroutine read_control                                &
 
         Else If (word1(1:5) == 'vafav') Then
 
-           lvafav = .false.
+           green%l_average = .false.
 
         Else If (word1(1:3) == 'vom' ) Then ! "no vom" should be used with TTM
 
@@ -2659,7 +2658,7 @@ Subroutine read_control                                &
         Else If (word(1:4) == 'zden') Then
            lpzdn = .true.
         Else If (word(1:3) == 'vaf') Then
-           lpvaf = .true.
+           green%l_print = .true.
         Else
            If (word(1:5) == 'every') Call get_word(record,word)
            nstbpo = Abs(Nint(word_2_real(word,1.0_wp)))
@@ -3313,7 +3312,7 @@ Subroutine read_control                                &
 
 ! report vaf
 
-  If (green%samp > 0 .or. lpvaf) Then
+  If (green%samp > 0 .or. green%l_print) Then
      If (green%samp > 0) Then
         Write(messages(1),'(a)') 'vaf profiles requested:'
         Write(messages(2),'(2x,a,i10)') 'vaf collection interval ',green%freq
@@ -3323,13 +3322,13 @@ Subroutine read_control                                &
         Call info('no vaf collection requested',.true.)
      End If
 
-     If (lpvaf) Then
+     If (green%l_print) Then
         Call info('vaf printing requested',.true.)
      Else
         Call info('no vaf printing requested',.true.)
      End If
 
-     If (lvafav) Then
+     If (green%l_average) Then
         Call info('time-averaged vaf profile',.true.)
      Else
         Call info('instantaneous vaf profiles',.true.)

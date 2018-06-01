@@ -125,7 +125,7 @@ End If
 
 ! Calculate green-kubo properties
 
-If (green%samp > 0) Call vaf_collect(lvafav,leql,nsteql,nstep,time,green,comm)
+If (green%samp > 0) Call vaf_collect(leql,nsteql,nstep,time,green,comm)
 
 
 !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
