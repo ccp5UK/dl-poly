@@ -172,8 +172,10 @@ program dl_poly
   Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
   Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
   Use nve, Only : nve_0_vv, nve_1_vv 
-    ! MAIN PROGRAM VARIABLES
   Use timer, Only  : timer_type, time_elapsed,timer_report
+  Use poisson, Only : poisson_type
+
+    ! MAIN PROGRAM VARIABLES
   Implicit None
 
   ! newjob used for trajectory_write &
@@ -248,6 +250,7 @@ program dl_poly
   Type(plumed_type) :: plume
   Type(msd_type) :: msd_data
   Type(metal_type) :: met
+  Type(poisson_type) :: pois
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -314,9 +317,9 @@ program dl_poly
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
-  Call set_bounds                                     &
-    (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats,thermo,green,devel,msd_data,met,comm)
+  Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
+    dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats, &
+    thermo,green,devel,msd_data,met,pois,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -390,7 +393,7 @@ program dl_poly
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstraj,istraj,keytrj,         &
     nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,tmr,comm)
+    ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -641,12 +644,12 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,stats,thermo,plume)
+    Call w_md_vv(mxatdm,stats,thermo,plume,pois)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,stats,thermo,plume,msd_data)
     Else
-      Call w_replay_history(mxatdm,stats,thermo,msd_data,met)
+      Call w_replay_history(mxatdm,stats,thermo,msd_data,met,pois)
     End If
   End If
 
@@ -772,9 +775,10 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(stat,plume)
+  Subroutine w_calculate_forces(stat,plume,pois)
     Type(stats_type), Intent(InOut) :: stat
     Type(plumed_type), Intent(InOut) :: plume
+    Type(poisson_type), Intent(InOut) :: pois
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
@@ -813,20 +817,22 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,stat,thermo,plume)
+  Subroutine w_md_vv(mxatdm_,stat,thermo,plume,pois)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(plumed_type), Intent(InOut) :: plume
+    Type(poisson_type), Intent(InOut) :: pois
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data,met)
+  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data,met,pois)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(msd_type), Intent(InOut) :: msd_data
     Type( metal_type ), Intent( InOut ) :: met
+    Type( poisson_type ), Intent( InOut ) :: pois
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

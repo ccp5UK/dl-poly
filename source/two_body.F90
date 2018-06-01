@@ -10,7 +10,7 @@ Module two_body
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
   Use coul_mpole,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
                              coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
-  Use poisson, Only : poisson_forces,poisson_excl_forces,poisson_frzn_forces
+  Use poisson, Only : poisson_type,poisson_forces,poisson_excl_forces,poisson_frzn_forces
   Use vdw,     Only : ntpvdw, &
                       vdw_forces
   Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
@@ -27,15 +27,18 @@ Module two_body
   Use development, Only : development_type
   Use statistics, Only : stats_type
   Implicit None
+
   Private
+
   Public :: two_body_forces
 Contains
+
 Subroutine two_body_forces                        &
            (rcut,rlnk,rvdw,pdplnc,ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,               &
-           stats,ewld,devel,met,tmr,comm)
+           stats,ewld,devel,met,pois,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -81,6 +84,7 @@ Subroutine two_body_forces                        &
   Type( ewald_type ),                       Intent( InOut ) :: ewld
   Type( development_type ),                 Intent( In    ) :: devel
   Type( metal_type ),                       Intent( InOut ) :: met
+  Type( poisson_type ),                       Intent( InOut ) :: pois
   Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( comms_type ),                       Intent( InOut ) :: comm
 
@@ -372,7 +376,7 @@ Subroutine two_body_forces                        &
 ! Poisson solver alternative to Ewald
 
   If (keyfce == 12) Then
-     Call poisson_forces(alpha,epsq,engacc,viracc,stats%stress,comm)
+     Call poisson_forces(alpha,epsq,engacc,viracc,stats%stress,pois,comm)
 
      engcpe_rl=engcpe_rl+engacc
      vircpe_rl=vircpe_rl+viracc

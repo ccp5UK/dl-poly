@@ -1,6 +1,5 @@
 Module poisson
-
-  Use kinds,           Only : wp
+  Use kinds,           Only : wp,wi
   Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend, &
                               gwait,girecv,gtime
   Use domains
@@ -13,71 +12,102 @@ Module poisson
   Use errors_warnings, Only : error,info
   Use numerics,        Only : dcell,invert
   Use parallel_fft,    Only : adjust_kmax
-
   Implicit None
 
-  Logical :: debug =.true., pinitialized=.false.
-  Logical :: pconverged
+  Private
 
-  Integer :: lnxl,lnxu, lnyl,lnyu, lnzl,lnzu, maxsteps=50, maxbicgst, icut
-  Integer :: ixb,iyb,izb, ixt,iyt,izt, block_x,block_y,block_z
-  Integer :: lmap(1:26) ! local copy of map to be modified
-  Integer :: mxitjb, mxitcg, xhalo, fail(1:10)=0
+  !> Type containing poisson data
+  Type, Public :: poisson_type
+    Private
 
-  Real( Kind = wp ) :: eps,alpha,delta,celprp(1:10),epsilon,  &
-                       bchange=1.0e-1_wp,deltaB_norm,         &
-                       normb, normphi0, normphi1,             &
-                       ccxxx,ccyyy,cczzz, ccsum,              &
-                       kmaxa_r,kmaxb_r,kmaxc_r
+    Logical :: debug =.true.
+    Logical :: initialized=.false.
+    Logical :: converged
 
-  Real( Kind = wp ), Dimension(:,:,:), Allocatable :: phi ! electrostatic potential
-  Real( Kind = wp ), Dimension(:,:,:), Allocatable :: b   ! charge density
-  Real( Kind = wp ), Dimension(:,:,:), Allocatable :: F, s, r, p, r0, v, t ! biCGStab variables
-  Real( Kind = wp ), Dimension(:,:,:), Allocatable :: pattern, phi0
+    Integer( Kind = wi ) :: lnxl,lnyl,lnzl
+    Integer( Kind = wi ) :: lnxu,lnyu,lnzu
+    Integer( Kind = wi ) :: maxbicgst
+
+    Integer( Kind = wi ) :: ixb,iyb,izb
+    Integer( Kind = wi ) :: ixt,iyt,izt
+    Integer( Kind = wi ) :: block_x,block_y,block_z
+
+    !> Local copy of map to be modified
+    Integer( Kind = wi ) :: lmap(1:26)
+
+    Integer( Kind = wi ), Public :: mxitjb
+    !> Conjugate gradients maximum iterations
+    Integer( Kind = wi ), Public :: mxitcg
+    Integer( Kind = wi ) :: xhalo
+    !Integer( Kind = wi ) :: fail(1:10)=0
+
+    !> Solver tolerance
+    Real( Kind = wp ), Public :: eps
+    !> Solver spacing
+    Real( Kind = wp ) :: delta
+    Real( Kind = wp ) :: celprp(1:10)
+    Real( Kind = wp ) :: normb
+    Real( Kind = wp ) :: normphi0,normphi1
+    Real( Kind = wp ) :: ccxxx,ccyyy,cczzz
+    Real( Kind = wp ) :: ccsum
+    Real( Kind = wp ) :: kmaxa_r,kmaxb_r,kmaxc_r
+
+    !> electrostatic potential
+    Real( Kind = wp ), Dimension(:,:,:), Allocatable :: phi
+    !> charge density
+    Real( Kind = wp ), Dimension(:,:,:), Allocatable :: b
+    !> biCGStab variables
+    Real( Kind = wp ), Dimension(:,:,:), Allocatable :: F, s, r, p, r0, v, t
+    Real( Kind = wp ), Dimension(:,:,:), Allocatable :: pattern, phi0
+  Contains
+    Private
+
+    Final :: cleanup
+  End Type poisson_type
+
+  Public :: poisson_forces,poisson_excl_forces,poisson_frzn_forces
 
 Contains
 
-  Subroutine poisson_forces(alphain,epsq,engcpe,vircpe,stress,comm)
+  Subroutine poisson_forces(alpha,epsq,engcpe,vircpe,stress,pois,comm)
 
-    Real( Kind = wp ), Intent( In    ) :: epsq,alphain
+    Real( Kind = wp ), Intent( In    ) :: epsq,alpha
     Real( Kind = wp ), Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
-    Type(comms_type), Intent( InOut)   :: comm
+    Type( poisson_type ), Intent( InOut ) :: pois
+    Type(comms_type), Intent( InOut )   :: comm
 
     Real( Kind = wp ) :: eng,virr
     Real( Kind = wp ) :: strs(1:9)
 
-    If (.not.pinitialized) Then
+    If (.not.pois%initialized) Then
 
-       pconverged=.false.
-       maxbicgst =0 ! the number of steps to solve eq. without a guess (phi=0)
-       maxsteps  =mxitcg
-       epsilon=epsq
-       alpha=alphain
-       delta=1.0_wp/alpha
-       Call biCGStab_init()
+       pois%converged=.false.
+       pois%maxbicgst =0 ! the number of steps to solve eq. without a guess (pois%phi=0)
+       pois%delta=1.0_wp/alpha
+       Call biCGStab_init(pois)
 
-       Call biCGStab_charge_density(comm)
+       Call biCGStab_charge_density(alpha,epsq,pois,comm)
 
-       If (normb > zero_plus) Then
-          Call biCGStab_solver_omp(eps,comm)
+       If (pois%normb > zero_plus) Then
+          Call biCGStab_solver_omp(pois,comm)
        Else
-          Call error(0,'normb too small')
+          Call error(0,'pois%normb too small')
        End If
 
-       pinitialized=.true.
+       pois%initialized=.true.
 
     Else
 
-       Call biCGStab_charge_density(comm)
+       Call biCGStab_charge_density(alpha,epsq,pois,comm)
 
     End If
 
-    If (normb > zero_plus) Then
-       Call P_solver_omp(eps,comm)
-       Call biCGStab_calc_forces(eng,virr,strs,comm)
+    If (pois%normb > zero_plus) Then
+       Call P_solver_omp(pois,comm)
+       Call biCGStab_calc_forces(eng,virr,strs,pois,comm)
     Else
-       Call error(0,'normb too small')
+       Call error(0,'pois%normb too small')
     End If
 
     engcpe=engcpe+eng
@@ -86,34 +116,36 @@ Contains
 
   End Subroutine poisson_forces
 
-  Subroutine biCGStab_init()
+  Subroutine biCGStab_init(pois)
+    Type( poisson_type ), Intent( InOut ) :: pois
 
 ! calculates preambles
 ! copy DD mapping
+    Integer :: fail(10)
     Character( Len = 256 ) :: message
-    lmap=map
+    pois%lmap=map
 
     If (imcon == 0 .or. imcon == 6) Then
        If      (imcon == 0) Then
-          If (idx == 0     ) lmap(1)=-1
-          If (idy == 0     ) lmap(3)=-1
-          If (idz == 0     ) lmap(5)=-1
-          If (idx == nprx-1) lmap(2)=-1
-          If (idy == npry-1) lmap(4)=-1
-          If (idz == nprz-1) lmap(6)=-1
+          If (idx == 0     ) pois%lmap(1)=-1
+          If (idy == 0     ) pois%lmap(3)=-1
+          If (idz == 0     ) pois%lmap(5)=-1
+          If (idx == nprx-1) pois%lmap(2)=-1
+          If (idy == npry-1) pois%lmap(4)=-1
+          If (idz == nprz-1) pois%lmap(6)=-1
        Else If (imcon == 6) Then
-          If (idz == 0     ) lmap(5)=-1
-          If (idz == nprz-1) lmap(6)=-1
+          If (idz == 0     ) pois%lmap(5)=-1
+          If (idz == nprz-1) pois%lmap(6)=-1
        End If
     End If
 
 ! (re)set grid size along x, y and z direction
 
-    Call dcell(cell,celprp)
+    Call dcell(cell,pois%celprp)
 
-    kmaxa=Nint(celprp(7)/delta)
-    kmaxb=Nint(celprp(8)/delta)
-    kmaxc=Nint(celprp(9)/delta)
+    kmaxa=Nint(pois%celprp(7)/pois%delta)
+    kmaxb=Nint(pois%celprp(8)/pois%delta)
+    kmaxc=Nint(pois%celprp(9)/pois%delta)
 
 ! adjust accordingly to processor grid restrictions
 
@@ -123,50 +155,50 @@ Contains
 
 ! 3D charge array construction (bottom and top) indices and block size
 
-    ixb=idx*(kmaxa/nprx)+1
-    ixt=(idx+1)*(kmaxa/nprx)
-    iyb=idy*(kmaxb/npry)+1
-    iyt=(idy+1)*(kmaxb/npry)
-    izb=idz*(kmaxc/nprz)+1
-    izt=(idz+1)*(kmaxc/nprz)
+    pois%ixb=idx*(kmaxa/nprx)+1
+    pois%ixt=(idx+1)*(kmaxa/nprx)
+    pois%iyb=idy*(kmaxb/npry)+1
+    pois%iyt=(idy+1)*(kmaxb/npry)
+    pois%izb=idz*(kmaxc/nprz)+1
+    pois%izt=(idz+1)*(kmaxc/nprz)
 
-    kmaxa_r=Real(kmaxa, wp)
-    kmaxb_r=Real(kmaxb, wp)
-    kmaxc_r=Real(kmaxc, wp)
+    pois%kmaxa_r=Real(kmaxa, wp)
+    pois%kmaxb_r=Real(kmaxb, wp)
+    pois%kmaxc_r=Real(kmaxc, wp)
 
-    block_x=kmaxa/nprx
-    block_y=kmaxb/npry
-    block_z=kmaxc/nprz
+    pois%block_x=kmaxa/nprx
+    pois%block_y=kmaxb/npry
+    pois%block_z=kmaxc/nprz
 
 ! new 1 grid link halo inclusive object per domain distributed sizes
 
-    lnxl=1-1
-    lnyl=1-1
-    lnzl=1-1
-    lnxu=block_x+1
-    lnyu=block_y+1
-    lnzu=block_z+1
+    pois%lnxl=1-1
+    pois%lnyl=1-1
+    pois%lnzl=1-1
+    pois%lnxu=pois%block_x+1
+    pois%lnyu=pois%block_y+1
+    pois%lnzu=pois%block_z+1
 
 ! extra halo on top of the one grid cell halo, according to size of differentiation stencil
 
-    xhalo=2+mxspl1-mxspl
+    pois%xhalo=2+mxspl1-mxspl
 
 ! allocate vectors for biCGStab
 
-    Allocate ( t(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) ,  Stat = fail( 1) )
-    Allocate ( b(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) ,  Stat = fail( 2) )
-    Allocate ( F(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) ,  Stat = fail( 3) )
-    Allocate ( s(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) ,  Stat = fail( 4) )
-    Allocate ( r(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) ,  Stat = fail( 5) )
-    Allocate ( p(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) ,  Stat = fail( 6) )
-    Allocate (  phi(lnxl-xhalo:lnxu+xhalo, &
-                    lnyl-xhalo:lnyu+xhalo, &
-                    lnzl-xhalo:lnzu+xhalo) ,       Stat = fail( 7) )
-    Allocate ( phi0(lnxl-xhalo:lnxu+xhalo, &
-                    lnyl-xhalo:lnyu+xhalo, &
-                    lnzl-xhalo:lnzu+xhalo) ,       Stat = fail( 8) )
-    Allocate ( r0(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) , Stat = fail( 9) )
-    Allocate (  v(lnxl:lnxu,lnyl:lnyu,lnzl:lnzu) , Stat = fail(10) )
+    Allocate ( pois%t(pois%lnxl:pois%lnxu,pois%lnyl:pois%lnyu,pois%lnzl:pois%lnzu) ,  Stat = fail( 1) )
+    Allocate ( pois%b(pois%lnxl:pois%lnxu,pois%lnyl:pois%lnyu,pois%lnzl:pois%lnzu) ,  Stat = fail( 2) )
+    Allocate ( pois%F(pois%lnxl:pois%lnxu,pois%lnyl:pois%lnyu,pois%lnzl:pois%lnzu) ,  Stat = fail( 3) )
+    Allocate ( pois%s(pois%lnxl:pois%lnxu,pois%lnyl:pois%lnyu,pois%lnzl:pois%lnzu) ,  Stat = fail( 4) )
+    Allocate ( pois%r(pois%lnxl:pois%lnxu,pois%lnyl:pois%lnyu,pois%lnzl:pois%lnzu) ,  Stat = fail( 5) )
+    Allocate ( pois%p(pois%lnxl:pois%lnxu,pois%lnyl:pois%lnyu,pois%lnzl:pois%lnzu) ,  Stat = fail( 6) )
+    Allocate (  pois%phi(pois%lnxl-pois%xhalo:pois%lnxu+pois%xhalo, &
+                    pois%lnyl-pois%xhalo:pois%lnyu+pois%xhalo, &
+                    pois%lnzl-pois%xhalo:pois%lnzu+pois%xhalo) ,       Stat = fail( 7) )
+    Allocate ( pois%phi0(pois%lnxl-pois%xhalo:pois%lnxu+pois%xhalo, &
+                    pois%lnyl-pois%xhalo:pois%lnyu+pois%xhalo, &
+                    pois%lnzl-pois%xhalo:pois%lnzu+pois%xhalo) ,       Stat = fail( 8) )
+    Allocate ( pois%r0(pois%lnxl:pois%lnxu,pois%lnyl:pois%lnyu,pois%lnzl:pois%lnzu) , Stat = fail( 9) )
+    Allocate (  pois%v(pois%lnxl:pois%lnxu,pois%lnyl:pois%lnyu,pois%lnzl:pois%lnzu) , Stat = fail(10) )
     If (Any(fail(1:10) > 0)) Then
        Write(message,'(a)') 'biCGStab_init allocation failure'
        Call error(0,message)
@@ -174,45 +206,95 @@ Contains
 
 ! Initialise
 
-    F   = 0.0_wp
-    s   = 0.0_wp
-    r   = 0.0_wp
-    p   = 0.0_wp
-    phi = 0.0_wp
-    r0  = 0.0_wp
-    v   = 0.0_wp
-    t   = 0.0_wp
+    pois%F   = 0.0_wp
+    pois%s   = 0.0_wp
+    pois%r   = 0.0_wp
+    pois%p   = 0.0_wp
+    pois%phi = 0.0_wp
+    pois%r0  = 0.0_wp
+    pois%v   = 0.0_wp
+    pois%t   = 0.0_wp
 
   End Subroutine biCGStab_init
 
-  Subroutine biCGStab_charge_density(comm)
+  Subroutine biCGStab_charge_density(alpha,epsq,pois,comm)
 
 ! calculates charge dansity at 0th order
 
-    Type(comms_type), Intent( InOut ) :: comm 
+    Real( Kind = wp ), Intent( In    ) :: alpha
+    Real( Kind = wp ), Intent( In    ) :: epsq
+    Type( poisson_type ), Intent( InOut ) :: pois
+    Type(comms_type), Intent( InOut ) :: comm
+
     Integer           :: i,j,k,n
     Real( Kind = wp ) :: reps0dv, txx,tyy,tzz, det,rcell(9)
 
-    reps0dv=fourpi*r4pie0*alpha/epsilon ! dv collapsed to dr=delta=1/alpha
+    reps0dv=fourpi*r4pie0*alpha/epsq ! dv collapsed to dr=pois%delta=1/alpha
 
     ! get reciprocal cell
     Call invert(cell,rcell,det)
     If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-    b=0.0_wp
+#ifdef __OPENMP
+    Block
+      Real( Kind = wp ), Dimension(:,:,:), Allocatable :: b
+      Real( Kind = wp ) :: ccsum
+      Real( Kind = wp ) :: ccxxx,ccyyy,cczzz
 
-    ccsum=0.0_wp
-    ccxxx=0.0_wp
-    ccyyy=0.0_wp
-    cczzz=0.0_wp
+      Allocate(b(Lbound(pois%b,1):Ubound(pois%b,1), &
+                 Lbound(pois%b,2):Ubound(pois%b,2), &
+                 Lbound(pois%b,3):Ubound(pois%b,3)))
+      b=0.0_wp
 
-    normb=0.0_wp
+      ccsum=0.0_wp
+      ccxxx=0.0_wp
+      ccyyy=0.0_wp
+      cczzz=0.0_wp
 
-    !$omp paralleldo default(shared) private(n) reduction(+:normb,b,ccsum,ccxxx,ccyyy,cczzz)
+      !$omp paralleldo default(shared) private(n) reduction(+:b,ccsum,ccxxx,ccyyy,cczzz)
+      Do n=1,natms !nlast
+         txx=pois%kmaxa_r*(rcell(1)*xxx(n)+rcell(4)*yyy(n)+rcell(7)*zzz(n)+0.5_wp)
+         tyy=pois%kmaxb_r*(rcell(2)*xxx(n)+rcell(5)*yyy(n)+rcell(8)*zzz(n)+0.5_wp)
+         tzz=pois%kmaxc_r*(rcell(3)*xxx(n)+rcell(6)*yyy(n)+rcell(9)*zzz(n)+0.5_wp)
+
+  ! global indeces
+
+         i=Int(txx)
+         j=Int(tyy)
+         k=Int(tzz)
+
+  ! get local indces
+
+         i = i - pois%ixb + 2
+         j = j - pois%iyb + 2
+         k = k - pois%izb + 2
+
+         If ( (i < 1 .or. i > pois%block_x) .or. &
+              (j < 1 .or. j > pois%block_y) .or. &
+              (k < 1 .or. k > pois%block_z) .or. &
+              (Abs(chge(n)) <= zero_plus) ) Cycle
+
+         b(i,j,k)=b(i,j,k)+chge(n)*reps0dv
+
+         ccsum=ccsum+Abs(chge(n))
+         ccxxx=ccxxx+Abs(chge(n))*xxx(n)
+         ccyyy=ccyyy+Abs(chge(n))*yyy(n)
+         cczzz=cczzz+Abs(chge(n))*zzz(n)
+      End Do
+      !$omp End paralleldo
+
+      pois%b=b
+
+      pois%ccsum=ccsum
+      pois%ccxxx=ccxxx
+      pois%ccyyy=ccyyy
+      pois%cczzz=cczzz
+    End Block
+#else
     Do n=1,natms !nlast
-       txx=kmaxa_r*(rcell(1)*xxx(n)+rcell(4)*yyy(n)+rcell(7)*zzz(n)+0.5_wp)
-       tyy=kmaxb_r*(rcell(2)*xxx(n)+rcell(5)*yyy(n)+rcell(8)*zzz(n)+0.5_wp)
-       tzz=kmaxc_r*(rcell(3)*xxx(n)+rcell(6)*yyy(n)+rcell(9)*zzz(n)+0.5_wp)
+       txx=pois%kmaxa_r*(rcell(1)*xxx(n)+rcell(4)*yyy(n)+rcell(7)*zzz(n)+0.5_wp)
+       tyy=pois%kmaxb_r*(rcell(2)*xxx(n)+rcell(5)*yyy(n)+rcell(8)*zzz(n)+0.5_wp)
+       tzz=pois%kmaxc_r*(rcell(3)*xxx(n)+rcell(6)*yyy(n)+rcell(9)*zzz(n)+0.5_wp)
 
 ! global indeces
 
@@ -222,59 +304,62 @@ Contains
 
 ! get local indces
 
-       i = i - ixb + 2
-       j = j - iyb + 2
-       k = k - izb + 2
+       i = i - pois%ixb + 2
+       j = j - pois%iyb + 2
+       k = k - pois%izb + 2
 
-       If ( (i < 1 .or. i > block_x) .or. &
-            (j < 1 .or. j > block_y) .or. &
-            (k < 1 .or. k > block_z) .or. &
+       If ( (i < 1 .or. i > pois%block_x) .or. &
+            (j < 1 .or. j > pois%block_y) .or. &
+            (k < 1 .or. k > pois%block_z) .or. &
             (Abs(chge(n)) <= zero_plus) ) Cycle
 
-       b(i,j,k)=b(i,j,k)+chge(n)*reps0dv
+       pois%b(i,j,k)=pois%b(i,j,k)+chge(n)*reps0dv
 
-       ccsum=ccsum+Abs(chge(n))
-       ccxxx=ccxxx+Abs(chge(n))*xxx(n)
-       ccyyy=ccyyy+Abs(chge(n))*yyy(n)
-       cczzz=cczzz+Abs(chge(n))*zzz(n)
+       pois%ccsum=pois%ccsum+Abs(chge(n))
+       pois%ccxxx=pois%ccxxx+Abs(chge(n))*xxx(n)
+       pois%ccyyy=pois%ccyyy+Abs(chge(n))*yyy(n)
+       pois%cczzz=pois%cczzz+Abs(chge(n))*zzz(n)
     End Do
-    !$omp End paralleldo
 
-    normb=Sum(b**2)
-    Call gsum(comm,normb)
+#endif
 
-    Call gsum(comm,ccsum)
-    Call gsum(comm,ccxxx)
-    Call gsum(comm,ccyyy)
-    Call gsum(comm,cczzz)
+    pois%normb=Sum(pois%b**2)
+    Call gsum(comm,pois%normb)
+
+    Call gsum(comm,pois%ccsum)
+    Call gsum(comm,pois%ccxxx)
+    Call gsum(comm,pois%ccyyy)
+    Call gsum(comm,pois%cczzz)
 
   End Subroutine biCGStab_charge_density
 
-  Recursive Subroutine P_solver_omp(occ, comm)
+  Recursive Subroutine P_solver_omp(pois,comm)
 
+    Type( poisson_type ), Intent( InOut ) :: pois
+    Type(comms_type), Intent( InOut )   :: comm
 
-    Real( Kind = wp ) :: Totstart, Totend, occ, dphi
-    Type(comms_type), Intent( InOut)   :: comm
-
+    Real( Kind = wp ) :: normphi0_local, normphi1_local
+    Real( Kind = wp ) :: Totstart, Totend, dphi
     Integer           :: mmm, i,j,k
     Real( Kind = wp ) :: element,  sm1,sm2,sm3,sm4 ! SM stands for Stoyan Markov (long live!!!)
     Character ( Len = 80 ) :: message
 
     Call gtime(Totstart)
-    pconverged=.false.
-    normphi0=0.0_wp
+    pois%converged=.false.
+    normphi0_local=0.0_wp
 
-    !$omp paralleldo default(shared) private(k) reduction(+:normphi0)
-    Do k=1,block_z
-       normphi0 = normphi0 + Sum(phi(1:block_x,1:block_y,k)**2)
+    !$omp paralleldo default(shared) private(k) reduction(+:normphi0_local)
+    Do k=1,pois%block_z
+       normphi0_local = normphi0_local + Sum(pois%phi(1:pois%block_x,1:pois%block_y,k)**2)
     End Do
     !$omp End paralleldo
 
-    Call gsum(comm,normphi0)
+    pois%normphi0=normphi0_local
+    Call gsum(comm,pois%normphi0)
 
-    Do mmm=1,mxitjb+3 ! Za seki sluchaj, proverka sa stabilno shozhdane
+    Do mmm=1,pois%mxitjb+3 ! Za seki sluchaj, proverka sa stabilno shozhdane
 
-       Call biCGStab_exchange_halo(phi,xhalo,comm)
+       Call biCGStab_exchange_halo(pois%phi,pois%xhalo,pois,comm)
 
        sm1 = -600.0_wp/144.0_wp
        sm2 =   60.0_wp/144.0_wp
@@ -282,80 +367,84 @@ Contains
        sm4 =    3.0_wp/144.0_wp
 
        !$omp paralleldo default(shared) private(element,k,j,i)
-       Do k=lnzl+1,lnzu-1
-          Do j=lnyl+1,lnyu-1
-             Do i=lnxl+1,lnxu-1
+       Do k=pois%lnzl+1,pois%lnzu-1
+          Do j=pois%lnyl+1,pois%lnyu-1
+             Do i=pois%lnxl+1,pois%lnxu-1
                 element=0.0_wp
-                element=element+sm4*phi(i - 1 ,j - 1 ,k - 1 )
-                element=element+sm3*phi(i     ,j - 1 ,k - 1 )
-                element=element+sm4*phi(i + 1 ,j - 1 ,k - 1 )
-                element=element+sm3*phi(i - 1 ,j     ,k - 1 )
-                element=element+sm2*phi(i     ,j     ,k - 1 )
-                element=element+sm3*phi(i + 1 ,j     ,k - 1 )
-                element=element+sm4*phi(i - 1 ,j + 1 ,k - 1 )
-                element=element+sm3*phi(i     ,j + 1 ,k - 1 )
-                element=element+sm4*phi(i + 1 ,j + 1 ,k - 1 )
-                element=element+sm3*phi(i - 1 ,j - 1 ,k     )
-                element=element+sm2*phi(i     ,j - 1 ,k     )
-                element=element+sm3*phi(i + 1 ,j - 1 ,k     )
-                element=element+sm2*phi(i - 1 ,j     ,k     )
-                element=element+sm2*phi(i + 1 ,j     ,k     )
-                element=element+sm3*phi(i - 1 ,j + 1 ,k     )
-                element=element+sm2*phi(i     ,j + 1 ,k     )
-                element=element+sm3*phi(i + 1 ,j + 1 ,k     )
-                element=element+sm4*phi(i - 1 ,j - 1 ,k + 1 )
-                element=element+sm3*phi(i     ,j - 1 ,k + 1 )
-                element=element+sm4*phi(i + 1 ,j - 1 ,k + 1 )
-                element=element+sm3*phi(i - 1 ,j     ,k + 1 )
-                element=element+sm2*phi(i     ,j     ,k + 1 )
-                element=element+sm3*phi(i + 1 ,j     ,k + 1 )
-                element=element+sm4*phi(i - 1 ,j + 1 ,k + 1 )
-                element=element+sm3*phi(i     ,j + 1 ,k + 1 )
-                element=element+sm4*phi(i + 1 ,j + 1 ,k + 1 )
-                phi0(i,j,k)=(-b(i,j,k)+element)/(-sm1)
+                element=element+sm4*pois%phi(i - 1 ,j - 1 ,k - 1 )
+                element=element+sm3*pois%phi(i     ,j - 1 ,k - 1 )
+                element=element+sm4*pois%phi(i + 1 ,j - 1 ,k - 1 )
+                element=element+sm3*pois%phi(i - 1 ,j     ,k - 1 )
+                element=element+sm2*pois%phi(i     ,j     ,k - 1 )
+                element=element+sm3*pois%phi(i + 1 ,j     ,k - 1 )
+                element=element+sm4*pois%phi(i - 1 ,j + 1 ,k - 1 )
+                element=element+sm3*pois%phi(i     ,j + 1 ,k - 1 )
+                element=element+sm4*pois%phi(i + 1 ,j + 1 ,k - 1 )
+                element=element+sm3*pois%phi(i - 1 ,j - 1 ,k     )
+                element=element+sm2*pois%phi(i     ,j - 1 ,k     )
+                element=element+sm3*pois%phi(i + 1 ,j - 1 ,k     )
+                element=element+sm2*pois%phi(i - 1 ,j     ,k     )
+                element=element+sm2*pois%phi(i + 1 ,j     ,k     )
+                element=element+sm3*pois%phi(i - 1 ,j + 1 ,k     )
+                element=element+sm2*pois%phi(i     ,j + 1 ,k     )
+                element=element+sm3*pois%phi(i + 1 ,j + 1 ,k     )
+                element=element+sm4*pois%phi(i - 1 ,j - 1 ,k + 1 )
+                element=element+sm3*pois%phi(i     ,j - 1 ,k + 1 )
+                element=element+sm4*pois%phi(i + 1 ,j - 1 ,k + 1 )
+                element=element+sm3*pois%phi(i - 1 ,j     ,k + 1 )
+                element=element+sm2*pois%phi(i     ,j     ,k + 1 )
+                element=element+sm3*pois%phi(i + 1 ,j     ,k + 1 )
+                element=element+sm4*pois%phi(i - 1 ,j + 1 ,k + 1 )
+                element=element+sm3*pois%phi(i     ,j + 1 ,k + 1 )
+                element=element+sm4*pois%phi(i + 1 ,j + 1 ,k + 1 )
+                pois%phi0(i,j,k)=(-pois%b(i,j,k)+element)/(-sm1)
              End Do
           End Do
        End Do
        !$omp End paralleldo
 
-       normphi1=0.0_wp
-       !$omp paralleldo default(shared) private(k) reduction(+:normphi1)
-       Do k=1,block_z
-          phi(:,:,k)=phi0(:,:,k)
-          normphi1=normphi1+Sum(phi(1:block_x,1:block_y,k)**2)
+       normphi1_local=0.0_wp
+       !$omp paralleldo default(shared) private(k) reduction(+:normphi1_local)
+       Do k=1,pois%block_z
+          pois%phi(:,:,k)=pois%phi0(:,:,k)
+          normphi1_local=normphi1_local+Sum(pois%phi(1:pois%block_x,1:pois%block_y,k)**2)
        End Do
        !$omp End paralleldo
 
-       Call gsum(comm, normphi1)
+       pois%normphi1=normphi1_local
+       Call gsum(comm, pois%normphi1)
 
-       dphi=Abs(normphi1-normphi0)
-       If (dphi <= occ*normb) Then
-          Call biCGStab_exchange_halo(phi,xhalo,comm)
+       dphi=Abs(pois%normphi1-pois%normphi0)
+       If (dphi <= pois%eps*pois%normb) Then
+          Call biCGStab_exchange_halo(pois%phi,pois%xhalo,pois,comm)
           Call gtime(Totend)
           Write (message,'(a,i0,a,g0,g0)')  "Jacobi it = ", mmm ,&
              &"d|Coulomb potential|/NormB >>>",&
-             &Abs(normphi1 - normphi0)/normb, Totend-Totstart
+             &Abs(pois%normphi1 - pois%normphi0)/pois%normb, Totend-Totstart
           Call info(message,.true.)
-          pconverged=.true.
+          pois%converged=.true.
           Return
        End If
 
-       If (mmm > mxitjb) Call biCGStab_solver_omp(occ,comm)
-       normphi0=normphi1
+       If (mmm > pois%mxitjb) Call biCGStab_solver_omp(pois,comm)
+       pois%normphi0=pois%normphi1
 
     End Do
 
-    Write(message,'(a,i0,a)') "poisson solver not converged in ",maxsteps,"steps..."
+    Write(message,'(a,i0,a)') "poisson solver not converged in ",pois%mxitcg,"steps..."
     Call info(message)
-    pconverged=.false.
+    pois%converged=.false.
 
   End Subroutine P_solver_omp
 
-  Recursive Subroutine biCGStab_solver_omp(occ,comm)
+  Recursive Subroutine biCGStab_solver_omp(pois,comm)
 
+    Type( poisson_type ), Intent( InOut ) :: pois
     Type(comms_type), Intent( InOut )  :: comm
+
+    Real( Kind = wp ) :: normphi0_local,normphi1_local
     Real( Kind = wp ) :: alfa, beta, omega, rho1,rho0,rv,tt,ts
-    Real( Kind = wp ) :: Totstart,Totend,occ
+    Real( Kind = wp ) :: Totstart,Totend
 
     Integer :: mmm, kk
     Character( Len = 80 ) :: message
@@ -367,39 +456,42 @@ Contains
     rho1=1.0_wp
     rho0=1.0_wp
 
-    Call biCGStab_exchange_halo(phi,xhalo,comm)
-    Call Adot_omp(phi,xhalo,F,0)
+    Call biCGStab_exchange_halo(pois%phi,pois%xhalo,pois,comm)
+    Call Adot_omp(pois%phi,pois%xhalo,pois%F,0,pois)
 
     !$omp parallel default(shared) private(kk)
     !$omp paralleldo
-    Do kk=1,block_z
-       r0(1:block_x,1:block_y,kk) = b(1:block_x,1:block_y,kk) - f(1:block_x,1:block_y,kk)
+    Do kk=1,pois%block_z
+       pois%r0(1:pois%block_x,1:pois%block_y,kk) = &
+         pois%b(1:pois%block_x,1:pois%block_y,kk) - pois%F(1:pois%block_x,1:pois%block_y,kk)
 
-       r(1:block_x,1:block_y,kk)  = r0(1:block_x,1:block_y,kk)
+       pois%r(1:pois%block_x,1:pois%block_y,kk)  = pois%r0(1:pois%block_x,1:pois%block_y,kk)
     End Do
     !$omp End paralleldo
 
     !$omp paralleldo
-    Do kk=lnzl,lnzu
-       p(:,:,kk) = 0.0_wp
-       v(:,:,kk) = 0.0_wp
+    Do kk=pois%lnzl,pois%lnzu
+       pois%p(:,:,kk) = 0.0_wp
+       pois%v(:,:,kk) = 0.0_wp
     End Do
     !$omp End paralleldo
 
-    normphi0=0.0_wp
-    !$omp paralleldo reduction(+:normphi0)
-    Do kk=1,block_z
-       normphi0 = normphi0 + Sum(phi(1:block_x,1:block_y,kk)**2)
+    normphi0_local=0.0_wp
+    !$omp paralleldo reduction(+:normphi0_local)
+    Do kk=1,pois%block_z
+       normphi0_local = normphi0_local + Sum(pois%phi(1:pois%block_x,1:pois%block_y,kk)**2)
     End Do
     !$omp End parallel
 
-    Call gsum(comm,normphi0)
-    Do mmm=1,mxitcg
+    pois%normphi0=normphi0_local
+    Call gsum(comm,pois%normphi0)
+    Do mmm=1,pois%mxitcg
        rho0 = rho1
        rho1 = 0.0_wp
        !$omp paralleldo reduction(+:rho1)
-       Do kk=1,block_z
-          rho1 = rho1 + Sum(r0(1:block_x,1:block_y,kk)*r(1:block_x,1:block_y,kk))
+       Do kk=1,pois%block_z
+          rho1 = rho1 + &
+            Sum(pois%r0(1:pois%block_x,1:pois%block_y,kk)*pois%r(1:pois%block_x,1:pois%block_y,kk))
        End Do
        !$omp End paralleldo
        Call gsum(comm,rho1)
@@ -407,19 +499,19 @@ Contains
        beta = (rho1/rho0) * (alfa/omega)
 
        !$omp paralleldo default(shared) private(kk)
-       Do kk=1,block_z
-          p(1:block_x,1:block_y,kk) = r(1:block_x,1:block_y,kk) + &
-                                      beta * (p(1:block_x,1:block_y,kk) - omega * v(1:block_x,1:block_y,kk))
+       Do kk=1,pois%block_z
+          pois%p(1:pois%block_x,1:pois%block_y,kk) = pois%r(1:pois%block_x,1:pois%block_y,kk) + &
+            beta * (pois%p(1:pois%block_x,1:pois%block_y,kk) - omega * pois%v(1:pois%block_x,1:pois%block_y,kk))
        End Do
        !$omp End paralleldo
 
-       Call biCGStab_exchange_halo(p,0,comm)
-       Call Adot_omp(p,0,v,0)
+       Call biCGStab_exchange_halo(pois%p,0,pois,comm)
+       Call Adot_omp(pois%p,0,pois%v,0,pois)
 
        rv=0.0_wp
        !$omp parallel Do default(shared) reduction(+:rv) private(kk)
-       Do kk=1,block_z
-          rv = rv + Sum(r0(1:block_x,1:block_y,kk) * v(1:block_x,1:block_y,kk))
+       Do kk=1,pois%block_z
+          rv = rv + Sum(pois%r0(1:pois%block_x,1:pois%block_y,kk) * pois%v(1:pois%block_x,1:pois%block_y,kk))
        End Do
        !$omp End paralleldo
        Call gsum(comm,rv)
@@ -427,26 +519,27 @@ Contains
        alfa=rho1/rv
 
        !$omp paralleldo default(shared) private(kk)
-       Do kk=1,block_z
-          s(1:block_x,1:block_y,kk) = r(1:block_x,1:block_y,kk) - alfa * v(1:block_x,1:block_y,kk)
+       Do kk=1,pois%block_z
+          pois%s(1:pois%block_x,1:pois%block_y,kk) = pois%r(1:pois%block_x,1:pois%block_y,kk) - &
+            alfa * pois%v(1:pois%block_x,1:pois%block_y,kk)
        End Do
        !$omp End paralleldo
 
-       Call biCGStab_exchange_halo(s,0,comm)
-       Call Adot_omp(s,0,t,0)
+       Call biCGStab_exchange_halo(pois%s,0,pois,comm)
+       Call Adot_omp(pois%s,0,pois%t,0,pois)
 
        tt=0.0_wp
        !$omp paralleldo default(shared) private(kk) reduction(+:tt)
-       Do kk=1,block_z
-          tt = tt + Sum(t(1:block_x,1:block_y,kk)**2)
+       Do kk=1,pois%block_z
+          tt = tt + Sum(pois%t(1:pois%block_x,1:pois%block_y,kk)**2)
        End Do
        !$omp End paralleldo
        Call gsum(comm,tt)
 
        ts=0.0_wp
        !$omp paralleldo default(shared) private(kk) reduction(+:ts)
-       Do kk=1,block_z
-          ts = ts + Sum(t(1:block_x,1:block_y,kk)*s(1:block_x,1:block_y,kk))
+       Do kk=1,pois%block_z
+          ts = ts + Sum(pois%t(1:pois%block_x,1:pois%block_y,kk)*pois%s(1:pois%block_x,1:pois%block_y,kk))
        End Do
        !$omp End paralleldo
        Call gsum(comm,ts)
@@ -454,75 +547,77 @@ Contains
        omega=ts/tt
 
        !$omp paralleldo default(shared) private(kk)
-       Do kk=1,block_z
-          phi(1:block_x,1:block_y,kk) = phi(1:block_x,1:block_y,kk) + &
-               alfa * p(1:block_x,1:block_y,kk) + omega * s(1:block_x,1:block_y,kk)
+       Do kk=1,pois%block_z
+          pois%phi(1:pois%block_x,1:pois%block_y,kk) = pois%phi(1:pois%block_x,1:pois%block_y,kk) + &
+               alfa * pois%p(1:pois%block_x,1:pois%block_y,kk) + omega * pois%s(1:pois%block_x,1:pois%block_y,kk)
        End Do
        !$omp End paralleldo
 
-       normphi1=0.0_wp
-       !$omp paralleldo default(shared) private(kk) reduction(+:normphi1)
-       Do kk=1,block_z
-          normphi1 = normphi1 + Sum(phi(1:block_x,1:block_y,kk)**2)
+       normphi1_local=0.0_wp
+       !$omp paralleldo default(shared) private(kk) reduction(+:normphi1_local)
+       Do kk=1,pois%block_z
+          normphi1_local = normphi1_local + Sum(pois%phi(1:pois%block_x,1:pois%block_y,kk)**2)
        End Do
        !$omp End paralleldo
-       Call gsum(comm,normphi1)
+       pois%normphi1=normphi1_local
+       Call gsum(comm,pois%normphi1)
 
-       If (maxbicgst > 0 .and. mmm > maxbicgst) Then
+       If (pois%maxbicgst > 0 .and. mmm > pois%maxbicgst) Then
           !$omp paralleldo default(shared) private(kk)
-          Do kk=lnzl,lnzu
-             phi(:,:,kk) = 0.0_wp
+          Do kk=pois%lnzl,pois%lnzu
+             pois%phi(:,:,kk) = 0.0_wp
           End Do
           !$omp End paralleldo
 
-          maxbicgst=0
-          pconverged=.false.
-          Call info("bicgstab exceeded *maxbicgst*... reset potential... pconverged=.false.",.true.)
+          pois%maxbicgst=0
+          pois%converged=.false.
+          Call info("bicgstab exceeded *pois%maxbicgst*... reset potential... pois%converged=.false.",.true.)
           Return
        End If
        Call gtime(Totend)
        Write (message,'(a,i0,a,g0,g0)')  "biCGStab it = ", mmm ,&
-            &"d|Coulomb potential|/NormB >>>",(Abs(normphi1 - normphi0)/normb),&
+            &"d|Coulomb potential|/NormB >>>",(Abs(pois%normphi1 - pois%normphi0)/pois%normb),&
             &Totend-Totstart
        Call info(message)
 
-       If (Abs(normphi1 - normphi0) <= occ*normb) Then
-          Call biCGStab_exchange_halo(phi,xhalo,comm)
+       If (Abs(pois%normphi1 - pois%normphi0) <= pois%eps*pois%normb) Then
+          Call biCGStab_exchange_halo(pois%phi,pois%xhalo,pois,comm)
 
           Call gtime(Totend)
           Write (message,'(a,i0,a,g0,g0)')  "biCGStab it = ", mmm ,&
-              &"d|Coulomb potential|/NormB >>>",(Abs(normphi1 - normphi0)/normb),&
+              &"d|Coulomb potential|/NormB >>>",(Abs(pois%normphi1 - pois%normphi0)/pois%normb),&
               &Totend-Totstart
           Call info(message,.true.)
-          If (maxbicgst == 0) Then
-             maxbicgst=mmm
+          If (pois%maxbicgst == 0) Then
+             pois%maxbicgst=mmm
           End If
-          pconverged=.true.
-          Write(message,'(a,i0,a)') "*maxbicgst* set to ",maxbicgst," pconverged=.true."
+          pois%converged=.true.
+          Write(message,'(a,i0,a)') "*pois%maxbicgst* set to ",pois%maxbicgst," pois%converged=.true."
           Call info(message,.true.)
           Return
        End If
 
        !$omp paralleldo default(shared) private(kk)
-       Do kk=1,block_z
-          r(1:block_x,1:block_y,kk) = s(1:block_x,1:block_y,kk) - omega * t(1:block_x,1:block_y,kk)
+       Do kk=1,pois%block_z
+          pois%r(1:pois%block_x,1:pois%block_y,kk) = pois%s(1:pois%block_x,1:pois%block_y,kk) - &
+            omega * pois%t(1:pois%block_x,1:pois%block_y,kk)
        End Do
        !$omp End paralleldo
 
-       normphi0=normphi1
+       pois%normphi0=pois%normphi1
     End Do
-    pconverged=.false.
-    Call info("maxit reached... pconverged=.false.",.true.)
+    pois%converged=.false.
+    Call info("maxit reached... pois%converged=.false.",.true.)
 
   End Subroutine biCGStab_solver_omp
 
-  Subroutine biCGStab_exchange_halo(vec,xtra,comm)
+  Subroutine biCGStab_exchange_halo(vec,xtra,pois,comm)
 
     Integer,           Intent( In    ) :: xtra
-
-    Real( Kind = wp ), Intent( InOut ) :: vec( lnxl-xtra:lnxu+xtra, &
-                                               lnyl-xtra:lnyu+xtra, &
-                                               lnzl-xtra:lnzu+xtra )
+    Type( poisson_type ), Intent( InOut ) :: pois
+    Real( Kind = wp ), Intent( InOut ) :: vec( pois%lnxl-xtra:pois%lnxu+xtra, &
+                                               pois%lnyl-xtra:pois%lnyu+xtra, &
+                                               pois%lnzl-xtra:pois%lnzu+xtra )
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: me, lx,ly,lz
@@ -533,43 +628,43 @@ Contains
 
 ! Find length of sides of the domain
 
-    lx = ixt - ixb + 1
-    ly = iyt - iyb + 1
-    lz = izt - izb + 1
+    lx = pois%ixt - pois%ixb + 1
+    ly = pois%iyt - pois%iyb + 1
+    lz = pois%izt - pois%izb + 1
 
 ! +X direction face - negative halo
 
-    Call exchange_grid_halo( lmap(1),                     lmap(2), &
+    Call exchange_grid_halo( pois%lmap(1),                     pois%lmap(2), &
          lx-(xtra+1)+1, lx  ,         1,              ly,            1,              lz, &
          1-(xtra+1),    1-1,          1,              ly,            1,              lz,comm)
 
 ! -X direction face - positive halo
 
-    Call exchange_grid_halo( lmap(2),                     lmap(1), &
+    Call exchange_grid_halo( pois%lmap(2),                     pois%lmap(1), &
          1,             1+(xtra+1)-1, 1,              ly,            1,              lz, &
          lx+1,          lx+(xtra+1),  1,              ly,            1,              lz,comm)
 
 ! +Y direction face (including the +&-X faces extensions) - negative halo
 
-    Call exchange_grid_halo( lmap(3),                     lmap(4), &
+    Call exchange_grid_halo( pois%lmap(3),                     pois%lmap(4), &
          1-(xtra+1),    lx+(xtra+1),  ly-(xtra+1)+1, ly,             1,              lz, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1)  ,  1-1,            1,              lz,comm)
 
 ! -Y direction face (including the +&-X faces extensions) - positive halo
 
-    Call exchange_grid_halo( lmap(4),                     lmap(3), &
+    Call exchange_grid_halo( pois%lmap(4),                     pois%lmap(3), &
          1-(xtra+1),    lx+(xtra+1),  1,              1+(xtra+1)-1,  1, lz, &
          1-(xtra+1),    lx+(xtra+1),  ly+1,           ly+(xtra+1),   1, lz,comm)
 
 ! +Z direction face (including the +&-Y+&-X faces extensions) - negative halo
 
-    Call exchange_grid_halo( lmap(5),                     lmap(6), &
+    Call exchange_grid_halo( pois%lmap(5),                     pois%lmap(6), &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  lz-(xtra+1)+1, lz, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  1-(xtra+1)  ,  1-1,comm)
 
 ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
 
-    Call exchange_grid_halo( lmap(6),                     lmap(5), &
+    Call exchange_grid_halo( pois%lmap(6),                     pois%lmap(5), &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  1,              1+(xtra+1)-1, &
          1-(xtra+1),    lx+(xtra+1),  1-(xtra+1),    ly+(xtra+1),  lz+1,           lz+(xtra+1),comm)
 
@@ -589,6 +684,7 @@ Contains
       Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: send_buffer
       Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: recv_buffer
 
+      Integer :: fail
       Integer :: length
       Character( Len = 256 ) :: message
 ! If the processor to receive FROM is actually ME it means there is
@@ -605,8 +701,8 @@ Contains
 ! so all can be sent and received as one message!!!
 
          If (from > -1) Then
-            Allocate ( recv_buffer( xdb:xdt, ydb:ydt, zdb:zdt ) , Stat = fail(1) )
-            If (fail(1) > 0) Then
+            Allocate (recv_buffer(xdb:xdt,ydb:ydt,zdb:zdt), Stat = fail)
+            If (fail > 0) Then
                Write(message,'(a)') 'exchange_grid_halo receive allocation failure'
                Call error(0,message)
             End If
@@ -615,8 +711,8 @@ Contains
          End If
 
          If (to   > -1) Then
-            Allocate ( send_buffer( xlb:xlt, ylb:ylt, zlb:zlt ) , Stat = fail(1) )
-            If (fail(1) > 0) Then
+            Allocate (send_buffer(xlb:xlt,ylb:ylt,zlb:zlt), Stat = fail)
+            If (fail > 0) Then
                Write(message,'(a)') 'exchange_grid_halo send allocation failure'
                Call error(0,message)
             End If
@@ -635,20 +731,20 @@ Contains
 
 ! Copy the received data into the domain halo
 
-            vec( xdb:xdt, ydb:ydt, zdb:zdt ) = recv_buffer
+            vec(xdb:xdt, ydb:ydt, zdb:zdt) = recv_buffer
 
 ! And, as my mum told me, leave things as we found them
 
-            Deallocate ( recv_buffer , Stat = fail(1) )
-            If (fail(1) > 0) Then
+            Deallocate(recv_buffer, Stat = fail)
+            If (fail > 0) Then
                Write(message,'(a,i0)') 'exchange_grid_halo receive deallocation failure'
                Call error(0,message)
             End If
          End If
 
          If (to   > -1) Then
-            Deallocate ( send_buffer , Stat = fail(1) )
-            If (fail(1) > 0) Then
+            Deallocate(send_buffer, Stat = fail)
+            If (fail > 0) Then
                Write(message,'(a,i0)') 'exchange_grid_halo send deallocation failure'
                Call error(0,message)
             End If
@@ -658,7 +754,7 @@ Contains
 
 ! Simple on node copy - as sizes are the same as 3D shapes
 
-         vec( xdb:xdt, ydb:ydt, zdb:zdt ) = vec( xlb:xlt, ylb:ylt, zlb:zlt )
+         vec(xdb:xdt, ydb:ydt, zdb:zdt) = vec(xlb:xlt, ylb:ylt, zlb:zlt)
 
       End If
 
@@ -666,24 +762,16 @@ Contains
 
   End Subroutine biCGStab_exchange_halo
 
-  Subroutine biCGStab_Deallocate_grids()
-
-    Character( Len = 256 ) :: message
-    Deallocate(t ,   b ,  v , Stat = fail(1) )
-    Deallocate(F ,   s ,  r , Stat = fail(2) )
-    Deallocate(p , phi , r0 , Stat = fail(3) )
-    If (Any(fail(1:3) > 0)) Then
-       Write(message,'(a)') 'exchange_grid_halo send deallocation failure'
-       Call error(0,message)
-    End If
-
-  End Subroutine biCGStab_Deallocate_grids
-
-  Subroutine Adot_omp(vec,vx,res,rx)
+  Subroutine Adot_omp(vec,vx,res,rx,pois)
 
     Integer          , Intent( In    ) :: vx,rx
-    Real( Kind = wp ), Intent( In    ) :: vec(lnxl-vx:lnxu+vx,lnyl-vx:lnyu+vx,lnzl-vx:lnzu+vx)
-    Real( Kind = wp ), Intent(   Out ) :: res(lnxl-rx:lnxu+rx,lnyl-rx:lnyu+rx,lnzl-rx:lnzu+rx)
+    Type( poisson_type ), Intent( InOut ) :: pois
+    Real( Kind = wp ), Intent( In    ) :: vec(pois%lnxl-vx:pois%lnxu+vx, &
+                                              pois%lnyl-vx:pois%lnyu+vx, &
+                                              pois%lnzl-vx:pois%lnzu+vx)
+    Real( Kind = wp ), Intent(   Out ) :: res(pois%lnxl-rx:pois%lnxu+rx, &
+                                              pois%lnyl-rx:pois%lnyu+rx, &
+                                              pois%lnzl-rx:pois%lnzu+rx)
 
     Integer          :: i,j,k,ioff,joff,koff
     Real( Kind = wp) :: sm(4), element
@@ -694,9 +782,9 @@ Contains
     sm(4) =    3.0_wp/144.0_wp
 
     !$omp paralleldo default(shared) private(element,k,j,i,ioff,joff,koff)
-    Do k=lnzl+1,lnzu-1
-       Do j=lnyl+1,lnyu-1
-          Do i=lnxl+1,lnxu-1
+    Do k=pois%lnzl+1,pois%lnzu-1
+       Do j=pois%lnyl+1,pois%lnyu-1
+          Do i=pois%lnxl+1,pois%lnxu-1
              element=0.0
              Do koff=-1,1
                 Do joff=-1,1
@@ -715,9 +803,10 @@ Contains
 
   End Subroutine Adot_omp
 
-  Subroutine biCGStab_calc_forces(cenergy,vir,stress,comm)
+  Subroutine biCGStab_calc_forces(cenergy,vir,stress,pois,comm)
 
     Real( Kind = wp ), Intent( InOut ) :: cenergy, vir, stress(1:9)
+    Type( poisson_type ), Intent( InOut ) :: pois
     Type( comms_type), Intent( InOut ) :: comm
 
     Integer       :: i,j,k,n, ii,jj,kk
@@ -725,13 +814,13 @@ Contains
                      cfxx, cfyy, cfzz,                           &
                      uenergy,r8veps0
 
-    If(.Not.pconverged) Then
+    If(.Not.pois%converged) Then
        Call info("poisson solver not converged",.true.)
        Return
     End If
 
-    reps0dv=fourpi*r4pie0/delta
-    r8veps0=fourpi*r4pie0/(8.0_wp*delta**3)
+    reps0dv=fourpi*r4pie0/pois%delta
+    r8veps0=fourpi*r4pie0/(8.0_wp*pois%delta**3)
 
 ! initialization
 
@@ -759,17 +848,17 @@ Contains
 
 ! get local indces
 
-       i = ii - ixb + 2
-       j = jj - iyb + 2
-       k = kk - izb + 2
+       i = ii - pois%ixb + 2
+       j = jj - pois%iyb + 2
+       k = kk - pois%izb + 2
 
-       cfxx=chge(n)*dPhidX(i,j,k)
-       cfyy=chge(n)*dPhidY(i,j,k)
-       cfzz=chge(n)*dPhidZ(i,j,k)
+       cfxx=chge(n)*dPhidX(i,j,k,pois)
+       cfyy=chge(n)*dPhidY(i,j,k,pois)
+       cfzz=chge(n)*dPhidZ(i,j,k,pois)
 
 ! calculate atomic energy
 
-       uenergy=chge(n)*phi(i,j,k)
+       uenergy=chge(n)*pois%phi(i,j,k)
 
 !caclulate atomic contribution to the stress tensor
 
@@ -797,97 +886,103 @@ Contains
 
   End Subroutine biCGStab_calc_forces
 
-  Subroutine Write_potential
-    Integer :: unit, kpkp,kk,kpk,tt
+  Subroutine Write_potential(pois)
+    Type( poisson_type ), Intent( InOut ) :: pois
+
+    Integer :: ounit, kpkp,kk,kpk,tt
     character(len=128) :: filename, line
-    unit=39
+
+    ounit=39
     line="pot"
     Write(filename,'(a,i1,i1,i1,a)') Trim(Adjustl(line)),idx,idy,idz,".dx"
-    Open(Unit=unit, File=Trim(Adjustl(filename)), Status='replace')
-    Write(unit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", block_x,block_y,block_z
-    Write(unit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
-         Real(idx*(kmaxa/nprx),wp)*delta,Real(idy*(kmaxb/npry),wp)*delta,Real(idz*(kmaxc/nprz),wp)*delta
-    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "delta ", (/delta, 0.0_wp,0.0_wp/)
-    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "delta ", (/0.0_wp,delta, 0.0_wp/)
-    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "delta ", (/0.0_wp,0.0_wp, delta/)
-    Write(unit,'(a,I5,1x,I5,1x,I5)') "object 2 class gridconnections counts ",block_x,block_y,block_z
-    Write(unit,'(a,1x,I20,1x,a)')'object 3 class array type Double rank 0 items ', &
-         &block_x*block_y*block_z , 'data follows'
+    Open(Unit=ounit, File=Trim(Adjustl(filename)), Status='replace')
+    Write(ounit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", pois%block_x,pois%block_y,pois%block_z
+    Write(ounit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
+         Real(idx*(kmaxa/nprx),wp)*pois%delta,Real(idy*(kmaxb/npry),wp)*pois%delta,Real(idz*(kmaxc/nprz),wp)*pois%delta
+    Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/pois%delta, 0.0_wp,0.0_wp/)
+    Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0_wp,pois%delta, 0.0_wp/)
+    Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0_wp,0.0_wp, pois%delta/)
+    Write(ounit,'(a,I5,1x,I5,1x,I5)') "object 2 class gridconnections counts ",pois%block_x,pois%block_y,pois%block_z
+    Write(ounit,'(a,1x,I20,1x,a)')'object 3 class array type Double rank 0 items ', &
+         &pois%block_x*pois%block_y*pois%block_z , 'data follows'
 
     tt=0
-    line=""
-    Do kpkp=1,block_x
-       Do kk=1,block_y
-          Do kpk=1,block_z
-             Write(line,"(a,3E15.5)") Trim(line), Real(phi(kpkp,kk,kpk),4)
+    line=''
+    Do kpkp=1,pois%block_x
+       Do kk=1,pois%block_y
+          Do kpk=1,pois%block_z
+             Write(line,"(a,3E15.5)") Trim(line), Real(pois%phi(kpkp,kk,kpk),4)
              tt=tt+1
              If ( mod(tt,3) == 0 ) Then
-                Write(unit,'(a)') Trim(Adjustl(line))
-                line=""
+                Write(ounit,'(a)') Trim(Adjustl(line))
+                line=''
                 tt=0
              End If
           End Do
        End Do
     End Do
 
-    Write(unit,'(a)') Trim(Adjustl(line))
-    Write(unit,'(a)') 'attribute "dep" string "positions"'
-    Write(unit,'(a)') 'object "PME potential (kT/e, T=300K)" class field'
-    Write(unit,'(a)') 'component "positions" value 1'
-    Write(unit,'(a)') 'component "connections" value 2'
-    Write(unit,'(a)') 'component "data" value 3'
+    Write(ounit,'(a)') Trim(Adjustl(line))
+    Write(ounit,'(a)') 'attribute "dep" string "positions"'
+    Write(ounit,'(a)') 'object "PME potential (kT/e, T=300K)" class field'
+    Write(ounit,'(a)') 'component "positions" value 1'
+    Write(ounit,'(a)') 'component "connections" value 2'
+    Write(ounit,'(a)') 'component "data" value 3'
 
-    close(unit=unit)
+    close(Unit=ounit)
 
   End Subroutine Write_potential
 
-  Subroutine Write_b
-    Integer :: unit, kpkp,kk,kpk,tt
+  Subroutine Write_b(pois)
+    Type( poisson_type ), Intent( InOut ) :: pois
+
+    Integer :: ounit, kpkp,kk,kpk,tt
     character(len=128) :: filename, line
-    unit=39
-    line="b"
+    ounit=39
+    line="pois%b"
     Write(filename,'(a,i1,i1,i1,a)') Trim(Adjustl(line)),idx,idy,idz,".dx"
-    Open(Unit=unit, File=Trim(Adjustl(filename)), Status='replace')
-    Write(unit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", block_x,block_y,block_z
-    Write(unit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
-         Real(idx*(kmaxa/nprx),wp)*delta,Real(idy*(kmaxb/npry),wp)*delta,Real(idz*(kmaxc/nprz),wp)*delta
-    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "delta ", (/Real(delta), 0.0,0.0/)
-    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "delta ", (/ 0.0,Real(delta), 0.0/)
-    Write(unit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "delta ", (/0.0,0.0, Real(delta)/)
-    Write(unit,'(a,I5,1x,I5,1x,I5)') "object 2 class gridconnections counts ",block_x,block_y,block_z
-    Write(unit,'(a,1x,I20,1x,a)')'object 3 class array type Double rank 0 items ', &
-         &block_x*block_y*block_z , 'data follows'
+    Open(Unit=ounit, File=Trim(Adjustl(filename)), Status='replace')
+    Write(ounit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", pois%block_x,pois%block_y,pois%block_z
+    Write(ounit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
+         Real(idx*(kmaxa/nprx),wp)*pois%delta,Real(idy*(kmaxb/npry),wp)*pois%delta,Real(idz*(kmaxc/nprz),wp)*pois%delta
+    Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/Real(pois%delta), 0.0,0.0/)
+    Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/ 0.0,Real(pois%delta), 0.0/)
+    Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0,0.0, Real(pois%delta)/)
+    Write(ounit,'(a,I5,1x,I5,1x,I5)') "object 2 class gridconnections counts ",pois%block_x,pois%block_y,pois%block_z
+    Write(ounit,'(a,1x,I20,1x,a)')'object 3 class array type Double rank 0 items ', &
+         &pois%block_x*pois%block_y*pois%block_z , 'data follows'
 
     tt=0
-    line=""
-    Do kpkp=1,block_x
-       Do kk=1,block_y
-          Do kpk=1,block_z
-             Write(line,"(a,3E15.5)") Trim(line), Real(b(kpkp,kk,kpk),4)
+    line=''
+    Do kpkp=1,pois%block_x
+       Do kk=1,pois%block_y
+          Do kpk=1,pois%block_z
+             Write(line,"(a,3E15.5)") Trim(line), Real(pois%b(kpkp,kk,kpk),4)
              tt=tt+1
              If ( mod(tt,3) == 0 ) Then
-                Write(unit,'(a)') Trim(Adjustl(line))
-                line=""
+                Write(ounit,'(a)') Trim(Adjustl(line))
+                line=''
                 tt=0
              End If
           End Do
        End Do
     End Do
 
-    Write(unit,'(a)') Trim(Adjustl(line))
-    Write(unit,'(a)') 'attribute "dep" string "positions"'
-    Write(unit,'(a)') 'object "PME potential (kT/e, T=300K)" class field'
-    Write(unit,'(a)') 'component "positions" value 1'
-    Write(unit,'(a)') 'component "connections" value 2'
-    Write(unit,'(a)') 'component "data" value 3'
+    Write(ounit,'(a)') Trim(Adjustl(line))
+    Write(ounit,'(a)') 'attribute "dep" string "positions"'
+    Write(ounit,'(a)') 'object "PME potential (kT/e, T=300K)" class field'
+    Write(ounit,'(a)') 'component "positions" value 1'
+    Write(ounit,'(a)') 'component "connections" value 2'
+    Write(ounit,'(a)') 'component "data" value 3'
 
-    close(unit=unit)
+    close(Unit=ounit)
 
   End Subroutine Write_b
 
-  Function dPhidX(i,j,k) Result(dphi)
+  Function dPhidX(i,j,k,pois) Result(dphi)
 
     Integer, Intent( In    ) :: i,j,k
+    Type( poisson_type ), Intent( InOut ) :: pois
 
     Integer           :: kk
     Real( Kind = wp ) :: par(3), par4, dphi
@@ -900,15 +995,16 @@ Contains
     ! sm  du/dx = [45(ui+1 – ui-1 ) -9(ui+2 – ui-2) + (ui+3 –ui-3)] / 60h
     dphi=0.0_wp
     Do kk=1,3
-       dphi = dphi + par(kk)*(phi(i+kk,j,k)-phi(i-kk,j,k))
+       dphi = dphi + par(kk)*(pois%phi(i+kk,j,k)-pois%phi(i-kk,j,k))
     End Do
-    dphi = dphi/(par4*delta)
+    dphi = dphi/(par4*pois%delta)
 
   End Function dPhidX
 
-  Function dPhidY(i,j,k) Result(dphi)
+  Function dPhidY(i,j,k,pois) Result(dphi)
 
     Integer, Intent( In    ) :: i,j,k
+    Type( poisson_type ), Intent( InOut ) :: pois
 
     Integer           :: kk
     Real( Kind = wp ) :: par(3), par4, dphi
@@ -921,15 +1017,16 @@ Contains
     ! sm  du/dx = [45(ui+1 – ui-1 ) -9(ui+2 – ui-2) + (ui+3 –ui-3)] / 60h
     dphi=0.0_wp
     Do kk=1,3
-       dphi = dphi + par(kk)*(phi(i,j+kk,k)-phi(i,j-kk,k))
+       dphi = dphi + par(kk)*(pois%phi(i,j+kk,k)-pois%phi(i,j-kk,k))
     End Do
-    dphi = dphi/(par4*delta)
+    dphi = dphi/(par4*pois%delta)
 
   End Function dPhidY
 
-  Function dPhidZ(i,j,k) Result(dphi)
+  Function dPhidZ(i,j,k,pois) Result(dphi)
 
     Integer, Intent( In    ) :: i,j,k
+    Type( poisson_type ), Intent( InOut ) :: pois
 
     Integer           :: kk
     Real( Kind = wp ) :: par(3), par4, dphi
@@ -942,39 +1039,42 @@ Contains
     ! sm  du/dx = [45(ui+1 – ui-1 ) -9(ui+2 – ui-2) + (ui+3 –ui-3)] / 60h
     dphi=0.0_wp
     Do kk=1,3
-       dphi = dphi + par(kk)*(phi(i,j,k+kk)-phi(i,j,k-kk))
+       dphi = dphi + par(kk)*(pois%phi(i,j,k+kk)-pois%phi(i,j,k-kk))
     End Do
-    dphi = dphi/(par4*delta)
+    dphi = dphi/(par4*pois%delta)
 
   End Function dPhidZ
 
-  Function d2PhidX2(i,j,k) Result(dphi)
+  Function d2PhidX2(i,j,k,pois) Result(dphi)
 
     Integer, Intent( In    ) :: i,j,k
+    Type( poisson_type ), Intent( InOut ) :: pois
 
     Real( Kind = wp ) :: dphi
 
-    dphi=( phi(i+2,j,k) + phi(i-1,j,k) - phi(i+1,j,k) - phi(i-2,j,k) ) / (3.0_wp*delta**2)
+    dphi=( pois%phi(i+2,j,k) + pois%phi(i-1,j,k) - pois%phi(i+1,j,k) - pois%phi(i-2,j,k) ) / (3.0_wp*pois%delta**2)
 
   End Function d2PhidX2
 
-  Function d2PhidY2(i,j,k) Result(dphi)
+  Function d2PhidY2(i,j,k,pois) Result(dphi)
 
     Integer, Intent( In    ) :: i,j,k
+    Type( poisson_type ), Intent( InOut ) :: pois
 
     Real( Kind = wp ) :: dphi
 
-    dphi=( phi(i,j+2,k) + phi(i,j-1,k) - phi(i,j+1,k) - phi(i,j-2,k) ) / (3.0_wp*delta**2)
+    dphi=( pois%phi(i,j+2,k) + pois%phi(i,j-1,k) - pois%phi(i,j+1,k) - pois%phi(i,j-2,k) ) / (3.0_wp*pois%delta**2)
 
   End Function d2PhidY2
 
-  Function d2PhidZ2(i,j,k) Result(dphi)
+  Function d2PhidZ2(i,j,k,pois) Result(dphi)
 
     Integer, Intent( In    ) :: i,j,k
+    Type( poisson_type ), Intent( InOut ) :: pois
 
     Real( Kind = wp ) :: dphi
 
-    dphi=( phi(i,j,k+2) + phi(i,j,k-1) - phi(i,j,k+1) - phi(i,j,k-2) ) / (3.0_wp*delta**2)
+    dphi=( pois%phi(i,j,k+2) + pois%phi(i,j,k-1) - pois%phi(i,j,k+1) - pois%phi(i,j,k-2) ) / (3.0_wp*pois%delta**2)
 
   End Function d2PhidZ2
 
@@ -984,7 +1084,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating the exclusion coulombic energy
-! and! force terms in a periodic system using 1/r potential as required
+! and! force terms in a periodic system using 1/pois%r potential as required
 ! for a direct space poisson solver
 !
 ! copyright - daresbury laboratory
@@ -1657,4 +1757,51 @@ Contains
 
   End Subroutine poisson_frzn_forces
 
+  Subroutine cleanup(pois)
+    Type(poisson_type) :: pois
+
+    If (Allocated(pois%phi)) Then
+      Deallocate(pois%phi)
+    End If
+
+    If (Allocated(pois%b)) Then
+      Deallocate(pois%b)
+    End If
+
+    If (Allocated(pois%F)) Then
+      Deallocate(pois%F)
+    End If
+
+    If (Allocated(pois%s)) Then
+      Deallocate(pois%s)
+    End If
+
+    If (Allocated(pois%r)) Then
+      Deallocate(pois%r)
+    End If
+
+    If (Allocated(pois%p)) Then
+      Deallocate(pois%p)
+    End If
+
+    If (Allocated(pois%r0)) Then
+      Deallocate(pois%r0)
+    End If
+
+    If (Allocated(pois%v)) Then
+      Deallocate(pois%v)
+    End If
+
+    If (Allocated(pois%t)) Then
+      Deallocate(pois%t)
+    End If
+
+    If (Allocated(pois%pattern)) Then
+      Deallocate(pois%pattern)
+    End If
+
+    If (Allocated(pois%phi0)) Then
+      Deallocate(pois%phi0)
+    End If
+  End Subroutine cleanup
 End Module poisson
