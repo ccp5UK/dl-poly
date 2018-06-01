@@ -128,7 +128,7 @@ Contains
   
   
   Subroutine defects1_write &
-           (rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time,comm)
+           (rcut,keyres,ensemble,nsdef,isdef,rdef,nstep,tstep,time,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -142,7 +142,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: keyres,keyens, &
+  Integer,           Intent( In    ) :: keyres,ensemble, &
                                         nsdef,isdef,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,rdef,tstep,time
   Type( comms_type), Intent( InOut ) :: comm
@@ -351,7 +351,7 @@ Contains
 
 ! Update rcell
 
-  If (keyens >= 20) Call invert(cell,rcell,cut)
+  If (ensemble >= 20) Call invert(cell,rcell,cut)
 
   fail=0
   Allocate (dr(1:mxatms),                                                Stat=fail(1))
@@ -3116,7 +3116,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 End Subroutine defects_reference_write
 
 Subroutine defects_write &
-           (rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time,comm)
+           (rcut,keyres,ensemble,nsdef,isdef,rdef,nstep,tstep,time,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3129,7 +3129,7 @@ Subroutine defects_write &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( In    ) :: keyres,keyens, &
+  Integer,           Intent( In    ) :: keyres,ensemble, &
                                         nsdef,isdef,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,rdef,tstep,time
   Type( comms_type), Intent( InOut ) :: comm
@@ -3337,7 +3337,7 @@ Subroutine defects_write &
 
 ! Update rcell
 
-  If (keyens >= 20) Call invert(cell,rcell,cut)
+  If (ensemble >= 20) Call invert(cell,rcell,cut)
 
   fail=0
   Allocate (dr(1:mxatms),                                                Stat=fail(1))
@@ -4072,7 +4072,7 @@ Subroutine defects_write &
      Call error(0,message)
   End If
 
-  If (l_dfx) Call defects1_write(rcut,keyres,keyens,nsdef,isdef,rdef,nstep,tstep,time,comm)
+  If (l_dfx) Call defects1_write(rcut,keyres,ensemble,nsdef,isdef,rdef,nstep,tstep,time,comm)
 
 End Subroutine defects_write
 

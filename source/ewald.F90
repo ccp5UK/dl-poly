@@ -86,16 +86,16 @@ Contains
     T%ffz = 0.0_wp
   End Subroutine ewald_allocate_kfrz_arrays
 
-  Subroutine ewald_check(T,keyens,megfrz,nsteql,nstfce,nstep)
+  Subroutine ewald_check(T,ensemble,megfrz,nsteql,nstfce,nstep)
     Class(ewald_type) :: T
 
-    Integer, Intent( In    ) :: keyens,megfrz, &
+    Integer, Intent( In    ) :: ensemble,megfrz, &
                                 nsteql,nstfce,nstep
 
 ! Full frozen-frozen evaluation is TRUE by default
 ! otherwise a "refresh" is applied.
 
-    If (keyens < 20 .and. megfrz > 0) Then
+    If (ensemble < 20 .and. megfrz > 0) Then
        T%lf_fce = .false.
 
        If (T%newjob_kfrz) Then
@@ -107,7 +107,7 @@ Contains
 
 ! Allow copying into these arrays
 
-          T%lf_cp=.true. ! == (keyens < 20 .and. megfrz > 0)
+          T%lf_cp=.true. ! == (ensemble < 20 .and. megfrz > 0)
 
 ! Force the full frozen force evaluation
 

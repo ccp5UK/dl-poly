@@ -31,7 +31,7 @@ Module two_body
   Public :: two_body_forces
 Contains
 Subroutine two_body_forces                        &
-           (rcut,rlnk,rvdw,pdplnc,keyens,    &
+           (rcut,rlnk,rvdw,pdplnc,ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,               &
@@ -70,7 +70,7 @@ Subroutine two_body_forces                        &
 
 
   Logical,                                  Intent( In    ) :: lbook,lrdf,leql
-  Integer,                                  Intent( In    ) :: keyens,        &
+  Integer,                                  Intent( In    ) :: ensemble,        &
                                                                keyfce,nstfce, &
                                                                megfrz,nstrdf, &
                                                                nsteql,nstep
@@ -117,7 +117,7 @@ Subroutine two_body_forces                        &
 ! frozen-frozen evaluations in constant volume ensembles only.
 
   If (keyfce == 2 .or. keyfce == 12) Then
-    Call ewld%check(keyens,megfrz,nsteql,nstfce,nstep)
+    Call ewld%check(ensemble,megfrz,nsteql,nstfce,nstep)
   End If
 
 ! initialise energy and virial accumulators
@@ -176,7 +176,7 @@ Subroutine two_body_forces                        &
 
 ! Reset metal long-range corrections (constant pressure/stress only)
 
-     If (keyens >= 20) Call metal_lrc(met,comm)
+     If (ensemble >= 20) Call metal_lrc(met,comm)
 
 ! calculate local density in metals
 

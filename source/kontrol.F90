@@ -42,7 +42,13 @@ Module kontrol
                             IO_WRITE_SORTED_NETCDF,   &
                             IO_WRITE_SORTED_MASTER
   Use numerics, Only : dcell, invert
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type, &
+                         ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
+                         ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
+                         ENS_NVT_GENTLE, ENS_NVT_LANGEVIN_INHOMO, &
+                         ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
+                         ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
+                         ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
   Use statistics, Only : stats_type
 
   Implicit None
@@ -67,7 +73,6 @@ Subroutine read_control                                &
            keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
-           keyens,&
            fmax,nstbpo,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
@@ -113,7 +118,6 @@ Subroutine read_control                                &
                                              keyres,nstrun,        &
                                              nsteql,       &
                                              keymin,nstmin,        &
-                                             keyens,           &
                                              nstbpo,        &
                                              keyfce,        &
                                              mxshak,mxquat,        &
@@ -266,7 +270,7 @@ Subroutine read_control                                &
 
   lvv    = .true.
   lens   = .false.
-  keyens = 0
+  thermo%ensemble = ENS_NVE
 
 ! default thermostat and barostat friction time constants
 
@@ -1174,7 +1178,7 @@ Subroutine read_control                                &
 
         If      (word(1:3) == 'nve' .or. word(1:3) == 'pmf') Then
 
-           keyens = 0
+           thermo%ensemble = ENS_NVE
 
            Call info('Ensemble : NVE (Microcanonical)',.true.)
 
@@ -1187,7 +1191,7 @@ Subroutine read_control                                &
 
            If      (word(1:5) == 'evans') Then
 
-              keyens = 1
+              thermo%ensemble = ENS_NVT_EVANS
 
               Call info('Ensemble : NVT Evans (Isokinetic)',.true.)
               Call info('Gaussian temperature constraints in use',.true.)
@@ -1197,7 +1201,7 @@ Subroutine read_control                                &
 
            Else If (word(1:4) == 'lang') Then
 
-              keyens = 10
+              thermo%ensemble = ENS_NVT_LANGEVIN
               If (.not.l_vv) thermo%l_langevin = .true.
 
               Call get_word(record,word)
@@ -1212,7 +1216,7 @@ Subroutine read_control                                &
 
            Else If (word(1:5) == 'ander') Then
 
-              keyens = 11
+              thermo%ensemble = ENS_NVT_ANDERSON
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -1230,7 +1234,7 @@ Subroutine read_control                                &
 
            Else If (word(1:3) == 'ber') Then
 
-              keyens = 12
+              thermo%ensemble = ENS_NVT_BERENDSEN
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -1244,7 +1248,7 @@ Subroutine read_control                                &
 
            Else If (word(1:6) == 'hoover') Then
 
-              keyens = 13
+              thermo%ensemble = ENS_NVT_NOSE_HOOVER
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -1258,7 +1262,7 @@ Subroutine read_control                                &
 
            Else If (word(1:3) == 'gst') Then
 
-              keyens = 14
+              thermo%ensemble = ENS_NVT_GENTLE
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -1276,7 +1280,7 @@ Subroutine read_control                                &
 
            Else If (word(1:4) == 'ttm' .or. word(1:6) == 'inhomo') Then
 
-              keyens = 15
+              thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
               If (.not.l_vv) thermo%l_langevin = .true.
 
               Call get_word(record,word)
@@ -1302,10 +1306,10 @@ Subroutine read_control                                &
 ! thermo%key_dpd determined in scan_control
 
               If      (thermo%key_dpd == 1) Then
-                 keyens = 0 ! equivalence to doing NVE with some extra fiddling before VV(0)
+                 thermo%ensemble = ENS_NVE ! equivalence to doing NVE with some extra fiddling before VV(0)
                  Call info("Ensemble type : Shardlow's first order splitting (S1)",.true.)
               Else If (thermo%key_dpd == 2) Then
-                 keyens = 0 ! equivalence to doing NVE with some extra fiddling before VV(0) and after VV(1)
+                 thermo%ensemble = ENS_NVE ! equivalence to doing NVE with some extra fiddling before VV(0) and after VV(1)
                  Call info("Ensemble type : Shardlow's second order splitting (S2)",.true.)
               Else
                  Call strip_blanks(record)
@@ -1340,7 +1344,7 @@ Subroutine read_control                                &
 
            If (word(1:4) == 'lang') Then
 
-              keyens = 20
+              thermo%ensemble = ENS_NPT_LANGEVIN
               thermo%l_langevin = .true.
 
               Call get_word(record,word)
@@ -1361,7 +1365,7 @@ Subroutine read_control                                &
 
            Else If (word(1:3) == 'ber') Then
 
-              keyens = 21
+              thermo%ensemble = ENS_NPT_BERENDSEN
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -1378,7 +1382,7 @@ Subroutine read_control                                &
 
            Else If (word(1:6) == 'hoover') Then
 
-              keyens = 22
+              thermo%ensemble = ENS_NPT_NOSE_HOOVER
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -1395,7 +1399,7 @@ Subroutine read_control                                &
 
            Else If (word(1:3) == 'mtk') Then
 
-              keyens = 23
+              thermo%ensemble = ENS_NPT_MTK
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -1425,7 +1429,7 @@ Subroutine read_control                                &
 
            If (word(1:4) == 'lang') Then
 
-              keyens = 30
+              thermo%ensemble = ENS_NPT_LANGEVIN_ANISO
               thermo%l_langevin = .true.
 
               Call get_word(record,word)
@@ -1496,7 +1500,7 @@ Subroutine read_control                                &
 
            Else If (word(1:3) == 'ber') Then
 
-              keyens = 31
+              thermo%ensemble = ENS_NPT_BERENDSEN_ANISO
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -1563,7 +1567,7 @@ Subroutine read_control                                &
 
            Else If (word(1:6) == 'hoover') Then
 
-              keyens = 32
+              thermo%ensemble = ENS_NPT_NOSE_HOOVER_ANISO
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -1630,7 +1634,7 @@ Subroutine read_control                                &
 
            Else If (word(1:3) == 'mtk') Then
 
-              keyens = 33
+              thermo%ensemble = ENS_NPT_MTK_ANISO
 
               Call get_word(record,word)
               thermo%tau_t = Abs(word_2_real(word))
@@ -2999,7 +3003,7 @@ Subroutine read_control                                &
     Else
       Call info('Ensemble : NVE (Microcanonical)',.true.)
     End If
-    If (l_ttm) keyens = 15
+    If (l_ttm) thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
     lens=.true.
   End If
 
@@ -3009,9 +3013,11 @@ Subroutine read_control                                &
 ! standard Langevin thermostat (if supplied), and use of
 ! thermal velocities only for thermostat
 
-  If (l_ttm .and. keyens/=15) Then
+  If (l_ttm .and. thermo%ensemble/=15) Then
     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
-    If (keyens==10 .or. keyens==20 .or. keyens==30 .and. thermo%chi>zero_plus) Then
+    If (thermo%ensemble==ENS_NVT_LANGEVIN .or. &
+        thermo%ensemble==ENS_NPT_LANGEVIN .or. &
+        thermo%ensemble==ENS_NPT_LANGEVIN_ANISO .and. thermo%chi>zero_plus) Then
       thermo%chi_ep = thermo%chi
     End If
 
@@ -3028,7 +3034,7 @@ Subroutine read_control                                &
     Else
       Call info('applying to total velocities in all directions',.true.)
     End If
-    keyens = 15
+    thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
 
   End If
 
@@ -3441,30 +3447,35 @@ Subroutine read_control                                &
 
 ! check settings in Langevin ensembles
 
-  If ((keyens == 10 .or. keyens == 20 .or. keyens == 30) .and. &
-      thermo%chi <= zero_plus) Call error(462)
+  If ((thermo%ensemble == ENS_NVT_LANGEVIN .or. &
+       thermo%ensemble == ENS_NPT_LANGEVIN .or. &
+       thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) .and. &
+      thermo%chi <= zero_plus) Then
+    Call error(462)
+  End IF
 
-  If (keyens == 15 ) Then
+  If (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO ) Then
     If (gvar==0 .and. thermo%chi_ep <= zero_plus) Call error(462)
     If (Abs(thermo%chi_es) <= zero_plus) Then
       Call info('assuming no electronic stopping in inhomogeneous Langevin thermostat',.true.)
     End If
   End If
 
-  If ((keyens == 20 .or. keyens == 30) .and. &
+  If ((thermo%ensemble == ENS_NPT_LANGEVIN .or. &
+       thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) .and. &
       thermo%tai <= zero_plus) Call error(463)
 
 ! check settings in ensembles with thermo%tau_t
 
-  If (((keyens >= 11 .and. keyens <= 13) .or. &
-       (keyens >= 21 .and. keyens <= 23) .or. &
-       (keyens >= 31 .and. keyens <= 33)) .and. thermo%tau_t <= 0.0_wp) Call error(464)
+  If (((thermo%ensemble >= 11 .and. thermo%ensemble <= 13) .or. &
+       (thermo%ensemble >= 21 .and. thermo%ensemble <= 23) .or. &
+       (thermo%ensemble >= 31 .and. thermo%ensemble <= 33)) .and. thermo%tau_t <= 0.0_wp) Call error(464)
 
 ! check settings in ensembles with thermo%press
 
-  If ((keyens >= 20 .and. keyens <= 23) .or. &
-      (keyens >= 30 .and. keyens <= 33)) Then
-     If      (keyens >= 20 .and. keyens <= 23) Then
+  If ((thermo%ensemble >= 20 .and. thermo%ensemble <= 23) .or. &
+      (thermo%ensemble >= 30 .and. thermo%ensemble <= 33)) Then
+     If      (thermo%ensemble >= 20 .and. thermo%ensemble <= 23) Then
         If (.not.lpres) Then
            If (lstrext) Then
               thermo%press=(thermo%stress(1)+thermo%stress(5)+thermo%stress(9))/3.0_wp
@@ -3488,7 +3499,7 @@ Subroutine read_control                                &
               Call info(messages,3,.true.)
            End If
         End If
-     Else If (keyens >= 30 .and. keyens <= 33) Then
+     Else If (thermo%ensemble >= 30 .and. thermo%ensemble <= 33) Then
         If (.not.lstrext) Then
            If (.not.lpres) Call error(387)
         Else
@@ -3506,7 +3517,11 @@ Subroutine read_control                                &
            End If
         End If
      End If
-     If (keyens /= 20 .and. keyens /= 30 .and. thermo%tau_p <= 0.0_wp) Call error(466)
+     If (thermo%ensemble /= ENS_NPT_LANGEVIN .and. &
+         thermo%ensemble /= ENS_NPT_LANGEVIN_ANISO .and. &
+         thermo%tau_p <= 0.0_wp) Then
+       Call error(466)
+     End If
   End If
 
 ! Two-temperature model: calculate atomic density (if not

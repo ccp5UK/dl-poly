@@ -9,7 +9,7 @@
 
         If (thermo%l_pseudo) Then
               Call pseudo_vv                            &
-           (1,keyshl,keyens,tstep, &
+           (1,keyshl,tstep, &
            nstep,stat,thermo,comm)
         End If
 

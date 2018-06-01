@@ -1519,7 +1519,7 @@ Module ewald_spole
   ! Note: Forces (as well as velocities) on frozen atoms are zeroed at the
   !       end (and any COM drift removed) but corrections to the stress
   !       and the virial are important as they feed into the system
-  !       pressure response.  Constant volume ensembles (keyens < 20)
+  !       pressure response.  Constant volume ensembles (ensemble < 20)
   !       need this calculation just once! - controlled by ewld%lf_fce in
   !       ewald_check<-two_body_forces
   !
