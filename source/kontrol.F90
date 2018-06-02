@@ -10,7 +10,6 @@ Module kontrol
   Use metal,      Only : metal_type
   Use poisson,    Only : poisson_type
   Use msd,        Only : msd_type
-  Use defects,   Only : l_dfx
   Use kinetics,  Only : l_vom
   Use plumed,   Only : plumed_type
   Use setup,       Only : nread,control,pi,zero_plus,seed, &
@@ -24,7 +23,7 @@ Module kontrol
   Use development, Only : development_type
   Use ttm
   Use impacts,     Only : impact_type
-
+  Use defects,     Only : defects_type
   
   Use io,     Only : io_set_parameters,        &
                             io_get_parameters,        &
@@ -77,7 +76,7 @@ Subroutine read_control                                &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstraj,istraj,keytrj,         &
-           nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
+           dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -124,7 +123,6 @@ Subroutine read_control                                &
                                              nstdih,nstinv,        &
                                              nstrdf,nstzdn,        &
                                              nstraj,istraj,keytrj, &
-                                             nsdef,isdef,          &
                                              nsrsd,isrsd,          &
                                              ndump
 
@@ -132,7 +130,7 @@ Subroutine read_control                                &
                                              min_tol(1:2), &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              tolnce,quattol,             &
-                                             rdef,rrsd,pdplnc
+                                             rrsd,pdplnc
   Type( stats_type ), Intent (   InOut )   :: stats
   Type( impact_type ),     Intent(   Out ) :: impa
   Type ( thermostat_type), Intent( InOut ) :: thermo
@@ -143,6 +141,7 @@ Subroutine read_control                                &
   Type( metal_type ), Intent( InOut ) :: met
   Type( poisson_type ), Intent( InOut ) :: pois
   Type( timer_type ),      Intent( InOut ) :: tmr
+  Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( comms_type ),     Intent( InOut )  :: comm
 
 
@@ -464,10 +463,11 @@ Subroutine read_control                                &
 ! (i) step to start at, (ii) every step after to be collected,
 ! (iii) default value for accepting an atom has defected
 
-  ldef   =.false.
-  nsdef  = 0
-  isdef  = 1
-  rdef   = Min(0.75_wp,rcut/3.0_wp)
+  dfcts(:)%ldef   =.false.
+  dfcts(:)%nsdef  = 0
+  dfcts(:)%isdef  = 1
+  dfcts(:)%rdef   = Min(0.75_wp,rcut/3.0_wp)
+  dfcts(:)%newjob = .True.
 
 ! default switch for displacements outputting and defaults for
 ! (i) step to start at, (ii) every step after to be collected,
@@ -2736,37 +2736,47 @@ Subroutine read_control                                &
 
      Else If (word(1:4) == 'defe') Then
 
-        ldef = .true.
+        dfcts(1)%ldef = .true.
 
         Call get_word(record,word)
         itmp = Abs(Nint(word_2_real(word)))
-        nsdef = Max(nsdef,itmp)
+        dfcts(1)%nsdef = Max(dfcts(1)%nsdef,itmp)
 
         Call get_word(record,word)
         itmp = Abs(Nint(word_2_real(word)))
-        isdef = Max(isdef,itmp)
+        dfcts(1)%isdef = Max(dfcts(1)%isdef,itmp)
 
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
         If (tmp >= Min(0.3_wp,rcut/3.0_wp) .and. tmp <= Min(3.5_wp,rcut/2.0_wp)) Then
-           rdef = tmp ! 3.43 Angs is the Cs VDW radius - largest possible
+           dfcts(1)%rdef = tmp ! 3.43 Angs is the Cs VDW radius - largest possible
         Else
-           Call warning(310,tmp,rdef,0.0_wp)
+           Call warning(310,tmp,dfcts(1)%rdef,0.0_wp)
         End If
+
 
         Write(messages(1),'(a)') 'defects file option on'
-        Write(messages(2),'(2x,a,i10)') 'defects file start ',nsdef
-        Write(messages(3),'(2x,a,i10)') 'defects file interval ',isdef
-        Write(messages(4),'(2x,a,1p,e12.4)') 'defects distance condition (Angs) ',rdef
+        Write(messages(2),'(2x,a,i10)') 'defects file start ',dfcts(1)%nsdef
+        Write(messages(3),'(2x,a,i10)') 'defects file interval ',dfcts(1)%isdef
+        Write(messages(4),'(2x,a,1p,e12.4)') 'defects distance condition (Angs) ',dfcts(1)%rdef
         Call info(messages,4,.true.)
+        dfcts(1)%reffile = 'REFERENCE'
+        dfcts(1)%deffile = 'DEFECTS'
 
 ! REFERENCE1 forcing
+       Call get_word(record,word)
+       If (word(1:5) == 'extra') Then
+         dfcts(2)%ldef=.true.
+         Call info('defects1 file option on',.true.)
+         dfcts(2)%nsdef =dfcts(1)%nsdef
+         dfcts(2)%isdef =dfcts(1)%isdef
+         dfcts(2)%rdef  =dfcts(1)%rdef
+         dfcts(2)%newjob = .True.
+         ! Name REFERENCE and DEFECTS files
+         dfcts(2)%reffile = 'REFERENCE1'
+         dfcts(2)%deffile = 'DEFECTS1'
+       End If
 
-        Call get_word(record,word)
-        If (word(1:5) == 'extra') Then
-           l_dfx=.true.
-           Call info('defects1 file option on',.true.)
-        End If
 
 ! read displacements trajectory printing option
 
@@ -3366,7 +3376,7 @@ Subroutine read_control                                &
         Write(messages(2),'(a)') '*** with structural properties will be recalculated ***'
         Call info(messages,2,.true.)
 ! abort if there's no structural property to recalculate
-        If (.not.(lrdf .or. lzdn .or. ldef .or. msd_data%l_msd .or. lrsd .or. (mxgana > 0))) Call error(580)
+        If (.not.(lrdf .or. lzdn .or. dfcts(1)%ldef .or. msd_data%l_msd .or. lrsd .or. (mxgana > 0))) Call error(580)
      End If
 
      If (keyres /= 0) Then

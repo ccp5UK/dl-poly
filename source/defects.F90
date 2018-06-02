@@ -9,8 +9,8 @@ Module defects
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,             Only : wp,li
-  Use setup,      Only : mxatms,mxbfxp,mxcell,ndefdt, &
+  Use kinds,             Only : wp,li, wi
+  Use setup,             Only : mxatms,mxbfxp,mxcell,ndefdt, &
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
@@ -20,8 +20,8 @@ Module defects
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
   Use core_shell,        Only : ntshl,listshl
-  Use parse,      Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
-  Use io,         Only : io_set_parameters,        &
+  Use parse,             Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
+  Use io,                Only : io_set_parameters,        &
                                 io_get_parameters,        &
                                 io_init, io_open,         &
                                 io_write_record,          &
@@ -49,1046 +49,87 @@ Module defects
                                 IO_UNKNOWN_WRITE_OPTION,  &
                                 IO_UNKNOWN_WRITE_LEVEL
   Use site
-  Use domains,   Only : nprx,npry,nprz,            &
-                               nprx_r,npry_r,nprz_r,map,  &
-                               idx,idy,idz,r_nprx,r_npry, &
-                               r_nprz
-  Use numerics, Only : pbcshift,invert,dcell, shellsort2
-  Use errors_warnings, Only : error,warning
-  Use link_cells, Only : defects_link_cells
+  Use domains,           Only : nprx,npry,nprz,            &
+                                nprx_r,npry_r,nprz_r,map,  &
+                                idx,idy,idz,r_nprx,r_npry, &
+                                r_nprz
+  Use numerics,          Only : pbcshift,invert,dcell, shellsort2
+  Use errors_warnings,   Only : error,warning
+  Use link_cells,        Only : defects_link_cells
+
   Implicit None
 
-! REFERENCE data
+  Private
+!> REFERENCE data
 
-  Integer,                             Save :: nrefs  = 0 , &
-                                               nlrefs = 0
+!> Defect Type  
+   Type, Public :: defects_type
+     Logical                             :: ldef, newjob
+     Integer(Kind =  wi)                 :: isdef, nsdef
+     Real(Kind =  wp)                    :: rdef   
+     Character( Len = 12 )               :: reffile
+     Character( Len = 12 )               :: deffile
 
-  Real( Kind = wp ),                   Save :: celr(1:9) = 0.0_wp
+     Integer(Kind =  wi)                 :: nrefs = 0 , nlrefs = 0 
+     Integer(Kind=li)                    :: rec=0_li,frm = 0_li
+     Integer(Kind =  wi)                 :: mxlcdef
 
+     Real( Kind = wp )                   :: celr(1:9)  = 0.0_wp
+     Real( Kind = wp )                   :: rdefsq,rcell(1:9),cwx,cwy,cwz, &
+                                            dxl,dxr,dyl,dyr,dzl,dzr,cutdef
 
-  Character( Len = 8 ),   Allocatable, Save :: namr(:)
+     Integer(Kind =  wi)   , Allocatable :: lri(:) ,lra(:) ,indr(:)
+     Real( Kind = wp )     , Allocatable :: xr(:)  ,yr(:)  ,zr(:)
+     Character( Len = 8 )  , Allocatable :: namr(:)
+   End Type
 
-  Integer,                Allocatable, Save :: lri(:),lra(:),indr(:)
-
-  Real( Kind = wp ),      Allocatable, Save :: xr(:),yr(:),zr(:)
-  
-  Logical,                             Save :: l_dfx = .false.
-  Integer,                             Save :: nrefs1  = 0 , &
-                                               nlrefs1 = 0
-
-  Real( Kind = wp ),                   Save :: celr1(1:9) = 0.0_wp
-
-
-  Character( Len = 8 ),   Allocatable, Save :: namr1(:)
-
-  Integer,                Allocatable, Save :: lri1(:),lra1(:),indr1(:)
-
-  Real( Kind = wp ),      Allocatable, Save :: xr1(:),yr1(:),zr1(:)
-
-  Public :: allocate_defects_arrays
-  Public :: allocate_defects1_arrays
+  Public :: defects_write
 
 Contains
 
-  Subroutine allocate_defects_arrays()
 
-    Integer, Dimension( 1:3 ) :: fail
+!> allocate_defects_arrays 
+  Subroutine allocate_defects_arrays(dfcts)
+
+    Integer(Kind =  wi), Dimension( 1:3 )  :: fail
+    Type(defects_type) , Intent( InOut )   :: dfcts 
 
     fail = 0
-
-    Allocate (namr(1:mxatms),                             Stat = fail(1))
-    Allocate (lri(1:mxatms),lra(1:mxatms),indr(1:mxatms), Stat = fail(2))
-    Allocate (xr(1:mxatms),yr(1:mxatms),zr(1:mxatms),     Stat = fail(3))
+    Allocate (dfcts%namr(1:mxatms)                                 , Stat = fail(1))
+    Allocate (dfcts%lri(1:mxatms) ,dfcts%lra(1:mxatms),dfcts%indr(1:mxatms), Stat = fail(2))
+    Allocate (dfcts%xr(1:mxatms)  ,dfcts%yr(1:mxatms) ,dfcts%zr(1:mxatms)  , Stat = fail(3))
 
     If (Any(fail > 0)) Call error(1035)
 
-    namr = ' '
-    lri = 0 ; lra = 0 ; indr = 0
-    xr = 0.0_wp ; yr = 0.0_wp ; zr = 0.0_wp
+    dfcts%namr = ' '
+    dfcts%lri  = 0 
+    dfcts%lra  = 0 
+    dfcts%indr = 0
 
+    dfcts%xr   = 0.0_wp 
+    dfcts%yr   = 0.0_wp 
+    dfcts%zr   = 0.0_wp
+ 
   End Subroutine allocate_defects_arrays
-  
-  Subroutine allocate_defects1_arrays()
-  
-    Integer, Dimension( 1:3 ) :: fail
+
+
+!> deallocate_defects_arrays 
+  Subroutine deallocate_defects_arrays(dfcts)
+
+    Integer(Kind =  wi), Dimension( 1:3 )  :: fail
+    Type(defects_type) , Intent( InOut )   :: dfcts 
 
     fail = 0
-
-    Allocate (namr1(1:mxatms),                               Stat = fail(1))
-    Allocate (lri1(1:mxatms),lra1(1:mxatms),indr1(1:mxatms), Stat = fail(2))
-    Allocate (xr1(1:mxatms),yr1(1:mxatms),zr1(1:mxatms),     Stat = fail(3))
+    Deallocate (dfcts%namr                     , Stat = fail(1))
+    Deallocate (dfcts%lri ,dfcts%lra,dfcts%indr, Stat = fail(2))
+    Deallocate (dfcts%xr  ,dfcts%yr ,dfcts%zr  , Stat = fail(3))
 
     If (Any(fail > 0)) Call error(1035)
-
-    namr1 = ' '
-    lri1 = 0 ; lra1 = 0 ; indr1 = 0
-    xr1 = 0.0_wp ; yr1 = 0.0_wp ; zr1 = 0.0_wp
-
-  End Subroutine allocate_defects1_arrays
-  
-  
-  Subroutine defects1_write &
-           (rcut,keyres,ensemble,nsdef,isdef,rdef,nstep,tstep,time,comm)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for writing DEFECTS1 file at selected intervals
-! in simulation
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov august 2016
-! contrib   - i.j.bush
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-  Integer,           Intent( In    ) :: keyres,ensemble, &
-                                        nsdef,isdef,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,rdef,tstep,time
-  Type( comms_type), Intent( InOut ) :: comm
-
-  Integer, Parameter :: recsz = 73 ! default record size
-
-  Logical,           Save :: newjob = .true.
-  Integer(Kind=li),  Save :: rec    = 0_li , &
-                             frm    = 0_li
-  Integer,           Save :: mxlcdef
-  Real( Kind = wp ), Save :: rdefsq,rcell(1:9),cwx,cwy,cwz, &
-                             dxl,dxr,dyl,dyr,dzl,dzr,cutdef
-
-  Logical                 :: safe,lexist,l_tmp,ready
-  Character( Len = 40 )   :: word
-  Integer                 :: fail(1:7),i,j,k,nlx,nly,nlz,   &
-                             ic,jc,kk,ix,iy,iz,jx,jy,jz,    &
-                             taken,ni,megni,nv,megnv,jdnode,jatms
-  Real( Kind = wp )       :: cut,x,y,z,xs,ys,zs,buffer(1:2)
-
-! Some parameters and variables needed by io interfaces
-
-  Integer                           :: fh, io_write, batsz
-  Integer( Kind = offset_kind ) :: rec_mpi_io
-  Character( Len = recsz )          :: record
-  Character                         :: lf
-
-! Number of neighbouring cells to look around for counting defects
-
-  Integer, Parameter :: nsbcll = 27
-
-! Direction arrays for jumping around in link-cell space
-
-  Integer, Dimension( 1:nsbcll ), Parameter :: &
-  nix = (/ 0,  -1,-1,-1, 0, 0, 0, 1, 1, 1, -1,-1,-1, 0, 0, 1, 1, 1, -1,-1,-1, 0, 0, 0, 1, 1, 1 /) , &
-  niy = (/ 0,  -1, 0, 1,-1, 0, 1,-1, 0, 1, -1, 0, 1,-1, 1,-1, 0, 1, -1, 0, 1,-1, 0, 1,-1, 0, 1 /) , &
-  niz = (/ 0,  -1,-1,-1,-1,-1,-1,-1,-1,-1,  0, 0, 0, 0, 0, 0, 0, 0,  1, 1, 1, 1, 1, 1, 1, 1, 1 /)
-
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: dr
-  Character( Len = 8 ), Dimension( : ),    Allocatable :: namv,nami
-  Integer,              Dimension( : ),    Allocatable :: indv,indi,interstitial,occupies
-  Integer,              Dimension( : ),    Allocatable :: linkr,lctr,link,lct
-
-  Integer,              Dimension( : ),    Allocatable :: ni_n,nv_n
-
-  Character( Len = 1 ), Dimension( :, : ), Allocatable :: chbat
-  Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
-  Integer,              Dimension( : ),    Allocatable :: iwrk
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: cxx,cyy,czz
-
-  Character( Len = 256 ) :: message
-
-  If (.not.(nstep >= nsdef .and. Mod(nstep-nsdef,isdef) == 0)) Return
-
-! Get write buffer size and line feed character
-
-  Call io_get_parameters( user_method_write      = io_write )
-  Call io_get_parameters( user_buffer_size_write = batsz    )
-  Call io_get_parameters( user_line_feed         = lf       )
-
-! netCDF not implemented for DEFECTS1.  Switch to DEFAULT temporarily.
-
-  If (io_write == IO_WRITE_SORTED_NETCDF) io_write = IO_WRITE_SORTED_MPIIO
-
-  If (newjob) Then
-     newjob = .false.
-
-! rdef squared
-
-     rdefsq=rdef**2
-
-! Build lattice sites list from REFERENCE
-
-     Call allocate_defects1_arrays()
-     Call defects_reference_read &
-           ('REFERENCE1',nstep,celr1,nrefs1,namr1,indr1,xr1,yr1,zr1,comm)
-
-! Assume that the MD cell will not change much in size and shape from
-! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set
-
-     cut=rdef+0.15_wp
-     Call defects_reference_set_halo                 &
-           (cut,cwx,cwy,cwz,dxl,dxr,dyl,dyr,dzl,dzr, &
-           nrefs1,nlrefs1,namr1,lri1,lra1,indr1,xr1, &
-           yr1,zr1,comm)
-
-! If the keyres=1, is DEFECTS1 old (does it exist) and
-! how many frames and records are in there
-
-     lexist=.true.
-     If (keyres == 1) Then
-        If (comm%idnode == 0) Inquire(File='DEFECTS1', Exist=lexist)
-        Call gcheck(comm,lexist,"enforce")
-     Else
-        lexist=.false.
-     End If
-
-! Generate file is non-existent
-
-10   Continue
-     If (.not.lexist) Then
-
-        If (comm%idnode == 0) Then
-           Open(Unit=ndefdt, File='DEFECTS1', Form='formatted', Access='direct', Status='replace', Recl=recsz)
-           Write(Unit=ndefdt, Fmt='(a72,a1)',           Rec=1) cfgname(1:72),lf
-           Write(Unit=ndefdt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) rdef,Repeat(' ',23),frm,rec,lf
-           Close(Unit=ndefdt)
-        End If
-        rec=Int(2,li)
-        frm=Int(0,li)
-
-! Get some sense of it
-
-     Else
-
-        safe=.true.
-        If (comm%idnode == 0) Then
-
-           Open(Unit=ndefdt, File='DEFECTS1', Form='formatted')
-
-           l_tmp =.true.
-           Do
-
-              record=' '
-              If (l_tmp) Then
-
-                 Read(Unit=ndefdt, Fmt=*, End=20)            ! title record
-                 rec=rec+Int(1,li)
-                 Read(Unit=ndefdt, Fmt='(a)', End=20) record ! bookkeeping record
-                 rec=rec+Int(1,li)
-
-                 Call tabs_2_blanks(record) ; Call get_word(record,word)
-                 If (word(1:Len_Trim(word)) /= 'timestep') Then
-                    Call get_word(record,word) ; Call get_word(record,word)
-                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
-                    If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
-                       Go To 20 ! New style
-                    Else
-                       l_tmp=.false. ! TOUGH, old style
-                       rec=Int(2,li)
-                       frm=Int(0,li)
-                    End If
-                 Else
-                    safe=.false. ! Overwrite the file, it's junk to me
-                    Go To 20
-                 End If
-
-              Else
-
-                 Read(Unit=ndefdt, Fmt=*, End=20)            ! timestep record
-                 rec=rec+Int(1,li)
-
-                 Read(Unit=ndefdt, Fmt='(a)', End=20) record ! defects record
-                 rec=rec+Int(1,li)
-
-                 Call tabs_2_blanks(record) ; Call get_word(record,word)
-                 Call get_word(record,word) ; j=Nint(word_2_real(word))
-
-                 Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for defects
-                    Read(Unit=ndefdt, Fmt=*, End=20)
-                    rec=rec+Int(1,li)
-                 End Do
-                 frm=frm+Int(1,li)
-
-              End If
-
-           End Do
-
-20         Continue
-           Close(Unit=ndefdt)
-
-        End If
-
-        Call gcheck(comm,safe,"enforce")
-        If (.not.safe) Then
-           lexist=.false.
-
-           rec=Int(0,li)
-           frm=Int(0,li)
-
-           Go To 10
-        Else If (comm%mxnode > 1) Then
-           buffer(1)=Real(frm,wp)
-           buffer(2)=Real(rec,wp)
-
-           Call gbcast(comm,buffer(1:2),0)
-
-           frm=Nint(buffer(1),li)
-           rec=Nint(buffer(2),li)
-        End If
-
-     End If
-
-! Get rcell
-
-     Call invert(cell,rcell,cut)
-
-! New real space cutoff and expansion for defects link-cells
-
-     cutdef=Min(rcut/3.0_wp,2.0_wp*rdef)
-     mxlcdef=Nint(((rcut/cutdef)**3+0.15_wp)*Real(mxcell,wp))
-  End If
-
-! Update rcell
-
-  If (ensemble >= 20) Call invert(cell,rcell,cut)
-
-  fail=0
-  Allocate (dr(1:mxatms),                                                Stat=fail(1))
-  Allocate (namv(1:mxatms),indv(1:mxatms),nami(1:mxatms),indi(1:mxatms), Stat=fail(2))
-  Allocate (interstitial(1:mxatms),occupies(1:mxatms),                   Stat=fail(3))
-  Allocate (linkr(1:mxatms),link(1:mxatms),                              Stat=fail(4))
-  Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms),                   Stat=fail(5))
-  Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),                   Stat=fail(6))
-  Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms),                   Stat=fail(7))
-  If (Any(fail > 0)) Then
-     Write(message,'(a)') 'defects1_write allocation failure'
-     Call error(0,message)
-  End If
-
-! Build bookkeeping lists: interstitial, occupies
-
-  Do i=1,nlast
-
-! Consider all particles at this point:j=1 - consider in,j=0 - consider out
-
-     j=1
-
-! Get all domain+halo particles' coordinates in MD cell centred reduced space
-
-     cxx(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-     cyy(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-     czz(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
-
-! Exclude particles in the domain's halo farther than cutoff(rdef)
-! smaller halo with a width defined by cutoff(rdef)
-
-     If ( i > natms .and.                        &
-          ((cxx(i) < dxl .or. cxx(i) > dxr) .or. &
-           (cyy(i) < dyl .or. cyy(i) > dyr) .or. &
-           (czz(i) < dzl .or. czz(i) > dzr)) ) j=0
-
-! Exclude frozen and shell particles from consideration
-
-     If ( j == 1 .and. (lfrzn(i) /= 0 .or. Any(listshl(2,1:ntshl) == ltg(i))) ) j=0
-
-! Assume that every considered particles (1) is an interstitial
-! and (2) does not occupy a site yet
-
-     If (j == 1) Then
-        interstitial(i)=-1 ! considered particle is assumed to be an interstitial
-        occupies(i)    = 0 ! and to not occupy a site yet (but may occupy one later)
-     Else
-        interstitial(i)= 0 ! excluded particle can neither ever be an interstitial
-        occupies(i)    =-1 ! nor can it ever occupy a site
-     End If
-  End Do
-
-! Partition sites and atoms in link-celled space with same imcon, cell and cutoff!!!
-
-  Allocate (lctr(0:mxlcdef),lct(0:mxlcdef), Stat=fail(1))
-  If (fail(1) > 0) Then
-     Write(message,'(a)') 'defects1_write allocation failure 1'
-     Call error(0,message)
-  End If
-  Call defects_link_cells &
-           (cutdef,mxlcdef,nrefs1,nlrefs1,xr1,yr1,zr1,nlx,nly,nlz,linkr,lctr)
-  Call defects_link_cells &
-           (cutdef,mxlcdef,natms,nlast,cxx,cyy,czz,nlx,nly,nlz,link,lct)
-
-  safe = .true.          ! Initialise safety flag to all safe
-  nv = 0                 ! Assume no vacancies (all sites are occupied)
-  ni = 0                 ! Assume no interstitials (all particles are occupying a site)
-  dr = (rdef+0.15_wp)**2 ! Assume all particles are > rdef distance away from the nearest to them site
-
-! Actual defect detection *********************************************
-
-! primary loop over domain subcells of sites
-
-  Do iz=0,nlz+1
-     Do iy=0,nly+1
-        Do ix=0,nlx+1
-
-! index of primary reference link-cell
-
-           ic=1+ix+(nlx+2)*(iy+(nly+2)*iz)
-
-! bypass reference subcell if empty
-
-           If (lctr(ic) > 0) Then
-
-! head of chain of i-th subcell (reference)
-
-              i=lctr(ic)
-
-! loop over primary cell contents
-
-100           Continue
-
-! Bypass if the site is a shell
-
-              If (Any(listshl(2,1:ntshl) == ltg(i))) Go To 400
-
-! Assume the site is vacant
-
-              taken=0 ! Assume the site is vacant
-
-! secondary loop over subcells of particles
-
-              Do kk=1,nsbcll
-
-                 jx=ix+nix(kk)
-                 jy=iy+niy(kk)
-                 jz=iz+niz(kk)
-
-! SHIFT BACK to the LEFT
-! Disregard cells outside the look-up scope
-
-  If ( (jx >= 0) .and. (jx <= nlx+1) .and. &
-       (jy >= 0) .and. (jy <= nly+1) .and. &
-       (jz >= 0) .and. (jz <= nlz+1) ) Then
-
-! index of neighbouring cell
-
-     jc=1+jx+(nlx+2)*(jy+(nly+2)*jz)
-
-! bypass real subcell if empty
-
-     If (lct(jc) > 0) Then
-
-! head of chain of j-th subcell (real)
-
-        j=lct(jc)
-
-! loop over secondary cell contents
-
-200     Continue
-
-! Bypass if the atom is excluded or has already claimed (occupied) a site
-
-        If (occupies(j) /= 0) Go To 300
-
-! Get vectors particle-site (in reduced space)
-
-        xs=xr1(i)-cxx(j) ; If (Abs(xs) > cwx) Go To 300
-        ys=yr1(i)-cyy(j) ; If (Abs(ys) > cwy) Go To 300
-        zs=zr1(i)-czz(j) ; If (Abs(zs) > cwz) Go To 300
-
-! Get in real space
-
-        x=cell(1)*xs+cell(4)*ys+cell(7)*zs
-        y=cell(2)*xs+cell(5)*ys+cell(8)*zs
-        z=cell(3)*xs+cell(6)*ys+cell(9)*zs
-
-! Get particle-site squared distance
-
-        cut=x**2+y**2+z**2
-
-! An atom qualifies to claim a site (occupies > 0)
-! when the site is vacant - not occupied/taken (taken=0).
-! If the site is not claimed yet then the atom is marked
-! as a claimee of this site (occupies > 0) and not an
-! interstitial (interstitial = 0).  If the site is
-! already taken by another atom then the atom is marked
-! as an interstitial of this site (interstitial > 0).
-
-        If (cut < rdefsq) Then
-           dr(j)=cut             ! Save the distance (site-atom)
-
-! Only general interstitial atoms are allowed to claim.  Otherwise, we are in a big trouble
-
-           If (interstitial(j) >= 0) safe=.false.
-
-           If (taken == 0) Then
-              taken=1            ! This site is taken (no longer vacant)
-              occupies(j)=i      ! This atom claims a site (this site)
-              interstitial(j)=0  ! This atom is not an interstitial any longer
-           Else
-              interstitial(j)=i  ! This atom is not a general interstitial any longer
-           End If
-        End If
-
-300     Continue
-
-        j=link(j)
-        If (j /= 0) Go To 200
-
-! end of loop over the real subcell contents jc
-
-     End If
-
-! End If of disregard cell outside the look-up scope
-
-  End If
-
-! SHIFT BACK to the RIGHT
-! End Do secondary loop around real subcells
-
-              End Do
-
-! Vacancies: taken=0 means we've found a vacancy
-
-              If (taken == 0 .and. i <= nrefs1) Then
-                 nv=nv+1
-                 namv(nv)=namr1(i)
-                 indv(nv)=indr1(i)
-                 axx(nv)=cell(1)*xr1(i)+cell(4)*yr1(i)+cell(7)*zr1(i)
-                 ayy(nv)=cell(2)*xr1(i)+cell(5)*yr1(i)+cell(8)*zr1(i)
-                 azz(nv)=cell(3)*xr1(i)+cell(6)*yr1(i)+cell(9)*zr1(i)
-              End If
-
-400           Continue
-              i=linkr(i)
-              If (i /= 0) Go To 100
-
-! end of bypass of empty subcell ic
-
-           End If
-        End Do
-     End Do
-  End Do
-
-! Check safety on rdef length
-
-  Call gcheck(comm,safe)
-  If (.not.safe) Call error(560)
-
-! Define real interstitials and real claimees of a site by swapping
-! interstitial/occupation statuses between particles based on
-! site-atom distances of these.  Amongst all atoms close to sites -
-! interstitials of the site and the site claimee -
-! the real claimee is the atom closest to the site.
-
-! primary loop over domain subcells of particles
-
-  Do iz=0,nlz+1
-     Do iy=0,nly+1
-        Do ix=0,nlx+1
-
-! index of primary link-cell
-
-           ic=1+ix+(nlx+2)*(iy+(nly+2)*iz)
-
-! bypass subcell if empty
-
-           If (lct(ic) > 0) Then
-
-! head of chain of i-th subcell
-
-              i=lct(ic)
-
-! loop over primary cell contents
-
-500           Continue
-
-! Bypass if the atom is excluded or is not a claimee
-
-              If (occupies(i) <= 0) Go To 700
-
-! Circle around domain+halo particles, k is the index of the
-! closest to a site atom (real claimee) assuming that the first
-! claimee is the true one.  Check for an interstitial of the
-! same site, that is closer to it than the claimee.
-
-              k=i
-              cut=dr(i)
-
-! secondary loop over subcells of particles
-
-              Do kk=1,nsbcll
-
-                 jx=ix+nix(kk)
-                 jy=iy+niy(kk)
-                 jz=iz+niz(kk)
-
-! SHIFT BACK to the LEFT
-! Disregard cells outside the look-up scope
-
-  If ( (jx >= 0) .and. (jx <= nlx+1) .and. &
-       (jy >= 0) .and. (jy <= nly+1) .and. &
-       (jz >= 0) .and. (jz <= nlz+1) ) Then
-
-! index of neighbouring cell
-
-     jc=1+jx+(nlx+2)*(jy+(nly+2)*jz)
-
-! bypass real subcell if empty
-
-     If (lct(jc) > 0) Then
-
-! head of chain of j-th subcell (real)
-
-        j=lct(jc)
-
-! loop over secondary cell contents
-
-600     Continue
-
-        If (interstitial(j) == occupies(i) .and. dr(j) < cut) Then
-           cut=dr(j)
-           k=j
-        End If
-
-        j=link(j)
-        If (j /= 0) Go To 600
-
-! end of loop over the subcell contents jc
-
-     End If
-
-! End If of disregard cell outside the look-up scope
-
-  End If
-
-! SHIFT BACK to the RIGHT
-! End Do secondary loop around subcells
-
-              End Do
-
-! If there is a new true claimee change statuses
-
-              If (k /= i) Then
-                 interstitial(i)=interstitial(k) ; interstitial(k)=0
-                 occupies(k)=occupies(i)         ; occupies(i)=0
-              End If
-
-700           Continue
-
-              i=link(i)
-              If (i /= 0) Go To 500
-
-! end of bypass of empty subcell ic
-
-           End If
-        End Do
-     End Do
-  End Do
-
-! Include the following if you want occupant/site type mismatches printed out
-! printing from many nodes can be messy
-!
-!     taken = 0
-!     Do i=1,natms
-!        If (occupies(i) > 0 .and. atmnam(i) /= namr1(occupies(i))) Then
-!!           Write(message,'(a,2(1x,a))') 'occupant/site type mismatch:', atmnam(i), namr1(occupies(i))
-!            Call info(message)
-!           taken = taken + 1
-!        End If
-!     End Do
-!     Call gsum(taken)
-!     Write(message,'(a,i10,2(1x,a,i10))') 'occupant/site type mismatches', taken
-!     Call info(message,.true.)
-
-! Interstitials: i <= natms & interstitial(i) /= 0 means we've found an interstitial
-
-  Do i=1,natms
-     If (interstitial(i) /= 0) Then
-        ni=ni+1
-        nami(ni)=atmnam(i)
-        indi(ni)=ltg(i)
-        bxx(ni)=xxx(i)
-        byy(ni)=yyy(i)
-        bzz(ni)=zzz(i)
-     End If
-  End Do
-
-! Sum global defects values
-
-  megni = ni
-  Call gsum(comm,megni)
-
-  megnv = nv
-  Call gsum(comm,megnv)
-
-! Get relative offsets (int,vac) for parallel printing
-
-  Allocate (ni_n(0:comm%mxnode),nv_n(0:comm%mxnode), Stat=fail(1))
-  Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
-  If (Any(fail > 0)) Then
-     Write(message,'(a)') 'defects1_write allocation failure 2'
-     Call error(0,message)
-  End If
-
-  ni_n=0 ; ni_n(comm%idnode+1)=ni
-  Call gsum(comm,ni_n)
-  ni_n(0)=Sum(ni_n(0:comm%idnode))
-
-  nv_n=0 ; nv_n(comm%idnode+1)=nv
-  Call gsum(comm,nv_n)
-  nv_n(0)=Sum(nv_n(0:comm%idnode))
-
-  chbat=' '
-
-! Notes:
-! the MPI-I/O records are numbered from 0 (not 1)
-! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
-!   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = offset_kind)
-
-! Update frame
-
-  frm=frm+Int(1,li)
-
-  If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
-      io_write == IO_WRITE_UNSORTED_DIRECT .or. &
-      io_write == IO_WRITE_SORTED_MPIIO    .or. &
-      io_write == IO_WRITE_SORTED_DIRECT) Then
-
-! Write header and cell information, where just one node is needed
-! Start of file
-
-     rec_mpi_io=Int(rec,offset_kind)
-     j=0
-     If (comm%idnode == 0) Then
-
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_open( io_write, comm_self, 'DEFECTS1', mode_wronly, fh )
-
-        Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
-           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',2),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Write(record, Fmt='(a8,i10,a15,i10,a11,i10,a8,a1)') &
-           'defects ',megni+megnv, ' interstitials ',megni, ' vacancies ',megnv,Repeat(' ',8),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Do i = 0, 2
-           Write( record, '( 3f20.10, a12, a1 )' ) &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
-           j=j+1
-           Do k=1,recsz
-              chbat(k,j) = record(k:k)
-           End Do
-        End Do
-
-! Dump header and cell information
-
-        Call io_write_batch( fh, rec_mpi_io, j, chbat )
-
-        Call io_close( fh )
-        Call io_finalize
-
-     Else
-
-        j=j+5
-
-     End If
-     Call gsync(comm)
-
-! Start of file
-
-     rec=rec+Int(j,li)
-
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, 'DEFECTS1', mode_wronly, fh )
-
-! Start of file
-
-     rec_mpi_io=Int(rec,offset_kind)+Int(2,offset_kind)*Int(ni_n(0),offset_kind)
-     j=0
-     Do i=1,ni
-        Write(record, Fmt='(a2,a8,i10,a52,a1)') 'i_',nami(i),indi(i),Repeat(' ',52),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Write(record, Fmt='(3g20.10,a12,a1)') bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-! Dump batch and update start of file
-
-        If (j + 2 >= batsz .or. i == ni) Then
-           Call io_write_batch( fh, rec_mpi_io, j, chbat )
-           rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
-           j=0
-        End If
-     End Do
-
-! Start of file
-
-     rec=rec+Int(2,li)*Int(megni,li)
-
-! Start of file
-
-     rec_mpi_io=Int(rec,offset_kind)+Int(2,offset_kind)*Int(nv_n(0),offset_kind)
-     Do i=1,nv
-        Write(record, Fmt='(a2,a8,i10,a52,a1)') 'v_',namv(i),indv(i),Repeat(' ',52),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Write(record, Fmt='(3g20.10,a12,a1)') axx(i),ayy(i),azz(i),Repeat(' ',12),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-! Dump batch and update start of file
-
-        If (j + 2 >= batsz .or. i == nv) Then
-           Call io_write_batch( fh, rec_mpi_io, j, chbat )
-           rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
-           j=0
-        End If
-     End Do
-     rec=rec+Int(2,li)*Int(megnv,li)
-
-! Update main header
-
-     If (comm%idnode == 0) Then
-        Write(record, Fmt='(f7.3,a23,2i21,a1)') rdef,Repeat(' ',23),frm,rec,lf
-        Call io_write_record( fh, Int(1,offset_kind), record )
-     End If
-
-     Call io_close( fh )
-     Call io_finalize
-
-  Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
-           io_write == IO_WRITE_SORTED_MASTER) Then
-
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
-     If (fail(1) > 0) Then
-        Write(message,'(a)') 'defects1_write allocation failure 3'
-        Call error(0,message)
-     End If
-
-! node 0 handles I/O
-! Start of file
-
-     j=0
-     If (comm%idnode == 0) Then
-        Open(Unit=ndefdt, File='DEFECTS1', Form='formatted', Access='direct', Recl=recsz)
-
-! Accumulate header
-
-        Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
-           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',2),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Write(record, Fmt='(a8,i10,a15,i10,a11,i10,a8,a1)') &
-           'defects ',megni+megnv, ' interstitials ',megni, ' vacancies ',megnv,Repeat(' ',8),lf
-        j=j+1
-        Do k=1,recsz
-           chbat(k,j) = record(k:k)
-        End Do
-
-        Do i = 0, 2
-           Write(record, Fmt='(3f20.10,a12,a1)') &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
-           j=j+1
-           Do k=1,recsz
-              chbat(k,j) = record(k:k)
-           End Do
-        End Do
-
-! Dump header and update start of file
-
-        Write(Unit=ndefdt, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,j)
-        rec=rec+Int(j,li)
-        j=0
-
-        Do i=1,ni
-           chbuf(i)=nami(i)
-           iwrk(i)=indi(i)
-
-           cxx(i)=bxx(i)
-           cyy(i)=byy(i)
-           czz(i)=bzz(i)
-        End Do
-
-        jatms=ni
-        ready=.true.
-        Do jdnode=0,comm%mxnode-1
-           If (jdnode > 0) Then
-              Call gsend(comm,ready,jdnode,DefWrite_tag)
-
-              Call grecv(comm,jatms,jdnode,DefWrite_tag)
-              If (jatms > 0) Then
-                 Call grecv(comm,chbuf(1:jatms),jdnode,DefWrite_tag)
-                 Call grecv(comm,iwrk(1:jatms),jdnode,DefWrite_tag)
-
-                 Call grecv(comm,cxx(1:jatms),jdnode,DefWrite_tag)
-                 Call grecv(comm,cyy(1:jatms),jdnode,DefWrite_tag)
-                 Call grecv(comm,czz(1:jatms),jdnode,DefWrite_tag)
-              End If
-           End If
-
-           Do i=1,jatms
-              Write(record, Fmt='(a2,a8,i10,a52,a1)') 'i_',chbuf(i),iwrk(i),Repeat(' ',52),lf
-              j=j+1
-              Do k=1,recsz
-                 chbat(k,j) = record(k:k)
-              End Do
-
-              Write(record, Fmt='(3g20.10,a12,a1)') cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
-              j=j+1
-              Do k=1,recsz
-                 chbat(k,j) = record(k:k)
-              End Do
-
-! Dump batch and update start of file
-
-              If (j + 2 >= batsz .or. i == jatms) Then
-                 Write(Unit=ndefdt, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,j)
-                 rec=rec+Int(j,li)
-                 j=0
-              End If
-           End Do
-        End Do
-     Else
-        Call grecv(comm,ready,0,DefWrite_tag)
-
-        Call gsend(comm,ni,0,DefWrite_tag)
-        If (ni > 0) Then
-           Call gsend(comm,nami(1:ni),0,DefWrite_tag)
-           Call gsend(comm,indi(1:ni),0,DefWrite_tag)
-
-           Call gsend(comm,bxx(1:ni),0,DefWrite_tag)
-           Call gsend(comm,byy(1:ni),0,DefWrite_tag)
-           Call gsend(comm,bzz(1:ni),0,DefWrite_tag)
-        End If
-     End If
-
-     If (comm%idnode == 0) Then
-        Do i=1,nv
-           chbuf(i)=namv(i)
-           iwrk(i)=indv(i)
-
-           cxx(i)=axx(i)
-           cyy(i)=ayy(i)
-           czz(i)=azz(i)
-        End Do
-
-        jatms=nv
-        ready=.true.
-        Do jdnode=0,comm%mxnode-1
-           If (jdnode > 0) Then
-              Call gsend(comm,ready,jdnode,DefWrite_tag)
-
-              Call grecv(comm,jatms,jdnode,DefWrite_tag)
-              If (jatms > 0) Then
-                 Call grecv(comm,chbuf(1:jatms),jdnode,DefWrite_tag)
-                 Call grecv(comm,iwrk(1:jatms),jdnode,DefWrite_tag)
-
-                 Call grecv(comm,cxx(1:jatms),jdnode,DefWrite_tag)
-                 Call grecv(comm,cyy(1:jatms),jdnode,DefWrite_tag)
-                 Call grecv(comm,czz(1:jatms),jdnode,DefWrite_tag)
-              End If
-           End If
-
-           Do i=1,jatms
-              Write(record, Fmt='(a2,a8,i10,a52,a1)') 'v_',chbuf(i),iwrk(i),Repeat(' ',52),lf
-              j=j+1
-              Do k=1,recsz
-                 chbat(k,j) = record(k:k)
-              End Do
-
-              Write(record, Fmt='(3g20.10,a12,a1)') cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
-              j=j+1
-              Do k=1,recsz
-                 chbat(k,j) = record(k:k)
-              End Do
-
-! Dump batch and update start of file
-
-              If (j + 2 >= batsz .or. i == jatms) Then
-                 Write(Unit=ndefdt, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,j)
-                 rec=rec+Int(j,li)
-                 j=0
-              End If
-           End Do
-        End Do
-     Else
-        Call grecv(comm,ready,0,DefWrite_tag)
-
-        Call gsend(comm,nv,0,DefWrite_tag)
-        If (nv > 0) Then
-           Call gsend(comm,namv(1:nv),0,DefWrite_tag)
-           Call gsend(comm,indv(1:nv),0,DefWrite_tag)
-
-           Call gsend(comm,axx(1:nv),0,DefWrite_tag)
-           Call gsend(comm,ayy(1:nv),0,DefWrite_tag)
-           Call gsend(comm,azz(1:nv),0,DefWrite_tag)
-        End If
-     End If
-
-! Update main header
-
-     If (comm%idnode == 0) Then
-        Write(Unit=ndefdt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) rdef,Repeat(' ',23),frm,rec,lf
-        Close(Unit=ndefdt)
-     Else
-        rec=rec+Int(5,li)+Int(2,li)*Int(megni+megnv,li)
-     End If
-
-     Deallocate (chbuf,iwrk, Stat=fail(1))
-     If (fail(1) > 0) Then
-        Write(message,'(a)') 'defects1_write deallocation failure 3'
-        Call error(0,message)
-     End If
-
-  End If
-
-  Call gsync(comm)
-
-  Deallocate (ni_n,nv_n, Stat=fail(1))
-  Deallocate (chbat,     Stat=fail(2))
-  If (Any(fail > 0)) Then
-     Write(message,'(a)') 'defects1_write deallocation failure 2'
-     Call error(0,message)
-  End If
-
-  Deallocate (dr,                    Stat=fail(1))
-  Deallocate (namv,indv,nami,indi,   Stat=fail(2))
-  Deallocate (interstitial,occupies, Stat=fail(3))
-  Deallocate (linkr,lctr,link,lct,   Stat=fail(4))
-  Deallocate (axx,ayy,azz,           Stat=fail(5))
-  Deallocate (bxx,byy,bzz,           Stat=fail(6))
-  Deallocate (cxx,cyy,czz,           Stat=fail(7))
-  If (Any(fail > 0)) Then
-     Write(message,'(a)') 'defects1_write deallocation failure'
-     Call error(0,message)
-  End If
-
-End Subroutine defects1_write
-
-Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
+ 
+  End Subroutine deallocate_defects_arrays
+
+!> defects_reference_export   
+  Subroutine defects_reference_export(mdir,ixyz,dfcts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1103,12 +144,10 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,              Intent( In    ) :: mdir
-  Integer,              Intent( InOut ) :: ixyz(1:mxatms),nlrefs
-  Character( Len = 8 ), Intent( InOut ) :: namr(1:mxatms)
-  Integer,              Intent( InOut ) :: indr(1:mxatms)
-  Real( Kind = wp ),    Intent( InOut ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
-  Type( comms_type ),   Intent( InOut ) :: comm
+  Integer,                Intent( In    ) :: mdir
+  Integer,                Intent( InOut ) :: ixyz(1:mxatms)
+  Type( defects_type ),   Intent( InOut ) :: dfcts
+  Type( comms_type )  ,   Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez
   Integer           :: fail,iadd,limit,iblock,          &
@@ -1132,6 +171,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 ! Set buffer limit (half for outgoing data - half for incoming)
 
   iblock=limit/Merge(2,1,comm%mxnode > 1)
+
 
 ! DIRECTION SETTINGS INITIALISATION
 
@@ -1212,7 +252,7 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
 ! LOOP OVER ALL PARTICLES ON THIS NODE
 
-  Do i=1,nlrefs
+  Do i=1,dfcts%nlrefs
 
 ! If the particle is within the remaining 'inverted halo' of this domain
 
@@ -1238,27 +278,27 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
 ! pack positions and apply possible wrap-around corrections for receiver
 
-              buffer(imove+ 1)=xr(i)
+              buffer(imove+ 1)=dfcts%xr(i)
               If (lsx) buffer(imove+1)=buffer(imove+1)+1.0_wp
               If (lex) buffer(imove+1)=buffer(imove+1)-1.0_wp
-              buffer(imove+ 2)=yr(i)
+              buffer(imove+ 2)=dfcts%yr(i)
               If (lsy) buffer(imove+2)=buffer(imove+2)+1.0_wp
               If (ley) buffer(imove+2)=buffer(imove+2)-1.0_wp
-              buffer(imove+ 3)=zr(i)
+              buffer(imove+ 3)=dfcts%zr(i)
               If (lsz) buffer(imove+3)=buffer(imove+3)+1.0_wp
               If (lez) buffer(imove+3)=buffer(imove+3)-1.0_wp
 
 ! pack config indexing, site name and remaining halo indexing arrays
 
-              buffer(imove+ 4)=Real(indr(i),wp)
-              buffer(imove+ 5)=Real(Ichar(namr(i)(1:1)),wp)
-              buffer(imove+ 6)=Real(Ichar(namr(i)(2:2)),wp)
-              buffer(imove+ 7)=Real(Ichar(namr(i)(3:3)),wp)
-              buffer(imove+ 8)=Real(Ichar(namr(i)(4:4)),wp)
-              buffer(imove+ 9)=Real(Ichar(namr(i)(5:5)),wp)
-              buffer(imove+10)=Real(Ichar(namr(i)(6:6)),wp)
-              buffer(imove+11)=Real(Ichar(namr(i)(7:7)),wp)
-              buffer(imove+12)=Real(Ichar(namr(i)(8:8)),wp)
+              buffer(imove+ 4)=Real(dfcts%indr(i),wp)
+              buffer(imove+ 5)=Real(Ichar(dfcts%namr(i)(1:1)),wp)
+              buffer(imove+ 6)=Real(Ichar(dfcts%namr(i)(2:2)),wp)
+              buffer(imove+ 7)=Real(Ichar(dfcts%namr(i)(3:3)),wp)
+              buffer(imove+ 8)=Real(Ichar(dfcts%namr(i)(4:4)),wp)
+              buffer(imove+ 9)=Real(Ichar(dfcts%namr(i)(5:5)),wp)
+              buffer(imove+10)=Real(Ichar(dfcts%namr(i)(6:6)),wp)
+              buffer(imove+11)=Real(Ichar(dfcts%namr(i)(7:7)),wp)
+              buffer(imove+12)=Real(Ichar(dfcts%namr(i)(8:8)),wp)
 
 ! Use the corrected halo reduction factor when the particle is halo to both +&- sides
 
@@ -1299,10 +339,10 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=((nlrefs+jmove/iadd) <= mxatms)
+  safe=((dfcts%nlrefs+jmove/iadd) <= mxatms)
   Call gcheck(comm,safe)
   If (.not.safe) Then
-     itmp=nlrefs+jmove/iadd
+     itmp=dfcts%nlrefs+jmove/iadd
      Call gmax(comm,itmp)
      Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
      Call error(559)
@@ -1324,26 +364,26 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
   j=Merge(iblock,0,comm%mxnode > 1)
   Do i=1,jmove/iadd
-     nlrefs=nlrefs+1
+     dfcts%nlrefs=dfcts%nlrefs+1
 
 ! unpack positions
 
-     xr(nlrefs)=buffer(j+1)
-     yr(nlrefs)=buffer(j+2)
-     zr(nlrefs)=buffer(j+3)
+     dfcts%xr(dfcts%nlrefs)=buffer(j+1)
+     dfcts%yr(dfcts%nlrefs)=buffer(j+2)
+     dfcts%zr(dfcts%nlrefs)=buffer(j+3)
 
 ! unpack config indexing, site name halo indexing arrays
 
-     indr(nlrefs)=Nint(buffer(j+4))
-     namr(nlrefs)(1:1)=Char(Nint(buffer(j+ 5)))
-     namr(nlrefs)(2:2)=Char(Nint(buffer(j+ 6)))
-     namr(nlrefs)(3:3)=Char(Nint(buffer(j+ 7)))
-     namr(nlrefs)(4:4)=Char(Nint(buffer(j+ 8)))
-     namr(nlrefs)(5:5)=Char(Nint(buffer(j+ 9)))
-     namr(nlrefs)(6:6)=Char(Nint(buffer(j+10)))
-     namr(nlrefs)(7:7)=Char(Nint(buffer(j+11)))
-     namr(nlrefs)(8:8)=Char(Nint(buffer(j+12)))
-     ixyz(nlrefs)=Nint(buffer(j+13))
+     dfcts%indr(dfcts%nlrefs)=Nint(buffer(j+4))
+     dfcts%namr(dfcts%nlrefs)(1:1)=Char(Nint(buffer(j+ 5)))
+     dfcts%namr(dfcts%nlrefs)(2:2)=Char(Nint(buffer(j+ 6)))
+     dfcts%namr(dfcts%nlrefs)(3:3)=Char(Nint(buffer(j+ 7)))
+     dfcts%namr(dfcts%nlrefs)(4:4)=Char(Nint(buffer(j+ 8)))
+     dfcts%namr(dfcts%nlrefs)(5:5)=Char(Nint(buffer(j+ 9)))
+     dfcts%namr(dfcts%nlrefs)(6:6)=Char(Nint(buffer(j+10)))
+     dfcts%namr(dfcts%nlrefs)(7:7)=Char(Nint(buffer(j+11)))
+     dfcts%namr(dfcts%nlrefs)(8:8)=Char(Nint(buffer(j+12)))
+     ixyz(dfcts%nlrefs)=Nint(buffer(j+13))
 
      j=j+iadd
   End Do
@@ -1356,7 +396,9 @@ Subroutine defects_reference_export(mdir,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
 
 End Subroutine defects_reference_export
 
-Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
+!> defects_reference_read
+
+  Subroutine defects_reference_read(nstep,dfcts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1369,12 +411,8 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   
-  Character( Len = * ), Intent( In    ) :: name
   Integer,              Intent( In    ) :: nstep
-  Real( Kind = wp ),    Intent(   Out ) :: celr(1:9)
-  Character( Len = 8 ), Intent(   Out ) :: namr(1:mxatms)
-  Integer,              Intent(   Out ) :: indr(1:mxatms),nrefs
-  Real( Kind = wp ),    Intent(   Out ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
+  Type( defects_type ), Intent( InOut ) :: dfcts
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Logical                :: l_ind = .true.  , &
@@ -1385,7 +423,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
   Integer                :: fail(1:2),megref,i,j,lvcfgr,imconr, &
                             indatm,idm,ipx,ipy,ipz,             &
                             itmols,isite,nsite,msite,fsite,ifrz,nrept
-  Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz,cell_vecs(1:3,1:3)
+  Real( Kind = wp )      :: det,sxx,syy,szz,cell_vecs(1:3,1:3)
 
 ! Some parameters and variables needed by io interfaces
 
@@ -1408,11 +446,11 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 ! Define filename ASCII or netCDF
 
   If (io_read /= IO_READ_NETCDF) Then
-     fname=name
+     fname=trim(dfcts%reffile)
   Else
-     fname=name // '.nc'
+     fname=trim(dfcts%reffile) // '.nc'
   End If
-
+ 
 ! Check if we have a REFERENCE and default megref
 
   lexist=.true. ; megref=0
@@ -1546,29 +584,29 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
         Call get_line(safe,nrefdt,record,comm)
         If (.not.safe) Go To 100
         Call get_word(record,word)
-        celr(1)=word_2_real(word)
+        dfcts%celr(1)=word_2_real(word)
         Call get_word(record,word)
-        celr(2)=word_2_real(word)
+        dfcts%celr(2)=word_2_real(word)
         Call get_word(record,word)
-        celr(3)=word_2_real(word)
+        dfcts%celr(3)=word_2_real(word)
 
         Call get_line(safe,nrefdt,record,comm)
         If (.not.safe) Go To 100
         Call get_word(record,word)
-        celr(4)=word_2_real(word)
+        dfcts%celr(4)=word_2_real(word)
         Call get_word(record,word)
-        celr(5)=word_2_real(word)
+        dfcts%celr(5)=word_2_real(word)
         Call get_word(record,word)
-        celr(6)=word_2_real(word)
+        dfcts%celr(6)=word_2_real(word)
 
         Call get_line(safe,nrefdt,record,comm)
         If (.not.safe) Go To 100
         Call get_word(record,word)
-        celr(7)=word_2_real(word)
+        dfcts%celr(7)=word_2_real(word)
         Call get_word(record,word)
-        celr(8)=word_2_real(word)
+        dfcts%celr(8)=word_2_real(word)
         Call get_word(record,word)
-        celr(9)=word_2_real(word)
+        dfcts%celr(9)=word_2_real(word)
      Else
         Call error(552) ! Lattice parameters are a must
      End If
@@ -1600,7 +638,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
      If (imconr == 4 .or. imconr == 5 .or. imconr == 7) Call error(300)
 
      Call io_nc_get_var( 'cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-     celr = Reshape( cell_vecs, (/ Size( celr ) /) )
+     dfcts%celr = Reshape( cell_vecs, (/ Size( dfcts%celr ) /) )
 
 ! Close REFERENCE
 
@@ -1613,18 +651,17 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
   match=.true.
   If (.not.lexist) Then
      Do i=1,9
-        match = match .and. Abs(cell(i)-celr(i)) < 1.0e-6_wp
+        match = match .and. Abs(cell(i)-dfcts%celr(i)) < 1.0e-6_wp
      End Do
   End If
 
 ! Get lattice invert
 
-  Call invert(celr,rcell,det)
+  Call invert(dfcts%celr,dfcts%rcell,det)
 
 ! If MASTER read
 
   If (io_read == IO_READ_MASTER) Then
-
      fail=0
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
      Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
@@ -1648,7 +685,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 
 ! Initialise domain localised referent atoms counter
 
-     nrefs=0
+     dfcts%nrefs=0
 
 ! Initialise dispatched atom counter
 
@@ -1729,7 +766,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 
 ! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
 !
-!           Call pbcshift(imconr,celr,indatm,axx,ayy,azz)
+!           Call pbcshift(imconr,dfcts%celr,indatm,axx,ayy,azz)
 
            If (comm%mxnode > 1) Then
               Call gbcast(comm,chbuf,0)
@@ -1744,9 +781,9 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 ! (DD bounding)
 
            Do i=1,indatm
-              sxx=rcell(1)*axx(i)+rcell(4)*ayy(i)+rcell(7)*azz(i)
-              syy=rcell(2)*axx(i)+rcell(5)*ayy(i)+rcell(8)*azz(i)
-              szz=rcell(3)*axx(i)+rcell(6)*ayy(i)+rcell(9)*azz(i)
+              sxx=dfcts%rcell(1)*axx(i)+dfcts%rcell(4)*ayy(i)+dfcts%rcell(7)*azz(i)
+              syy=dfcts%rcell(2)*axx(i)+dfcts%rcell(5)*ayy(i)+dfcts%rcell(8)*azz(i)
+              szz=dfcts%rcell(3)*axx(i)+dfcts%rcell(6)*ayy(i)+dfcts%rcell(9)*azz(i)
 
 ! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
 
@@ -1770,15 +807,15 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
               If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
                  Call error(555)
               Else If (idm == comm%idnode)                 Then
-                 nrefs=nrefs+1
+                 dfcts%nrefs=dfcts%nrefs+1
 
-                 If (nrefs < mxatms) Then
-                    namr(nrefs)=chbuf(i)
-                    indr(nrefs)=iwrk(i)
+                 If (dfcts%nrefs < mxatms) Then
+                    dfcts%namr(dfcts%nrefs)=chbuf(i)
+                    dfcts%indr(dfcts%nrefs)=iwrk(i)
 
-                    xr(nrefs)=sxx
-                    yr(nrefs)=syy
-                    zr(nrefs)=szz
+                    dfcts%xr(dfcts%nrefs)=sxx
+                    dfcts%yr(dfcts%nrefs)=syy
+                    dfcts%zr(dfcts%nrefs)=szz
                  Else
                     safe=.false.
                  End If
@@ -1828,8 +865,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
      End If
 
      Call defects_reference_read_parallel       &
-           (lvcfgr, celr, l_ind, l_str, megref, &
-            fast, fh, top_skip, nrefs, namr, indr, xr, yr, zr,comm)
+           (lvcfgr,l_ind,l_str,megref,fast,fh,top_skip,dfcts,comm)
 
 ! Close REFERENCE
 
@@ -1858,16 +894,16 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
               Do nrept=1,nummols(itmols)
                  ifrz=nsite+msite+(nrept-1)*numsit(itmols)
 
-                 Do i=1,nrefs
-                    If (indr(i) == ifrz) Then
-                       namr(i)=namr(nrefs) ; namr(nrefs)=' '
-                       indr(i)=indr(nrefs) ; indr(nrefs)=0
+                 Do i=1,dfcts%nrefs
+                    If (dfcts%indr(i) == ifrz) Then
+                       dfcts%namr(i)=dfcts%namr(dfcts%nrefs) ; dfcts%namr(dfcts%nrefs)=' '
+                       dfcts%indr(i)=dfcts%indr(dfcts%nrefs) ; dfcts%indr(dfcts%nrefs)=0
 
-                       xr(i)=xr(nrefs) ; xr(nrefs)=0.0_wp
-                       yr(i)=yr(nrefs) ; yr(nrefs)=0.0_wp
-                       zr(i)=zr(nrefs) ; zr(nrefs)=0.0_wp
+                       dfcts%xr(i)=dfcts%xr(dfcts%nrefs) ; dfcts%xr(dfcts%nrefs)=0.0_wp
+                       dfcts%yr(i)=dfcts%yr(dfcts%nrefs) ; dfcts%yr(dfcts%nrefs)=0.0_wp
+                       dfcts%zr(i)=dfcts%zr(dfcts%nrefs) ; dfcts%zr(dfcts%nrefs)=0.0_wp
 
-                       nrefs=nrefs-1
+                       dfcts%nrefs=dfcts%nrefs-1
                     End If
                  End Do
               End Do
@@ -1879,7 +915,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
      End Do
 
      If (fsite > 0) Then
-        nsite=nrefs
+        nsite=dfcts%nrefs
         Call gsum(comm,nsite)
         megref=nsite
      End If
@@ -1888,7 +924,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 ! MATCH glitch fix
 
   If (.not.match) Then
-     Call defects_reference_write(fname,megref,nrefs,namr,indr,xr,yr,zr,comm)
+     Call defects_reference_write(fname,megref,dfcts,comm)
      Go To 5
   End If
 
@@ -1903,8 +939,7 @@ Subroutine defects_reference_read(name,nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
 End Subroutine defects_reference_read
 
 Subroutine defects_reference_read_parallel      &
-           (lvcfgr, celr, l_ind, l_str, megref, &
-            fast, fh, top_skip, nrefs, namr, indr, xr, yr, zr,comm)
+           (lvcfgr,l_ind,l_str,megref,fast,fh,top_skip,dfcts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1919,12 +954,9 @@ Subroutine defects_reference_read_parallel      &
 
   Logical,                           Intent( In    ) :: l_ind,l_str,fast
   Integer,                           Intent( In    ) :: lvcfgr,megref,fh
-  Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
-  Real( Kind = wp ),                 Intent( In    ) :: celr(1:9)
-  Character( Len = 8 ),              Intent(   Out ) :: namr(1:mxatms)
-  Integer,                           Intent(   Out ) :: indr(1:mxatms),nrefs
-  Real( Kind = wp ),                 Intent(   Out ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
-  Type( comms_type ),                Intent( InOut ) :: comm
+  Integer( Kind = offset_kind ),     Intent( In    ) :: top_skip
+  Type( defects_type ),              Intent( InOut ) :: dfcts
+  Type( comms_type )  ,              Intent( InOut ) :: comm
 
   Logical                :: safe,do_read
   Character( Len = 200 ) :: record
@@ -1943,7 +975,7 @@ Subroutine defects_reference_read_parallel      &
 
   Integer                           :: io_read,ierr
   Integer                           :: recsz, batsz
-  Integer( Kind = offset_kind ) :: rec_mpi_io, n_skip
+  Integer( Kind = offset_kind )     :: rec_mpi_io, n_skip
   Integer                           :: this_rec_buff, recs_to_read
 
 ! netCDF
@@ -2084,12 +1116,12 @@ Subroutine defects_reference_read_parallel      &
 
   End If
 
-  Call invert(celr,rcell,det)
+  Call invert(dfcts%celr,dfcts%rcell,det)
 
 ! Initialise domain localised atom counter (defects._module),
 ! dispatched atom counter and safe dispatch flag
 
-  nrefs =0
+  dfcts%nrefs =0
   indatm=0
   safe  =.true.
 
@@ -2223,9 +1255,9 @@ Subroutine defects_reference_read_parallel      &
 
         n_held=0
         Do i=1,to_read
-           sxx=rcell(1)*axx_read(i)+rcell(4)*ayy_read(i)+rcell(7)*azz_read(i)
-           syy=rcell(2)*axx_read(i)+rcell(5)*ayy_read(i)+rcell(8)*azz_read(i)
-           szz=rcell(3)*axx_read(i)+rcell(6)*ayy_read(i)+rcell(9)*azz_read(i)
+           sxx=dfcts%rcell(1)*axx_read(i)+dfcts%rcell(4)*ayy_read(i)+dfcts%rcell(7)*azz_read(i)
+           syy=dfcts%rcell(2)*axx_read(i)+dfcts%rcell(5)*ayy_read(i)+dfcts%rcell(8)*azz_read(i)
+           szz=dfcts%rcell(3)*axx_read(i)+dfcts%rcell(6)*ayy_read(i)+dfcts%rcell(9)*azz_read(i)
 
 ! sxx,syy,szz are in [-0.5,0.5) interval and values as 0.4(9) may pose a problem
 
@@ -2308,21 +1340,21 @@ Subroutine defects_reference_read_parallel      &
 ! Assign atoms to correct domains
 
 Dispatch:  Do i=1,n_loc
-              nrefs=nrefs+1
+              dfcts%nrefs=dfcts%nrefs+1
 
 ! Check safety by the upper bound of: namr,indr,xr,yr,zr &
 
-              If (nrefs > Size( xr )) Then
+              If (dfcts%nrefs > Size( dfcts%xr )) Then
                  safe=.false.
                  Exit Dispatch
               End If
 
-              namr(nrefs)=chbuf(i)
-              indr(nrefs)=iwrk(i)
+              dfcts%namr(dfcts%nrefs)=chbuf(i)
+              dfcts%indr(dfcts%nrefs)=iwrk(i)
 
-              xr(nrefs)=scatter_buffer(1,i)
-              yr(nrefs)=scatter_buffer(2,i)
-              zr(nrefs)=scatter_buffer(3,i)
+              dfcts%xr(dfcts%nrefs)=scatter_buffer(1,i)
+              dfcts%yr(dfcts%nrefs)=scatter_buffer(2,i)
+              dfcts%zr(dfcts%nrefs)=scatter_buffer(3,i)
            End Do Dispatch
         End Do
 
@@ -2387,9 +1419,7 @@ Dispatch:  Do i=1,n_loc
 End Subroutine defects_reference_read_parallel
 
 
-Subroutine defects_reference_set_halo                &
-           (cut,cwx,cwy,cwz,dxl,dxr,dyl,dyr,dzl,dzr, &
-           nrefs,nlrefs,namr,lri,lra,indr,xr,yr,zr,comm)
+Subroutine defects_reference_set_halo(cut,dfcts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2403,12 +1433,7 @@ Subroutine defects_reference_set_halo                &
 
 
   Real( Kind = wp ),    Intent( In    ) :: cut
-  Real( Kind = wp ),    Intent(   Out ) :: cwx,cwy,cwz,dxl,dxr,dyl,dyr,dzl,dzr
-  Integer,              Intent( In    ) :: nrefs
-  Integer,              Intent(   Out ) :: nlrefs
-  Character( Len = 8 ), Intent( InOut ) :: namr(1:mxatms)
-  Integer,              Intent( InOut ) :: lri(1:mxatms),lra(1:mxatms),indr(1:mxatms)
-  Real( Kind = wp ),    Intent( InOut ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
+  Type( defects_type ), Intent( InOut ) :: dfcts
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Integer           :: fail,nlx,nly,nlz,i,j,ia,ib
@@ -2442,68 +1467,68 @@ Subroutine defects_reference_set_halo                &
 
 ! link-cell widths in reduced space
 
-  cwx=1.0_wp/xdc
-  cwy=1.0_wp/ydc
-  cwz=1.0_wp/zdc
+  dfcts%cwx=1.0_wp/xdc
+  dfcts%cwy=1.0_wp/ydc
+  dfcts%cwz=1.0_wp/zdc
 
 ! Distance from the - edge of this domain
 
-  dxl=Nearest( (-0.5_wp+cwx)+Real(idx,wp)*r_nprx , +1.0_wp)+zero_plus
-  dyl=Nearest( (-0.5_wp+cwy)+Real(idy,wp)*r_npry , +1.0_wp)+zero_plus
-  dzl=Nearest( (-0.5_wp+cwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
+  dfcts%dxl=Nearest( (-0.5_wp+dfcts%cwx)+Real(idx,wp)*r_nprx , +1.0_wp)+zero_plus
+  dfcts%dyl=Nearest( (-0.5_wp+dfcts%cwy)+Real(idy,wp)*r_npry , +1.0_wp)+zero_plus
+  dfcts%dzl=Nearest( (-0.5_wp+dfcts%cwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
 
 ! Distance from the + edge of this domain
 
-  dxr=Nearest( (-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus
-  dyr=Nearest( (-0.5_wp-cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus
-  dzr=Nearest( (-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz , -1.0_wp)-zero_plus
+  dfcts%dxr=Nearest( (-0.5_wp-dfcts%cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus
+  dfcts%dyr=Nearest( (-0.5_wp-dfcts%cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus
+  dfcts%dzr=Nearest( (-0.5_wp-dfcts%cwz)+Real(idz+1,wp)*r_nprz , -1.0_wp)-zero_plus
 
 ! Convert atomic positions from MD cell centred
 ! Cartesian coordinates to reduced space ones
 ! Populate the halo indicator array
 
-  nlrefs=nrefs     ! No halo exists yet
-  ixyz(1:nlrefs)=0 ! Initialise halo indicator
-  Do i=1,nlrefs
-     If (xr(i) <= dxl) ixyz(i)=ixyz(i)+1
-     If (xr(i) >= dxr) ixyz(i)=ixyz(i)+2
+  dfcts%nlrefs=dfcts%nrefs     ! No halo exists yet
+  ixyz(1:dfcts%nlrefs)=0 ! Initialise halo indicator
+  Do i=1,dfcts%nlrefs
+     If (dfcts%xr(i) <= dfcts%dxl) ixyz(i)=ixyz(i)+1
+     If (dfcts%xr(i) >= dfcts%dxr) ixyz(i)=ixyz(i)+2
 
-     If (yr(i) <= dyl) ixyz(i)=ixyz(i)+10
-     If (yr(i) >= dyr) ixyz(i)=ixyz(i)+20
+     If (dfcts%yr(i) <= dfcts%dyl) ixyz(i)=ixyz(i)+10
+     If (dfcts%yr(i) >= dfcts%dyr) ixyz(i)=ixyz(i)+20
 
-     If (zr(i) <= dzl) ixyz(i)=ixyz(i)+100
-     If (zr(i) >= dzr) ixyz(i)=ixyz(i)+200
+     If (dfcts%zr(i) <= dfcts%dzl) ixyz(i)=ixyz(i)+100
+     If (dfcts%zr(i) >= dfcts%dzr) ixyz(i)=ixyz(i)+200
   End Do
 
 ! exchange atom data in -/+ x directions
 
-  Call defects_reference_export(-1,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
-  Call defects_reference_export( 1,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
+  Call defects_reference_export(-1,ixyz,dfcts,comm)
+  Call defects_reference_export( 1,ixyz,dfcts,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call defects_reference_export(-2,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
-  Call defects_reference_export( 2,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
+  Call defects_reference_export(-2,ixyz,dfcts,comm)
+  Call defects_reference_export( 2,ixyz,dfcts,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call defects_reference_export(-3,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
-  Call defects_reference_export( 3,ixyz,nlrefs,namr,indr,xr,yr,zr,comm)
+  Call defects_reference_export(-3,ixyz,dfcts,comm)
+  Call defects_reference_export( 3,ixyz,dfcts,comm)
 
-  Do i=1,nlrefs
-     lri(i)=i
-     lra(i)=indr(i)
+  Do i=1,dfcts%nlrefs
+     dfcts%lri(i)=i
+     dfcts%lra(i)=dfcts%indr(i)
   End Do
-  Call shellsort2(nlrefs,lri,lra)
+  Call shellsort2(dfcts%nlrefs,dfcts%lri,dfcts%lra)
 
-  Do i=1,nlrefs-1
+  Do i=1,dfcts%nlrefs-1
      j=1
-     Do While ((i+j) <= nlrefs)
-        If (lra(i) == lra(i+j)) Then
-           ia=Min(lri(i),lri(i+j))
-           ib=Max(lri(i),lri(i+j))
-           lri(i)=ia
-           lri(i+j)=ib
+     Do While ((i+j) <= dfcts%nlrefs)
+        If (dfcts%lra(i) == dfcts%lra(i+j)) Then
+           ia=Min(dfcts%lri(i),dfcts%lri(i+j))
+           ib=Max(dfcts%lri(i),dfcts%lri(i+j))
+           dfcts%lri(i)=ia
+           dfcts%lri(i+j)=ib
            j=j+1
         Else
            Exit
@@ -2515,15 +1540,15 @@ Subroutine defects_reference_set_halo                &
 
 ! Distance from the - edge of this domain
 
-  dxl=Nearest( (-0.5_wp-cwx)+Real(idx,wp)*r_nprx , -1.0_wp)-zero_plus
-  dyl=Nearest( (-0.5_wp-cwy)+Real(idy,wp)*r_npry , -1.0_wp)-zero_plus
-  dzl=Nearest( (-0.5_wp-cwz)+Real(idz,wp)*r_nprz , -1.0_wp)-zero_plus
+  dfcts%dxl=Nearest( (-0.5_wp-dfcts%cwx)+Real(idx,wp)*r_nprx , -1.0_wp)-zero_plus
+  dfcts%dyl=Nearest( (-0.5_wp-dfcts%cwy)+Real(idy,wp)*r_npry , -1.0_wp)-zero_plus
+  dfcts%dzl=Nearest( (-0.5_wp-dfcts%cwz)+Real(idz,wp)*r_nprz , -1.0_wp)-zero_plus
 
 ! Distance from the + edge of this domain
 
-  dxr=Nearest( (-0.5_wp+cwx)+Real(idx+1,wp)*r_nprx , +1.0_wp)+zero_plus
-  dyr=Nearest( (-0.5_wp+cwy)+Real(idy+1,wp)*r_npry , +1.0_wp)+zero_plus
-  dzr=Nearest( (-0.5_wp+cwz)+Real(idz+1,wp)*r_nprz , +1.0_wp)+zero_plus
+  dfcts%dxr=Nearest( (-0.5_wp+dfcts%cwx)+Real(idx+1,wp)*r_nprx , +1.0_wp)+zero_plus
+  dfcts%dyr=Nearest( (-0.5_wp+dfcts%cwy)+Real(idy+1,wp)*r_npry , +1.0_wp)+zero_plus
+  dfcts%dzr=Nearest( (-0.5_wp+dfcts%cwz)+Real(idz+1,wp)*r_nprz , +1.0_wp)+zero_plus
 
   Deallocate (ixyz, Stat=fail)
   If (fail > 0) Then
@@ -2534,7 +1559,7 @@ Subroutine defects_reference_set_halo                &
 End Subroutine defects_reference_set_halo
 
 
-Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
+Subroutine defects_reference_write(name,megref,dfcts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2548,15 +1573,13 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Character( Len = * ), Intent( In    ) :: name
-  Integer,              Intent( In    ) :: megref,nrefs
-  Character( Len = 8 ), Intent( In    ) :: namr(1:mxatms)
-  Integer,              Intent( In    ) :: indr(1:mxatms)
-  Real( Kind = wp ),    Intent( In    ) :: xr(1:mxatms),yr(1:mxatms),zr(1:mxatms)
+  Integer,              Intent( In    ) :: megref
+  Type( defects_type),  Intent( InOut ) :: dfcts
   Type( comms_type),    Intent( InOut ) :: comm
   Integer, Parameter :: recsz = 73 ! default record size
 
   Logical               :: ready
-  Integer(Kind=li)      :: rec,rec1! record line
+  Integer(Kind=li)      :: recr,recr1 ! record line
 
   Integer               :: fail(1:4),i,k,jj,jdnode,jatms
 
@@ -2567,7 +1590,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
   Integer                           :: fh
   Integer                           :: io_write,io_read,batsz,ierr
-  Integer( Kind = offset_kind ) :: rec_mpi_io
+  Integer( Kind = offset_kind )     :: rec_mpi_io
   Character( Len = recsz )          :: record
   Character                         :: lf
 
@@ -2609,7 +1632,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
      End If
 
      chbat=' '
-     n_atm=0 ; n_atm(comm%idnode+1)=nrefs
+     n_atm=0 ; n_atm(comm%idnode+1)=dfcts%nrefs
      Call gsum(comm,n_atm)
      n_atm(0)=Sum(n_atm(0:comm%idnode))
   End If
@@ -2680,22 +1703,22 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
 ! Get to real space
 
-     Do i=1,nrefs
-        axx(i)=cell(1)*xr(i)+cell(4)*yr(i)+cell(7)*zr(i)
-        ayy(i)=cell(2)*xr(i)+cell(5)*yr(i)+cell(8)*zr(i)
-        azz(i)=cell(3)*xr(i)+cell(6)*yr(i)+cell(9)*zr(i)
+     Do i=1,dfcts%nrefs
+        axx(i)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
+        ayy(i)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
+        azz(i)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
      End Do
 
 ! DD bound
 
-     Call pbcshift(imcon,cell,nrefs,axx,ayy,azz)
+     Call pbcshift(imcon,cell,dfcts%nrefs,axx,ayy,azz)
 
 ! Start of file (updated)
 
      rec_mpi_io=Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(2,offset_kind)
      jj=0
-     Do i=1,nrefs
-        Write(record, Fmt='(a8,i10,a54,a1)') namr(i),indr(i),Repeat(' ',54),lf
+     Do i=1,dfcts%nrefs
+        Write(record, Fmt='(a8,i10,a54,a1)') dfcts%namr(i),dfcts%indr(i),Repeat(' ',54),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -2709,7 +1732,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
 ! Dump batch and update start of file
 
-        If (jj + 2 >= batsz .or. i == nrefs) Then
+        If (jj + 2 >= batsz .or. i == dfcts%nrefs) Then
            Call io_write_batch( fh, rec_mpi_io, jj, chbat )
            rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
            jj=0
@@ -2732,7 +1755,7 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 ! node 0 handles I/O
 ! Start of file
 
-     rec=Int(0,li)
+     recr=Int(0,li)
      jj=0
      If (comm%idnode == 0) Then
 
@@ -2766,21 +1789,21 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 ! Dump header and update start of file
 
         Write(Unit=nrefdt, Fmt='(73a)', Rec=Int(1,li)) (chbat(:,k), k=1,jj)
-        rec=Int(jj,li)
+        recr=Int(jj,li)
         jj=0
 
 ! Get to real space
 
-        Do i=1,nrefs
-           chbuf(i)=namr(i)
-           iwrk(i)=indr(i)
+        Do i=1,dfcts%nrefs
+           chbuf(i)=dfcts%namr(i)
+           iwrk(i)=dfcts%indr(i)
 
-           axx(i)=cell(1)*xr(i)+cell(4)*yr(i)+cell(7)*zr(i)
-           ayy(i)=cell(2)*xr(i)+cell(5)*yr(i)+cell(8)*zr(i)
-           azz(i)=cell(3)*xr(i)+cell(6)*yr(i)+cell(9)*zr(i)
+           axx(i)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
+           ayy(i)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
+           azz(i)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
         End Do
 
-        jatms=nrefs
+        jatms=dfcts%nrefs
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
@@ -2826,8 +1849,8 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 ! Dump batch and update start of file
 
               If (jj + 2 >= batsz .or. i == jatms) Then
-                 Write(Unit=nrefdt, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
-                 rec=rec+Int(jj,li)
+                 Write(Unit=nrefdt, Fmt='(73a)', Rec=recr+Int(1,li)) (chbat(:,k), k=1,jj)
+                 recr=recr+Int(jj,li)
                  jj=0
               End If
            End Do
@@ -2841,14 +1864,14 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
         Call grecv(comm,ready,0,DefRWrite_tag)
 
-        Call gsend(comm,nrefs,0,DefRWrite_tag)
-        If (nrefs > 0) Then
-           Call gsend(comm,namr(1:nrefs),0,DefRWrite_tag)
-           Call gsend(comm,indr(1:nrefs),0,DefRWrite_tag)
+        Call gsend(comm,dfcts%nrefs,0,DefRWrite_tag)
+        If (dfcts%nrefs > 0) Then
+           Call gsend(comm,dfcts%namr(1:dfcts%nrefs),0,DefRWrite_tag)
+           Call gsend(comm,dfcts%indr(1:dfcts%nrefs),0,DefRWrite_tag)
 
-           Call gsend(comm,xr(1:nrefs),0,DefRWrite_tag)
-           Call gsend(comm,yr(1:nrefs),0,DefRWrite_tag)
-           Call gsend(comm,zr(1:nrefs),0,DefRWrite_tag)
+           Call gsend(comm,dfcts%xr(1:dfcts%nrefs),0,DefRWrite_tag)
+           Call gsend(comm,dfcts%yr(1:dfcts%nrefs),0,DefRWrite_tag)
+           Call gsend(comm,dfcts%zr(1:dfcts%nrefs),0,DefRWrite_tag)
         End If
 
      End If
@@ -2953,21 +1976,21 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
 ! Get to real space
 
-     Do i=1,nrefs
-        axx(i)=cell(1)*xr(i)+cell(4)*yr(i)+cell(7)*zr(i)
-        ayy(i)=cell(2)*xr(i)+cell(5)*yr(i)+cell(8)*zr(i)
-        azz(i)=cell(3)*xr(i)+cell(6)*yr(i)+cell(9)*zr(i)
+     Do i=1,dfcts%nrefs
+        axx(i)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
+        ayy(i)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
+        azz(i)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
      End Do
 
 ! DD bound
 
-     Call pbcshift(imcon,cell,nrefs,axx,ayy,azz)
+     Call pbcshift(imcon,cell,dfcts%nrefs,axx,ayy,azz)
 
 ! Write the rest
 
      rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
-     Call io_write_sorted_file( fh, 0, IO_RESTART, rec_mpi_io, nrefs,          &
-          indr, namr, (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), axx, ayy, azz, &
+     Call io_write_sorted_file( fh, 0, IO_RESTART, rec_mpi_io, dfcts%nrefs,          &
+          dfcts%indr, dfcts%namr, (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), axx, ayy, azz, &
           (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /),                            &
           (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), ierr )
 
@@ -3000,34 +2023,34 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 ! node 0 handles I/O
 ! Start of file
 
-     rec=Int(0,li)
+     recr=Int(0,li)
      If (comm%idnode == 0) Then
 
 ! Obliterate old REFERENCE if not needed and print header
 
         Open(Unit=nrefdt, File=name, Form='formatted', Access='direct', Recl=73, Status='replace')
-        rec=rec+Int(1,li)
-        Write(Unit=nrefdt, Fmt='(a72,a1)',         Rec=rec) cfgname(1:72),lf
-        rec=rec+Int(1,li)
-        Write(Unit=nrefdt, Fmt='(3i10,a42,a1)',    Rec=rec) 0,imcon,megref,Repeat(' ',42),lf
+        recr=recr+Int(1,li)
+        Write(Unit=nrefdt, Fmt='(a72,a1)',         Rec=recr) cfgname(1:72),lf
+        recr=recr+Int(1,li)
+        Write(Unit=nrefdt, Fmt='(3i10,a42,a1)',    Rec=recr) 0,imcon,megref,Repeat(' ',42),lf
         Do i = 0, 2
-           rec=rec+Int(1,li)
-           Write(Unit=nrefdt, Fmt='(3f20.10,a12,a1)', Rec=rec) &
+           recr=recr+Int(1,li)
+           Write(Unit=nrefdt, Fmt='(3f20.10,a12,a1)', Rec=recr) &
                 cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
         End Do
 
 ! Get to real space
 
-        Do i=1,nrefs
-           chbuf(i)=namr(i)
-           iwrk(i)=indr(i)
+        Do i=1,dfcts%nrefs
+           chbuf(i)=dfcts%namr(i)
+           iwrk(i)=dfcts%indr(i)
 
-           axx(i)=cell(1)*xr(i)+cell(4)*yr(i)+cell(7)*zr(i)
-           ayy(i)=cell(2)*xr(i)+cell(5)*yr(i)+cell(8)*zr(i)
-           azz(i)=cell(3)*xr(i)+cell(6)*yr(i)+cell(9)*zr(i)
+           axx(i)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
+           ayy(i)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
+           azz(i)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
         End Do
 
-        jatms=nrefs
+        jatms=dfcts%nrefs
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
@@ -3058,11 +2081,11 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
            Call pbcshift(imcon,cell,jatms,axx,ayy,azz)
 
            Do i=1,jatms
-              rec1=rec+Int(iwrk(i)-1,li)*Int(2)+Int(1,li)
-              Write(Unit=nrefdt, Fmt='(a8,i10,a54,a1)', Rec=rec1) chbuf(i),iwrk(i),Repeat(' ',54),lf
+              recr1=recr+Int(iwrk(i)-1,li)*Int(2)+Int(1,li)
+              Write(Unit=nrefdt, Fmt='(a8,i10,a54,a1)', Rec=recr1) chbuf(i),iwrk(i),Repeat(' ',54),lf
 
-              rec1=rec1+Int(1,li)
-              Write(Unit=nrefdt, Fmt='(3g20.10,a12,a1)', Rec=rec1) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+              recr1=recr1+Int(1,li)
+              Write(Unit=nrefdt, Fmt='(3g20.10,a12,a1)', Rec=recr1) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
            End Do
         End Do
 
@@ -3074,14 +2097,14 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
         Call grecv(comm,ready,0,DefRWrite_tag)
 
-        Call gsend(comm,nrefs,0,DefRWrite_tag)
-        If (nrefs > 0) Then
-           Call gsend(comm,namr(1:nrefs),0,DefRWrite_tag)
-           Call gsend(comm,indr(1:nrefs),0,DefRWrite_tag)
+        Call gsend(comm,dfcts%nrefs,0,DefRWrite_tag)
+        If (dfcts%nrefs > 0) Then
+           Call gsend(comm,dfcts%namr(1:dfcts%nrefs),0,DefRWrite_tag)
+           Call gsend(comm,dfcts%indr(1:dfcts%nrefs),0,DefRWrite_tag)
 
-           Call gsend(comm,xr(1:nrefs),0,DefRWrite_tag)
-           Call gsend(comm,yr(1:nrefs),0,DefRWrite_tag)
-           Call gsend(comm,zr(1:nrefs),0,DefRWrite_tag)
+           Call gsend(comm,dfcts%xr(1:dfcts%nrefs),0,DefRWrite_tag)
+           Call gsend(comm,dfcts%yr(1:dfcts%nrefs),0,DefRWrite_tag)
+           Call gsend(comm,dfcts%zr(1:dfcts%nrefs),0,DefRWrite_tag)
          End If
 
      End If
@@ -3115,8 +2138,8 @@ Subroutine defects_reference_write(name,megref,nrefs,namr,indr,xr,yr,zr,comm)
 
 End Subroutine defects_reference_write
 
-Subroutine defects_write &
-           (rcut,keyres,ensemble,nsdef,isdef,rdef,nstep,tstep,time,comm)
+!> defects_write
+  Subroutine defects_write(rcut,keyres,ensemble,nstep,tstep,time,dfcts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3129,19 +2152,12 @@ Subroutine defects_write &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( In    ) :: keyres,ensemble, &
-                                        nsdef,isdef,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,rdef,tstep,time
-  Type( comms_type), Intent( InOut ) :: comm
+  Integer,              Intent( In    ) :: keyres,ensemble,nstep
+  Real( Kind = wp )   , Intent( In    ) :: rcut,tstep,time
+  Type( defects_type ), Intent( InOut ) :: dfcts
+  Type( comms_type)   , Intent( InOut ) :: comm
   
   Integer, Parameter :: recsz = 73 ! default record size
-
-  Logical,           Save :: newjob = .true.
-  Integer(Kind=li),  Save :: rec    = 0_li , &
-                             frm    = 0_li
-  Integer,           Save :: mxlcdef
-  Real( Kind = wp ), Save :: rdefsq,rcell(1:9),cwx,cwy,cwz, &
-                             dxl,dxr,dyl,dyr,dzl,dzr,cutdef
 
   Logical                 :: safe,lexist,l_tmp,ready
   Character( Len = 40 )   :: word
@@ -3153,7 +2169,7 @@ Subroutine defects_write &
 ! Some parameters and variables needed by io interfaces
 
   Integer                           :: fh, io_write, batsz
-  Integer( Kind = offset_kind ) :: rec_mpi_io
+  Integer( Kind = offset_kind )     :: rec_mpi_io
   Character( Len = recsz )          :: record
   Character                         :: lf
 
@@ -3183,8 +2199,7 @@ Subroutine defects_write &
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: cxx,cyy,czz
 
-
-  If (.not.(nstep >= nsdef .and. Mod(nstep-nsdef,isdef) == 0)) Return
+  If (.not.(nstep >= dfcts%nsdef .and. Mod(nstep-dfcts%nsdef,dfcts%isdef) == 0)) Return
 
 ! Get write buffer size and line feed character
 
@@ -3196,33 +2211,30 @@ Subroutine defects_write &
 
   If (io_write == IO_WRITE_SORTED_NETCDF) io_write = IO_WRITE_SORTED_MPIIO
 
-  If (newjob) Then
-     newjob = .false.
+    
+   If (dfcts%newjob) Then
+     dfcts%newjob = .false.
 
 ! rdef squared
 
-     rdefsq=rdef**2
+     dfcts%rdefsq=dfcts%rdef**2
 
 ! Build lattice sites list from REFERENCE
-
-     Call allocate_defects_arrays()
-     Call defects_reference_read &
-           ('REFERENCE',nstep,celr,nrefs,namr,indr,xr,yr,zr,comm)
+     Call allocate_defects_arrays(dfcts)
+     Call defects_reference_read(nstep,dfcts,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set
 
-     cut=rdef+0.15_wp
-     Call defects_reference_set_halo                 &
-           (cut,cwx,cwy,cwz,dxl,dxr,dyl,dyr,dzl,dzr, &
-           nrefs,nlrefs,namr,lri,lra,indr,xr,yr,zr,comm)
+     cut=dfcts%rdef+0.15_wp
+     Call defects_reference_set_halo(cut,dfcts,comm)
 
 ! If the keyres=1, is DEFECTS old (does it exist) and
 ! how many frames and records are in there
 
      lexist=.true.
      If (keyres == 1) Then
-        If (comm%idnode == 0) Inquire(File='DEFECTS', Exist=lexist)
+        If (comm%idnode == 0) Inquire(File=trim(dfcts%deffile), Exist=lexist)
         Call gcheck(comm,lexist,"enforce")
      Else
         lexist=.false.
@@ -3234,13 +2246,13 @@ Subroutine defects_write &
      If (.not.lexist) Then
 
         If (comm%idnode == 0) Then
-           Open(Unit=ndefdt, File='DEFECTS', Form='formatted', Access='direct', Status='replace', Recl=recsz)
+           Open (Unit=ndefdt, File=trim(dfcts%deffile), Form='formatted', Access='direct', Status='replace', Recl=recsz)
            Write(Unit=ndefdt, Fmt='(a72,a1)',           Rec=1) cfgname(1:72),lf
-           Write(Unit=ndefdt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) rdef,Repeat(' ',23),frm,rec,lf
+           Write(Unit=ndefdt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) dfcts%rdef,Repeat(' ',23),dfcts%frm,dfcts%rec,lf
            Close(Unit=ndefdt)
         End If
-        rec=Int(2,li)
-        frm=Int(0,li)
+        dfcts%rec=Int(2,li)
+        dfcts%frm=Int(0,li)
 
 ! Get some sense of it
 
@@ -3249,7 +2261,7 @@ Subroutine defects_write &
         safe=.true.
         If (comm%idnode == 0) Then
 
-           Open(Unit=ndefdt, File='DEFECTS', Form='formatted')
+           Open(Unit=ndefdt, File=trim(dfcts%deffile), Form='formatted')
 
            l_tmp =.true.
            Do
@@ -3258,21 +2270,21 @@ Subroutine defects_write &
               If (l_tmp) Then
 
                  Read(Unit=ndefdt, Fmt=*, End=20)            ! title record
-                 rec=rec+Int(1,li)
+                 dfcts%rec=dfcts%rec+Int(1,li)
                  Read(Unit=ndefdt, Fmt='(a)', End=20) record ! bookkeeping record
-                 rec=rec+Int(1,li)
+                 dfcts%rec=dfcts%rec+Int(1,li)
 
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  If (word(1:Len_Trim(word)) /= 'timestep') Then
                     Call get_word(record,word) ; Call get_word(record,word)
-                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
-                    If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
+                    Call get_word(record,word) ; dfcts%frm=Nint(word_2_real(word,0.0_wp),li)
+                    Call get_word(record,word) ; dfcts%rec=Nint(word_2_real(word,0.0_wp),li)
+                    If (dfcts%frm /= Int(0,li) .and. dfcts%rec > Int(2,li)) Then
                        Go To 20 ! New style
                     Else
                        l_tmp=.false. ! TOUGH, old style
-                       rec=Int(2,li)
-                       frm=Int(0,li)
+                       dfcts%rec=Int(2,li)
+                       dfcts%frm=Int(0,li)
                     End If
                  Else
                     safe=.false. ! Overwrite the file, it's junk to me
@@ -3282,19 +2294,19 @@ Subroutine defects_write &
               Else
 
                  Read(Unit=ndefdt, Fmt=*, End=20)            ! timestep record
-                 rec=rec+Int(1,li)
+                 dfcts%rec=dfcts%rec+Int(1,li)
 
                  Read(Unit=ndefdt, Fmt='(a)', End=20) record ! defects record
-                 rec=rec+Int(1,li)
+                 dfcts%rec=dfcts%rec+Int(1,li)
 
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  Call get_word(record,word) ; j=Nint(word_2_real(word))
 
                  Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for defects
                     Read(Unit=ndefdt, Fmt=*, End=20)
-                    rec=rec+Int(1,li)
+                    dfcts%rec=dfcts%rec+Int(1,li)
                  End Do
-                 frm=frm+Int(1,li)
+                 dfcts%frm=dfcts%frm+Int(1,li)
 
               End If
 
@@ -3309,35 +2321,34 @@ Subroutine defects_write &
         If (.not.safe) Then
            lexist=.false.
 
-           rec=Int(0,li)
-           frm=Int(0,li)
+           dfcts%rec=Int(0,li)
+           dfcts%frm=Int(0,li)
 
            Go To 10
         Else If (comm%mxnode > 1) Then
-           buffer(1)=Real(frm,wp)
-           buffer(2)=Real(rec,wp)
+           buffer(1)=Real(dfcts%frm,wp)
+           buffer(2)=Real(dfcts%rec,wp)
 
            Call gbcast(comm,buffer(1:2),0)
 
-           frm=Nint(buffer(1),li)
-           rec=Nint(buffer(2),li)
+           dfcts%frm=Nint(buffer(1),li)
+           dfcts%rec=Nint(buffer(2),li)
         End If
 
      End If
 
 ! Get rcell
 
-     Call invert(cell,rcell,cut)
+     Call invert(cell,dfcts%rcell,cut)
 
 ! New real space cutoff and expansion for defects link-cells
-
-     cutdef=Min(rcut/3.0_wp,2.0_wp*rdef)
-     mxlcdef=Nint(((rcut/cutdef)**3+0.15_wp)*Real(mxcell,wp))
+     dfcts%cutdef=Min(rcut/3.0_wp,2.0_wp*dfcts%rdef)
+     dfcts%mxlcdef=Nint(((rcut/dfcts%cutdef)**3+0.15_wp)*Real(mxcell,wp))
   End If
 
 ! Update rcell
 
-  If (ensemble >= 20) Call invert(cell,rcell,cut)
+  If (ensemble >= 20) Call invert(cell,dfcts%rcell,cut)
 
   fail=0
   Allocate (dr(1:mxatms),                                                Stat=fail(1))
@@ -3348,7 +2359,7 @@ Subroutine defects_write &
   Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),                   Stat=fail(6))
   Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms),                   Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(message,'(a)') 'defects_write allocation failure'
+     Write(message,'(a)') Trim(dfcts%deffile)//'_write allocation failure'
      Call error(0,message)
   End If
 
@@ -3362,17 +2373,17 @@ Subroutine defects_write &
 
 ! Get all domain+halo particles' coordinates in MD cell centred reduced space
 
-     cxx(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-     cyy(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-     czz(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+     cxx(i)=dfcts%rcell(1)*xxx(i)+dfcts%rcell(4)*yyy(i)+dfcts%rcell(7)*zzz(i)
+     cyy(i)=dfcts%rcell(2)*xxx(i)+dfcts%rcell(5)*yyy(i)+dfcts%rcell(8)*zzz(i)
+     czz(i)=dfcts%rcell(3)*xxx(i)+dfcts%rcell(6)*yyy(i)+dfcts%rcell(9)*zzz(i)
 
 ! Exclude particles in the domain's halo farther than cutoff(rdef)
 ! smaller halo with a width defined by cutoff(rdef)
 
      If ( i > natms .and.                        &
-          ((cxx(i) < dxl .or. cxx(i) > dxr) .or. &
-           (cyy(i) < dyl .or. cyy(i) > dyr) .or. &
-           (czz(i) < dzl .or. czz(i) > dzr)) ) j=0
+          ((cxx(i) < dfcts%dxl .or. cxx(i) > dfcts%dxr) .or. &
+           (cyy(i) < dfcts%dyl .or. cyy(i) > dfcts%dyr) .or. &
+           (czz(i) < dfcts%dzl .or. czz(i) > dfcts%dzr)) ) j=0
 
 ! Exclude frozen and shell particles from consideration
 
@@ -3392,20 +2403,20 @@ Subroutine defects_write &
 
 ! Partition sites and atoms in link-celled space with same imcon, cell and cutoff!!!
 
-  Allocate (lctr(0:mxlcdef),lct(0:mxlcdef), Stat=fail(1))
+  Allocate (lctr(0:dfcts%mxlcdef),lct(0:dfcts%mxlcdef), Stat=fail(1))
   If (fail(1) > 0) Then
-     Write(message,'(a)') 'defects_write allocation failure 1'
+     Write(message,'(a)') Trim(dfcts%deffile)//'_write allocation failure 1'
      Call error(0,message)
-  End If
+  EndIf
   Call defects_link_cells &
-           (cutdef,mxlcdef,nrefs,nlrefs,xr,yr,zr,nlx,nly,nlz,linkr,lctr)
+           (dfcts%cutdef,dfcts%mxlcdef,dfcts%nrefs,dfcts%nlrefs,dfcts%xr,dfcts%yr,dfcts%zr,nlx,nly,nlz,linkr,lctr)
   Call defects_link_cells &
-           (cutdef,mxlcdef,natms,nlast,cxx,cyy,czz,nlx,nly,nlz,link,lct)
+           (dfcts%cutdef,dfcts%mxlcdef,natms,nlast,cxx,cyy,czz,nlx,nly,nlz,link,lct)
 
   safe = .true.          ! Initialise safety flag to all safe
   nv = 0                 ! Assume no vacancies (all sites are occupied)
   ni = 0                 ! Assume no interstitials (all particles are occupying a site)
-  dr = (rdef+0.15_wp)**2 ! Assume all particles are > rdef distance away from the nearest to them site
+  dr = (dfcts%rdef+0.15_wp)**2 ! Assume all particles are > rdef distance away from the nearest to them site
 
 ! Actual defect detection *********************************************
 
@@ -3476,9 +2487,9 @@ Subroutine defects_write &
 
 ! Get vectors particle-site (in reduced space)
 
-        xs=xr(i)-cxx(j) ; If (Abs(xs) > cwx) Go To 300
-        ys=yr(i)-cyy(j) ; If (Abs(ys) > cwy) Go To 300
-        zs=zr(i)-czz(j) ; If (Abs(zs) > cwz) Go To 300
+        xs=dfcts%xr(i)-cxx(j) ; If (Abs(xs) > dfcts%cwx) Go To 300
+        ys=dfcts%yr(i)-cyy(j) ; If (Abs(ys) > dfcts%cwy) Go To 300
+        zs=dfcts%zr(i)-czz(j) ; If (Abs(zs) > dfcts%cwz) Go To 300
 
 ! Get in real space
 
@@ -3498,7 +2509,7 @@ Subroutine defects_write &
 ! already taken by another atom then the atom is marked
 ! as an interstitial of this site (interstitial > 0).
 
-        If (cut < rdefsq) Then
+        If (cut < dfcts%rdefsq) Then
            dr(j)=cut             ! Save the distance (site-atom)
 
 ! Only general interstitial atoms are allowed to claim.  Otherwise, we are in a big trouble
@@ -3534,13 +2545,13 @@ Subroutine defects_write &
 
 ! Vacancies: taken=0 means we've found a vacancy
 
-              If (taken == 0 .and. i <= nrefs) Then
+              If (taken == 0 .and. i <= dfcts%nrefs) Then
                  nv=nv+1
-                 namv(nv)=namr(i)
-                 indv(nv)=indr(i)
-                 axx(nv)=cell(1)*xr(i)+cell(4)*yr(i)+cell(7)*zr(i)
-                 ayy(nv)=cell(2)*xr(i)+cell(5)*yr(i)+cell(8)*zr(i)
-                 azz(nv)=cell(3)*xr(i)+cell(6)*yr(i)+cell(9)*zr(i)
+                 namv(nv)=dfcts%namr(i)
+                 indv(nv)=dfcts%indr(i)
+                 axx(nv)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
+                 ayy(nv)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
+                 azz(nv)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
               End If
 
 400           Continue
@@ -3560,7 +2571,7 @@ Subroutine defects_write &
   If (.not.safe) Call error(560)
 
 ! Define real interstitials and real claimees of a site by swapping
-! interstitial/occupation comm%statuses between particles based on
+! interstitial/occupation statuses between particles based on
 ! site-atom distances of these.  Amongst all atoms close to sites -
 ! interstitials of the site and the site claimee -
 ! the real claimee is the atom closest to the site.
@@ -3651,7 +2662,7 @@ Subroutine defects_write &
 
               End Do
 
-! If there is a new true claimee change comm%statuses
+! If there is a new true claimee change statuses
 
               If (k /= i) Then
                  interstitial(i)=interstitial(k) ; interstitial(k)=0
@@ -3711,7 +2722,7 @@ Subroutine defects_write &
   Allocate (ni_n(0:comm%mxnode),nv_n(0:comm%mxnode), Stat=fail(1))
   Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(a)') 'defects_write allocation failure 2'
+     Write(message,'(a)') Trim(dfcts%deffile)//'_write allocation failure 2'
      Call error(0,message)
   End If
 
@@ -3733,7 +2744,7 @@ Subroutine defects_write &
 
 ! Update frame
 
-  frm=frm+Int(1,li)
+  dfcts%frm=dfcts%frm+Int(1,li)
 
   If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
@@ -3743,16 +2754,16 @@ Subroutine defects_write &
 ! Write header and cell information, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)
+     rec_mpi_io=Int(dfcts%rec,offset_kind)
      j=0
      If (comm%idnode == 0) Then
 
         Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
-        Call io_open( io_write, comm_self, 'DEFECTS', mode_wronly, fh )
+        Call io_open( io_write, comm_self, trim(dfcts%deffile), mode_wronly, fh )
 
         Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
-           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',2),lf
+           'timestep',nstep,tstep,time,imcon,dfcts%rdef,Repeat(' ',2),lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -3790,15 +2801,15 @@ Subroutine defects_write &
 
 ! Start of file
 
-     rec=rec+Int(j,li)
+     dfcts%rec=dfcts%rec+Int(j,li)
 
      Call io_set_parameters( user_comm = comm%comm )
      Call io_init( recsz )
-     Call io_open( io_write, comm%comm, 'DEFECTS', mode_wronly, fh )
+     Call io_open( io_write, comm%comm, trim(dfcts%deffile), mode_wronly, fh )
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)+Int(2,offset_kind)*Int(ni_n(0),offset_kind)
+     rec_mpi_io=Int(dfcts%rec,offset_kind)+Int(2,offset_kind)*Int(ni_n(0),offset_kind)
      j=0
      Do i=1,ni
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'i_',nami(i),indi(i),Repeat(' ',52),lf
@@ -3824,11 +2835,11 @@ Subroutine defects_write &
 
 ! Start of file
 
-     rec=rec+Int(2,li)*Int(megni,li)
+     dfcts%rec=dfcts%rec+Int(2,li)*Int(megni,li)
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)+Int(2,offset_kind)*Int(nv_n(0),offset_kind)
+     rec_mpi_io=Int(dfcts%rec,offset_kind)+Int(2,offset_kind)*Int(nv_n(0),offset_kind)
      Do i=1,nv
         Write(record, Fmt='(a2,a8,i10,a52,a1)') 'v_',namv(i),indv(i),Repeat(' ',52),lf
         j=j+1
@@ -3850,12 +2861,12 @@ Subroutine defects_write &
            j=0
         End If
      End Do
-     rec=rec+Int(2,li)*Int(megnv,li)
+     dfcts%rec=dfcts%rec+Int(2,li)*Int(megnv,li)
 
 ! Update main header
 
      If (comm%idnode == 0) Then
-        Write(record, Fmt='(f7.3,a23,2i21,a1)') rdef,Repeat(' ',23),frm,rec,lf
+        Write(record, Fmt='(f7.3,a23,2i21,a1)') dfcts%rdef,Repeat(' ',23),dfcts%frm,dfcts%rec,lf
         Call io_write_record( fh, Int(1,offset_kind), record )
      End If
 
@@ -3867,7 +2878,7 @@ Subroutine defects_write &
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(a)') 'defects_write allocation failure 3'
+        Write(message,'(a)') Trim(dfcts%deffile)//'_write allocation failure 3'
         Call error(0,message)
      End If
 
@@ -3876,12 +2887,12 @@ Subroutine defects_write &
 
      j=0
      If (comm%idnode == 0) Then
-        Open(Unit=ndefdt, File='DEFECTS', Form='formatted', Access='direct', Recl=recsz)
+        Open(Unit=ndefdt, File=trim(dfcts%deffile), Form='formatted', Access='direct', Recl=recsz)
 
 ! Accumulate header
 
         Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
-           'timestep',nstep,tstep,time,imcon,rdef,Repeat(' ',2),lf
+           'timestep',nstep,tstep,time,imcon,dfcts%rdef,Repeat(' ',2),lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -3905,8 +2916,8 @@ Subroutine defects_write &
 
 ! Dump header and update start of file
 
-        Write(Unit=ndefdt, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,j)
-        rec=rec+Int(j,li)
+        Write(Unit=ndefdt, Fmt='(73a)', Rec=dfcts%rec+Int(1,li)) (chbat(:,k), k=1,j)
+        dfcts%rec=dfcts%rec+Int(j,li)
         j=0
 
         Do i=1,ni
@@ -3951,8 +2962,8 @@ Subroutine defects_write &
 ! Dump batch and update start of file
 
               If (j + 2 >= batsz .or. i == jatms) Then
-                 Write(Unit=ndefdt, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,j)
-                 rec=rec+Int(j,li)
+                 Write(Unit=ndefdt, Fmt='(73a)', Rec=dfcts%rec+Int(1,li)) (chbat(:,k), k=1,j)
+                 dfcts%rec=dfcts%rec+Int(j,li)
                  j=0
               End If
            End Do
@@ -4014,8 +3025,8 @@ Subroutine defects_write &
 ! Dump batch and update start of file
 
               If (j + 2 >= batsz .or. i == jatms) Then
-                 Write(Unit=ndefdt, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,j)
-                 rec=rec+Int(j,li)
+                 Write(Unit=ndefdt, Fmt='(73a)', Rec=dfcts%rec+Int(1,li)) (chbat(:,k), k=1,j)
+                 dfcts%rec=dfcts%rec+Int(j,li)
                  j=0
               End If
            End Do
@@ -4037,15 +3048,15 @@ Subroutine defects_write &
 ! Update main header
 
      If (comm%idnode == 0) Then
-        Write(Unit=ndefdt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) rdef,Repeat(' ',23),frm,rec,lf
+        Write(Unit=ndefdt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) dfcts%rdef,Repeat(' ',23),dfcts%frm,dfcts%rec,lf
         Close(Unit=ndefdt)
      Else
-        rec=rec+Int(5,li)+Int(2,li)*Int(megni+megnv,li)
+        dfcts%rec=dfcts%rec+Int(5,li)+Int(2,li)*Int(megni+megnv,li)
      End If
 
      Deallocate (chbuf,iwrk, Stat=fail(1))
      If (fail(1) > 0) Then
-        Write(message,'(a)') 'defects_write deallocation failure 3'
+        Write(message,'(a)') Trim(dfcts%deffile)//'_write deallocation failure 3'
         Call error(0,message)
      End If
 
@@ -4056,7 +3067,7 @@ Subroutine defects_write &
   Deallocate (ni_n,nv_n, Stat=fail(1))
   Deallocate (chbat,     Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(a)') 'defects_write deallocation failure 2'
+     Write(message,'(a)') Trim(dfcts%deffile)//'_write deallocation failure 2'
      Call error(0,message)
   End If
 
@@ -4068,11 +3079,10 @@ Subroutine defects_write &
   Deallocate (bxx,byy,bzz,           Stat=fail(6))
   Deallocate (cxx,cyy,czz,           Stat=fail(7))
   If (Any(fail > 0)) Then
-     Write(message,'(a)') 'defects_write deallocation failure'
+     Write(message,'(a)') Trim(dfcts%deffile)//'_write deallocation failure'
      Call error(0,message)
   End If
 
-  If (l_dfx) Call defects1_write(rcut,keyres,ensemble,nsdef,isdef,rdef,nstep,tstep,time,comm)
 
 End Subroutine defects_write
 
