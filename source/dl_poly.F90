@@ -134,7 +134,13 @@ program dl_poly
   Use minimise, Only : passmin, minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
   Use ewald, Only : ewald_type
+
+  ! IMPACT MODULE
   Use impacts, Only : impact_type
+
+  ! DEFECTS MODULE
+  Use defects, Only : defects_type
+
   Use halo, Only : refresh_halo_positions,set_halo_particles
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
   Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
@@ -243,7 +249,6 @@ program dl_poly
   Type(thermostat_type) :: thermo
   Type(ewald_type) :: ewld
   Type(timer_type) :: tmr
-  Type(impact_type) :: impa
   Type(development_type) :: devel
   Type(stats_type) :: stats
   Type(greenkubo_type) :: green
@@ -251,6 +256,8 @@ program dl_poly
   Type(msd_type) :: msd_data
   Type(metal_type) :: met
   Type(poisson_type) :: pois
+  Type(impact_type) :: impa
+  Type(defects_type) :: dfcts(2)
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -392,7 +399,7 @@ program dl_poly
     rlx_tol,mxshak,tolnce,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstraj,istraj,keytrj,         &
-    nsdef,isdef,rdef,nsrsd,isrsd,rrsd,          &
+    dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
