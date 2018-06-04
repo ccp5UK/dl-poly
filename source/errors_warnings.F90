@@ -1969,10 +1969,6 @@ Subroutine info_sl(message,master_only)
 
         Write(ounit,'(/,1x,a)') 'error - allocation failure in tersoff_module -> allocate_tersoff_arrays'
 
-     Else If (kode == 1028) Then
-
-        Write(ounit,'(/,1x,a)') 'error - deallocation failure in angles_module -> deallocate_angles_arrays'
-
      Else If (kode == 1030) Then
 
         Write(ounit,'(/,1x,a)') 'error - deallocation failure in core_shell -> deallocate_core_shell_arrays'

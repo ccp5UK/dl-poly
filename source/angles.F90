@@ -25,29 +25,67 @@ Module angles
 
   Implicit None
 
-  Logical,                        Save :: lt_ang = .false. ! no tabulated potentials opted
+  !> Type containing angles variables
+  Type, Public :: angles_type
+    Private
 
-  Integer,                        Save :: ntangl  = 0 , &
-                                          ntangl1 = 0 , &
-                                          ncfang  = 0
+    !> Tabulated potential switch
+    Logical,                        Save :: lt_ang = .false.
 
+    !> Number of angle types (potentials)
+    Integer( Kind = wi ), Public :: n_types  = 0
+    Integer( Kind = wi ), Public :: n_types1 = 0
+    !> Number of frames
+    Integer( Kind = wi ), Public :: n_frames  = 0
+    !> Total number of angles (all nodes)
+    Integer( Kind = wi ), Public :: total
 
-  Integer,           Allocatable, Save :: numang(:),keyang(:)
-  Integer,           Allocatable, Save :: lstang(:,:),listang(:,:),legang(:,:)
+    Integer( Kind = wi ), Allocatable, Public :: num(:),key(:)
 
-  Real( Kind = wp ), Allocatable, Save :: prmang(:,:)
+    !> Atom indices (local)
+    Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
+    !> Atom indices
+    Integer( Kind = wi ), Allocatable, Public :: list(:,:)
+    !> Legend
+    Integer( Kind = wi ), Allocatable, Public :: legend(:,:)
 
-! Possible tabulated calculation arrays
+    !> Angle parameters (force constant, etc.)
+    Real( Kind = wp ), Allocatable, Save :: param(:,:)
 
-  Integer,           Allocatable, Save :: ltpang(:)
-  Real( Kind = wp ), Allocatable, Save :: vang(:,:),gang(:,:)
+    ! Possible tabulated calculation arrays
+    Integer,           Allocatable, Save :: ltp(:)
+    !> Tabulated potential
+    Real( Kind = wp ), Allocatable, Public :: tab_potential(:,:)
+    !> Tabulated force
+    Real( Kind = wp ), Allocatable, Public :: tab_force(:,:)
 
-! Possible distribution arrays
+    ! Possible distribution arrays
+    Integer,           Allocatable, Save :: ldf(:),typ(:,:)
+    Real( Kind = wp ), Allocatable, Save :: dst(:,:)
 
-  Integer,           Allocatable, Save :: ldfang(:),typang(:,:)
-  Real( Kind = wp ), Allocatable, Save :: dstang(:,:)
+    ! Maximums
+    !> Maximum number of angle types
+    Integer( Kind = wi ), Public :: max_types
+    !> Maximum number of angles per node
+    Integer( Kind = wi ), Public :: max_angles
+    !> Length of legend array
+    Integer( Kind = wi ), Public :: max_legend
+    !> Maximum number of bonds parameters
+    Integer( Kind = wi ), Public :: max_param
 
-  Public :: allocate_angles_arrays , deallocate_angles_arrays , &
+    ! Number of bins
+    !> Angular distribution function bins
+    Integer( Kind = wi ), Public :: bin_adf
+    !> Tabulated potential bins
+    Integer( Kind = wi ), Public :: bin_tab
+
+  Contains
+    Private
+
+    Final :: cleanup
+  End Type angles_type
+
+  Public :: allocate_angles_arrays , &
             allocate_angl_pot_arrays , allocate_angl_dst_arrays, angles_compute, &
             angles_forces, angles_table_read
 
@@ -87,18 +125,6 @@ Contains
     ldfang  = 0
 
   End Subroutine allocate_angles_arrays
-
-  Subroutine deallocate_angles_arrays()
-
-    Integer :: fail
-
-    fail = 0
-
-    Deallocate (numang,lstang, Stat = fail)
-
-    If (fail > 0) Call error(1028)
-
-  End Subroutine deallocate_angles_arrays
 
   Subroutine allocate_angl_pot_arrays()
 
@@ -1405,6 +1431,38 @@ Subroutine angles_table_read(angl_name,comm)
 
 End Subroutine angles_table_read
 
+  Subroutine cleanup(angle)
+    Type(angles_type) :: angle
 
+    If (Allocated(angle%num)) Then
+      Deallocate(angle%num)
+    End If
+    If (Allocated(angle%key)) Then
+      Deallocate(angle%key)
+    End If
 
+    If (Allocated(angle%lst)) Then
+      Deallocate(angle%lst)
+    End If
+    If (Allocated(angle%list)) Then
+      Deallocate(angle%list)
+    End If
+    If (Allocated(angle%legend)) Then
+      Deallocate(angle%legend)
+    End If
+
+    If (Allocated(angle%param)) Then
+      Deallocate(angle%param)
+    End If
+
+    If (Allocated(angle%ltp)) Then
+      Deallocate(angle%ltp)
+    End If
+    If (Allocated(angle%tab_potential)) Then
+      Deallocate(angle%tab_potential)
+    End If
+    If (Allocated(angle%tab_force)) Then
+      Deallocate(angle%tab_force)
+    End If
+  End Subroutine cleanup
 End Module angles

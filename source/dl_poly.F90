@@ -541,7 +541,6 @@ program dl_poly
 
       Call deallocate_tethers_arrays()
 
-      Call deallocate_angles_arrays()
       Call deallocate_dihedrals_arrays()
       Call deallocate_inversions_arrays()
     End If
