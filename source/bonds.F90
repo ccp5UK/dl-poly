@@ -36,36 +36,38 @@ Module bonds
     Logical, Public :: l_tab = .false. ! no tabulated potentials opted
 
     !> Number of bond types (potentials)
-    Integer, Public :: n_types  = 0
-    Integer, Public :: n_types1 = 0
+    Integer( Kind = wi ), Public :: n_types  = 0
+    Integer( Kind = wi ), Public :: n_types1 = 0
     !> Number of frames
-    Integer, Public :: n_frames  = 0
+    Integer( Kind = wi ), Public :: n_frames  = 0
+    !> Total number of bonds (all nodes)
+    Integer( Kind = wi ), Public :: total
 
     !> Cut off
     Real( Kind = wp ), Public :: rcut = 0.0_wp
 
 
-    Integer, Allocatable, Public :: num(:),key(:)
+    Integer( Kind = wi ), Allocatable, Public :: num(:),key(:)
 
     !> Atom indices (local)
-    Integer, Allocatable, Public :: lst(:,:)
+    Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
     !> Atom indices
-    Integer, Allocatable, Public :: list(:,:)
+    Integer( Kind = wi ), Allocatable, Public :: list(:,:)
     !> Legend
-    Integer, Allocatable, Public :: legend(:,:)
+    Integer( Kind = wi ), Allocatable, Public :: legend(:,:)
 
     !> Bonded parameters (force constant, etc.)
     Real( Kind = wp ), Allocatable, Public :: param(:,:)
 
     ! Possible tabulated calculation arrays
-    Integer,           Allocatable, Public :: ltp(:)
+    Integer( Kind = wi ), Allocatable, Public :: ltp(:)
     !> Tabulated potential
     Real( Kind = wp ), Allocatable, Public :: tab_potential(:,:)
     !> Tabulated force
     Real( Kind = wp ), Allocatable, Public :: tab_force(:,:)
 
     ! Possible distribution arrays
-    Integer,           Allocatable, Public :: ldf(:),typ(:,:)
+    Integer( Kind = wi ), Allocatable, Public :: ldf(:),typ(:,:)
     Real( Kind = wp ), Allocatable, Public :: dst(:,:)
 
     ! Maximums

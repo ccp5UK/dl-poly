@@ -50,7 +50,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megbnd,megang,megdih,meginv,bond,comm)
+           megtet,megang,megdih,meginv,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,7 +69,7 @@ Subroutine build_book_intra             &
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megcon,megpmf, &
-                                        megtet,megbnd,megang, &
+                                        megtet,megang, &
                                         megdih,meginv
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
@@ -1632,7 +1632,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,megbnd,megang,megdih,meginv,bond,comm)
+           megtet,megang,megdih,meginv,bond,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 

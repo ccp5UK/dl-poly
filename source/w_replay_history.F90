@@ -140,7 +140,7 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megbnd,megang,megdih,meginv,bond,comm)
+           megtet,megang,megdih,meginv,bond,comm)
               If (lexcl) Call build_excl_intra(lecx,bond,comm)
            End If
 
@@ -156,7 +156,7 @@
 
 ! Calculate bond forces
 
-           If (megbnd > 0 .and. bond%bin_pdf > 0) Then
+           If (bond%total > 0 .and. bond%bin_pdf > 0) Then
               isw = 0
               Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress, &
               rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,comm)

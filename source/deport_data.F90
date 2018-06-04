@@ -2526,7 +2526,7 @@ Subroutine relocate_particles       &
            (dvar,rlnk,lbook,lmsd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           megbnd,megang,megdih,    &
+           megang,megdih,    &
            meginv,stats,ewld,thermo,green,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2547,7 +2547,7 @@ Subroutine relocate_particles       &
   Integer,           Intent( In    ) :: megatm,              &
                                         megshl,m_con,megpmf, &
                                         m_rgd,megtet,        &
-                                        megbnd,megang,megdih,meginv
+                                        megang,megdih,meginv
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2722,7 +2722,7 @@ Subroutine relocate_particles       &
         If (megpmf > 0) safe(3)=(ntpmf  <= mxpmf )
         If (m_rgd  > 0) safe(4)=(ntrgd  <= mxrgd )
         If (megtet > 0) safe(5)=(ntteth <= mxteth)
-        If (megbnd > 0) safe(6)=(bond%n_types <= bond%max_bonds)
+        If (bond%total > 0) safe(6)=(bond%n_types <= bond%max_bonds)
         If (megang > 0) safe(7)=(ntangl <= mxangl)
         If (megdih > 0) safe(8)=(ntdihd <= mxdihd)
         If (meginv > 0) safe(9)=(ntinv  <= mxinv )
@@ -2784,7 +2784,7 @@ Subroutine relocate_particles       &
         If (megtet > 0) Call compress_book_intra &
            (mxteth,ntteth,Ubound(listtet,Dim=1),listtet,mxftet,legtet,comm)
 
-        If (megbnd > 0) Call compress_book_intra &
+        If (bond%total > 0) Call compress_book_intra &
            (bond%max_bonds,bond%n_types,Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,comm)
         If (megang > 0) Call compress_book_intra &
            (mxangl,ntangl,Ubound(listang,Dim=1),listang,mxfang,legang,comm)

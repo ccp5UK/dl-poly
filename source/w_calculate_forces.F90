@@ -55,7 +55,7 @@
 
 ! Calculate bond forces
 
-     If (megbnd > 0) Then
+     If (bond%total > 0) Then
         ltmp = (bond%bin_pdf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
 
         isw = 1 + Merge(1,0,ltmp)

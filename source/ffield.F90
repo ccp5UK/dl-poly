@@ -74,7 +74,7 @@ Subroutine read_field                      &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
-           megtet,megbnd,megang,megdih,    &
+           megtet,megang,megdih,    &
            meginv,thermo,met,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -109,7 +109,7 @@ Subroutine read_field                      &
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megcon,megpmf,megrgd,        &
-                                        megtet,megbnd,megang,megdih,meginv
+                                        megtet,megang,megdih,meginv
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
@@ -234,7 +234,7 @@ Subroutine read_field                      &
 
   megtet = 0
 
-  megbnd = 0
+  bond%total = 0
   megang = 0
   megdih = 0
   meginv = 0
@@ -2137,7 +2137,7 @@ Subroutine read_field                      &
 
                  megtet=megtet+nummols(itmols)*numteth(itmols)
 
-                 megbnd=megbnd+nummols(itmols)*bond%num(itmols)
+                 bond%total=bond%total+nummols(itmols)*bond%num(itmols)
                  megang=megang+nummols(itmols)*numang(itmols)
                  megdih=megdih+nummols(itmols)*numdih(itmols)
                  meginv=meginv+nummols(itmols)*numinv(itmols)
@@ -4740,7 +4740,7 @@ End Subroutine read_field
 Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,megbnd,megang,megdih,  &
+           megtet,megang,megdih,  &
            meginv,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4754,7 +4754,7 @@ Subroutine report_topology               &
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
                               megshl,megcon,megpmf,megrgd, &
-                              megtet,megbnd,megang,megdih,meginv
+                              megtet,megang,megdih,meginv
   Type( bonds_type ), Intent( InOut ) :: bond
   Type(comms_type), Intent( InOut ) :: comm
 
@@ -4928,7 +4928,7 @@ Subroutine report_topology               &
   Write(banner(11),fmt3) '||  PMF units              | ',megpmf,'  |  P         ',frzpmf,'     ||'
   Write(banner(12),fmt2) '||  rigid body units       | ',mgrgd,'  |  F  ',mgrgd-megrgd,'     ||'
   Write(banner(13),fmt2) '||  tethered atom units    | ',megtet,'  |  F  ',mgfrtt,'     ||'
-  Write(banner(14),fmt2) '||  chemical bond units    | ',megbnd,'  |  F  ',mgfrbn,'     ||'
+  Write(banner(14),fmt2) '||  chemical bond units    | ',bond%total,'  |  F  ',mgfrbn,'     ||'
   Write(banner(15),fmt2) '||  bond angle units       | ',megang,'  |  F  ',mgfran,'     ||'
   Write(banner(16),fmt2) '||  dihedral angle units   | ',megdih,'  |  F  ',mgfrdh,'     ||'
   Write(banner(17),fmt2) '||  inversion angle units  | ',meginv,'  |  F  ',mgfrin,'     ||'

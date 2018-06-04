@@ -120,7 +120,7 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megbnd,megang,megdih,meginv,bond,comm)
+           megtet,megang,megdih,meginv,bond,comm)
               If (lexcl) Call build_excl_intra(lecx,bond,comm)
            End If
 
