@@ -1387,9 +1387,6 @@ Contains
     Integer,            Intent(   Out ) :: s
     Integer,            Intent( In    ) :: source,tag
 
-    If (comm%mxnode == 1) Then
-      Return
-    End If
     Call MPI_IRECV(s,1,MPI_INTEGER,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_integer_scalar
 
@@ -1409,9 +1406,6 @@ Contains
 
     Integer :: n_s
 
-    If (comm%mxnode == 1) Then
-      Return
-    End If
     n_s = Size(vec, Dim = 1)
 
     Call MPI_IRECV(vec(:),n_s,MPI_INTEGER,source,tag,comm%comm,comm%request,comm%ierr)
@@ -1431,9 +1425,6 @@ Contains
     Real( Kind = wp),   Intent(   Out ) :: s
     Integer,            Intent( In    ) :: source,tag
 
-    If (comm%mxnode == 1) Then
-      Return
-    End If
     Call MPI_IRECV(s,1,wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_real_scalar
 
@@ -1453,9 +1444,6 @@ Contains
 
     Integer :: n_s
 
-    If (comm%mxnode == 1) Then
-      Return
-    End If
     n_s = Size(vec, Dim = 1)
 
     Call MPI_IRECV(vec(:),n_s,wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
@@ -1478,9 +1466,6 @@ Contains
     Integer               :: i
     Integer, Dimension(3) :: n_s
 
-    If (comm%mxnode == 1) Then
-      Return
-    End If
     Do i = 1, 3
       n_s(i) = Size(arr, Dim = i)
     End Do
@@ -1503,9 +1488,6 @@ Contains
     Logical,            Intent(   Out ) :: s
     Integer,            Intent( In    ) :: source,tag
 
-    If (comm%mxnode == 1) Then
-      Return
-    End If
     Call MPI_IRECV(s,1,MPI_LOGICAL,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_logical_scalar
 
@@ -1525,9 +1507,6 @@ Contains
 
     Integer :: n_s
 
-    If (comm%mxnode == 1) Then
-      Return
-    End If
     n_s = Size(vec, Dim = 1)
 
     Call MPI_IRECV(vec(:),n_s,MPI_LOGICAL,source,tag,comm%comm,comm%request,comm%ierr)
@@ -1549,9 +1528,6 @@ Contains
 
     Integer :: n_s
 
-    If (comm%mxnode == 1) Then
-      Return
-    End If
     n_s = Len(s)
 
     Call MPI_IRECV(s,n_s,MPI_CHARACTER,source,tag,comm%comm,comm%request,comm%ierr)
@@ -1573,9 +1549,6 @@ Contains
 
     Integer :: n_s
 
-    If (comm%mxnode == 1) Then
-      Return
-    End If
     n_s = Size(vec, Dim = 1)*Len(vec(1))
 
     Call MPI_IRECV(vec(:),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%request,comm%ierr)
