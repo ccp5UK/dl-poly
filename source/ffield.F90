@@ -5045,7 +5045,7 @@ Subroutine scan_field                                &
   mxtteth=0
   mxftet =0
 
-  bond%num=0
+  numbonds=0
   mtbond=0
   bond%max_bonds=0
   bond%max_types=0
