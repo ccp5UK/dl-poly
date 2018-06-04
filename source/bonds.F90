@@ -11,7 +11,7 @@ Module bonds
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,           Only : wp
+  Use kinds,           Only : wp,wi
   Use setup,           Only : mxtmls,mxatdm, &
                               fourpi,boltz,delr_max,nrite,npdfdt,npdgdt, &
                               engunit,zero_plus,r4pie0,mximpl,ntable,delr_max,nrite, &
@@ -96,8 +96,8 @@ Module bonds
 
 Contains
 
-  Subroutine allocate_bonds_arrays()
-
+  Subroutine allocate_bonds_arrays(bond)
+    Type( bonds_type ), Intent( InOut ) :: bond
 
     Integer, Dimension( 1:8 ) :: fail
 
@@ -132,8 +132,8 @@ Contains
 
   End Subroutine allocate_bonds_arrays
 
-  Subroutine allocate_bond_pot_arrays()
-
+  Subroutine allocate_bond_pot_arrays(bond)
+    Type( bonds_type ), Intent( InOut ) :: bond
 
     Integer :: fail(1:2)
 
@@ -149,7 +149,8 @@ Contains
 
   End Subroutine allocate_bond_pot_arrays
 
-  Subroutine allocate_bond_dst_arrays()
+  Subroutine allocate_bond_dst_arrays(bond)
+    Type( bonds_type ), Intent( InOut ) :: bond
 
     Integer :: fail
 
@@ -165,7 +166,7 @@ Contains
   End Subroutine allocate_bond_dst_arrays
 
 
-  Subroutine bonds_compute(temp,comm)
+  Subroutine bonds_compute(temp,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -179,6 +180,7 @@ Contains
 
 
   Real( Kind = wp ), Intent( In    ) :: temp
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical           :: zero
@@ -481,7 +483,7 @@ Contains
 
 End Subroutine bonds_compute
 
-Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,vircpe,comm)
+Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,vircpe,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -505,6 +507,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
   Real( Kind = wp ),                   Intent( In    ) :: rcut,alpha,epsq
   Integer,                             Intent( In    ) :: keyfce
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe
+  Type( bonds_type ),                  Intent( InOut ) :: bond
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical           :: safe(1:3)
@@ -964,7 +967,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 End Subroutine bonds_forces
 
-Subroutine bonds_table_read(bond_name,comm)
+Subroutine bonds_table_read(bond_name,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -976,8 +979,10 @@ Subroutine bonds_table_read(bond_name,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( bonds_type ),    Intent( InOut ) :: bond
   Character( Len = 16 ), Intent( In    ) :: bond_name(1:bond%max_types)
   Type( comms_type),     Intent( InOut ) :: comm
+
   Logical                :: safe,remake
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
@@ -1059,7 +1064,7 @@ Subroutine bonds_table_read(bond_name,comm)
      Write(message,'(a)') 'error - bonds_table_read allocation failure'
      Call error(0,message)
   End If
-  Call allocate_bond_pot_arrays()
+  Call allocate_bond_pot_arrays(bond)
 
   read_type=0 ! initialise read_type
   Do rtbnd=1,bond%ltp(0)
@@ -1261,8 +1266,10 @@ Subroutine bonds_table_read(bond_name,comm)
 
 ! linear extrapolation for the grid point just beyond the cutoff
 
-        bond%tab_potential(bond%bin_tab-3,jtbnd) = 2.0_wp*bond%tab_potential(bond%bin_tab-4,jtbnd) - bond%tab_potential(bond%bin_tab-5,jtbnd)
-        bond%tab_force(bond%bin_tab-3,jtbnd) = 2.0_wp*bond%tab_force(bond%bin_tab-4,jtbnd) - bond%tab_force(bond%bin_tab-5,jtbnd)
+        bond%tab_potential(bond%bin_tab-3,jtbnd) = &
+          2.0_wp*bond%tab_potential(bond%bin_tab-4,jtbnd) - bond%tab_potential(bond%bin_tab-5,jtbnd)
+        bond%tab_force(bond%bin_tab-3,jtbnd) = &
+          2.0_wp*bond%tab_force(bond%bin_tab-4,jtbnd) - bond%tab_force(bond%bin_tab-5,jtbnd)
 
         bond%tab_potential(-1,jtbnd) = cutpot
         bond%tab_force(-1,jtbnd) = 1.0_wp/delpot
@@ -1273,8 +1280,10 @@ Subroutine bonds_table_read(bond_name,comm)
      bond%tab_potential(0,jtbnd) = bufpot(0)
      bond%tab_force(0,jtbnd) = bufvir(0)
 
-     bond%tab_potential(bond%bin_tab-2,jtbnd) = 2.0_wp*bond%tab_potential(bond%bin_tab-3,jtbnd) - bond%tab_potential(bond%bin_tab-4,jtbnd)
-     bond%tab_force(bond%bin_tab-2,jtbnd) = 2.0_wp*bond%tab_force(bond%bin_tab-3,jtbnd) - bond%tab_force(bond%bin_tab-4,jtbnd)
+     bond%tab_potential(bond%bin_tab-2,jtbnd) = &
+       2.0_wp*bond%tab_potential(bond%bin_tab-3,jtbnd) - bond%tab_potential(bond%bin_tab-4,jtbnd)
+     bond%tab_force(bond%bin_tab-2,jtbnd) = &
+       2.0_wp*bond%tab_force(bond%bin_tab-3,jtbnd) - bond%tab_force(bond%bin_tab-4,jtbnd)
   End Do
 
   If (comm%idnode == 0) Then

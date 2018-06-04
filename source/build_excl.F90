@@ -17,7 +17,7 @@ Module build_excl
 
   Use rigid_bodies
 
-  Use bonds
+  Use bonds, Only : bonds_type
   Use angles
   Use dihedrals
   Use inversions
@@ -30,7 +30,7 @@ Module build_excl
 
 Contains
 
-Subroutine build_excl_intra(lecx,comm)
+Subroutine build_excl_intra(lecx,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -47,6 +47,7 @@ Subroutine build_excl_intra(lecx,comm)
 
 
   Logical,             Intent( In    ) :: lecx
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type ),  Intent( InOut ) :: comm
 
   Logical :: safe
@@ -424,7 +425,7 @@ Subroutine build_excl_intra(lecx,comm)
 
 ! exclude sites on basis of bonds to core-shell units
 
-     Do kk=1,bond%n_type1
+     Do kk=1,bond%n_types1
         If (bond%key(bond%list(0,kk)) > 0) Then
            ja=bond%list(1,kk)
            jb=bond%list(2,kk)

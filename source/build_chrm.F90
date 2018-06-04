@@ -17,7 +17,7 @@ Module build_chrm
 
   Use rigid_bodies
 
-  Use bonds
+  Use bonds, Only : bonds_type
   Use angles
   Use dihedrals
   Use inversions
@@ -33,7 +33,7 @@ Module build_chrm
 
   Public :: build_chrm_intra
 Contains 
-  Subroutine build_chrm_intra(comm)
+  Subroutine build_chrm_intra(bond,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -55,6 +55,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type( bonds_type ), Intent( In    ) :: bond
     Type( comms_type ),  Intent( InOut) :: comm
 
     Logical :: safe
@@ -166,7 +167,7 @@ Contains
 
       ! add sites on basis of bonds to core-shell units
 
-      Do kk=1,bond%n_type1
+      Do kk=1,bond%n_types1
         If (bond%key(bond%list(0,kk)) > 0) Then
           ja=bond%list(1,kk)
           jb=bond%list(2,kk)

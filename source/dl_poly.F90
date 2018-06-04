@@ -82,7 +82,7 @@ program dl_poly
 
   Use tethers
 
-  Use bonds
+  Use bonds, Only : bonds_type,allocate_bonds_arrays,bonds_forces
   Use angles
   Use dihedrals
   Use inversions
@@ -258,6 +258,7 @@ program dl_poly
   Type(poisson_type) :: pois
   Type(impact_type) :: impa
   Type(defects_type) :: dfcts(2)
+  Type(bonds_type) :: bond
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -326,7 +327,7 @@ program dl_poly
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats, &
-    thermo,green,devel,msd_data,met,pois,comm)
+    thermo,green,devel,msd_data,met,pois,bond,comm)
 
   Call gtime(tmr%elapsed)
   Call info('',.true.)
@@ -353,7 +354,7 @@ program dl_poly
 
   Call allocate_tethers_arrays()
 
-  Call allocate_bonds_arrays()
+  Call allocate_bonds_arrays(bond)
   Call allocate_angles_arrays()
   Call allocate_dihedrals_arrays()
   Call allocate_inversions_arrays()
@@ -400,7 +401,7 @@ program dl_poly
     nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,tmr,comm)
+    ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,bond,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -412,7 +413,7 @@ program dl_poly
     rcter,rctbp,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megcon,megpmf,megrgd,    &
-    megtet,megbnd,megang,megdih,meginv,thermo,met,comm)
+    megtet,megbnd,megang,megdih,meginv,thermo,met,bond,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -481,7 +482,7 @@ program dl_poly
 
   ! Expand current system if opted for
 
-  If (l_exp) Call system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
+  If (l_exp) Call system_expand(l_str,rcut,nx,ny,nz,megatm,bond,comm)
 
   ! EXIT gracefully
 
@@ -495,7 +496,7 @@ program dl_poly
 
   Call system_init                                                 &
     (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
-    time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,comm)
+    time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -516,17 +517,17 @@ program dl_poly
       megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,        &
       megrgd,degrot,degtra,        &
-      megtet,megbnd,megang,megdih,meginv,comm)
+      megtet,megbnd,megang,megdih,meginv,bond,comm)
     If (mximpl > 0) Then
-      Call build_tplg_intra(comm) ! multipoles topology for internal coordinate system
-      If (keyind == 1) Call build_chrm_intra(comm) ! CHARMM core-shell screened electrostatic induction interactions
+      Call build_tplg_intra(bond,comm) ! multipoles topology for internal coordinate system
+      If (keyind == 1) Call build_chrm_intra(bond,comm) ! CHARMM core-shell screened electrostatic induction interactions
     End If
-    If (lexcl) Call build_excl_intra(lecx,comm)
+    If (lexcl) Call build_excl_intra(lecx,bond,comm)
   Else
     Call report_topology                &
       (megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,megrgd,  &
-      megtet,megbnd,megang,megdih,meginv,comm)
+      megtet,megbnd,megang,megdih,meginv,bond,comm)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -540,7 +541,6 @@ program dl_poly
 
       Call deallocate_tethers_arrays()
 
-      Call deallocate_bonds_arrays()
       Call deallocate_angles_arrays()
       Call deallocate_dihedrals_arrays()
       Call deallocate_inversions_arrays()
@@ -651,12 +651,12 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,stats,thermo,plume,pois)
+    Call w_md_vv(mxatdm,stats,thermo,plume,pois,bond)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,stats,thermo,plume,msd_data)
+      Call w_replay_historf(mxatdm,stats,thermo,plume,msd_data,bond)
     Else
-      Call w_replay_history(mxatdm,stats,thermo,msd_data,met,pois)
+      Call w_replay_history(mxatdm,stats,thermo,msd_data,met,pois,bond)
     End If
   End If
 
@@ -715,7 +715,7 @@ program dl_poly
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
       (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-      stats,devel,green,thermo,comm)
+      stats,devel,green,thermo,bond,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -724,7 +724,7 @@ program dl_poly
   Call statistics_result                                        &
     (rcut,lmin,lpana,lrdf,lprdf,lzdn,msd_data%l_msd,lpzdn, &
     nstrun,keyshl,megcon,megpmf,              &
-    nstep,tstep,time,tmst,mxatdm,stats,thermo,green,comm,passmin)
+    nstep,tstep,time,tmst,mxatdm,stats,thermo,green,bond,comm,passmin)
 
   10 Continue
 
@@ -789,9 +789,10 @@ Contains
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings(stat,msd_data)
+  Subroutine w_refresh_mappings(stat,msd_data,bond)
     Type(stats_type), Intent(InOut) :: stat
     Type(msd_type), Intent(InOut) :: msd_data
+    Type( bonds_type ), Intent( InOut ) :: bond
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
@@ -824,22 +825,24 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,stat,thermo,plume,pois)
+  Subroutine w_md_vv(mxatdm_,stat,thermo,plume,pois,bond)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(plumed_type), Intent(InOut) :: plume
     Type(poisson_type), Intent(InOut) :: pois
+    Type( bonds_type ), Intent( InOut ) :: bond
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data,met,pois)
+  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data,met,pois,bond)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(msd_type), Intent(InOut) :: msd_data
     Type( metal_type ), Intent( InOut ) :: met
     Type( poisson_type ), Intent( InOut ) :: pois
+    Type( bonds_type ), Intent( InOut ) :: bond
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -849,12 +852,13 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,stat,thermo,plume,msd_data)
+  Subroutine w_replay_historf(mxatdm_,stat,thermo,plume,msd_data,bond)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_ 
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(plumed_type), Intent(InOut) :: plume
     Type(msd_type), Intent(InOut) :: msd_data
+    Type( bonds_type ), Intent( InOut ) :: bond
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

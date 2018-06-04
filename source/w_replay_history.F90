@@ -140,8 +140,8 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megbnd,megang,megdih,meginv,comm)
-              If (lexcl) Call build_excl_intra(lecx,comm)
+           megtet,megbnd,megang,megdih,meginv,bond,comm)
+              If (lexcl) Call build_excl_intra(lecx,bond,comm)
            End If
 
 ! Accumulate RDFs if needed (nstep->nstph)
@@ -159,7 +159,7 @@
            If (megbnd > 0 .and. bond%bin_pdf > 0) Then
               isw = 0
               Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress, &
-              rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,comm)
+              rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,comm)
            End If
 
 ! Calculate valence angle forces
@@ -268,7 +268,7 @@
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,comm)
+           stat,devel,green,thermo,bond,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -343,7 +343,7 @@
 
   If (.not. devel%l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,comm)
+           stat,devel,green,thermo,bond,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

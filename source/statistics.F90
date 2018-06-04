@@ -27,7 +27,7 @@ Module statistics
   Use core_shell,  Only : passshl
   Use constraints, Only : passcon
   Use pmf,         Only : passpmf
-  Use bonds,       Only : bond%n_frames,bond%bin_pdf
+  Use bonds,       Only : bonds_type,bonds_compute
   Use angles,      Only : ncfang,mxgang1
   Use dihedrals,   Only : ncfdih,mxgdih1
   Use inversions,  Only : ncfinv,mxginv1
@@ -38,7 +38,6 @@ Module statistics
   Use z_density,   Only : ncfzdn,z_density_compute,z_density_collect
   Use msd,         Only : msd_type
   Use greenkubo,   Only : greenkubo_type,vaf_compute
-  Use bonds,       Only : bonds_compute
   Use angles,      Only : angles_compute
   Use dihedrals,   Only : dihedrals_compute
   Use inversions,  Only : inversions_compute
@@ -1331,7 +1330,7 @@ Subroutine statistics_result                                    &
            (rcut,lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
-           mxatdm,stats,thermo,green,comm,passmin)
+           mxatdm,stats,thermo,green,bond,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1351,6 +1350,7 @@ Subroutine statistics_result                                    &
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( In    ) :: green
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
   Logical           :: check
@@ -1726,7 +1726,7 @@ Subroutine statistics_result                                    &
 
 ! Calculate and print PDFs
   If (lpana) Then
-     If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Call bonds_compute(temp,comm)
+     If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Call bonds_compute(temp,bond,comm)
      If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(temp,comm)
      If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp,comm)
      If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp,comm)

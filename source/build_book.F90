@@ -23,7 +23,7 @@ Module build_book
 
   Use tethers
 
-  Use bonds
+  Use bonds, Only : bonds_type
   Use angles
   Use dihedrals
   Use inversions
@@ -50,7 +50,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megbnd,megang,megdih,meginv,comm)
+           megtet,megbnd,megang,megdih,meginv,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -73,6 +73,7 @@ Subroutine build_book_intra             &
                                         megdih,meginv
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -106,7 +107,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra()
+  If (.not.(newjob .or. lsim)) Call init_intra(bond)
 
 ! Initialise safety flags
 
@@ -502,7 +503,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),iat0,jbonds,bond%legend,bond%max_legend)
                        If (bond%legend(bond%max_legend,iat0) > 0) Then
                           Call warning('too many bond type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', bond%max_legend-1+bond%legend(bond%max_legend,iat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            bond%max_legend-1+bond%legend(bond%max_legend,iat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', bond%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', bond%lst(1,lbonds+kbonds)
@@ -517,7 +519,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),jat0,jbonds,bond%legend,bond%max_legend)
                        If (bond%legend(bond%max_legend,jat0) > 0) Then
                           Call warning('too many bond type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', bond%max_legend-1+bond%legend(bond%max_legend,jat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            bond%max_legend-1+bond%legend(bond%max_legend,jat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', bond%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', bond%lst(2,lbonds+kbonds)
@@ -896,7 +899,7 @@ Subroutine build_book_intra             &
 
      ntrgd1 =ntrgd
 
-     bond%n_type1=bond%n_types
+     bond%n_types1=bond%n_types
      ntangl1=ntangl
      ntdihd1=ntdihd
      ntinv1 =ntinv
@@ -1364,7 +1367,7 @@ Subroutine build_book_intra             &
 
   ntrgd1 =jrigid
 
-  bond%n_type1=jbonds
+  bond%n_types1=jbonds
   ntangl1=jangle
   ntdihd1=jdihed
   ntinv1 =jinver
@@ -1400,7 +1403,7 @@ Subroutine build_book_intra             &
         End If
      End Do
   End Do
-  Do i=bond%n_types+1,bond%n_type1
+  Do i=bond%n_types+1,bond%n_types1
      iatm=bond%list(1,i)
      jatm=bond%list(2,i)
 
@@ -1629,7 +1632,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,megbnd,megang,megdih,meginv,comm)
+           megtet,megbnd,megang,megdih,meginv,bond,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1643,7 +1646,6 @@ Subroutine build_book_intra             &
 
         Call deallocate_tethers_arrays()
 
-        Call deallocate_bonds_arrays()
         Call deallocate_angles_arrays()
         Call deallocate_dihedrals_arrays()
         Call deallocate_inversions_arrays()
@@ -1765,7 +1767,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra()
+Subroutine init_intra(bond)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1778,6 +1780,7 @@ Subroutine init_intra()
 ! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Type( bonds_type ), Intent( InOut ) :: bond
 
 ! exclusions locals
 
@@ -1828,7 +1831,7 @@ Subroutine init_intra()
 
 ! bonds locals
 
-  bond%n_types  = 0 ; bond%n_type1 = 0
+  bond%n_types  = 0 ; bond%n_types1 = 0
   bond%list  = 0
   bond%legend   = 0
 

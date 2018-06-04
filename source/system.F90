@@ -13,7 +13,7 @@ Module system
   Use statistics, Only : stats_type
   Use rdfs,        Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density,   Only : ncfzdn,zdens
-  Use bonds,       Only : bond%ldf,bond%n_frames,bond%dst,bond%num,bond%lst,bond%key
+  Use bonds,       Only : bonds_type
   Use angles,      Only : ldfang,ncfang,dstang,numang,lstang,keyang
   Use dihedrals,   Only : ldfdih,ncfdih,dstdih,numdih,lstdih
   Use inversions,  Only : ldfinv,ncfinv,dstinv,numinv,lstinv
@@ -60,7 +60,7 @@ Module system
   
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
-           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,comm)
+           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -87,6 +87,7 @@ Module system
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -619,7 +620,7 @@ Module system
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -641,6 +642,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,comm)
   Integer,           Intent( In    ) :: nx,ny,megatm
   Real( Kind = wp ), Intent( In    ) :: rcut
   Integer,           Intent( InOut ) :: nz
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size
@@ -1798,7 +1800,7 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stats,devel,green,thermo,comm)
+           stats,devel,green,thermo,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1819,6 +1821,7 @@ Subroutine system_revive                                      &
   Type( development_type ), Intent( In    ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( thermostat_type ), Intent( InOut ) :: thermo
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready

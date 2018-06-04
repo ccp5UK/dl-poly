@@ -30,7 +30,7 @@ Module ffield
 
   Use tethers
 
-  Use bonds
+  Use bonds, Only : bonds_type,bonds_table_read,allocate_bond_dst_arrays
   Use angles
   Use dihedrals
   Use inversions
@@ -75,7 +75,7 @@ Subroutine read_field                      &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
            megtet,megbnd,megang,megdih,    &
-           meginv,thermo,met,comm)
+           meginv,thermo,met,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -112,6 +112,7 @@ Subroutine read_field                      &
                                         megtet,megbnd,megang,megdih,meginv
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -2171,7 +2172,7 @@ Subroutine read_field                      &
 ! Deal with intarmolecular potential tables:
 ! read & generate intramolecular potential & virial arrays
 
-        If (bond%l_tab) Call bonds_table_read(bond_name,comm)
+        If (bond%l_tab) Call bonds_table_read(bond_name,bond,comm)
         If (lt_ang) Call angles_table_read(angl_name,comm)
         If (lt_dih) Call dihedrals_table_read(dihd_name,comm)
         If (lt_inv) Call inversions_table_read(invr_name,comm)
@@ -2409,7 +2410,7 @@ Subroutine read_field                      &
 
            If (bond%bin_pdf > 0) Then
               ntpbnd = 0 ! for bonds
-              Call allocate_bond_dst_arrays() ! as it depends on bond%ldf(0)
+              Call allocate_bond_dst_arrays(bond) ! as it depends on bond%ldf(0)
 !             bond%typ = 0 ! initialised in bonds_module
            End If
            If (mxgang1 > 0) Then
@@ -4740,7 +4741,7 @@ Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
            megtet,megbnd,megang,megdih,  &
-           meginv,comm)
+           meginv,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4754,7 +4755,8 @@ Subroutine report_topology               &
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
                               megshl,megcon,megpmf,megrgd, &
                               megtet,megbnd,megang,megdih,meginv
- Type(comms_type), Intent( InOut ) :: comm
+  Type( bonds_type ), Intent( InOut ) :: bond
+  Type(comms_type), Intent( InOut ) :: comm
 
   Integer :: itmols,nsite,                &
              isite1,isite2,isite3,isite4, &
@@ -4942,13 +4944,13 @@ Subroutine scan_field                                &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,mxtteth,mxteth,mxftet,             &
-           mtbond,bond%max_types,bond%max_bonds,bond%max_legend,bond%rcut,bond%bin_tab, &
+           mtbond, &
            mtangl,mxtang,mxangl,mxfang,mxgang,       &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4966,6 +4968,7 @@ Subroutine scan_field                                &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( metal_type ), Intent( InOut ) :: met
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type ), Intent( InOut ) :: comm
 ! Max number of different atom types
 
@@ -4989,7 +4992,7 @@ Subroutine scan_field                                &
                        mxtpmf(1:2),mxpmf,ipmf,jpmf,mxfpmf,                     &
                        numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
                        numteth,mtteth,mxtteth,mxteth,iteth,mxftet,             &
-                       bond%num,mtbond,bond%max_types,bond%max_bonds,ibonds,bond%max_legend,bond%bin_tab,     &
+                       numbonds,mtbond,ibonds, &
                        numang,mtangl,mxtang,mxangl,iang,mxfang,mxgang,         &
                        numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,mxgdih,         &
                        numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,mxginv,           &
@@ -4997,7 +5000,7 @@ Subroutine scan_field                                &
                        mxmet,mxmed,mxmds,itpmet,                        &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
-  Real( Kind = wp ) :: bond%rcut,rvdw,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
+  Real( Kind = wp ) :: rvdw,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
   mxompl=0      ! default of maximum order of poles (charges)
@@ -5345,12 +5348,12 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 bond%num=Nint(word_2_real(word))
-                 mtbond=Max(mtbond,bond%num)
-                 bond%max_types=bond%max_types+bond%num
-                 bond%max_bonds=bond%max_bonds+nummols*bond%num
+                 numbonds=Nint(word_2_real(word))
+                 mtbond=Max(mtbond,numbonds)
+                 bond%max_types=bond%max_types+numbonds
+                 bond%max_bonds=bond%max_bonds+nummols*numbonds
 
-                 Do ibonds=1,bond%num
+                 Do ibonds=1,numbonds
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                        Call get_line(safe,nfield,record,comm)

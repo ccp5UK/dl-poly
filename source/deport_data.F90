@@ -20,7 +20,7 @@ Module deport_data
 
   Use tethers,      Only : ntteth,listtet,legtet
 
-  Use bonds,        Only : bond%n_types,bond%list,bond%legend
+  Use bonds,        Only : bonds_type
   Use angles,       Only : ntangl,listang,legang
   Use dihedrals,    Only : ntdihd,listdih,legdih,lx_dih
   Use inversions,   Only : ntinv,listinv,leginv
@@ -59,7 +59,7 @@ Module deport_data
   Contains 
   
 
-Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
+Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -82,6 +82,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,comm)
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( InOut ) :: green
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -2526,7 +2527,7 @@ Subroutine relocate_particles       &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
            megbnd,megang,megdih,    &
-           meginv,stats,ewld,thermo,green,comm)
+           meginv,stats,ewld,thermo,green,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2551,6 +2552,7 @@ Subroutine relocate_particles       &
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( InOut ) :: green
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2666,18 +2668,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
 
 ! check system for loss of atoms
 

@@ -120,8 +120,8 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megbnd,megang,megdih,meginv,comm)
-              If (lexcl) Call build_excl_intra(lecx,comm)
+           megtet,megbnd,megang,megdih,meginv,bond,comm)
+              If (lexcl) Call build_excl_intra(lecx,bond,comm)
            End If
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
@@ -238,7 +238,7 @@
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,comm)
+           stat,devel,green,thermo,bond,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -313,7 +313,7 @@
 
   If (.not. devel%l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,comm)
+           stat,devel,green,thermo,bond,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 
