@@ -23,7 +23,7 @@ Module build_book
 
   Use tethers
 
-  Use bonds
+  Use bonds, Only : bonds_type
   Use angles
   Use dihedrals
   Use inversions
@@ -50,7 +50,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megbnd,megang,megdih,meginv,comm)
+           megtet,megang,megdih,meginv,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,10 +69,11 @@ Subroutine build_book_intra             &
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megcon,megpmf, &
-                                        megtet,megbnd,megang, &
+                                        megtet,megang, &
                                         megdih,meginv
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -106,7 +107,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra()
+  If (.not.(newjob .or. lsim)) Call init_intra(bond)
 
 ! Initialise safety flags
 
@@ -481,9 +482,9 @@ Subroutine build_book_intra             &
 
 ! Construct chemical bond interaction list
 
-           Do lbonds=1,numbonds(itmols)
-              iatm=lstbnd(1,lbonds+kbonds)+isite
-              jatm=lstbnd(2,lbonds+kbonds)+isite
+           Do lbonds=1,bond%num(itmols)
+              iatm=bond%lst(1,lbonds+kbonds)+isite
+              jatm=bond%lst(2,lbonds+kbonds)+isite
 
               iat0=local_index(iatm,nlast,lsi,lsa)
               jat0=local_index(jatm,nlast,lsi,lsa)
@@ -493,19 +494,20 @@ Subroutine build_book_intra             &
 
               If (iat0 > 0 .or. jat0 > 0) Then
                  jbonds=jbonds+1
-                 If (jbonds <= mxbond) Then
-                    listbnd(0,jbonds)=lbonds+kbonds
-                    listbnd(1,jbonds)=iatm
-                    listbnd(2,jbonds)=jatm
+                 If (jbonds <= bond%max_bonds) Then
+                    bond%list(0,jbonds)=lbonds+kbonds
+                    bond%list(1,jbonds)=iatm
+                    bond%list(2,jbonds)=jatm
 
                     If (iat0 > 0) Then
-                       Call tag_legend(safe(1),iat0,jbonds,legbnd,mxfbnd)
-                       If (legbnd(mxfbnd,iat0) > 0) Then
+                       Call tag_legend(safe(1),iat0,jbonds,bond%legend,bond%max_legend)
+                       If (bond%legend(bond%max_legend,iat0) > 0) Then
                           Call warning('too many bond type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfbnd-1+legbnd(mxfbnd,iat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfbnd-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            bond%max_legend-1+bond%legend(bond%max_legend,iat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', bond%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstbnd(1,lbonds+kbonds)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', bond%lst(1,lbonds+kbonds)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', lbonds
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -514,13 +516,14 @@ Subroutine build_book_intra             &
                     End If
 
                     If (jat0 > 0) Then
-                       Call tag_legend(safe(1),jat0,jbonds,legbnd,mxfbnd)
-                       If (legbnd(mxfbnd,jat0) > 0) Then
+                       Call tag_legend(safe(1),jat0,jbonds,bond%legend,bond%max_legend)
+                       If (bond%legend(bond%max_legend,jat0) > 0) Then
                           Call warning('too many bond type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfbnd-1+legbnd(mxfbnd,jat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfbnd-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            bond%max_legend-1+bond%legend(bond%max_legend,jat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', bond%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstbnd(2,lbonds+kbonds)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', bond%lst(2,lbonds+kbonds)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', lbonds
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -866,7 +869,7 @@ Subroutine build_book_intra             &
 
      kteths=kteths+numteth(itmols)
 
-     kbonds=kbonds+numbonds(itmols)
+     kbonds=kbonds+bond%num(itmols)
      kangle=kangle+numang(itmols)
      kdihed=kdihed+numdih(itmols)
      kinver=kinver+numinv(itmols)
@@ -884,7 +887,7 @@ Subroutine build_book_intra             &
 
   ntteth=jteths
 
-  ntbond=jbonds
+  bond%n_types=jbonds
   ntangl=jangle
   ntdihd=jdihed
   ntinv =jinver
@@ -896,7 +899,7 @@ Subroutine build_book_intra             &
 
      ntrgd1 =ntrgd
 
-     ntbond1=ntbond
+     bond%n_types1=bond%n_types
      ntangl1=ntangl
      ntdihd1=ntdihd
      ntinv1 =ntinv
@@ -941,9 +944,9 @@ Subroutine build_book_intra             &
         End If
      End Do
   End Do
-  Do i=1,ntbond
-     iatm=listbnd(1,i)
-     jatm=listbnd(2,i)
+  Do i=1,bond%n_types
+     iatm=bond%list(1,i)
+     jatm=bond%list(2,i)
 
      iat0=local_index(iatm,nlast,lsi,lsa)
      jat0=local_index(jatm,nlast,lsi,lsa)
@@ -1185,7 +1188,7 @@ Subroutine build_book_intra             &
         End Do
 
 ! If there is a non-local, cross-domained core-shell unit atom on this
-! molecule on this node, extend listcon, listrgd, listbnd and listang
+! molecule on this node, extend listcon, listrgd, bond%list and listang
 
         If (i > 0) Then
 
@@ -1235,17 +1238,17 @@ Subroutine build_book_intra             &
 
 ! Extend chemical bond interaction list
 
-           Do lbonds=1,numbonds(itmols)
-              iatm=lstbnd(1,lbonds+kbonds)+isite
-              jatm=lstbnd(2,lbonds+kbonds)+isite
+           Do lbonds=1,bond%num(itmols)
+              iatm=bond%lst(1,lbonds+kbonds)+isite
+              jatm=bond%lst(2,lbonds+kbonds)+isite
 
               If ( Any(iwrk(1:mshels) == iatm) .or. &
                    Any(iwrk(1:mshels) == jatm) ) Then
                  jbonds=jbonds+1
-                 If (jbonds <= mxbond) Then
-                    listbnd(0,jbonds)=lbonds+kbonds
-                    listbnd(1,jbonds)=iatm
-                    listbnd(2,jbonds)=jatm
+                 If (jbonds <= bond%max_bonds) Then
+                    bond%list(0,jbonds)=lbonds+kbonds
+                    bond%list(1,jbonds)=iatm
+                    bond%list(2,jbonds)=jatm
                  Else
                     safe(7)=.false.
                  End If
@@ -1349,7 +1352,7 @@ Subroutine build_book_intra             &
 
      krigid=krigid+numrgd(itmols)
 
-     kbonds=kbonds+numbonds(itmols)
+     kbonds=kbonds+bond%num(itmols)
      kangle=kangle+numang(itmols)
      kdihed=kdihed+numdih(itmols)
      kinver=kinver+numinv(itmols)
@@ -1364,7 +1367,7 @@ Subroutine build_book_intra             &
 
   ntrgd1 =jrigid
 
-  ntbond1=jbonds
+  bond%n_types1=jbonds
   ntangl1=jangle
   ntdihd1=jdihed
   ntinv1 =jinver
@@ -1400,9 +1403,9 @@ Subroutine build_book_intra             &
         End If
      End Do
   End Do
-  Do i=ntbond+1,ntbond1
-     iatm=listbnd(1,i)
-     jatm=listbnd(2,i)
+  Do i=bond%n_types+1,bond%n_types1
+     iatm=bond%list(1,i)
+     jatm=bond%list(2,i)
 
      If (.not.Any(iwrk(1:mshels) == iatm)) Then
         mshels=mshels+1
@@ -1583,7 +1586,7 @@ Subroutine build_book_intra             &
      itmp(3)=ipmf   ; jtmp(3)=mxpmf
      itmp(4)=irigid ; jtmp(4)=mxrgd
      itmp(5)=iteths ; jtmp(5)=mxteth
-     itmp(6)=ibonds ; jtmp(6)=mxbond
+     itmp(6)=ibonds ; jtmp(6)=bond%max_bonds
      itmp(7)=iangle ; jtmp(7)=mxangl
      itmp(8)=idihed ; jtmp(8)=mxdihd
      itmp(9)=iinver ; jtmp(9)=mxinv
@@ -1629,7 +1632,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,megbnd,megang,megdih,meginv,comm)
+           megtet,megang,megdih,meginv,bond,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1643,7 +1646,6 @@ Subroutine build_book_intra             &
 
         Call deallocate_tethers_arrays()
 
-        Call deallocate_bonds_arrays()
         Call deallocate_angles_arrays()
         Call deallocate_dihedrals_arrays()
         Call deallocate_inversions_arrays()
@@ -1765,7 +1767,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra()
+Subroutine init_intra(bond)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1778,6 +1780,7 @@ Subroutine init_intra()
 ! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Type( bonds_type ), Intent( InOut ) :: bond
 
 ! exclusions locals
 
@@ -1828,9 +1831,9 @@ Subroutine init_intra()
 
 ! bonds locals
 
-  ntbond  = 0 ; ntbond1 = 0
-  listbnd  = 0
-  legbnd   = 0
+  bond%n_types  = 0 ; bond%n_types1 = 0
+  bond%list  = 0
+  bond%legend   = 0
 
 ! angles locals
 

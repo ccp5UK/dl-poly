@@ -88,7 +88,7 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(stat,msd_data)
+        Call w_refresh_mappings(stat,msd_data,bond)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
@@ -136,7 +136,7 @@
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,comm)
+           stat,devel,green,thermo,bond,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 

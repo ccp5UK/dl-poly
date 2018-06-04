@@ -9,7 +9,7 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(stat,msd_data)
+        Call w_refresh_mappings(stat,msd_data,bond)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -55,11 +55,11 @@
 
 ! Calculate bond forces
 
-     If (megbnd > 0) Then
-        ltmp = (mxgbnd1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
+     If (bond%total > 0) Then
+        ltmp = (bond%bin_pdf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,comm)
+        Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,comm)
      End If
 
 ! Calculate valence angle forces
@@ -146,7 +146,7 @@
 ! Refresh mappings
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
-           Call w_refresh_mappings(stat,msd_data)
+           Call w_refresh_mappings(stat,msd_data,bond)
 
            Go To 100
         End If

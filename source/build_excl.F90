@@ -17,7 +17,7 @@ Module build_excl
 
   Use rigid_bodies
 
-  Use bonds
+  Use bonds, Only : bonds_type
   Use angles
   Use dihedrals
   Use inversions
@@ -30,7 +30,7 @@ Module build_excl
 
 Contains
 
-Subroutine build_excl_intra(lecx,comm)
+Subroutine build_excl_intra(lecx,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -47,6 +47,7 @@ Subroutine build_excl_intra(lecx,comm)
 
 
   Logical,             Intent( In    ) :: lecx
+  Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type ),  Intent( InOut ) :: comm
 
   Logical :: safe
@@ -113,10 +114,10 @@ Subroutine build_excl_intra(lecx,comm)
 
 ! exclude sites on basis of chemical bonds
 
-  Do i=1,ntbond
-     If (keybnd(listbnd(0,i)) > 0) Then
-        ia=listbnd(1,i)
-        ib=listbnd(2,i)
+  Do i=1,bond%n_types
+     If (bond%key(bond%list(0,i)) > 0) Then
+        ia=bond%list(1,i)
+        ib=bond%list(2,i)
 
         ia0=local_index(ia,nlast,lsi,lsa)
         ib0=local_index(ib,nlast,lsi,lsa)
@@ -424,10 +425,10 @@ Subroutine build_excl_intra(lecx,comm)
 
 ! exclude sites on basis of bonds to core-shell units
 
-     Do kk=1,ntbond1
-        If (keybnd(listbnd(0,kk)) > 0) Then
-           ja=listbnd(1,kk)
-           jb=listbnd(2,kk)
+     Do kk=1,bond%n_types1
+        If (bond%key(bond%list(0,kk)) > 0) Then
+           ja=bond%list(1,kk)
+           jb=bond%list(2,kk)
 
            ja0=local_index(ja,nlast,lsi,lsa)
            jb0=local_index(jb,nlast,lsi,lsa)
