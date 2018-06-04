@@ -14,7 +14,7 @@ Module system
   Use rdfs,        Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density,   Only : ncfzdn,zdens
   Use bonds,       Only : bonds_type
-  Use angles,      Only : ldfang,ncfang,dstang,numang,lstang,keyang
+  Use angles,      Only : angle%ldf,angle%n_frames,angle%dst,angle%num,angle%lst,angle%key
   Use dihedrals,   Only : ldfdih,ncfdih,dstdih,numdih,lstdih
   Use inversions,  Only : ldfinv,ncfinv,dstinv,numinv,lstinv
   Use vdw,         Only : ls_vdw,ntpvdw
@@ -181,9 +181,9 @@ Module system
            bond%dst=0.0_wp
         End If
 
-        If (mxgang1 > 0) Then
-           ncfang=0
-           dstang=0.0_wp
+        If (angle%bin_adf > 0) Then
+           angle%n_frames=0
+           angle%dst=0.0_wp
         End If
 
         If (mxgdih1 > 0) Then
@@ -257,7 +257,7 @@ Module system
            End If
 
            If (bond%bin_pdf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,bond%dst
-           If (mxgang1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfang,dstang
+           If (angle%bin_adf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfang,angle%dst
            If (mxgdih1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfdih,dstdih
            If (mxginv1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfinv,dstinv
         Else
@@ -287,7 +287,7 @@ Module system
            End If
 
            If (bond%bin_pdf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfbnd,bond%dst
-           If (mxgang1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfang,dstang
+           If (angle%bin_adf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfang,angle%dst
            If (mxgdih1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfdih,dstdih
            If (mxginv1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfinv,dstinv
         End If
@@ -306,7 +306,7 @@ Module system
         If (green%samp > 0) green%step=Nint(dvafstep)
 
         If (bond%bin_pdf > 0) bond%n_frames=Nint(dncfbnd)
-        If (mxgang1 > 0) ncfang=Nint(dncfang)
+        If (angle%bin_adf > 0) angle%n_frames=Nint(dncfang)
         If (mxgdih1 > 0) ncfdih=Nint(dncfdih)
         If (mxginv1 > 0) ncfinv=Nint(dncfinv)
 
@@ -425,12 +425,12 @@ Module system
 
 ! angles table - broadcast and normalise
 
-        If (mxgang1 > 0) Then
-           Call gbcast(comm,ncfang,0)
-           Do k=1,ldfang(0)
-              Call gbcast(comm,dstang(:,k),0)
+        If (angle%bin_adf > 0) Then
+           Call gbcast(comm,angle%n_frames,0)
+           Do k=1,angle%ldf(0)
+              Call gbcast(comm,angle%dst(:,k),0)
 
-              dstang(:,k) = dstang(:,k) * r_mxnode
+              angle%dst(:,k) = angle%dst(:,k) * r_mxnode
            End Do
         End If
 
@@ -1235,14 +1235,14 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,comm)
            safe=(safe .and. safel)
 
            safel=.true.
-           Do iang=1,numang(itmols)
+           Do iang=1,angle%num(itmols)
               nangle=nangle+1
 
               safem=.true.
               Do i=1,2
-                 iatm=lstang(i,nangle)-indatm1
+                 iatm=angle%lst(i,nangle)-indatm1
                  Do j=i+1,3
-                    jatm=lstang(j,nangle)-indatm1
+                    jatm=angle%lst(j,nangle)-indatm1
 
                     safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
                     safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
@@ -1261,7 +1261,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,comm)
                     x=Abs(xm(jatm)-xm(iatm))
                     y=Abs(ym(jatm)-ym(iatm))
                     z=Abs(zm(jatm)-zm(iatm))
-                    If (keyang(nangle) > 0) Then
+                    If (angle%key(nangle) > 0) Then
                        t=c1*Real(j-i+1,wp)
                     Else
                        t=c3*Real(j-i+1,wp)
@@ -1280,7 +1280,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,comm)
                         'possible distance violation: ', i,j,r, ' > ', t, ' Angstroms'
                       Call info(message,.true.)
 
-                       If (keyang(nangle) > 0) Then
+                       If (angle%key(nangle) > 0) Then
                           t=c2*Real(j-i+1,wp)
                        Else
                           t=c4*Real(j-i+1,wp)
@@ -1302,7 +1302,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,comm)
                  Call info(messages,2,.true.)
 
                  Do i=1,3
-                   iatm=lstang(i,nangle)-indatm1
+                   iatm=angle%lst(i,nangle)-indatm1
                    Write(message,'(2i10,3f10.1)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
                    Call info(message,.true.)
                  End Do
@@ -1456,7 +1456,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,comm)
               nconst=nconst-numcon(itmols)
               nrigid=nrigid-numrgd(itmols)
               nbonds=nbonds-bond%num(itmols)
-              nangle=nangle-numang(itmols)
+              nangle=nangle-angle%num(itmols)
               ndihed=ndihed-numdih(itmols)
               ninver=ninver-numinv(itmols)
            End If
@@ -1927,15 +1927,15 @@ Subroutine system_revive                                      &
 
 ! globally sum angles' distributions information before saving
 
-     If (mxgang1 > 0) Then
+     If (angle%bin_adf > 0) Then
 
-! maximum dstang that can be summed in each step
+! maximum angle%dst that can be summed in each step
 
-        nsum = mxbuff/(mxgang1+1)
+        nsum = mxbuff/(angle%bin_adf+1)
         If (nsum == 0) Call error(200)
 
-        Do i=1,ldfang(0),nsum
-           Call gsum(comm,dstang(:,i:Min(i+nsum-1,ldfang(0))))
+        Do i=1,angle%ldf(0),nsum
+           Call gsum(comm,angle%dst(:,i:Min(i+nsum-1,angle%ldf(0))))
         End Do
 
      End If
@@ -2015,7 +2015,7 @@ Subroutine system_revive                                      &
         End If
 
         If (bond%bin_pdf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(bond%n_frames,wp),bond%dst
-        If (mxgang1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfang,wp),dstang
+        If (angle%bin_adf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(angle%n_frames,wp),angle%dst
         If (mxgdih1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfdih,wp),dstdih
         If (mxginv1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfinv,wp),dstinv
      Else
@@ -2048,7 +2048,7 @@ Subroutine system_revive                                      &
         End If
 
         If (bond%bin_pdf > 0) Write(Unit=nrest) Real(bond%n_frames,wp),bond%dst
-        If (mxgang1 > 0) Write(Unit=nrest) Real(ncfang,wp),dstang
+        If (angle%bin_adf > 0) Write(Unit=nrest) Real(angle%n_frames,wp),angle%dst
         If (mxgdih1 > 0) Write(Unit=nrest) Real(ncfdih,wp),dstdih
         If (mxginv1 > 0) Write(Unit=nrest) Real(ncfinv,wp),dstinv
      End If
@@ -2203,7 +2203,7 @@ Subroutine system_revive                                      &
 
 ! globally divide angles' distributions data between nodes
 
-     If (mxgang1 > 0) dstang = dstang * r_mxnode
+     If (angle%bin_adf > 0) angle%dst = angle%dst * r_mxnode
 
 ! globally divide dihedrals' distributions data between nodes
 

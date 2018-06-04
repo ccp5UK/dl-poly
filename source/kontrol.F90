@@ -3158,7 +3158,7 @@ Subroutine read_control                                &
      If (mxgana == 0) Then
         Call info('no intramolecular distribution collection requested',.true.)
      Else
-        If (bond%bin_pdf > 0 .and. mxgang1 > 0 .and. &
+        If (bond%bin_pdf > 0 .and. angle%bin_adf > 0 .and. &
             mxgdih1 > 0 .and. mxginv1 > 0) Then
            Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):',.true.)
         Else
@@ -3193,16 +3193,16 @@ Subroutine read_control                                &
            End If
         End If
 
-        If (mxgang1 > 0) Then
+        If (angle%bin_adf > 0) Then
            If (nstang == 0 .or. (nstang > nstana .and. nstana > 0)) Then
               nstang = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
            End If
-           j=Merge(1, 0, grdang /= mxgang1)
+           j=Merge(1, 0, grdang /= angle%bin_adf)
            Write(message,'(2(a,i10),a)') &
-              'angles     - collection every ',nstang,' step(s); ngrid = ',mxgang1,' points'
+              'angles     - collection every ',nstang,' step(s); ngrid = ',angle%bin_adf,' points'
            Call info(message,.true.)
            If (i+j > 1) Then
              Write(message,'(2(a,i10))') &
@@ -3626,7 +3626,7 @@ End Subroutine read_control
 Subroutine scan_control                                    &
            (mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,mxgang1,mxgdih1,mxginv1,         &
+           mxgana,angle%bin_adf,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
@@ -3653,7 +3653,7 @@ Subroutine scan_control                                    &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon,mxshl
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
-  Integer,           Intent(   Out ) :: mxgana,mxgang1,mxgdih1,mxginv1, &
+  Integer,           Intent(   Out ) :: mxgana,angle%bin_adf,mxgdih1,mxginv1, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: rvdw,cell(1:9)
@@ -3705,7 +3705,7 @@ Subroutine scan_control                                    &
 
   la_ana = .false. ; mxgana  = 0
   la_bnd = .false. ; bond%bin_pdf = 0
-  la_ang = .false. ; mxgang1 = 0
+  la_ang = .false. ; angle%bin_adf = 0
   la_dih = .false. ; mxgdih1 = 0
   la_inv = .false. ; mxginv1 = 0
 
@@ -4092,7 +4092,7 @@ Subroutine scan_control                                    &
 
            mxgana = Abs(Nint(word_2_real(word)))
            bond%bin_pdf = Max(bond%bin_pdf,mxgana)
-           mxgang1 = Max(mxgang1,mxgana)
+           angle%bin_adf = Max(angle%bin_adf,mxgana)
            mxgdih1 = Max(mxgdih1,mxgana)
            mxginv1 = Max(mxginv1,mxgana)
 
@@ -4110,7 +4110,7 @@ Subroutine scan_control                                    &
         Else If (akey == 'ang') Then
            la_ang = .true.
 
-           mxgang1 = Max(mxgang1,Abs(Nint(word_2_real(word))))
+           angle%bin_adf = Max(angle%bin_adf,Abs(Nint(word_2_real(word))))
         Else If (akey == 'dih') Then
            la_dih = .true.
 
@@ -4325,7 +4325,7 @@ Subroutine scan_control                                    &
   If (la_ana) Then
      If (mxgana > 0) Then
         bond%bin_pdf = Max(bond%bin_pdf,mxgana)
-        mxgang1 = Max(mxgang1,mxgana)
+        angle%bin_adf = Max(angle%bin_adf,mxgana)
         mxgdih1 = Max(mxgdih1,mxgana)
         mxginv1 = Max(mxginv1,mxgana)
      End If
@@ -4336,14 +4336,14 @@ Subroutine scan_control                                    &
         If (bond%bin_pdf == 0) bond%bin_pdf = -1
         bond%rcut=Max(bond%rcut,rcbnd_def)
      End If
-     If (la_ang .and. mxgang1 == 0) mxgang1 = -1
+     If (la_ang .and. angle%bin_adf == 0) angle%bin_adf = -1
      If (la_dih .and. mxgdih1 == 0) mxgdih1 = -1
      If (la_inv .and. mxginv1 == 0) mxginv1 = -1
 
 ! mxgana by construction equals the largest possible grid
 ! or 1 (positive) as an indicator for analysis
 
-     mxgana=Max(1,bond%bin_pdf,mxgang1,mxgdih1,mxginv1)
+     mxgana=Max(1,bond%bin_pdf,angle%bin_adf,mxgdih1,mxginv1)
   End If
 
 ! Sort electrostatics

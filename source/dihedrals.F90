@@ -15,7 +15,7 @@ Module dihedrals
   Use comms, Only : comms_type,gcheck,gsum,gsync,gbcast
   Use setup,  Only : pi,twopi,boltz,delth_max,npdfdt,npdgdt, &
                             mxgdih,mxgdih1,engunit,zero_plus, mxtmls,     &
-                            mxtang,mxtdih,mxpdih,rtwopi,r4pie0,mxdihd,    &
+                            angle%max_types,mxtdih,mxpdih,rtwopi,r4pie0,mxdihd,    &
                             mximpl, ntable, mxgvdw,mxatdm,mxfdih
   Use site,   Only : unqatm,ntpatm
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
@@ -138,7 +138,7 @@ Contains
   End Subroutine allocate_dihd_dst_arrays
   
   Subroutine dihedrals_14_check &
-           (l_str,l_top,lx_dih,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih,comm)
+           (l_str,l_top,lx_dih,ntpmls,nummols,angle%num,angle%key,angle%lst,numdih,lstdih,prmdih,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -152,8 +152,8 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   Logical,           Intent( In    ) :: l_str,l_top,lx_dih
-  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls),numang(1:mxtmls), &
-                                        keyang(1:mxtang),lstang(1:3,1:mxtang),     &
+  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls),angle%num(1:mxtmls), &
+                                        angle%key(1:angle%max_types),angle%lst(1:3,1:angle%max_types),     &
                                         numdih(1:mxtmls),lstdih(1:6,1:mxtdih)
   Real( Kind = wp ), Intent( InOut ) :: prmdih(1:mxpdih,1:mxtdih)
   Type( comms_type), Intent( InOut ) :: comm
@@ -180,12 +180,12 @@ Contains
 
 ! check for valence angle on dihedral angle conflicts
 
-        Do langle=1,numang(itmols)
+        Do langle=1,angle%num(itmols)
 
-           If (keyang(langle+kangle) > 0) Then
+           If (angle%key(langle+kangle) > 0) Then
 
-              iang=lstang(1,langle+kangle)
-              jang=lstang(3,langle+kangle)
+              iang=angle%lst(1,langle+kangle)
+              jang=angle%lst(3,langle+kangle)
 
               Do ldihed=1,numdih(itmols)
 
@@ -267,7 +267,7 @@ Contains
 
 ! Update counters
 
-     kangle=kangle+numang(itmols)
+     kangle=kangle+angle%num(itmols)
      kdihed=kdihed+numdih(itmols)
 
   End Do

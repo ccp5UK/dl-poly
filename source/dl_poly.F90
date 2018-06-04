@@ -227,7 +227,7 @@ program dl_poly
     ndump,nstep,keyshl,                 &
     atmfre,atmfrz,megatm,megfrz,        &
     megshl,megcon,megpmf,megrgd,        &
-    megtet,megang,megdih,meginv
+    megtet,angle%total,megdih,meginv
 
   ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
 
@@ -413,7 +413,7 @@ program dl_poly
     rcter,rctbp,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megcon,megpmf,megrgd,    &
-    megtet,megang,megdih,meginv,thermo,met,bond,comm)
+    megtet,angle%total,megdih,meginv,thermo,met,bond,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -517,7 +517,7 @@ program dl_poly
       megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,        &
       megrgd,degrot,degtra,        &
-      megtet,megang,megdih,meginv,bond,comm)
+      megtet,angle%total,megdih,meginv,bond,comm)
     If (mximpl > 0) Then
       Call build_tplg_intra(bond,comm) ! multipoles topology for internal coordinate system
       If (keyind == 1) Call build_chrm_intra(bond,comm) ! CHARMM core-shell screened electrostatic induction interactions
@@ -527,7 +527,7 @@ program dl_poly
     Call report_topology                &
       (megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,megrgd,  &
-      megtet,megang,megdih,meginv,bond,comm)
+      megtet,angle%total,megdih,meginv,bond,comm)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 

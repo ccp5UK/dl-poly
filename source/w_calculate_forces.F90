@@ -64,8 +64,8 @@
 
 ! Calculate valence angle forces
 
-     If (megang > 0) Then
-        ltmp = (mxgang1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstang) == 0)
+     If (angle%total > 0) Then
+        ltmp = (angle%bin_adf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstang) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
         Call angles_forces(isw,stat%engang,stat%virang,stat%stress,comm)

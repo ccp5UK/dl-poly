@@ -248,11 +248,11 @@ Contains
 
       ! add sites on basis of valence angles to core-shell units
 
-      Do kk=1,ntangl1
-        If (keyang(listang(0,kk)) > 0) Then
-          ja=listang(1,kk)
-          jb=listang(2,kk)
-          jc=listang(3,kk)
+      Do kk=1,angle%n_types1
+        If (angle%key(angle%list(0,kk)) > 0) Then
+          ja=angle%list(1,kk)
+          jb=angle%list(2,kk)
+          jc=angle%list(3,kk)
 
           ja0=local_index(ja,nlast,lsi,lsa)
           jb0=local_index(jb,nlast,lsi,lsa)

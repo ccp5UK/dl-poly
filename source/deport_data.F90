@@ -21,7 +21,7 @@ Module deport_data
   Use tethers,      Only : ntteth,listtet,legtet
 
   Use bonds,        Only : bonds_type
-  Use angles,       Only : ntangl,listang,legang
+  Use angles,       Only : angle%n_types,angle%list,angle%legend
   Use dihedrals,    Only : ntdihd,listdih,legdih,lx_dih
   Use inversions,   Only : ntinv,listinv,leginv
 
@@ -705,15 +705,15 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
 
 ! pack valence angle details
 
-           jj=legang(0,i)
+           jj=angle%legend(0,i)
            If (jj > 0) Then
               Do ll=1,jj
                  If (imove+4 <= iblock) Then
-                    kk=legang(ll,i)
+                    kk=angle%legend(ll,i)
 
                     Do k=0,3
                        imove=imove+1
-                       buffer(imove)=Real(listang(k,kk),wp)
+                       buffer(imove)=Real(angle%list(k,kk),wp)
                     End Do
                  Else
                     imove=imove+4
@@ -898,7 +898,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
         legtet(:,keep)=legtet(:,i)
 
         bond%legend(:,keep)=bond%legend(:,i)
-        legang(:,keep)=legang(:,i)
+        angle%legend(:,keep)=angle%legend(:,i)
         legdih(:,keep)=legdih(:,i)
         leginv(:,keep)=leginv(:,i)
      End If
@@ -1116,7 +1116,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
         jteths=ntteth
 
         jbonds=bond%n_types
-        jangle=ntangl
+        jangle=angle%n_types
         jdihed=ntdihd
         jinver=ntinv
 
@@ -1476,7 +1476,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
 
 ! unpack valence angle details
 
-        legang(:,newatm) = 0
+        angle%legend(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
            jj=Nint(buffer(kmove+1))
            iatm=Nint(buffer(kmove+2))
@@ -1488,12 +1488,12 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
 
            kangle=0
            check=.true.
-           Do While (check .and. kangle < Min(jangle,mxangl))
+           Do While (check .and. kangle < Min(jangle,angle%max_angles))
               kangle=kangle+1
-              check=.not.( jj   == listang(0,kangle) .and. &
-                           iatm == listang(1,kangle) .and. &
-                           jatm == listang(2,kangle) .and. &
-                           katm == listang(3,kangle) )
+              check=.not.( jj   == angle%list(0,kangle) .and. &
+                           iatm == angle%list(1,kangle) .and. &
+                           jatm == angle%list(2,kangle) .and. &
+                           katm == angle%list(3,kangle) )
            End Do
 
 ! insert new angle details
@@ -1501,19 +1501,19 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
            If (check) Then
               jangle=jangle+1
 
-              If (jangle <= mxangl) Then
-                 listang(0,jangle)=jj
-                 listang(1,jangle)=iatm
-                 listang(2,jangle)=jatm
-                 listang(3,jangle)=katm
+              If (jangle <= angle%max_angles) Then
+                 angle%list(0,jangle)=jj
+                 angle%list(1,jangle)=iatm
+                 angle%list(2,jangle)=jatm
+                 angle%list(3,jangle)=katm
 
-                 Call tag_legend(safe1,newatm,jangle,legang,mxfang)
+                 Call tag_legend(safe1,newatm,jangle,angle%legend,angle%max_legend)
               Else
                  safe=.false.
                  Call warning('too many angle units')
               End If
            Else
-              Call tag_legend(safe1,newatm,kangle,legang,mxfang)
+              Call tag_legend(safe1,newatm,kangle,angle%legend,angle%max_legend)
            End If
         End Do
         kmove=kmove+1
@@ -1634,7 +1634,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
         ntteth=jteths
 
         bond%n_types=jbonds
-        ntangl=jangle
+        angle%n_types=jangle
         ntdihd=jdihed
         ntinv =jinver
 
@@ -2526,7 +2526,7 @@ Subroutine relocate_particles       &
            (dvar,rlnk,lbook,lmsd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           megang,megdih,    &
+           angle%total,megdih,    &
            meginv,stats,ewld,thermo,green,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2547,7 +2547,7 @@ Subroutine relocate_particles       &
   Integer,           Intent( In    ) :: megatm,              &
                                         megshl,m_con,megpmf, &
                                         m_rgd,megtet,        &
-                                        megang,megdih,meginv
+                                        angle%total,megdih,meginv
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2723,7 +2723,7 @@ Subroutine relocate_particles       &
         If (m_rgd  > 0) safe(4)=(ntrgd  <= mxrgd )
         If (megtet > 0) safe(5)=(ntteth <= mxteth)
         If (bond%total > 0) safe(6)=(bond%n_types <= bond%max_bonds)
-        If (megang > 0) safe(7)=(ntangl <= mxangl)
+        If (angle%total > 0) safe(7)=(angle%n_types <= angle%max_angles)
         If (megdih > 0) safe(8)=(ntdihd <= mxdihd)
         If (meginv > 0) safe(9)=(ntinv  <= mxinv )
 
@@ -2736,7 +2736,7 @@ Subroutine relocate_particles       &
            itmp(4)=ntrgd  ; jtmp(4)=mxrgd
            itmp(5)=ntteth ; jtmp(5)=mxteth
            itmp(6)=bond%n_types ; jtmp(6)=bond%max_bonds
-           itmp(7)=ntangl ; jtmp(7)=mxangl
+           itmp(7)=angle%n_types ; jtmp(7)=angle%max_angles
            itmp(8)=ntdihd ; jtmp(8)=mxdihd
            itmp(9)=ntinv  ; jtmp(9)=mxinv
 
@@ -2786,8 +2786,8 @@ Subroutine relocate_particles       &
 
         If (bond%total > 0) Call compress_book_intra &
            (bond%max_bonds,bond%n_types,Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,comm)
-        If (megang > 0) Call compress_book_intra &
-           (mxangl,ntangl,Ubound(listang,Dim=1),listang,mxfang,legang,comm)
+        If (angle%total > 0) Call compress_book_intra &
+           (angle%max_angles,angle%n_types,Ubound(angle%list,Dim=1),angle%list,angle%max_legend,angle%legend,comm)
         If (megdih > 0) Call compress_book_intra &
            (mxdihd,ntdihd,Ubound(listdih,Dim=1),listdih,mxfdih,legdih,comm)
         If (meginv > 0) Call compress_book_intra &

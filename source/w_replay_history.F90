@@ -140,7 +140,7 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megang,megdih,meginv,bond,comm)
+           megtet,angle%total,megdih,meginv,bond,comm)
               If (lexcl) Call build_excl_intra(lecx,bond,comm)
            End If
 
@@ -164,7 +164,7 @@
 
 ! Calculate valence angle forces
 
-           If (megang > 0 .and. mxgang1 > 0) Then
+           If (angle%total > 0 .and. angle%bin_adf > 0) Then
               isw = 0
               Call angles_forces(isw,stat%engang,stat%virang,stat%stress,comm)
            End If

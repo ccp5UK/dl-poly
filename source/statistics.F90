@@ -28,7 +28,7 @@ Module statistics
   Use constraints, Only : passcon
   Use pmf,         Only : passpmf
   Use bonds,       Only : bonds_type,bonds_compute
-  Use angles,      Only : ncfang,mxgang1
+  Use angles,      Only : angle%n_frames,angle%bin_adf
   Use dihedrals,   Only : ncfdih,mxgdih1
   Use inversions,  Only : ncfinv,mxginv1
 
@@ -1727,7 +1727,7 @@ Subroutine statistics_result                                    &
 ! Calculate and print PDFs
   If (lpana) Then
      If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Call bonds_compute(temp,bond,comm)
-     If (mxgang1 > 0 .and. ncfang > 0) Call angles_compute(temp,comm)
+     If (angle%bin_adf > 0 .and. angle%n_frames > 0) Call angles_compute(temp,comm)
      If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp,comm)
      If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp,comm)
   End If
