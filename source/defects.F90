@@ -350,15 +350,17 @@ Contains
 
 ! exchange buffers between nodes (this is a MUST)
 
-  If (jmove > 0) Then
-    Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,DefExport_tag)
-  End If
-  If (imove > 0) Then
-    Call gsend(comm,buffer(1:imove),jdnode,DefExport_tag)
-  End If
-  If (jmove > 0) Then
-    Call gwait(comm)
-  End If
+  If (comm%mxnode > 1) Then
+    If (jmove > 0) Then
+      Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,DefExport_tag)
+    End If
+    If (imove > 0) Then
+      Call gsend(comm,buffer(1:imove),jdnode,DefExport_tag)
+    End If
+    If (jmove > 0) Then
+      Call gwait(comm)
+    End If
+  End If   
 
 ! load transferred data
 

@@ -13,8 +13,8 @@ Module kontrol
   Use kinetics,  Only : l_vom
   Use plumed,   Only : plumed_type
   Use setup,       Only : nread,control,pi,zero_plus,seed, &
-                                            output,field,config,statis, &
-                                  history,historf,revive,revcon,revold
+                          output,field,config,statis, &
+                          history,historf,revive,revcon,revold
   Use parse,       Only : get_line,get_word,lower_case,word_2_real
   
   Use kim,         Only : kimim,rkim
@@ -67,7 +67,7 @@ Subroutine read_control                                &
            l_exp,lecx,lfcap,l_top,lmin,          &
            lvar,leql,               &
            lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
-           ltraj,ldef,lrsd,               &
+           ltraj,lrsd,               &
            nx,ny,nz,impa,                            &
            keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
@@ -109,7 +109,7 @@ Subroutine read_control                                &
                                              lvar,leql,lfce,   &
                                              lpana,                 &
                                              lrdf,lprdf,lzdn,lpzdn, &
-                                             ltraj,ldef,lrsd
+                                             ltraj,lrsd
 
 
   Integer,                Intent(   Out ) :: nx,ny,nz,             &

@@ -209,7 +209,7 @@ program dl_poly
     lmin,          &
     lvar,leql,lsim,lfce,    &
     lpana,lrdf,lprdf,lzdn,lpzdn, &
-    ltraj,ldef,lrsd,             &
+    ltraj,lrsd,             &
     safe,lbook,lexcl,            &
     relaxed_shl = .true.,        &
     relaxed_min = .true.
@@ -391,7 +391,7 @@ program dl_poly
     l_exp,lecx,lfcap,l_top,lmin,          &
     lvar,leql,               &
     lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
-    ltraj,ldef,lrsd,               &
+    ltraj,lrsd,               &
     nx,ny,nz,impa,                            &
     keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
