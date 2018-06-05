@@ -275,7 +275,7 @@ Contains
 
   Pure Real(wp) Function intRadMDF(pot,a,b,c,ri,rw,prec)
     Real(wp), Intent( In    )             :: a,b,c,ri,rw,prec
-    Character( Len = 4 ), Intent( In    ) :: pot
+    Character( Len = * ), Intent( In    ) :: pot
 
     Real(wp) :: is,ie,h,s,x,sold,f1,f0,f2,df0
 
@@ -322,7 +322,7 @@ Contains
 
   Pure Real(wp) Function intdRadMDF(pot,a,b,c,ri,rw,prec)
     Real(wp), Intent( In    )             :: a,b,c,ri,rw,prec
-    Character( Len = 4 ), Intent( In    ) :: pot
+    Character( Len = * ), Intent( In    ) :: pot
 
     Real(wp) :: is,ie,h,s,x,sold,df1,df0,df2,f0
 
