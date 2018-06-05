@@ -386,6 +386,86 @@ Contains
 
   End Subroutine get_line
 
+!Subroutine get_line(safe,ifile,record,comm)
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!
+!! dl_poly_4 subroutine to read a character string on node zero and
+!! broadcast it to all other nodes
+!!
+!! copyright - daresbury laboratory
+!! author    - i.t.todorov june 2011
+!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+!    Logical,              Intent(   Out ) :: safe
+!    Integer,              Intent( In    ) :: ifile
+!    Character( Len = * ), Intent(   Out ) :: record
+!    Type(comms_type),     Intent( InOut ) :: comm
+!
+!    Integer                              :: i,fail,rec_len
+!    Integer, Dimension( : ), Allocatable :: line
+!
+!    rec_len = Len(record)
+!
+!    fail = 0
+!    Allocate (line(1:rec_len), Stat = fail)
+!    If (fail > 0) Call error(1011)
+!
+!    record = ' '
+!    safe = .true.
+!
+!    If (comm%mxnode > 1) Call gsync(comm)
+!
+!    If (comm%idnode == 0) Then
+!
+!       Read(Unit=ifile, Fmt='(a)', End=100) record
+!
+!       If (comm%mxnode > 1) Then
+!          Do i=1,rec_len
+!             line(i) = Ichar(record(i:i))
+!          End Do
+!
+!          Call gcheck(comm,safe)
+!
+!          !Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
+!          Call gbcast(comm,line,0)
+!       End If
+!
+!       Go To 200
+!
+!100    safe = .false.
+!
+!       If (comm%mxnode > 1) Call gcheck(comm,safe)
+!       If (.not.safe) Go To 200
+!
+!    Else
+!
+!       Call gcheck(comm,safe)
+!       If (.not.safe) Go To 200
+!
+!       line = 0
+!
+!       !Call MPI_BCAST(line(1:rec_len), rec_len, MPI_INTEGER, 0, dlp_comm_world, ierr)
+!       Call gbcast(comm,line,0)
+!
+!       Do i=1,rec_len
+!          record(i:i) = Char(line(i))
+!       End Do
+!
+!    End If
+!
+!200 Continue
+!
+!    Call tabs_2_blanks(record)
+!
+!    Deallocate (line, Stat = fail)
+!    If (fail > 0) Call error(1012)
+!
+!  End Subroutine get_line
+
+
+
   Function word_2_real(word,def,report)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
