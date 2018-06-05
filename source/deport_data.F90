@@ -22,7 +22,7 @@ Module deport_data
 
   Use bonds,        Only : bonds_type
   Use angles,       Only : angles_type
-  Use dihedrals,    Only : ntdihd,listdih,legdih,lx_dih
+  Use dihedrals,    Only : dihedral%n_types,dihedral%list,dihedral%legend,dihedral%l_core_shell
   Use inversions,   Only : ntinv,listinv,leginv
 
   Use statistics, Only : stats_type
@@ -732,20 +732,20 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
 ! pack dihedral angle details
 
-           jj=legdih(0,i)
+           jj=dihedral%legend(0,i)
            If (jj > 0) Then
-              If (.not.lx_dih) Then ! dihedrals only have 4 members
+              If (.not.dihedral%l_core_shell) Then ! dihedrals only have 4 members
                  l=4
               Else                  ! dihedrals have 4+2 tracked members
                  l=6
               End If
               Do ll=1,jj
                  If (imove+l+1 <= iblock) Then
-                    kk=legdih(ll,i)
+                    kk=dihedral%legend(ll,i)
 
                     Do k=0,l
                        imove=imove+1
-                       buffer(imove)=Real(listdih(k,kk),wp)
+                       buffer(imove)=Real(dihedral%list(k,kk),wp)
                     End Do
                  Else
                     imove=imove+l+1
@@ -900,7 +900,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
         bond%legend(:,keep)=bond%legend(:,i)
         angle%legend(:,keep)=angle%legend(:,i)
-        legdih(:,keep)=legdih(:,i)
+        dihedral%legend(:,keep)=dihedral%legend(:,i)
         leginv(:,keep)=leginv(:,i)
      End If
   End Do
@@ -1118,7 +1118,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
         jbonds=bond%n_types
         jangle=angle%n_types
-        jdihed=ntdihd
+        jdihed=dihedral%n_types
         jinver=ntinv
 
 ! unpack core-shell details
@@ -1521,14 +1521,14 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
 ! unpack dihedral angle details
 
-        legdih(:,newatm) = 0
+        dihedral%legend(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
            jj=Nint(buffer(kmove+1))
            iatm=Nint(buffer(kmove+2))
            jatm=Nint(buffer(kmove+3))
            katm=Nint(buffer(kmove+4))
            latm=Nint(buffer(kmove+5))
-           If (lx_dih) Then
+           If (dihedral%l_core_shell) Then
               matm=Nint(buffer(kmove+6))
               natm=Nint(buffer(kmove+7))
               kmove=kmove+7
@@ -1540,13 +1540,13 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
            kdihed=0
            check=.true.
-           Do While (check .and. kdihed < Min(jdihed,mxdihd))
+           Do While (check .and. kdihed < Min(jdihed,dihedral%max_angles))
               kdihed=kdihed+1
-              check=.not.( jj   == listdih(0,kdihed) .and. &
-                           iatm == listdih(1,kdihed) .and. &
-                           jatm == listdih(2,kdihed) .and. &
-                           katm == listdih(3,kdihed) .and. &
-                           latm == listdih(4,kdihed) )
+              check=.not.( jj   == dihedral%list(0,kdihed) .and. &
+                           iatm == dihedral%list(1,kdihed) .and. &
+                           jatm == dihedral%list(2,kdihed) .and. &
+                           katm == dihedral%list(3,kdihed) .and. &
+                           latm == dihedral%list(4,kdihed) )
            End Do
 
 ! add new dihedral details
@@ -1554,24 +1554,24 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
            If (check) Then
               jdihed=jdihed+1
 
-              If (jdihed <= mxdihd) Then
-                 listdih(0,jdihed)=jj
-                 listdih(1,jdihed)=iatm
-                 listdih(2,jdihed)=jatm
-                 listdih(3,jdihed)=katm
-                 listdih(4,jdihed)=latm
-                 If (lx_dih) Then
-                    listdih(5,jdihed)=matm
-                    listdih(6,jdihed)=natm
+              If (jdihed <= dihedral%max_angles) Then
+                 dihedral%list(0,jdihed)=jj
+                 dihedral%list(1,jdihed)=iatm
+                 dihedral%list(2,jdihed)=jatm
+                 dihedral%list(3,jdihed)=katm
+                 dihedral%list(4,jdihed)=latm
+                 If (dihedral%l_core_shell) Then
+                    dihedral%list(5,jdihed)=matm
+                    dihedral%list(6,jdihed)=natm
                  End If
 
-                 Call tag_legend(safe1,newatm,jdihed,legdih,mxfdih)
+                 Call tag_legend(safe1,newatm,jdihed,dihedral%legend,dihedral%max_legend)
               Else
                  safe=.false.
                  Call warning('too many dihedral units')
               End If
            Else
-              Call tag_legend(safe1,newatm,kdihed,legdih,mxfdih)
+              Call tag_legend(safe1,newatm,kdihed,dihedral%legend,dihedral%max_legend)
            End If
         End Do
         kmove=kmove+1
@@ -1636,7 +1636,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
         bond%n_types=jbonds
         angle%n_types=jangle
-        ntdihd=jdihed
+        dihedral%n_types=jdihed
         ntinv =jinver
 
      End If
@@ -2527,7 +2527,7 @@ Subroutine relocate_particles       &
            (dvar,rlnk,lbook,lmsd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           megdih,    &
+           dihedral%total,    &
            meginv,stats,ewld,thermo,green,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2548,7 +2548,7 @@ Subroutine relocate_particles       &
   Integer,           Intent( In    ) :: megatm,              &
                                         megshl,m_con,megpmf, &
                                         m_rgd,megtet,        &
-                                        megdih,meginv
+                                        dihedral%total,meginv
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2726,7 +2726,7 @@ Subroutine relocate_particles       &
         If (megtet > 0) safe(5)=(ntteth <= mxteth)
         If (bond%total > 0) safe(6)=(bond%n_types <= bond%max_bonds)
         If (angle%total > 0) safe(7)=(angle%n_types <= angle%max_angles)
-        If (megdih > 0) safe(8)=(ntdihd <= mxdihd)
+        If (dihedral%total > 0) safe(8)=(dihedral%n_types <= dihedral%max_angles)
         If (meginv > 0) safe(9)=(ntinv  <= mxinv )
 
         Call gcheck(comm,safe)
@@ -2739,7 +2739,7 @@ Subroutine relocate_particles       &
            itmp(5)=ntteth ; jtmp(5)=mxteth
            itmp(6)=bond%n_types ; jtmp(6)=bond%max_bonds
            itmp(7)=angle%n_types ; jtmp(7)=angle%max_angles
-           itmp(8)=ntdihd ; jtmp(8)=mxdihd
+           itmp(8)=dihedral%n_types ; jtmp(8)=dihedral%max_angles
            itmp(9)=ntinv  ; jtmp(9)=mxinv
 
            Call gmax(comm,itmp(1:9))
@@ -2790,8 +2790,8 @@ Subroutine relocate_particles       &
            (bond%max_bonds,bond%n_types,Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,comm)
         If (angle%total > 0) Call compress_book_intra &
            (angle%max_angles,angle%n_types,Ubound(angle%list,Dim=1),angle%list,angle%max_legend,angle%legend,comm)
-        If (megdih > 0) Call compress_book_intra &
-           (mxdihd,ntdihd,Ubound(listdih,Dim=1),listdih,mxfdih,legdih,comm)
+        If (dihedral%total > 0) Call compress_book_intra &
+           (dihedral%max_angles,dihedral%n_types,Ubound(dihedral%list,Dim=1),dihedral%list,dihedral%max_legend,dihedral%legend,comm)
         If (meginv > 0) Call compress_book_intra &
            (mxinv,ntinv,  Ubound(listinv,Dim=1),listinv,mxfinv,leginv,comm)
 

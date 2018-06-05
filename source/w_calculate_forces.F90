@@ -73,8 +73,8 @@
 
 ! Calculate dihedral forces
 
-     If (megdih > 0) Then
-        ltmp = (mxgdih1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstdih) == 0)
+     If (dihedral%total > 0) Then
+        ltmp = (dihedral%bin_adf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstdih) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &

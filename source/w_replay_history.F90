@@ -140,7 +140,7 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megdih,meginv,bond,angle,comm)
+           megtet,dihedral%total,meginv,bond,angle,comm)
               If (lexcl) Call build_excl_intra(lecx,bond,angle,comm)
            End If
 
@@ -171,7 +171,7 @@
 
 ! Calculate dihedral forces
 
-           If (megdih > 0 .and. mxgdih1 > 0) Then
+           If (dihedral%total > 0 .and. dihedral%bin_adf > 0) Then
               isw = 0
               Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
            rcut,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,comm)

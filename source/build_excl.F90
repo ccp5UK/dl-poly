@@ -171,12 +171,12 @@ Subroutine build_excl_intra(lecx,bond,angle,comm)
 
 ! exclude sites on basis of dihedral angles
 
-  Do i=1,ntdihd
-     If (keydih(listdih(0,i)) > 0) Then
-        ia=listdih(1,i)
-        ib=listdih(2,i)
-        ic=listdih(3,i)
-        id=listdih(4,i)
+  Do i=1,dihedral%n_types
+     If (dihedral%key(dihedral%list(0,i)) > 0) Then
+        ia=dihedral%list(1,i)
+        ib=dihedral%list(2,i)
+        ic=dihedral%list(3,i)
+        id=dihedral%list(4,i)
 
         ia0=local_index(ia,nlast,lsi,lsa)
         ib0=local_index(ib,nlast,lsi,lsa)
@@ -662,12 +662,12 @@ Subroutine build_excl_intra(lecx,bond,angle,comm)
 
 ! exclude sites on basis of dihedral angles to core-shell units
 
-     Do kk=1,ntdihd1
-        If (keydih(listdih(0,kk)) > 0) Then
-           ja=listdih(1,kk)
-           jb=listdih(2,kk)
-           jc=listdih(3,kk)
-           jd=listdih(4,kk)
+     Do kk=1,dihedral%n_types1
+        If (dihedral%key(dihedral%list(0,kk)) > 0) Then
+           ja=dihedral%list(1,kk)
+           jb=dihedral%list(2,kk)
+           jc=dihedral%list(3,kk)
+           jd=dihedral%list(4,kk)
 
            ja0=local_index(ja,nlast,lsi,lsa)
            jb0=local_index(jb,nlast,lsi,lsa)

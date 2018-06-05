@@ -29,7 +29,7 @@ Module statistics
   Use pmf,         Only : passpmf
   Use bonds,       Only : bonds_type,bonds_compute
   Use angles,      Only : angles_type,angles_compute
-  Use dihedrals,   Only : ncfdih,mxgdih1
+  Use dihedrals,   Only : dihedral%n_frames,dihedral%bin_adf
   Use inversions,  Only : ncfinv,mxginv1
 
   Use rdfs,         Only : ncfrdf,l_errors_jack,l_errors_block,ncfusr, &
@@ -1728,7 +1728,7 @@ Subroutine statistics_result                                    &
   If (lpana) Then
      If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Call bonds_compute(temp,bond,comm)
      If (angle%bin_adf > 0 .and. angle%n_frames > 0) Call angles_compute(temp,angle,comm)
-     If (mxgdih1 > 0 .and. ncfdih > 0) Call dihedrals_compute(temp,comm)
+     If (dihedral%bin_adf > 0 .and. dihedral%n_frames > 0) Call dihedrals_compute(temp,comm)
      If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp,comm)
   End If
 

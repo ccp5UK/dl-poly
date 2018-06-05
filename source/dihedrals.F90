@@ -14,9 +14,9 @@ Module dihedrals
   Use kinds, only : wp
   Use comms, Only : comms_type,gcheck,gsum,gsync,gbcast
   Use setup,  Only : pi,twopi,boltz,delth_max,npdfdt,npdgdt, &
-                            mxgdih,mxgdih1,engunit,zero_plus, mxtmls,     &
-                            mxtdih,mxpdih,rtwopi,r4pie0,mxdihd,    &
-                            mximpl, ntable, mxgvdw,mxatdm,mxfdih
+                            dihedral%bin_tab,dihedral%bin_adf,engunit,zero_plus, mxtmls,     &
+                            dihedral%max_types,dihedral%max_param,rtwopi,r4pie0,dihedral%max_angles,    &
+                            mximpl, ntable, mxgvdw,mxatdm,dihedral%max_legend
   Use site,   Only : unqatm,ntpatm
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz,cfgname
@@ -104,33 +104,33 @@ Contains
 
     fail = 0
 
-    Allocate (numdih(1:mxtmls),          Stat = fail(1))
-    Allocate (keydih(1:mxtdih),          Stat = fail(2))
-    Allocate (lstdih(1:6,1:mxtdih),      Stat = fail(3))
-    Allocate (listdih(0:6,1:mxdihd),     Stat = fail(4))
-    Allocate (legdih(0:mxfdih,1:mxatdm), Stat = fail(5))
-    Allocate (prmdih(1:mxpdih,1:mxtdih), Stat = fail(6))
-    If (lt_dih) &
-    Allocate (ltpdih(0:mxtdih),          Stat = fail(7))
-    If (mxgdih1 > 0) &
-    Allocate (ldfdih(0:mxtdih),          Stat = fail(8))
+    Allocate (dihedral%num(1:mxtmls),          Stat = fail(1))
+    Allocate (dihedral%key(1:dihedral%max_types),          Stat = fail(2))
+    Allocate (dihedral%lst(1:6,1:dihedral%max_types),      Stat = fail(3))
+    Allocate (dihedral%list(0:6,1:dihedral%max_angles),     Stat = fail(4))
+    Allocate (dihedral%legend(0:dihedral%max_legend,1:mxatdm), Stat = fail(5))
+    Allocate (dihedral%param(1:dihedral%max_param,1:dihedral%max_types), Stat = fail(6))
+    If (dihedral%l_tab) &
+    Allocate (dihedral%ltp(0:dihedral%max_types),          Stat = fail(7))
+    If (dihedral%bin_adf > 0) &
+    Allocate (dihedral%ldf(0:dihedral%max_types),          Stat = fail(8))
 
 
     If (Any(fail > 0)) Call error(1020)
 
-    numdih  = 0
-    keydih  = 0
-    lstdih  = 0
-    listdih = 0
-    legdih  = 0
+    dihedral%num  = 0
+    dihedral%key  = 0
+    dihedral%lst  = 0
+    dihedral%list = 0
+    dihedral%legend  = 0
 
-    prmdih  = 0.0_wp
+    dihedral%param  = 0.0_wp
 
-    If (lt_dih) &
-    ltpdih  = 0
+    If (dihedral%l_tab) &
+    dihedral%ltp  = 0
 
-    If (mxgdih1 > 0) &
-    ldfdih  = 0
+    If (dihedral%bin_adf > 0) &
+    dihedral%ldf  = 0
 
   End Subroutine allocate_dihedrals_arrays
 
@@ -140,13 +140,13 @@ Contains
 
     fail = 0
 
-    Allocate (vdih(-1:mxgdih,1:ltpdih(0)), Stat = fail(1))
-    Allocate (gdih(-1:mxgdih,1:ltpdih(0)), Stat = fail(2))
+    Allocate (dihedral%tab_potential(-1:dihedral%bin_tab,1:dihedral%ltp(0)), Stat = fail(1))
+    Allocate (dihedral%tab_force(-1:dihedral%bin_tab,1:dihedral%ltp(0)), Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1076)
 
-    vdih = 0.0_wp
-    gdih = 0.0_wp
+    dihedral%tab_potential = 0.0_wp
+    dihedral%tab_force = 0.0_wp
 
   End Subroutine allocate_dihd_pot_arrays
 
@@ -157,17 +157,17 @@ Contains
 
     fail = 0
 
-    Allocate (typdih(-1:4,1:ldfdih(0)),dstdih(1:mxgdih1,1:ldfdih(0)), Stat = fail)
+    Allocate (dihedral%typ(-1:4,1:dihedral%ldf(0)),dihedral%dst(1:dihedral%bin_adf,1:dihedral%ldf(0)), Stat = fail)
 
     If (fail > 0) Call error(1077)
 
-    typdih = 0
-    dstdih = 0.0_wp
+    dihedral%typ = 0
+    dihedral%dst = 0.0_wp
 
   End Subroutine allocate_dihd_dst_arrays
   
   Subroutine dihedrals_14_check &
-           (l_str,l_top,lx_dih,ntpmls,nummols,numdih,lstdih,prmdih,angle,comm)
+           (l_str,l_top,dihedral%l_core_shell,ntpmls,nummols,dihedral%num,dihedral%lst,dihedral%param,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -180,10 +180,10 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
-  Logical,           Intent( In    ) :: l_str,l_top,lx_dih
+  Logical,           Intent( In    ) :: l_str,l_top,dihedral%l_core_shell
   Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls), &
-                                        numdih(1:mxtmls),lstdih(1:6,1:mxtdih)
-  Real( Kind = wp ), Intent( InOut ) :: prmdih(1:mxpdih,1:mxtdih)
+                                        dihedral%num(1:mxtmls),dihedral%lst(1:6,1:dihedral%max_types)
+  Real( Kind = wp ), Intent( InOut ) :: dihedral%param(1:dihedral%max_param,1:dihedral%max_types)
   Type( angles_type ), Intent( In    ) :: angle
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -216,14 +216,14 @@ Contains
               iang=angle%lst(1,langle+kangle)
               jang=angle%lst(3,langle+kangle)
 
-              Do ldihed=1,numdih(itmols)
+              Do ldihed=1,dihedral%num(itmols)
 
-                 idih=lstdih(1,ldihed+kdihed)
-                 jdih=lstdih(4,ldihed+kdihed)
+                 idih=dihedral%lst(1,ldihed+kdihed)
+                 jdih=dihedral%lst(4,ldihed+kdihed)
 
                  If (Min(iang,jang) == Min(idih,jdih) .and. Max(iang,jang) == Max(idih,jdih)) Then
-                    prmdih(4,ldihed+kdihed)=0.0_wp
-                    prmdih(5,ldihed+kdihed)=0.0_wp
+                    dihedral%param(4,ldihed+kdihed)=0.0_wp
+                    dihedral%param(5,ldihed+kdihed)=0.0_wp
 
                     l_reset = .true.
                     If (l_print) Call warning(20,Real(itmols,wp),Real(idih,wp),Real(jdih,wp))
@@ -237,35 +237,35 @@ Contains
 
 ! check for double dihedral angle conflicts
 
-        Do ldihed=1,numdih(itmols)-1
+        Do ldihed=1,dihedral%num(itmols)-1
 
-           idih=lstdih(1,ldihed+kdihed)
-           jdih=lstdih(4,ldihed+kdihed)
-           If (lx_dih) Then
-              mdih=lstdih(5,ldihed+kdihed)
-              ndih=lstdih(6,ldihed+kdihed)
+           idih=dihedral%lst(1,ldihed+kdihed)
+           jdih=dihedral%lst(4,ldihed+kdihed)
+           If (dihedral%l_core_shell) Then
+              mdih=dihedral%lst(5,ldihed+kdihed)
+              ndih=dihedral%lst(6,ldihed+kdihed)
            End If
 
-           Do mdihed=ldihed+1,numdih(itmols)
+           Do mdihed=ldihed+1,dihedral%num(itmols)
 
-              kdih=lstdih(1,mdihed+kdihed)
-              ldih=lstdih(4,mdihed+kdihed)
-              If (lx_dih) Then
-                 odih=lstdih(5,mdihed+kdihed)
-                 pdih=lstdih(6,mdihed+kdihed)
+              kdih=dihedral%lst(1,mdihed+kdihed)
+              ldih=dihedral%lst(4,mdihed+kdihed)
+              If (dihedral%l_core_shell) Then
+                 odih=dihedral%lst(5,mdihed+kdihed)
+                 pdih=dihedral%lst(6,mdihed+kdihed)
               End If
 
               l_reset_l=.false.
-              If (lx_dih) Then
+              If (dihedral%l_core_shell) Then
                  If (Min(kdih,ldih,odih,pdih) == Min(idih,jdih,mdih,ndih) .and. &
                      Max(kdih,ldih,odih,pdih) == Max(idih,jdih,mdih,ndih)) Then
-                    If (prmdih(4,ldihed+kdihed)*prmdih(4,mdihed+kdihed) > 1.0e-10_wp) Then
-                       prmdih(4,mdihed+kdihed) = 0.0_wp
+                    If (dihedral%param(4,ldihed+kdihed)*dihedral%param(4,mdihed+kdihed) > 1.0e-10_wp) Then
+                       dihedral%param(4,mdihed+kdihed) = 0.0_wp
                        l_reset_l = .true.
                     End If
 
-                    If (prmdih(5,ldihed+kdihed)*prmdih(5,mdihed+kdihed) > 1.0e-10_wp) Then
-                       prmdih(5,mdihed+kdihed) = 0.0_wp
+                    If (dihedral%param(5,ldihed+kdihed)*dihedral%param(5,mdihed+kdihed) > 1.0e-10_wp) Then
+                       dihedral%param(5,mdihed+kdihed) = 0.0_wp
                        l_reset_l = .true.
                     End If
 
@@ -273,13 +273,13 @@ Contains
                  End If
               Else
                  If (Min(kdih,ldih) == Min(idih,jdih) .and. Max(kdih,ldih) == Max(idih,jdih)) Then
-                    If (prmdih(4,ldihed+kdihed)*prmdih(4,mdihed+kdihed) > 1.0e-10_wp) Then
-                       prmdih(4,mdihed+kdihed) = 0.0_wp
+                    If (dihedral%param(4,ldihed+kdihed)*dihedral%param(4,mdihed+kdihed) > 1.0e-10_wp) Then
+                       dihedral%param(4,mdihed+kdihed) = 0.0_wp
                        l_reset_l = .true.
                     End If
 
-                    If (prmdih(5,ldihed+kdihed)*prmdih(5,mdihed+kdihed) > 1.0e-10_wp) Then
-                       prmdih(5,mdihed+kdihed) = 0.0_wp
+                    If (dihedral%param(5,ldihed+kdihed)*dihedral%param(5,mdihed+kdihed) > 1.0e-10_wp) Then
+                       dihedral%param(5,mdihed+kdihed) = 0.0_wp
                        l_reset_l = .true.
                     End If
 
@@ -297,7 +297,7 @@ Contains
 ! Update counters
 
      kangle=kangle+angle%num(itmols)
-     kdihed=kdihed+numdih(itmols)
+     kdihed=kdihed+dihedral%num(itmols)
 
   End Do
 
@@ -336,7 +336,7 @@ Subroutine dihedrals_compute(temp,comm)
   Character( Len = 256 ) :: message,messages(3)
 
   fail = 0
-  Allocate (dstddih(0:mxgdih1,1:ldfdih(0)),pmf(0:mxgdih1+2),vir(0:mxgdih1+2), Stat = fail)
+  Allocate (dstddih(0:dihedral%bin_adf,1:dihedral%ldf(0)),pmf(0:dihedral%bin_adf+2),vir(0:dihedral%bin_adf+2), Stat = fail)
   If (fail > 0) Then
      Write(message,'(a)') 'dihedrals_compute - allocation failure'
      Call error(0,message)
@@ -353,28 +353,28 @@ Subroutine dihedrals_compute(temp,comm)
 
 ! grid interval for pdf/pmf tables
 
-  delth = twopi/Real(mxgdih1,wp)
-  rdlth = Real(mxgdih1,wp)/360.0_wp
+  delth = twopi/Real(dihedral%bin_adf,wp)
+  rdlth = Real(dihedral%bin_adf,wp)/360.0_wp
 
 ! resampling grid and grid interval for pmf tables
 
-  ngrid = Max(Nint(360.0_wp/delth_max),mxgdih1,mxgdih-4)
+  ngrid = Max(Nint(360.0_wp/delth_max),dihedral%bin_adf,dihedral%bin_tab-4)
   dgrid = twopi/Real(ngrid,wp)
 
 ! loop over all valid PDFs to get valid totals
 
   kk=0
   ll=0
-  Do i=1,ldfdih(0)
-     If (typdih(0,i) > 0) Then
+  Do i=1,dihedral%ldf(0)
+     If (dihedral%typ(0,i) > 0) Then
         kk=kk+1
-        ll=ll+typdih(0,i)
+        ll=ll+dihedral%typ(0,i)
      End If
   End Do
 
 ! normalisation factor
 
-  factor = 1.0_wp/Real(ncfdih,wp)
+  factor = 1.0_wp/Real(dihedral%n_frames,wp)
 
 ! the lower bound to nullify the nearly-zero histogram (PDF) values
 
@@ -384,7 +384,7 @@ Subroutine dihedrals_compute(temp,comm)
   Write(messages(2),'(a)') &
      'DIHEDRALS : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)'
   Write(messages(3),'(a,i10,1x,a,2(i0,a),3(1x,i10))') &
-     '# bins, range, frames, types: ',mxgdih1,'[',-180,',',180,']',ncfdih,kk,ll
+     '# bins, range, frames, types: ',dihedral%bin_adf,'[',-180,',',180,']',dihedral%n_frames,kk,ll
   Call info(messages,3,.true.)
 
 ! open RDF file and write headers
@@ -393,7 +393,7 @@ Subroutine dihedrals_compute(temp,comm)
      Open(Unit=npdfdt, File='DIHDAT', Status='replace')
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a)') '# DIHEDRALS: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dTheta_bin'
-     Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',mxgdih1,360,ncfdih,kk
+     Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',dihedral%bin_adf,360,dihedral%n_frames,kk
      Write(npdfdt,'(a)') '#'
      Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  PDF_norm(Theta)   @   dTheta_bin = ',delth*rad2dgr
      Write(npdfdt,'(a)') '#'
@@ -402,30 +402,30 @@ Subroutine dihedrals_compute(temp,comm)
 ! loop over all valid PDFs
 
   j=0
-  Do i=1,ldfdih(0)
-     If (typdih(0,i) > 0) Then
+  Do i=1,dihedral%ldf(0)
+     If (dihedral%typ(0,i) > 0) Then
         j=j+1
 
         Write(messages(1),*) ''
         Write(messages(2),'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-           unqatm(typdih(1,i)),unqatm(typdih(2,i)),unqatm(typdih(3,i)), &
-           unqatm(typdih(4,i)),j,typdih(0,i)
+           unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
+           unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i)
         Write(messages(3),'(a,f8.5)') &
            'Theta(degrees)  P_dih(Theta)  Sum_P_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
         Call info(messages,3,.true.)
         If (comm%idnode == 0) Then
            Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-              unqatm(typdih(1,i)),unqatm(typdih(2,i)),unqatm(typdih(3,i)), &
-              unqatm(typdih(4,i)),j,typdih(0,i)
+              unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
+              unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i)
         End If
 
 ! global sum of data on all nodes
 
-        Call gsum(comm,dstdih(1:mxgdih1,i))
+        Call gsum(comm,dihedral%dst(1:dihedral%bin_adf,i))
 
 ! factor in instances (first, pdfdih is normalised to unity)
 
-        factor1=factor/Real(typdih(0,i),wp)
+        factor1=factor/Real(dihedral%typ(0,i),wp)
 
 ! running integration of pdf
 
@@ -434,10 +434,10 @@ Subroutine dihedrals_compute(temp,comm)
 ! loop over distances
 
         zero=.true.
-        Do ig=1,mxgdih1
-           If (zero .and. ig < (mxgdih1-3)) zero=(dstdih(ig+2,i) <= 0.0_wp)
+        Do ig=1,dihedral%bin_adf
+           If (zero .and. ig < (dihedral%bin_adf-3)) zero=(dihedral%dst(ig+2,i) <= 0.0_wp)
 
-           pdfdih = dstdih(ig,i)*factor1
+           pdfdih = dihedral%dst(ig,i)*factor1
            sum = sum + pdfdih
 
 ! null it if < pdfzero
@@ -490,7 +490,7 @@ Subroutine dihedrals_compute(temp,comm)
   If (comm%idnode == 0) Then
      Open(Unit=npdgdt, File='DIHPMF', Status='replace')
      Write(npdgdt,'(a)') '# '//cfgname
-     Write(npdgdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',mxgdih1,delth*Real(mxgdih1,wp)*rad2dgr,delth*rad2dgr,kk, &
+     Write(npdgdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',dihedral%bin_adf,delth*Real(dihedral%bin_adf,wp)*rad2dgr,delth*rad2dgr,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
 
      Open(Unit=npdfdt, File='DIHTAB', Status='replace')
@@ -502,17 +502,17 @@ Subroutine dihedrals_compute(temp,comm)
 ! loop over all valid PDFs
 
   j=0
-  Do i=1,ldfdih(0)
-     If (typdih(0,i) > 0) Then
+  Do i=1,dihedral%ldf(0)
+     If (dihedral%typ(0,i) > 0) Then
         j=j+1
 
         If (comm%idnode == 0) Then
            Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(typdih(1,i)),unqatm(typdih(2,i)),unqatm(typdih(3,i)), &
-                unqatm(typdih(4,i)),j,typdih(0,i),' (type, index, instances)'
+                unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
+                unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
            Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(typdih(1,i)),unqatm(typdih(2,i)),unqatm(typdih(3,i)), &
-                unqatm(typdih(4,i)),j,typdih(0,i),' (type, index, instances)'
+                unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
+                unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
         End If
 
 ! Smoothen and get derivatives
@@ -521,7 +521,7 @@ Subroutine dihedrals_compute(temp,comm)
         dfed0 = 10.0_wp
         dfed  = 10.0_wp
 
-        Do ig=1,mxgdih1
+        Do ig=1,dihedral%bin_adf
            tmp = Real(ig,wp)-0.5_wp
            theta = tmp*delth-pi
 
@@ -532,7 +532,7 @@ Subroutine dihedrals_compute(temp,comm)
                  fed  = 0.0_wp
               End If
 
-              If (ig < mxgdih1-1) Then
+              If (ig < dihedral%bin_adf-1) Then
                  If (dstddih(ig+1,i) <= zero_plus .and. dstddih(ig+2,i) > zero_plus) &
                     dstddih(ig+1,i) = 0.5_wp*(dstddih(ig,i)+dstddih(ig+2,i))
               End If
@@ -548,7 +548,7 @@ Subroutine dihedrals_compute(temp,comm)
               Else
                  dfed =-dfed0
               End If
-           Else If (ig == mxgdih1) Then
+           Else If (ig == dihedral%bin_adf) Then
               If      (dstddih(ig,i) > zero_plus .and. dstddih(ig-1,i) > zero_plus) Then
                  dfed = Log(dstddih(ig,i)/dstddih(ig-1,i))
               Else If (dfed > 0.0_wp) Then
@@ -580,12 +580,12 @@ Subroutine dihedrals_compute(temp,comm)
 
 ! Cyclic grid
 
-        pmf(0)         = 0.5_wp*(pmf(1)-pmf(mxgdih1))
-        vir(0)         = 0.5_wp*(vir(1)-vir(mxgdih1))
-        pmf(mxgdih1+1) = pmf(0)
-        vir(mxgdih1+1) = vir(0)
-        pmf(mxgdih1+2) = pmf(1)
-        vir(mxgdih1+2) = vir(1)
+        pmf(0)         = 0.5_wp*(pmf(1)-pmf(dihedral%bin_adf))
+        vir(0)         = 0.5_wp*(vir(1)-vir(dihedral%bin_adf))
+        pmf(dihedral%bin_adf+1) = pmf(0)
+        vir(dihedral%bin_adf+1) = vir(0)
+        pmf(dihedral%bin_adf+2) = pmf(1)
+        vir(dihedral%bin_adf+2) = vir(1)
 
 ! resample using 3pt interpolation
 
@@ -693,11 +693,11 @@ Subroutine dihedrals_forces &
   Character( Len = 256 ) :: message,messages(7)
 
   fail=0
-  Allocate (lunsafe(1:mxdihd),lstopt(0:6,1:mxdihd),lad(1:3,1:mxdihd), Stat=fail(1))
-  Allocate (xdab(1:mxdihd),ydab(1:mxdihd),zdab(1:mxdihd),             Stat=fail(2))
-  Allocate (xdbc(1:mxdihd),ydbc(1:mxdihd),zdbc(1:mxdihd),             Stat=fail(3))
-  Allocate (xdcd(1:mxdihd),ydcd(1:mxdihd),zdcd(1:mxdihd),             Stat=fail(4))
-  Allocate (xdad(1:3,1:mxdihd),ydad(1:3,1:mxdihd),zdad(1:3,1:mxdihd), Stat=fail(5))
+  Allocate (lunsafe(1:dihedral%max_angles),lstopt(0:6,1:dihedral%max_angles),lad(1:3,1:dihedral%max_angles), Stat=fail(1))
+  Allocate (xdab(1:dihedral%max_angles),ydab(1:dihedral%max_angles),zdab(1:dihedral%max_angles),             Stat=fail(2))
+  Allocate (xdbc(1:dihedral%max_angles),ydbc(1:dihedral%max_angles),zdbc(1:dihedral%max_angles),             Stat=fail(3))
+  Allocate (xdcd(1:dihedral%max_angles),ydcd(1:dihedral%max_angles),zdcd(1:dihedral%max_angles),             Stat=fail(4))
+  Allocate (xdad(1:3,1:dihedral%max_angles),ydad(1:3,1:dihedral%max_angles),zdad(1:3,1:dihedral%max_angles), Stat=fail(5))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'dihedrals_forces allocation failure'
      Call error(0,message)
@@ -706,22 +706,22 @@ Subroutine dihedrals_forces &
 
 ! calculate atom separation vectors
 
-  Do i=1,ntdihd
+  Do i=1,dihedral%n_types
      lunsafe(i)=.false.
 
 ! indices of dihedral atoms
 
-     ia=local_index(listdih(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
-     ib=local_index(listdih(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
-     ic=local_index(listdih(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
-     id=local_index(listdih(4,i),nlast,lsi,lsa) ; lstopt(4,i)=id
-     If (lx_dih) Then
-        ia0=local_index(listdih(5,i),nlast,lsi,lsa) ; lstopt(5,i)=ia0
-        id0=local_index(listdih(6,i),nlast,lsi,lsa) ; lstopt(6,i)=id0
+     ia=local_index(dihedral%list(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
+     ib=local_index(dihedral%list(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
+     ic=local_index(dihedral%list(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
+     id=local_index(dihedral%list(4,i),nlast,lsi,lsa) ; lstopt(4,i)=id
+     If (dihedral%l_core_shell) Then
+        ia0=local_index(dihedral%list(5,i),nlast,lsi,lsa) ; lstopt(5,i)=ia0
+        id0=local_index(dihedral%list(6,i),nlast,lsi,lsa) ; lstopt(6,i)=id0
      End If
 
      lstopt(0,i)=0
-     If (lx_dih) Then
+     If (dihedral%l_core_shell) Then
         If (ia > 0 .and. ib > 0 .and. ic > 0 .and. id > 0 .and. &
             ia0 > 0 .and. id0 > 0) Then !Tag
            If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic)*lfrzn(id) == 0) Then
@@ -771,9 +771,9 @@ Subroutine dihedrals_forces &
         ydcd(i)=yyy(ic)-yyy(id)
         zdcd(i)=zzz(ic)-zzz(id)
 
-        If (lx_dih) Then
-           csa=(listdih(1,i) /= listdih(5,i))
-           csd=(listdih(4,i) /= listdih(6,i))
+        If (dihedral%l_core_shell) Then
+           csa=(dihedral%list(1,i) /= dihedral%list(5,i))
+           csd=(dihedral%list(4,i) /= dihedral%list(6,i))
 
            lad(:,i)=.false.
            If (csa .or. csd) Then
@@ -818,7 +818,7 @@ Subroutine dihedrals_forces &
 !        ydcd(i)=0.0_wp
 !        zdcd(i)=0.0_wp
 !
-!        If (lx_dih) Then
+!        If (dihedral%l_core_shell) Then
 !           lad(i,:)=.false.
 !           xdad(i,:)=0.0_wp
 !           ydad(i,:)=0.0_wp
@@ -829,16 +829,16 @@ Subroutine dihedrals_forces &
 
 ! Check for uncompressed units
 
-  safe(1) = .not. Any(lunsafe(1:ntdihd))
+  safe(1) = .not. Any(lunsafe(1:dihedral%n_types))
   Call gcheck(comm,safe(1))
   If (.not.safe(1)) Then
      Do j=0,comm%mxnode-1
         If (comm%idnode == j) Then
-           Do i=1,ntdihd
+           Do i=1,dihedral%n_types
              If (lunsafe(i)) Then
                Write(message,'(2(a,i10))') &
-                 'global unit number', listdih(0,i), &
-                 ' , with a head particle number', listdih(1,i)
+                 'global unit number', dihedral%list(0,i), &
+                 ' , with a head particle number', dihedral%list(1,i)
                Call info(message)
                Call warning('contributes towards next error')
              End If
@@ -851,16 +851,16 @@ Subroutine dihedrals_forces &
 
 ! periodic boundary condition
 
-  Call images(imcon,cell,ntdihd,xdab,ydab,zdab)
-  Call images(imcon,cell,ntdihd,xdbc,ydbc,zdbc)
-  Call images(imcon,cell,ntdihd,xdcd,ydcd,zdcd)
+  Call images(imcon,cell,dihedral%n_types,xdab,ydab,zdab)
+  Call images(imcon,cell,dihedral%n_types,xdbc,ydbc,zdbc)
+  Call images(imcon,cell,dihedral%n_types,xdcd,ydcd,zdcd)
 
   If (Mod(isw,3) > 0) Then
 
-     If (lx_dih) Then
-        If (Any(lad(1,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(1,1:ntdihd),ydad(1,1:ntdihd),zdad(1,1:ntdihd))
-        If (Any(lad(2,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(2,1:ntdihd),ydad(2,1:ntdihd),zdad(2,1:ntdihd))
-        If (Any(lad(3,1:ntdihd))) Call images(imcon,cell,ntdihd,xdad(3,1:ntdihd),ydad(3,1:ntdihd),zdad(3,1:ntdihd))
+     If (dihedral%l_core_shell) Then
+        If (Any(lad(1,1:dihedral%n_types))) Call images(imcon,cell,dihedral%n_types,xdad(1,1:dihedral%n_types),ydad(1,1:dihedral%n_types),zdad(1,1:dihedral%n_types))
+        If (Any(lad(2,1:dihedral%n_types))) Call images(imcon,cell,dihedral%n_types,xdad(2,1:dihedral%n_types),ydad(2,1:dihedral%n_types),zdad(2,1:dihedral%n_types))
+        If (Any(lad(3,1:dihedral%n_types))) Call images(imcon,cell,dihedral%n_types,xdad(3,1:dihedral%n_types),ydad(3,1:dihedral%n_types),zdad(3,1:dihedral%n_types))
      End If
 
 ! Initialise safety flags
@@ -893,13 +893,13 @@ Subroutine dihedrals_forces &
 ! Recover bin size and increment counter
 
   If (Mod(isw,2) == 0) Then
-     rdelth = Real(mxgdih1,wp)*rtwopi
-     ncfdih = ncfdih + 1
+     rdelth = Real(dihedral%bin_adf,wp)*rtwopi
+     dihedral%n_frames = dihedral%n_frames + 1
   End If
 
 ! loop over all specified dihedrals
 
-  Do i=1,ntdihd
+  Do i=1,dihedral%n_types
      If (lstopt(0,i) > 0) Then
 
 ! indices of dihedral atoms
@@ -911,7 +911,7 @@ Subroutine dihedrals_forces &
 
 ! indices of 1-4 shelled dihedral atoms
 
-        If (lx_dih) Then
+        If (dihedral%l_core_shell) Then
            ia0=lstopt(5,i)
            id0=lstopt(6,i)
         End If
@@ -974,16 +974,16 @@ Subroutine dihedrals_forces &
 
 ! selection of potential energy function type
 
-        kk=listdih(0,i)
-        keyd = Abs(keydih(kk))
+        kk=dihedral%list(0,i)
+        keyd = Abs(dihedral%key(kk))
 
 ! accumulate the histogram (distribution)
 
         If (Mod(isw,2) == 0 .and. ia <= natms) Then
-           j = ldfdih(kk)
-           l = Min(1+Int((theta+pi)*rdelth),mxgdih1)
+           j = dihedral%ldf(kk)
+           l = Min(1+Int((theta+pi)*rdelth),dihedral%bin_adf)
 
-           dstdih(l,j) = dstdih(l,j) + 1.0_wp
+           dihedral%dst(l,j) = dihedral%dst(l,j) + 1.0_wp
         End If
         If (isw == 0) Cycle
 
@@ -993,9 +993,9 @@ Subroutine dihedrals_forces &
 
 ! torsion dihedral potential
 
-           a=prmdih(1,kk)
-           d=prmdih(2,kk)
-           m=prmdih(3,kk)
+           a=dihedral%param(1,kk)
+           d=dihedral%param(2,kk)
+           m=dihedral%param(3,kk)
 
            term=m*theta-d
 
@@ -1006,8 +1006,8 @@ Subroutine dihedrals_forces &
 
 ! harmonic improper dihedral
 
-           a     =prmdih(1,kk)
-           theta0=prmdih(2,kk)
+           a     =dihedral%param(1,kk)
+           theta0=dihedral%param(2,kk)
            dtheta=theta-theta0
            dtheta=dtheta-Real(Nint(dtheta*rtwopi),wp)*twopi
 
@@ -1020,8 +1020,8 @@ Subroutine dihedrals_forces &
 
 ! harmonic cosine dihedral (note sint is cancelled)
 
-           a     =prmdih(1,kk)
-           theta0=prmdih(2,kk)
+           a     =dihedral%param(1,kk)
+           theta0=dihedral%param(2,kk)
            dtheta=Cos(theta)-Cos(theta0)
 
            term  =a*dtheta
@@ -1033,9 +1033,9 @@ Subroutine dihedrals_forces &
 
 ! 3-term cosine dihedral
 
-           a1=prmdih(1,kk)
-           a2=prmdih(2,kk)
-           a3=prmdih(3,kk)
+           a1=dihedral%param(1,kk)
+           a2=dihedral%param(2,kk)
+           a3=dihedral%param(3,kk)
 
            pterm=0.5_wp*(a1*(1.0_wp+Cos(theta)) +        &
                          a2*(1.0_wp-Cos(2.0_wp*theta)) + &
@@ -1052,7 +1052,7 @@ Subroutine dihedrals_forces &
 ! ATTENTION: Modified to have the transition configuration correspond
 !            to theta=180 rather than theta=0 as in original form
 
-           a=prmdih(1,kk)
+           a=dihedral%param(1,kk)
            m=Cos(theta)
 
            pterm=a*( 1.116_wp      - 1.462_wp*m    - 1.578_wp*m**2 + &
@@ -1065,7 +1065,7 @@ Subroutine dihedrals_forces &
 ! fluorinated ryckaert-bellemans potential
 ! reference: Rice at al., JCP 104, p. 2101 (1996)
 
-           a=prmdih(1,kk)
+           a=dihedral%param(1,kk)
            m=Cos(theta)
            d=Exp(-56.0_wp*(theta-pi)**2)
            term=-1083.04_wp*(theta-pi)*d
@@ -1080,11 +1080,11 @@ Subroutine dihedrals_forces &
 
 ! opls cosine dihedral
 
-           a0=prmdih(1,kk)
-           a1=prmdih(2,kk)
-           a2=prmdih(3,kk)
-           a3=prmdih(6,kk)
-           theta0=prmdih(7,kk)
+           a0=dihedral%param(1,kk)
+           a1=dihedral%param(2,kk)
+           a2=dihedral%param(3,kk)
+           a3=dihedral%param(6,kk)
+           theta0=dihedral%param(7,kk)
            dtheta=theta-theta0
 
            pterm=a0 + 0.5_wp*( a1*(1.0_wp+Cos(dtheta)) +        &
@@ -1098,24 +1098,24 @@ Subroutine dihedrals_forces &
 
 ! TABDIH potential
 
-           j = ltpdih(kk)
-           rdr = gdih(-1,j) ! 1.0_wp/delpot (in rad^-1)
+           j = dihedral%ltp(kk)
+           rdr = dihedral%tab_force(-1,j) ! 1.0_wp/delpot (in rad^-1)
 
            l   = Int((theta+pi)*rdr)         ! theta (-pi,+pi) is shifted
            ppp = (theta+pi)*rdr - Real(l,wp) ! by +pi so l is [1,ngrid]
 
-           vk  = vdih(l,j)
-           vk1 = vdih(l+1,j)
-           vk2 = vdih(l+2,j)
+           vk  = dihedral%tab_potential(l,j)
+           vk1 = dihedral%tab_potential(l+1,j)
+           vk2 = dihedral%tab_potential(l+2,j)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
            pterm = t1 + (t2-t1)*ppp*0.5_wp
 
-           vk  = gdih(l,j)
-           vk1 = gdih(l+1,j)
-           vk2 = gdih(l+2,j)
+           vk  = dihedral%tab_force(l,j)
+           vk1 = dihedral%tab_force(l+1,j)
+           vk2 = dihedral%tab_force(l+2,j)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -1204,7 +1204,7 @@ Subroutine dihedrals_forces &
         rad2(0)=xad**2+yad**2+zad**2
         rad(0) =Sqrt(rad2(0))
 
-        If (lx_dih) Then
+        If (dihedral%l_core_shell) Then
            If (lad(1,i)) Then
               rad2(1) = xdad(1,i)**2+ydad(1,i)**2+zdad(1,i)**2
               rad(1)  = Sqrt(rad2(1))
@@ -1230,7 +1230,7 @@ Subroutine dihedrals_forces &
            Write(messages(6),*) 'C',xxx(ic),yyy(ic),zzz(ic)
            Write(messages(7),*) 'D',xxx(id),yyy(id),zzz(id)
            Call info(messages,7)
-           If (lx_dih) Then
+           If (dihedral%l_core_shell) Then
               If (lad(1,i)) Then
                 Write(message,*) 'A0',xxx(ia0),yyy(ia0),zzz(ia0)
                 Call info(message)
@@ -1242,7 +1242,7 @@ Subroutine dihedrals_forces &
            End If
            Write(message,*) i,ltg(ia),ltg(ib),ltg(ic),ltg(id),rcut,rad(0)
            Call info(message)
-           If (lx_dih) Then
+           If (dihedral%l_core_shell) Then
               If (lad(1,i)) Then
                 Write(message,*) i,ltg(ia0),ltg(id),rad(1)
                 Call info(message)
@@ -1262,7 +1262,7 @@ Subroutine dihedrals_forces &
 ! 1-4 electrostatics: adjust by weighting factor
 ! assumes 1-4 interactions are in the exclude list and Rad < rcut
 
-        scale=prmdih(4,kk)
+        scale=dihedral%param(4,kk)
 
 ! scaled charge product times dielectric constants
 
@@ -1314,7 +1314,7 @@ Subroutine dihedrals_forces &
 
         End If
 
-        If (lx_dih) Then
+        If (dihedral%l_core_shell) Then
            If (lad(1,i)) Then
               chgprd=scale*chge(ia0)*chge(id)*r4pie0/epsq
               If ((Abs(chgprd) > zero_plus .or. mximpl > 0) .and. keyfce > 0) Then
@@ -1464,7 +1464,7 @@ Subroutine dihedrals_forces &
 ! 1-4 short-range (vdw) interactions: adjust by weighting factor
 ! assumes 1-4 interactions are in the exclude list and Rad < rvdw
 
-        scale=prmdih(5,kk)
+        scale=dihedral%param(5,kk)
         If (Abs(scale) > zero_plus .and. ntpvdw > 0) Then
 
 ! atomic type indices
@@ -1511,7 +1511,7 @@ Subroutine dihedrals_forces &
 
            End If
 
-           If (lx_dih) Then
+           If (dihedral%l_core_shell) Then
               If (lad(1,i)) Then
                  ai=ltype(ia0)
                  aj=ltype(id)
@@ -1722,7 +1722,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Character( Len = 32 ), Intent( In    ) :: dihd_name(1:mxtdih)
+  Character( Len = 32 ), Intent( In    ) :: dihd_name(1:dihedral%max_types)
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,remake,zero
@@ -1760,7 +1760,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 
   delpot = 360.0_wp/Real(ngrid,wp)
 
-  dlrpot = 360.0_wp/Real(mxgdih-4,wp)
+  dlrpot = 360.0_wp/Real(dihedral%bin_tab-4,wp)
 
 ! check grid spacing
 
@@ -1773,7 +1773,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
      Write(messages(1),*) ''
      Write(messages(2),'(a,1p,e15.7)') 'expected (maximum) angular increment : ', delth_max
      Write(messages(3),'(a,1p,e15.7)') 'TABDIH file actual angular increment : ', delpot
-     Write(messages(4),'(a,0p,i10)') 'expected (minimum) number of grid points : ', mxgdih-4
+     Write(messages(4),'(a,0p,i10)') 'expected (minimum) number of grid points : ', dihedral%bin_tab-4
      Write(messages(5),'(a,0p,i10)') 'TABDIH file actual number of grid points : ', ngrid
      Call info(messages,5,.true.)
      Call error(22)
@@ -1784,15 +1784,15 @@ Subroutine dihedrals_table_read(dihd_name,comm)
   If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
-     Write(message,'(a,i10)') 'TABDIH arrays resized for mxgrid = ', mxgdih-4
+     Write(message,'(a,i10)') 'TABDIH arrays resized for mxgrid = ', dihedral%bin_tab-4
      Call info('',.true.)
      Call info(message,.true.)
   End If
 
 ! compare grids dimensions
 
-  If (ngrid < mxgdih-4) Then
-     Call warning(270,Real(ngrid,wp),Real(mxgdih-4,wp),0.0_wp)
+  If (ngrid < dihedral%bin_tab-4) Then
+     Call warning(270,Real(ngrid,wp),Real(dihedral%bin_tab-4,wp),0.0_wp)
      Call error(48)
   End If
 
@@ -1800,7 +1800,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
   dgr2rad= pi/180.0_wp
 
   fail=0
-  Allocate (read_type(1:ltpdih(0)),          Stat=fail(1))
+  Allocate (read_type(1:dihedral%ltp(0)),          Stat=fail(1))
   Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'error - dihedrals_table_read allocation failure'
@@ -1809,7 +1809,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
   Call allocate_dihd_pot_arrays()
 
   read_type=0 ! initialise read_type
-  Do rtdih=1,ltpdih(0)
+  Do rtdih=1,dihedral%ltp(0)
      Call get_line(safe,ntable,record,comm)
      If (.not.safe) Go To 100
 
@@ -1852,10 +1852,10 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 ! read potential arrays if potential is defined
 
      itdih=0
-     Do jtdih=1,ltpdih(0)
+     Do jtdih=1,dihedral%ltp(0)
         If (dihd_name(jtdih) == iddihd) Then
-           Do itdih=1,mxtdih
-              If (ltpdih(itdih) == jtdih) Exit
+           Do itdih=1,dihedral%max_types
+              If (dihedral%ltp(itdih) == jtdih) Exit
            End Do
            Exit
         End If
@@ -1953,7 +1953,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=0,mxgdih-4
+        Do i=0,dihedral%bin_tab-4
            rrr = Real(i,wp)*delth_max
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)
@@ -1978,8 +1978,8 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-           vdih(i,jtdih) = t1 + (t2-t1)*ppp*0.5_wp
-           vdih(i,jtdih) = vdih(i,jtdih)*engunit ! convert to internal units
+           dihedral%tab_potential(i,jtdih) = t1 + (t2-t1)*ppp*0.5_wp
+           dihedral%tab_potential(i,jtdih) = dihedral%tab_potential(i,jtdih)*engunit ! convert to internal units
 
 ! cyclic grid
 
@@ -2001,25 +2001,25 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-           gdih(i,jtdih) = t1 + (t2-t1)*ppp*0.5_wp
-           gdih(i,jtdih) = gdih(i,jtdih)*engunit*rad2dgr ! convert to internal units
+           dihedral%tab_force(i,jtdih) = t1 + (t2-t1)*ppp*0.5_wp
+           dihedral%tab_force(i,jtdih) = dihedral%tab_force(i,jtdih)*engunit*rad2dgr ! convert to internal units
         End Do
 
-        gdih(-1,jtdih) = rad2dgr/dlrpot
+        dihedral%tab_force(-1,jtdih) = rad2dgr/dlrpot
      Else
-        Do i=0,mxgdih-4
-           vdih(i,jtdih) = bufpot(i)*engunit ! convert to internal units
-           gdih(i,jtdih) = bufvir(i)*engunit*rad2dgr ! convert to internal units
+        Do i=0,dihedral%bin_tab-4
+           dihedral%tab_potential(i,jtdih) = bufpot(i)*engunit ! convert to internal units
+           dihedral%tab_force(i,jtdih) = bufvir(i)*engunit*rad2dgr ! convert to internal units
         End Do
 
 ! cyclic grid
 
-        vdih(mxgdih-3,jtdih) = vdih(0,jtdih)
-        vdih(mxgdih-2,jtdih) = vdih(1,jtdih)
-        gdih(mxgdih-3,jtdih) = gdih(0,jtdih)
-        gdih(mxgdih-2,jtdih) = gdih(1,jtdih)
+        dihedral%tab_potential(dihedral%bin_tab-3,jtdih) = dihedral%tab_potential(0,jtdih)
+        dihedral%tab_potential(dihedral%bin_tab-2,jtdih) = dihedral%tab_potential(1,jtdih)
+        dihedral%tab_force(dihedral%bin_tab-3,jtdih) = dihedral%tab_force(0,jtdih)
+        dihedral%tab_force(dihedral%bin_tab-2,jtdih) = dihedral%tab_force(1,jtdih)
 
-        gdih(-1,jtdih) = rad2dgr/delpot
+        dihedral%tab_force(-1,jtdih) = rad2dgr/delpot
      End If
   End Do
 

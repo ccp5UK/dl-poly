@@ -50,7 +50,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megdih,meginv,bond,angle,comm)
+           megtet,dihedral%total,meginv,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -70,7 +70,7 @@ Subroutine build_book_intra             &
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megcon,megpmf, &
                                         megtet, &
-                                        megdih,meginv
+                                        dihedral%total,meginv
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( bonds_type ), Intent( InOut ) :: bond
@@ -618,21 +618,21 @@ Subroutine build_book_intra             &
 
 ! Construct dihedral angle interaction list
 
-           Do ldihed=1,numdih(itmols)
-              iatm=lstdih(1,ldihed+kdihed)+isite
-              jatm=lstdih(2,ldihed+kdihed)+isite
-              katm=lstdih(3,ldihed+kdihed)+isite
-              latm=lstdih(4,ldihed+kdihed)+isite
-              If (lx_dih) Then
-                 matm=lstdih(5,ldihed+kdihed)+isite
-                 natm=lstdih(6,ldihed+kdihed)+isite
+           Do ldihed=1,dihedral%num(itmols)
+              iatm=dihedral%lst(1,ldihed+kdihed)+isite
+              jatm=dihedral%lst(2,ldihed+kdihed)+isite
+              katm=dihedral%lst(3,ldihed+kdihed)+isite
+              latm=dihedral%lst(4,ldihed+kdihed)+isite
+              If (dihedral%l_core_shell) Then
+                 matm=dihedral%lst(5,ldihed+kdihed)+isite
+                 natm=dihedral%lst(6,ldihed+kdihed)+isite
               End If
 
               iat0=local_index(iatm,nlast,lsi,lsa)
               jat0=local_index(jatm,nlast,lsi,lsa)
               kat0=local_index(katm,nlast,lsi,lsa)
               lat0=local_index(latm,nlast,lsi,lsa)
-              If (lx_dih) Then
+              If (dihedral%l_core_shell) Then
                  mat0=local_index(matm,nlast,lsi,lsa)
                  nat0=local_index(natm,nlast,lsi,lsa)
               Else
@@ -644,7 +644,7 @@ Subroutine build_book_intra             &
               If (jat0 > natms) jat0=0
               If (kat0 > natms) kat0=0
               If (lat0 > natms) lat0=0
-              If (lx_dih) Then
+              If (dihedral%l_core_shell) Then
                  If (mat0 > natms) mat0=0
                  If (nat0 > natms) nat0=0
               Else
@@ -652,28 +652,28 @@ Subroutine build_book_intra             &
                  nat0=0
               End If
 
-              If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0 .or. lat0 > 0 .or. & ! lx_dih=.false.
+              If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0 .or. lat0 > 0 .or. & ! dihedral%l_core_shell=.false.
                   mat0 > 0 .or. nat0 > 0) Then                              ! lx_dix=.true.
                  jdihed=jdihed+1
-                 If (jdihed <= mxdihd) Then
-                    listdih(0,jdihed)=ldihed+kdihed
-                    listdih(1,jdihed)=iatm
-                    listdih(2,jdihed)=jatm
-                    listdih(3,jdihed)=katm
-                    listdih(4,jdihed)=latm
-                    If (lx_dih) Then
-                       listdih(5,jdihed)=matm
-                       listdih(6,jdihed)=natm
+                 If (jdihed <= dihedral%max_angles) Then
+                    dihedral%list(0,jdihed)=ldihed+kdihed
+                    dihedral%list(1,jdihed)=iatm
+                    dihedral%list(2,jdihed)=jatm
+                    dihedral%list(3,jdihed)=katm
+                    dihedral%list(4,jdihed)=latm
+                    If (dihedral%l_core_shell) Then
+                       dihedral%list(5,jdihed)=matm
+                       dihedral%list(6,jdihed)=natm
                     End If
 
                     If (iat0 > 0) Then
-                       Call tag_legend(safe(1),iat0,jdihed,legdih,mxfdih)
-                       If (legdih(mxfdih,iat0) > 0) Then
+                       Call tag_legend(safe(1),iat0,jdihed,dihedral%legend,dihedral%max_legend)
+                       If (dihedral%legend(dihedral%max_legend,iat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfdih-1+legdih(mxfdih,iat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfdih-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,iat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstdih(1,ldihed+kdihed)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(1,ldihed+kdihed)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', ldihed
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -682,13 +682,13 @@ Subroutine build_book_intra             &
                     End If
 
                     If (jat0 > 0) Then
-                       Call tag_legend(safe(1),jat0,jdihed,legdih,mxfdih)
-                       If (legdih(mxfdih,jat0) > 0) Then
+                       Call tag_legend(safe(1),jat0,jdihed,dihedral%legend,dihedral%max_legend)
+                       If (dihedral%legend(dihedral%max_legend,jat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfdih-1+legdih(mxfdih,jat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfdih-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,jat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstdih(2,ldihed+kdihed)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(2,ldihed+kdihed)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', ldihed
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -697,13 +697,13 @@ Subroutine build_book_intra             &
                     End If
 
                     If (kat0 > 0) Then
-                       Call tag_legend(safe(1),kat0,jdihed,legdih,mxfdih)
-                       If (legdih(mxfdih,kat0) > 0) Then
+                       Call tag_legend(safe(1),kat0,jdihed,dihedral%legend,dihedral%max_legend)
+                       If (dihedral%legend(dihedral%max_legend,kat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfdih-1+legdih(mxfdih,kat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfdih-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,kat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstdih(3,ldihed+kdihed)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(3,ldihed+kdihed)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', ldihed
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -712,13 +712,13 @@ Subroutine build_book_intra             &
                     End If
 
                     If (lat0 > 0) Then
-                       Call tag_legend(safe(1),lat0,jdihed,legdih,mxfdih)
-                       If (legdih(mxfdih,lat0) > 0) Then
+                       Call tag_legend(safe(1),lat0,jdihed,dihedral%legend,dihedral%max_legend)
+                       If (dihedral%legend(dihedral%max_legend,lat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfdih-1+legdih(mxfdih,lat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfdih-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,lat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstdih(4,ldihed+kdihed)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(4,ldihed+kdihed)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', ldihed
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -727,13 +727,13 @@ Subroutine build_book_intra             &
                     End If
 
                     If (mat0 > 0) Then
-                       Call tag_legend(safe(1),mat0,jdihed,legdih,mxfdih)
-                       If (legdih(mxfdih,mat0) > 0) Then
+                       Call tag_legend(safe(1),mat0,jdihed,dihedral%legend,dihedral%max_legend)
+                       If (dihedral%legend(dihedral%max_legend,mat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfdih-1+legdih(mxfdih,mat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfdih-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,mat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstdih(4,ldihed+kdihed)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(4,ldihed+kdihed)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', ldihed
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -742,13 +742,13 @@ Subroutine build_book_intra             &
                     End If
 
                     If (nat0 > 0) Then
-                       Call tag_legend(safe(1),nat0,jdihed,legdih,mxfdih)
-                       If (legdih(mxfdih,nat0) > 0) Then
+                       Call tag_legend(safe(1),nat0,jdihed,dihedral%legend,dihedral%max_legend)
+                       If (dihedral%legend(dihedral%max_legend,nat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfdih-1+legdih(mxfdih,nat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfdih-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,nat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstdih(4,ldihed+kdihed)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(4,ldihed+kdihed)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', ldihed
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -875,7 +875,7 @@ Subroutine build_book_intra             &
 
      kbonds=kbonds+bond%num(itmols)
      kangle=kangle+angle%num(itmols)
-     kdihed=kdihed+numdih(itmols)
+     kdihed=kdihed+dihedral%num(itmols)
      kinver=kinver+numinv(itmols)
 
   End Do
@@ -893,7 +893,7 @@ Subroutine build_book_intra             &
 
   bond%n_types=jbonds
   angle%n_types=jangle
-  ntdihd=jdihed
+  dihedral%n_types=jdihed
   ntinv =jinver
 
   If (megshl == 0) Then
@@ -905,7 +905,7 @@ Subroutine build_book_intra             &
 
      bond%n_types1=bond%n_types
      angle%n_types1=angle%n_types
-     ntdihd1=ntdihd
+     dihedral%n_types1=dihedral%n_types
      ntinv1 =ntinv
 
      ntshl2 =ntshl1
@@ -989,21 +989,21 @@ Subroutine build_book_intra             &
         iwrk(mshels)=katm
      End If
   End Do
-  Do i=1,ntdihd
-     iatm=listdih(1,i)
-     jatm=listdih(2,i)
-     katm=listdih(3,i)
-     latm=listdih(4,i)
-     If (lx_dih) Then
-        matm=listdih(5,i)
-        natm=listdih(6,i)
+  Do i=1,dihedral%n_types
+     iatm=dihedral%list(1,i)
+     jatm=dihedral%list(2,i)
+     katm=dihedral%list(3,i)
+     latm=dihedral%list(4,i)
+     If (dihedral%l_core_shell) Then
+        matm=dihedral%list(5,i)
+        natm=dihedral%list(6,i)
      End If
 
      iat0=local_index(iatm,nlast,lsi,lsa)
      jat0=local_index(jatm,nlast,lsi,lsa)
      kat0=local_index(katm,nlast,lsi,lsa)
      lat0=local_index(latm,nlast,lsi,lsa)
-     If (lx_dih) Then
+     If (dihedral%l_core_shell) Then
         mat0=local_index(matm,nlast,lsi,lsa)
         nat0=local_index(natm,nlast,lsi,lsa)
      Else
@@ -1283,34 +1283,34 @@ Subroutine build_book_intra             &
 
 ! Extend dihedral angle interaction list
 
-           Do ldihed=1,numdih(itmols)
-              iatm=lstdih(1,ldihed+kdihed)+isite
-              jatm=lstdih(2,ldihed+kdihed)+isite
-              katm=lstdih(3,ldihed+kdihed)+isite
-              latm=lstdih(4,ldihed+kdihed)+isite
+           Do ldihed=1,dihedral%num(itmols)
+              iatm=dihedral%lst(1,ldihed+kdihed)+isite
+              jatm=dihedral%lst(2,ldihed+kdihed)+isite
+              katm=dihedral%lst(3,ldihed+kdihed)+isite
+              latm=dihedral%lst(4,ldihed+kdihed)+isite
 
               If ( Any(iwrk(1:mshels) == iatm) .or.    &
                    Any(iwrk(1:mshels) == jatm) .or.    &
                    Any(iwrk(1:mshels) == katm) .or.    &
                    Any(iwrk(1:mshels) == latm) ) Then
 
-                 If (lx_dih) Then
-                    matm=lstdih(5,ldihed+kdihed)+isite
-                    natm=lstdih(6,ldihed+kdihed)+isite
+                 If (dihedral%l_core_shell) Then
+                    matm=dihedral%lst(5,ldihed+kdihed)+isite
+                    natm=dihedral%lst(6,ldihed+kdihed)+isite
                     If ( .not.(Any(iwrk(1:mshels) == jatm) .or. &
                                Any(iwrk(1:mshels) == katm)) ) Exit
                  End If
 
                  jdihed=jdihed+1
-                 If (jdihed <= mxdihd) Then
-                    listdih(0,jdihed)=ldihed+kdihed
-                    listdih(1,jdihed)=iatm
-                    listdih(2,jdihed)=jatm
-                    listdih(3,jdihed)=katm
-                    listdih(4,jdihed)=latm
-                    If (lx_dih) Then
-                       listdih(5,jdihed)=matm
-                       listdih(6,jdihed)=natm
+                 If (jdihed <= dihedral%max_angles) Then
+                    dihedral%list(0,jdihed)=ldihed+kdihed
+                    dihedral%list(1,jdihed)=iatm
+                    dihedral%list(2,jdihed)=jatm
+                    dihedral%list(3,jdihed)=katm
+                    dihedral%list(4,jdihed)=latm
+                    If (dihedral%l_core_shell) Then
+                       dihedral%list(5,jdihed)=matm
+                       dihedral%list(6,jdihed)=natm
                     End If
                  Else
                     safe(9)=.false.
@@ -1358,7 +1358,7 @@ Subroutine build_book_intra             &
 
      kbonds=kbonds+bond%num(itmols)
      kangle=kangle+angle%num(itmols)
-     kdihed=kdihed+numdih(itmols)
+     kdihed=kdihed+dihedral%num(itmols)
      kinver=kinver+numinv(itmols)
   End Do
 
@@ -1373,7 +1373,7 @@ Subroutine build_book_intra             &
 
   bond%n_types1=jbonds
   angle%n_types1=jangle
-  ntdihd1=jdihed
+  dihedral%n_types1=jdihed
   ntinv1 =jinver
 
 ! Cycle through the extended -
@@ -1441,14 +1441,14 @@ Subroutine build_book_intra             &
         iwrk(mshels)=katm
      End If
   End Do
-  Do i=ntdihd+1,ntdihd1
-     iatm=listdih(1,i)
-     jatm=listdih(2,i)
-     katm=listdih(3,i)
-     latm=listdih(4,i)
-     If (lx_dih) Then
-        matm=listdih(5,i)
-        natm=listdih(6,i)
+  Do i=dihedral%n_types+1,dihedral%n_types1
+     iatm=dihedral%list(1,i)
+     jatm=dihedral%list(2,i)
+     katm=dihedral%list(3,i)
+     latm=dihedral%list(4,i)
+     If (dihedral%l_core_shell) Then
+        matm=dihedral%list(5,i)
+        natm=dihedral%list(6,i)
      End If
 
      If (.not.Any(iwrk(1:mshels) == iatm)) Then
@@ -1471,7 +1471,7 @@ Subroutine build_book_intra             &
         iwrk(mshels)=latm
      End If
 
-     If (lx_dih) Then
+     If (dihedral%l_core_shell) Then
         If (.not.Any(iwrk(1:mshels) == matm)) Then
            mshels=mshels+1
            iwrk(mshels)=matm
@@ -1575,7 +1575,7 @@ Subroutine build_book_intra             &
 
   ntshl2 =jshels
 
-!  If (lx_dih) ntdihd=ntdihd1 ! extend the dihedrals' set
+!  If (dihedral%l_core_shell) dihedral%n_types=dihedral%n_types1 ! extend the dihedrals' set
 
 400 Continue
 
@@ -1592,7 +1592,7 @@ Subroutine build_book_intra             &
      itmp(5)=iteths ; jtmp(5)=mxteth
      itmp(6)=ibonds ; jtmp(6)=bond%max_bonds
      itmp(7)=iangle ; jtmp(7)=angle%max_angles
-     itmp(8)=idihed ; jtmp(8)=mxdihd
+     itmp(8)=idihed ; jtmp(8)=dihedral%max_angles
      itmp(9)=iinver ; jtmp(9)=mxinv
 
      Call gmax(comm,itmp(1:9))
@@ -1636,7 +1636,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,megdih,meginv,bond,angle,comm)
+           megtet,dihedral%total,meginv,bond,angle,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1847,9 +1847,9 @@ Subroutine init_intra(bond,angle)
 
 ! dihedrals locals
 
-  ntdihd  = 0 ; ntdihd1 = 0
-  listdih = 0
-  legdih  = 0
+  dihedral%n_types  = 0 ; dihedral%n_types1 = 0
+  dihedral%list = 0
+  dihedral%legend  = 0
 
 ! inversions locals
 

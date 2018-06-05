@@ -111,11 +111,11 @@ Contains
 
     ! include sites on basis of dihedral angles
 
-    Do i=1,ntdihd
-      ia=listdih(1,i)
-      ib=listdih(2,i)
-      ic=listdih(3,i)
-      id=listdih(4,i)
+    Do i=1,dihedral%n_types
+      ia=dihedral%list(1,i)
+      ib=dihedral%list(2,i)
+      ic=dihedral%list(3,i)
+      id=dihedral%list(4,i)
 
       ia0=local_index(ia,nlast,lsi,lsa)
       ib0=local_index(ib,nlast,lsi,lsa)

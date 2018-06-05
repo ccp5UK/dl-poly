@@ -413,7 +413,7 @@ program dl_poly
     rcter,rctbp,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megcon,megpmf,megrgd,    &
-    megtet,megdih,meginv,thermo,met,bond,angle,comm)
+    megtet,dihedral%total,meginv,thermo,met,bond,angle,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -509,7 +509,7 @@ program dl_poly
       megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,        &
       megrgd,degrot,degtra,        &
-      megtet,megdih,meginv,bond,angle,comm)
+      megtet,dihedral%total,meginv,bond,angle,comm)
     If (mximpl > 0) Then
       Call build_tplg_intra(bond,angle,comm) ! multipoles topology for internal coordinate system
       If (keyind == 1) Call build_chrm_intra(bond,angle,comm) ! CHARMM core-shell screened electrostatic induction interactions
@@ -519,7 +519,7 @@ program dl_poly
     Call report_topology                &
       (megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,megrgd,  &
-      megtet,megdih,meginv,bond,angle,comm)
+      megtet,dihedral%total,meginv,bond,angle,comm)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
