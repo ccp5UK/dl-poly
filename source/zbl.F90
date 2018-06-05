@@ -181,7 +181,7 @@ Contains
         x = is + i*h
         Call zbl(x,kk,a,f0,df0)
         Call zbl(x+h,kk,a,f0,df1)
-        Call zbl(x+2.0_wp*h,kk,a,f0,df1)
+        Call zbl(x+2.0_wp*h,kk,a,f0,df2)
         s = s  +             x*x * df0 + &
           4.0_wp*(x+h)**2 * df1 + &
           (x+2.0_wp*h)**2 * df2
