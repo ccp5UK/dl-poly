@@ -276,7 +276,7 @@ program dl_poly
   Call init_error_system(nrite,dlp_world(0))
   comm=dlp_world(0) ! this shall vanish asap w_ are proper things
   If (dlp_world(0)%mxnode > 1) Call gsync(dlp_world(0))
-  Call gtime(tmr%elapsed)
+  Call gtime(tmr%elapsed) ! Initialise wall clock time
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() == 1 ) Then
       Call get_command_argument(1, control)
@@ -330,7 +330,6 @@ program dl_poly
     dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,comm)
 
-  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
   Call time_elapsed(tmr%elapsed)
@@ -429,7 +428,6 @@ program dl_poly
 
   Call check_config(levcfg,l_str,keyfce,keyres,megatm,thermo,comm)
 
-  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** all reading and connectivity checks DONE ***",.true.)
   Call time_elapsed(tmr%elapsed)
@@ -437,13 +435,11 @@ program dl_poly
   ! devel%l_org: translate CONFIG into CFGORG and exit gracefully
 
   If (devel%l_org) Then
-    Call gtime(tmr%elapsed)
     Call info('',.true.)
     Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
 
     Call origin_config(megatm,devel,comm)
 
-    Call gtime(tmr%elapsed)
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
   End If
@@ -451,13 +447,11 @@ program dl_poly
   ! devel%l_scl: rescale CONFIG to CFGSCL and exit gracefully
 
   If (devel%l_scl) Then
-    Call gtime(tmr%elapsed)
     Call info('',.true.)
     Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
 
     Call scale_config(megatm,devel,comm)
 
-    Call gtime(tmr%elapsed)
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
   End If
@@ -465,7 +459,6 @@ program dl_poly
   ! devel%l_his: generate HISTORY and exit gracefully
 
   If (devel%l_his) Then
-    Call gtime(tmr%elapsed)
     Call info('',.true.)
     Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
 
@@ -476,7 +469,6 @@ program dl_poly
     time   = 0.0_wp                       ! time is not relevant
     Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stats%rsd,comm)
 
-    Call gtime(tmr%elapsed)
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
   End If
@@ -504,7 +496,6 @@ program dl_poly
 
   Call set_halo_particles(rlnk,keyfce,comm)
 
-  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
   Call time_elapsed(tmr%elapsed)
@@ -547,7 +538,6 @@ program dl_poly
     End If
   End If
 
-  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** bookkeeping DONE ***",.true.)
   Call time_elapsed(tmr%elapsed)
@@ -567,7 +557,6 @@ program dl_poly
     megrgd,degtra,degrot,     &
     degfre,degshl,stats%engrot,thermo,comm)
 
-  Call gtime(tmr%elapsed)
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
   Call time_elapsed(tmr%elapsed)
@@ -638,7 +627,6 @@ program dl_poly
 
   ! start-up time when forces are not recalculated
 
-  Call gtime(tmr%elapsed)
   Call time_elapsed(tmr%elapsed)
 
   ! Now you can run fast, boy

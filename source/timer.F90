@@ -1,5 +1,5 @@
 Module timer
-  Use kinds, Only : wp 
+  Use kinds, Only : wp
   Use comms, Only : comms_type,gtime,mtime,gmin,gmax,gsum
   Use errors_warnings, Only : info
   Implicit None
@@ -17,7 +17,7 @@ Module timer
   Public :: time_elapsed
   Public :: timer_report
 
-  Contains 
+  Contains
 
   Subroutine start_timer(t)
     Real( kind = wp ), Intent(   Out ) :: t(4)
@@ -32,10 +32,11 @@ Module timer
   End Subroutine stop_timer
 
   Subroutine time_elapsed(time)
-    Real( Kind = wp ), Intent( In    ) :: time
+    Real( Kind = wp ), Intent( InOut ) :: time
 
     Character( Len = 256 ) :: message
 
+    Call gtime(time)
     Write(message,'(a,f12.3,a)') "time elapsed since job start: ", time, " sec"
     Call info(message,.true.)
   End Subroutine time_elapsed
