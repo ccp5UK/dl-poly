@@ -92,7 +92,7 @@ Subroutine set_bounds                                 &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond, &
            mtangl,       &
-           mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
+           mtdihd,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &

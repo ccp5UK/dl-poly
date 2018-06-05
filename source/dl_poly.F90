@@ -227,7 +227,7 @@ program dl_poly
     ndump,nstep,keyshl,                 &
     atmfre,atmfrz,megatm,megfrz,        &
     megshl,megcon,megpmf,megrgd,        &
-    megtet,megdih,meginv
+    megtet,meginv
 
   ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
 

@@ -30,31 +30,71 @@ Module dihedrals
   Use angles, Only : angles_type
   Implicit None
 
-  Logical,                        Save :: lt_dih=.false. , & ! no tabulated potentials opted
-                                          lx_dih=.false.     ! dihedrals with core-shell
+  Private
 
-  Integer,                        Save :: ntdihd  = 0 , &
-                                          ntdihd1 = 0 , &
-                                          ncfdih  = 0
+  Type, Public :: dihedrals_type
+    Private
+
+    !> Tabulated potential switch
+    Logical, Public :: l_tab = .false.
+    !> Core shell switch
+    Logical, Public :: l_core_shell = .false.
+
+    !> Number of dihedral angle types (potentials)
+    Integer( Kind = wi ), Public :: n_types  = 0
+    Integer( Kind = wi ), Public :: n_types1 = 0
+    !> Number of frames
+    Integer( Kind = wi ), Public :: n_frames  = 0
+    !> Total number of angles (all nodes)
+    Integer( Kind = wi ), Public :: total
+
+    Integer( Kind = wi ), Allocatable, Public :: num(:),key(:)
+
+    !> Atom indices (local)
+    Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
+    !> Atom indices
+    Integer( Kind = wi ), Allocatable, Public :: list(:,:)
+    !> Legend
+    Integer( Kind = wi ), Allocatable, Public :: legend(:,:)
+
+    !> Angle parameters (force constant, etc.)
+    Real( Kind = wp ), Allocatable, Public :: param(:,:)
+
+    ! Possible tabulated calculation arrays
+    Integer,           Allocatable, Public :: ltp(:)
+    !> Tabulated potential
+    Real( Kind = wp ), Allocatable, Public :: tab_potential(:,:)
+    !> Tabulated force
+    Real( Kind = wp ), Allocatable, Public :: tab_force(:,:)
+
+    ! Possible distribution arrays
+    Integer,           Allocatable, Public :: ldf(:),typ(:,:)
+    Real( Kind = wp ), Allocatable, Public :: dst(:,:)
+
+    ! Maximums
+    !> Maximum number of dihedral angle types
+    Integer( Kind = wi ), Public :: max_types
+    !> Maximum number of dihedral angles per node
+    Integer( Kind = wi ), Public :: max_angles
+    !> Length of legend array
+    Integer( Kind = wi ), Public :: max_legend
+    !> Maximum number of dihedral parameters
+    Integer( Kind = wi ), Public :: max_param
+
+    ! Number of bins
+    !> Angular distribution function bins
+    Integer( Kind = wi ), Public :: bin_adf
+    !> Tabulated potential bins
+    Integer( Kind = wi ), Public :: bin_tab
+  Contains
+    Private
+
+    Final :: cleanup
+  End Type dihedrals_type
 
 
-  Integer,           Allocatable, Save :: numdih(:),keydih(:)
-  Integer,           Allocatable, Save :: lstdih(:,:),listdih(:,:),legdih(:,:)
-
-  Real( Kind = wp ), Allocatable, Save :: prmdih(:,:)
-
-! Possible tabulated calculation arrays
-
-  Integer,           Allocatable, Save :: ltpdih(:)
-  Real( Kind = wp ), Allocatable, Save :: vdih(:,:),gdih(:,:)
-
-! Possible distribution arrays
-
-  Integer,           Allocatable, Save :: ldfdih(:),typdih(:,:)
-  Real( Kind = wp ), Allocatable, Save :: dstdih(:,:)
-
-  Public :: allocate_dihedrals_arrays , deallocate_dihedrals_arrays , &
-            allocate_dihd_pot_arrays , allocate_dihd_dst_arrays
+  Public :: allocate_dihedrals_arrays, &
+            allocate_dihd_pot_arrays, allocate_dihd_dst_arrays
 
 Contains
 
@@ -93,18 +133,6 @@ Contains
     ldfdih  = 0
 
   End Subroutine allocate_dihedrals_arrays
-
-  Subroutine deallocate_dihedrals_arrays()
-
-    Integer :: fail
-
-    fail = 0
-
-    Deallocate (numdih,lstdih, Stat = fail)
-
-    If (fail > 0) Call error(1033)
-
-  End Subroutine deallocate_dihedrals_arrays
 
   Subroutine allocate_dihd_pot_arrays()
 
@@ -2380,6 +2408,38 @@ Subroutine dihedrals_14_vdw(rvdw,ai,aj,rad,rad2,eng,gamma)
 
 End Subroutine dihedrals_14_vdw
 
+  Subroutine cleanup(dihedral)
+    Type(dihedrals_type) :: dihedral
 
+    If (Allocated(dihedral%num)) Then
+      Deallocate(dihedral%num)
+    End If
+    If (Allocated(dihedral%key)) Then
+      Deallocate(dihedral%key)
+    End If
 
+    If (Allocated(dihedral%lst)) Then
+      Deallocate(dihedral%lst)
+    End If
+    If (Allocated(dihedral%list)) Then
+      Deallocate(dihedral%list)
+    End If
+    If (Allocated(dihedral%legend)) Then
+      Deallocate(dihedral%legend)
+    End If
+
+    If (Allocated(dihedral%param)) Then
+      Deallocate(dihedral%param)
+    End If
+
+    If (Allocated(dihedral%ltp)) Then
+      Deallocate(dihedral%ltp)
+    End If
+    If (Allocated(dihedral%tab_potential)) Then
+      Deallocate(dihedral%tab_potential)
+    End If
+    If (Allocated(dihedral%tab_force)) Then
+      Deallocate(dihedral%tab_force)
+    End If
+  End Subroutine cleanup
 End Module dihedrals
