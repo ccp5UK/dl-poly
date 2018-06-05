@@ -5056,7 +5056,7 @@ Subroutine scan_field                                &
   bond%rcut =0.0_wp
   bond%bin_tab=-2
 
-  angle%num=0
+  numang=0
   mtangl=0
   angle%max_angles=0
   angle%max_types=0
@@ -5395,7 +5395,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 angle%num=Nint(word_2_real(word))
+                 numang=Nint(word_2_real(word))
                  mtangl=Max(mtangl,numang)
                  angle%max_types=angle%max_types+numang
                  angle%max_angles=angle%max_angles+nummols*numang
