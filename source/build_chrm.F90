@@ -19,7 +19,7 @@ Module build_chrm
 
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
-  Use dihedrals
+  Use dihedrals, Only : dihedrals_type
   Use inversions
 
   ! MULTIPOLES MODULE
@@ -32,8 +32,8 @@ Module build_chrm
   Private
 
   Public :: build_chrm_intra
-Contains 
-  Subroutine build_chrm_intra(bond,angle,comm)
+Contains
+  Subroutine build_chrm_intra(bond,angle,dihedral,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -57,6 +57,7 @@ Contains
 
     Type( bonds_type ), Intent( In    ) :: bond
     Type( angles_type ), Intent( In    ) :: angle
+    Type( dihedrals_type ), Intent( In    ) :: dihedral
     Type( comms_type ),  Intent( InOut) :: comm
 
     Logical :: safe

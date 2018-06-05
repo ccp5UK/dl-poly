@@ -7,6 +7,7 @@ Module kontrol
   Use langevin,   Only : langevin_allocate_arrays
   Use bonds,      Only : bonds_type
   Use angles,     Only : angles_type
+  Use dihedrals,  Only : dihedrals_type
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : metal_type
   Use poisson,    Only : poisson_type
@@ -78,7 +79,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,tmr,comm)
+           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -143,6 +144,7 @@ Subroutine read_control                                &
   Type( poisson_type ), Intent( InOut ) :: pois
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
+  Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( comms_type ),     Intent( InOut )  :: comm
@@ -3628,12 +3630,12 @@ End Subroutine read_control
 Subroutine scan_control                                    &
            (mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,dihedral%bin_adf,mxginv1,         &
+           mxgana,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
-           thermo,green,devel,msd_data,met,pois,bond,angle,comm)
+           thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3655,7 +3657,7 @@ Subroutine scan_control                                    &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon,mxshl
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
-  Integer,           Intent(   Out ) :: mxgana,dihedral%bin_adf,mxginv1, &
+  Integer,           Intent(   Out ) :: mxgana,mxginv1, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: rvdw,cell(1:9)
@@ -3669,6 +3671,7 @@ Subroutine scan_control                                    &
   Type( poisson_type ), Intent( InOut ) :: pois
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &

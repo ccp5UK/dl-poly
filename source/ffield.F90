@@ -32,7 +32,8 @@ Module ffield
 
   Use bonds, Only : bonds_type,bonds_table_read,allocate_bond_dst_arrays
   Use angles, Only : angles_type,angles_table_read,allocate_angl_dst_arrays
-  Use dihedrals
+  Use dihedrals, Only : dihedrals_type,dihedrals_table_read,allocate_dihd_dst_arrays, &
+                        dihedrals_14_check
   Use inversions
 
   Use vdw
@@ -74,8 +75,8 @@ Subroutine read_field                      &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
-           megtet,dihedral%total,    &
-           meginv,thermo,met,bond,angle,comm)
+           megtet,    &
+           meginv,thermo,met,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -109,11 +110,12 @@ Subroutine read_field                      &
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megcon,megpmf,megrgd,        &
-                                        megtet,dihedral%total,meginv
+                                        megtet,meginv
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -1779,10 +1781,12 @@ Subroutine read_field                      &
                        If (l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
                             Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',dihedral%max_param,'f15.6,2x,a8)'
-                            Write(message,rfmt) idih,keyword,dihedral%lst(1:4,ndihed),dihedral%param(1:dihedral%max_param,ndihed),'*frozen*'
+                            Write(message,rfmt) idih,keyword,dihedral%lst(1:4,ndihed), &
+                              dihedral%param(1:dihedral%max_param,ndihed),'*frozen*'
                           Else
                             Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',dihedral%max_param,'f15.6)'
-                            Write(message,rfmt) idih,keyword,dihedral%lst(1:4,ndihed),dihedral%param(1:dihedral%max_param,ndihed)
+                            Write(message,rfmt) idih,keyword,dihedral%lst(1:4,ndihed), &
+                              dihedral%param(1:dihedral%max_param,ndihed)
                           End If
                           Call info(message,.true.)
                        End If
@@ -2175,7 +2179,7 @@ Subroutine read_field                      &
 
         If (bond%l_tab) Call bonds_table_read(bond_name,bond,comm)
         If (angle%l_tab) Call angles_table_read(angl_name,angle,comm)
-        If (dihedral%l_tab) Call dihedrals_table_read(dihd_name,comm)
+        If (dihedral%l_tab) Call dihedrals_table_read(dihd_name,dihedral,comm)
         If (lt_inv) Call inversions_table_read(invr_name,comm)
 
 ! If some intramolecular PDFs analysis is opted for
@@ -2421,7 +2425,7 @@ Subroutine read_field                      &
            End If
            If (dihedral%bin_adf > 0) Then
               ntpdih = 0 ! for dihedrals
-              Call allocate_dihd_dst_arrays() ! as it depends on dihedral%ldf(0)
+              Call allocate_dihd_dst_arrays(dihedral) ! as it depends on dihedral%ldf(0)
 !             dihedral%typ = 0 ! initialised in dihedrals
            End If
            If (mxginv1 > 0) Then
@@ -4695,7 +4699,7 @@ Subroutine read_field                      &
 ! check and resolve any conflicting 14 dihedral specifications
 
         Call dihedrals_14_check &
-           (l_str,l_top,dihedral%l_core_shell,ntpmls,nummols,dihedral%num,dihedral%lst,dihedral%param,angle,comm)
+           (l_str,l_top,ntpmls,nummols,angle,dihedral,comm)
 
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
@@ -4741,8 +4745,8 @@ End Subroutine read_field
 Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,dihedral%total,  &
-           meginv,bond,angle,comm)
+           megtet,  &
+           meginv,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4755,9 +4759,10 @@ Subroutine report_topology               &
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
                               megshl,megcon,megpmf,megrgd, &
-                              megtet,dihedral%total,meginv
+                              megtet,meginv
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
+  Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type(comms_type), Intent( InOut ) :: comm
 
   Integer :: itmols,nsite,                &
@@ -4948,11 +4953,11 @@ Subroutine scan_field                                &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond, &
            mtangl,       &
-           mtdihd,dihedral%max_types,dihedral%max_angles,dihedral%max_legend,dihedral%bin_tab,       &
+           mtdihd,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4972,6 +4977,7 @@ Subroutine scan_field                                &
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 ! Max number of different atom types
 
@@ -4997,7 +5003,7 @@ Subroutine scan_field                                &
                        numteth,mtteth,mxtteth,mxteth,iteth,mxftet,             &
                        numbonds,mtbond,ibonds, &
                        numang,mtangl,iang,         &
-                       dihedral%num,mtdihd,dihedral%max_types,dihedral%max_angles,idih,dihedral%max_legend,dihedral%bin_tab,         &
+                       numdih,mtdihd,idih,         &
                        numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,mxginv,           &
                        mxrdf,itprdf,mxvdw,itpvdw,mxgvdw,                       &
                        mxmet,mxmed,mxmds,itpmet,                        &
@@ -5063,7 +5069,7 @@ Subroutine scan_field                                &
   angle%max_legend=0
   angle%bin_tab=-2
 
-  dihedral%num=0
+  numdih=0
   mtdihd=0
   dihedral%max_angles=0
   dihedral%max_types=0
@@ -5436,12 +5442,12 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 dihedral%num=Nint(word_2_real(word))
-                 mtdihd=Max(mtdihd,dihedral%num)
-                 dihedral%max_types=dihedral%max_types+dihedral%num
-                 dihedral%max_angles=dihedral%max_angles+nummols*dihedral%num
+                 numdih=Nint(word_2_real(word))
+                 mtdihd=Max(mtdihd,numdih)
+                 dihedral%max_types=dihedral%max_types+numdih
+                 dihedral%max_angles=dihedral%max_angles+nummols*numdih
 
-                 Do idih=1,dihedral%num
+                 Do idih=1,numdih
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                        Call get_line(safe,nfield,record,comm)

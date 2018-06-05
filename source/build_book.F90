@@ -25,7 +25,7 @@ Module build_book
 
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
-  Use dihedrals
+  Use dihedrals, Only : dihedrals_type
   Use inversions
   Use configuration, only : lexatm
   Use shared_units, Only : tag_legend,pass_shared_units
@@ -50,7 +50,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,dihedral%total,meginv,bond,angle,comm)
+           megtet,meginv,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -70,11 +70,12 @@ Subroutine build_book_intra             &
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megcon,megpmf, &
                                         megtet, &
-                                        dihedral%total,meginv
+                                        meginv
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -108,7 +109,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra(bond,angle)
+  If (.not.(newjob .or. lsim)) Call init_intra(bond,angle,dihedral)
 
 ! Initialise safety flags
 
@@ -670,7 +671,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),iat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,iat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,iat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,iat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(1,ldihed+kdihed)
@@ -685,7 +687,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),jat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,jat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,jat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,jat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(2,ldihed+kdihed)
@@ -700,7 +703,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),kat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,kat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,kat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,kat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(3,ldihed+kdihed)
@@ -715,7 +719,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),lat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,lat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,lat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,lat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(4,ldihed+kdihed)
@@ -730,7 +735,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),mat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,mat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,mat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,mat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(4,ldihed+kdihed)
@@ -745,7 +751,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),nat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,nat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,nat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,nat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', dihedral%lst(4,ldihed+kdihed)
@@ -1636,7 +1643,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,dihedral%total,meginv,bond,angle,comm)
+           megtet,meginv,bond,angle,dihedral,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1650,7 +1657,6 @@ Subroutine build_book_intra             &
 
         Call deallocate_tethers_arrays()
 
-        Call deallocate_dihedrals_arrays()
         Call deallocate_inversions_arrays()
      End If
 
@@ -1770,7 +1776,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra(bond,angle)
+Subroutine init_intra(bond,angle,dihedral)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1785,6 +1791,7 @@ Subroutine init_intra(bond,angle)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
 
 ! exclusions locals
 

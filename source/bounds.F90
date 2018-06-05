@@ -10,6 +10,7 @@ Module bounds
   Use kim,             Only : kimim
   Use bonds,           Only : bonds_type
   Use angles,          Only : angles_type
+  Use dihedrals,       Only : dihedrals_type
   Use tersoff,         Only : potter
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
@@ -34,7 +35,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce, &
-           alpha,width,stats,thermo,green,devel,msd_data,met,pois,bond,angle,comm)
+           alpha,width,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -62,6 +63,7 @@ Subroutine set_bounds                                 &
   Type( poisson_type ), Intent( InOut ) :: pois
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -92,11 +94,11 @@ Subroutine set_bounds                                 &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond, &
            mtangl,       &
-           mtdihd,dihedral%max_angles,dihedral%max_legend,dihedral%bin_tab,       &
+           mtdihd,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,comm)
 
 ! Get imc_r & set dvar
 
@@ -116,11 +118,12 @@ Subroutine set_bounds                                 &
   Call scan_control                                        &
            (mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,dihedral%bin_adf,mxginv1,         &
+           mxgana,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,msd_data,met,pois,bond,angle,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo, &
+           green,devel,msd_data,met,pois,bond,angle,dihedral,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)

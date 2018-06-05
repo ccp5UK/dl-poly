@@ -29,7 +29,7 @@ Module statistics
   Use pmf,         Only : passpmf
   Use bonds,       Only : bonds_type,bonds_compute
   Use angles,      Only : angles_type,angles_compute
-  Use dihedrals,   Only : dihedral%n_frames,dihedral%bin_adf
+  Use dihedrals,   Only : dihedrals_type,dihedrals_compute
   Use inversions,  Only : ncfinv,mxginv1
 
   Use rdfs,         Only : ncfrdf,l_errors_jack,l_errors_block,ncfusr, &
@@ -38,7 +38,6 @@ Module statistics
   Use z_density,   Only : ncfzdn,z_density_compute,z_density_collect
   Use msd,         Only : msd_type
   Use greenkubo,   Only : greenkubo_type,vaf_compute
-  Use dihedrals,   Only : dihedrals_compute
   Use inversions,  Only : inversions_compute
   Use errors_warnings, Only : error,warning,info
   Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
@@ -1329,7 +1328,7 @@ Subroutine statistics_result                                    &
            (rcut,lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
-           mxatdm,stats,thermo,green,bond,angle,comm,passmin)
+           mxatdm,stats,thermo,green,bond,angle,dihedral,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1345,12 +1344,13 @@ Subroutine statistics_result                                    &
   Logical,           Intent( In    ) :: lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn
   Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
-  Integer( Kind = wi ),    Intent( In    ) :: mxatdm 
+  Integer( Kind = wi ),    Intent( In    ) :: mxatdm
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( In    ) :: green
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
   Logical           :: check
@@ -1728,7 +1728,7 @@ Subroutine statistics_result                                    &
   If (lpana) Then
      If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Call bonds_compute(temp,bond,comm)
      If (angle%bin_adf > 0 .and. angle%n_frames > 0) Call angles_compute(temp,angle,comm)
-     If (dihedral%bin_adf > 0 .and. dihedral%n_frames > 0) Call dihedrals_compute(temp,comm)
+     If (dihedral%bin_adf > 0 .and. dihedral%n_frames > 0) Call dihedrals_compute(temp,dihedral,comm)
      If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp,comm)
   End If
 

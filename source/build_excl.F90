@@ -19,7 +19,7 @@ Module build_excl
 
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
-  Use dihedrals
+  Use dihedrals, Only : dihedrals_type
   Use inversions
   Use numerics, Only : local_index,shellsort
 
@@ -30,7 +30,7 @@ Module build_excl
 
 Contains
 
-Subroutine build_excl_intra(lecx,bond,angle,comm)
+Subroutine build_excl_intra(lecx,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -49,6 +49,7 @@ Subroutine build_excl_intra(lecx,bond,angle,comm)
   Logical,             Intent( In    ) :: lecx
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
+  Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type( comms_type ),  Intent( InOut ) :: comm
 
   Logical :: safe

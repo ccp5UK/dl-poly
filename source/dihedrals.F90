@@ -11,12 +11,12 @@ Module dihedrals
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
+  Use kinds, only : wp,wi
   Use comms, Only : comms_type,gcheck,gsum,gsync,gbcast
   Use setup,  Only : pi,twopi,boltz,delth_max,npdfdt,npdgdt, &
-                            dihedral%bin_tab,dihedral%bin_adf,engunit,zero_plus, mxtmls,     &
-                            dihedral%max_types,dihedral%max_param,rtwopi,r4pie0,dihedral%max_angles,    &
-                            mximpl, ntable, mxgvdw,mxatdm,dihedral%max_legend
+                            engunit,zero_plus, mxtmls,     &
+                            rtwopi,r4pie0,    &
+                            mximpl, ntable,mxgvdw,mxatdm
   Use site,   Only : unqatm,ntpatm
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz,cfgname
@@ -93,12 +93,14 @@ Module dihedrals
   End Type dihedrals_type
 
 
-  Public :: allocate_dihedrals_arrays, &
-            allocate_dihd_pot_arrays, allocate_dihd_dst_arrays
+  Public :: allocate_dihedrals_arrays, allocate_dihd_pot_arrays, &
+            allocate_dihd_dst_arrays, dihedrals_compute, dihedrals_table_read, &
+            dihedrals_14_check, dihedrals_forces
 
 Contains
 
-  Subroutine allocate_dihedrals_arrays()
+  Subroutine allocate_dihedrals_arrays(dihedral)
+    Type( dihedrals_type ), Intent( InOut ) :: dihedral
 
     Integer, Dimension( 1:8 ) :: fail
 
@@ -134,7 +136,8 @@ Contains
 
   End Subroutine allocate_dihedrals_arrays
 
-  Subroutine allocate_dihd_pot_arrays()
+  Subroutine allocate_dihd_pot_arrays(dihedral)
+    Type( dihedrals_type ), Intent( InOut ) :: dihedral
 
     Integer :: fail(1:2)
 
@@ -150,8 +153,8 @@ Contains
 
   End Subroutine allocate_dihd_pot_arrays
 
-  Subroutine allocate_dihd_dst_arrays()
-
+  Subroutine allocate_dihd_dst_arrays(dihedral)
+    Type( dihedrals_type ), Intent( InOut ) :: dihedral
 
     Integer :: fail
 
@@ -167,7 +170,7 @@ Contains
   End Subroutine allocate_dihd_dst_arrays
   
   Subroutine dihedrals_14_check &
-           (l_str,l_top,dihedral%l_core_shell,ntpmls,nummols,dihedral%num,dihedral%lst,dihedral%param,angle,comm)
+           (l_str,l_top,ntpmls,nummols,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -180,11 +183,10 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
-  Logical,           Intent( In    ) :: l_str,l_top,dihedral%l_core_shell
-  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls), &
-                                        dihedral%num(1:mxtmls),dihedral%lst(1:6,1:dihedral%max_types)
-  Real( Kind = wp ), Intent( InOut ) :: dihedral%param(1:dihedral%max_param,1:dihedral%max_types)
+  Logical,           Intent( In    ) :: l_str,l_top
+  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls)
   Type( angles_type ), Intent( In    ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: l_print,l_reset,l_reset_l
@@ -308,7 +310,7 @@ Contains
 
 End Subroutine dihedrals_14_check
 
-Subroutine dihedrals_compute(temp,comm)
+Subroutine dihedrals_compute(temp,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -322,6 +324,7 @@ Subroutine dihedrals_compute(temp,comm)
 
 
   Real( Kind = wp ), Intent( In    ) :: temp
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: zero
@@ -635,7 +638,7 @@ Subroutine dihedrals_compute(temp,comm)
 End Subroutine dihedrals_compute
 
 Subroutine dihedrals_forces &
-           (isw,engdih,virdih,stress,rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp,comm)
+           (isw,engdih,virdih,stress,rcut,rvdw,keyfce,alpha,epsq,engcpe,vircpe,engsrp,virsrp,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -663,6 +666,7 @@ Subroutine dihedrals_forces &
   Integer,                             Intent( In    ) :: keyfce
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe, &
                                                           engsrp,virsrp
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical                 :: safe(1:3),csa,csd
@@ -857,11 +861,20 @@ Subroutine dihedrals_forces &
 
   If (Mod(isw,3) > 0) Then
 
-     If (dihedral%l_core_shell) Then
-        If (Any(lad(1,1:dihedral%n_types))) Call images(imcon,cell,dihedral%n_types,xdad(1,1:dihedral%n_types),ydad(1,1:dihedral%n_types),zdad(1,1:dihedral%n_types))
-        If (Any(lad(2,1:dihedral%n_types))) Call images(imcon,cell,dihedral%n_types,xdad(2,1:dihedral%n_types),ydad(2,1:dihedral%n_types),zdad(2,1:dihedral%n_types))
-        If (Any(lad(3,1:dihedral%n_types))) Call images(imcon,cell,dihedral%n_types,xdad(3,1:dihedral%n_types),ydad(3,1:dihedral%n_types),zdad(3,1:dihedral%n_types))
-     End If
+    If (dihedral%l_core_shell) Then
+      If (Any(lad(1,1:dihedral%n_types))) Then
+        Call images(imcon,cell,dihedral%n_types,xdad(1,1:dihedral%n_types), &
+          ydad(1,1:dihedral%n_types),zdad(1,1:dihedral%n_types))
+      End If
+      If (Any(lad(2,1:dihedral%n_types))) Then
+        Call images(imcon,cell,dihedral%n_types,xdad(2,1:dihedral%n_types), &
+          ydad(2,1:dihedral%n_types),zdad(2,1:dihedral%n_types))
+      End If
+      If (Any(lad(3,1:dihedral%n_types))) Then
+        Call images(imcon,cell,dihedral%n_types,xdad(3,1:dihedral%n_types), &
+          ydad(3,1:dihedral%n_types),zdad(3,1:dihedral%n_types))
+      End If
+    End If
 
 ! Initialise safety flags
 
@@ -1708,7 +1721,7 @@ Subroutine dihedrals_forces &
 
 End Subroutine dihedrals_forces
 
-Subroutine dihedrals_table_read(dihd_name,comm)
+Subroutine dihedrals_table_read(dihd_name,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1722,6 +1735,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Character( Len = 32 ), Intent( In    ) :: dihd_name(1:dihedral%max_types)
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -1806,7 +1820,7 @@ Subroutine dihedrals_table_read(dihd_name,comm)
      Write(message,'(a)') 'error - dihedrals_table_read allocation failure'
      Call error(0,message)
   End If
-  Call allocate_dihd_pot_arrays()
+  Call allocate_dihd_pot_arrays(dihedral)
 
   read_type=0 ! initialise read_type
   Do rtdih=1,dihedral%ltp(0)

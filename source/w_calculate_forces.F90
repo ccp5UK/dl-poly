@@ -9,7 +9,7 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(stat,msd_data,bond,angle)
+        Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -78,7 +78,7 @@
 
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
-           rcut,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,comm)
+           rcut,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,comm)
      End If
 
 ! Calculate inversion forces
@@ -146,7 +146,7 @@
 ! Refresh mappings
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
-           Call w_refresh_mappings(stat,msd_data,bond,angle)
+           Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral)
 
            Go To 100
         End If

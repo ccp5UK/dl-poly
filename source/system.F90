@@ -15,7 +15,7 @@ Module system
   Use z_density,   Only : ncfzdn,zdens
   Use bonds,       Only : bonds_type
   Use angles,      Only : angles_type
-  Use dihedrals,   Only : dihedral%ldf,dihedral%n_frames,dihedral%dst,dihedral%num,dihedral%lst
+  Use dihedrals,   Only : dihedrals_type
   Use inversions,  Only : ldfinv,ncfinv,dstinv,numinv,lstinv
   Use vdw,         Only : ls_vdw,ntpvdw
   Use metal,       Only : metal_type,metal_lrc
@@ -60,7 +60,7 @@ Module system
   
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
-           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,angle,comm)
+           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -89,6 +89,7 @@ Module system
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -621,7 +622,7 @@ Module system
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,comm)
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -645,6 +646,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,comm)
   Integer,           Intent( InOut ) :: nz
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size
@@ -1802,7 +1804,7 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stats,devel,green,thermo,bond,angle,comm)
+           stats,devel,green,thermo,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1825,6 +1827,7 @@ Subroutine system_revive                                      &
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready

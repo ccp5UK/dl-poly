@@ -22,7 +22,7 @@ Module deport_data
 
   Use bonds,        Only : bonds_type
   Use angles,       Only : angles_type
-  Use dihedrals,    Only : dihedral%n_types,dihedral%list,dihedral%legend,dihedral%l_core_shell
+  Use dihedrals,    Only : dihedrals_type
   Use inversions,   Only : ntinv,listinv,leginv
 
   Use statistics, Only : stats_type
@@ -53,13 +53,13 @@ Module deport_data
   Use shared_units, Only : pass_shared_units, tag_legend
   Use thermostat, Only : thermostat_type
   Implicit None
-  
-  Public :: deport_atomic_data, export_atomic_data
-  
-  Contains 
-  
 
-Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
+  Public :: deport_atomic_data, export_atomic_data
+
+  Contains
+
+
+Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -84,6 +84,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -1673,10 +1674,8 @@ Subroutine export_atomic_data(mdir,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  
-  
   Integer,            Intent( In    ) :: mdir
-  Type( comms_type ), Intent( InOut ) :: comm 
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap
   Integer           :: fail,iadd,limit,iblock,            &
@@ -2216,8 +2215,6 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
 End Subroutine export_atomic_positions
 
-
-
 Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2447,7 +2444,6 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
 End Subroutine mpoles_rotmat_export
 
-
 Subroutine mpoles_rotmat_set_halo(comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2527,8 +2523,7 @@ Subroutine relocate_particles       &
            (dvar,rlnk,lbook,lmsd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           dihedral%total,    &
-           meginv,stats,ewld,thermo,green,bond,angle,comm)
+           meginv,stats,ewld,thermo,green,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2547,14 +2542,14 @@ Subroutine relocate_particles       &
   Logical,           Intent( In    ) :: lmsd
   Integer,           Intent( In    ) :: megatm,              &
                                         megshl,m_con,megpmf, &
-                                        m_rgd,megtet,        &
-                                        dihedral%total,meginv
+                                        m_rgd,megtet, meginv
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2670,18 +2665,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
 
 ! check system for loss of atoms
 
