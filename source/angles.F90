@@ -70,7 +70,7 @@ Module angles
     Integer( Kind = wi ), Public :: max_angles
     !> Length of legend array
     Integer( Kind = wi ), Public :: max_legend
-    !> Maximum number of bonds parameters
+    !> Maximum number of angle parameters
     Integer( Kind = wi ), Public :: max_param
 
     ! Number of bins

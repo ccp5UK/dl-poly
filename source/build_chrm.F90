@@ -19,7 +19,7 @@ Module build_chrm
 
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
-  Use dihedrals
+  Use dihedrals, Only : dihedrals_type
   Use inversions
 
   ! MULTIPOLES MODULE
@@ -32,8 +32,8 @@ Module build_chrm
   Private
 
   Public :: build_chrm_intra
-Contains 
-  Subroutine build_chrm_intra(bond,angle,comm)
+Contains
+  Subroutine build_chrm_intra(bond,angle,dihedral,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -57,6 +57,7 @@ Contains
 
     Type( bonds_type ), Intent( In    ) :: bond
     Type( angles_type ), Intent( In    ) :: angle
+    Type( dihedrals_type ), Intent( In    ) :: dihedral
     Type( comms_type ),  Intent( InOut) :: comm
 
     Logical :: safe
@@ -450,12 +451,12 @@ Contains
 
       ! add sites on basis of dihedral angles to core-shell units
 
-      Do kk=1,ntdihd1
-        If (keydih(listdih(0,kk)) > 0) Then
-          ja=listdih(1,kk)
-          jb=listdih(2,kk)
-          jc=listdih(3,kk)
-          jd=listdih(4,kk)
+      Do kk=1,dihedral%n_types1
+        If (dihedral%key(dihedral%list(0,kk)) > 0) Then
+          ja=dihedral%list(1,kk)
+          jb=dihedral%list(2,kk)
+          jc=dihedral%list(3,kk)
+          jd=dihedral%list(4,kk)
 
           ja0=local_index(ja,nlast,lsi,lsa)
           jb0=local_index(jb,nlast,lsi,lsa)

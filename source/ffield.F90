@@ -32,7 +32,8 @@ Module ffield
 
   Use bonds, Only : bonds_type,bonds_table_read,allocate_bond_dst_arrays
   Use angles, Only : angles_type,angles_table_read,allocate_angl_dst_arrays
-  Use dihedrals
+  Use dihedrals, Only : dihedrals_type,dihedrals_table_read,allocate_dihd_dst_arrays, &
+                        dihedrals_14_check
   Use inversions
 
   Use vdw
@@ -74,8 +75,8 @@ Subroutine read_field                      &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
-           megtet,megdih,    &
-           meginv,thermo,met,bond,angle,comm)
+           megtet,    &
+           meginv,thermo,met,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -109,11 +110,12 @@ Subroutine read_field                      &
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megcon,megpmf,megrgd,        &
-                                        megtet,megdih,meginv
+                                        megtet,meginv
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -191,7 +193,7 @@ Subroutine read_field                      &
   fail = 0
   If (bond%l_tab .or. bond%bin_pdf > 0) Allocate (bond_name(1:bond%max_types), Stat=fail(1))
   If (angle%l_tab .or. angle%bin_adf > 0) Allocate (angl_name(1:angle%max_types), Stat=fail(2))
-  If (lt_dih .or. mxgdih1 > 0) Allocate (dihd_name(1:mxtdih), Stat=fail(3))
+  If (dihedral%l_tab .or. dihedral%bin_adf > 0) Allocate (dihd_name(1:dihedral%max_types), Stat=fail(3))
   If (lt_inv .or. mxginv1 > 0) Allocate (invr_name(1:mxtinv), Stat=fail(4))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'read_field allocation failure'
@@ -209,7 +211,7 @@ Subroutine read_field                      &
      ntpang = 0 ! TABANG
      angl_name = ' '
   End If
-  If (lt_dih) Then
+  If (dihedral%l_tab) Then
      ntpdih = 0 ! TABDIH
      dihd_name = ' '
   End If
@@ -237,7 +239,7 @@ Subroutine read_field                      &
 
   bond%total = 0
   angle%total = 0
-  megdih = 0
+  dihedral%total = 0
   meginv = 0
 
 ! Default for existence of intra-like interactions (including
@@ -1671,7 +1673,7 @@ Subroutine read_field                      &
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  ntmp=Nint(word_2_real(word))
-                 numdih(itmols)=numdih(itmols)+ntmp
+                 dihedral%num(itmols)=dihedral%num(itmols)+ntmp
 
                  Write(message,'(a,i10)') 'number of dihedral angles ',ntmp
                  Call info(message,.true.)
@@ -1684,9 +1686,9 @@ Subroutine read_field                      &
                    Call info(messages,2,.true.)
                  End If
 
-                 Do idih=1,numdih(itmols)
+                 Do idih=1,dihedral%num(itmols)
                     ndihed=ndihed+1
-                    If (ndihed > mxtdih) Call error(60)
+                    If (ndihed > dihedral%max_types) Call error(60)
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -1700,37 +1702,37 @@ Subroutine read_field                      &
                     Call lower_case(word)
                     keyword=word(1:4)
                     If      (keyword == 'tab' ) Then
-                       keydih(ndihed)=20
+                       dihedral%key(ndihed)=20
                     Else If (keyword == '-tab') Then
-                       keydih(ndihed)=-20
+                       dihedral%key(ndihed)=-20
                     Else If (keyword == 'cos' ) Then
-                       keydih(ndihed)=1
+                       dihedral%key(ndihed)=1
                     Else If (keyword == '-cos') Then
-                       keydih(ndihed)=-1
+                       dihedral%key(ndihed)=-1
                     Else If (keyword == 'harm') Then
-                       keydih(ndihed)=2
+                       dihedral%key(ndihed)=2
                     Else If (keyword == '-hrm') Then
-                       keydih(ndihed)=-2
+                       dihedral%key(ndihed)=-2
                     Else If (keyword == 'hcos') Then
-                       keydih(ndihed)=3
+                       dihedral%key(ndihed)=3
                     Else If (keyword == '-hcs') Then
-                       keydih(ndihed)=-3
+                       dihedral%key(ndihed)=-3
                     Else If (keyword == 'cos3') Then
-                       keydih(ndihed)=4
+                       dihedral%key(ndihed)=4
                     Else If (keyword == '-cs3') Then
-                       keydih(ndihed)=-4
+                       dihedral%key(ndihed)=-4
                     Else If (keyword == 'ryck') Then
-                       keydih(ndihed)=5
+                       dihedral%key(ndihed)=5
                     Else If (keyword == '-rck') Then
-                       keydih(ndihed)=-5
+                       dihedral%key(ndihed)=-5
                     Else If (keyword == 'rbf' ) Then
-                       keydih(ndihed)=6
+                       dihedral%key(ndihed)=6
                     Else If (keyword == '-rbf') Then
-                       keydih(ndihed)=-6
+                       dihedral%key(ndihed)=-6
                     Else If (keyword == 'opls') Then
-                       keydih(ndihed)=7
+                       dihedral%key(ndihed)=7
                     Else If (keyword == '-opl') Then
-                       keydih(ndihed)=-7
+                       dihedral%key(ndihed)=-7
                     Else
                        Call info(keyword,.true.)
                        Call error(448)
@@ -1747,60 +1749,62 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     iatm4=Nint(word_2_real(word))
 
-                    lstdih(1,ndihed)=iatm1
-                    lstdih(2,ndihed)=iatm2
-                    lstdih(3,ndihed)=iatm3
-                    lstdih(4,ndihed)=iatm4
+                    dihedral%lst(1,ndihed)=iatm1
+                    dihedral%lst(2,ndihed)=iatm2
+                    dihedral%lst(3,ndihed)=iatm3
+                    dihedral%lst(4,ndihed)=iatm4
 
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
                     isite3 = nsite - numsit(itmols) + iatm3
                     isite4 = nsite - numsit(itmols) + iatm4
 
-                    If (keydih(ndihed) /= 20) Then
+                    If (dihedral%key(ndihed) /= 20) Then
 
                        Call get_word(record,word)
-                       prmdih(1,ndihed)=word_2_real(word)
+                       dihedral%param(1,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(2,ndihed)=word_2_real(word)
+                       dihedral%param(2,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(3,ndihed)=word_2_real(word)
+                       dihedral%param(3,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(4,ndihed)=word_2_real(word)
+                       dihedral%param(4,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(5,ndihed)=word_2_real(word)
+                       dihedral%param(5,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(6,ndihed)=word_2_real(word)
+                       dihedral%param(6,ndihed)=word_2_real(word)
                        Call get_word(record,word)
-                       prmdih(7,ndihed)=word_2_real(word)
+                       dihedral%param(7,ndihed)=word_2_real(word)
 
 ! test for frozen atoms and print unit
 
                        If (l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
-                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',mxpdih,'f15.6,2x,a8)'
-                            Write(message,rfmt) idih,keyword,lstdih(1:4,ndihed),prmdih(1:mxpdih,ndihed),'*frozen*'
+                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',dihedral%max_param,'f15.6,2x,a8)'
+                            Write(message,rfmt) idih,keyword,dihedral%lst(1:4,ndihed), &
+                              dihedral%param(1:dihedral%max_param,ndihed),'*frozen*'
                           Else
-                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',mxpdih,'f15.6)'
-                            Write(message,rfmt) idih,keyword,lstdih(1:4,ndihed),prmdih(1:mxpdih,ndihed)
+                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',dihedral%max_param,'f15.6)'
+                            Write(message,rfmt) idih,keyword,dihedral%lst(1:4,ndihed), &
+                              dihedral%param(1:dihedral%max_param,ndihed)
                           End If
                           Call info(message,.true.)
                        End If
 
 ! convert energies to internal units and angles to radians
 
-                       prmdih(1,ndihed)=prmdih(1,ndihed)*engunit
+                       dihedral%param(1,ndihed)=dihedral%param(1,ndihed)*engunit
 
-                       If (keydih(ndihed) == 4) Then
-                          prmdih(2,ndihed)=prmdih(2,ndihed)*engunit
-                          prmdih(3,ndihed)=prmdih(3,ndihed)*engunit
-                       Else If (keydih(ndihed) == 7) Then
-                          prmdih(2,ndihed)=prmdih(2,ndihed)*engunit
-                          prmdih(3,ndihed)=prmdih(3,ndihed)*engunit
-                          prmdih(6,ndihed)=prmdih(6,ndihed)*engunit
-                          prmdih(7,ndihed)=prmdih(7,ndihed)*(pi/180.0_wp)
+                       If (dihedral%key(ndihed) == 4) Then
+                          dihedral%param(2,ndihed)=dihedral%param(2,ndihed)*engunit
+                          dihedral%param(3,ndihed)=dihedral%param(3,ndihed)*engunit
+                       Else If (dihedral%key(ndihed) == 7) Then
+                          dihedral%param(2,ndihed)=dihedral%param(2,ndihed)*engunit
+                          dihedral%param(3,ndihed)=dihedral%param(3,ndihed)*engunit
+                          dihedral%param(6,ndihed)=dihedral%param(6,ndihed)*engunit
+                          dihedral%param(7,ndihed)=dihedral%param(7,ndihed)*(pi/180.0_wp)
                        Else
-                          prmdih(2,ndihed)=prmdih(2,ndihed)*(pi/180.0_wp)
+                          dihedral%param(2,ndihed)=dihedral%param(2,ndihed)*(pi/180.0_wp)
                        End If
 
                     Else ! TABDIH to read
@@ -1830,17 +1834,17 @@ Subroutine read_field                      &
 
                        Do i=1,ntpdih
                           If (dihd_name(i) == iddihd) Then
-                             ltpdih(ndihed)=i ! Re-point from zero to type
+                             dihedral%ltp(ndihed)=i ! Re-point from zero to type
                              Exit
                           End If
                        End Do
 
-                       If (ltpdih(ndihed) == 0) Then
+                       If (dihedral%ltp(ndihed) == 0) Then
                           ntpdih=ntpdih+1
                           dihd_name(ntpdih)=iddihd
 
-                          ltpdih(0)=ntpdih      ! NUTDP
-                          ltpdih(ndihed)=ntpdih ! Re-point from zero to type
+                          dihedral%ltp(0)=ntpdih      ! NUTDP
+                          dihedral%ltp(ndihed)=ntpdih ! Re-point from zero to type
                        End If
 
 ! test for frozen atoms and print unit
@@ -1848,10 +1852,10 @@ Subroutine read_field                      &
                        If (l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
                             Write(message,'(2x,i10,a8,4i10,2x,a9,2x,a8)') &
-                              idih,keyword,lstdih(1:4,ndihed),'tabulated','*frozen*'
+                              idih,keyword,dihedral%lst(1:4,ndihed),'tabulated','*frozen*'
                           Else
                             Write(message,'(2x,i10,a8,4i10,2x,a9)') &
-                              idih,keyword,lstdih(1:4,ndihed),'tabulated'
+                              idih,keyword,dihedral%lst(1:4,ndihed),'tabulated'
                           End If
                           Call info(message,.true.)
                        End If
@@ -1860,7 +1864,7 @@ Subroutine read_field                      &
 
 ! catch unidentified entry
 
-                    If (Any(lstdih(1:4,ndihed) < 1) .or. Any(lstdih(1:4,ndihed) > numsit(itmols))) Call error(27)
+                    If (Any(dihedral%lst(1:4,ndihed) < 1) .or. Any(dihedral%lst(1:4,ndihed) > numsit(itmols))) Call error(27)
 
 ! test for mistyped dihedral unit
 
@@ -1871,19 +1875,19 @@ Subroutine read_field                      &
 
 ! Check for multiple dihedral angle entries
 
-                 Do i=ndihed-numdih(itmols)+1,ndihed
-                    is(0)=keydih(i)
-                    is(1)=lstdih(1,i)
-                    is(2)=lstdih(2,i)
-                    is(3)=lstdih(3,i)
-                    is(4)=lstdih(4,i)
+                 Do i=ndihed-dihedral%num(itmols)+1,ndihed
+                    is(0)=dihedral%key(i)
+                    is(1)=dihedral%lst(1,i)
+                    is(2)=dihedral%lst(2,i)
+                    is(3)=dihedral%lst(3,i)
+                    is(4)=dihedral%lst(4,i)
 
                     Do j=i+1,ndihed
-                       js(0)=keydih(j)
-                       js(1)=lstdih(1,j)
-                       js(2)=lstdih(2,j)
-                       js(3)=lstdih(3,j)
-                       js(4)=lstdih(4,j)
+                       js(0)=dihedral%key(j)
+                       js(1)=dihedral%lst(1,j)
+                       js(2)=dihedral%lst(2,j)
+                       js(3)=dihedral%lst(3,j)
+                       js(4)=dihedral%lst(4,j)
 
                        If ((js(1) == is(1) .and. js(2) == is(2) .and. &
                             js(3) == is(3) .and. js(4) == is(4)) .or. &
@@ -2140,7 +2144,7 @@ Subroutine read_field                      &
 
                  bond%total=bond%total+nummols(itmols)*bond%num(itmols)
                  angle%total=angle%total+nummols(itmols)*angle%num(itmols)
-                 megdih=megdih+nummols(itmols)*numdih(itmols)
+                 dihedral%total=dihedral%total+nummols(itmols)*dihedral%num(itmols)
                  meginv=meginv+nummols(itmols)*numinv(itmols)
 
                  Go To 1000
@@ -2175,7 +2179,7 @@ Subroutine read_field                      &
 
         If (bond%l_tab) Call bonds_table_read(bond_name,bond,comm)
         If (angle%l_tab) Call angles_table_read(angl_name,angle,comm)
-        If (lt_dih) Call dihedrals_table_read(dihd_name,comm)
+        If (dihedral%l_tab) Call dihedrals_table_read(dihd_name,dihedral,comm)
         If (lt_inv) Call inversions_table_read(invr_name,comm)
 
 ! If some intramolecular PDFs analysis is opted for
@@ -2193,7 +2197,7 @@ Subroutine read_field                      &
               ntpang = 0 ! for angles
               angl_name = ' '
            End If
-           If (mxgdih1 > 0) Then
+           If (dihedral%bin_adf > 0) Then
               ntpdih = 0 ! for dihedrals
               dihd_name = ' '
            End If
@@ -2290,13 +2294,13 @@ Subroutine read_field                      &
                  End If
               End Do
 
-              Do idih=1,numdih(itmols)*Merge(1,0,mxgdih1 > 0)
+              Do idih=1,dihedral%num(itmols)*Merge(1,0,dihedral%bin_adf > 0)
                  ndihed=ndihed+1
 
-                 iatm1=lstdih(1,ndihed)
-                 iatm2=lstdih(2,ndihed)
-                 iatm3=lstdih(3,ndihed)
-                 iatm4=lstdih(4,ndihed)
+                 iatm1=dihedral%lst(1,ndihed)
+                 iatm2=dihedral%lst(2,ndihed)
+                 iatm3=dihedral%lst(3,ndihed)
+                 iatm4=dihedral%lst(4,ndihed)
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
@@ -2328,17 +2332,17 @@ Subroutine read_field                      &
 
                  Do i=1,ntpdih
                     If (dihd_name(i) == iddihd) Then
-                       ldfdih(ndihed)=i ! Re-point from zero to type
+                       dihedral%ldf(ndihed)=i ! Re-point from zero to type
                        Exit
                     End If
                  End Do
 
-                 If (ldfdih(ndihed) == 0) Then
+                 If (dihedral%ldf(ndihed) == 0) Then
                     ntpdih=ntpdih+1
                     dihd_name(ntpdih)=iddihd
 
-                    ldfdih(0)=ntpdih      ! NUTDPDF
-                    ldfdih(ndihed)=ntpdih ! Re-point from zero to type
+                    dihedral%ldf(0)=ntpdih      ! NUTDPDF
+                    dihedral%ldf(ndihed)=ntpdih ! Re-point from zero to type
                  End If
               End Do
 
@@ -2419,10 +2423,10 @@ Subroutine read_field                      &
               Call allocate_angl_dst_arrays(angle) ! as it depends on angle%ldf(0)
 !             angle%typ = 0 ! initialised in angles_module
            End If
-           If (mxgdih1 > 0) Then
+           If (dihedral%bin_adf > 0) Then
               ntpdih = 0 ! for dihedrals
-              Call allocate_dihd_dst_arrays() ! as it depends on ldfdih(0)
-!             typdih = 0 ! initialised in dihedrals
+              Call allocate_dihd_dst_arrays(dihedral) ! as it depends on dihedral%ldf(0)
+!             dihedral%typ = 0 ! initialised in dihedrals
            End If
            If (mxginv1 > 0) Then
               ntpinv = 0 ! for inversions
@@ -2538,20 +2542,20 @@ Subroutine read_field                      &
                  End If
               End Do
 
-              Do idih=1,numdih(itmols)*Merge(1,0,mxgdih1 > 0)
+              Do idih=1,dihedral%num(itmols)*Merge(1,0,dihedral%bin_adf > 0)
                  ndihed=ndihed+1
 
-                 iatm1=lstdih(1,ndihed)
-                 iatm2=lstdih(2,ndihed)
-                 iatm3=lstdih(3,ndihed)
-                 iatm4=lstdih(4,ndihed)
+                 iatm1=dihedral%lst(1,ndihed)
+                 iatm2=dihedral%lst(2,ndihed)
+                 iatm3=dihedral%lst(3,ndihed)
+                 iatm4=dihedral%lst(4,ndihed)
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
                  isite3 = nsite + iatm3
                  isite4 = nsite + iatm4
 
-                 j=ldfdih(ndihed)
+                 j=dihedral%ldf(ndihed)
                  If (j > ntpdih) Then
 
 ! record species and presence(frozen and non-frozen)
@@ -2566,31 +2570,31 @@ Subroutine read_field                      &
                     End Do
 
                     If      (katom1 == katom4) Then
-                       typdih(1,ntpdih)=katom1
-                       typdih(4,ntpdih)=katom4
+                       dihedral%typ(1,ntpdih)=katom1
+                       dihedral%typ(4,ntpdih)=katom4
                        If (katom2 <= katom3) Then
-                          typdih(2,ntpdih)=katom2
-                          typdih(3,ntpdih)=katom3
+                          dihedral%typ(2,ntpdih)=katom2
+                          dihedral%typ(3,ntpdih)=katom3
                        Else
-                          typdih(2,ntpdih)=katom3
-                          typdih(3,ntpdih)=katom2
+                          dihedral%typ(2,ntpdih)=katom3
+                          dihedral%typ(3,ntpdih)=katom2
                        End If
                     Else If (katom1 <  katom4) Then
-                       typdih(1,ntpdih)=katom1
-                       typdih(2,ntpdih)=katom2
-                       typdih(3,ntpdih)=katom3
-                       typdih(4,ntpdih)=katom4
+                       dihedral%typ(1,ntpdih)=katom1
+                       dihedral%typ(2,ntpdih)=katom2
+                       dihedral%typ(3,ntpdih)=katom3
+                       dihedral%typ(4,ntpdih)=katom4
                     Else
-                       typdih(1,ntpdih)=katom4
-                       typdih(2,ntpdih)=katom3
-                       typdih(3,ntpdih)=katom2
-                       typdih(4,ntpdih)=katom1
+                       dihedral%typ(1,ntpdih)=katom4
+                       dihedral%typ(2,ntpdih)=katom3
+                       dihedral%typ(3,ntpdih)=katom2
+                       dihedral%typ(4,ntpdih)=katom1
                     End If
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
-                       typdih(0,ntpdih)=typdih(0,ntpdih)+nummols(itmols)
+                       dihedral%typ(0,ntpdih)=dihedral%typ(0,ntpdih)+nummols(itmols)
                     Else
-                       typdih(-1,ntpdih)=typdih(-1,ntpdih)+nummols(itmols)
+                       dihedral%typ(-1,ntpdih)=dihedral%typ(-1,ntpdih)+nummols(itmols)
                     End If
 
                  Else If (j > 0) Then
@@ -2598,9 +2602,9 @@ Subroutine read_field                      &
 ! accumulate the existing type and presence(frozen and non-frozen)
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
-                       typdih(0,j)=typdih(0,j)+nummols(itmols)
+                       dihedral%typ(0,j)=dihedral%typ(0,j)+nummols(itmols)
                     Else
-                       typdih(-1,j)=typdih(-1,j)+nummols(itmols)
+                       dihedral%typ(-1,j)=dihedral%typ(-1,j)+nummols(itmols)
                     End If
                  End If
               End Do
@@ -2690,7 +2694,7 @@ Subroutine read_field                      &
 
            mxtana = Max(ntpbnd*Merge(1,0,bond%bin_pdf > 0), &
                         ntpang*Merge(1,0,angle%bin_adf > 0), &
-                        ntpdih*Merge(1,0,mxgdih1 > 0), &
+                        ntpdih*Merge(1,0,dihedral%bin_adf > 0), &
                         ntpinv*Merge(1,0,mxginv1 > 0))
         End If
 
@@ -2698,7 +2702,7 @@ Subroutine read_field                      &
 
         If (bond%l_tab .or. bond%bin_pdf > 0) Deallocate (bond_name, Stat=fail(1))
         If (angle%l_tab .or. angle%bin_adf > 0) Deallocate (angl_name, Stat=fail(2))
-        If (lt_dih .or. mxgdih1 > 0) Deallocate (dihd_name, Stat=fail(3))
+        If (dihedral%l_tab .or. dihedral%bin_adf > 0) Deallocate (dihd_name, Stat=fail(3))
         If (lt_inv .or. mxginv1 > 0) Deallocate (invr_name, Stat=fail(4))
         If (Any(fail > 0)) Then
            Write(message,'(a)') 'read_field deallocation failure'
@@ -3017,37 +3021,37 @@ Subroutine read_field                      &
                  End Do
                  If (ishls /= numshl(itmols)) nangle=nangle-angle%num(itmols)
 
-                 Do idih=1,numdih(itmols)
+                 Do idih=1,dihedral%num(itmols)
                     ndihed=ndihed+1
 
-                    If (Any(lstdih(1:4,ndihed) == ia) .and. Any(lstdih(1:4,ndihed) == ja)) Then
+                    If (Any(dihedral%lst(1:4,ndihed) == ia) .and. Any(dihedral%lst(1:4,ndihed) == ja)) Then
                        Call warning(298,Real(ishls,wp),Real(idih,wp),Real(itmols,wp))
                        Call error(99)
                     End If
 
 ! core-shell up the 1 and 4 members
 
-                    If (lecx) Then ! lx_dih=.false. is the default in dihedrals
-                       If (lstdih(1,ndihed) == ia) Then
-                          lx_dih=.true.
-                          lstdih(5,ndihed)=ja
+                    If (lecx) Then ! dihedral%l_core_shell=.false. is the default in dihedrals
+                       If (dihedral%lst(1,ndihed) == ia) Then
+                          dihedral%l_core_shell=.true.
+                          dihedral%lst(5,ndihed)=ja
                        End If
-                       If (lstdih(1,ndihed) == ja) Then
-                          lx_dih=.true.
-                          lstdih(5,ndihed)=ia
+                       If (dihedral%lst(1,ndihed) == ja) Then
+                          dihedral%l_core_shell=.true.
+                          dihedral%lst(5,ndihed)=ia
                        End If
 
-                       If (lstdih(4,ndihed) == ia) Then
-                          lx_dih=.true.
-                          lstdih(6,ndihed)=ja
+                       If (dihedral%lst(4,ndihed) == ia) Then
+                          dihedral%l_core_shell=.true.
+                          dihedral%lst(6,ndihed)=ja
                        End If
-                       If (lstdih(4,ndihed) == ja) Then
-                          lx_dih=.true.
-                          lstdih(6,ndihed)=ia
+                       If (dihedral%lst(4,ndihed) == ja) Then
+                          dihedral%l_core_shell=.true.
+                          dihedral%lst(6,ndihed)=ia
                        End If
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) ndihed=ndihed-numdih(itmols)
+                 If (ishls /= numshl(itmols)) ndihed=ndihed-dihedral%num(itmols)
 
                  Do iinv=1,numinv(itmols)
                     ninver=ninver+1
@@ -3065,14 +3069,14 @@ Subroutine read_field                      &
 ! if core-shelling up has occurred to 1 or/and 4 members then
 ! default the unshelled cores of 1 or/and 4 to the corresponding 5 & 6
 
-           If (lx_dih) Then
+           If (dihedral%l_core_shell) Then
               ndihed=0 ! initialise unshelled units
               Do itmols=1,ntpmls
-                 Do idih=1,numdih(itmols)
+                 Do idih=1,dihedral%num(itmols)
                     ndihed=ndihed+1
 
-                    If (lstdih(5,ndihed) == 0) lstdih(5,ndihed)=lstdih(1,ndihed)
-                    If (lstdih(6,ndihed) == 0) lstdih(6,ndihed)=lstdih(4,ndihed)
+                    If (dihedral%lst(5,ndihed) == 0) dihedral%lst(5,ndihed)=dihedral%lst(1,ndihed)
+                    If (dihedral%lst(6,ndihed) == 0) dihedral%lst(6,ndihed)=dihedral%lst(4,ndihed)
                  End Do
               End Do
            End If
@@ -4695,7 +4699,7 @@ Subroutine read_field                      &
 ! check and resolve any conflicting 14 dihedral specifications
 
         Call dihedrals_14_check &
-           (l_str,l_top,lx_dih,ntpmls,nummols,numdih,lstdih,prmdih,angle,comm)
+           (l_str,l_top,ntpmls,nummols,angle,dihedral,comm)
 
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
@@ -4741,8 +4745,8 @@ End Subroutine read_field
 Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,megdih,  &
-           meginv,bond,angle,comm)
+           megtet,  &
+           meginv,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4755,9 +4759,10 @@ Subroutine report_topology               &
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
                               megshl,megcon,megpmf,megrgd, &
-                              megtet,megdih,meginv
+                              megtet,meginv
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
+  Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type(comms_type), Intent( InOut ) :: comm
 
   Integer :: itmols,nsite,                &
@@ -4867,13 +4872,13 @@ Subroutine report_topology               &
      End Do
 
      frzdih=0
-     Do idih=1,numdih(itmols)
+     Do idih=1,dihedral%num(itmols)
         ndihed=ndihed+1
 
-        iatm1=lstdih(1,ndihed)
-        iatm2=lstdih(2,ndihed)
-        iatm3=lstdih(3,ndihed)
-        iatm4=lstdih(4,ndihed)
+        iatm1=dihedral%lst(1,ndihed)
+        iatm2=dihedral%lst(2,ndihed)
+        iatm3=dihedral%lst(3,ndihed)
+        iatm4=dihedral%lst(4,ndihed)
 
         isite1 = nsite + iatm1
         isite2 = nsite + iatm2
@@ -4932,7 +4937,7 @@ Subroutine report_topology               &
   Write(banner(13),fmt2) '||  tethered atom units    | ',megtet,'  |  F  ',mgfrtt,'     ||'
   Write(banner(14),fmt2) '||  chemical bond units    | ',bond%total,'  |  F  ',mgfrbn,'     ||'
   Write(banner(15),fmt2) '||  bond angle units       | ',angle%total,'  |  F  ',mgfran,'     ||'
-  Write(banner(16),fmt2) '||  dihedral angle units   | ',megdih,'  |  F  ',mgfrdh,'     ||'
+  Write(banner(16),fmt2) '||  dihedral angle units   | ',dihedral%total,'  |  F  ',mgfrdh,'     ||'
   Write(banner(17),fmt2) '||  inversion angle units  | ',meginv,'  |  F  ',mgfrin,'     ||'
   Write(banner(18),fmt1) '\\'//Repeat('=',62)//'//'
   Call info(banner,18,.true.)
@@ -4948,11 +4953,11 @@ Subroutine scan_field                                &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond, &
            mtangl,       &
-           mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
+           mtdihd,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4972,6 +4977,7 @@ Subroutine scan_field                                &
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 ! Max number of different atom types
 
@@ -4997,7 +5003,7 @@ Subroutine scan_field                                &
                        numteth,mtteth,mxtteth,mxteth,iteth,mxftet,             &
                        numbonds,mtbond,ibonds, &
                        numang,mtangl,iang,         &
-                       numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,mxgdih,         &
+                       numdih,mtdihd,idih,         &
                        numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,mxginv,           &
                        mxrdf,itprdf,mxvdw,itpvdw,mxgvdw,                       &
                        mxmet,mxmed,mxmds,itpmet,                        &
@@ -5065,10 +5071,10 @@ Subroutine scan_field                                &
 
   numdih=0
   mtdihd=0
-  mxdihd=0
-  mxtdih=0
-  mxfdih=0
-  mxgdih=-2
+  dihedral%max_angles=0
+  dihedral%max_types=0
+  dihedral%max_legend=0
+  dihedral%bin_tab=-2
 
   numinv=0
   mtinv =0
@@ -5432,14 +5438,14 @@ Subroutine scan_field                                &
 
               Else If (word(1:6) == 'dihedr') Then
 
-!                 lt_dih=.false. ! initialised in dihedrals.f90
+!                 dihedral%l_tab=.false. ! initialised in dihedrals.f90
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  numdih=Nint(word_2_real(word))
                  mtdihd=Max(mtdihd,numdih)
-                 mxtdih=mxtdih+numdih
-                 mxdihd=mxdihd+nummols*numdih
+                 dihedral%max_types=dihedral%max_types+numdih
+                 dihedral%max_angles=dihedral%max_angles+nummols*numdih
 
                  Do idih=1,numdih
                     word(1:1)='#'
@@ -5449,10 +5455,10 @@ Subroutine scan_field                                &
                        Call get_word(record,word)
                     End Do
 
-                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) lt_dih=.true.
+                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) dihedral%l_tab=.true.
                  End Do
 
-                 If (lt_dih) Then
+                 If (dihedral%l_tab) Then
                     If (comm%idnode == 0) Open(Unit=ntable, File='TABDIH')
 
                     Call get_line(safe,ntable,record,comm)
@@ -5466,14 +5472,14 @@ Subroutine scan_field                                &
 
                     Call get_word(record,word) ! no need for cutoff in angles (max is always 360 degrees
                     k=Nint(word_2_real(word))  ! from -180 to 180)
-                    mxgdih=Max(mxgdih,k+4)
+                    dihedral%bin_tab=Max(dihedral%bin_tab,k+4)
 
                     If (comm%idnode == 0) Close(Unit=ntable)
                  End If
 
               Else If (word(1:6) == 'invers') Then
 
-!                 lt_dih=.false. ! initialised in dihedrals.f90
+!                 dihedral%l_tab=.false. ! initialised in dihedrals.f90
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -5862,8 +5868,8 @@ Subroutine scan_field                                &
   If (angle%max_angles > 0) angle%max_legend=(mxb+1)**2/2+1
   mxf(7)=angle%max_legend
 
-  If (mxdihd > 0) mxfdih=((mxb-1)*mxb*(mxb+1))/2+2*mxb+1
-  mxf(8)=mxfdih
+  If (dihedral%max_angles > 0) dihedral%max_legend=((mxb-1)*mxb*(mxb+1))/2+2*mxb+1
+  mxf(8)=dihedral%max_legend
 
   If (mxinv  > 0) mxfinv=(mxb*(mxb+1))/4+1
   mxf(9)=mxfinv

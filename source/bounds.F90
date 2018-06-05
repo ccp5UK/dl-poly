@@ -10,6 +10,7 @@ Module bounds
   Use kim,             Only : kimim
   Use bonds,           Only : bonds_type
   Use angles,          Only : angles_type
+  Use dihedrals,       Only : dihedrals_type
   Use tersoff,         Only : potter
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
@@ -34,7 +35,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce, &
-           alpha,width,stats,thermo,green,devel,msd_data,met,pois,bond,angle,comm)
+           alpha,width,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -62,6 +63,7 @@ Subroutine set_bounds                                 &
   Type( poisson_type ), Intent( InOut ) :: pois
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -92,11 +94,11 @@ Subroutine set_bounds                                 &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond, &
            mtangl,       &
-           mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
+           mtdihd,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,comm)
 
 ! Get imc_r & set dvar
 
@@ -116,11 +118,12 @@ Subroutine set_bounds                                 &
   Call scan_control                                        &
            (mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,mxgdih1,mxginv1,         &
+           mxgana,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,msd_data,met,pois,bond,angle,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo, &
+           green,devel,msd_data,met,pois,bond,angle,dihedral,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -201,9 +204,9 @@ Subroutine set_bounds                                 &
 
   fdvar = dvar**1.7_wp
 
-! dvar push of mxfdih and mxexcl ranges as the usual suspects
+! dvar push of dihedral%max_legend and mxexcl ranges as the usual suspects
 
-  mxfdih = Nint(fdvar * Real(mxfdih,wp))
+  dihedral%max_legend = Nint(fdvar * Real(dihedral%max_legend,wp))
   mxexcl = Nint(fdvar * Real(mxexcl,wp))
 
 !!! INTRA-LIKE POTENTIAL PARAMETERS !!!
@@ -291,15 +294,15 @@ Subroutine set_bounds                                 &
 
 ! maximum number of torsion angles per node and dihedral potential parameters
 
-  If (mxdihd > 0) Then
+  If (dihedral%max_angles > 0) Then
      If (comm%mxnode > 1) Then
-        mxdihd = Max(mxdihd,comm%mxnode*mtdihd)
-        mxdihd = (3*(Nint(fdvar*Real(mxdihd,wp))+comm%mxnode-1))/comm%mxnode
-        mxdihd = mxdihd + (mxdihd+4)/5 ! allow for 25% higher density
+        dihedral%max_angles = Max(dihedral%max_angles,comm%mxnode*mtdihd)
+        dihedral%max_angles = (3*(Nint(fdvar*Real(dihedral%max_angles,wp))+comm%mxnode-1))/comm%mxnode
+        dihedral%max_angles = dihedral%max_angles + (dihedral%max_angles+4)/5 ! allow for 25% higher density
      End If
-     mxpdih = 7
+     dihedral%max_param = 7
   Else
-     mxpdih = 0
+     dihedral%max_param = 0
   End If
 
 
@@ -339,21 +342,21 @@ Subroutine set_bounds                                 &
            angle%bin_adf = Nint(180.0_wp/delth_max)
         End If
      End If
-     If (mxgdih1 == -1) Then
-        If (mxgdih > 0) Then
-           mxgdih1 = mxgdih-4
+     If (dihedral%bin_adf == -1) Then
+        If (dihedral%bin_tab > 0) Then
+           dihedral%bin_adf = dihedral%bin_tab-4
         Else
-           mxgdih1 = Nint(360.0_wp/delth_max)
+           dihedral%bin_adf = Nint(360.0_wp/delth_max)
         End If
      End If
      If (mxginv1 == -1) Then
         If (mxginv > 0) Then
            mxginv1 = mxginv-4
         Else
-           mxgdih1 = Nint(180.0_wp/delth_max)
+           dihedral%bin_adf = Nint(180.0_wp/delth_max)
         End If
      End If
-     mxgana = Max(bond%bin_pdf,angle%bin_adf,mxgdih1,mxginv1)
+     mxgana = Max(bond%bin_pdf,angle%bin_adf,dihedral%bin_adf,mxginv1)
   End If
   mxtana = 0 ! initialise for buffer size purposes, set in read_field
 
@@ -395,7 +398,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for dihedrals
 
-  mxgdih = Merge(mxgdih,Min(mxgdih,Nint(360.0_wp/delth_max)+4),mxgdih < 0)
+  dihedral%bin_tab = Merge(dihedral%bin_tab,Min(dihedral%bin_tab,Nint(360.0_wp/delth_max)+4),dihedral%bin_tab < 0)
 
 ! maximum number of grid points for inversions
 
@@ -419,7 +422,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,mxgdih,mxginv,mxgele,mxgvdw,met%maxgrid,mxgter)
+  mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab,mxginv,mxgele,mxgvdw,met%maxgrid,mxgter)
 
 
 
@@ -800,7 +803,7 @@ Subroutine set_bounds                                 &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp        + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
-           3*mxteth+4*bond%max_bonds+5*angle%max_angles+8*mxdihd+6*mxinv,wp) * dens0)
+           3*mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*mxinv,wp) * dens0)
 
 ! statistics connect deporting total per atom
 

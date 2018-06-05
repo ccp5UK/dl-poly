@@ -13,7 +13,7 @@ Module build_tplg
 
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
-  Use dihedrals
+  Use dihedrals, Only : dihedrals_type
   Use inversions
 
   ! MULTIPOLES MODULE
@@ -29,7 +29,7 @@ Module build_tplg
 
 Contains
 
-  Subroutine build_tplg_intra(bond,angle,comm)
+  Subroutine build_tplg_intra(bond,angle,dihedral,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -44,6 +44,7 @@ Contains
 
     Type( bonds_type ), Intent( In    ) :: bond
     Type( angles_type ), Intent( In    ) :: angle
+    Type( dihedrals_type ), Intent( In    ) :: dihedral
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
@@ -111,11 +112,11 @@ Contains
 
     ! include sites on basis of dihedral angles
 
-    Do i=1,ntdihd
-      ia=listdih(1,i)
-      ib=listdih(2,i)
-      ic=listdih(3,i)
-      id=listdih(4,i)
+    Do i=1,dihedral%n_types
+      ia=dihedral%list(1,i)
+      ib=dihedral%list(2,i)
+      ic=dihedral%list(3,i)
+      id=dihedral%list(4,i)
 
       ia0=local_index(ia,nlast,lsi,lsa)
       ib0=local_index(ib,nlast,lsi,lsa)
