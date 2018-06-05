@@ -31,7 +31,7 @@ Module ffield
   Use tethers
 
   Use bonds, Only : bonds_type,bonds_table_read,allocate_bond_dst_arrays
-  Use angles
+  Use angles, Only : angles_type,angles_table_read,allocate_angl_dst_arrays
   Use dihedrals
   Use inversions
 
@@ -74,8 +74,8 @@ Subroutine read_field                      &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
-           megtet,megang,megdih,    &
-           meginv,thermo,met,bond,comm)
+           megtet,megdih,    &
+           meginv,thermo,met,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -109,10 +109,11 @@ Subroutine read_field                      &
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megcon,megpmf,megrgd,        &
-                                        megtet,megang,megdih,meginv
+                                        megtet,megdih,meginv
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -189,7 +190,7 @@ Subroutine read_field                      &
 
   fail = 0
   If (bond%l_tab .or. bond%bin_pdf > 0) Allocate (bond_name(1:bond%max_types), Stat=fail(1))
-  If (lt_ang .or. mxgang1 > 0) Allocate (angl_name(1:mxtang), Stat=fail(2))
+  If (angle%l_tab .or. angle%bin_adf > 0) Allocate (angl_name(1:angle%max_types), Stat=fail(2))
   If (lt_dih .or. mxgdih1 > 0) Allocate (dihd_name(1:mxtdih), Stat=fail(3))
   If (lt_inv .or. mxginv1 > 0) Allocate (invr_name(1:mxtinv), Stat=fail(4))
   If (Any(fail > 0)) Then
@@ -204,7 +205,7 @@ Subroutine read_field                      &
      ntpbnd = 0 ! TABBND
      bond_name = ' '
   End If
-  If (lt_ang) Then
+  If (angle%l_tab) Then
      ntpang = 0 ! TABANG
      angl_name = ' '
   End If
@@ -235,7 +236,7 @@ Subroutine read_field                      &
   megtet = 0
 
   bond%total = 0
-  megang = 0
+  angle%total = 0
   megdih = 0
   meginv = 0
 
@@ -1420,7 +1421,7 @@ Subroutine read_field                      &
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  ntmp=Nint(word_2_real(word))
-                 numang(itmols)=numang(itmols)+ntmp
+                 angle%num(itmols)=angle%num(itmols)+ntmp
 
                  Write(message,'(a,i10)') 'number of bond angles ',ntmp
                  Call info(message,.true.)
@@ -1431,9 +1432,9 @@ Subroutine read_field                      &
                    Call info(messages,2,.true.)
                  End If
 
-                 Do iang=1,numang(itmols)
+                 Do iang=1,angle%num(itmols)
                     nangle=nangle+1
-                    If (nangle > mxtang) Call error(50)
+                    If (nangle > angle%max_types) Call error(50)
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -1450,65 +1451,65 @@ Subroutine read_field                      &
                     If (keyword(1:1) /= '-') lexcl=.true.
 
                     If      (keyword == 'tab' ) Then
-                       keyang(nangle)=20
+                       angle%key(nangle)=20
                     Else If (keyword == '-tab') Then
-                       keyang(nangle)=-20
+                       angle%key(nangle)=-20
                     Else If (keyword == 'harm') Then
-                       keyang(nangle)=1
+                       angle%key(nangle)=1
                     Else If (keyword == '-hrm') Then
-                       keyang(nangle)=-1
+                       angle%key(nangle)=-1
                     Else If (keyword == 'quar') Then
-                       keyang(nangle)=2
+                       angle%key(nangle)=2
                     Else If (keyword == '-qur') Then
-                       keyang(nangle)=-2
+                       angle%key(nangle)=-2
                     Else If (keyword == 'thrm') Then
-                       keyang(nangle)=3
+                       angle%key(nangle)=3
                     Else If (keyword == '-thm') Then
-                       keyang(nangle)=-3
+                       angle%key(nangle)=-3
                     Else If (keyword == 'shrm') Then
-                       keyang(nangle)=4
+                       angle%key(nangle)=4
                     Else If (keyword == '-shm') Then
-                       keyang(nangle)=-4
+                       angle%key(nangle)=-4
                     Else If (keyword == 'bvs1') Then
-                       keyang(nangle)=5
+                       angle%key(nangle)=5
                     Else If (keyword == '-bv1') Then
-                       keyang(nangle)=-5
+                       angle%key(nangle)=-5
                     Else If (keyword == 'bvs2') Then
-                       keyang(nangle)=6
+                       angle%key(nangle)=6
                     Else If (keyword == '-bv2') Then
-                       keyang(nangle)=-6
+                       angle%key(nangle)=-6
                     Else If (keyword == 'hcos') Then
-                       keyang(nangle)=7
+                       angle%key(nangle)=7
                     Else If (keyword == '-hcs') Then
-                       keyang(nangle)=-7
+                       angle%key(nangle)=-7
                     Else If (keyword == 'cos' ) Then
-                       keyang(nangle)=8
+                       angle%key(nangle)=8
                     Else If (keyword == '-cos') Then
-                       keyang(nangle)=-8
+                       angle%key(nangle)=-8
                     Else If (keyword == 'mmsb') Then
-                       keyang(nangle)=9
+                       angle%key(nangle)=9
                     Else If (keyword == '-msb') Then
-                       keyang(nangle)=-9
+                       angle%key(nangle)=-9
                     Else If (keyword == 'stst') Then
-                       keyang(nangle)=10
+                       angle%key(nangle)=10
                     Else If (keyword == '-sts') Then
-                       keyang(nangle)=-10
+                       angle%key(nangle)=-10
                     Else If (keyword == 'stbe') Then
-                       keyang(nangle)=11
+                       angle%key(nangle)=11
                     Else If (keyword == '-stb') Then
-                       keyang(nangle)=-11
+                       angle%key(nangle)=-11
                     Else If (keyword == 'cmps') Then
-                       keyang(nangle)=12
+                       angle%key(nangle)=12
                     Else If (keyword == '-cmp') Then
-                       keyang(nangle)=-12
+                       angle%key(nangle)=-12
                     Else If (keyword == 'mmbd') Then
-                       keyang(nangle)=13
+                       angle%key(nangle)=13
                     Else If (keyword == '-mbd') Then
-                       keyang(nangle)=-13
+                       angle%key(nangle)=-13
                     Else If (keyword == 'kky' ) Then
-                       keyang(nangle)=14
+                       angle%key(nangle)=14
                     Else If (keyword == '-kky') Then
-                       keyang(nangle)=-14
+                       angle%key(nangle)=-14
                     Else
                        Call info(keyword,.true.)
                        Call error(440)
@@ -1523,60 +1524,60 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     iatm3=Nint(word_2_real(word))
 
-                    lstang(1,nangle)=iatm1
-                    lstang(2,nangle)=iatm2
-                    lstang(3,nangle)=iatm3
+                    angle%lst(1,nangle)=iatm1
+                    angle%lst(2,nangle)=iatm2
+                    angle%lst(3,nangle)=iatm3
 
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
                     isite3 = nsite - numsit(itmols) + iatm3
 
-                    If (Abs(keyang(nangle)) /= 20) Then
+                    If (Abs(angle%key(nangle)) /= 20) Then
 
                        Call get_word(record,word)
-                       prmang(1,nangle)=word_2_real(word)
+                       angle%param(1,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(2,nangle)=word_2_real(word)
+                       angle%param(2,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(3,nangle)=word_2_real(word)
+                       angle%param(3,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(4,nangle)=word_2_real(word)
+                       angle%param(4,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(5,nangle)=word_2_real(word)
+                       angle%param(5,nangle)=word_2_real(word)
                        Call get_word(record,word)
-                       prmang(6,nangle)=word_2_real(word)
+                       angle%param(6,nangle)=word_2_real(word)
 
 ! test for frozen atoms and print unit
 
                        If (l_top) Then
                          If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) /= 0) Then
-                           write(rfmt,'(a,i0,a)') '(2x,i10,a8,3i10,',mxpang,'f15.6,2x,a8)'
-                           write(message,rfmt) iang,keyword,lstang(1:3,nangle),prmang(1:mxpang,nangle),'*frozen*'
+                           write(rfmt,'(a,i0,a)') '(2x,i10,a8,3i10,',angle%max_param,'f15.6,2x,a8)'
+                           write(message,rfmt) iang,keyword,angle%lst(1:3,nangle),angle%param(1:angle%max_param,nangle),'*frozen*'
                          Else
-                           write(rfmt,'(a,i0,a)') '(2x,i10,a8,3i10,',mxpang,'f15.6)'
-                           write(message,rfmt) iang,keyword,lstang(1:3,nangle),prmang(1:mxpang,nangle)
+                           write(rfmt,'(a,i0,a)') '(2x,i10,a8,3i10,',angle%max_param,'f15.6)'
+                           write(message,rfmt) iang,keyword,angle%lst(1:3,nangle),angle%param(1:angle%max_param,nangle)
                          End If
                          Call info(message,.true.)
                        End If
 
 ! convert energies to internal units
 
-                       prmang(1,nangle) = prmang(1,nangle)*engunit
+                       angle%param(1,nangle) = angle%param(1,nangle)*engunit
 
-                       If      (Abs(keyang(nangle)) == 2) Then
-                          prmang(3,nangle) = prmang(3,nangle)*engunit
-                          prmang(4,nangle) = prmang(4,nangle)*engunit
-                       Else If (Abs(keyang(nangle)) == 12) Then
-                          prmang(2,nangle) = prmang(2,nangle)*engunit
-                          prmang(3,nangle) = prmang(3,nangle)*engunit
+                       If      (Abs(angle%key(nangle)) == 2) Then
+                          angle%param(3,nangle) = angle%param(3,nangle)*engunit
+                          angle%param(4,nangle) = angle%param(4,nangle)*engunit
+                       Else If (Abs(angle%key(nangle)) == 12) Then
+                          angle%param(2,nangle) = angle%param(2,nangle)*engunit
+                          angle%param(3,nangle) = angle%param(3,nangle)*engunit
                        End If
 
 ! convert angles to radians
 
-                       If      (Abs(keyang(nangle)) == 12) Then
-                          prmang(4,nangle) = prmang(4,nangle)*(pi/180.0_wp)
-                       Else If (Abs(keyang(nangle)) /= 10) Then
-                          prmang(2,nangle) = prmang(2,nangle)*(pi/180.0_wp)
+                       If      (Abs(angle%key(nangle)) == 12) Then
+                          angle%param(4,nangle) = angle%param(4,nangle)*(pi/180.0_wp)
+                       Else If (Abs(angle%key(nangle)) /= 10) Then
+                          angle%param(2,nangle) = angle%param(2,nangle)*(pi/180.0_wp)
                        End If
 
                     Else ! TABANG to read
@@ -1598,17 +1599,17 @@ Subroutine read_field                      &
 
                        Do i=1,ntpang
                           If (angl_name(i) == idangl) Then
-                             ltpang(nangle)=i ! Re-point from zero to type
+                             angle%ltp(nangle)=i ! Re-point from zero to type
                              Exit
                           End If
                        End Do
 
-                       If (ltpang(nangle) == 0) Then
+                       If (angle%ltp(nangle) == 0) Then
                           ntpang=ntpang+1
                           angl_name(ntpang)=idangl
 
-                          ltpang(0)=ntpang      ! NUTAP
-                          ltpang(nangle)=ntpang ! Re-point from zero to type
+                          angle%ltp(0)=ntpang      ! NUTAP
+                          angle%ltp(nangle)=ntpang ! Re-point from zero to type
                        End If
 
 ! test for frozen atoms and print unit
@@ -1616,10 +1617,10 @@ Subroutine read_field                      &
                        If (l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) /= 0) Then
                             Write(message,'(2x,i10,a8,3i10,2x,a9,2x,a8)') &
-                              iang,keyword,lstang(1:3,nangle),'tabulated','*frozen*'
+                              iang,keyword,angle%lst(1:3,nangle),'tabulated','*frozen*'
                           Else
                             Write(message,'(2x,i10,a8,3i10,2x,a9)') &
-                              iang,keyword,lstang(1:3,nangle),'tabulated'
+                              iang,keyword,angle%lst(1:3,nangle),'tabulated'
                           End If
                           Call info(message,.true.)
                        End If
@@ -1628,7 +1629,7 @@ Subroutine read_field                      &
 
 ! catch unidentified entry
 
-                    If (Any(lstang(1:3,nangle) < 1) .or. Any(lstang(1:3,nangle) > numsit(itmols))) Call error(27)
+                    If (Any(angle%lst(1:3,nangle) < 1) .or. Any(angle%lst(1:3,nangle) > numsit(itmols))) Call error(27)
 
 ! test for mistyped bond angle unit
 
@@ -1637,17 +1638,17 @@ Subroutine read_field                      &
 
 ! Check for multiple bond angle entries
 
-                 Do i=nangle-numang(itmols)+1,nangle
-                    is(0)=keyang(i)
-                    is(1)=Min(lstang(1,i),lstang(3,i))
-                    is(2)=lstang(2,i)
-                    is(3)=Max(lstang(1,i),lstang(3,i))
+                 Do i=nangle-angle%num(itmols)+1,nangle
+                    is(0)=angle%key(i)
+                    is(1)=Min(angle%lst(1,i),angle%lst(3,i))
+                    is(2)=angle%lst(2,i)
+                    is(3)=Max(angle%lst(1,i),angle%lst(3,i))
 
                     Do j=i+1,nangle
-                       js(0)=keyang(j)
-                       js(1)=Min(lstang(1,j),lstang(3,j))
-                       js(2)=lstang(2,j)
-                       js(3)=Max(lstang(1,j),lstang(3,j))
+                       js(0)=angle%key(j)
+                       js(1)=Min(angle%lst(1,j),angle%lst(3,j))
+                       js(2)=angle%lst(2,j)
+                       js(3)=Max(angle%lst(1,j),angle%lst(3,j))
 
                        If (js(1) == is(1) .and. js(2) == is(2) .and. &
                            js(3) == is(3)) Then
@@ -2138,7 +2139,7 @@ Subroutine read_field                      &
                  megtet=megtet+nummols(itmols)*numteth(itmols)
 
                  bond%total=bond%total+nummols(itmols)*bond%num(itmols)
-                 megang=megang+nummols(itmols)*numang(itmols)
+                 angle%total=angle%total+nummols(itmols)*angle%num(itmols)
                  megdih=megdih+nummols(itmols)*numdih(itmols)
                  meginv=meginv+nummols(itmols)*numinv(itmols)
 
@@ -2173,7 +2174,7 @@ Subroutine read_field                      &
 ! read & generate intramolecular potential & virial arrays
 
         If (bond%l_tab) Call bonds_table_read(bond_name,bond,comm)
-        If (lt_ang) Call angles_table_read(angl_name,comm)
+        If (angle%l_tab) Call angles_table_read(angl_name,angle,comm)
         If (lt_dih) Call dihedrals_table_read(dihd_name,comm)
         If (lt_inv) Call inversions_table_read(invr_name,comm)
 
@@ -2188,7 +2189,7 @@ Subroutine read_field                      &
               ntpbnd = 0 ! for bonds
               bond_name = ' '
            End If
-           If (mxgang1 > 0) Then
+           If (angle%bin_adf > 0) Then
               ntpang = 0 ! for angles
               angl_name = ' '
            End If
@@ -2247,12 +2248,12 @@ Subroutine read_field                      &
                  End If
               End Do
 
-              Do iang=1,numang(itmols)*Merge(1,0,mxgang1 > 0)
+              Do iang=1,angle%num(itmols)*Merge(1,0,angle%bin_adf > 0)
                  nangle=nangle+1
 
-                 iatm1=lstang(1,nangle)
-                 iatm2=lstang(2,nangle)
-                 iatm3=lstang(3,nangle)
+                 iatm1=angle%lst(1,nangle)
+                 iatm2=angle%lst(2,nangle)
+                 iatm3=angle%lst(3,nangle)
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
@@ -2275,17 +2276,17 @@ Subroutine read_field                      &
 
                  Do i=1,ntpang
                     If (angl_name(i) == idangl) Then
-                       ldfang(nangle)=i ! Re-point from zero to type
+                       angle%ldf(nangle)=i ! Re-point from zero to type
                        Exit
                     End If
                  End Do
 
-                 If (ldfang(nangle) == 0) Then
+                 If (angle%ldf(nangle) == 0) Then
                     ntpang=ntpang+1
                     angl_name(ntpang)=idangl
 
-                    ldfang(0)=ntpang      ! NUTAPDF
-                    ldfang(nangle)=ntpang ! Re-point from zero to type
+                    angle%ldf(0)=ntpang      ! NUTAPDF
+                    angle%ldf(nangle)=ntpang ! Re-point from zero to type
                  End If
               End Do
 
@@ -2413,10 +2414,10 @@ Subroutine read_field                      &
               Call allocate_bond_dst_arrays(bond) ! as it depends on bond%ldf(0)
 !             bond%typ = 0 ! initialised in bonds_module
            End If
-           If (mxgang1 > 0) Then
+           If (angle%bin_adf > 0) Then
               ntpang = 0 ! for angles
-              Call allocate_angl_dst_arrays() ! as it depends on ldfang(0)
-!             typang = 0 ! initialised in angles_module
+              Call allocate_angl_dst_arrays(angle) ! as it depends on angle%ldf(0)
+!             angle%typ = 0 ! initialised in angles_module
            End If
            If (mxgdih1 > 0) Then
               ntpdih = 0 ! for dihedrals
@@ -2485,18 +2486,18 @@ Subroutine read_field                      &
                  End If
               End Do
 
-              Do iang=1,numang(itmols)*Merge(1,0,mxgang1 > 0)
+              Do iang=1,angle%num(itmols)*Merge(1,0,angle%bin_adf > 0)
                  nangle=nangle+1
 
-                 iatm1=lstang(1,nangle)
-                 iatm2=lstang(2,nangle)
-                 iatm3=lstang(3,nangle)
+                 iatm1=angle%lst(1,nangle)
+                 iatm2=angle%lst(2,nangle)
+                 iatm3=angle%lst(3,nangle)
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
                  isite3 = nsite + iatm3
 
-                 j=ldfang(nangle)
+                 j=angle%ldf(nangle)
                  If (j > ntpang) Then
 
 ! record species and presence(frozen and non-frozen)
@@ -2509,19 +2510,19 @@ Subroutine read_field                      &
                        If (sitnam(isite3) == unqatm(jsite)) katom3=jsite
                     End Do
 
-                    typang(2,ntpang)=katom2
+                    angle%typ(2,ntpang)=katom2
                     If (katom1 <= katom3) Then
-                       typang(1,ntpang)=katom1
-                       typang(3,ntpang)=katom3
+                       angle%typ(1,ntpang)=katom1
+                       angle%typ(3,ntpang)=katom3
                     Else
-                       typang(1,ntpang)=katom3
-                       typang(3,ntpang)=katom1
+                       angle%typ(1,ntpang)=katom3
+                       angle%typ(3,ntpang)=katom1
                     End If
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) == 0) Then
-                       typang(0,ntpang)=typang(0,ntpang)+nummols(itmols)
+                       angle%typ(0,ntpang)=angle%typ(0,ntpang)+nummols(itmols)
                     Else
-                       typang(-1,ntpang)=typang(-1,ntpang)+nummols(itmols)
+                       angle%typ(-1,ntpang)=angle%typ(-1,ntpang)+nummols(itmols)
                     End If
 
                  Else If (j > 0) Then
@@ -2529,9 +2530,9 @@ Subroutine read_field                      &
 ! accumulate the existing type and presence(frozen and non-frozen)
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3) == 0) Then
-                       typang(0,j)=typang(0,j)+nummols(itmols)
+                       angle%typ(0,j)=angle%typ(0,j)+nummols(itmols)
                     Else
-                       typang(-1,j)=typang(-1,j)+nummols(itmols)
+                       angle%typ(-1,j)=angle%typ(-1,j)+nummols(itmols)
                     End If
 
                  End If
@@ -2688,7 +2689,7 @@ Subroutine read_field                      &
            End Do
 
            mxtana = Max(ntpbnd*Merge(1,0,bond%bin_pdf > 0), &
-                        ntpang*Merge(1,0,mxgang1 > 0), &
+                        ntpang*Merge(1,0,angle%bin_adf > 0), &
                         ntpdih*Merge(1,0,mxgdih1 > 0), &
                         ntpinv*Merge(1,0,mxginv1 > 0))
         End If
@@ -2696,7 +2697,7 @@ Subroutine read_field                      &
 ! Deallocate possibly allocated auxiliary intramolecular TPs/PDFs arrays
 
         If (bond%l_tab .or. bond%bin_pdf > 0) Deallocate (bond_name, Stat=fail(1))
-        If (lt_ang .or. mxgang1 > 0) Deallocate (angl_name, Stat=fail(2))
+        If (angle%l_tab .or. angle%bin_adf > 0) Deallocate (angl_name, Stat=fail(2))
         If (lt_dih .or. mxgdih1 > 0) Deallocate (dihd_name, Stat=fail(3))
         If (lt_inv .or. mxginv1 > 0) Deallocate (invr_name, Stat=fail(4))
         If (Any(fail > 0)) Then
@@ -3006,15 +3007,15 @@ Subroutine read_field                      &
 
 ! test for core-shell units fully overlapped on angles, dihedrals and inversions
 
-                 Do iang=1,numang(itmols)
+                 Do iang=1,angle%num(itmols)
                     nangle=nangle+1
 
-                    If (Any(lstang(1:3,nangle) == ia) .and. Any(lstang(1:3,nangle) == ja)) Then
+                    If (Any(angle%lst(1:3,nangle) == ia) .and. Any(angle%lst(1:3,nangle) == ja)) Then
                        Call warning(297,Real(ishls,wp),Real(iang,wp),Real(itmols,wp))
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) nangle=nangle-numang(itmols)
+                 If (ishls /= numshl(itmols)) nangle=nangle-angle%num(itmols)
 
                  Do idih=1,numdih(itmols)
                     ndihed=ndihed+1
@@ -4694,7 +4695,7 @@ Subroutine read_field                      &
 ! check and resolve any conflicting 14 dihedral specifications
 
         Call dihedrals_14_check &
-           (l_str,l_top,lx_dih,ntpmls,nummols,numang,keyang,lstang,numdih,lstdih,prmdih,comm)
+           (l_str,l_top,lx_dih,ntpmls,nummols,numdih,lstdih,prmdih,angle,comm)
 
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
@@ -4740,8 +4741,8 @@ End Subroutine read_field
 Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,megang,megdih,  &
-           meginv,bond,comm)
+           megtet,megdih,  &
+           meginv,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4754,8 +4755,9 @@ Subroutine report_topology               &
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
                               megshl,megcon,megpmf,megrgd, &
-                              megtet,megang,megdih,meginv
-  Type( bonds_type ), Intent( InOut ) :: bond
+                              megtet,megdih,meginv
+  Type( bonds_type ), Intent( In    ) :: bond
+  Type( angles_type ), Intent( In    ) :: angle
   Type(comms_type), Intent( InOut ) :: comm
 
   Integer :: itmols,nsite,                &
@@ -4850,12 +4852,12 @@ Subroutine report_topology               &
      End Do
 
      frzang=0
-     Do iang=1,numang(itmols)
+     Do iang=1,angle%num(itmols)
         nangle=nangle+1
 
-        iatm1=lstang(1,nangle)
-        iatm2=lstang(2,nangle)
-        iatm3=lstang(3,nangle)
+        iatm1=angle%lst(1,nangle)
+        iatm2=angle%lst(2,nangle)
+        iatm3=angle%lst(3,nangle)
 
         isite1 = nsite + iatm1
         isite2 = nsite + iatm2
@@ -4929,7 +4931,7 @@ Subroutine report_topology               &
   Write(banner(12),fmt2) '||  rigid body units       | ',mgrgd,'  |  F  ',mgrgd-megrgd,'     ||'
   Write(banner(13),fmt2) '||  tethered atom units    | ',megtet,'  |  F  ',mgfrtt,'     ||'
   Write(banner(14),fmt2) '||  chemical bond units    | ',bond%total,'  |  F  ',mgfrbn,'     ||'
-  Write(banner(15),fmt2) '||  bond angle units       | ',megang,'  |  F  ',mgfran,'     ||'
+  Write(banner(15),fmt2) '||  bond angle units       | ',angle%total,'  |  F  ',mgfran,'     ||'
   Write(banner(16),fmt2) '||  dihedral angle units   | ',megdih,'  |  F  ',mgfrdh,'     ||'
   Write(banner(17),fmt2) '||  inversion angle units  | ',meginv,'  |  F  ',mgfrin,'     ||'
   Write(banner(18),fmt1) '\\'//Repeat('=',62)//'//'
@@ -4945,12 +4947,12 @@ Subroutine scan_field                                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond, &
-           mtangl,mxtang,mxangl,mxfang,mxgang,       &
+           mtangl,       &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4969,6 +4971,7 @@ Subroutine scan_field                                &
 
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 ! Max number of different atom types
 
@@ -4993,7 +4996,7 @@ Subroutine scan_field                                &
                        numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
                        numteth,mtteth,mxtteth,mxteth,iteth,mxftet,             &
                        numbonds,mtbond,ibonds, &
-                       numang,mtangl,mxtang,mxangl,iang,mxfang,mxgang,         &
+                       numang,mtangl,iang,         &
                        numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,mxgdih,         &
                        numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,mxginv,           &
                        mxrdf,itprdf,mxvdw,itpvdw,mxgvdw,                       &
@@ -5055,10 +5058,10 @@ Subroutine scan_field                                &
 
   numang=0
   mtangl=0
-  mxangl=0
-  mxtang=0
-  mxfang=0
-  mxgang=-2
+  angle%max_angles=0
+  angle%max_types=0
+  angle%max_legend=0
+  angle%bin_tab=-2
 
   numdih=0
   mtdihd=0
@@ -5388,14 +5391,14 @@ Subroutine scan_field                                &
 
               Else If (word(1:6) == 'angles') Then
 
-!                 lt_ang=.false. ! initialised in angles_module.f90
+!                 angle%l_tab=.false. ! initialised in angles_module.f90
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  numang=Nint(word_2_real(word))
                  mtangl=Max(mtangl,numang)
-                 mxtang=mxtang+numang
-                 mxangl=mxangl+nummols*numang
+                 angle%max_types=angle%max_types+numang
+                 angle%max_angles=angle%max_angles+nummols*numang
 
                  Do iang=1,numang
                     word(1:1)='#'
@@ -5405,10 +5408,10 @@ Subroutine scan_field                                &
                        Call get_word(record,word)
                     End Do
 
-                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) lt_ang=.true.
+                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) angle%l_tab=.true.
                  End Do
 
-                 If (lt_ang) Then
+                 If (angle%l_tab) Then
                     If (comm%idnode == 0) Open(Unit=ntable, File='TABANG')
 
                     Call get_line(safe,ntable,record,comm)
@@ -5422,7 +5425,7 @@ Subroutine scan_field                                &
 
                     Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
                     k=Nint(word_2_real(word))
-                    mxgang=Max(mxgang,k+4)
+                    angle%bin_tab=Max(angle%bin_tab,k+4)
 
                     If (comm%idnode == 0) Close(Unit=ntable)
                  End If
@@ -5856,8 +5859,8 @@ Subroutine scan_field                                &
   If (bond%max_bonds > 0) bond%max_legend=(mxb*(mxb+1))+1
   mxf(6)=bond%max_legend
 
-  If (mxangl > 0) mxfang=(mxb+1)**2/2+1
-  mxf(7)=mxfang
+  If (angle%max_angles > 0) angle%max_legend=(mxb+1)**2/2+1
+  mxf(7)=angle%max_legend
 
   If (mxdihd > 0) mxfdih=((mxb-1)*mxb*(mxb+1))/2+2*mxb+1
   mxf(8)=mxfdih

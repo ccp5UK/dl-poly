@@ -9,6 +9,7 @@ Module bounds
   Use rdfs,            Only : rusr
   Use kim,             Only : kimim
   Use bonds,           Only : bonds_type
+  Use angles,          Only : angles_type
   Use tersoff,         Only : potter
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
@@ -33,7 +34,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce, &
-           alpha,width,stats,thermo,green,devel,msd_data,met,pois,bond,comm)
+           alpha,width,stats,thermo,green,devel,msd_data,met,pois,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -60,6 +61,7 @@ Subroutine set_bounds                                 &
   Type( metal_type ), Intent( InOut ) :: met
   Type( poisson_type ), Intent( InOut ) :: pois
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -89,12 +91,12 @@ Subroutine set_bounds                                 &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond, &
-           mtangl,mxtang,mxangl,mxfang,mxgang,       &
+           mtangl,       &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,comm)
 
 ! Get imc_r & set dvar
 
@@ -114,11 +116,11 @@ Subroutine set_bounds                                 &
   Call scan_control                                        &
            (mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,mxgang1,mxgdih1,mxginv1,         &
+           mxgana,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,msd_data,met,pois,bond,comm)
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo,green,devel,msd_data,met,pois,bond,angle,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -276,14 +278,14 @@ Subroutine set_bounds                                 &
 
 ! maximum number of bond angles per node and angular potential parameters
 
-  If (mxangl > 0) Then
+  If (angle%max_angles > 0) Then
      If (comm%mxnode > 1) Then
-        mxangl = Max(mxangl,comm%mxnode*mtangl)
-        mxangl = (3*(Nint(fdvar*Real(mxangl,wp))+comm%mxnode-1))/comm%mxnode
+        angle%max_angles = Max(angle%max_angles,comm%mxnode*mtangl)
+        angle%max_angles = (3*(Nint(fdvar*Real(angle%max_angles,wp))+comm%mxnode-1))/comm%mxnode
      End If
-     mxpang = 6
+     angle%max_param = 6
   Else
-     mxpang = 0
+     angle%max_param = 0
   End If
 
 
@@ -330,11 +332,11 @@ Subroutine set_bounds                                 &
            bond%bin_pdf = Nint(bond%rcut/delr_max)
         End If
      End If
-     If (mxgang1 == -1) Then
-        If (mxgang > 0) Then
-           mxgang1 = mxgang-4
+     If (angle%bin_adf == -1) Then
+        If (angle%bin_tab > 0) Then
+           angle%bin_adf = angle%bin_tab-4
         Else
-           mxgang1 = Nint(180.0_wp/delth_max)
+           angle%bin_adf = Nint(180.0_wp/delth_max)
         End If
      End If
      If (mxgdih1 == -1) Then
@@ -351,7 +353,7 @@ Subroutine set_bounds                                 &
            mxgdih1 = Nint(180.0_wp/delth_max)
         End If
      End If
-     mxgana = Max(bond%bin_pdf,mxgang1,mxgdih1,mxginv1)
+     mxgana = Max(bond%bin_pdf,angle%bin_adf,mxgdih1,mxginv1)
   End If
   mxtana = 0 ! initialise for buffer size purposes, set in read_field
 
@@ -389,7 +391,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for angles
 
-  mxgang = Merge(mxgang,Min(mxgang,Nint(180.0_wp/delth_max)+4),mxgang < 0)
+  angle%bin_tab = Merge(angle%bin_tab,Min(angle%bin_tab,Nint(180.0_wp/delth_max)+4),angle%bin_tab < 0)
 
 ! maximum number of grid points for dihedrals
 
@@ -417,7 +419,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgrid,bond%bin_tab,mxgang,mxgdih,mxginv,mxgele,mxgvdw,met%maxgrid,mxgter)
+  mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,mxgdih,mxginv,mxgele,mxgvdw,met%maxgrid,mxgter)
 
 
 
@@ -798,7 +800,7 @@ Subroutine set_bounds                                 &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp        + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
-           3*mxteth+4*bond%max_bonds+5*mxangl+8*mxdihd+6*mxinv,wp) * dens0)
+           3*mxteth+4*bond%max_bonds+5*angle%max_angles+8*mxdihd+6*mxinv,wp) * dens0)
 
 ! statistics connect deporting total per atom
 

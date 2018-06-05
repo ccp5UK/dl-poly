@@ -24,7 +24,7 @@ Module build_book
   Use tethers
 
   Use bonds, Only : bonds_type
-  Use angles
+  Use angles, Only : angles_type
   Use dihedrals
   Use inversions
   Use configuration, only : lexatm
@@ -50,7 +50,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,megang,megdih,meginv,bond,comm)
+           megtet,megdih,meginv,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,11 +69,12 @@ Subroutine build_book_intra             &
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megcon,megpmf, &
-                                        megtet,megang, &
+                                        megtet, &
                                         megdih,meginv
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -107,7 +108,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra(bond)
+  If (.not.(newjob .or. lsim)) Call init_intra(bond,angle)
 
 ! Initialise safety flags
 
@@ -540,10 +541,10 @@ Subroutine build_book_intra             &
 
 ! Construct valence angle interaction list
 
-           Do langle=1,numang(itmols)
-              iatm=lstang(1,langle+kangle)+isite
-              jatm=lstang(2,langle+kangle)+isite
-              katm=lstang(3,langle+kangle)+isite
+           Do langle=1,angle%num(itmols)
+              iatm=angle%lst(1,langle+kangle)+isite
+              jatm=angle%lst(2,langle+kangle)+isite
+              katm=angle%lst(3,langle+kangle)+isite
 
               iat0=local_index(iatm,nlast,lsi,lsa)
               jat0=local_index(jatm,nlast,lsi,lsa)
@@ -555,20 +556,21 @@ Subroutine build_book_intra             &
 
               If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0) Then
                  jangle=jangle+1
-                 If (jangle <= mxangl) Then
-                    listang(0,jangle)=langle+kangle
-                    listang(1,jangle)=iatm
-                    listang(2,jangle)=jatm
-                    listang(3,jangle)=katm
+                 If (jangle <= angle%max_angles) Then
+                    angle%list(0,jangle)=langle+kangle
+                    angle%list(1,jangle)=iatm
+                    angle%list(2,jangle)=jatm
+                    angle%list(3,jangle)=katm
 
                     If (iat0 > 0) Then
-                       Call tag_legend(safe(1),iat0,jangle,legang,mxfang)
-                       If (legang(mxfang,iat0) > 0) Then
+                       Call tag_legend(safe(1),iat0,jangle,angle%legend,angle%max_legend)
+                       If (angle%legend(angle%max_legend,iat0) > 0) Then
                           Call warning('too many angle type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfang-1+legang(mxfang,iat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfang-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            angle%max_legend-1+angle%legend(angle%max_legend,iat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', angle%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstang(1,langle+kangle)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', angle%lst(1,langle+kangle)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', langle
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -577,13 +579,14 @@ Subroutine build_book_intra             &
                     End If
 
                     If (jat0 > 0) Then
-                       Call tag_legend(safe(1),jat0,jangle,legang,mxfang)
-                       If (legang(mxfang,jat0) > 0) Then
+                       Call tag_legend(safe(1),jat0,jangle,angle%legend,angle%max_legend)
+                       If (angle%legend(angle%max_legend,jat0) > 0) Then
                           Call warning('too many angle type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfang-1+legang(mxfang,jat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfang-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            angle%max_legend-1+angle%legend(angle%max_legend,jat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', angle%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstang(2,langle+kangle)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', angle%lst(2,langle+kangle)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', langle
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -592,13 +595,14 @@ Subroutine build_book_intra             &
                     End If
 
                     If (kat0 > 0) Then
-                       Call tag_legend(safe(1),kat0,jangle,legang,mxfang)
-                       If (legang(mxfang,kat0) > 0) Then
+                       Call tag_legend(safe(1),kat0,jangle,angle%legend,angle%max_legend)
+                       If (angle%legend(angle%max_legend,kat0) > 0) Then
                           Call warning('too many angle type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfang-1+legang(mxfang,kat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfang-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            angle%max_legend-1+angle%legend(angle%max_legend,kat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', angle%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstang(3,langle+kangle)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', angle%lst(3,langle+kangle)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', langle
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -870,7 +874,7 @@ Subroutine build_book_intra             &
      kteths=kteths+numteth(itmols)
 
      kbonds=kbonds+bond%num(itmols)
-     kangle=kangle+numang(itmols)
+     kangle=kangle+angle%num(itmols)
      kdihed=kdihed+numdih(itmols)
      kinver=kinver+numinv(itmols)
 
@@ -888,7 +892,7 @@ Subroutine build_book_intra             &
   ntteth=jteths
 
   bond%n_types=jbonds
-  ntangl=jangle
+  angle%n_types=jangle
   ntdihd=jdihed
   ntinv =jinver
 
@@ -900,7 +904,7 @@ Subroutine build_book_intra             &
      ntrgd1 =ntrgd
 
      bond%n_types1=bond%n_types
-     ntangl1=ntangl
+     angle%n_types1=angle%n_types
      ntdihd1=ntdihd
      ntinv1 =ntinv
 
@@ -961,10 +965,10 @@ Subroutine build_book_intra             &
         iwrk(mshels)=jatm
      End If
   End Do
-  Do i=1,ntangl
-     iatm=listang(1,i)
-     jatm=listang(2,i)
-     katm=listang(3,i)
+  Do i=1,angle%n_types
+     iatm=angle%list(1,i)
+     jatm=angle%list(2,i)
+     katm=angle%list(3,i)
 
      iat0=local_index(iatm,nlast,lsi,lsa)
      jat0=local_index(jatm,nlast,lsi,lsa)
@@ -1188,7 +1192,7 @@ Subroutine build_book_intra             &
         End Do
 
 ! If there is a non-local, cross-domained core-shell unit atom on this
-! molecule on this node, extend listcon, listrgd, bond%list and listang
+! molecule on this node, extend listcon, listrgd, bond%list and angle%list
 
         If (i > 0) Then
 
@@ -1257,20 +1261,20 @@ Subroutine build_book_intra             &
 
 ! Extend valence angle interaction list
 
-           Do langle=1,numang(itmols)
-              iatm=lstang(1,langle+kangle)+isite
-              jatm=lstang(2,langle+kangle)+isite
-              katm=lstang(3,langle+kangle)+isite
+           Do langle=1,angle%num(itmols)
+              iatm=angle%lst(1,langle+kangle)+isite
+              jatm=angle%lst(2,langle+kangle)+isite
+              katm=angle%lst(3,langle+kangle)+isite
 
               If ( Any(iwrk(1:mshels) == iatm) .or. &
                    Any(iwrk(1:mshels) == jatm) .or. &
                    Any(iwrk(1:mshels) == katm) ) Then
                  jangle=jangle+1
-                 If (jangle <= mxangl) Then
-                    listang(0,jangle)=langle+kangle
-                    listang(1,jangle)=iatm
-                    listang(2,jangle)=jatm
-                    listang(3,jangle)=katm
+                 If (jangle <= angle%max_angles) Then
+                    angle%list(0,jangle)=langle+kangle
+                    angle%list(1,jangle)=iatm
+                    angle%list(2,jangle)=jatm
+                    angle%list(3,jangle)=katm
                  Else
                     safe(8)=.false.
                  End If
@@ -1353,7 +1357,7 @@ Subroutine build_book_intra             &
      krigid=krigid+numrgd(itmols)
 
      kbonds=kbonds+bond%num(itmols)
-     kangle=kangle+numang(itmols)
+     kangle=kangle+angle%num(itmols)
      kdihed=kdihed+numdih(itmols)
      kinver=kinver+numinv(itmols)
   End Do
@@ -1368,7 +1372,7 @@ Subroutine build_book_intra             &
   ntrgd1 =jrigid
 
   bond%n_types1=jbonds
-  ntangl1=jangle
+  angle%n_types1=jangle
   ntdihd1=jdihed
   ntinv1 =jinver
 
@@ -1417,10 +1421,10 @@ Subroutine build_book_intra             &
         iwrk(mshels)=jatm
      End If
   End Do
-  Do i=ntangl+1,ntangl1
-     iatm=listang(1,i)
-     jatm=listang(2,i)
-     katm=listang(3,i)
+  Do i=angle%n_types+1,angle%n_types1
+     iatm=angle%list(1,i)
+     jatm=angle%list(2,i)
+     katm=angle%list(3,i)
 
      If (.not.Any(iwrk(1:mshels) == iatm)) Then
         mshels=mshels+1
@@ -1587,7 +1591,7 @@ Subroutine build_book_intra             &
      itmp(4)=irigid ; jtmp(4)=mxrgd
      itmp(5)=iteths ; jtmp(5)=mxteth
      itmp(6)=ibonds ; jtmp(6)=bond%max_bonds
-     itmp(7)=iangle ; jtmp(7)=mxangl
+     itmp(7)=iangle ; jtmp(7)=angle%max_angles
      itmp(8)=idihed ; jtmp(8)=mxdihd
      itmp(9)=iinver ; jtmp(9)=mxinv
 
@@ -1632,7 +1636,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,megang,megdih,meginv,bond,comm)
+           megtet,megdih,meginv,bond,angle,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1646,7 +1650,6 @@ Subroutine build_book_intra             &
 
         Call deallocate_tethers_arrays()
 
-        Call deallocate_angles_arrays()
         Call deallocate_dihedrals_arrays()
         Call deallocate_inversions_arrays()
      End If
@@ -1767,7 +1770,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra(bond)
+Subroutine init_intra(bond,angle)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1781,6 +1784,7 @@ Subroutine init_intra(bond)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
 
 ! exclusions locals
 
@@ -1837,9 +1841,9 @@ Subroutine init_intra(bond)
 
 ! angles locals
 
-  ntangl  = 0 ; ntangl1 = 0
-  listang = 0
-  legang  = 0
+  angle%n_types  = 0 ; angle%n_types1 = 0
+  angle%list = 0
+  angle%legend  = 0
 
 ! dihedrals locals
 

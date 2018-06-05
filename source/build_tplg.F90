@@ -12,7 +12,7 @@ Module build_tplg
   ! INTERACTION MODULES
 
   Use bonds, Only : bonds_type
-  Use angles
+  Use angles, Only : angles_type
   Use dihedrals
   Use inversions
 
@@ -29,7 +29,7 @@ Module build_tplg
 
 Contains
 
-  Subroutine build_tplg_intra(bond,comm)
+  Subroutine build_tplg_intra(bond,angle,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -43,6 +43,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( bonds_type ), Intent( In    ) :: bond
+    Type( angles_type ), Intent( In    ) :: angle
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
@@ -75,11 +76,11 @@ Contains
 
     ! include sites on basis of bond angles
 
-    Do i=1,ntangl
-      If (Abs(keyang(listang(0,i))) > 0) Then
-        ia=listang(1,i)
-        ib=listang(2,i)
-        ic=listang(3,i)
+    Do i=1,angle%n_types
+      If (Abs(angle%key(angle%list(0,i))) > 0) Then
+        ia=angle%list(1,i)
+        ib=angle%list(2,i)
+        ic=angle%list(3,i)
 
         ia0=local_index(ia,nlast,lsi,lsa)
         ib0=local_index(ib,nlast,lsi,lsa)

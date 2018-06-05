@@ -11,11 +11,11 @@ Module angles
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gsum,gbcast,gsync,gcheck
   Use setup,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
-                            mxgang,mxgang1,engunit,zero_plus, mxangl, twopi, &
-                            delth_max,ntable,mxtang,mxatdm,mxfang,mxpang,mxtmls
+                     engunit,zero_plus,twopi, &
+                     delth_max,ntable,mxatdm,mxtmls
   Use site,   Only : unqatm,ntpatm
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz,cfgname
@@ -25,113 +25,142 @@ Module angles
 
   Implicit None
 
-  Logical,                        Save :: lt_ang = .false. ! no tabulated potentials opted
+  !> Type containing angles variables
+  Type, Public :: angles_type
+    Private
 
-  Integer,                        Save :: ntangl  = 0 , &
-                                          ntangl1 = 0 , &
-                                          ncfang  = 0
+    !> Tabulated potential switch
+    Logical, Public :: l_tab = .false.
 
+    !> Number of angle types (potentials)
+    Integer( Kind = wi ), Public :: n_types  = 0
+    Integer( Kind = wi ), Public :: n_types1 = 0
+    !> Number of frames
+    Integer( Kind = wi ), Public :: n_frames  = 0
+    !> Total number of angles (all nodes)
+    Integer( Kind = wi ), Public :: total
 
-  Integer,           Allocatable, Save :: numang(:),keyang(:)
-  Integer,           Allocatable, Save :: lstang(:,:),listang(:,:),legang(:,:)
+    Integer( Kind = wi ), Allocatable, Public :: num(:),key(:)
 
-  Real( Kind = wp ), Allocatable, Save :: prmang(:,:)
+    !> Atom indices (local)
+    Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
+    !> Atom indices
+    Integer( Kind = wi ), Allocatable, Public :: list(:,:)
+    !> Legend
+    Integer( Kind = wi ), Allocatable, Public :: legend(:,:)
 
-! Possible tabulated calculation arrays
+    !> Angle parameters (force constant, etc.)
+    Real( Kind = wp ), Allocatable, Public :: param(:,:)
 
-  Integer,           Allocatable, Save :: ltpang(:)
-  Real( Kind = wp ), Allocatable, Save :: vang(:,:),gang(:,:)
+    ! Possible tabulated calculation arrays
+    Integer,           Allocatable, Public :: ltp(:)
+    !> Tabulated potential
+    Real( Kind = wp ), Allocatable, Public :: tab_potential(:,:)
+    !> Tabulated force
+    Real( Kind = wp ), Allocatable, Public :: tab_force(:,:)
 
-! Possible distribution arrays
+    ! Possible distribution arrays
+    Integer,           Allocatable, Public :: ldf(:),typ(:,:)
+    Real( Kind = wp ), Allocatable, Public :: dst(:,:)
 
-  Integer,           Allocatable, Save :: ldfang(:),typang(:,:)
-  Real( Kind = wp ), Allocatable, Save :: dstang(:,:)
+    ! Maximums
+    !> Maximum number of angle types
+    Integer( Kind = wi ), Public :: max_types
+    !> Maximum number of angles per node
+    Integer( Kind = wi ), Public :: max_angles
+    !> Length of legend array
+    Integer( Kind = wi ), Public :: max_legend
+    !> Maximum number of bonds parameters
+    Integer( Kind = wi ), Public :: max_param
 
-  Public :: allocate_angles_arrays , deallocate_angles_arrays , &
+    ! Number of bins
+    !> Angular distribution function bins
+    Integer( Kind = wi ), Public :: bin_adf
+    !> Tabulated potential bins
+    Integer( Kind = wi ), Public :: bin_tab
+
+  Contains
+    Private
+
+    Final :: cleanup
+  End Type angles_type
+
+  Public :: allocate_angles_arrays , &
             allocate_angl_pot_arrays , allocate_angl_dst_arrays, angles_compute, &
             angles_forces, angles_table_read
 
 Contains
 
-  Subroutine allocate_angles_arrays()
+  Subroutine allocate_angles_arrays(angle)
+    Type( angles_type ), Intent( InOut ) :: angle
 
-    Integer, Dimension( 1:8 ) :: fail
+    Integer, Dimension(8) :: fail
 
     fail = 0
 
-    Allocate (numang(1:mxtmls),          Stat = fail(1))
-    Allocate (keyang(1:mxtang),          Stat = fail(2))
-    Allocate (lstang(1:3,1:mxtang),      Stat = fail(3))
-    Allocate (listang(0:3,1:mxangl),     Stat = fail(4))
-    Allocate (legang(0:mxfang,1:mxatdm), Stat = fail(5))
-    Allocate (prmang(1:mxpang,1:mxtang), Stat = fail(6))
-    If (lt_ang) &
-    Allocate (ltpang(0:mxtang),          Stat = fail(7))
-    If (mxgang1 > 0) &
-    Allocate (ldfang(0:mxtang),          Stat = fail(8))
+    Allocate (angle%num(1:mxtmls),          Stat = fail(1))
+    Allocate (angle%key(1:angle%max_types),          Stat = fail(2))
+    Allocate (angle%lst(1:3,1:angle%max_types),      Stat = fail(3))
+    Allocate (angle%list(0:3,1:angle%max_angles),     Stat = fail(4))
+    Allocate (angle%legend(0:angle%max_legend,1:mxatdm), Stat = fail(5))
+    Allocate (angle%param(1:angle%max_param,1:angle%max_types), Stat = fail(6))
+    If (angle%l_tab) &
+    Allocate (angle%ltp(0:angle%max_types),          Stat = fail(7))
+    If (angle%bin_adf > 0) &
+    Allocate (angle%ldf(0:angle%max_types),          Stat = fail(8))
 
     If (Any(fail > 0)) Call error(1013)
 
-    numang  = 0
-    keyang  = 0
-    lstang  = 0
-    listang = 0
-    legang  = 0
+    angle%num  = 0
+    angle%key  = 0
+    angle%lst  = 0
+    angle%list = 0
+    angle%legend  = 0
 
-    prmang  = 0.0_wp
+    angle%param  = 0.0_wp
 
-    If (lt_ang) &
-    ltpang  = 0
+    If (angle%l_tab) &
+    angle%ltp  = 0
 
-    If (mxgang1 > 0) &
-    ldfang  = 0
+    If (angle%bin_adf > 0) &
+    angle%ldf  = 0
 
   End Subroutine allocate_angles_arrays
 
-  Subroutine deallocate_angles_arrays()
+  Subroutine allocate_angl_pot_arrays(angle)
+    Type( angles_type ), Intent( InOut ) :: angle
 
-    Integer :: fail
-
-    fail = 0
-
-    Deallocate (numang,lstang, Stat = fail)
-
-    If (fail > 0) Call error(1028)
-
-  End Subroutine deallocate_angles_arrays
-
-  Subroutine allocate_angl_pot_arrays()
-
-    Integer :: fail(1:2)
+    Integer :: fail(2)
 
     fail = 0
 
-    Allocate (vang(-1:mxgang,1:ltpang(0)), Stat = fail(1))
-    Allocate (gang(-1:mxgang,1:ltpang(0)), Stat = fail(2))
+    Allocate (angle%tab_potential(-1:angle%bin_tab,1:angle%ltp(0)), Stat = fail(1))
+    Allocate (angle%tab_force(-1:angle%bin_tab,1:angle%ltp(0)), Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1074)
 
-    vang = 0.0_wp
-    gang = 0.0_wp
+    angle%tab_potential = 0.0_wp
+    angle%tab_force = 0.0_wp
 
   End Subroutine allocate_angl_pot_arrays
 
-  Subroutine allocate_angl_dst_arrays()
+  Subroutine allocate_angl_dst_arrays(angle)
+    Type( angles_type ), Intent( InOut ) :: angle
 
     Integer :: fail
 
     fail = 0
 
-    Allocate (typang(-1:3,1:ldfang(0)),dstang(1:mxgang1,1:ldfang(0)), Stat = fail)
+    Allocate (angle%typ(-1:3,1:angle%ldf(0)),angle%dst(1:angle%bin_adf,1:angle%ldf(0)), Stat = fail)
 
     If (fail > 0) Call error(1075)
 
-    typang = 0
-    dstang = 0.0_wp
+    angle%typ = 0
+    angle%dst = 0.0_wp
 
   End Subroutine allocate_angl_dst_arrays
   
-  Subroutine angles_compute(temp,comm)
+  Subroutine angles_compute(temp,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -145,6 +174,7 @@ Contains
 
 
   Real( Kind = wp ),  Intent( In    ) :: temp
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: zero
@@ -159,7 +189,7 @@ Contains
   Character( Len = 256 ) :: message
 
   fail = 0
-  Allocate (dstdang(0:mxgang1,1:ldfang(0)),pmf(0:mxgang1+2),vir(0:mxgang1+2), Stat = fail)
+  Allocate (dstdang(0:angle%bin_adf,1:angle%ldf(0)),pmf(0:angle%bin_adf+2),vir(0:angle%bin_adf+2), Stat = fail)
   If (fail > 0) Then
      Write(message,'(a)') 'angles_compute - allocation failure, node'
      Call error(0,message)
@@ -176,28 +206,28 @@ Contains
 
 ! grid interval for pdf/pmf tables
 
-  delth = pi/Real(mxgang1,wp)
-  rdlth = Real(mxgang1,wp)/180.0_wp
+  delth = pi/Real(angle%bin_adf,wp)
+  rdlth = Real(angle%bin_adf,wp)/180.0_wp
 
 ! resampling grid and grid interval for pmf tables
 
-  ngrid = Max(Nint(180.0_wp/delth_max),mxgang1,mxgang-4)
+  ngrid = Max(Nint(180.0_wp/delth_max),angle%bin_adf,angle%bin_tab-4)
   dgrid = pi/Real(ngrid,wp)
 
 ! loop over all valid PDFs to get valid totals
 
   kk=0
   ll=0
-  Do i=1,ldfang(0)
-     If (typang(0,i) > 0) Then
+  Do i=1,angle%ldf(0)
+     If (angle%typ(0,i) > 0) Then
         kk=kk+1
-        ll=ll+typang(0,i)
+        ll=ll+angle%typ(0,i)
      End If
   End Do
 
 ! normalisation factor
 
-  factor = 1.0_wp/Real(ncfang,wp)
+  factor = 1.0_wp/Real(angle%n_frames,wp)
 
 ! the lower bound to nullify the nearly-zero histogram (PDF) values
 
@@ -205,7 +235,7 @@ Contains
 
   Call info('',.true.)
   Call info('ANGLES : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)',.true.)
-  Write(message,'(a,5(1x,i10))') '# bins, cutoff, frames, types: ',mxgang1,180,ncfang,kk,ll
+  Write(message,'(a,5(1x,i10))') '# bins, cutoff, frames, types: ',angle%bin_adf,180,angle%n_frames,kk,ll
   Call info(message,.true.)
 
 ! open RDF file and write headers
@@ -214,7 +244,7 @@ Contains
      Open(Unit=npdfdt, File='ANGDAT', Status='replace')
      Write(npdfdt,'(a)') '# '//cfgname
      Write(npdfdt,'(a)') '# ANGLES: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dTheta_bin'
-     Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',mxgang1,180,ncfang,kk
+     Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',angle%bin_adf,180,angle%n_frames,kk
      Write(npdfdt,'(a)') '#'
      Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  PDF_norm(Theta)  PDF_norm(Theta)/Sin(Theta)   @   dTheta_bin = ',delth*rad2dgr
      Write(npdfdt,'(a)') '#'
@@ -223,12 +253,12 @@ Contains
 ! loop over all valid PDFs
 
   j=0
-  Do i=1,ldfang(0)
-     If (typang(0,i) > 0) Then
+  Do i=1,angle%ldf(0)
+     If (angle%typ(0,i) > 0) Then
         j=j+1
 
         Write(message,'(a,3(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-          unqatm(typang(1,i)),unqatm(typang(2,i)),unqatm(typang(3,i)),j,typang(0,i)
+          unqatm(angle%typ(1,i)),unqatm(angle%typ(2,i)),unqatm(angle%typ(3,i)),j,angle%typ(0,i)
         Call info(message,.true.)
         Write(message,'(a,f8.5)') &
          'Theta(degrees)  PDF_ang(Theta)  Sum_PDF_ang(Theta)   @   dTheta_bin = ',delth*rad2dgr
@@ -236,16 +266,16 @@ Contains
 
         If (comm%idnode == 0) Then
            Write(npdfdt,'(/,a,3(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-                unqatm(typang(1,i)),unqatm(typang(2,i)),unqatm(typang(3,i)),j,typang(0,i)
+                unqatm(angle%typ(1,i)),unqatm(angle%typ(2,i)),unqatm(angle%typ(3,i)),j,angle%typ(0,i)
         End If
 
 ! global sum of data on all nodes
 
-        Call gsum(comm,dstang(1:mxgang1,i))
+        Call gsum(comm,angle%dst(1:angle%bin_adf,i))
 
 ! factor in instances (first, pdfang is normalised to unity)
 
-        factor1=factor/Real(typang(0,i),wp)
+        factor1=factor/Real(angle%typ(0,i),wp)
 
 ! running integration of pdf
 
@@ -254,10 +284,10 @@ Contains
 ! loop over distances
 
         zero=.true.
-        Do ig=1,mxgang1
-           If (zero .and. ig < (mxgang1-3)) zero=(dstang(ig+2,i) <= 0.0_wp)
+        Do ig=1,angle%bin_adf
+           If (zero .and. ig < (angle%bin_adf-3)) zero=(angle%dst(ig+2,i) <= 0.0_wp)
 
-           pdfang = dstang(ig,i)*factor1
+           pdfang = angle%dst(ig,i)*factor1
            sum = sum + pdfang
 
 ! null it if < pdfzero
@@ -316,7 +346,7 @@ Contains
   If (comm%idnode == 0) Then
      Open(Unit=npdgdt, File='ANGPMF', Status='replace')
      Write(npdgdt,'(a)') '# '//cfgname
-     Write(npdgdt,'(a,2i6,f12.5,i10,a,e15.7)') '# ',mxgang1,180,delth*rad2dgr,kk, &
+     Write(npdgdt,'(a,2i6,f12.5,i10,a,e15.7)') '# ',angle%bin_adf,180,delth*rad2dgr,kk, &
           '   conversion factor(kT -> energy units) = ', kT2engo
 
      Open(Unit=npdfdt, File='ANGTAB', Status='replace')
@@ -328,16 +358,16 @@ Contains
 ! loop over all valid PDFs
 
   j=0
-  Do i=1,ldfang(0)
-     If (typang(0,i) > 0) Then
+  Do i=1,angle%ldf(0)
+     If (angle%typ(0,i) > 0) Then
         j=j+1
 
         If (comm%idnode == 0) Then
            Write(npdgdt,'(/,a,3(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(typang(1,i)),unqatm(typang(2,i)),unqatm(typang(3,i)),j,typang(0,i), &
+                unqatm(angle%typ(1,i)),unqatm(angle%typ(2,i)),unqatm(angle%typ(3,i)),j,angle%typ(0,i), &
                 ' (type, index, instances)'
            Write(npdfdt,'(/,a,3(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(typang(1,i)),unqatm(typang(2,i)),unqatm(typang(3,i)),j,typang(0,i), &
+                unqatm(angle%typ(1,i)),unqatm(angle%typ(2,i)),unqatm(angle%typ(3,i)),j,angle%typ(0,i), &
                 ' (type, index, instances)'
         End If
 
@@ -347,7 +377,7 @@ Contains
         dfed0 = 10.0_wp
         dfed  = 10.0_wp
 
-        Do ig=1,mxgang1
+        Do ig=1,angle%bin_adf
            tmp = Real(ig,wp)-0.5_wp
            theta = tmp*delth
 
@@ -358,7 +388,7 @@ Contains
                  fed  = 0.0_wp
               End If
 
-              If (ig < mxgang1-1) Then
+              If (ig < angle%bin_adf-1) Then
                  If (dstdang(ig+1,i) <= zero_plus .and. dstdang(ig+2,i) > zero_plus) &
                     dstdang(ig+1,i) = 0.5_wp*(dstdang(ig,i)+dstdang(ig+2,i))
               End If
@@ -374,7 +404,7 @@ Contains
               Else
                  dfed =-dfed0
               End If
-           Else If (ig == mxgang1) Then
+           Else If (ig == angle%bin_adf) Then
               If      (dstdang(ig,i) > zero_plus .and. dstdang(ig-1,i) > zero_plus) Then
                  dfed = Log(dstdang(ig,i)/dstdang(ig-1,i))
               Else If (dfed > 0.0_wp) Then
@@ -409,10 +439,10 @@ Contains
 
         pmf(0)         = 2.0_wp*pmf(1)        -pmf(2)
         vir(0)         = 2.0_wp*vir(1)        -vir(2)
-        pmf(mxgang1+1) = 2.0_wp*pmf(mxgang1)  -pmf(mxgang1-1)
-        vir(mxgang1+1) = 2.0_wp*vir(mxgang1)  -vir(mxgang1-1)
-        pmf(mxgang1+2) = 2.0_wp*pmf(mxgang1+1)-pmf(mxgang1)
-        vir(mxgang1+2) = 2.0_wp*vir(mxgang1+1)-vir(mxgang1)
+        pmf(angle%bin_adf+1) = 2.0_wp*pmf(angle%bin_adf)  -pmf(angle%bin_adf-1)
+        vir(angle%bin_adf+1) = 2.0_wp*vir(angle%bin_adf)  -vir(angle%bin_adf-1)
+        pmf(angle%bin_adf+2) = 2.0_wp*pmf(angle%bin_adf+1)-pmf(angle%bin_adf)
+        vir(angle%bin_adf+2) = 2.0_wp*vir(angle%bin_adf+1)-vir(angle%bin_adf)
 
 ! resample using 3pt interpolation
 
@@ -461,7 +491,7 @@ Contains
 
 End Subroutine angles_compute
 
-Subroutine angles_forces(isw,engang,virang,stress,comm)
+Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -482,6 +512,7 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
   Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: engang,virang
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical           :: safe
@@ -503,9 +534,9 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
   Character( Len = 256 ) :: message
 
   fail=0
-  Allocate (lunsafe(1:mxangl),lstopt(0:3,1:mxangl),       Stat=fail(1))
-  Allocate (xdab(1:mxangl),ydab(1:mxangl),zdab(1:mxangl), Stat=fail(2))
-  Allocate (xdbc(1:mxangl),ydbc(1:mxangl),zdbc(1:mxangl), Stat=fail(3))
+  Allocate (lunsafe(1:angle%max_angles),lstopt(0:3,1:angle%max_angles),       Stat=fail(1))
+  Allocate (xdab(1:angle%max_angles),ydab(1:angle%max_angles),zdab(1:angle%max_angles), Stat=fail(2))
+  Allocate (xdbc(1:angle%max_angles),ydbc(1:angle%max_angles),zdbc(1:angle%max_angles), Stat=fail(3))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'angles_forces allocation failure'
      Call error(0,message)
@@ -514,14 +545,14 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! calculate atom separation vectors
 
-  Do i=1,ntangl
+  Do i=1,angle%n_types
      lunsafe(i)=.false.
 
 ! indices of angle bonded atoms
 
-     ia=local_index(listang(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
-     ib=local_index(listang(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
-     ic=local_index(listang(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
+     ia=local_index(angle%list(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
+     ib=local_index(angle%list(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
+     ic=local_index(angle%list(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
 
      lstopt(0,i)=0
      If (ia > 0 .and. ib > 0 .and. ic > 0) Then ! Tag
@@ -560,16 +591,16 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! Check for uncompressed units
 
-  safe = .not. Any(lunsafe(1:ntangl))
+  safe = .not. Any(lunsafe(1:angle%n_types))
   Call gcheck(comm,safe)
   If (.not.safe) Then
      Do j=0,comm%mxnode-1
         If (comm%idnode == j) Then
-           Do i=1,ntangl
+           Do i=1,angle%n_types
              If (lunsafe(i)) Then
                Write(message,'(a,2(i10,a))')     &
-                 'global unit number', listang(0,i), &
-                 ' , with a head particle number', listang(1,i),   &
+                 'global unit number', angle%list(0,i), &
+                 ' , with a head particle number', angle%list(1,i),   &
                  ' contributes towards next error'
                Call warning(message)
              End If
@@ -582,8 +613,8 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! periodic boundary condition
 
-  Call images(imcon,cell,ntangl,xdab,ydab,zdab)
-  Call images(imcon,cell,ntangl,xdbc,ydbc,zdbc)
+  Call images(imcon,cell,angle%n_types,xdab,ydab,zdab)
+  Call images(imcon,cell,angle%n_types,xdbc,ydbc,zdbc)
 
   If (Mod(isw,3) > 0) Then
 
@@ -610,13 +641,13 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 ! Recover bin size and increment counter
 
   If (Mod(isw,2) == 0) Then
-     rdelth = Real(mxgang1,wp)/pi
-     ncfang = ncfang + 1
+     rdelth = Real(angle%bin_adf,wp)/pi
+     angle%n_frames = angle%n_frames + 1
   End If
 
 ! loop over all specified angle potentials
 
-  Do i=1,ntangl
+  Do i=1,angle%n_types
      If (lstopt(0,i) > 0) Then
 
 ! indices of bonded atoms
@@ -653,16 +684,16 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! index of potential function parameters
 
-        kk=listang(0,i)
-        keya = Abs(keyang(kk))
+        kk=angle%list(0,i)
+        keya = Abs(angle%key(kk))
 
 ! accumulate the histogram (distribution)
 
         If (Mod(isw,2) == 0 .and. ib <= natms) Then
-           j = ldfang(kk)
-           l = Min(1+Int(theta*rdelth),mxgang1)
+           j = angle%ldf(kk)
+           l = Min(1+Int(theta*rdelth),angle%bin_adf)
 
-           dstang(l,j) = dstang(l,j) + 1.0_wp
+           angle%dst(l,j) = angle%dst(l,j) + 1.0_wp
         End If
         If (isw == 0) Cycle
 
@@ -670,8 +701,8 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! harmonic potential
 
-           k     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           k     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=theta-theta0
 
            tmp   =k*dtheta
@@ -686,11 +717,11 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! quartic potential
 
-           k2    =prmang(1,kk)
-           theta0=prmang(2,kk)
+           k2    =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=theta-theta0
-           k3    =prmang(3,kk)
-           k4    =prmang(4,kk)
+           k3    =angle%param(3,kk)
+           k4    =angle%param(4,kk)
 
            pterm=0.5_wp*k2*dtheta**2+(k3/3.0_wp)*dtheta**3+0.25*k4*dtheta**4
            gamma=dtheta*(k2+k3*dtheta+k4*dtheta**2)*rsint
@@ -702,10 +733,10 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! truncated Harmonic potential
 
-           k     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           k     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=theta-theta0
-           rho   =prmang(3,kk)
+           rho   =angle%param(3,kk)
            switch=-(rab**8+rbc**8)/rho**8
 
            tmp   =k*dtheta*Exp(switch)
@@ -720,11 +751,11 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! screened Harmonic potential
 
-           k     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           k     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=theta-theta0
-           rho1  =prmang(3,kk)
-           rho2  =prmang(4,kk)
+           rho1  =angle%param(3,kk)
+           rho2  =angle%param(4,kk)
            switch=-(rab/rho1+rbc/rho2)
 
            tmp   =k*dtheta*Exp(switch)
@@ -739,13 +770,13 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! screened Vessal potential (type 1)
 
-           k     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           k     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dth0pi=theta0-pi
            dthpi =theta -pi
            dth   =dth0pi**2-dthpi**2
-           rho1  =prmang(3,kk)
-           rho2  =prmang(4,kk)
+           rho1  =angle%param(3,kk)
+           rho2  =angle%param(4,kk)
            switch=-(rab/rho1+rbc/rho2)
 
            tmp   =(k*dth/(2.0_wp*dth0pi**2)) * Exp(switch)
@@ -760,13 +791,13 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! truncated Vessal potential (type 2)
 
-           k     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           k     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=theta-theta0
            dth0pi=theta0-pi
            dthpi =theta -pi
-           a     =prmang(3,kk)
-           rho   =prmang(4,kk)
+           a     =angle%param(3,kk)
+           rho   =angle%param(4,kk)
            switch=-(rab**8+rbc**8)/rho**8
 
            tmp   =k*dtheta*Exp(switch)
@@ -783,8 +814,8 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! harmonic cosine potential (note cancellation of sint in gamma)
 
-           k     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           k     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=Cos(theta)-Cos(theta0)
 
            tmp   =k*dtheta
@@ -799,9 +830,9 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! ordinary cosine potential
 
-           k    =prmang(1,kk)
-           delta=prmang(2,kk)
-           m    =prmang(3,kk)
+           k    =angle%param(1,kk)
+           delta=angle%param(2,kk)
+           m    =angle%param(3,kk)
            a    =m*theta-delta
 
            pterm=k*(1.0_wp+Cos(a))
@@ -814,12 +845,12 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! MM3-stretch-bend potential
 
-           a     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           a     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=theta-theta0
-           rho1  =prmang(3,kk)
+           rho1  =angle%param(3,kk)
            dr1   =rab-rho1
-           rho2  =prmang(4,kk)
+           rho2  =angle%param(4,kk)
            dr2   =rbc-rho2
 
            tmp   =a*dr1*dr2
@@ -834,10 +865,10 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! compass stretch-stretch potential
 
-           a     =prmang(1,kk)
-           rho1  =prmang(2,kk)
+           a     =angle%param(1,kk)
+           rho1  =angle%param(2,kk)
            dr1   =rab-rho1
-           rho2  =prmang(3,kk)
+           rho2  =angle%param(3,kk)
            dr2   =rbc-rho2
 
            pterm=a*dr1*dr2
@@ -850,10 +881,10 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! compass stretch-bend potential
 
-           a     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           a     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=theta-theta0
-           rho1  =prmang(3,kk)
+           rho1  =angle%param(3,kk)
            dr1   =rab-rho1
 
            tmp   =a*dr1
@@ -868,14 +899,14 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! combined compass angle potential with 3 coupling terms
 
-           a     =prmang(1,kk)
-           b     =prmang(2,kk)
-           c     =prmang(3,kk)
-           theta0=prmang(4,kk)
+           a     =angle%param(1,kk)
+           b     =angle%param(2,kk)
+           c     =angle%param(3,kk)
+           theta0=angle%param(4,kk)
            dtheta=theta-theta0
-           rho1  =prmang(5,kk)
+           rho1  =angle%param(5,kk)
            dr1   =rab-rho1
-           rho2  =prmang(6,kk)
+           rho2  =angle%param(6,kk)
            dr2   =rbc-rho2
 
            tmp   =b*dr1+c*dr2
@@ -890,8 +921,8 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! MM3-angle-bend potential
 
-           k     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           k     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=theta-theta0
 
            pterm=k*dtheta**2 * (1.0_wp-1.4e-2_wp*dtheta+5.60e-5_wp*dtheta**2 - &
@@ -906,11 +937,11 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! KKY potential
 
-           k     =prmang(1,kk)
-           theta0=prmang(2,kk)
+           k     =angle%param(1,kk)
+           theta0=angle%param(2,kk)
            dtheta=theta-theta0
-           gr    =prmang(3,kk)
-           rm    =prmang(4,kk)
+           gr    =angle%param(3,kk)
+           rm    =angle%param(4,kk)
            dr1   =rab-rm
            rho1  =Exp(-0.5_wp*gr*dr1)
            dr2   =rbc-rm
@@ -927,24 +958,24 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 ! TABANG potential
 
-           j = ltpang(kk)
-           rdr = gang(-1,j) ! 1.0_wp/delpot (in rad^-1)
+           j = angle%ltp(kk)
+           rdr = angle%tab_force(-1,j) ! 1.0_wp/delpot (in rad^-1)
 
            l   = Int(theta*rdr)
            ppp = theta*rdr - Real(l,wp)
 
-           vk  = vang(l,j)
-           vk1 = vang(l+1,j)
-           vk2 = vang(l+2,j)
+           vk  = angle%tab_potential(l,j)
+           vk1 = angle%tab_potential(l+1,j)
+           vk2 = angle%tab_potential(l+2,j)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
            pterm = t1 + (t2-t1)*ppp*0.5_wp
 
-           vk  = gang(l,j) ; If (l == 0) vk = vk*theta
-           vk1 = gang(l+1,j)
-           vk2 = gang(l+2,j)
+           vk  = angle%tab_force(l,j) ; If (l == 0) vk = vk*theta
+           vk1 = angle%tab_force(l+1,j)
+           vk2 = angle%tab_force(l+2,j)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -1060,7 +1091,7 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 End Subroutine angles_forces
 
-Subroutine angles_table_read(angl_name,comm)
+Subroutine angles_table_read(angl_name,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1073,7 +1104,8 @@ Subroutine angles_table_read(angl_name,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Character( Len = 24 ), Intent( In    ) :: angl_name(1:mxtang)
+  Type( angles_type ), Intent( InOut ) :: angle
+  Character( Len = 24 ), Intent( In    ) :: angl_name(1:angle%max_types)
   Type(comms_type),      Intent( InOut ) :: comm
 
   Logical                :: safe,remake
@@ -1113,7 +1145,7 @@ Subroutine angles_table_read(angl_name,comm)
 
   delpot = 180.0_wp/Real(ngrid,wp)
 
-  dlrpot = 180.0_wp/Real(mxgang-4,wp)
+  dlrpot = 180.0_wp/Real(angle%bin_tab-4,wp)
 
 ! check grid spacing
 
@@ -1125,7 +1157,7 @@ Subroutine angles_table_read(angl_name,comm)
   If (delpot > delth_max .and. (.not.safe)) Then
     Write(messages(1),'(a,1p,e15.7)') 'expected (maximum) angular increment : ', delth_max
     Write(messages(2),'(a,1p,e15.7)') 'TABANG file actual angular increment : ', delpot
-    Write(messages(3),'(a,0p,i10)') ' expected (minimum) number of grid points : ', mxgang-4
+    Write(messages(3),'(a,0p,i10)') ' expected (minimum) number of grid points : ', angle%bin_tab-4
     Write(messages(4),'(a,0p,i10)') ' TABANG file actual number of grid points : ', ngrid
     Call info(messages,4,.true.)
     Call error(22)
@@ -1136,14 +1168,14 @@ Subroutine angles_table_read(angl_name,comm)
   If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
-     Write(message,'(a,i10)') 'TABANG arrays resized for mxgrid = ', mxgang-4
+     Write(message,'(a,i10)') 'TABANG arrays resized for mxgrid = ', angle%bin_tab-4
      Call info(message,.true.)
   End If
 
 ! compare grids dimensions
 
-  If (ngrid < mxgang-4) Then
-     Call warning(270,Real(ngrid,wp),Real(mxgang-4,wp),0.0_wp)
+  If (ngrid < angle%bin_tab-4) Then
+     Call warning(270,Real(ngrid,wp),Real(angle%bin_tab-4,wp),0.0_wp)
      Call error(48)
   End If
 
@@ -1151,16 +1183,16 @@ Subroutine angles_table_read(angl_name,comm)
   dgr2rad= pi/180.0_wp
 
   fail=0
-  Allocate (read_type(1:ltpang(0)),          Stat=fail(1))
+  Allocate (read_type(1:angle%ltp(0)),          Stat=fail(1))
   Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'error - angles_table_read allocation failure'
      Call error(0,message)
   End If
-  Call allocate_angl_pot_arrays()
+  Call allocate_angl_pot_arrays(angle)
 
   read_type=0 ! initialise read_type
-  Do rtang=1,ltpang(0)
+  Do rtang=1,angle%ltp(0)
      Call get_line(safe,ntable,record,comm)
      If (.not.safe) Go To 100
 
@@ -1201,10 +1233,10 @@ Subroutine angles_table_read(angl_name,comm)
 ! read potential arrays if potential is defined
 
      itang=0
-     Do jtang=1,ltpang(0)
+     Do jtang=1,angle%ltp(0)
         If (angl_name(jtang) == idangl) Then
-           Do itang=1,mxtang
-              If (ltpang(itang) == jtang) Exit
+           Do itang=1,angle%max_types
+              If (angle%ltp(itang) == jtang) Exit
            End Do
            Exit
         End If
@@ -1302,7 +1334,7 @@ Subroutine angles_table_read(angl_name,comm)
 ! reconstruct arrays using 3pt interpolation
 
      If (remake) Then
-        Do i=1,mxgang-4
+        Do i=1,angle%bin_tab-4
            rrr = Real(i,wp)*dlrpot
            l   = Int(rrr*rdr)
            ppp = rrr*rdr-Real(l,wp)
@@ -1326,8 +1358,8 @@ Subroutine angles_table_read(angl_name,comm)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-           vang(i,jtang) = t1 + (t2-t1)*ppp*0.5_wp
-           vang(i,jtang) = vang(i,jtang)*engunit ! convert to internal units
+           angle%tab_potential(i,jtang) = t1 + (t2-t1)*ppp*0.5_wp
+           angle%tab_potential(i,jtang) = angle%tab_potential(i,jtang)*engunit ! convert to internal units
 
            vk  = bufvir(l)
 
@@ -1348,32 +1380,36 @@ Subroutine angles_table_read(angl_name,comm)
 
            t1 = vk  + (vk1 - vk)*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-           gang(i,jtang) = t1 + (t2-t1)*ppp*0.5_wp
-           gang(i,jtang) = gang(i,jtang)*engunit*rad2dgr ! convert to internal units
+           angle%tab_force(i,jtang) = t1 + (t2-t1)*ppp*0.5_wp
+           angle%tab_force(i,jtang) = angle%tab_force(i,jtang)*engunit*rad2dgr ! convert to internal units
         End Do
 
-        gang(-1,jtang) = rad2dgr/dlrpot
+        angle%tab_force(-1,jtang) = rad2dgr/dlrpot
      Else
-        Do i=1,mxgang-4
-           vang(i,jtang) = bufpot(i)*engunit         ! convert to internal units
-           gang(i,jtang) = bufvir(i)*engunit*rad2dgr ! convert to internal units
+        Do i=1,angle%bin_tab-4
+           angle%tab_potential(i,jtang) = bufpot(i)*engunit         ! convert to internal units
+           angle%tab_force(i,jtang) = bufvir(i)*engunit*rad2dgr ! convert to internal units
         End Do
 
 ! linear extrapolation for the grid point just beyond the cutoff
 
-        vang(mxgang-3,jtang) = 2.0_wp*vang(mxgang-4,jtang) - vang(mxgang-5,jtang)
-        gang(mxgang-3,jtang) = 2.0_wp*gang(mxgang-4,jtang) - gang(mxgang-5,jtang)
+        angle%tab_potential(angle%bin_tab-3,jtang) = &
+          2.0_wp*angle%tab_potential(angle%bin_tab-4,jtang) - angle%tab_potential(angle%bin_tab-5,jtang)
+        angle%tab_force(angle%bin_tab-3,jtang) = &
+          2.0_wp*angle%tab_force(angle%bin_tab-4,jtang) - angle%tab_force(angle%bin_tab-5,jtang)
 
-        gang(-1,jtang) = rad2dgr/delpot
+        angle%tab_force(-1,jtang) = rad2dgr/delpot
      End If
 
-! grid point at 0 and linear extrapolation for the grid point at mxgang-2
+! grid point at 0 and linear extrapolation for the grid point at angle%bin_tab-2
 
-     vang(0,jtang) = bufpot(0)
-     gang(0,jtang) = bufvir(0)
+     angle%tab_potential(0,jtang) = bufpot(0)
+     angle%tab_force(0,jtang) = bufvir(0)
 
-     vang(mxgang-2,jtang) = 2.0_wp*vang(mxgang-3,jtang) - vang(mxgang-4,jtang)
-     gang(mxgang-2,jtang) = 2.0_wp*gang(mxgang-3,jtang) - gang(mxgang-4,jtang)
+     angle%tab_potential(angle%bin_tab-2,jtang) = &
+       2.0_wp*angle%tab_potential(angle%bin_tab-3,jtang) - angle%tab_potential(angle%bin_tab-4,jtang)
+     angle%tab_force(angle%bin_tab-2,jtang) = &
+       2.0_wp*angle%tab_force(angle%bin_tab-3,jtang) - angle%tab_force(angle%bin_tab-4,jtang)
   End Do
 
   If (comm%idnode == 0) Then
@@ -1405,6 +1441,38 @@ Subroutine angles_table_read(angl_name,comm)
 
 End Subroutine angles_table_read
 
+  Subroutine cleanup(angle)
+    Type(angles_type) :: angle
 
+    If (Allocated(angle%num)) Then
+      Deallocate(angle%num)
+    End If
+    If (Allocated(angle%key)) Then
+      Deallocate(angle%key)
+    End If
 
+    If (Allocated(angle%lst)) Then
+      Deallocate(angle%lst)
+    End If
+    If (Allocated(angle%list)) Then
+      Deallocate(angle%list)
+    End If
+    If (Allocated(angle%legend)) Then
+      Deallocate(angle%legend)
+    End If
+
+    If (Allocated(angle%param)) Then
+      Deallocate(angle%param)
+    End If
+
+    If (Allocated(angle%ltp)) Then
+      Deallocate(angle%ltp)
+    End If
+    If (Allocated(angle%tab_potential)) Then
+      Deallocate(angle%tab_potential)
+    End If
+    If (Allocated(angle%tab_force)) Then
+      Deallocate(angle%tab_force)
+    End If
+  End Subroutine cleanup
 End Module angles

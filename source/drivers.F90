@@ -10,7 +10,7 @@ Module drivers
                            rgdriz,rgdwgt,rgdrix,rgdriy,rgdriz,rgdind,rgdzzz,rgdyyy,&
                            rgdxxx,rgdmeg,ntrgd,lshmv_rgd,lishp_rgd,lashp_rgd
   Use setup, Only : boltz,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
-  Use angles, Only : mxgang1
+  Use angles, Only : angles_type
   Use dihedrals, Only : mxgdih1
   Use inversions, Only : mxginv1 
   Use site,        Only : dofsit

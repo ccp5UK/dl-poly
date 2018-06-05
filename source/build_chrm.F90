@@ -18,7 +18,7 @@ Module build_chrm
   Use rigid_bodies
 
   Use bonds, Only : bonds_type
-  Use angles
+  Use angles, Only : angles_type
   Use dihedrals
   Use inversions
 
@@ -33,7 +33,7 @@ Module build_chrm
 
   Public :: build_chrm_intra
 Contains 
-  Subroutine build_chrm_intra(bond,comm)
+  Subroutine build_chrm_intra(bond,angle,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -56,6 +56,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( bonds_type ), Intent( In    ) :: bond
+    Type( angles_type ), Intent( In    ) :: angle
     Type( comms_type ),  Intent( InOut) :: comm
 
     Logical :: safe
@@ -248,11 +249,11 @@ Contains
 
       ! add sites on basis of valence angles to core-shell units
 
-      Do kk=1,ntangl1
-        If (keyang(listang(0,kk)) > 0) Then
-          ja=listang(1,kk)
-          jb=listang(2,kk)
-          jc=listang(3,kk)
+      Do kk=1,angle%n_types1
+        If (angle%key(angle%list(0,kk)) > 0) Then
+          ja=angle%list(1,kk)
+          jb=angle%list(2,kk)
+          jc=angle%list(3,kk)
 
           ja0=local_index(ja,nlast,lsi,lsa)
           jb0=local_index(jb,nlast,lsi,lsa)

@@ -1311,7 +1311,8 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  200) Then
 
-        Write(ounit,'(/,1x,a)') 'error - rdf||z-density||bond%dst||dstang||dstdih||dstinv buffer array too small in system_revive'
+        Write(ounit,'(/,1x,a)') 'error - rdf||z-density||bond%dst||angle%dst||dstdih||dstinv'// &
+          'buffer array too small in system_revive'
 
      Else If (kode ==  210) Then
 
@@ -1968,10 +1969,6 @@ Subroutine info_sl(message,master_only)
      Else If (kode == 1027) Then
 
         Write(ounit,'(/,1x,a)') 'error - allocation failure in tersoff_module -> allocate_tersoff_arrays'
-
-     Else If (kode == 1028) Then
-
-        Write(ounit,'(/,1x,a)') 'error - deallocation failure in angles_module -> deallocate_angles_arrays'
 
      Else If (kode == 1030) Then
 
