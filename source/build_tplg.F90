@@ -12,7 +12,7 @@ Module build_tplg
   ! INTERACTION MODULES
 
   Use bonds, Only : bonds_type
-  Use angles
+  Use angles, Only : angles_type
   Use dihedrals
   Use inversions
 
@@ -29,7 +29,7 @@ Module build_tplg
 
 Contains
 
-  Subroutine build_tplg_intra(bond,comm)
+  Subroutine build_tplg_intra(bond,angle,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -43,6 +43,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( bonds_type ), Intent( In    ) :: bond
+    Type( angles_type ), Intent( In    ) :: angle
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe

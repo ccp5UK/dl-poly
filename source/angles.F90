@@ -11,11 +11,11 @@ Module angles
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gsum,gbcast,gsync,gcheck
   Use setup,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
-                            angle%bin_tab,angle%bin_adf,engunit,zero_plus, angle%max_angles, twopi, &
-                            delth_max,ntable,angle%max_types,mxatdm,angle%max_legend,angle%max_param,mxtmls
+                     engunit,zero_plus,twopi, &
+                     delth_max,ntable,mxatdm,mxtmls
   Use site,   Only : unqatm,ntpatm
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz,cfgname
@@ -30,7 +30,7 @@ Module angles
     Private
 
     !> Tabulated potential switch
-    Logical,                        Save :: l_tab = .false.
+    Logical, Public :: l_tab = .false.
 
     !> Number of angle types (potentials)
     Integer( Kind = wi ), Public :: n_types  = 0
@@ -50,18 +50,18 @@ Module angles
     Integer( Kind = wi ), Allocatable, Public :: legend(:,:)
 
     !> Angle parameters (force constant, etc.)
-    Real( Kind = wp ), Allocatable, Save :: param(:,:)
+    Real( Kind = wp ), Allocatable, Public :: param(:,:)
 
     ! Possible tabulated calculation arrays
-    Integer,           Allocatable, Save :: ltp(:)
+    Integer,           Allocatable, Public :: ltp(:)
     !> Tabulated potential
     Real( Kind = wp ), Allocatable, Public :: tab_potential(:,:)
     !> Tabulated force
     Real( Kind = wp ), Allocatable, Public :: tab_force(:,:)
 
     ! Possible distribution arrays
-    Integer,           Allocatable, Save :: ldf(:),typ(:,:)
-    Real( Kind = wp ), Allocatable, Save :: dst(:,:)
+    Integer,           Allocatable, Public :: ldf(:),typ(:,:)
+    Real( Kind = wp ), Allocatable, Public :: dst(:,:)
 
     ! Maximums
     !> Maximum number of angle types
@@ -91,9 +91,10 @@ Module angles
 
 Contains
 
-  Subroutine allocate_angles_arrays()
+  Subroutine allocate_angles_arrays(angle)
+    Type( angles_type ), Intent( InOut ) :: angle
 
-    Integer, Dimension( 1:8 ) :: fail
+    Integer, Dimension(8) :: fail
 
     fail = 0
 
@@ -126,9 +127,10 @@ Contains
 
   End Subroutine allocate_angles_arrays
 
-  Subroutine allocate_angl_pot_arrays()
+  Subroutine allocate_angl_pot_arrays(angle)
+    Type( angles_type ), Intent( InOut ) :: angle
 
-    Integer :: fail(1:2)
+    Integer :: fail(2)
 
     fail = 0
 
@@ -142,7 +144,8 @@ Contains
 
   End Subroutine allocate_angl_pot_arrays
 
-  Subroutine allocate_angl_dst_arrays()
+  Subroutine allocate_angl_dst_arrays(angle)
+    Type( angles_type ), Intent( InOut ) :: angle
 
     Integer :: fail
 
@@ -157,7 +160,7 @@ Contains
 
   End Subroutine allocate_angl_dst_arrays
   
-  Subroutine angles_compute(temp,comm)
+  Subroutine angles_compute(temp,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -171,6 +174,7 @@ Contains
 
 
   Real( Kind = wp ),  Intent( In    ) :: temp
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: zero
@@ -487,7 +491,7 @@ Contains
 
 End Subroutine angles_compute
 
-Subroutine angles_forces(isw,engang,virang,stress,comm)
+Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -508,6 +512,7 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
   Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: engang,virang
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical           :: safe
@@ -1086,7 +1091,7 @@ Subroutine angles_forces(isw,engang,virang,stress,comm)
 
 End Subroutine angles_forces
 
-Subroutine angles_table_read(angl_name,comm)
+Subroutine angles_table_read(angl_name,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1099,6 +1104,7 @@ Subroutine angles_table_read(angl_name,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Type( angles_type ), Intent( InOut ) :: angle
   Character( Len = 24 ), Intent( In    ) :: angl_name(1:angle%max_types)
   Type(comms_type),      Intent( InOut ) :: comm
 
@@ -1183,7 +1189,7 @@ Subroutine angles_table_read(angl_name,comm)
      Write(message,'(a)') 'error - angles_table_read allocation failure'
      Call error(0,message)
   End If
-  Call allocate_angl_pot_arrays()
+  Call allocate_angl_pot_arrays(angle)
 
   read_type=0 ! initialise read_type
   Do rtang=1,angle%ltp(0)
@@ -1387,8 +1393,10 @@ Subroutine angles_table_read(angl_name,comm)
 
 ! linear extrapolation for the grid point just beyond the cutoff
 
-        angle%tab_potential(angle%bin_tab-3,jtang) = 2.0_wp*angle%tab_potential(angle%bin_tab-4,jtang) - angle%tab_potential(angle%bin_tab-5,jtang)
-        angle%tab_force(angle%bin_tab-3,jtang) = 2.0_wp*angle%tab_force(angle%bin_tab-4,jtang) - angle%tab_force(angle%bin_tab-5,jtang)
+        angle%tab_potential(angle%bin_tab-3,jtang) = &
+          2.0_wp*angle%tab_potential(angle%bin_tab-4,jtang) - angle%tab_potential(angle%bin_tab-5,jtang)
+        angle%tab_force(angle%bin_tab-3,jtang) = &
+          2.0_wp*angle%tab_force(angle%bin_tab-4,jtang) - angle%tab_force(angle%bin_tab-5,jtang)
 
         angle%tab_force(-1,jtang) = rad2dgr/delpot
      End If
@@ -1398,8 +1406,10 @@ Subroutine angles_table_read(angl_name,comm)
      angle%tab_potential(0,jtang) = bufpot(0)
      angle%tab_force(0,jtang) = bufvir(0)
 
-     angle%tab_potential(angle%bin_tab-2,jtang) = 2.0_wp*angle%tab_potential(angle%bin_tab-3,jtang) - angle%tab_potential(angle%bin_tab-4,jtang)
-     angle%tab_force(angle%bin_tab-2,jtang) = 2.0_wp*angle%tab_force(angle%bin_tab-3,jtang) - angle%tab_force(angle%bin_tab-4,jtang)
+     angle%tab_potential(angle%bin_tab-2,jtang) = &
+       2.0_wp*angle%tab_potential(angle%bin_tab-3,jtang) - angle%tab_potential(angle%bin_tab-4,jtang)
+     angle%tab_force(angle%bin_tab-2,jtang) = &
+       2.0_wp*angle%tab_force(angle%bin_tab-3,jtang) - angle%tab_force(angle%bin_tab-4,jtang)
   End Do
 
   If (comm%idnode == 0) Then

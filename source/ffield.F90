@@ -31,7 +31,7 @@ Module ffield
   Use tethers
 
   Use bonds, Only : bonds_type,bonds_table_read,allocate_bond_dst_arrays
-  Use angles
+  Use angles, Only : angles_type,angles_table_read,allocate_angl_dst_arrays
   Use dihedrals
   Use inversions
 
@@ -74,8 +74,8 @@ Subroutine read_field                      &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
-           megtet,angle%total,megdih,    &
-           meginv,thermo,met,bond,comm)
+           megtet,megdih,    &
+           meginv,thermo,met,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -109,10 +109,11 @@ Subroutine read_field                      &
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megcon,megpmf,megrgd,        &
-                                        megtet,angle%total,megdih,meginv
+                                        megtet,megdih,meginv
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -2173,7 +2174,7 @@ Subroutine read_field                      &
 ! read & generate intramolecular potential & virial arrays
 
         If (bond%l_tab) Call bonds_table_read(bond_name,bond,comm)
-        If (angle%l_tab) Call angles_table_read(angl_name,comm)
+        If (angle%l_tab) Call angles_table_read(angl_name,angle,comm)
         If (lt_dih) Call dihedrals_table_read(dihd_name,comm)
         If (lt_inv) Call inversions_table_read(invr_name,comm)
 
@@ -2415,7 +2416,7 @@ Subroutine read_field                      &
            End If
            If (angle%bin_adf > 0) Then
               ntpang = 0 ! for angles
-              Call allocate_angl_dst_arrays() ! as it depends on angle%ldf(0)
+              Call allocate_angl_dst_arrays(angle) ! as it depends on angle%ldf(0)
 !             angle%typ = 0 ! initialised in angles_module
            End If
            If (mxgdih1 > 0) Then
@@ -4694,7 +4695,7 @@ Subroutine read_field                      &
 ! check and resolve any conflicting 14 dihedral specifications
 
         Call dihedrals_14_check &
-           (l_str,l_top,lx_dih,ntpmls,nummols,angle%num,angle%key,angle%lst,numdih,lstdih,prmdih,comm)
+           (l_str,l_top,lx_dih,ntpmls,nummols,numdih,lstdih,prmdih,angle,comm)
 
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
@@ -4740,8 +4741,8 @@ End Subroutine read_field
 Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,angle%total,megdih,  &
-           meginv,bond,comm)
+           megtet,megdih,  &
+           meginv,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4754,8 +4755,9 @@ Subroutine report_topology               &
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
                               megshl,megcon,megpmf,megrgd, &
-                              megtet,angle%total,megdih,meginv
-  Type( bonds_type ), Intent( InOut ) :: bond
+                              megtet,megdih,meginv
+  Type( bonds_type ), Intent( In    ) :: bond
+  Type( angles_type ), Intent( In    ) :: angle
   Type(comms_type), Intent( InOut ) :: comm
 
   Integer :: itmols,nsite,                &
@@ -4945,12 +4947,12 @@ Subroutine scan_field                                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,mxtteth,mxteth,mxftet,             &
            mtbond, &
-           mtangl,angle%max_types,angle%max_angles,angle%max_legend,angle%bin_tab,       &
+           mtangl,       &
            mtdihd,mxtdih,mxdihd,mxfdih,mxgdih,       &
            mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4969,6 +4971,7 @@ Subroutine scan_field                                &
 
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 ! Max number of different atom types
 
@@ -4993,7 +4996,7 @@ Subroutine scan_field                                &
                        numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
                        numteth,mtteth,mxtteth,mxteth,iteth,mxftet,             &
                        numbonds,mtbond,ibonds, &
-                       angle%num,mtangl,angle%max_types,angle%max_angles,iang,angle%max_legend,angle%bin_tab,         &
+                       numang,mtangl,iang,         &
                        numdih,mtdihd,mxtdih,mxdihd,idih,mxfdih,mxgdih,         &
                        numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,mxginv,           &
                        mxrdf,itprdf,mxvdw,itpvdw,mxgvdw,                       &
@@ -5393,11 +5396,11 @@ Subroutine scan_field                                &
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  angle%num=Nint(word_2_real(word))
-                 mtangl=Max(mtangl,angle%num)
-                 angle%max_types=angle%max_types+angle%num
-                 angle%max_angles=angle%max_angles+nummols*angle%num
+                 mtangl=Max(mtangl,numang)
+                 angle%max_types=angle%max_types+numang
+                 angle%max_angles=angle%max_angles+nummols*numang
 
-                 Do iang=1,angle%num
+                 Do iang=1,numang
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                        Call get_line(safe,nfield,record,comm)

@@ -1311,7 +1311,8 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  200) Then
 
-        Write(ounit,'(/,1x,a)') 'error - rdf||z-density||bond%dst||angle%dst||dstdih||dstinv buffer array too small in system_revive'
+        Write(ounit,'(/,1x,a)') 'error - rdf||z-density||bond%dst||angle%dst||dstdih||dstinv'// &
+          'buffer array too small in system_revive'
 
      Else If (kode ==  210) Then
 

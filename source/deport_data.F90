@@ -21,7 +21,7 @@ Module deport_data
   Use tethers,      Only : ntteth,listtet,legtet
 
   Use bonds,        Only : bonds_type
-  Use angles,       Only : angle%n_types,angle%list,angle%legend
+  Use angles,       Only : angles_type
   Use dihedrals,    Only : ntdihd,listdih,legdih,lx_dih
   Use inversions,   Only : ntinv,listinv,leginv
 
@@ -59,7 +59,7 @@ Module deport_data
   Contains 
   
 
-Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
+Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -83,6 +83,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -2526,8 +2527,8 @@ Subroutine relocate_particles       &
            (dvar,rlnk,lbook,lmsd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           angle%total,megdih,    &
-           meginv,stats,ewld,thermo,green,bond,comm)
+           megdih,    &
+           meginv,stats,ewld,thermo,green,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2547,12 +2548,13 @@ Subroutine relocate_particles       &
   Integer,           Intent( In    ) :: megatm,              &
                                         megshl,m_con,megpmf, &
                                         m_rgd,megtet,        &
-                                        angle%total,megdih,meginv
+                                        megdih,meginv
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2668,18 +2670,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,comm)
 
 ! check system for loss of atoms
 

@@ -15,7 +15,7 @@ Module dihedrals
   Use comms, Only : comms_type,gcheck,gsum,gsync,gbcast
   Use setup,  Only : pi,twopi,boltz,delth_max,npdfdt,npdgdt, &
                             mxgdih,mxgdih1,engunit,zero_plus, mxtmls,     &
-                            angle%max_types,mxtdih,mxpdih,rtwopi,r4pie0,mxdihd,    &
+                            mxtdih,mxpdih,rtwopi,r4pie0,mxdihd,    &
                             mximpl, ntable, mxgvdw,mxatdm,mxfdih
   Use site,   Only : unqatm,ntpatm
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
@@ -27,6 +27,7 @@ Module dihedrals
   Use numerics, Only : local_index,images
   Use coul_spole, Only : intra_coul
   Use coul_mpole, Only : intra_mcoul
+  Use angles, Only : angles_type
   Implicit None
 
   Logical,                        Save :: lt_dih=.false. , & ! no tabulated potentials opted
@@ -138,7 +139,7 @@ Contains
   End Subroutine allocate_dihd_dst_arrays
   
   Subroutine dihedrals_14_check &
-           (l_str,l_top,lx_dih,ntpmls,nummols,angle%num,angle%key,angle%lst,numdih,lstdih,prmdih,comm)
+           (l_str,l_top,lx_dih,ntpmls,nummols,numdih,lstdih,prmdih,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -152,10 +153,10 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   Logical,           Intent( In    ) :: l_str,l_top,lx_dih
-  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls),angle%num(1:mxtmls), &
-                                        angle%key(1:angle%max_types),angle%lst(1:3,1:angle%max_types),     &
+  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls), &
                                         numdih(1:mxtmls),lstdih(1:6,1:mxtdih)
   Real( Kind = wp ), Intent( InOut ) :: prmdih(1:mxpdih,1:mxtdih)
+  Type( angles_type ), Intent( In    ) :: angle
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: l_print,l_reset,l_reset_l

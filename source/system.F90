@@ -14,7 +14,7 @@ Module system
   Use rdfs,        Only : ncfrdf,rdf,ncfusr,rusr,usr
   Use z_density,   Only : ncfzdn,zdens
   Use bonds,       Only : bonds_type
-  Use angles,      Only : angle%ldf,angle%n_frames,angle%dst,angle%num,angle%lst,angle%key
+  Use angles,      Only : angles_type
   Use dihedrals,   Only : ldfdih,ncfdih,dstdih,numdih,lstdih
   Use inversions,  Only : ldfinv,ncfinv,dstinv,numinv,lstinv
   Use vdw,         Only : ls_vdw,ntpvdw
@@ -60,7 +60,7 @@ Module system
   
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
-           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,comm)
+           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -88,6 +88,7 @@ Module system
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -620,7 +621,7 @@ Module system
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,comm)
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -642,7 +643,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,comm)
   Integer,           Intent( In    ) :: nx,ny,megatm
   Real( Kind = wp ), Intent( In    ) :: rcut
   Integer,           Intent( InOut ) :: nz
-  Type( bonds_type ), Intent( InOut ) :: bond
+  Type( bonds_type ), Intent( In    ) :: bond
+  Type( angles_type ), Intent( In    ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size
@@ -1800,7 +1802,7 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stats,devel,green,thermo,bond,comm)
+           stats,devel,green,thermo,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1822,6 +1824,7 @@ Subroutine system_revive                                      &
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready

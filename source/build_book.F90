@@ -24,7 +24,7 @@ Module build_book
   Use tethers
 
   Use bonds, Only : bonds_type
-  Use angles
+  Use angles, Only : angles_type
   Use dihedrals
   Use inversions
   Use configuration, only : lexatm
@@ -50,7 +50,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,angle%total,megdih,meginv,bond,comm)
+           megtet,megdih,meginv,bond,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,11 +69,12 @@ Subroutine build_book_intra             &
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megcon,megpmf, &
-                                        megtet,angle%total, &
+                                        megtet, &
                                         megdih,meginv
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -107,7 +108,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra(bond)
+  If (.not.(newjob .or. lsim)) Call init_intra(bond,angle)
 
 ! Initialise safety flags
 
@@ -565,7 +566,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),iat0,jangle,angle%legend,angle%max_legend)
                        If (angle%legend(angle%max_legend,iat0) > 0) Then
                           Call warning('too many angle type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', angle%max_legend-1+angle%legend(angle%max_legend,iat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            angle%max_legend-1+angle%legend(angle%max_legend,iat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', angle%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', angle%lst(1,langle+kangle)
@@ -580,7 +582,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),jat0,jangle,angle%legend,angle%max_legend)
                        If (angle%legend(angle%max_legend,jat0) > 0) Then
                           Call warning('too many angle type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', angle%max_legend-1+angle%legend(angle%max_legend,jat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            angle%max_legend-1+angle%legend(angle%max_legend,jat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', angle%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', angle%lst(2,langle+kangle)
@@ -595,7 +598,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),kat0,jangle,angle%legend,angle%max_legend)
                        If (angle%legend(angle%max_legend,kat0) > 0) Then
                           Call warning('too many angle type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', angle%max_legend-1+angle%legend(angle%max_legend,kat0)
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            angle%max_legend-1+angle%legend(angle%max_legend,kat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', angle%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', angle%lst(3,langle+kangle)
@@ -1632,7 +1636,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,angle%total,megdih,meginv,bond,comm)
+           megtet,megdih,meginv,bond,angle,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1766,7 +1770,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra(bond)
+Subroutine init_intra(bond,angle)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1780,6 +1784,7 @@ Subroutine init_intra(bond)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( angles_type ), Intent( InOut ) :: angle
 
 ! exclusions locals
 
