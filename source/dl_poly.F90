@@ -180,6 +180,7 @@ program dl_poly
   Use nve, Only : nve_0_vv, nve_1_vv 
   Use timer, Only  : timer_type, time_elapsed,timer_report
   Use poisson, Only : poisson_type
+  Use analysis, Only : analysis_result
 
     ! MAIN PROGRAM VARIABLES
   Implicit None
@@ -710,9 +711,14 @@ program dl_poly
   ! Produce summary of simulation
 
   Call statistics_result                                        &
-    (rcut,lmin,lpana,lrdf,lprdf,lzdn,msd_data%l_msd,lpzdn, &
+    (lmin,msd_data%l_msd, &
     nstrun,keyshl,megcon,megpmf,              &
-    nstep,tstep,time,tmst,mxatdm,stats,thermo,green,bond,angle,dihedral,comm,passmin)
+    nstep,tstep,time,tmst,mxatdm,stats,thermo,green,comm,passmin)
+
+  ! Final anlysis
+  Call analysis_result(lrdf,lzdn,lpana,lprdf,lpzdn, &
+                       nstep,tstep,rcut,stats%sumval(2),thermo%ensemble, &
+                       bond,angle,dihedral,stats,green,comm)
 
   10 Continue
 

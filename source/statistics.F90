@@ -27,18 +27,9 @@ Module statistics
   Use core_shell,  Only : passshl
   Use constraints, Only : passcon
   Use pmf,         Only : passpmf
-  Use bonds,       Only : bonds_type,bonds_compute
-  Use angles,      Only : angles_type,angles_compute
-  Use dihedrals,   Only : dihedrals_type,dihedrals_compute
-  Use inversions,  Only : ncfinv,mxginv1
-
-  Use rdfs,         Only : ncfrdf,l_errors_jack,l_errors_block,ncfusr, &
-                           calculate_errors,calculate_errors_jackknife, &
-                           rdf_compute,usr_compute
-  Use z_density,   Only : ncfzdn,z_density_compute,z_density_collect
+  Use z_density,   Only : z_density_collect
   Use msd,         Only : msd_type
-  Use greenkubo,   Only : greenkubo_type,vaf_compute
-  Use inversions,  Only : inversions_compute
+  Use greenkubo,   Only : greenkubo_type
   Use errors_warnings, Only : error,warning,info
   Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
   Use thermostat, Only : thermostat_type
@@ -1325,10 +1316,10 @@ Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
 End Subroutine statistics_connect_spread
 
 Subroutine statistics_result                                    &
-           (rcut,lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn, &
+           (lmin,lmsd, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
-           mxatdm,stats,thermo,green,bond,angle,dihedral,comm,passmin)
+           mxatdm,stats,thermo,green,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1341,21 +1332,18 @@ Subroutine statistics_result                                    &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: lmin,lpana,lrdf,lmsd,lprdf,lzdn,lpzdn
+  Logical,           Intent( In    ) :: lmin,lmsd
   Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
+  Real( Kind = wp ), Intent( In    ) :: tstep,time,tmst
   Integer( Kind = wi ),    Intent( In    ) :: mxatdm
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( In    ) :: green
-  Type( bonds_type ), Intent( InOut ) :: bond
-  Type( angles_type ), Intent( InOut ) :: angle
-  Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
   Logical           :: check
   Integer           :: i,iadd
-  Real( Kind = wp ) :: avvol,avcel(1:9),dc,srmsd,timelp,tmp,h_z,tx,ty,temp
+  Real( Kind = wp ) :: avvol,dc,srmsd,timelp,tmp,h_z,tx,ty,temp
   Character( Len = 256 ) :: message
   Character( Len = 256 ), Dimension(5) :: messages
 
@@ -1476,7 +1464,6 @@ Subroutine statistics_result                                    &
 ! safe average volume and cell
 
   avvol = volm
-  avcel = cell
 
 ! If dry/static/minimisation run - NO AVERAGES
 ! Print pressure tensor and jump to possible RDF and Z-Density
@@ -1500,145 +1487,137 @@ Subroutine statistics_result                                    &
      Go To 10
   End If
 
-! If still running in the pure equilibration regime - NO AVERAGES
+  ! If still running in the pure equilibration regime - NO AVERAGES
+  If (stats%numacc /= 0) Then
+    ! shift back statistical averages as from statistics_collect
 
-  If (stats%numacc == 0) Go To 20
+    Do i=0,stats%mxnstk
+      stats%sumval(i)=stats%sumval(i)+stats%stpvl0(i)
+    End Do
 
-! shift back statistical averages as from statistics_collect
+    ! calculate final fluctuations
 
-  Do i=0,stats%mxnstk
-    stats%sumval(i)=stats%sumval(i)+stats%stpvl0(i)
-  End Do
+    Do i=0,stats%mxnstk
+      stats%ssqval(i)=Sqrt(stats%ssqval(i))
+    End Do
 
-! calculate final fluctuations
+    ! average volume
 
-  Do i=0,stats%mxnstk
-    stats%ssqval(i)=Sqrt(stats%ssqval(i))
-  End Do
+    avvol =stats%sumval(19)
 
-! average volume
+    ! final averages and fluctuations
+    Write(messages(1),'(a)') Repeat('-',130)
+    Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+      'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
+    Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
+      'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
+    Write(messages(4), '(5x,a8,5x,a6,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
+      'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
+    Write(messages(5),'(a)') Repeat('-',130)
+    Call info(messages,5,.true.)
 
-  avvol =stats%sumval(19)
+    Write(messages(1),'(i13,1p,9e12.4)')stats%numacc,stats%sumval(1:9)
+    Write(messages(2),'(f13.5,1p,9e12.4)')tmp,stats%sumval(10:18)
+    Write(messages(3),'(0p,f13.3,1p,9e12.4)') timelp,stats%sumval(19:27)
+    Write(messages(4),'(a)')''
+    Call info(messages,4,.true.)
 
-! final averages and fluctuations
-  Write(messages(1),'(a)') Repeat('-',130)
-  Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-   'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
-  Write(messages(3),'(5x,a8,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
-   'time(ps)',' eng_pv','temp_rot','vir_cfg','vir_src','vir_cou','vir_bnd','vir_ang','vir_con','vir_tet'
-  Write(messages(4), '(5x,a8,5x,a6,4x,a8,5x,a7,5x,a7,7x,a5,8x,a4,7x,a5,5x,a7,7x,a5)') &
-    'cpu  (s)','volume','temp_shl','eng_shl','vir_shl','alpha','beta','gamma','vir_pmf','press'
-  Write(messages(5),'(a)') Repeat('-',130)
-  Call info(messages,5,.true.)
+    Write(messages(1),'(6x,a8,1p,9e12.4)') ' r.m.s. ',stats%ssqval(1:9)
+    Write(messages(2),'(6x,a8,1p,9e12.4)') 'fluctu- ',stats%ssqval(10:18)
+    Write(messages(3),'(6x,a8,1p,9e12.4)') 'ations  ',stats%ssqval(19:27)
+    Write(messages(4),'(a)') Repeat('-',130)
+    Call info(messages,4,.true.)
 
-  Write(messages(1),'(i13,1p,9e12.4)')stats%numacc,stats%sumval(1:9)
-  Write(messages(2),'(f13.5,1p,9e12.4)')tmp,stats%sumval(10:18)
-  Write(messages(3),'(0p,f13.3,1p,9e12.4)') timelp,stats%sumval(19:27)
-  Write(messages(4),'(a)')''
-  Call info(messages,4,.true.)
+    ! Some extra information - conserved quantity=extended ensemble energy
 
-  Write(messages(1),'(6x,a8,1p,9e12.4)') ' r.m.s. ',stats%ssqval(1:9)
-  Write(messages(2),'(6x,a8,1p,9e12.4)') 'fluctu- ',stats%ssqval(10:18)
-  Write(messages(3),'(6x,a8,1p,9e12.4)') 'ations  ',stats%ssqval(19:27)
-  Write(messages(4),'(a)') Repeat('-',130)
-  Call info(messages,4,.true.)
-
-  ! Some extra information - conserved quantity=extended ensemble energy
-
-  Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)") &
-    "Extended energy:       ",stats%sumval(0),     &
-    " r.m.s. fluctuations:  ",stats%ssqval(0)
-  Call info(message,.true.)
-
-  ! Some extra information - <P*V> term - only matters for NP/sT ensembles
-
-  If (thermo%ensemble >= 20) Then 
-    Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
-      "<P*V> term:            ",stats%sumval(37+ntpatm+2*Merge(mxatdm,0,lmsd)), &
-      " r.m.s. fluctuations:  ",stats%ssqval(37+ntpatm+2*Merge(mxatdm,0,lmsd))
+    Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)") &
+      "Extended energy:       ",stats%sumval(0),     &
+      " r.m.s. fluctuations:  ",stats%ssqval(0)
     Call info(message,.true.)
-  End If  
 
-  Write(messages(1),"(130('-'))")
-  Write(messages(2),'(a)')''
-  Call info(messages,2,.true.)
+    ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
-! Move at the end of the default 27 quantities
+    If (thermo%ensemble >= 20) Then
+      Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
+        "<P*V> term:            ",stats%sumval(37+ntpatm+2*Merge(mxatdm,0,lmsd)), &
+        " r.m.s. fluctuations:  ",stats%ssqval(37+ntpatm+2*Merge(mxatdm,0,lmsd))
+      Call info(message,.true.)
+    End If
 
-  iadd = 27
+    Write(messages(1),"(130('-'))")
+    Write(messages(2),'(a)')''
+    Call info(messages,2,.true.)
 
-  If (lmsd) iadd = iadd+2*mxatdm
+    ! Move at the end of the default 27 quantities
 
-! Write out estimated diffusion coefficients
+    iadd = 27
 
-  Write(messages(1),'(a)') 'Approximate 3D Diffusion Coefficients and square root of MSDs:'
-  Write(messages(2),'(6x,a4,2x,a19,6x,a15)') 'atom','DC (10^-9 m^2 s^-1)','Sqrt[MSD] (Ang)'
-  Call info(messages,2,.true.)
+    If (lmsd) iadd = iadd+2*mxatdm
 
-  Do i=1,ntpatm
-     If (numtypnf(i) > zero_plus) Then
+    ! Write out estimated diffusion coefficients
+
+    Write(messages(1),'(a)') 'Approximate 3D Diffusion Coefficients and square root of MSDs:'
+    Write(messages(2),'(6x,a4,2x,a19,6x,a15)') 'atom','DC (10^-9 m^2 s^-1)','Sqrt[MSD] (Ang)'
+    Call info(messages,2,.true.)
+
+    Do i=1,ntpatm
+      If (numtypnf(i) > zero_plus) Then
         dc = 10.0_wp * (stats%ravval(iadd+i)-stats%sumval(iadd+i)) / &
-             (3.0_wp*Real(stats%numacc-Min(stats%mxstak,stats%numacc-1),wp)*tstep)
+          (3.0_wp*Real(stats%numacc-Min(stats%mxstak,stats%numacc-1),wp)*tstep)
         If (dc < 1.0e-10_wp) dc = 0.0_wp
 
         srmsd = Sqrt(stats%ravval(iadd+i))
         Write(message,'(2x,a8,1p,2(8x,e13.4))') unqatm(i),dc,srmsd
-     Else
+      Else
         Write(message,'(2x,a8,1p,2(8x,e13.4))') unqatm(i),0.0_wp,0.0_wp
-     End If
-     Call info(message,.true.)
-  End Do
-  Call info('',.true.)
-
-  iadd = iadd+ntpatm
-
-! print out average pressure tensor
-
-  If (comm%idnode == 0) Then
-    Write(messages(1),'(a)') 'Pressure tensor:'
-    Write(messages(2),'(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)','r.m.s. fluctuations'
-    Call info(messages,2,.true.)
-
-    Do i=iadd,iadd+6,3
-      Write(message,'(2x,1p,3e12.4,5x,3e12.4)')stats%sumval(i+1:i+3),stats%ssqval(i+1:i+3)
+      End If
       Call info(message,.true.)
     End Do
-
-    Write(message,'(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd+1)+stats%sumval(iadd+5)+stats%sumval(iadd+9))/3.0_wp
-    Call info(message,.true.)
     Call info('',.true.)
-  End If
 
-  iadd = iadd+9
+    iadd = iadd+ntpatm
 
-! Write out mean cell vectors for npt/nst
+    ! print out average pressure tensor
 
-  If (thermo%ensemble >= 20) Then
+    If (comm%idnode == 0) Then
+      Write(messages(1),'(a)') 'Pressure tensor:'
+      Write(messages(2),'(6x,a32,5x,17x,a19)') 'Average pressure tensor  (katms)','r.m.s. fluctuations'
+      Call info(messages,2,.true.)
 
-! average cell (again)
+      Do i=iadd,iadd+6,3
+        Write(message,'(2x,1p,3e12.4,5x,3e12.4)')stats%sumval(i+1:i+3),stats%ssqval(i+1:i+3)
+        Call info(message,.true.)
+      End Do
 
-     Do i=1,9
-        avcel(i) =stats%sumval(iadd+i)
-     End Do
+      Write(message,'(2x,a,1p,e12.4)') 'trace/3  ', (stats%sumval(iadd+1)+stats%sumval(iadd+5)+stats%sumval(iadd+9))/3.0_wp
+      Call info(message,.true.)
+      Call info('',.true.)
+    End If
 
-     If (comm%idnode == 0) Then
-       Write(message,'(a32,33x,a19)') 'Average cell vectors     (Angs) ','r.m.s. fluctuations'
-       Call info(message,.true.)
+    iadd = iadd+9
+
+    ! Write out mean cell vectors for npt/nst
+
+    If (thermo%ensemble >= 20) Then
+
+      If (comm%idnode == 0) Then
+        Write(message,'(a32,33x,a19)') 'Average cell vectors     (Angs) ','r.m.s. fluctuations'
+        Call info(message,.true.)
 
 
-       Do i=iadd,iadd+6,3
-         Write(message,'(3f20.10,5x,1p,3e12.4)')stats%sumval(i+1:i+3),stats%ssqval(i+1:i+3)
-         Call info(message,.true.)
-       End Do
-     End If
+        Do i=iadd,iadd+6,3
+          Write(message,'(3f20.10,5x,1p,3e12.4)')stats%sumval(i+1:i+3),stats%ssqval(i+1:i+3)
+          Call info(message,.true.)
+        End Do
+      End If
 
-     iadd = iadd+9
+      iadd = iadd+9
 
-! PV term used above
+      ! PV term used above
 
-     iadd = iadd+1
+      iadd = iadd+1
 
-     If (thermo%iso > 0) Then
+      If (thermo%iso > 0) Then
         h_z=stats%sumval(iadd+1)
 
         Write(message,"('Average surface area, fluctuations & mean estimate (Angs^2)')")
@@ -1649,92 +1628,47 @@ Subroutine statistics_result                                    &
         iadd = iadd+2
 
         If (thermo%iso > 1) Then
-           tx= -h_z * (stats%sumval(iadd-9-8-2)/prsunt - (thermo%press+thermo%stress(1)) ) * tenunt
-           ty= -h_z * (stats%sumval(iadd-9-7-2)/prsunt - (thermo%press+thermo%stress(5)) ) * tenunt
-           Write(message,"('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
-           Call info(message,.true.)
-           Write(message,'(1p,3e12.4)')stats%sumval(iadd+1),stats%ssqval(iadd+1),tx
-           Call info(message,.true.)
-           Write(message,"('Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
-           Call info(message,.true.)
-           Write(message,'(1p,3e12.4)')stats%sumval(iadd+2),stats%ssqval(iadd+2),ty
-           Call info(message,.true.)
+          tx= -h_z * (stats%sumval(iadd-9-8-2)/prsunt - (thermo%press+thermo%stress(1)) ) * tenunt
+          ty= -h_z * (stats%sumval(iadd-9-7-2)/prsunt - (thermo%press+thermo%stress(5)) ) * tenunt
+          Write(message,"('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
+          Call info(message,.true.)
+          Write(message,'(1p,3e12.4)')stats%sumval(iadd+1),stats%ssqval(iadd+1),tx
+          Call info(message,.true.)
+          Write(message,"('Average surface tension, fluctuations & mean estimate in y (dyn/cm)')")
+          Call info(message,.true.)
+          Write(message,'(1p,3e12.4)')stats%sumval(iadd+2),stats%ssqval(iadd+2),ty
+          Call info(message,.true.)
 
-           iadd = iadd+2
+          iadd = iadd+2
         End If
-     End If
+      End If
+
+    End If
+
+    ! Write out remaining registers
+
+    check = .false.
+    Do i=iadd+1,stats%mxnstk
+      If (Abs(stats%sumval(i)) > zero_plus .or. Abs(stats%ssqval(i)) > zero_plus) check=.true.
+    End Do
+
+    If (check) Then
+      Write(messages(1),"('Remaining non-zero statistics registers:')")
+      Write(messages(2),"(4x,'Register',7x,'Average value',8x,'r.m.s. fluc.')")
+      Call info(messages,2,.true.)
+    End If
+
+    If (comm%idnode == 0) Then
+      Do i=iadd+1,mxnstk
+        If (Abs(stats%sumval(i)) > zero_plus .or. Abs(stats%ssqval(i)) > zero_plus) Then
+          Write(message,'(2x,i10,2f20.10)') i,stats%sumval(i),stats%ssqval(i)
+          Call info(message,.true.)
+        End If
+      End Do
+    End If
 
   End If
-
-! Write out remaining registers
-
-  check = .false.
-  Do i=iadd+1,stats%mxnstk
-     If (Abs(stats%sumval(i)) > zero_plus .or. Abs(stats%ssqval(i)) > zero_plus) check=.true.
-  End Do
-
-  If (check) Then
-     Write(messages(1),"('Remaining non-zero statistics registers:')")
-     Write(messages(2),"(4x,'Register',7x,'Average value',8x,'r.m.s. fluc.')")
-     Call info(messages,2,.true.)
-   End If
-
-   If (comm%idnode == 0) Then
-     Do i=iadd+1,mxnstk
-       If (Abs(stats%sumval(i)) > zero_plus .or. Abs(stats%ssqval(i)) > zero_plus) Then
-         Write(message,'(2x,i10,2f20.10)') i,stats%sumval(i),stats%ssqval(i)
-         Call info(message,.true.)
-       End If
-     End Do
-   End If
-
 10 Continue
-
-! scale densities for average volume and average volume and cell
-
-  Do i=1,ntpatm
-     dens(i)=dens(i)*(volm/avvol)
-  End Do
-
-! volm and cell become the averaged ones, as is the local temp
-
-  volm = avvol
-  cell = avcel
-  temp =stats%sumval(2)
-
-! calculate and print radial distribution functions
-
-!If block average errors, output that, else if jackknife errors output those, else just RDF.
-  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_block) Then
-    Call calculate_errors(temp, rcut, nstep, comm)
-  End If
-  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) Then
-    Call calculate_errors_jackknife(temp, rcut, nstep, comm)
-  End If
-  If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_errors_block .or. l_errors_jack)) Then
-    Call rdf_compute(lpana,rcut,temp,comm)
-  End IF
-  If (ncfusr > 0) Call usr_compute(comm)
-
-! calculate and print z-density profile
-  If (lzdn .and. lpzdn .and. ncfzdn > 0) Then
-    Call z_density_compute(comm)
-  End If
-
-! calculate and print velocity autocorrelation function
-  If (green%samp > 0 .and. green%l_print .and. green%vafcount > zero_plus) Then
-    Call vaf_compute(tstep,green,comm)
-  End If
-
-! Calculate and print PDFs
-  If (lpana) Then
-     If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Call bonds_compute(temp,bond,comm)
-     If (angle%bin_adf > 0 .and. angle%n_frames > 0) Call angles_compute(temp,angle,comm)
-     If (dihedral%bin_adf > 0 .and. dihedral%n_frames > 0) Call dihedrals_compute(temp,dihedral,comm)
-     If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp,comm)
-  End If
-
-20 Continue
 
 ! print final time check
 

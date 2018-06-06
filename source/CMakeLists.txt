@@ -76,6 +76,7 @@ gpfa235.F90
 parallel_fft.F90
 drivers.F90
 thermostat.F90
+analysis.F90
 )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY
