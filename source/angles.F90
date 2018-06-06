@@ -578,14 +578,14 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
         xdbc(i)=xxx(ic)-xxx(ib)
         ydbc(i)=yyy(ic)-yyy(ib)
         zdbc(i)=zzz(ic)-zzz(ib)
-!     Else ! (DEBUG)
-!        xdab(i)=0.0_wp
-!        ydab(i)=0.0_wp
-!        zdab(i)=0.0_wp
-!
-!        xdbc(i)=0.0_wp
-!        ydbc(i)=0.0_wp
-!        zdbc(i)=0.0_wp
+     Else ! (DEBUG)
+        xdab(i)=0.0_wp
+        ydab(i)=0.0_wp
+        zdab(i)=0.0_wp
+
+        xdbc(i)=0.0_wp
+        ydbc(i)=0.0_wp
+        zdbc(i)=0.0_wp
      End If
   End Do
 

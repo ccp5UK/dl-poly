@@ -514,7 +514,9 @@ program dl_poly
       megtet,meginv,bond,angle,dihedral,comm)
     If (mximpl > 0) Then
       Call build_tplg_intra(bond,angle,dihedral,comm) ! multipoles topology for internal coordinate system
-      If (keyind == 1) Call build_chrm_intra(bond,angle,dihedral,comm) ! CHARMM core-shell screened electrostatic induction interactions
+      If (keyind == 1)Then
+        Call build_chrm_intra(bond,angle,dihedral,comm) ! CHARMM core-shell screened electrostatic induction interactions
+      End If
     End If
     If (lexcl) Call build_excl_intra(lecx,bond,angle,dihedral,comm)
   Else

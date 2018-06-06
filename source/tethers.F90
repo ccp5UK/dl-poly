@@ -131,10 +131,10 @@ Contains
         xdab(i) = xxx(ia)-stats%xin(ia)
         ydab(i) = yyy(ia)-stats%yin(ia)
         zdab(i) = zzz(ia)-stats%zin(ia)
-!     Else ! (DEBUG)
-!        xdab(i)=0.0_wp
-!        ydab(i)=0.0_wp
-!        zdab(i)=0.0_wp
+     Else ! (DEBUG)
+        xdab(i)=0.0_wp
+        ydab(i)=0.0_wp
+        zdab(i)=0.0_wp
      End If
 
   End Do
