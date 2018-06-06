@@ -20,7 +20,7 @@ Module build_excl
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
-  Use inversions
+  Use inversions, Only : inversions_type
   Use numerics, Only : local_index,shellsort
 
   Implicit None
@@ -30,7 +30,7 @@ Module build_excl
 
 Contains
 
-Subroutine build_excl_intra(lecx,bond,angle,dihedral,comm)
+Subroutine build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -50,6 +50,7 @@ Subroutine build_excl_intra(lecx,bond,angle,dihedral,comm)
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( In    ) :: dihedral
+  Type( inversions_type ), Intent( In    ) :: inversion
   Type( comms_type ),  Intent( InOut ) :: comm
 
   Logical :: safe
@@ -219,12 +220,12 @@ Subroutine build_excl_intra(lecx,bond,angle,dihedral,comm)
 
 ! exclude sites on basis of inversion potentials
 
-  Do i=1,ntinv
-     If (keyinv(listinv(0,i)) > 0) Then
-        ia=listinv(1,i)
-        ib=listinv(2,i)
-        ic=listinv(3,i)
-        id=listinv(4,i)
+  Do i=1,inversion%n_types
+     If (inversion%key(inversion%list(0,i)) > 0) Then
+        ia=inversion%list(1,i)
+        ib=inversion%list(2,i)
+        ic=inversion%list(3,i)
+        id=inversion%list(4,i)
 
         ia0=local_index(ia,nlast,lsi,lsa)
         ib0=local_index(ib,nlast,lsi,lsa)
@@ -912,12 +913,12 @@ Subroutine build_excl_intra(lecx,bond,angle,dihedral,comm)
 
 ! exclude sites on basis of inversion angles to core-shell units
 
-     Do kk=1,ntinv1
-        If (keyinv(listinv(0,kk)) > 0) Then
-           ja=listinv(1,kk)
-           jb=listinv(2,kk)
-           jc=listinv(3,kk)
-           jd=listinv(4,kk)
+     Do kk=1,inversion%n_types1
+        If (inversion%key(inversion%list(0,kk)) > 0) Then
+           ja=inversion%list(1,kk)
+           jb=inversion%list(2,kk)
+           jc=inversion%list(3,kk)
+           jd=inversion%list(4,kk)
 
            ja0=local_index(ja,nlast,lsi,lsa)
            jb0=local_index(jb,nlast,lsi,lsa)

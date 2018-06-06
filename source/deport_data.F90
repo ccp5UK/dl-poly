@@ -23,7 +23,7 @@ Module deport_data
   Use bonds,        Only : bonds_type
   Use angles,       Only : angles_type
   Use dihedrals,    Only : dihedrals_type
-  Use inversions,   Only : ntinv,listinv,leginv
+  Use inversions, Only : inversions_type
 
   Use statistics, Only : stats_type
 
@@ -59,7 +59,7 @@ Module deport_data
   Contains
 
 
-Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
+Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -85,6 +85,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -764,15 +765,15 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
 ! pack inversion angle details
 
-           jj=leginv(0,i)
+           jj=inversion%legend(0,i)
            If (jj > 0) Then
               Do ll=1,jj
                  If (imove+5 <= iblock) Then
-                    kk=leginv(ll,i)
+                    kk=inversion%legend(ll,i)
 
                     Do k=0,4
                        imove=imove+1
-                       buffer(imove)=Real(listinv(k,kk),wp)
+                       buffer(imove)=Real(inversion%list(k,kk),wp)
                     End Do
                  Else
                     imove=imove+5
@@ -902,7 +903,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
         bond%legend(:,keep)=bond%legend(:,i)
         angle%legend(:,keep)=angle%legend(:,i)
         dihedral%legend(:,keep)=dihedral%legend(:,i)
-        leginv(:,keep)=leginv(:,i)
+        inversion%legend(:,keep)=inversion%legend(:,i)
      End If
   End Do
   keep=k ! How many particles are to be kept
@@ -1120,7 +1121,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
         jbonds=bond%n_types
         jangle=angle%n_types
         jdihed=dihedral%n_types
-        jinver=ntinv
+        jinver=inversion%n_types
 
 ! unpack core-shell details
 
@@ -1579,7 +1580,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
 ! unpack inversion angle details
 
-        leginv(:,newatm) = 0
+        inversion%legend(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
            jj=Nint(buffer(kmove+1))
            iatm=Nint(buffer(kmove+2))
@@ -1592,13 +1593,13 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
            kinver=0
            check=.true.
-           Do While (check .and. kinver < Min(jinver,mxinv))
+           Do While (check .and. kinver < Min(jinver,inversion%max_angles))
               kinver=kinver+1
-              check=.not.( jj   == listinv(0,kinver) .and. &
-                           iatm == listinv(1,kinver) .and. &
-                           jatm == listinv(2,kinver) .and. &
-                           katm == listinv(3,kinver) .and. &
-                           latm == listinv(4,kinver) )
+              check=.not.( jj   == inversion%list(0,kinver) .and. &
+                           iatm == inversion%list(1,kinver) .and. &
+                           jatm == inversion%list(2,kinver) .and. &
+                           katm == inversion%list(3,kinver) .and. &
+                           latm == inversion%list(4,kinver) )
            End Do
 
 ! add new inversion details
@@ -1606,20 +1607,20 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
            If (check) Then
               jinver=jinver+1
 
-              If (jinver <= mxinv) Then
-                 listinv(0,jinver)=jj
-                 listinv(1,jinver)=iatm
-                 listinv(2,jinver)=jatm
-                 listinv(3,jinver)=katm
-                 listinv(4,jinver)=latm
+              If (jinver <= inversion%max_angles) Then
+                 inversion%list(0,jinver)=jj
+                 inversion%list(1,jinver)=iatm
+                 inversion%list(2,jinver)=jatm
+                 inversion%list(3,jinver)=katm
+                 inversion%list(4,jinver)=latm
 
-                 Call tag_legend(safe1,newatm,jinver,leginv,mxfinv)
+                 Call tag_legend(safe1,newatm,jinver,inversion%legend,inversion%max_legend)
               Else
                  safe=.false.
                  Call warning('too many inversion units')
               End If
            Else
-              Call tag_legend(safe1,newatm,kinver,leginv,mxfinv)
+              Call tag_legend(safe1,newatm,kinver,inversion%legend,inversion%max_legend)
            End If
         End Do
         kmove=kmove+1
@@ -1638,7 +1639,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
         bond%n_types=jbonds
         angle%n_types=jangle
         dihedral%n_types=jdihed
-        ntinv =jinver
+        inversion%n_types =jinver
 
      End If
   End Do
@@ -2523,7 +2524,7 @@ Subroutine relocate_particles       &
            (dvar,rlnk,lbook,lmsd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           meginv,stats,ewld,thermo,green,bond,angle,dihedral,comm)
+           stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2542,7 +2543,7 @@ Subroutine relocate_particles       &
   Logical,           Intent( In    ) :: lmsd
   Integer,           Intent( In    ) :: megatm,              &
                                         megshl,m_con,megpmf, &
-                                        m_rgd,megtet, meginv
+                                        m_rgd,megtet
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2550,6 +2551,7 @@ Subroutine relocate_particles       &
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2665,18 +2667,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
 
 ! check system for loss of atoms
 
@@ -2722,7 +2724,7 @@ Subroutine relocate_particles       &
         If (bond%total > 0) safe(6)=(bond%n_types <= bond%max_bonds)
         If (angle%total > 0) safe(7)=(angle%n_types <= angle%max_angles)
         If (dihedral%total > 0) safe(8)=(dihedral%n_types <= dihedral%max_angles)
-        If (meginv > 0) safe(9)=(ntinv  <= mxinv )
+        If (inversion%total > 0) safe(9)=(inversion%n_types  <= inversion%max_angles )
 
         Call gcheck(comm,safe)
 
@@ -2735,7 +2737,7 @@ Subroutine relocate_particles       &
            itmp(6)=bond%n_types ; jtmp(6)=bond%max_bonds
            itmp(7)=angle%n_types ; jtmp(7)=angle%max_angles
            itmp(8)=dihedral%n_types ; jtmp(8)=dihedral%max_angles
-           itmp(9)=ntinv  ; jtmp(9)=mxinv
+           itmp(9)=inversion%n_types  ; jtmp(9)=inversion%max_angles
 
            Call gmax(comm,itmp(1:9))
 
@@ -2781,14 +2783,22 @@ Subroutine relocate_particles       &
         If (megtet > 0) Call compress_book_intra &
            (mxteth,ntteth,Ubound(listtet,Dim=1),listtet,mxftet,legtet,comm)
 
-        If (bond%total > 0) Call compress_book_intra &
-           (bond%max_bonds,bond%n_types,Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,comm)
-        If (angle%total > 0) Call compress_book_intra &
-           (angle%max_angles,angle%n_types,Ubound(angle%list,Dim=1),angle%list,angle%max_legend,angle%legend,comm)
-        If (dihedral%total > 0) Call compress_book_intra &
-           (dihedral%max_angles,dihedral%n_types,Ubound(dihedral%list,Dim=1),dihedral%list,dihedral%max_legend,dihedral%legend,comm)
-        If (meginv > 0) Call compress_book_intra &
-           (mxinv,ntinv,  Ubound(listinv,Dim=1),listinv,mxfinv,leginv,comm)
+        If (bond%total > 0) Then
+          Call compress_book_intra(bond%max_bonds,bond%n_types, &
+            Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,comm)
+        End If
+        If (angle%total > 0) Then
+          Call compress_book_intra(angle%max_angles,angle%n_types, &
+            Ubound(angle%list,Dim=1),angle%list,angle%max_legend,angle%legend,comm)
+        End If
+        If (dihedral%total > 0) Then
+          Call compress_book_intra(dihedral%max_angles,dihedral%n_types, &
+            Ubound(dihedral%list,Dim=1),dihedral%list,dihedral%max_legend,dihedral%legend,comm)
+        End If
+        If (inversion%total > 0) Then
+          Call compress_book_intra(inversion%max_angles,inversion%n_types, &
+            Ubound(inversion%list,Dim=1),inversion%list,inversion%max_legend,inversion%legend,comm)
+        End If
 
      End If
 

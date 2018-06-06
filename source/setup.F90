@@ -202,12 +202,11 @@ Module setup
     mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc,     &
     mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
     mxtteth,mxteth,mxftet,mxpteth,                              &
-    mxtinv, mxinv, mxfinv,mxpinv,mxginv,                        &
     mxrdf,mxgrdf,mxgele,                                        &
     mxvdw,mxpvdw,mxgvdw,                                        &
     mxmet,mxmed,mxmds,mxpmet,                            &
     mxter,mxpter,mxgter,mxgrid,                                 &
-    mxtana,mxgana,mxginv1,              &
+    mxtana,mxgana,              &
     mxtbp,mx2tbp,mxptbp,mxfbp,mx3fbp,mxpfbp,                    &
     mxpfld,mxgusr,                                              &
     mxlist,mxcell,mxatms,mxatdm,                  &

@@ -16,7 +16,7 @@ Module system
   Use bonds,       Only : bonds_type
   Use angles,      Only : angles_type
   Use dihedrals,   Only : dihedrals_type
-  Use inversions,  Only : ldfinv,ncfinv,dstinv,numinv,lstinv
+  Use inversions, Only : inversions_type
   Use vdw,         Only : ls_vdw,ntpvdw
   Use metal,       Only : metal_type,metal_lrc
   Use greenkubo,   Only : greenkubo_type
@@ -60,7 +60,7 @@ Module system
   
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
-           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,angle,dihedral,comm)
+           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -90,6 +90,7 @@ Module system
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -193,9 +194,9 @@ Module system
            dihedral%dst=0.0_wp
         End If
 
-        If (mxginv1 > 0) Then
-           ncfinv=0
-           dstinv=0.0_wp
+        If (inversion%bin_adf > 0) Then
+           inversion%n_frames=0
+           inversion%dst=0.0_wp
         End If
 
      End If
@@ -261,7 +262,7 @@ Module system
            If (bond%bin_pdf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,bond%dst
            If (angle%bin_adf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfang,angle%dst
            If (dihedral%bin_adf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfdih,dihedral%dst
-           If (mxginv1 > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfinv,dstinv
+           If (inversion%bin_adf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfinv,inversion%dst
         Else
            Read(Unit=nrest, IOStat=keyio, End=100) &
                dnstep,dtstep,time,tmst,dnumacc,thermo%chi_t,thermo%chi_p,thermo%cint
@@ -291,7 +292,7 @@ Module system
            If (bond%bin_pdf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfbnd,bond%dst
            If (angle%bin_adf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfang,angle%dst
            If (dihedral%bin_adf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfdih,dihedral%dst
-           If (mxginv1 > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfinv,dstinv
+           If (inversion%bin_adf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfinv,inversion%dst
         End If
 
         nstep =Nint(dnstep)
@@ -310,7 +311,7 @@ Module system
         If (bond%bin_pdf > 0) bond%n_frames=Nint(dncfbnd)
         If (angle%bin_adf > 0) angle%n_frames=Nint(dncfang)
         If (dihedral%bin_adf > 0) dihedral%n_frames=Nint(dncfdih)
-        If (mxginv1 > 0) ncfinv=Nint(dncfinv)
+        If (inversion%bin_adf > 0) inversion%n_frames=Nint(dncfinv)
 
 ! calculate stats%virtot = stats%virtot-stats%vircon-stats%virpmf
 
@@ -449,12 +450,12 @@ Module system
 
 ! inversions table - broadcast and normalise
 
-        If (mxginv1 > 0) Then
-           Call gbcast(comm,ncfinv,0)
-           Do k=1,ldfinv(0)
-              Call gbcast(comm,mxginv1,0)
+        If (inversion%bin_adf > 0) Then
+           Call gbcast(comm,inversion%n_frames,0)
+           Do k=1,inversion%ldf(0)
+              Call gbcast(comm,inversion%bin_adf,0)
 
-              dstinv(:,k) = dstinv(:,k) * r_mxnode
+              inversion%dst(:,k) = inversion%dst(:,k) * r_mxnode
            End Do
         End If
      End If
@@ -622,7 +623,7 @@ Module system
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,comm)
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -647,6 +648,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,comm)
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size
@@ -1385,14 +1387,14 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,comm)
            safe=(safe .and. safel)
 
            safel=.true.
-           Do iinv=1,numinv(itmols)
+           Do iinv=1,inversion%num(itmols)
               ninver=ninver+1
 
               safem=.true.
               Do i=1,3
-                 iatm=lstinv(i,ninver)-indatm1
+                 iatm=inversion%lst(i,ninver)-indatm1
                  Do j=i+1,4
-                    jatm=lstinv(j,ninver)-indatm1
+                    jatm=inversion%lst(j,ninver)-indatm1
 
                     safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
                     safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
@@ -1445,7 +1447,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,comm)
                  Call info(messages,2,.true.)
 
                  Do i=1,4
-                   iatm=lstinv(i,ninver)-indatm1
+                   iatm=inversion%lst(i,ninver)-indatm1
                    Write(message,'(2i10,3f10.1)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
                    Call info(message,.true.)
                  End Do
@@ -1462,7 +1464,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,comm)
               nbonds=nbonds-bond%num(itmols)
               nangle=nangle-angle%num(itmols)
               ndihed=ndihed-dihedral%num(itmols)
-              ninver=ninver-numinv(itmols)
+              ninver=ninver-inversion%num(itmols)
            End If
         End Do
 
@@ -1804,7 +1806,7 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stats,devel,green,thermo,bond,angle,dihedral,comm)
+           stats,devel,green,thermo,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1828,6 +1830,7 @@ Subroutine system_revive                                      &
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready
@@ -1963,15 +1966,15 @@ Subroutine system_revive                                      &
 
 ! globally sum inversions' distributions information before saving
 
-     If (mxginv1 > 0) Then
+     If (inversion%bin_adf > 0) Then
 
-! maximum dstinv that can be summed in each step
+! maximum inversion%dst that can be summed in each step
 
-        nsum = mxbuff/(mxginv1+1)
+        nsum = mxbuff/(inversion%bin_adf+1)
         If (nsum == 0) Call error(200)
 
-        Do i=1,ldfinv(0),nsum
-           Call gsum(comm,dstinv(:,i:Min(i+nsum-1,ldfinv(0))))
+        Do i=1,inversion%ldf(0),nsum
+           Call gsum(comm,inversion%dst(:,i:Min(i+nsum-1,inversion%ldf(0))))
         End Do
 
      End If
@@ -2023,7 +2026,7 @@ Subroutine system_revive                                      &
         If (bond%bin_pdf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(bond%n_frames,wp),bond%dst
         If (angle%bin_adf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(angle%n_frames,wp),angle%dst
         If (dihedral%bin_adf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(dihedral%n_frames,wp),dihedral%dst
-        If (mxginv1 > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfinv,wp),dstinv
+        If (inversion%bin_adf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(inversion%n_frames,wp),inversion%dst
      Else
         Open(Unit=nrest, File=Trim(revive), Form='unformatted', Status='replace')
 
@@ -2056,7 +2059,7 @@ Subroutine system_revive                                      &
         If (bond%bin_pdf > 0) Write(Unit=nrest) Real(bond%n_frames,wp),bond%dst
         If (angle%bin_adf > 0) Write(Unit=nrest) Real(angle%n_frames,wp),angle%dst
         If (dihedral%bin_adf > 0) Write(Unit=nrest) Real(dihedral%n_frames,wp),dihedral%dst
-        If (mxginv1 > 0) Write(Unit=nrest) Real(ncfinv,wp),dstinv
+        If (inversion%bin_adf > 0) Write(Unit=nrest) Real(inversion%n_frames,wp),inversion%dst
      End If
 
 ! Write initial position and final displacement data to REVIVE
@@ -2217,7 +2220,7 @@ Subroutine system_revive                                      &
 
 ! globally divide inversions' distributions data between nodes
 
-     If (mxginv1 > 0) dstinv = dstinv * r_mxnode
+     If (inversion%bin_adf > 0) inversion%dst = inversion%dst * r_mxnode
 
   Deallocate (iwrk,        Stat=fail(1))
   Deallocate (axx,ayy,azz, Stat=fail(2))

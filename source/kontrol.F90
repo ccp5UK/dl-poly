@@ -8,6 +8,7 @@ Module kontrol
   Use bonds,      Only : bonds_type
   Use angles,     Only : angles_type
   Use dihedrals,  Only : dihedrals_type
+  Use inversions, Only : inversions_type
   Use vdw,        Only : ld_vdw,ls_vdw,mxtvdw
   Use metal,      Only : metal_type
   Use poisson,    Only : poisson_type
@@ -79,7 +80,8 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral,tmr,comm)
+           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met, &
+           pois,bond,angle,dihedral,inversion,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -145,6 +147,7 @@ Subroutine read_control                                &
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( In    ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( comms_type ),     Intent( InOut )  :: comm
@@ -3163,7 +3166,7 @@ Subroutine read_control                                &
         Call info('no intramolecular distribution collection requested',.true.)
      Else
         If (bond%bin_pdf > 0 .and. angle%bin_adf > 0 .and. &
-            dihedral%bin_adf > 0 .and. mxginv1 > 0) Then
+            dihedral%bin_adf > 0 .and. inversion%bin_adf > 0) Then
            Call info('full intramolecular distribution collection requested (all=bnd/ang/dih/inv):',.true.)
         Else
            Call info('intramolecular distribution collection requested for:',.true.)
@@ -3233,16 +3236,16 @@ Subroutine read_control                                &
            End If
         End If
 
-        If (mxginv1 > 0) Then
+        If (inversion%bin_adf > 0) Then
            If (nstinv == 0 .or. (nstinv > nstana .and. nstana > 0)) Then
               nstinv = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
            End If
-           j=Merge(1, 0, grdinv /= mxginv1)
+           j=Merge(1, 0, grdinv /= inversion%bin_adf)
            Write(message,'(2(a,i10),a)') &
-             'inversions - collection every ',nstinv,' step(s); ngrid = ',mxginv1,' points'
+             'inversions - collection every ',nstinv,' step(s); ngrid = ',inversion%bin_adf,' points'
            Call info(message,.true.)
            If (i+j > 1) Then
              Write(message,'(2(a,i10))') &
@@ -3630,12 +3633,12 @@ End Subroutine read_control
 Subroutine scan_control                                    &
            (mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,mxginv1,         &
+           mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
-           thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,comm)
+           thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3657,7 +3660,7 @@ Subroutine scan_control                                    &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon,mxshl
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
-  Integer,           Intent(   Out ) :: mxgana,mxginv1, &
+  Integer,           Intent(   Out ) :: mxgana, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: rvdw,cell(1:9)
@@ -3672,6 +3675,7 @@ Subroutine scan_control                                    &
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3713,7 +3717,7 @@ Subroutine scan_control                                    &
   la_bnd = .false. ; bond%bin_pdf = 0
   la_ang = .false. ; angle%bin_adf = 0
   la_dih = .false. ; dihedral%bin_adf = 0
-  la_inv = .false. ; mxginv1 = 0
+  la_inv = .false. ; inversion%bin_adf = 0
 
 ! electrostatics and no electrostatics, rdf and no rdf, vdw and no vdw,
 ! metal and no metal, tersoff and no tersoff interactions,
@@ -4100,7 +4104,7 @@ Subroutine scan_control                                    &
            bond%bin_pdf = Max(bond%bin_pdf,mxgana)
            angle%bin_adf = Max(angle%bin_adf,mxgana)
            dihedral%bin_adf = Max(dihedral%bin_adf,mxgana)
-           mxginv1 = Max(mxginv1,mxgana)
+           inversion%bin_adf = Max(inversion%bin_adf,mxgana)
 
            Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
@@ -4124,7 +4128,7 @@ Subroutine scan_control                                    &
         Else If (akey == 'inv') Then
            la_inv = .true.
 
-           mxginv1 = Max(mxginv1,Abs(Nint(word_2_real(word))))
+           inversion%bin_adf = Max(inversion%bin_adf,Abs(Nint(word_2_real(word))))
         End If
 
 ! read rdf calculation option
@@ -4333,7 +4337,7 @@ Subroutine scan_control                                    &
         bond%bin_pdf = Max(bond%bin_pdf,mxgana)
         angle%bin_adf = Max(angle%bin_adf,mxgana)
         dihedral%bin_adf = Max(dihedral%bin_adf,mxgana)
-        mxginv1 = Max(mxginv1,mxgana)
+        inversion%bin_adf = Max(inversion%bin_adf,mxgana)
      End If
 
 ! switch indicators for set_bounds
@@ -4344,12 +4348,12 @@ Subroutine scan_control                                    &
      End If
      If (la_ang .and. angle%bin_adf == 0) angle%bin_adf = -1
      If (la_dih .and. dihedral%bin_adf == 0) dihedral%bin_adf = -1
-     If (la_inv .and. mxginv1 == 0) mxginv1 = -1
+     If (la_inv .and. inversion%bin_adf == 0) inversion%bin_adf = -1
 
 ! mxgana by construction equals the largest possible grid
 ! or 1 (positive) as an indicator for analysis
 
-     mxgana=Max(1,bond%bin_pdf,angle%bin_adf,dihedral%bin_adf,mxginv1)
+     mxgana=Max(1,bond%bin_pdf,angle%bin_adf,dihedral%bin_adf,inversion%bin_adf)
   End If
 
 ! Sort electrostatics

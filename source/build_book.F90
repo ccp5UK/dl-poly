@@ -26,7 +26,7 @@ Module build_book
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
-  Use inversions
+  Use inversions, Only : inversions_type
   Use configuration, only : lexatm
   Use shared_units, Only : tag_legend,pass_shared_units
   Use numerics, Only : local_index
@@ -50,7 +50,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,meginv,bond,angle,dihedral,comm)
+           megtet,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,13 +69,13 @@ Subroutine build_book_intra             &
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megshl,megcon,megpmf, &
-                                        megtet, &
-                                        meginv
+                                        megtet
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -109,7 +109,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra(bond,angle,dihedral)
+  If (.not.(newjob .or. lsim)) Call init_intra(bond,angle,dihedral,inversion)
 
 ! Initialise safety flags
 
@@ -771,11 +771,11 @@ Subroutine build_book_intra             &
 
 ! Construct inversion potential interaction list
 
-           Do linver=1,numinv(itmols)
-              iatm=lstinv(1,linver+kinver)+isite
-              jatm=lstinv(2,linver+kinver)+isite
-              katm=lstinv(3,linver+kinver)+isite
-              latm=lstinv(4,linver+kinver)+isite
+           Do linver=1,inversion%num(itmols)
+              iatm=inversion%lst(1,linver+kinver)+isite
+              jatm=inversion%lst(2,linver+kinver)+isite
+              katm=inversion%lst(3,linver+kinver)+isite
+              latm=inversion%lst(4,linver+kinver)+isite
 
               iat0=local_index(iatm,nlast,lsi,lsa)
               jat0=local_index(jatm,nlast,lsi,lsa)
@@ -789,21 +789,22 @@ Subroutine build_book_intra             &
 
               If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0 .or. lat0 > 0) Then
                  jinver=jinver+1
-                 If (jinver <= mxinv) Then
-                    listinv(0,jinver)=linver+kinver
-                    listinv(1,jinver)=iatm
-                    listinv(2,jinver)=jatm
-                    listinv(3,jinver)=katm
-                    listinv(4,jinver)=latm
+                 If (jinver <= inversion%max_angles) Then
+                    inversion%list(0,jinver)=linver+kinver
+                    inversion%list(1,jinver)=iatm
+                    inversion%list(2,jinver)=jatm
+                    inversion%list(3,jinver)=katm
+                    inversion%list(4,jinver)=latm
 
                     If (iat0 > 0) Then
-                       Call tag_legend(safe(1),iat0,jinver,leginv,mxfinv)
-                       If (leginv(mxfinv,iat0) > 0) Then
+                       Call tag_legend(safe(1),iat0,jinver,inversion%legend,inversion%max_legend)
+                       If (inversion%legend(inversion%max_legend,iat0) > 0) Then
                           Call warning('too many inversion type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfinv-1+leginv(mxfinv,iat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfinv-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            inversion%max_legend-1+inversion%legend(inversion%max_legend,iat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', inversion%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstinv(1,linver+kinver)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', inversion%lst(1,linver+kinver)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', linver
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -812,13 +813,14 @@ Subroutine build_book_intra             &
                     End If
 
                     If (jat0 > 0) Then
-                       Call tag_legend(safe(1),jat0,jinver,leginv,mxfinv)
-                       If (leginv(mxfinv,jat0) > 0) Then
+                       Call tag_legend(safe(1),jat0,jinver,inversion%legend,inversion%max_legend)
+                       If (inversion%legend(inversion%max_legend,jat0) > 0) Then
                           Call warning('too many inversion type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfinv-1+leginv(mxfinv,jat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfinv-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            inversion%max_legend-1+inversion%legend(inversion%max_legend,jat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', inversion%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstinv(2,linver+kinver)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', inversion%lst(2,linver+kinver)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', linver
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -827,13 +829,14 @@ Subroutine build_book_intra             &
                     End If
 
                     If (kat0 > 0) Then
-                       Call tag_legend(safe(1),kat0,jinver,leginv,mxfinv)
-                       If (leginv(mxfinv,kat0) > 0) Then
+                       Call tag_legend(safe(1),kat0,jinver,inversion%legend,inversion%max_legend)
+                       If (inversion%legend(inversion%max_legend,kat0) > 0) Then
                           Call warning('too many inversion type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfinv-1+leginv(mxfinv,kat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfinv-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            inversion%max_legend-1+inversion%legend(inversion%max_legend,kat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', inversion%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstinv(3,linver+kinver)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', inversion%lst(3,linver+kinver)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', linver
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -842,13 +845,14 @@ Subroutine build_book_intra             &
                     End If
 
                     If (lat0 > 0) Then
-                       Call tag_legend(safe(1),lat0,jinver,leginv,mxfinv)
-                       If (leginv(mxfinv,lat0) > 0) Then
+                       Call tag_legend(safe(1),lat0,jinver,inversion%legend,inversion%max_legend)
+                       If (inversion%legend(inversion%max_legend,lat0) > 0) Then
                           Call warning('too many inversion type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfinv-1+leginv(mxfinv,lat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfinv-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            inversion%max_legend-1+inversion%legend(inversion%max_legend,lat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', inversion%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstinv(4,linver+kinver)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', inversion%lst(4,linver+kinver)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', linver
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -883,7 +887,7 @@ Subroutine build_book_intra             &
      kbonds=kbonds+bond%num(itmols)
      kangle=kangle+angle%num(itmols)
      kdihed=kdihed+dihedral%num(itmols)
-     kinver=kinver+numinv(itmols)
+     kinver=kinver+inversion%num(itmols)
 
   End Do
 
@@ -901,7 +905,7 @@ Subroutine build_book_intra             &
   bond%n_types=jbonds
   angle%n_types=jangle
   dihedral%n_types=jdihed
-  ntinv =jinver
+  inversion%n_types =jinver
 
   If (megshl == 0) Then
      ntshl1 =ntshl
@@ -913,7 +917,7 @@ Subroutine build_book_intra             &
      bond%n_types1=bond%n_types
      angle%n_types1=angle%n_types
      dihedral%n_types1=dihedral%n_types
-     ntinv1 =ntinv
+     inversion%n_types1 =inversion%n_types
 
      ntshl2 =ntshl1
 
@@ -1048,11 +1052,11 @@ Subroutine build_book_intra             &
         iwrk(mshels)=natm
      End If
   End Do
-  Do i=1,ntinv
-     iatm=listinv(1,i)
-     jatm=listinv(2,i)
-     katm=listinv(3,i)
-     latm=listinv(4,i)
+  Do i=1,inversion%n_types
+     iatm=inversion%list(1,i)
+     jatm=inversion%list(2,i)
+     katm=inversion%list(3,i)
+     latm=inversion%list(4,i)
 
      iat0=local_index(iatm,nlast,lsi,lsa)
      jat0=local_index(jatm,nlast,lsi,lsa)
@@ -1327,23 +1331,23 @@ Subroutine build_book_intra             &
 
 ! Extend inversion potential interaction list
 
-           Do linver=1,numinv(itmols)
-              iatm=lstinv(1,linver+kinver)+isite
-              jatm=lstinv(2,linver+kinver)+isite
-              katm=lstinv(3,linver+kinver)+isite
-              latm=lstinv(4,linver+kinver)+isite
+           Do linver=1,inversion%num(itmols)
+              iatm=inversion%lst(1,linver+kinver)+isite
+              jatm=inversion%lst(2,linver+kinver)+isite
+              katm=inversion%lst(3,linver+kinver)+isite
+              latm=inversion%lst(4,linver+kinver)+isite
 
               If ( Any(iwrk(1:mshels) == iatm) .or. &
                    Any(iwrk(1:mshels) == jatm) .or. &
                    Any(iwrk(1:mshels) == katm) .or. &
                    Any(iwrk(1:mshels) == latm) ) Then
                  jinver=jinver+1
-                 If (jinver <= mxinv) Then
-                    listinv(0,jinver)=linver+kinver
-                    listinv(1,jinver)=iatm
-                    listinv(2,jinver)=jatm
-                    listinv(3,jinver)=katm
-                    listinv(4,jinver)=latm
+                 If (jinver <= inversion%max_angles) Then
+                    inversion%list(0,jinver)=linver+kinver
+                    inversion%list(1,jinver)=iatm
+                    inversion%list(2,jinver)=jatm
+                    inversion%list(3,jinver)=katm
+                    inversion%list(4,jinver)=latm
                  Else
                     safe(10)=.false.
                  End If
@@ -1366,7 +1370,7 @@ Subroutine build_book_intra             &
      kbonds=kbonds+bond%num(itmols)
      kangle=kangle+angle%num(itmols)
      kdihed=kdihed+dihedral%num(itmols)
-     kinver=kinver+numinv(itmols)
+     kinver=kinver+inversion%num(itmols)
   End Do
 
 200 Continue
@@ -1381,7 +1385,7 @@ Subroutine build_book_intra             &
   bond%n_types1=jbonds
   angle%n_types1=jangle
   dihedral%n_types1=jdihed
-  ntinv1 =jinver
+  inversion%n_types1 =jinver
 
 ! Cycle through the extended -
 ! constraint, RB, bond, angle, dihedral and inversion units
@@ -1490,11 +1494,11 @@ Subroutine build_book_intra             &
         End If
      End If
   End Do
-  Do i=ntinv+1,ntinv1
-     iatm=listinv(1,i)
-     jatm=listinv(2,i)
-     katm=listinv(3,i)
-     latm=listinv(4,i)
+  Do i=inversion%n_types+1,inversion%n_types1
+     iatm=inversion%list(1,i)
+     jatm=inversion%list(2,i)
+     katm=inversion%list(3,i)
+     latm=inversion%list(4,i)
 
      If (.not.Any(iwrk(1:mshels) == iatm)) Then
         mshels=mshels+1
@@ -1600,7 +1604,7 @@ Subroutine build_book_intra             &
      itmp(6)=ibonds ; jtmp(6)=bond%max_bonds
      itmp(7)=iangle ; jtmp(7)=angle%max_angles
      itmp(8)=idihed ; jtmp(8)=dihedral%max_angles
-     itmp(9)=iinver ; jtmp(9)=mxinv
+     itmp(9)=iinver ; jtmp(9)=inversion%max_angles
 
      Call gmax(comm,itmp(1:9))
 
@@ -1643,7 +1647,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,meginv,bond,angle,dihedral,comm)
+           megtet,bond,angle,dihedral,inversion,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1656,8 +1660,6 @@ Subroutine build_book_intra             &
         Call deallocate_rigid_bodies_arrays()
 
         Call deallocate_tethers_arrays()
-
-        Call deallocate_inversions_arrays()
      End If
 
   Else
@@ -1776,7 +1778,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra(bond,angle,dihedral)
+Subroutine init_intra(bond,angle,dihedral,inversion)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1792,6 +1794,7 @@ Subroutine init_intra(bond,angle,dihedral)
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
 
 ! exclusions locals
 
@@ -1860,9 +1863,9 @@ Subroutine init_intra(bond,angle,dihedral)
 
 ! inversions locals
 
-  ntinv  = 0 ; ntinv1 = 0
-  listinv = 0
-  leginv  = 0
+  inversion%n_types  = 0 ; inversion%n_types1 = 0
+  inversion%list = 0
+  inversion%legend  = 0
 
 End Subroutine init_intra
 
