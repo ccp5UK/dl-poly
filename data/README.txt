@@ -21,7 +21,7 @@ Unpack the files in the `data' subdirectory using firstly
 `gunzip' to uncompress them and then `tar -xf' to create the
 `TEST_X' directory.
 
-TEST 01 - Sodium Chloride (27,000 ions)
+TEST 01 - Sodium Chloride (27,000 ions) interacting via Born-Huggins-Meyer potentials
 TEST 02 - DMPC in Water (51,737 atoms)
 TEST 03 - KNaSi2O5 - Potassium/Sodium Disilicate Glass (69,120 ions)
 TEST 04 - Gramicidin A Molecules in Water (99,120 ions)
@@ -68,8 +68,8 @@ TEST 46 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Langevi
 TEST 47 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Berendsen thermostat-barostat
 TEST 48 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Nose-Hoover thermostat-barostat
 TEST 49 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Martyna-Tuckerman-Klein thermostat-barostat
-TEST 50 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Langevin thermostat /semi-isotropic barostat : constant normal pressure (Pn)********THIS TEST FAILS WHEN NOT USING THE -O3 OPTION FOR THE COMPILATION  
-TEST 51 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Berendsen thermostat/semi-isotropic barostat : constant normal pressure (Pn)********THIS TEST FAILS FOR SEVERAL EXAMPLES. ACTION: EXPLORE OTHER SYSTEMS AND CHECK UNDER WHICH CONDITIONS IT MIGHT WORK
+TEST 50 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Langevin thermostat /semi-isotropic barostat : constant normal pressure (Pn)
+TEST 51 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Berendsen thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 52 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Nose-Hoover thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 53 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Martyna-Tuckerman-Klein thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 54 - Wetted POPC membrane (32,107 ions), N-Pn-gamma-T ensemble, constant surface tension (gamma), Langevin thermostat/semi-isotropic barostat : constant normal pressure (Pn) 
@@ -88,3 +88,25 @@ TEST 66 - Wetted POPC membrane (32,107 ions), NPT anisotropic ensemble, Langevin
 TEST 67 - Wetted POPC membrane (32,107 ions), NPT anisotropic ensemble, Berendsen thermostat/semi-isotropic barostat   : semi-orthorhombic MD cell constraints
 TEST 68 - Wetted POPC membrane (32,107 ions), NPT anisotropic ensemble, Nose-Hoover thermostat/semi-isotropic barostat : semi-orthorhombic MD cell constraints
 TEST 69 - Wetted POPC membrane (32,107 ions), NPT anisotropic ensemble, Martyna-Tuckerman-Klein thermostat/semi-isotropic barostat : semi-orthorhombic MD cell constraints
+TEST 70 - Impact and defects analysis for radiation damage in Sodium Chloride (27,000 ions)
+TEST 71 - Sodium Chloride (27,000 ions) interacting via 12-6 potentials
+TEST 72 - Sodium Chloride (27,000 ions) interacting via Lenhard-Jones potentials
+TEST 73 - Sodium Chloride (27,000 ions) interacting via Lenhard-Jones cohesive potentials
+TEST 74 - Sodium Chloride (27,000 ions) interacting via n-m potentials
+TEST 75 - Sodium Chloride (27,000 ions) interacting via Buckingham potentials
+TEST 76 - Sodium Chloride (27,000 ions) interacting via Hydrogen-bond potentials
+TEST 77 - Sodium Chloride (27,000 ions) interacting via Shifted force n-m potential potentials
+TEST 78 - Sodium Chloride (27,000 ions) interacting via Morse potentials
+TEST 79 - Sodium Chloride (27,000 ions) interacting via Shifted Weeks-Chandler-Andersen potentials
+TEST 80 - Sodium Chloride (27,000 ions) interacting via Standard DPD potentials
+TEST 81 - Sodium Chloride (27,000 ions) interacting via 14-7 pair potentials
+TEST 82 - Sodium Chloride (27,000 ions) interacting via Morse modified potentials
+TEST 83 - Sodium Chloride (27,000 ions) interacting via Rydberg potentials
+TEST 84 - Sodium Chloride (27,000 ions) interacting via Ziegler-Biersack-Littmark (ZBL) potentials
+TEST 85 - Sodium Chloride (27,000 ions) interacting via ZBL mixed with Morse potentials
+TEST 86 - Sodium Chloride (27,000 ions) interacting via ZBL mixed with Buckingham potentials
+TEST 87 - Sodium Chloride (27,000 ions) interacting via tabulated potentials
+TEST 88 - Sodium Chloride (27,000 ions) interacting via Lennard-Jones tapered with Mei-Davenport-Fernando (MDF) taper potentials
+TEST 89 - Sodium Chloride (27,000 ions) interacting via Buckingham tapered with MDF potentials
+TEST 90 - Sodium Chloride (27,000 ions) interacting via 12-6 tapered with MDF potentials
+TEST 91 - Restart of TEST 04
