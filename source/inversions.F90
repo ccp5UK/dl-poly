@@ -10,11 +10,10 @@ Module inversions
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum,gsync,gcheck,gbcast
-  Use setup, Only : mxtmls,mxtinv,mxinv,mxfinv,mxpinv,mxginv,mxginv1, &
-                           mxatdm,pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
-                           engunit,zero_plus,ntable
+  Use setup, Only : mxtmls,mxatdm,pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
+                    engunit,zero_plus,ntable
   Use site,  Only : ntpatm,unqatm
   Use configuration, Only : cfgname
   Use parse, Only : get_line,get_word,word_2_real
@@ -22,113 +21,144 @@ Module inversions
   Use numerics, Only : local_index, images
   Implicit None
 
-  Logical,                        Save :: lt_inv=.false. ! no tabulated potentials opted
+  Private
 
-  Integer,                        Save :: ntinv  = 0 , &
-                                          ntinv1 = 0 , &
-                                          ncfinv = 0
+  Type, Public :: inversions_type
+    Private
 
+    !> Tabulated potential switch
+    Logical, Public :: l_tab = .false.
+    !> Core shell switch
+    Logical, Public :: l_core_shell = .false.
 
-  Integer,           Allocatable, Save :: numinv(:),keyinv(:)
-  Integer,           Allocatable, Save :: lstinv(:,:),listinv(:,:),leginv(:,:)
+    !> Number of inversion angle types (potentials)
+    Integer( Kind = wi ), Public :: n_types  = 0
+    Integer( Kind = wi ), Public :: n_types1 = 0
+    !> Number of frames
+    Integer( Kind = wi ), Public :: n_frames  = 0
+    !> Total number of inversion angles (all nodes)
+    Integer( Kind = wi ), Public :: total
 
-  Real( Kind = wp ), Allocatable, Save :: prminv(:,:)
+    Integer( Kind = wi ), Allocatable, Public :: num(:),key(:)
 
-! Possible tabulated calculation arrays
+    !> Atom indices (local)
+    Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
+    !> Atom indices
+    Integer( Kind = wi ), Allocatable, Public :: list(:,:)
+    !> Legend
+    Integer( Kind = wi ), Allocatable, Public :: legend(:,:)
 
-  Integer,           Allocatable, Save :: ltpinv(:)
-  Real( Kind = wp ), Allocatable, Save :: vinv(:,:),ginv(:,:)
+    !> Angle parameters (force constant, etc.)
+    Real( Kind = wp ), Allocatable, Public :: param(:,:)
 
-! Possible distribution arrays
+    ! Possible tabulated calculation arrays
+    Integer,           Allocatable, Public :: ltp(:)
+    !> Tabulated potential
+    Real( Kind = wp ), Allocatable, Public :: tab_potential(:,:)
+    !> Tabulated force
+    Real( Kind = wp ), Allocatable, Public :: tab_force(:,:)
 
-  Integer,           Allocatable, Save :: ldfinv(:),typinv(:,:)
-  Real( Kind = wp ), Allocatable, Save :: dstinv(:,:)
+    ! Possible distribution arrays
+    Integer,           Allocatable, Public :: ldf(:),typ(:,:)
+    Real( Kind = wp ), Allocatable, Public :: dst(:,:)
 
-  Public :: allocate_inversions_arrays , deallocate_inversions_arrays , &
+    ! Maximums
+    !> Maximum number of inversion angle types
+    Integer( Kind = wi ), Public :: max_types
+    !> Maximum number of inversion angles per node
+    Integer( Kind = wi ), Public :: max_angles
+    !> Length of legend array
+    Integer( Kind = wi ), Public :: max_legend
+    !> Maximum number of inversion parameters
+    Integer( Kind = wi ), Public :: max_param
+
+    ! Number of bins
+    !> Angular distribution function bins
+    Integer( Kind = wi ), Public :: bin_adf
+    !> Tabulated potential bins
+    Integer( Kind = wi ), Public :: bin_tab
+  Contains
+    Private
+
+    Final :: cleanup
+  End Type inversions_type
+
+  Public :: allocate_inversions_arrays , &
             allocate_invr_pot_arrays , allocate_invr_dst_arrays, &
-            inversions_compute, inversions_forces
+            inversions_compute, inversions_forces, inversions_table_read
 
 Contains
 
-  Subroutine allocate_inversions_arrays()
+  Subroutine allocate_inversions_arrays(inversion)
+    Type( inversions_type ), Intent( InOut ) :: inversion
 
     Integer, Dimension( 1:8 ) :: fail
 
     fail = 0
 
-    Allocate (numinv(1:mxtmls),          Stat = fail(1))
-    Allocate (keyinv(1:mxtinv),          Stat = fail(2))
-    Allocate (lstinv(1:4,1:mxtinv),      Stat = fail(3))
-    Allocate (listinv(0:4,1:mxinv),      Stat = fail(4))
-    Allocate (leginv(0:mxfinv,1:mxatdm), Stat = fail(5))
-    Allocate (prminv(1:mxpinv,1:mxtinv), Stat = fail(6))
-    If (lt_inv) &
-    Allocate (ltpinv(0:mxtinv),          Stat = fail(7))
-    If (mxginv1 > 0) &
-    Allocate (ldfinv(0:mxtinv),          Stat = fail(8))
+    Allocate (inversion%num(1:mxtmls),          Stat = fail(1))
+    Allocate (inversion%key(1:inversion%max_types),          Stat = fail(2))
+    Allocate (inversion%lst(1:4,1:inversion%max_types),      Stat = fail(3))
+    Allocate (inversion%list(0:4,1:inversion%max_angles),      Stat = fail(4))
+    Allocate (inversion%legend(0:inversion%max_legend,1:mxatdm), Stat = fail(5))
+    Allocate (inversion%param(1:inversion%max_param,1:inversion%max_types), Stat = fail(6))
+    If (inversion%l_tab) &
+    Allocate (inversion%ltp(0:inversion%max_types),          Stat = fail(7))
+    If (inversion%bin_adf > 0) &
+    Allocate (inversion%ldf(0:inversion%max_types),          Stat = fail(8))
 
     If (Any(fail > 0)) Call error(1021)
 
-    numinv  = 0
-    keyinv  = 0
-    lstinv  = 0
-    listinv = 0
-    leginv  = 0
+    inversion%num  = 0
+    inversion%key  = 0
+    inversion%lst  = 0
+    inversion%list = 0
+    inversion%legend  = 0
 
-    prminv  = 0.0_wp
+    inversion%param  = 0.0_wp
 
-    If (lt_inv) &
-    ltpinv  = 0
+    If (inversion%l_tab) &
+    inversion%ltp  = 0
 
-    If (mxginv1 > 0) &
-    ldfinv  = 0
+    If (inversion%bin_adf > 0) &
+    inversion%ldf  = 0
 
   End Subroutine allocate_inversions_arrays
 
-  Subroutine deallocate_inversions_arrays()
-
-    Integer :: fail
-
-    fail = 0
-
-    Deallocate (numinv,lstinv, Stat = fail)
-
-    If (fail > 0) Call error(1034)
-
-  End Subroutine deallocate_inversions_arrays
-
-  Subroutine allocate_invr_pot_arrays()
+  Subroutine allocate_invr_pot_arrays(inversion)
+    Type( inversions_type ), Intent( InOut ) :: inversion
 
     Integer :: fail(1:2)
 
     fail = 0
 
-    Allocate (vinv(-1:mxginv,1:ltpinv(0)), Stat = fail(1))
-    Allocate (ginv(-1:mxginv,1:ltpinv(0)), Stat = fail(2))
+    Allocate (inversion%tab_potential(-1:inversion%bin_tab,1:inversion%ltp(0)), Stat = fail(1))
+    Allocate (inversion%tab_force(-1:inversion%bin_tab,1:inversion%ltp(0)), Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1078)
 
-    vinv = 0.0_wp
-    ginv = 0.0_wp
+    inversion%tab_potential = 0.0_wp
+    inversion%tab_force = 0.0_wp
 
   End Subroutine allocate_invr_pot_arrays
 
-  Subroutine allocate_invr_dst_arrays()
+  Subroutine allocate_invr_dst_arrays(inversion)
+    Type( inversions_type ), Intent( InOut ) :: inversion
 
     Integer :: fail
 
     fail = 0
 
-    Allocate (typinv(-1:4,1:ldfinv(0)),dstinv(1:mxginv1,1:ldfinv(0)), Stat = fail)
+    Allocate (inversion%typ(-1:4,1:inversion%ldf(0)),inversion%dst(1:inversion%bin_adf,1:inversion%ldf(0)), Stat = fail)
 
     If (fail > 0) Call error(1079)
 
-    typinv = 0
-    dstinv = 0.0_wp
+    inversion%typ = 0
+    inversion%dst = 0.0_wp
 
   End Subroutine allocate_invr_dst_arrays
 
-  Subroutine inversions_compute(temp, comm)
+  Subroutine inversions_compute(temp,inversion,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -141,6 +171,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),  Intent( In    ) :: temp
+    Type( inversions_type ), Intent( InOut ) :: inversion
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: zero
@@ -155,7 +186,7 @@ Contains
     Character( Len = 256 ) :: message
 
     fail = 0
-    Allocate (dstdinv(0:mxginv1,1:ldfinv(0)),pmf(0:mxginv1+2),vir(0:mxginv1+2), Stat = fail)
+    Allocate (dstdinv(0:inversion%bin_adf,1:inversion%ldf(0)),pmf(0:inversion%bin_adf+2),vir(0:inversion%bin_adf+2), Stat = fail)
     If (fail > 0) Then
        Write(message,'(a)') 'inversions_compute - allocation failure'
        Call error(0,message)
@@ -172,28 +203,28 @@ Contains
 
   ! grid interval for pdf tables
 
-    delth = pi/Real(mxginv1,wp)
-    rdlth = Real(mxginv1,wp)/180.0_wp
+    delth = pi/Real(inversion%bin_adf,wp)
+    rdlth = Real(inversion%bin_adf,wp)/180.0_wp
 
   ! resampling grid and grid interval for pmf tables
 
-    ngrid = Max(Nint(360.0_wp/delth_max),mxginv1,mxginv-4)
+    ngrid = Max(Nint(360.0_wp/delth_max),inversion%bin_adf,inversion%bin_tab-4)
     dgrid = pi/Real(ngrid,wp)
 
   ! loop over all valid PDFs to get valid totals
 
     kk=0
     ll=0
-    Do i=1,ldfinv(0)
-       If (typinv(0,i) > 0) Then
+    Do i=1,inversion%ldf(0)
+       If (inversion%typ(0,i) > 0) Then
           kk=kk+1
-          ll=ll+typinv(0,i)
+          ll=ll+inversion%typ(0,i)
        End If
     End Do
 
   ! normalisation factor
 
-    factor = 1.0_wp/Real(ncfinv,wp)
+    factor = 1.0_wp/Real(inversion%n_frames,wp)
 
   ! the lower bound to nullify the nearly-zero histogram (PDF) values
 
@@ -202,7 +233,7 @@ Contains
     Call info('',.true.)
     Call info('INVERSIONS : Probability Distribution Functions (PDF) := histogram(bin)/hist_sum(bins)',.true.)
     Write(message,'(a,5(1x,i10))') '# bins, cutoff, frames, types: ', &
-      mxginv1,180,ncfinv,kk,ll
+      inversion%bin_adf,180,inversion%n_frames,kk,ll
     Call info(message,.true.)
 
   ! open RDF file and write headers
@@ -211,7 +242,7 @@ Contains
        Open(Unit=npdfdt, File='INVDAT', Status='replace')
        Write(npdfdt,'(a)') '# '//cfgname
        Write(npdfdt,'(a)') '# INVERSIONS: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dTheta_bin'
-       Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',mxginv1,180,ncfinv,kk
+       Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',inversion%bin_adf,180,inversion%n_frames,kk
        Write(npdfdt,'(a)') '#'
        Write(npdfdt,'(a,f8.5)') '# Theta(degrees)  PDF_norm(Theta)   @   dTheta_bin = ',delth*rad2dgr
        Write(npdfdt,'(a)') '#'
@@ -220,30 +251,31 @@ Contains
   ! loop over all valid PDFs
 
     j=0
-    Do i=1,ldfinv(0)
-       If (typinv(0,i) > 0) Then
+    Do i=1,inversion%ldf(0)
+       If (inversion%typ(0,i) > 0) Then
           j=j+1
 
           Write(message,'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-            unqatm(typinv(1,i)),unqatm(typinv(2,i)),unqatm(typinv(3,i)), &
-            unqatm(typinv(4,i)),j,typinv(0,i)
+            unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)),unqatm(inversion%typ(3,i)), &
+            unqatm(inversion%typ(4,i)),j,inversion%typ(0,i)
           Call info(message,.true.)
           Write(message,'(a,f8.5)') &
             'Theta(degrees)  P_inv(Theta)  Sum_P_inv(Theta)   @   dTheta_bin = ', &
             delth*rad2dgr
           Call info(message,.true.)
           If (comm%idnode == 0) Then
-             Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-                  unqatm(typinv(1,i)),unqatm(typinv(2,i)),unqatm(typinv(3,i)),unqatm(typinv(4,i)),j,typinv(0,i)
+            Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
+              unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)), &
+              unqatm(inversion%typ(3,i)),unqatm(inversion%typ(4,i)),j,inversion%typ(0,i)
           End If
 
   ! global sum of data on all nodes
 
-          Call gsum(comm,dstinv(1:mxginv1,i))
+          Call gsum(comm,inversion%dst(1:inversion%bin_adf,i))
 
   ! factor in instances (first, pdfinv is normalised to unity)
 
-          factor1=factor/Real(typinv(0,i),wp)
+          factor1=factor/Real(inversion%typ(0,i),wp)
 
   ! running integration of pdf
 
@@ -252,10 +284,10 @@ Contains
   ! loop over distances
 
           zero=.true.
-          Do ig=1,mxginv1
-             If (zero .and. ig < (mxginv1-3)) zero=(dstinv(ig+2,i) <= 0.0_wp)
+          Do ig=1,inversion%bin_adf
+             If (zero .and. ig < (inversion%bin_adf-3)) zero=(inversion%dst(ig+2,i) <= 0.0_wp)
 
-             pdfinv = dstinv(ig,i)*factor1
+             pdfinv = inversion%dst(ig,i)*factor1
              sum = sum + pdfinv
 
   ! null it if < pdfzero
@@ -308,29 +340,31 @@ Contains
     If (comm%idnode == 0) Then
        Open(Unit=npdgdt, File='INVPMF', Status='replace')
        Write(npdgdt,'(a)') '# '//cfgname
-       Write(npdgdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',mxginv1,delth*Real(mxginv1,wp)*rad2dgr,delth*rad2dgr,kk, &
-            '   conversion factor(kT -> energy units) =',kT2engo
+       Write(npdgdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',inversion%bin_adf, &
+         delth*Real(inversion%bin_adf,wp)*rad2dgr,delth*rad2dgr,kk, &
+         '   conversion factor(kT -> energy units) =',kT2engo
 
        Open(Unit=npdfdt, File='INVPMF', Status='replace')
        Write(npdfdt,'(a)') '# '//cfgname
-       Write(npdfdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',ngrid,dgrid*Real(ngrid,wp)*rad2dgr,dgrid*rad2dgr,kk, &
-            '   conversion factor(kT -> energy units) =',kT2engo
+       Write(npdfdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',ngrid, &
+         dgrid*Real(ngrid,wp)*rad2dgr,dgrid*rad2dgr,kk, &
+         '   conversion factor(kT -> energy units) =',kT2engo
     End If
 
   ! loop over all valid PDFs
 
     j=0
-    Do i=1,ldfinv(0)
-       If (typinv(0,i) > 0) Then
+    Do i=1,inversion%ldf(0)
+       If (inversion%typ(0,i) > 0) Then
           j=j+1
 
           If (comm%idnode == 0) Then
              Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                  unqatm(typinv(1,i)),unqatm(typinv(2,i)),unqatm(typinv(3,i)), &
-                  unqatm(typinv(4,i)),j,typinv(0,i),' (type, index, instances)'
+                  unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)),unqatm(inversion%typ(3,i)), &
+                  unqatm(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
              Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                  unqatm(typinv(1,i)),unqatm(typinv(2,i)),unqatm(typinv(3,i)), &
-                  unqatm(typinv(4,i)),j,typinv(0,i),' (type, index, instances)'
+                  unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)),unqatm(inversion%typ(3,i)), &
+                  unqatm(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
           End If
 
   ! Smoothen and get derivatives
@@ -339,7 +373,7 @@ Contains
           dfed0 = 10.0_wp
           dfed  = 10.0_wp
 
-          Do ig=1,mxginv1
+          Do ig=1,inversion%bin_adf
              tmp = Real(ig,wp)-0.5_wp
              theta = tmp*delth
 
@@ -350,7 +384,7 @@ Contains
                    fed  = 0.0_wp
                 End If
 
-                If (ig < mxginv1-1) Then
+                If (ig < inversion%bin_adf-1) Then
                    If (dstdinv(ig+1,i) <= zero_plus .and. dstdinv(ig+2,i) > zero_plus) &
                       dstdinv(ig+1,i) = 0.5_wp*(dstdinv(ig,i)+dstdinv(ig+2,i))
                 End If
@@ -366,7 +400,7 @@ Contains
                 Else
                    dfed =-dfed0
                 End If
-             Else If (ig == mxginv1) Then
+             Else If (ig == inversion%bin_adf) Then
                 If      (dstdinv(ig,i) > zero_plus .and. dstdinv(ig-1,i) > zero_plus) Then
                    dfed = Log(dstdinv(ig,i)/dstdinv(ig-1,i))
                 Else If (dfed > 0.0_wp) Then
@@ -400,10 +434,10 @@ Contains
 
           pmf(0)         = 2.0_wp*pmf(1)        -pmf(2)
           vir(0)         = 2.0_wp*vir(1)        -vir(2)
-          pmf(mxginv1+1) = 2.0_wp*pmf(mxginv1)  -pmf(mxginv1-1)
-          vir(mxginv1+1) = 2.0_wp*vir(mxginv1)  -vir(mxginv1-1)
-          pmf(mxginv1+2) = 2.0_wp*pmf(mxginv1+1)-pmf(mxginv1)
-          vir(mxginv1+2) = 2.0_wp*vir(mxginv1+1)-vir(mxginv1)
+          pmf(inversion%bin_adf+1) = 2.0_wp*pmf(inversion%bin_adf)  -pmf(inversion%bin_adf-1)
+          vir(inversion%bin_adf+1) = 2.0_wp*vir(inversion%bin_adf)  -vir(inversion%bin_adf-1)
+          pmf(inversion%bin_adf+2) = 2.0_wp*pmf(inversion%bin_adf+1)-pmf(inversion%bin_adf)
+          vir(inversion%bin_adf+2) = 2.0_wp*vir(inversion%bin_adf+1)-vir(inversion%bin_adf)
 
   ! resample using 3pt interpolation
 
@@ -452,7 +486,7 @@ Contains
 
   End Subroutine inversions_compute
 
-  Subroutine inversions_forces(isw,enginv,virinv,stress,comm)
+  Subroutine inversions_forces(isw,enginv,virinv,stress,inversion,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -474,6 +508,7 @@ Contains
     Integer,                             Intent( In    ) :: isw
     Real( Kind = wp ),                   Intent(   Out ) :: enginv,virinv
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+    Type( inversions_type ), Intent( InOut ) :: inversion
     Type( comms_type ),                  Intent( InOut ) :: comm
 
     Logical           :: safe
@@ -502,10 +537,10 @@ Contains
     Character( Len = 256 ) :: message
 
     fail=0
-    Allocate (lunsafe(1:mxinv),lstopt(0:4,1:mxinv),      Stat=fail(1))
-    Allocate (xdab(1:mxinv),ydab(1:mxinv),zdab(1:mxinv), Stat=fail(2))
-    Allocate (xdac(1:mxinv),ydac(1:mxinv),zdac(1:mxinv), Stat=fail(3))
-    Allocate (xdad(1:mxinv),ydad(1:mxinv),zdad(1:mxinv), Stat=fail(4))
+    Allocate (lunsafe(1:inversion%max_angles),lstopt(0:4,1:inversion%max_angles),      Stat=fail(1))
+    Allocate (xdab(1:inversion%max_angles),ydab(1:inversion%max_angles),zdab(1:inversion%max_angles), Stat=fail(2))
+    Allocate (xdac(1:inversion%max_angles),ydac(1:inversion%max_angles),zdac(1:inversion%max_angles), Stat=fail(3))
+    Allocate (xdad(1:inversion%max_angles),ydad(1:inversion%max_angles),zdad(1:inversion%max_angles), Stat=fail(4))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'inversions_forces allocation failure'
        Call error(0,message)
@@ -514,15 +549,15 @@ Contains
 
   ! calculate atom separation vectors
 
-    Do i=1,ntinv
+    Do i=1,inversion%n_types
        lunsafe(i)=.false.
 
   ! indices of atoms involved
 
-       ia=local_index(listinv(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
-       ib=local_index(listinv(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
-       ic=local_index(listinv(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
-       id=local_index(listinv(4,i),nlast,lsi,lsa) ; lstopt(4,i)=id
+       ia=local_index(inversion%list(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
+       ib=local_index(inversion%list(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
+       ic=local_index(inversion%list(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
+       id=local_index(inversion%list(4,i),nlast,lsi,lsa) ; lstopt(4,i)=id
 
        lstopt(0,i)=0
        If (ia > 0 .and. ib > 0 .and. ic > 0 .and. id > 0) Then !Tag
@@ -548,8 +583,8 @@ Contains
 
   ! select potential energy function type
 
-          kk=listinv(0,i)
-          keyi = Abs(keyinv(kk))
+          kk=inversion%list(0,i)
+          keyi = Abs(inversion%key(kk))
 
           If (keyi == 5) Then
              xdac(i)=xxx(ic)-xxx(ib)
@@ -585,15 +620,15 @@ Contains
 
   ! Check for uncompressed units
 
-    safe = .not. Any(lunsafe(1:ntinv))
+    safe = .not. Any(lunsafe(1:inversion%n_types))
     Call gcheck(comm,safe)
     If (.not.safe) Then
        Do j=0,comm%mxnode-1
           If (comm%idnode == j) Then
-             Do i=1,ntinv
+             Do i=1,inversion%n_types
                 If (lunsafe(i)) Then
-                  Write(message,'(2(a,i10))') 'global unit number', listinv(0,i), &
-                    ' , with a head particle number', listinv(1,i)
+                  Write(message,'(2(a,i10))') 'global unit number', inversion%list(0,i), &
+                    ' , with a head particle number', inversion%list(1,i)
                   Call info(message)
                   Call warning('contributes towards next error')
                 End If
@@ -606,9 +641,9 @@ Contains
 
   ! periodic boundary condition
 
-    Call images(imcon,cell,ntinv,xdab,ydab,zdab)
-    Call images(imcon,cell,ntinv,xdac,ydac,zdac)
-    Call images(imcon,cell,ntinv,xdad,ydad,zdad)
+    Call images(imcon,cell,inversion%n_types,xdab,ydab,zdab)
+    Call images(imcon,cell,inversion%n_types,xdac,ydac,zdac)
+    Call images(imcon,cell,inversion%n_types,xdad,ydad,zdad)
 
     If (Mod(isw,3) > 0) Then
 
@@ -635,13 +670,13 @@ Contains
   ! Recover bin size and increment counter
 
     If (Mod(isw,2) == 0) Then
-       rdelth = Real(mxginv1,wp)/pi
-       ncfinv = ncfinv + 1
+       rdelth = Real(inversion%bin_adf,wp)/pi
+       inversion%n_frames = inversion%n_frames + 1
     End If
 
   ! loop over all specified inversions
 
-    Do i=1,ntinv
+    Do i=1,inversion%n_types
        If (lstopt(0,i) > 0) Then
 
   ! indices of atoms involved
@@ -673,8 +708,8 @@ Contains
 
   ! select potential energy function type
 
-          kk=listinv(0,i)
-          keyi=keyinv(kk)
+          kk=inversion%list(0,i)
+          keyi=inversion%key(kk)
 
           If (keyi == 5) Then
 
@@ -765,19 +800,19 @@ Contains
   ! accumulate the histogram (distribution)
 
              If (Mod(isw,2) == 0 .and. ib <= natms) Then
-                j = ldfinv(kk)
+                j = inversion%ldf(kk)
 
                 thb=Acos(cosb)
-                l = Min(1+Int(thb*rdelth),mxginv1)
-                dstinv(l,j) = dstinv(l,j) + 1.0_wp/3.0_wp
+                l = Min(1+Int(thb*rdelth),inversion%bin_adf)
+                inversion%dst(l,j) = inversion%dst(l,j) + 1.0_wp/3.0_wp
 
                 thc=Acos(cosc)
-                l = Min(1+Int(thc*rdelth),mxginv1)
-                dstinv(l,j) = dstinv(l,j) + 1.0_wp/3.0_wp
+                l = Min(1+Int(thc*rdelth),inversion%bin_adf)
+                inversion%dst(l,j) = inversion%dst(l,j) + 1.0_wp/3.0_wp
 
                 thd=Acos(cosd)
-                l = Min(1+Int(thd*rdelth),mxginv1)
-                dstinv(l,j) = dstinv(l,j) + 1.0_wp/3.0_wp
+                l = Min(1+Int(thd*rdelth),inversion%bin_adf)
+                inversion%dst(l,j) = inversion%dst(l,j) + 1.0_wp/3.0_wp
              End If
 
           End If
@@ -789,8 +824,8 @@ Contains
 
   ! harmonic inversion potential
 
-             k  =prminv(1,kk)/6.0_wp
-             th0=prminv(2,kk)
+             k  =inversion%param(1,kk)/6.0_wp
+             th0=inversion%param(2,kk)
 
              thb=Acos(cosb)
              thc=Acos(cosc)
@@ -810,8 +845,8 @@ Contains
 
   ! harmonic cosine inversion potential
 
-             k   =prminv(1,kk)/6.0_wp
-             cos0=prminv(2,kk)
+             k   =inversion%param(1,kk)/6.0_wp
+             cos0=inversion%param(2,kk)
 
              pterm=k*((cosb-cos0)**2+(cosc-cos0)**2+(cosd-cos0)**2)
              vterm=0.0_wp
@@ -824,7 +859,7 @@ Contains
 
   ! planar inversion potentials
 
-             a=prminv(1,kk)
+             a=inversion%param(1,kk)
 
              pterm=a*(1.0_wp-(cosb+cosc+cosd)/3.0_wp)
              vterm=0.0_wp
@@ -837,9 +872,9 @@ Contains
 
   ! extended planar inversion potentials
 
-             k  =prminv(1,kk)/6.0_wp
-             th0=prminv(2,kk)
-             m  =prminv(3,kk)
+             k  =inversion%param(1,kk)/6.0_wp
+             th0=inversion%param(2,kk)
+             m  =inversion%param(3,kk)
 
              thb=Acos(cosb)
              thc=Acos(cosc)
@@ -859,8 +894,8 @@ Contains
 
   ! planar calcite potential
 
-             a=prminv(1,kk)
-             b=prminv(2,kk)
+             a=inversion%param(1,kk)
+             b=inversion%param(2,kk)
 
              uu2=uuu*uuu
              m=2.0_wp*a+4.0_wp*b*uu2
@@ -878,8 +913,8 @@ Contains
 
              pterm=0.0_wp
 
-             j = ltpinv(kk)
-             rdr = ginv(-1,j) ! 1.0_wp/delpot (in rad^-1)
+             j = inversion%ltp(kk)
+             rdr = inversion%tab_force(-1,j) ! 1.0_wp/delpot (in rad^-1)
 
              thb=Acos(cosb)
              thc=Acos(cosc)
@@ -888,18 +923,18 @@ Contains
              l   = Int(thb*rdr)
              ppp = thb*rdr - Real(l,wp)
 
-             vk  = vinv(l,j)
-             vk1 = vinv(l+1,j)
-             vk2 = vinv(l+2,j)
+             vk  = inversion%tab_potential(l,j)
+             vk1 = inversion%tab_potential(l+1,j)
+             vk2 = inversion%tab_potential(l+2,j)
 
              t1 = vk  + (vk1 - vk)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
              pterm = pterm + t1 + (t2-t1)*ppp*0.5_wp
 
-             vk  = ginv(l,j) ; If (l == 0) vk = vk*thb
-             vk1 = ginv(l+1,j)
-             vk2 = ginv(l+2,j)
+             vk  = inversion%tab_force(l,j) ; If (l == 0) vk = vk*thb
+             vk1 = inversion%tab_force(l+1,j)
+             vk2 = inversion%tab_force(l+2,j)
 
              t1 = vk  + (vk1 - vk)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -909,18 +944,18 @@ Contains
              l   = Int(thc*rdr)
              ppp = thc*rdr - Real(l,wp)
 
-             vk  = vinv(l,j)
-             vk1 = vinv(l+1,j)
-             vk2 = vinv(l+2,j)
+             vk  = inversion%tab_potential(l,j)
+             vk1 = inversion%tab_potential(l+1,j)
+             vk2 = inversion%tab_potential(l+2,j)
 
              t1 = vk  + (vk1 - vk)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
              pterm = pterm + t1 + (t2-t1)*ppp*0.5_wp
 
-             vk  = ginv(l,j) ; If (l == 0) vk = vk*thc
-             vk1 = ginv(l+1,j)
-             vk2 = ginv(l+2,j)
+             vk  = inversion%tab_force(l,j) ; If (l == 0) vk = vk*thc
+             vk1 = inversion%tab_force(l+1,j)
+             vk2 = inversion%tab_force(l+2,j)
 
              t1 = vk  + (vk1 - vk)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -930,18 +965,18 @@ Contains
              l   = Int(thd*rdr)
              ppp = thd*rdr - Real(l,wp)
 
-             vk  = Merge(vinv(l,j), 0.0_wp, l > 0)
-             vk1 = vinv(l+1,j)
-             vk2 = vinv(l+2,j)
+             vk  = Merge(inversion%tab_potential(l,j), 0.0_wp, l > 0)
+             vk1 = inversion%tab_potential(l+1,j)
+             vk2 = inversion%tab_potential(l+2,j)
 
              t1 = vk  + (vk1 - vk)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
              pterm = pterm + t1 + (t2-t1)*ppp*0.5_wp
 
-             vk  = ginv(l,j) ; If (l == 0) vk = vk*thd
-             vk1 = ginv(l+1,j)
-             vk2 = ginv(l+2,j)
+             vk  = inversion%tab_force(l,j) ; If (l == 0) vk = vk*thd
+             vk1 = inversion%tab_force(l+1,j)
+             vk2 = inversion%tab_force(l+2,j)
 
              t1 = vk  + (vk1 - vk)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -964,7 +999,7 @@ Contains
 
           End If
 
-          If (keyinv(kk) == 5) Then
+          If (inversion%key(kk) == 5) Then
 
   ! calculate atomic forces
 
@@ -1091,7 +1126,7 @@ Contains
 
   ! stress tensor calculation for inversion terms
 
-             If (keyinv(kk) == 5) Then
+             If (inversion%key(kk) == 5) Then
                 strs1 = strs1 + uuu*gamma*uux*uux
                 strs2 = strs2 + uuu*gamma*uux*uuy
                 strs3 = strs3 + uuu*gamma*uux*uuz
@@ -1180,7 +1215,7 @@ Contains
 
   End Subroutine inversions_forces
 
-  Subroutine inversions_table_read(invr_name,comm)
+  Subroutine inversions_table_read(invr_name,inversion,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1192,8 +1227,8 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-    Character( Len = 32 ), Intent( In    ) :: invr_name(1:mxtinv)
+    Type( inversions_type ), Intent( InOut ) :: inversion
+    Character( Len = 32 ), Intent( In    ) :: invr_name(1:inversion%max_types)
     Type( comms_type ),    Intent( InOut ) :: comm
 
     Logical                :: safe,remake
@@ -1232,7 +1267,7 @@ Contains
 
     delpot = 180.0_wp/Real(ngrid,wp)
 
-    dlrpot = 180.0_wp/Real(mxginv-4,wp)
+    dlrpot = 180.0_wp/Real(inversion%bin_tab-4,wp)
 
   ! check grid spacing
 
@@ -1244,7 +1279,7 @@ Contains
     If (delpot > delth_max .and. (.not.safe)) Then
        Write(messages(1),'(a,1p,e15.7)') 'expected (maximum) angular increment : ', delth_max
        Write(messages(2),'(a,1p,e15.7)') 'TABINV file actual angular increment : ', delpot
-       Write(messages(3),'(a,i10)') 'expected (minimum) number of grid points : ', mxginv-4
+       Write(messages(3),'(a,i10)') 'expected (minimum) number of grid points : ', inversion%bin_tab-4
        Write(messages(4),'(a,i10)') 'TABINV file actual number of grid points : ', ngrid
        Call info(messages,4,.true.)
        Call error(22)
@@ -1255,14 +1290,14 @@ Contains
     If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
        remake=.true.
        rdr=1.0_wp/delpot
-       Write(message,'(a,i10)') 'TABINV arrays resized for mxgrid = ', mxginv-4
+       Write(message,'(a,i10)') 'TABINV arrays resized for mxgrid = ', inversion%bin_tab-4
        Call info(message,.true.)
     End If
 
   ! compare grids dimensions
 
-    If (ngrid < mxginv-4) Then
-       Call warning(270,Real(ngrid,wp),Real(mxginv-4,wp),0.0_wp)
+    If (ngrid < inversion%bin_tab-4) Then
+       Call warning(270,Real(ngrid,wp),Real(inversion%bin_tab-4,wp),0.0_wp)
        Call error(48)
     End If
 
@@ -1270,16 +1305,16 @@ Contains
     dgr2rad= pi/180.0_wp
 
     fail=0
-    Allocate (read_type(1:ltpinv(0)),          Stat=fail(1))
+    Allocate (read_type(1:inversion%ltp(0)),          Stat=fail(1))
     Allocate (bufpot(0:ngrid),bufvir(0:ngrid), Stat=fail(2))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'error - inversions_table_read allocation failure'
        Call error(0,message)
     End If
-    Call allocate_invr_pot_arrays()
+    Call allocate_invr_pot_arrays(inversion)
 
     read_type=0 ! initialise read_type
-    Do rtinv=1,ltpinv(0)
+    Do rtinv=1,inversion%ltp(0)
        Call get_line(safe,ntable,record,comm)
        If (.not.safe) Go To 100
 
@@ -1337,10 +1372,10 @@ Contains
   ! read potential arrays if potential is defined
 
        itinv=0
-       Do jtinv=1,ltpinv(0)
+       Do jtinv=1,inversion%ltp(0)
           If (invr_name(jtinv) == idinvr) Then
-             Do itinv=1,mxtinv
-                If (ltpinv(itinv) == jtinv) Exit
+             Do itinv=1,inversion%max_types
+                If (inversion%ltp(itinv) == jtinv) Exit
              End Do
              Exit
           End If
@@ -1440,7 +1475,7 @@ Contains
   ! reconstruct arrays using 3pt interpolation
 
        If (remake) Then
-          Do i=1,mxginv-4
+          Do i=1,inversion%bin_tab-4
              rrr = Real(i,wp)*dlrpot
              l   = Int(rrr*rdr)
              ppp = rrr*rdr-Real(l,wp)
@@ -1464,8 +1499,8 @@ Contains
 
              t1 = vk  + (vk1 - vk)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-             vinv(i,jtinv) = t1 + (t2-t1)*ppp*0.5_wp
-             vinv(i,jtinv) = vinv(i,jtinv)*engunit ! convert to internal units
+             inversion%tab_potential(i,jtinv) = t1 + (t2-t1)*ppp*0.5_wp
+             inversion%tab_potential(i,jtinv) = inversion%tab_potential(i,jtinv)*engunit ! convert to internal units
 
              vk  = bufvir(l)
 
@@ -1486,33 +1521,41 @@ Contains
 
              t1 = vk  + (vk1 - vk)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-             ginv(i,jtinv) = t1 + (t2-t1)*ppp*0.5_wp
-             ginv(i,jtinv) = ginv(i,jtinv)*engunit*rad2dgr ! convert to internal units
+             inversion%tab_force(i,jtinv) = t1 + (t2-t1)*ppp*0.5_wp
+             inversion%tab_force(i,jtinv) = inversion%tab_force(i,jtinv)*engunit*rad2dgr ! convert to internal units
           End Do
 
-          ginv(-1,jtinv) = rad2dgr/dlrpot
+          inversion%tab_force(-1,jtinv) = rad2dgr/dlrpot
        Else
-          Do i=1,mxginv-4
-             vinv(i,jtinv) = bufpot(i)*engunit ! convert to internal units
-             ginv(i,jtinv) = bufvir(i)*engunit*rad2dgr ! convert to internal units
+          Do i=1,inversion%bin_tab-4
+             inversion%tab_potential(i,jtinv) = bufpot(i)*engunit ! convert to internal units
+             inversion%tab_force(i,jtinv) = bufvir(i)*engunit*rad2dgr ! convert to internal units
           End Do
 
   ! linear extrapolation for the grid point just beyond the cutoff
 
-          vinv(mxginv-3,jtinv) = 2.0_wp*vinv(mxginv-4,jtinv) - vinv(mxginv-5,jtinv)
-          ginv(mxginv-3,jtinv) = 2.0_wp*ginv(mxginv-4,jtinv) - ginv(mxginv-5,jtinv)
+          inversion%tab_potential(inversion%bin_tab-3,jtinv) = &
+            2.0_wp*inversion%tab_potential(inversion%bin_tab-4,jtinv) - &
+            inversion%tab_potential(inversion%bin_tab-5,jtinv)
+          inversion%tab_force(inversion%bin_tab-3,jtinv) = &
+            2.0_wp*inversion%tab_force(inversion%bin_tab-4,jtinv) - &
+            inversion%tab_force(inversion%bin_tab-5,jtinv)
 
-          ginv(-1,jtinv) = rad2dgr/delpot
+          inversion%tab_force(-1,jtinv) = rad2dgr/delpot
        End If
 
-  ! grid point at 0 and linear extrapolation for the grid point at mxginv-2
+  ! grid point at 0 and linear extrapolation for the grid point at inversion%bin_tab-2
 
 
-       vinv(0,jtinv) = bufpot(0)
-       ginv(0,jtinv) = bufvir(0)
+       inversion%tab_potential(0,jtinv) = bufpot(0)
+       inversion%tab_force(0,jtinv) = bufvir(0)
 
-       vinv(mxginv-2,jtinv) = 2.0_wp*vinv(mxginv-3,jtinv) - vinv(mxginv-4,jtinv)
-       ginv(mxginv-2,jtinv) = 2.0_wp*ginv(mxginv-3,jtinv) - ginv(mxginv-4,jtinv)
+       inversion%tab_potential(inversion%bin_tab-2,jtinv) = &
+         2.0_wp*inversion%tab_potential(inversion%bin_tab-3,jtinv) - &
+         inversion%tab_potential(inversion%bin_tab-4,jtinv)
+       inversion%tab_force(inversion%bin_tab-2,jtinv) = &
+         2.0_wp*inversion%tab_force(inversion%bin_tab-3,jtinv) - &
+         inversion%tab_force(inversion%bin_tab-4,jtinv)
     End Do
 
     If (comm%idnode == 0) Then
@@ -1542,4 +1585,39 @@ Contains
     Call error(24)
 
   End Subroutine inversions_table_read
+
+  Subroutine cleanup(inversion)
+    Type(inversions_type) :: inversion
+
+    If (Allocated(inversion%num)) Then
+      Deallocate(inversion%num)
+    End If
+    If (Allocated(inversion%key)) Then
+      Deallocate(inversion%key)
+    End If
+
+    If (Allocated(inversion%lst)) Then
+      Deallocate(inversion%lst)
+    End If
+    If (Allocated(inversion%list)) Then
+      Deallocate(inversion%list)
+    End If
+    If (Allocated(inversion%legend)) Then
+      Deallocate(inversion%legend)
+    End If
+
+    If (Allocated(inversion%param)) Then
+      Deallocate(inversion%param)
+    End If
+
+    If (Allocated(inversion%ltp)) Then
+      Deallocate(inversion%ltp)
+    End If
+    If (Allocated(inversion%tab_potential)) Then
+      Deallocate(inversion%tab_potential)
+    End If
+    If (Allocated(inversion%tab_force)) Then
+      Deallocate(inversion%tab_force)
+    End If
+  End Subroutine cleanup
 End Module inversions

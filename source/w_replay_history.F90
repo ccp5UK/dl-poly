@@ -140,8 +140,8 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,meginv,bond,angle,dihedral,comm)
-              If (lexcl) Call build_excl_intra(lecx,bond,angle,dihedral,comm)
+           megtet,bond,angle,dihedral,inversion,comm)
+              If (lexcl) Call build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
            End If
 
 ! Accumulate RDFs if needed (nstep->nstph)
@@ -179,9 +179,9 @@
 
 ! Calculate inversion forces
 
-           If (meginv > 0 .and. mxginv1 > 0) Then
+           If (inversion%total > 0 .and. inversion%bin_adf > 0) Then
               isw = 0
-              Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,comm)
+              Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,inversion,comm)
            End If
 
 ! Calculate kinetic stress and energy if available
@@ -268,7 +268,7 @@
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,comm)
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -343,7 +343,7 @@
 
   If (.not. devel%l_tor) Call system_revive                         &
            (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,comm)
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

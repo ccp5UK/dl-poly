@@ -11,6 +11,7 @@ Module bounds
   Use bonds,           Only : bonds_type
   Use angles,          Only : angles_type
   Use dihedrals,       Only : dihedrals_type
+  Use inversions,      Only : inversions_type
   Use tersoff,         Only : potter
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
@@ -35,7 +36,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce, &
-           alpha,width,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,comm)
+           alpha,width,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -64,6 +65,7 @@ Subroutine set_bounds                                 &
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -95,10 +97,10 @@ Subroutine set_bounds                                 &
            mtbond, &
            mtangl,       &
            mtdihd,       &
-           mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
+           mtinv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,inversion,comm)
 
 ! Get imc_r & set dvar
 
@@ -118,12 +120,12 @@ Subroutine set_bounds                                 &
   Call scan_control                                        &
            (mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,mxginv1,         &
+           mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo, &
-           green,devel,msd_data,met,pois,bond,angle,dihedral,comm)
+           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -309,15 +311,15 @@ Subroutine set_bounds                                 &
 ! maximum number of inversions per node and inversion potential parameters
 ! allow for 20% higher density
 
-  If (mxinv > 0) Then
+  If (inversion%max_angles > 0) Then
      If (comm%mxnode > 1) Then
-        mxinv = Max(mxinv,comm%mxnode*mtinv)
-        mxinv = (3*(Nint(fdvar*Real(mxinv,wp))+comm%mxnode-1))/comm%mxnode
-        mxinv = mxinv + (mxinv+4)/5 ! allow for 25% higher density
+        inversion%max_angles = Max(inversion%max_angles,comm%mxnode*mtinv)
+        inversion%max_angles = (3*(Nint(fdvar*Real(inversion%max_angles,wp))+comm%mxnode-1))/comm%mxnode
+        inversion%max_angles = inversion%max_angles + (inversion%max_angles+4)/5 ! allow for 25% higher density
      End If
-     mxpinv = 3
+     inversion%max_param = 3
   Else
-     mxpinv = 0
+     inversion%max_param = 0
   End If
 
 
@@ -349,14 +351,14 @@ Subroutine set_bounds                                 &
            dihedral%bin_adf = Nint(360.0_wp/delth_max)
         End If
      End If
-     If (mxginv1 == -1) Then
-        If (mxginv > 0) Then
-           mxginv1 = mxginv-4
+     If (inversion%bin_adf == -1) Then
+        If (inversion%bin_tab > 0) Then
+           inversion%bin_adf = inversion%bin_tab-4
         Else
            dihedral%bin_adf = Nint(180.0_wp/delth_max)
         End If
      End If
-     mxgana = Max(bond%bin_pdf,angle%bin_adf,dihedral%bin_adf,mxginv1)
+     mxgana = Max(bond%bin_pdf,angle%bin_adf,dihedral%bin_adf,inversion%bin_adf)
   End If
   mxtana = 0 ! initialise for buffer size purposes, set in read_field
 
@@ -402,7 +404,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for inversions
 
-  mxginv = Merge(mxginv,Min(mxginv,Nint(180.0_wp/delth_max)+4),mxginv < 0)
+  inversion%bin_tab = Merge(inversion%bin_tab,Min(inversion%bin_tab,Nint(180.0_wp/delth_max)+4),inversion%bin_tab < 0)
 
 ! maximum number of grid points for electrostatics
 
@@ -422,7 +424,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab,mxginv,mxgele,mxgvdw,met%maxgrid,mxgter)
+  mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab,inversion%bin_tab,mxgele,mxgvdw,met%maxgrid,mxgter)
 
 
 
@@ -803,7 +805,7 @@ Subroutine set_bounds                                 &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp        + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
-           3*mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*mxinv,wp) * dens0)
+           3*mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)
 
 ! statistics connect deporting total per atom
 

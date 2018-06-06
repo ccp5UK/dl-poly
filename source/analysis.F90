@@ -8,7 +8,7 @@ Module analysis
   Use bonds,         Only : bonds_type,bonds_compute
   Use angles,        Only : angles_type,angles_compute
   Use dihedrals,     Only : dihedrals_type,dihedrals_compute
-  Use inversions,    Only : ncfinv,mxginv1,inversions_compute
+  Use inversions,    Only : inversions_type,inversions_compute
   Use greenkubo,     Only : greenkubo_type,vaf_compute
   Use rdfs,          Only : ncfrdf,ncfusr,l_errors_block,l_errors_jack,rdf_compute, &
                             usr_compute,calculate_errors,calculate_errors_jackknife
@@ -25,7 +25,7 @@ Contains
   !> Calculate and print final analysis
   Subroutine analysis_result(lrdf,lzdn,lpana,lprdf,lpzdn, &
                              nstep,tstep,rcut,temp,ensemble, &
-                             bond,angle,dihedral,stats,green,comm)
+                             bond,angle,dihedral,inversion,stats,green,comm)
 
     Logical, Intent( In    ) :: lrdf,lzdn,lpana,lprdf,lpzdn
     !> Number of simulation steps
@@ -44,6 +44,8 @@ Contains
     Type( angles_type ), Intent( InOut ) :: angle
     !> Dihedrals data
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    !> Inversion angles data
+    Type( inversions_type ), Intent( InOut ) :: inversion
     !> Statistics data
     Type( stats_type ), Intent( In    ) :: stats
     !> Greenkubo data
@@ -101,10 +103,18 @@ Contains
 
     ! Calculate and print PDFs
     If (lpana) Then
-      If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Call bonds_compute(temp,bond,comm)
-      If (angle%bin_adf > 0 .and. angle%n_frames > 0) Call angles_compute(temp,angle,comm)
-      If (dihedral%bin_adf > 0 .and. dihedral%n_frames > 0) Call dihedrals_compute(temp,dihedral,comm)
-      If (mxginv1 > 0 .and. ncfinv > 0) Call inversions_compute(temp,comm)
+      If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Then
+        Call bonds_compute(temp,bond,comm)
+      End If
+      If (angle%bin_adf > 0 .and. angle%n_frames > 0) Then
+        Call angles_compute(temp,angle,comm)
+      End If
+      If (dihedral%bin_adf > 0 .and. dihedral%n_frames > 0) Then
+        Call dihedrals_compute(temp,dihedral,comm)
+      End If
+      If (inversion%bin_adf > 0 .and. inversion%n_frames > 0) Then
+        Call inversions_compute(temp,inversion,comm)
+      End If
     End If
   End Subroutine analysis_result
 End Module analysis
