@@ -1552,10 +1552,12 @@ Subroutine statistics_result                                    &
 
   ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
-  If (thermo%ensemble >= 20) Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
-    "<P*V> term:            ",stats%sumval(37+ntpatm+2*Merge(mxatdm,0,lmsd)), &
-    " r.m.s. fluctuations:  ",stats%ssqval(37+ntpatm+2*Merge(mxatdm,0,lmsd))
-  Call info(message,.true.)
+  If (thermo%ensemble >= 20) Then 
+    Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
+      "<P*V> term:            ",stats%sumval(37+ntpatm+2*Merge(mxatdm,0,lmsd)), &
+      " r.m.s. fluctuations:  ",stats%ssqval(37+ntpatm+2*Merge(mxatdm,0,lmsd))
+    Call info(message,.true.)
+  End If  
 
   Write(messages(1),"(130('-'))")
   Write(messages(2),'(a)')''
