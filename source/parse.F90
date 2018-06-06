@@ -11,7 +11,7 @@ Module parse
   Use kinds, Only : wp
   Use comms, Only : comms_type,gsync,gbcast,gcheck
   Use setup, Only : nrite
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,warning
   Implicit None
 
   Public :: tabs_2_blanks, nls_2_blanks, strip_blanks, get_word, &
@@ -533,12 +533,15 @@ Subroutine get_line(safe,ifile,record,comm)
     30  Continue
     If (Present(def)) Then
       word_2_real = def
-      If (l_report) Write(message,'(1x,3a,g20.10,a)') &
-        "*** warning - word_2_real defaulted word # ", word(1:word_end), " # to number # ", def, " # ***"
+      If (l_report) Then
+        Write(message,'(3a,g20.10,a)') &
+          "word_2_real defaulted word # ", word(1:word_end), " # to number # ", def, " #"
+        Call warning(message,.true.)
+      End If
     Else
       word_2_real = 0.0_wp
-      Write(message,'(1x,3a)') &
-        "*** warning - word_2_real expected to read a number but found # ", word(1:word_end), " # ***"
+      Write(message,'(3a)') &
+        "word_2_real expected to read a number but found # ", word(1:word_end), " #"
       Call error(1,message,.true.)
     End If
 
