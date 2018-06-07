@@ -201,7 +201,6 @@ Module setup
     mxspl,mxspl1,mxspl2,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1, &
     mxtshl,mxshl,mxfshl,mxtcon,mxcons,mxfcon,mxlshp,mxproc,     &
     mxtpmf(1:2),mxpmf,mxfpmf,mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
-    mxtteth,mxteth,mxftet,mxpteth,                              &
     mxrdf,mxgrdf,mxgele,                                        &
     mxvdw,mxpvdw,mxgvdw,                                        &
     mxmet,mxmed,mxmds,mxpmet,                            &

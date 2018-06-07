@@ -120,13 +120,13 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,bond,angle,dihedral,inversion,comm)
+           megtet,bond,angle,dihedral,inversion,tether,comm)
               If (lexcl) Call build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
            End If
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion)
+           Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether)
 
 ! Evaluate kinetics if available
 

@@ -809,25 +809,25 @@ Subroutine dihedrals_forces &
               End If
            End If
         End If
-!     Else ! (DEBUG)
-!        xdab(i)=0.0_wp
-!        ydab(i)=0.0_wp
-!        zdab(i)=0.0_wp
-!
-!        xdbc(i)=0.0_wp
-!        ydbc(i)=0.0_wp
-!        zdbc(i)=0.0_wp
-!
-!        xdcd(i)=0.0_wp
-!        ydcd(i)=0.0_wp
-!        zdcd(i)=0.0_wp
-!
-!        If (dihedral%l_core_shell) Then
-!           lad(i,:)=.false.
-!           xdad(i,:)=0.0_wp
-!           ydad(i,:)=0.0_wp
-!           zdad(i,:)=0.0_wp
-!        End If
+     Else ! (DEBUG)
+        xdab(i)=0.0_wp
+        ydab(i)=0.0_wp
+        zdab(i)=0.0_wp
+
+        xdbc(i)=0.0_wp
+        ydbc(i)=0.0_wp
+        zdbc(i)=0.0_wp
+
+        xdcd(i)=0.0_wp
+        ydcd(i)=0.0_wp
+        zdcd(i)=0.0_wp
+
+        If (dihedral%l_core_shell) Then
+           lad(i,:)=.false.
+           xdad(i,:)=0.0_wp
+           ydad(i,:)=0.0_wp
+           zdad(i,:)=0.0_wp
+        End If
      End If
   End Do
 

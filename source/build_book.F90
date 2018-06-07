@@ -21,7 +21,7 @@ Module build_book
 
   Use rigid_bodies
 
-  Use tethers
+  Use tethers, Only : tethers_type, deallocate_tethers_arrays
 
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
@@ -50,7 +50,8 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,bond,angle,dihedral,inversion,comm)
+           megtet,bond,angle,dihedral,  & 
+           inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -76,6 +77,7 @@ Subroutine build_book_intra             &
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( tethers_type ), Intent( InOut ) :: tether
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -109,7 +111,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra(bond,angle,dihedral,inversion)
+  If (.not.(newjob .or. lsim)) Call init_intra(bond,angle,dihedral,inversion,tether)
 
 ! Initialise safety flags
 
@@ -452,24 +454,25 @@ Subroutine build_book_intra             &
 
 ! Construct tethered atoms interaction list
 
-           Do lteths=1,numteth(itmols)
-              iatm=lsttet(lteths+kteths)+isite
+           Do lteths=1,tether%numteth(itmols)
+              iatm=tether%lsttet(lteths+kteths)+isite
               iat0=local_index(iatm,nlast,lsi,lsa)
               If (iat0 > natms) iat0=0
 
               If (iat0 > 0) Then
                  jteths=jteths+1
-                 If (jteths <= mxteth) Then
-                    listtet(0,jteths)=lteths+kteths
-                    listtet(1,jteths)=iatm
+                 If (jteths <= tether%mxteth) Then
+                    tether%listtet(0,jteths)=lteths+kteths
+                    tether%listtet(1,jteths)=iatm
 
-                    Call tag_legend(safe(1),iat0,jteths,legtet,mxftet)
-                    If (legtet(mxftet,iat0) > 0) Then
+                    Call tag_legend(safe(1),iat0,jteths,tether%legtet,tether%mxftet)
+                    If (tether%legtet(tether%mxftet,iat0) > 0) Then
                        Call warning('too many tether type neighbours')
-                       Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxftet-1+legtet(mxftet,iat0)
-                       Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxftet-1
+                       Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                             tether%mxftet-1+tether%legtet(tether%mxftet,iat0)
+                       Write(messages(2),'(a,i0)') 'but maximum length allowed: ', tether%mxftet-1
                        Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                       Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lsttet(lteths+kteths)
+                       Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', tether%lsttet(lteths+kteths)
                        Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', lteths
                        Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                        Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -882,7 +885,7 @@ Subroutine build_book_intra             &
 
      krigid=krigid+numrgd(itmols)
 
-     kteths=kteths+numteth(itmols)
+     kteths=kteths+tether%numteth(itmols)
 
      kbonds=kbonds+bond%num(itmols)
      kangle=kangle+angle%num(itmols)
@@ -900,7 +903,7 @@ Subroutine build_book_intra             &
 
   ntrgd =jrigid
 
-  ntteth=jteths
+  tether%ntteth=jteths
 
   bond%n_types=jbonds
   angle%n_types=jangle
@@ -1600,7 +1603,7 @@ Subroutine build_book_intra             &
      itmp(2)=iconst ; jtmp(2)=mxcons
      itmp(3)=ipmf   ; jtmp(3)=mxpmf
      itmp(4)=irigid ; jtmp(4)=mxrgd
-     itmp(5)=iteths ; jtmp(5)=mxteth
+     itmp(5)=iteths ; jtmp(5)=tether%mxteth
      itmp(6)=ibonds ; jtmp(6)=bond%max_bonds
      itmp(7)=iangle ; jtmp(7)=angle%max_angles
      itmp(8)=idihed ; jtmp(8)=dihedral%max_angles
@@ -1647,7 +1650,7 @@ Subroutine build_book_intra             &
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
-           megtet,bond,angle,dihedral,inversion,comm)
+           megtet,bond,angle,dihedral,inversion,tether,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1659,7 +1662,7 @@ Subroutine build_book_intra             &
 
         Call deallocate_rigid_bodies_arrays()
 
-        Call deallocate_tethers_arrays()
+        Call deallocate_tethers_arrays(tether)
      End If
 
   Else
@@ -1778,7 +1781,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra(bond,angle,dihedral,inversion)
+Subroutine init_intra(bond,angle,dihedral,inversion,tether)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1795,6 +1798,7 @@ Subroutine init_intra(bond,angle,dihedral,inversion)
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( tethers_type ), Intent( InOut ) :: tether
 
 ! exclusions locals
 
@@ -1839,9 +1843,9 @@ Subroutine init_intra(bond,angle,dihedral,inversion)
 
 ! tethers locals
 
-  ntteth = 0
-  listtet = 0
-  legtet  = 0
+  tether%ntteth = 0
+  tether%listtet = 0
+  tether%legtet  = 0
 
 ! bonds locals
 
