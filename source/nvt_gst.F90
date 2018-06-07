@@ -334,7 +334,7 @@ Contains
                 mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
           End Do
           mxdr=Sqrt(mxdr)
-          If (comm%mxnode > 1) Call gmax(comm,mxdr)
+          Call gmax(comm,mxdr)
 
           If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
