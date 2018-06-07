@@ -436,9 +436,9 @@ Contains
         ! halo and partly outside it are not considered and zero bond vectors
         ! are assigned (DEBUG)
 
-        !        dxx(k)=0.0_wp
-        !        dyy(k)=0.0_wp
-        !        dzz(k)=0.0_wp
+        dxx(k)=0.0_wp
+        dyy(k)=0.0_wp
+        dzz(k)=0.0_wp
 
       Else
 
@@ -761,9 +761,9 @@ Subroutine constraints_shake_vv       &
            dyt(k)=yyy(i)-yyy(j)
            dzt(k)=zzz(i)-zzz(j)
         Else ! DEBUG
-!           dxt(k)=0.0_wp
-!           dyt(k)=0.0_wp
-!           dzt(k)=0.0_wp
+           dxt(k)=0.0_wp
+           dyt(k)=0.0_wp
+           dzt(k)=0.0_wp
         End If
      End Do
 

@@ -565,10 +565,10 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
         xdab(i)=xxx(ia)-xxx(ib)
         ydab(i)=yyy(ia)-yyy(ib)
         zdab(i)=zzz(ia)-zzz(ib)
-!     Else ! (DEBUG)
-!        xdab(i)=0.0_wp
-!        ydab(i)=0.0_wp
-!        zdab(i)=0.0_wp
+     Else ! (DEBUG)
+        xdab(i)=0.0_wp
+        ydab(i)=0.0_wp
+        zdab(i)=0.0_wp
      End If
   End Do
 

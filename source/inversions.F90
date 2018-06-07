@@ -603,18 +603,18 @@ Contains
              ydad(i)=yyy(id)-yyy(ia)
              zdad(i)=zzz(id)-zzz(ia)
           End If
-  !     Else ! (DEBUG)
-  !        xdab(i)=0.0_wp
-  !        ydab(i)=0.0_wp
-  !        zdab(i)=0.0_wp
-  !
-  !        xdac(i)=0.0_wp
-  !        ydac(i)=0.0_wp
-  !        zdac(i)=0.0_wp
-  !
-  !        xdad(i)=0.0_wp
-  !        ydad(i)=0.0_wp
-  !        zdad(i)=0.0_wp
+       Else ! (DEBUG)
+          xdab(i)=0.0_wp
+          ydab(i)=0.0_wp
+          zdab(i)=0.0_wp
+  
+          xdac(i)=0.0_wp
+          ydac(i)=0.0_wp
+          zdac(i)=0.0_wp
+   
+          xdad(i)=0.0_wp
+          ydad(i)=0.0_wp
+          zdad(i)=0.0_wp
        End If
     End Do
 
