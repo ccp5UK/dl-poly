@@ -34,7 +34,7 @@ Module ffield
   Use angles, Only : angles_type,angles_table_read,allocate_angl_dst_arrays
   Use dihedrals, Only : dihedrals_type,dihedrals_table_read,allocate_dihd_dst_arrays, &
                         dihedrals_14_check
-  Use inversions
+  Use inversions, Only : inversions_type,inversions_table_read,allocate_invr_dst_arrays
 
   Use vdw
   Use metal, Only : metal_type,allocate_metal_arrays,allocate_metal_table_arrays, &
@@ -76,7 +76,7 @@ Subroutine read_field                      &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
            megtet,    &
-           meginv,thermo,met,bond,angle,dihedral,comm)
+           thermo,met,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -110,12 +110,13 @@ Subroutine read_field                      &
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megcon,megpmf,megrgd,        &
-                                        megtet,meginv
+                                        megtet
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -194,7 +195,7 @@ Subroutine read_field                      &
   If (bond%l_tab .or. bond%bin_pdf > 0) Allocate (bond_name(1:bond%max_types), Stat=fail(1))
   If (angle%l_tab .or. angle%bin_adf > 0) Allocate (angl_name(1:angle%max_types), Stat=fail(2))
   If (dihedral%l_tab .or. dihedral%bin_adf > 0) Allocate (dihd_name(1:dihedral%max_types), Stat=fail(3))
-  If (lt_inv .or. mxginv1 > 0) Allocate (invr_name(1:mxtinv), Stat=fail(4))
+  If (inversion%l_tab .or. inversion%bin_adf > 0) Allocate (invr_name(1:inversion%max_types), Stat=fail(4))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'read_field allocation failure'
      Call error(0,message)
@@ -215,7 +216,7 @@ Subroutine read_field                      &
      ntpdih = 0 ! TABDIH
      dihd_name = ' '
   End If
-  If (lt_inv) Then
+  If (inversion%l_tab) Then
      ntpinv = 0 ! TABINV
      invr_name = ' '
   End If
@@ -240,7 +241,7 @@ Subroutine read_field                      &
   bond%total = 0
   angle%total = 0
   dihedral%total = 0
-  meginv = 0
+  inversion%total = 0
 
 ! Default for existence of intra-like interactions (including
 ! shells and tethers)
@@ -1912,7 +1913,7 @@ Subroutine read_field                      &
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  ntmp=Nint(word_2_real(word))
-                 numinv(itmols)=numinv(itmols)+ntmp
+                 inversion%num(itmols)=inversion%num(itmols)+ntmp
 
                  Write(message,'(a,i10)') 'number of inversion angles ',ntmp
                  Call info(message,.true.)
@@ -1924,9 +1925,9 @@ Subroutine read_field                      &
                   Call info(messages,2,.true.)
                 End If
 
-                 Do iinv=1,numinv(itmols)
+                 Do iinv=1,inversion%num(itmols)
                     ninver=ninver+1
-                    If (ninver > mxtinv) Call error(73)
+                    If (ninver > inversion%max_types) Call error(73)
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -1941,29 +1942,29 @@ Subroutine read_field                      &
                     keyword=word(1:4)
 
                     If      (keyword == 'tab' ) Then
-                       keyinv(ninver)=20
+                       inversion%key(ninver)=20
                     Else If (keyword == '-tab') Then
-                       keyinv(ninver)=-20
+                       inversion%key(ninver)=-20
                     Else If (keyword == 'harm') Then
-                       keyinv(ninver)=1
+                       inversion%key(ninver)=1
                     Else If (keyword == '-hrm') Then
-                       keyinv(ninver)=-1
+                       inversion%key(ninver)=-1
                     Else If (keyword == 'hcos') Then
-                       keyinv(ninver)=2
+                       inversion%key(ninver)=2
                     Else If (keyword == '-hcs') Then
-                       keyinv(ninver)=-2
+                       inversion%key(ninver)=-2
                     Else If (keyword == 'plan') Then
-                       keyinv(ninver)=3
+                       inversion%key(ninver)=3
                     Else If (keyword == '-pln') Then
-                       keyinv(ninver)=-3
+                       inversion%key(ninver)=-3
                     Else If (keyword == 'xpln') Then
-                       keyinv(ninver)=4
+                       inversion%key(ninver)=4
                     Else If (keyword == '-xpl') Then
-                       keyinv(ninver)=-4
+                       inversion%key(ninver)=-4
                     Else If (keyword == 'calc') Then
-                       keyinv(ninver)=5
+                       inversion%key(ninver)=5
                     Else If (keyword == '-clc') Then
-                       keyinv(ninver)=-5
+                       inversion%key(ninver)=-5
                     Else
                        Call info(keyword,.true.)
                        Call error(449)
@@ -1980,48 +1981,50 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     iatm4=Nint(word_2_real(word))
 
-                    lstinv(1,ninver)=iatm1
-                    lstinv(2,ninver)=iatm2
-                    lstinv(3,ninver)=iatm3
-                    lstinv(4,ninver)=iatm4
+                    inversion%lst(1,ninver)=iatm1
+                    inversion%lst(2,ninver)=iatm2
+                    inversion%lst(3,ninver)=iatm3
+                    inversion%lst(4,ninver)=iatm4
 
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
                     isite3 = nsite - numsit(itmols) + iatm3
                     isite4 = nsite - numsit(itmols) + iatm4
 
-                    If (keyinv(ninver) /= 20) Then
+                    If (inversion%key(ninver) /= 20) Then
 
                        Call get_word(record,word)
-                       prminv(1,ninver)=word_2_real(word)
+                       inversion%param(1,ninver)=word_2_real(word)
                        Call get_word(record,word)
-                       prminv(2,ninver)=word_2_real(word)
+                       inversion%param(2,ninver)=word_2_real(word)
                        Call get_word(record,word)
-                       prminv(3,ninver)=word_2_real(word)
+                       inversion%param(3,ninver)=word_2_real(word)
 
 ! test for frozen atoms and print unit
 
                        If (comm%idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
-                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',mxpinv,'f15.6,2x,a8)'
-                            Write(message,rfmt) iinv,keyword,lstinv(1:4,ninver),prminv(1:mxpinv,ninver),'*frozen*'
+                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',inversion%max_param,'f15.6,2x,a8)'
+                            Write(message,rfmt) iinv,keyword,inversion%lst(1:4,ninver), &
+                              inversion%param(1:inversion%max_param,ninver),'*frozen*'
                           Else
-                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',mxpinv,'f15.6)'
-                            Write(message,rfmt) iinv,keyword,lstinv(1:4,ninver),prminv(1:mxpinv,ninver)
+                            Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',inversion%max_param,'f15.6)'
+                            Write(message,rfmt) iinv,keyword,inversion%lst(1:4,ninver), &
+                              inversion%param(1:inversion%max_param,ninver)
                           End If
                           Call info(message,.true.)
                        End If
 
 ! convert energies to internal units and angles to radians
 
-                       prminv(1,ninver)=prminv(1,ninver)*engunit
+                       inversion%param(1,ninver)=inversion%param(1,ninver)*engunit
 
-                       If (keyinv(ninver) == 5) Then
-                          prminv(2,ninver)=prminv(2,ninver)*engunit
+                       If (inversion%key(ninver) == 5) Then
+                          inversion%param(2,ninver)=inversion%param(2,ninver)*engunit
                        Else
-                          prminv(2,ninver)=prminv(2,ninver)*(pi/180.0_wp)
-                          If (keyinv(ninver) == 2) &
-                             prminv(2,ninver)=Cos(prminv(2,ninver))
+                          inversion%param(2,ninver)=inversion%param(2,ninver)*(pi/180.0_wp)
+                          If (inversion%key(ninver) == 2) &
+                             inversion%param(2,ninver)=Cos(inversion%param(2,ninver))
                        End If
 
                     Else ! TABINV to read
@@ -2058,17 +2061,17 @@ Subroutine read_field                      &
 
                        Do i=1,ntpinv
                           If (invr_name(i) == idinvr) Then
-                             ltpinv(ninver)=i ! Re-point from zero to type
+                             inversion%ltp(ninver)=i ! Re-point from zero to type
                              Exit
                           End If
                        End Do
 
-                       If (ltpinv(ninver) == 0) Then
+                       If (inversion%ltp(ninver) == 0) Then
                           ntpinv=ntpinv+1
                           invr_name(ntpinv)=idinvr
 
-                          ltpinv(0)=ntpinv      ! NUTIP
-                          ltpinv(ninver)=ntpinv ! Re-point from zero to type
+                          inversion%ltp(0)=ntpinv      ! NUTIP
+                          inversion%ltp(ninver)=ntpinv ! Re-point from zero to type
                        End If
 
 ! test for frozen atoms and print unit
@@ -2076,10 +2079,10 @@ Subroutine read_field                      &
                        If (comm%idnode == 0 .and. l_top) Then
                           If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) /= 0) Then
                             Write(message,'(2x,i10,a8,4i10,2x,a9,2x,a8)') &
-                              iinv,keyword,lstinv(1:4,ninver),'tabulated','*frozen*'
+                              iinv,keyword,inversion%lst(1:4,ninver),'tabulated','*frozen*'
                           Else
                             Write(message,'(2x,i10,a8,4i10,2x,a9)') &
-                              iinv,keyword,lstinv(1:4,ninver),'tabulated'
+                              iinv,keyword,inversion%lst(1:4,ninver),'tabulated'
                           End If
                           Call info(message,.true.)
                        End If
@@ -2088,7 +2091,7 @@ Subroutine read_field                      &
 
 ! catch unidentified entry
 
-                    If (Any(lstinv(1:4,ninver) < 1) .or. Any(lstinv(1:4,ninver) > numsit(itmols))) Call error(27)
+                    If (Any(inversion%lst(1:4,ninver) < 1) .or. Any(inversion%lst(1:4,ninver) > numsit(itmols))) Call error(27)
 
 ! test for mistyped inversion unit
 
@@ -2099,20 +2102,20 @@ Subroutine read_field                      &
 
 ! Check for multiple inversion angle entries
 
-                 Do i=ninver-numinv(itmols)+1,ninver
-                    is(0)=keyinv(i)
-                    is(1)=lstinv(1,i)
-                    is(2)=lstinv(2,i)
-                    is(3)=lstinv(3,i)
-                    is(4)=lstinv(4,i)
+                 Do i=ninver-inversion%num(itmols)+1,ninver
+                    is(0)=inversion%key(i)
+                    is(1)=inversion%lst(1,i)
+                    is(2)=inversion%lst(2,i)
+                    is(3)=inversion%lst(3,i)
+                    is(4)=inversion%lst(4,i)
                     Call shellsort(3,is(2:4))
 
                     Do j=i+1,ninver
-                       js(0)=keyinv(j)
-                       js(1)=lstinv(1,j)
-                       js(2)=lstinv(2,j)
-                       js(3)=lstinv(3,j)
-                       js(4)=lstinv(4,j)
+                       js(0)=inversion%key(j)
+                       js(1)=inversion%lst(1,j)
+                       js(2)=inversion%lst(2,j)
+                       js(3)=inversion%lst(3,j)
+                       js(4)=inversion%lst(4,j)
                        Call shellsort(3,js(2:4))
 
                        If (js(1) == is(1) .and. js(2) == is(2) .and. &
@@ -2145,7 +2148,7 @@ Subroutine read_field                      &
                  bond%total=bond%total+nummols(itmols)*bond%num(itmols)
                  angle%total=angle%total+nummols(itmols)*angle%num(itmols)
                  dihedral%total=dihedral%total+nummols(itmols)*dihedral%num(itmols)
-                 meginv=meginv+nummols(itmols)*numinv(itmols)
+                 inversion%total=inversion%total+nummols(itmols)*inversion%num(itmols)
 
                  Go To 1000
 
@@ -2180,7 +2183,7 @@ Subroutine read_field                      &
         If (bond%l_tab) Call bonds_table_read(bond_name,bond,comm)
         If (angle%l_tab) Call angles_table_read(angl_name,angle,comm)
         If (dihedral%l_tab) Call dihedrals_table_read(dihd_name,dihedral,comm)
-        If (lt_inv) Call inversions_table_read(invr_name,comm)
+        If (inversion%l_tab) Call inversions_table_read(invr_name,inversion,comm)
 
 ! If some intramolecular PDFs analysis is opted for
 
@@ -2201,7 +2204,7 @@ Subroutine read_field                      &
               ntpdih = 0 ! for dihedrals
               dihd_name = ' '
            End If
-           If (mxginv1 > 0) Then
+           If (inversion%bin_adf > 0) Then
               ntpinv = 0 ! for inversions
               invr_name = ' '
            End If
@@ -2346,15 +2349,15 @@ Subroutine read_field                      &
                  End If
               End Do
 
-              Do iinv=1,numinv(itmols)*Merge(1,0,mxginv1 > 0)
+              Do iinv=1,inversion%num(itmols)*Merge(1,0,inversion%bin_adf > 0)
                  ninver=ninver+1
 
-                 If (keyinv(ninver) /= 5) Cycle ! avoid the calcite OoP potential
+                 If (inversion%key(ninver) /= 5) Cycle ! avoid the calcite OoP potential
 
-                 iatm1=lstinv(1,ninver)
-                 iatm2=lstinv(2,ninver)
-                 iatm3=lstinv(3,ninver)
-                 iatm4=lstinv(4,ninver)
+                 iatm1=inversion%lst(1,ninver)
+                 iatm2=inversion%lst(2,ninver)
+                 iatm3=inversion%lst(3,ninver)
+                 iatm4=inversion%lst(4,ninver)
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
@@ -2393,17 +2396,17 @@ Subroutine read_field                      &
 
                  Do i=1,ntpinv
                     If (invr_name(i) == idinvr) Then
-                       ldfinv(ninver)=i ! Re-point from zero to type
+                       inversion%ldf(ninver)=i ! Re-point from zero to type
                        Exit
                     End If
                  End Do
 
-                 If (ldfinv(ninver) == 0) Then
+                 If (inversion%ldf(ninver) == 0) Then
                     ntpinv=ntpinv+1
                     invr_name(ntpinv)=idinvr
 
-                    ldfinv(0)=ntpinv      ! NUTIPDFs
-                    ldfinv(ninver)=ntpinv ! Re-point from zero to type
+                    inversion%ldf(0)=ntpinv      ! NUTIPDFs
+                    inversion%ldf(ninver)=ntpinv ! Re-point from zero to type
                  End If
               End Do
 
@@ -2428,10 +2431,10 @@ Subroutine read_field                      &
               Call allocate_dihd_dst_arrays(dihedral) ! as it depends on dihedral%ldf(0)
 !             dihedral%typ = 0 ! initialised in dihedrals
            End If
-           If (mxginv1 > 0) Then
+           If (inversion%bin_adf > 0) Then
               ntpinv = 0 ! for inversions
-              Call allocate_invr_dst_arrays() ! as it depends on ldfinv(0)
-!             typinv = 0 ! initialised in inversions
+              Call allocate_invr_dst_arrays(inversion) ! as it depends on inversion%ldf(0)
+!             inversion%typ = 0 ! initialised in inversions
            End If
 
            nsite =0
@@ -2609,22 +2612,22 @@ Subroutine read_field                      &
                  End If
               End Do
 
-              Do iinv=1,numinv(itmols)*Merge(1,0,mxginv1 > 0)
+              Do iinv=1,inversion%num(itmols)*Merge(1,0,inversion%bin_adf > 0)
                  ninver=ninver+1
 
-                 If (keyinv(ninver) /= 5) Cycle ! avoid the calcite OoP potential
+                 If (inversion%key(ninver) /= 5) Cycle ! avoid the calcite OoP potential
 
-                 iatm1=lstinv(1,ninver)
-                 iatm2=lstinv(2,ninver)
-                 iatm3=lstinv(3,ninver)
-                 iatm4=lstinv(4,ninver)
+                 iatm1=inversion%lst(1,ninver)
+                 iatm2=inversion%lst(2,ninver)
+                 iatm3=inversion%lst(3,ninver)
+                 iatm4=inversion%lst(4,ninver)
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
                  isite3 = nsite + iatm3
                  isite4 = nsite + iatm4
 
-                 j=ldfinv(ninver)
+                 j=inversion%ldf(ninver)
                  If (j > ntpinv) Then
 
 ! record species and presence(frozen and non-frozen)
@@ -2638,43 +2641,43 @@ Subroutine read_field                      &
                        If (sitnam(isite4) == unqatm(jsite)) katom4=jsite
                     End Do
 
-                    typinv(1,ntpinv)=katom1
+                    inversion%typ(1,ntpinv)=katom1
                     If      (Min(katom2,katom3,katom4) == katom2) Then
                        If (katom3 <= katom4) Then
-                          typinv(2,ntpinv)=katom2
-                          typinv(3,ntpinv)=katom3
-                          typinv(4,ntpinv)=katom4
+                          inversion%typ(2,ntpinv)=katom2
+                          inversion%typ(3,ntpinv)=katom3
+                          inversion%typ(4,ntpinv)=katom4
                        Else
-                          typinv(2,ntpinv)=katom2
-                          typinv(3,ntpinv)=katom4
-                          typinv(4,ntpinv)=katom3
+                          inversion%typ(2,ntpinv)=katom2
+                          inversion%typ(3,ntpinv)=katom4
+                          inversion%typ(4,ntpinv)=katom3
                        End If
                     Else If (Min(katom2,katom3,katom4) == katom3) Then
                        If (katom2 <= katom4) Then
-                          typinv(2,ntpinv)=katom3
-                          typinv(3,ntpinv)=katom2
-                          typinv(4,ntpinv)=katom4
+                          inversion%typ(2,ntpinv)=katom3
+                          inversion%typ(3,ntpinv)=katom2
+                          inversion%typ(4,ntpinv)=katom4
                        Else
-                          typinv(2,ntpinv)=katom3
-                          typinv(3,ntpinv)=katom4
-                          typinv(4,ntpinv)=katom2
+                          inversion%typ(2,ntpinv)=katom3
+                          inversion%typ(3,ntpinv)=katom4
+                          inversion%typ(4,ntpinv)=katom2
                        End If
                     Else
                        If (katom2 <= katom3) Then
-                          typinv(2,ntpinv)=katom4
-                          typinv(3,ntpinv)=katom2
-                          typinv(4,ntpinv)=katom3
+                          inversion%typ(2,ntpinv)=katom4
+                          inversion%typ(3,ntpinv)=katom2
+                          inversion%typ(4,ntpinv)=katom3
                        Else
-                          typinv(2,ntpinv)=katom4
-                          typinv(3,ntpinv)=katom3
-                          typinv(4,ntpinv)=katom2
+                          inversion%typ(2,ntpinv)=katom4
+                          inversion%typ(3,ntpinv)=katom3
+                          inversion%typ(4,ntpinv)=katom2
                        End If
                     End If
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
-                       typinv(0,ntpinv)=typinv(0,ntpinv)+nummols(itmols)
+                       inversion%typ(0,ntpinv)=inversion%typ(0,ntpinv)+nummols(itmols)
                     Else
-                       typinv(-1,ntpinv)=typinv(-1,ntpinv)+nummols(itmols)
+                       inversion%typ(-1,ntpinv)=inversion%typ(-1,ntpinv)+nummols(itmols)
                     End If
 
                  Else If (j > 0) Then
@@ -2682,9 +2685,9 @@ Subroutine read_field                      &
 ! accumulate the existing type and presence(frozen and non-frozen)
 
                     If (frzsit(isite1)*frzsit(isite2)*frzsit(isite3)*frzsit(isite4) == 0) Then
-                       typinv(0,j)=typinv(0,j)+nummols(itmols)
+                       inversion%typ(0,j)=inversion%typ(0,j)+nummols(itmols)
                     Else
-                       typinv(-1,j)=typinv(-1,j)+nummols(itmols)
+                       inversion%typ(-1,j)=inversion%typ(-1,j)+nummols(itmols)
                     End If
                  End If
               End Do
@@ -2695,7 +2698,7 @@ Subroutine read_field                      &
            mxtana = Max(ntpbnd*Merge(1,0,bond%bin_pdf > 0), &
                         ntpang*Merge(1,0,angle%bin_adf > 0), &
                         ntpdih*Merge(1,0,dihedral%bin_adf > 0), &
-                        ntpinv*Merge(1,0,mxginv1 > 0))
+                        ntpinv*Merge(1,0,inversion%bin_adf > 0))
         End If
 
 ! Deallocate possibly allocated auxiliary intramolecular TPs/PDFs arrays
@@ -2703,7 +2706,7 @@ Subroutine read_field                      &
         If (bond%l_tab .or. bond%bin_pdf > 0) Deallocate (bond_name, Stat=fail(1))
         If (angle%l_tab .or. angle%bin_adf > 0) Deallocate (angl_name, Stat=fail(2))
         If (dihedral%l_tab .or. dihedral%bin_adf > 0) Deallocate (dihd_name, Stat=fail(3))
-        If (lt_inv .or. mxginv1 > 0) Deallocate (invr_name, Stat=fail(4))
+        If (inversion%l_tab .or. inversion%bin_adf > 0) Deallocate (invr_name, Stat=fail(4))
         If (Any(fail > 0)) Then
            Write(message,'(a)') 'read_field deallocation failure'
            Call error(0,message)
@@ -3053,15 +3056,15 @@ Subroutine read_field                      &
                  End Do
                  If (ishls /= numshl(itmols)) ndihed=ndihed-dihedral%num(itmols)
 
-                 Do iinv=1,numinv(itmols)
+                 Do iinv=1,inversion%num(itmols)
                     ninver=ninver+1
 
-                    If (Any(lstinv(1:4,ninver) == ia) .and. Any(lstinv(1:4,ninver) == ja)) Then
+                    If (Any(inversion%lst(1:4,ninver) == ia) .and. Any(inversion%lst(1:4,ninver) == ja)) Then
                        Call warning(299,Real(ishls,wp),Real(iinv,wp),Real(itmols,wp))
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) ninver=ninver-numinv(itmols)
+                 If (ishls /= numshl(itmols)) ninver=ninver-inversion%num(itmols)
               End Do
               nsite=nsite+numsit(itmols)
            End Do
@@ -4746,7 +4749,7 @@ Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
            megtet,  &
-           meginv,bond,angle,dihedral,comm)
+           bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4759,10 +4762,11 @@ Subroutine report_topology               &
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
                               megshl,megcon,megpmf,megrgd, &
-                              megtet,meginv
+                              megtet
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( In    ) :: dihedral
+  Type( inversions_type ), Intent( In    ) :: inversion
   Type(comms_type), Intent( InOut ) :: comm
 
   Integer :: itmols,nsite,                &
@@ -4889,13 +4893,13 @@ Subroutine report_topology               &
      End Do
 
      frzinv=0
-     Do iinv=1,numinv(itmols)
+     Do iinv=1,inversion%num(itmols)
         ninver=ninver+1
 
-        iatm1=lstinv(1,ninver)
-        iatm2=lstinv(2,ninver)
-        iatm3=lstinv(3,ninver)
-        iatm4=lstinv(4,ninver)
+        iatm1=inversion%lst(1,ninver)
+        iatm2=inversion%lst(2,ninver)
+        iatm3=inversion%lst(3,ninver)
+        iatm4=inversion%lst(4,ninver)
 
         isite1 = nsite + iatm1
         isite2 = nsite + iatm2
@@ -4938,7 +4942,7 @@ Subroutine report_topology               &
   Write(banner(14),fmt2) '||  chemical bond units    | ',bond%total,'  |  F  ',mgfrbn,'     ||'
   Write(banner(15),fmt2) '||  bond angle units       | ',angle%total,'  |  F  ',mgfran,'     ||'
   Write(banner(16),fmt2) '||  dihedral angle units   | ',dihedral%total,'  |  F  ',mgfrdh,'     ||'
-  Write(banner(17),fmt2) '||  inversion angle units  | ',meginv,'  |  F  ',mgfrin,'     ||'
+  Write(banner(17),fmt2) '||  inversion angle units  | ',inversion%total,'  |  F  ',mgfrin,'     ||'
   Write(banner(18),fmt1) '\\'//Repeat('=',62)//'//'
   Call info(banner,18,.true.)
 End Subroutine report_topology
@@ -4954,10 +4958,10 @@ Subroutine scan_field                                &
            mtbond, &
            mtangl,       &
            mtdihd,       &
-           mtinv,mxtinv,mxinv,mxfinv,mxginv,         &
+           mtinv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4978,6 +4982,7 @@ Subroutine scan_field                                &
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( inversions_type ), Intent( InOut ) :: inversion
   Type( comms_type ), Intent( InOut ) :: comm
 ! Max number of different atom types
 
@@ -5004,7 +5009,7 @@ Subroutine scan_field                                &
                        numbonds,mtbond,ibonds, &
                        numang,mtangl,iang,         &
                        numdih,mtdihd,idih,         &
-                       numinv,mtinv,mxtinv,mxinv,iinv,mxfinv,mxginv,           &
+                       numinv,mtinv,iinv,           &
                        mxrdf,itprdf,mxvdw,itpvdw,mxgvdw,                       &
                        mxmet,mxmed,mxmds,itpmet,                        &
                        mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
@@ -5078,10 +5083,10 @@ Subroutine scan_field                                &
 
   numinv=0
   mtinv =0
-  mxinv =0
-  mxtinv=0
-  mxfinv=0
-  mxginv=-2
+  inversion%max_angles =0
+  inversion%max_types=0
+  inversion%max_legend=0
+  inversion%bin_tab=-2
 
   mxrdf =0
 
@@ -5485,8 +5490,8 @@ Subroutine scan_field                                &
                  If (word(1:5) == 'units') Call get_word(record,word)
                  numinv=Nint(word_2_real(word))
                  mtinv=Max(mtinv,numinv)
-                 mxtinv=mxtinv+numinv
-                 mxinv=mxinv+nummols*numinv
+                 inversion%max_types=inversion%max_types+numinv
+                 inversion%max_angles=inversion%max_angles+nummols*numinv
 
                  Do iinv=1,numinv
                     word(1:1)='#'
@@ -5496,10 +5501,10 @@ Subroutine scan_field                                &
                        Call get_word(record,word)
                     End Do
 
-                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) lt_inv=.true.
+                    If (word(1:3) == 'tab' .or. word(1:4)=='-tab' ) inversion%l_tab=.true.
                  End Do
 
-                 If (lt_inv) Then
+                 If (inversion%l_tab) Then
                     If (comm%idnode == 0) Open(Unit=ntable, File='TABINV')
 
                     Call get_line(safe,ntable,record,comm)
@@ -5513,7 +5518,7 @@ Subroutine scan_field                                &
 
                     Call get_word(record,word) ! no need for cutoff in angles (max is always 180 degrees)
                     k=Nint(word_2_real(word))
-                    mxginv=Max(mxginv,k+4)
+                    inversion%bin_tab=Max(inversion%bin_tab,k+4)
 
                     If (comm%idnode == 0) Close(Unit=ntable)
                  End If
@@ -5871,8 +5876,8 @@ Subroutine scan_field                                &
   If (dihedral%max_angles > 0) dihedral%max_legend=((mxb-1)*mxb*(mxb+1))/2+2*mxb+1
   mxf(8)=dihedral%max_legend
 
-  If (mxinv  > 0) mxfinv=(mxb*(mxb+1))/4+1
-  mxf(9)=mxfinv
+  If (inversion%max_angles  > 0) inversion%max_legend=(mxb*(mxb+1))/4+1
+  mxf(9)=inversion%max_legend
 
   Do i=1,9
      mxt(i)=Min(1,mxf(i))

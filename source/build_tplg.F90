@@ -14,13 +14,15 @@ Module build_tplg
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
-  Use inversions
+  Use inversions, Only : inversions_type
 
   ! MULTIPOLES MODULE
 
   Use mpole, Only : ltpatm ! equivalent to lexatm in configuration
   Use numerics, Only : local_index,shellsort
   Use build_excl, Only : add_exclusion
+
+  Use errors_warnings, Only : error,warning
 
   Implicit None
 
@@ -29,7 +31,7 @@ Module build_tplg
 
 Contains
 
-  Subroutine build_tplg_intra(bond,angle,dihedral,comm)
+  Subroutine build_tplg_intra(bond,angle,dihedral,inversion,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -45,6 +47,7 @@ Contains
     Type( bonds_type ), Intent( In    ) :: bond
     Type( angles_type ), Intent( In    ) :: angle
     Type( dihedrals_type ), Intent( In    ) :: dihedral
+    Type( inversions_type ), Intent( InOut ) :: inversion
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
@@ -153,11 +156,11 @@ Contains
 
     ! include sites on basis of inversion potentials
 
-    Do i=1,ntinv
-      ia=listinv(1,i)
-      ib=listinv(2,i)
-      ic=listinv(3,i)
-      id=listinv(4,i)
+    Do i=1,inversion%n_types
+      ia=inversion%list(1,i)
+      ib=inversion%list(2,i)
+      ic=inversion%list(3,i)
+      id=inversion%list(4,i)
 
       ia0=local_index(ia,nlast,lsi,lsa)
       ib0=local_index(ib,nlast,lsi,lsa)

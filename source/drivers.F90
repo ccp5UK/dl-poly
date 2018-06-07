@@ -12,7 +12,7 @@ Module drivers
   Use setup, Only : boltz,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
-  Use inversions, Only : mxginv1 
+  Use inversions, Only : inversions_type
   Use site,        Only : dofsit
   Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 

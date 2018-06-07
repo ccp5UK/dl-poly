@@ -9,7 +9,7 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral)
+        Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -83,11 +83,11 @@
 
 ! Calculate inversion forces
 
-     If (meginv > 0) Then
-        ltmp = (mxginv1 > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstinv) == 0)
+     If (inversion%total > 0) Then
+        ltmp = (inversion%bin_adf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstinv) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,comm)
+        Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,inversion,comm)
      End If
 
 ! Apply external field
@@ -146,7 +146,7 @@
 ! Refresh mappings
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
-           Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral)
+           Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion)
 
            Go To 100
         End If
