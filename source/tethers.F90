@@ -10,70 +10,71 @@ Module tethers
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp, wi
   Use comms,      Only : comms_type,gsum,gcheck
   Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
   Use statistics, Only : stats_type
-  Use setup, Only : mxtmls,mxtteth,mxteth,mxftet,mxpteth,mxatdm,nrite
+  Use setup, Only : mxtmls,mxatdm,nrite
   Use errors_warnings, Only : error, warning
   Use numerics, Only : images,local_index
 
 
   Implicit None
   Private
-
-  Integer, Public,                   Save :: ntteth = 0
-
-
-  Integer,Public,       Allocatable, Save :: numteth(:),keytet(:)
-  Integer,Public,       Allocatable, Save :: lsttet(:),listtet(:,:),legtet(:,:)
-
-  Real( Kind = wp ),Public, Allocatable, Save :: prmtet(:,:)
+  Type, Public :: tethers_type
+    Integer( Kind =  wi )               :: ntteth = 0
+    Integer( Kind =  wi )               :: mxtteth,mxteth,mxftet,mxpteth
+    Integer( Kind =  wi ),  Allocatable :: numteth(:),keytet(:)
+    Integer( Kind =  wi ),  Allocatable :: lsttet(:),listtet(:,:),legtet(:,:)
+    Real( Kind = wp ),      Allocatable :: prmtet(:,:)
+  End Type
 
   Public :: allocate_tethers_arrays , deallocate_tethers_arrays
   Public :: tethers_forces
 
 Contains
 
-  Subroutine allocate_tethers_arrays()
+  Subroutine allocate_tethers_arrays(tether)
 
+    Type(tethers_type) , Intent( InOut )   :: tether
     Integer, Dimension( 1:6 ) :: fail
 
     fail = 0
 
-    Allocate (numteth(1:mxtmls),           Stat = fail(1))
-    Allocate (keytet(1:mxtteth),           Stat = fail(2))
-    Allocate (lsttet(1:mxtteth),           Stat = fail(3))
-    Allocate (listtet(0:1,1:mxteth),       Stat = fail(4))
-    Allocate (legtet(0:mxftet,1:mxatdm),   Stat = fail(5))
-    Allocate (prmtet(1:mxpteth,1:mxtteth), Stat = fail(6))
+    Allocate (tether%numteth(1:mxtmls),           Stat = fail(1))
+    Allocate (tether%keytet(1:tether%mxtteth),   Stat = fail(2))
+    Allocate (tether%lsttet(1:tether%mxtteth),   Stat = fail(3))
+    Allocate (tether%listtet(0:1,1:tether%mxteth),       Stat = fail(4))
+    Allocate (tether%legtet(0:tether%mxftet,1:mxatdm),   Stat = fail(5))
+    Allocate (tether%prmtet(1:tether%mxpteth,1:tether%mxtteth), Stat = fail(6))
 
     If (Any(fail > 0)) Call error(1017)
 
-    numteth = 0
-    keytet  = 0
-    lsttet  = 0
-    listtet = 0
-    legtet  = 0
+    tether%numteth = 0
+    tether%keytet  = 0
+    tether%lsttet  = 0
+    tether%listtet = 0
+    tether%legtet  = 0
 
-    prmtet  = 0.0_wp
+    tether%prmtet  = 0.0_wp
 
   End Subroutine allocate_tethers_arrays
 
-  Subroutine deallocate_tethers_arrays()
+  Subroutine deallocate_tethers_arrays(tether)
 
+    Type(tethers_type) , Intent( InOut )   :: tether
     Integer:: fail
 
     fail = 0
 
-    Deallocate (numteth,lsttet, Stat = fail)
+    Deallocate (tether%numteth,tether%lsttet, Stat = fail)
 
     If (fail > 0) Call error(1031)
 
   End Subroutine deallocate_tethers_arrays
 
-  Subroutine tethers_forces(stats,comm)
+  Subroutine tethers_forces(stats,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -86,36 +87,38 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Type( stats_type ), Intent( InOut ) :: stats
-  Type( comms_type ), Intent( InOut ) :: comm
+    Type( stats_type )   , Intent( InOut ) :: stats
+    Type( tethers_type ) , Intent( InOut ) :: tether
+    Type( comms_type )   , Intent( InOut ) :: comm
 
-  Logical           :: safe
-  Integer           :: fail(1:2),i,ia,kk
-  Real( Kind = wp ) :: rab,rrab,fx,fy,fz,k,k2,k3,k4,rc,gamma,omega, &
-                       strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
+    Logical           :: safe
+    Integer           :: fail(1:2),i,ia,kk
+    Real( Kind = wp ) :: rab,rrab,fx,fy,fz,k,k2,k3,k4,rc,gamma,omega, &
+                         strs1,strs2,strs3,strs5,strs6,strs9,buffer(1:2)
 
-  Integer,           Allocatable :: lstopt(:,:)
-  Real( Kind = wp ), Allocatable :: xdab(:),ydab(:),zdab(:)
-  Character( Len = 256 ) :: message
-  fail=0
-  Allocate (lstopt(0:1,1:mxteth),                         Stat=fail(1))
-  Allocate (xdab(1:mxteth),ydab(1:mxteth),zdab(1:mxteth), Stat=fail(2))
-  If (Any(fail > 0)) Then
-     Write(message,'(a)') 'tethers_forces allocation failure'
-     Call error(0,message)
-  End If
+    Integer,           Allocatable :: lstopt(:,:)
+    Real( Kind = wp ), Allocatable :: xdab(:),ydab(:),zdab(:)
+    Character( Len = 256 ) :: message
+    fail=0
+
+    Allocate (lstopt(0:1,1:tether%mxteth),                         Stat=fail(1))
+    Allocate (xdab(1:tether%mxteth),ydab(1:tether%mxteth),zdab(1:tether%mxteth), Stat=fail(2))
+    If (Any(fail > 0)) Then
+      Write(message,'(a)') 'tethers_forces allocation failure'
+      Call error(0,message)
+    End If
 
 ! Initialise safety flag
 
-  safe=.true.
+   safe=.true.
 
 ! calculate tether vector
 
-  Do i=1,ntteth
+  Do i=1,tether%ntteth
 
 ! indices of tethered atoms
 
-     ia=local_index(listtet(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
+     ia=local_index(tether%listtet(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
 
      lstopt(0,i)=0
      If (ia > 0 .and. ia <= natms) Then !Tag
@@ -141,7 +144,7 @@ Contains
 
 ! periodic boundary condition
 
-  Call images(imcon,cell,ntteth,xdab,ydab,zdab)
+  Call images(imcon,cell,tether%ntteth,xdab,ydab,zdab)
 
 ! initialise stress tensor accumulators
 
@@ -159,7 +162,7 @@ Contains
 
 ! loop over all specified tethered atoms
 
-  Do i=1,ntteth
+  Do i=1,tether%ntteth
      If (lstopt(0,i) > 0) Then
 
 ! indices of tethered atoms
@@ -180,36 +183,36 @@ Contains
 
 ! index of potential function parameters
 
-        kk=listtet(0,i)
+        kk=tether%listtet(0,i)
 
 ! calculate scalar constant terms
 
-        If      (keytet(kk) == 1) Then
+        If(tether%keytet(kk) == 1) Then
 
 ! harmonic function
 
-           k=prmtet(1,kk)
+           k=tether%prmtet(1,kk)
 
            omega=0.5_wp*k*rab**2
            gamma=k
 
-        Else If (keytet(kk) == 2) Then
+        Else If (tether%keytet(kk) == 2) Then
 
 ! restrained harmonic
 
-           k =prmtet(1,kk)
-           rc=prmtet(2,kk)
+           k =tether%prmtet(1,kk)
+           rc=tether%prmtet(2,kk)
 
            omega=0.5_wp*k*Min(rab,rc)**2 + k*rc*Sign(Max(rab-rc,0.0_wp),rab)
            gamma=k*Sign(Min(rab,rc),rab)*rrab
 
-        Else If (keytet(kk) == 3) Then
+        Else If (tether%keytet(kk) == 3) Then
 
 ! quartic potential
 
-           k2=prmtet(1,kk)
-           k3=prmtet(2,kk)
-           k4=prmtet(3,kk)
+           k2=tether%prmtet(1,kk)
+           k3=tether%prmtet(2,kk)
+           k4=tether%prmtet(3,kk)
 
            omega=rab**2 * (0.5_wp*k2+(k3/3.0_wp)*rab+0.25_wp*k4*rab**2)
            gamma=k2+k3*rab+k4*rab**2

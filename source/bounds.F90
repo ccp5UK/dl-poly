@@ -27,6 +27,8 @@ Module bounds
   Use statistics,      Only : stats_type
   Use metal,           Only : metal_type
   Use poisson,         Only : poisson_type
+  Use tethers,         Only : tethers_type
+
 
   Implicit None
   Private
@@ -35,8 +37,10 @@ Contains
 
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-           dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce, &
-           alpha,width,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,comm)
+           dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,      &
+           alpha,width,stats,thermo,green,devel,      &
+           msd_data,met,pois,bond,angle,dihedral,     &
+           inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -66,6 +70,7 @@ Subroutine set_bounds                                 &
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( tethers_type ), Intent( InOut ) :: tether
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -93,14 +98,14 @@ Subroutine set_bounds                                 &
            mtcons,mxtcon,mxcons,mxfcon,              &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
-           mtteth,mxtteth,mxteth,mxftet,             &
+           mtteth, &
            mtbond, &
-           mtangl,       &
-           mtdihd,       &
-           mtinv,         &
+           mtangl, &
+           mtdihd, &
+           mtinv,  &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,inversion,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,inversion,tether,comm)
 
 ! Get imc_r & set dvar
 
@@ -257,14 +262,14 @@ Subroutine set_bounds                                 &
 
 ! maximum number of tethered atoms per node and tether potential parameters
 
-  If (mxteth > 0) Then
+  If (tether%mxteth > 0) Then
      If (comm%mxnode > 1) Then
-        mxteth = Max(mxteth,comm%mxnode*mtteth)
-        mxteth = (3*(Nint(fdvar*Real(mxteth,wp))+comm%mxnode-1))/comm%mxnode
+        tether%mxteth = Max(tether%mxteth,comm%mxnode*mtteth)
+        tether%mxteth = (3*(Nint(fdvar*Real(tether%mxteth,wp))+comm%mxnode-1))/comm%mxnode
      End If
-     mxpteth = 3
+     tether%mxpteth = 3
   Else
-     mxpteth = 0
+     tether%mxpteth = 0
   End If
 
 
@@ -805,7 +810,7 @@ Subroutine set_bounds                                 &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp        + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
-           3*mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)
+           3*tether%mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)
 
 ! statistics connect deporting total per atom
 

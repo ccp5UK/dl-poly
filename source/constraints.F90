@@ -213,9 +213,9 @@ Contains
         dyy(k)=dyy(k)*dis
         dzz(k)=dzz(k)*dis
       Else ! DEBUG
-        !        dxx(k)=0.0_wp
-        !        dyy(k)=0.0_wp
-        !        dzz(k)=0.0_wp
+        dxx(k)=0.0_wp
+        dyy(k)=0.0_wp
+        dzz(k)=0.0_wp
       End If
     End Do
 
@@ -542,9 +542,9 @@ Subroutine constraints_rattle              &
            dyy(k)=dyy(k)*dis
            dzz(k)=dzz(k)*dis
         Else ! DEBUG
-!           dxx(k)=0.0_wp
-!           dyy(k)=0.0_wp
-!           dzz(k)=0.0_wp
+           dxx(k)=0.0_wp
+           dyy(k)=0.0_wp
+           dzz(k)=0.0_wp
         End If
      End Do
   End If

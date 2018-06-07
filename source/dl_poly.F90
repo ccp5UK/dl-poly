@@ -80,7 +80,7 @@ program dl_poly
 
   Use rigid_bodies
 
-  Use tethers
+  Use tethers, Only : tethers_type, allocate_tethers_arrays, deallocate_tethers_arrays, tethers_forces
 
   Use bonds, Only : bonds_type,allocate_bonds_arrays,bonds_forces
   Use angles, Only : angles_type,allocate_angles_arrays,angles_forces
@@ -263,6 +263,7 @@ program dl_poly
   Type( angles_type ) :: angle
   Type( dihedrals_type ) :: dihedral
   Type( inversions_type ) :: inversion
+  Type( tethers_type ) :: tether
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -331,7 +332,7 @@ program dl_poly
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats, &
-    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,comm)
+    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -355,7 +356,7 @@ program dl_poly
 
   Call allocate_rigid_bodies_arrays()
 
-  Call allocate_tethers_arrays()
+  Call allocate_tethers_arrays(tether)
 
   Call allocate_bonds_arrays(bond)
   Call allocate_angles_arrays(angle)
@@ -416,7 +417,7 @@ program dl_poly
     rcter,rctbp,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megcon,megpmf,megrgd,    &
-    megtet,thermo,met,bond,angle,dihedral,inversion,comm)
+    megtet,thermo,met,bond,angle,dihedral,inversion,tether,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -512,17 +513,18 @@ program dl_poly
       megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,        &
       megrgd,degrot,degtra,        &
-      megtet,bond,angle,dihedral,inversion,comm)
+      megtet,bond,angle,dihedral,inversion,tether,comm)
     If (mximpl > 0) Then
       Call build_tplg_intra(bond,angle,dihedral,inversion,comm) ! multipoles topology for internal coordinate system
-      If (keyind == 1) Call build_chrm_intra(bond,angle,dihedral,inversion,comm) ! CHARMM core-shell screened electrostatic induction interactions
+      If (keyind == 1) Call build_chrm_intra &
+         (bond,angle,dihedral,inversion,comm) ! CHARMM core-shell screened electrostatic induction interactions
     End If
     If (lexcl) Call build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
   Else
     Call report_topology                &
       (megatm,megfrz,atmfre,atmfrz, &
       megshl,megcon,megpmf,megrgd,  &
-      megtet,bond,angle,dihedral,inversion,comm)
+      megtet,bond,angle,dihedral,inversion,tether,comm)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -534,7 +536,7 @@ program dl_poly
 
       Call deallocate_rigid_bodies_arrays()
 
-      Call deallocate_tethers_arrays()
+      Call deallocate_tethers_arrays(tether)
     End If
   End If
 
@@ -775,7 +777,7 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion)
+  Subroutine w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether)
     Type(stats_type), Intent(InOut) :: stat
     Type(plumed_type), Intent(InOut) :: plume
     Type(poisson_type), Intent(InOut) :: pois
@@ -783,16 +785,18 @@ Contains
     Type( angles_type ), Intent( InOut ) :: angle
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( tethers_type ), Intent( InOut ) :: tether
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion)
+  Subroutine w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion,tether)
     Type(stats_type), Intent(InOut) :: stat
     Type(msd_type), Intent(InOut) :: msd_data
     Type( bonds_type ), Intent( InOut ) :: bond
     Type( angles_type ), Intent( InOut ) :: angle
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( tethers_type ), Intent( InOut ) :: tether
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 

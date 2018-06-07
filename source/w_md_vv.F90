@@ -88,13 +88,13 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion)
+        Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion,tether)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
 ! Evaluate forces
 
-     Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion)
+     Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 

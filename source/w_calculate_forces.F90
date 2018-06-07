@@ -9,7 +9,8 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion)
+        Call w_refresh_mappings &
+        (stat,msd_data,bond,angle,dihedral,inversion,tether)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -51,7 +52,7 @@
 
 ! Calculate tethered atom forces
 
-     If (megtet > 0) Call tethers_forces(stat,comm)
+     If (megtet > 0) Call tethers_forces(stat,tether,comm)
 
 ! Calculate bond forces
 
@@ -146,7 +147,8 @@
 ! Refresh mappings
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
-           Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion)
+           Call w_refresh_mappings &
+            (stat,msd_data,bond,angle,dihedral,inversion,tether)
 
            Go To 100
         End If

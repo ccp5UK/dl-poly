@@ -18,7 +18,7 @@ Module deport_data
                                   rgdoxx,rgdoyy,rgdozz, &
                                   legrgd,lshmv_rgd,lishp_rgd,lashp_rgd
 
-  Use tethers,      Only : ntteth,listtet,legtet
+  Use tethers,      Only : tethers_type 
 
   Use bonds,        Only : bonds_type
   Use angles,       Only : angles_type
@@ -59,7 +59,7 @@ Module deport_data
   Contains
 
 
-Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
+Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -86,6 +86,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( tethers_type ), Intent( InOut ) :: tether
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -656,15 +657,15 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
 ! pack tether details
 
-           jj=legtet(0,i)
+           jj=tether%legtet(0,i)
            If (jj > 0) Then
               Do ll=1,jj
                  If (imove+2 <= iblock) Then
-                    kk=legtet(ll,i)
+                    kk=tether%legtet(ll,i)
 
                     Do k=0,1
                        imove=imove+1
-                       buffer(imove)=Real(listtet(k,kk),wp)
+                       buffer(imove)=Real(tether%listtet(k,kk),wp)
                     End Do
                  Else
                     imove=imove+2
@@ -898,7 +899,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
         legrgd(:,keep)=legrgd(:,i)
 
-        legtet(:,keep)=legtet(:,i)
+        tether%legtet(:,keep)=tether%legtet(:,i)
 
         bond%legend(:,keep)=bond%legend(:,i)
         angle%legend(:,keep)=angle%legend(:,i)
@@ -1116,7 +1117,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
         jrigid=ntrgd
 
-        jteths=ntteth
+        jteths=tether%ntteth
 
         jbonds=bond%n_types
         jangle=angle%n_types
@@ -1400,7 +1401,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
 ! unpack tether details
 
-        legtet(:,newatm) = 0
+        tether%legtet(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
            jj=Nint(buffer(kmove+1))
            iatm=Nint(buffer(kmove+2))
@@ -1410,10 +1411,10 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
            kteths=0
            check=.true.
-           Do While (check .and. kteths < Min(jteths,mxteth))
+           Do While (check .and. kteths < Min(jteths,tether%mxteth))
               kteths=kteths+1
-              check=.not.( jj   == listtet(0,kteths) .and. &
-                           iatm == listtet(1,kteths) )
+              check=.not.( jj   == tether%listtet(0,kteths) .and. &
+                           iatm == tether%listtet(1,kteths) )
            End Do
 
 ! add new tether unit
@@ -1421,17 +1422,17 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
            If (check) Then
               jteths=jteths+1
 
-              If (jteths <= mxteth) Then
-                 listtet(0,jteths)=jj
-                 listtet(1,jteths)=iatm
+              If (jteths <= tether%mxteth) Then
+                 tether%listtet(0,jteths)=jj
+                 tether%listtet(1,jteths)=iatm
 
-                 Call tag_legend(safe1,newatm,jteths,legtet,mxftet)
+                 Call tag_legend(safe1,newatm,jteths,tether%legtet,tether%mxftet)
               Else
                  safe=.false.
                  Call warning('too many tether units')
               End If
            Else
-              Call tag_legend(safe1,newatm,kteths,legtet,mxftet)
+              Call tag_legend(safe1,newatm,kteths,tether%legtet,tether%mxftet)
            End If
         End Do
         kmove=kmove+1
@@ -1634,7 +1635,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
         ntrgd =jrigid
 
-        ntteth=jteths
+        tether%ntteth=jteths
 
         bond%n_types=jbonds
         angle%n_types=jangle
@@ -2524,7 +2525,7 @@ Subroutine relocate_particles       &
            (dvar,rlnk,lbook,lmsd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
+           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2552,6 +2553,7 @@ Subroutine relocate_particles       &
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( tethers_type ), Intent( InOut ) :: tether
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2667,18 +2669,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 ! check system for loss of atoms
 
@@ -2720,7 +2722,7 @@ Subroutine relocate_particles       &
         If (m_con  > 0) safe(2)=(ntcons <= mxcons)
         If (megpmf > 0) safe(3)=(ntpmf  <= mxpmf )
         If (m_rgd  > 0) safe(4)=(ntrgd  <= mxrgd )
-        If (megtet > 0) safe(5)=(ntteth <= mxteth)
+        If (megtet > 0) safe(5)=(tether%ntteth <= tether%mxteth)
         If (bond%total > 0) safe(6)=(bond%n_types <= bond%max_bonds)
         If (angle%total > 0) safe(7)=(angle%n_types <= angle%max_angles)
         If (dihedral%total > 0) safe(8)=(dihedral%n_types <= dihedral%max_angles)
@@ -2733,7 +2735,7 @@ Subroutine relocate_particles       &
            itmp(2)=ntcons ; jtmp(2)=mxcons
            itmp(3)=ntpmf  ; jtmp(3)=mxpmf
            itmp(4)=ntrgd  ; jtmp(4)=mxrgd
-           itmp(5)=ntteth ; jtmp(5)=mxteth
+           itmp(5)=tether%ntteth ; jtmp(5)=tether%mxteth
            itmp(6)=bond%n_types ; jtmp(6)=bond%max_bonds
            itmp(7)=angle%n_types ; jtmp(7)=angle%max_angles
            itmp(8)=dihedral%n_types ; jtmp(8)=dihedral%max_angles
@@ -2781,8 +2783,8 @@ Subroutine relocate_particles       &
 ! Compress the rest of the bookkeeping arrays if needed
 
         If (megtet > 0) Call compress_book_intra &
-           (mxteth,ntteth,Ubound(listtet,Dim=1),listtet,mxftet,legtet,comm)
-
+           (tether%mxteth,tether%ntteth,Ubound(tether%listtet,Dim=1),&
+            tether%listtet,tether%mxftet,tether%legtet,comm)
         If (bond%total > 0) Then
           Call compress_book_intra(bond%max_bonds,bond%n_types, &
             Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,comm)

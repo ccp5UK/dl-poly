@@ -17,7 +17,7 @@
            (dvar,rlnk,lbook,msd_data%l_msd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
-           stat,ewld,thermo,green,bond,angle,dihedral,inversion,comm)
+           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 ! Exchange atomic data in border regions
 

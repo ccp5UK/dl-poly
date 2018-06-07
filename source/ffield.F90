@@ -28,7 +28,7 @@ Module ffield
 
   Use rigid_bodies
 
-  Use tethers
+  Use tethers, Only : tethers_type
 
   Use bonds, Only : bonds_type,bonds_table_read,allocate_bond_dst_arrays
   Use angles, Only : angles_type,angles_table_read,allocate_angl_dst_arrays
@@ -76,7 +76,7 @@ Subroutine read_field                      &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megcon,megpmf,megrgd,    &
            megtet,    &
-           thermo,met,bond,angle,dihedral,inversion,comm)
+           thermo,met,bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -117,6 +117,7 @@ Subroutine read_field                      &
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( tethers_type), Intent( InOut ) :: tether
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -1085,7 +1086,7 @@ Subroutine read_field                      &
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  ntmp=Nint(word_2_real(word))
-                 numteth(itmols)=numteth(itmols)+ntmp
+                 tether%numteth(itmols)=tether%numteth(itmols)+ntmp
 
                  Write(message,'(a,7x,i10)') 'number of tethered sites', ntmp
                  Call info(message,.true.)
@@ -1096,9 +1097,9 @@ Subroutine read_field                      &
                    Call info(message,.true.)
                  End If
 
-                 Do iteth=1,numteth(itmols)
+                 Do iteth=1,tether%numteth(itmols)
                     nteth=nteth+1
-                    If (nteth > mxteth) Call error(62)
+                    If (nteth > tether%mxteth) Call error(62)
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -1113,11 +1114,11 @@ Subroutine read_field                      &
                     keyword=word(1:4)
 
                     If      (keyword == 'harm') Then
-                       keytet(nteth)=1
+                       tether%keytet(nteth)=1
                     Else If (keyword == 'rhrm') Then
-                       keytet(nteth)=2
+                       tether%keytet(nteth)=2
                     Else If (keyword == 'quar') Then
-                       keytet(nteth)=3
+                       tether%keytet(nteth)=3
                     Else
 
                        Call info(keyword,.true.)
@@ -1130,14 +1131,14 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     iatm1=Nint(word_2_real(word))
 
-                    lsttet(nteth)=iatm1
+                    tether%lsttet(nteth)=iatm1
 
                     Call get_word(record,word)
-                    prmtet(1,nteth)=word_2_real(word)
+                    tether%prmtet(1,nteth)=word_2_real(word)
                     Call get_word(record,word)
-                    prmtet(2,nteth)=word_2_real(word)
+                    tether%prmtet(2,nteth)=word_2_real(word)
                     Call get_word(record,word)
-                    prmtet(3,nteth)=word_2_real(word)
+                    tether%prmtet(3,nteth)=word_2_real(word)
 
                     isite1 = nsite - numsit(itmols) + iatm1
 
@@ -1145,34 +1146,34 @@ Subroutine read_field                      &
 
                     If (l_top) Then
                        If (frzsit(isite1) /= 0) Then
-                         Write(rfmt,'(a,i0,a)') '(2x,i10,a8,i10,2x,',mxpteth,'f15.6,2x,a8)'
-                         Write(message,rfmt) iteth,keyword,lsttet(nteth),prmtet(1:mxpteth,nteth),'*frozen*'
+                         Write(rfmt,'(a,i0,a)') '(2x,i10,a8,i10,2x,',tether%mxpteth,'f15.6,2x,a8)'
+                         Write(message,rfmt) iteth,keyword,tether%lsttet(nteth),tether%prmtet(1:tether%mxpteth,nteth),'*frozen*'
                        Else
-                         Write(rfmt,'(a,i0,a)') '(2x,i10,a8,i10,2x,',mxpteth,'f15.6)'
-                         Write(message,rfmt) iteth,keyword,lsttet(nteth),prmtet(1:mxpteth,nteth)
+                         Write(rfmt,'(a,i0,a)') '(2x,i10,a8,i10,2x,',tether%mxpteth,'f15.6)'
+                         Write(message,rfmt) iteth,keyword,tether%lsttet(nteth),tether%prmtet(1:tether%mxpteth,nteth)
                        End If
                        Call info(message,.true.)
                     End If
 
 ! catch unidentified entry
 
-                    If (lsttet(nteth) < 1 .or. lsttet(nteth) > numsit(itmols)) Call error(27)
+                    If (tether%lsttet(nteth) < 1 .or. tether%lsttet(nteth) > numsit(itmols)) Call error(27)
 
 ! convert energy units to internal units
 
-                    prmtet(:,nteth)=prmtet(:,nteth)*engunit
+                    tether%prmtet(:,nteth)=tether%prmtet(:,nteth)*engunit
 
                  End Do
 
 ! Check for multiple tether entries
 
-                 Do i=nteth-numteth(itmols)+1,nteth
-                    is(0)=keytet(i)
-                    is(1)=lsttet(i)
+                 Do i=nteth-tether%numteth(itmols)+1,nteth
+                    is(0)=tether%keytet(i)
+                    is(1)=tether%lsttet(i)
 
                     Do j=i+1,nteth
-                       js(0)=keytet(j)
-                       js(1)=lsttet(j)
+                       js(0)=tether%keytet(j)
+                       js(1)=tether%lsttet(j)
 
                        If (js(1) == is(1)) Then
                           If (l_str .and. l_top) Call warning(410,Real(i,wp),Real(j,wp),0.0_wp)
@@ -2143,7 +2144,7 @@ Subroutine read_field                      &
 
                  megrgd=megrgd+nummols(itmols)*(numrgd(itmols)-frzrgd)
 
-                 megtet=megtet+nummols(itmols)*numteth(itmols)
+                 megtet=megtet+nummols(itmols)*tether%numteth(itmols)
 
                  bond%total=bond%total+nummols(itmols)*bond%num(itmols)
                  angle%total=angle%total+nummols(itmols)*angle%num(itmols)
@@ -3002,15 +3003,15 @@ Subroutine read_field                      &
                  End Do
                  If (ishls /= numshl(itmols)) nrigid=nrigid-numrgd(itmols)
 
-                 Do iteth=1,numteth(itmols)
+                 Do iteth=1,tether%numteth(itmols)
                     nteth=nteth+1
 
-                    If (lsttet(nteth) == ja) Then
+                    If (tether%lsttet(nteth) == ja) Then
                        Call warning(303,Real(ishls,wp),Real(iteth,wp),Real(itmols,wp))
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) nteth=nteth-numteth(itmols)
+                 If (ishls /= numshl(itmols)) nteth=nteth-tether%numteth(itmols)
 
 ! test for core-shell units fully overlapped on angles, dihedrals and inversions
 
@@ -4749,7 +4750,7 @@ Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megcon,megpmf,megrgd,  &
            megtet,  &
-           bond,angle,dihedral,inversion,comm)
+           bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4767,6 +4768,7 @@ Subroutine report_topology               &
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type( inversions_type ), Intent( In    ) :: inversion
+  Type(tethers_type), Intent( InOut ) :: tether
   Type(comms_type), Intent( InOut ) :: comm
 
   Integer :: itmols,nsite,                &
@@ -4837,10 +4839,10 @@ Subroutine report_topology               &
      End Do
 
      frztet=0
-     Do iteth=1,numteth(itmols)
+     Do iteth=1,tether%numteth(itmols)
         nteth=nteth+1
 
-        iatm1=lsttet(nteth)
+        iatm1=tether%lsttet(nteth)
 
         isite1 = nsite + iatm1
 
@@ -4954,14 +4956,14 @@ Subroutine scan_field                                &
            mtcons,mxtcon,mxcons,mxfcon,              &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
-           mtteth,mxtteth,mxteth,mxftet,             &
+           mtteth,             &
            mtbond, &
            mtangl,       &
            mtdihd,       &
            mtinv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,inversion,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4983,6 +4985,7 @@ Subroutine scan_field                                &
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( tethers_type ), Intent( InOut ) :: tether
   Type( comms_type ), Intent( InOut ) :: comm
 ! Max number of different atom types
 
@@ -5005,7 +5008,7 @@ Subroutine scan_field                                &
                        numcon,mtcons,mxtcon,mxcons,icon,mxfcon,                &
                        mxtpmf(1:2),mxpmf,ipmf,jpmf,mxfpmf,                     &
                        numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
-                       numteth,mtteth,mxtteth,mxteth,iteth,mxftet,             &
+                       inumteth,mtteth,iteth,  &
                        numbonds,mtbond,ibonds, &
                        numang,mtangl,iang,         &
                        numdih,mtdihd,idih,         &
@@ -5053,11 +5056,11 @@ Subroutine scan_field                                &
   mxlrgd=0
   mxfrgd=0
 
-  numteth=0
+  inumteth=0
   mtteth =0
-  mxteth =0
-  mxtteth=0
-  mxftet =0
+  tether%mxteth =0
+  tether%mxtteth=0
+  tether%mxftet =0
 
   numbonds=0
   mtbond=0
@@ -5342,12 +5345,12 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 numteth=Nint(word_2_real(word))
-                 mtteth=Max(mtteth,numteth)
-                 mxtteth=mxtteth+numteth
-                 mxteth=mxteth+nummols*numteth
+                 inumteth=Nint(word_2_real(word))
+                 mtteth=Max(mtteth,inumteth)
+                 tether%mxtteth=tether%mxtteth+inumteth
+                 tether%mxteth=tether%mxteth+nummols*inumteth
 
-                 Do iteth=1,numteth
+                 Do iteth=1,inumteth
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                        Call get_line(safe,nfield,record,comm)
@@ -5864,8 +5867,8 @@ Subroutine scan_field                                &
   If (mxrgd  > 0) mxfrgd=1+1 ! One RB per particle
   mxf(4)=mxlrgd
 
-  If (mxteth > 0) mxftet=1+1 ! One tether per particle
-  mxf(5)=mxftet
+  If (tether%mxteth > 0) tether%mxftet=1+1 ! One tether per particle
+  mxf(5)=tether%mxftet
 
   If (bond%max_bonds > 0) bond%max_legend=(mxb*(mxb+1))+1
   mxf(6)=bond%max_legend
