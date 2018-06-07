@@ -27,7 +27,7 @@ Module statistics
   Use core_shell,  Only : passshl
   Use constraints, Only : passcon
   Use pmf,         Only : passpmf
-  Use z_density,   Only : z_density_collect
+  Use z_density,   Only : z_density_type,z_density_collect
   Use msd,         Only : msd_type
   Use greenkubo,   Only : greenkubo_type
   Use errors_warnings, Only : error,warning,info
@@ -155,11 +155,11 @@ Contains
   End Subroutine deallocate_statistics_connect
 
   Subroutine statistics_collect           &
-           (lsim,leql,nsteql,lzdn,lmsd,nstzdn, &
+           (lsim,leql,nsteql,lmsd, &
            keyres,                 &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
-           mxatdm,stats,thermo,comm)
+           mxatdm,stats,thermo,zdensity,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -173,8 +173,8 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: lsim,leql,lzdn,lmsd
-  Integer,           Intent( In    ) :: nsteql,nstzdn,keyres, &
+  Logical,           Intent( In    ) :: lsim,leql,lmsd
+  Integer,           Intent( In    ) :: nsteql,keyres, &
                                         nstep
 
   Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
@@ -185,6 +185,7 @@ Contains
   Integer( Kind = wi),Intent( In    ) :: mxatdm
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -526,8 +527,8 @@ Contains
 
 ! z-density collection
 
-  If ( lzdn .and. ((.not.leql) .or. nstep >= nsteql) .and. &
-       Mod(nstep,nstzdn) == 0 ) Call z_density_collect()
+  If ( zdensity%l_collect .and. ((.not.leql) .or. nstep >= nsteql) .and. &
+       Mod(nstep,zdensity%frequency) == 0 ) Call z_density_collect(zdensity)
 
 ! Catch time of starting statistical averages
 

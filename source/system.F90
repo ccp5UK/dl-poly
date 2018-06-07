@@ -12,7 +12,7 @@ Module system
                                  write_config
   Use statistics, Only : stats_type
   Use rdfs,        Only : ncfrdf,rdf,ncfusr,rusr,usr
-  Use z_density,   Only : ncfzdn,zdens
+  Use z_density,   Only : z_density_type
   Use bonds,       Only : bonds_type
   Use angles,      Only : angles_type
   Use dihedrals,   Only : dihedrals_type
@@ -59,8 +59,9 @@ Module system
   Contains
   
   Subroutine system_init                                             &
-           (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
-           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,angle,dihedral,inversion,comm)
+           (levcfg,rcut,rvdw,rbin,lrdf,keyres,megatm,    &
+           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met, &
+           bond,angle,dihedral,inversion,zdensity,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -73,7 +74,7 @@ Module system
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: lrdf,lzdn
+  Logical,           Intent( In    ) :: lrdf
   Integer,           Intent( InOut ) :: levcfg,keyres
   Integer,           Intent( In    ) :: megatm
   Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rbin
@@ -91,6 +92,7 @@ Module system
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -166,17 +168,17 @@ Module system
            usr   =0
         End If
 
-        If (lzdn) Then
-           ncfzdn=0
-           zdens =0.0_wp
+        If (zdensity%l_collect) Then
+           zdensity%n_samples=0
+           zdensity%density=0.0_wp
         End If
 
         If (green%samp > 0) Then
            green%vafcount=0.0_wp
-           green%step =0
-           green%vafdata =0.0_wp
-           green%vaf     =0.0_wp
-           green%time =0.0_wp
+           green%step=0
+           green%vafdata=0.0_wp
+           green%vaf=0.0_wp
+           green%time=0.0_wp
         End If
 
         If (bond%bin_pdf > 0) Then
@@ -250,7 +252,7 @@ Module system
 
            If (lrdf) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf
            If (mxgusr > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
-           If (lzdn) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfzdn,zdens
+           If (zdensity%l_collect) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfzdn,zdensity%density
            If (green%samp > 0) Then
              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vafcount
              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dvafstep
@@ -280,7 +282,7 @@ Module system
 
            If (lrdf) Read(Unit=nrest, IOStat=keyio, End=100) dncfrdf,rdf
            If (mxgusr > 0) Read(Unit=nrest, IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
-           If (lzdn) Read(Unit=nrest, IOStat=keyio, End=100) dncfzdn,zdens
+           If (zdensity%l_collect) Read(Unit=nrest, IOStat=keyio, End=100) dncfzdn,zdensity%density
            If (green%samp > 0) Then
              Read(Unit=nrest, IOStat=keyio, End=100) green%vafcount
              Read(Unit=nrest, IOStat=keyio, End=100) dvafstep
@@ -305,7 +307,7 @@ Module system
            rusr  =drusr
            ncfusr=Nint(dncfusr)
         End If
-        If (lzdn) ncfzdn=Nint(dncfzdn)
+        If (zdensity%l_collect) zdensity%n_samples=Nint(dncfzdn)
         If (green%samp > 0) green%step=Nint(dvafstep)
 
         If (bond%bin_pdf > 0) bond%n_frames=Nint(dncfbnd)
@@ -391,11 +393,11 @@ Module system
 
 ! z-density table - broadcast and normalise
 
-        If (lzdn) Then
-           Call gbcast(comm,ncfzdn,0)
+        If (zdensity%l_collect) Then
+           Call gbcast(comm,zdensity%n_samples,0)
            Do k=1,mxatyp
-              Call gbcast(comm,zdens(:,k),0)
-              zdens(:,k) = zdens(:,k) * r_mxnode
+              Call gbcast(comm,zdensity%density(:,k),0)
+              zdensity%density(:,k) = zdensity%density(:,k) * r_mxnode
            End Do
         End If
 
@@ -1805,8 +1807,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,inversio
 End Subroutine system_expand
 
 Subroutine system_revive                                      &
-           (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stats,devel,green,thermo,bond,angle,dihedral,inversion,comm)
+           (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+           stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1821,7 +1823,7 @@ Subroutine system_revive                                      &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,           Intent( In    ) :: megatm,nstep
-  Logical,           Intent( In    ) :: lrdf,lzdn
+  Logical,           Intent( In    ) :: lrdf
   Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
@@ -1831,6 +1833,7 @@ Subroutine system_revive                                      &
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready
@@ -1888,15 +1891,15 @@ Subroutine system_revive                                      &
 
 ! globally sum z-density information before saving
 
-     If (lzdn) Then
+     If (zdensity%l_collect) Then
 
-! maximum zdens that can be summed in each step
+! maximum zdensity%density that can be summed in each step
 
         nsum = mxbuff/mxgrdf
         If (nsum == 0) Call error(200)
 
         Do i=1,mxatyp,nsum
-           Call gsum(comm,zdens(:,i:Min(i+nsum-1,mxatyp)))
+           Call gsum(comm,zdensity%density(:,i:Min(i+nsum-1,mxatyp)))
         End Do
 
      End If
@@ -2014,7 +2017,7 @@ Subroutine system_revive                                      &
 
         If (lrdf) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfrdf,wp),rdf
         If (mxgusr > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(mxgusr),rusr,Real(ncfusr,wp),usr
-        If (lzdn) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfzdn,wp),zdens
+        If (zdensity%l_collect) Write(Unit=nrest, Fmt=forma, Advance='No') Real(zdensity%n_samples,wp),zdensity%density
         If (green%samp > 0) Then
           Write(Unit=nrest, Fmt=forma, Advance='No') green%vafcount
           Write(Unit=nrest, Fmt=forma, Advance='No') Real(green%step,wp)
@@ -2047,7 +2050,7 @@ Subroutine system_revive                                      &
 
         If (lrdf) Write(Unit=nrest) Real(ncfrdf,wp),rdf
         If (mxgusr > 0) Write(Unit=nrest) Real(mxgusr),rusr,Real(ncfusr,wp),usr
-        If (lzdn) Write(Unit=nrest) Real(ncfzdn,wp),zdens
+        If (zdensity%l_collect) Write(Unit=nrest) Real(zdensity%n_samples,wp),zdensity%density
         If (green%samp > 0) Then
           Write(Unit=nrest) green%vafcount
           Write(Unit=nrest) Real(green%step,wp)
@@ -2204,7 +2207,7 @@ Subroutine system_revive                                      &
 
 ! globally divide z-density data between nodes
 
-     If (lzdn) zdens = zdens * r_mxnode
+     If (zdensity%l_collect) zdensity%density = zdensity%density * r_mxnode
 
 ! globally divide bonds' distributions data between nodes
 

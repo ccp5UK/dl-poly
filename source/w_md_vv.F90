@@ -98,7 +98,7 @@
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-     If (nstep == 0) Call w_statistics_report(mxatdm_,stat,msd_data)
+     If (nstep == 0) Call w_statistics_report(mxatdm_,stat,msd_data,zdensity)
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
@@ -125,7 +125,7 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(mxatdm_,stat,msd_data)
+        Call w_statistics_report(mxatdm_,stat,msd_data,zdensity)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
@@ -135,8 +135,8 @@
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
-           (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,comm)
+           (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 

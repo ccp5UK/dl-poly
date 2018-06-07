@@ -103,7 +103,7 @@ program dl_poly
   ! STATISTICS MODULES
 
   Use rdfs
-  Use z_density
+  Use z_density, Only : z_density_type,allocate_z_density_arrays
   Use statistics, Only : stats_type,allocate_statistics_arrays,&
     statistics_result,statistics_collect,deallocate_statistics_connect, &
     allocate_statistics_connect,statistics_connect_set, &
@@ -209,7 +209,7 @@ program dl_poly
     l_exp,lecx,lfcap,      &
     lmin,          &
     lvar,leql,lsim,lfce,    &
-    lpana,lrdf,lprdf,lzdn,lpzdn, &
+    lpana,lrdf,lprdf, &
     ltraj,lrsd,             &
     safe,lbook,lexcl,            &
     relaxed_shl = .true.,        &
@@ -222,7 +222,7 @@ program dl_poly
     nstbpo,    &
     keyfce,mxshak,mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
-    nstrdf,nstzdn,                      &
+    nstrdf,                      &
     nstraj,istraj,keytrj, &
     nsdef,isdef,nsrsd,isrsd,            &
     ndump,nstep,keyshl,                 &
@@ -264,6 +264,7 @@ program dl_poly
   Type( dihedrals_type ) :: dihedral
   Type( inversions_type ) :: inversion
   Type( tethers_type ) :: tether
+  Type( z_density_type ) :: zdensity
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -332,7 +333,7 @@ program dl_poly
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats, &
-    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,comm)
+    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,zdensity,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -378,7 +379,7 @@ program dl_poly
   ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
 
   Call allocate_rdf_arrays()
-  Call allocate_z_density_arrays()
+  Call allocate_z_density_arrays(zdensity)
   Call allocate_statistics_arrays(mxatdm,stats)
   Call allocate_greenkubo_arrays(green)
 
@@ -394,7 +395,7 @@ program dl_poly
     rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
     l_exp,lecx,lfcap,l_top,lmin,          &
     lvar,leql,               &
-    lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
+    lfce,lpana,lrdf,lprdf,           &
     ltraj,lrsd,               &
     nx,ny,nz,impa,                            &
     keyres,                   &
@@ -402,10 +403,11 @@ program dl_poly
     keymin,nstmin,min_tol,                      &
     fmax,nstbpo,keyfce,epsq,             &
     rlx_tol,mxshak,tolnce,mxquat,quattol,       &
-    nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
+    nstbnd,nstang,nstdih,nstinv,nstrdf,  &
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral,inversion,tmr,comm)
+    ndump,pdplnc,stats,thermo,green,devel,plume,msd_data, &
+    met,pois,bond,angle,dihedral,inversion,zdensity,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -492,8 +494,8 @@ program dl_poly
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
   Call system_init                                                 &
-    (levcfg,rcut,rvdw,rbin,lrdf,lzdn,keyres,megatm,    &
-    time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,angle,dihedral,inversion,comm)
+    (levcfg,rcut,rvdw,rbin,lrdf,keyres,megatm,    &
+    time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,angle,dihedral,inversion,zdensity,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -641,12 +643,12 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,stats,thermo,plume,pois,bond,angle,dihedral,inversion)
+    Call w_md_vv(mxatdm,stats,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,stats,thermo,plume,msd_data,bond,angle,dihedral,inversion)
+      Call w_replay_historf(mxatdm,stats,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity)
     Else
-      Call w_replay_history(mxatdm,stats,thermo,msd_data,met,pois,bond,angle,dihedral,inversion)
+      Call w_replay_history(mxatdm,stats,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity)
     End If
   End If
 
@@ -704,8 +706,8 @@ program dl_poly
 
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
-      (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-      stats,devel,green,thermo,bond,angle,dihedral,inversion,comm)
+      (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+      stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -717,9 +719,9 @@ program dl_poly
     nstep,tstep,time,tmst,mxatdm,stats,thermo,green,comm,passmin)
 
   ! Final anlysis
-  Call analysis_result(lrdf,lzdn,lpana,lprdf,lpzdn, &
+  Call analysis_result(lrdf,lpana,lprdf, &
                        nstep,tstep,rcut,stats%sumval(2),thermo%ensemble, &
-                       bond,angle,dihedral,inversion,stats,green,comm)
+                       bond,angle,dihedral,inversion,stats,green,zdensity,comm)
 
   10 Continue
 
@@ -813,10 +815,11 @@ Contains
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
-  Subroutine w_statistics_report(mxatdm_,stat,msd_data)
+  Subroutine w_statistics_report(mxatdm_,stat,msd_data,zdensity)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(msd_type), Intent(InOut) :: msd_data
+    Type( z_density_type ), Intent( InOut ) :: zdensity
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
@@ -829,7 +832,7 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,stat,thermo,plume,pois,bond,angle,dihedral,inversion)
+  Subroutine w_md_vv(mxatdm_,stat,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
@@ -839,10 +842,11 @@ Contains
     Type( angles_type ), Intent( InOut ) :: angle
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( z_density_type ), Intent( InOut ) :: zdensity
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data,met,pois,bond,angle,dihedral,inversion)
+  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
@@ -853,6 +857,7 @@ Contains
     Type( angles_type ), Intent( InOut ) :: angle
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( z_density_type ), Intent( InOut ) :: zdensity
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -862,7 +867,7 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,stat,thermo,plume,msd_data,bond,angle,dihedral,inversion)
+  Subroutine w_replay_historf(mxatdm_,stat,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
@@ -872,6 +877,7 @@ Contains
     Type( angles_type ), Intent( InOut ) :: angle
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( z_density_type ), Intent( InOut ) :: zdensity
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
