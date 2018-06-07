@@ -339,12 +339,12 @@ Contains
 
      Call warning(260,0.0_wp,0.0_wp,0.0_wp)
 
-     If (thermo%ensemble >= 20) Call error(390)
+     If (thermo%variable_cell) Call error(390)
   End If
 
 ! Check image conditions for nst ensembles
 
-  If (thermo%ensemble >= 30) Then
+  If (thermo%anisotropic_pressure) Then
      If (thermo%iso == 0) Then
         If (imcon == 1 .or. imcon == 2) Then
            Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)

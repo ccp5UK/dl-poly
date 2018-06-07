@@ -1344,12 +1344,10 @@ Contains
           yfr(ii)=yyy(l_ind(i))
           zfr(ii)=zzz(l_ind(i))
        End Do
-       If (comm%mxnode > 1) Then
-          Call gsum(comm,cfr)
-          Call gsum(comm,xfr)
-          Call gsum(comm,yfr)
-          Call gsum(comm,zfr)
-       End If
+       Call gsum(comm,cfr)
+       Call gsum(comm,xfr)
+       Call gsum(comm,yfr)
+       Call gsum(comm,zfr)
 
        Do i=1,nz_fr(comm%idnode+1)
           ii=nz_fr(0)+i

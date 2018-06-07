@@ -8,6 +8,10 @@ Module thermostat
   Type, Public :: thermostat_type
     !> Ensemble key
     Integer( Kind = wi ) :: ensemble
+    !> Flag for variable cell size e.g. NPT ensembles
+    Logical :: variable_cell = .false.
+    !> Flag for anisotropic pressure
+    Logical :: anisotropic_pressure = .false.
 
     !> Simulation temperature
     Real( Kind = wp ) :: temp
@@ -28,6 +32,12 @@ Module thermostat
     Real( Kind = wp ) :: tension
 
     !> Constraint type for anisotropic barostats
+    !>
+    !> - 0 fully anisotropic
+    !> - 1 semi-isotropic barostat to constant normal pressure & surface area
+    !> - 2 semi-isotropic barostat to constant normal pressure & surface tension
+    !>     or with orthorhombic constraints (thermo%tension=0.0_wp)
+    !> - 3 semi-isotropic barostat with semi-orthorhombic constraints
     Integer( Kind = wi ) :: iso
 
     !> Andersen thermostat softness
@@ -60,7 +70,6 @@ Module thermostat
     Real( Kind = wp ) :: cint
     !> Cell parameter scaling factor for barostats
     Real( Kind = wp ) :: eta(1:9)
-
 
     !> DPD switch
     !>
@@ -99,7 +108,10 @@ Module thermostat
     Logical :: l_zero
     !> Zero temperature regaussing frequency
     Integer :: freq_zero
+  Contains
+    Private
 
+    Final :: cleanup
   End Type thermostat_type
 
   ! Thermostat keys
@@ -138,4 +150,14 @@ Module thermostat
   Integer( Kind = wi ), Parameter, Public :: ENS_NPT_NOSE_HOOVER_ANISO = 32
   !> Isobaric isothermal ensemble anistropic Martyna-Tuckerman-Klein
   Integer( Kind = wi ), Parameter, Public :: ENS_NPT_MTK_ANISO = 33
+
+Contains
+
+  Subroutine cleanup(thermo)
+    Type(thermostat_type) :: thermo
+
+    If (Allocated(thermo%gamdpd)) Then
+      Deallocate(thermo%gamdpd)
+    End If
+  End Subroutine cleanup
 End Module thermostat

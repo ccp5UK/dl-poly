@@ -104,7 +104,7 @@ Contains
     ! Open the simulation input file
 
     If (comm%idnode == 0) Inquire(File=Trim(control), Exist=safe)
-    If (comm%mxnode > 1) Call gcheck(comm,safe,"enforce")
+    Call gcheck(comm,safe,"enforce")
     If (.not.safe) Then
       Return
     Else
