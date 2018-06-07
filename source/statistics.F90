@@ -289,9 +289,9 @@ Contains
 
 ! system enthalpy
 
-  If (thermo%ensemble >= 20) Then             ! P_target*V_instantaneous
+  If (thermo%variable_cell) Then             ! P_target*V_instantaneous
      stats%stpeth = stats%stpeng + thermo%press*stats%stpvol
-  Else                               ! for thermo%ensemble < 20 V_instantaneous=V_target
+  Else                               ! for thermo%variable_cell=.false. V_instantaneous=V_target
      stats%stpeth = stats%stpeng + stpipv        ! and there is only P_instantaneous
   End If
 
@@ -417,7 +417,7 @@ Contains
   End Do
   iadd = iadd + 9
 
-  If (thermo%ensemble >= 20) Then
+  If (thermo%variable_cell) Then
 
 ! cell parameters
 
@@ -1537,7 +1537,7 @@ Subroutine statistics_result                                    &
 
     ! Some extra information - <P*V> term - only matters for NP/sT ensembles
 
-    If (thermo%ensemble >= 20) Then
+    If (thermo%variable_cell) Then
       Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
         "<P*V> term:            ",stats%sumval(37+ntpatm+2*Merge(mxatdm,0,lmsd)), &
         " r.m.s. fluctuations:  ",stats%ssqval(37+ntpatm+2*Merge(mxatdm,0,lmsd))
@@ -1598,7 +1598,7 @@ Subroutine statistics_result                                    &
 
     ! Write out mean cell vectors for npt/nst
 
-    If (thermo%ensemble >= 20) Then
+    If (thermo%variable_cell) Then
 
       If (comm%idnode == 0) Then
         Write(message,'(a32,33x,a19)') 'Average cell vectors     (Angs) ','r.m.s. fluctuations'

@@ -197,7 +197,7 @@ Subroutine pseudo_vv                                      &
 ! Random forces cycle - thermostat-system decoupling
 ! Recalculate the following for NPT and NST integration
 
-     If (thermo%ensemble >= 20 .or. newjob) Then
+     If (thermo%variable_cell .or. newjob) Then
         If (newjob) Then
            newjob = .false.
 
