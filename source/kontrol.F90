@@ -1348,6 +1348,8 @@ Subroutine read_control                                &
 
         Else If (word(1:3) == 'npt') Then
 
+           thermo%variable_cell = .true.
+
            Call get_word(record,word)
 
            If (word(1:4) == 'lang') Then
@@ -1432,6 +1434,9 @@ Subroutine read_control                                &
            End If
 
         Else If (word(1:3) == 'nst') Then
+
+           thermo%variable_cell = .true.
+           thermo%anisotropic_pressure = .true.
 
            Call get_word(record,word)
 
@@ -3031,7 +3036,7 @@ Subroutine read_control                                &
 ! standard Langevin thermostat (if supplied), and use of
 ! thermal velocities only for thermostat
 
-  If (l_ttm .and. thermo%ensemble/=15) Then
+  If (l_ttm .and. thermo%ensemble/=ENS_NVT_LANGEVIN_INHOMO) Then
     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
     If (thermo%ensemble==ENS_NVT_LANGEVIN .or. &
         thermo%ensemble==ENS_NPT_LANGEVIN .or. &
@@ -3485,15 +3490,17 @@ Subroutine read_control                                &
 
 ! check settings in ensembles with thermo%tau_t
 
-  If (((thermo%ensemble >= 11 .and. thermo%ensemble <= 13) .or. &
-       (thermo%ensemble >= 21 .and. thermo%ensemble <= 23) .or. &
-       (thermo%ensemble >= 31 .and. thermo%ensemble <= 33)) .and. thermo%tau_t <= 0.0_wp) Call error(464)
+  If (Any([ENS_NVT_ANDERSON,ENS_NVT_BERENDSEN,ENS_NVT_NOSE_HOOVER, &
+           ENS_NPT_BERENDSEN,ENS_NPT_NOSE_HOOVER,ENS_NPT_MTK, &
+           ENS_NPT_BERENDSEN_ANISO,ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO] &
+          == thermo%ensemble) .and. thermo%tau_t <= 0.0_wp) Then
+    Call error(464)
+  End If
 
 ! check settings in ensembles with thermo%press
 
-  If ((thermo%ensemble >= 20 .and. thermo%ensemble <= 23) .or. &
-      (thermo%ensemble >= 30 .and. thermo%ensemble <= 33)) Then
-     If      (thermo%ensemble >= 20 .and. thermo%ensemble <= 23) Then
+  If (thermo%variable_cell) Then
+     If (.not. thermo%anisotropic_pressure) Then
         If (.not.lpres) Then
            If (lstrext) Then
               thermo%press=(thermo%stress(1)+thermo%stress(5)+thermo%stress(9))/3.0_wp
@@ -3517,7 +3524,7 @@ Subroutine read_control                                &
               Call info(messages,3,.true.)
            End If
         End If
-     Else If (thermo%ensemble >= 30 .and. thermo%ensemble <= 33) Then
+     Else If (thermo%anisotropic_pressure) Then
         If (.not.lstrext) Then
            If (.not.lpres) Call error(387)
         Else

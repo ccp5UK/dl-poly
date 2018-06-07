@@ -2294,7 +2294,7 @@ Contains
   Real( Kind = wp ), Allocatable :: rgdxin(:),rgdyin(:),rgdzin(:)
   Character ( Len = 256 )        :: message
 
-  If (thermo%ensemble < 20) Return
+  If (.not. thermo%variable_cell) Return
 
   If (m_rgd == 0) Then
 
