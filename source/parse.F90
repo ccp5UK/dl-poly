@@ -342,7 +342,7 @@ Contains
 !    record = ' '
 !    safe = .true.
 !
-!    If (comm%mxnode > 1) Call gsync(comm)
+!    Call gsync(comm)
 !
 !    If (comm%idnode == 0) Then
 !
@@ -353,7 +353,7 @@ Contains
 !      End If 
 !    End If 
 !
-!    If (comm%mxnode > 1) Call gcheck(comm,safe)
+!    Call gcheck(comm,safe)
 !
 !    If ( .not. safe) Then
 !      Call tabs_2_blanks(record)
@@ -415,7 +415,7 @@ Subroutine get_line(safe,ifile,record,comm)
     record = ' '
     safe = .true.
 
-    If (comm%mxnode > 1) Call gsync(comm)
+    Call gsync(comm)
 
     If (comm%idnode == 0) Then
 
@@ -436,7 +436,7 @@ Subroutine get_line(safe,ifile,record,comm)
 
 100    safe = .false.
 
-       If (comm%mxnode > 1) Call gcheck(comm,safe)
+       Call gcheck(comm,safe)
        If (.not.safe) Go To 200
 
     Else

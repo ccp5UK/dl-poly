@@ -360,7 +360,7 @@ Contains
     If (jmove > 0) Then
       Call gwait(comm)
     End If
-  End If   
+  End If
 
 ! load transferred data
 
@@ -770,14 +770,12 @@ End Subroutine defects_reference_export
 !
 !           Call pbcshift(imconr,dfcts%celr,indatm,axx,ayy,azz)
 
-           If (comm%mxnode > 1) Then
-              Call gbcast(comm,chbuf,0)
-              Call gbcast(comm,iwrk,0)
+           Call gbcast(comm,chbuf,0)
+           Call gbcast(comm,iwrk,0)
 
-              Call gbcast(comm,axx,0)
-              Call gbcast(comm,ayy,0)
-              Call gbcast(comm,azz,0)
-           End If
+           Call gbcast(comm,axx,0)
+           Call gbcast(comm,ayy,0)
+           Call gbcast(comm,azz,0)
 
 ! Assign atoms positions in fractional coordinates to the correct domains
 ! (DD bounding)

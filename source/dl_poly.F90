@@ -278,7 +278,7 @@ program dl_poly
   dlp_world(0)%ou=nrite
   Call init_error_system(nrite,dlp_world(0))
   comm=dlp_world(0) ! this shall vanish asap w_ are proper things
-  If (dlp_world(0)%mxnode > 1) Call gsync(dlp_world(0))
+  Call gsync(dlp_world(0))
   Call gtime(tmr%elapsed) ! Initialise wall clock time
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() == 1 ) Then
@@ -768,7 +768,7 @@ program dl_poly
 
   ! Terminate job
 
-  If (dlp_world(0)%mxnode > 1) Call gsync(dlp_world(0))
+  Call gsync(dlp_world(0))
   Call exit_comms(comm)
 
   ! Create wrappers for the MD cycle in VV, and replay history
