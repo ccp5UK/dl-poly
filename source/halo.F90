@@ -85,7 +85,7 @@ Module halo
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(rlnk,keyfce,neigh,comm)
+Subroutine set_halo_particles(keyfce,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -98,7 +98,6 @@ Subroutine set_halo_particles(rlnk,keyfce,neigh,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,           Intent( In    ) :: keyfce
-  Real( Kind = wp ), Intent( In    ) :: rlnk
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type ( comms_type ), Intent( InOut  ) :: comm
 
@@ -110,7 +109,7 @@ Subroutine set_halo_particles(rlnk,keyfce,neigh,comm)
 
 ! Define cut
 
-  cut=rlnk+1.0e-6_wp
+  cut=neigh%cutoff_extended+1.0e-6_wp
 
 ! Get the dimensional properties of the MD cell
 

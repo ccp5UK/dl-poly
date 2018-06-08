@@ -1876,7 +1876,7 @@ Subroutine metal_generate(met)
 
            met%vmet(1,imet,1)=Real(met%maxgrid,wp)
            met%vmet(2,imet,1)=0.0_wp          ! l_int(min) >= 1
-           met%vmet(3,imet,1)=met%rcut            ! met%rcut=rcut
+           met%vmet(3,imet,1)=met%rcut            ! met%rcut=neigh%cutoff
            met%vmet(4,imet,1)=dlrpot
 
            Do i=1,4
@@ -2987,7 +2987,7 @@ Subroutine metal_ld_set_halo(met,comm)
 ! neighbouring domains/nodes
 !
 ! Note: all depends on the ixyz halo array set in set_halo, this assumes
-!       that (i) met%rcut=rcut! as well as (ii) all the error checks in there
+!       that (i) met%rcut=neigh%cutoff! as well as (ii) all the error checks in there
 !
 ! copyright - daresbury laboratory
 ! amended   - i.t.todorov february 2014
@@ -3078,7 +3078,7 @@ Subroutine erfgen_met(alpha,beta,met)
 
   met%merf(1) = Real(met%maxgrid,wp)
   met%merf(2) = 0.0_wp          ! l_int(min) >= 1
-  met%merf(3) = met%rcut            ! met%rcut=rcut
+  met%merf(3) = met%rcut            ! met%rcut=neigh%cutoff
   met%merf(4) = drmet
 
 ! offset

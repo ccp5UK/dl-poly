@@ -139,9 +139,10 @@ Module errors_warnings
 
      Else If (kode ==  35) Then
 
-        Write(ounit,'(2(/,1x,a),/)')                                                                     &
+        Write(ounit,'(3(/,1x,a),/)')                                                                     &
         "*** warning - DL_POLY_2/Classic directive 'delr - Verlet shell strip cutoff' defaulted to ***", &
-        "*** DL_POLY_4 directive 'rpad - real space cutoff padding option' ; rpad=Max(rpad,delr/4) !!! ***"
+        "*** DL_POLY_4 directive 'neigh%padding - real space cutoff padding option' ***", &
+        "*** neigh%padding=Max(neigh%padding,delr/4) !!! ***"
 
      Else If (kode ==  36) Then
 
@@ -486,8 +487,9 @@ Module errors_warnings
 
      Else If (kode == 310) Then
 
-        Write(ounit,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                                               &
-     '*** warning - control distance for defect look-up MUST be in the interval [Min(0.3,rcut/3);Min(1.2,rcut/2)] Angs !!! ***', &
+        Write(ounit,'(/,2(1x,a,/),1x,a,2(f6.2,a),/)') &
+     '*** warning - control distance for defect look-up MUST be in the interval', &
+     '[Min(0.3,neigh%cutoff/3);Min(1.2,neigh%cutoff/2)] Angs !!! ***', &
      '*** defects distance condition will default from ', a, ' to ', b, ' Angs !!! ***'
 
      Else If (kode == 320) Then
@@ -505,7 +507,7 @@ Module errors_warnings
 
         Write(ounit,'(3(/,1x,a),2(f7.4,a),/,1x,a,f7.4,a,/)')                             &
         '*** warning - inconsistent binsize for spatial distribution functions !!! ***', &
-        '*** 1.0E-5 (Angstroms) <= binsize <= rcut/4 (Angstroms) !!! ***',               &
+        '*** 1.0E-5 (Angstroms) <= binsize <= neigh%cutoff/4 (Angstroms) !!! ***',               &
         '*** 1.0E-5 (Angstroms) <= ', a, ' <= ', b, ' (Angstroms) !!! ***',              &
         '*** binsize defaults to ', c, ' (Angstroms) !!! ***'
 
@@ -895,7 +897,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==   34) Then
 
-        Write(ounit,'(/,1x,a)') 'error - length of constraint bond unit >= real space cutoff (rcut)'
+        Write(ounit,'(/,1x,a)') 'error - length of constraint bond unit >= real space cutoff (neigh%cutoff)'
 
      Else If (kode ==   35) Then
 
@@ -1119,7 +1121,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==   95) Then
 
-        Write(ounit,'(/,1x,a)') 'error - rcut (or rcut+rpad) > minimum of all half-cell widths'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff (or neigh%cutoff+neigh%padding) > minimum of all half-cell widths'
 
      Else If (kode ==   96) Then
 
@@ -1135,7 +1137,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  100) Then
 
-        Write(ounit,'(/,1x,a)') 'error - core-shell unit separation > rcut (the system cutoff)'
+        Write(ounit,'(/,1x,a)') 'error - core-shell unit separation > neigh%cutoff (the system cutoff)'
 
      Else If (kode ==  101) Then
 
@@ -1143,7 +1145,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  102) Then
 
-        Write(ounit,'(/,1x,a)') 'error - rcut < 2*rcter (maximum cutoff for tersoff potentials)'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff < 2*rcter (maximum cutoff for tersoff potentials)'
 
      Else If (kode ==  103) Then
 
@@ -1179,7 +1181,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  111) Then
 
-        Write(ounit,'(/,1x,a)') 'error - bond constraint separation > rcut (the system cutoff)'
+        Write(ounit,'(/,1x,a)') 'error - bond constraint separation > neigh%cutoff (the system cutoff)'
 
      Else If (kode ==  112) Then
 
@@ -1223,19 +1225,19 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  128) Then
 
-        Write(ounit,'(/,1x,a)') 'error - chemical bond unit separation > rcut (the system cutoff)'
+        Write(ounit,'(/,1x,a)') 'error - chemical bond unit separation > neigh%cutoff (the system cutoff)'
 
      Else If (kode ==  130) Then
 
-        Write(ounit,'(/,1x,a)') 'error - bond angle unit diameter > rcut (the system cutoff)'
+        Write(ounit,'(/,1x,a)') 'error - bond angle unit diameter > neigh%cutoff (the system cutoff)'
 
      Else If (kode ==  132) Then
 
-        Write(ounit,'(/,1x,a)') 'error - dihedral angle unit diameter > rcut (the system cutoff)'
+        Write(ounit,'(/,1x,a)') 'error - dihedral angle unit diameter > neigh%cutoff (the system cutoff)'
 
      Else If (kode ==  134) Then
 
-        Write(ounit,'(/,1x,a)') 'error - inversion angle unit diameter > rcut (the system cutoff)'
+        Write(ounit,'(/,1x,a)') 'error - inversion angle unit diameter > neigh%cutoff (the system cutoff)'
 
      Else If (kode ==  138) Then
 
@@ -1408,7 +1410,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  433) Then
 
-        Write(ounit,'(/,1x,a)') 'error - rcut MUST be specified for the Ewald sum precision'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff MUST be specified for the Ewald sum precision'
 
      Else If (kode ==  436) Then
 
@@ -1432,7 +1434,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  445) Then
 
-        Write(ounit,'(/,1x,a)') 'error - r_14 > rcut in dihedrals_forces'
+        Write(ounit,'(/,1x,a)') 'error - r_14 > neigh%cutoff in dihedrals_forces'
 
      Else If (kode ==  446) Then
 
@@ -1504,11 +1506,11 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  471) Then
 
-        Write(ounit,'(/,1x,a)') 'error - rcut < 2*rctbp (maximum cutoff for three-body potentials)'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff < 2*rctbp (maximum cutoff for three-body potentials)'
 
      Else If (kode ==  472) Then
 
-        Write(ounit,'(/,1x,a)') 'error - rcut < 2*rcfbp (maximum cutoff for four-body potentials)'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff < 2*rcfbp (maximum cutoff for four-body potentials)'
 
      Else If (kode ==  474) Then
 
@@ -1763,7 +1765,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  642) Then
 
-        Write(ounit,'(/,1x,a)') 'error - rigid body unit diameter > rcut (the system cutoff)'
+        Write(ounit,'(/,1x,a)') 'error - rigid body unit diameter > neigh%cutoff (the system cutoff)'
 
      Else If (kode ==  644) Then
 

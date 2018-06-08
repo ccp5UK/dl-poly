@@ -135,7 +135,7 @@
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
-           (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+           (neigh%cutoff,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
            stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)

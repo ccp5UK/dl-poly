@@ -7,21 +7,21 @@
 
 ! Check VNL conditioning
 
-        Call vnl_check(l_str,rcut,rpad,rlnk,width,neigh,comm)
+        Call vnl_check(l_str,width,neigh,comm)
 
         If (neigh%update) Then
 
 ! Relocate atoms to new domains and restore bonding description
 
            Call relocate_particles  &
-           (dvar,rlnk,lbook,msd_data%l_msd,megatm, &
+           (dvar,neigh%cutoff_extended,lbook,msd_data%l_msd,megatm, &
            megshl,m_con,megpmf,     &
            m_rgd,megtet,            &
            stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 ! Exchange atomic data in border regions
 
-           Call set_halo_particles(rlnk,keyfce,neigh,comm) ! inducing in here only
+           Call set_halo_particles(keyfce,neigh,comm) ! inducing in here only
 
 ! Re-tag RBs when called again after the very first time
 ! when it's done in rigid_bodies_setup <- build_book_intra

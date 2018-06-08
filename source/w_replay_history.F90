@@ -76,7 +76,7 @@
   Do
      Call allocate_statistics_connect(mxatdm,stat)
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(rlnk,mxatdm_,msd_data%l_msd,stat,comm)
+     If (nstph > nstpe) Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,comm)
 
 ! Make a move - Read a frame
 
@@ -118,7 +118,7 @@
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(rlnk,mxatdm,msd_data%l_msd,stat,comm)
+              Call statistics_connect_set(neigh%cutoff_extended,mxatdm,msd_data%l_msd,stat,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
@@ -129,7 +129,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(rlnk,keyfce,neigh,comm)
+           Call set_halo_particles(keyfce,neigh,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -148,18 +148,18 @@
 ! Make sure RDFs are complete (lbook=.false. - no exclusion lists)
 
            If (lrdf) Call two_body_forces         &
-           (rcut,rlnk,rvdw,pdplnc,thermo%ensemble,    &
+           (rvdw,pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
-           lrdf,nstrdf,leql,neigh%update,nsteql,nstph,         &
+           lrdf,nstrdf,leql,nsteql,nstph,         &
            elrc,virlrc,               &
-           stat,ewld,devel,met,pois,tmr,comm)
+           stat,ewld,devel,met,pois,neigh,tmr,comm)
 
 ! Calculate bond forces
 
            If (bond%total > 0 .and. bond%bin_pdf > 0) Then
               isw = 0
               Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress, &
-              rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,comm)
+              neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,comm)
            End If
 
 ! Calculate valence angle forces
@@ -174,7 +174,7 @@
            If (dihedral%total > 0 .and. dihedral%bin_adf > 0) Then
               isw = 0
               Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
-           rcut,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,comm)
+           neigh%cutoff,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,comm)
            End If
 
 ! Calculate inversion forces
@@ -241,10 +241,10 @@
            (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write &
-             (rcut,keyres,thermo%ensemble,nstep,tstep,time,dfcts(1),comm)
+             (neigh%cutoff,keyres,thermo%ensemble,nstep,tstep,time,dfcts(1),comm)
              If (dfcts(2)%ldef)Then
                Call defects_write &
-               (rcut,keyres,thermo%ensemble,nstep,tstep,time,dfcts(2),comm)
+               (neigh%cutoff,keyres,thermo%ensemble,nstep,tstep,time,dfcts(2),comm)
              End If
            End If  
            If (msd_data%l_msd) Call msd_write &
@@ -267,7 +267,7 @@
 
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
-           (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+           (neigh%cutoff,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
            stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
@@ -342,7 +342,7 @@
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
   If (.not. devel%l_tor) Call system_revive                         &
-           (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+           (neigh%cutoff,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
            stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
 
 ! step counter is data counter now, so statistics_result is triggered

@@ -238,7 +238,7 @@ program dl_poly
 
   Real( Kind = wp ) :: tsths,                                     &
     tstep,time,tmst,      &
-    dvar,rcut,rpad,rlnk,                       &
+    dvar,                       &
     rvdw,rbin,rcter,rctbp,rcfbp,          &
     alpha,epsq,fmax,                           &
     width,mndis,mxdis,mxstp,     &
@@ -332,9 +332,9 @@ program dl_poly
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
-  Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind,neigh%unconditional_update, &
-    dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats, &
-    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,zdensity,comm)
+  Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
+    dvar,rvdw,rbin,nstfce,alpha,width,stats, &
+    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,zdensity,neigh,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -393,7 +393,7 @@ program dl_poly
 
   Call read_control                                    &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
-    rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
+    rvdw,rbin,nstfce,alpha,width,     &
     l_exp,lecx,lfcap,l_top,lmin,          &
     lvar,leql,               &
     lfce,lpana,lrdf,lprdf,           &
@@ -408,13 +408,13 @@ program dl_poly
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,stats,thermo,green,devel,plume,msd_data, &
-    met,pois,bond,angle,dihedral,inversion,zdensity,tmr,comm)
+    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
   Call read_field                          &
     (l_str,l_top,l_n_v,             &
-    rcut,rvdw,width,epsq, &
+    neigh%cutoff,rvdw,width,epsq, &
     keyfce,keyshl,           &
     lecx,lbook,lexcl,               &
     rcter,rctbp,rcfbp,              &
@@ -482,7 +482,7 @@ program dl_poly
 
   ! Expand current system if opted for
 
-  If (l_exp) Call system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,inversion,comm)
+  If (l_exp) Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,bond,angle,dihedral,inversion,comm)
 
   ! EXIT gracefully
 
@@ -495,13 +495,13 @@ program dl_poly
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
   Call system_init                                                 &
-    (levcfg,rcut,rvdw,rbin,lrdf,keyres,megatm,    &
+    (levcfg,neigh%cutoff,rvdw,rbin,lrdf,keyres,megatm,    &
     time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met,bond,angle,dihedral,inversion,zdensity,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(rlnk,keyfce,neigh,comm)
+  Call set_halo_particles(keyfce,neigh,comm)
 
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
@@ -707,7 +707,7 @@ program dl_poly
 
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
-      (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+      (neigh%cutoff,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
       stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
@@ -721,7 +721,7 @@ program dl_poly
 
   ! Final anlysis
   Call analysis_result(lrdf,lpana,lprdf, &
-                       nstep,tstep,rcut,stats%sumval(2),thermo%ensemble, &
+                       nstep,tstep,neigh%cutoff,stats%sumval(2),thermo%ensemble, &
                        bond,angle,dihedral,inversion,stats,green,zdensity,comm)
 
   10 Continue
