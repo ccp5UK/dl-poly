@@ -12,7 +12,7 @@ Module analysis
   Use greenkubo,     Only : greenkubo_type,vaf_compute
   Use rdfs,          Only : ncfrdf,ncfusr,l_errors_block,l_errors_jack,rdf_compute, &
                             usr_compute,calculate_errors,calculate_errors_jackknife
-  Use z_density,     Only : ncfzdn,z_density_compute
+  Use z_density,     Only : z_density_type,z_density_compute
   Use comms,         Only : comms_type
   Implicit None
 
@@ -23,11 +23,11 @@ Module analysis
 Contains
 
   !> Calculate and print final analysis
-  Subroutine analysis_result(lrdf,lzdn,lpana,lprdf,lpzdn, &
+  Subroutine analysis_result(lrdf,lpana,lprdf, &
                              nstep,tstep,rcut,temp,ensemble, &
-                             bond,angle,dihedral,inversion,stats,green,comm)
+                             bond,angle,dihedral,inversion,stats,green,zdensity,comm)
 
-    Logical, Intent( In    ) :: lrdf,lzdn,lpana,lprdf,lpzdn
+    Logical, Intent( In    ) :: lrdf,lpana,lprdf
     !> Number of simulation steps
     Integer( Kind = wi ), Intent( In    ) :: nstep
     !> Simulation tiime step (ps)
@@ -50,6 +50,8 @@ Contains
     Type( stats_type ), Intent( In    ) :: stats
     !> Greenkubo data
     Type( greenkubo_type ), Intent( In    ) :: green
+    !> Z density data
+    Type( z_density_type ), Intent( InOut ) :: zdensity
     !> Comms
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -92,8 +94,8 @@ Contains
     If (ncfusr > 0) Call usr_compute(comm)
 
     ! calculate and print z-density profile
-    If (lzdn .and. lpzdn .and. ncfzdn > 0) Then
-      Call z_density_compute(comm)
+    If (zdensity%l_collect .and. zdensity%l_print .and. zdensity%n_samples > 0) Then
+      Call z_density_compute(zdensity,comm)
     End If
 
     ! calculate and print velocity autocorrelation function

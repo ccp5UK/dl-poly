@@ -9,38 +9,58 @@ Module z_density
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gsum
   Use setup,  Only : mxgrdf,nrite,nzdndt,mxatyp
   Use site,   Only : ntpatm,unqatm
   Use configuration, Only : cfgname,cell,volm,natms,ltype,zzz
   Use errors_warnings, Only : error,info
-
   Implicit None
 
-  Integer,                        Save :: ncfzdn = 0
+  Private
 
-  Real( Kind = wp ), Allocatable, Save :: zdens(:,:)
+  !> Type containing z density data
+  Type, Public :: z_density_type
+    Private
 
-  Public :: allocate_z_density_arrays
+    !> Collection switch
+    Logical, Public :: l_collect
+    !> Printing switch
+    Logical, Public :: l_print
+    !> Number of configurations sampled
+    Integer( Kind = wi ), Public :: n_samples = 0
+    !> Collection frequency in steps
+    Integer( Kind = wi ), Public :: frequency
+    !> Bin width
+    Real( Kind = wp ), Public :: bin_width
+    !> z density
+    Real( Kind = wp ), Allocatable, Public :: density(:,:)
+  Contains
+    Private
+
+    Final :: cleanup
+  End Type z_density_type
+
+  Public :: allocate_z_density_arrays, z_density_collect, z_density_compute
 
 Contains
 
-  Subroutine allocate_z_density_arrays()
+  Subroutine allocate_z_density_arrays(zdensity)
+    Type( z_density_type ), Intent( InOut ) :: zdensity
 
     Integer :: fail
 
     fail = 0
 
-    Allocate (zdens(1:mxgrdf,1:mxatyp), Stat = fail)
+    Allocate (zdensity%density(1:mxgrdf,1:mxatyp), Stat = fail)
 
     If (fail > 0) Call error(1016)
 
-    zdens = 0.0_wp
+    zdensity%density = 0.0_wp
 
   End Subroutine allocate_z_density_arrays
 
-  Subroutine z_density_collect()
+  Subroutine z_density_collect(zdensity)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -51,12 +71,13 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( z_density_type ), Intent( InOut ) :: zdensity
   Integer           :: i,k,l
   Real( Kind = wp ) :: zlen,zleno2,rdelr
 
 ! accumulator
 
-  ncfzdn=ncfzdn+1
+  zdensity%n_samples=zdensity%n_samples+1
 
 ! length of cell in z direction
 
@@ -77,13 +98,13 @@ Contains
 
      l=Min(1+Int((zzz(i)+zleno2)*rdelr),mxgrdf)
 
-     zdens(l,k)=zdens(l,k) + 1.0_wp
+     zdensity%density(l,k)=zdensity%density(l,k) + 1.0_wp
   End Do
 
 End Subroutine z_density_collect
 
 
-Subroutine z_density_compute(comm)
+Subroutine z_density_compute(zdensity,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -96,13 +117,14 @@ Subroutine z_density_compute(comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( comms_type ), Intent( InOut ) :: comm
   Integer           :: j,k
   Real( Kind = wp ) :: zlen,delr,dvolz,factor,rho,rho1,rrr,sum,sum1
   Character( Len = 256 ) :: messages(2)
 
   Write(messages(1),'(a)') 'z density profiles:'
-  Write(messages(2),'(2x,a,i8,a)') 'calculated using ',ncfzdn,' configurations'
+  Write(messages(2),'(2x,a,i8,a)') 'calculated using ',zdensity%n_samples,' configurations'
   Call info(messages,2,.true.)
 
 ! open Z density file and write headers
@@ -127,8 +149,8 @@ Subroutine z_density_compute(comm)
 
 ! normalisation factor
 
-  ncfzdn=Max(ncfzdn,1)
-  factor=1.0_wp/(Real(ncfzdn,wp)*dvolz)
+  zdensity%n_samples=Max(zdensity%n_samples,1)
+  factor=1.0_wp/(Real(zdensity%n_samples,wp)*dvolz)
 
 ! for every species
 
@@ -142,7 +164,7 @@ Subroutine z_density_compute(comm)
 
 ! global sum of data on all nodes
 
-     Call gsum(comm,zdens(1:mxgrdf,k))
+     Call gsum(comm,zdensity%density(1:mxgrdf,k))
 
 ! running integration of z-density
 
@@ -152,7 +174,7 @@ Subroutine z_density_compute(comm)
 
      Do j=1,mxgrdf
         rrr=(Real(j,wp)-0.5_wp)*delr - zlen*0.5_wp
-        rho=zdens(j,k)*factor
+        rho=zdensity%density(j,k)*factor
         sum=sum + rho*dvolz
 
 ! null it if < 1.0e-6_wp
@@ -183,5 +205,11 @@ Subroutine z_density_compute(comm)
 
 End Subroutine z_density_compute
 
-  
+  Subroutine cleanup(zdensity)
+    Type( z_density_type ) :: zdensity
+
+    If (Allocated(zdensity%density)) Then
+      Deallocate(zdensity%density)
+    End If
+  End Subroutine cleanup
 End Module z_density

@@ -52,6 +52,7 @@ Module kontrol
                          ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
                          ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
   Use statistics, Only : stats_type
+  USe z_density, Only : z_density_type
 
   Implicit None
   Private
@@ -69,7 +70,7 @@ Subroutine read_control                                &
            rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
            l_exp,lecx,lfcap,l_top,lmin,          &
            lvar,leql,               &
-           lfce,lpana,lrdf,lprdf,lzdn,lpzdn,           &
+           lfce,lpana,lrdf,lprdf,           &
            ltraj,lrsd,               &
            nx,ny,nz,impa,                            &
            keyres,                   &
@@ -77,11 +78,11 @@ Subroutine read_control                                &
            keymin,nstmin,min_tol,                      &
            fmax,nstbpo,keyfce,epsq,             &
            rlx_tol,mxshak,tolnce,mxquat,quattol,       &
-           nstbnd,nstang,nstdih,nstinv,nstrdf,nstzdn,  &
+           nstbnd,nstang,nstdih,nstinv,nstrdf,  &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met, &
-           pois,bond,angle,dihedral,inversion,tmr,comm)
+           pois,bond,angle,dihedral,inversion,zdensity,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -112,7 +113,7 @@ Subroutine read_control                                &
                                              lmin, &
                                              lvar,leql,lfce,   &
                                              lpana,                 &
-                                             lrdf,lprdf,lzdn,lpzdn, &
+                                             lrdf,lprdf, &
                                              ltraj,lrsd
 
 
@@ -125,7 +126,7 @@ Subroutine read_control                                &
                                              mxshak,mxquat,        &
                                              nstbnd,nstang,        &
                                              nstdih,nstinv,        &
-                                             nstrdf,nstzdn,        &
+                                             nstrdf,        &
                                              nstraj,istraj,keytrj, &
                                              nsrsd,isrsd,          &
                                              ndump
@@ -148,6 +149,7 @@ Subroutine read_control                                &
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( comms_type ),     Intent( InOut )  :: comm
@@ -434,9 +436,9 @@ Subroutine read_control                                &
 ! default switch for calculation of z-density profile, default number of steps
 ! when to be collected and default switch for printing it
 
-  lzdn   = .false.
-  nstzdn = 1
-  lpzdn  = .false.
+  zdensity%l_collect   = .false.
+  zdensity%frequency = 1
+  zdensity%l_print  = .false.
 
 ! default switches for calculation of velocity autocorrelation functions:
 ! time-averaging and printing
@@ -2632,13 +2634,13 @@ Subroutine read_control                                &
 
      Else If (word(1:4) == 'zden') Then
 
-        lzdn = .true.
+        zdensity%l_collect = .true.
 
         Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        nstzdn = Abs(Nint(word_2_real(word,1.0_wp)))
+        zdensity%frequency = Abs(Nint(word_2_real(word,1.0_wp)))
 
 ! read vaf calculation option dealt with in scan_control<-set_bounds
 
@@ -2670,7 +2672,7 @@ Subroutine read_control                                &
         Else If (word(1:3) == 'rdf' ) Then
            lprdf = .true.
         Else If (word(1:4) == 'zden') Then
-           lpzdn = .true.
+           zdensity%l_print = .true.
         Else If (word(1:3) == 'vaf') Then
            green%l_print = .true.
         Else
@@ -3312,25 +3314,25 @@ Subroutine read_control                                &
 
 ! report zden
 
-  If (lzdn .or. lpzdn) Then
-     If (lzdn) Then
+  If (zdensity%l_collect .or. zdensity%l_print) Then
+     If (zdensity%l_collect) Then
         Write(messages(1),'(a)') 'z-density profiles requested:'
-        Write(messages(2),'(2x,a,i10)') 'z-density collection interval ',nstzdn
+        Write(messages(2),'(2x,a,i10)') 'z-density collection interval ',zdensity%frequency
         Write(messages(3),'(2x,a,1p,e12.4)') 'z-density binsize (Angstroms) ',rbin
         Call info(messages,3,.true.)
      Else
         Call info('no z-density profiles requested',.true.)
      End If
 
-     If (lpzdn) Then
+     If (zdensity%l_print) Then
         Call info('z-density printing requested',.true.)
      Else
         Call info('no z-density printing requested',.true.)
      End If
 
-     If (.not.lzdn) Then
+     If (.not.zdensity%l_collect) Then
         Call info('z-density routines not to be activated',.true.)
-        lpzdn=.false.
+        zdensity%l_print=.false.
      End If
   End If
 
@@ -3389,7 +3391,7 @@ Subroutine read_control                                &
         Write(messages(2),'(a)') '*** with structural properties will be recalculated ***'
         Call info(messages,2,.true.)
 ! abort if there's no structural property to recalculate
-        If (.not.(lrdf .or. lzdn .or. dfcts(1)%ldef .or. msd_data%l_msd .or. lrsd .or. (mxgana > 0))) Call error(580)
+        If (.not.(lrdf .or. zdensity%l_collect .or. dfcts(1)%ldef .or. msd_data%l_msd .or. lrsd .or. (mxgana > 0))) Call error(580)
      End If
 
      If (keyres /= 0) Then
@@ -3645,7 +3647,7 @@ Subroutine scan_control                                    &
            rcut,rpad,rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
-           thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,comm)
+           thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3683,6 +3685,7 @@ Subroutine scan_control                                    &
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3885,6 +3888,7 @@ Subroutine scan_control                                    &
 
         Call get_word(record,word)
         rbin = Abs(word_2_real(word))
+        zdensity%bin_width = rbin
 
 ! read dpd ensembles option
 

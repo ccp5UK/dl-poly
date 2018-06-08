@@ -12,11 +12,11 @@ If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(stat%shlke,comm)
 ! Calculate physical quantities and collect statistics
 
 Call statistics_collect           &
-  (lsim,leql,nsteql,lzdn,msd_data%l_msd,nstzdn, &
+  (lsim,leql,nsteql,msd_data%l_msd, &
   keyres,      &
   degfre,degshl,degrot,          &
   nstep,tstep,time,tmst,         &
-  mxatdm_,stat,thermo,comm)
+  mxatdm_,stat,thermo,zdensity,comm)
 
 ! VV forces evaluation report for 0th or weird restart
 

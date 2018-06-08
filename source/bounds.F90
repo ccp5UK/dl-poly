@@ -7,6 +7,7 @@ Module bounds
   Use vnl,             Only : llvnl ! Depends on l_str,lsim & rpad
   Use msd,             Only : msd_type
   Use rdfs,            Only : rusr
+  Use z_density,       Only : z_density_type
   Use kim,             Only : kimim
   Use bonds,           Only : bonds_type
   Use angles,          Only : angles_type
@@ -40,7 +41,7 @@ Subroutine set_bounds                                 &
            dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,      &
            alpha,width,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,comm)
+           inversion,tether,zdensity,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -71,6 +72,7 @@ Subroutine set_bounds                                 &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -130,7 +132,7 @@ Subroutine set_bounds                                 &
            rcut,rpad,rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo, &
-           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,comm)
+           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)

@@ -37,7 +37,7 @@
 ! enforce printing and collection if the calculation exists
 
   lprdf=lrdf ; nstrdf = 1
-  lpzdn=lzdn ; nstzdn = 1
+  zdensity%l_print=zdensity%l_collect ; zdensity%frequency = 1
 
 ! Calculate kinetic tensor and energy at restart as it may not exists later
 
@@ -178,11 +178,11 @@
            Call vaf_collect(leql,nsteql,nstph-1,time,green,comm)
 
            Call statistics_collect        &
-           (lsim,leql,nsteql,lzdn,msd_data%l_msd,nstzdn, &
+           (lsim,leql,nsteql,msd_data%l_msd, &
            keyres,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
-           mxatdm_,stat,thermo,comm)
+           mxatdm_,stat,thermo,zdensity,comm)
 
 ! line-printer output
 ! Update cpu time
@@ -237,8 +237,8 @@
 
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
-           (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,comm)
+           (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -312,8 +312,8 @@
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
   If (.not. devel%l_tor) Call system_revive                         &
-           (rcut,rbin,lrdf,lzdn,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,comm)
+           (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 
