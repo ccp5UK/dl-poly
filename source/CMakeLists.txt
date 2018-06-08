@@ -41,7 +41,7 @@ minimise.F90
 dihedrals.F90
 pmf.F90
 configuration.F90
-vnl.F90
+neighbours.F90
 comms.F90
 io.F90
 mpole.F90

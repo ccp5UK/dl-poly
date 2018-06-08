@@ -9,7 +9,7 @@ Module halo
   Use site
   Use mpole
 
-  Use vnl,              Only : vnl_set_check
+  Use neighbours,       Only : neighbours_type,vnl_set_check
   Use errors_warnings,  Only : error
   
   Implicit None
@@ -85,7 +85,7 @@ Module halo
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(rlnk,keyfce,comm)
+Subroutine set_halo_particles(rlnk,keyfce,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -99,14 +99,14 @@ Subroutine set_halo_particles(rlnk,keyfce,comm)
 
   Integer,           Intent( In    ) :: keyfce
   Real( Kind = wp ), Intent( In    ) :: rlnk
+  Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ), Save :: cut
 
   Integer           :: nlx,nly,nlz,i,j,ia,ib
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
                        xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
-
-  Type ( comms_type ), Intent( InOut  ) :: comm
 
 ! Define cut
 
@@ -227,7 +227,7 @@ Subroutine set_halo_particles(rlnk,keyfce,comm)
 
 ! Set VNL checkpoint
 
-  Call vnl_set_check(comm)
+  Call vnl_set_check(neigh,comm)
 
 ! Record global atom indices for local+halo sorting
 ! and sort multiple entries

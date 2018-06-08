@@ -4,7 +4,7 @@ Module bounds
   Use setup
   Use domains,         Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
   Use configuration,   Only : imcon,imc_n,cfgname,cell,volm
-  Use vnl,             Only : llvnl ! Depends on l_str,lsim & rpad
+  Use neighbours,      Only : neighbours_type
   Use msd,             Only : msd_type
   Use rdfs,            Only : rusr
   Use z_density,       Only : z_density_type
@@ -37,7 +37,7 @@ Module bounds
 Contains
 
 Subroutine set_bounds                                 &
-           (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
+           (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind,neigh_update, &
            dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,      &
            alpha,width,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
@@ -57,6 +57,7 @@ Subroutine set_bounds                                 &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_e,l_n_v,l_ind
+  Logical,           Intent( InOut ) :: neigh_update
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rbin,alpha,width
@@ -651,7 +652,7 @@ Subroutine set_bounds                                 &
         rlnk = rcut + rpad ! recalculate rlnk respectively
      End If
   End If
-  llvnl = (rpad > zero_plus) ! Determine/Detect conditional VNL updating at start
+  neigh_update = (rpad > zero_plus) ! Determine/Detect conditional VNL updating at start
 
   If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call warning(100,0.0_wp,0.0_wp,0.0_wp)
 
@@ -706,7 +707,7 @@ Subroutine set_bounds                                 &
      qly = Min(qly , kmaxb/(mxspl*npry))
      qlz = Min(qlz , kmaxc/(mxspl*nprz))
 
-     If (.not.llvnl) Then
+     If (.not.neigh_update) Then
         mxspl1=mxspl
      Else
         mxspl1=mxspl+Ceiling((rpad*Real(mxspl,wp))/rcut)
@@ -808,7 +809,7 @@ Subroutine set_bounds                                 &
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
   mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real(                          &
-           mxatdm*(18+12 + Merge(3,0,llvnl) + (mxexcl+1)                 + &
+           mxatdm*(18+12 + Merge(3,0,neigh_update) + (mxexcl+1)                 + &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp        + &
            4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &

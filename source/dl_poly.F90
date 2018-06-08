@@ -65,7 +65,7 @@ program dl_poly
 
   ! VNL module
 
-  Use vnl
+  Use neighbours, Only : neighbours_type,vnl_check
 
   ! DPD module
 
@@ -265,6 +265,7 @@ program dl_poly
   Type( inversions_type ) :: inversion
   Type( tethers_type ) :: tether
   Type( z_density_type ) :: zdensity
+  Type( neighbours_type ) :: neigh
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -331,7 +332,7 @@ program dl_poly
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
-  Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
+  Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind,neigh%unconditional_update, &
     dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,zdensity,comm)
 
@@ -500,7 +501,7 @@ program dl_poly
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(rlnk,keyfce,comm)
+  Call set_halo_particles(rlnk,keyfce,neigh,comm)
 
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
@@ -643,12 +644,12 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,stats,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity)
+    Call w_md_vv(mxatdm,stats,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,stats,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity)
+      Call w_replay_historf(mxatdm,stats,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh)
     Else
-      Call w_replay_history(mxatdm,stats,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity)
+      Call w_replay_history(mxatdm,stats,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh)
     End If
   End If
 
@@ -716,7 +717,7 @@ program dl_poly
   Call statistics_result                                        &
     (lmin,msd_data%l_msd, &
     nstrun,keyshl,megcon,megpmf,              &
-    nstep,tstep,time,tmst,mxatdm,stats,thermo,green,comm,passmin)
+    nstep,tstep,time,tmst,mxatdm,stats,thermo,green,neigh,comm,passmin)
 
   ! Final anlysis
   Call analysis_result(lrdf,lpana,lprdf, &
@@ -779,7 +780,7 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether)
+  Subroutine w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether,neigh)
     Type(stats_type), Intent(InOut) :: stat
     Type(plumed_type), Intent(InOut) :: plume
     Type(poisson_type), Intent(InOut) :: pois
@@ -788,10 +789,11 @@ Contains
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( tethers_type ), Intent( InOut ) :: tether
+    Type( neighbours_type ), Intent( InOut ) :: neigh
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion,tether)
+  Subroutine w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
     Type(stats_type), Intent(InOut) :: stat
     Type(msd_type), Intent(InOut) :: msd_data
     Type( bonds_type ), Intent( InOut ) :: bond
@@ -799,6 +801,7 @@ Contains
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( tethers_type ), Intent( InOut ) :: tether
+    Type( neighbours_type ), Intent( InOut ) :: neigh
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
@@ -832,7 +835,7 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,stat,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity)
+  Subroutine w_md_vv(mxatdm_,stat,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
@@ -843,10 +846,11 @@ Contains
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( z_density_type ), Intent( InOut ) :: zdensity
+    Type( neighbours_type ), Intent( InOut ) :: neigh
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity)
+  Subroutine w_replay_history(mxatdm_,stat,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
@@ -858,6 +862,7 @@ Contains
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( z_density_type ), Intent( InOut ) :: zdensity
+    Type( neighbours_type ), Intent( InOut ) :: neigh
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -867,7 +872,7 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,stat,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity)
+  Subroutine w_replay_historf(mxatdm_,stat,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
@@ -878,6 +883,7 @@ Contains
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( z_density_type ), Intent( InOut ) :: zdensity
+    Type( neighbours_type ), Intent( InOut ) :: neigh
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

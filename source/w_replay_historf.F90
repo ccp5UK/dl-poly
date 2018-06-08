@@ -109,7 +109,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(rlnk,keyfce,comm)
+           Call set_halo_particles(rlnk,keyfce,neigh,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -126,7 +126,7 @@
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether)
+           Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether,neigh)
 
 ! Evaluate kinetics if available
 

@@ -129,7 +129,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(rlnk,keyfce,comm)
+           Call set_halo_particles(rlnk,keyfce,neigh,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -150,7 +150,7 @@
            If (lrdf) Call two_body_forces         &
            (rcut,rlnk,rvdw,pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
-           lrdf,nstrdf,leql,nsteql,nstph,         &
+           lrdf,nstrdf,leql,neigh%update,nsteql,nstph,         &
            elrc,virlrc,               &
            stat,ewld,devel,met,pois,tmr,comm)
 

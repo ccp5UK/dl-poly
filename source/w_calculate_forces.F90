@@ -10,7 +10,7 @@
 ! Refresh mappings
 
         Call w_refresh_mappings &
-        (stat,msd_data,bond,angle,dihedral,inversion,tether)
+        (stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -30,7 +30,7 @@
         Call two_body_forces                      &
            (rcut,rlnk,rvdw,pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
-           lrdf,nstrdf,leql,nsteql,nstep,         &
+           lrdf,nstrdf,leql,neigh%update,nsteql,nstep,         &
            elrc,virlrc,               &
            stat,ewld,devel,met,pois,tmr,comm)
 
@@ -148,7 +148,7 @@
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
            Call w_refresh_mappings &
-            (stat,msd_data,bond,angle,dihedral,inversion,tether)
+            (stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
 
            Go To 100
         End If

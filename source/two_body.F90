@@ -4,7 +4,7 @@ Module two_body
   Use setup
   Use site,    Only : ntpatm,unqatm
   Use configuration,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
-  Use vnl,     Only : l_vnl
+  Use neighbours,     Only : neighbours_type
   Use ewald,           Only : ewald_type
   Use mpole,          Only : induce,keyind
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
@@ -36,7 +36,7 @@ Contains
 Subroutine two_body_forces                        &
            (rcut,rlnk,rvdw,pdplnc,ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
-           lrdf,nstrdf,leql,nsteql,nstep,         &
+           lrdf,nstrdf,leql,neigh_update,nsteql,nstep,         &
            elrc,virlrc,               &
            stats,ewld,devel,met,pois,tmr,comm)
 
@@ -72,7 +72,7 @@ Subroutine two_body_forces                        &
 
 
 
-  Logical,                                  Intent( In    ) :: lbook,lrdf,leql
+  Logical,                                  Intent( In    ) :: lbook,lrdf,leql,neigh_update
   Integer,                                  Intent( In    ) :: ensemble,        &
                                                                keyfce,nstfce, &
                                                                megfrz,nstrdf, &
@@ -167,7 +167,7 @@ Subroutine two_body_forces                        &
   stats%vircpe    = 0.0_wp
 
 ! Set up non-bonded interaction (verlet) list using link cells
-  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,met%rcut,pdplnc,lbook,megfrz,devel,tmr,comm)
+  If ((.not.induce) .and. neigh_update) Call link_cell_pairs(rcut,rlnk,rvdw,met%rcut,pdplnc,lbook,megfrz,devel,tmr,comm)
 ! Calculate all contributions from KIM
 
   If (kimim /= ' ') Then
