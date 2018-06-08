@@ -29,7 +29,7 @@ Module bounds
   Use metal,           Only : metal_type
   Use poisson,         Only : poisson_type
   Use tethers,         Only : tethers_type
-
+  Use three_body,      Only : threebody_type
 
   Implicit None
   Private
@@ -41,7 +41,7 @@ Subroutine set_bounds                                 &
            dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,      &
            alpha,width,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,zdensity,comm)
+           inversion,tether,threebody,zdensity,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -72,6 +72,7 @@ Subroutine set_bounds                                 &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( threebody_type ), Intent( InOut ) :: threebody 
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -106,8 +107,10 @@ Subroutine set_bounds                                 &
            mtdihd, &
            mtinv,  &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
-           mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,inversion,tether,comm)
+           mxmet,mxmed,mxmds,                        &
+           mxter,rcter,mxfbp,rcfbp,lext,met,bond,    &
+           angle,dihedral,inversion,                 &
+           tether,threebody,comm)
 
 ! Get imc_r & set dvar
 
@@ -472,17 +475,17 @@ Subroutine set_bounds                                 &
 
 ! maximum number of three-body potentials and parameters
 
-  If (mxtbp > 0) Then
-     mx2tbp = (mxatyp*(mxatyp+1))/2
-     mxtbp  = mx2tbp*mxatyp
+  If (threebody%mxtbp > 0) Then
+     threebody%mx2tbp = (mxatyp*(mxatyp+1))/2
+     threebody%mxtbp  = threebody%mx2tbp*mxatyp
      If (rctbp < 1.0e-6_wp) rctbp=0.5_wp*rcut
 
-     mxptbp = 5
+     threebody%mxptbp = 5
   Else
-     mx2tbp = 0
-     mxtbp  = 0
+     threebody%mx2tbp = 0
+     threebody%mxtbp  = 0
 
-     mxptbp = 0
+     threebody%mxptbp = 0
   End If
 
 
@@ -838,10 +841,10 @@ Subroutine set_bounds                                 &
 ! reset (increase) link-cell maximum (mxcell)
 ! if tersoff or three- or four-body potentials exist
 
-  If (mxter > 0 .or. mxtbp > 0 .or. mxfbp > 0) Then
+  If (mxter > 0 .or. threebody%mxtbp > 0 .or. mxfbp > 0) Then
      cut=rcut+1.0e-6_wp ! reduce cut
      If (mxter > 0) cut = Min(cut,rcter+1.0e-6_wp)
-     If (mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
+     If (threebody%mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
      If (mxfbp > 0) cut = Min(cut,rcfbp+1.0e-6_wp)
 
      ilx=Int(r_nprx*celprp(7)/cut)

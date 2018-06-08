@@ -86,13 +86,13 @@ program dl_poly
   Use angles, Only : angles_type,allocate_angles_arrays,angles_forces
   Use dihedrals, Only : dihedrals_type,allocate_dihedrals_arrays,dihedrals_forces
   Use inversions, Only : inversions_type,allocate_inversions_arrays,inversions_forces
+  Use three_body, Only : threebody_type, allocate_three_body_arrays, three_body_forces
 
   Use mpole
 
   Use vdw
   Use metal, Only : metal_type,allocate_metal_arrays
   Use tersoff
-  Use three_body
   Use four_body
 
   Use kim
@@ -239,7 +239,7 @@ program dl_poly
   Real( Kind = wp ) :: tsths,                                     &
     tstep,time,tmst,      &
     dvar,rcut,rpad,rlnk,                       &
-    rvdw,rbin,rcter,rctbp,rcfbp,          &
+    rvdw,rbin,rcter,rcfbp,          &
     alpha,epsq,fmax,                           &
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),min_tol(1:2),                 &
@@ -264,6 +264,7 @@ program dl_poly
   Type( dihedrals_type ) :: dihedral
   Type( inversions_type ) :: inversion
   Type( tethers_type ) :: tether
+  Type( threebody_type ) :: threebody
   Type( z_density_type ) :: zdensity
 
   Character( Len = 256 ) :: message,messages(5)
@@ -333,7 +334,7 @@ program dl_poly
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,alpha,width,stats, &
-    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,zdensity,comm)
+    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,threebody,zdensity,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -371,7 +372,7 @@ program dl_poly
   Call allocate_vdw_arrays()
   Call allocate_metal_arrays(met)
   Call allocate_tersoff_arrays()
-  Call allocate_three_body_arrays()
+  Call allocate_three_body_arrays(threebody)
   Call allocate_four_body_arrays()
 
   Call allocate_external_field_arrays()
@@ -416,10 +417,11 @@ program dl_poly
     rcut,rvdw,width,epsq, &
     keyfce,keyshl,           &
     lecx,lbook,lexcl,               &
-    rcter,rctbp,rcfbp,              &
+    rcter,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megcon,megpmf,megrgd,    &
-    megtet,thermo,met,bond,angle,dihedral,inversion,tether,comm)
+    megtet,thermo,met,bond,angle,   &
+    dihedral,inversion,tether,threebody,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -779,7 +781,7 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether)
+  Subroutine w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody)
     Type(stats_type), Intent(InOut) :: stat
     Type(plumed_type), Intent(InOut) :: plume
     Type(poisson_type), Intent(InOut) :: pois
@@ -788,6 +790,7 @@ Contains
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( tethers_type ), Intent( InOut ) :: tether
+    Type( threebody_type ), Intent( InOut ) :: threebody
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
