@@ -40,7 +40,7 @@
 
 ! Calculate three-body forces
 
-     If (ntptbp > 0) Call three_body_forces(rctbp,stat,comm)
+     If (threebody%ntptbp > 0) Call three_body_forces(stat,threebody,comm)
 
 ! Calculate four-body forces
 

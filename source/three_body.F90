@@ -10,7 +10,7 @@ Module three_body
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp, wi
 
   Use comms,   Only : comms_type,gsum,gcheck
   Use setup
@@ -21,46 +21,48 @@ Module three_body
   Use errors_warnings, Only : error,warning
   Use numerics, Only : dcell, invert
   Use statistics, Only : stats_type
+
   Implicit None
 
-  Integer,                        Save :: ntptbp = 0
+  Private
 
+  Type, Public ::  threebody_type
+    Integer( Kind = wi )               :: ntptbp = 0
+    Integer( Kind = wi )               :: mxptbp, mxtbp, mx2tbp
+    Real( Kind = wp )                  :: cutoff
+    Logical,              Allocatable  :: lfrtbp(:)
+    Integer( Kind = wi ), Allocatable  :: lsttbp(:),ltptbp(:)
+    Real( Kind = wp ),    Allocatable  :: prmtbp(:,:),rcttbp(:)
+  End Type
 
-  Logical,           Allocatable, Save :: lfrtbp(:)
-
-  Integer,           Allocatable, Save :: lsttbp(:),ltptbp(:)
-
-  Real( Kind = wp ), Allocatable, Save :: prmtbp(:,:),rcttbp(:)
-
-  Public :: allocate_three_body_arrays
+  Public :: allocate_three_body_arrays, three_body_forces
 
 Contains
 
-  Subroutine allocate_three_body_arrays()
+  Subroutine allocate_three_body_arrays(threebody)
 
-    Integer, Dimension( 1:5 ) :: fail
+  Type(threebody_type) , Intent( InOut )   :: threebody
+  Integer, Dimension( 1:5 ) :: fail
+ 
+  fail=0
 
-    fail = 0
+  Allocate (threebody%lfrtbp(1:Merge(mxsite,0,threebody%mxtbp > 0)), Stat = fail(1))
+  Allocate (threebody%lsttbp(1:threebody%mxtbp),                     Stat = fail(2))
+  Allocate (threebody%ltptbp(1:threebody%mxtbp),                     Stat = fail(3))
+  Allocate (threebody%prmtbp(1:threebody%mxptbp,1:threebody%mxtbp),  Stat = fail(4))
+  Allocate (threebody%rcttbp(1:threebody%mxtbp),                     Stat = fail(5))
 
-    Allocate (lfrtbp(1:Merge(mxsite,0,mxtbp > 0)), Stat = fail(1))
-    Allocate (lsttbp(1:mxtbp),                     Stat = fail(2))
-    Allocate (ltptbp(1:mxtbp),                     Stat = fail(3))
-    Allocate (prmtbp(1:mxptbp,1:mxtbp),            Stat = fail(4))
-    Allocate (rcttbp(1:mxtbp),                     Stat = fail(5))
+  If (Any(fail > 0)) Call error(1024)
 
-    If (Any(fail > 0)) Call error(1024)
-
-    lfrtbp = .false.
-
-    lsttbp = 0
-    ltptbp = 0
-
-    prmtbp = 0.0_wp
-    rcttbp = 0.0_wp
+  threebody%lfrtbp = .false.
+  threebody%lsttbp = 0
+  threebody%ltptbp = 0
+  threebody%prmtbp = 0.0_wp
+  threebody%rcttbp = 0.0_wp 
 
   End Subroutine allocate_three_body_arrays
-  
-  Subroutine three_body_forces(rctbp,stats,comm)
+
+  Subroutine three_body_forces(stats,threebody,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -79,8 +81,8 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Real( Kind = wp ),                   Intent( In    ) :: rctbp
   Type(stats_type), Intent( InOut ) :: stats
+  Type(threebody_type), Intent( InOut ) :: threebody 
   Type(comms_type), Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -126,9 +128,9 @@ Contains
 
 ! Calculate the number of link-cells per domain in every direction
 
-  nbx=Int(r_nprx*celprp(7)/(rctbp+1.0e-6_wp))
-  nby=Int(r_npry*celprp(8)/(rctbp+1.0e-6_wp))
-  nbz=Int(r_nprz*celprp(9)/(rctbp+1.0e-6_wp))
+  nbx=Int(r_nprx*celprp(7)/(threebody%cutoff+1.0e-6_wp))
+  nby=Int(r_npry*celprp(8)/(threebody%cutoff+1.0e-6_wp))
+  nbz=Int(r_nprz*celprp(9)/(threebody%cutoff+1.0e-6_wp))
 
 ! check for link cell algorithm violations
 
@@ -175,7 +177,7 @@ Contains
 ! the left-most link-cell
 
   Do i=1,nlast
-     If (lfrtbp(ltype(i))) Then
+     If (threebody%lfrtbp(ltype(i))) Then
         xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
         yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
         zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
@@ -212,7 +214,7 @@ Contains
 !***************************************************************
 
   Do i=1,nlast
-     If (lfrtbp(ltype(i))) Then
+     If (threebody%lfrtbp(ltype(i))) Then
 
 ! Push cell coordinates accordingly
 
@@ -380,11 +382,11 @@ Contains
 ! index of the primary atom (and table type)
 
               ib=listin(ii)
-              itbp=mx2tbp*(ltype(ib)-1)
+              itbp=threebody%mx2tbp*(ltype(ib)-1)
 
 ! bypass if primary atom type is not involved in interaction
 
-              If (lsttbp(itbp+1) >= 0) Then
+              If (threebody%lsttbp(itbp+1) >= 0) Then
 
                  last=limit
 
@@ -427,7 +429,7 @@ Contains
 ! get index of interaction
 
                           jktbp=itbp+(jtbp*(jtbp-1))/2+ktbp
-                          kktbp=lsttbp(jktbp)
+                          kktbp=threebody%lsttbp(jktbp)
 
 ! check existence of interaction in system
 
@@ -443,13 +445,13 @@ Contains
      szab = zzt(ia)-zzt(ib)
 
      xab=cell(1)*sxab+cell(4)*syab+cell(7)*szab
-     If (Abs(xab) < rctbp) Then
+     If (Abs(xab) < threebody%cutoff) Then
 
         yab=cell(2)*sxab+cell(5)*syab+cell(8)*szab
-        If (Abs(yab) < rctbp) Then
+        If (Abs(yab) < threebody%cutoff) Then
 
           zab=cell(3)*sxab+cell(6)*syab+cell(9)*szab
-          If (Abs(zab) < rctbp) Then
+          If (Abs(zab) < threebody%cutoff) Then
 
              rab=Sqrt(xab*xab+yab*yab+zab*zab)
 
@@ -458,17 +460,17 @@ Contains
              szbc = zzt(ic)-zzt(ib)
 
              xbc=cell(1)*sxbc+cell(4)*sybc+cell(7)*szbc
-             If (Abs(xbc) < rctbp) Then
+             If (Abs(xbc) < threebody%cutoff) Then
 
                 ybc=cell(2)*sxbc+cell(5)*sybc+cell(8)*szbc
-                If (Abs(ybc) < rctbp) Then
+                If (Abs(ybc) < threebody%cutoff) Then
 
                    zbc=cell(3)*sxbc+cell(6)*sybc+cell(9)*szbc
-                   If (Abs(zbc) < rctbp) Then
+                   If (Abs(zbc) < threebody%cutoff) Then
 
                       rbc=Sqrt(xbc*xbc+ybc*ybc+zbc*zbc)
 
-                      If (Max(rab,rbc) <= rcttbp(kktbp)) Then
+                      If (Max(rab,rbc) <= threebody%rcttbp(kktbp)) Then
 
                          xac = xab - xbc
                          yac = yab - ybc
@@ -499,7 +501,7 @@ Contains
 ! (SECOND SHIFT TO LEFT)
 ! select potential energy function type
 
-  ktyp=ltptbp(kktbp)
+  ktyp=threebody%ltptbp(kktbp)
 
   If (ktyp /= 6) Then
 
@@ -515,8 +517,8 @@ Contains
 
 ! harmonic valence angle potential
 
-     k0    =prmtbp(1,kktbp)
-     theta0=prmtbp(2,kktbp)
+     k0    =threebody%prmtbp(1,kktbp)
+     theta0=threebody%prmtbp(2,kktbp)
      dtheta=theta-theta0
 
      pterm=k0*dtheta
@@ -532,10 +534,10 @@ Contains
 
 ! truncated harmonic valence angle potential
 
-     k0    =prmtbp(1,kktbp)
-     theta0=prmtbp(2,kktbp)
+     k0    =threebody%prmtbp(1,kktbp)
+     theta0=threebody%prmtbp(2,kktbp)
      dtheta=theta-theta0
-     rho   =prmtbp(3,kktbp)
+     rho   =threebody%prmtbp(3,kktbp)
      switch=-(rab**8+rbc**8)/rho**8
 
      pterm=k0*dtheta*Exp(switch)
@@ -551,11 +553,11 @@ Contains
 
 ! screened harmonic valence angle potential
 
-     k0    =prmtbp(1,kktbp)
-     theta0=prmtbp(2,kktbp)
+     k0    =threebody%prmtbp(1,kktbp)
+     theta0=threebody%prmtbp(2,kktbp)
      dtheta=theta-theta0
-     rho1  =prmtbp(3,kktbp)
-     rho2  =prmtbp(4,kktbp)
+     rho1  =threebody%prmtbp(3,kktbp)
+     rho2  =threebody%prmtbp(4,kktbp)
      switch=-(rab/rho1+rbc/rho2)
 
      pterm=k0*dtheta*Exp(switch)
@@ -566,21 +568,21 @@ Contains
      gamsa=pterm/rho1
      gamsc=pterm/rho2
 
-     gamsa=(pterm/prmtbp(3,kktbp))
-     gamsc=(pterm/prmtbp(4,kktbp))
+     gamsa=(pterm/threebody%prmtbp(3,kktbp))
+     gamsc=(pterm/threebody%prmtbp(4,kktbp))
      gamsb=0.0_wp
 
   Else If (ktyp == 4) Then
 
 ! screened Vessal potential type 1
 
-     k0    =prmtbp(1,kktbp)
-     theta0=prmtbp(2,kktbp)
+     k0    =threebody%prmtbp(1,kktbp)
+     theta0=threebody%prmtbp(2,kktbp)
      dth0pi=theta0-pi
      dthpi =theta -pi
      dth   =dth0pi**2-dthpi**2
-     rho1  =prmtbp(3,kktbp)
-     rho2  =prmtbp(4,kktbp)
+     rho1  =threebody%prmtbp(3,kktbp)
+     rho2  =threebody%prmtbp(4,kktbp)
      switch=-(rab/rho1+rbc/rho2)
 
      pterm=(k0*dth/(2.0_wp*dth0pi**2)) * Exp(switch)
@@ -596,13 +598,13 @@ Contains
 
 ! truncated Vessal potential type 2
 
-     k0    =prmtbp(1,kktbp)
-     theta0=prmtbp(2,kktbp)
+     k0    =threebody%prmtbp(1,kktbp)
+     theta0=threebody%prmtbp(2,kktbp)
      dtheta=theta-theta0
      dth0pi=theta0-pi
      dthpi =theta -pi
-     a     =prmtbp(3,kktbp)
-     rho   =prmtbp(4,kktbp)
+     a     =threebody%prmtbp(3,kktbp)
+     rho   =threebody%prmtbp(4,kktbp)
      switch=-(rab**8+rbc**8)/rho**8
 
      pterm=k0*dtheta*Exp(switch)
@@ -621,9 +623,9 @@ Contains
 
 ! dreiding/CHARMM hydrogen bond
 
-     If (Min(rab,rbc) < 1.5_wp .and. rac < rcttbp(kktbp)) Then
-        dhb   =prmtbp(1,kktbp)
-        rhb   =prmtbp(2,kktbp)
+     If (Min(rab,rbc) < 1.5_wp .and. rac < threebody%rcttbp(kktbp)) Then
+        dhb   =threebody%prmtbp(1,kktbp)
+        rhb   =threebody%prmtbp(2,kktbp)
         switch=(5.0_wp*(rhb/rac)**2-6.0_wp)*(rhb/rac)**10
         term  =60.0_wp*(1.0_wp-(rhb/rac)**2)*(rhb/rac)**10
 

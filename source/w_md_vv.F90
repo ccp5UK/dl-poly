@@ -94,7 +94,7 @@
 
 ! Evaluate forces
 
-     Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether,neigh)
+     Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
