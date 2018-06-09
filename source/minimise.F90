@@ -118,7 +118,7 @@ Contains
   Integer,              Save :: keyopt
   Integer                    :: fail(1:8),i,j,levcfg
   Real( Kind = wp ),    Save :: total,grad_tol,eng_tol,dist_tol,step,           &
-                                eng_0,eng_min,engcon,engpmf,eng,eng0,eng1,eng2, &
+                                eng_0,eng_min,engpmf,eng,eng0,eng1,eng2, &
                                 grad,grad0,grad1,grad2,onorm,sgn,stride,gamma
 
 ! OUTPUT existence
@@ -289,7 +289,7 @@ Contains
      If (cons%megcon > 0) Then
         Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
         Call constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,stat,cons,comm)
-        eng=eng+engcon
+        eng=eng+stat%engcon
      End If
 
      If (megpmf > 0) Then
