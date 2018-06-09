@@ -52,7 +52,8 @@ Module kontrol
                          ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
                          ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
   Use statistics, Only : stats_type
-  USe z_density, Only : z_density_type
+  Use z_density, Only : z_density_type
+  Use neighbours, Only : neighbours_type
 
   Implicit None
   Private
@@ -67,7 +68,7 @@ Module kontrol
 
 Subroutine read_control                                &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
-           rcut,rpad,rvdw,rbin,nstfce,alpha,width,     &
+           rvdw,rbin,nstfce,alpha,width,     &
            l_exp,lecx,lfcap,l_top,lmin,          &
            lvar,leql,               &
            lfce,lpana,lrdf,lprdf,           &
@@ -82,7 +83,7 @@ Subroutine read_control                                &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met, &
-           pois,bond,angle,dihedral,inversion,zdensity,tmr,comm)
+           pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -105,7 +106,7 @@ Subroutine read_control                                &
   Logical,                Intent( In    ) :: l_str,lsim,l_vv,l_n_e,l_n_v
   Integer,                Intent( In    ) :: levcfg
   Integer,                Intent( InOut ) :: nstfce
-  Real( Kind = wp ),      Intent( In    ) :: rcut,rpad,rvdw,rbin,width
+  Real( Kind = wp ),      Intent( In    ) :: rvdw,rbin,width
   Real( Kind = wp ),      Intent( InOut ) :: alpha
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
@@ -150,6 +151,7 @@ Subroutine read_control                                &
   Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( neighbours_type ), Intent( In    ) :: neigh
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( comms_type ),     Intent( InOut )  :: comm
@@ -476,7 +478,7 @@ Subroutine read_control                                &
   dfcts(:)%ldef   =.false.
   dfcts(:)%nsdef  = 0
   dfcts(:)%isdef  = 1
-  dfcts(:)%rdef   = Min(0.75_wp,rcut/3.0_wp)
+  dfcts(:)%rdef   = Min(0.75_wp,neigh%cutoff/3.0_wp)
   dfcts(:)%newjob = .True.
 
 ! default switch for displacements outputting and defaults for
@@ -1872,14 +1874,14 @@ Subroutine read_control                                &
            Write(message,'(a,1p,e12.4)') 'precision parameter ', eps0
            Call info(message,.true.)
            eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
-           tol = Sqrt(Abs(Log(eps0*rcut)))
-           alpha = Sqrt(Abs(Log(eps0*rcut*tol)))/rcut
+           tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+           alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
            Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) derived ', alpha
            Call info(message,.true.)
         End If
         If (alpha > zero_plus) Then
            Call info('Fennell damping applied',.true.)
-           If (rcut < 12.0_wp) Call warning(7,rcut,12.0_wp,0.0_wp)
+           If (neigh%cutoff < 12.0_wp) Call warning(7,neigh%cutoff,12.0_wp,0.0_wp)
         End If
 
         If (lforc) Call error(416)
@@ -1906,14 +1908,14 @@ Subroutine read_control                                &
            Write(message,'(a,1p,e12.4)') 'precision parameter ', eps0
            Call info(message,.true.)
            eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
-           tol = Sqrt(Abs(Log(eps0*rcut)))
-           alpha = Sqrt(Abs(Log(eps0*rcut*tol)))/rcut
+           tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+           alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
            Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) derived ', alpha
            Call info(message,.true.)
         End If
         If (alpha > zero_plus) Then
            Call info('Fennell damping applied',.true.)
-           If (rcut < 12.0_wp) Call warning(7,rcut,12.0_wp,0.0_wp)
+           If (neigh%cutoff < 12.0_wp) Call warning(7,neigh%cutoff,12.0_wp,0.0_wp)
         End If
 
         If (lforc) Call error(416)
@@ -2561,7 +2563,7 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
-        If (Abs(rbin-tmp) > 1.0e-6_wp) Call warning(340,tmp,rcut/4.0_wp,rbin)
+        If (Abs(rbin-tmp) > 1.0e-6_wp) Call warning(340,tmp,neigh%cutoff/4.0_wp,rbin)
 
 ! read analysis (intramolecular distributions calculation) option
 
@@ -2763,7 +2765,7 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
-        If (tmp >= Min(0.3_wp,rcut/3.0_wp) .and. tmp <= Min(3.5_wp,rcut/2.0_wp)) Then
+        If (tmp >= Min(0.3_wp,neigh%cutoff/3.0_wp) .and. tmp <= Min(3.5_wp,neigh%cutoff/2.0_wp)) Then
            dfcts(1)%rdef = tmp ! 3.43 Angs is the Cs VDW radius - largest possible
         Else
            Call warning(310,tmp,dfcts(1)%rdef,0.0_wp)
@@ -3090,19 +3092,19 @@ Subroutine read_control                                &
      End If
   End If
 
-! report if rcut is reset (measures taken in scan_config -
-! rcut is the maximum cutoff needed in the system)
+! report if neigh%cutoff is reset (measures taken in scan_config -
+! neigh%cutoff is the maximum cutoff needed in the system)
 
-  If (Abs(rcut-rcut1) > 1.0e-6_wp) Then
-    Write(message,'(a,1p,e12.4)') 'real space cutoff reset to (Angs) ',rcut
+  If (Abs(neigh%cutoff-rcut1) > 1.0e-6_wp) Then
+    Write(message,'(a,1p,e12.4)') 'real space cutoff reset to (Angs) ',neigh%cutoff
     Call info(message,.true.)
   End If
 
-! report if rpad is reset (measures taken in scan_config & set_bounds -
-! rpad is the cutoff padding needed the conditional VNL update)
+! report if neigh%padding is reset (measures taken in scan_config & set_bounds -
+! neigh%padding is the cutoff padding needed the conditional VNL update)
 
-  If (Abs(rpad-rpad1) > 1.0e-6_wp) Then
-    Write(message,'(a,1p,e12.4)') 'cutoff padding reset to (Angs) ',rpad
+  If (Abs(neigh%padding-rpad1) > 1.0e-6_wp) Then
+    Write(message,'(a,1p,e12.4)') 'cutoff padding reset to (Angs) ',neigh%padding
     Call info(message,.true.)
   End If
 
@@ -3644,10 +3646,10 @@ Subroutine scan_control                                    &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rcut,rpad,rbin,                          &
+           rbin,                          &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
-           thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,comm)
+           thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3673,7 +3675,7 @@ Subroutine scan_control                                    &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: rvdw,cell(1:9)
-  Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
+  Real( Kind = wp ), Intent(   Out ) :: rbin,alpha
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
@@ -3686,6 +3688,7 @@ Subroutine scan_control                                    &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3750,10 +3753,10 @@ Subroutine scan_control                                    &
   lter  = (mxter > 0)
 
   lrcut = .false.
-  rcut  = 0.0_wp
+  neigh%cutoff  = 0.0_wp
 
   lrpad = .false.
-  rpad  = 0.0_wp
+  neigh%padding  = 0.0_wp
 
   rbin  = rbin_def
 
@@ -3856,8 +3859,8 @@ Subroutine scan_control                                    &
 
         lrcut = .true.
         Call get_word(record,word)
-        rcut = Abs(word_2_real(word))
-        lrcut = (rcut > zero_plus) ! if zero or nothing is entered
+        neigh%cutoff = Abs(word_2_real(word))
+        lrcut = (neigh%cutoff > zero_plus) ! if zero or nothing is entered
 
 ! read real space cut off
 
@@ -3865,8 +3868,8 @@ Subroutine scan_control                                    &
 
         lrpad = .true.
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
-        rpad = Max(rpad,Abs(word_2_real(word)))
-        lrpad = (rpad > zero_plus) ! if zero or nothing is entered
+        neigh%padding = Max(neigh%padding,Abs(word_2_real(word)))
+        lrpad = (neigh%padding > zero_plus) ! if zero or nothing is entered
 
 ! read vdw cutoff
 
@@ -3966,8 +3969,8 @@ Subroutine scan_control                                    &
 
         lrpad = .true.
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
-        rpad = Max(rpad,0.25_wp*Abs(word_2_real(word)))
-        lrpad = (rpad > zero_plus) ! if zero or nothing is entered
+        neigh%padding = Max(neigh%padding,0.25_wp*Abs(word_2_real(word)))
+        lrpad = (neigh%padding > zero_plus) ! if zero or nothing is entered
 
 ! read DL_POLY_2/Classic multiple timestep option (compatibility)
 ! as DL_POLY_4 infrequent k-space SPME evaluation option
@@ -4388,7 +4391,7 @@ Subroutine scan_control                                    &
   If (lvdw) Then
      If (.not.lrvdw) Then
         lrvdw = (rvdw > 1.0e-6_wp)
-        rvdw = Min(rvdw,Max(rcut,rcut_def))
+        rvdw = Min(rvdw,Max(neigh%cutoff,rcut_def))
      End If
 
      If (l_n_v) lvdw = .not.l_n_v
@@ -4396,9 +4399,9 @@ Subroutine scan_control                                    &
      l_n_v = .true.
   End If
 
-! Sort rcut as the maximum of all valid cutoffs
+! Sort neigh%cutoff as the maximum of all valid cutoffs
 
-  rcut=Max(rcut,rvdw,met%rcut,rkim,2.0_wp*Max(rcter,bond%rcut)+1.0e-6_wp)
+  neigh%cutoff=Max(neigh%cutoff,rvdw,met%rcut,rkim,2.0_wp*Max(rcter,bond%rcut)+1.0e-6_wp)
 
   If (comm%idnode == 0) Rewind(nread)
 
@@ -4438,13 +4441,13 @@ Subroutine scan_control                                    &
 
         Else
 
-! rcut MUST be >= rcut_def
+! neigh%cutoff MUST be >= rcut_def
 
-           If (rcut < rcut_def) rcut=rcut_def
+           If (neigh%cutoff < rcut_def) neigh%cutoff=rcut_def
 
 ! define cut
 
-           cut=rcut+1.0e-6_wp
+           cut=neigh%cutoff+1.0e-6_wp
 
 ! fix cell vectors for image conditions with discontinuities
 
@@ -4480,9 +4483,9 @@ Subroutine scan_control                                    &
                  Call get_word(record,word)
                  mxspl = Abs(Nint(word_2_real(word)))
 
-                 tol = Sqrt(Abs(Log(eps0*rcut)))
-                 alpha = Sqrt(Abs(Log(eps0*rcut*tol)))/rcut
-                 tol1 = Sqrt(-Log(eps0*rcut*(2.0_wp*tol*alpha)**2))
+                 tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
+                 alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+                 tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*alpha)**2))
 
                  fac = 1.0_wp
                  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp/3.0_wp)
@@ -4491,7 +4494,7 @@ Subroutine scan_control                                    &
                  kmaxb1 = 2*Nint(0.25_wp + fac*celprp(8)*alpha*tol1/pi)
                  kmaxc1 = 2*Nint(0.25_wp + fac*celprp(9)*alpha*tol1/pi)
 
-! rcut is needed directly for the SPME and it MUST exist
+! neigh%cutoff is needed directly for the SPME and it MUST exist
 
                  If (.not.lrcut) Call error(433)
 
@@ -4517,7 +4520,7 @@ Subroutine scan_control                                    &
                  tol=alpha*Real(kmaxa1,wp)*Real(kmaxa1,wp)*Real(kmaxa1,wp)
                  If (Nint(tol) < 1) Call error(9)
 
-! rcut is not needed directly for the SPME but it's needed
+! neigh%cutoff is not needed directly for the SPME but it's needed
 ! for the link-cell division of the domains
 ! let's not fail here if no cutoff is specified
 
@@ -4565,7 +4568,7 @@ Subroutine scan_control                                    &
 
 ! Check for undefined and ill defined parameters
 
-!             0.1 Angs <= delta=1/alpha <= Min(3 Angs,rcut/3) - 3 grid points within a link-cell
+!             0.1 Angs <= delta=1/alpha <= Min(3 Angs,neigh%cutoff/3) - 3 grid points within a link-cell
               If (alpha > 10.0_wp)                       alpha = 10.0_wp
               If (alpha < 1.0_wp/Min(3.0_wp,cut/3.0_wp)) alpha = 1.0_wp/Min(3.0_wp,cut/3.0_wp)
 
@@ -4594,7 +4597,7 @@ Subroutine scan_control                                    &
         If ((.not.lrvdw) .and. lvdw) Then
            If (lrcut) Then
               lrvdw=.true.
-              rvdw=rcut
+              rvdw=neigh%cutoff
            Else
               Call error(402)
            End If
@@ -4605,19 +4608,19 @@ Subroutine scan_control                                    &
         If ((.not.lrmet) .and. lmet) Then
            If (lrcut .or. lrvdw) Then
               lrmet=.true.
-              met%rcut=Max(rcut,rvdw)
+              met%rcut=Max(neigh%cutoff,rvdw)
            Else
               Call error(382)
            End If
         End If
 
-! Sort rcut by a reset sequence
-! rcut may be >= rcut_def but lrcut may still be .false.
+! Sort neigh%cutoff by a reset sequence
+! neigh%cutoff may be >= rcut_def but lrcut may still be .false.
 ! mxspl = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
 
         If (mxspl /= 0) Then ! SPME or Poisson Solver
 
-! (1) to Max(rcut,Max(cell_width*mxspl/kmax),mxspl*delta) satisfying SPME b-splines
+! (1) to Max(neigh%cutoff,Max(cell_width*mxspl/kmax),mxspl*delta) satisfying SPME b-splines
 ! propagation width or the Poisson Solver extra halo relation to cutoff
 ! delta=1/alpha is the grid spacing and mxspl is the grid length needed for the
 ! 3 haloed stencil of differentiation
@@ -4626,51 +4629,51 @@ Subroutine scan_control                                    &
               lrcut=.true.
 
               Call dcell(cell,celprp)
-              rcut=Max( rcut, Merge(Real(mxspl,wp)/alpha,                          &
+              neigh%cutoff=Max( neigh%cutoff, Merge(Real(mxspl,wp)/alpha,                          &
                                     Max(celprp(7)*Real(mxspl,wp)/Real(kmaxa1,wp),  &
                                         celprp(8)*Real(mxspl,wp)/Real(kmaxb1,wp),  &
                                         celprp(9)*Real(mxspl,wp)/Real(kmaxc1,wp)), &
                                     itmp == 0) )
            End If
 
-! Reset rvdw, met%rcut and rcut when only tersoff potentials are opted for
+! Reset rvdw, met%rcut and neigh%cutoff when only tersoff potentials are opted for
 
            If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r) Then
               rvdw=0.0_wp
               met%rcut=0.0_wp
               If (.not.l_str) Then
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                    rcut=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
+                    neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
                  Else
-                    rcut=Max(rcut,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                    neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
                  End If
               End If
            End If
 
         Else
 
-! no SPME electrostatics is specified but rcut is still needed for
+! no SPME electrostatics is specified but neigh%cutoff is still needed for
 ! domain decompositioning and link-celling
 ! It is needed for the rest of the types of electrostatics
 
            If ((.not.lrcut) .and. lelec) Call error(382)
 
-! So there is rcut and some kind of electrostatics(-: or neither
+! So there is neigh%cutoff and some kind of electrostatics(-: or neither
 
-! Reset rcut to something sensible if sensible is an option
+! Reset neigh%cutoff to something sensible if sensible is an option
 
            If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
                 (lrvdw .or. lrmet .or. lter .or. kimim /= ' ') ) Then
               lrcut=.true.
               If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                 rcut=Max(rvdw,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                 neigh%cutoff=Max(rvdw,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
               Else
-                 rcut=Max(rcut,rvdw,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                 neigh%cutoff=Max(neigh%cutoff,rvdw,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
               End If
            End If
 
 ! Reset rvdw and met%rcut when only tersoff potentials are opted for and
-! possibly reset rcut to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
+! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
            If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. kimim == ' ') Then
               rvdw=0.0_wp
@@ -4678,20 +4681,20 @@ Subroutine scan_control                                    &
               If (.not.l_str) Then
                  lrcut=.true.
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                    rcut=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
+                    neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
                  Else
-                    rcut=Max(rcut,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                    neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
                  End If
               End If
            End If
 
-! rcut must exist
+! neigh%cutoff must exist
 
            If (.not.lrcut) Call error(382)
 
 ! define cut
 
-           cut=rcut+1.0e-6_wp
+           cut=neigh%cutoff+1.0e-6_wp
 
 ! fix cell vectors for image conditions with discontinuities
 
@@ -4716,19 +4719,19 @@ Subroutine scan_control                                    &
 
         End If
 
-! Sort met%rcut=rcut if metal interactions are in play, even if
-! they are defined by EAM since met%rcut can be /= rcut in such
+! Sort met%rcut=neigh%cutoff if metal interactions are in play, even if
+! they are defined by EAM since met%rcut can be /= neigh%cutoff in such
 ! instances, this can break the NLAST check in metal_ld_set_halo
 
-        If (lmet) met%rcut = rcut
+        If (lmet) met%rcut = neigh%cutoff
 
-! Sort rvdw=rcut if VDW interactions are in play
+! Sort rvdw=neigh%cutoff if VDW interactions are in play
 
-        If (lvdw .and. rvdw > rcut) rvdw = rcut
+        If (lvdw .and. rvdw > neigh%cutoff) rvdw = neigh%cutoff
 
-! Sort rbin as now rcut is already pinned down
+! Sort rbin as now neigh%cutoff is already pinned down
 
-        If (rbin < 1.0e-05_wp .or. rbin > rcut/4.0_wp) rbin = Min(rbin_def,rcut/4.0_wp)
+        If (rbin < 1.0e-05_wp .or. rbin > neigh%cutoff/4.0_wp) rbin = Min(rbin_def,neigh%cutoff/4.0_wp)
 
         carry=.false.
 
@@ -4746,7 +4749,7 @@ Subroutine scan_control                                    &
 ! expanding and not running the small system prepare to exit gracefully
 
   devel%l_trm = (l_exp .and. nstrun == 0)
-  If (((.not.lsim) .or. devel%l_trm) .and. lrpad) rpad=0.0_wp
+  If (((.not.lsim) .or. devel%l_trm) .and. lrpad) neigh%padding=0.0_wp
 
   l_errors_block = l_errors_block .and. lrdf
   l_errors_jack = l_errors_jack .and. lrdf

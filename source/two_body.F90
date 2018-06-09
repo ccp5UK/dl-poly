@@ -4,7 +4,7 @@ Module two_body
   Use setup
   Use site,    Only : ntpatm,unqatm
   Use configuration,  Only : volm,sumchg,natms,list,xxx,yyy,zzz
-  Use vnl,     Only : l_vnl
+  Use neighbours,     Only : neighbours_type
   Use ewald,           Only : ewald_type
   Use mpole,          Only : induce,keyind
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
@@ -34,11 +34,11 @@ Module two_body
 Contains
 
 Subroutine two_body_forces                        &
-           (rcut,rlnk,rvdw,pdplnc,ensemble,    &
+           (rvdw,pdplnc,ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,               &
-           stats,ewld,devel,met,pois,tmr,comm)
+           stats,ewld,devel,met,pois,neigh,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -77,14 +77,15 @@ Subroutine two_body_forces                        &
                                                                keyfce,nstfce, &
                                                                megfrz,nstrdf, &
                                                                nsteql,nstep
-  Real( Kind = wp ),                        Intent( In    ) :: rcut,rlnk,rvdw, &
+  Real( Kind = wp ),                        Intent( In    ) :: rvdw, &
                                                                pdplnc,alpha,epsq
   Real( Kind = wp ),                        Intent( In    ) :: elrc,virlrc
   Type( stats_type ), Intent( InOut )                       :: stats
   Type( ewald_type ),                       Intent( InOut ) :: ewld
   Type( development_type ),                 Intent( In    ) :: devel
   Type( metal_type ),                       Intent( InOut ) :: met
-  Type( poisson_type ),                       Intent( InOut ) :: pois
+  Type( poisson_type ),                     Intent( InOut ) :: pois
+  Type( neighbours_type ),                  Intent( In    ) :: neigh
   Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( comms_type ),                       Intent( InOut ) :: comm
 
@@ -167,7 +168,9 @@ Subroutine two_body_forces                        &
   stats%vircpe    = 0.0_wp
 
 ! Set up non-bonded interaction (verlet) list using link cells
-  If ((.not.induce) .and. l_vnl) Call link_cell_pairs(rcut,rlnk,rvdw,met%rcut,pdplnc,lbook,megfrz,devel,tmr,comm)
+  If ((.not.induce) .and. neigh%update) Then
+    Call link_cell_pairs(rvdw,met%rcut,pdplnc,lbook,megfrz,devel,neigh,tmr,comm)
+  End If
 ! Calculate all contributions from KIM
 
   If (kimim /= ' ') Then
@@ -270,9 +273,9 @@ Subroutine two_body_forces                        &
 ! calculate coulombic forces, Ewald sum - real space contribution
 
            If (mxompl <= 2) Then
-              Call ewald_real_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,ewld,comm)
+              Call ewald_real_mforces_d(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,ewld,comm)
            Else
-              Call ewald_real_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
+              Call ewald_real_mforces(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
            End If
 
            engcpe_rl=engcpe_rl+engacc
@@ -282,7 +285,7 @@ Subroutine two_body_forces                        &
 
 ! distance dependant dielectric potential
 
-           Call coul_dddp_mforces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+           Call coul_dddp_mforces(i,neigh%cutoff,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -291,7 +294,7 @@ Subroutine two_body_forces                        &
 
 ! coulombic 1/r potential with no truncation or damping
 
-           Call coul_cp_mforces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+           Call coul_cp_mforces(i,neigh%cutoff,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -300,7 +303,7 @@ Subroutine two_body_forces                        &
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
+           Call coul_fscp_mforces(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -309,7 +312,7 @@ Subroutine two_body_forces                        &
 
 ! reaction field potential
 
-           Call coul_rfp_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
+           Call coul_rfp_mforces(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -322,7 +325,7 @@ Subroutine two_body_forces                        &
 
 ! calculate coulombic forces, Ewald sum - real space contribution
 
-           Call ewald_real_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
+           Call ewald_real_forces(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -331,7 +334,7 @@ Subroutine two_body_forces                        &
 
 ! distance dependant dielectric potential
 
-           Call coul_dddp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+           Call coul_dddp_forces(i,neigh%cutoff,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -340,7 +343,7 @@ Subroutine two_body_forces                        &
 
 ! coulombic 1/r potential with no truncation or damping
 
-           Call coul_cp_forces(i,rcut,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+           Call coul_cp_forces(i,neigh%cutoff,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -349,7 +352,7 @@ Subroutine two_body_forces                        &
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
+           Call coul_fscp_forces(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -358,7 +361,7 @@ Subroutine two_body_forces                        &
 
 ! reaction field potential
 
-           Call coul_rfp_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
+           Call coul_rfp_forces(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -369,7 +372,7 @@ Subroutine two_body_forces                        &
 
 ! accumulate radial distribution functions
 
-     If (l_do_rdf) Call rdf_collect(i,rcut,rrt)
+     If (l_do_rdf) Call rdf_collect(i,neigh%cutoff,rrt)
 
   End Do
 
@@ -423,17 +426,17 @@ Subroutine two_body_forces                        &
 
 ! accumulate radial distribution functions
 
-           If (l_do_rdf) Call rdf_excl_collect(i,rcut,rrt)
+           If (l_do_rdf) Call rdf_excl_collect(i,neigh%cutoff,rrt)
 
            If (keyfce == 2) Then ! Ewald corrections
               If (mximpl > 0) Then
                  If (mxompl <= 2) Then
-                    Call ewald_excl_mforces_d(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+                    Call ewald_excl_mforces_d(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
                  Else
-                    Call ewald_excl_mforces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+                    Call ewald_excl_mforces(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
                  End If
               Else
-                 Call ewald_excl_forces(i,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+                 Call ewald_excl_forces(i,neigh%cutoff,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
               End If
 
               engcpe_ex=engcpe_ex+engacc
@@ -492,7 +495,7 @@ Subroutine two_body_forces                        &
 
 ! accumulate radial distribution functions
 
-              Call rdf_frzn_collect(i,rcut,rrt)
+              Call rdf_frzn_collect(i,neigh%cutoff,rrt)
            End If
 
         End Do
@@ -521,12 +524,12 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
         If (megfrz /= 0) Then
            If (keyfce == 2) Then ! Ewald
               If (mximpl > 0) Then
-                 Call ewald_frzn_mforces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,comm)
+                 Call ewald_frzn_mforces(neigh%cutoff,alpha,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,comm)
               Else
-                 Call ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,comm)
+                 Call ewald_frzn_forces(neigh%cutoff,alpha,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,comm)
               End If
            Else !If (keyfce == 12) Then ! Poisson Solver
-              Call poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,comm)
+              Call poisson_frzn_forces(neigh%cutoff,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,comm)
            End If
         End If
 

@@ -13,16 +13,16 @@ Module statistics
   Use kinds, Only : wp,wi,li
   Use setup, Only : mxbfss,nstats,statis,zero_plus,&
                    prsunt,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
-                   eu_kjpm,mxatyp,pi
+                   eu_kjpm,mxatyp,pi,mxatms
 
   Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend, &
-                      gwait,girecv
+                      gwait,girecv,gcheck
   Use site,    Only : ntpatm,numtypnf,unqatm,dens
   Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
   Use domains,    Only : nprx,npry,nprz,map,r_nprx,r_npry,r_nprz,&
                                 nprx_r,npry_r,nprz_r,idx,idy,idz
-  Use vnl
+  Use neighbours,  Only  : neighbours_type
 
   Use core_shell,  Only : passshl
   Use constraints, Only : passcon
@@ -1320,7 +1320,7 @@ Subroutine statistics_result                                    &
            (lmin,lmsd, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
-           mxatdm,stats,thermo,green,comm,passmin)
+           mxatdm,stats,thermo,green,neigh,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1340,6 +1340,7 @@ Subroutine statistics_result                                    &
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( In    ) :: green
+  Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
   Logical           :: check
@@ -1356,19 +1357,19 @@ Subroutine statistics_result                                    &
 
 ! VNL skipping statistics
 
-  If (llvnl .and. nstep > 0) Then
-     If (.not.l_vnl) Then ! Include the final skip in skipping statistics
-        skipvnl(3)=skipvnl(2)*skipvnl(3)
-        skipvnl(2)=skipvnl(2)+1.0_wp
-        skipvnl(3)=skipvnl(3)/skipvnl(2)+skipvnl(1)/skipvnl(2)
-        skipvnl(4)=Min(skipvnl(1),skipvnl(4))
-        skipvnl(5)=Max(skipvnl(1),skipvnl(5))
+  If (neigh%unconditional_update .and. nstep > 0) Then
+     If (.not.neigh%update) Then ! Include the final skip in skipping statistics
+        neigh%skip(3)=neigh%skip(2)*neigh%skip(3)
+        neigh%skip(2)=neigh%skip(2)+1.0_wp
+        neigh%skip(3)=neigh%skip(3)/neigh%skip(2)+neigh%skip(1)/neigh%skip(2)
+        neigh%skip(4)=Min(neigh%skip(1),neigh%skip(4))
+        neigh%skip(5)=Max(neigh%skip(1),neigh%skip(5))
      End If
 
      Write(message,'(a,f7.2,2(a,i4))') &
-       'VNL skipping run statistics - skips per timestep: average ',skipvnl(3), &
-       ' minimum ',Nint(Merge(skipvnl(4),skipvnl(5),skipvnl(4)<skipvnl(5))), &
-       ' maximum ',Nint(skipvnl(5))
+       'VNL skipping run statistics - skips per timestep: average ',neigh%skip(3), &
+       ' minimum ',Nint(Merge(neigh%skip(4),neigh%skip(5),neigh%skip(4)<neigh%skip(5))), &
+       ' maximum ',Nint(neigh%skip(5))
      Call info(message,.true.)
   End If
 

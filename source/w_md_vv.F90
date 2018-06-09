@@ -88,13 +88,13 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion,tether)
+        Call w_refresh_mappings(stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
 ! Evaluate forces
 
-     Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody)
+     Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
@@ -135,7 +135,7 @@
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
-           (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
+           (neigh%cutoff,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
            stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)

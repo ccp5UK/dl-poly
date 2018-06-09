@@ -10,7 +10,7 @@
 ! Refresh mappings
 
         Call w_refresh_mappings &
-        (stat,msd_data,bond,angle,dihedral,inversion,tether)
+        (stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -28,11 +28,11 @@
 
      If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) &
         Call two_body_forces                      &
-           (rcut,rlnk,rvdw,pdplnc,thermo%ensemble,    &
+           (rvdw,pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,               &
-           stat,ewld,devel,met,pois,tmr,comm)
+           stat,ewld,devel,met,pois,neigh,tmr,comm)
 
 ! Calculate tersoff forces
 
@@ -60,7 +60,7 @@
         ltmp = (bond%bin_pdf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,rcut,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,comm)
+        Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,comm)
      End If
 
 ! Calculate valence angle forces
@@ -79,7 +79,7 @@
 
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
-           rcut,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,comm)
+           neigh%cutoff,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,comm)
      End If
 
 ! Calculate inversion forces
@@ -148,7 +148,7 @@
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
            Call w_refresh_mappings &
-            (stat,msd_data,bond,angle,dihedral,inversion,tether)
+            (stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
 
            Go To 100
         End If

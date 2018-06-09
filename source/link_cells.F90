@@ -13,6 +13,7 @@ Module link_cells
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : dcell, invert,match
   Use timer,  Only : timer_type,start_timer,stop_timer
+  Use neighbours, Only : neighbours_type
   Implicit None
 
   Private
@@ -20,7 +21,7 @@ Module link_cells
 
 Contains
 
-Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,devel,tmr,comm)
+Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,devel,neigh,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -36,8 +37,9 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,devel,tmr,com
 
   Logical,            Intent( In    ) :: lbook
   Integer,            Intent( In    ) :: megfrz
-  Real( Kind = wp ) , Intent( In    ) :: rcut,rlnk,rvdw,rmet,pdplnc
+  Real( Kind = wp ) , Intent( In    ) :: rvdw,rmet,pdplnc
   Type( development_type ), Intent( In    ) :: devel
+  Type( neighbours_type ), Intent( In    ) :: neigh
   Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -73,15 +75,15 @@ Subroutine link_cell_pairs(rcut,rlnk,rvdw,rmet,pdplnc,lbook,megfrz,devel,tmr,com
 ! halt program if potential cutoff exceeds the minimum half-cell width
 
   det=Min(celprp(7),celprp(8),celprp(9))
-  If (rlnk > det/2.0_wp) Then
-     Call warning(3,rlnk,det/2.0_wp,0.0_wp)
+  If (neigh%cutoff_extended > det/2.0_wp) Then
+     Call warning(3,neigh%cutoff_extended,det/2.0_wp,0.0_wp)
      Call error(95)
   End If
 
 ! Real space cutoff and squared r.s.c.
 
-  cut=rlnk+1.0e-6_wp
-  rcsq=rlnk**2
+  cut=neigh%cutoff_extended+1.0e-6_wp
+  rcsq=neigh%cutoff_extended**2
 
 ! Calculate the number of link-cells per domain in every direction
 
@@ -981,7 +983,7 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
            End If
 
            If (j <= natms .or. ii < jj) Then
-              cnt(1)=cnt(1)+1.0_wp ! sum up all pairs (rlnk=rcut+rpad)
+              cnt(1)=cnt(1)+1.0_wp ! sum up all pairs (neigh%cutoff_extended=neigh%cutoff+neigh%padding)
 
               det=Sqrt((xxx(i)-xxx(j))**2+(yyy(i)-yyy(j))**2+(zzz(i)-zzz(j))**2)
 
@@ -995,7 +997,7 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
               End If
 
               If (kk <= list(0,i)) Then
-                 If (det <  rcut) cnt(2)=cnt(2)+1.0_wp ! sum up all pairs (rcut, electrostatics)
+                 If (det <  neigh%cutoff) cnt(2)=cnt(2)+1.0_wp ! sum up all pairs (neigh%cutoff, electrostatics)
                  If (det <  rvdw) cnt(3)=cnt(3)+1.0_wp ! sum up all pairs (rvdw, vdw)
                  If (det <= rmet) cnt(4)=cnt(4)+1.0_wp ! sum up all pairs (rmet, metal)
               End If
@@ -1014,13 +1016,13 @@ inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
      End If
 
       Call info('Pair totals of short range interactions over cutoffs (in Angstroms):',.true.)
-      If (Abs(rlnk-rcut) > 1.0e-6_wp) Then
+      If (Abs(neigh%cutoff_extended-neigh%cutoff) > 1.0e-6_wp) Then
         Write(message,'(2x,a,i20,a,f7.3)') &
-          'extended       -  ', Int(cnt(1),li), '  within rlnk = ', rlnk
+          'extended       -  ', Int(cnt(1),li), '  within neigh%cutoff_extended = ', neigh%cutoff_extended
         Call info(message,.true.)
       End If
       Write(messages(1),'(2x,a,i20,a,f7.3)') &
-        'electrostatics -  ', Int(cnt(2),li), '  within r = ', rcut
+        'electrostatics -  ', Int(cnt(2),li), '  within r = ', neigh%cutoff
       Write(messages(2),'(2x,a,i20,a,f7.3)') &
         'van der Waals  -  ', Int(cnt(3),li), '  within r = ', rvdw
       Write(messages(3),'(2x,a,i20,a,f7.3)') &
