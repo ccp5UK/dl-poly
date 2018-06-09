@@ -421,7 +421,7 @@ program dl_poly
     lecx,lbook,lexcl,               &
     rcter,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
-    megshl,megcon,megpmf,megrgd,    &
+    megshl,megpmf,megrgd,    &
     megtet,cons,thermo,met,bond,angle,   &
     dihedral,inversion,tether,threebody,comm)
 
@@ -783,7 +783,7 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(cons,stat,plume,pois,bond,angle,dihedral,inversion,tether,neigh)
+  Subroutine w_calculate_forces(cons,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type(stats_type), Intent(InOut) :: stat
     Type(plumed_type), Intent(InOut) :: plume
