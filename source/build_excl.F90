@@ -13,7 +13,6 @@ Module build_excl
 
   Use core_shell
 
-  Use constraints
 
   Use rigid_bodies
 
@@ -22,6 +21,7 @@ Module build_excl
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type
   Use numerics, Only : local_index,shellsort
+  Use constraints, Only : constraints_type
 
   Implicit None
 
@@ -30,7 +30,7 @@ Module build_excl
 
 Contains
 
-Subroutine build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
+Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -47,6 +47,7 @@ Subroutine build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
 
 
   Logical,             Intent( In    ) :: lecx
+  Type( constraints_type), Intent( In ) :: cons
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( In    ) :: dihedral
@@ -79,9 +80,9 @@ Subroutine build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
 
 ! exclude sites on basis of bond constraints
 
-  Do i=1,ntcons
-     ia=listcon(1,i)
-     ib=listcon(2,i)
+  Do i=1,cons%ntcons
+     ia=cons%listcon(1,i)
+     ib=cons%listcon(2,i)
 
      ia0=local_index(ia,nlast,lsi,lsa)
      ib0=local_index(ib,nlast,lsi,lsa)
@@ -284,9 +285,9 @@ Subroutine build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
 
 ! exclude sites on basis of constraint bonds to core-shell units
 
-     Do kk=1,ntcons1
-        ja=listcon(1,kk)
-        jb=listcon(2,kk)
+     Do kk=1,cons%ntcons1
+        ja=cons%listcon(1,kk)
+        jb=cons%listcon(2,kk)
 
         ja0=local_index(ja,nlast,lsi,lsa)
         jb0=local_index(jb,nlast,lsi,lsa)

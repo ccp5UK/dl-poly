@@ -11,7 +11,7 @@ Module temperature
                               rgdrix,rgdriy,rgdriz,rgdwgt,q0,q1,q2,q3, &
                               ntrgd,rgdmeg,lashp_rgd,lishp_rgd,lshmv_rgd, &
                               rgdfrz,listrgd,indrgd,getrotmat,rigid_bodies_quench
-  Use constraints,     Only : constraints_quench
+  Use constraints,     Only : constraints_type, constraints_quench
   Use pmf,             Only : pmf_quench
   Use core_shell,      Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl, &
                               lashp_shl,core_shell_quench
@@ -20,6 +20,7 @@ Module temperature
   use shared_units,    Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,warning,info
   Use thermostat,      Only : thermostat_type
+  Use statistics, Only : stats_type
 
   Implicit None
 
@@ -32,11 +33,11 @@ Contains
   Subroutine set_temperature           &
              (levcfg,keyres,      &
              lmin,nstep,nstrun,nstmin, &
-             mxshak,tolnce,keyshl,     &
+             keyshl,     &
              atmfre,atmfrz,            &
-             megshl,megcon,megpmf,     &
+             megshl,megpmf,     &
              megrgd,degtra,degrot,     &
-             degfre,degshl,engrot,thermo,comm)
+             degfre,degshl,engrot,stat,cons,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -49,18 +50,19 @@ Contains
 
     Logical,            Intent( In    ) :: lmin
     Integer,            Intent( In    ) :: nstep,nstrun,nstmin, &
-                                           mxshak,keyshl,       &
+                                           keyshl,       &
                                            atmfre,atmfrz,       &
                                            megshl,              &
-                                           megcon,megpmf,       &
+                                           megpmf,       &
                                            megrgd
-    Real( Kind = wp ),  Intent( In    ) :: tolnce
 
     Integer,            Intent( InOut ) :: keyres,levcfg
     Integer(Kind=li),   Intent( InOut ) :: degtra,degrot
 
     Integer(Kind=li),   Intent(   Out ) :: degfre,degshl
     Real( Kind = wp ),  Intent(   Out ) :: engrot
+    Type( stats_type ), Intent( InOut ) :: stat
+    Type( constraints_type ), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -117,7 +119,7 @@ Contains
 
   ! lost to constrained atoms and PMF constraints
 
-    con=Int(megcon)+Int(megpmf)
+    con=Int(cons%megcon)+Int(megpmf)
 
   ! TOTAL DoF
 
@@ -523,8 +525,8 @@ Contains
   ! quench constraints & PMFs
 
        If (no_min_0) Then
-          If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
-          If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
+          If (cons%megcon > 0) Call constraints_quench(cons,stat,comm)
+          If (megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,comm)
        End If
 
   ! quench core-shell units in adiabatic model
@@ -533,11 +535,11 @@ Contains
           Do
              Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
              Call core_shell_quench(safe,thermo%temp,comm)
-             If (megcon > 0) Then
-               Call constraints_quench(mxshak,tolnce,comm)
+             If (cons%megcon > 0) Then
+               Call constraints_quench(cons,stat,comm)
              End If
              If (megpmf > 0) Then
-               Call pmf_quench(mxshak,tolnce,comm)
+               Call pmf_quench(cons%max_iter_shake,cons%tolerance,comm)
              End If
              If (megrgd > 0) Then
                Call rigid_bodies_quench(comm)

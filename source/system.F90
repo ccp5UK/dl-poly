@@ -22,7 +22,7 @@ Module system
   Use greenkubo,   Only : greenkubo_type
   Use development,  Only : development_type
   Use core_shell,   Only : numshl,lstshl
-  Use constraints,  Only : numcon,lstcon
+  Use constraints,  Only : constraints_type
   Use rigid_bodies, Only : numrgd,lstrgd
   Use parse,        Only : tabs_2_blanks, get_word, strip_blanks, &
                                   lower_case, word_2_real
@@ -625,7 +625,7 @@ Module system
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,inversion,comm)
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inversion,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -647,6 +647,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,inversio
   Integer,           Intent( In    ) :: nx,ny,megatm
   Real( Kind = wp ), Intent( In    ) :: rcut
   Integer,           Intent( InOut ) :: nz
+  Type( constraints_type ), Intent( In    ) :: cons
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
@@ -1053,11 +1054,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,inversio
            safe=(safe .and. safel)
 
            safel=.true.
-           Do icnst=1,numcon(itmols)
+           Do icnst=1,cons%numcon(itmols)
               nconst=nconst+1
 
-              iatm=lstcon(1,nconst)-indatm1
-              jatm=lstcon(2,nconst)-indatm1
+              iatm=cons%lstcon(1,nconst)-indatm1
+              jatm=cons%lstcon(2,nconst)-indatm1
 
               safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
               safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
@@ -1461,7 +1462,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,bond,angle,dihedral,inversio
            If ( ((.not.safe) .and. imols <= nummols(itmols) .and. mxiter < 42) .or. &
                 imols < nummols(itmols) ) Then
               nshels=nshels-numshl(itmols)
-              nconst=nconst-numcon(itmols)
+              nconst=nconst-cons%numcon(itmols)
               nrigid=nrigid-numrgd(itmols)
               nbonds=nbonds-bond%num(itmols)
               nangle=nangle-angle%num(itmols)

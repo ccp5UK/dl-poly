@@ -10,88 +10,111 @@ Module constraints
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,           Only : wp
+  Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type,gsum,gcheck,gsync
+
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
                               imcon,cell,xxx,yyy,zzz
-  Use setup,           Only : mxtmls,mxtcon,mxcons,mxfcon,mxlshp,mxproc,mxatdm, &
-                              mxatms,nrite
+  Use setup,           Only : mxatms
+
   Use errors_warnings, Only : error,warning,info
   Use shared_units,    Only : update_shared_units
   Use numerics,        Only : images,local_index
+  Use statistics, Only : stats_type
+
   Implicit None
 
-  Logical,                        Save :: lshmv_con = .false.
+  Private 
 
-  Integer,                        Save :: ntcons  = 0 , &
+  Type, Public :: constraints_type
+    Private
+  Logical,                        Public :: lshmv_con = .false.
+
+  Integer,                        Public :: ntcons  = 0 , &
     ntcons1 = 0 , &
-    m_con   = 0
+    m_con   = 0 , megcon
 
-  Real( Kind = wp ),              Save :: passcnq(1:5) = (/ & ! QUENCHING per call
-    0.0_wp         ,  & ! cycles counter
-    0.0_wp         ,  & ! access counter
-    0.0_wp         ,  & ! average cycles
-    999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
-    0.0_wp /)           ! maximum cycles
-  Real( Kind = wp ),              Save :: passcon(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
-    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
-    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
-    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
-    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
+  Integer,                        Public :: mxtcon,mxcons,mxfcon
+  Integer,                        Public :: max_iter_shake
+  Real( Kind = wp ), Public :: tolerance
+  Integer,           Allocatable, Public :: numcon(:)
+  Integer,           Allocatable, Public :: lstcon(:,:),listcon(:,:),legcon(:,:)
+  Integer,           Allocatable, Public :: lishp_con(:),lashp_con(:)
 
+  Real( Kind = wp ), Allocatable, Public :: prmcon(:)
+  Contains 
+    Private
+    Procedure, Public :: init => allocate_constraints_arrays
+    Procedure, Public :: deallocate_constraints_temps
+    Final :: deallocate_constraints_arrays
+End Type
 
-  Integer,           Allocatable, Save :: numcon(:)
-  Integer,           Allocatable, Save :: lstcon(:,:),listcon(:,:),legcon(:,:)
-  Integer,           Allocatable, Save :: lishp_con(:),lashp_con(:)
-
-  Real( Kind = wp ), Allocatable, Save :: prmcon(:)
-
-  Public :: allocate_constraints_arrays , deallocate_constraints_arrays
   Public :: constraints_pseudo_bonds
   Public :: constraints_quench
   Public :: constraints_tags
+  Public :: constraints_shake_vv
+  Public :: constraints_rattle
 
 Contains
 
-  Subroutine allocate_constraints_arrays()
+  Subroutine allocate_constraints_arrays(T,mxtmls,mxatdm,mxlshp,mxproc)
+    Class(constraints_type) :: T
+    Integer(kind=wi), Intent( In ) :: mxtmls,mxatdm,mxlshp,mxproc
 
-    Integer, Dimension( 1:6 ) :: fail
+    Integer :: fail(7)
 
     fail = 0
 
-    Allocate (numcon(1:mxtmls),                        Stat = fail(1))
-    Allocate (lstcon(1:2,1:mxtcon),                    Stat = fail(2))
-    Allocate (listcon(0:2,1:mxcons),                   Stat = fail(3))
-    Allocate (legcon(0:mxfcon,1:mxatdm),               Stat = fail(4))
-    Allocate (lishp_con(1:mxlshp),lashp_con(1:mxproc), Stat = fail(5))
-    Allocate (prmcon(1:mxtcon),                        Stat = fail(6))
+    Allocate (T%numcon(1:mxtmls),                        Stat = fail(1))
+    Allocate (T%lstcon(1:2,1:T%mxtcon),                    Stat = fail(2))
+    Allocate (T%listcon(0:2,1:T%mxcons),                   Stat = fail(3))
+    Allocate (T%legcon(0:T%mxfcon,1:mxatdm),               Stat = fail(4))
+    Allocate (T%lishp_con(1:mxlshp), Stat = fail(5))
+    Allocate (T%lashp_con(1:mxproc), Stat = fail(6))
+    Allocate (T%prmcon(1:T%mxtcon),                        Stat = fail(7))
 
     If (Any(fail > 0)) Call error(1018)
 
-    numcon  = 0
-    lstcon  = 0
-    listcon = 0
-    legcon  = 0
+    T%numcon  = 0
+    T%lstcon  = 0
+    T%listcon = 0
+    T%legcon  = 0
 
-    lishp_con = 0 ; lashp_con = 0
+    T%lishp_con = 0 ; T%lashp_con = 0
 
-    prmcon  = 0.0_wp
+    T%prmcon  = 0.0_wp
 
   End Subroutine allocate_constraints_arrays
 
-  Subroutine deallocate_constraints_arrays()
+  Subroutine deallocate_constraints_temps(T)
+    Class(constraints_type) :: T
+    Integer :: fail(2)
+      If (Allocated(T%numcon)) Deallocate (T%numcon, Stat = fail(1))
+      If (Allocated(T%lstcon)) Deallocate (T%lstcon, Stat = fail(2))
+    If (Any(fail > 0)) Call error(1032)
 
-    Integer :: fail
+    End Subroutine deallocate_constraints_temps
+  Subroutine deallocate_constraints_arrays(T)
+    Type(constraints_type) :: T
+
+    Integer :: fail(7)
 
     fail = 0
-
-    Deallocate (numcon,lstcon, Stat = fail)
-
-    If (fail > 0) Call error(1032)
+      If (Allocated(T%numcon)) Deallocate (T%numcon, Stat = fail(1))
+      If (Allocated(T%lstcon)) Deallocate (T%lstcon, Stat = fail(2))
+      If (Allocated(T%numcon)) Deallocate (T%numcon, Stat = fail(1))
+      If (Allocated(T%lstcon)) Deallocate (T%lstcon, Stat = fail(2))
+    If (Allocated(T%listcon)) Deallocate (T%listcon, Stat = fail(3))
+    If (Allocated(T%legcon)) Deallocate (T%legcon, Stat = fail(4))
+    If (Allocated(T%lishp_con)) Deallocate (T%lishp_con, Stat = fail(5))
+    If (Allocated(T%lashp_con)) Deallocate (T%lashp_con, Stat = fail(6))
+    If (Allocated(T%prmcon)) Deallocate (T%prmcon, Stat = fail(7))
+    
+    If (Any(fail > 0)) Call error(1032)
 
   End Subroutine deallocate_constraints_arrays
 
-  Subroutine constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,engcon,comm)
+  Subroutine constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,stat,cons,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -103,10 +126,11 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    )  :: lstopt(0:2,1:mxcons)
-    Real( Kind = wp ), Intent( In    )  :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
-    Real( Kind = wp ), Intent( InOut )  :: gxx(1:mxatms),gyy(1:mxatms),gzz(1:mxatms)
-    Real( Kind = wp ), Intent(   Out )  :: engcon
+    Integer,           Intent( In    )  :: lstopt(0:,1:)
+    Real( Kind = wp ), Intent( In    )  :: dxx(:),dyy(:),dzz(:)
+    Real( Kind = wp ), Intent( InOut )  :: gxx(:),gyy(:),gzz(:)
+    Type( stats_type), Intent( InOut ) :: stat
+    Type( constraints_type), Intent( InOut) :: cons
     Type( comms_type ), Intent( InOut ) :: comm
 
     Real( Kind = wp ), Parameter :: rigid=1.0e6_wp
@@ -114,8 +138,8 @@ Contains
     Integer           :: k,i,j
     Real( Kind = wp ) :: r,r0,ebond,gamma
 
-    engcon=0.0_wp
-    Do k=1,ntcons
+    stat%engcon=0.0_wp
+    Do k=1,cons%ntcons
       If (lstopt(0,k) == 0) Then
         i=lstopt(1,k)
         j=lstopt(2,k)
@@ -124,7 +148,7 @@ Contains
         ! than constrained (users!!!)
 
         r=Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
-        r0=prmcon(listcon(0,k))
+        r0=cons%prmcon(cons%listcon(0,k))
 
         gamma=rigid*(r-r0)
         ebond=gamma*0.5_wp*(r-r0)
@@ -133,7 +157,7 @@ Contains
         ! Accumulate energy and add forces
 
         If (i <= natms) Then
-          engcon=engcon+ebond
+          stat%engcon=stat%engcon+ebond
 
           If (lfrzn(i) == 0) Then
             gxx(i)=gxx(i)-dxx(k)*gamma
@@ -152,11 +176,11 @@ Contains
 
     ! global sum of energy
 
-    Call gsum(comm,engcon)
+    Call gsum(comm,stat%engcon)
 
   End Subroutine constraints_pseudo_bonds
 
-  Subroutine constraints_quench(mxshak,tolnce,comm)
+  Subroutine constraints_quench(cons,stat,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -168,8 +192,8 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: mxshak
-    Real( Kind = wp ), Intent( In    ) :: tolnce
+    Type( constraints_type ), Intent( InOut ) :: cons
+    Type( stats_type), Intent( InOut ) :: stat
     Type( comms_type), Intent( InOut ) :: comm
 
     Logical           :: safe
@@ -184,8 +208,8 @@ Contains
 
     fail=0
     Allocate (lstitr(1:mxatms),                          Stat=fail(1))
-    Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),     Stat=fail(2))
-    Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons), Stat=fail(3))
+    Allocate (lstopt(0:2,1:cons%mxcons),listot(1:mxatms),     Stat=fail(2))
+    Allocate (dxx(1:cons%mxcons),dyy(1:cons%mxcons),dzz(1:cons%mxcons), Stat=fail(3))
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail(4))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'constraints_quench allocation failure'
@@ -194,19 +218,19 @@ Contains
 
     ! gather velocities of shared atoms
 
-    If (lshmv_con) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz,comm)
+    If (cons%lshmv_con) Then
+      Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con,cons%lashp_con,vxx,vyy,vzz,comm)
     End If
 
     ! construct current constrained bond vectors and listot array (shared
     ! constraint atoms) for iterative (constraints) algorithms
 
     lstitr(1:natms)=.false. ! initialise lstitr
-    Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+    Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
 
     ! normalise constraint vectors
 
-    Do k=1,ntcons
+    Do k=1,cons%ntcons
       If (lstopt(0,k) == 0) Then
         dis=1.0_wp/Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
         dxx(k)=dxx(k)*dis
@@ -225,7 +249,7 @@ Contains
     icyc=0
     safe=.false.
 
-    Do While ((.not.safe) .and. icyc < mxshak)
+    Do While ((.not.safe) .and. icyc < cons%max_iter_shake)
       icyc=icyc+1
 
       ! initialise velocity correction arrays
@@ -239,7 +263,7 @@ Contains
       ! calculate velocity constraint corrections
 
       esig=0.0_wp
-      Do k=1,ntcons
+      Do k=1,cons%ntcons
         If (lstopt(0,k) == 0) Then
           i=lstopt(1,k)
           j=lstopt(2,k)
@@ -283,7 +307,7 @@ Contains
 
       ! global verification of convergence
 
-      safe=(esig < tolnce)
+      safe=(esig < cons%tolerance)
       Call gcheck(comm,safe,"enforce")
 
       ! bypass next section and terminate iteration if all tolerances ok
@@ -292,7 +316,7 @@ Contains
 
         ! update velocities
 
-        Do k=1,ntcons
+        Do k=1,cons%ntcons
           If (lstopt(0,k) == 0) Then
             i=lstopt(1,k)
             j=lstopt(2,k)
@@ -314,8 +338,8 @@ Contains
         End Do
 
         ! transport velocity updates to other nodes
-        If (lshmv_con) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz,comm)
+        If (cons%lshmv_con) Then
+          Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con,cons%lashp_con,vxx,vyy,vzz,comm)
         End If
       End If
     End Do
@@ -323,13 +347,13 @@ Contains
     If (.not.safe) Then ! error exit if quenching fails
       Call error(70)
     Else ! Collect per call passage statistics
-      passcnq(1)=Real(icyc-1,wp)
-      passcnq(3)=passcnq(2)*passcnq(3)
-      passcnq(2)=passcnq(2)+1.0_wp
-      passcnq(3)=passcnq(3)/passcnq(2)+passcnq(1)/passcnq(2)
-      passcnq(4)=Min(passcnq(1),passcnq(4))
-      passcnq(5)=Max(passcnq(1),passcnq(5))
-      passcnq(1)=0.0_wp ! Reset
+      stat%passcnq(1)=Real(icyc-1,wp)
+      stat%passcnq(3)=stat%passcnq(2)*stat%passcnq(3)
+      stat%passcnq(2)=stat%passcnq(2)+1.0_wp
+      stat%passcnq(3)=stat%passcnq(3)/stat%passcnq(2)+stat%passcnq(1)/stat%passcnq(2)
+      stat%passcnq(4)=Min(stat%passcnq(1),stat%passcnq(4))
+      stat%passcnq(5)=Max(stat%passcnq(1),stat%passcnq(5))
+      stat%passcnq(1)=0.0_wp ! Reset
     End If
 
     Deallocate (lstitr,        Stat=fail(1))
@@ -343,7 +367,7 @@ Contains
 
   End Subroutine constraints_quench
 
-  Subroutine constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+  Subroutine constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -357,10 +381,11 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,            Intent( InOut ) :: lstitr(1:mxatms)
-    Integer,            Intent(   Out ) :: lstopt(0:2,1:mxcons)
-    Real( Kind = wp ),  Intent(   Out ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
-    Integer,            Intent(   Out ) :: listot(1:mxatms)
+    Logical,            Intent( InOut ) :: lstitr(:)
+    Integer,            Intent(   Out ) :: lstopt(0:,1:)
+    Real( Kind = wp ),  Intent(   Out ) :: dxx(:),dyy(:),dzz(:)
+    Integer,            Intent(   Out ) :: listot(:)
+    Type( constraints_type ), Intent( InOut ) :: cons
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
@@ -371,7 +396,7 @@ Contains
     Character( Len = 256 ) :: message
 
     fail=0
-    Allocate (lunsafe(1:mxcons), Stat=fail)
+    Allocate (lunsafe(1:cons%mxcons), Stat=fail)
     If (fail > 0) Then
       Write(message,'(a)') 'constraints_tags allocation failure'
       Call error(0,message)
@@ -383,7 +408,7 @@ Contains
       listot(k)=0
     End Do
 
-    Do k=1,ntcons
+    Do k=1,cons%ntcons
       lunsafe(k)=.false.
 
       ! Opt out bond from action by default
@@ -392,8 +417,8 @@ Contains
 
       ! indices of atoms in bond
 
-      i=local_index(listcon(1,k),nlast,lsi,lsa)
-      j=local_index(listcon(2,k),nlast,lsi,lsa)
+      i=local_index(cons%listcon(1,k),nlast,lsi,lsa)
+      j=local_index(cons%listcon(2,k),nlast,lsi,lsa)
 
       ! store indices
 
@@ -452,16 +477,16 @@ Contains
 
     ! check for incomplete bond data
 
-    safe = .not. Any(lunsafe(1:ntcons))
+    safe = .not. Any(lunsafe(1:cons%ntcons))
     Call gcheck(comm,safe)
     If (.not.safe) Then
       Do l=0,comm%mxnode-1
         If (comm%idnode == l) Then
-          Do k=1,ntcons
+          Do k=1,cons%ntcons
             If (lunsafe(k)) Then
                 Write(message,'(2(a,i10))')     &
-                  'global unit number', listcon(0,k), &
-                  ' , with a head particle number', listcon(1,k)
+                  'global unit number', cons%listcon(0,k), &
+                  ' , with a head particle number', cons%listcon(1,k)
                 Call info(message)
                 Call warning('contributes towards next error')
               End If
@@ -474,7 +499,7 @@ Contains
 
     ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,ntcons,dxx,dyy,dzz)
+    Call images(imcon,cell,cons%ntcons,dxx,dyy,dzz)
 
     ! update lstitr
 
@@ -491,9 +516,9 @@ Contains
   End Subroutine constraints_tags
 
 Subroutine constraints_rattle              &
-           (mxshak,tolnce,tstep,lfst,lcol, &
+           (tstep,lfst,lcol, &
            lstopt,dxx,dyy,dzz,listot,      &
-           vxx,vyy,vzz,comm)
+           vxx,vyy,vzz,stat,cons,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -508,13 +533,14 @@ Subroutine constraints_rattle              &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( In    ) :: mxshak
-  Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
+  Real( Kind = wp ), Intent( In    ) :: tstep
   Logical,           Intent( In    ) :: lfst,lcol
-  Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
-  Real( Kind = wp ), Intent( InOut ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
-  Integer,           Intent( In    ) :: listot(1:mxatms)
-  Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+  Integer,           Intent( In    ) :: lstopt(0:,1:)
+  Real( Kind = wp ), Intent( InOut ) :: dxx(:),dyy(:),dzz(:)
+  Integer,           Intent( In    ) :: listot(:)
+  Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
+  Type( stats_type ), Intent( InOut ) :: stat
+  Type( constraints_type ), Intent( InOut ) :: cons
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe
@@ -535,7 +561,7 @@ Subroutine constraints_rattle              &
 ! normalise constraint vectors on first pass outside
 
   If (lfst) Then
-     Do k=1,ntcons
+     Do k=1,cons%ntcons
         If (lstopt(0,k) == 0) Then
            dis=1.0_wp/Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
            dxx(k)=dxx(k)*dis
@@ -554,13 +580,13 @@ Subroutine constraints_rattle              &
 
   safe=.false.
   icyc=0
-  Do While ((.not.safe) .and. icyc < mxshak)
+  Do While ((.not.safe) .and. icyc < cons%max_iter_shake)
      icyc=icyc+1
 
 ! update velocities globally: transport velocity updates of shared atoms to other nodes
 
-     If (lshmv_con) Then
-       Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,vxx,vyy,vzz,comm)
+     If (cons%lshmv_con) Then
+       Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con,cons%lashp_con,vxx,vyy,vzz,comm)
      End If
 
 ! initialise velocity correction arrays
@@ -574,7 +600,7 @@ Subroutine constraints_rattle              &
 ! calculate velocity constraint corrections
 
      esig=0.0_wp
-     Do k=1,ntcons
+     Do k=1,cons%ntcons
         If (lstopt(0,k) == 0) Then
            i=lstopt(1,k)
            j=lstopt(2,k)
@@ -615,7 +641,7 @@ Subroutine constraints_rattle              &
 
 ! global verification of convergence
 
-     safe=(esig < tolnce)
+     safe=(esig < cons%tolerance)
      Call gcheck(comm,safe,"enforce")
 
 ! bypass next section and terminate iteration if all tolerances ok
@@ -624,7 +650,7 @@ Subroutine constraints_rattle              &
 
 ! update velocities locally
 
-        Do k=1,ntcons
+        Do k=1,cons%ntcons
            If (lstopt(0,k) == 0) Then
               i=lstopt(1,k)
               j=lstopt(2,k)
@@ -651,23 +677,23 @@ Subroutine constraints_rattle              &
   If (.not.safe) Then ! error exit for non-convergence
      Call error(515)
   Else ! Collect per call and per step passage statistics
-     passcon(1,1,2)=Real(icyc-1,wp)
-     passcon(3,1,2)=passcon(2,1,2)*passcon(3,1,2)
-     passcon(2,1,2)=passcon(2,1,2)+1.0_wp
-     passcon(3,1,2)=passcon(3,1,2)/passcon(2,1,2)+passcon(1,1,2)/passcon(2,1,2)
-     passcon(4,1,2)=Min(passcon(1,1,2),passcon(4,1,2))
-     passcon(5,1,2)=Max(passcon(1,1,2),passcon(5,1,2))
+     stat%passcon(1,1,2)=Real(icyc-1,wp)
+     stat%passcon(3,1,2)=stat%passcon(2,1,2)*stat%passcon(3,1,2)
+     stat%passcon(2,1,2)=stat%passcon(2,1,2)+1.0_wp
+     stat%passcon(3,1,2)=stat%passcon(3,1,2)/stat%passcon(2,1,2)+stat%passcon(1,1,2)/stat%passcon(2,1,2)
+     stat%passcon(4,1,2)=Min(stat%passcon(1,1,2),stat%passcon(4,1,2))
+     stat%passcon(5,1,2)=Max(stat%passcon(1,1,2),stat%passcon(5,1,2))
 
-     passcon(1,2,2)=passcon(1,2,2)+passcon(1,1,2)
+     stat%passcon(1,2,2)=stat%passcon(1,2,2)+stat%passcon(1,1,2)
      If (lcol) Then ! Collect
-        passcon(3,2,2)=passcon(2,2,2)*passcon(3,2,2)
-        passcon(2,2,2)=passcon(2,2,2)+1.0_wp
-        passcon(3,2,2)=passcon(3,2,2)/passcon(2,2,2)+passcon(1,2,2)/passcon(2,2,2)
-        passcon(4,2,2)=Min(passcon(1,2,2),passcon(4,2,2))
-        passcon(5,2,2)=Max(passcon(1,2,2),passcon(5,2,2))
-        passcon(1,2,2)=0.0_wp ! Reset
+        stat%passcon(3,2,2)=stat%passcon(2,2,2)*stat%passcon(3,2,2)
+        stat%passcon(2,2,2)=stat%passcon(2,2,2)+1.0_wp
+        stat%passcon(3,2,2)=stat%passcon(3,2,2)/stat%passcon(2,2,2)+stat%passcon(1,2,2)/stat%passcon(2,2,2)
+        stat%passcon(4,2,2)=Min(stat%passcon(1,2,2),stat%passcon(4,2,2))
+        stat%passcon(5,2,2)=Max(stat%passcon(1,2,2),stat%passcon(5,2,2))
+        stat%passcon(1,2,2)=0.0_wp ! Reset
      End If
-     passcon(1,1,2)=0.0_wp ! Reset
+     stat%passcon(1,1,2)=0.0_wp ! Reset
   End If
 
   Deallocate (vxt,vyt,vzt, Stat=fail)
@@ -680,9 +706,9 @@ End Subroutine constraints_rattle
 
 
 Subroutine constraints_shake_vv       &
-           (mxshak,tolnce,tstep,      &
+           (tstep,      &
            lstopt,dxx,dyy,dzz,listot, &
-           xxx,yyy,zzz,strcon,vircon, comm)
+           xxx,yyy,zzz,str,vir,stat,cons,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -698,14 +724,14 @@ Subroutine constraints_shake_vv       &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: mxshak
-  Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Integer,           Intent( In    ) :: lstopt(0:2,1:mxcons)
-  Real( Kind = wp ), Intent( In    ) :: dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons)
-  Integer,           Intent( In    ) :: listot(1:mxatms)
-  Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
-  Real( Kind = wp ), Intent(   Out ) :: strcon(1:9)
-  Real( Kind = wp ), Intent(   Out ) :: vircon
+  Real( Kind = wp ), Intent( In    ) :: tstep
+  Integer,           Intent( In    ) :: lstopt(0:,1:)
+  Real( Kind = wp ), Intent( In    ) :: dxx(:),dyy(:),dzz(:)
+  Integer,           Intent( In    ) :: listot(:)
+  Real( Kind = wp ), Intent( InOut ) :: xxx(:),yyy(:),zzz(:)
+  Real( Kind = wp ), Intent( InOut ) :: vir, str(:) 
+  Type( constraints_type), Intent( InOut ) :: cons
+  Type( stats_type), Intent( InOut ) :: stat
   TYpe( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe
@@ -719,7 +745,7 @@ Subroutine constraints_shake_vv       &
 
   fail=0
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                              Stat=fail(1))
-  Allocate (dxt(1:mxcons),dyt(1:mxcons),dzt(1:mxcons),dt2(1:mxcons),esig(1:mxcons), Stat=fail(2))
+  Allocate (dxt(1:cons%mxcons),dyt(1:cons%mxcons),dzt(1:cons%mxcons),dt2(1:cons%mxcons),esig(1:cons%mxcons), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'constraints_shake allocation failure'
      Call error(0,message)
@@ -728,8 +754,8 @@ Subroutine constraints_shake_vv       &
 
 ! Initialise constraint virial and stress
 
-  vircon=0.0_wp
-  strcon=0.0_wp
+  vir=0.0_wp
+  str=0.0_wp
 
 ! squared timestep
 
@@ -741,18 +767,18 @@ Subroutine constraints_shake_vv       &
 
   safe=.false.
   icyc=0
-  Do While ((.not.safe) .and. icyc < mxshak)
+  Do While ((.not.safe) .and. icyc < cons%max_iter_shake)
      icyc=icyc+1
 
 ! update positions globally: transport position updates of shared atoms to other nodes
 
-     If (lshmv_con) Then
-       Call update_shared_units(natms,nlast,lsi,lsa,lishp_con,lashp_con,xxx,yyy,zzz,comm)
+     If (cons%lshmv_con) Then
+       Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con,cons%lashp_con,xxx,yyy,zzz,comm)
      End If
 
 ! calculate temporary bond vector
 
-     Do k=1,ntcons
+     Do k=1,cons%ntcons
         If (lstopt(0,k) == 0) Then
            i=lstopt(1,k)
            j=lstopt(2,k)
@@ -769,17 +795,17 @@ Subroutine constraints_shake_vv       &
 
 ! periodic boundary condition
 
-     Call images(imcon,cell,ntcons,dxt,dyt,dzt)
+     Call images(imcon,cell,cons%ntcons,dxt,dyt,dzt)
 
 ! calculate maximum error in bondlength and
 ! do a global verification of convergence
 
      safe=.true.
-     Do k=1,ntcons
+     Do k=1,cons%ntcons
         If (lstopt(0,k) == 0) Then
-           dt2(k) =dxt(k)**2+dyt(k)**2+dzt(k)**2 - prmcon(listcon(0,k))**2
+           dt2(k) =dxt(k)**2+dyt(k)**2+dzt(k)**2 - cons%prmcon(cons%listcon(0,k))**2
            esig(k)=0.5_wp*Abs(dt2(k))
-           safe=(safe .and. (esig(k) < tolnce*prmcon(listcon(0,k))))
+           safe=(safe .and. (esig(k) < cons%tolerance*cons%prmcon(cons%listcon(0,k))))
         Else
            dt2(k) =0.0_wp
            esig(k)=0.0_wp
@@ -801,7 +827,7 @@ Subroutine constraints_shake_vv       &
 
 ! calculate constraint forces
 
-        Do k=1,ntcons
+        Do k=1,cons%ntcons
            If (lstopt(0,k) == 0) Then
               i=lstopt(1,k)
               j=lstopt(2,k)
@@ -822,12 +848,12 @@ Subroutine constraints_shake_vv       &
 
 ! accumulate bond stress
 
-                 strcon(1) = strcon(1) - gamma*dxx(k)*dxx(k)
-                 strcon(2) = strcon(2) - gamma*dxx(k)*dyy(k)
-                 strcon(3) = strcon(3) - gamma*dxx(k)*dzz(k)
-                 strcon(5) = strcon(5) - gamma*dyy(k)*dyy(k)
-                 strcon(6) = strcon(6) - gamma*dyy(k)*dzz(k)
-                 strcon(9) = strcon(9) - gamma*dzz(k)*dzz(k)
+                 str(1) =str(1) - gamma*dxx(k)*dxx(k)
+                 str(2) =str(2) - gamma*dxx(k)*dyy(k)
+                 str(3) =str(3) - gamma*dxx(k)*dzz(k)
+                 str(5) =str(5) - gamma*dyy(k)*dyy(k)
+                 str(6) =str(6) - gamma*dyy(k)*dzz(k)
+                 str(9) =str(9) - gamma*dzz(k)*dzz(k)
 
 ! calculate atomic position constraint corrections
 
@@ -851,7 +877,7 @@ Subroutine constraints_shake_vv       &
 
 ! update positions locally
 
-        Do k=1,ntcons
+        Do k=1,cons%ntcons
            If (lstopt(0,k) == 0) Then
               i=lstopt(1,k)
               j=lstopt(2,k)
@@ -880,17 +906,17 @@ Subroutine constraints_shake_vv       &
   If (.not.safe) Then ! error exit for non-convergence
      Do i=0,comm%mxnode-1
         If (comm%idnode == i) Then
-           Do k=1,ntcons
-             If (esig(k) >= tolnce*prmcon(listcon(0,k))) Then
+           Do k=1,cons%ntcons
+             If (esig(k) >= cons%tolerance*cons%prmcon(cons%listcon(0,k))) Then
                Write(message,'(3(a,i10))') &
-                 'global constraint number', listcon(0,k),  &
-                 ' , with particle numbers:', listcon(1,k), &
-                 ' &', listcon(2,k)
+                 'global constraint number', cons%listcon(0,k),  &
+                 ' , with particle numbers:', cons%listcon(1,k), &
+                 ' &', cons%listcon(2,k)
                Call info(message)
                Write(message,'(a,f8.2,a,1p,e12.4)') &
                'converges to a length of ', &
-                 Sqrt(dt2(k)+prmcon(listcon(0,k))**2), &
-                 ' Angstroms with a factor', esig(k)/prmcon(listcon(0,k))
+                 Sqrt(dt2(k)+cons%prmcon(cons%listcon(0,k))**2), &
+                 ' Angstroms with a factor', esig(k)/cons%prmcon(cons%listcon(0,k))
                Call info(message)
                Write(message,'(a)') 'contributes towards next error'
                Call warning(message)
@@ -901,30 +927,30 @@ Subroutine constraints_shake_vv       &
      End Do
      Call error(105)
   Else ! Collect per call and per step passage statistics
-     passcon(1,1,1)=Real(icyc-1,wp)
-     passcon(3,1,1)=passcon(2,1,1)*passcon(3,1,1)
-     passcon(2,1,1)=passcon(2,1,1)+1.0_wp
-     passcon(3,1,1)=passcon(3,1,1)/passcon(2,1,1)+passcon(1,1,1)/passcon(2,1,1)
-     passcon(4,1,1)=Min(passcon(1,1,1),passcon(4,1,1))
-     passcon(5,1,1)=Max(passcon(1,1,1),passcon(5,1,1))
+     stat%passcon(1,1,1)=Real(icyc-1,wp)
+     stat%passcon(3,1,1)=stat%passcon(2,1,1)*stat%passcon(3,1,1)
+     stat%passcon(2,1,1)=stat%passcon(2,1,1)+1.0_wp
+     stat%passcon(3,1,1)=stat%passcon(3,1,1)/stat%passcon(2,1,1)+stat%passcon(1,1,1)/stat%passcon(2,1,1)
+     stat%passcon(4,1,1)=Min(stat%passcon(1,1,1),stat%passcon(4,1,1))
+     stat%passcon(5,1,1)=Max(stat%passcon(1,1,1),stat%passcon(5,1,1))
 
-     passcon(1,2,1)=passcon(1,2,1)+passcon(1,1,1)
-     passcon(1,1,1)=0.0_wp ! Reset
+     stat%passcon(1,2,1)=stat%passcon(1,2,1)+stat%passcon(1,1,1)
+     stat%passcon(1,1,1)=0.0_wp ! Reset
   End If
 
 ! global sum of stress tensor
 
-  Call gsum(comm,strcon)
+  Call gsum(comm,stat%strcon)
 
 ! complete stress tensor (symmetrise)
 
-  strcon(4) = strcon(2)
-  strcon(7) = strcon(3)
-  strcon(8) = strcon(6)
+  str(4) = str(2)
+  str(7) = str(3)
+  str(8) = str(6)
 
 ! total constraint virial
 
-  vircon=-(strcon(1)+strcon(5)+strcon(9))
+  vir=-(str(1)+str(5)+str(9))
 
   Deallocate (xxt,yyt,zzt,          Stat=fail(1))
   Deallocate (dxt,dyt,dzt,dt2,esig, Stat=fail(2))

@@ -23,7 +23,6 @@ Module ffield
   Use core_shell
   Use mpole, Only : keyind,thole,mpllfr,plrsit,dmpsit
 
-  Use constraints
   Use pmf
 
   Use rigid_bodies
@@ -58,6 +57,7 @@ Module ffield
   Use numerics, Only : factorial, shellsort
   Use errors_warnings, Only : error,warning,info
   Use thermostat, Only : thermostat_type,ENS_NVE
+  Use constraints, Only : constraints_type
 
   Implicit None
 
@@ -74,8 +74,9 @@ Subroutine read_field                      &
            lecx,lbook,lexcl,               &
            rcter,rctbp,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
-           megshl,megcon,megpmf,megrgd,    &
+           megshl,megpmf,megrgd,    &
            megtet,    &
+           cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -109,8 +110,9 @@ Subroutine read_field                      &
   Real( Kind = wp ), Intent(   Out ) :: rcter,rctbp,rcfbp
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
-                                        megshl,megcon,megpmf,megrgd,        &
+                                        megshl,megpmf,megrgd,        &
                                         megtet
+  Type( constraints_type ), Intent( InOut ) :: cons
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
@@ -232,7 +234,7 @@ Subroutine read_field                      &
 
   megshl = 0
 
-  megcon = 0
+  cons%megcon = 0
   megpmf = 0
 
   megrgd = 0
@@ -651,7 +653,7 @@ Subroutine read_field                      &
 
                  If (.not.l_con) Call error(112)
                  l_con=.false.
-                 m_con=1
+                 cons%m_con=1
 
                  lbook=.true.
                  lexcl=.true.
@@ -659,7 +661,7 @@ Subroutine read_field                      &
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  ntmp=Nint(word_2_real(word))
-                 numcon(itmols)=numcon(itmols)+ntmp
+                 cons%numcon(itmols)=cons%numcon(itmols)+ntmp
 
                  Write(message,'(a,5x,i10)') 'number of bond constraints', ntmp
                  Call info(message,.true.)
@@ -671,9 +673,9 @@ Subroutine read_field                      &
                  End If
 
 
-                 Do icnst=1,numcon(itmols)
+                 Do icnst=1,cons%numcon(itmols)
                     nconst=nconst+1
-                    If (nconst > mxtcon) Call error(40)
+                    If (nconst > cons%mxtcon) Call error(40)
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -688,11 +690,11 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     iatm2=Nint(word_2_real(word))
 
-                    lstcon(1,nconst)=iatm1
-                    lstcon(2,nconst)=iatm2
+                    cons%lstcon(1,nconst)=iatm1
+                    cons%lstcon(2,nconst)=iatm2
 
                     Call get_word(record,word)
-                    prmcon(nconst)=word_2_real(word)
+                    cons%prmcon(nconst)=word_2_real(word)
 
                     isite1 = nsite - numsit(itmols) + iatm1
                     isite2 = nsite - numsit(itmols) + iatm2
@@ -725,19 +727,19 @@ Subroutine read_field                      &
                     If (l_top) Then
                       If (frzsit(isite1)*frzsit(isite2) /= 0) Then
                         Write(message,'(2x,3i10,f15.6,1x,a8)') &
-                          icnst,lstcon(1,nconst),lstcon(2,nconst), &
-                          prmcon(nconst),'*frozen*'
+                          icnst,cons%lstcon(1,nconst),cons%lstcon(2,nconst), &
+                          cons%prmcon(nconst),'*frozen*'
                       Else
                         Write(message,'(2x,3i10,f15.6)') &
-                          icnst,lstcon(1,nconst),lstcon(2,nconst), &
-                          prmcon(nconst)
+                          icnst,cons%lstcon(1,nconst),cons%lstcon(2,nconst), &
+                          cons%prmcon(nconst)
                       End If
                       Call info(message,.true.)
                     End If
 
 ! catch unidentified entry
 
-                    If (Any(lstcon(1:2,nconst) < 1) .or. Any(lstcon(1:2,nconst) > numsit(itmols))) Call error(27)
+                    If (Any(cons%lstcon(1:2,nconst) < 1) .or. Any(cons%lstcon(1:2,nconst) > numsit(itmols))) Call error(27)
 
 ! test for mistyped constraint bond unit
 
@@ -745,19 +747,19 @@ Subroutine read_field                      &
 
 ! test for length of constraint bond unit > rcut
 
-                    If (prmcon(nconst) >= rcut) Call error(34)
+                    If (cons%prmcon(nconst) >= rcut) Call error(34)
 
                  End Do
 
 ! Check for multiple constraint bond entries
 
-                 Do i=nconst-numcon(itmols)+1,nconst
-                    is(1)=Min(lstcon(1,i),lstcon(2,i))
-                    is(2)=Max(lstcon(1,i),lstcon(2,i))
+                 Do i=nconst-cons%numcon(itmols)+1,nconst
+                    is(1)=Min(cons%lstcon(1,i),cons%lstcon(2,i))
+                    is(2)=Max(cons%lstcon(1,i),cons%lstcon(2,i))
 
                     Do j=i+1,nconst
-                       js(1)=Min(lstcon(1,j),lstcon(2,j))
-                       js(2)=Max(lstcon(1,j),lstcon(2,j))
+                       js(1)=Min(cons%lstcon(1,j),cons%lstcon(2,j))
+                       js(2)=Max(cons%lstcon(1,j),cons%lstcon(2,j))
 
                        If (js(1) == is(1) .and. js(2) == is(2)) Then
                           Call warning(400,Real(i,wp),Real(j,wp),0.0_wp)
@@ -2139,7 +2141,7 @@ Subroutine read_field                      &
 
                  megshl=megshl+nummols(itmols)*numshl(itmols)
 
-                 megcon=megcon+nummols(itmols)*(numcon(itmols)-frzcon)
+                 cons%megcon=cons%megcon+nummols(itmols)*(cons%numcon(itmols)-frzcon)
                  megpmf=megpmf+nummols(itmols)*numpmf(itmols)
 
                  megrgd=megrgd+nummols(itmols)*(numrgd(itmols)-frzrgd)
@@ -2975,15 +2977,15 @@ Subroutine read_field                      &
 
 ! test for constrained, RBed and tethered shells
 
-                 Do icnst=1,numcon(itmols)
+                 Do icnst=1,cons%numcon(itmols)
                     nconst=nconst+1
 
-                    If (Any(lstcon(1:2,nconst) == ja)) Then
+                    If (Any(cons%lstcon(1:2,nconst) == ja)) Then
                        Call warning(301,Real(ishls,wp),Real(icnst,wp),Real(itmols,wp))
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) nconst=nconst-numcon(itmols)
+                 If (ishls /= numshl(itmols)) nconst=nconst-cons%numcon(itmols)
 
                  Do i=1,numpmf(itmols)
                     If (Any(lstpmf(1:mxtpmf(1),1) == ja) .or. Any(lstpmf(1:mxtpmf(2),2) == ja)) Then
@@ -3092,15 +3094,15 @@ Subroutine read_field                      &
 
 ! test for constraint units on RB units
 
-           If (m_con > 0) Then
+           If (cons%m_con > 0) Then
               nsite =0
               nconst=0
               nrigid=0
               Do itmols=1,ntpmls
-                 Do icnst=1,numcon(itmols)
+                 Do icnst=1,cons%numcon(itmols)
                     nconst=nconst+1
-                    iatm1=lstcon(1,nconst)
-                    iatm2=lstcon(2,nconst)
+                    iatm1=cons%lstcon(1,nconst)
+                    iatm2=cons%lstcon(2,nconst)
 
                     Do irgd=1,numrgd(itmols)
                        nrigid=nrigid+1
@@ -3110,7 +3112,7 @@ Subroutine read_field                      &
                           Call error(97)
                        End If
                     End Do
-                    If (icnst /= numcon(itmols)) nrigid=nrigid-numrgd(itmols)
+                    If (icnst /= cons%numcon(itmols)) nrigid=nrigid-numrgd(itmols)
                  End Do
                  nsite=nsite+numsit(itmols)
               End Do
@@ -4748,8 +4750,9 @@ End Subroutine read_field
 
 Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,megrgd,  &
+           megshl,megpmf,megrgd,  &
            megtet,  &
+           cons, &
            bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4762,8 +4765,9 @@ Subroutine report_topology               &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
-                              megshl,megcon,megpmf,megrgd, &
+                              megshl,megpmf,megrgd, &
                               megtet
+  Type( constraints_type ), Intent( In    ) :: cons
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( In    ) :: dihedral
@@ -4911,7 +4915,7 @@ Subroutine report_topology               &
         If (frzsit(isite1)+frzsit(isite2)+frzsit(isite3)+frzsit(isite4) == 4) frzinv=frzinv+1
      End Do
 
-     mgcon=mgcon+nummols(itmols)*numcon(itmols)
+     mgcon=mgcon+nummols(itmols)*cons%numcon(itmols)
      mgrgd=mgrgd+nummols(itmols)*numrgd(itmols)
 
      mgfrsh=mgfrsh+nummols(itmols)*frzshl
@@ -4937,7 +4941,7 @@ Subroutine report_topology               &
   Write(banner(7),fmt2) '||  all particles/sites    | ',megatm,'  |  F  ',megfrz,'     ||'
   Write(banner(8),fmt2) '||  free particles         | ',atmfre,'  |  F  ',atmfrz,'     ||'
   Write(banner(9),fmt2) '||  core-shell units       | ',megshl,'  |  P  ',mgfrsh,'     ||'
-  Write(banner(10),fmt2) '||  constraint bond units  | ',mgcon,'  |  F  ',mgcon-megcon,'     ||'
+  Write(banner(10),fmt2) '||  constraint bond units  | ',mgcon,'  |  F  ',mgcon-cons%megcon,'     ||'
   Write(banner(11),fmt3) '||  PMF units              | ',megpmf,'  |  P         ',frzpmf,'     ||'
   Write(banner(12),fmt2) '||  rigid body units       | ',mgrgd,'  |  F  ',mgrgd-megrgd,'     ||'
   Write(banner(13),fmt2) '||  tethered atom units    | ',megtet,'  |  F  ',mgfrtt,'     ||'
@@ -4953,7 +4957,7 @@ Subroutine scan_field                                &
            (l_n_e,mxompl,mximpl,                     &
            mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
-           mtcons,mxtcon,mxcons,mxfcon,              &
+           mtcons,              &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,             &
@@ -4963,7 +4967,9 @@ Subroutine scan_field                                &
            mtinv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,met,bond,angle,dihedral,inversion,tether,comm)
+           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext, &
+           cons, &
+           met,bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4980,6 +4986,7 @@ Subroutine scan_field                                &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( constraints_type ), Intent( InOut ) :: cons
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
@@ -5005,7 +5012,7 @@ Subroutine scan_field                                &
   Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,ksite,nrept,        &
                        mxompl,mximpl,mxsite,mxatyp,megatm,i,j,k,mxexcl,        &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
-                       numcon,mtcons,mxtcon,mxcons,icon,mxfcon,                &
+                       numcon,mtcons,icon,                &
                        mxtpmf(1:2),mxpmf,ipmf,jpmf,mxfpmf,                     &
                        numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
                        inumteth,mtteth,iteth,  &
@@ -5041,9 +5048,9 @@ Subroutine scan_field                                &
 
   numcon=0
   mtcons=0
-  mxcons=0
-  mxtcon=0
-  mxfcon=0
+  cons%mxcons=0
+  cons%mxtcon=0
+  cons%mxfcon=0
 
   mxpmf =0
   mxtpmf=0
@@ -5261,8 +5268,8 @@ Subroutine scan_field                                &
                  If (word(1:5) == 'units') Call get_word(record,word)
                  numcon=Nint(word_2_real(word))
                  mtcons=Max(mtcons,numcon)
-                 mxtcon=mxtcon+numcon
-                 mxcons=mxcons+nummols*numcon
+                 cons%mxtcon=cons%mxtcon+numcon
+                 cons%mxcons=cons%mxcons+nummols*numcon
 
                  Do icon=1,numcon
                     word(1:1)='#'
@@ -5858,8 +5865,8 @@ Subroutine scan_field                                &
   If (mxshl >  0) mxfshl=1+1 ! One shell per core
   mxf(1)=mxfshl
 
-  If (mxcons > 0) mxfcon=mxb+1
-  mxf(2)=mxfcon
+  If (cons%mxcons > 0) cons%mxfcon=mxb+1
+  mxf(2)=cons%mxfcon
 
   If (mxpmf  > 0) mxfpmf=1+1 ! PMFs are global
   mxf(3)=mxfpmf
