@@ -5,7 +5,8 @@ Module bounds
   Use setup
   Use domains,         Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
   Use configuration,   Only : imcon,imc_n,cfgname,cell,volm
-  Use vnl,             Only : llvnl ! Depends on l_str,lsim & rpad
+  Use neighbours,      Only : neighbours_type
+  Use msd,             Only : msd_type
   Use rdfs,            Only : rusr
 
   Use msd,             Only : msd_type
@@ -32,7 +33,7 @@ Module bounds
   Use poisson,         Only : poisson_type
   Use tethers,         Only : tethers_type
   Use constraints, Only : constraints_type
-
+  Use three_body,      Only : threebody_type
 
   Implicit None
   Private
@@ -41,10 +42,10 @@ Contains
 
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-           dvar,rcut,rpad,rlnk,rvdw,rbin,nstfce,      &
+           dvar,rvdw,rbin,nstfce,      &
            alpha,width,cons,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,zdensity,comm)
+           inversion,tether,threebody,zdensity,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -61,7 +62,7 @@ Subroutine set_bounds                                 &
 
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_e,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,nstfce
-  Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
+  Real( Kind = wp ), Intent(   Out ) :: dvar
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rbin,alpha,width
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
@@ -76,7 +77,9 @@ Subroutine set_bounds                                 &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( threebody_type ), Intent( InOut ) :: threebody
   Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -110,10 +113,10 @@ Subroutine set_bounds                                 &
            mtdihd, &
            mtinv,  &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
-           mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext,&
-           cons, &
-           met,bond,angle,dihedral,inversion,tether,comm)
+           mxmet,mxmed,mxmds,                        &
+           mxter,rcter,mxfbp,rcfbp,lext,cons,met,bond,    &
+           angle,dihedral,inversion,                 &
+           tether,threebody,comm)
 
 ! Get imc_r & set dvar
 
@@ -135,10 +138,10 @@ Subroutine set_bounds                                 &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rcut,rpad,rbin,                         &
+           rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo, &
-           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,comm)
+           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -208,8 +211,8 @@ Subroutine set_bounds                                 &
 
 ! halt program if potential cutoff exceeds the minimum half-cell width
 
-     If (rcut > width/2.0_wp) Then
-        Call warning(3,rcut,width/2.0_wp,0.0_wp)
+     If (neigh%cutoff > width/2.0_wp) Then
+        Call warning(3,neigh%cutoff,width/2.0_wp,0.0_wp)
         Call error(95)
      End If
   End If
@@ -381,7 +384,7 @@ Subroutine set_bounds                                 &
   If ((.not. l_n_r) .or. lzdn) Then
      If (((.not. l_n_r) .and. mxrdf == 0) .and. (mxvdw > 0 .or. mxmet > 0)) &
         mxrdf = Max(mxvdw,mxmet) ! (vdw,met) == rdf scanning
-     mxgrdf = Nint(rcut/rbin)
+     mxgrdf = Nint(neigh%cutoff/rbin)
   Else
      mxgrdf = 0 ! RDF and Z-density function MUST NOT get called!!!
   End If
@@ -399,7 +402,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgana,mxgvdw,met%maxgrid,mxgrdf,mxgusr,1004,Nint(rcut/delr_max)+4)
+  mxgrid = Max(mxgana,mxgvdw,met%maxgrid,mxgrdf,mxgusr,1004,Nint(neigh%cutoff/delr_max)+4)
 
 ! grids setting and overrides
 
@@ -421,7 +424,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for electrostatics
 
-  mxgele = Merge(-1,Max(1004,Nint(rcut/delr_max)+4),l_n_e)
+  mxgele = Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4),l_n_e)
 
 ! maximum number of grid points for vdw interactions - overwritten
 
@@ -478,17 +481,17 @@ Subroutine set_bounds                                 &
 
 ! maximum number of three-body potentials and parameters
 
-  If (mxtbp > 0) Then
-     mx2tbp = (mxatyp*(mxatyp+1))/2
-     mxtbp  = mx2tbp*mxatyp
-     If (rctbp < 1.0e-6_wp) rctbp=0.5_wp*rcut
+  If (threebody%mxtbp > 0) Then
+     threebody%mx2tbp = (mxatyp*(mxatyp+1))/2
+     threebody%mxtbp  = threebody%mx2tbp*mxatyp
+     If (rctbp < 1.0e-6_wp) rctbp=0.5_wp*neigh%cutoff
 
-     mxptbp = 5
+     threebody%mxptbp = 5
   Else
-     mx2tbp = 0
-     mxtbp  = 0
+     threebody%mx2tbp = 0
+     threebody%mxtbp  = 0
 
-     mxptbp = 0
+     threebody%mxptbp = 0
   End If
 
 
@@ -497,7 +500,7 @@ Subroutine set_bounds                                 &
   If (mxfbp > 0) Then
      mx3fbp = (mxatyp*(mxatyp+1)*(mxatyp+2))/6
      mxfbp  = mx3fbp*mxatyp
-     If (rcfbp < 1.0e-6_wp) rcfbp=0.5_wp*rcut
+     If (rcfbp < 1.0e-6_wp) rcfbp=0.5_wp*neigh%cutoff
 
      mxpfbp = 3
   Else
@@ -527,11 +530,11 @@ Subroutine set_bounds                                 &
   Write(message,'(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
   Call info(message,.true.)
 
-  If (rpad > zero_plus) Then
+  If (neigh%padding > zero_plus) Then
 
 ! define cut
 
-     cut=rcut+1.0e-6_wp
+     cut=neigh%cutoff+1.0e-6_wp
 
 ! Provide advise on decomposition
 
@@ -555,15 +558,15 @@ Subroutine set_bounds                                 &
 
   End If
 
-10 Continue ! possible rcut redefinition...
+10 Continue ! possible neigh%cutoff redefinition...
 
 ! Define link-cell cutoff (minimum width)
 
-  rlnk = rcut + rpad
+  neigh%cutoff_extended = neigh%cutoff + neigh%padding
 
 ! define cut
 
-  cut=rlnk+1.0e-6_wp
+  cut=neigh%cutoff_extended+1.0e-6_wp
 
 ! Provide advise on decomposition
 
@@ -596,30 +599,30 @@ Subroutine set_bounds                                 &
   Write(message,'(a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
   Call info(message,.true.)
 
-  tol=Min(0.05_wp,0.005_wp*rcut)                                        ! tolerance
+  tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
   test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
   cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp ! domain size
 
   If (ilx*ily*ilz == 0) Then
      If (devel%l_trm) Then ! we are prepared to exit gracefully(-:
-        rcut = cut   ! - rpad (was zeroed in scan_control)
+        neigh%cutoff = cut   ! - neigh%padding (was zeroed in scan_control)
         Write(message,'(a)') &
           "real space cutoff reset has occurred, early run termination is due"
         Call warning(message,.true.)
         Go To 10
      Else
-        If (cut < rcut) Then
-           Write(message,'(a)') 'rcut <= Min(domain width) < rlnk = rcut + rpad'
+        If (cut < neigh%cutoff) Then
+           Write(message,'(a)') 'neigh%cutoff <= Min(domain width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
            Call warning(message,.true.)
            Call error(307)
-        Else ! rpad is defined & in 'no strict' mode
-           If (rpad > zero_plus .and. (.not.l_str)) Then ! Re-set rpad with some slack
-              rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
-              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
-              If (rpad < tol) rpad = 0.0_wp ! Don't bother
+        Else ! neigh%padding is defined & in 'no strict' mode
+           If (neigh%padding > zero_plus .and. (.not.l_str)) Then ! Re-set neigh%padding with some slack
+              neigh%padding = Min( 0.95_wp * (cut - neigh%cutoff) , test * neigh%cutoff)
+              neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
+              If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
               Go To 10
            Else
-              Write(message,'(a)') 'rcut <= Min(domain width) < rlnk = rcut + rpad'
+              Write(message,'(a)') 'neigh%cutoff <= Min(domain width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
               Call warning(message,.true.)
               Call error(307)
            End If
@@ -629,35 +632,35 @@ Subroutine set_bounds                                 &
      If (.not.l_str) Then
         If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) Then ! 2b link-cells are needed
            If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
-              rpad = 0.95_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
-              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
+              neigh%padding = 0.95_wp * (0.5_wp*width - neigh%cutoff - 1.0e-6_wp)
+              neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up
            End If
 
-           If (rpad <= zero_plus) Then ! When rpad is undefined give it some value
+           If (neigh%padding <= zero_plus) Then ! When neigh%padding is undefined give it some value
               If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
-                 rpad = test * rcut
-                 rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
-                 If (rpad > tol) Go To 10
+                 neigh%padding = test * neigh%cutoff
+                 neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
+                 If (neigh%padding > tol) Go To 10
               Else ! not so good non-exception
-                 rpad = Min( 0.95_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                 neigh%padding = Min( 0.95_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
                                                r_npry * celprp(8) / Real(ily,wp) , &
                                                r_nprz * celprp(9) / Real(ilz,wp) ) &
-                                         - rcut - 1.0e-6_wp ) , test * rcut )
-              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
+                                         - neigh%cutoff - 1.0e-6_wp ) , test * neigh%cutoff )
+              neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up
               End If
            End If
 
-           If (rpad > zero_plus) Then
-              If (rpad < tol) rpad = 0.0_wp ! Don't bother
+           If (neigh%padding > zero_plus) Then
+              If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
            End If
         Else
-           If (rpad >= zero_plus) rpad = 0.0_wp ! Don't bother
+           If (neigh%padding >= zero_plus) neigh%padding = 0.0_wp ! Don't bother
         End If
 
-        rlnk = rcut + rpad ! recalculate rlnk respectively
+        neigh%cutoff_extended = neigh%cutoff + neigh%padding ! recalculate neigh%cutoff_extended respectively
      End If
   End If
-  llvnl = (rpad > zero_plus) ! Determine/Detect conditional VNL updating at start
+  neigh%unconditional_update = (neigh%padding > zero_plus) ! Determine/Detect conditional VNL updating at start
 
   If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call warning(100,0.0_wp,0.0_wp,0.0_wp)
 
@@ -712,10 +715,10 @@ Subroutine set_bounds                                 &
      qly = Min(qly , kmaxb/(mxspl*npry))
      qlz = Min(qlz , kmaxc/(mxspl*nprz))
 
-     If (.not.llvnl) Then
+     If (.not.neigh%unconditional_update) Then
         mxspl1=mxspl
      Else
-        mxspl1=mxspl+Ceiling((rpad*Real(mxspl,wp))/rcut)
+        mxspl1=mxspl+Ceiling((neigh%padding*Real(mxspl,wp))/neigh%cutoff)
 
 ! Redifine ql.
 
@@ -741,7 +744,7 @@ Subroutine set_bounds                                 &
 
 ! decide on MXATMS while reading CONFIG and scan particle density
 
-  Call read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,comm)
+  Call read_config(megatm,levcfg,l_ind,l_str,neigh%cutoff,dvar,xhi,yhi,zhi,dens0,dens,comm)
 
 ! Create f(fdvar,dens0,dens)
 
@@ -757,10 +760,10 @@ Subroutine set_bounds                                 &
 ! more than domains(+halo) arrays' dimensions, in case of
 ! events of extreme collapse in atomic systems (aggregation)
 
-! mxlist is the maximum length of link-cell list (dens * 4/3 pi rlnk^3)
-! + 75% extra tolerance - i.e f(dens0,dens)*(7.5/3)*pi*rlnk^3
+! mxlist is the maximum length of link-cell list (dens * 4/3 pi neigh%cutoff_extended^3)
+! + 75% extra tolerance - i.e f(dens0,dens)*(7.5/3)*pi*neigh%cutoff_extended^3
 
-  mxlist = Nint(fdens*2.5_wp*pi*rlnk**3)
+  mxlist = Nint(fdens*2.5_wp*pi*neigh%cutoff_extended**3)
   mxlist = Min(mxlist,megatm-1) ! mxexcl
 
   If (mxlist < mxexcl-1) Then
@@ -812,18 +815,18 @@ Subroutine set_bounds                                 &
 ! deporting total per atom
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
-  dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
-  mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real(                          &
-           mxatdm*(18+12 + Merge(3,0,llvnl) + (mxexcl+1)                 + &
-           Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0)  + &
-           Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp        + &
+  dens0 = dens0/Max(neigh%cutoff_extended/0.2_wp,1.0_wp)
+  mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real( &
+           mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (mxexcl+1) + &
+           Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0) + &
+           Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp  + &
            4*mxshl+4*cons%mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
            3*tether%mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)
 
 ! statistics connect deporting total per atom
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
-  dens0 = dens0/Max(rlnk/0.2_wp,1.0_wp)
+  dens0 = dens0/Max(neigh%cutoff_extended/0.2_wp,1.0_wp)
   mxbfss = Merge( 4, 0, comm%mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)),wp) * dens0)
 
 ! exporting single per atom (times 13 up to 35)
@@ -835,7 +838,7 @@ Subroutine set_bounds                                 &
 ! shared units single per atom of all shared unit
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) - 1.0_wp
-  dens0 = dens0/Max(rlnk/2.0_wp,1.0_wp)
+  dens0 = dens0/Max(neigh%cutoff_extended/2.0_wp,1.0_wp)
   mxbfsh = Merge( 1, 0, comm%mxnode > 1) * Nint(Real(Max(2*mxshl,2*cons%mxcons,mxlrgd*mxrgd),wp) * dens0)
 
   mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
@@ -844,10 +847,10 @@ Subroutine set_bounds                                 &
 ! reset (increase) link-cell maximum (mxcell)
 ! if tersoff or three- or four-body potentials exist
 
-  If (mxter > 0 .or. mxtbp > 0 .or. mxfbp > 0) Then
-     cut=rcut+1.0e-6_wp ! reduce cut
+  If (mxter > 0 .or. threebody%mxtbp > 0 .or. mxfbp > 0) Then
+     cut=neigh%cutoff+1.0e-6_wp ! reduce cut
      If (mxter > 0) cut = Min(cut,rcter+1.0e-6_wp)
-     If (mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
+     If (threebody%mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
      If (mxfbp > 0) cut = Min(cut,rcfbp+1.0e-6_wp)
 
      ilx=Int(r_nprx*celprp(7)/cut)

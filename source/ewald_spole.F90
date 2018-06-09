@@ -462,7 +462,7 @@ Module ewald_spole
        tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
        tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
 
-  ! If not DD bound in kmax grid space when .not.llvnl = (mxspl1 == mxspl)
+  ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (mxspl1 == mxspl)
 
        If (mxspl1 == mxspl .and. i <= natms) Then
           If (txx(i) < ixbm1_r .or. txx(i) > ixtm0_r .or. &
@@ -487,7 +487,7 @@ Module ewald_spole
        End If
     End Do
 
-  ! Check for breakage of llspl when .not.llvnl = (mxspl1 == mxspl)
+  ! Check for breakage of llspl when .not.neigh%unconditional_update = (mxspl1 == mxspl)
 
     mxspl2=mxspl1
     If (mxspl1 == mxspl) Then

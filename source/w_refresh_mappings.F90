@@ -3,18 +3,18 @@
 
 ! Scale t=0 reference positions
 
-        If (nstep > 0) Call xscale(m_rgd,tstep,thermo,stat,comm)
+        If (nstep > 0) Call xscale(m_rgd,tstep,thermo,stat,neigh,comm)
 
 ! Check VNL conditioning
 
-        Call vnl_check(l_str,rcut,rpad,rlnk,width,comm)
+        Call vnl_check(l_str,width,neigh,comm)
 
-        If (l_vnl) Then
+        If (neigh%update) Then
 
 ! Relocate atoms to new domains and restore bonding description
 
            Call relocate_particles  &
-           (dvar,rlnk,lbook,msd_data%l_msd,megatm, &
+           (dvar,neigh%cutoff_extended,lbook,msd_data%l_msd,megatm, &
            megshl,megpmf,     &
            m_rgd,megtet,            &
            cons, & 
@@ -22,7 +22,7 @@
 
 ! Exchange atomic data in border regions
 
-           Call set_halo_particles(rlnk,keyfce,comm) ! inducing in here only
+           Call set_halo_particles(keyfce,neigh,comm) ! inducing in here only
 
 ! Re-tag RBs when called again after the very first time
 ! when it's done in rigid_bodies_setup <- build_book_intra

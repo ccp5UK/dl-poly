@@ -34,12 +34,11 @@ Module ffield
   Use dihedrals, Only : dihedrals_type,dihedrals_table_read,allocate_dihd_dst_arrays, &
                         dihedrals_14_check
   Use inversions, Only : inversions_type,inversions_table_read,allocate_invr_dst_arrays
-
+  Use three_body, Only : threebody_type
   Use vdw
   Use metal, Only : metal_type,allocate_metal_arrays,allocate_metal_table_arrays, &
                     metal_generate_erf,metal_table_read,metal_generate
   Use tersoff
-  Use three_body
   Use four_body
 
   Use external_field
@@ -72,12 +71,12 @@ Subroutine read_field                      &
            rcut,rvdw,width,epsq, &
            keyfce,keyshl,           &
            lecx,lbook,lexcl,               &
-           rcter,rctbp,rcfbp,              &
+           rcter,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megpmf,megrgd,    &
            megtet,    &
            cons,  &
-           thermo,met,bond,angle,dihedral,inversion,tether,comm)
+           thermo,met,bond,angle,dihedral,inversion,tether,threebody,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -107,7 +106,7 @@ Subroutine read_field                      &
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
-  Real( Kind = wp ), Intent(   Out ) :: rcter,rctbp,rcfbp
+  Real( Kind = wp ), Intent(   Out ) :: rcter,rcfbp
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megpmf,megrgd,        &
@@ -120,6 +119,7 @@ Subroutine read_field                      &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type), Intent( InOut ) :: tether
+  Type( threebody_type), Intent( InOut ) :: threebody
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -264,7 +264,7 @@ Subroutine read_field                      &
 ! Default potential cutoffs
 
   rcter=0.0_wp
-  rctbp=0.0_wp
+  threebody%cutoff=0.0_wp
   rcfbp=0.0_wp
 
 
@@ -4279,9 +4279,9 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'tbp') Then
 
         Call get_word(record,word)
-        ntptbp=Nint(word_2_real(word))
+        threebody%ntptbp=Nint(word_2_real(word))
 
-        Write(message,'(a,i10)') 'number of specified three-body potentials ',ntptbp
+        Write(message,'(a,i10)') 'number of specified three-body potentials ',threebody%ntptbp
         Call info(message,.true.)
         If (l_top) Then
           Write(message,'(5x,a7,5x,a6,2(2x,a6),5x,a3,5x,a10)') &
@@ -4289,17 +4289,17 @@ Subroutine read_field                      &
           Call info(message,.true.)
         End If
 
-        If (ntptbp > mxtbp) Call error(83)
+        If (threebody%ntptbp > threebody%mxtbp) Call error(83)
         If (.not.lunits) Call error(6)
         If (.not.lmols) Call error(13)
 
 ! Initialise head of group atom to not participating in an interaction
 
-        Do itbp=1,mxtbp,mx2tbp
-           lsttbp(itbp)=-1
+        Do itbp=1,threebody%mxtbp,threebody%mx2tbp
+           threebody%lsttbp(itbp)=-1
         End Do
 
-        Do itptbp=1,ntptbp
+        Do itptbp=1,threebody%ntptbp
            parpot=0.0_wp
 
            word(1:1)='#'
@@ -4350,8 +4350,8 @@ Subroutine read_field                      &
            parpot(5)=word_2_real(word)
 
            If (l_top) Then
-             Write(rfmt,'(a,i0,a)') '(2x,i10,5x,3a8,3x,a4,1x,',mxptbp,'f15.6)'
-             Write(message,rfmt) itptbp,atom1,atom0,atom2,keyword,parpot(1:mxptbp)
+             Write(rfmt,'(a,i0,a)') '(2x,i10,5x,3a8,3x,a4,1x,',threebody%mxptbp,'f15.6)'
+             Write(message,rfmt) itptbp,atom1,atom0,atom2,keyword,parpot(1:threebody%mxptbp)
              Call info(message,.true.)
            End If
 
@@ -4367,50 +4367,50 @@ Subroutine read_field                      &
 
            If (katom0 == 0 .or. katom1 == 0 .or. katom2 == 0) Call error(84)
 
-           lfrtbp(katom0)=.true.
-           lfrtbp(katom1)=.true.
-           lfrtbp(katom2)=.true.
+           threebody%lfrtbp(katom0)=.true.
+           threebody%lfrtbp(katom1)=.true.
+           threebody%lfrtbp(katom2)=.true.
 
            ka1=Max(katom1,katom2)
            ka2=Min(katom1,katom2)
 
-           keytbp=(ka1*(ka1-1))/2+ka2+(katom0-1)*mx2tbp
+           keytbp=(ka1*(ka1-1))/2+ka2+(katom0-1)*threebody%mx2tbp
 
-           If (keytbp > mxtbp) Call error(86)
+           If (keytbp > threebody%mxtbp) Call error(86)
 
 ! convert parameters to internal units and angles to radians
 
            parpot(1) = parpot(1)*engunit
            If (keypot /= 6) parpot(2) = parpot(2)*(pi/180.0_wp)
 
-           If (lsttbp(keytbp) > 0) Call error(18)
+           If (threebody%lsttbp(keytbp) > 0) Call error(18)
 
-           lsttbp(keytbp)=itptbp
-           ktbp=mx2tbp*((keytbp-1)/mx2tbp)+1 ! == mx2tbp*(katom0-1)+1
-           If (lsttbp(ktbp) < 0) lsttbp(ktbp)=0
+           threebody%lsttbp(keytbp)=itptbp
+           ktbp=threebody%mx2tbp*((keytbp-1)/threebody%mx2tbp)+1 ! == threebody%mx2tbp*(katom0-1)+1
+           If (threebody%lsttbp(ktbp) < 0) threebody%lsttbp(ktbp)=0
 
-           ltptbp(itptbp)=keypot
+           threebody%ltptbp(itptbp)=keypot
 
 ! calculate max three-body cutoff
 
-           rctbp=Max(rctbp,parpot(5))
+           threebody%cutoff=Max(threebody%cutoff,parpot(5))
            If (parpot(5) < 1.0e-6_wp) Then
-              rcttbp(itptbp)=rctbp
-              parpot(5)=rctbp
+              threebody%rcttbp(itptbp)=threebody%cutoff
+              parpot(5)=threebody%cutoff
            Else
-              rcttbp(itptbp)=parpot(5)
+              threebody%rcttbp(itptbp)=parpot(5)
            End If
 
 ! store three-body potential parameters
 
-           Do i=1,mxptbp
-              prmtbp(i,itptbp)=parpot(i)
+           Do i=1,threebody%mxptbp
+              threebody%prmtbp(i,itptbp)=parpot(i)
            End Do
         End Do
 
-        If (ntptbp > 0) Then
-           If (rctbp < 1.0e-6_wp) Call error(451)
-           If (rcut < 2.0_wp*rctbp) Call error(471)
+        If (threebody%ntptbp > 0) Then
+           If (threebody%cutoff < 1.0e-6_wp) Call error(451)
+           If (rcut < 2.0_wp*threebody%cutoff) Call error(471)
         End If
 
 ! read in the four-body potential energy parameters
@@ -4967,9 +4967,7 @@ Subroutine scan_field                                &
            mtinv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxtbp,rctbp,mxfbp,rcfbp,lext, &
-           cons, &
-           met,bond,angle,dihedral,inversion,tether,comm)
+           mxter,rcter,mxfbp,rcfbp,lext,cons,met,bond,angle,dihedral,inversion,tether,threebody,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4993,6 +4991,7 @@ Subroutine scan_field                                &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( threebody_type ), Intent( InOut ) :: threebody
   Type( comms_type ), Intent( InOut ) :: comm
 ! Max number of different atom types
 
@@ -5022,9 +5021,9 @@ Subroutine scan_field                                &
                        numinv,mtinv,iinv,           &
                        mxrdf,itprdf,mxvdw,itpvdw,mxgvdw,                       &
                        mxmet,mxmed,mxmds,itpmet,                        &
-                       mxter,itpter,mxtbp,itptbp,mxfbp,itpfbp,                 &
+                       mxter,itpter,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
-  Real( Kind = wp ) :: rvdw,rcter,rctbp,rcfbp,rct,tmp,tmp1,tmp2
+  Real( Kind = wp ) :: rvdw,rcter,rcfbp,rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
   mxompl=0      ! default of maximum order of poles (charges)
@@ -5113,8 +5112,8 @@ Subroutine scan_field                                &
   mxter=0
   rcter=0.0_wp
 
-  mxtbp=0
-  rctbp=0.0_wp
+  threebody%mxtbp=0
+  threebody%cutoff=0.0_wp
 
   mxfbp=0
   rcfbp=0.0_wp
@@ -5787,9 +5786,9 @@ Subroutine scan_field                                &
      Else If (word(1:3) == 'tbp') Then
 
         Call get_word(record,word)
-        mxtbp=Nint(word_2_real(word))
+        threebody%mxtbp=Nint(word_2_real(word))
 
-        Do itptbp=1,mxtbp
+        Do itptbp=1,threebody%mxtbp
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
               Call get_line(safe,nfield,record,comm)
@@ -5802,7 +5801,7 @@ Subroutine scan_field                                &
            End Do
 
            rct=word_2_real(word)
-           rctbp=Max(rctbp,rct)
+           threebody%cutoff=Max(threebody%cutoff,rct)
         End Do
 
      Else If (word(1:3) == 'fbp') Then

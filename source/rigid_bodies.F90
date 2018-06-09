@@ -15,7 +15,7 @@ Module rigid_bodies
   Use site
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
                               ltg,lsite,lfrzn,fxx,fyy,fzz,nfree,lstfre,getcom
-  Use vnl,             Only : llvnl,l_vnl,xbg,ybg,zbg
+  Use neighbours,      Only : neighbours_type
   Use statistics,      Only : stats_type
   Use numerics,        Only : images, jacobi, invert
   Use shared_units,    Only : update_shared_units
@@ -2269,7 +2269,7 @@ Contains
     End If
   End Subroutine rigid_bodies_widths
 
-  Subroutine xscale(m_rgd,tstep,thermo,stats,comm)
+  Subroutine xscale(m_rgd,tstep,thermo,stats,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2285,6 +2285,7 @@ Contains
   Real( Kind = wp ), Intent( In    ) :: tstep
   Type( thermostat_type), Intent( InOut ) :: thermo
   Type( stats_type), Intent( InOut ) :: stats
+  Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type), Intent( InOut ) :: comm
 
   Integer           :: fail,i,j,irgd,jrgd,lrgd
@@ -2421,7 +2422,7 @@ Contains
 
      End If
 
-     If (.not.l_vnl) Then
+     If (.not.neigh%update) Then
 
         If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -2432,21 +2433,21 @@ Contains
               scale = thermo%eta(1)
 
               Do i=1,natms
-                 xbg(i) = scale*xbg(i)
-                 ybg(i) = scale*ybg(i)
-                 zbg(i) = scale*zbg(i)
+                 neigh%xbg(i) = scale*neigh%xbg(i)
+                 neigh%ybg(i) = scale*neigh%ybg(i)
+                 neigh%zbg(i) = scale*neigh%zbg(i)
               End Do
 
            Else
 
               Do i=1,natms
-                 xa = xbg(i)*thermo%eta(1)+ybg(i)*thermo%eta(2)+zbg(i)*thermo%eta(3)
-                 ya = xbg(i)*thermo%eta(4)+ybg(i)*thermo%eta(5)+zbg(i)*thermo%eta(6)
-                 za = xbg(i)*thermo%eta(7)+ybg(i)*thermo%eta(8)+zbg(i)*thermo%eta(9)
+                 xa = neigh%xbg(i)*thermo%eta(1)+neigh%ybg(i)*thermo%eta(2)+neigh%zbg(i)*thermo%eta(3)
+                 ya = neigh%xbg(i)*thermo%eta(4)+neigh%ybg(i)*thermo%eta(5)+neigh%zbg(i)*thermo%eta(6)
+                 za = neigh%xbg(i)*thermo%eta(7)+neigh%ybg(i)*thermo%eta(8)+neigh%zbg(i)*thermo%eta(9)
 
-                 xbg(i) = xa
-                 ybg(i) = ya
-                 zbg(i) = za
+                 neigh%xbg(i) = xa
+                 neigh%ybg(i) = ya
+                 neigh%zbg(i) = za
               End Do
 
            End If
@@ -2455,16 +2456,16 @@ Contains
 
 ! hoover npt/nst
 
-           Call getcom(xbg,ybg,zbg,com,comm)
+           Call getcom(neigh%xbg,neigh%ybg,neigh%zbg,com,comm)
 
            If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
               scale = Exp(tstep*thermo%eta(1))
 
               Do i=1,natms
-                 xbg(i) = scale*(xbg(i)-com(1))+com(1)
-                 ybg(i) = scale*(ybg(i)-com(2))+com(2)
-                 zbg(i) = scale*(zbg(i)-com(3))+com(3)
+                 neigh%xbg(i) = scale*(neigh%xbg(i)-com(1))+com(1)
+                 neigh%ybg(i) = scale*(neigh%ybg(i)-com(2))+com(2)
+                 neigh%zbg(i) = scale*(neigh%zbg(i)-com(3))+com(3)
               End Do
 
            Else
@@ -2486,13 +2487,13 @@ Contains
               b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
               Do i=1,natms
-                 xa = xbg(i)-com(1)
-                 ya = ybg(i)-com(2)
-                 za = zbg(i)-com(3)
+                 xa = neigh%xbg(i)-com(1)
+                 ya = neigh%ybg(i)-com(2)
+                 za = neigh%zbg(i)-com(3)
 
-                 xbg(i) = xa*b1 + ya*b2 + za*b3 + com(1)
-                 ybg(i) = xa*b2 + ya*b5 + za*b6 + com(2)
-                 zbg(i) = xa*b3 + ya*b6 + za*b9 + com(3)
+                 neigh%xbg(i) = xa*b1 + ya*b2 + za*b3 + com(1)
+                 neigh%ybg(i) = xa*b2 + ya*b5 + za*b6 + com(2)
+                 neigh%zbg(i) = xa*b3 + ya*b6 + za*b9 + com(3)
               End Do
 
            End If
@@ -2509,9 +2510,9 @@ Contains
               scale = Exp(tstep*thermo%eta(1))
 
               Do i=1,natms
-                 xbg(i) = scale*xbg(i)
-                 ybg(i) = scale*ybg(i)
-                 zbg(i) = scale*zbg(i)
+                 neigh%xbg(i) = scale*neigh%xbg(i)
+                 neigh%ybg(i) = scale*neigh%ybg(i)
+                 neigh%zbg(i) = scale*neigh%zbg(i)
               End Do
 
            Else
@@ -2533,13 +2534,13 @@ Contains
               b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
               Do i=1,natms
-                 xa = xbg(i)
-                 ya = ybg(i)
-                 za = zbg(i)
+                 xa = neigh%xbg(i)
+                 ya = neigh%ybg(i)
+                 za = neigh%zbg(i)
 
-                 xbg(i) = xa*b1 + ya*b2 + za*b3
-                 ybg(i) = xa*b2 + ya*b5 + za*b6
-                 zbg(i) = xa*b3 + ya*b6 + za*b9
+                 neigh%xbg(i) = xa*b1 + ya*b2 + za*b3
+                 neigh%ybg(i) = xa*b2 + ya*b5 + za*b6
+                 neigh%zbg(i) = xa*b3 + ya*b6 + za*b9
               End Do
 
            End If
@@ -2836,9 +2837,9 @@ Contains
 
      End If
 
-     If (.not.l_vnl) Then
+     If (.not.neigh%update) Then
 
-        Call rigid_bodies_coms(xbg,ybg,zbg,rgdxin,rgdyin,rgdzin,comm)
+        Call rigid_bodies_coms(neigh%xbg,neigh%ybg,neigh%zbg,rgdxin,rgdyin,rgdzin,comm)
 
         If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -2851,9 +2852,9 @@ Contains
               Do j=1,nfree
                  i=lstfre(j)
 
-                 xbg(i) = scale*xbg(i)
-                 ybg(i) = scale*ybg(i)
-                 zbg(i) = scale*zbg(i)
+                 neigh%xbg(i) = scale*neigh%xbg(i)
+                 neigh%ybg(i) = scale*neigh%ybg(i)
+                 neigh%zbg(i) = scale*neigh%zbg(i)
               End Do
 
               Do irgd=1,ntrgd
@@ -2870,9 +2871,9 @@ Contains
                     i=indrgd(jrgd,irgd)
 
                     If (i <= natms) Then
-                       xbg(i) = xbg(i) - x + rgdxin(irgd)
-                       ybg(i) = ybg(i) - y + rgdyin(irgd)
-                       zbg(i) = zbg(i) - z + rgdzin(irgd)
+                       neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
+                       neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
+                       neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
                     End If
                  End Do
               End Do
@@ -2882,13 +2883,13 @@ Contains
               Do j=1,nfree
                  i=lstfre(j)
 
-                 xa = xbg(i)*thermo%eta(1)+ybg(i)*thermo%eta(2)+zbg(i)*thermo%eta(3)
-                 ya = xbg(i)*thermo%eta(4)+ybg(i)*thermo%eta(5)+zbg(i)*thermo%eta(6)
-                 za = xbg(i)*thermo%eta(7)+ybg(i)*thermo%eta(8)+zbg(i)*thermo%eta(9)
+                 xa = neigh%xbg(i)*thermo%eta(1)+neigh%ybg(i)*thermo%eta(2)+neigh%zbg(i)*thermo%eta(3)
+                 ya = neigh%xbg(i)*thermo%eta(4)+neigh%ybg(i)*thermo%eta(5)+neigh%zbg(i)*thermo%eta(6)
+                 za = neigh%xbg(i)*thermo%eta(7)+neigh%ybg(i)*thermo%eta(8)+neigh%zbg(i)*thermo%eta(9)
 
-                 xbg(i) = xa
-                 ybg(i) = ya
-                 zbg(i) = za
+                 neigh%xbg(i) = xa
+                 neigh%ybg(i) = ya
+                 neigh%zbg(i) = za
               End Do
 
               Do irgd=1,ntrgd
@@ -2909,9 +2910,9 @@ Contains
                     i=indrgd(jrgd,irgd)
 
                     If (i <= natms) Then
-                       xbg(i) = xbg(i) - x + rgdxin(irgd)
-                       ybg(i) = ybg(i) - y + rgdyin(irgd)
-                       zbg(i) = zbg(i) - z + rgdzin(irgd)
+                       neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
+                       neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
+                       neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
                     End If
                  End Do
               End Do
@@ -2922,7 +2923,7 @@ Contains
 
 ! hoover npt/nst
 
-           Call getcom(xbg,ybg,zbg,com,comm)
+           Call getcom(neigh%xbg,neigh%ybg,neigh%zbg,com,comm)
 
            If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
@@ -2931,9 +2932,9 @@ Contains
               Do j=1,nfree
                  i=lstfre(j)
 
-                 xbg(i) = scale*(xbg(i)-com(1))+com(1)
-                 ybg(i) = scale*(ybg(i)-com(2))+com(2)
-                 zbg(i) = scale*(zbg(i)-com(3))+com(3)
+                 neigh%xbg(i) = scale*(neigh%xbg(i)-com(1))+com(1)
+                 neigh%ybg(i) = scale*(neigh%ybg(i)-com(2))+com(2)
+                 neigh%zbg(i) = scale*(neigh%zbg(i)-com(3))+com(3)
               End Do
 
               Do irgd=1,ntrgd
@@ -2950,9 +2951,9 @@ Contains
                     i=indrgd(jrgd,irgd)
 
                     If (i <= natms) Then
-                       xbg(i) = xbg(i) - x + rgdxin(irgd)
-                       ybg(i) = ybg(i) - y + rgdyin(irgd)
-                       zbg(i) = zbg(i) - z + rgdzin(irgd)
+                       neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
+                       neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
+                       neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
                     End If
                  End Do
               End Do
@@ -2978,13 +2979,13 @@ Contains
               Do j=1,nfree
                  i=lstfre(j)
 
-                 xa = xbg(i)-com(1)
-                 ya = ybg(i)-com(2)
-                 za = zbg(i)-com(3)
+                 xa = neigh%xbg(i)-com(1)
+                 ya = neigh%ybg(i)-com(2)
+                 za = neigh%zbg(i)-com(3)
 
-                 xbg(i) = xa*b1 + ya*b2 + za*b3 + com(1)
-                 ybg(i) = xa*b2 + ya*b5 + za*b6 + com(2)
-                 zbg(i) = xa*b3 + ya*b6 + za*b9 + com(3)
+                 neigh%xbg(i) = xa*b1 + ya*b2 + za*b3 + com(1)
+                 neigh%ybg(i) = xa*b2 + ya*b5 + za*b6 + com(2)
+                 neigh%zbg(i) = xa*b3 + ya*b6 + za*b9 + com(3)
               End Do
 
               Do irgd=1,ntrgd
@@ -3005,9 +3006,9 @@ Contains
                     i=indrgd(jrgd,irgd)
 
                     If (i <= natms) Then
-                       xbg(i) = xbg(i) - x + rgdxin(irgd)
-                       ybg(i) = ybg(i) - y + rgdyin(irgd)
-                       zbg(i) = zbg(i) - z + rgdzin(irgd)
+                       neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
+                       neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
+                       neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
                     End If
                  End Do
               End Do
@@ -3028,9 +3029,9 @@ Contains
               Do j=1,nfree
                  i=lstfre(j)
 
-                 xbg(i) = scale*xbg(i)
-                 ybg(i) = scale*ybg(i)
-                 zbg(i) = scale*zbg(i)
+                 neigh%xbg(i) = scale*neigh%xbg(i)
+                 neigh%ybg(i) = scale*neigh%ybg(i)
+                 neigh%zbg(i) = scale*neigh%zbg(i)
               End Do
 
               Do irgd=1,ntrgd
@@ -3047,9 +3048,9 @@ Contains
                     i=indrgd(jrgd,irgd)
 
                     If (i <= natms) Then
-                       xbg(i) = xbg(i) - x + rgdxin(irgd)
-                       ybg(i) = ybg(i) - y + rgdyin(irgd)
-                       zbg(i) = zbg(i) - z + rgdzin(irgd)
+                       neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
+                       neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
+                       neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
                     End If
                  End Do
               End Do
@@ -3075,13 +3076,13 @@ Contains
               Do j=1,nfree
                  i=lstfre(j)
 
-                 xa = xbg(i)
-                 ya = ybg(i)
-                 za = zbg(i)
+                 xa = neigh%xbg(i)
+                 ya = neigh%ybg(i)
+                 za = neigh%zbg(i)
 
-                 xbg(i) = xa*b1 + ya*b2 + za*b3
-                 ybg(i) = xa*b2 + ya*b5 + za*b6
-                 zbg(i) = xa*b3 + ya*b6 + za*b9
+                 neigh%xbg(i) = xa*b1 + ya*b2 + za*b3
+                 neigh%ybg(i) = xa*b2 + ya*b5 + za*b6
+                 neigh%zbg(i) = xa*b3 + ya*b6 + za*b9
               End Do
 
               Do irgd=1,ntrgd
@@ -3102,9 +3103,9 @@ Contains
                     i=indrgd(jrgd,irgd)
 
                     If (i <= natms) Then
-                       xbg(i) = xbg(i) - x + rgdxin(irgd)
-                       ybg(i) = ybg(i) - y + rgdyin(irgd)
-                       zbg(i) = zbg(i) - z + rgdzin(irgd)
+                       neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
+                       neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
+                       neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
                     End If
                  End Do
               End Do
@@ -3115,7 +3116,7 @@ Contains
 
 ! Halo final RB members positions across onto neighbouring domains
 
-        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xbg,ybg,zbg,comm)
+        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,neigh%xbg,neigh%ybg,neigh%zbg,comm)
 
      End If
 
@@ -3128,7 +3129,7 @@ Contains
   End If
 
   Call pbcshift(imcon,cell,natms,stats%xin,stats%yin,stats%zin)
-  If (llvnl) Call pbcshift(imcon,cell,natms,xbg,ybg,zbg)
+  If (neigh%unconditional_update) Call pbcshift(imcon,cell,natms,neigh%xbg,neigh%ybg,neigh%zbg)
 
 End Subroutine xscale
 

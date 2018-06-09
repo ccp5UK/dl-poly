@@ -2523,7 +2523,7 @@ Subroutine mpoles_rotmat_set_halo(comm)
 End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles       &
-           (dvar,rlnk,lbook,lmsd,megatm, &
+           (dvar,cutoff_extended,lbook,lmsd,megatm, &
            megshl,megpmf,     &
            m_rgd,megtet,            &
            cons,  &
@@ -2541,7 +2541,7 @@ Subroutine relocate_particles       &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Real( Kind = wp ), Intent( In    ) :: dvar,rlnk
+  Real( Kind = wp ), Intent( In    ) :: dvar,cutoff_extended
   Logical,           Intent( In    ) :: lbook
   Logical,           Intent( In    ) :: lmsd
   Integer,           Intent( In    ) :: megatm,              &
@@ -2568,7 +2568,7 @@ Subroutine relocate_particles       &
 
 ! Define cut
 
-  cut=rlnk+1.0e-6_wp
+  cut=cutoff_extended+1.0e-6_wp
 
 ! rescale mock cell vectors for non-periodic system
 
@@ -2621,7 +2621,7 @@ Subroutine relocate_particles       &
 ! Cartesian coordinates to reduced space ones.
 ! Populate the move (former halo) indicator array.
 ! Here we assume no particle has moved more than
-! a link-cell width (> rlnk) in any direction
+! a link-cell width (> cutoff_extended) in any direction
 ! since last call to relocate as we don't test this!!!
 
      ixyz(1:natms)=0 ! Initialise move (former halo) indicator
@@ -2818,7 +2818,7 @@ Subroutine relocate_particles       &
 
 ! Halt program if potential cutoff exceeds cell width
 
-  If (rlnk > Min(celprp(7),celprp(8),celprp(9))/2.0_wp) Call error(95)
+  If (cutoff_extended > Min(celprp(7),celprp(8),celprp(9))/2.0_wp) Call error(95)
 
 End Subroutine relocate_particles
 
