@@ -138,10 +138,10 @@
               Call build_book_intra     &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,        &
+           megshl,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,bond,angle,dihedral,inversion,tether,comm)
-              If (lexcl) Call build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
+           megtet,cons,bond,angle,dihedral,inversion,tether,comm)
+              If (lexcl) Call build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
            End If
 
 ! Accumulate RDFs if needed (nstep->nstph)
@@ -207,7 +207,7 @@
 
 ! Apply kinetic options
 
-              Call w_kinetic_options(stat)
+              Call w_kinetic_options(cons,stat)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
@@ -330,11 +330,11 @@
      Call set_temperature            &
            (levcfg,keyres,      &
            lmin,nstep,nstrun,nstmin, &
-           mxshak,tolnce,keyshl,     &
+           keyshl,     &
            atmfre,atmfrz,            &
-           megshl,megcon,megpmf,     &
+           megshl,megpmf,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,stat%engrot,thermo,comm)
+           degfre,degshl,stat%engrot,stat,cons,thermo,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

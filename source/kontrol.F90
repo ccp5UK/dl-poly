@@ -53,6 +53,7 @@ Module kontrol
                          ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
   Use statistics, Only : stats_type
   USe z_density, Only : z_density_type
+  Use constraints, Only : constraints_type
 
   Implicit None
   Private
@@ -77,11 +78,11 @@ Subroutine read_control                                &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
            keymin,nstmin,min_tol,                      &
            fmax,nstbpo,keyfce,epsq,             &
-           rlx_tol,mxshak,tolnce,mxquat,quattol,       &
+           rlx_tol,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,nstrdf,  &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,stats,thermo,green,devel,plume,msd_data,met, &
+           ndump,pdplnc,cons,stats,thermo,green,devel,plume,msd_data,met, &
            pois,bond,angle,dihedral,inversion,zdensity,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -123,7 +124,7 @@ Subroutine read_control                                &
                                              keymin,nstmin,        &
                                              nstbpo,        &
                                              keyfce,        &
-                                             mxshak,mxquat,        &
+                                             mxquat,        &
                                              nstbnd,nstang,        &
                                              nstdih,nstinv,        &
                                              nstrdf,        &
@@ -132,10 +133,10 @@ Subroutine read_control                                &
                                              ndump
 
   Real( Kind = wp ),      Intent(   Out ) :: tstep,mndis,mxdis,mxstp,    &
-                                             min_tol(1:2), &
+                                             min_tol(1:2), quattol,&
                                              fmax,epsq,rlx_tol(1:2),     &
-                                             tolnce,quattol,             &
                                              rrsd,pdplnc
+  Type( constraints_type ), Intent (   InOut )   :: cons
   Type( stats_type ), Intent (   InOut )   :: stats
   Type( impact_type ),     Intent(   Out ) :: impa
   Type ( thermostat_type), Intent( InOut ) :: thermo
@@ -329,8 +330,8 @@ Subroutine read_control                                &
 ! default maximum number of iterations and maximum tolerance
 ! for constraint algorithms
 
-  mxshak = 250
-  tolnce = 1.0e-6_wp
+  cons%max_iter_shake = 250
+  cons%tolerance = 1.0e-6_wp
 
 ! default maximum number of iterations and maximum tolerance
 ! for LFV quaternion integration algorithms
@@ -2104,7 +2105,7 @@ Subroutine read_control                                &
      Else If (word(1:6) == 'mxshak') Then
 
         Call get_word(record,word)
-        mxshak = Abs(Nint(word_2_real(word)))
+        cons%max_iter_shake = Abs(Nint(word_2_real(word)))
 
 ! read tolerance for constraint algorithms
 
@@ -2112,7 +2113,7 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         If (word(1:9) == 'tolerance') Call get_word(record,word)
-        tolnce = Abs(word_2_real(word))
+        cons%tolerance = Abs(word_2_real(word))
 
 ! read maximum number of iterations in LFV quaternion integration algorithms
 
@@ -3065,9 +3066,9 @@ Subroutine read_control                                &
 
 ! report iteration length and tolerance condition for constraints and PMF algorithms
 
-  If ((mxcons > 0 .or. mxpmf > 0) .and. comm%idnode == 0) Then
-     Write(messages(1),'(a,i10)') 'iterations for shake/rattle ',mxshak
-     Write(messages(2),'(a,1p,e12.4)') 'tolerance for shake/rattle (Angs) ',tolnce
+  If ((cons%mxcons > 0 .or. mxpmf > 0) .and. comm%idnode == 0) Then
+     Write(messages(1),'(a,i10)') 'iterations for shake/rattle ',cons%max_iter_shake
+     Write(messages(2),'(a,1p,e12.4)') 'tolerance for shake/rattle (Angs) ',cons%tolerance
      Call info(messages,2,.true.)
   End If
 

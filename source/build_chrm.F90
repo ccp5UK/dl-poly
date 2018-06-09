@@ -5,15 +5,10 @@ Module build_chrm
   Use comms,  Only : comms_type,gcheck,gmax,gsum
   Use setup
 
-  ! CONFIG MODULE
 
   Use configuration, Only : natms,nlast,lsi,lsa,ltg,lfrzn
 
-  ! INTERACTION MODULES
-
   Use core_shell
-
-  Use constraints
 
   Use rigid_bodies
 
@@ -22,18 +17,17 @@ Module build_chrm
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type
 
-  ! MULTIPOLES MODULE
-
   Use mpole, Only : keyind,lchatm ! equivalent to lexatm in configuration
   Use numerics, Only : local_index,shellsort
   Use build_excl, Only : add_exclusion
+  Use constraints, Only : constraints_type 
   Implicit None
 
   Private
 
   Public :: build_chrm_intra
 Contains
-  Subroutine build_chrm_intra(bond,angle,dihedral,inversion,comm)
+  Subroutine build_chrm_intra(cons,bond,angle,dihedral,inversion,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -55,6 +49,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type( constraints_type ), Intent( In    ) :: cons
     Type( bonds_type ), Intent( In    ) :: bond
     Type( angles_type ), Intent( In    ) :: angle
     Type( dihedrals_type ), Intent( In    ) :: dihedral
@@ -88,9 +83,9 @@ Contains
 
       ! add sites on basis of constraint bonds to core-shell units
 
-      Do kk=1,ntcons1
-        ja=listcon(1,kk)
-        jb=listcon(2,kk)
+      Do kk=1,cons%ntcons1
+        ja=cons%listcon(1,kk)
+        jb=cons%listcon(2,kk)
 
         ja0=local_index(ja,nlast,lsi,lsa)
         jb0=local_index(jb,nlast,lsi,lsa)

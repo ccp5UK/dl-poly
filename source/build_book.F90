@@ -16,7 +16,6 @@ Module build_book
 
   Use core_shell
 
-  Use constraints
   Use pmf
 
   Use rigid_bodies
@@ -31,6 +30,7 @@ Module build_book
   Use shared_units, Only : tag_legend,pass_shared_units
   Use numerics, Only : local_index
   Use ffield, Only : report_topology
+  Use constraints, Only : constraints_type
 
   Use errors_warnings, Only : error
 
@@ -48,9 +48,10 @@ Module build_book
 Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,        &
+           megshl,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,bond,angle,dihedral,  & 
+           megtet,                      &
+           cons,bond,angle,dihedral,  & 
            inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -69,10 +70,11 @@ Subroutine build_book_intra             &
   Real(Kind = wp),   Intent( In    ) :: dvar
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
-                                        megshl,megcon,megpmf, &
+                                        megshl,megpmf, &
                                         megtet
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
+  Type( constraints_type), Intent(Inout) :: cons
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
@@ -111,7 +113,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra(bond,angle,dihedral,inversion,tether)
+  If (.not.(newjob .or. lsim)) Call init_intra(cons,bond,angle,dihedral,inversion,tether)
 
 ! Initialise safety flags
 
@@ -267,9 +269,9 @@ Subroutine build_book_intra             &
 
 ! Construct constraint bond list
 
-           Do lconst=1,numcon(itmols)
-              iatm=lstcon(1,lconst+kconst)+isite
-              jatm=lstcon(2,lconst+kconst)+isite
+           Do lconst=1,cons%numcon(itmols)
+              iatm=cons%lstcon(1,lconst+kconst)+isite
+              jatm=cons%lstcon(2,lconst+kconst)+isite
 
               iat0=local_index(iatm,nlast,lsi,lsa)
               jat0=local_index(jatm,nlast,lsi,lsa)
@@ -279,19 +281,19 @@ Subroutine build_book_intra             &
 
               If (iat0 > 0 .or. jat0 > 0) Then
                  jconst=jconst+1
-                 If (jconst <= mxcons) Then
-                    listcon(0,jconst)=lconst+kconst
-                    listcon(1,jconst)=iatm
-                    listcon(2,jconst)=jatm
+                 If (jconst <= cons%mxcons) Then
+                    cons%listcon(0,jconst)=lconst+kconst
+                    cons%listcon(1,jconst)=iatm
+                    cons%listcon(2,jconst)=jatm
 
                     If (iat0 > 0) Then
-                       Call tag_legend(safe(1),iat0,jconst,legcon,mxfcon)
-                       If (legcon(mxfcon,iat0) > 0) Then
+                       Call tag_legend(safe(1),iat0,jconst,cons%legcon,cons%mxfcon)
+                       If (cons%legcon(cons%mxfcon,iat0) > 0) Then
                           Call warning('too many constraint type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfcon-1+legcon(mxfcon,iat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfcon-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', cons%mxfcon-1+cons%legcon(cons%mxfcon,iat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', cons%mxfcon-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstcon(1,lconst+kconst)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', cons%lstcon(1,lconst+kconst)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', lconst
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -300,13 +302,13 @@ Subroutine build_book_intra             &
                     End If
 
                     If (jat0 > 0) Then
-                       Call tag_legend(safe(1),jat0,jconst,legcon,mxfcon)
-                       If (legcon(mxfcon,jat0) > 0) Then
+                       Call tag_legend(safe(1),jat0,jconst,cons%legcon,cons%mxfcon)
+                       If (cons%legcon(cons%mxfcon,jat0) > 0) Then
                           Call warning('too many constraint type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfcon-1+legcon(mxfcon,jat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfcon-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', cons%mxfcon-1+cons%legcon(cons%mxfcon,jat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', cons%mxfcon-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', jatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstcon(2,lconst+kconst)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', cons%lstcon(2,lconst+kconst)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', lconst
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -880,7 +882,7 @@ Subroutine build_book_intra             &
 
      kshels=kshels+numshl(itmols)
 
-     kconst=kconst+numcon(itmols)
+     kconst=kconst+cons%numcon(itmols)
 ! No 'kpmf' needed since PMF is defined on one and only one molecular type
 
      krigid=krigid+numrgd(itmols)
@@ -898,7 +900,7 @@ Subroutine build_book_intra             &
 
   ntshl =jshels
 
-  ntcons=jconst
+  cons%ntcons=jconst
 ! 'ntpmf' is updated locally as PMFs are global and one type only
 
   ntrgd =jrigid
@@ -913,7 +915,7 @@ Subroutine build_book_intra             &
   If (megshl == 0) Then
      ntshl1 =ntshl
 
-     ntcons1=ntcons
+     cons%ntcons1=cons%ntcons
 
      ntrgd1 =ntrgd
 
@@ -932,9 +934,9 @@ Subroutine build_book_intra             &
 
   iwrk=0
   mshels=0
-  Do i=1,ntcons
-     iatm=listcon(1,i)
-     jatm=listcon(2,i)
+  Do i=1,cons%ntcons
+     iatm=cons%listcon(1,i)
+     jatm=cons%listcon(2,i)
 
      iat0=local_index(iatm,nlast,lsi,lsa)
      jat0=local_index(jatm,nlast,lsi,lsa)
@@ -1206,23 +1208,23 @@ Subroutine build_book_intra             &
         End Do
 
 ! If there is a non-local, cross-domained core-shell unit atom on this
-! molecule on this node, extend listcon, listrgd, bond%list and angle%list
+! molecule on this node, extend cons%listcon, listrgd, bond%list and angle%list
 
         If (i > 0) Then
 
 ! Extend constraint bond list
 
-           Do lconst=1,numcon(itmols)
-              iatm=lstcon(1,lconst+kconst)+isite
-              jatm=lstcon(2,lconst+kconst)+isite
+           Do lconst=1,cons%numcon(itmols)
+              iatm=cons%lstcon(1,lconst+kconst)+isite
+              jatm=cons%lstcon(2,lconst+kconst)+isite
 
               If ( Any(iwrk(1:mshels) == iatm) .or. &
                    Any(iwrk(1:mshels) == jatm) ) Then
                  jconst=jconst+1
-                 If (jconst <= mxcons) Then
-                    listcon(0,jconst)=lconst+kconst
-                    listcon(1,jconst)=iatm
-                    listcon(2,jconst)=jatm
+                 If (jconst <= cons%mxcons) Then
+                    cons%listcon(0,jconst)=lconst+kconst
+                    cons%listcon(1,jconst)=iatm
+                    cons%listcon(2,jconst)=jatm
                  Else
                     safe(3)=.false.
                  End If
@@ -1366,7 +1368,7 @@ Subroutine build_book_intra             &
 ! Update constraint, RB, bond, angle, dihedral and inversion
 ! units numbers for all passed molecules so far
 
-     kconst=kconst+numcon(itmols)
+     kconst=kconst+cons%numcon(itmols)
 
      krigid=krigid+numrgd(itmols)
 
@@ -1381,7 +1383,7 @@ Subroutine build_book_intra             &
 ! Store first extended array counters for bookkeeping and exclusion
 ! of constraint, RB, bond, angle, dihedral and inversion units
 
-  ntcons1=jconst
+  cons%ntcons1=jconst
 
   ntrgd1 =jrigid
 
@@ -1396,9 +1398,9 @@ Subroutine build_book_intra             &
 
   iwrk=0
   mshels=0
-  Do i=ntcons+1,ntcons1
-     iatm=listcon(1,i)
-     jatm=listcon(2,i)
+  Do i=cons%ntcons+1,cons%ntcons1
+     iatm=cons%listcon(1,i)
+     jatm=cons%listcon(2,i)
 
      If (.not.Any(iwrk(1:mshels) == iatm)) Then
         mshels=mshels+1
@@ -1600,7 +1602,7 @@ Subroutine build_book_intra             &
 
   If (Any(.not.safe)) Then
      itmp(1)=ishels ; jtmp(1)=mxshl
-     itmp(2)=iconst ; jtmp(2)=mxcons
+     itmp(2)=iconst ; jtmp(2)=cons%mxcons
      itmp(3)=ipmf   ; jtmp(3)=mxpmf
      itmp(4)=irigid ; jtmp(4)=mxrgd
      itmp(5)=iteths ; jtmp(5)=tether%mxteth
@@ -1649,15 +1651,15 @@ Subroutine build_book_intra             &
 
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,megrgd,  &
-           megtet,bond,angle,dihedral,inversion,tether,comm)
+           megshl,megpmf,megrgd,  &
+           megtet,cons,bond,angle,dihedral,inversion,tether,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
      If (lsim) Then
         Call deallocate_core_shell_arrays()
 
-        Call deallocate_constraints_arrays()
+        Call cons%deallocate_constraints_temps()
         Call deallocate_pmf_arrays()
 
         Call deallocate_rigid_bodies_arrays()
@@ -1686,8 +1688,10 @@ Subroutine build_book_intra             &
      (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl,comm,&
    q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
-  If (m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (mxcons,Lbound(listcon,Dim=1),Ubound(listcon,Dim=1),ntcons,listcon,mxfcon,legcon,lshmv_con,lishp_con,lashp_con,comm,&
+  If (cons%m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
+     (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,&
+     cons%legcon,cons%lshmv_con,&
+     cons%lishp_con,cons%lashp_con,comm,&
    q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
   If (m_rgd > 0 .and. comm%mxnode > 1) Call pass_shared_units &
@@ -1696,7 +1700,7 @@ Subroutine build_book_intra             &
 
 End Subroutine build_book_intra
 
-Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
+Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1713,6 +1717,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
 
   Integer, Intent( In    )          :: mxf_u,mx_u,b_u
   Integer, Intent( InOut )          :: nt_u,list_u(0:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
+  Type( constraints_type), Intent( InOut) :: cons
   Type( comms_type), Intent( InOut) :: comm
 
   Logical :: ok,keep_k,keep_nt
@@ -1781,7 +1786,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra(bond,angle,dihedral,inversion,tether)
+Subroutine init_intra(cons,bond,angle,dihedral,inversion,tether)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1794,6 +1799,7 @@ Subroutine init_intra(bond,angle,dihedral,inversion,tether)
 ! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Type( constraints_type ), Intent( InOut ) :: cons
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
@@ -1812,9 +1818,9 @@ Subroutine init_intra(bond,angle,dihedral,inversion,tether)
 
 ! constraints locals
 
-  ntcons  = 0 ; ntcons1 = 0
-  listcon = 0
-  legcon  = 0
+  cons%ntcons  = 0 ; cons%ntcons1 = 0
+  cons%listcon = 0
+  cons%legcon  = 0
 
 ! PMFs locals
 

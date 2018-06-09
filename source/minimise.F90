@@ -12,7 +12,7 @@ Module minimise
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gsum,gmax
   Use setup,           Only : engunit,nrite,output, &
-                              mxatms,mxcons,mxtpmf,mxpmf,zero_plus, &
+                              mxatms,mxtpmf,mxpmf,zero_plus, &
                               mxrgd,mxlrgd
   Use configuration,   Only : natms,nlast,nfree,          &
                               lsi,lsa,lfrzn,lfree,lstfre, &
@@ -29,12 +29,12 @@ Module minimise
   Use kinetics,        Only : getvom,getkin,getknf,getknt,getknr, &
                               kinstress,kinstresf,kinstrest
   Use numerics,        Only : images,invert
-  Use constraints,     Only : constraints_tags,constraints_pseudo_bonds
   Use pmf,             Only : pmf_tags,pmf_pseudo_bonds
   Use shared_units,    Only : update_shared_units
   Use rigid_bodies,    Only : rigid_bodies_split_torque,rigid_bodies_move
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
+  Use constraints, Only : constraints_type,constraints_tags,constraints_pseudo_bonds
 
   Implicit None
 
@@ -82,8 +82,8 @@ Contains
   End Subroutine deallocate_minimise_arrays
   
   Subroutine minimise_relax &
-           (l_str,relaxed,lrdf,megatm,megcon,megpmf,megrgd, &
-           keymin,min_tol,tstep,stpcfg,comm)
+           (l_str,relaxed,lrdf,megatm,megpmf,megrgd, &
+           keymin,min_tol,tstep,stpcfg,stat,cons,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -105,9 +105,11 @@ Contains
 
   Logical,           Intent( In    ) :: l_str
   Logical,           Intent( InOut ) :: relaxed,lrdf
-  Integer,           Intent( In    ) :: megatm,megcon, &
+  Integer,           Intent( In    ) :: megatm, &
                                         megpmf,megrgd,keymin
   Real( Kind = wp ), Intent( In    ) :: min_tol(1:2),tstep,stpcfg
+  Type( stats_type ), Intent(InOut) :: stat
+  Type( constraints_type ), Intent(InOut) :: cons
   Type( comms_type ), Intent( inOut ) :: comm
 
   Logical,              Save :: newjob = .true. , l_rdf, l_mov
@@ -116,7 +118,7 @@ Contains
   Integer,              Save :: keyopt
   Integer                    :: fail(1:8),i,j,levcfg
   Real( Kind = wp ),    Save :: total,grad_tol,eng_tol,dist_tol,step,           &
-                                eng_0,eng_min,engcon,engpmf,eng,eng0,eng1,eng2, &
+                                eng_0,eng_min,engpmf,eng,eng0,eng1,eng2, &
                                 grad,grad0,grad1,grad2,onorm,sgn,stride,gamma
 
 ! OUTPUT existence
@@ -144,11 +146,11 @@ Contains
 
 
   fail=0
-  If (megcon > 0 .or. megpmf > 0) Then
+  If (cons%megcon > 0 .or. megpmf > 0) Then
      Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
-     If (megcon > 0) Then
-        Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),          Stat=fail(2))
-        Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons),      Stat=fail(3))
+     If (cons%megcon > 0) Then
+        Allocate (lstopt(0:2,1:cons%mxcons),listot(1:mxatms),          Stat=fail(2))
+        Allocate (dxx(1:cons%mxcons),dyy(1:cons%mxcons),dzz(1:cons%mxcons),      Stat=fail(3))
      End If
      If (megpmf > 0) Then
         Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail(4))
@@ -209,7 +211,7 @@ Contains
 
 ! enlarged depending on functionality if defaulted
 
-     If (megcon == 0 .and. megpmf == 0) Then
+     If (cons%megcon == 0 .and. megpmf == 0) Then
         If (megrgd == 0) Then
            step=10.0_wp*step
         Else
@@ -281,13 +283,13 @@ Contains
 
 ! Calculate pseudo forces and energy for constraint bonds and PMFs
 
-  If (megcon > 0 .or. megpmf > 0) Then
+  If (cons%megcon > 0 .or. megpmf > 0) Then
      lstitr(1:natms)=.false. ! initialise lstitr
 
-     If (megcon > 0) Then
-        Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
-        Call constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,engcon,comm)
-        eng=eng+engcon
+     If (cons%megcon > 0) Then
+        Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
+        Call constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,stat,cons,comm)
+        eng=eng+stat%engcon
      End If
 
      If (megpmf > 0) Then
@@ -586,9 +588,9 @@ Contains
 
   End If
 
-  If (megcon > 0 .or. megpmf > 0) Then
+  If (cons%megcon > 0 .or. megpmf > 0) Then
      Deallocate (lstitr,           Stat=fail(1))
-     If (megcon > 0) Then
+     If (cons%megcon > 0) Then
         Deallocate (lstopt,listot, Stat=fail(2))
         Deallocate (dxx,dyy,dzz,   Stat=fail(3))
      End If
