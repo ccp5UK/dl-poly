@@ -940,7 +940,7 @@ Subroutine constraints_shake_vv       &
 
 ! global sum of stress tensor
 
-  Call gsum(comm,stat%strcon)
+  Call gsum(comm,str)
 
 ! complete stress tensor (symmetrise)
 
