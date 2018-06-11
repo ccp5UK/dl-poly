@@ -13,13 +13,14 @@ Module metal
   Use kinds, Only : wp,wi
   Use setup
   Use site,   Only : ntpatm,unqatm,dens
-  Use configuration, Only : natms,ltg,ltype,list,fxx,fyy,fzz,&
+  Use configuration, Only : natms,ltg,ltype,fxx,fyy,fzz,&
                             xxx,yyy,zzz,imcon,volm,nlast,ixyz
 
   Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag,wp_mpi,gsend, &
                      gwait,girecv
   Use parse, Only : get_line,get_word,lower_case,word_2_real
   Use domains, Only : map
+  Use neighbours, Only : neighbours_type
 
   Use errors_warnings, Only : error,warning,info
   Implicit None
@@ -154,7 +155,7 @@ Contains
   End Subroutine allocate_metal_erf_arrays
 
   Subroutine metal_forces &
-          (iatm,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,met)
+          (iatm,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,met,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -169,7 +170,8 @@ Contains
 
   
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+  Type( neighbours_type ), Intent( In    ) :: neigh
+  Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
   Real( Kind = wp ),                        Intent(   Out ) :: engmet,virmet
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Logical,                                  Intent( InOut ) :: safe
@@ -217,11 +219,11 @@ Contains
 
 ! start of primary loop for forces evaluation
 
-  Do m=1,list(0,iatm)
+  Do m=1,neigh%list(0,iatm)
 
 ! atomic and potential function indices
 
-     jatm=list(m,iatm)
+     jatm=neigh%list(m,iatm)
      aj=ltype(jatm)
 
      If      (met%tab == 1 .or. met%tab == 3) Then ! EAM & 2BEAM
@@ -828,7 +830,7 @@ Contains
   stress(9) = stress(9) + strs9
 End Subroutine metal_forces
 
-Subroutine metal_ld_compute(engden,virden,stress,met,comm)
+Subroutine metal_ld_compute(engden,virden,stress,met,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -848,6 +850,7 @@ Subroutine metal_ld_compute(engden,virden,stress,met,comm)
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Type( metal_type ), Intent( InOut ) :: met
+  Type( neighbours_type ), Intent( In    ) :: neigh
   Type( comms_type ),                       Intent( InOut ) :: comm
 
   Logical           :: safe = .true.
@@ -876,19 +879,19 @@ Subroutine metal_ld_compute(engden,virden,stress,met,comm)
 ! outer loop over atoms
 
   fail=0
-  Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
+  Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'metal_ld_compute allocation failure'
      Call error(0,message)
   End If
 
   Do i=1,natms
-     limit=list(0,i) ! Get list limit
+     limit=neigh%list(0,i) ! Get list limit
 
 ! calculate interatomic distances
 
      Do k=1,limit
-        j=list(k,i)
+        j=neigh%list(k,i)
 
         xxt(k)=xxx(i)-xxx(j)
         yyt(k)=yyy(i)-yyy(j)
@@ -908,9 +911,9 @@ Subroutine metal_ld_compute(engden,virden,stress,met,comm)
 ! calculate contributions to local density
 
      If (met%tab > 0) Then         ! EAM contributions
-        Call metal_ld_collect_eam(i,rrt,safe,met)
+        Call metal_ld_collect_eam(i,rrt,safe,met,neigh)
      Else ! If (met%tab == 0) Then ! FST contributions
-        Call metal_ld_collect_fst(i,rrt,safe,met)
+        Call metal_ld_collect_fst(i,rrt,safe,met,neigh)
      End If
   End Do
 
@@ -2105,7 +2108,7 @@ Subroutine metal_generate_erf(met)
   End If
 End Subroutine metal_generate_erf
 
-Subroutine metal_ld_collect_eam(iatm,rrt,safe,met)
+Subroutine metal_ld_collect_eam(iatm,rrt,safe,met,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2124,7 +2127,8 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,met)
 
 
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
+  Type( neighbours_type ), Intent( In    ) :: neigh
+  Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
   Logical,                                  Intent( InOut ) :: safe
   Type( metal_type ), Intent( InOut ) :: met
 
@@ -2137,11 +2141,11 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,met)
 
 ! start of primary loop for density
 
-  Do m=1,list(0,iatm)
+  Do m=1,neigh%list(0,iatm)
 
 ! atomic and potential function indices
 
-     jatm=list(m,iatm)
+     jatm=neigh%list(m,iatm)
      aj=ltype(jatm)
 
      If      (met%tab == 1 .or. met%tab == 3) Then ! EAM & 2BEAM
@@ -2387,7 +2391,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,met)
   End Do
 End Subroutine metal_ld_collect_eam
 
-Subroutine metal_ld_collect_fst(iatm,rrt,safe,met)
+Subroutine metal_ld_collect_fst(iatm,rrt,safe,met,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2403,7 +2407,8 @@ Subroutine metal_ld_collect_fst(iatm,rrt,safe,met)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
+  Type( neighbours_type ), Intent( In    ) :: neigh
+  Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
   Logical,                                  Intent( InOut ) :: safe
   Type( metal_type ), Intent( InOut ) :: met
 
@@ -2421,11 +2426,11 @@ Subroutine metal_ld_collect_fst(iatm,rrt,safe,met)
 
 ! start of primary loop for density
 
-  Do m=1,list(0,iatm)
+  Do m=1,neigh%list(0,iatm)
 
 ! atomic and potential function indices
 
-     jatm=list(m,iatm)
+     jatm=neigh%list(m,iatm)
      aj=ltype(jatm)
 
      If (ai > aj) Then

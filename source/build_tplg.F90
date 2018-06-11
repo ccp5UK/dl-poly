@@ -35,7 +35,7 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine for constructing the topology related list
+    ! dl_poly_4 subroutine for constructing the topology related neigh%list
     ! of neighbours for the MD system mapped onto this node.  It is presumed
     ! that constraint bonds are put on top of chemical bonds!
     !
@@ -71,7 +71,7 @@ Contains
         If (ia0 > natms) ia0=0
         If (ib0 > natms) ib0=0
 
-        ! add atoms to topology list
+        ! add atoms to topology neigh%list
 
         If (ia0 > 0) Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
         If (ib0 > 0) Call add_exclusion(safe,ib0,ia,ibig,ltpatm)
@@ -94,7 +94,7 @@ Contains
         If (ib0 > natms) ib0=0
         If (ic0 > natms) ic0=0
 
-        ! add atoms to topology list
+        ! add atoms to topology neigh%list
 
         If (ia0 > 0) Then ! ia : ib - ic neighbours
           Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
@@ -131,7 +131,7 @@ Contains
       If (ic0 > natms) ic0=0
       If (id0 > natms) id0=0
 
-      ! add atoms to topology list
+      ! add atoms to topology neigh%list
 
       If (ia0 > 0) Then ! ia : ib - ic neighbours
         Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
@@ -172,7 +172,7 @@ Contains
       If (ic0 > natms) ic0=0
       If (id0 > natms) id0=0
 
-      ! add atoms to topology list
+      ! add atoms to topology neigh%list
 
       If (ia0 > 0) Then ! ia : ib - ic - id neighbours
         Call add_exclusion(safe,ia0,ib,ibig,ltpatm)

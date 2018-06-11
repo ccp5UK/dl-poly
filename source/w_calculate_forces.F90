@@ -36,15 +36,15 @@
 
 ! Calculate tersoff forces
 
-     If (ntpter > 0) Call tersoff_forces(rcter,stat,comm)
+     If (ntpter > 0) Call tersoff_forces(rcter,stat,neigh,comm)
 
 ! Calculate three-body forces
 
-     If (threebody%ntptbp > 0) Call three_body_forces(stat,threebody,comm)
+     If (threebody%ntptbp > 0) Call three_body_forces(stat,threebody,neigh,comm)
 
 ! Calculate four-body forces
 
-     If (ntpfbp > 0) Call four_body_forces(rcfbp,stat,comm)
+     If (ntpfbp > 0) Call four_body_forces(rcfbp,stat,neigh,comm)
 
 ! Calculate shell model forces
 

@@ -6,7 +6,7 @@
 ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
 
         If (thermo%key_dpd > 0 .and. thermo%key_dpd*isw == 0) Then
-          Call dpd_thermostat(isw,l_str,neigh%cutoff,nstep,tstep,stat,thermo,comm)
+          Call dpd_thermostat(isw,l_str,neigh%cutoff,nstep,tstep,stat,thermo,neigh,comm)
         End If
 
 ! Integrate equations of motion - velocity verlet
@@ -391,7 +391,7 @@
 ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
 
         If (thermo%key_dpd > 0 .and. thermo%key_dpd*isw == 2) Then
-          Call dpd_thermostat(isw,l_str,neigh%cutoff,nstep,tstep,stat,thermo,comm)
+          Call dpd_thermostat(isw,l_str,neigh%cutoff,nstep,tstep,stat,thermo,neigh,comm)
         End If
 
 

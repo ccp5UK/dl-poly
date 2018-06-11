@@ -500,7 +500,7 @@ Subroutine read_field                      &
                           If (wgtsit(nsite) > 1.0e-6_wp) dofsit(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
                        End Do
 
-! establish list of unique atom types
+! establish neigh%list of unique atom types
 
                        atmchk=.true.
                        Do jsite=1,ntpatm
@@ -605,7 +605,7 @@ Subroutine read_field                      &
 
                     If (frzsit(isite2) /= 0) Call error(49)
 
-! establish list of unique shell types (most certainly ntpshl <= ntpatm <= mxatyp)
+! establish neigh%list of unique shell types (most certainly ntpshl <= ntpatm <= mxatyp)
 
                     If (.not.Any(unqshl(1:ntpshl) == sitnam(isite2))) Then
                        ntpshl=ntpshl+1

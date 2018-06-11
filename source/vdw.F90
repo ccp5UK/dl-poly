@@ -14,13 +14,14 @@ Module vdw
   Use setup
   Use site,   Only : ntpatm,numtyp
   Use configuration, Only : imcon,volm,natms,ltype,lfrzn, &
-                            ltg,list,fxx,fyy,fzz
+                            ltg,fxx,fyy,fzz
   Use mm3lrc
   Use zbl_pots,         Only : ab, intRadZBL, intdRadZBL, &
                            zbl,zbls,zblb
 
   Use site,  Only : ntpatm,unqatm
   Use parse, Only : get_line,get_word,word_2_real
+  Use neighbours, Only : neighbours_type
   Use errors_warnings, Only : error,warning,info
   Implicit None
 
@@ -1676,7 +1677,7 @@ End Subroutine vdw_generate
 
 
 Subroutine vdw_forces &
-           (iatm,rvdw,xxt,yyt,zzt,rrt,engvdw,virvdw,stress)
+           (iatm,rvdw,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1695,7 +1696,8 @@ Subroutine vdw_forces &
 
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ),                        Intent( In    ) :: rvdw
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+  Type( neighbours_type ), Intent( In    ) :: neigh
+  Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
   Real( Kind = wp ),                        Intent(   Out ) :: engvdw,virvdw
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -1749,11 +1751,11 @@ Subroutine vdw_forces &
 
 ! start of primary loop for forces evaluation
 
-  Do mm=1,list(0,iatm)
+  Do mm=1,neigh%list(0,iatm)
 
 ! atomic and potential function indices
 
-     jatm=list(mm,iatm)
+     jatm=neigh%list(mm,iatm)
      aj=ltype(jatm)
 
      If (ai > aj) Then

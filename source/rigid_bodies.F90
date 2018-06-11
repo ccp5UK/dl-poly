@@ -1294,7 +1294,7 @@ Contains
        nsite=nsite+numsit(itmols)
     End Do
 
-  ! In case of any refreezing changes refresh the local list of frozen atoms
+  ! In case of any refreezing changes refresh the local neigh%list of frozen atoms
 
     If (lstsit(0) > 0) Then
        Do i=1,nlast

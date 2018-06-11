@@ -13,14 +13,15 @@ Module coul_mpole
   Use kinds, Only : wp
   Use comms,  Only : comms_type
   Use setup, Only : mxsite,mxexcl,mxspl,mxompl,mximpl,mxatdm,mxatms, &
-                           mxlist, r4pie0, zero_plus, mxgele, nrite, sqrpi
-  Use configuration, Only : imcon,natms,ltg,fxx,fyy,fzz,xxx,yyy,zzz,cell,list, &
+                            r4pie0, zero_plus, mxgele, nrite, sqrpi
+  Use configuration, Only : imcon,natms,ltg,fxx,fyy,fzz,xxx,yyy,zzz,cell, &
                             chge
   Use mpole
   Use mpoles_container, Only : coul_deriv, ewald_deriv, &
                                explicit_fscp_rfp_loops, explicit_ewald_real_loops, &
                                explicit_ewald_real_loops
   Use numerics,         Only : erfcgen, images_s
+  Use neighbours,       Only : neighbours_type
 
   Implicit None
 
@@ -420,7 +421,7 @@ Contains
   End Subroutine intra_mcoul
 
   Subroutine coul_fscp_mforces &
-             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,comm)
+             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -428,8 +429,8 @@ Contains
   ! in a periodic system using multipoles assuming a force shifted
   ! coulomb potential kernel
   !
-  ! U is proportional to ( 1/r + aa*r  + bb ) such that dU(rcut)/dr = 0
-  ! therefore aa = 1/(rcut)**2 and U(rcut) = 0 therefore bb = -2/(rcut)
+  ! U is proportional to ( 1/r + aa*r  + bb ) such that dU(neigh%cutoff)/dr = 0
+  ! therefore aa = 1/(neigh%cutoff)**2 and U(neigh%cutoff) = 0 therefore bb = -2/(neigh%cutoff)
   !
   ! Note: FS potential can be generalised (R1) by using a damping function
   ! as used for damping the real space coulombic interaction in the
@@ -444,8 +445,9 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( comms_type ),                       Intent( In    ) :: comm
@@ -488,7 +490,7 @@ Contains
 
   ! interpolation interval
 
-          drewd = rcut/Real(mxgele-4,wp)
+          drewd = neigh%cutoff/Real(mxgele-4,wp)
 
   ! reciprocal of interpolation interval
 
@@ -503,19 +505,19 @@ Contains
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(rcut,alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =   fer(mxgele-4)*rcut
-          bb = -(erc(mxgele-4)+aa*rcut)
+          aa =   fer(mxgele-4)*neigh%cutoff
+          bb = -(erc(mxgele-4)+aa*neigh%cutoff)
 
        Else
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =  1.0_wp/rcut**2
-          bb = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
+          aa =  1.0_wp/neigh%cutoff**2
+          bb = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
 
        End If
     End If
@@ -580,11 +582,11 @@ Contains
 
   ! start of primary loop for forces evaluation
 
-       Do m=1,list(0,iatm)
+       Do m=1,neigh%list(0,iatm)
 
   ! atomic index
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
 
   ! get the multipoles for site j
 
@@ -604,7 +606,7 @@ Contains
 
   ! truncation of potential
 
-          If (Maxval(Abs(jmp)) > zero_plus .and. rrr < rcut) Then
+          If (Maxval(Abs(jmp)) > zero_plus .and. rrr < neigh%cutoff) Then
 
   ! get the components for site j infinitesimal rotations
 
@@ -787,7 +789,7 @@ Contains
 
   ! scale the derivatives of 'r' and add to d1
 
-                d1 = d1 + a1/rcut**2
+                d1 = d1 + a1/neigh%cutoff**2
 
   ! calculate potential forces
 
@@ -1004,13 +1006,13 @@ Contains
   End Subroutine coul_fscp_mforces
 
   Subroutine coul_rfp_mforces &
-             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,comm)
+             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for calculating coulombic energy and force terms
   ! in a periodic system using multipoles assuming a reaction field
-  ! potential (corrected for the existence of a dipole moment outside rcut)
+  ! potential (corrected for the existence of a dipole moment outside neigh%cutoff)
   !
   ! Note: RF potential can be generalised (R1) by using a damping function
   ! as used for damping the real space coulombic interaction in the
@@ -1026,8 +1028,9 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( comms_type ),                       Intent( In    ) :: comm
@@ -1073,15 +1076,15 @@ Contains
   ! reaction field terms
 
        b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
-       rfld0 = b0/rcut**3
-       rfld1 = (1.0_wp + 0.5_wp*b0)/rcut
+       rfld0 = b0/neigh%cutoff**3
+       rfld1 = (1.0_wp + 0.5_wp*b0)/neigh%cutoff
        rfld2 = 0.5_wp*rfld0
 
        If (damp) Then
 
   ! interpolation interval
 
-          drewd = rcut/Real(mxgele-4,wp)
+          drewd = neigh%cutoff/Real(mxgele-4,wp)
 
   ! reciprocal of interpolation interval
 
@@ -1096,19 +1099,19 @@ Contains
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(rcut,alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =   fer(mxgele-4)*rcut
-          bb = -(erc(mxgele-4)+aa*rcut)
+          aa =   fer(mxgele-4)*neigh%cutoff
+          bb = -(erc(mxgele-4)+aa*neigh%cutoff)
 
        Else
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =  1.0_wp/rcut**2
-          bb = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
+          aa =  1.0_wp/neigh%cutoff**2
+          bb = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
 
        End If
     End If
@@ -1171,11 +1174,11 @@ Contains
 
        tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
 
-       Do m=1,list(0,iatm)
+       Do m=1,neigh%list(0,iatm)
 
   ! atomic index
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
 
   ! get the multipoles for site j
 
@@ -1195,7 +1198,7 @@ Contains
 
   ! truncation of potential
 
-          If (Maxval(Abs(jmp)) > zero_plus .and. rrr < rcut) Then
+          If (Maxval(Abs(jmp)) > zero_plus .and. rrr < neigh%cutoff) Then
 
   ! get the components for site j infinitesimal rotations
 
@@ -1376,7 +1379,7 @@ Contains
 
   ! shift potential
 
-                tmp    = bb-0.5_wp*b0/rcut
+                tmp    = bb-0.5_wp*b0/neigh%cutoff
                 engmpl = engmpl + tmp*imp(1)*jmp(1)
 
   ! shift torque
@@ -1619,7 +1622,7 @@ Contains
   End Subroutine coul_rfp_mforces
 
   Subroutine coul_cp_mforces &
-             (iatm,rcut,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress)
+             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1634,8 +1637,9 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -1712,11 +1716,11 @@ Contains
 
   ! start of primary loop for forces evaluation
 
-       Do m=1,list(0,iatm)
+       Do m=1,neigh%list(0,iatm)
 
   ! atomic index
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
 
   ! get the multipoles for site j
 
@@ -1732,7 +1736,7 @@ Contains
 
   ! truncation of potential - rrt(m) is the interatomic distance
 
-          If (Maxval(Abs(jmp)) > zero_plus .and. rrt(m) < rcut) Then
+          If (Maxval(Abs(jmp)) > zero_plus .and. rrt(m) < neigh%cutoff) Then
 
   ! get the components for site j infinitesimal rotations
 
@@ -1938,7 +1942,7 @@ Contains
   End Subroutine coul_cp_mforces
 
   Subroutine coul_dddp_mforces &
-             (iatm,rcut,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress)
+             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1953,8 +1957,9 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -2031,11 +2036,11 @@ Contains
 
   ! start of primary loop for forces evaluation
 
-       Do m=1,list(0,iatm)
+       Do m=1,neigh%list(0,iatm)
 
   ! atomic index
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
 
   ! get the multipoles for site j
 
@@ -2051,7 +2056,7 @@ Contains
 
   ! truncation of potential - rrt(m) is the interatomic distance
 
-          If (Maxval(Abs(jmp)) > zero_plus .and. rrt(m) < rcut) Then
+          If (Maxval(Abs(jmp)) > zero_plus .and. rrt(m) < neigh%cutoff) Then
 
   ! get the components for site j infinitesimal rotations
 
@@ -2256,7 +2261,7 @@ Contains
 
   End Subroutine coul_dddp_mforces
 
-  Subroutine coul_chrm_forces(iatm,epsq,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress)
+  Subroutine coul_chrm_forces(iatm,epsq,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress,neigh)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2277,7 +2282,8 @@ Contains
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ch,vircpe_ch
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -2324,9 +2330,9 @@ Contains
 
   ! start of primary loop for forces evaluation
 
-  ! Get list limit
+  ! Get neigh%list limit
 
-    limit=list(-3,iatm)-list(0,iatm)
+    limit=neigh%list(-3,iatm)-neigh%list(0,iatm)
 
     Do m=1,limit
 
@@ -2338,7 +2344,7 @@ Contains
   ! atomic index, charge & inverse polarisability products
   ! and total inter-atomic summed dumping
 
-       jatm=list(list(0,iatm)+m,iatm)
+       jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
        chgprd=chgea*chge(jatm)
        plrprd=plra*plratm(jatm)
        dmpsum=dmpa+dmpatm(jatm)

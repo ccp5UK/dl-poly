@@ -93,8 +93,8 @@ Module errors_warnings
         ib = Nint(b)
 
         Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,a,/,1x,a)')                    &
-        '*** warning - maximum length of linked cell list: ', ia,          &
-        ' + 1 is less than maximum length of particle exclusion list: ',   &
+        '*** warning - maximum length of linked cell neigh%list: ', ia,          &
+        ' + 1 is less than maximum length of particle exclusion neigh%list: ',   &
         ib, ' !!! ***',                                                    &
         '*** this may be due to using too short a cutoff in CONTROL ',     &
         'and/or a badly defined intramolecular topology in FIELD !!! ***', &
@@ -336,7 +336,7 @@ Module errors_warnings
         ib = Nint(b)
 
         Write(ounit,'(/,1x,a,2(i0,a),/)') &
-        '*** warning - required link-cell list size is ', ia, ' and actual (mxlist) ', ib, ' !!! ***'
+        '*** warning - required link-cell neigh%list size is ', ia, ' and actual (neigh%max_list) ', ib, ' !!! ***'
 
      Else If (kode == 295) Then
 
@@ -1053,7 +1053,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==   74) Then
 
-        Write(ounit,'(/,1x,a)') 'error - unidentified atom in tersoff potential list'
+        Write(ounit,'(/,1x,a)') 'error - unidentified atom in tersoff potential neigh%list'
 
      Else If (kode ==   76) Then
 
@@ -1073,7 +1073,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==   81) Then
 
-        Write(ounit,'(/,1x,a)') 'error - unidentified atom in pair potential list'
+        Write(ounit,'(/,1x,a)') 'error - unidentified atom in pair potential neigh%list'
 
      Else If (kode ==   82) Then
 
@@ -1085,7 +1085,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==   84) Then
 
-        Write(ounit,'(/,1x,a)') 'error - unidentified atom in three-body/angles potential list'
+        Write(ounit,'(/,1x,a)') 'error - unidentified atom in three-body/angles potential neigh%list'
 
      Else If (kode ==   85) Then
 
@@ -1109,7 +1109,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==   91) Then
 
-        Write(ounit,'(/,1x,a)') 'error - unidentified atom in four-body/dihedrals/iversions potential list'
+        Write(ounit,'(/,1x,a)') 'error - unidentified atom in four-body/dihedrals/iversions potential neigh%list'
 
      Else If (kode ==   92) Then
 
@@ -1161,7 +1161,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  106) Then
 
-        Write(ounit,'(/,1x,a)') 'error - neighbour list array too small in link_cell_pairs'
+        Write(ounit,'(/,1x,a)') 'error - neighbour neigh%list array too small in link_cell_pairs'
 
      Else If (kode ==  107) Then
 
@@ -1169,7 +1169,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  108) Then
 
-        Write(ounit,'(/,1x,a)') 'error - unidentified atom in rdf look up list'
+        Write(ounit,'(/,1x,a)') 'error - unidentified atom in rdf look up neigh%list'
 
      Else If (kode ==  109) Then
 
