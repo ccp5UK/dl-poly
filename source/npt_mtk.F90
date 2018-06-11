@@ -10,13 +10,14 @@ Module npt_mtk
   Use rigid_bodies
   Use kinetics,      Only : getvom,kinstress,kinstresf,kinstrest
   Use core_shell,    Only : legshl
-  Use constraints,   Only : passcon, constraints_shake_vv, constraints_rattle, &
-                            constraints_tags
+  Use constraints,   Only : constraints_shake_vv, constraints_rattle, &
+                            constraints_tags,constraints_type
   Use pmf,           Only : passpmf, pmf_rattle,pmf_shake_vv,pmf_tags
   Use nvt_nose_hoover, Only : nvt_h0_scl, nvt_h1_scl 
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h1_scl 
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type
+  Use statistics, Only : stats_type
   Implicit None
 
   Private
@@ -30,10 +31,8 @@ Contains
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
-             mxshak,tolnce,                     &
-             megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,thermo,comm)
+             elrc,virlrc,cons,stat,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -64,13 +63,12 @@ Contains
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
-    Integer,            Intent( In    ) :: mxshak
-    Real( Kind = wp ),  Intent( In    ) :: tolnce
-    Integer,            Intent( In    ) :: megcon,megpmf
-    Real( Kind = wp ),  Intent( InOut ) :: strcon(1:9),vircon, &
-                                           strpmf(1:9),virpmf
+    Integer,            Intent( In    ) :: megpmf
+    Real( Kind = wp ),  Intent( InOut ) :: strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( stats_type), Intent( InOut ) :: stat
+    Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -104,11 +102,11 @@ Contains
 
 
     fail=0
-    If (megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. megpmf > 0) Then
        Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
-       If (megcon > 0) Then
-          Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),          Stat=fail(2))
-          Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons),      Stat=fail(3))
+       If (cons%megcon > 0) Then
+          Allocate (lstopt(0:2,1:cons%mxcons),listot(1:mxatms),          Stat=fail(2))
+          Allocate (dxx(1:cons%mxcons),dyy(1:cons%mxcons),dzz(1:cons%mxcons),      Stat=fail(3))
        End If
        If (megpmf > 0) Then
           Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail(4))
@@ -154,20 +152,20 @@ Contains
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
        mxiter=1
-       If (megcon > 0 .or.  megpmf > 0) Then
+       If (cons%megcon > 0 .or.  megpmf > 0) Then
           mxkit=1
           mxiter=mxiter+3
        End If
-       If (megcon > 0 .and. megpmf > 0) mxkit=mxshak
+       If (cons%megcon > 0 .and. megpmf > 0) mxkit=cons%max_iter_shake
     End If
 
-    If (megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. megpmf > 0) Then
        lstitr(1:natms)=.false. ! initialise lstitr
 
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+       If (cons%megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
@@ -214,9 +212,9 @@ Contains
 
   ! constraint virial and stress tensor
 
-       If (megcon > 0) Then
-          vircon=0.0_wp
-          strcon=0.0_wp
+       If (cons%megcon > 0) Then
+          stat%vircon=0.0_wp
+          stat%strcon=0.0_wp
        End If
 
   ! PMF virial and stress tensor
@@ -236,14 +234,14 @@ Contains
 
   ! constraint+pmf virial and stress
 
-          vir=vircon+virpmf
-          str=strcon+strpmf
+          vir=stat%vircon+virpmf
+          str=stat%strcon+strpmf
 
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
           Call npt_h0_scl &
              (1,hstep,degfre,pmass,thermo%chi_t,volm,vir,virtot, &
-             vxx,vyy,vzz,engke,thermo)
+             vxx,vyy,vzz,engke,stat,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
@@ -284,7 +282,7 @@ Contains
 
   ! SHAKE procedures
 
-          If (megcon > 0 .or. megpmf > 0) Then
+          If (cons%megcon > 0 .or. megpmf > 0) Then
              safe=.false.
              kit =0
 
@@ -301,19 +299,19 @@ Contains
              Do While ((.not.safe) .and. kit <= mxkit)
                 kit=kit+1
 
-                If (megcon > 0) Then
+                If (cons%megcon > 0) Then
 
-  ! apply constraint correction: vircon,strcon - constraint virial,stress
+  ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
 
                    Call constraints_shake_vv &
-             (mxshak,tolnce,tstep,      &
+             (tstep,      &
              lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir,comm)
+             xxx,yyy,zzz,str,vir,stat,cons,comm)
 
   ! constraint virial and stress tensor
 
-                   vircon=vircon+vir
-                   strcon=strcon+str
+                   stat%vircon=stat%vircon+vir
+                   stat%strcon=stat%strcon+str
 
                    safe=.true.
                 End If
@@ -323,7 +321,7 @@ Contains
   ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
                    Call pmf_shake_vv &
-             (mxshak,tolnce,tstep, &
+             (cons%max_iter_shake,cons%tolerance,tstep, &
              indpmf,pxx,pyy,pzz,   &
              xxx,yyy,zzz,str,vir,comm)
 
@@ -341,13 +339,13 @@ Contains
   ! Collect per step passage statistics for bond and pmf constraints
 
              If (iter == mxiter) Then
-                If (megcon > 0) Then
-                   passcon(3,2,1)=passcon(2,2,1)*passcon(3,2,1)
-                   passcon(2,2,1)=passcon(2,2,1)+1.0_wp
-                   passcon(3,2,1)=passcon(3,2,1)/passcon(2,2,1)+passcon(1,2,1)/passcon(2,2,1)
-                   passcon(4,2,1)=Min(passcon(1,2,1),passcon(4,2,1))
-                   passcon(5,2,1)=Max(passcon(1,2,1),passcon(5,2,1))
-                   passcon(1,2,1)=0.0_wp ! Reset
+                If (cons%megcon > 0) Then
+                   stat%passcon(3,2,1)=stat%passcon(2,2,1)*stat%passcon(3,2,1)
+                   stat%passcon(2,2,1)=stat%passcon(2,2,1)+1.0_wp
+                   stat%passcon(3,2,1)=stat%passcon(3,2,1)/stat%passcon(2,2,1)+stat%passcon(1,2,1)/stat%passcon(2,2,1)
+                   stat%passcon(4,2,1)=Min(stat%passcon(1,2,1),stat%passcon(4,2,1))
+                   stat%passcon(5,2,1)=Max(stat%passcon(1,2,1),stat%passcon(5,2,1))
+                   stat%passcon(1,2,1)=0.0_wp ! Reset
                 End If
 
                 If (megpmf > 0) Then
@@ -386,7 +384,7 @@ Contains
 
   ! restore original integration parameters as well as
   ! velocities if iter < mxiter
-  ! in the next iteration vircon and virpmf are freshly new
+  ! in the next iteration stat%vircon and virpmf are freshly new
 
           If (iter < mxiter) Then
              volm=vzero
@@ -507,18 +505,18 @@ Contains
   ! RATTLE procedures
   ! apply velocity corrections to bond and PMF constraints
 
-       If (megcon > 0 .or. megpmf > 0) Then
+       If (cons%megcon > 0 .or. megpmf > 0) Then
           Do i=1,kit
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
+             If (cons%megcon > 0) Call constraints_rattle &
+             (tstep,lfst,lcol, &
              lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz,comm)
+             vxx,vyy,vzz,stat,cons,comm)
 
              If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
+             (cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
              indpmf,pxx,pyy,pzz,             &
              vxx,vyy,vzz,comm)
           End Do
@@ -532,14 +530,14 @@ Contains
 
   ! constraint+pmf virial and stress
 
-       vir=vircon+virpmf
-       str=strcon+strpmf
+       vir=stat%vircon+virpmf
+       str=stat%strcon+strpmf
 
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
        Call npt_h0_scl &
              (1,hstep,degfre,pmass,thermo%chi_t,volm,vir,virtot, &
-             vxx,vyy,vzz,engke,thermo)
+             vxx,vyy,vzz,engke,stat,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
@@ -579,9 +577,9 @@ Contains
     thermo%eta(5)=thermo%chi_p
     thermo%eta(9)=thermo%chi_p
 
-    If (megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. megpmf > 0) Then
        Deallocate (lstitr,           Stat=fail(1))
-       If (megcon > 0) Then
+       If (cons%megcon > 0) Then
           Deallocate (lstopt,listot, Stat=fail(2))
           Deallocate (dxx,dyy,dzz,   Stat=fail(3))
        End If
@@ -605,11 +603,9 @@ Contains
              degfre,degrot,virtot,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
-             mxshak,tolnce,                     &
-             megcon,strcon,vircon,              &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,thermo,comm)
+             elrc,virlrc,cons,stat,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -643,15 +639,14 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
 
-    Integer,            Intent( In    ) :: mxshak
-    Real( Kind = wp ),  Intent( In    ) :: tolnce
-    Integer,            Intent( In    ) :: megcon,megpmf
-    Real( Kind = wp ),  Intent( InOut ) :: strcon(1:9),vircon, &
-                                           strpmf(1:9),virpmf
+    Integer,            Intent( In    ) :: megpmf
+    Real( Kind = wp ),  Intent( InOut ) :: strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
+    Type( stats_type ), Intent( InOut ) :: stat
+    Type( constraints_type ), Intent( InOut ) :: cons 
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -697,11 +692,11 @@ Contains
     Character ( Len = 256 )  ::  message
 
     fail=0
-    If (megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. megpmf > 0) Then
        Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
-       If (megcon > 0) Then
-          Allocate (lstopt(0:2,1:mxcons),listot(1:mxatms),          Stat=fail( 2))
-          Allocate (dxx(1:mxcons),dyy(1:mxcons),dzz(1:mxcons),      Stat=fail( 3))
+       If (cons%megcon > 0) Then
+          Allocate (lstopt(0:2,1:cons%mxcons),listot(1:mxatms),          Stat=fail( 2))
+          Allocate (dxx(1:cons%mxcons),dyy(1:cons%mxcons),dzz(1:cons%mxcons),      Stat=fail( 3))
        End If
        If (megpmf > 0) Then
           Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail( 4))
@@ -753,11 +748,11 @@ Contains
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
        mxiter=1
-       If (megcon > 0 .or.  megpmf > 0) Then
+       If (cons%megcon > 0 .or.  megpmf > 0) Then
           mxkit=1
           mxiter=mxiter+3
        End If
-       If (megcon > 0 .and. megpmf > 0) mxkit=mxshak
+       If (cons%megcon > 0 .and. megpmf > 0) mxkit=cons%max_iter_shake
 
   ! unsafe positioning due to possibly locally shared RBs
 
@@ -769,13 +764,13 @@ Contains
     matms=nlast
     If (comm%mxnode == 1) matms=natms
 
-    If (megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. megpmf > 0) Then
        lstitr(1:natms)=.false. ! initialise lstitr
 
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
-       If (megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,comm)
+       If (cons%megcon > 0) Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
@@ -870,9 +865,9 @@ Contains
 
   ! constraint virial and stress tensor
 
-       If (megcon > 0) Then
-          vircon=0.0_wp
-          strcon=0.0_wp
+       If (cons%megcon > 0) Then
+          stat%vircon=0.0_wp
+          stat%strcon=0.0_wp
        End If
 
   ! PMF virial and stress tensor
@@ -895,14 +890,14 @@ Contains
 
   ! constraint+pmf virial and stress
 
-          vir=vircon+virpmf
-          str=strcon+strpmf
+          vir=stat%vircon+virpmf
+          str=stat%strcon+strpmf
 
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
           Call npt_h1_scl &
              (1,hstep,degfre,degrot,pmass,thermo%chi_t,volm,vir,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,engke,thermo)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,engke,stat,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
@@ -950,7 +945,7 @@ Contains
 
   ! SHAKE procedures
 
-          If (megcon > 0 .or. megpmf > 0) Then
+          If (cons%megcon > 0 .or. megpmf > 0) Then
              safe=.false.
              kit =0
 
@@ -969,19 +964,19 @@ Contains
              Do While ((.not.safe) .and. kit <= mxkit)
                 kit=kit+1
 
-                If (megcon > 0) Then
+                If (cons%megcon > 0) Then
 
-  ! apply constraint correction: vircon,strcon - constraint virial,stress
+  ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
 
                    Call constraints_shake_vv &
-             (mxshak,tolnce,tstep,      &
+             (tstep,      &
              lstopt,dxx,dyy,dzz,listot, &
-             xxx,yyy,zzz,str,vir,comm)
+             xxx,yyy,zzz,str,vir,stat,cons,comm)
 
   ! constraint virial and stress tensor
 
-                   vircon=vircon+vir
-                   strcon=strcon+str
+                   stat%vircon=stat%vircon+vir
+                   stat%strcon=stat%strcon+str
 
                    safe=.true.
                 End If
@@ -991,7 +986,7 @@ Contains
   ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
                    Call pmf_shake_vv &
-             (mxshak,tolnce,tstep, &
+             (cons%max_iter_shake,cons%tolerance,tstep, &
              indpmf,pxx,pyy,pzz,   &
              xxx,yyy,zzz,str,vir,comm)
 
@@ -1009,13 +1004,13 @@ Contains
   ! Collect per step passage statistics for bond and pmf constraints
 
              If (iter == mxiter) Then
-                If (megcon > 0) Then
-                   passcon(3,2,1)=passcon(2,2,1)*passcon(3,2,1)
-                   passcon(2,2,1)=passcon(2,2,1)+1.0_wp
-                   passcon(3,2,1)=passcon(3,2,1)/passcon(2,2,1)+passcon(1,2,1)/passcon(2,2,1)
-                   passcon(4,2,1)=Min(passcon(1,2,1),passcon(4,2,1))
-                   passcon(5,2,1)=Max(passcon(1,2,1),passcon(5,2,1))
-                   passcon(1,2,1)=0.0_wp ! Reset
+                If (cons%megcon > 0) Then
+                   stat%passcon(3,2,1)=stat%passcon(2,2,1)*stat%passcon(3,2,1)
+                   stat%passcon(2,2,1)=stat%passcon(2,2,1)+1.0_wp
+                   stat%passcon(3,2,1)=stat%passcon(3,2,1)/stat%passcon(2,2,1)+stat%passcon(1,2,1)/stat%passcon(2,2,1)
+                   stat%passcon(4,2,1)=Min(stat%passcon(1,2,1),stat%passcon(4,2,1))
+                   stat%passcon(5,2,1)=Max(stat%passcon(1,2,1),stat%passcon(5,2,1))
+                   stat%passcon(1,2,1)=0.0_wp ! Reset
                 End If
 
                 If (megpmf > 0) Then
@@ -1056,7 +1051,7 @@ Contains
 
   ! restore original integration parameters as well as
   ! velocities if iter < mxiter
-  ! in the next iteration vircon and virpmf are freshly new
+  ! in the next iteration stat%vircon and virpmf are freshly new
 
           If (iter < mxiter) Then
              volm=vzero
@@ -1405,18 +1400,18 @@ Contains
   ! RATTLE procedures
   ! apply velocity corrections to bond and PMF constraints
 
-       If (megcon > 0 .or. megpmf > 0) Then
+       If (cons%megcon > 0 .or. megpmf > 0) Then
           Do i=1,kit
              lfst = (i == 1)
              lcol = (i == kit)
 
-             If (megcon > 0) Call constraints_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
+             If (cons%megcon > 0) Call constraints_rattle &
+             (tstep,lfst,lcol, &
              lstopt,dxx,dyy,dzz,listot,      &
-             vxx,vyy,vzz,comm)
+             vxx,vyy,vzz,stat,cons,comm)
 
              If (megpmf > 0) Call pmf_rattle &
-             (mxshak,tolnce,tstep,lfst,lcol, &
+             (cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
              indpmf,pxx,pyy,pzz,             &
              vxx,vyy,vzz,comm)
           End Do
@@ -1569,14 +1564,14 @@ Contains
 
   ! constraint+pmf virial and stress
 
-       vir=vircon+virpmf
-       str=strcon+strpmf
+       vir=stat%vircon+virpmf
+       str=stat%strcon+strpmf
 
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
        Call npt_h1_scl &
              (1,hstep,degfre,degrot,pmass,thermo%chi_t,volm,vir,virtot,vircom, &
-             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,engke,thermo)
+             vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,engke,stat,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
@@ -1645,9 +1640,9 @@ Contains
     thermo%eta(5)=thermo%chi_p
     thermo%eta(9)=thermo%chi_p
 
-    If (megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. megpmf > 0) Then
        Deallocate (lstitr,            Stat=fail( 1))
-       If (megcon > 0) Then
+       If (cons%megcon > 0) Then
           Deallocate (lstopt,listot,  Stat=fail( 2))
           Deallocate (dxx,dyy,dzz,    Stat=fail( 3))
        End If

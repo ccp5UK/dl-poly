@@ -94,14 +94,14 @@ If (nstep == nsteql) Then
 
   ! bond & PMF constraint quenching iterative cycles statistics report
 
-  If (megcon > 0) Then
-    Call gmax(comm,passcnq(3:5))
-    If (passcnq(3) > 0.0_wp) Then
+  If (cons%megcon > 0) Then
+    Call gmax(comm,stat%passcnq(3:5))
+    If (stat%passcnq(3) > 0.0_wp) Then
       Write(message,'(2(a,f5.2),4(a,i3))') &
         'constraints quench run statistics per call: average cycles ', &
-        passcnq(3),'/',passcnq(3), &
-        ' minimum cycles ',Nint(passcnq(4)),'/',Nint(passcnq(4)), &
-        ' maximum cycles ',Nint(passcnq(5)),'/',Nint(passcnq(5))
+        stat%passcnq(3),'/',stat%passcnq(3), &
+        ' minimum cycles ',Nint(stat%passcnq(4)),'/',Nint(stat%passcnq(4)), &
+        ' maximum cycles ',Nint(stat%passcnq(5)),'/',Nint(stat%passcnq(5))
       Call info(message,.true.)
     End If
   End If
@@ -118,7 +118,7 @@ If (nstep == nsteql) Then
     End If
   End If
 
-  If (nstep > 0 .or. megcon > 0 .or. megpmf > 0) Then
+  If (nstep > 0 .or. cons%megcon > 0 .or. megpmf > 0) Then
     Call info(repeat('-',130),.true.)
   End If
 End If

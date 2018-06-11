@@ -15,8 +15,9 @@
 
            Call relocate_particles  &
            (dvar,neigh%cutoff_extended,lbook,msd_data%l_msd,megatm, &
-           megshl,m_con,megpmf,     &
+           megshl,megpmf,     &
            m_rgd,megtet,            &
+           cons, & 
            stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 ! Exchange atomic data in border regions

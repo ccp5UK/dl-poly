@@ -24,8 +24,8 @@
 
 ! quench constraints & PMFs
 
-           If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
-           If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
+           If (cons%megcon > 0) Call constraints_quench(cons,stat,comm)
+           If (megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,comm)
 
 ! quench core-shell units in adiabatic model
 
@@ -34,8 +34,8 @@
               Do
                  Call scale_temperature(stat%engke+stat%engrot,degtra,degrot,degfre,comm)
                  Call core_shell_quench(safe,stat%stptmp,comm)
-                 If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
-                 If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
+                 If (cons%megcon > 0) Call constraints_quench(cons,stat,comm)
+                 If (megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,comm)
                  If (megrgd > 0) Call rigid_bodies_quench(comm)
                  If (safe) Exit
               End Do
@@ -67,8 +67,8 @@
 
 ! quench constraints & PMFs
 
-           If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
-           If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
+           If (cons%megcon > 0) Call constraints_quench(cons,stat,comm)
+           If (megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,comm)
 
 ! quench core-shell units in adiabatic model
 
@@ -76,8 +76,8 @@
               Do
                  Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
                  Call core_shell_quench(safe,stat%stptmp,comm)
-                 If (megcon > 0) Call constraints_quench(mxshak,tolnce,comm)
-                 If (megpmf > 0) Call pmf_quench(mxshak,tolnce,comm)
+                 If (cons%megcon > 0) Call constraints_quench(cons,stat,comm)
+                 If (megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,comm)
                  If (megrgd > 0) Call rigid_bodies_quench(comm)
                  If (safe) Exit
               End Do

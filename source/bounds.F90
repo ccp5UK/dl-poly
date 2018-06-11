@@ -1,12 +1,15 @@
 Module bounds
   Use kinds,           Only : wp
   Use comms,           Only : comms_type
+
   Use setup
   Use domains,         Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
   Use configuration,   Only : imcon,imc_n,cfgname,cell,volm
   Use neighbours,      Only : neighbours_type
   Use msd,             Only : msd_type
   Use rdfs,            Only : rusr
+
+  Use msd,             Only : msd_type
   Use z_density,       Only : z_density_type
   Use kim,             Only : kimim
   Use bonds,           Only : bonds_type
@@ -29,6 +32,7 @@ Module bounds
   Use metal,           Only : metal_type
   Use poisson,         Only : poisson_type
   Use tethers,         Only : tethers_type
+  Use constraints, Only : constraints_type
   Use three_body,      Only : threebody_type
 
   Implicit None
@@ -39,7 +43,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rvdw,rbin,nstfce,      &
-           alpha,width,stats,thermo,green,devel,      &
+           alpha,width,cons,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,comm)
 
@@ -60,6 +64,7 @@ Subroutine set_bounds                                 &
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rbin,alpha,width
+  Type( constraints_type ), Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
@@ -99,7 +104,7 @@ Subroutine set_bounds                                 &
            (l_n_e,mxompl,mximpl,                     &
            mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
-           mtcons,mxtcon,mxcons,mxfcon,              &
+           mtcons,              &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth, &
@@ -109,7 +114,7 @@ Subroutine set_bounds                                 &
            mtinv,  &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,                        &
-           mxter,rcter,mxfbp,rcfbp,lext,met,bond,    &
+           mxter,rcter,mxfbp,rcfbp,lext,cons,met,bond,    &
            angle,dihedral,inversion,                 &
            tether,threebody,comm)
 
@@ -234,9 +239,9 @@ Subroutine set_bounds                                 &
 
 ! maximum number of constraints per node
 
-  If (mxcons > 0 .and. comm%mxnode > 1) Then
-     mxcons = Max(mxcons,comm%mxnode*mtcons)
-     mxcons = (3*(Nint(fdvar*Real(mxcons,wp))+comm%mxnode-1))/comm%mxnode
+  If (cons%mxcons > 0 .and. comm%mxnode > 1) Then
+     cons%mxcons = Max(cons%mxcons,comm%mxnode*mtcons)
+     cons%mxcons = (3*(Nint(fdvar*Real(cons%mxcons,wp))+comm%mxnode-1))/comm%mxnode
   End If
 
 
@@ -258,7 +263,7 @@ Subroutine set_bounds                                 &
 ! and maximum number of neighbouring domains/nodes in 3D DD (3^3 - 1)
 
   If (comm%mxnode > 1) Then
-     mxlshp = Max((2*mxshl)/2,(2*mxcons)/2,(mxlrgd*mxrgd)/2)
+     mxlshp = Max((2*mxshl)/2,(2*cons%mxcons)/2,(mxlrgd*mxrgd)/2)
      mxproc = 26
   Else ! nothing is to be shared on one node
      mxlshp = 0
@@ -815,7 +820,7 @@ Subroutine set_bounds                                 &
            mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (mxexcl+1) + &
            Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0) + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp  + &
-           4*mxshl+4*mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
+           4*mxshl+4*cons%mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
            3*tether%mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)
 
 ! statistics connect deporting total per atom
@@ -834,7 +839,7 @@ Subroutine set_bounds                                 &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) - 1.0_wp
   dens0 = dens0/Max(neigh%cutoff_extended/2.0_wp,1.0_wp)
-  mxbfsh = Merge( 1, 0, comm%mxnode > 1) * Nint(Real(Max(2*mxshl,2*mxcons,mxlrgd*mxrgd),wp) * dens0)
+  mxbfsh = Merge( 1, 0, comm%mxnode > 1) * Nint(Real(Max(2*mxshl,2*cons%mxcons,mxlrgd*mxrgd),wp) * dens0)
 
   mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
                 stats%mxnstk*stats%mxstak , mxgrid , mxgrdf , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )

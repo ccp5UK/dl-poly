@@ -25,7 +25,6 @@ Module statistics
   Use neighbours,  Only  : neighbours_type
 
   Use core_shell,  Only : passshl
-  Use constraints, Only : passcon
   Use pmf,         Only : passpmf
   Use z_density,   Only : z_density_type,z_density_collect
   Use msd,         Only : msd_type
@@ -47,7 +46,7 @@ Module statistics
                                     engter  = 0.0_wp,engtbp = 0.0_wp,engfbp = 0.0_wp,&
                                     engshl = 0.0_wp,engtet = 0.0_wp,engbnd = 0.0_wp,&
                                     engang = 0.0_wp,engdih = 0.0_wp,enginv = 0.0_wp,&
-                                    engfld = 0.0_wp
+                                    engfld = 0.0_wp, engcon = 0.0_wp
 
   Real( Kind = wp )              :: stptmp = 0.0_wp,stpprs = 0.0_wp,stpvol = 0.0_wp,&
                                     stpcfg = 0.0_wp,stpeng = 0.0_wp,stpeth = 0.0_wp,&
@@ -65,6 +64,18 @@ Module statistics
                                     strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp,strdpd(1:9) = 0.0_wp
                                      
   Real( Kind = wp )              :: clin(1:9) = 0.0_wp
+  ! constraints accumulators
+  Real( Kind = wp ),              Public :: passcnq(1:5) = (/ & ! QUENCHING per call
+    0.0_wp         ,  & ! cycles counter
+    0.0_wp         ,  & ! access counter
+    0.0_wp         ,  & ! average cycles
+    999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
+    0.0_wp /)           ! maximum cycles
+  Real( Kind = wp ),              Public :: passcon(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
+    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
+    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
+    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
+    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
 
   Real( Kind = wp ), Allocatable :: xin(:),yin(:),zin(:)
   Real( Kind = wp ), Allocatable :: xto(:),yto(:),zto(:),rsd(:)
@@ -1394,23 +1405,23 @@ Subroutine statistics_result                                    &
 ! bond constraints iterative cycles statistics
 
   If (megcon > 0) Then
-     Call gmax(comm,passcon(3:5,1,1)) ; Call gmax(comm,passcon(3:5,2,1))
-     If (passcon(3,1,1) > 0.0_wp) Then
+     Call gmax(comm,stats%passcon(3:5,1,1)) ; Call gmax(comm,stats%passcon(3:5,2,1))
+     If (stats%passcon(3,1,1) > 0.0_wp) Then
        Write(message,'(2(a,f5.2),4(a,i3))') &
          'constraints shake  run statistics - cycles per call/timestep: average ', &
-         passcon(3,1,1),' / ',passcon(3,2,1), &
-         ' minimum ',Nint(passcon(4,1,1)),' / ',Nint(passcon(4,2,1)), &
-         ' maximum ',Nint(passcon(5,1,1)),' / ',Nint(passcon(5,2,1))
+         stats%passcon(3,1,1),' / ',stats%passcon(3,2,1), &
+         ' minimum ',Nint(stats%passcon(4,1,1)),' / ',Nint(stats%passcon(4,2,1)), &
+         ' maximum ',Nint(stats%passcon(5,1,1)),' / ',Nint(stats%passcon(5,2,1))
        Call info(message,.true.)
      End If
 
-     Call gmax(comm,passcon(3:5,1,2)) ; Call gmax(comm,passcon(3:5,2,2))
-     If (passcon(3,1,2) > 0.0_wp) Then
+     Call gmax(comm,stats%passcon(3:5,1,2)) ; Call gmax(comm,stats%passcon(3:5,2,2))
+     If (stats%passcon(3,1,2) > 0.0_wp) Then
        Write(message,'(2(a,f5.2),4(a,i3))') &
          'constraints rattle  run statistics - cycles per call/timestep: average ', &
-         passcon(3,1,1),' / ',passcon(3,2,1), &
-         ' minimum ',Nint(passcon(4,1,2)),' / ',Nint(passcon(4,2,2)), &
-         ' maximum ',Nint(passcon(5,1,2)),' / ',Nint(passcon(5,2,2))
+         stats%passcon(3,1,1),' / ',stats%passcon(3,2,1), &
+         ' minimum ',Nint(stats%passcon(4,1,2)),' / ',Nint(stats%passcon(4,2,2)), &
+         ' maximum ',Nint(stats%passcon(5,1,2)),' / ',Nint(stats%passcon(5,2,2))
        Call info(message,.true.)
      End If
   End If

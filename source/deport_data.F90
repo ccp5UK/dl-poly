@@ -43,7 +43,7 @@ Module deport_data
 
   Use core_shell,   Only : ntshl, listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 
-  Use constraints,  Only : ntcons,listcon,legcon,lshmv_con,lishp_con,lashp_con
+  Use constraints,  Only : constraints_type 
 
   Use errors_warnings, Only : error, warning
   Use mpoles_container, Only : rotate_mpoles, rotate_mpoles_d
@@ -59,7 +59,7 @@ Module deport_data
   Contains
 
 
-Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -78,6 +78,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
   Integer,            Intent( In    ) :: mdir
   Logical,            Intent( In    ) :: lbook
   Logical,            Intent( In    ) :: lmsd
+  Type( constraints_type) , Intent( InOut ) :: cons 
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -505,15 +506,15 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
 ! pack constraint details
 
-           jj=legcon(0,i)
+           jj=cons%legcon(0,i)
            If (jj > 0) Then
               Do ll=1,jj
                  If (imove+3 <= iblock) Then
-                    kk=legcon(ll,i)
+                    kk=cons%legcon(ll,i)
 
                     Do k=0,2
                        imove=imove+1
-                       buffer(imove)=Real(listcon(k,kk),wp)
+                       buffer(imove)=Real(cons%listcon(k,kk),wp)
                     End Do
                  Else
                     imove=imove+3
@@ -894,7 +895,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
         legshl(:,keep)=legshl(:,i)
 
-        legcon(:,keep)=legcon(:,i)
+        cons%legcon(:,keep)=cons%legcon(:,i)
         legpmf(:,keep)=legpmf(:,i)
 
         legrgd(:,keep)=legrgd(:,i)
@@ -1112,7 +1113,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
         jshels=ntshl
 
-        jconst=ntcons
+        jconst=cons%ntcons
         jpmf  =ntpmf
 
         jrigid=ntrgd
@@ -1168,7 +1169,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
 ! unpack bond constraint details
 
-        legcon(:,newatm) = 0
+        cons%legcon(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
            jj=Nint(buffer(kmove+1))
            iatm=Nint(buffer(kmove+2))
@@ -1179,11 +1180,11 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
            kconst=0
            check=.true.
-           Do While (check .and. kconst < Min(jconst,mxcons))
+           Do While (check .and. kconst < Min(jconst,cons%mxcons))
               kconst=kconst+1
-              check=.not.( jj   == listcon(0,kconst) .and. &
-                           iatm == listcon(1,kconst) .and. &
-                           jatm == listcon(2,kconst) )
+              check=.not.( jj   == cons%listcon(0,kconst) .and. &
+                           iatm == cons%listcon(1,kconst) .and. &
+                           jatm == cons%listcon(2,kconst) )
            End Do
 
 ! insert new constraint unit
@@ -1191,18 +1192,18 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
            If (check) Then
               jconst=jconst+1
 
-              If (jconst <= mxcons) Then
-                 listcon(0,jconst)=jj
-                 listcon(1,jconst)=iatm
-                 listcon(2,jconst)=jatm
+              If (jconst <= cons%mxcons) Then
+                 cons%listcon(0,jconst)=jj
+                 cons%listcon(1,jconst)=iatm
+                 cons%listcon(2,jconst)=jatm
 
-                 Call tag_legend(safe1,newatm,jconst,legcon,mxfcon)
+                 Call tag_legend(safe1,newatm,jconst,cons%legcon,cons%mxfcon)
               Else
                  safe=.false.
                  Call warning('too many constraint units')
               End If
            Else
-              Call tag_legend(safe1,newatm,kconst,legcon,mxfcon)
+              Call tag_legend(safe1,newatm,kconst,cons%legcon,cons%mxfcon)
            End If
         End Do
         kmove=kmove+1
@@ -1630,7 +1631,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,stats,ewld,thermo,green,bond,angle
 
         ntshl =jshels
 
-        ntcons=jconst
+        cons%ntcons=jconst
         ntpmf =jpmf
 
         ntrgd =jrigid
@@ -2523,8 +2524,9 @@ End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles       &
            (dvar,cutoff_extended,lbook,lmsd,megatm, &
-           megshl,m_con,megpmf,     &
+           megshl,megpmf,     &
            m_rgd,megtet,            &
+           cons,  &
            stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2543,8 +2545,9 @@ Subroutine relocate_particles       &
   Logical,           Intent( In    ) :: lbook
   Logical,           Intent( In    ) :: lmsd
   Integer,           Intent( In    ) :: megatm,              &
-                                        megshl,m_con,megpmf, &
+                                        megshl,megpmf, &
                                         m_rgd,megtet
+  Type( constraints_type), Intent( InOut ) :: cons 
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2669,18 +2672,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
 
 ! check system for loss of atoms
 
@@ -2719,7 +2722,7 @@ Subroutine relocate_particles       &
 ! Check safety of working arrays for all active bookkeeping arrays
 
         If (megshl > 0) safe(1)=(ntshl  <= mxshl )
-        If (m_con  > 0) safe(2)=(ntcons <= mxcons)
+        If (cons%m_con  > 0) safe(2)=(cons%ntcons <= cons%mxcons)
         If (megpmf > 0) safe(3)=(ntpmf  <= mxpmf )
         If (m_rgd  > 0) safe(4)=(ntrgd  <= mxrgd )
         If (megtet > 0) safe(5)=(tether%ntteth <= tether%mxteth)
@@ -2732,7 +2735,7 @@ Subroutine relocate_particles       &
 
         If (Any(.not.safe)) Then
            itmp(1)=ntshl  ; jtmp(1)=mxshl
-           itmp(2)=ntcons ; jtmp(2)=mxcons
+           itmp(2)=cons%ntcons ; jtmp(2)=cons%mxcons
            itmp(3)=ntpmf  ; jtmp(3)=mxpmf
            itmp(4)=ntrgd  ; jtmp(4)=mxrgd
            itmp(5)=tether%ntteth ; jtmp(5)=tether%mxteth
@@ -2770,8 +2773,9 @@ Subroutine relocate_particles       &
      (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl,comm,&
      q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
-        If (m_con  > 0) Call pass_shared_units &
-     (mxcons,Lbound(listcon,Dim=1),Ubound(listcon,Dim=1),ntcons,listcon,mxfcon,legcon,lshmv_con,lishp_con,lashp_con,comm,&
+        If (cons%m_con  > 0) Call pass_shared_units &
+     (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,cons%legcon,&
+     cons%lshmv_con,cons%lishp_con,cons%lashp_con,comm,&
      q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
         If (megpmf > 0) Call pmf_units_set(comm)
@@ -2784,22 +2788,22 @@ Subroutine relocate_particles       &
 
         If (megtet > 0) Call compress_book_intra &
            (tether%mxteth,tether%ntteth,Ubound(tether%listtet,Dim=1),&
-            tether%listtet,tether%mxftet,tether%legtet,comm)
+            tether%listtet,tether%mxftet,tether%legtet,cons,comm)
         If (bond%total > 0) Then
           Call compress_book_intra(bond%max_bonds,bond%n_types, &
-            Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,comm)
+            Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,cons,comm)
         End If
         If (angle%total > 0) Then
           Call compress_book_intra(angle%max_angles,angle%n_types, &
-            Ubound(angle%list,Dim=1),angle%list,angle%max_legend,angle%legend,comm)
+            Ubound(angle%list,Dim=1),angle%list,angle%max_legend,angle%legend,cons,comm)
         End If
         If (dihedral%total > 0) Then
           Call compress_book_intra(dihedral%max_angles,dihedral%n_types, &
-            Ubound(dihedral%list,Dim=1),dihedral%list,dihedral%max_legend,dihedral%legend,comm)
+            Ubound(dihedral%list,Dim=1),dihedral%list,dihedral%max_legend,dihedral%legend,cons,comm)
         End If
         If (inversion%total > 0) Then
           Call compress_book_intra(inversion%max_angles,inversion%n_types, &
-            Ubound(inversion%list,Dim=1),inversion%list,inversion%max_legend,inversion%legend,comm)
+            Ubound(inversion%list,Dim=1),inversion%list,inversion%max_legend,inversion%legend,cons,comm)
         End If
 
      End If

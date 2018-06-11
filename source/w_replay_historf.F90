@@ -118,15 +118,15 @@
               Call build_book_intra     &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           megshl,megcon,megpmf,        &
+           megshl,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,bond,angle,dihedral,inversion,tether,comm)
-              If (lexcl) Call build_excl_intra(lecx,bond,angle,dihedral,inversion,comm)
+           megtet,cons,bond,angle,dihedral,inversion,tether,comm)
+              If (lexcl) Call build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
            End If
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh)
+           Call w_calculate_forces(cons,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh)
 
 ! Evaluate kinetics if available
 
@@ -156,7 +156,7 @@
 
 ! Apply kinetic options
 
-              Call w_kinetic_options(stat)
+              Call w_kinetic_options(cons,stat)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
@@ -300,11 +300,11 @@
      Call set_temperature            &
            (levcfg,keyres,      &
            lmin,nstep,nstrun,nstmin, &
-           mxshak,tolnce,keyshl,     &
+           keyshl,     &
            atmfre,atmfrz,            &
-           megshl,megcon,megpmf,     &
+           megshl,megpmf,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,stat%engrot,thermo,comm)
+           degfre,degshl,stat%engrot,stat,cons,thermo,comm)
 
   End If
   Call deallocate_statistics_connect(stat)
