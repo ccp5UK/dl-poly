@@ -44,7 +44,7 @@
 
 ! Calculate four-body forces
 
-     If (ntpfbp > 0) Call four_body_forces(rcfbp,stat,comm)
+     If (ntpfbp > 0) Call four_body_forces(rcfbp,stat,neigh,comm)
      call start_timer(tmr%t_bonded)
 ! Calculate shell model forces
 
