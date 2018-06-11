@@ -110,3 +110,4 @@ TEST 88 - Sodium Chloride (27,000 ions) interacting via Lennard-Jones tapered wi
 TEST 89 - Sodium Chloride (27,000 ions) interacting via Buckingham tapered with MDF potentials
 TEST 90 - Sodium Chloride (27,000 ions) interacting via 12-6 tapered with MDF potentials
 TEST 91 - Restart of TEST 04
+TEST 92 - H2O-K pmf test, no electrostatics
