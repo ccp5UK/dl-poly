@@ -45,7 +45,7 @@
 ! Calculate four-body forces
 
      If (ntpfbp > 0) Call four_body_forces(rcfbp,stat,comm)
-
+     call start_timer(tmr%t_bonded)
 ! Calculate shell model forces
 
      If (megshl > 0) Call core_shell_forces(stat%engshl,stat%virshl,stat%stress,comm)
@@ -90,6 +90,7 @@
         isw = 1 + Merge(1,0,ltmp)
         Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,inversion,comm)
      End If
+     call stop_timer(tmr%t_bonded)
 
 ! Apply external field
 

@@ -18,7 +18,7 @@ Module nst_mtk
   Use numerics,           Only : dcell, mat_mul
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
-
+  Use timer, Only : timer_type
   Implicit None
 
   Private
@@ -33,7 +33,7 @@ Contains
              consv,                             &
              strkin,engke,                      &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,cons,stat,thermo,comm)
+             elrc,virlrc,cons,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -78,6 +78,7 @@ Contains
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -360,7 +361,7 @@ Contains
                    Call constraints_shake_vv &
                      (tstep,      &
                      lstopt,dxx,dyy,dzz,listot, &
-                     xxx,yyy,zzz,str,vir,stat,cons,comm)
+                     xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
 
   ! constraint virial and stress tensor
 
@@ -575,7 +576,7 @@ Contains
                Call constraints_rattle &
                  (tstep,lfst,lcol, &
                  lstopt,dxx,dyy,dzz,listot,      &
-                 vxx,vyy,vzz,stat,cons,comm)
+                 vxx,vyy,vzz,stat,cons,tmr,comm)
              End If
 
              If (megpmf > 0)Then
@@ -668,7 +669,7 @@ Contains
              strkin,strknf,strknt,engke,engrot, &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,cons,stat,thermo,comm)
+             elrc,virlrc,cons,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -717,6 +718,7 @@ Contains
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true. , &
@@ -1085,7 +1087,7 @@ Contains
                    Call constraints_shake_vv &
                      (tstep,      &
                      lstopt,dxx,dyy,dzz,listot, &
-                     xxx,yyy,zzz,str,vir,stat,cons,comm)
+                     xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
 
   ! constraint virial and stress tensor
 
@@ -1530,7 +1532,7 @@ Contains
                Call constraints_rattle &
                  (tstep,lfst,lcol, &
                  lstopt,dxx,dyy,dzz,listot,      &
-                 vxx,vyy,vzz,stat,cons,comm)
+                 vxx,vyy,vzz,stat,cons,tmr,comm)
              End If 
 
              If (megpmf > 0)Then

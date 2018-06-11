@@ -21,6 +21,7 @@ Module constraints
   Use shared_units,    Only : update_shared_units
   Use numerics,        Only : images,local_index
   Use statistics, Only : stats_type
+  Use timer, Only : timer_type, stop_timer, start_timer
 
   Implicit None
 
@@ -518,7 +519,7 @@ Contains
 Subroutine constraints_rattle              &
            (tstep,lfst,lcol, &
            lstopt,dxx,dyy,dzz,listot,      &
-           vxx,vyy,vzz,stat,cons,comm)
+           vxx,vyy,vzz,stat,cons,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -541,6 +542,7 @@ Subroutine constraints_rattle              &
   Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
   Type( stats_type ), Intent( InOut ) :: stat
   Type( constraints_type ), Intent( InOut ) :: cons
+  Type( timer_type ), Intent( InOut ) :: tmr
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe
@@ -551,6 +553,9 @@ Subroutine constraints_rattle              &
 
   Character( Len = 256 ) :: message
 
+#ifdef CHRONO
+  Call start_timer(tmr%t_rattle)
+#endif
   fail=0
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail)
   If (fail > 0) Then
@@ -701,6 +706,9 @@ Subroutine constraints_rattle              &
      Write(message,'(a)') 'constraints_rattle deallocation failure'
      Call error(0,message)
   End If
+#ifdef CHRONO
+  Call stop_timer(tmr%t_rattle)
+#endif
 
 End Subroutine constraints_rattle
 
@@ -708,7 +716,7 @@ End Subroutine constraints_rattle
 Subroutine constraints_shake_vv       &
            (tstep,      &
            lstopt,dxx,dyy,dzz,listot, &
-           xxx,yyy,zzz,str,vir,stat,cons,comm)
+           xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -732,6 +740,7 @@ Subroutine constraints_shake_vv       &
   Real( Kind = wp ), Intent( InOut ) :: vir, str(:) 
   Type( constraints_type), Intent( InOut ) :: cons
   Type( stats_type), Intent( InOut ) :: stat
+  Type( timer_type ), Intent( InOut ) :: tmr
   TYpe( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe
@@ -742,7 +751,9 @@ Subroutine constraints_shake_vv       &
   Real( Kind = wp ), Dimension( : ), Allocatable :: dxt,dyt,dzt,dt2,esig
 
   Character(Len=256) :: message
-
+#ifdef CHRONO
+  Call start_timer(tmr%t_shake)
+#endif
   fail=0
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                              Stat=fail(1))
   Allocate (dxt(1:cons%mxcons),dyt(1:cons%mxcons),dzt(1:cons%mxcons),dt2(1:cons%mxcons),esig(1:cons%mxcons), Stat=fail(2))
@@ -959,6 +970,9 @@ Subroutine constraints_shake_vv       &
      Call error(0,message)
   End If
 
+#ifdef CHRONO
+  Call stop_timer(tmr%t_shake)
+#endif
 End Subroutine constraints_shake_vv
 
   
