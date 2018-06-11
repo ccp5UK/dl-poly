@@ -21,6 +21,7 @@ Module three_body
   Use errors_warnings, Only : error,warning
   Use numerics, Only : dcell, invert
   Use statistics, Only : stats_type
+  Use neighbours, Only : neighbours_type
 
   Implicit None
 
@@ -62,7 +63,7 @@ Contains
 
   End Subroutine allocate_three_body_arrays
 
-  Subroutine three_body_forces(stats,threebody,comm)
+  Subroutine three_body_forces(stats,threebody,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -82,7 +83,8 @@ Contains
 
 
   Type(stats_type), Intent( InOut ) :: stats
-  Type(threebody_type), Intent( InOut ) :: threebody 
+  Type(threebody_type), Intent( InOut ) :: threebody
+  Type( neighbours_type ), Intent( InOut ) :: neigh
   Type(comms_type), Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -137,9 +139,9 @@ Contains
   If (nbx < 3 .or. nby < 3 .or. nbz < 3) Call error(305)
 
   ncells=(nbx+4)*(nby+4)*(nbz+4)
-  If (ncells > mxcell) Then
-     Call warning(90,Real(ncells,wp),Real(mxcell,wp),1.0_wp)
-     mxcell = Nint(1.25_wp*Real(ncells,wp))
+  If (ncells > neigh%max_cell) Then
+     Call warning(90,Real(ncells,wp),Real(neigh%max_cell,wp),1.0_wp)
+     neigh%max_cell = Nint(1.25_wp*Real(ncells,wp))
      If (ncells > mxatms) Call error(69)
   End If
 
@@ -184,7 +186,7 @@ Contains
      End If
   End Do
 
-! Form linked list
+! Form linked neigh%list
 ! Initialise link arrays
 
   link=0
@@ -345,7 +347,7 @@ Contains
 
 ! Initialise extended head of chain array (for all subcells
 ! around icell and icell itself at a very first instance)
-! and its length (mini-list of neighbour cell contents)
+! and its length (mini-neigh%list of neighbour cell contents)
 
            k=0
            listin=0

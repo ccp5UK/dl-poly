@@ -73,7 +73,7 @@ Module shared_units
 
   safe=.true.
 
-! is it ok not to compress the bookkeeping list arrays
+! is it ok not to compress the bookkeeping neigh%list arrays
 ! since it's safe - there's enough buffering space
 
   ok=.true.
@@ -91,10 +91,10 @@ Module shared_units
 ! initialise lshmv and lishp and lashp arrays
 
   lshmv=.false. ! sharing flag
-!  lishp=0       ! list of shared particles (DEBUG)
+!  lishp=0       ! neigh%list of shared particles (DEBUG)
 !  lashp=0       ! break-down of lishp onto a DD map around comm%idnode (DEBUG)
 
-! zero list arrays and last element pointers
+! zero neigh%list arrays and last element pointers
 
   l_me =0 !; listme=0 ! (DEBUG)
   l_out=0 !; lstout=0 ! (DEBUG)
@@ -157,7 +157,7 @@ Module shared_units
                  End If
               End Do
 
-              list_u(:,k)=list_u(:,nt_u) ! Copy list content from 'nt_u' to 'k'
+              list_u(:,k)=list_u(:,nt_u) ! Copy neigh%list content from 'nt_u' to 'k'
 
               If (b_l == -1) Then        ! RB handling of q., rgdv.. & rgdo..
                  q0(k)=q0(nt_u)
@@ -174,7 +174,7 @@ Module shared_units
                  rgdozz(k)=rgdozz(nt_u)
               End If
 
-              list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+              list_u(:,nt_u)=0           ! Remove neigh%list content in 'nt_u'
 
               If (b_l == -1) Then        ! RB handling of q., rgdv.. & rgdo..
                  q0(nt_u)=0.0_wp
@@ -195,7 +195,7 @@ Module shared_units
 
            Else
 
-              list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+              list_u(:,nt_u)=0           ! Remove neigh%list content in 'nt_u'
 
               If (b_l == -1) Then        ! RB handling of q., rgdv.. & rgdo..
                  q0(nt_u)=0.0_wp
@@ -214,15 +214,15 @@ Module shared_units
 
               nt_u=nt_u-1                ! Reduce 'nt_u' pointer
 
-              Go To 20 ! Go back and check again for the new list contents in 'nt_u'
+              Go To 20 ! Go back and check again for the new neigh%list contents in 'nt_u'
 
            End If
 
-           Go To 10    ! Go back and check it all again for the new list contents in 'k'
+           Go To 10    ! Go back and check it all again for the new neigh%list contents in 'k'
 
         Else If (k == nt_u) Then
 
-           list_u(:,nt_u)=0           ! Remove list content in 'k=nt_u'
+           list_u(:,nt_u)=0           ! Remove neigh%list content in 'k=nt_u'
 
            If (b_l == -1) Then        ! RB handling of q., rgdv.. & rgdo.. @ 'k=nt_u'
               q0(nt_u)=0.0_wp
@@ -255,7 +255,7 @@ Module shared_units
 
         Else
 
-! Construct list of bonded atoms crossing domains
+! Construct neigh%list of bonded atoms crossing domains
 
            Do i=1,n_k
               If (i0(i) > 0) Then
@@ -340,7 +340,7 @@ Module shared_units
         Call gsend(comm,l_out,jdnode,PassUnit_tag+k)
         Call gwait(comm)
 
-! transmit atom list of units
+! transmit atom neigh%list of units
 
         listin=0
         If (l_in  > 0) Then

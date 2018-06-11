@@ -21,6 +21,7 @@ Module tersoff
   Use errors_warnings, Only : error,warning
   use numerics, Only : dcell, invert
   Use statistics, Only : stats_type
+  Use neighbours, Only : neighbours_type
   Implicit None
 
   Integer,                        Save :: ntpter = 0, &
@@ -69,7 +70,7 @@ Contains
 
   End Subroutine allocate_tersoff_arrays
   
-  Subroutine tersoff_forces(rcter,stats,comm)
+  Subroutine tersoff_forces(rcter,stats,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -94,6 +95,7 @@ Contains
 
   Real( Kind = wp ),                   Intent( In    ) :: rcter
   Type( stats_type ), Intent( InOut )  :: stats
+  Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type ), Intent( InOut )  :: comm
 
 ! flag for undefined potentials NOT NEEDED HERE YET
@@ -155,20 +157,20 @@ Contains
   If (nbx < 3 .or. nby < 3 .or. nbz < 3) Call error(305)
 
   ncells=(nbx+4)*(nby+4)*(nbz+4)
-  If (ncells > mxcell) Then
-     Call warning(90,Real(ncells,wp),Real(mxcell,wp),3.0_wp)
-     mxcell = Nint(1.25_wp*Real(ncells,wp))
+  If (ncells > neigh%max_cell) Then
+     Call warning(90,Real(ncells,wp),Real(neigh%max_cell,wp),3.0_wp)
+     neigh%max_cell = Nint(1.25_wp*Real(ncells,wp))
      If (ncells > mxatms) Call error(69)
   End If
 
   fail=0
   Allocate (link(1:mxatms),listin(1:mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
   Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
-  Allocate (xtf(1:mxlist),ytf(1:mxlist),ztf(1:mxlist),rtf(1:mxlist),     Stat=fail(3))
-  Allocate (ert(1:mxlist),eat(1:mxlist),grt(1:mxlist),gat(1:mxlist),     Stat=fail(4))
-  Allocate (scr(1:mxlist),gcr(1:mxlist),                                 Stat=fail(5))
-  Allocate (cst(1:mxlist),gam(1:mxlist),gvr(1:mxlist),                   Stat=fail(6))
-  If (potter == 2) Allocate (rkj(1:mxlist),wkj(1:mxlist),                Stat=fail(7))
+  Allocate (xtf(1:neigh%max_list),ytf(1:neigh%max_list),ztf(1:neigh%max_list),rtf(1:neigh%max_list),     Stat=fail(3))
+  Allocate (ert(1:neigh%max_list),eat(1:neigh%max_list),grt(1:neigh%max_list),gat(1:neigh%max_list),     Stat=fail(4))
+  Allocate (scr(1:neigh%max_list),gcr(1:neigh%max_list),                                 Stat=fail(5))
+  Allocate (cst(1:neigh%max_list),gam(1:neigh%max_list),gvr(1:neigh%max_list),                   Stat=fail(6))
+  If (potter == 2) Allocate (rkj(1:neigh%max_list),wkj(1:neigh%max_list),                Stat=fail(7))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'tersoff_forces allocation failure'
      Call error(0,message)
@@ -207,7 +209,7 @@ Contains
      End If
   End Do
 
-! Form linked list
+! Form linked neigh%list
 ! Initialise link arrays
 
   link=0
@@ -361,7 +363,7 @@ Contains
 
 ! Initialise extended head of chain array (for all subcells
 ! around icell and icell itself at the very first instance)
-! and its length (mini-list of neighbour cell contents)
+! and its length (mini-neigh%list of neighbour cell contents)
 
               k=0
               listin=0

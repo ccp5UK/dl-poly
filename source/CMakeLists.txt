@@ -6,7 +6,6 @@ build_chrm.F90
 build_excl.F90
 build_tplg.F90
 defects.F90
-link_cells.F90
 kontrol.F90
 trajectory.F90
 temperature.F90

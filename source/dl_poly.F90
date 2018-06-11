@@ -346,6 +346,7 @@ program dl_poly
 
   Call allocate_site_arrays()
   Call allocate_config_arrays()
+  Call neigh%init_list(mxatdm)
 
   ! ALLOCATE DPD ARRAYS
 
@@ -725,7 +726,7 @@ program dl_poly
   ! Final anlysis
   Call analysis_result(lrdf,lpana,lprdf, &
                        nstep,tstep,neigh%cutoff,stats%sumval(2),thermo%ensemble, &
-                       bond,angle,dihedral,inversion,stats,green,zdensity,comm)
+                       bond,angle,dihedral,inversion,stats,green,zdensity,neigh,comm)
 
   10 Continue
 

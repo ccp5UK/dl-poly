@@ -604,7 +604,7 @@ Subroutine pmf_units_set(comm)
 
   safe=.true.
 
-! is it ok not to compress the bookkeeping list arrays
+! is it ok not to compress the bookkeeping neigh%list arrays
 ! since it's safe - there's enough buffering space
 
   ok=.true.
@@ -662,13 +662,13 @@ Subroutine pmf_units_set(comm)
 
         If (listpmf(0,2,ipmf) == 0 .and. (.not.ok)) Then
            If      (ipmf  < ntpmf) Then
-              listpmf(:,:,ipmf)=listpmf(:,:,ntpmf) ! Copy list content from 'ipmf' to 'ntpmf'
-              listpmf(:,:,ntpmf)=0                 ! Remove list content in 'ntpmf'
+              listpmf(:,:,ipmf)=listpmf(:,:,ntpmf) ! Copy neigh%list content from 'ipmf' to 'ntpmf'
+              listpmf(:,:,ntpmf)=0                 ! Remove neigh%list content in 'ntpmf'
               ntpmf=ntpmf-1                        ! Reduce 'ntpmf' pointer
 
-              Go To 10 ! Go back and check it all again for the new list content in 'ipmf'
+              Go To 10 ! Go back and check it all again for the new neigh%list content in 'ipmf'
            Else If (ipmf == ntpmf) Then
-              listpmf(:,:,ntpmf)=0                 ! Remove list content in 'ntpmf=ipmf'
+              listpmf(:,:,ntpmf)=0                 ! Remove neigh%list content in 'ntpmf=ipmf'
               ntpmf=ntpmf-1                        ! Reduce 'ntpmf' pointer
            End If
         End If
@@ -680,7 +680,7 @@ Subroutine pmf_units_set(comm)
      End If
   End Do
 
-! check for inconsistently built local list
+! check for inconsistently built local neigh%list
 
   Call gcheck(comm,safe)
   If (.not.safe) Call error(490)

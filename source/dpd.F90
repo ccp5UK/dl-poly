@@ -10,12 +10,11 @@ Module dpd
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  
   Use comms,        Only : comms_type,gsum,gcheck,gmax,DpdVExp_tag,wp_mpi, &
                            gsend,gwait,girecv
-  Use setup,        Only : nrite,mxlist,mxatdm,mxatms,mxbfxp,mxvdw
+  Use setup,        Only : nrite,mxatdm,mxatms,mxbfxp,mxvdw
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
-                                  list,weight,xxx,yyy,zzz,vxx,vyy,vzz, &
+                                  weight,xxx,yyy,zzz,vxx,vyy,vzz, &
                                   fxx,fyy,fzz, ixyz
   Use rigid_bodies, Only : lshmv_rgd,lishp_rgd,lashp_rgd
   Use domains
@@ -25,6 +24,7 @@ Module dpd
   Use numerics,        Only : box_mueller_saru2
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
+  Use neighbours, Only : neighbours_type
 
   Implicit None
 
@@ -51,12 +51,12 @@ Contains
 
   End Subroutine allocate_dpd_arrays
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,comm)
+  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine applying DPD thermostat in a Shardlow's VV manner
-    ! using the verlet neighbour list
+    ! using the verlet neighbour neigh%list
     !
     ! isw=isw(VV) : by stages 0 for VV1 and 1 for VV2
     ! thermo%key_dpd = 1 for first order splitting
@@ -72,6 +72,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: rcut,tstep
     Type( stats_type ), Intent( InOut ) :: stats
     Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( neighbours_type ), Intent( In    ) :: neigh
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -89,7 +90,7 @@ Contains
     If (thermo%key_dpd /= 1 .or. thermo%key_dpd /= 2 .or. thermo%key_dpd*isw == 1) Return
 
     fail=0
-    Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat = fail(1))
+    Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat = fail(1))
     Allocate (fdpdx(1:mxatdm),fdpdy(1:mxatdm),fdpdz(1:mxatdm),         Stat = fail(2))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'dpd_thermostat allocation failure'
@@ -138,14 +139,14 @@ Contains
 
     Do i=1,natms
 
-      ! Get list limit
+      ! Get neigh%list limit
 
-      limit=Merge(list(0,i),0,weight(i) > 1.0e-6_wp)
+      limit=Merge(neigh%list(0,i),0,weight(i) > 1.0e-6_wp)
 
       ! calculate interatomic distances
 
       Do k=1,limit
-        j=list(k,i)
+        j=neigh%list(k,i)
 
         xxt(k)=xxx(i)-xxx(j)
         yyt(k)=yyy(i)-yyy(j)
@@ -184,7 +185,7 @@ Contains
 
         ! secondary atomic index
 
-        j=list(k,i)
+        j=neigh%list(k,i)
 
         ! interatomic distance
 
@@ -316,14 +317,14 @@ Contains
 
     Do i=1,natms
 
-      ! Get list limit
+      ! Get neigh%list limit
 
-      limit=Merge(list(0,i),0,weight(i) > 1.0e-6_wp)
+      limit=Merge(neigh%list(0,i),0,weight(i) > 1.0e-6_wp)
 
       ! calculate interatomic distances
 
       Do k=1,limit
-        j=list(k,i)
+        j=neigh%list(k,i)
 
         xxt(k)=xxx(i)-xxx(j)
         yyt(k)=yyy(i)-yyy(j)
@@ -362,7 +363,7 @@ Contains
 
         ! secondary atomic index
 
-        j=list(k,i)
+        j=neigh%list(k,i)
 
         ! interatomic distance
 

@@ -18,14 +18,15 @@ Module kim
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use, Intrinsic :: iso_c_binding
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
+  Use neighbours, Only : neighbours_type
   Use errors_warnings, Only : error
 #ifdef KIM
   Use KIM_API_F03
   Use domains, Only : map
-  Use configuration,  Only : natms,nlast,lsi,lsa,ltg,list,lsite, &
+  Use configuration,  Only : natms,nlast,lsi,lsa,ltg,lsite, &
                              xxx,yyy,zzz,fxx,fyy,fzz
-  Use setup,   Only : mxsite,mxlist,mxatdm,mxbfxp
+  Use setup,   Only : mxsite,mxatdm,mxbfxp
   Use site,    Only : unqatm,ntpatm,sitnam
   Use comms, Only : comms_type,export_tag,wp_mpi,gsend,gwait,girecv
   Use numerics, Only : local_index
@@ -138,7 +139,7 @@ Contains
 #endif
   End Subroutine  kim_cutoff
 
-  Subroutine kim_setup(num_types,model_types,model_name,comm)
+  Subroutine kim_setup(num_types,model_types,model_name,max_list,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -151,6 +152,7 @@ Contains
     Character(Len = *),      Intent( In    ) :: model_name
     Integer( Kind = c_int ), Intent( In    ) :: num_types
     Character( Len = * ),    Intent( In    ) :: model_types(1:num_types)
+    Integer( Kind = wi ),    Intent( In    ) :: max_list
     Type(comms_type),        Intent( InOut ) :: comm
 
 #ifdef KIM
@@ -195,13 +197,13 @@ Contains
     End If
 
     fail=0
-    Allocate (kim_list(mxlist,mxatdm), Stat=fail)
+    Allocate (kim_list(max_list,mxatdm), Stat=fail)
     If (fail > 0) Then
        Write(message,'(a)') 'kim_setup kim_list allocation failure'
        Call error(0,message)
     End If
 
-    If (RijNeeded) Allocate (kim_Rij(3,mxlist,mxatdm), Stat=fail)
+    If (RijNeeded) Allocate (kim_Rij(3,max_list,mxatdm), Stat=fail)
     If (fail > 0) Then
        Write(message,'(a)') 'kim_setup kim_Rij allocation failure'
        Call error(0,message)
@@ -333,7 +335,7 @@ Contains
 #endif
   End Subroutine kim_cleanup
 
-  Subroutine kim_forces(engkim,virkim,stress,comm)
+  Subroutine kim_forces(engkim,virkim,stress,list,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -350,6 +352,7 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: engkim
     Real( Kind = wp ), Intent( InOut ) :: virkim
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
+    Integer( Kind = wi), Dimension(-3:,1:) :: list
     Type(comms_type),        Intent( InOut ) :: comm
 
 #ifdef KIM

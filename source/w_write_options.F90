@@ -7,10 +7,10 @@
            (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,comm)
         If(dfcts(1)%ldef)Then
            Call defects_write &
-          (neigh%cutoff,keyres,thermo%ensemble,nstep,tstep,time,dfcts(1),comm)
+          (keyres,thermo%ensemble,nstep,tstep,time,dfcts(1),neigh,comm)
            If (dfcts(2)%ldef)Then
              Call defects_write &
-             (neigh%cutoff,keyres,thermo%ensemble,nstep,tstep,time,dfcts(2),comm)
+             (keyres,thermo%ensemble,nstep,tstep,time,dfcts(2),neigh,comm)
            End If
         End If   
         If (msd_data%l_msd) Call msd_write &

@@ -211,7 +211,7 @@ Subroutine build_book_intra             &
 
         If (nlapm > 0) Then
 
-! Construct core-shell list
+! Construct core-shell neigh%list
 
            Do lshels=1,numshl(itmols)
               iatm=lstshl(1,lshels+kshels)+isite
@@ -235,7 +235,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),iat0,jshels,legshl,mxfshl)
                        If (legshl(mxfshl,iat0) > 0) Then
                           Call warning('too many core-shell type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfshl-1+legshl(mxfshl,iat0)
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', mxfshl-1+legshl(mxfshl,iat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfshl-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstshl(1,lshels+kshels)
@@ -250,7 +250,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),jat0,-jshels,legshl,mxfshl)
                        If (legshl(mxfshl,jat0) > 0) Then
                           Call warning('too many core-shell type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfshl-1+legshl(mxfshl,jat0)
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', mxfshl-1+legshl(mxfshl,jat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfshl-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', jatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstshl(2,lshels+kshels)
@@ -267,7 +267,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Construct constraint bond list
+! Construct constraint bond neigh%list
 
            Do lconst=1,cons%numcon(itmols)
               iatm=cons%lstcon(1,lconst+kconst)+isite
@@ -290,7 +290,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),iat0,jconst,cons%legcon,cons%mxfcon)
                        If (cons%legcon(cons%mxfcon,iat0) > 0) Then
                           Call warning('too many constraint type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', cons%mxfcon-1+cons%legcon(cons%mxfcon,iat0)
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
+                            cons%mxfcon-1+cons%legcon(cons%mxfcon,iat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', cons%mxfcon-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', cons%lstcon(1,lconst+kconst)
@@ -305,7 +306,8 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),jat0,jconst,cons%legcon,cons%mxfcon)
                        If (cons%legcon(cons%mxfcon,jat0) > 0) Then
                           Call warning('too many constraint type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', cons%mxfcon-1+cons%legcon(cons%mxfcon,jat0)
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
+                            cons%mxfcon-1+cons%legcon(cons%mxfcon,jat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', cons%mxfcon-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', jatm
                           Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', cons%lstcon(2,lconst+kconst)
@@ -322,7 +324,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Construct PMF bond list
+! Construct PMF bond neigh%list
 ! Note: This is executed for only one given molecular
 !       type as only one PMF type per MD system is allowed.
 
@@ -368,7 +370,7 @@ Subroutine build_book_intra             &
                           Call tag_legend(safe(1),i1pmf0(i),ntpmf,legpmf,mxfpmf)
                           If (legpmf(mxfpmf,i1pmf0(i)) > 0) Then
                              Call warning('too many PMF type neighbours')
-                             Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfpmf-1+legpmf(mxfpmf,i1pmf0(i))
+                             Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', mxfpmf-1+legpmf(mxfpmf,i1pmf0(i))
                              Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfpmf-1
                              Write(messages(3),'(a,i0)') 'for particle (global ID #): ', i1pmf(i)
                              Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstpmf(i,1)
@@ -387,7 +389,7 @@ Subroutine build_book_intra             &
                           Call tag_legend(safe(1),i2pmf0(i),ntpmf,legpmf,mxfpmf)
                           If (legpmf(mxfpmf,i2pmf0(i)) > 0) Then
                              Call warning('too many PMF type neighbours')
-                             Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfpmf-1+legpmf(mxfpmf,i2pmf0(i))
+                             Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', mxfpmf-1+legpmf(mxfpmf,i2pmf0(i))
                              Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfpmf-1
                              Write(messages(3),'(a,i0)') 'for particle (global ID #): ', i2pmf(i)
                              Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstpmf(i,2)
@@ -413,7 +415,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Construct RBs list
+! Construct RBs neigh%list
 
            Do lrigid=1,numrgd(itmols)
               mrigid=lstrgd(0,lrigid+krigid)
@@ -436,7 +438,7 @@ Subroutine build_book_intra             &
                           Call tag_legend(safe(1),irgd0(irigid),jrigid,legrgd,mxfrgd)
                           If (legrgd(mxfrgd,irgd0(irigid)) > 0) Then
                              Call warning('too many RB type neighbours')
-                             Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfrgd-1+legrgd(mxfrgd,irgd0(irigid))
+                             Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', mxfrgd-1+legrgd(mxfrgd,irgd0(irigid))
                              Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfrgd-1
                              Write(messages(3),'(a,i0)') 'for particle (global ID #): ', irgd(irigid)
                              Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstrgd(irigid,lrigid+krigid)
@@ -454,7 +456,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Construct tethered atoms interaction list
+! Construct tethered atoms interaction neigh%list
 
            Do lteths=1,tether%numteth(itmols)
               iatm=tether%lsttet(lteths+kteths)+isite
@@ -470,7 +472,7 @@ Subroutine build_book_intra             &
                     Call tag_legend(safe(1),iat0,jteths,tether%legtet,tether%mxftet)
                     If (tether%legtet(tether%mxftet,iat0) > 0) Then
                        Call warning('too many tether type neighbours')
-                       Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                       Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                              tether%mxftet-1+tether%legtet(tether%mxftet,iat0)
                        Write(messages(2),'(a,i0)') 'but maximum length allowed: ', tether%mxftet-1
                        Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -487,7 +489,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Construct chemical bond interaction list
+! Construct chemical bond interaction neigh%list
 
            Do lbonds=1,bond%num(itmols)
               iatm=bond%lst(1,lbonds+kbonds)+isite
@@ -510,7 +512,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),iat0,jbonds,bond%legend,bond%max_legend)
                        If (bond%legend(bond%max_legend,iat0) > 0) Then
                           Call warning('too many bond type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             bond%max_legend-1+bond%legend(bond%max_legend,iat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', bond%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -526,7 +528,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),jat0,jbonds,bond%legend,bond%max_legend)
                        If (bond%legend(bond%max_legend,jat0) > 0) Then
                           Call warning('too many bond type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             bond%max_legend-1+bond%legend(bond%max_legend,jat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', bond%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -545,7 +547,7 @@ Subroutine build_book_intra             &
 
            End Do
 
-! Construct valence angle interaction list
+! Construct valence angle interaction neigh%list
 
            Do langle=1,angle%num(itmols)
               iatm=angle%lst(1,langle+kangle)+isite
@@ -572,7 +574,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),iat0,jangle,angle%legend,angle%max_legend)
                        If (angle%legend(angle%max_legend,iat0) > 0) Then
                           Call warning('too many angle type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             angle%max_legend-1+angle%legend(angle%max_legend,iat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', angle%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -588,7 +590,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),jat0,jangle,angle%legend,angle%max_legend)
                        If (angle%legend(angle%max_legend,jat0) > 0) Then
                           Call warning('too many angle type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             angle%max_legend-1+angle%legend(angle%max_legend,jat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', angle%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -604,7 +606,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),kat0,jangle,angle%legend,angle%max_legend)
                        If (angle%legend(angle%max_legend,kat0) > 0) Then
                           Call warning('too many angle type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             angle%max_legend-1+angle%legend(angle%max_legend,kat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', angle%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -622,7 +624,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Construct dihedral angle interaction list
+! Construct dihedral angle interaction neigh%list
 
            Do ldihed=1,dihedral%num(itmols)
               iatm=dihedral%lst(1,ldihed+kdihed)+isite
@@ -676,7 +678,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),iat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,iat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,iat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -692,7 +694,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),jat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,jat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,jat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -708,7 +710,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),kat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,kat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,kat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -724,7 +726,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),lat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,lat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,lat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -740,7 +742,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),mat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,mat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,mat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -756,7 +758,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),nat0,jdihed,dihedral%legend,dihedral%max_legend)
                        If (dihedral%legend(dihedral%max_legend,nat0) > 0) Then
                           Call warning('too many dihedral type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             dihedral%max_legend-1+dihedral%legend(dihedral%max_legend,nat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', dihedral%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -774,7 +776,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Construct inversion potential interaction list
+! Construct inversion potential interaction neigh%list
 
            Do linver=1,inversion%num(itmols)
               iatm=inversion%lst(1,linver+kinver)+isite
@@ -805,7 +807,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),iat0,jinver,inversion%legend,inversion%max_legend)
                        If (inversion%legend(inversion%max_legend,iat0) > 0) Then
                           Call warning('too many inversion type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             inversion%max_legend-1+inversion%legend(inversion%max_legend,iat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', inversion%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -821,7 +823,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),jat0,jinver,inversion%legend,inversion%max_legend)
                        If (inversion%legend(inversion%max_legend,jat0) > 0) Then
                           Call warning('too many inversion type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             inversion%max_legend-1+inversion%legend(inversion%max_legend,jat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', inversion%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -837,7 +839,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),kat0,jinver,inversion%legend,inversion%max_legend)
                        If (inversion%legend(inversion%max_legend,kat0) > 0) Then
                           Call warning('too many inversion type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             inversion%max_legend-1+inversion%legend(inversion%max_legend,kat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', inversion%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -853,7 +855,7 @@ Subroutine build_book_intra             &
                        Call tag_legend(safe(1),lat0,jinver,inversion%legend,inversion%max_legend)
                        If (inversion%legend(inversion%max_legend,lat0) > 0) Then
                           Call warning('too many inversion type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                          Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
                             inversion%max_legend-1+inversion%legend(inversion%max_legend,lat0)
                           Write(messages(2),'(a,i0)') 'but maximum length allowed: ', inversion%max_legend-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
@@ -1114,7 +1116,7 @@ Subroutine build_book_intra             &
 
         If (i > 0) Then
 
-! Extend core-shell units interaction list
+! Extend core-shell units interaction neigh%list
 
            Do lshels=1,numshl(itmols)
               iatm=lstshl(1,lshels+kshels)+isite
@@ -1212,7 +1214,7 @@ Subroutine build_book_intra             &
 
         If (i > 0) Then
 
-! Extend constraint bond list
+! Extend constraint bond neigh%list
 
            Do lconst=1,cons%numcon(itmols)
               iatm=cons%lstcon(1,lconst+kconst)+isite
@@ -1231,7 +1233,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Extend RB list
+! Extend RB neigh%list
 
            Do lrigid=1,numrgd(itmols)
               mrigid=lstrgd(0,lrigid+krigid)
@@ -1256,7 +1258,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Extend chemical bond interaction list
+! Extend chemical bond interaction neigh%list
 
            Do lbonds=1,bond%num(itmols)
               iatm=bond%lst(1,lbonds+kbonds)+isite
@@ -1275,7 +1277,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Extend valence angle interaction list
+! Extend valence angle interaction neigh%list
 
            Do langle=1,angle%num(itmols)
               iatm=angle%lst(1,langle+kangle)+isite
@@ -1297,7 +1299,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Extend dihedral angle interaction list
+! Extend dihedral angle interaction neigh%list
 
            Do ldihed=1,dihedral%num(itmols)
               iatm=dihedral%lst(1,ldihed+kdihed)+isite
@@ -1334,7 +1336,7 @@ Subroutine build_book_intra             &
               End If
            End Do
 
-! Extend inversion potential interaction list
+! Extend inversion potential interaction neigh%list
 
            Do linver=1,inversion%num(itmols)
               iatm=inversion%lst(1,linver+kinver)+isite
@@ -1554,7 +1556,7 @@ Subroutine build_book_intra             &
 
         If (i > 0) Then
 
-! Extend core-shell units interaction list
+! Extend core-shell units interaction neigh%list
 
            Do lshels=1,numshl(itmols)
               iatm=lstshl(1,lshels+kshels)+isite
@@ -1762,21 +1764,21 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,comm)
               End Do
 
               If (keep_nt) Then             ! Do repointing
-                 list_u(:,k)=list_u(:,nt_u) ! Copy list content from 'nt_u' to 'k'
-                 list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+                 list_u(:,k)=list_u(:,nt_u) ! Copy neigh%list content from 'nt_u' to 'k'
+                 list_u(:,nt_u)=0           ! Remove neigh%list content in 'nt_u'
                  nt_u=nt_u-1                ! Reduce 'nt_u' pointer
               Else
-                 list_u(:,nt_u)=0           ! Remove list content in 'nt_u'
+                 list_u(:,nt_u)=0           ! Remove neigh%list content in 'nt_u'
                  nt_u=nt_u-1                ! Reduce 'nt_u' pointer
 
-                 Go To 20 ! Go back and check again for the new list contents in 'nt_u'
+                 Go To 20 ! Go back and check again for the new neigh%list contents in 'nt_u'
               End If
 
-              Go To 10    ! Go back and check it all again for the new list contents in 'k'
+              Go To 10    ! Go back and check it all again for the new neigh%list contents in 'k'
 
            Else If (k == nt_u) Then
 
-              list_u(:,nt_u)=0           ! Remove list content in 'k=nt_u'
+              list_u(:,nt_u)=0           ! Remove neigh%list content in 'k=nt_u'
               nt_u=nt_u-1                ! Reduce 'nt_u' pointer
 
            End If

@@ -13,6 +13,7 @@ Module analysis
   Use rdfs,          Only : ncfrdf,ncfusr,l_errors_block,l_errors_jack,rdf_compute, &
                             usr_compute,calculate_errors,calculate_errors_jackknife
   Use z_density,     Only : z_density_type,z_density_compute
+  Use neighbours,    Only : neighbours_type
   Use comms,         Only : comms_type
   Implicit None
 
@@ -25,7 +26,7 @@ Contains
   !> Calculate and print final analysis
   Subroutine analysis_result(lrdf,lpana,lprdf, &
                              nstep,tstep,rcut,temp,ensemble, &
-                             bond,angle,dihedral,inversion,stats,green,zdensity,comm)
+                             bond,angle,dihedral,inversion,stats,green,zdensity,neigh,comm)
 
     Logical, Intent( In    ) :: lrdf,lpana,lprdf
     !> Number of simulation steps
@@ -52,6 +53,8 @@ Contains
     Type( greenkubo_type ), Intent( In    ) :: green
     !> Z density data
     Type( z_density_type ), Intent( InOut ) :: zdensity
+    !> Neighbours data
+    Type( neighbours_type ), Intent( In    ) :: neigh
     !> Comms
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -83,10 +86,10 @@ Contains
     ! Calculate and print radial distribution functions
     ! If block average errors, output that, else if jackknife errors output those, else just RDF.
     If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_block) Then
-      Call calculate_errors(temp, rcut, nstep, comm)
+      Call calculate_errors(temp, rcut, nstep, neigh, comm)
     End If
     If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) Then
-      Call calculate_errors_jackknife(temp, rcut, nstep, comm)
+      Call calculate_errors_jackknife(temp, rcut, nstep, neigh, comm)
     End If
     If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_errors_block .or. l_errors_jack)) Then
       Call rdf_compute(lpana,rcut,temp,comm)

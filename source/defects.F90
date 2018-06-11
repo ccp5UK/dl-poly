@@ -10,7 +10,7 @@ Module defects
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,             Only : wp,li, wi
-  Use setup,             Only : mxatms,mxbfxp,mxcell,ndefdt, &
+  Use setup,             Only : mxatms,mxbfxp,ndefdt, &
                                 nrefdt,config,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
@@ -55,7 +55,7 @@ Module defects
                                 r_nprz
   Use numerics,          Only : pbcshift,invert,dcell, shellsort2
   Use errors_warnings,   Only : error,warning
-  Use link_cells,        Only : defects_link_cells
+  Use neighbours,        Only : neighbours_type,defects_link_cells
 
   Implicit None
 
@@ -2139,7 +2139,7 @@ Subroutine defects_reference_write(name,megref,dfcts,comm)
 End Subroutine defects_reference_write
 
 !> defects_write
-  Subroutine defects_write(rcut,keyres,ensemble,nstep,tstep,time,dfcts,comm)
+  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,dfcts,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2153,8 +2153,9 @@ End Subroutine defects_reference_write
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,              Intent( In    ) :: keyres,ensemble,nstep
-  Real( Kind = wp )   , Intent( In    ) :: rcut,tstep,time
+  Real( Kind = wp )   , Intent( In    ) :: tstep,time
   Type( defects_type ), Intent( InOut ) :: dfcts
+  Type( neighbours_type ), Intent( In    ) :: neigh
   Type( comms_type)   , Intent( InOut ) :: comm
   
   Integer, Parameter :: recsz = 73 ! default record size
@@ -2342,8 +2343,8 @@ End Subroutine defects_reference_write
      Call invert(cell,dfcts%rcell,cut)
 
 ! New real space cutoff and expansion for defects link-cells
-     dfcts%cutdef=Min(rcut/3.0_wp,2.0_wp*dfcts%rdef)
-     dfcts%mxlcdef=Nint(((rcut/dfcts%cutdef)**3+0.15_wp)*Real(mxcell,wp))
+     dfcts%cutdef=Min(neigh%cutoff/3.0_wp,2.0_wp*dfcts%rdef)
+     dfcts%mxlcdef=Nint(((neigh%cutoff/dfcts%cutdef)**3+0.15_wp)*Real(neigh%max_cell,wp))
   End If
 
 ! Update rcell

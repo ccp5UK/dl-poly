@@ -5,13 +5,14 @@ Module poisson
   Use domains
   Use setup,           Only : fourpi,r4pie0,nrite,            &
                               kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
-                              mxlist,mxatms,mxatdm,half_minus,zero_plus
-  Use configuration,   Only : imcon,cell,natms,nlast,list,ltg,lfrzn, &
+                              mxatms,mxatdm,half_minus,zero_plus
+  Use configuration,   Only : imcon,cell,natms,nlast,ltg,lfrzn, &
                               chge,xxx,yyy,zzz,fxx,fyy,fzz
   Use ewald,           Only : ewald_type
   Use errors_warnings, Only : error,info
   Use numerics,        Only : dcell,invert
   Use parallel_fft,    Only : adjust_kmax
+  Use neighbours,      Only : neighbours_type
   Implicit None
 
   Private
@@ -1079,7 +1080,7 @@ Contains
   End Function d2PhidZ2
 
   Subroutine poisson_excl_forces &
-             (iatm,rcut,epsq,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress)
+             (iatm,rcut,epsq,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1094,7 +1095,8 @@ Contains
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -1137,7 +1139,7 @@ Contains
 
 ! Get limit
 
-       limit=list(-1,iatm)-list(0,iatm)
+       limit=neigh%list(-1,iatm)-neigh%list(0,iatm)
 
 ! start of primary loop for forces evaluation
 
@@ -1145,7 +1147,7 @@ Contains
 
 ! atomic index and charge
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
           chgprd=chge(jatm)
 
 ! interatomic distance
@@ -1228,7 +1230,7 @@ Contains
 
   End Subroutine poisson_excl_forces
 
-  Subroutine poisson_frzn_forces(rcut,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
+  Subroutine poisson_frzn_forces(epsq,engcpe_fr,vircpe_fr,stress,ewld,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1248,11 +1250,12 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),                   Intent( In    ) :: rcut,epsq
+    Real( Kind = wp ),                   Intent( In    ) :: epsq
     Real( Kind = wp ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
-    Type(comms_type), Intent( InOut )                    :: comm
     Type(ewald_type), Intent( InOut )                    :: ewld
+    Type( neighbours_type ), Intent( In    )             :: neigh
+    Type(comms_type), Intent( InOut )                    :: comm
 
     Integer           :: fail,i,j,k,ii,jj,idi,nzfr,limit
     Real( Kind = wp ) :: det,rcell(1:9),xrr,yrr,zrr,rrr,rsq, &
@@ -1568,9 +1571,9 @@ Contains
     Else
 
 ! We resort to approximating N*(N-1)/2 interactions
-! with the short-range one from the two body linked cell list
+! with the short-range one from the two body linked cell neigh%list
 
-       Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
+       Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat=fail)
        If (fail > 0) Then
           Write(message,'(a,i0)') 'poisson_frzn_forces allocation failure 2'
           Call error(0,message)
@@ -1580,15 +1583,15 @@ Contains
           i=l_ind(nz_fr(comm%idnode+1))
           idi=ltg(ii)
 
-! Get list limit
+! Get neigh%list limit
 
-          limit=list(-2,i)-list(-1,i)
+          limit=neigh%list(-2,i)-neigh%list(-1,i)
           If (limit > 0) Then
 
 ! calculate interatomic distances
 
              Do k=1,limit
-                j=list(list(-1,i)+k,i)
+                j=neigh%list(neigh%list(-1,i)+k,i)
 
                 xxt(k)=xxx(i)-xxx(j)
                 yyt(k)=yyy(i)-yyy(j)
@@ -1606,10 +1609,10 @@ Contains
              End Do
 
              Do k=1,limit
-                j=list(list(-1,i)+k,i)
+                j=neigh%list(neigh%list(-1,i)+k,i)
 
                 rrr=rrt(k)
-                If (Abs(chge(j)) > zero_plus .and. rrr < rcut) Then
+                If (Abs(chge(j)) > zero_plus .and. rrr < neigh%cutoff) Then
                    chgprd=-chge(i)*chge(j)/epsq*r4pie0 ! the MINUS signifies the exclusion!!!
                    rsq=rrr**2
 

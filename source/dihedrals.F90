@@ -649,7 +649,7 @@ Subroutine dihedrals_forces &
 ! isw = 2 - do both
 !
 ! Note: scale factors for reduces electrostatic and vdw 1-4 interactions
-!       assumes 1-4 interactions are in the exclude list
+!       assumes 1-4 interactions are in the exclude neigh%list
 !
 ! copyright - daresbury laboratory
 ! author    - w.smith march 1992
@@ -1273,7 +1273,7 @@ Subroutine dihedrals_forces &
         End If
 
 ! 1-4 electrostatics: adjust by weighting factor
-! assumes 1-4 interactions are in the exclude list and Rad < rcut
+! assumes 1-4 interactions are in the exclude neigh%list and Rad < rcut
 
         scale=dihedral%param(4,kk)
 
@@ -1475,7 +1475,7 @@ Subroutine dihedrals_forces &
         End If
 
 ! 1-4 short-range (vdw) interactions: adjust by weighting factor
-! assumes 1-4 interactions are in the exclude list and Rad < rvdw
+! assumes 1-4 interactions are in the exclude neigh%list and Rad < rvdw
 
         scale=dihedral%param(5,kk)
         If (Abs(scale) > zero_plus .and. ntpvdw > 0) Then

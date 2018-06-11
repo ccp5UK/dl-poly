@@ -1,10 +1,11 @@
 Module coul_spole
   Use kinds,           Only : wp
   Use comms,           Only : comms_type
-  Use setup,           Only : mxlist, r4pie0, zero_plus, mxgele, nrite,sqrpi
-  Use configuration,   Only : natms,ltg,list,chge,fxx,fyy,fzz
+  Use setup,           Only :  r4pie0, zero_plus, mxgele, nrite,sqrpi
+  Use configuration,   Only : natms,ltg,chge,fxx,fyy,fzz
   Use errors_warnings, Only : error
   Use numerics,        Only : erfcgen
+  Use neighbours,      Only : neighbours_type
 
   Implicit None
 
@@ -140,15 +141,15 @@ Module coul_spole
   End Subroutine intra_coul
 
   Subroutine coul_fscp_forces &
-             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,comm)
+             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for calculating coulombic energy and force terms
   ! in a periodic system assuming a force shifted coulombic potential
   !
-  ! U is proportional to ( 1/r + aa*r  + bb ) such that dU(rcut)/dr = 0
-  ! therefore aa = 1/(rcut)**2 and U(rcut) = 0 therefore bb = -2/(rcut)
+  ! U is proportional to ( 1/r + aa*r  + bb ) such that dU(neigh%cutoff)/dr = 0
+  ! therefore aa = 1/(neigh%cutoff)**2 and U(neigh%cutoff) = 0 therefore bb = -2/(neigh%cutoff)
   !
   ! Note: FS potential can be generalised (R1) by using a damping function
   ! as used for damping the real space coulombic interaction in the
@@ -163,8 +164,9 @@ Module coul_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( comms_type ),                       Intent( In    ) :: comm
@@ -198,7 +200,7 @@ Module coul_spole
 
   ! interpolation interval
 
-          drewd = rcut/Real(mxgele-4,wp)
+          drewd = neigh%cutoff/Real(mxgele-4,wp)
 
   ! reciprocal of interpolation interval
 
@@ -213,19 +215,19 @@ Module coul_spole
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(rcut,alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =   fer(mxgele-4)*rcut
-          bb = -(erc(mxgele-4)+aa*rcut)
+          aa =   fer(mxgele-4)*neigh%cutoff
+          bb = -(erc(mxgele-4)+aa*neigh%cutoff)
 
        Else
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =  1.0_wp/rcut**2
-          bb = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
+          aa =  1.0_wp/neigh%cutoff**2
+          bb = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
 
        End If
     End If
@@ -264,11 +266,11 @@ Module coul_spole
 
   ! start of primary loop for forces evaluation
 
-       Do m=1,list(0,iatm)
+       Do m=1,neigh%list(0,iatm)
 
   ! atomic index and charge
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
           chgprd=chge(jatm)
 
   ! interatomic distance
@@ -277,7 +279,7 @@ Module coul_spole
 
   ! interaction validity and truncation of potential
 
-          If (Abs(chgprd) > zero_plus .and. rrr < rcut) Then
+          If (Abs(chgprd) > zero_plus .and. rrr < neigh%cutoff) Then
 
   ! charge product
 
@@ -385,7 +387,7 @@ Module coul_spole
   End Subroutine coul_fscp_forces
 
   Subroutine coul_rfp_forces &
-             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,comm)
+             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -407,8 +409,9 @@ Module coul_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( comms_type ),                       Intent( In    ) :: comm
@@ -448,15 +451,15 @@ Module coul_spole
   ! reaction field terms
 
        b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
-       rfld0 = b0/rcut**3
-       rfld1 = (1.0_wp + 0.5_wp*b0)/rcut
+       rfld0 = b0/neigh%cutoff**3
+       rfld1 = (1.0_wp + 0.5_wp*b0)/neigh%cutoff
        rfld2 = 0.5_wp*rfld0
 
        If (damp) Then
 
   ! interpolation interval
 
-          drewd = rcut/Real(mxgele-4,wp)
+          drewd = neigh%cutoff/Real(mxgele-4,wp)
 
   ! reciprocal of interpolation interval
 
@@ -471,16 +474,16 @@ Module coul_spole
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(rcut,alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =   fer(mxgele-4)*rcut
-          bb = -(erc(mxgele-4)+aa*rcut)
+          aa =   fer(mxgele-4)*neigh%cutoff
+          bb = -(erc(mxgele-4)+aa*neigh%cutoff)
 
   ! Cutoff squared
 
-          rcsq = rcut**2
+          rcsq = neigh%cutoff**2
 
        End If
     End If
@@ -519,11 +522,11 @@ Module coul_spole
 
   ! start of primary loop for forces evaluation
 
-       Do m=1,list(0,iatm)
+       Do m=1,neigh%list(0,iatm)
 
   ! atomic index and charge
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
           chgprd=chge(jatm)
 
   ! interatomic distance
@@ -532,7 +535,7 @@ Module coul_spole
 
   ! interaction validity and truncation of potential
 
-          If (Abs(chgprd) > zero_plus .and. rrr < rcut) Then
+          If (Abs(chgprd) > zero_plus .and. rrr < neigh%cutoff) Then
 
   ! charge product
 
@@ -641,7 +644,7 @@ Module coul_spole
   End Subroutine coul_rfp_forces
 
   Subroutine coul_cp_forces &
-             (iatm,rcut,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress)
+             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -655,8 +658,9 @@ Module coul_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -700,11 +704,11 @@ Module coul_spole
 
   ! start of primary loop for forces evaluation
 
-       Do m=1,list(0,iatm)
+       Do m=1,neigh%list(0,iatm)
 
   ! atomic index and charge
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
           chgprd=chge(jatm)
 
   ! interatomic distance
@@ -713,7 +717,7 @@ Module coul_spole
 
   ! interaction validity and truncation of potential
 
-          If (Abs(chgprd) > zero_plus .and. rrr < rcut) Then
+          If (Abs(chgprd) > zero_plus .and. rrr < neigh%cutoff) Then
 
   ! charge product
 
@@ -787,7 +791,7 @@ Module coul_spole
   End Subroutine coul_cp_forces
 
   Subroutine coul_dddp_forces &
-             (iatm,rcut,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress)
+             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -802,8 +806,9 @@ Module coul_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -847,11 +852,11 @@ Module coul_spole
 
   ! start of primary loop for forces evaluation
 
-       Do m=1,list(0,iatm)
+       Do m=1,neigh%list(0,iatm)
 
   ! atomic index and charge
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
           chgprd=chge(jatm)
 
   ! interatomic distance
@@ -860,7 +865,7 @@ Module coul_spole
 
   ! interaction validity and truncation of potential
 
-          If (Abs(chgprd) > zero_plus .and. rrr < rcut) Then
+          If (Abs(chgprd) > zero_plus .and. rrr < neigh%cutoff) Then
 
   ! charge product
 

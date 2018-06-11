@@ -13,15 +13,16 @@ Module rdfs
 
   Use kinds, Only : wp
   Use site, Only: ntpatm
-  Use configuration, Only : natms,ltg,ltype,list
+  Use configuration, Only : natms,ltg,ltype
   Use comms,  Only : comms_type,gsum
   Use setup,  Only : fourpi,boltz,delr_max,nrdfdt,npdfdt,npdgdt, &
-                            mxgrdf,engunit,zero_plus,mxlist,mxrdf,mxgusr
+                            mxgrdf,engunit,zero_plus,mxrdf,mxgusr
   Use site,   Only : ntpatm,unqatm,numtyp,dens
   Use configuration, Only : cfgname,volm
   Use parse
   Use io
   Use errors_warnings, Only : error,info
+  Use neighbours, Only : neighbours_type
 
   Implicit None
 
@@ -93,7 +94,7 @@ Subroutine allocate_block_average_array(nstrun)
   End Subroutine allocate_block_average_array
 
 
-  Subroutine rdf_collect(iatm,rcut,rrt)
+  Subroutine rdf_collect(iatm,rrt,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -110,16 +111,16 @@ Subroutine allocate_block_average_array(nstrun)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Type( neighbours_type), Intent( In    ) :: neigh
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ),                        Intent( In    ) :: rcut
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
+  Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
 
   Integer                 :: idi,jatm,ai,aj,keyrdf,kk,ll,m
   Real( Kind = wp )       :: rdelr,rrr
 
 ! set cutoff condition for pair forces and grid interval for rdf tables
 
-  rdelr= Real(mxgrdf,wp)/rcut
+  rdelr= Real(mxgrdf,wp)/neigh%cutoff
 
 ! global identity and type of iatm
 
@@ -128,11 +129,11 @@ Subroutine allocate_block_average_array(nstrun)
 
 ! start of primary loop for rdf accumulation
 
-  Do m=1,list(0,iatm)
+  Do m=1,neigh%list(0,iatm)
 
 ! atomic and type indices
 
-     jatm=list(m,iatm)
+     jatm=neigh%list(m,iatm)
      aj=ltype(jatm)
 
      If (jatm <= natms .or. idi < ltg(jatm)) Then
@@ -150,7 +151,7 @@ Subroutine allocate_block_average_array(nstrun)
 
            rrr=rrt(m)
 
-           If (rrr < rcut) Then
+           If (rrr < neigh%cutoff) Then
               ll=Min(1+Int(rrr*rdelr),mxgrdf)
 
 ! accumulate correlation
@@ -484,10 +485,11 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 
 End Subroutine rdf_compute
 
-Subroutine calculate_block(temp, rcut)
+Subroutine calculate_block(temp, rcut,neigh)
 
+  Type( neighbours_type), Intent( In    ) :: neigh
   Real( Kind = wp ), Intent(in)            :: temp, rcut
-  Real( Kind = wp ), Dimension( 1:mxlist ) :: rrt, xxt, yyt, zzt
+  Real( Kind = wp ), Dimension( 1:neigh%max_list ) :: rrt, xxt, yyt, zzt
   Real( Kind = wp )                        :: kT2engo, delr, rdlr, dgrid, pdfzero, factor1, rrr,dvol,gofr,gofr1
 
   Integer :: i, loopend, j, ia, ib, ngrid, kk, k, limit, jj
@@ -532,10 +534,12 @@ Subroutine calculate_block(temp, rcut)
 
 End Subroutine calculate_block
 
-Subroutine calculate_errors(temp, rcut, num_steps, comm)
+Subroutine calculate_errors(temp, rcut, num_steps, neigh, comm)
 
   Real( Kind = wp ), Intent( In )                      :: temp, rcut
+  Type( neighbours_type ), Intent( In    ) :: neigh
   Type(comms_type), Intent( InOut )                    :: comm
+
   Real( Kind = wp )                                    :: test1, delr
   Real( kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
   Real( kind = wp)                                     :: i_nr_blocks, s
@@ -565,7 +569,7 @@ Subroutine calculate_errors(temp, rcut, num_steps, comm)
 
 !Compute the rdf for each of the blocks
   Do block_number=1, num_blocks+1
-     Call calculate_block(temp, rcut)
+     Call calculate_block(temp, rcut,neigh)
   End Do
   nr_blocks = num_blocks+1
 
@@ -626,10 +630,12 @@ Subroutine calculate_errors(temp, rcut, num_steps, comm)
   Deallocate(averages, errors)
 End Subroutine calculate_errors
 
-Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
+Subroutine calculate_errors_jackknife(temp, rcut, num_steps,neigh,comm)
 
   Real( Kind = wp ), Intent(In)                        :: temp, rcut
+  Type( neighbours_type ), Intent( In    ) :: neigh
   Type(comms_type), Intent( InOut )                    :: comm
+
   Real( Kind = wp )                                    :: test1
   Real( Kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
   Real(Kind = wp)                                      :: i_nr_blocks, delr, s
@@ -659,7 +665,7 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
 
 !Compute the rdf for each of the blocks
   Do block_number=1,num_blocks+1
-     Call calculate_block(temp, rcut)
+     Call calculate_block(temp, rcut,neigh)
   End Do
   nr_blocks = num_blocks+1
   i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)
@@ -743,7 +749,7 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps,comm)
   End If
 End Subroutine calculate_errors_jackknife
 
-  Subroutine rdf_excl_collect(iatm,rcut,rrt)
+  Subroutine rdf_excl_collect(iatm,rrt,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -758,25 +764,25 @@ End Subroutine calculate_errors_jackknife
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( neighbours_type), Intent( In    ) :: neigh
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ),                        Intent( In    ) :: rcut
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
+  Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
 
   Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
   Real( Kind = wp )       :: rdelr,rrr
 
 ! set cutoff condition for pair forces and grid interval for rdf tables
 
-  rdelr= Real(mxgrdf,wp)/rcut
+  rdelr= Real(mxgrdf,wp)/neigh%cutoff
 
 ! global identity and type of iatm
 
   idi=ltg(iatm)
   ai=ltype(iatm)
 
-! Get list limit
+! Get neigh%list limit
 
-  limit=list(-1,iatm)-list(0,iatm)
+  limit=neigh%list(-1,iatm)-neigh%list(0,iatm)
 
 ! start of primary loop for rdf accumulation
 
@@ -784,7 +790,7 @@ End Subroutine calculate_errors_jackknife
 
 ! atomic and type indices
 
-     jatm=list(list(0,iatm)+m,iatm)
+     jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
      aj=ltype(jatm)
 
      If (jatm <= natms .or. idi < ltg(jatm)) Then
@@ -802,7 +808,7 @@ End Subroutine calculate_errors_jackknife
 
            rrr=rrt(m)
 
-           If (rrr < rcut) Then
+           If (rrr < neigh%cutoff) Then
               ll=Min(1+Int(rrr*rdelr),mxgrdf)
 
 ! accumulate correlation
@@ -819,7 +825,7 @@ End Subroutine calculate_errors_jackknife
 
 End Subroutine rdf_excl_collect
 
-Subroutine rdf_frzn_collect(iatm,rcut,rrt)
+Subroutine rdf_frzn_collect(iatm,rrt,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -834,25 +840,25 @@ Subroutine rdf_frzn_collect(iatm,rcut,rrt)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( neighbours_type), Intent( In    ) :: neigh
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ),                        Intent( In    ) :: rcut
-  Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: rrt
+  Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
 
   Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
   Real( Kind = wp )       :: rdelr,rrr
 
 ! set cutoff condition for pair forces and grid interval for rdf tables
 
-  rdelr= Real(mxgrdf,wp)/rcut
+  rdelr= Real(mxgrdf,wp)/neigh%cutoff
 
 ! global identity and type of iatm
 
   idi=ltg(iatm)
   ai=ltype(iatm)
 
-! Get list limit
+! Get neigh%list limit
 
-  limit=list(-2,iatm)-list(-1,iatm)
+  limit=neigh%list(-2,iatm)-neigh%list(-1,iatm)
 
 ! start of primary loop for rdf accumulation
 
@@ -860,7 +866,7 @@ Subroutine rdf_frzn_collect(iatm,rcut,rrt)
 
 ! atomic and type indices
 
-     jatm=list(list(-1,iatm)+m,iatm)
+     jatm=neigh%list(neigh%list(-1,iatm)+m,iatm)
      aj=ltype(jatm)
 
      If (jatm <= natms .or. idi < ltg(jatm)) Then
@@ -878,7 +884,7 @@ Subroutine rdf_frzn_collect(iatm,rcut,rrt)
 
            rrr=rrt(m)
 
-           If (rrr < rcut) Then
+           If (rrr < neigh%cutoff) Then
               ll=Min(1+Int(rrr*rdelr),mxgrdf)
 
 ! accumulate correlation

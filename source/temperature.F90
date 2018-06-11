@@ -127,7 +127,7 @@ Contains
 
   ! Report DoF
 
-    Write(messages(1),'(a)') 'degrees of freedom break-down list:'
+    Write(messages(1),'(a)') 'degrees of freedom break-down neigh%list:'
     Write(messages(2),'(2x,a,i12)') 'free particles        ',meg
     Write(messages(3),'(2x,a,i12)') 'centre of mass        ',-com
     Write(messages(4),'(2x,a,i12)') 'non-periodicity       ',-non
