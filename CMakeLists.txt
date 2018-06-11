@@ -220,7 +220,7 @@ if(BUILD_TESTING)
   foreach(test RANGE 70 87 1)
     do_test("TEST${test}")
   endforeach()
-  foreach(test RANGE 91 91 1)
+  foreach(test RANGE 91 92 1)
     do_test("TEST${test}")
   endforeach()
 
