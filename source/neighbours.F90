@@ -11,7 +11,7 @@ Module neighbours
                             r_nprx,r_npry,r_nprz, &
                             nprx_r,npry_r,nprz_r
   Use configuration,  Only : imcon,cell,natms,nlast,ltg,lfrzn, &
-                             xxx,yyy,zzz,lexatm
+                             xxx,yyy,zzz
   Use core_shell,    Only : listshl,legshl
   Use mpole,         Only : keyind,lchatm
   Use development, Only : development_type
@@ -58,6 +58,12 @@ Module neighbours
     Integer( Kind = wi ), Public :: max_list
     !> Maximum number of cells per domain
     Integer( Kind = wi ), Public :: max_cell
+
+    !> Excluded atom list
+    Integer( Kind = wi ), Allocatable, Public :: list_excl(:,:)
+    !> Maximum size of excluded atom list
+    Integer( Kind = wi ), Public :: max_exclude
+
   Contains
     Private
 
@@ -75,8 +81,10 @@ Contains
     Integer( Kind = wi ), Intent( In    ) :: mxatdm
 
     Allocate (neigh%list(-3:neigh%max_list,1:mxatdm))
+    Allocate (neigh%list_excl(0:neigh%max_exclude,1:mxatdm))
 
     neigh%list(:,:) = 0
+    neigh%list_excl(:,:) = 0
   End Subroutine init_list
 
   !> Perform Verlet neighbour list update check
@@ -972,12 +980,12 @@ Contains
         l_end=neigh%list(0,i)
         m_end=l_end
 
-        ii=lexatm(0,i)
+        ii=neigh%list_excl(0,i)
         If (ii > 0) Then
           Do kk=l_end,1,-1
             j =neigh%list(kk,i)
             jj=ltg(j)
-            If (match(jj,ii,lexatm(1:ii,i))) Then
+            If (match(jj,ii,neigh%list_excl(1:ii,i))) Then
               If (kk < m_end) Then
                 neigh%list(kk,i)=neigh%list(m_end,i)
                 neigh%list(m_end,i)=j

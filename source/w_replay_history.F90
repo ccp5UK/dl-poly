@@ -140,8 +140,8 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,megpmf,        &
            megrgd,degrot,degtra,        &
-           megtet,cons,bond,angle,dihedral,inversion,tether,comm)
-              If (lexcl) Call build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
+           megtet,cons,bond,angle,dihedral,inversion,tether,neigh,comm)
+              If (lexcl) Call build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
            End If
 
 ! Accumulate RDFs if needed (nstep->nstph)

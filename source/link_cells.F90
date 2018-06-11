@@ -6,7 +6,7 @@ Module link_cells
                             r_nprx,r_npry,r_nprz, &
                             nprx_r,npry_r,nprz_r
   Use configuration, Only : cell,natms,nlast,ltg,lfrzn, &
-                            xxx,yyy,zzz,lexatm,neigh%list
+                            xxx,yyy,zzz,neigh%list_excl,neigh%list
   Use core_shell,    Only : listshl,legshl
   Use mpole,         Only : keyind,lchatm
   Use development,   Only : development_type
