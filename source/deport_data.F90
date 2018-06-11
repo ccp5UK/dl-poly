@@ -452,7 +452,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
 
            End If
 
-! pack the exclusion list
+! pack the exclusion neigh%list
 
            kk=lexatm(0,i)
            If (imove+1 <= iblock) Then
@@ -1094,7 +1094,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
            End If
         End If
 
-! unpack the exclusion list
+! unpack the exclusion neigh%list
 
         kmove=kmove+1
         kk=Nint(buffer(kmove))
@@ -1107,7 +1107,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
 
 ! the order of unpacking intra bookkeeping arrays must be the same as
 ! the order of their scanning in build_book_intra in order to rebuild
-! correctly the new list arrays and create new legend arrays
+! correctly the new neigh%list arrays and create new legend arrays
 
 ! set initial intra counters
 

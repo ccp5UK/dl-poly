@@ -90,7 +90,7 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
      If (ia0 > natms) ia0=0
      If (ib0 > natms) ib0=0
 
-! add atoms to exclusion list
+! add atoms to exclusion neigh%list
 
      If (ia0 > 0) Call add_exclusion(safe,ia0,ib,ibig,lexatm)
      If (ib0 > 0) Call add_exclusion(safe,ib0,ia,ibig,lexatm)
@@ -105,7 +105,7 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
         If (irgd0(j,i) > natms) irgd0(j,i)=0
      End Do
 
-! add atoms to exclusion list
+! add atoms to exclusion neigh%list
 
      Do j=1,listrgd(-1,i)
         If (irgd0(j,i) > 0) Then
@@ -129,7 +129,7 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
         If (ia0 > natms) ia0=0
         If (ib0 > natms) ib0=0
 
-! add atoms to exclusion list
+! add atoms to exclusion neigh%list
 
         If (ia0 > 0) Call add_exclusion(safe,ia0,ib,ibig,lexatm)
         If (ib0 > 0) Call add_exclusion(safe,ib0,ia,ibig,lexatm)
@@ -153,7 +153,7 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
         If (ib0 > natms) ib0=0
         If (ic0 > natms) ic0=0
 
-! add atoms to exclusion list
+! add atoms to exclusion neigh%list
 
         If (ia0 > 0) Then ! ia : ib - ic interactions
            Call add_exclusion(safe,ia0,ib,ibig,lexatm)
@@ -191,7 +191,7 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
         If (ic0 > natms) ic0=0
         If (id0 > natms) id0=0
 
-! add atoms to exclusion list
+! add atoms to exclusion neigh%list
 
         If (ia0 > 0) Then ! ia : ib - ic - id interactions
            Call add_exclusion(safe,ia0,ib,ibig,lexatm)
@@ -238,7 +238,7 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
         If (ic0 > natms) ic0=0
         If (id0 > natms) id0=0
 
-! add atoms to exclusion list
+! add atoms to exclusion neigh%list
 
         If (ia0 > 0) Then ! ia : ib - ic - id interactions
            Call add_exclusion(safe,ia0,ib,ibig,lexatm)
@@ -278,7 +278,7 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
      If (ia0 > natms) ia0=0
      If (ib0 > natms) ib0=0
 
-! add atoms to exclusion list
+! add atoms to exclusion neigh%list
 
      If (ia0 > 0) Call add_exclusion(safe,ia0,ib,ibig,lexatm)
      If (ib0 > 0) Call add_exclusion(safe,ib0,ia,ibig,lexatm)
@@ -1192,7 +1192,7 @@ Subroutine add_exclusion(safe,ia0,ib,ibig,lexatm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to add excluded atoms to the excluded atom list
+! dl_poly_4 subroutine to add excluded atoms to the excluded atom neigh%list
 ! provided they are not already excluded
 !
 ! copyright - daresbury laboratory
@@ -1229,7 +1229,7 @@ Subroutine add_exclusion(safe,ia0,ib,ibig,lexatm)
 
      If (safe_local) Then
 
-! Increase length of the ia0 exclusion list and tag ib in it
+! Increase length of the ia0 exclusion neigh%list and tag ib in it
 
         last = last + 1
         lexatm(0,ia0) = last

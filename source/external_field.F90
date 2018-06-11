@@ -83,7 +83,7 @@ Contains
   Real( Kind = wp ) :: gamma,rrr,rz,zdif,vxt,vyt,vzt,tmp,rtmp(1:2), &
                        x(1:1),y(1:1),z(1:1),cmm(0:3),cm2(0:3)
 
-  Integer,           Allocatable :: lstopt(:,:),list(:)
+  Integer,           Allocatable :: lstopt(:,:)
   Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
   Character( Len = 256 ) :: message
 ! Recover megrgd

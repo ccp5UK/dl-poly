@@ -282,7 +282,7 @@ Contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 function to return the n-th factoriser from the list of
+! dl_poly_4 function to return the n-th factoriser from the neigh%list of
 ! all possible integer factorisers
 !
 ! copyright - daresbury laboratory

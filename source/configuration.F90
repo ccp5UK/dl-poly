@@ -18,7 +18,7 @@ Module configuration
   Use site
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
-                      mxatdm,mxexcl,mxlist
+                      mxatdm,mxexcl
   Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line
   Use domains, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r,idx,idy,idz
@@ -78,7 +78,7 @@ Module configuration
   Integer,              Allocatable, Save :: lfrzn(:),lfree(:)
   Integer,              Allocatable, Save :: lsi(:),lsa(:),ltg(:)
   Integer,              Allocatable, Save :: lexatm(:,:)
-  Integer,              Allocatable, Save :: ixyz(:),list(:,:)
+  Integer,              Allocatable, Save :: ixyz(:)
   Integer,              Allocatable, Save :: lstfre(:)
 
   Real( Kind = wp ),    Allocatable, Save :: weight(:),chge(:)
@@ -248,7 +248,7 @@ Contains
     Allocate (lsite(1:mxatms),ltype(1:mxatms),           Stat = fail(1))
     Allocate (lfrzn(1:mxatms),lfree(1:mxatms),           Stat = fail(2))
     Allocate (lexatm(0:mxexcl,1:mxatdm),ixyz(1:mxatms),  Stat = fail(3))
-    Allocate (list(-3:mxlist,1:mxatdm),lstfre(1:mxatdm), Stat = fail(4))
+    Allocate (lstfre(1:mxatdm), Stat = fail(4))
     Allocate (weight(1:mxatms),chge(1:mxatms),           Stat = fail(5))
 
     If (Any(fail > 0)) Call error(1025)
@@ -257,7 +257,7 @@ Contains
     lfrzn = 0 ; lfree = 0
 
     lexatm = 0 ; ixyz = 0
-    list = 0 ; lstfre = 0
+    lstfre = 0
 
     weight = 0.0_wp ; chge = 0.0_wp
 

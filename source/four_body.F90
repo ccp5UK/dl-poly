@@ -18,11 +18,12 @@ Module four_body
   Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use setup, Only : mxsite,mxfbp,mxpfbp,zero_plus,mx3fbp, &
-                          mxcell, mxatms,nrite
+                           mxatms,nrite
 
   Use errors_warnings, Only : error, warning
   Use numerics, Only : invert, dcell
   Use statistics, Only : stats_type
+  Use neighbours, Only : neighbours_type
   Implicit None
 
   Integer,                        Save :: ntpfbp = 0
@@ -63,7 +64,7 @@ Contains
   End Subroutine allocate_four_body_arrays
   
   
-  Subroutine four_body_forces(rcfbp,stats,comm)
+  Subroutine four_body_forces(rcfbp,stats,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -82,9 +83,10 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Real( Kind = wp ),                   Intent( In    ) :: rcfbp
-  Type( stats_type ),                  Intent( InOut ) :: stats
-  Type( comms_type ),                  Intent( InOut ) :: comm
+  Real( Kind = wp ),       Intent( In    ) :: rcfbp
+  Type( stats_type ),      Intent( InOut ) :: stats
+  Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( comms_type ),      Intent( InOut ) :: comm
   
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
 
@@ -143,9 +145,9 @@ Contains
   If (nbx < 3 .or. nby < 3 .or. nbz < 3) Call error(305)
 
   ncells=(nbx+4)*(nby+4)*(nbz+4)
-  If (ncells > mxcell) Then
-     Call warning(90,Real(ncells,wp),Real(mxcell,wp),2.0_wp)
-     mxcell = Nint(1.25_wp*Real(ncells,wp))
+  If (ncells > neigh%max_cell) Then
+     Call warning(90,Real(ncells,wp),Real(neigh%max_cell,wp),2.0_wp)
+     neigh%max_cell = Nint(1.25_wp*Real(ncells,wp))
      If (ncells > mxatms) Call error(69)
   End If
 
@@ -190,7 +192,7 @@ Contains
      End If
   End Do
 
-! Form linked list
+! Form linked neigh%list
 ! Initialise link arrays
 
   link=0
@@ -350,7 +352,7 @@ Contains
 
 ! Initialise extended head of chain array (for all subcells
 ! around icell and icell itself at a very first instance)
-! and its length (mini-list of neighbour cell contents)
+! and its length (mini-neigh%list of neighbour cell contents)
 
            k=0
            listin=0

@@ -672,11 +672,11 @@ Subroutine set_bounds                                 &
 ! total link-cells per node/domain is ncells = (ilx+4)*(ily+4)*(ilz+4)
 
   If      (imcon == 0                ) Then
-     mxcell = Nint((fdvar**4) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
+     neigh%max_cell = Nint((fdvar**4) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
   Else If (imcon == 6 .or. imc_n == 6) Then
-     mxcell = Nint((fdvar**3) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
+     neigh%max_cell = Nint((fdvar**3) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
   Else
-     mxcell = Nint((fdvar**2) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
+     neigh%max_cell = Nint((fdvar**2) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
   End If
 
 
@@ -760,15 +760,15 @@ Subroutine set_bounds                                 &
 ! more than domains(+halo) arrays' dimensions, in case of
 ! events of extreme collapse in atomic systems (aggregation)
 
-! mxlist is the maximum length of link-cell list (dens * 4/3 pi neigh%cutoff_extended^3)
+! neigh%max_list is the maximum length of link-cell neigh%list (dens * 4/3 pi neigh%cutoff_extended^3)
 ! + 75% extra tolerance - i.e f(dens0,dens)*(7.5/3)*pi*neigh%cutoff_extended^3
 
-  mxlist = Nint(fdens*2.5_wp*pi*neigh%cutoff_extended**3)
-  mxlist = Min(mxlist,megatm-1) ! mxexcl
+  neigh%max_list = Nint(fdens*2.5_wp*pi*neigh%cutoff_extended**3)
+  neigh%max_list = Min(neigh%max_list,megatm-1) ! mxexcl
 
-  If (mxlist < mxexcl-1) Then
-     Call warning(6,Real(mxlist,wp),Real(mxexcl,wp),0.0_wp)
-     mxlist=mxexcl-1
+  If (neigh%max_list < mxexcl-1) Then
+     Call warning(6,Real(neigh%max_list,wp),Real(mxexcl,wp),0.0_wp)
+     neigh%max_list=mxexcl-1
   End If
 
 ! get link-cell volume
@@ -844,7 +844,7 @@ Subroutine set_bounds                                 &
   mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
                 stats%mxnstk*stats%mxstak , mxgrid , mxgrdf , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )
 
-! reset (increase) link-cell maximum (mxcell)
+! reset (increase) link-cell maximum (neigh%max_cell)
 ! if tersoff or three- or four-body potentials exist
 
   If (mxter > 0 .or. threebody%mxtbp > 0 .or. mxfbp > 0) Then
@@ -863,11 +863,11 @@ Subroutine set_bounds                                 &
      If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
      If      (imcon == 0                ) Then
-        mxcell = Max(mxcell,Nint((fdvar**4) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
+        neigh%max_cell = Max(neigh%max_cell,Nint((fdvar**4) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
      Else If (imcon == 6 .or. imc_n == 6) Then
-        mxcell = Max(mxcell,Nint((fdvar**3) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
+        neigh%max_cell = Max(neigh%max_cell,Nint((fdvar**3) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
      Else
-        mxcell = Max(mxcell,Nint((fdvar**2) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
+        neigh%max_cell = Max(neigh%max_cell,Nint((fdvar**2) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
      End If
   End If
 

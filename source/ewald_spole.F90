@@ -1,16 +1,17 @@
 Module ewald_spole
   Use kinds,           Only : wp
   Use comms,           Only : comms_type, gcheck, gsum
-  Use setup,           Only : mxlist, mxatdm, mxatms, nrite, r4pie0, sqrpi, twopi, &
+  Use setup,           Only : mxatdm, mxatms, nrite, r4pie0, sqrpi, twopi, &
                               mxspl, mxspl1, mxspl2, kmaxa, kmaxb, kmaxc, &
                               zero_plus, mxgele
-  Use configuration,   Only : natms,ltg,list,chge,fxx,fyy,fzz,cell,volm,nlast, &
+  Use configuration,   Only : natms,ltg,chge,fxx,fyy,fzz,cell,volm,nlast, &
                               xxx,yyy,zzz, lfrzn
   Use numerics,        Only : erfcgen, invert, dcell
   Use errors_warnings, Only : error
   Use ewald,           Only : ewald_type,spl_cexp, bspcoe, bspgen, exchange_grid
   Use domains, Only : nprx,npry,nprz,idx,idy,idz
   Use parallel_fft, Only : initialize_fft, pfft, pfft_indices
+  Use neighbours, Only : neighbours_type
   Implicit None
 
   Private
@@ -19,7 +20,7 @@ Module ewald_spole
   Contains
 
   Subroutine ewald_real_forces &
-             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress,comm)
+             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress,neigh,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -35,8 +36,9 @@ Module ewald_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( comms_type),                        Intent( In    ) :: comm
@@ -66,7 +68,7 @@ Module ewald_spole
 
   ! interpolation interval
 
-       drewd = rcut/Real(mxgele-4,wp)
+       drewd = neigh%cutoff/Real(mxgele-4,wp)
 
   ! reciprocal of interpolation interval
 
@@ -74,7 +76,7 @@ Module ewald_spole
 
   ! generate error function complement tables for ewald sum
 
-       Call erfcgen(rcut,alpha,mxgele,erc,fer)
+       Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
     End If
 
   ! initialise potential energy and virial
@@ -111,11 +113,11 @@ Module ewald_spole
 
   ! start of primary loop for forces evaluation
 
-       Do m=1,list(0,iatm)
+       Do m=1,neigh%list(0,iatm)
 
   ! atomic index and charge
 
-          jatm=list(m,iatm)
+          jatm=neigh%list(m,iatm)
           chgprd=chge(jatm)
 
   ! interatomic distance
@@ -124,7 +126,7 @@ Module ewald_spole
 
   ! interaction validity and truncation of potential
 
-          If (Abs(chgprd) > zero_plus .and. rrr < rcut) Then
+          If (Abs(chgprd) > zero_plus .and. rrr < neigh%cutoff) Then
 
   ! charge product
 
@@ -1317,7 +1319,7 @@ Module ewald_spole
   End Subroutine ewald_spme_forces
 
   Subroutine ewald_excl_forces &
-             (iatm,rcut,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress)
+             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress,neigh)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1333,8 +1335,9 @@ Module ewald_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha,epsq
-    Real( Kind = wp ), Dimension( 1:mxlist ), Intent( In    ) :: xxt,yyt,zzt,rrt
+    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
+    Type( neighbours_type ), Intent( In    ) :: neigh
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
 
@@ -1387,9 +1390,9 @@ Module ewald_spole
        fiy=fyy(iatm)
        fiz=fzz(iatm)
 
-  ! Get list limit
+  ! Get neigh%list limit
 
-       limit=list(-1,iatm)-list(0,iatm)
+       limit=neigh%list(-1,iatm)-neigh%list(0,iatm)
 
   ! start of primary loop for forces evaluation
 
@@ -1397,7 +1400,7 @@ Module ewald_spole
 
   ! atomic index and charge
 
-          jatm=list(list(0,iatm)+m,iatm)
+          jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
           chgprd=chge(jatm)
 
   ! interatomic distance
@@ -1406,7 +1409,7 @@ Module ewald_spole
 
   ! interaction validity and truncation of potential
 
-          If (Abs(chgprd) > zero_plus .and. rrr < rcut) Then
+          If (Abs(chgprd) > zero_plus .and. rrr < neigh%cutoff) Then
 
   ! charge product
 
@@ -1509,7 +1512,7 @@ Module ewald_spole
 
   End Subroutine ewald_excl_forces
 
-  Subroutine ewald_frzn_forces(rcut,alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,comm)
+  Subroutine ewald_frzn_forces(alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,neigh,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1528,11 +1531,12 @@ Module ewald_spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp  ),                   Intent( In    ) :: rcut,alpha,epsq
+    Real( Kind = wp  ),                   Intent( In    ) :: alpha,epsq
     Real( Kind = wp  ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp  ), Dimension( 1:9 ), Intent( InOut ) :: stress
-    Type( comms_type ),                   Intent( InOut ) :: comm
     Type( ewald_type ),                   Intent( InOut ) :: ewld
+    Type( neighbours_type ),              Intent( In    ) :: neigh
+    Type( comms_type ),                   Intent( InOut ) :: comm
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -1874,9 +1878,9 @@ Module ewald_spole
     Else
 
   ! We resort to approximating N*(N-1)/2 interactions
-  ! with the short-range one from the two body linked cell list
+  ! with the short-range one from the two body linked cell neigh%list
 
-       Allocate (xxt(1:mxlist),yyt(1:mxlist),zzt(1:mxlist),rrt(1:mxlist), Stat=fail)
+       Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat=fail)
        If (fail > 0) Then
           Write(message,'(a)') 'ewald_frzn_forces allocation failure 2'
           Call error(0,message)
@@ -1886,15 +1890,15 @@ Module ewald_spole
           i=l_ind(nz_fr(comm%idnode+1))
           idi=ltg(ii)
 
-  ! Get list limit
+  ! Get neigh%list limit
 
-          limit=list(-2,i)-list(-1,i)
+          limit=neigh%list(-2,i)-neigh%list(-1,i)
           If (limit > 0) Then
 
   ! calculate interatomic distances
 
              Do k=1,limit
-                j=list(list(-1,i)+k,i)
+                j=neigh%list(neigh%list(-1,i)+k,i)
 
                 xxt(k)=xxx(i)-xxx(j)
                 yyt(k)=yyy(i)-yyy(j)
@@ -1912,10 +1916,10 @@ Module ewald_spole
              End Do
 
              Do k=1,limit
-                j=list(list(-1,i)+k,i)
+                j=neigh%list(neigh%list(-1,i)+k,i)
 
                 rrr=rrt(k)
-                If (Abs(chge(j)) > zero_plus .and. rrr < rcut) Then
+                If (Abs(chge(j)) > zero_plus .and. rrr < neigh%cutoff) Then
                    chgprd=chge(i)*chge(j)*scl
                    rsq=rrr**2
 
