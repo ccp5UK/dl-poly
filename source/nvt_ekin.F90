@@ -8,9 +8,9 @@ Module nvt_ekin
   Use domains,         Only : map
   Use kinetics,        Only : kinstress,kinstresf,kinstrest
   Use core_shell,      Only : legshl
-  Use constraints,     Only : constraints_tags,constraints_shake_vv,&
+  Use constraints,     Only : constraints_tags,apply_shake,&
                               constraints_rattle,constraints_type
-  Use pmf,             Only : passpmf,pmf_tags,pmf_shake_vv,pmf_rattle
+  Use pmf,             Only : passpmf,pmf_tags,pmf_rattle
   Use rigid_bodies,    Only : lashp_rgd,lishp_rgd,lshmv_rgd,mxatms,mxlrgd, &
                               ntrgd,rgdx,rgdy,rgdz,rgdxxx,rgdyyy,rgdzzz, &
                               rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz, &
@@ -200,101 +200,9 @@ Contains
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. megpmf > 0) Then
-          safe=.false.
-          kit =0
-
-  ! store integrated positions
-
-          Do i=1,natms
-             If (lstitr(i)) Then
-                oxt(i)=xxx(i)
-                oyt(i)=yyy(i)
-                ozt(i)=zzz(i)
-             End If
-          End Do
-
-          Do While ((.not.safe) .and. kit <= mxkit)
-             kit=kit+1
-
-             If (cons%megcon > 0) Then
-
-  ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
-
-                Call constraints_shake_vv &
-                  (tstep,      &
-                  lstopt,dxx,dyy,dzz,listot, &
-                  xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
-
-  ! constraint virial and stress tensor
-
-                stat%vircon=stat%vircon+vir
-                stat%strcon=stat%strcon+str
-
-                safe=.true.
-             End If
-
-             If (megpmf > 0) Then
-
-  ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
-
-                Call pmf_shake_vv  &
-                  (cons%max_iter_shake,cons%tolerance,tstep, &
-                  indpmf,pxx,pyy,pzz,   &
-                  xxx,yyy,zzz,str,vir,comm)
-
-  ! PMF virial and stress tensor
-
-                virpmf=virpmf+vir
-                strpmf=strpmf+str
-
-                safe=(Abs(vir) <= zero_plus)
-             End If
-          End Do
-
-          If (.not.safe) Call error(478)
-
-  ! Collect per step passage statistics for bond and pmf constraints
-
-          If (cons%megcon > 0) Then
-             stat%passcon(3,2,1)=stat%passcon(2,2,1)*stat%passcon(3,2,1)
-             stat%passcon(2,2,1)=stat%passcon(2,2,1)+1.0_wp
-             stat%passcon(3,2,1)=stat%passcon(3,2,1)/stat%passcon(2,2,1)+stat%passcon(1,2,1)/stat%passcon(2,2,1)
-             stat%passcon(4,2,1)=Min(stat%passcon(1,2,1),stat%passcon(4,2,1))
-             stat%passcon(5,2,1)=Max(stat%passcon(1,2,1),stat%passcon(5,2,1))
-             stat%passcon(1,2,1)=0.0_wp ! Reset
-          End If
-
-          If (megpmf > 0) Then
-             passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
-             passpmf(2,2,1)=passpmf(2,2,1)+1.0_wp
-             passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
-             passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
-             passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))
-             passpmf(1,2,1)=0.0_wp ! Reset
-          End If
-
-  ! calculate velocity and force correction
-
-          Do i=1,natms
-             If (lstitr(i)) Then
-                xt=(xxx(i)-oxt(i))*rstep
-                yt=(yyy(i)-oyt(i))*rstep
-                zt=(zzz(i)-ozt(i))*rstep
-
-                vxx(i)=vxx(i)+xt
-                vyy(i)=vyy(i)+yt
-                vzz(i)=vzz(i)+zt
-
-                tmp=weight(i)/hstep
-                xt=xt*tmp
-                yt=yt*tmp
-                zt=zt*tmp
-
-                fxx(i)=fxx(i)+xt
-                fyy(i)=fyy(i)+yt
-                fzz(i)=fzz(i)+zt
-             End If
-          End Do
+        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,dxx,dyy,dzz,pxx,pyy,pzz,&
+          listot,lstitr,lstopt,indpmf,&
+          megpmf,virpmf,strpmf,stat,cons,tmr,comm)
        End If
 
   ! check timestep for variable timestep
@@ -778,105 +686,9 @@ Contains
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. megpmf > 0) Then
-          safe=.false.
-          kit =0
-
-  ! store integrated positions
-
-          Do j=1,nfree
-             i=lstfre(j)
-
-             If (lstitr(i)) Then
-                oxt(i)=xxx(i)
-                oyt(i)=yyy(i)
-                ozt(i)=zzz(i)
-             End If
-          End Do
-
-          Do While ((.not.safe) .and. kit <= mxkit)
-             kit=kit+1
-
-             If (cons%megcon > 0) Then
-
-  ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
-
-                Call constraints_shake_vv &
-                  (tstep,      &
-                  lstopt,dxx,dyy,dzz,listot, &
-                  xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
-
-  ! constraint virial and stress tensor
-
-                stat%vircon=stat%vircon+vir
-                stat%strcon=stat%strcon+str
-
-                safe=.true.
-             End If
-
-             If (megpmf > 0) Then
-
-  ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
-
-                Call pmf_shake_vv  &
-                  (cons%max_iter_shake,cons%tolerance,tstep, &
-                  indpmf,pxx,pyy,pzz,   &
-                  xxx,yyy,zzz,str,vir,comm)
-
-  ! PMF virial and stress tensor
-
-                virpmf=virpmf+vir
-                strpmf=strpmf+str
-
-                safe=(Abs(vir) <= zero_plus)
-             End If
-          End Do
-
-          If (.not.safe) Call error(478)
-
-  ! Collect per step passage statistics for bond and pmf constraints
-
-          If (cons%megcon > 0) Then
-             stat%passcon(3,2,1)=stat%passcon(2,2,1)*stat%passcon(3,2,1)
-             stat%passcon(2,2,1)=stat%passcon(2,2,1)+1.0_wp
-             stat%passcon(3,2,1)=stat%passcon(3,2,1)/stat%passcon(2,2,1)+stat%passcon(1,2,1)/stat%passcon(2,2,1)
-             stat%passcon(4,2,1)=Min(stat%passcon(1,2,1),stat%passcon(4,2,1))
-             stat%passcon(5,2,1)=Max(stat%passcon(1,2,1),stat%passcon(5,2,1))
-             stat%passcon(1,2,1)=0.0_wp ! Reset
-          End If
-
-          If (megpmf > 0) Then
-             passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
-             passpmf(2,2,1)=passpmf(2,2,1)+1.0_wp
-             passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
-             passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
-             passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))
-             passpmf(1,2,1)=0.0_wp ! Reset
-          End If
-
-  ! calculate velocity and force correction
-
-          Do j=1,nfree
-             i=lstfre(j)
-
-             If (lstitr(i)) Then
-                xt=(xxx(i)-oxt(i))*rstep
-                yt=(yyy(i)-oyt(i))*rstep
-                zt=(zzz(i)-ozt(i))*rstep
-
-                vxx(i)=vxx(i)+xt
-                vyy(i)=vyy(i)+yt
-                vzz(i)=vzz(i)+zt
-
-                tmp=weight(i)/hstep
-                xt=xt*tmp
-                yt=yt*tmp
-                zt=zt*tmp
-
-                fxx(i)=fxx(i)+xt
-                fyy(i)=fyy(i)+yt
-                fzz(i)=fzz(i)+zt
-             End If
-          End Do
+        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,dxx,dyy,dzz,pxx,pyy,pzz,&
+          listot,lstitr,lstopt,indpmf,&
+          megpmf,virpmf,strpmf,stat,cons,tmr,comm)
        End If
 
   ! update velocity and position of RBs
