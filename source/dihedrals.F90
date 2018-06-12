@@ -17,7 +17,7 @@ Module dihedrals
                             engunit,zero_plus, mxtmls,     &
                             rtwopi,r4pie0,    &
                             mximpl, ntable,mxgvdw,mxatdm
-  Use site,   Only : unqatm,ntpatm
+  Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz,cfgname
   Use vdw,    Only : ntpvdw,gvdw,vvdw,afs,prmvdw,bfs,ls_vdw,ld_vdw,  &

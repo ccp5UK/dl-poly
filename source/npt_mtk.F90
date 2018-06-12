@@ -3,7 +3,7 @@ Module npt_mtk
   Use comms,         Only : comms_type,gmax
   Use setup
   Use domains,       Only : map
-  Use site,          Only : ntpatm,dens
+  Use site, Only : site_type
   Use configuration, Only : imcon,cell,volm,natms,nlast,nfree, &
                             lfrzn,lstfre,weight,               &
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz

@@ -59,7 +59,7 @@ program dl_poly
 
   ! SITE & CONFIG MODULES
 
-  Use site
+  Use site, Only : site_type
   Use configuration
   Use kontrol, Only : read_control
 

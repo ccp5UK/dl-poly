@@ -3,7 +3,7 @@ Module analysis
   Use kinds,         Only : wp,wi
   Use setup,         Only : zero_plus
   Use configuration, Only : volm,cell
-  Use site,          Only : dens,ntpatm
+  Use site, Only : site_type
   Use statistics,    Only : stats_type
   Use bonds,         Only : bonds_type,bonds_compute
   Use angles,        Only : angles_type,angles_compute

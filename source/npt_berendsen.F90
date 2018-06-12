@@ -6,7 +6,7 @@ Module npt_berendsen
                               xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains,         Only : map
   Use setup
-  Use site,            Only : ntpatm,dens
+  Use site, Only : site_type
   Use kinetics,        Only : getvom
   Use core_shell,      Only : legshl
   Use constraints,     Only : constraints_type,constraints_rattle,&

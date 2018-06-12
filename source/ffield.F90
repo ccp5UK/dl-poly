@@ -6,7 +6,7 @@ Module ffield
 
 ! SITE MODULE
 
-  Use site
+  Use site, Only : site_type
 
 ! CONFIG MODULE
 ! Fuchs correction of charge non-neutral systems

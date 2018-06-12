@@ -3,7 +3,7 @@ Module mpole
   Use setup, Only : mxatdm, mxatms, mxexcl, mximpl, mxompl, mxsite, mxspl, &
                            sqrpi,r4pie0,zero_plus,nrite,nmpldt
   Use configuration,Only : natms
-  Use site
+  Use site, Only : site_type
   Use core_shell, Only : numshl,lstshl
   Use parse
   Use comms, Only : comms_type

@@ -12,14 +12,14 @@ Module vdw
   Use kinds, Only : wp
   Use comms,  Only : comms_type,gsum,gbcast
   Use setup
-  Use site,   Only : ntpatm,numtyp
+  Use site, Only : site_type
   Use configuration, Only : imcon,volm,natms,ltype,lfrzn, &
                             ltg,fxx,fyy,fzz
   Use mm3lrc
   Use zbl_pots,         Only : ab, intRadZBL, intdRadZBL, &
                            zbl,zbls,zblb
 
-  Use site,  Only : ntpatm,unqatm
+  Use site, Only : site_type
   Use parse, Only : get_line,get_word,word_2_real
   Use neighbours, Only : neighbours_type
   Use errors_warnings, Only : error,warning,info

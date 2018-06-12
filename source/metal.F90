@@ -12,7 +12,7 @@ Module metal
 
   Use kinds, Only : wp,wi
   Use setup
-  Use site,   Only : ntpatm,unqatm,dens
+  Use site, Only : site_type
   Use configuration, Only : natms,ltg,ltype,fxx,fyy,fzz,&
                             xxx,yyy,zzz,imcon,volm,nlast,ixyz
 

@@ -27,7 +27,7 @@ Module kim
   Use configuration,  Only : natms,nlast,lsi,lsa,ltg,lsite, &
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use setup,   Only : mxsite,mxatdm,mxbfxp
-  Use site,    Only : unqatm,ntpatm,sitnam
+  Use site, Only : site_type
   Use comms, Only : comms_type,export_tag,wp_mpi,gsend,gwait,girecv
   Use numerics, Only : local_index
 #else  

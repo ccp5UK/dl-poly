@@ -6,7 +6,7 @@ Module build_book
 
 ! SITE MODULE
 
-  Use site
+  Use site, Only : site_type
 
 ! CONFIG MODULE
 

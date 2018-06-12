@@ -12,7 +12,7 @@ Module msd
   Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync,gbcast, &
                     gsend,grecv,offset_kind,comm_self,mode_wronly
   Use setup
-  Use site,       Only : dofsit
+  Use site, Only : site_type
   Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
                                 weight
 

@@ -12,7 +12,7 @@ Module z_density
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gsum
   Use setup,  Only : mxgrdf,nrite,nzdndt,mxatyp
-  Use site,   Only : ntpatm,unqatm
+  Use site, Only : site_type
   Use configuration, Only : cfgname,cell,volm,natms,ltype,zzz
   Use errors_warnings, Only : error,info
   Implicit None

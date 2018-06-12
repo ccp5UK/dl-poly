@@ -17,7 +17,7 @@ Module statistics
 
   Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend, &
                       gwait,girecv,gcheck
-  Use site,    Only : ntpatm,numtypnf,unqatm,dens
+  Use site, Only : site_type
   Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
   Use domains,    Only : nprx,npry,nprz,map,r_nprx,r_npry,r_nprz,&

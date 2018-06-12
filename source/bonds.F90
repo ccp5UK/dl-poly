@@ -19,7 +19,7 @@ Module bonds
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                               chge,xxx,yyy,zzz,fxx,fyy,fzz, cfgname
-  Use site,            Only : ntpatm,unqatm
+  Use site, Only : site_type
   Use parse,           Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info
   Use numerics,        Only : images, local_index

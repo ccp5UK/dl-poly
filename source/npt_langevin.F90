@@ -2,7 +2,7 @@ Module npt_langevin
   Use kinds,         Only : wp, li
   Use comms,         Only : comms_type,gmax
   Use domains,       Only : map
-  Use site,          Only : ntpatm,dens
+  Use site, Only : site_type
   Use setup
   Use configuration, Only : imcon,cell,volm,natms,nlast,nfree,  &
                             lsi,lsa,lfrzn,lstfre,weight,        &

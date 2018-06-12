@@ -6,7 +6,7 @@ Module halo
   Use configuration 
 
   Use domains
-  Use site
+  Use site, Only : site_type
   Use mpole
 
   Use neighbours,       Only : neighbours_type,vnl_set_check

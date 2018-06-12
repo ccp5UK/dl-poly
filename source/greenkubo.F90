@@ -16,7 +16,7 @@ Module greenkubo
   Use comms,     Only : comms_type,gsum,gcheck
   Use setup,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt,mxatms
   Use configuration,    Only : natms,ltype,lfrzn,vxx,vyy,vzz,cfgname
-  Use site,      Only : unqatm,numtypnf
+  Use site, Only : site_type
 
   Use errors_warnings, Only : error,info
   Implicit None

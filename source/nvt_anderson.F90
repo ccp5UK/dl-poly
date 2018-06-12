@@ -3,7 +3,7 @@ Module nvt_anderson
   Use comms,         Only : comms_type,gsum,gmax
   Use domains,       Only : map
   Use setup,         Only : boltz,mxpmf,mxshl,mxtpmf,zero_plus
-  Use site,          Only : dofsit
+  Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,nfree,lsite, &
                             lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
                             weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz

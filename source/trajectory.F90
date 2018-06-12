@@ -4,7 +4,7 @@ Module trajectory
                             gsum,gsend,grecv,offset_kind,mode_wronly, &
                             mode_rdonly, comm_self
   Use domains,       Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
-  Use site
+  Use site, Only : site_type
   Use setup
   Use parse,         Only : tabs_2_blanks, get_line, get_word, &
                             strip_blanks, word_2_real

@@ -15,7 +15,7 @@ Module configuration
                     gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
                     gallgather,galltoall,galltoallv,gallreduce,op_land, &
                     offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
-  Use site
+  Use site, Only : site_type
 
   Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
                       mxatdm,mxexcl

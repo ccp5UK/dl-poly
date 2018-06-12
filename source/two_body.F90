@@ -2,7 +2,7 @@ Module two_body
   Use kinds, Only : wp
   Use comms,   Only : comms_type,gsum
   Use setup
-  Use site,    Only : ntpatm,unqatm
+  Use site, Only : site_type
   Use configuration,  Only : volm,sumchg,natms,xxx,yyy,zzz
   Use neighbours,     Only : neighbours_type,link_cell_pairs
   Use ewald,           Only : ewald_type

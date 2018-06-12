@@ -13,7 +13,7 @@ Module drivers
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type
-  Use site,        Only : dofsit
+  Use site, Only : site_type
   Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 
   Use impacts, Only : impact_type, impact

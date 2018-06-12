@@ -2,7 +2,7 @@ Module nst_langevin
   Use kinds,           Only : wp, li
   Use comms,           Only : comms_type,gmax
   Use setup
-  Use site,            Only : ntpatm,dens
+  Use site, Only : site_type
   Use configuration,   Only : imcon,cell,volm,natms,nlast,nfree,  &
                               lsi,lsa,lfrzn,lstfre,weight,        &
                               xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz

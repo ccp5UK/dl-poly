@@ -48,7 +48,7 @@ Module defects
                                 IO_ALLOCATION_ERROR,      &
                                 IO_UNKNOWN_WRITE_OPTION,  &
                                 IO_UNKNOWN_WRITE_LEVEL
-  Use site
+  Use site, Only : site_type
   Use domains,           Only : nprx,npry,nprz,            &
                                 nprx_r,npry_r,nprz_r,map,  &
                                 idx,idy,idz,r_nprx,r_npry, &

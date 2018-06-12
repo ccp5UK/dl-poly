@@ -14,7 +14,7 @@ Module inversions
   Use comms, Only : comms_type,gsum,gsync,gcheck,gbcast
   Use setup, Only : mxtmls,mxatdm,pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                     engunit,zero_plus,ntable
-  Use site,  Only : ntpatm,unqatm
+  Use site, Only : site_type
   Use configuration, Only : cfgname
   Use parse, Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info

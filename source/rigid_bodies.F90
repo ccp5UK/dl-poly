@@ -12,7 +12,7 @@ Module rigid_bodies
   Use comms,           Only : comms_type,gsum,gmin,gmax,gsync,gcheck
   Use setup,           Only : mxtmls,mxtrgd,mxrgd,mxlrgd,mxfrgd,mxlshp,mxproc,mxatdm, &
                               mxatms,zero_plus
-  Use site
+  Use site, Only : site_type
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
                               ltg,lsite,lfrzn,fxx,fyy,fzz,nfree,lstfre,getcom
   Use neighbours,      Only : neighbours_type

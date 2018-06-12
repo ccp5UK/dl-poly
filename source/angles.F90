@@ -16,7 +16,7 @@ Module angles
   Use setup,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                      engunit,zero_plus,twopi, &
                      delth_max,ntable,mxatdm,mxtmls
-  Use site,   Only : unqatm,ntpatm
+  Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz,cfgname
   Use parse, Only : get_line,get_word,word_2_real

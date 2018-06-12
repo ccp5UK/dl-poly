@@ -5,7 +5,7 @@ Module system
                     gsend,grecv,offset_kind,mode_wronly,comm_self,mode_create, &
                     gtime,gsum,gcheck
   Use setup
-  Use site,        Only : ntpatm,numtyp,numtypnf,dens,ntpmls,numsit,&
+  Use site, Only : site_type
                                  nummols
   Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz, &
                                  cfgname,imcon,cell,lsi,lsa,atmnam, &
