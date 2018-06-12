@@ -1,6 +1,6 @@
 Module mpole
-  Use kinds, Only : wp
-  Use setup, Only : mxatdm, mxatms, mxexcl, mximpl, mxompl, mxsite, mxspl, &
+  Use kinds, Only : wp,wi
+  Use setup, Only : mxatdm, mxatms, mximpl, mxompl, mxsite, mxspl, &
                            sqrpi,r4pie0,zero_plus,nrite,nmpldt
   Use configuration,Only : natms
   Use site
@@ -69,7 +69,8 @@ Module mpole
 
 Contains
 
-  Subroutine allocate_mpoles_arrays()
+  Subroutine allocate_mpoles_arrays(max_exclude)
+    Integer( Kind = wi ), Intent( In    ) :: max_exclude
 
     Integer           :: n,k,om1,numpl,fail(1:9)
     Real( Kind = wp ) :: gearp(1:7),aspcp(1:7)
@@ -82,9 +83,9 @@ Contains
     fail = 0
 
     Allocate (mplmap(0:mxompl,0:mxompl,0:mxompl),mplltg(1:numpl),  Stat = fail(1))
-    Allocate (mplflg(1:mxatdm),ltpatm(0:mxexcl,1:mxatdm),          Stat = fail(2))
+    Allocate (mplflg(1:mxatdm),ltpatm(0:max_exclude,1:mxatdm),          Stat = fail(2))
     If (keyind == 1) &
-    Allocate (lchatm(0:mxexcl,1:mxatdm),                           Stat = fail(3))
+    Allocate (lchatm(0:max_exclude,1:mxatdm),                           Stat = fail(3))
     Allocate (mpllfr(1:mximpl,1:mxsite),mplgfr(1:mximpl,1:mxatms), Stat = fail(4))
     Allocate (plrsit(1:mxsite),plratm(1:mxatms),                   Stat = fail(5))
     Allocate (dmpsit(1:mxsite),dmpatm(1:mxatms),                   Stat = fail(6))

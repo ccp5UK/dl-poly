@@ -18,7 +18,7 @@ Module deport_data
                                   rgdoxx,rgdoyy,rgdozz, &
                                   legrgd,lshmv_rgd,lishp_rgd,lashp_rgd
 
-  Use tethers,      Only : tethers_type 
+  Use tethers,      Only : tethers_type
 
   Use bonds,        Only : bonds_type
   Use angles,       Only : angles_type
@@ -52,6 +52,7 @@ Module deport_data
   Use build_book, Only : compress_book_intra
   Use shared_units, Only : pass_shared_units, tag_legend
   Use thermostat, Only : thermostat_type
+  Use neighbours, Only : neighbours_type
   Implicit None
 
   Public :: deport_atomic_data, export_atomic_data
@@ -59,7 +60,7 @@ Module deport_data
   Contains
 
 
-Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -88,6 +89,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -452,9 +454,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
 
            End If
 
-! pack the exclusion neigh%list
+! pack the exclusion list
 
-           kk=lexatm(0,i)
+           kk=neigh%list_excl(0,i)
            If (imove+1 <= iblock) Then
               imove=imove+1
               buffer(imove)=Real(kk,wp)
@@ -465,7 +467,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
            If (imove+kk <= iblock) Then
               Do k=1,kk
                  imove=imove+1
-                 buffer(imove)=Real(lexatm(k,i),wp)
+                 buffer(imove)=Real(neigh%list_excl(k,i),wp)
               End Do
            Else
               imove=imove+kk
@@ -891,7 +893,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
            If (keyind == 1) lchatm(:,keep)=lchatm(:,i)
         End If
 
-        lexatm(:,keep)=lexatm(:,i)
+        neigh%list_excl(:,keep)=neigh%list_excl(:,i)
 
         legshl(:,keep)=legshl(:,i)
 
@@ -1080,7 +1082,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
               kmove=kmove+1
               ltpatm(k,newatm)=Nint(buffer(kmove))
            End Do
-           ltpatm(kk+1:mxexcl,newatm)=0
+           ltpatm(kk+1:neigh%max_exclude,newatm)=0
 
            If (keyind == 1) Then ! unpack CHARMMing core-shell interactions array
               kmove=kmove+1
@@ -1090,7 +1092,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
                  kmove=kmove+1
                  lchatm(k,newatm)=Nint(buffer(kmove))
               End Do
-              lchatm(kk+1:mxexcl,newatm)=0
+              lchatm(kk+1:neigh%max_exclude,newatm)=0
            End If
         End If
 
@@ -1098,12 +1100,12 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
 
         kmove=kmove+1
         kk=Nint(buffer(kmove))
-        lexatm(0,newatm)=kk
+        neigh%list_excl(0,newatm)=kk
         Do k=1,kk
            kmove=kmove+1
-           lexatm(k,newatm)=Nint(buffer(kmove))
+           neigh%list_excl(k,newatm)=Nint(buffer(kmove))
         End Do
-        lexatm(kk+1:mxexcl,newatm)=0
+        neigh%list_excl(kk+1:neigh%max_exclude,newatm)=0
 
 ! the order of unpacking intra bookkeeping arrays must be the same as
 ! the order of their scanning in build_book_intra in order to rebuild
@@ -2527,7 +2529,7 @@ Subroutine relocate_particles       &
            megshl,megpmf,     &
            m_rgd,megtet,            &
            cons,  &
-           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2547,7 +2549,7 @@ Subroutine relocate_particles       &
   Integer,           Intent( In    ) :: megatm,              &
                                         megshl,megpmf, &
                                         m_rgd,megtet
-  Type( constraints_type), Intent( InOut ) :: cons 
+  Type( constraints_type), Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2557,6 +2559,7 @@ Subroutine relocate_particles       &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2672,18 +2675,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! check system for loss of atoms
 

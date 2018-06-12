@@ -102,7 +102,7 @@ Subroutine set_bounds                                 &
 
   Call scan_field                                    &
            (l_n_e,mxompl,mximpl,                     &
-           mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
+           mxsite,mxatyp,megatm,mxtmls,neigh%max_exclude,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
            mtcons,              &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &
@@ -222,10 +222,10 @@ Subroutine set_bounds                                 &
 
   fdvar = dvar**1.7_wp
 
-! dvar push of dihedral%max_legend and mxexcl ranges as the usual suspects
+! dvar push of dihedral%max_legend and neigh%max_exclude ranges as the usual suspects
 
   dihedral%max_legend = Nint(fdvar * Real(dihedral%max_legend,wp))
-  mxexcl = Nint(fdvar * Real(mxexcl,wp))
+  neigh%max_exclude = Nint(fdvar * Real(neigh%max_exclude,wp))
 
 !!! INTRA-LIKE POTENTIAL PARAMETERS !!!
 
@@ -764,11 +764,11 @@ Subroutine set_bounds                                 &
 ! + 75% extra tolerance - i.e f(dens0,dens)*(7.5/3)*pi*neigh%cutoff_extended^3
 
   neigh%max_list = Nint(fdens*2.5_wp*pi*neigh%cutoff_extended**3)
-  neigh%max_list = Min(neigh%max_list,megatm-1) ! mxexcl
+  neigh%max_list = Min(neigh%max_list,megatm-1) ! neigh%max_exclude
 
-  If (neigh%max_list < mxexcl-1) Then
-     Call warning(6,Real(neigh%max_list,wp),Real(mxexcl,wp),0.0_wp)
-     neigh%max_list=mxexcl-1
+  If (neigh%max_list < neigh%max_exclude-1) Then
+     Call warning(6,Real(neigh%max_list,wp),Real(neigh%max_exclude,wp),0.0_wp)
+     neigh%max_list=neigh%max_exclude-1
   End If
 
 ! get link-cell volume
@@ -817,8 +817,8 @@ Subroutine set_bounds                                 &
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(neigh%cutoff_extended/0.2_wp,1.0_wp)
   mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real( &
-           mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (mxexcl+1) + &
-           Merge(mxexcl+1 + Merge(mxexcl+1,0,keyind == 1),0,mximpl > 0) + &
+           mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (neigh%max_exclude+1) + &
+           Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,keyind == 1),0,mximpl > 0) + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp  + &
            4*mxshl+4*cons%mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
            3*tether%mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)

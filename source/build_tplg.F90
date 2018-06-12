@@ -1,7 +1,7 @@
 Module build_tplg
   ! SETUP MODULES
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gcheck,gmax
   Use setup
 
@@ -18,7 +18,7 @@ Module build_tplg
 
   ! MULTIPOLES MODULE
 
-  Use mpole, Only : ltpatm ! equivalent to lexatm in configuration
+  Use mpole, Only : ltpatm
   Use numerics, Only : local_index,shellsort
   Use build_excl, Only : add_exclusion
 
@@ -31,11 +31,11 @@ Module build_tplg
 
 Contains
 
-  Subroutine build_tplg_intra(bond,angle,dihedral,inversion,comm)
+  Subroutine build_tplg_intra(max_exclude,bond,angle,dihedral,inversion,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine for constructing the topology related neigh%list
+    ! dl_poly_4 subroutine for constructing the topology related list
     ! of neighbours for the MD system mapped onto this node.  It is presumed
     ! that constraint bonds are put on top of chemical bonds!
     !
@@ -44,6 +44,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Integer( Kind = wi ), Intent( In    ) :: max_exclude
     Type( bonds_type ), Intent( In    ) :: bond
     Type( angles_type ), Intent( In    ) :: angle
     Type( dihedrals_type ), Intent( In    ) :: dihedral
@@ -71,7 +72,7 @@ Contains
         If (ia0 > natms) ia0=0
         If (ib0 > natms) ib0=0
 
-        ! add atoms to topology neigh%list
+        ! add atoms to topology list
 
         If (ia0 > 0) Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
         If (ib0 > 0) Call add_exclusion(safe,ib0,ia,ibig,ltpatm)
@@ -94,7 +95,7 @@ Contains
         If (ib0 > natms) ib0=0
         If (ic0 > natms) ic0=0
 
-        ! add atoms to topology neigh%list
+        ! add atoms to topology list
 
         If (ia0 > 0) Then ! ia : ib - ic neighbours
           Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
@@ -131,7 +132,7 @@ Contains
       If (ic0 > natms) ic0=0
       If (id0 > natms) id0=0
 
-      ! add atoms to topology neigh%list
+      ! add atoms to topology list
 
       If (ia0 > 0) Then ! ia : ib - ic neighbours
         Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
@@ -172,7 +173,7 @@ Contains
       If (ic0 > natms) ic0=0
       If (id0 > natms) id0=0
 
-      ! add atoms to topology neigh%list
+      ! add atoms to topology list
 
       If (ia0 > 0) Then ! ia : ib - ic - id neighbours
         Call add_exclusion(safe,ia0,ib,ibig,ltpatm)
@@ -204,7 +205,7 @@ Contains
     Call gcheck(comm,safe)
     If (.not.safe) Then
       Call gmax(comm,ibig)
-      Call warning(250,Real(ibig,wp),Real(mxexcl,wp),0.0_wp)
+      Call warning(250,Real(ibig,wp),Real(max_exclude,wp),0.0_wp)
       Call error(65)
     End If
 

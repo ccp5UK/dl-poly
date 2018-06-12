@@ -308,7 +308,7 @@ Module errors_warnings
         ib = Nint(b)
 
         Write(ounit,'(/,1x,a,2(i0,a),/)') &
-        '*** warning - required coulombic exclusion array size ', ia, ' and actual (mxexcl): ', ib, ' !!! ***'
+        '*** warning - required coulombic exclusion array size ', ia, ' and actual (neigh%max_exclude): ', ib, ' !!! ***'
 
      Else If (kode == 260) Then
 

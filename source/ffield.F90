@@ -500,7 +500,7 @@ Subroutine read_field                      &
                           If (wgtsit(nsite) > 1.0e-6_wp) dofsit(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
                        End Do
 
-! establish neigh%list of unique atom types
+! establish list of unique atom types
 
                        atmchk=.true.
                        Do jsite=1,ntpatm
@@ -605,7 +605,7 @@ Subroutine read_field                      &
 
                     If (frzsit(isite2) /= 0) Call error(49)
 
-! establish neigh%list of unique shell types (most certainly ntpshl <= ntpatm <= mxatyp)
+! establish list of unique shell types (most certainly ntpshl <= ntpatm <= mxatyp)
 
                     If (.not.Any(unqshl(1:ntpshl) == sitnam(isite2))) Then
                        ntpshl=ntpshl+1
@@ -4955,7 +4955,7 @@ End Subroutine report_topology
 
 Subroutine scan_field                                &
            (l_n_e,mxompl,mximpl,                     &
-           mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
+           mxsite,mxatyp,megatm,mxtmls,max_exclude,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
            mtcons,              &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &
@@ -4993,6 +4993,7 @@ Subroutine scan_field                                &
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( threebody_type ), Intent( InOut ) :: threebody
   Type( comms_type ), Intent( InOut ) :: comm
+  Integer( Kind = wi ), Intent(   Out ) :: max_exclude
 ! Max number of different atom types
 
   Integer, Parameter :: mmk = 1000
@@ -5009,7 +5010,7 @@ Subroutine scan_field                                &
 
   Logical           :: l_n_e,check,safe,l_usr,lext
   Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,ksite,nrept,        &
-                       mxompl,mximpl,mxsite,mxatyp,megatm,i,j,k,mxexcl,        &
+                       mxompl,mximpl,mxsite,mxatyp,megatm,i,j,k,        &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
                        numcon,mtcons,icon,                &
                        mxtpmf(1:2),mxpmf,ipmf,jpmf,mxfpmf,                     &
@@ -5118,7 +5119,7 @@ Subroutine scan_field                                &
   mxfbp=0
   rcfbp=0.0_wp
 
-  mxexcl=0
+  max_exclude=0
 
   lext =.false.
   l_usr=.false.
@@ -5891,8 +5892,8 @@ Subroutine scan_field                                &
   Do i=1,9
      mxt(i)=Min(1,mxf(i))
   End Do
-  mxexcl = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Max(1,mxshl)+1) )
-  If (mxexcl > 0) mxexcl=mxexcl+1 ! violation excess element
+  max_exclude = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Max(1,mxshl)+1) )
+  If (max_exclude > 0) max_exclude=max_exclude+1 ! violation excess element
 
   Return
 
