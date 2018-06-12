@@ -6,7 +6,7 @@ Module system
                     gtime,gsum,gcheck
   Use setup
   Use site, Only : site_type
-                                 nummols
+                                 site_data%num_mols
   Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz, &
                                  cfgname,imcon,cell,lsi,lsa,atmnam, &
                                  write_config
@@ -595,21 +595,21 @@ Module system
 
   Do i=1,natms
      k = ltype(i)
-     numtyp(k) = numtyp(k)+1.0_wp
-     If (lfrzn(i) == 0) numtypnf(k) = numtypnf(k)+1.0_wp
+     site_data%num_type(k) = site_data%num_type(k)+1.0_wp
+     If (lfrzn(i) == 0) site_data%num_type_nf(k) = site_data%num_type_nf(k)+1.0_wp
   End Do
 
 ! global number densities
 
   
-    Call gsum(comm,numtyp(1:ntpatm))
-    Call gsum(comm,numtypnf(1:ntpatm))
+    Call gsum(comm,site_data%num_type(1:site_data%ntype_atom))
+    Call gsum(comm,site_data%num_type_nf(1:site_data%ntype_atom))
   
 
 ! number densities
 
-  Do i=1,ntpatm
-     If (numtyp(i) > zero_plus) dens(i) = numtyp(i)/volm
+  Do i=1,site_data%ntype_atom
+     If (site_data%num_type(i) > zero_plus) dens(i) = site_data%num_type(i)/volm
   End Do
 
 ! Get long-range corrections
@@ -948,17 +948,17 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inv
   safeg=.true. ! topology presumed safe
 
   sapmpt=0
-  Do itmols=1,ntpmls
-     setspc=nummols(itmols)*numsit(itmols)
+  Do itmols=1,site_data%ntype_mol
+     setspc=site_data%num_mols(itmols)*site_data%num_site(itmols)
 
      sapmtt=0
-     Do imols=1,nummols(itmols)
-        If (numsit(itmols) > 10*mxatms) Call error(0,message)
+     Do imols=1,site_data%num_mols(itmols)
+        If (site_data%num_site(itmols) > 10*mxatms) Call error(0,message)
 
 ! Grab the coordinates of the atoms constituting this molecule
 
         indatm1=indatm
-        Do m=1,numsit(itmols)
+        Do m=1,site_data%num_site(itmols)
            nattot=nattot+1 ! Increase global atom counter in CONFIG(old)
 
            If (lsa(indatm1) == nattot) Then  ! If a local atom has a global index nattot
@@ -973,11 +973,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inv
               zm(m)=0.0_wp
            End If
         End Do
-        nattot=nattot-numsit(itmols)
+        nattot=nattot-site_data%num_site(itmols)
 
-           Call gsum(comm,xm(1:numsit(itmols)))
-           Call gsum(comm,ym(1:numsit(itmols)))
-           Call gsum(comm,zm(1:numsit(itmols)))
+           Call gsum(comm,xm(1:site_data%num_site(itmols)))
+           Call gsum(comm,ym(1:site_data%num_site(itmols)))
+           Call gsum(comm,zm(1:site_data%num_site(itmols)))
 
 
 ! Start unwrapping - not safe at start for each molecule
@@ -1459,8 +1459,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inv
            End Do
            safe=(safe .and. safel)
 
-           If ( ((.not.safe) .and. imols <= nummols(itmols) .and. mxiter < 42) .or. &
-                imols < nummols(itmols) ) Then
+           If ( ((.not.safe) .and. imols <= site_data%num_mols(itmols) .and. mxiter < 42) .or. &
+                imols < site_data%num_mols(itmols) ) Then
               nshels=nshels-numshl(itmols)
               nconst=nconst-cons%numcon(itmols)
               nrigid=nrigid-numrgd(itmols)
@@ -1473,7 +1473,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inv
 
         safeg=(safeg.and.safe)
 
-        Do m=1,numsit(itmols)
+        Do m=1,site_data%num_site(itmols)
            nattot=nattot+1 ! Increase global atom counter in CONFIG(old)
 
            If (lsa(indatm) == nattot) Then ! If a local atom has a global index nattot
@@ -1588,8 +1588,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inv
            End If
         End Do
 
-        sapmtt = sapmtt + numsit(itmols)
-        offset = offset + Int(2,li)*Int(numsit(itmols),li)
+        sapmtt = sapmtt + site_data%num_site(itmols)
+        offset = offset + Int(2,li)*Int(site_data%num_site(itmols),li)
      End Do
 
      sapmpt = sapmpt + sapmtt

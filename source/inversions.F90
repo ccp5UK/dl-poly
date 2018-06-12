@@ -256,8 +256,8 @@ Contains
           j=j+1
 
           Write(message,'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-            unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)),unqatm(inversion%typ(3,i)), &
-            unqatm(inversion%typ(4,i)),j,inversion%typ(0,i)
+            site_data%unique_atom(inversion%typ(1,i)),site_data%unique_atom(inversion%typ(2,i)),site_data%unique_atom(inversion%typ(3,i)), &
+            site_data%unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i)
           Call info(message,.true.)
           Write(message,'(a,f8.5)') &
             'Theta(degrees)  P_inv(Theta)  Sum_P_inv(Theta)   @   dTheta_bin = ', &
@@ -265,8 +265,8 @@ Contains
           Call info(message,.true.)
           If (comm%idnode == 0) Then
             Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-              unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)), &
-              unqatm(inversion%typ(3,i)),unqatm(inversion%typ(4,i)),j,inversion%typ(0,i)
+              site_data%unique_atom(inversion%typ(1,i)),site_data%unique_atom(inversion%typ(2,i)), &
+              site_data%unique_atom(inversion%typ(3,i)),site_data%unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i)
           End If
 
   ! global sum of data on all nodes
@@ -360,11 +360,11 @@ Contains
 
           If (comm%idnode == 0) Then
              Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                  unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)),unqatm(inversion%typ(3,i)), &
-                  unqatm(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
+                  site_data%unique_atom(inversion%typ(1,i)),site_data%unique_atom(inversion%typ(2,i)),site_data%unique_atom(inversion%typ(3,i)), &
+                  site_data%unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
              Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                  unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)),unqatm(inversion%typ(3,i)), &
-                  unqatm(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
+                  site_data%unique_atom(inversion%typ(1,i)),site_data%unique_atom(inversion%typ(2,i)),site_data%unique_atom(inversion%typ(3,i)), &
+                  site_data%unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
           End If
 
   ! Smoothen and get derivatives
@@ -1334,11 +1334,11 @@ Contains
        katom3=0
        katom4=0
 
-       Do jtpatm=1,ntpatm
-          If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-          If (atom2 == unqatm(jtpatm)) katom2=jtpatm
-          If (atom3 == unqatm(jtpatm)) katom3=jtpatm
-          If (atom4 == unqatm(jtpatm)) katom4=jtpatm
+       Do jtpatm=1,site_data%ntype_atom
+          If (atom1 == site_data%unique_atom(jtpatm)) katom1=jtpatm
+          If (atom2 == site_data%unique_atom(jtpatm)) katom2=jtpatm
+          If (atom3 == site_data%unique_atom(jtpatm)) katom3=jtpatm
+          If (atom4 == site_data%unique_atom(jtpatm)) katom4=jtpatm
        End Do
 
        If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0 .or. katom4 == 0) Then

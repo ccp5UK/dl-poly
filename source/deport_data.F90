@@ -2694,12 +2694,12 @@ Subroutine relocate_particles       &
 ! reassign atom properties
 
      Do i=1,natms
-        atmnam(i)=sitnam(lsite(i))
-        ltype(i)=typsit(lsite(i))
-        chge(i)=chgsit(lsite(i))
-        weight(i)=wgtsit(lsite(i))
-        lfrzn(i)=frzsit(lsite(i))
-        lfree(i)=fresit(lsite(i))
+        atmnam(i)=site_data%site_name(lsite(i))
+        ltype(i)=site_data%type_site(lsite(i))
+        chge(i)=site_data%charge_site(lsite(i))
+        weight(i)=site_data%weight_site(lsite(i))
+        lfrzn(i)=site_data%freeze_site(lsite(i))
+        lfree(i)=site_data%free_site(lsite(i))
      End Do
 
      If (lbook) Then

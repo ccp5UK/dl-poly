@@ -170,7 +170,7 @@ Contains
   End Subroutine allocate_dihd_dst_arrays
   
   Subroutine dihedrals_14_check &
-           (l_str,l_top,ntpmls,nummols,angle,dihedral,comm)
+           (l_str,l_top,site_data%ntype_mol,site_data%num_mols,angle,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -184,7 +184,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   
   Logical,           Intent( In    ) :: l_str,l_top
-  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls)
+  Integer,           Intent( In    ) :: site_data%ntype_mol,site_data%num_mols(1:mxtmls)
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type), Intent( InOut ) :: comm
@@ -203,11 +203,11 @@ Contains
 
 ! loop over molecular types
 
-  Do itmols=1,ntpmls
+  Do itmols=1,site_data%ntype_mol
 
 ! loop over molecules in system
 
-     Do imols=1,nummols(itmols)
+     Do imols=1,site_data%num_mols(itmols)
 
 ! check for valence angle on dihedral angle conflicts
 
@@ -411,15 +411,15 @@ Subroutine dihedrals_compute(temp,dihedral,comm)
 
         Write(messages(1),*) ''
         Write(messages(2),'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-           unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
-           unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i)
+           site_data%unique_atom(dihedral%typ(1,i)),site_data%unique_atom(dihedral%typ(2,i)),site_data%unique_atom(dihedral%typ(3,i)), &
+           site_data%unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i)
         Write(messages(3),'(a,f8.5)') &
            'Theta(degrees)  P_dih(Theta)  Sum_P_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
         Call info(messages,3,.true.)
         If (comm%idnode == 0) Then
            Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-              unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
-              unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i)
+              site_data%unique_atom(dihedral%typ(1,i)),site_data%unique_atom(dihedral%typ(2,i)),site_data%unique_atom(dihedral%typ(3,i)), &
+              site_data%unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i)
         End If
 
 ! global sum of data on all nodes
@@ -511,11 +511,11 @@ Subroutine dihedrals_compute(temp,dihedral,comm)
 
         If (comm%idnode == 0) Then
            Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
-                unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
+                site_data%unique_atom(dihedral%typ(1,i)),site_data%unique_atom(dihedral%typ(2,i)),site_data%unique_atom(dihedral%typ(3,i)), &
+                site_data%unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
            Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
-                unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
+                site_data%unique_atom(dihedral%typ(1,i)),site_data%unique_atom(dihedral%typ(2,i)),site_data%unique_atom(dihedral%typ(3,i)), &
+                site_data%unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
         End If
 
 ! Smoothen and get derivatives
@@ -1843,11 +1843,11 @@ Subroutine dihedrals_table_read(dihd_name,dihedral,comm)
      katom3=0
      katom4=0
 
-     Do jtpatm=1,ntpatm
-        If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-        If (atom2 == unqatm(jtpatm)) katom2=jtpatm
-        If (atom3 == unqatm(jtpatm)) katom3=jtpatm
-        If (atom4 == unqatm(jtpatm)) katom4=jtpatm
+     Do jtpatm=1,site_data%ntype_atom
+        If (atom1 == site_data%unique_atom(jtpatm)) katom1=jtpatm
+        If (atom2 == site_data%unique_atom(jtpatm)) katom2=jtpatm
+        If (atom3 == site_data%unique_atom(jtpatm)) katom3=jtpatm
+        If (atom4 == site_data%unique_atom(jtpatm)) katom4=jtpatm
      End Do
 
      If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0 .or. katom4 == 0) Then

@@ -886,13 +886,13 @@ End Subroutine defects_reference_export
      nsite=0
      msite=0
      fsite=0
-     Do itmols=1,ntpmls
-        Do isite=1,numsit(itmols)
+     Do itmols=1,site_data%ntype_mol
+        Do isite=1,site_data%num_site(itmols)
            nsite=nsite+1
 
-           If (frzsit(nsite) /= 0) Then
-              Do nrept=1,nummols(itmols)
-                 ifrz=nsite+msite+(nrept-1)*numsit(itmols)
+           If (site_data%freeze_site(nsite) /= 0) Then
+              Do nrept=1,site_data%num_mols(itmols)
+                 ifrz=nsite+msite+(nrept-1)*site_data%num_site(itmols)
 
                  Do i=1,dfcts%nrefs
                     If (dfcts%indr(i) == ifrz) Then
@@ -910,8 +910,8 @@ End Subroutine defects_reference_export
            End If
         End Do
 
-        msite=msite+(nummols(itmols)-1)*numsit(itmols)
-        fsite=fsite+nummols(itmols)*numfrz(itmols)
+        msite=msite+(site_data%num_mols(itmols)-1)*site_data%num_site(itmols)
+        fsite=fsite+site_data%num_mols(itmols)*site_data%num_freeze(itmols)
      End Do
 
      If (fsite > 0) Then

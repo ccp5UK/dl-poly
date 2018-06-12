@@ -173,15 +173,15 @@ Subroutine build_book_intra             &
 
 ! loop over molecule types in the system
 
-  Do itmols=1,ntpmls
+  Do itmols=1,site_data%ntype_mol
 
 ! loop over molecules of this type
 
-     Do imols=1,nummols(itmols)
+     Do imols=1,site_data%num_mols(itmols)
 
 ! last atom in the molecule
 
-        neatm=nsatm+numsit(itmols)
+        neatm=nsatm+site_data%num_site(itmols)
 
 ! number of local atoms on this molecule
 
@@ -875,7 +875,7 @@ Subroutine build_book_intra             &
 
         End If
 
-        isite=isite+numsit(itmols)
+        isite=isite+site_data%num_site(itmols)
         nsatm=neatm
 
      End Do
@@ -1099,9 +1099,9 @@ Subroutine build_book_intra             &
   isite=0                            ! initialise bookkeeping indices
   kshels=0                           ! last index of core-shell unit
   nsatm =0                           ! global atom counter
-  Do itmols=1,ntpmls                 ! loop over molecule types in the system
-     Do imols=1,nummols(itmols)      ! loop over molecules of this type
-        neatm=nsatm+numsit(itmols)   ! last atom in the molecule
+  Do itmols=1,site_data%ntype_mol                 ! loop over molecule types in the system
+     Do imols=1,site_data%num_mols(itmols)      ! loop over molecules of this type
+        neatm=nsatm+site_data%num_site(itmols)   ! last atom in the molecule
 
 ! From the first till the last atom of this molecule, is there a
 ! non-local atom iwrk(1:mshels)
@@ -1137,7 +1137,7 @@ Subroutine build_book_intra             &
 
         End If
 
-        isite=isite+numsit(itmols)
+        isite=isite+site_data%num_site(itmols)
         nsatm=neatm
      End Do
 
@@ -1197,9 +1197,9 @@ Subroutine build_book_intra             &
   kdihed=0                           ! last index of dihedral unit
   kinver=0                           ! last index of inversion unit
   nsatm =0                           ! global atom counter
-  Do itmols=1,ntpmls                 ! loop over molecule types in the system
-     Do imols=1,nummols(itmols)      ! loop over molecules of this type
-        neatm=nsatm+numsit(itmols)   ! last atom in the molecule
+  Do itmols=1,site_data%ntype_mol                 ! loop over molecule types in the system
+     Do imols=1,site_data%num_mols(itmols)      ! loop over molecules of this type
+        neatm=nsatm+site_data%num_site(itmols)   ! last atom in the molecule
 
 ! From the first till the last atom of this molecule, is there a
 ! non-local, cross-domained core-shell unit atom
@@ -1363,7 +1363,7 @@ Subroutine build_book_intra             &
 
         End If
 
-        isite=isite+numsit(itmols)
+        isite=isite+site_data%num_site(itmols)
         nsatm=neatm
      End Do
 
@@ -1539,9 +1539,9 @@ Subroutine build_book_intra             &
   isite=0                            ! initialise bookkeeping indices
   kshels=0                           ! last index of core-shell unit
   nsatm =0                           ! global atom counter
-  Do itmols=1,ntpmls                 ! loop over molecule types in the system
-     Do imols=1,nummols(itmols)      ! loop over molecules of this type
-        neatm=nsatm+numsit(itmols)   ! last atom in the molecule
+  Do itmols=1,site_data%ntype_mol                 ! loop over molecule types in the system
+     Do imols=1,site_data%num_mols(itmols)      ! loop over molecules of this type
+        neatm=nsatm+site_data%num_site(itmols)   ! last atom in the molecule
 
 ! From the first till the last atom of this molecule, is there a
 ! non-local atom iwrk(1:mshels)
@@ -1577,7 +1577,7 @@ Subroutine build_book_intra             &
 
         End If
 
-        isite=isite+numsit(itmols)
+        isite=isite+site_data%num_site(itmols)
         nsatm=neatm
      End Do
 

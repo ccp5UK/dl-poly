@@ -404,11 +404,11 @@ Contains
 ! Check atom names and assign atomic characteristics
 ! Connecting FIELD to CONFIG on local basis
 
-  Do k=1,ntpmls
+  Do k=1,site_data%ntype_mol
 
-     Do l=1,nummols(k)
+     Do l=1,site_data%num_mols(k)
 
-        Do m=1,numsit(k)
+        Do m=1,site_data%num_site(k)
 
 ! Increase global atom counter
 
@@ -426,7 +426,7 @@ Contains
 ! (FIELD) match the one found in the crystallographic data (CONFIG)?
 ! Check for unidentified atoms in CONFIG by their existence in FIELD
 
-              If (atmnam(loc_ind) /= sitnam(mol_sit+m)) Then
+              If (atmnam(loc_ind) /= site_data%site_name(mol_sit+m)) Then
                  Write(message,"( 'unidentified atom label :',a8,': atom number ',i5)") atmnam(loc_ind),loc_ind
                  Call info(message)
                  safe=.false.
@@ -435,11 +435,11 @@ Contains
 ! Assign global site, type, weight, charge & frozen status to localised atoms
 
               lsite(loc_ind)=mol_sit+m
-              ltype(loc_ind)=typsit(mol_sit+m)
-              weight(loc_ind)=wgtsit(mol_sit+m)
-              chge(loc_ind)=chgsit(mol_sit+m)
-              lfrzn(loc_ind)=frzsit(mol_sit+m)
-              lfree(loc_ind)=fresit(mol_sit+m)
+              ltype(loc_ind)=site_data%type_site(mol_sit+m)
+              weight(loc_ind)=site_data%weight_site(mol_sit+m)
+              chge(loc_ind)=site_data%charge_site(mol_sit+m)
+              lfrzn(loc_ind)=site_data%freeze_site(mol_sit+m)
+              lfree(loc_ind)=site_data%free_site(mol_sit+m)
 
 ! Print global indices for a later check on ordering (mixed indexing)
 
@@ -457,7 +457,7 @@ Contains
 
 ! Increase site counter per molecule
 
-     mol_sit=mol_sit+numsit(k)
+     mol_sit=mol_sit+site_data%num_site(k)
 
   End Do
   indatm=indatm-1 ! Correct presence number

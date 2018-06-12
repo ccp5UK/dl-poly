@@ -304,7 +304,7 @@ Module msd
     Do i=1,natms
         k=2*i
 
-        If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+        If (Abs(site_data%dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
 
         Write(record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') atmnam(i),ltg(i),Sqrt(stpval(27+k-1)),tmp,Repeat(' ',8),lf
         jj=jj+1
@@ -359,7 +359,7 @@ Module msd
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(site_data%dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
@@ -410,7 +410,7 @@ Module msd
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(site_data%dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
@@ -482,7 +482,7 @@ Module msd
 
         ddd(i)=Sqrt(stpval(27+k-1))
 
-        If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+        If (Abs(site_data%dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
         eee(i)=tmp
     End Do
 
@@ -549,7 +549,7 @@ Module msd
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(site_data%dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
@@ -589,7 +589,7 @@ Module msd
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(site_data%dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 

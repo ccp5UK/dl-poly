@@ -459,7 +459,7 @@ Subroutine pseudo_vv                                      &
         mxdr = 0.0_wp
         Do i=1,natms
            If (qn(i) == 1 .and. lfree(i) == 0) Then
-              If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
+              If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
 
 ! Get gaussian distribution (unit variance)
 
@@ -486,7 +486,7 @@ Subroutine pseudo_vv                                      &
                  Do jrgd=1,lrgd
                     i=indrgd(jrgd,irgd) ! particle index
                     If (i <= natms) Then
-                       If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
+                       If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
                     End If
                  End Do
 
@@ -950,7 +950,7 @@ Subroutine pseudo_vv                                      &
 
 ! Get particle kinetic energy and produce a scaler to target temperature
 
-              tmp = Sqrt(scale * dofsit(lsite(i)) / (weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)))
+              tmp = Sqrt(scale * site_data%dof_site(lsite(i)) / (weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)))
 
               vxx(i) = vxx(i)*tmp
               vyy(i) = vyy(i)*tmp

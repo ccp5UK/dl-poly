@@ -26,7 +26,7 @@ Module kim
   Use domains, Only : map
   Use configuration,  Only : natms,nlast,lsi,lsa,ltg,lsite, &
                              xxx,yyy,zzz,fxx,fyy,fzz
-  Use setup,   Only : mxsite,mxatdm,mxbfxp
+  Use setup,   Only : site_data%max_site,mxatdm,mxbfxp
   Use site, Only : site_type
   Use comms, Only : comms_type,export_tag,wp_mpi,gsend,gwait,girecv
   Use numerics, Only : local_index
@@ -251,12 +251,12 @@ Contains
     Call c_f_Pointer(pPT,  particleSpecies, [nlast])
 
     numberOfParticles = nlast
-    numberOfSpecies = ntpatm
+    numberOfSpecies = site_data%ntype_atom
     If (HalfList) numberContributingParticles = natms
 
     Do i=1,nlast
        particleSpecies(i) = kim_api_get_species_code(pkim, &
-                                                     Trim(sitnam(lsite(i))), ier)
+                                                     Trim(site_data%site_name(lsite(i))), ier)
        If (ier < KIM_STATUS_OK) Then
           idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                       "kim_api_get_species", ier)

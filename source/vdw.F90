@@ -135,11 +135,11 @@ Contains
                        eadd,padd,denprd,plrc,t,kk,s9, &
                        z1,z2,rm,al
 
-  Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
+  Real( Kind = wp ), Dimension( : ), Allocatable :: site_data%num_freeze
   Character( Len = 256 ) :: message,messages(3)
 
   fail=0
-  Allocate (numfrz(mxatyp), Stat=fail)
+  Allocate (site_data%num_freeze(mxatyp), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'vdw_lrc allocation failure'
      Call error(0,message)
@@ -154,19 +154,19 @@ Contains
 
 ! initialise counter arrays and evaluate number density in system
 
-  numfrz = 0.0_wp
+  site_data%num_freeze = 0.0_wp
   Do i=1,natms
      k = ltype(i)
-     If (lfrzn(i) /= 0) numfrz(k)=numfrz(k)+1.0_wp
+     If (lfrzn(i) /= 0) site_data%num_freeze(k)=site_data%num_freeze(k)+1.0_wp
   End Do
-  Call gsum(comm,numfrz(1:ntpatm))
+  Call gsum(comm,site_data%num_freeze(1:site_data%ntype_atom))
 
 ! Evaluate only for 3D periodic systems
 
   If (imcon /= 0 .and. imcon /= 6) Then
      ivdw = 0
 
-     Do i=1,ntpatm
+     Do i=1,site_data%ntype_atom
         Do j=1,i
 
            eadd = 0.0_wp
@@ -386,7 +386,7 @@ Contains
               padd = padd*2.0_wp
            End If
 
-           denprd=twopi * (numtyp(i)*numtyp(j) - numfrz(i)*numfrz(j)) / volm**2
+           denprd=twopi * (site_data%num_type(i)*site_data%num_type(j) - site_data%num_freeze(i)*site_data%num_freeze(j)) / volm**2
 
            elrc = elrc + volm*denprd*eadd
            plrc = plrc + denprd*padd/3.0_wp
@@ -407,7 +407,7 @@ Contains
 
   virlrc = plrc*(-3.0_wp*volm)
 
-  Deallocate (numfrz, Stat=fail)
+  Deallocate (site_data%num_freeze, Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'vdw_lrc deallocation failure'
      Call error(0,message)
@@ -826,9 +826,9 @@ Subroutine vdw_table_read(rvdw,comm)
         katom1=0
         katom2=0
 
-        Do jtpatm=1,ntpatm
-           If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-           If (atom2 == unqatm(jtpatm)) katom2=jtpatm
+        Do jtpatm=1,site_data%ntype_atom
+           If (atom1 == site_data%unique_atom(jtpatm)) katom1=jtpatm
+           If (atom2 == site_data%unique_atom(jtpatm)) katom2=jtpatm
         End Do
 
         If (katom1 == 0 .or. katom2 == 0) Then

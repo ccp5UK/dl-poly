@@ -70,7 +70,7 @@ Contains
     ! Average volume
     avvol = stats%sumval(19)
     ! Scale densities for average volume and average volume and cell
-    Do i = 1,ntpatm
+    Do i = 1,site_data%ntype_atom
       dens(i) = dens(i)*(volm/avvol)
     End Do
 
@@ -79,7 +79,7 @@ Contains
     ! Redefine cell dimensions for analysis routines for npt/nst
     If (ensemble >= 20) Then
       Do i = 1, 9
-        cell(i) = stats%sumval(36+ntpatm+i)
+        cell(i) = stats%sumval(36+site_data%ntype_atom+i)
       End Do
     End If
 

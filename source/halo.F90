@@ -208,11 +208,11 @@ Subroutine set_halo_particles(keyfce,neigh,comm)
 ! assign incoming atom properties (of the halo only)
 
   Do i=natms+1,nlast
-     ltype(i)=typsit(lsite(i))
-     chge(i)=chgsit(lsite(i))
-     weight(i)=wgtsit(lsite(i))
-     lfrzn(i)=frzsit(lsite(i))
-     lfree(i)=fresit(lsite(i))
+     ltype(i)=site_data%type_site(lsite(i))
+     chge(i)=site_data%charge_site(lsite(i))
+     weight(i)=site_data%weight_site(lsite(i))
+     lfrzn(i)=site_data%freeze_site(lsite(i))
+     lfree(i)=site_data%free_site(lsite(i))
   End Do
 
 ! Assign polarisation and dumping factor

@@ -155,7 +155,7 @@ Contains
           Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
-       Do i=1,ntpatm
+       Do i=1,site_data%ntype_atom
           dens0(i) = dens(i)
        End Do
 
@@ -521,7 +521,7 @@ Contains
        tmp=(volm0/volm)
        elrc=elrc0*tmp
        virlrc=virlrc0*tmp
-       Do i=1,ntpatm
+       Do i=1,site_data%ntype_atom
           dens(i)=dens0(i)*tmp
        End Do
 
@@ -818,7 +818,7 @@ Contains
           Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
-       Do i=1,ntpatm
+       Do i=1,site_data%ntype_atom
           dens0(i) = dens(i)
        End Do
 
@@ -1536,7 +1536,7 @@ Contains
        tmp=(volm0/volm)
        elrc=elrc0*tmp
        virlrc=virlrc0*tmp
-       Do i=1,ntpatm
+       Do i=1,site_data%ntype_atom
           dens(i)=dens0(i)*tmp
        End Do
 

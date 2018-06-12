@@ -173,7 +173,7 @@ Subroutine two_body_forces                        &
 ! Calculate all contributions from KIM
 
   If (kimim /= ' ') Then
-     Call kim_setup(ntpatm,unqatm,kimim,neigh%max_list,comm)
+     Call kim_setup(site_data%ntype_atom,site_data%unique_atom,kimim,neigh%max_list,comm)
      Call kim_forces(engkim,virkim,stats%stress,neigh%list,comm)
      Call kim_cleanup(comm)
   End If

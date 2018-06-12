@@ -143,8 +143,8 @@ Contains
 
     tmp=0.0_wp
     Do i=1,natms
-       If (dofsit(lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
-          tmp=tmp+dofsit(lsite(i))
+       If (site_data%dof_site(lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
+          tmp=tmp+site_data%dof_site(lsite(i))
     End Do
     Call gsum(comm,tmp)
     If (Nint(tmp,li)-non-com /= degfre) Call error(360)

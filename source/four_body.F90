@@ -17,7 +17,7 @@ Module four_body
                              r_nprx,r_npry,r_nprz
   Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
-  Use setup, Only : mxsite,mxfbp,mxpfbp,zero_plus,mx3fbp, &
+  Use setup, Only : site_data%max_site,mxfbp,mxpfbp,zero_plus,mx3fbp, &
                            mxatms,nrite
 
   Use errors_warnings, Only : error, warning
@@ -45,7 +45,7 @@ Contains
 
     fail = 0
 
-    Allocate (lfrfbp(1:Merge(mxsite,0,mxfbp > 0)), Stat = fail(1))
+    Allocate (lfrfbp(1:Merge(site_data%max_site,0,mxfbp > 0)), Stat = fail(1))
     Allocate (lstfbp(1:mxfbp),                     Stat = fail(2))
     Allocate (ltpfbp(1:mxfbp),                     Stat = fail(3))
     Allocate (prmfbp(1:mxpfbp,1:mxfbp),            Stat = fail(4))

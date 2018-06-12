@@ -433,7 +433,7 @@ Contains
                 j = j + 1
                 qn(i) = 1
 
-                If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
+                If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
 
   ! Get gaussian distribution (unit variance)
 
@@ -1449,7 +1449,7 @@ Contains
        mxdr = 0.0_wp
        Do i=1,natms
           If (qn(i) == 1 .and. lfree(i) == 0) Then
-             If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
+             If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
 
   ! Get gaussian distribution (unit variance)
 
@@ -1475,7 +1475,7 @@ Contains
                 Do jrgd=1,lrgd
                    i=indrgd(jrgd,irgd) ! particle index
                    If (i <= natms) Then
-                      If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
+                      If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
                    End If
                 End Do
 

@@ -102,7 +102,7 @@ Subroutine set_bounds                                 &
 
   Call scan_field                                    &
            (l_n_e,mxompl,mximpl,                     &
-           mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
+           site_data%max_site,mxatyp,megatm,mxtmls,mxexcl,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
            mtcons,              &
            mxtpmf,mxpmf,mxfpmf,l_usr,                &

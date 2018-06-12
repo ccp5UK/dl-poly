@@ -297,9 +297,9 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
 
      nattot=0
 
-     Do k=1,ntpmls
-        Do l=1,nummols(k)
-           Do m=1,numsit(k)
+     Do k=1,site_data%ntype_mol
+        Do l=1,site_data%num_mols(k)
+           Do m=1,site_data%num_site(k)
 
 ! Increase counters
 

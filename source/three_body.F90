@@ -47,7 +47,7 @@ Contains
  
   fail=0
 
-  Allocate (threebody%lfrtbp(1:Merge(mxsite,0,threebody%mxtbp > 0)), Stat = fail(1))
+  Allocate (threebody%lfrtbp(1:Merge(site_data%max_site,0,threebody%mxtbp > 0)), Stat = fail(1))
   Allocate (threebody%lsttbp(1:threebody%mxtbp),                     Stat = fail(2))
   Allocate (threebody%ltptbp(1:threebody%mxtbp),                     Stat = fail(3))
   Allocate (threebody%prmtbp(1:threebody%mxptbp,1:threebody%mxtbp),  Stat = fail(4))

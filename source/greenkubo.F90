@@ -254,7 +254,7 @@ Contains
     Call info(message,.true.)
 
     time0 = green%time(0)
-    numt = Sum(numtypnf(1:mxatyp))
+    numt = Sum(site_data%num_type_nf(1:mxatyp))
     factor = 1.0_wp/Sum(green%vaf(0,1:mxatyp))
     ovaf = Sum(green%vaf(0,1:mxatyp))/Real(numt,Kind=wp)
     If (green%l_average) ovaf = ovaf/green%vafcount
@@ -326,7 +326,7 @@ Contains
       Do i=1,mxatyp
         lexist=.true.
         If (keyres == 1) Then
-          If (comm%idnode == 0) Inquire(File='VAFDAT_'//unqatm(i), Exist=lexist)
+          If (comm%idnode == 0) Inquire(File='VAFDAT_'//site_data%unique_atom(i), Exist=lexist)
           Call gcheck(comm,lexist)
         Else
           lexist=.false.
@@ -336,7 +336,7 @@ Contains
 
         If ((.not.lexist) .or. green%l_average) Then
           If (comm%idnode == 0) Then
-            Open(Unit=nvafdt, File='VAFDAT_'//unqatm(i), Status='replace')
+            Open(Unit=nvafdt, File='VAFDAT_'//site_data%unique_atom(i), Status='replace')
             Write(nvafdt,'(a)') cfgname
             Close(Unit=nvafdt)
           End If
@@ -349,7 +349,7 @@ Contains
     ! loop over species types
 
     Do j=1,mxatyp
-      numt = numtypnf(j)
+      numt = site_data%num_type_nf(j)
       factor = 1.0_wp
       If (Abs(green%vaf(0,j)) > 0.0e-6_wp) factor = 1.0_wp/green%vaf(0,j)
       ovaf = green%vaf(0,j)/Real(numt,Kind=wp)
@@ -359,12 +359,12 @@ Contains
 
       If (comm%idnode == 0) Then
         If (green%l_average) Then
-          Open(Unit=nvafdt, File='VAFDAT_'//unqatm(j), Status='replace')
+          Open(Unit=nvafdt, File='VAFDAT_'//site_data%unique_atom(j), Status='replace')
           Write(nvafdt,'(a)') cfgname
           Close(Unit=nvafdt)
         End If
-        Open(Unit=nvafdt, File='VAFDAT_'//unqatm(j), Position='append')
-        Write(nvafdt,'(a8,i10,1p,e16.8,f20.6)') unqatm(j),green%binsize,ovaf,time0
+        Open(Unit=nvafdt, File='VAFDAT_'//site_data%unique_atom(j), Position='append')
+        Write(nvafdt,'(a8,i10,1p,e16.8,f20.6)') site_data%unique_atom(j),green%binsize,ovaf,time0
       End If
 
       ! Then loop over time steps

@@ -82,32 +82,32 @@ Contains
 
     fail = 0
 
-    Allocate (T%molnam(1:mxtmls), stat=fail(1))
-    Allocate (T%sitnam(1:T%max_site),T%unqatm(1:T%max_site),T%unqshl(1:T%max_site), stat=fail(2))
-    Allocate (T%nummols(1:mxtmls),T%numsit(1:mxtmls),T%numfrz(1:mxtmls), stat=fail(3))
-    Allocate (T%typsit(1:T%max_site),T%frzsit(1:T%max_site),T%fresit(1:T%max_site), stat=fail(4))
-    Allocate (T%wgtsit(1:T%max_site),T%chgsit(1:T%max_site),T%dofsit(1:T%max_site), stat=fail(5))
-    Allocate (T%numtyp(1:mxatyp),T%numtypnf(1:mxatyp),T%dens(1:mxatyp), stat=fail(6))
+    Allocate (T%mol_name(1:mxtmls), stat=fail(1))
+    Allocate (T%site_name(1:T%max_site),T%unique_atom(1:T%max_site),T%unique_shell(1:T%max_site), stat=fail(2))
+    Allocate (T%num_mols(1:mxtmls),T%num_site(1:mxtmls),T%num_freeze(1:mxtmls), stat=fail(3))
+    Allocate (T%type_site(1:T%max_site),T%freeze_site(1:T%max_site),T%free_site(1:T%max_site), stat=fail(4))
+    Allocate (T%weight_site(1:T%max_site),T%charge_site(1:T%max_site),T%dof_site(1:T%max_site), stat=fail(5))
+    Allocate (T%num_type(1:mxatyp),T%num_type_nf(1:mxatyp),T%dens(1:mxatyp), stat=fail(6))
 
     If (Any(fail > 0)) Call error(1026)
 
-    T%molnam = ' '
-    T%sitnam = ' '
-    T%unqatm = ' '
-    T%unqshl = ' '
+    T%mol_name = ' '
+    T%site_name = ' '
+    T%unique_atom = ' '
+    T%unique_shell = ' '
 
-    T%nummols = 0
-    T%numsit = 0
-    T%numfrz = 0
-    T%typsit  = 0
-    T%frzsit = 0
-    T%fresit = 0
+    T%num_mols = 0
+    T%num_site = 0
+    T%num_freeze = 0
+    T%type_site  = 0
+    T%freeze_site = 0
+    T%free_site = 0
 
-    T%wgtsit = 0.0_wp
-    T%chgsit = 0.0_wp
-    T%dofsit = 0.0_wp
-    T%numtyp = 0.0_wp
-    T%numtypnf = 0.0_wp
+    T%weight_site = 0.0_wp
+    T%charge_site = 0.0_wp
+    T%dof_site = 0.0_wp
+    T%num_type = 0.0_wp
+    T%num_type_nf = 0.0_wp
     T%dens = 0.0_wp
   End Subroutine allocate_site_arrays
 
@@ -115,55 +115,55 @@ Contains
   Subroutine cleanup(T)
     Type( site_type ) :: T
 
-    If (Allocated(T%molnam)) Then
-      Deallocate(T%molnam)
+    If (Allocated(T%mol_name)) Then
+      Deallocate(T%mol_name)
     End If
 
-    If (Allocated(T%sitnam)) Then
-      Deallocate(T%sitnam)
+    If (Allocated(T%site_name)) Then
+      Deallocate(T%site_name)
     End If
-    If (Allocated(T%unqatm)) Then
-      Deallocate(T%unqatm)
+    If (Allocated(T%unique_atom)) Then
+      Deallocate(T%unique_atom)
     End If
-    If (Allocated(T%unqshl)) Then
-      Deallocate(T%unqshl)
-    End If
-
-    If (Allocated(T%nummols)) Then
-      Deallocate(T%nummols)
-    End If
-    If (Allocated(T%numsit)) Then
-      Deallocate(T%numsit)
-    End If
-    If (Allocated(T%numfrz)) Then
-      Deallocate(T%numfrz)
+    If (Allocated(T%unique_shell)) Then
+      Deallocate(T%unique_shell)
     End If
 
-    If (Allocated(T%typsit)) Then
-      Deallocate(T%typsit)
+    If (Allocated(T%num_mols)) Then
+      Deallocate(T%num_mols)
     End If
-    If (Allocated(T%frzsit)) Then
-      Deallocate(T%frzsit)
+    If (Allocated(T%num_site)) Then
+      Deallocate(T%num_site)
     End If
-    If (Allocated(T%fresit)) Then
-      Deallocate(T%fresit)
-    End If
-
-    If (Allocated(T%wgtsit)) Then
-      Deallocate(T%wgtsit)
-    End If
-    If (Allocated(T%chgsit)) Then
-      Deallocate(T%chgsit)
-    End If
-    If (Allocated(T%dofsit)) Then
-      Deallocate(T%dofsit)
+    If (Allocated(T%num_freeze)) Then
+      Deallocate(T%num_freeze)
     End If
 
-    If (Allocated(T%numtyp)) Then
-      Deallocate(T%numtyp)
+    If (Allocated(T%type_site)) Then
+      Deallocate(T%type_site)
     End If
-    If (Allocated(T%numtypnf)) Then
-      Deallocate(T%numtypnf)
+    If (Allocated(T%freeze_site)) Then
+      Deallocate(T%freeze_site)
+    End If
+    If (Allocated(T%free_site)) Then
+      Deallocate(T%free_site)
+    End If
+
+    If (Allocated(T%weight_site)) Then
+      Deallocate(T%weight_site)
+    End If
+    If (Allocated(T%charge_site)) Then
+      Deallocate(T%charge_site)
+    End If
+    If (Allocated(T%dof_site)) Then
+      Deallocate(T%dof_site)
+    End If
+
+    If (Allocated(T%num_type)) Then
+      Deallocate(T%num_type)
+    End If
+    If (Allocated(T%num_type_nf)) Then
+      Deallocate(T%num_type_nf)
     End If
     If (Allocated(T%dens)) Then
       Deallocate(T%dens)

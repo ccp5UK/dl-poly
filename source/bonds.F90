@@ -261,12 +261,12 @@ Contains
         j=j+1
 
         Write(messages(1),'(a,2(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-          unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i)
+          site_data%unique_atom(bond%typ(1,i)),site_data%unique_atom(bond%typ(2,i)),j,bond%typ(0,i)
         Write(messages(2),'(a,f8.5)') 'r(Angstroms)  P_bond(r)  Sum_P_bond(r)   @   dr_bin = ',delr
         Call info(messages,2,.true.)
         If (comm%idnode == 0) Then
            Write(npdfdt,'(/,a,2(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-                unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i)
+                site_data%unique_atom(bond%typ(1,i)),site_data%unique_atom(bond%typ(2,i)),j,bond%typ(0,i)
         End If
 
 ! global sum of data on all nodes
@@ -358,10 +358,10 @@ Contains
 
         If (comm%idnode == 0)  Then
            Write(npdgdt,'(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i), &
+                site_data%unique_atom(bond%typ(1,i)),site_data%unique_atom(bond%typ(2,i)),j,bond%typ(0,i), &
                 ' (type, index, instances)'
            Write(npdfdt,'(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i), &
+                site_data%unique_atom(bond%typ(1,i)),site_data%unique_atom(bond%typ(2,i)),j,bond%typ(0,i), &
                 ' (type, index, instances)'
         End If
 
@@ -1085,9 +1085,9 @@ Subroutine bonds_table_read(bond_name,bond,comm)
      katom1=0
      katom2=0
 
-     Do jtpatm=1,ntpatm
-        If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-        If (atom2 == unqatm(jtpatm)) katom2=jtpatm
+     Do jtpatm=1,site_data%ntype_atom
+        If (atom1 == site_data%unique_atom(jtpatm)) katom1=jtpatm
+        If (atom2 == site_data%unique_atom(jtpatm)) katom2=jtpatm
      End Do
 
      If (katom1 == 0 .or. katom2 == 0) Then

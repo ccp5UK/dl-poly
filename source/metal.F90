@@ -230,8 +230,8 @@ Contains
         ki=ai
         kj=aj
      Else If (met%tab == 2 .or. met%tab == 4) Then ! EEAM & 2BEEAM
-        ki=(aj-1)*ntpatm+ai ! aj-ai
-        kj=(ai-1)*ntpatm+aj ! ai-aj
+        ki=(aj-1)*site_data%ntype_atom+ai ! aj-ai
+        kj=(ai-1)*site_data%ntype_atom+aj ! ai-aj
      End If
 
      If (ai > aj) Then
@@ -1212,7 +1212,7 @@ Subroutine metal_lrc(met,comm)
   If (imcon /= 0 .and. imcon /= 6) Then
      kmet = 0
 
-     Do i=1,ntpatm
+     Do i=1,site_data%ntype_atom
         Do j=1,i
 
            elrc0=0.0_wp
@@ -1393,11 +1393,11 @@ Subroutine metal_lrc(met,comm)
 
      Call info('density dependent energy and virial corrections:',.true.)
      If (comm%idnode == 0) Then
-       Do i=1,ntpatm
+       Do i=1,site_data%ntype_atom
          kmet=met%list((i*(i+1))/2)
          If (met%list(kmet) > 0) Then
            Write(message,"(2x,a8,1p,2e15.6)") &
-             unqatm(i),met%elrc(i)/engunit,met%vlrc(i)/engunit
+             site_data%unique_atom(i),met%elrc(i)/engunit,met%vlrc(i)/engunit
            Call info(message,.true.)
          End If
        End Do
@@ -1538,9 +1538,9 @@ Subroutine metal_table_read(l_top,met,comm)
      katom1=0
      katom2=0
 
-     Do jtpatm=1,ntpatm
-        If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-        If (atom2 == unqatm(jtpatm)) katom2=jtpatm
+     Do jtpatm=1,site_data%ntype_atom
+        If (atom1 == site_data%unique_atom(jtpatm)) katom1=jtpatm
+        If (atom2 == site_data%unique_atom(jtpatm)) katom2=jtpatm
      End Do
 
      If (katom1 == 0 .or. katom2 == 0) Then
@@ -1641,7 +1641,7 @@ Subroutine metal_table_read(l_top,met,comm)
         If      (met%tab == 1 .or. met%tab == 3) Then ! EAM
            k0=katom1
         Else If (met%tab == 2 .or. met%tab == 4) Then ! EEAM
-           k0=(katom1-1)*ntpatm+katom2
+           k0=(katom1-1)*site_data%ntype_atom+katom2
         End If
 
         cd=cd+1
@@ -1728,7 +1728,7 @@ Subroutine metal_table_read(l_top,met,comm)
         If (met%tab == 3) Then ! 2BMEAM
 !           k0=met%list(keymet)
         Else If (met%tab == 4) Then ! 2BMEEAM
-           k0=(katom1-1)*ntpatm+katom2
+           k0=(katom1-1)*site_data%ntype_atom+katom2
         End If
 
         cds=cds+1
@@ -1865,7 +1865,7 @@ Subroutine metal_generate(met)
 ! construct arrays for metal potentials
 
   kmet=0
-  Do katom1=1,ntpatm
+  Do katom1=1,site_data%ntype_atom
      Do katom2=1,katom1
         kmet=kmet+1
 
@@ -2152,8 +2152,8 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,met,neigh)
         ki=ai
         kj=aj
      Else If (met%tab == 2 .or. met%tab == 4) Then ! EEAM & 2BEEAM
-        ki=(aj-1)*ntpatm+ai ! aj-ai
-        kj=(ai-1)*ntpatm+aj ! ai-aj
+        ki=(aj-1)*site_data%ntype_atom+ai ! aj-ai
+        kj=(ai-1)*site_data%ntype_atom+aj ! ai-aj
      End If
 
 ! interatomic distance

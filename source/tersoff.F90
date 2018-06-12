@@ -48,7 +48,7 @@ Contains
 
     fail = 0
 
-    Allocate (lfrter(1:Merge(mxsite,0,mxter > 0)),    Stat = fail(1))
+    Allocate (lfrter(1:Merge(site_data%max_site,0,mxter > 0)),    Stat = fail(1))
     Allocate (lstter(1:mxter),                        Stat = fail(2))
     Allocate (ltpter(1:mxter),                        Stat = fail(3))
     Allocate (prmter(1:mxpter,1:mxter),               Stat = fail(4))
