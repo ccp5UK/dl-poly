@@ -197,7 +197,7 @@ Module setup
 ! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
 ! mxproc and mxlshp shall be somewhere in domain_type probably
   Integer, Save ::                                              &
-    mxsite,mxatyp,mxtmls,mxexcl,mxompl,mximpl,                  &
+    mxsite,mxatyp,mxtmls,mxompl,mximpl,                  &
     mxspl,mxspl1,mxspl2,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1, &
     mxtshl,mxshl,mxfshl,mxlshp,mxproc,     &
     mxtrgd,mxrgd,mxlrgd,mxfrgd,        &

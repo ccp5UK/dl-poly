@@ -369,7 +369,7 @@ program dl_poly
   Call allocate_dihedrals_arrays(dihedral)
   Call allocate_inversions_arrays(inversion)
 
-  Call allocate_mpoles_arrays()
+  Call allocate_mpoles_arrays(neigh%max_exclude)
 
   ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
 
@@ -521,13 +521,13 @@ program dl_poly
       megatm,megfrz,atmfre,atmfrz, &
       megshl,        &
       megrgd,degrot,degtra,        &
-      megtet,cons,pmfs,bond,angle,dihedral,inversion,tether,comm)
+      megtet,cons,pmfs,bond,angle,dihedral,inversion,tether,neigh,comm)
     If (mximpl > 0) Then
-      Call build_tplg_intra(bond,angle,dihedral,inversion,comm) ! multipoles topology for internal coordinate system
+      Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion,comm) ! multipoles topology for internal coordinate system
       If (keyind == 1) Call build_chrm_intra &
-         (cons,bond,angle,dihedral,inversion,comm) ! CHARMM core-shell screened electrostatic induction interactions
+         (neigh%max_exclude,cons,bond,angle,dihedral,inversion,comm) ! CHARMM core-shell screened electrostatic induction interactions
     End If
-    If (lexcl) Call build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,comm)
+    If (lexcl) Call build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
   Else
     Call report_topology                &
       (megatm,megfrz,atmfre,atmfrz, &

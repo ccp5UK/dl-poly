@@ -18,7 +18,7 @@
            megshl,     &
            m_rgd,megtet,            &
            cons, pmf,& 
-           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! Exchange atomic data in border regions
 
