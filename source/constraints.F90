@@ -15,7 +15,7 @@ Module constraints
 
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
     imcon,cell,xxx,yyy,zzz,fxx,fyy,fzz,nfree,lstfre
-  Use pmf, Only : pmf_shake_vv, passpmf,pmf_rattle
+  Use pmf, Only : pmf_shake_vv,pmf_rattle
   Use setup,           Only : mxatms,zero_plus
 
   Use errors_warnings, Only : error,warning,info
@@ -1029,7 +1029,7 @@ Subroutine allocate_work(T,n)
         Call pmf_rattle &
           (cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
           indpmf,pxx,pyy,pzz,             &
-          vxx,vyy,vzz,comm)
+          vxx,vyy,vzz,stat,comm)
       End If
     End Do
   End Subroutine apply_rattle
@@ -1100,7 +1100,7 @@ Subroutine allocate_work(T,n)
         Call pmf_shake_vv  &
           (cons%max_iter_shake,cons%tolerance,tstep, &
           indpmf,pxx,pyy,pzz,   &
-          xxx,yyy,zzz,str,vir,comm)
+          xxx,yyy,zzz,str,vir,stat,comm)
 
         ! PMF virial and stress tensor
 
@@ -1125,12 +1125,12 @@ Subroutine allocate_work(T,n)
     End If
 
     If (megpmf > 0) Then
-      passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
-      passpmf(2,2,1)=passpmf(2,2,1)+1.0_wp
-      passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
-      passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
-      passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))
-      passpmf(1,2,1)=0.0_wp ! Reset
+      stat%passpmf(3,2,1)=stat%passpmf(2,2,1)*stat%passpmf(3,2,1)
+      stat%passpmf(2,2,1)=stat%passpmf(2,2,1)+1.0_wp
+      stat%passpmf(3,2,1)=stat%passpmf(3,2,1)/stat%passpmf(2,2,1)+stat%passpmf(1,2,1)/stat%passpmf(2,2,1)
+      stat%passpmf(4,2,1)=Min(stat%passpmf(1,2,1),stat%passpmf(4,2,1))
+      stat%passpmf(5,2,1)=Max(stat%passpmf(1,2,1),stat%passpmf(5,2,1))
+      stat%passpmf(1,2,1)=0.0_wp ! Reset
     End If
 
     ! calculate velocity and force correction

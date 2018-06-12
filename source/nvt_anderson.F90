@@ -11,7 +11,7 @@ Module nvt_anderson
   Use core_shell,    Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
   Use constraints,   Only : constraints_tags,apply_shake, &
                             apply_rattle,constraints_type
-  Use pmf,           Only : passpmf,pmf_tags
+  Use pmf,           Only : pmf_tags
   Use rigid_bodies,  Only : lashp_rgd,lishp_rgd,lshmv_rgd,mxatms,mxlrgd, &
                             ntrgd,rgdx,rgdy,rgdz,rgdxxx,rgdyyy,rgdzzz, &
                             rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz, &

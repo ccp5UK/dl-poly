@@ -17,23 +17,12 @@ Module pmf
                               vxx,vyy,vzz,nlast,lsi,lsa
   Use errors_warnings, Only : error,warning,info
   Use numerics,        Only : images,local_index,dcell
+  Use statistics, Only : stats_type
   Implicit None
 
   Integer,                        Save :: ntpmf  = 0
 
   Real( Kind = wp ),              Save :: prmpmf = 0.0_wp
-  Real( Kind = wp ),              Save :: passpmq(1:5) = (/ & ! QUENCHING per call
-                                          0.0_wp         ,  & ! cycles counter
-                                          0.0_wp         ,  & ! access counter
-                                          0.0_wp         ,  & ! average cycles
-                                          999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
-                                          0.0_wp /)           ! maximum cycles
-  Real( Kind = wp ),              Save :: passpmf(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
-                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
-                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
-                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
-                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
-
 
   Integer,           Allocatable, Save :: numpmf(:),pmffrz(:)
   Integer,           Allocatable, Save :: lstpmf(:,:),listpmf(:,:,:),legpmf(:,:)
@@ -343,7 +332,7 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf,comm)
 
 End Subroutine pmf_pseudo_bonds
 
-Subroutine pmf_quench(mxshak,tolnce,comm)
+Subroutine pmf_quench(mxshak,tolnce,stat,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -356,6 +345,7 @@ Subroutine pmf_quench(mxshak,tolnce,comm)
 
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
+  Type( stats_type ), Intent( InOut ) :: stat
   Type( comms_type), intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -500,13 +490,13 @@ Subroutine pmf_quench(mxshak,tolnce,comm)
   If (.not.safe) Then ! error exit if quenching fails
      Call error(497)
   Else ! Collect per call passage statistics
-     passpmq(1)=Real(icyc-1,wp)
-     passpmq(3)=passpmq(2)*passpmq(3)
-     passpmq(2)=passpmq(2)+1.0_wp
-     passpmq(3)=passpmq(3)/passpmq(2)+passpmq(1)/passpmq(2)
-     passpmq(4)=Min(passpmq(1),passpmq(4))
-     passpmq(5)=Max(passpmq(1),passpmq(5))
-     passpmq(1)=0.0_wp ! Reset
+     stat%passpmq(1)=Real(icyc-1,wp)
+     stat%passpmq(3)=stat%passpmq(2)*stat%passpmq(3)
+     stat%passpmq(2)=stat%passpmq(2)+1.0_wp
+     stat%passpmq(3)=stat%passpmq(3)/stat%passpmq(2)+stat%passpmq(1)/stat%passpmq(2)
+     stat%passpmq(4)=Min(stat%passpmq(1),stat%passpmq(4))
+     stat%passpmq(5)=Max(stat%passpmq(1),stat%passpmq(5))
+     stat%passpmq(1)=0.0_wp ! Reset
   End If
 
   Deallocate (lstitr,         Stat=fail(1))
@@ -822,7 +812,7 @@ Subroutine pmf_shake_vv          &
            (mxshak,tolnce,tstep, &
            indpmf,pxx,pyy,pzz,   &
            xxx,yyy,zzz,strpmf,   &
-           virpmf,comm)
+           virpmf,stat,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -844,6 +834,7 @@ Subroutine pmf_shake_vv          &
   Real( Kind = wp ), Intent( In    ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
   Real( Kind = wp ), Intent(   Out ) :: strpmf(1:9),virpmf
+  Type( stats_type ), Intent( InOut ) :: stat
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -990,15 +981,15 @@ Subroutine pmf_shake_vv          &
      End Do
      Call error(498)
   Else ! Collect per call and per step passage statistics
-     passpmf(1,1,1)=Real(icyc-1,wp)
-     passpmf(3,1,1)=passpmf(2,1,1)*passpmf(3,1,1)
-     passpmf(2,1,1)=passpmf(2,1,1)+1.0_wp
-     passpmf(3,1,1)=passpmf(3,1,1)/passpmf(2,1,1)+passpmf(1,1,1)/passpmf(2,1,1)
-     passpmf(4,1,1)=Min(passpmf(1,1,1),passpmf(4,1,1))
-     passpmf(5,1,1)=Max(passpmf(1,1,1),passpmf(5,1,1))
+     stat%passpmf(1,1,1)=Real(icyc-1,wp)
+     stat%passpmf(3,1,1)=stat%passpmf(2,1,1)*stat%passpmf(3,1,1)
+     stat%passpmf(2,1,1)=stat%passpmf(2,1,1)+1.0_wp
+     stat%passpmf(3,1,1)=stat%passpmf(3,1,1)/stat%passpmf(2,1,1)+stat%passpmf(1,1,1)/stat%passpmf(2,1,1)
+     stat%passpmf(4,1,1)=Min(stat%passpmf(1,1,1),stat%passpmf(4,1,1))
+     stat%passpmf(5,1,1)=Max(stat%passpmf(1,1,1),stat%passpmf(5,1,1))
 
-     passpmf(1,2,1)=passpmf(1,2,1)+passpmf(1,1,1)
-     passpmf(1,1,1)=0.0_wp ! Reset
+     stat%passpmf(1,2,1)=stat%passpmf(1,2,1)+stat%passpmf(1,1,1)
+     stat%passpmf(1,1,1)=0.0_wp ! Reset
   End If
 
 ! global sum of stress tensor
@@ -1026,7 +1017,7 @@ End Subroutine pmf_shake_vv
 Subroutine pmf_rattle                      &
            (mxshak,tolnce,tstep,lfst,lcol, &
            indpmf,pxx,pyy,pzz,             &
-           vxx,vyy,vzz,comm)
+           vxx,vyy,vzz,stat,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1047,6 +1038,7 @@ Subroutine pmf_rattle                      &
   Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+  Type( stats_type ), Intent( InOut ) :: stat
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -1183,23 +1175,23 @@ Subroutine pmf_rattle                      &
   If (.not.safe) Then ! error exit for non-convergence
      Call error(499)
   Else ! Collect per call and per step passage statistics
-     passpmf(1,1,2)=Real(icyc-1,wp)
-     passpmf(3,1,2)=passpmf(2,1,2)*passpmf(3,1,2)
-     passpmf(2,1,2)=passpmf(2,1,2)+1.0_wp
-     passpmf(3,1,2)=passpmf(3,1,2)/passpmf(2,1,2)+passpmf(1,1,2)/passpmf(2,1,2)
-     passpmf(4,1,2)=Min(passpmf(1,1,2),passpmf(4,1,2))
-     passpmf(5,1,2)=Max(passpmf(1,1,2),passpmf(5,1,2))
+     stat%passpmf(1,1,2)=Real(icyc-1,wp)
+     stat%passpmf(3,1,2)=stat%passpmf(2,1,2)*stat%passpmf(3,1,2)
+     stat%passpmf(2,1,2)=stat%passpmf(2,1,2)+1.0_wp
+     stat%passpmf(3,1,2)=stat%passpmf(3,1,2)/stat%passpmf(2,1,2)+stat%passpmf(1,1,2)/stat%passpmf(2,1,2)
+     stat%passpmf(4,1,2)=Min(stat%passpmf(1,1,2),stat%passpmf(4,1,2))
+     stat%passpmf(5,1,2)=Max(stat%passpmf(1,1,2),stat%passpmf(5,1,2))
 
-     passpmf(1,2,2)=passpmf(1,2,2)+passpmf(1,1,2)
+     stat%passpmf(1,2,2)=stat%passpmf(1,2,2)+stat%passpmf(1,1,2)
      If (lcol) Then ! Collect
-        passpmf(3,2,2)=passpmf(2,2,2)*passpmf(3,2,2)
-        passpmf(2,2,2)=passpmf(2,2,2)+1.0_wp
-        passpmf(3,2,2)=passpmf(3,2,2)/passpmf(2,2,2)+passpmf(1,2,2)/passpmf(2,2,2)
-        passpmf(4,2,2)=Min(passpmf(1,2,2),passpmf(4,2,2))
-        passpmf(5,2,2)=Max(passpmf(1,2,2),passpmf(5,2,2))
-        passpmf(1,2,2)=0.0_wp ! Reset
+        stat%passpmf(3,2,2)=stat%passpmf(2,2,2)*stat%passpmf(3,2,2)
+        stat%passpmf(2,2,2)=stat%passpmf(2,2,2)+1.0_wp
+        stat%passpmf(3,2,2)=stat%passpmf(3,2,2)/stat%passpmf(2,2,2)+stat%passpmf(1,2,2)/stat%passpmf(2,2,2)
+        stat%passpmf(4,2,2)=Min(stat%passpmf(1,2,2),stat%passpmf(4,2,2))
+        stat%passpmf(5,2,2)=Max(stat%passpmf(1,2,2),stat%passpmf(5,2,2))
+        stat%passpmf(1,2,2)=0.0_wp ! Reset
      End If
-     passpmf(1,1,2)=0.0_wp ! Reset
+     stat%passpmf(1,1,2)=0.0_wp ! Reset
   End If
 
   Deallocate (vxt,vyt,vzt,    Stat=fail(1))

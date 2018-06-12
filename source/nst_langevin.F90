@@ -13,7 +13,7 @@ Module nst_langevin
   Use core_shell,      Only : legshl
   Use constraints,     Only : apply_rattle,apply_shake,&
                               constraints_tags, constraints_type
-  Use pmf,             Only : passpmf,pmf_tags 
+  Use pmf,             Only : pmf_tags 
   Use rigid_bodies     
   Use errors_warnings, Only : error,info
   Use shared_units,    Only : update_shared_units

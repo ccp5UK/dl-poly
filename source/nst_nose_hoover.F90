@@ -12,7 +12,7 @@ Module nst_nose_hoover
   Use core_shell,  Only : legshl
   Use constraints, Only : constraints_tags,apply_rattle,&
                           apply_shake, constraints_type
-  Use pmf,         Only : passpmf,pmf_tags
+  Use pmf,         Only : pmf_tags
   Use rigid_bodies
   Use numerics,        Only : dcell, mat_mul
   Use nvt_nose_hoover, Only : nvt_h0_scl, nvt_h1_scl

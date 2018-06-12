@@ -15,7 +15,7 @@ Module nve
     rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
     rgdx,rgdy,rgdz,rgdrix,rgdriy,rgdriz,rgdwgt, &
     indrgd,rgdind,getrotmat,no_squish,rigid_bodies_stress
-  Use pmf,           Only : passpmf,pmf_tags
+  Use pmf,           Only : pmf_tags
   Use numerics, Only : images
   Use errors_warnings, Only : error,info
   Use statistics, Only : stats_type

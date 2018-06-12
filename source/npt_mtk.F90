@@ -12,7 +12,7 @@ Module npt_mtk
   Use core_shell,    Only : legshl
   Use constraints,   Only : apply_shake, apply_rattle, &
                             constraints_tags,constraints_type
-  Use pmf,           Only : passpmf,pmf_tags
+  Use pmf,           Only : pmf_tags
   Use nvt_nose_hoover, Only : nvt_h0_scl, nvt_h1_scl 
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h1_scl 
   Use errors_warnings, Only : error,info

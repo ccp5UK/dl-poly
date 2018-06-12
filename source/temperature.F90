@@ -530,7 +530,7 @@ Contains
             Call constraints_quench(cons,stat,comm)
             Call cons%deallocate_work()
           End If  
-          If (megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,comm)
+          If (megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,comm)
        End If
 
   ! quench core-shell units in adiabatic model
@@ -543,7 +543,7 @@ Contains
                Call constraints_quench(cons,stat,comm)
              End If
              If (megpmf > 0) Then
-               Call pmf_quench(cons%max_iter_shake,cons%tolerance,comm)
+               Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,comm)
              End If
              If (megrgd > 0) Then
                Call rigid_bodies_quench(comm)

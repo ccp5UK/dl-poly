@@ -15,7 +15,7 @@ Module nvt_nose_hoover
   Use kinetics,     Only : kinstress,kinstresf,kinstrest,getkin,getknf,getknt,getknr
   Use core_shell,  Only : legshl
   Use constraints, Only : constraints_type,constraints_tags,apply_rattle,apply_shake
-  Use pmf,         Only : passpmf,pmf_tags
+  Use pmf,         Only : pmf_tags
   Use numerics,        Only : images
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type

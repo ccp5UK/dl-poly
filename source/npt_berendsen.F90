@@ -12,7 +12,7 @@ Module npt_berendsen
   Use constraints,     Only : constraints_type,apply_rattle,&
             constraints_tags,apply_shake
   Use statistics, Only : stats_type
-  Use pmf,             Only : passpmf,pmf_tags
+  Use pmf,             Only : pmf_tags
   Use rigid_bodies
   Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
   Use errors_warnings, Only : error,info

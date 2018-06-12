@@ -10,7 +10,7 @@ Module npt_nose_hoover
   Use kinetics,     Only : getcom,getvom,kinstress,kinstresf,kinstrest
   Use core_shell,  Only : legshl
   Use constraints, Only : constraints_type,constraints_tags, apply_shake, apply_rattle
-  Use pmf,         Only : passpmf, pmf_tags
+  Use pmf,         Only :  pmf_tags
   Use nvt_nose_hoover, Only : nvt_h0_scl,nvt_h1_scl 
   Use rigid_bodies
   Use errors_warnings, Only : error,info

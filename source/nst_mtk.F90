@@ -11,7 +11,7 @@ Module nst_mtk
   Use core_shell,         Only : legshl
   Use constraints,        Only : apply_rattle,apply_shake,&
                                  constraints_tags, constraints_type
-  Use pmf,                Only : passpmf,pmf_tags
+  Use pmf,                Only : pmf_tags
   Use rigid_bodies
   Use nvt_nose_hoover,    Only : nvt_h0_scl,nvt_h1_scl
   Use nst_nose_hoover,    ONly : nst_h0_scl,nst_h1_scl

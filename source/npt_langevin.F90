@@ -12,12 +12,11 @@ Module npt_langevin
   Use kinetics,      Only : getvom,getknf,getknt,getknr,getkin, &
                             kinstress,kinstresf,kinstrest
   Use core_shell,      Only : legshl
-  Use pmf,             Only : passpmf
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error,info
   Use numerics,        Only : box_mueller_saru1
   Use constraints,     Only : constraints_type,constraints_tags, apply_shake, apply_rattle
-  Use pmf,             Only : pmf_tags, pmf_rattle
+  Use pmf,             Only : pmf_tags
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h0_scl,npt_h1_scl
   Use langevin,        Only : langevin_forces
   Use thermostat, Only : thermostat_type
