@@ -19,59 +19,139 @@ Module pmf
   Use numerics,        Only : images,local_index,dcell
   Use statistics, Only : stats_type
   Implicit None
+  Private
+  
+  Type, Public ::  pmf_type
+  Private
 
-  Integer,                        Save :: ntpmf  = 0
+  Integer,                        Public :: ntpmf  = 0
+  Integer, Public :: mxtpmf(1:2),mxpmf,mxfpmf,megpmf
 
-  Real( Kind = wp ),              Save :: prmpmf = 0.0_wp
+  Real( Kind = wp ),              Public :: prmpmf = 0.0_wp
+  
 
-  Integer,           Allocatable, Save :: numpmf(:),pmffrz(:)
-  Integer,           Allocatable, Save :: lstpmf(:,:),listpmf(:,:,:),legpmf(:,:)
+  Integer,           Allocatable, Public :: numpmf(:),pmffrz(:)
+  Integer,           Allocatable, Public :: lstpmf(:,:),listpmf(:,:,:),legpmf(:,:)
+  Integer,           Allocatable :: indpmf(:,:,:)
+  
+  Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
+  Real( Kind = wp ), Allocatable, Public :: pmfwgt(:,:),pmfwg1(:,:)
 
-  Real( Kind = wp ), Allocatable, Save :: pmfwgt(:,:),pmfwg1(:,:)
-
-  Public :: allocate_pmf_arrays , deallocate_pmf_arrays
+  Contains
+  Private
+  Procedure, Public :: init => allocate_pmf_arrays
+  Procedure, Public :: deallocate_pmf_tmp_arrays
+  Procedure, Public :: allocate_work
+  Procedure, Public :: deallocate_work
+  Procedure, Public :: deallocate_pmf_arrays
+  End Type pmf_type
+  Public :: pmf_shake_vv
+  Public :: pmf_rattle
+  Public :: pmf_tags
+  Public :: pmf_pseudo_bonds
+  Public :: pmf_units_set
+  Public :: pmf_quench
 
 Contains
-
-  Subroutine allocate_pmf_arrays()
-
+Subroutine allocate_work(T)
+  Class(pmf_type) :: T
+  Integer :: fail(2)
+  Character(Len=100) :: message
+  
+  fail=0
+        If (T%megpmf > 0) Then
+        Allocate (T%indpmf(1:Max(T%mxtpmf(1),T%mxtpmf(2)),1:2,1:T%mxpmf), Stat=fail( 1))
+        Allocate (T%pxx(1:T%mxpmf),T%pyy(1:T%mxpmf),T%pzz(1:T%mxpmf),         Stat=fail( 2))
+      End If
+         If (Any(fail > 0)) Then
+      Write(message,'(a)') 'failed to allocate work arrays for pmf'
+      Call error(0,message)
+    End If
+  End Subroutine allocate_work
+  
+  Subroutine deallocate_work(T)
+  Class(pmf_type) :: T
+  Integer :: fail(4)
+  Character(Len=100) :: message
+  
+  fail=0
+  If (T%megpmf >0) Then
+  
+  If (Allocated(T%indpmf)) Deallocate(T%indpmf, stat=fail(1))
+  If (Allocated(T%pxx)) Deallocate(T%pxx, stat=fail(2))
+  If (Allocated(T%pyy)) Deallocate(T%pyy, stat=fail(3))
+  If (Allocated(T%pzz)) Deallocate(T%pzz, stat=fail(4))
+  
+  If (Any(fail > 0)) Then
+      Write(message,'(a)') 'failed to allocate work arrays for pmf'
+      Call error(0,message)
+  End If 
+  End If
+  
+  End Subroutine deallocate_work
+  
+  Subroutine allocate_pmf_arrays(T,mxtmls,mxatdm)
+  Class(pmf_type) :: T
+  Integer, Intent ( In ) :: mxtmls, mxatdm
     Integer, Dimension( 1:6 ) :: fail
+    
 
     fail = 0
 
-    Allocate (numpmf(1:mxtmls),pmffrz(1:2),                    Stat = fail(1))
-    Allocate (lstpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2),          Stat = fail(2))
-    Allocate (listpmf(0:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat = fail(3))
-    Allocate (legpmf(0:mxfpmf,1:mxatdm),                       Stat = fail(4))
-    Allocate (pmfwgt(0:Max(mxtpmf(1),mxtpmf(2)),1:2),          Stat = fail(5))
-    Allocate (pmfwg1(0:Max(mxtpmf(1),mxtpmf(2)),1:2),          Stat = fail(6))
+    Allocate (T%numpmf(1:mxtmls),T%pmffrz(1:2),                    Stat = fail(1))
+    Allocate (T%lstpmf(1:Max(T%mxtpmf(1),T%mxtpmf(2)),1:2),          Stat = fail(2))
+    Allocate (T%listpmf(0:Max(T%mxtpmf(1),T%mxtpmf(2)),1:2,1:T%mxpmf), Stat = fail(3))
+    Allocate (T%legpmf(0:T%mxfpmf,1:mxatdm),                       Stat = fail(4))
+    Allocate (T%pmfwgt(0:Max(T%mxtpmf(1),T%mxtpmf(2)),1:2),          Stat = fail(5))
+    Allocate (T%pmfwg1(0:Max(T%mxtpmf(1),T%mxtpmf(2)),1:2),          Stat = fail(6))
 
     If (Any(fail > 0)) Call error(1036)
 
-    numpmf  = 0
-    pmffrz  = 0
-    lstpmf  = 0
-    listpmf = 0
-    legpmf  = 0
+    T%numpmf  = 0
+    T%pmffrz  = 0
+    T%lstpmf  = 0
+    T%listpmf = 0
+    T%legpmf  = 0
 
-    pmfwgt = 0.0_wp
-    pmfwg1 = 0.0_wp
+    T%pmfwgt = 0.0_wp
+    T%pmfwg1 = 0.0_wp
 
   End Subroutine allocate_pmf_arrays
 
-  Subroutine deallocate_pmf_arrays()
-
-    Integer :: fail
+  Subroutine deallocate_pmf_tmp_arrays(T)
+    Class(pmf_type) :: T
+    Integer :: fail(2)
 
     fail = 0
 
-    Deallocate (numpmf,lstpmf, Stat = fail)
+    If (Allocated(T%numpmf)) Deallocate (T%numpmf, Stat = fail(1))
+    If (Allocated(T%lstpmf)) Deallocate (T%lstpmf, Stat = fail(2))
 
-    If (fail > 0) Call error(1037)
+    If (Any(fail > 0)) Call error(1037)
 
-  End Subroutine deallocate_pmf_arrays
+  End Subroutine deallocate_pmf_tmp_arrays
   
-  Subroutine pmf_coms(indpmf,pxx,pyy,pzz,comm)
+  Subroutine deallocate_pmf_arrays(T)
+    Class(pmf_type) :: T
+
+  Integer :: fail(7)
+
+  fail = 0
+
+    If (Allocated(T%numpmf)) Deallocate (T%numpmf, Stat = fail(1))
+    If (Allocated(T%lstpmf)) Deallocate (T%lstpmf, Stat = fail(2))
+    If (Allocated(T%pmffrz)) Deallocate (T%pmffrz, Stat = fail(3))
+    If (Allocated(T%listpmf)) Deallocate (T%listpmf, Stat = fail(4))
+    If (Allocated(T%legpmf)) Deallocate (T%legpmf, Stat = fail(5))
+    If (Allocated(T%pmfwgt)) Deallocate (T%pmfwgt, Stat = fail(6))
+    If (Allocated(T%pmfwg1)) Deallocate (T%pmfwg1, Stat = fail(7))
+
+  If (Any(fail > 0)) Call error(1037)
+
+End Subroutine deallocate_pmf_arrays
+  
+  
+  Subroutine pmf_coms(pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -86,9 +166,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
-
-  Real( Kind = wp ), Intent(   Out ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
+  Type( pmf_type), Intent( InOut ) :: pmf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                 :: safe(1:2)
@@ -104,9 +182,10 @@ Contains
 
   Character( Len = 256 ) :: message
   fail=0
-  Allocate (xxt(1:Max(mxtpmf(1),mxtpmf(2))),yyt(1:Max(mxtpmf(1),mxtpmf(2))),zzt(1:Max(mxtpmf(1),mxtpmf(2))), Stat=fail(1))
-  Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf),                                           Stat=fail(2))
-  Allocate (buffer(1:(mxtpmf(1)+mxtpmf(2))*(mxpmf+2)),                                                       Stat=fail(3))
+  Allocate (xxt(1:Max(pmf%mxtpmf(1),pmf%mxtpmf(2))),yyt(1:Max(pmf%mxtpmf(1),pmf%mxtpmf(2))),&
+  zzt(1:Max(pmf%mxtpmf(1),pmf%mxtpmf(2))), Stat=fail(1))
+  Allocate (xpmf(1:2,1:pmf%mxpmf),ypmf(1:2,1:pmf%mxpmf),zpmf(1:2,1:pmf%mxpmf),  Stat=fail(2))
+  Allocate (buffer(1:(pmf%mxtpmf(1)+pmf%mxtpmf(2))*(pmf%mxpmf+2)),              Stat=fail(3))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'pmf_coms allocation failure'
      Call error(0,message)
@@ -125,34 +204,34 @@ Contains
 ! Initialise PMF COMs' and inter-COMs' vector arrays
 
   xpmf = 0.0_wp ; ypmf = 0.0_wp ; zpmf = 0.0_wp
-  pxx  = 0.0_wp ; pyy  = 0.0_wp ; pzz  = 0.0_wp
+  pmf%pxx  = 0.0_wp ; pmf%pyy  = 0.0_wp ; pmf%pzz  = 0.0_wp
 
 ! Loop over all global PMF constraints
 
   gpmf1=1          ! number of passed global PMFs
   buffer=0.0_wp    ! coordinates buffer
   iadd=3           ! adding three coordinates only per particle
-  Do gpmf=1,mxpmf
+  Do gpmf=1,pmf%mxpmf
 
 ! Loop over all local to this node PMF constraints matching the global one
 
-     Do ipmf=1,ntpmf
-        If (listpmf(0,1,ipmf) == gpmf) Then
+     Do ipmf=1,pmf%ntpmf
+        If (pmf%listpmf(0,1,ipmf) == gpmf) Then
 
 ! Loop over all PMF units present on my domain (no halo)
 
            Do jpmf=1,2
-              If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
+              If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
 
 ! Loop over their members present on my domain (no halo)
 
-                 Do k=1,mxtpmf(jpmf)
-                    j=indpmf(k,jpmf,ipmf)
+                 Do k=1,pmf%mxtpmf(jpmf)
+                    j=pmf%indpmf(k,jpmf,ipmf)
 
 ! Copy particles' coordinates to buffer in an orderly manner
 
                     If (j > 0 .and. j <= natms) Then ! j is a domain particle
-                       l=((gpmf-gpmf1)*(mxtpmf(1)+mxtpmf(2))+(jpmf-1)*mxtpmf(1)+(k-1))*iadd
+                       l=((gpmf-gpmf1)*(pmf%mxtpmf(1)+pmf%mxtpmf(2))+(jpmf-1)*pmf%mxtpmf(1)+(k-1))*iadd
                        buffer(l+1)=xxx(j)
                        buffer(l+2)=yyy(j)
                        buffer(l+3)=zzz(j)
@@ -165,22 +244,22 @@ Contains
 
 ! Check if it safe to fill up the buffer
 
-     safe(1)=(gpmf-gpmf1+2 < (mxpmf+2)/3)
+     safe(1)=(gpmf-gpmf1+2 < (pmf%mxpmf+2)/3)
 
 ! If not safe or we've finished looping over all global PMFs
 
-     If ((.not.safe(1)) .or. gpmf == mxpmf) Then
+     If ((.not.safe(1)) .or. gpmf == pmf%mxpmf) Then
         Call gsum(comm,buffer)
 
         Do gpmf2=gpmf1,gpmf
-           Do ipmf=1,ntpmf
-              If (listpmf(0,1,ipmf) == gpmf2) Then
+           Do ipmf=1,pmf%ntpmf
+              If (pmf%listpmf(0,1,ipmf) == gpmf2) Then
                  Do jpmf=1,2
 
 ! Get in the local scope of the unit
 
-                    m=((gpmf2-gpmf1)*(mxtpmf(1)+mxtpmf(2))+(jpmf-1)*mxtpmf(1))*iadd
-                    Do k=1,mxtpmf(jpmf)
+                    m=((gpmf2-gpmf1)*(pmf%mxtpmf(1)+pmf%mxtpmf(2))+(jpmf-1)*pmf%mxtpmf(1))*iadd
+                    Do k=1,pmf%mxtpmf(jpmf)
                        l=m+(k-1)*iadd
 
                        xxt(k)=buffer(l+1)-buffer(m+1)
@@ -188,12 +267,12 @@ Contains
                        zzt(k)=buffer(l+3)-buffer(m+3)
                     End Do
 
-                    Call images(imcon,cell,mxtpmf(jpmf),xxt,yyt,zzt)
+                    Call images(imcon,cell,pmf%mxtpmf(jpmf),xxt,yyt,zzt)
 
                     xmin=0.0_wp ; xmax = 0.0_wp
                     ymin=0.0_wp ; ymax = 0.0_wp
                     zmin=0.0_wp ; zmax = 0.0_wp
-                    Do k=1,mxtpmf(jpmf)
+                    Do k=1,pmf%mxtpmf(jpmf)
                        xmin=Min(xmin,xxt(k)) ; xmax=Max(xmax,xxt(k))
                        ymin=Min(ymin,yyt(k)) ; ymax=Max(ymax,yyt(k))
                        zmin=Min(zmin,zzt(k)) ; zmax=Max(zmax,zzt(k))
@@ -205,17 +284,17 @@ Contains
 
 ! Get the COM of this unit
 
-                    Do k=1,mxtpmf(jpmf)
-                       xpmf(jpmf,ipmf) = xpmf(jpmf,ipmf) + pmfwgt(k,jpmf)*xxt(k)
-                       ypmf(jpmf,ipmf) = ypmf(jpmf,ipmf) + pmfwgt(k,jpmf)*yyt(k)
-                       zpmf(jpmf,ipmf) = zpmf(jpmf,ipmf) + pmfwgt(k,jpmf)*zzt(k)
+                    Do k=1,pmf%mxtpmf(jpmf)
+                       xpmf(jpmf,ipmf) = xpmf(jpmf,ipmf) + pmf%pmfwgt(k,jpmf)*xxt(k)
+                       ypmf(jpmf,ipmf) = ypmf(jpmf,ipmf) + pmf%pmfwgt(k,jpmf)*yyt(k)
+                       zpmf(jpmf,ipmf) = zpmf(jpmf,ipmf) + pmf%pmfwgt(k,jpmf)*zzt(k)
                     End Do
 
 ! Get out of local frame
 
-                    xpmf(jpmf,ipmf) = xpmf(jpmf,ipmf)*pmfwgt(0,jpmf) + buffer(m+1)
-                    ypmf(jpmf,ipmf) = ypmf(jpmf,ipmf)*pmfwgt(0,jpmf) + buffer(m+2)
-                    zpmf(jpmf,ipmf) = zpmf(jpmf,ipmf)*pmfwgt(0,jpmf) + buffer(m+3)
+                    xpmf(jpmf,ipmf) = xpmf(jpmf,ipmf)*pmf%pmfwgt(0,jpmf) + buffer(m+1)
+                    ypmf(jpmf,ipmf) = ypmf(jpmf,ipmf)*pmf%pmfwgt(0,jpmf) + buffer(m+2)
+                    zpmf(jpmf,ipmf) = zpmf(jpmf,ipmf)*pmf%pmfwgt(0,jpmf) + buffer(m+3)
 
                  End Do
               End If
@@ -235,15 +314,15 @@ Contains
 
 ! Loop over all PMF constraints on this node and calculate PMF constraint vectors
 
-  Do ipmf=1,ntpmf
-     pxx(ipmf) = xpmf(2,ipmf) - xpmf(1,ipmf)
-     pyy(ipmf) = ypmf(2,ipmf) - ypmf(1,ipmf)
-     pzz(ipmf) = zpmf(2,ipmf) - zpmf(1,ipmf)
+  Do ipmf=1,pmf%ntpmf
+     pmf%pxx(ipmf) = xpmf(2,ipmf) - xpmf(1,ipmf)
+     pmf%pyy(ipmf) = ypmf(2,ipmf) - ypmf(1,ipmf)
+     pmf%pzz(ipmf) = zpmf(2,ipmf) - zpmf(1,ipmf)
   End Do
 
 ! Minimum image convention for bond vectors
 
-  Call images(imcon,cell,ntpmf,pxx,pyy,pzz)
+  Call images(imcon,cell,pmf%ntpmf,pmf%pxx,pmf%pyy,pmf%pzz)
 
   Deallocate (xxt,yyt,zzt,    Stat=fail(1))
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(2))
@@ -255,7 +334,7 @@ Contains
 
 End Subroutine pmf_coms
 
-Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf,comm)
+Subroutine pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -268,10 +347,9 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
-  Real( Kind = wp ), Intent( In    ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: gxx(1:mxatms),gyy(1:mxatms),gzz(1:mxatms)
-  Real( Kind = wp ), Intent(   Out ) :: engpmf
+  Type( stats_type ), Intent( InOut ) :: stat
+  Type( pmf_type), Intent( InOut ) :: pmf
   Type( comms_type), Intent( InOut ) :: comm
 
   Real( Kind = wp ), Parameter :: rigid=1.0e6_wp
@@ -279,14 +357,14 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf,comm)
   Integer           :: ipmf,jpmf,k,l
   Real( Kind = wp ) :: r,r0,ebond,gamma,tmp
 
-  r0=prmpmf
+  r0=pmf%prmpmf
 
-  engpmf=0.0_wp
-  Do ipmf=1,ntpmf
+  stat%engpmf=0.0_wp
+  Do ipmf=1,pmf%ntpmf
 
-     r=Sqrt(pxx(ipmf)**2+pyy(ipmf)**2+pzz(ipmf)**2)
+     r=Sqrt(pmf%pxx(ipmf)**2+pmf%pyy(ipmf)**2+pmf%pzz(ipmf)**2)
 
-     gamma=rigid*(r-r0)/Real(mxtpmf(1)+mxtpmf(2),wp)
+     gamma=rigid*(r-r0)/Real(pmf%mxtpmf(1)+pmf%mxtpmf(2),wp)
      ebond=gamma*0.5_wp*(r-r0)
      gamma=gamma/r
 
@@ -295,10 +373,10 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf,comm)
 
 ! If this unit is present on my domain
 
-        If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
+        If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
 
-           Do k=1,mxtpmf(jpmf)
-              l=indpmf(k,jpmf,ipmf)
+           Do k=1,pmf%mxtpmf(jpmf)
+              l=pmf%indpmf(k,jpmf,ipmf)
 
 ! For domain particles
 
@@ -306,14 +384,14 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf,comm)
 
 ! Accumulate energy
 
-                 engpmf=engpmf+ebond
+                 stat%engpmf=stat%engpmf+ebond
 
 ! Add forces
 
                  If (lfrzn(l) == 0) Then
-                    gxx(l)=gxx(l)+pxx(ipmf)*tmp
-                    gyy(l)=gyy(l)+pyy(ipmf)*tmp
-                    gzz(l)=gzz(l)+pzz(ipmf)*tmp
+                    gxx(l)=gxx(l)+pmf%pxx(ipmf)*tmp
+                    gyy(l)=gyy(l)+pmf%pyy(ipmf)*tmp
+                    gzz(l)=gzz(l)+pmf%pzz(ipmf)*tmp
                  End If
 
               End If
@@ -328,11 +406,11 @@ Subroutine pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf,comm)
 
 ! Global sum of energy
 
-  Call gsum(comm,engpmf)
+  Call gsum(comm,stat%engpmf)
 
 End Subroutine pmf_pseudo_bonds
 
-Subroutine pmf_quench(mxshak,tolnce,stat,comm)
+Subroutine pmf_quench(mxshak,tolnce,stat,pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -346,6 +424,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,comm)
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Type( stats_type ), Intent( InOut ) :: stat
+  Type( pmf_type), Intent( InOut ) :: pmf
   Type( comms_type), intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -356,18 +435,15 @@ Subroutine pmf_quench(mxshak,tolnce,stat,comm)
   Real( Kind = wp )       :: dis,esig,gamma,gamm(1:2)
 
   Logical,           Allocatable :: lstitr(:)
-  Integer,           Allocatable :: indpmf(:,:,:)
-  Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
   Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
   Real( Kind = wp ), Allocatable :: xpmf(:,:),ypmf(:,:),zpmf(:,:)
   Character( Len = 256 ) :: message
 
   fail=0
   Allocate (lstitr(1:mxatms),                                      Stat=fail(1))
-  Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf),        Stat=fail(2))
-  Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),                Stat=fail(3))
+  Call pmf%allocate_work()
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),             Stat=fail(4))
-  Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf), Stat=fail(5))
+  Allocate (xpmf(1:2,1:pmf%mxpmf),ypmf(1:2,1:pmf%mxpmf),zpmf(1:2,1:pmf%mxpmf), Stat=fail(5))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'pmf_quench allocation failure'
      Call error(0,message)
@@ -379,24 +455,24 @@ Subroutine pmf_quench(mxshak,tolnce,stat,comm)
      newjob = .false.
 
      Do jpmf=1,2
-        If (pmffrz(jpmf) == mxtpmf(jpmf)) Then
+        If (pmf%pmffrz(jpmf) == pmf%mxtpmf(jpmf)) Then
            amt(jpmf)=0.0_wp
         Else
-           amt(jpmf)=pmfwg1(0,jpmf)
+           amt(jpmf)=pmf%pmfwg1(0,jpmf)
         End If
      End Do
   End If
 
   lstitr(1:natms)=.false. ! initialise lstitr
-  Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+  Call pmf_tags(lstitr,pmf,comm)
 
 ! normalise PMF constraint vectors
 
-  Do ipmf=1,ntpmf
-     dis=1.0_wp/Sqrt(pxx(ipmf)**2+pyy(ipmf)**2+pzz(ipmf)**2)
-     pxx(ipmf)=pxx(ipmf)*dis
-     pyy(ipmf)=pyy(ipmf)*dis
-     pzz(ipmf)=pzz(ipmf)*dis
+  Do ipmf=1,pmf%ntpmf
+     dis=1.0_wp/Sqrt(pmf%pxx(ipmf)**2+pmf%pyy(ipmf)**2+pmf%pzz(ipmf)**2)
+     pmf%pxx(ipmf)=pmf%pxx(ipmf)*dis
+     pmf%pyy(ipmf)=pmf%pyy(ipmf)*dis
+     pmf%pzz(ipmf)=pmf%pzz(ipmf)*dis
   End Do
 
 ! application of PMF constraint (rattle) algorithm
@@ -418,18 +494,18 @@ Subroutine pmf_quench(mxshak,tolnce,stat,comm)
 
 ! calculate temporary COM velocity of each unit
 
-     Call pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
+     Call pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
 
 ! calculate PMF velocity corrections
 
      esig=0.0_wp
-     Do ipmf=1,ntpmf
+     Do ipmf=1,pmf%ntpmf
 
 ! calculate constraint force parameter - gamma
 
-        gamma = pxx(ipmf)*(xpmf(1,ipmf)-xpmf(2,ipmf)) + &
-                pyy(ipmf)*(ypmf(1,ipmf)-ypmf(2,ipmf)) + &
-                pzz(ipmf)*(zpmf(1,ipmf)-zpmf(2,ipmf))
+        gamma = pmf%pxx(ipmf)*(xpmf(1,ipmf)-xpmf(2,ipmf)) + &
+                pmf%pyy(ipmf)*(ypmf(1,ipmf)-ypmf(2,ipmf)) + &
+                pmf%pzz(ipmf)*(zpmf(1,ipmf)-zpmf(2,ipmf))
 
         esig=Max(esig,0.5_wp*Abs(gamma))
 
@@ -439,18 +515,18 @@ Subroutine pmf_quench(mxshak,tolnce,stat,comm)
 
 ! If this unit is present on my domain
 
-           If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
+           If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
               gamm(jpmf) = Real(1-2*Mod(jpmf,2),wp)*gamma*amt(jpmf)
-              Do k=1,mxtpmf(jpmf)
-                 l=indpmf(k,jpmf,ipmf)
+              Do k=1,pmf%mxtpmf(jpmf)
+                 l=pmf%indpmf(k,jpmf,ipmf)
 
 ! improve approximate PMF particles velocity and force (if non-frozen)
 
                  If (l > 0 .and. l <= natms) Then ! l is a domain particle
                     If (lfrzn(l) == 0) Then
-                       vxt(l)=vxt(l)+pxx(ipmf)*gamm(jpmf)
-                       vyt(l)=vyt(l)+pyy(ipmf)*gamm(jpmf)
-                       vzt(l)=vzt(l)+pzz(ipmf)*gamm(jpmf)
+                       vxt(l)=vxt(l)+pmf%pxx(ipmf)*gamm(jpmf)
+                       vyt(l)=vyt(l)+pmf%pyy(ipmf)*gamm(jpmf)
+                       vzt(l)=vzt(l)+pmf%pzz(ipmf)*gamm(jpmf)
                     End If
                  End If
               End Do
@@ -468,11 +544,11 @@ Subroutine pmf_quench(mxshak,tolnce,stat,comm)
 ! bypass next section and terminate iteration if all tolerances ok
 
      If (.not.safe) Then
-        Do ipmf=1,ntpmf
+        Do ipmf=1,pmf%ntpmf
            Do jpmf=1,2
-              If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
-                 Do k=1,mxtpmf(jpmf)
-                    l=indpmf(k,jpmf,ipmf)
+              If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
+                 Do k=1,pmf%mxtpmf(jpmf)
+                    l=pmf%indpmf(k,jpmf,ipmf)
                     If (l > 0 .and. l <= natms) Then ! l is a domain particle
                        If (lfrzn(l) == 0) Then
                           vxx(l)=vxx(l)+vxt(l)
@@ -500,8 +576,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,comm)
   End If
 
   Deallocate (lstitr,         Stat=fail(1))
-  Deallocate (indpmf,         Stat=fail(2))
-  Deallocate (pxx,pyy,pzz,    Stat=fail(3))
+  Call pmf%deallocate_work()
   Deallocate (vxt,vyt,vzt,    Stat=fail(4))
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(5))
   If (Any(fail > 0)) Then
@@ -511,7 +586,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,comm)
 
 End Subroutine pmf_quench
 
-Subroutine pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+Subroutine pmf_tags(lstitr,pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -526,8 +601,7 @@ Subroutine pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( InOut ) :: lstitr(1:mxatms)
-  Integer,           Intent(   Out ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
-  Real( Kind = wp ), Intent(   Out ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
+  Type(pmf_type), Intent( Inout ) :: pmf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer :: ipmf,jpmf,j,k
@@ -536,17 +610,17 @@ Subroutine pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
 ! save the indices of the members that are present on my domain (no halo)
 ! update lstitr
 
-  Do ipmf=1,ntpmf
+  Do ipmf=1,pmf%ntpmf
 
 ! Initialise indices
 
-     indpmf(:,:,ipmf) = 0
+     pmf%indpmf(:,:,ipmf) = 0
 
      Do jpmf=1,2
-        If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
-           Do k=1,mxtpmf(jpmf)
-              j=local_index(listpmf(k,jpmf,ipmf),nlast,lsi,lsa)
-              indpmf(k,jpmf,ipmf)=j
+        If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
+           Do k=1,pmf%mxtpmf(jpmf)
+              j=local_index(pmf%listpmf(k,jpmf,ipmf),nlast,lsi,lsa)
+              pmf%indpmf(k,jpmf,ipmf)=j
               If (j > 0 .and. j <= natms) lstitr(j)=(lfrzn(j) == 0)
            End Do
         End If
@@ -556,18 +630,18 @@ Subroutine pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
 
 ! Get PMF units' COM vectors
 
-  Call pmf_coms(indpmf,pxx,pyy,pzz,comm)
+  Call pmf_coms(pmf,comm)
 
 End Subroutine pmf_tags
 
-Subroutine pmf_units_set(comm)
+Subroutine pmf_units_set(pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for setting the existence of the PMF units on the
 ! node where supposedly PMF constraints exist
 !
-! Note: (1) Deals with listpmf, legpmf and ntpmf
+! Note: (1) Deals with pmf%listpmf, pmf%legpmf and pmf%ntpmf
 !       (2) Applies only at the end of relocate_particles
 !           if megpmf>0 and mxnode>1
 !
@@ -576,6 +650,7 @@ Subroutine pmf_units_set(comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type (pmf_type ), Intent( InOut ) :: pmf
   Type( comms_type ), Intent( InOut) :: comm
   Logical :: safe,ok
   Integer :: fail,ipmf,jpmf,gpmf
@@ -584,7 +659,7 @@ Subroutine pmf_units_set(comm)
   Character( Len = 256 ) :: message
 
   fail=0
-  Allocate (i1pmf0(1:mxtpmf(1)),i2pmf0(1:mxtpmf(2)), Stat=fail)
+  Allocate (i1pmf0(1:pmf%mxtpmf(1)),i2pmf0(1:pmf%mxtpmf(2)), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'pmf_units_set allocation failure'
      Call error(0,message)
@@ -598,18 +673,18 @@ Subroutine pmf_units_set(comm)
 ! since it's safe - there's enough buffering space
 
   ok=.true.
-  If (mxpmf > 0) ok=.not.(Real(ntpmf,wp)/Real(mxpmf,wp) > 0.85_wp)
+  If (pmf%mxpmf > 0) ok=.not.(Real(pmf%ntpmf,wp)/Real(pmf%mxpmf,wp) > 0.85_wp)
 
 ! Sort out local PMF units presence and legend array
 
   ipmf=0
-  Do While (ipmf < ntpmf)
+  Do While (ipmf < pmf%ntpmf)
      ipmf=ipmf+1
 10   Continue
 
 ! This holds the global PMF index
 
-     gpmf=listpmf(0,1,ipmf)
+     gpmf=pmf%listpmf(0,1,ipmf)
      If (gpmf > 0) Then
 
 ! For presence of : PMF unit 1 only - this holds 1
@@ -617,49 +692,49 @@ Subroutine pmf_units_set(comm)
 !                   both units 1&2  - this holds 3
 ! It CANNOT and MUST NOT hold ZERO
 
-        listpmf(0,2,ipmf)=0
+        pmf%listpmf(0,2,ipmf)=0
 
-        Do jpmf=1,mxtpmf(1)
-           i1pmf0(jpmf)=local_index(listpmf(jpmf,1,ipmf),natms,lsi,lsa)
+        Do jpmf=1,pmf%mxtpmf(1)
+           i1pmf0(jpmf)=local_index(pmf%listpmf(jpmf,1,ipmf),natms,lsi,lsa)
 
            If (i1pmf0(jpmf) > 0) Then
 
 ! This identifies which local PMF constraint the particle belongs to
 
-              legpmf(0,i1pmf0(jpmf))=1
-              legpmf(1,i1pmf0(jpmf))=ipmf
+              pmf%legpmf(0,i1pmf0(jpmf))=1
+              pmf%legpmf(1,i1pmf0(jpmf))=ipmf
 
            End If
         End Do
-        If (Any(i1pmf0 > 0)) listpmf(0,2,ipmf)=listpmf(0,2,ipmf)+1
+        If (Any(i1pmf0 > 0)) pmf%listpmf(0,2,ipmf)=pmf%listpmf(0,2,ipmf)+1
 
-        Do jpmf=1,mxtpmf(2)
-           i2pmf0(jpmf)=local_index(listpmf(jpmf,2,ipmf),natms,lsi,lsa)
+        Do jpmf=1,pmf%mxtpmf(2)
+           i2pmf0(jpmf)=local_index(pmf%listpmf(jpmf,2,ipmf),natms,lsi,lsa)
 
            If (i2pmf0(jpmf) > 0) Then
 
 ! This identifies which local PMF constraint the particle belongs to
 
-              legpmf(0,i2pmf0(jpmf))=1
-              legpmf(1,i2pmf0(jpmf))=ipmf
+              pmf%legpmf(0,i2pmf0(jpmf))=1
+              pmf%legpmf(1,i2pmf0(jpmf))=ipmf
 
            End If
         End Do
-        If (Any(i2pmf0 > 0)) listpmf(0,2,ipmf)=listpmf(0,2,ipmf)+2
+        If (Any(i2pmf0 > 0)) pmf%listpmf(0,2,ipmf)=pmf%listpmf(0,2,ipmf)+2
 
-! If the PMF has moved to another node, listpmf(0,2,ipmf)=0,
-! compress listpmf
+! If the PMF has moved to another node, pmf%listpmf(0,2,ipmf)=0,
+! compress pmf%listpmf
 
-        If (listpmf(0,2,ipmf) == 0 .and. (.not.ok)) Then
-           If      (ipmf  < ntpmf) Then
-              listpmf(:,:,ipmf)=listpmf(:,:,ntpmf) ! Copy neigh%list content from 'ipmf' to 'ntpmf'
-              listpmf(:,:,ntpmf)=0                 ! Remove neigh%list content in 'ntpmf'
-              ntpmf=ntpmf-1                        ! Reduce 'ntpmf' pointer
+        If (pmf%listpmf(0,2,ipmf) == 0 .and. (.not.ok)) Then
+           If      (ipmf  < pmf%ntpmf) Then
+              pmf%listpmf(:,:,ipmf)=pmf%listpmf(:,:,pmf%ntpmf) ! Copy neigh%list content from 'ipmf' to 'pmf%ntpmf'
+              pmf%listpmf(:,:,pmf%ntpmf)=0                 ! Remove neigh%list content in 'pmf%ntpmf'
+              pmf%ntpmf=pmf%ntpmf-1                        ! Reduce 'pmf%ntpmf' pointer
 
               Go To 10 ! Go back and check it all again for the new neigh%list content in 'ipmf'
-           Else If (ipmf == ntpmf) Then
-              listpmf(:,:,ntpmf)=0                 ! Remove neigh%list content in 'ntpmf=ipmf'
-              ntpmf=ntpmf-1                        ! Reduce 'ntpmf' pointer
+           Else If (ipmf == pmf%ntpmf) Then
+              pmf%listpmf(:,:,pmf%ntpmf)=0                 ! Remove neigh%list content in 'pmf%ntpmf=ipmf'
+              pmf%ntpmf=pmf%ntpmf-1                        ! Reduce 'pmf%ntpmf' pointer
            End If
         End If
 
@@ -682,7 +757,7 @@ Subroutine pmf_units_set(comm)
   End If
 
 End Subroutine pmf_units_set
-Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
+Subroutine pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -697,8 +772,8 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
-  Real( Kind = wp ), Intent(   Out ) :: xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf)
+  Real( Kind = wp ), Intent(   Out ) :: xpmf(1:,1:),ypmf(1:,1:),zpmf(1:,1:)
+  Type(pmf_type), Intent( Inout ) :: pmf
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                 :: safe
@@ -710,7 +785,7 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
   Character( Len = 256 ) :: message
 
   fail=0
-  Allocate (buffer(1:(mxtpmf(1)+mxtpmf(2))*(mxpmf+2)), Stat=fail)
+  Allocate (buffer(1:(pmf%mxtpmf(1)+pmf%mxtpmf(2))*(pmf%mxpmf+2)), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'pmf_vcoms allocation failure'
      Call error(0,message)
@@ -730,27 +805,27 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
   gpmf1=1          ! number of passed global PMFs
   buffer=0.0_wp    ! velocities buffer
   iadd=3           ! adding three velocities only per particle
-  Do gpmf=1,mxpmf
+  Do gpmf=1,pmf%mxpmf
 
 ! Loop over all local to this node PMF constraints matching the global one
 
-     Do ipmf=1,ntpmf
-        If (listpmf(0,1,ipmf) == gpmf) Then
+     Do ipmf=1,pmf%ntpmf
+        If (pmf%listpmf(0,1,ipmf) == gpmf) Then
 
 ! Loop over all PMF units present on my domain (no halo)
 
            Do jpmf=1,2
-              If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
+              If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
 
 ! Loop over their members present on my domain (no halo)
 
-                 Do k=1,mxtpmf(jpmf)
-                    j=indpmf(k,jpmf,ipmf)
+                 Do k=1,pmf%mxtpmf(jpmf)
+                    j=pmf%indpmf(k,jpmf,ipmf)
 
 ! Copy particles' velocities to buffer in an orderly manner
 
                     If (j > 0 .and. j <= natms) Then ! j is a domain particle
-                       l=((gpmf-gpmf1)*(mxtpmf(1)+mxtpmf(2))+(jpmf-1)*mxtpmf(1)+(k-1))*iadd
+                       l=((gpmf-gpmf1)*(pmf%mxtpmf(1)+pmf%mxtpmf(2))+(jpmf-1)*pmf%mxtpmf(1)+(k-1))*iadd
                        buffer(l+1)=vxx(j)
                        buffer(l+2)=vyy(j)
                        buffer(l+3)=vzz(j)
@@ -763,31 +838,31 @@ Subroutine pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
 
 ! Check if it safe to fill up the buffer
 
-     safe=(gpmf-gpmf1+2 < (mxpmf+2)/3)
+     safe=(gpmf-gpmf1+2 < (pmf%mxpmf+2)/3)
 
 ! If not safe or we've finished looping over all global PMFs
 
-     If ((.not.safe) .or. gpmf == mxpmf) Then
+     If ((.not.safe) .or. gpmf == pmf%mxpmf) Then
         Call gsum(comm,buffer)
 
         Do gpmf2=gpmf1,gpmf
-           Do ipmf=1,ntpmf
-              If (listpmf(0,1,ipmf) == gpmf2) Then
+           Do ipmf=1,pmf%ntpmf
+              If (pmf%listpmf(0,1,ipmf) == gpmf2) Then
                  Do jpmf=1,2
 
 ! Get the COM momentum of this unit
 
-                    Do k=1,mxtpmf(jpmf)
-                       l=((gpmf2-gpmf1)*(mxtpmf(1)+mxtpmf(2))+(jpmf-1)*mxtpmf(1)+(k-1))*iadd
+                    Do k=1,pmf%mxtpmf(jpmf)
+                       l=((gpmf2-gpmf1)*(pmf%mxtpmf(1)+pmf%mxtpmf(2))+(jpmf-1)*pmf%mxtpmf(1)+(k-1))*iadd
 
-                       xpmf(jpmf,ipmf) = xpmf(jpmf,ipmf) + pmfwg1(k,jpmf)*buffer(l+1)
-                       ypmf(jpmf,ipmf) = ypmf(jpmf,ipmf) + pmfwg1(k,jpmf)*buffer(l+2)
-                       zpmf(jpmf,ipmf) = zpmf(jpmf,ipmf) + pmfwg1(k,jpmf)*buffer(l+3)
+                       xpmf(jpmf,ipmf) = xpmf(jpmf,ipmf) + pmf%pmfwg1(k,jpmf)*buffer(l+1)
+                       ypmf(jpmf,ipmf) = ypmf(jpmf,ipmf) + pmf%pmfwg1(k,jpmf)*buffer(l+2)
+                       zpmf(jpmf,ipmf) = zpmf(jpmf,ipmf) + pmf%pmfwg1(k,jpmf)*buffer(l+3)
                     End Do
 
-                    xpmf(jpmf,ipmf) = xpmf(jpmf,ipmf)*pmfwg1(0,jpmf)
-                    ypmf(jpmf,ipmf) = ypmf(jpmf,ipmf)*pmfwg1(0,jpmf)
-                    zpmf(jpmf,ipmf) = zpmf(jpmf,ipmf)*pmfwg1(0,jpmf)
+                    xpmf(jpmf,ipmf) = xpmf(jpmf,ipmf)*pmf%pmfwg1(0,jpmf)
+                    ypmf(jpmf,ipmf) = ypmf(jpmf,ipmf)*pmf%pmfwg1(0,jpmf)
+                    zpmf(jpmf,ipmf) = zpmf(jpmf,ipmf)*pmf%pmfwg1(0,jpmf)
 
                  End Do
               End If
@@ -810,9 +885,8 @@ End Subroutine pmf_vcoms
 
 Subroutine pmf_shake_vv          &
            (mxshak,tolnce,tstep, &
-           indpmf,pxx,pyy,pzz,   &
            xxx,yyy,zzz,strpmf,   &
-           virpmf,stat,comm)
+           virpmf,stat,pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -830,11 +904,10 @@ Subroutine pmf_shake_vv          &
 
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
-  Real( Kind = wp ), Intent( In    ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
   Real( Kind = wp ), Intent(   Out ) :: strpmf(1:9),virpmf
   Type( stats_type ), Intent( InOut ) :: stat
+  Type(pmf_type), Intent( Inout ) :: pmf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -848,7 +921,7 @@ Subroutine pmf_shake_vv          &
   Character( Len = 256 ) :: message
 
   fail=0
-  Allocate (pxt(1:mxpmf),pyt(1:mxpmf),pzt(1:mxpmf),pt2(1:mxpmf),esig(1:mxpmf), Stat=fail)
+  Allocate (pxt(1:pmf%mxpmf),pyt(1:pmf%mxpmf),pzt(1:pmf%mxpmf),pt2(1:pmf%mxpmf),esig(1:pmf%mxpmf), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'pmf_shake allocation failure'
      Call error(0,message)
@@ -861,16 +934,16 @@ Subroutine pmf_shake_vv          &
 ! Get reciprocal PMF units' masses
 
      Do jpmf=1,2
-        If (pmffrz(jpmf) == mxtpmf(jpmf)) Then
+        If (pmf%pmffrz(jpmf) == pmf%mxtpmf(jpmf)) Then
            rmass_pmf_unit(jpmf)=0.0_wp
         Else
-           rmass_pmf_unit(jpmf)=pmfwg1(0,jpmf)
+           rmass_pmf_unit(jpmf)=pmf%pmfwg1(0,jpmf)
         End If
      End Do
 
 ! set PMF constraint parameters
 
-     dis=prmpmf
+     dis=pmf%prmpmf
      dis2=dis**2
   End If
 
@@ -894,18 +967,18 @@ Subroutine pmf_shake_vv          &
 
 ! calculate temporary PMF units' COM vectors
 
-     Call pmf_coms(indpmf,pxt,pyt,pzt,comm)
+     Call pmf_coms(pmf,comm)
 
 ! calculate maximum error in bondlength
 
-     Do ipmf=1,ntpmf
+     Do ipmf=1,pmf%ntpmf
         pt2(ipmf) =pxt(ipmf)**2+pyt(ipmf)**2+pzt(ipmf)**2 - dis2
         esig(ipmf)=0.5_wp*Abs(pt2(ipmf))/dis
      End Do
 
 ! global verification of convergence
 
-     safe=Merge(Maxval(esig(1:ntpmf)) < tolnce,.true.,ntpmf > 0)
+     safe=Merge(Maxval(esig(1:pmf%ntpmf)) < tolnce,.true.,pmf%ntpmf > 0)
      Call gcheck(comm,safe,"enforce")
 
 ! bypass next section and terminate iteration if all tolerances ok
@@ -914,39 +987,39 @@ Subroutine pmf_shake_vv          &
 
 ! calculate PMF constraint forces
 
-        Do ipmf=1,ntpmf
+        Do ipmf=1,pmf%ntpmf
 
 ! calculate PMF constraint force parameter
 
            gamma = -pt2(ipmf) / &
-                   ((amt(1)+amt(2))*(pxx(ipmf)*pxt(ipmf)+pyy(ipmf)*pyt(ipmf)+pzz(ipmf)*pzt(ipmf)))
-           tmp   = gamma / Real(mxtpmf(1)+mxtpmf(2),wp)
+                   ((amt(1)+amt(2))*(pmf%pxx(ipmf)*pxt(ipmf)+pmf%pyy(ipmf)*pyt(ipmf)+pmf%pzz(ipmf)*pzt(ipmf)))
+           tmp   = gamma / Real(pmf%mxtpmf(1)+pmf%mxtpmf(2),wp)
 
            Do jpmf=1,2
 
 ! If this unit is present on my domain
 
-              If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
+              If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
                  gamm(jpmf) = 0.5_wp*Real(1-2*Mod(jpmf,2),wp)*gamma*amt(jpmf)
 
-                 Do k=1,mxtpmf(jpmf)
-                    l=indpmf(k,jpmf,ipmf)
+                 Do k=1,pmf%mxtpmf(jpmf)
+                    l=pmf%indpmf(k,jpmf,ipmf)
 
 ! for non-frozen domain particles accumulate PMF constraint stress
 ! and atomic position corrections
 
                     If (l > 0 .and. l <= natms) Then ! l is a domain particle
                        If (lfrzn(l) == 0) Then
-                          strpmf(1) = strpmf(1) - tmp*pxx(ipmf)*pxx(ipmf)
-                          strpmf(2) = strpmf(2) - tmp*pxx(ipmf)*pyy(ipmf)
-                          strpmf(3) = strpmf(3) - tmp*pxx(ipmf)*pzz(ipmf)
-                          strpmf(5) = strpmf(5) - tmp*pyy(ipmf)*pyy(ipmf)
-                          strpmf(6) = strpmf(6) - tmp*pyy(ipmf)*pzz(ipmf)
-                          strpmf(9) = strpmf(9) - tmp*pzz(ipmf)*pzz(ipmf)
+                          strpmf(1) = strpmf(1) - tmp*pmf%pxx(ipmf)*pmf%pxx(ipmf)
+                          strpmf(2) = strpmf(2) - tmp*pmf%pxx(ipmf)*pmf%pyy(ipmf)
+                          strpmf(3) = strpmf(3) - tmp*pmf%pxx(ipmf)*pmf%pzz(ipmf)
+                          strpmf(5) = strpmf(5) - tmp*pmf%pyy(ipmf)*pmf%pyy(ipmf)
+                          strpmf(6) = strpmf(6) - tmp*pmf%pyy(ipmf)*pmf%pzz(ipmf)
+                          strpmf(9) = strpmf(9) - tmp*pmf%pzz(ipmf)*pmf%pzz(ipmf)
 
-                          xxx(l)=xxx(l)+pxx(ipmf)*gamm(jpmf)
-                          yyy(l)=yyy(l)+pyy(ipmf)*gamm(jpmf)
-                          zzz(l)=zzz(l)+pzz(ipmf)*gamm(jpmf)
+                          xxx(l)=xxx(l)+pmf%pxx(ipmf)*gamm(jpmf)
+                          yyy(l)=yyy(l)+pmf%pyy(ipmf)*gamm(jpmf)
+                          zzz(l)=zzz(l)+pmf%pzz(ipmf)*gamm(jpmf)
                        End If
                     End If
                  End Do
@@ -962,12 +1035,12 @@ Subroutine pmf_shake_vv          &
   If (.not.safe) Then ! error exit for non-convergence
      Do k=0,comm%mxnode-1
         If (comm%idnode == k) Then
-           Do ipmf=1,ntpmf
+           Do ipmf=1,pmf%ntpmf
              If (esig(ipmf) >= tolnce) Then
                  Write(message,'(3(a,i10),a)') &
                  'global PMF constraint number', ipmf, &
-                 ' , with head particle numbers, U1:', listpmf(1,1,ipmf), &
-                 ' & U2:', listpmf(1,2,ipmf)
+                 ' , with head particle numbers, U1:', pmf%listpmf(1,1,ipmf), &
+                 ' & U2:', pmf%listpmf(1,2,ipmf)
                Call info(message)
                Write(message,'(a,f8.2,a,1p,e12.4)') &
                  'converges to a length of', Sqrt(pt2(ipmf)+dis2), &
@@ -1016,8 +1089,7 @@ End Subroutine pmf_shake_vv
 
 Subroutine pmf_rattle                      &
            (mxshak,tolnce,tstep,lfst,lcol, &
-           indpmf,pxx,pyy,pzz,             &
-           vxx,vyy,vzz,stat,comm)
+           vxx,vyy,vzz,stat,pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1035,10 +1107,9 @@ Subroutine pmf_rattle                      &
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
   Logical,           Intent( In    ) :: lfst,lcol
-  Integer,           Intent( In    ) :: indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf)
-  Real( Kind = wp ), Intent( InOut ) :: pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf)
   Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
   Type( stats_type ), Intent( InOut ) :: stat
+  Type(pmf_type), Intent( Inout ) :: pmf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -1054,7 +1125,7 @@ Subroutine pmf_rattle                      &
 
   fail=0
   Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),             Stat=fail(1))
-  Allocate (xpmf(1:2,1:mxpmf),ypmf(1:2,1:mxpmf),zpmf(1:2,1:mxpmf), Stat=fail(2))
+  Allocate (xpmf(1:2,1:pmf%mxpmf),ypmf(1:2,1:pmf%mxpmf),zpmf(1:2,1:pmf%mxpmf), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'pmf_rattle allocation failure'
      Call error(0,message)
@@ -1066,10 +1137,10 @@ Subroutine pmf_rattle                      &
      newjob = .false.
 
      Do jpmf=1,2
-        If (pmffrz(jpmf) == mxtpmf(jpmf)) Then
+        If (pmf%pmffrz(jpmf) == pmf%mxtpmf(jpmf)) Then
            amt(jpmf)=0.0_wp
         Else
-           amt(jpmf)=pmfwg1(0,jpmf)
+           amt(jpmf)=pmf%pmfwg1(0,jpmf)
         End If
      End Do
   End If
@@ -1077,11 +1148,11 @@ Subroutine pmf_rattle                      &
 ! normalise PMF constraint vectors on first pass outside
 
   If (lfst) Then
-     Do ipmf=1,ntpmf
-        dis=1.0_wp/Sqrt(pxx(ipmf)**2+pyy(ipmf)**2+pzz(ipmf)**2)
-        pxx(ipmf)=pxx(ipmf)*dis
-        pyy(ipmf)=pyy(ipmf)*dis
-        pzz(ipmf)=pzz(ipmf)*dis
+     Do ipmf=1,pmf%ntpmf
+        dis=1.0_wp/Sqrt(pmf%pxx(ipmf)**2+pmf%pyy(ipmf)**2+pmf%pzz(ipmf)**2)
+        pmf%pxx(ipmf)=pmf%pxx(ipmf)*dis
+        pmf%pyy(ipmf)=pmf%pyy(ipmf)*dis
+        pmf%pzz(ipmf)=pmf%pzz(ipmf)*dis
      End Do
   End If
 
@@ -1103,18 +1174,18 @@ Subroutine pmf_rattle                      &
 
 ! calculate temporary COM velocity of each unit
 
-     Call pmf_vcoms(indpmf,xpmf,ypmf,zpmf,comm)
+     Call pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
 
 ! calculate PMF velocity corrections
 
      esig=0.0_wp
-     Do ipmf=1,ntpmf
+     Do ipmf=1,pmf%ntpmf
 
 ! calculate constraint force parameter - gamma
 
-        gamma = pxx(ipmf)*(xpmf(1,ipmf)-xpmf(2,ipmf)) + &
-                pyy(ipmf)*(ypmf(1,ipmf)-ypmf(2,ipmf)) + &
-                pzz(ipmf)*(zpmf(1,ipmf)-zpmf(2,ipmf))
+        gamma = pmf%pxx(ipmf)*(xpmf(1,ipmf)-xpmf(2,ipmf)) + &
+                pmf%pyy(ipmf)*(ypmf(1,ipmf)-ypmf(2,ipmf)) + &
+                pmf%pzz(ipmf)*(zpmf(1,ipmf)-zpmf(2,ipmf))
 
         esig=Max(esig,0.5_wp*tstep*Abs(gamma))
 
@@ -1124,18 +1195,18 @@ Subroutine pmf_rattle                      &
 
 ! If this unit is present on my domain
 
-           If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
+           If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
               gamm(jpmf) = Real(1-2*Mod(jpmf,2),wp)*gamma*amt(jpmf)
-              Do k=1,mxtpmf(jpmf)
-                 l=indpmf(k,jpmf,ipmf)
+              Do k=1,pmf%mxtpmf(jpmf)
+                 l=pmf%indpmf(k,jpmf,ipmf)
 
 ! improve approximate PMF particles velocity and force (if non-frozen)
 
                  If (l > 0 .and. l <= natms) Then ! l is a domain particle
                     If (lfrzn(l) == 0) Then
-                       vxt(l)=vxt(l)+pxx(ipmf)*gamm(jpmf)
-                       vyt(l)=vyt(l)+pyy(ipmf)*gamm(jpmf)
-                       vzt(l)=vzt(l)+pzz(ipmf)*gamm(jpmf)
+                       vxt(l)=vxt(l)+pmf%pxx(ipmf)*gamm(jpmf)
+                       vyt(l)=vyt(l)+pmf%pyy(ipmf)*gamm(jpmf)
+                       vzt(l)=vzt(l)+pmf%pzz(ipmf)*gamm(jpmf)
                     End If
                  End If
               End Do
@@ -1153,11 +1224,11 @@ Subroutine pmf_rattle                      &
 ! bypass next section and terminate iteration if all tolerances ok
 
      If (.not.safe) Then
-        Do ipmf=1,ntpmf
+        Do ipmf=1,pmf%ntpmf
            Do jpmf=1,2
-              If (listpmf(0,2,ipmf) == jpmf .or. listpmf(0,2,ipmf) == 3) Then
-                 Do k=1,mxtpmf(jpmf)
-                    l=indpmf(k,jpmf,ipmf)
+              If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
+                 Do k=1,pmf%mxtpmf(jpmf)
+                    l=pmf%indpmf(k,jpmf,ipmf)
                     If (l > 0 .and. l <= natms) Then ! l is a domain particle
                        If (lfrzn(l) == 0) Then
                           vxx(l)=vxx(l)+vxt(l)

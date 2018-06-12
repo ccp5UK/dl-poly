@@ -12,7 +12,7 @@ Module temperature
                               ntrgd,rgdmeg,lashp_rgd,lishp_rgd,lshmv_rgd, &
                               rgdfrz,listrgd,indrgd,getrotmat,rigid_bodies_quench
   Use constraints,     Only : constraints_type, constraints_quench
-  Use pmf,             Only : pmf_quench
+  Use pmf,             Only : pmf_quench, pmf_type
   Use core_shell,      Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl, &
                               lashp_shl,core_shell_quench
   Use kinetics,        Only : l_vom,chvom,getcom,getvom,getkin,getknf,getknt,getknr
@@ -35,9 +35,9 @@ Contains
              lmin,nstep,nstrun,nstmin, &
              keyshl,     &
              atmfre,atmfrz,            &
-             megshl,megpmf,     &
+             megshl,     &
              megrgd,degtra,degrot,     &
-             degfre,degshl,engrot,stat,cons,thermo,comm)
+             degfre,degshl,engrot,stat,cons,pmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -53,7 +53,6 @@ Contains
                                            keyshl,       &
                                            atmfre,atmfrz,       &
                                            megshl,              &
-                                           megpmf,       &
                                            megrgd
 
     Integer,            Intent( InOut ) :: keyres,levcfg
@@ -62,6 +61,7 @@ Contains
     Integer(Kind=li),   Intent(   Out ) :: degfre,degshl
     Real( Kind = wp ),  Intent(   Out ) :: engrot
     Type( stats_type ), Intent( InOut ) :: stat
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
@@ -119,7 +119,7 @@ Contains
 
   ! lost to constrained atoms and PMF constraints
 
-    con=Int(cons%megcon)+Int(megpmf)
+    con=Int(cons%megcon)+Int(pmf%megpmf)
 
   ! TOTAL DoF
 
@@ -526,11 +526,9 @@ Contains
 
        If (no_min_0) Then
           If (cons%megcon > 0) Then 
-            Call cons%allocate_work(mxatms)
             Call constraints_quench(cons,stat,comm)
-            Call cons%deallocate_work()
           End If  
-          If (megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,comm)
+          If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
        End If
 
   ! quench core-shell units in adiabatic model
@@ -542,8 +540,8 @@ Contains
              If (cons%megcon > 0) Then
                Call constraints_quench(cons,stat,comm)
              End If
-             If (megpmf > 0) Then
-               Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,comm)
+             If (pmf%megpmf > 0) Then
+               Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
              End If
              If (megrgd > 0) Then
                Call rigid_bodies_quench(comm)

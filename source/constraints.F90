@@ -15,7 +15,7 @@ Module constraints
 
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
     imcon,cell,xxx,yyy,zzz,fxx,fyy,fzz,nfree,lstfre
-  Use pmf, Only : pmf_shake_vv,pmf_rattle
+  Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
   Use setup,           Only : mxatms,zero_plus
 
   Use errors_warnings, Only : error,warning,info
@@ -1000,15 +1000,13 @@ Subroutine allocate_work(T,n)
 #endif
   End Subroutine constraints_shake_vv
 
-  Subroutine apply_rattle(tstep,kit,megpmf, &
-      pxx,pyy,pzz,&
-      indpmf,cons,stat,tmr,comm)
+  Subroutine apply_rattle(tstep,kit, &
+      pmf,cons,stat,tmr,comm)
 
-    Real( Kind = wp ),  Intent( InOut ) :: pxx(:),pyy(:),pzz(:)
-    Integer, Intent( In ) :: kit,megpmf
+    Integer, Intent( In ) :: kit
     Real( Kind = wp ), Intent( In ) :: tstep
-    Integer, Intent( In ) :: indpmf(:,:,:)
     Type( stats_type), Intent( InOut ) :: stat
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type( constraints_type), Intent( InOut ) :: cons
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
@@ -1025,27 +1023,25 @@ Subroutine allocate_work(T,n)
           vxx,vyy,vzz,stat,cons,tmr,comm)
       End IF
 
-      If (megpmf > 0) Then
+      If (pmf%megpmf > 0) Then
         Call pmf_rattle &
           (cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
-          indpmf,pxx,pyy,pzz,             &
-          vxx,vyy,vzz,stat,comm)
+          vxx,vyy,vzz,stat,pmf,comm)
       End If
     End Do
   End Subroutine apply_rattle
 
-  Subroutine apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,pxx,pyy,pzz,&
-      lstitr,indpmf,&
-      megpmf,virpmf,strpmf,stat,cons,tmr,comm)
+  Subroutine apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+      lstitr,&
+      stat,pmf,cons,tmr,comm)
     Integer, Intent( InOut ) :: kit
-    Integer, Intent( In ) :: indpmf(:,:,:),mxkit
+    Integer, Intent( In ) :: mxkit
     Logical, Intent( In ) :: lstitr(:)
-    Integer,            Intent( In    ) :: megpmf
-    Real( Kind = wp ),  Intent( InOut ) :: strpmf(1:),virpmf, &
-      oxt(:),oyt(:),ozt(:), &
-      pxx(:),pyy(:),pzz(:)
+    Real( Kind = wp ),  Intent( InOut ) :: oxt(:),oyt(:),ozt(:)
+
     Real( Kind = wp ),  Intent( In ) :: tstep
     Type( stats_type), Intent( InOut ) :: stat
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type( constraints_type), Intent( InOut ) :: cons
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
@@ -1093,19 +1089,18 @@ Subroutine allocate_work(T,n)
         safe=.true.
       End If
 
-      If (megpmf > 0) Then
+      If (pmf%megpmf > 0) Then
 
         ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
 
         Call pmf_shake_vv  &
           (cons%max_iter_shake,cons%tolerance,tstep, &
-          indpmf,pxx,pyy,pzz,   &
-          xxx,yyy,zzz,str,vir,stat,comm)
+          xxx,yyy,zzz,str,vir,stat,pmf,comm)
 
         ! PMF virial and stress tensor
 
-        virpmf=virpmf+vir
-        strpmf=strpmf+str
+        stat%virpmf=stat%virpmf+vir
+        stat%strpmf=stat%strpmf+str
 
         safe=(Abs(vir) <= zero_plus)
       End If
@@ -1124,7 +1119,7 @@ Subroutine allocate_work(T,n)
       stat%passcon(1,2,1)=0.0_wp ! Reset
     End If
 
-    If (megpmf > 0) Then
+    If (pmf%megpmf > 0) Then
       stat%passpmf(3,2,1)=stat%passpmf(2,2,1)*stat%passpmf(3,2,1)
       stat%passpmf(2,2,1)=stat%passpmf(2,2,1)+1.0_wp
       stat%passpmf(3,2,1)=stat%passpmf(3,2,1)/stat%passpmf(2,2,1)+stat%passpmf(1,2,1)/stat%passpmf(2,2,1)

@@ -45,7 +45,7 @@ Module statistics
                                     engter  = 0.0_wp,engtbp = 0.0_wp,engfbp = 0.0_wp,&
                                     engshl = 0.0_wp,engtet = 0.0_wp,engbnd = 0.0_wp,&
                                     engang = 0.0_wp,engdih = 0.0_wp,enginv = 0.0_wp,&
-                                    engfld = 0.0_wp, engcon = 0.0_wp
+                                    engfld = 0.0_wp,engcon = 0.0_wp,engpmf = 0.0_wp
 
   Real( Kind = wp )              :: stptmp = 0.0_wp,stpprs = 0.0_wp,stpvol = 0.0_wp,&
                                     stpcfg = 0.0_wp,stpeng = 0.0_wp,stpeth = 0.0_wp,&

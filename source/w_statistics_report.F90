@@ -106,7 +106,7 @@ If (nstep == nsteql) Then
     End If
   End If
 
-  If (megpmf > 0) Then
+  If (pmf%megpmf > 0) Then
     Call gmax(comm,stat%passpmq(3:5))
     If (stat%passpmq(3) > 0.0_wp) Then
       Write(message,'(2(a,f5.2),4(a,i3))') &
@@ -118,7 +118,7 @@ If (nstep == nsteql) Then
     End If
   End If
 
-  If (nstep > 0 .or. cons%megcon > 0 .or. megpmf > 0) Then
+  If (nstep > 0 .or. cons%megcon > 0 .or. pmf%megpmf > 0) Then
     Call info(repeat('-',130),.true.)
   End If
 End If

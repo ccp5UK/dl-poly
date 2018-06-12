@@ -57,6 +57,7 @@ Module ffield
   Use errors_warnings, Only : error,warning,info
   Use thermostat, Only : thermostat_type,ENS_NVE
   Use constraints, Only : constraints_type
+  Use pmf, Only : pmf_type
 
   Implicit None
 
@@ -73,9 +74,9 @@ Subroutine read_field                      &
            lecx,lbook,lexcl,               &
            rcter,rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
-           megshl,megpmf,megrgd,    &
+           megshl,megrgd,    &
            megtet,    &
-           cons,  &
+           pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -109,9 +110,10 @@ Subroutine read_field                      &
   Real( Kind = wp ), Intent(   Out ) :: rcter,rcfbp
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
-                                        megshl,megpmf,megrgd,        &
+                                        megshl,megrgd,        &
                                         megtet
   Type( constraints_type ), Intent( InOut ) :: cons
+  Type( pmf_type ), Intent( InOut ) :: pmf
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
@@ -235,7 +237,7 @@ Subroutine read_field                      &
   megshl = 0
 
   cons%megcon = 0
-  megpmf = 0
+  pmf%megpmf = 0
 
   megrgd = 0
 
@@ -776,18 +778,18 @@ Subroutine read_field                      &
 
                  If (lpmf) Call error(484)
                  lpmf=.true.               ! Only one PMF type per
-                 numpmf(itmols)=1          ! MD system is allowed
+                 pmf%numpmf(itmols)=1          ! MD system is allowed
 
 ! read PMF bondlength
 
                  Call get_word(record,word)
-                 prmpmf=word_2_real(word)
+                 pmf%prmpmf=word_2_real(word)
 
                  Call info('PMF constraint details',.true.)
-                 Write(message,'(a,5x,f15.6)') 'bondlength:', prmpmf
+                 Write(message,'(a,5x,f15.6)') 'bondlength:', pmf%prmpmf
                  Call info(message,.true.)
 
-                 If (prmpmf > width/2.0_wp) Call error(480)
+                 If (pmf%prmpmf > width/2.0_wp) Call error(480)
 
                  Do ipmf=1,2
                     word(1:1)='#'
@@ -800,19 +802,19 @@ Subroutine read_field                      &
 
 ! read PMF indices and weights
 
-                    pmffrz(ipmf) = 0
+                    pmf%pmffrz(ipmf) = 0
                     pmf_tmp(ipmf) = 0.0_wp
 
 ! test for zero length units
 
-                    If (mxtpmf(ipmf) == 0) Then
+                    If (pmf%mxtpmf(ipmf) == 0) Then
                        Call strip_blanks(record)
                        Write(message,'(2a)') word(1:Len_Trim(word)+1),record
                        Call info(message,.true.)
                        Call error(500)
                     End If
 
-                    Do jpmf=1,mxtpmf(ipmf)
+                    Do jpmf=1,pmf%mxtpmf(ipmf)
                        word(1:1)='#'
                        Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                           Call get_line(safe,nfield,record,comm)
@@ -821,16 +823,16 @@ Subroutine read_field                      &
                        End Do
 
                        iatm1=Nint(word_2_real(word))
-                       lstpmf(jpmf,ipmf)=iatm1
+                       pmf%lstpmf(jpmf,ipmf)=iatm1
                        isite1 = nsite - numsit(itmols) + iatm1
 
 ! test for frozen units
 
-                       pmffrz(ipmf)=pmffrz(ipmf)+frzsit(isite1)
+                       pmf%pmffrz(ipmf)=pmf%pmffrz(ipmf)+frzsit(isite1)
 
                        Call get_word(record,word)
                        weight=word_2_real(word)
-                       pmfwgt(jpmf,ipmf)=weight
+                       pmf%pmfwgt(jpmf,ipmf)=weight
 
 ! test for weightless units
 
@@ -842,21 +844,21 @@ Subroutine read_field                      &
 ! if a PMF unit is massless supply weights from atoms' masses
 
                  Do ipmf=1,2
-                    Do jpmf=1,mxtpmf(ipmf)
-                       isite1 = nsite - numsit(itmols) + lstpmf(jpmf,ipmf)
+                    Do jpmf=1,pmf%mxtpmf(ipmf)
+                       isite1 = nsite - numsit(itmols) + pmf%lstpmf(jpmf,ipmf)
 
-                       pmfwg1(jpmf,ipmf)=wgtsit(isite1)
-                       If (pmf_tmp(ipmf) < 1.0e-6_wp) pmfwgt(jpmf,ipmf)=wgtsit(isite1)
+                       pmf%pmfwg1(jpmf,ipmf)=wgtsit(isite1)
+                       If (pmf_tmp(ipmf) < 1.0e-6_wp) pmf%pmfwgt(jpmf,ipmf)=wgtsit(isite1)
                     End Do
 
 ! if a PMF unit is still weightless set all members' masses to 1
 
                     If (pmf_tmp(ipmf) < 1.0e-6_wp) Then
-                       pmf_tmp(ipmf)=Sum(pmfwgt(1:mxtpmf(ipmf),ipmf))
+                       pmf_tmp(ipmf)=Sum(pmf%pmfwgt(1:pmf%mxtpmf(ipmf),ipmf))
 
                        If (pmf_tmp(ipmf) < 1.0e-6_wp) Then
-                          pmfwgt(:,ipmf)=1.0_wp
-                          pmfwg1(:,ipmf)=1.0_wp
+                          pmf%pmfwgt(:,ipmf)=1.0_wp
+                          pmf%pmfwg1(:,ipmf)=1.0_wp
                           Call warning(230,Real(ipmf,wp),0.0_wp,0.0_wp)
                        End If
                     End If
@@ -870,14 +872,14 @@ Subroutine read_field                      &
                    Call info(message,.true.)
 
                     Do ipmf=1,2
-                       Do jpmf=1,mxtpmf(ipmf)
-                          isite1 = nsite - numsit(itmols) + lstpmf(jpmf,ipmf)
+                       Do jpmf=1,pmf%mxtpmf(ipmf)
+                          isite1 = nsite - numsit(itmols) + pmf%lstpmf(jpmf,ipmf)
                           If (frzsit(isite1) /= 0) Then
                             Write(message,'(2x,2i10,f15.6,1x,a8)') &
-                              ipmf,lstpmf(jpmf,ipmf),pmfwgt(jpmf,ipmf),'*frozen*'
+                              ipmf,pmf%lstpmf(jpmf,ipmf),pmf%pmfwgt(jpmf,ipmf),'*frozen*'
                           Else
                             Write(message,'(2x,2i10,f15.6)') &
-                              ipmf,lstpmf(jpmf,ipmf),pmfwgt(jpmf,ipmf)
+                              ipmf,pmf%lstpmf(jpmf,ipmf),pmf%pmfwgt(jpmf,ipmf)
                           End If
                           Call info(message,.true.)
                        End Do
@@ -887,33 +889,34 @@ Subroutine read_field                      &
 
 ! catch unidentified entry
 
-                 If ( (Any(lstpmf(1:mxtpmf(1),1) < 1) .or. Any(lstpmf(1:mxtpmf(1),1) > numsit(itmols))) .or. &
-                      (Any(lstpmf(1:mxtpmf(2),2) < 1) .or. Any(lstpmf(1:mxtpmf(2),2) > numsit(itmols))) ) Call error(27)
+                 If ( (Any(pmf%lstpmf(1:pmf%mxtpmf(1),1) < 1) .or. Any(pmf%lstpmf(1:pmf%mxtpmf(1),1) > numsit(itmols))) .or. &
+                      (Any(pmf%lstpmf(1:pmf%mxtpmf(2),2) < 1) .or. Any(pmf%lstpmf(1:pmf%mxtpmf(2),2) > numsit(itmols))) ) &
+                         Call error(27)
 
 ! PMF reciprocal total unit masses
 
                  Do ipmf=1,2
-                    pmfwgt(0,ipmf)=1.0_wp/Sum(pmfwgt(1:mxtpmf(ipmf),ipmf))
-                    pmfwg1(0,ipmf)=1.0_wp/Sum(pmfwg1(1:mxtpmf(ipmf),ipmf))
+                    pmf%pmfwgt(0,ipmf)=1.0_wp/Sum(pmf%pmfwgt(1:pmf%mxtpmf(ipmf),ipmf))
+                    pmf%pmfwg1(0,ipmf)=1.0_wp/Sum(pmf%pmfwg1(1:pmf%mxtpmf(ipmf),ipmf))
                  End Do
 
 ! abort if there are frozen atoms on both PMF units
 
-                 If (pmffrz(1)*pmffrz(2) > 0) Then
+                 If (pmf%pmffrz(1)*pmf%pmffrz(2) > 0) Then
                     Call error(486)
                  Else
-                    If (pmffrz(1) == mxtpmf(1) .or. pmffrz(2) == mxtpmf(2)) Then
+                    If (pmf%pmffrz(1) == pmf%mxtpmf(1) .or. pmf%pmffrz(2) == pmf%mxtpmf(2)) Then
                        charge=1.0_wp
                     Else
                        charge=0.5_wp
                     End If
 
                     Do ipmf=1,2
-                       ntmp=mxtpmf(ipmf)-pmffrz(ipmf)
+                       ntmp=pmf%mxtpmf(ipmf)-pmf%pmffrz(ipmf)
                        If (ntmp > 0) Then
                           tmp=charge/Real(ntmp,wp)
-                          Do jpmf=1,mxtpmf(ipmf)
-                             isite1 = nsite - numsit(itmols) + lstpmf(jpmf,ipmf)
+                          Do jpmf=1,pmf%mxtpmf(ipmf)
+                             isite1 = nsite - numsit(itmols) + pmf%lstpmf(jpmf,ipmf)
                              If (frzsit(isite1) == 0) Then
                                 dofsit(isite1)=dofsit(isite1)-tmp
 
@@ -930,14 +933,14 @@ Subroutine read_field                      &
 ! Check for mistyped PMF unit's entries and joined PMF units
 
                  Do ipmf=1,2
-                    Do jpmf=1,mxtpmf(ipmf)
-                       Do kpmf=jpmf+1,mxtpmf(ipmf)
-                          If (lstpmf(kpmf,ipmf) == lstpmf(jpmf,ipmf)) Call error(501)
+                    Do jpmf=1,pmf%mxtpmf(ipmf)
+                       Do kpmf=jpmf+1,pmf%mxtpmf(ipmf)
+                          If (pmf%lstpmf(kpmf,ipmf) == pmf%lstpmf(jpmf,ipmf)) Call error(501)
                        End Do
                     End Do
                  End Do
-                 Do jpmf=1,mxtpmf(2)
-                    If (Any(lstpmf(1:mxtpmf(1),1) == lstpmf(jpmf,2))) Call error(502)
+                 Do jpmf=1,pmf%mxtpmf(2)
+                    If (Any(pmf%lstpmf(1:pmf%mxtpmf(1),1) == pmf%lstpmf(jpmf,2))) Call error(502)
                  End Do
 
 ! read RBs: number, size, indices
@@ -2142,7 +2145,7 @@ Subroutine read_field                      &
                  megshl=megshl+nummols(itmols)*numshl(itmols)
 
                  cons%megcon=cons%megcon+nummols(itmols)*(cons%numcon(itmols)-frzcon)
-                 megpmf=megpmf+nummols(itmols)*numpmf(itmols)
+                 pmf%megpmf=pmf%megpmf+nummols(itmols)*pmf%numpmf(itmols)
 
                  megrgd=megrgd+nummols(itmols)*(numrgd(itmols)-frzrgd)
 
@@ -2987,8 +2990,8 @@ Subroutine read_field                      &
                  End Do
                  If (ishls /= numshl(itmols)) nconst=nconst-cons%numcon(itmols)
 
-                 Do i=1,numpmf(itmols)
-                    If (Any(lstpmf(1:mxtpmf(1),1) == ja) .or. Any(lstpmf(1:mxtpmf(2),2) == ja)) Then
+                 Do i=1,pmf%numpmf(itmols)
+                    If (Any(pmf%lstpmf(1:pmf%mxtpmf(1),1) == ja) .or. Any(pmf%lstpmf(1:pmf%mxtpmf(2),2) == ja)) Then
                        Call warning(300,Real(ishls,wp),Real(i,wp),Real(itmols,wp))
                        Call error(99)
                     End If
@@ -3120,14 +3123,14 @@ Subroutine read_field                      &
 
 ! test for PMF units on RB units
 
-           If (megpmf > 0) Then
+           If (pmf%megpmf > 0) Then
               nsite =0
               nrigid=0
               Do itmols=1,ntpmls
-                 Do i=1,numpmf(itmols)
+                 Do i=1,pmf%numpmf(itmols)
                     Do ipmf=1,2
-                       Do jpmf=1,mxtpmf(ipmf)
-                          iatm1=lstpmf(jpmf,ipmf)
+                       Do jpmf=1,pmf%mxtpmf(ipmf)
+                          iatm1=pmf%lstpmf(jpmf,ipmf)
                           isite1=nsite+iatm1
 
                           Do irgd=1,numrgd(itmols)
@@ -3140,7 +3143,7 @@ Subroutine read_field                      &
                                 Call error(93)
                              End If
                           End Do
-                          If (i /= numpmf(itmols) .and. ipmf /= 2) nrigid=nrigid-numrgd(itmols)
+                          If (i /= pmf%numpmf(itmols) .and. ipmf /= 2) nrigid=nrigid-numrgd(itmols)
                        End Do
                     End Do
                  End Do
@@ -4750,9 +4753,9 @@ End Subroutine read_field
 
 Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
-           megshl,megpmf,megrgd,  &
+           megshl,megrgd,  &
            megtet,  &
-           cons, &
+           cons,pmf, &
            bond,angle,dihedral,inversion,tether,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4765,9 +4768,10 @@ Subroutine report_topology               &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
-                              megshl,megpmf,megrgd, &
+                              megshl,megrgd, &
                               megtet
   Type( constraints_type ), Intent( In    ) :: cons
+  Type( pmf_type ), Intent( In    ) :: pmf
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( In    ) :: dihedral
@@ -4830,10 +4834,10 @@ Subroutine report_topology               &
         If (frzsit(isite1) == 1) frzshl=frzshl+1
      End Do
 
-     Do lpmf=1,numpmf(itmols) ! numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
+     Do lpmf=1,pmf%numpmf(itmols) ! pmf%numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
         Do ipmf=1,2
-           Do jpmf=1,mxtpmf(ipmf)
-              iatm1=lstpmf(jpmf,ipmf)
+           Do jpmf=1,pmf%mxtpmf(ipmf)
+              iatm1=pmf%lstpmf(jpmf,ipmf)
 
               isite1 = nsite + iatm1
 
@@ -4942,7 +4946,7 @@ Subroutine report_topology               &
   Write(banner(8),fmt2) '||  free particles         | ',atmfre,'  |  F  ',atmfrz,'     ||'
   Write(banner(9),fmt2) '||  core-shell units       | ',megshl,'  |  P  ',mgfrsh,'     ||'
   Write(banner(10),fmt2) '||  constraint bond units  | ',mgcon,'  |  F  ',mgcon-cons%megcon,'     ||'
-  Write(banner(11),fmt3) '||  PMF units              | ',megpmf,'  |  P         ',frzpmf,'     ||'
+  Write(banner(11),fmt3) '||  PMF units              | ',pmf%megpmf,'  |  P         ',frzpmf,'     ||'
   Write(banner(12),fmt2) '||  rigid body units       | ',mgrgd,'  |  F  ',mgrgd-megrgd,'     ||'
   Write(banner(13),fmt2) '||  tethered atom units    | ',megtet,'  |  F  ',mgfrtt,'     ||'
   Write(banner(14),fmt2) '||  chemical bond units    | ',bond%total,'  |  F  ',mgfrbn,'     ||'
@@ -4958,7 +4962,7 @@ Subroutine scan_field                                &
            mxsite,mxatyp,megatm,mxtmls,mxexcl,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
            mtcons,              &
-           mxtpmf,mxpmf,mxfpmf,l_usr,                &
+           l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth,             &
            mtbond, &
@@ -4967,7 +4971,8 @@ Subroutine scan_field                                &
            mtinv,         &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxfbp,rcfbp,lext,cons,met,bond,angle,dihedral,inversion,tether,threebody,comm)
+           mxter,rcter,mxfbp,rcfbp,lext,cons,pmf,met,&
+           bond,angle,dihedral,inversion,tether,threebody,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4984,6 +4989,7 @@ Subroutine scan_field                                &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
@@ -5012,7 +5018,7 @@ Subroutine scan_field                                &
                        mxompl,mximpl,mxsite,mxatyp,megatm,i,j,k,mxexcl,        &
                        numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
                        numcon,mtcons,icon,                &
-                       mxtpmf(1:2),mxpmf,ipmf,jpmf,mxfpmf,                     &
+                       ipmf,jpmf,                     &
                        numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
                        inumteth,mtteth,iteth,  &
                        numbonds,mtbond,ibonds, &
@@ -5051,9 +5057,9 @@ Subroutine scan_field                                &
   cons%mxtcon=0
   cons%mxfcon=0
 
-  mxpmf =0
-  mxtpmf=0
-  mxfpmf=0
+  pmf%mxpmf =0
+  pmf%mxtpmf=0
+  pmf%mxfpmf=0
 
   numrgd=0
   mtrgd =0
@@ -5281,7 +5287,7 @@ Subroutine scan_field                                &
 
               Else If (word(1:3) == 'pmf') Then
 
-                 mxpmf=mxpmf+nummols
+                 pmf%mxpmf=pmf%mxpmf+nummols
 
                  Do ipmf=1,2
                     word(1:1)='#'
@@ -5302,9 +5308,9 @@ Subroutine scan_field                                &
                     Else
                        Go To 30
                     End If
-                    mxtpmf(ipmf)=Nint(word_2_real(word))
+                    pmf%mxtpmf(ipmf)=Nint(word_2_real(word))
 
-                    Do jpmf=1,mxtpmf(ipmf)
+                    Do jpmf=1,pmf%mxtpmf(ipmf)
                        word(1:1)='#'
                        Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                           Call get_line(safe,nfield,record,comm)
@@ -5867,8 +5873,8 @@ Subroutine scan_field                                &
   If (cons%mxcons > 0) cons%mxfcon=mxb+1
   mxf(2)=cons%mxfcon
 
-  If (mxpmf  > 0) mxfpmf=1+1 ! PMFs are global
-  mxf(3)=mxfpmf
+  If (pmf%mxpmf  > 0) pmf%mxfpmf=1+1 ! PMFs are global
+  mxf(3)=pmf%mxfpmf
 
   If (mxrgd  > 0) mxfrgd=1+1 ! One RB per particle
   mxf(4)=mxlrgd

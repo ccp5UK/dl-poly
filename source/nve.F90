@@ -1,7 +1,7 @@
 Module nve
   Use kinds,         Only : wp
   Use comms,         Only : comms_type,gmax
-  Use setup,         Only : mxpmf,mxtpmf,mxatms,zero_plus
+  Use setup,         Only : mxatms,zero_plus
   Use configuration, Only : imcon,cell,natms,nfree,nlast, &
     lstfre,weight,                &
     xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -15,7 +15,7 @@ Module nve
     rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
     rgdx,rgdy,rgdz,rgdrix,rgdriy,rgdriz,rgdwgt, &
     indrgd,rgdind,getrotmat,no_squish,rigid_bodies_stress
-  Use pmf,           Only : pmf_tags
+  Use pmf,           Only : pmf_tags,pmf_type
   Use numerics, Only : images
   Use errors_warnings, Only : error,info
   Use statistics, Only : stats_type
@@ -31,7 +31,7 @@ Contains
   Subroutine nve_0_vv                           &
       (isw,lvar,mndis,mxdis,mxstp,tstep, &
       strkin,engke,                      &
-      megpmf,strpmf,virpmf,cons,stat,tmr,comm)
+      cons,pmf,stat,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -51,10 +51,9 @@ Contains
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
-    Integer,            Intent( In    ) :: megpmf
-    Real( Kind = wp ),  Intent( InOut ) :: strpmf(1:9),virpmf
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
+Type( pmf_type ), Intent( InOut ) :: pmf
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -70,24 +69,21 @@ Contains
     Logical,           Allocatable :: lstitr(:)
     Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
 
-
-    Integer,           Allocatable :: indpmf(:,:,:)
-    Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
-
     Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
     Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
     Real( Kind = wp ), Allocatable :: fxt(:),fyt(:),fzt(:)
     Character( Len = 256 ) :: message
 
     fail=0
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
       Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
       Call cons%allocate_work(mxatms)
-      Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
-    End If
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail(7))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
+      Call pmf%allocate_work()
+      Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail( 6))
+    End IF
+    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 7))
+    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 8))
+    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail( 9))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'nve_0 allocation failure'
       Call error(0,message)
@@ -99,11 +95,11 @@ Contains
 
       ! set number of constraint+pmf shake iterations
 
-      If (cons%megcon > 0 .or.  megpmf > 0) mxkit=1
-      If (cons%megcon > 0 .and. megpmf > 0) mxkit=cons%max_iter_shake
+      If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
+      If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
     End If
 
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
       lstitr(1:natms)=.false. ! initialise lstitr
 
       ! construct current bond vectors and listot array (shared
@@ -116,8 +112,8 @@ Contains
       ! construct current PMF constraint vectors and shared description
       ! for iterative PMF constraint algorithms
 
-      If (megpmf > 0) Then
-        Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+      If (pmf%megpmf > 0) Then
+        Call pmf_tags(lstitr,pmf,comm)
       End If
     End If
 
@@ -159,9 +155,9 @@ Contains
 
   ! PMF virial and stress tensor
 
-       If (megpmf > 0) Then
-          virpmf=0.0_wp
-          strpmf=0.0_wp
+       If (pmf%megpmf > 0) Then
+          stat%virpmf=0.0_wp
+          stat%strpmf=0.0_wp
        End If
 
         ! update velocity and position
@@ -180,10 +176,10 @@ Contains
        End Do
 
       ! SHAKE procedures
-      If (cons%megcon > 0 .or. megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,pxx,pyy,pzz,&
-          lstitr,indpmf,&
-          megpmf,virpmf,strpmf,stat,cons,tmr,comm)
+      If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
+        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+          lstitr,&
+          stat,pmf,cons,tmr,comm)
       End If
 
       ! check timestep for variable timestep
@@ -260,9 +256,9 @@ Contains
       ! RATTLE procedures
       ! apply velocity corrections to bond and PMF constraints
 
-      If (cons%megcon > 0 .or. megpmf > 0) Then
-        Call apply_rattle(tstep,kit,megpmf,pxx,pyy,pzz,&
-                          indpmf,cons,stat,tmr,comm)
+      If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
+        Call apply_rattle(tstep,kit,&
+                          pmf,cons,stat,tmr,comm)
       End If
 
       ! update kinetic energy and stress
@@ -272,14 +268,10 @@ Contains
 
     End If
 
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
       Deallocate (lstitr,           Stat=fail(1))
       Call cons%deallocate_work()
-      If (megpmf > 0) Then
-        Deallocate (indpmf,        Stat=fail(4))
-        Deallocate (pxx,pyy,pzz,   Stat=fail(5))
-      End If
-      Deallocate (oxt,oyt,ozt,      Stat=fail(6))
+      Call pmf%deallocate_work()
     End If
     Deallocate (xxt,yyt,zzt,         Stat=fail(7))
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
@@ -294,8 +286,7 @@ Contains
   Subroutine nve_1_vv                           &
       (isw,lvar,mndis,mxdis,mxstp,tstep, &
       strkin,strknf,strknt,engke,engrot, &
-      megpmf,strpmf,virpmf,              &
-      strcom,vircom,cons,stat,tmr,comm)
+      strcom,vircom,cons,pmf,stat,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -317,12 +308,11 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
       strknf(1:9),strknt(1:9),engrot
 
-    Integer,            Intent( In    ) :: megpmf
-    Real( Kind = wp ),  Intent( InOut ) :: strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
+Type( pmf_type ), Intent( InOut ) :: pmf
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -345,8 +335,6 @@ Contains
     Logical,           Allocatable :: lstitr(:)
     Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
 
-    Integer,           Allocatable :: indpmf(:,:,:)
-    Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
 
     Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
     Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
@@ -360,14 +348,10 @@ Contains
     Character( Len = 256 ) :: message
 
     fail=0
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
       Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
       Call cons%allocate_work(mxatms)
-      If (megpmf > 0) Then
-        Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail( 4))
-        Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),         Stat=fail( 5))
-      End If
-      Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail( 6))
+Call pmf%allocate_work()
     End If
     Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), &
       Stat=fail( 7))
@@ -389,8 +373,8 @@ Contains
 
       ! set number of constraint+pmf shake iterations
 
-      If (cons%megcon > 0 .or.  megpmf > 0) mxkit=1
-      If (cons%megcon > 0 .and. megpmf > 0) mxkit=cons%max_iter_shake
+      If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
+      If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
 
       ! unsafe positioning due to possibly locally shared RBs
 
@@ -404,7 +388,7 @@ Contains
       matms=natms
     End If
 
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
       lstitr(1:natms)=.false. ! initialise lstitr
 
       ! construct current bond vectors and listot array (shared
@@ -417,8 +401,8 @@ Contains
       ! construct current PMF constraint vectors and shared description
       ! for iterative PMF constraint algorithms
 
-      If (megpmf > 0) Then
-        Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+      If (pmf%megpmf > 0) Then
+        Call pmf_tags(lstitr,pmf,comm)
       End If
     End If
 
@@ -507,9 +491,9 @@ Contains
 
   ! PMF virial and stress tensor
 
-       If (megpmf > 0) Then
-          virpmf=0.0_wp
-          strpmf=0.0_wp
+       If (pmf%megpmf > 0) Then
+          stat%virpmf=0.0_wp
+          stat%strpmf=0.0_wp
        End If
 
      ! update velocity and position of FPs
@@ -530,10 +514,10 @@ Contains
       End Do
 
       ! SHAKE procedures
-      If (cons%megcon > 0 .or. megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,pxx,pyy,pzz,&
-          lstitr,indpmf,&
-          megpmf,virpmf,strpmf,stat,cons,tmr,comm)
+      If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
+        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+          lstitr,&
+          stat,pmf,cons,tmr,comm)
       End If
 
       ! update velocity and position of RBs
@@ -784,9 +768,9 @@ Contains
       ! RATTLE procedures
       ! apply velocity corrections to bond and PMF constraints
 
-      If (cons%megcon > 0 .or. megpmf > 0) Then
-        Call apply_rattle(tstep,kit,megpmf,pxx,pyy,pzz,&
-                          indpmf,cons,stat,tmr,comm)
+      If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
+        Call apply_rattle(tstep,kit,&
+                          pmf,cons,stat,tmr,comm)
 
       End If
 
@@ -940,14 +924,10 @@ Contains
 
     End If
 
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
       Deallocate (lstitr,            Stat=fail( 1))
       Call cons%deallocate_work()
-      If (megpmf > 0) Then
-        Deallocate (indpmf,         Stat=fail( 4))
-        Deallocate (pxx,pyy,pzz,    Stat=fail( 5))
-      End If
-      Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
+Call pmf%deallocate_work()
     End If
     Deallocate (ggx,ggy,ggz,          Stat=fail( 7))
     Deallocate (xxt,yyt,zzt,          Stat=fail( 8))

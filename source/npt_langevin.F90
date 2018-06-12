@@ -16,7 +16,7 @@ Module npt_langevin
   Use errors_warnings, Only : error,info
   Use numerics,        Only : box_mueller_saru1
   Use constraints,     Only : constraints_type,constraints_tags, apply_shake, apply_rattle
-  Use pmf,             Only : pmf_tags
+  Use pmf,             Only : pmf_tags,pmf_type
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h0_scl,npt_h1_scl
   Use langevin,        Only : langevin_forces
   Use thermostat, Only : thermostat_type
@@ -37,8 +37,7 @@ Contains
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
-             megpmf,strpmf,virpmf,              &
-             elrc,virlrc,cons,stat,thermo,tmr,comm)
+             elrc,virlrc,cons,pmf,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -71,12 +70,11 @@ Contains
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
-    Integer,            Intent( In    ) :: megpmf
-    Real( Kind = wp ),  Intent( InOut ) :: strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
+Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
@@ -97,8 +95,6 @@ Contains
     Logical,           Allocatable :: lstitr(:)
     Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
 
-    Integer,           Allocatable :: indpmf(:,:,:)
-    Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
 
     Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
     Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
@@ -108,13 +104,10 @@ Contains
     Character ( Len = 256 )        :: message
 
     fail=0
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
        Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
        Call cons%allocate_work(mxatms)
-       If (megpmf > 0) Then
-          Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail(4))
-          Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),         Stat=fail(5))
-       End If
+Call pmf%allocate_work()
        Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
     Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail(7))
@@ -161,11 +154,11 @@ Contains
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
        mxiter=1
-       If (cons%megcon > 0 .or.  megpmf > 0) Then
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) Then
           mxkit=1
           mxiter=mxiter+3
        End If
-       If (cons%megcon > 0 .and. megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
 
   ! Langevin forces for particles are now generated in w_calculate_forces
   ! Generate Langevin pseudo-tensor force for barostat piston
@@ -178,7 +171,7 @@ Contains
        fpl(9)=tmp
     End If
 
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
        lstitr(1:natms)=.false. ! initialise lstitr
 
   ! construct current bond vectors and listot array (shared
@@ -189,7 +182,7 @@ Contains
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+       If (pmf%megpmf > 0) Call pmf_tags(lstitr,pmf,comm)
     End If
 
   ! first pass of velocity verlet algorithm
@@ -229,9 +222,9 @@ Contains
 
   ! PMF virial and stress tensor
 
-       If (megpmf > 0) Then
-          virpmf=0.0_wp
-          strpmf=0.0_wp
+       If (pmf%megpmf > 0) Then
+          stat%virpmf=0.0_wp
+          stat%strpmf=0.0_wp
        End If
 
        Do iter=1,mxiter
@@ -248,8 +241,8 @@ Contains
 
   ! constraint+pmf virial and stress
 
-          vir=stat%vircon+virpmf
-          str=stat%strcon+strpmf
+          vir=stat%vircon+stat%virpmf
+          str=stat%strcon+stat%strpmf
 
   ! integrate and apply npt_h0_scl barostat - 1/2 step
   ! augment vir to include the random force on the barostat
@@ -302,15 +295,15 @@ Contains
 
   ! SHAKE procedures
 
-          If (cons%megcon > 0 .or. megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,pxx,pyy,pzz,&
-          lstitr,indpmf,&
-          megpmf,virpmf,strpmf,stat,cons,tmr,comm)
+          If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
+           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+          lstitr,&
+          stat,pmf,cons,tmr,comm)
           End If
 
   ! restore original integration parameters as well as
   ! velocities if iter < mxiter
-  ! in the next iteration stat%vircon and virpmf are freshly new
+  ! in the next iteration stat%vircon and stat%virpmf are freshly new
 
           If (iter < mxiter) Then
              volm=vzero
@@ -455,9 +448,9 @@ Contains
   ! RATTLE procedures
   ! apply velocity corrections to bond and PMF constraints
 
-       If (cons%megcon > 0 .or. megpmf > 0) Then
-          Call apply_rattle(tstep,kit,megpmf,pxx,pyy,pzz,&
-                          indpmf,cons,stat,tmr,comm)
+       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
+          Call apply_rattle(tstep,kit,&
+                          pmf,cons,stat,tmr,comm)
        End If
 
   ! update kinetic energy
@@ -476,8 +469,8 @@ Contains
 
   ! constraint+pmf virial and stress
 
-       vir=stat%vircon+virpmf
-       str=stat%strcon+strpmf
+       vir=stat%vircon+stat%virpmf
+       str=stat%strcon+stat%strpmf
 
   ! integrate and apply npt_h0_scl barostat - 1/2 step
   ! augment vir to include the random force on the barostat
@@ -529,13 +522,10 @@ Contains
     thermo%eta(5)=thermo%chi_p
     thermo%eta(9)=thermo%chi_p
 
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
        Deallocate (lstitr,           Stat=fail(1))
        Call cons%deallocate_work()
-       If (megpmf > 0) Then
-          Deallocate (indpmf,        Stat=fail(4))
-          Deallocate (pxx,pyy,pzz,   Stat=fail(5))
-       End If
+Call pmf%deallocate_work()
        Deallocate (oxt,oyt,ozt,      Stat=fail(6))
     End If
     Deallocate (xxt,yyt,zzt,         Stat=fail(7))
@@ -553,9 +543,8 @@ Contains
              degfre,degrot,virtot,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
-             megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,cons,stat,thermo,tmr,comm)
+             elrc,virlrc,cons,pmf,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -590,14 +579,13 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
 
-    Integer,            Intent( In    ) :: megpmf
-    Real( Kind = wp ),  Intent( InOut ) :: strpmf(1:9),virpmf
 
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut) :: cons
+Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
@@ -629,8 +617,6 @@ Contains
     Logical,           Allocatable :: lstitr(:)
     Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
 
-    Integer,           Allocatable :: indpmf(:,:,:)
-    Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
 
     Real( Kind = wp ), Allocatable :: xxt(:),yyt(:),zzt(:)
     Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
@@ -647,13 +633,10 @@ Contains
  
 
     fail=0
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
        Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
        Call cons%allocate_work(mxatms)
-       If (megpmf > 0) Then
-          Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail( 4))
-          Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),         Stat=fail( 5))
-       End If
+Call pmf%allocate_work()
        Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail( 6))
     End If
     Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), &
@@ -706,11 +689,11 @@ Contains
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
        mxiter=1
-       If (cons%megcon > 0 .or.  megpmf > 0) Then
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) Then
           mxkit=1
           mxiter=mxiter+3
        End If
-       If (cons%megcon > 0 .and. megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
 
   ! unsafe positioning due to possibly locally shared RBs
 
@@ -732,7 +715,7 @@ Contains
     matms=nlast
     If (comm%mxnode == 1) matms=natms
 
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
        lstitr(1:natms)=.false. ! initialise lstitr
 
   ! construct current bond vectors and listot array (shared
@@ -743,7 +726,7 @@ Contains
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
-       If (megpmf > 0) Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
+       If (pmf%megpmf > 0) Call pmf_tags(lstitr,pmf,comm)
     End If
 
   ! Get the RB particles vectors wrt the RB's COM
@@ -839,9 +822,9 @@ Contains
 
   ! PMF virial and stress tensor
 
-       If (megpmf > 0) Then
-          virpmf=0.0_wp
-          strpmf=0.0_wp
+       If (pmf%megpmf > 0) Then
+          stat%virpmf=0.0_wp
+          stat%strpmf=0.0_wp
        End If
 
        Do iter=1,mxiter
@@ -871,8 +854,8 @@ Contains
 
   ! constraint+pmf virial and stress
 
-          vir=stat%vircon+virpmf
-          str=stat%strcon+strpmf
+          vir=stat%vircon+stat%virpmf
+          str=stat%strcon+stat%strpmf
 
   ! integrate and apply npt_h1_scl barostat - 1/2 step
   ! augment vir to include the random force on the barostat
@@ -942,15 +925,15 @@ Contains
 
   ! SHAKE procedures
 
-          If (cons%megcon > 0 .or. megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,pxx,pyy,pzz,&
-          lstitr,indpmf,&
-          megpmf,virpmf,strpmf,stat,cons,tmr,comm)
+          If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
+           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+          lstitr,&
+          stat,pmf,cons,tmr,comm)
           End If
 
   ! restore original integration parameters as well as
   ! velocities if iter < mxiter
-  ! in the next iteration stat%vircon and virpmf are freshly new
+  ! in the next iteration stat%vircon and stat%virpmf are freshly new
 
           If (iter < mxiter) Then
              volm=vzero
@@ -1353,9 +1336,9 @@ Contains
   ! RATTLE procedures
   ! apply velocity corrections to bond and PMF constraints
 
-       If (cons%megcon > 0 .or. megpmf > 0) Then
-          Call apply_rattle(tstep,kit,megpmf,pxx,pyy,pzz,&
-                          indpmf,cons,stat,tmr,comm)
+       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
+          Call apply_rattle(tstep,kit,&
+                          pmf,cons,stat,tmr,comm)
        End If
 
   ! Get RB COM stress and virial
@@ -1557,8 +1540,8 @@ Contains
 
   ! constraint+pmf virial and stress
 
-       vir=stat%vircon+virpmf
-       str=stat%strcon+strpmf
+       vir=stat%vircon+stat%virpmf
+       str=stat%strcon+stat%strpmf
 
   ! integrate and apply npt_h1_scl barostat - 1/2 step
   ! augment vir to include the random force on the barostat
@@ -1649,13 +1632,10 @@ Contains
     thermo%eta(5)=thermo%chi_p
     thermo%eta(9)=thermo%chi_p
 
-    If (cons%megcon > 0 .or. megpmf > 0) Then
+    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
        Deallocate (lstitr,            Stat=fail( 1))
        Call cons%deallocate_work()
-       If (megpmf > 0) Then
-          Deallocate (indpmf,         Stat=fail( 4))
-          Deallocate (pxx,pyy,pzz,    Stat=fail( 5))
-       End If
+Call pmf%deallocate_work()
        Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     End If
     Deallocate (ggx,ggy,ggz,          Stat=fail( 7))
