@@ -136,8 +136,6 @@ Contains
 ! Constraints and PMFs arrays
 
   Logical,           Allocatable :: lstitr(:)
-  Integer,           Allocatable :: lstopt(:,:),listot(:)
-  Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
   Integer,           Allocatable :: indpmf(:,:,:)
   Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
   Real( Kind = wp ), Allocatable :: txx(:),tyy(:),tzz(:)
@@ -148,10 +146,7 @@ Contains
   fail=0
   If (cons%megcon > 0 .or. megpmf > 0) Then
      Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
-     If (cons%megcon > 0) Then
-        Allocate (lstopt(0:2,1:cons%mxcons),listot(1:mxatms),          Stat=fail(2))
-        Allocate (dxx(1:cons%mxcons),dyy(1:cons%mxcons),dzz(1:cons%mxcons),      Stat=fail(3))
-     End If
+     call cons%allocate_work(mxatms)
      If (megpmf > 0) Then
         Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail(4))
         Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),         Stat=fail(5))
@@ -287,8 +282,8 @@ Contains
      lstitr(1:natms)=.false. ! initialise lstitr
 
      If (cons%megcon > 0) Then
-        Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
-        Call constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,stat,cons,comm)
+        Call constraints_tags(lstitr,cons,comm)
+        Call constraints_pseudo_bonds(gxx,gyy,gzz,stat,cons,comm)
         eng=eng+stat%engcon
      End If
 
@@ -590,10 +585,7 @@ Contains
 
   If (cons%megcon > 0 .or. megpmf > 0) Then
      Deallocate (lstitr,           Stat=fail(1))
-     If (cons%megcon > 0) Then
-        Deallocate (lstopt,listot, Stat=fail(2))
-        Deallocate (dxx,dyy,dzz,   Stat=fail(3))
-     End If
+     call cons%deallocate_work()
      If (megpmf > 0) Then
         Deallocate (indpmf,        Stat=fail(4))
         Deallocate (pxx,pyy,pzz,   Stat=fail(5))

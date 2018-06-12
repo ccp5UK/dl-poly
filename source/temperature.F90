@@ -525,7 +525,11 @@ Contains
   ! quench constraints & PMFs
 
        If (no_min_0) Then
-          If (cons%megcon > 0) Call constraints_quench(cons,stat,comm)
+          If (cons%megcon > 0) Then 
+            Call cons%allocate_work(mxatms)
+            Call constraints_quench(cons,stat,comm)
+            Call cons%deallocate_work()
+          End If  
           If (megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,comm)
        End If
 

@@ -15,7 +15,7 @@ Module constraints
 
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
     imcon,cell,xxx,yyy,zzz,fxx,fyy,fzz,nfree,lstfre
-  Use pmf, Only : pmf_shake_vv, passpmf
+  Use pmf, Only : pmf_shake_vv, passpmf,pmf_rattle
   Use setup,           Only : mxatms,zero_plus
 
   Use errors_warnings, Only : error,warning,info
@@ -43,11 +43,16 @@ Module constraints
     Integer,           Allocatable, Public :: lstcon(:,:),listcon(:,:),legcon(:,:)
     Integer,           Allocatable, Public :: lishp_con(:),lashp_con(:)
 
+    Integer,           Allocatable :: lstopt(:,:),listot(:)
+    Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
+
     Real( Kind = wp ), Allocatable, Public :: prmcon(:)
   Contains 
     Private
     Procedure, Public :: init => allocate_constraints_arrays
     Procedure, Public :: deallocate_constraints_temps
+    Procedure, Public :: allocate_work
+    Procedure, Public :: deallocate_work
     Final :: deallocate_constraints_arrays
   End Type
 
@@ -60,6 +65,39 @@ Module constraints
   Public :: apply_rattle
 
 Contains
+
+Subroutine allocate_work(T,n)
+ Class(constraints_type) :: T
+   Integer, Intent( In ) :: n
+   Integer :: fail(2)
+  Character(Len=100) :: message
+
+   If (T%megcon > 0) Then
+     Allocate (T%lstopt(0:2,1:T%mxcons),T%listot(1:n),          Stat=fail( 1)) 
+      Allocate (T%dxx(1:T%mxcons),T%dyy(1:T%mxcons),T%dzz(1:T%mxcons),      Stat=fail( 2))
+
+    End If
+    If (Any(fail > 0)) Then
+      Write(message,'(a)') 'failed to allocate work arrays for constraints'
+      Call error(0,message)
+    End If
+  End Subroutine allocate_work
+
+  Subroutine deallocate_work(T)
+  Class(constraints_type) :: T
+
+    Integer :: fail(2)
+    Character(Len=100) :: message
+
+    If (T%megcon > 0) Then
+      Deallocate (T%lstopt,T%listot,  Stat=fail( 1))
+      Deallocate (T%dxx,T%dyy,T%dzz,    Stat=fail( 2))
+    End If
+    If (Any(fail > 0)) Then
+      Write(message,'(a)') 'failed to deallocate work arrays for constraints'
+      Call error(0,message)
+    End If
+  End Subroutine deallocate_work
 
   Subroutine allocate_constraints_arrays(T,mxtmls,mxatdm,mxlshp,mxproc)
   Class(constraints_type) :: T
@@ -118,7 +156,7 @@ Contains
 
   End Subroutine deallocate_constraints_arrays
 
-  Subroutine constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,stat,cons,comm)
+  Subroutine constraints_pseudo_bonds(gxx,gyy,gzz,stat,cons,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -130,8 +168,8 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    )  :: lstopt(0:,1:)
-    Real( Kind = wp ), Intent( In    )  :: dxx(:),dyy(:),dzz(:)
+
+
     Real( Kind = wp ), Intent( InOut )  :: gxx(:),gyy(:),gzz(:)
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut) :: cons
@@ -144,14 +182,14 @@ Contains
 
     stat%engcon=0.0_wp
     Do k=1,cons%ntcons
-      If (lstopt(0,k) == 0) Then
-        i=lstopt(1,k)
-        j=lstopt(2,k)
+      If (cons%lstopt(0,k) == 0) Then
+        i=cons%lstopt(1,k)
+        j=cons%lstopt(2,k)
 
         ! if a pair is frozen and constraint bonded, it is more frozen
         ! than constrained (users!!!)
 
-        r=Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
+        r=Sqrt(cons%dxx(k)**2+cons%dyy(k)**2+cons%dzz(k)**2)
         r0=cons%prmcon(cons%listcon(0,k))
 
         gamma=rigid*(r-r0)
@@ -164,16 +202,16 @@ Contains
           stat%engcon=stat%engcon+ebond
 
           If (lfrzn(i) == 0) Then
-            gxx(i)=gxx(i)-dxx(k)*gamma
-            gyy(i)=gyy(i)-dyy(k)*gamma
-            gzz(i)=gzz(i)-dzz(k)*gamma
+            gxx(i)=gxx(i)-cons%dxx(k)*gamma
+            gyy(i)=gyy(i)-cons%dyy(k)*gamma
+            gzz(i)=gzz(i)-cons%dzz(k)*gamma
           End If
         End If
 
         If (j <= natms .and. lfrzn(j) == 0) Then
-          gxx(j)=gxx(j)+dxx(k)*gamma
-          gyy(j)=gyy(j)+dyy(k)*gamma
-          gzz(j)=gzz(j)+dzz(k)*gamma
+          gxx(j)=gxx(j)+cons%dxx(k)*gamma
+          gyy(j)=gyy(j)+cons%dyy(k)*gamma
+          gzz(j)=gzz(j)+cons%dzz(k)*gamma
         End If
       End If
     End Do
@@ -201,24 +239,21 @@ Contains
     Type( comms_type), Intent( InOut ) :: comm
 
     Logical           :: safe
-    Integer           :: fail(1:4),i,j,k,icyc
+    Integer           :: fail(1:2),i,j,k,icyc
     Real( Kind = wp ) :: dis,amti,amtj,dlj,dli,esig,gamma,gammi,gammj
 
     Logical,           Allocatable :: lstitr(:)
-    Integer,           Allocatable :: lstopt(:,:),listot(:)
-    Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
     Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
     Character( Len = 256 )         :: message
 
     fail=0
     Allocate (lstitr(1:mxatms),                          Stat=fail(1))
-    Allocate (lstopt(0:2,1:cons%mxcons),listot(1:mxatms),     Stat=fail(2))
-    Allocate (dxx(1:cons%mxcons),dyy(1:cons%mxcons),dzz(1:cons%mxcons), Stat=fail(3))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail(4))
+    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail(2))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'constraints_quench allocation failure'
       Call error(0,message)
     End If
+    Call cons%allocate_work(mxatms)
 
     ! gather velocities of shared atoms
 
@@ -230,20 +265,20 @@ Contains
     ! constraint atoms) for iterative (constraints) algorithms
 
     lstitr(1:natms)=.false. ! initialise lstitr
-    Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
+    Call constraints_tags(lstitr,cons,comm)
 
     ! normalise constraint vectors
 
     Do k=1,cons%ntcons
-      If (lstopt(0,k) == 0) Then
-        dis=1.0_wp/Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
-        dxx(k)=dxx(k)*dis
-        dyy(k)=dyy(k)*dis
-        dzz(k)=dzz(k)*dis
+      If (cons%lstopt(0,k) == 0) Then
+        dis=1.0_wp/Sqrt(cons%dxx(k)**2+cons%dyy(k)**2+cons%dzz(k)**2)
+        cons%dxx(k)=cons%dxx(k)*dis
+        cons%dyy(k)=cons%dyy(k)*dis
+        cons%dzz(k)=cons%dzz(k)*dis
       Else ! DEBUG
-        dxx(k)=0.0_wp
-        dyy(k)=0.0_wp
-        dzz(k)=0.0_wp
+        cons%dxx(k)=0.0_wp
+        cons%dyy(k)=0.0_wp
+        cons%dzz(k)=0.0_wp
       End If
     End Do
 
@@ -268,9 +303,9 @@ Contains
 
       esig=0.0_wp
       Do k=1,cons%ntcons
-        If (lstopt(0,k) == 0) Then
-          i=lstopt(1,k)
-          j=lstopt(2,k)
+        If (cons%lstopt(0,k) == 0) Then
+          i=cons%lstopt(1,k)
+          j=cons%lstopt(2,k)
 
           ! if a pair is frozen and constraint bonded, it is more frozen
           ! than constrained (users!!!)
@@ -285,7 +320,7 @@ Contains
 
           ! calculate constraint force parameter - gamma
 
-          gamma = dxx(k)*(vxx(i)-vxx(j)) + dyy(k)*(vyy(i)-vyy(j)) + dzz(k)*(vzz(i)-vzz(j))
+          gamma = cons%dxx(k)*(vxx(i)-vxx(j)) + cons%dyy(k)*(vyy(i)-vyy(j)) + cons%dzz(k)*(vzz(i)-vzz(j))
 
           esig=Max(esig,0.5_wp*Abs(gamma))
 
@@ -295,16 +330,16 @@ Contains
 
           If (i <= natms .and. lfrzn(i) == 0) Then
             gammi =-gamma*amti
-            vxt(i)=vxt(i)+dxx(k)*gammi
-            vyt(i)=vyt(i)+dyy(k)*gammi
-            vzt(i)=vzt(i)+dzz(k)*gammi
+            vxt(i)=vxt(i)+cons%dxx(k)*gammi
+            vyt(i)=vyt(i)+cons%dyy(k)*gammi
+            vzt(i)=vzt(i)+cons%dzz(k)*gammi
           End If
 
           If (j <= natms .and. lfrzn(j) == 0) Then
             gammj = gamma*amtj
-            vxt(j)=vxt(j)+dxx(k)*gammj
-            vyt(j)=vyt(j)+dyy(k)*gammj
-            vzt(j)=vzt(j)+dzz(k)*gammj
+            vxt(j)=vxt(j)+cons%dxx(k)*gammj
+            vyt(j)=vyt(j)+cons%dyy(k)*gammj
+            vzt(j)=vzt(j)+cons%dzz(k)*gammj
           End If
         End If
       End Do
@@ -321,19 +356,19 @@ Contains
         ! update velocities
 
         Do k=1,cons%ntcons
-          If (lstopt(0,k) == 0) Then
-            i=lstopt(1,k)
-            j=lstopt(2,k)
+          If (cons%lstopt(0,k) == 0) Then
+            i=cons%lstopt(1,k)
+            j=cons%lstopt(2,k)
 
             If (i <= natms .and. lfrzn(i) == 0) Then
-              dli = 1.0_wp/Real(listot(i),wp)
+              dli = 1.0_wp/Real(cons%listot(i),wp)
               vxx(i)=vxx(i)+vxt(i)*dli
               vyy(i)=vyy(i)+vyt(i)*dli
               vzz(i)=vzz(i)+vzt(i)*dli
             End If
 
             If (j <= natms .and. lfrzn(j) == 0) Then
-              dlj = 1.0_wp/Real(listot(j),wp)
+              dlj = 1.0_wp/Real(cons%listot(j),wp)
               vxx(j)=vxx(j)+vxt(j)*dlj
               vyy(j)=vyy(j)+vyt(j)*dlj
               vzz(j)=vzz(j)+vzt(j)*dlj
@@ -361,17 +396,15 @@ Contains
     End If
 
     Deallocate (lstitr,        Stat=fail(1))
-    Deallocate (lstopt,listot, Stat=fail(2))
-    Deallocate (dxx,dyy,dzz,   Stat=fail(3))
-    Deallocate (vxt,vyt,vzt,   Stat=fail(4))
+    Deallocate (vxt,vyt,vzt,   Stat=fail(2))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'constraints_quench deallocation failure'
       Call error(0,message)
     End If
-
+    Call cons%deallocate_work()
   End Subroutine constraints_quench
 
-  Subroutine constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
+  Subroutine constraints_tags(lstitr,cons,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -386,9 +419,6 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Logical,            Intent( InOut ) :: lstitr(:)
-    Integer,            Intent(   Out ) :: lstopt(0:,1:)
-    Real( Kind = wp ),  Intent(   Out ) :: dxx(:),dyy(:),dzz(:)
-    Integer,            Intent(   Out ) :: listot(:)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -406,10 +436,10 @@ Contains
       Call error(0,message)
     End If
 
-    ! initialise listot array (shared constraint bond)
+    ! initialise cons%listot array (shared constraint bond)
 
     Do k=1,natms
-      listot(k)=0
+      cons%listot(k)=0
     End Do
 
     Do k=1,cons%ntcons
@@ -417,7 +447,7 @@ Contains
 
       ! Opt out bond from action by default
 
-      lstopt(0,k)=1
+      cons%lstopt(0,k)=1
 
       ! indices of atoms in bond
 
@@ -426,8 +456,8 @@ Contains
 
       ! store indices
 
-      lstopt(1,k)=i
-      lstopt(2,k)=j
+      cons%lstopt(1,k)=i
+      cons%lstopt(2,k)=j
 
       ! for all native and natively shared constraints
 
@@ -440,21 +470,21 @@ Contains
 
           ! Select bond for action if product gives zero
 
-          lstopt(0,k)=0
+          cons%lstopt(0,k)=0
 
           ! calculate bond vectors
 
-          dxx(k)=xxx(i)-xxx(j)
-          dyy(k)=yyy(i)-yyy(j)
-          dzz(k)=zzz(i)-zzz(j)
+          cons%dxx(k)=xxx(i)-xxx(j)
+          cons%dyy(k)=yyy(i)-yyy(j)
+          cons%dzz(k)=zzz(i)-zzz(j)
 
           ! indicate sharing on local ends of bonds
           ! summed contributions (quench/shake/rattle) for each local
-          ! constrained bonded atom must be weighted by listot(atom) -
+          ! constrained bonded atom must be weighted by cons%listot(atom) -
           ! how many bond constraints an atom is involved in
 
-          If (i <= natms) listot(i)=listot(i)+1
-          If (j <= natms) listot(j)=listot(j)+1
+          If (i <= natms) cons%listot(i)=cons%listot(i)+1
+          If (j <= natms) cons%listot(j)=cons%listot(j)+1
 
         End If
 
@@ -465,9 +495,9 @@ Contains
         ! halo and partly outside it are not considered and zero bond vectors
         ! are assigned (DEBUG)
 
-        dxx(k)=0.0_wp
-        dyy(k)=0.0_wp
-        dzz(k)=0.0_wp
+        cons%dxx(k)=0.0_wp
+        cons%dyy(k)=0.0_wp
+        cons%dzz(k)=0.0_wp
 
       Else
 
@@ -503,12 +533,12 @@ Contains
 
     ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,cons%ntcons,dxx,dyy,dzz)
+    Call images(imcon,cell,cons%ntcons,cons%dxx,cons%dyy,cons%dzz)
 
     ! update lstitr
 
     Do k=1,natms
-      lstitr(k)=(listot(k) > 0 .and. lfrzn(k) == 0)
+      lstitr(k)=(cons%listot(k) > 0 .and. lfrzn(k) == 0)
     End Do
 
     Deallocate (lunsafe, Stat=fail)
@@ -521,8 +551,7 @@ Contains
 
   Subroutine constraints_rattle              &
       (tstep,lfst,lcol, &
-      lstopt,dxx,dyy,dzz,listot,      &
-      vxx,vyy,vzz,stat,cons,tmr,comm)
+       vxx,vyy,vzz,stat,cons,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -539,9 +568,6 @@ Contains
 
     Real( Kind = wp ), Intent( In    ) :: tstep
     Logical,           Intent( In    ) :: lfst,lcol
-    Integer,           Intent( In    ) :: lstopt(0:,1:)
-    Real( Kind = wp ), Intent( InOut ) :: dxx(:),dyy(:),dzz(:)
-    Integer,           Intent( In    ) :: listot(:)
     Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
     Type( stats_type ), Intent( InOut ) :: stat
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -570,15 +596,15 @@ Contains
 
     If (lfst) Then
       Do k=1,cons%ntcons
-        If (lstopt(0,k) == 0) Then
-          dis=1.0_wp/Sqrt(dxx(k)**2+dyy(k)**2+dzz(k)**2)
-          dxx(k)=dxx(k)*dis
-          dyy(k)=dyy(k)*dis
-          dzz(k)=dzz(k)*dis
+        If (cons%lstopt(0,k) == 0) Then
+          dis=1.0_wp/Sqrt(cons%dxx(k)**2+cons%dyy(k)**2+cons%dzz(k)**2)
+          cons%dxx(k)=cons%dxx(k)*dis
+          cons%dyy(k)=cons%dyy(k)*dis
+          cons%dzz(k)=cons%dzz(k)*dis
         Else ! DEBUG
-          dxx(k)=0.0_wp
-          dyy(k)=0.0_wp
-          dzz(k)=0.0_wp
+          cons%dxx(k)=0.0_wp
+          cons%dyy(k)=0.0_wp
+          cons%dzz(k)=0.0_wp
         End If
       End Do
     End If
@@ -609,9 +635,9 @@ Contains
 
       esig=0.0_wp
       Do k=1,cons%ntcons
-        If (lstopt(0,k) == 0) Then
-          i=lstopt(1,k)
-          j=lstopt(2,k)
+        If (cons%lstopt(0,k) == 0) Then
+          i=cons%lstopt(1,k)
+          j=cons%lstopt(2,k)
 
           amti=tstep/weight(i)
           amtj=tstep/weight(j)
@@ -623,7 +649,7 @@ Contains
 
           ! calculate constraint force parameter - gamma
 
-          gamma = dxx(k)*(vxx(i)-vxx(j)) + dyy(k)*(vyy(i)-vyy(j)) + dzz(k)*(vzz(i)-vzz(j))
+          gamma = cons%dxx(k)*(vxx(i)-vxx(j)) + cons%dyy(k)*(vyy(i)-vyy(j)) + cons%dzz(k)*(vzz(i)-vzz(j))
 
           esig=Max(esig,0.5_wp*tstep*Abs(gamma))
 
@@ -633,16 +659,16 @@ Contains
 
           If (i <= natms .and. lfrzn(i) == 0) Then
             gammi =-gamma*amti
-            vxt(i)=vxt(i)+dxx(k)*gammi
-            vyt(i)=vyt(i)+dyy(k)*gammi
-            vzt(i)=vzt(i)+dzz(k)*gammi
+            vxt(i)=vxt(i)+cons%dxx(k)*gammi
+            vyt(i)=vyt(i)+cons%dyy(k)*gammi
+            vzt(i)=vzt(i)+cons%dzz(k)*gammi
           End If
 
           If (j <= natms .and. lfrzn(j) == 0) Then
             gammj = gamma*amtj
-            vxt(j)=vxt(j)+dxx(k)*gammj
-            vyt(j)=vyt(j)+dyy(k)*gammj
-            vzt(j)=vzt(j)+dzz(k)*gammj
+            vxt(j)=vxt(j)+cons%dxx(k)*gammj
+            vyt(j)=vyt(j)+cons%dyy(k)*gammj
+            vzt(j)=vzt(j)+cons%dzz(k)*gammj
           End If
         End If
       End Do
@@ -659,19 +685,19 @@ Contains
         ! update velocities locally
 
         Do k=1,cons%ntcons
-          If (lstopt(0,k) == 0) Then
-            i=lstopt(1,k)
-            j=lstopt(2,k)
+          If (cons%lstopt(0,k) == 0) Then
+            i=cons%lstopt(1,k)
+            j=cons%lstopt(2,k)
 
             If (i <= natms .and. lfrzn(i) == 0) Then
-              dli = 1.0_wp/Real(listot(i),wp)
+              dli = 1.0_wp/Real(cons%listot(i),wp)
               vxx(i)=vxx(i)+vxt(i)*dli
               vyy(i)=vyy(i)+vyt(i)*dli
               vzz(i)=vzz(i)+vzt(i)*dli
             End If
 
             If (j <= natms .and. lfrzn(j) == 0) Then
-              dlj = 1.0_wp/Real(listot(j),wp)
+              dlj = 1.0_wp/Real(cons%listot(j),wp)
               vxx(j)=vxx(j)+vxt(j)*dlj
               vyy(j)=vyy(j)+vyt(j)*dlj
               vzz(j)=vzz(j)+vzt(j)*dlj
@@ -718,7 +744,6 @@ Contains
 
   Subroutine constraints_shake_vv       &
       (tstep,      &
-      lstopt,dxx,dyy,dzz,listot, &
       xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -736,9 +761,6 @@ Contains
 
 
     Real( Kind = wp ), Intent( In    ) :: tstep
-    Integer,           Intent( In    ) :: lstopt(0:,1:)
-    Real( Kind = wp ), Intent( In    ) :: dxx(:),dyy(:),dzz(:)
-    Integer,           Intent( In    ) :: listot(:)
     Real( Kind = wp ), Intent( InOut ) :: xxx(:),yyy(:),zzz(:)
     Real( Kind = wp ), Intent( InOut ) :: vir, str(:) 
     Type( constraints_type), Intent( InOut ) :: cons
@@ -776,7 +798,7 @@ Contains
     tstep2 = tstep*tstep
 
     ! application of constraint (shake) algorithm
-    ! start bond vectors are dxx = xxx(i) - xxx(j) etc.
+    ! start bond vectors are cons%dxx = xxx(i) - xxx(j) etc.
     ! Initialise number of cycles to zero and unsafe passage of the algorithm
 
     safe=.false.
@@ -793,9 +815,9 @@ Contains
       ! calculate temporary bond vector
 
       Do k=1,cons%ntcons
-        If (lstopt(0,k) == 0) Then
-          i=lstopt(1,k)
-          j=lstopt(2,k)
+        If (cons%lstopt(0,k) == 0) Then
+          i=cons%lstopt(1,k)
+          j=cons%lstopt(2,k)
 
           dxt(k)=xxx(i)-xxx(j)
           dyt(k)=yyy(i)-yyy(j)
@@ -816,7 +838,7 @@ Contains
 
       safe=.true.
       Do k=1,cons%ntcons
-        If (lstopt(0,k) == 0) Then
+        If (cons%lstopt(0,k) == 0) Then
           dt2(k) =dxt(k)**2+dyt(k)**2+dzt(k)**2 - cons%prmcon(cons%listcon(0,k))**2
           esig(k)=0.5_wp*Abs(dt2(k))
           safe=(safe .and. (esig(k) < cons%tolerance*cons%prmcon(cons%listcon(0,k))))
@@ -842,9 +864,9 @@ Contains
         ! calculate constraint forces
 
         Do k=1,cons%ntcons
-          If (lstopt(0,k) == 0) Then
-            i=lstopt(1,k)
-            j=lstopt(2,k)
+          If (cons%lstopt(0,k) == 0) Then
+            i=cons%lstopt(1,k)
+            j=cons%lstopt(2,k)
 
             amti=tstep2/weight(i)
             amtj=tstep2/weight(j)
@@ -856,35 +878,35 @@ Contains
 
             ! calculate constraint force parameter
 
-            gamma = dt2(k) / ((amti+amtj)*(dxx(k)*dxt(k)+dyy(k)*dyt(k)+dzz(k)*dzt(k)))
+            gamma = dt2(k) / ((amti+amtj)*(cons%dxx(k)*dxt(k)+cons%dyy(k)*dyt(k)+cons%dzz(k)*dzt(k)))
 
             If (i <= natms) Then
 
               ! accumulate bond stress
 
-              str(1) =str(1) - gamma*dxx(k)*dxx(k)
-              str(2) =str(2) - gamma*dxx(k)*dyy(k)
-              str(3) =str(3) - gamma*dxx(k)*dzz(k)
-              str(5) =str(5) - gamma*dyy(k)*dyy(k)
-              str(6) =str(6) - gamma*dyy(k)*dzz(k)
-              str(9) =str(9) - gamma*dzz(k)*dzz(k)
+              str(1) =str(1) - gamma*cons%dxx(k)*cons%dxx(k)
+              str(2) =str(2) - gamma*cons%dxx(k)*cons%dyy(k)
+              str(3) =str(3) - gamma*cons%dxx(k)*cons%dzz(k)
+              str(5) =str(5) - gamma*cons%dyy(k)*cons%dyy(k)
+              str(6) =str(6) - gamma*cons%dyy(k)*cons%dzz(k)
+              str(9) =str(9) - gamma*cons%dzz(k)*cons%dzz(k)
 
               ! calculate atomic position constraint corrections
 
               If (lfrzn(i) == 0) Then
                 gammi =-0.5_wp*gamma*amti
-                xxt(i)=xxt(i)+dxx(k)*gammi
-                yyt(i)=yyt(i)+dyy(k)*gammi
-                zzt(i)=zzt(i)+dzz(k)*gammi
+                xxt(i)=xxt(i)+cons%dxx(k)*gammi
+                yyt(i)=yyt(i)+cons%dyy(k)*gammi
+                zzt(i)=zzt(i)+cons%dzz(k)*gammi
               End If
 
             End If
 
             If (j <= natms .and. lfrzn(j) == 0) Then
               gammj = 0.5_wp*gamma*amtj
-              xxt(j)=xxt(j)+dxx(k)*gammj
-              yyt(j)=yyt(j)+dyy(k)*gammj
-              zzt(j)=zzt(j)+dzz(k)*gammj
+              xxt(j)=xxt(j)+cons%dxx(k)*gammj
+              yyt(j)=yyt(j)+cons%dyy(k)*gammj
+              zzt(j)=zzt(j)+cons%dzz(k)*gammj
             End If
           End If
         End Do
@@ -892,21 +914,21 @@ Contains
         ! update positions locally
 
         Do k=1,cons%ntcons
-          If (lstopt(0,k) == 0) Then
-            i=lstopt(1,k)
-            j=lstopt(2,k)
+          If (cons%lstopt(0,k) == 0) Then
+            i=cons%lstopt(1,k)
+            j=cons%lstopt(2,k)
 
             ! apply position corrections if non-frozen
 
             If (i <= natms .and. lfrzn(i) == 0) Then
-              dli = 1.0_wp/Real(listot(i),wp)
+              dli = 1.0_wp/Real(cons%listot(i),wp)
               xxx(i)=xxx(i)+xxt(i)*dli
               yyy(i)=yyy(i)+yyt(i)*dli
               zzz(i)=zzz(i)+zzt(i)*dli
             End If
 
             If (j <= natms .and. lfrzn(j) == 0) Then
-              dlj = 1.0_wp/Real(listot(j),wp)
+              dlj = 1.0_wp/Real(cons%listot(j),wp)
               xxx(j)=xxx(j)+xxt(j)*dlj
               yyy(j)=yyy(j)+yyt(j)*dlj
               zzz(j)=zzz(j)+zzt(j)*dlj
@@ -978,19 +1000,49 @@ Contains
 #endif
   End Subroutine constraints_shake_vv
 
-  Subroutine apply_rattle()
+  Subroutine apply_rattle(tstep,kit,megpmf, &
+      pxx,pyy,pzz,&
+      indpmf,cons,stat,tmr,comm)
+
+    Real( Kind = wp ),  Intent( InOut ) :: pxx(:),pyy(:),pzz(:)
+    Integer, Intent( In ) :: kit,megpmf
+    Real( Kind = wp ), Intent( In ) :: tstep
+    Integer, Intent( In ) :: indpmf(:,:,:)
+    Type( stats_type), Intent( InOut ) :: stat
+    Type( constraints_type), Intent( InOut ) :: cons
+    Type( timer_type ), Intent( InOut ) :: tmr
+    Type( comms_type ), Intent( InOut ) :: comm
+
+    Logical :: lfst, lcol
+    Integer :: i
+    Do i=1,kit
+      lfst = (i == 1)
+      lcol = (i == kit)
+
+      If (cons%megcon > 0) Then
+        Call constraints_rattle &
+          (tstep,lfst,lcol, &
+          vxx,vyy,vzz,stat,cons,tmr,comm)
+      End IF
+
+      If (megpmf > 0) Then
+        Call pmf_rattle &
+          (cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
+          indpmf,pxx,pyy,pzz,             &
+          vxx,vyy,vzz,comm)
+      End If
+    End Do
   End Subroutine apply_rattle
 
-  Subroutine apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,dxx,dyy,dzz,pxx,pyy,pzz,&
-      listot,lstitr,lstopt,indpmf,&
+  Subroutine apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,pxx,pyy,pzz,&
+      lstitr,indpmf,&
       megpmf,virpmf,strpmf,stat,cons,tmr,comm)
-    Integer, Intent( In ) :: lstopt(0:,1:),listot(:)
     Integer, Intent( InOut ) :: kit
     Integer, Intent( In ) :: indpmf(:,:,:),mxkit
     Logical, Intent( In ) :: lstitr(:)
     Integer,            Intent( In    ) :: megpmf
     Real( Kind = wp ),  Intent( InOut ) :: strpmf(1:),virpmf, &
-      oxt(:),oyt(:),ozt(:),dxx(:),dyy(:),dzz(:), &
+      oxt(:),oyt(:),ozt(:), &
       pxx(:),pyy(:),pzz(:)
     Real( Kind = wp ),  Intent( In ) :: tstep
     Type( stats_type), Intent( InOut ) :: stat
@@ -1007,105 +1059,104 @@ Contains
 
     ! SHAKE procedures
 
-      safe=.false.
-      kit =0
+    safe=.false.
+    kit =0
 
-      ! store integrated positions
+    ! store integrated positions
 
-      Do j=1,nfree
-        i=lstfre(j)
+    Do j=1,nfree
+      i=lstfre(j)
 
-        If (lstitr(i)) Then
-          oxt(i)=xxx(i)
-          oyt(i)=yyy(i)
-          ozt(i)=zzz(i)
-        End If
-      End Do
+      If (lstitr(i)) Then
+        oxt(i)=xxx(i)
+        oyt(i)=yyy(i)
+        ozt(i)=zzz(i)
+      End If
+    End Do
 
-      Do While ((.not.safe) .and. kit <= mxkit)
-        kit=kit+1
-
-        If (cons%megcon > 0) Then
-
-          ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
-
-          Call constraints_shake_vv &
-            (tstep,      &
-            lstopt,dxx,dyy,dzz,listot, &
-            xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
-
-          ! constraint virial and stress tensor
-
-          stat%vircon=stat%vircon+vir
-          stat%strcon=stat%strcon+str
-
-          safe=.true.
-        End If
-
-        If (megpmf > 0) Then
-
-          ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
-
-          Call pmf_shake_vv  &
-            (cons%max_iter_shake,cons%tolerance,tstep, &
-            indpmf,pxx,pyy,pzz,   &
-            xxx,yyy,zzz,str,vir,comm)
-
-          ! PMF virial and stress tensor
-
-          virpmf=virpmf+vir
-          strpmf=strpmf+str
-
-          safe=(Abs(vir) <= zero_plus)
-        End If
-      End Do
-
-      If (.not.safe) Call error(478)
-
-      ! Collect per step passage statistics for bond and pmf constraints
+    Do While ((.not.safe) .and. kit <= mxkit)
+      kit=kit+1
 
       If (cons%megcon > 0) Then
-        stat%passcon(3,2,1)=stat%passcon(2,2,1)*stat%passcon(3,2,1)
-        stat%passcon(2,2,1)=stat%passcon(2,2,1)+1.0_wp
-        stat%passcon(3,2,1)=stat%passcon(3,2,1)/stat%passcon(2,2,1)+stat%passcon(1,2,1)/stat%passcon(2,2,1)
-        stat%passcon(4,2,1)=Min(stat%passcon(1,2,1),stat%passcon(4,2,1))
-        stat%passcon(5,2,1)=Max(stat%passcon(1,2,1),stat%passcon(5,2,1))
-        stat%passcon(1,2,1)=0.0_wp ! Reset
+
+        ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
+
+        Call constraints_shake_vv &
+          (tstep,      &
+          xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
+
+        ! constraint virial and stress tensor
+
+        stat%vircon=stat%vircon+vir
+        stat%strcon=stat%strcon+str
+
+        safe=.true.
       End If
 
       If (megpmf > 0) Then
-        passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
-        passpmf(2,2,1)=passpmf(2,2,1)+1.0_wp
-        passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
-        passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
-        passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))
-        passpmf(1,2,1)=0.0_wp ! Reset
+
+        ! apply PMF correction: virpmf,strpmf - PMF constraint virial,stress
+
+        Call pmf_shake_vv  &
+          (cons%max_iter_shake,cons%tolerance,tstep, &
+          indpmf,pxx,pyy,pzz,   &
+          xxx,yyy,zzz,str,vir,comm)
+
+        ! PMF virial and stress tensor
+
+        virpmf=virpmf+vir
+        strpmf=strpmf+str
+
+        safe=(Abs(vir) <= zero_plus)
       End If
+    End Do
 
-      ! calculate velocity and force correction
+    If (.not.safe) Call error(478)
 
-      Do j=1,nfree
-        i=lstfre(j)
+    ! Collect per step passage statistics for bond and pmf constraints
 
-        If (lstitr(i)) Then
-          xt=(xxx(i)-oxt(i))*rstep
-          yt=(yyy(i)-oyt(i))*rstep
-          zt=(zzz(i)-ozt(i))*rstep
+    If (cons%megcon > 0) Then
+      stat%passcon(3,2,1)=stat%passcon(2,2,1)*stat%passcon(3,2,1)
+      stat%passcon(2,2,1)=stat%passcon(2,2,1)+1.0_wp
+      stat%passcon(3,2,1)=stat%passcon(3,2,1)/stat%passcon(2,2,1)+stat%passcon(1,2,1)/stat%passcon(2,2,1)
+      stat%passcon(4,2,1)=Min(stat%passcon(1,2,1),stat%passcon(4,2,1))
+      stat%passcon(5,2,1)=Max(stat%passcon(1,2,1),stat%passcon(5,2,1))
+      stat%passcon(1,2,1)=0.0_wp ! Reset
+    End If
 
-          vxx(i)=vxx(i)+xt
-          vyy(i)=vyy(i)+yt
-          vzz(i)=vzz(i)+zt
+    If (megpmf > 0) Then
+      passpmf(3,2,1)=passpmf(2,2,1)*passpmf(3,2,1)
+      passpmf(2,2,1)=passpmf(2,2,1)+1.0_wp
+      passpmf(3,2,1)=passpmf(3,2,1)/passpmf(2,2,1)+passpmf(1,2,1)/passpmf(2,2,1)
+      passpmf(4,2,1)=Min(passpmf(1,2,1),passpmf(4,2,1))
+      passpmf(5,2,1)=Max(passpmf(1,2,1),passpmf(5,2,1))
+      passpmf(1,2,1)=0.0_wp ! Reset
+    End If
 
-          tmp=weight(i)/hstep
-          xt=xt*tmp
-          yt=yt*tmp
-          zt=zt*tmp
+    ! calculate velocity and force correction
 
-          fxx(i)=fxx(i)+xt
-          fyy(i)=fyy(i)+yt
-          fzz(i)=fzz(i)+zt
-        End If
-      End Do
+    Do j=1,nfree
+      i=lstfre(j)
+
+      If (lstitr(i)) Then
+        xt=(xxx(i)-oxt(i))*rstep
+        yt=(yyy(i)-oyt(i))*rstep
+        zt=(zzz(i)-ozt(i))*rstep
+
+        vxx(i)=vxx(i)+xt
+        vyy(i)=vyy(i)+yt
+        vzz(i)=vzz(i)+zt
+
+        tmp=weight(i)/hstep
+        xt=xt*tmp
+        yt=yt*tmp
+        zt=zt*tmp
+
+        fxx(i)=fxx(i)+xt
+        fyy(i)=fyy(i)+yt
+        fzz(i)=fzz(i)+zt
+      End If
+    End Do
   End Subroutine apply_shake
 
 End module constraints

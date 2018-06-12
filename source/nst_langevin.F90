@@ -11,9 +11,9 @@ Module nst_langevin
   Use kinetics,        Only : getvom,getkin,getknt,getknr,getknf, &
                               kinstress,kinstresf,kinstrest
   Use core_shell,      Only : legshl
-  Use constraints,     Only : constraints_rattle,apply_shake,&
+  Use constraints,     Only : apply_rattle,apply_shake,&
                               constraints_tags, constraints_type
-  Use pmf,             Only : passpmf,pmf_rattle,pmf_tags 
+  Use pmf,             Only : passpmf,pmf_tags 
   Use rigid_bodies     
   Use errors_warnings, Only : error,info
   Use shared_units,    Only : update_shared_units
@@ -110,8 +110,6 @@ Contains
     Logical,           Allocatable :: lstitr(:)
     Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
 
-    Integer,           Allocatable :: lstopt(:,:),listot(:)
-    Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
     Integer,           Allocatable :: indpmf(:,:,:)
     Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
 
@@ -125,10 +123,7 @@ Contains
     fail=0
     If (cons%megcon > 0 .or. megpmf > 0) Then
        Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
-       If (cons%megcon > 0) Then
-          Allocate (lstopt(0:2,1:cons%mxcons),listot(1:mxatms),          Stat=fail(2))
-          Allocate (dxx(1:cons%mxcons),dyy(1:cons%mxcons),dzz(1:cons%mxcons),      Stat=fail(3))
-       End If
+       Call cons%allocate_work(mxatms)
        If (megpmf > 0) Then
           Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail(4))
           Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),         Stat=fail(5))
@@ -216,7 +211,7 @@ Contains
   ! constraint atoms) for iterative bond algorithms
 
        If (cons%megcon > 0)Then
-         Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
+         Call constraints_tags(lstitr,cons,comm)
        End If 
 
   ! construct current PMF constraint vectors and shared description
@@ -344,8 +339,8 @@ Contains
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,dxx,dyy,dzz,pxx,pyy,pzz,&
-          listot,lstitr,lstopt,indpmf,&
+           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,pxx,pyy,pzz,&
+          lstitr,indpmf,&
           megpmf,virpmf,strpmf,stat,cons,tmr,comm)
           End If
 
@@ -504,24 +499,8 @@ Contains
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. megpmf > 0) Then
-          Do i=1,kit
-             lfst = (i == 1)
-             lcol = (i == kit)
-
-             If (cons%megcon > 0)Then
-               Call constraints_rattle &
-                 (tstep,lfst,lcol, &
-                 lstopt,dxx,dyy,dzz,listot,      &
-                 vxx,vyy,vzz,stat,cons,tmr,comm)
-             End If
-
-             If (megpmf > 0)Then
-               Call pmf_rattle &
-                 (cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
-                 indpmf,pxx,pyy,pzz,             &
-                 vxx,vyy,vzz,comm)
-             End If
-          End Do
+          Call apply_rattle(tstep,kit,megpmf,pxx,pyy,pzz,&
+                          indpmf,cons,stat,tmr,comm)
        End If
 
   ! update kinetic energy
@@ -591,10 +570,7 @@ Contains
 
     If (cons%megcon > 0 .or. megpmf > 0) Then
        Deallocate (lstitr,           Stat=fail(1))
-       If (cons%megcon > 0) Then
-          Deallocate (lstopt,listot, Stat=fail(2))
-          Deallocate (dxx,dyy,dzz,   Stat=fail(3))
-       End If
+       Call cons%deallocate_work()
        If (megpmf > 0) Then
           Deallocate (indpmf,        Stat=fail(4))
           Deallocate (pxx,pyy,pzz,   Stat=fail(5))
@@ -705,8 +681,6 @@ Contains
     Logical,           Allocatable :: lstitr(:)
     Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
 
-    Integer,           Allocatable :: lstopt(:,:),listot(:)
-    Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
     Integer,           Allocatable :: indpmf(:,:,:)
     Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
 
@@ -727,10 +701,7 @@ Contains
     fail=0
     If (cons%megcon > 0 .or. megpmf > 0) Then
        Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
-       If (cons%megcon > 0) Then
-          Allocate (lstopt(0:2,1:cons%mxcons),listot(1:mxatms),          Stat=fail( 2))
-          Allocate (dxx(1:cons%mxcons),dyy(1:cons%mxcons),dzz(1:cons%mxcons),      Stat=fail( 3))
-       End If
+       Call cons%allocate_work(mxatms)
        If (megpmf > 0) Then
           Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail( 4))
           Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),         Stat=fail( 5))
@@ -833,7 +804,7 @@ Contains
   ! constraint atoms) for iterative bond algorithms
 
        If (cons%megcon > 0)Then
-         Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
+         Call constraints_tags(lstitr,cons,comm)
        End If
 
   ! construct current PMF constraint vectors and shared description
@@ -1046,8 +1017,8 @@ Contains
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,dxx,dyy,dzz,pxx,pyy,pzz,&
-          listot,lstitr,lstopt,indpmf,&
+           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,pxx,pyy,pzz,&
+          lstitr,indpmf,&
           megpmf,virpmf,strpmf,stat,cons,tmr,comm)
           End If
 
@@ -1464,24 +1435,8 @@ Contains
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. megpmf > 0) Then
-          Do i=1,kit
-             lfst = (i == 1)
-             lcol = (i == kit)
-
-             If (cons%megcon > 0)Then
-               Call constraints_rattle &
-                 (tstep,lfst,lcol, &
-                 lstopt,dxx,dyy,dzz,listot,      &
-                 vxx,vyy,vzz,stat,cons,tmr,comm)
-             End If
-
-             If (megpmf > 0)Then
-               Call pmf_rattle &
-                 (cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
-                 indpmf,pxx,pyy,pzz,             &
-                 vxx,vyy,vzz,comm)
-             End If
-          End Do
+          Call apply_rattle(tstep,kit,megpmf,pxx,pyy,pzz,&
+                          indpmf,cons,stat,tmr,comm)
        End If
 
   ! Get RB COM stress and virial
@@ -1774,10 +1729,7 @@ Contains
 
     If (cons%megcon > 0 .or. megpmf > 0) Then
        Deallocate (lstitr,            Stat=fail( 1))
-       If (cons%megcon > 0) Then
-          Deallocate (lstopt,listot,  Stat=fail( 2))
-          Deallocate (dxx,dyy,dzz,    Stat=fail( 3))
-       End If
+       Call cons%deallocate_work()
        If (megpmf > 0) Then
           Deallocate (indpmf,         Stat=fail( 4))
           Deallocate (pxx,pyy,pzz,    Stat=fail( 5))
