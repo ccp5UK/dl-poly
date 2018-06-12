@@ -21,6 +21,7 @@ Module nvt_berendsen
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
+  Use timer, Only : timer_type
   Implicit None
 
   Private
@@ -32,7 +33,7 @@ Contains
   Subroutine nvt_b0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              strkin,engke,                      &
-             megpmf,strpmf,virpmf,cons,stat,thermo,comm)
+             megpmf,strpmf,virpmf,cons,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -58,6 +59,7 @@ Contains
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
+  Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -216,7 +218,7 @@ Contains
                 Call constraints_shake_vv &
                   (tstep,      &
                   lstopt,dxx,dyy,dzz,listot, &
-                  xxx,yyy,zzz,str,vir,stat,cons,comm)
+                  xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
 
   ! constraint virial and stress tensor
 
@@ -373,7 +375,7 @@ Contains
                Call constraints_rattle &
                  (tstep,lfst,lcol, &
                  lstopt,dxx,dyy,dzz,listot,      &
-                 vxx,vyy,vzz,stat,cons,comm)
+                 vxx,vyy,vzz,stat,cons,tmr,comm)
              End If
 
              If (megpmf > 0) Then
@@ -433,7 +435,7 @@ Contains
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              strkin,strknf,strknt,engke,engrot, &
              megpmf,strpmf,virpmf,              &
-             strcom,vircom,cons,stat,thermo,comm)
+             strcom,vircom,cons,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -463,6 +465,7 @@ Contains
     Type( constraints_type), Intent( InOut ) :: cons
     Type( stats_type), Intent( Inout ) :: stat
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -700,7 +703,7 @@ Contains
                 Call constraints_shake_vv &
                   (tstep,      &
                   lstopt,dxx,dyy,dzz,listot, &
-                  xxx,yyy,zzz,str,vir,stat,cons,comm)
+                  xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
 
   ! constraint virial and stress tensor
 
@@ -1033,7 +1036,7 @@ Contains
                Call constraints_rattle &
                  (tstep,lfst,lcol, &
                  lstopt,dxx,dyy,dzz,listot,      &
-                 vxx,vyy,vzz,stat,cons,comm)
+                 vxx,vyy,vzz,stat,cons,tmr,comm)
              End If
 
              If (megpmf > 0) Then

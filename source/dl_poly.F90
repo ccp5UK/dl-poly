@@ -177,7 +177,7 @@ program dl_poly
   Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
   Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
   Use nve, Only : nve_0_vv, nve_1_vv 
-  Use timer, Only  : timer_type, time_elapsed,timer_report
+  Use timer, Only  : timer_type, time_elapsed,timer_report,start_timer,stop_timer
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type, constraints_quench
@@ -648,10 +648,10 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,cons,stats,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh)
+    Call w_md_vv(mxatdm,cons,stats,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,cons,stats,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh)
+      Call w_replay_historf(mxatdm,cons,stats,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
     Else
       Call w_replay_history(mxatdm,cons,stats,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh)
     End If
@@ -784,7 +784,7 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(cons,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh)
+  Subroutine w_calculate_forces(cons,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type(stats_type), Intent(InOut) :: stat
     Type(plumed_type), Intent(InOut) :: plume
@@ -796,6 +796,7 @@ Contains
     Type( tethers_type ), Intent( InOut ) :: tether
     Type( threebody_type ), Intent( InOut ) :: threebody
     Type( neighbours_type ), Intent( InOut ) :: neigh
+    Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
@@ -812,11 +813,12 @@ Contains
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw,cons,stat,thermo)
+  Subroutine w_integrate_vv(isw,cons,stat,thermo,tmr)
     Integer, Intent( In    ) :: isw ! used for vv stage control
     Type( constraints_type ), Intent( InOut ) :: cons
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
+    Type( timer_type ), Intent( InOut ) :: tmr
 
     Include 'w_integrate_vv.F90'
   End Subroutine w_integrate_vv
@@ -845,7 +847,7 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,cons,stat,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh)
+  Subroutine w_md_vv(mxatdm_,cons,stat,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type(stats_type), Intent(InOut) :: stat
@@ -858,6 +860,7 @@ Contains
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( z_density_type ), Intent( InOut ) :: zdensity
     Type( neighbours_type ), Intent( InOut ) :: neigh
+    Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
@@ -884,7 +887,7 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,cons,stat,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh)
+  Subroutine w_replay_historf(mxatdm_,cons,stat,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type(stats_type), Intent(InOut) :: stat
@@ -897,6 +900,7 @@ Contains
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( z_density_type ), Intent( InOut ) :: zdensity
     Type( neighbours_type ), Intent( InOut ) :: neigh
+    Type( timer_type ), Intent( InOut ) :: tmr
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

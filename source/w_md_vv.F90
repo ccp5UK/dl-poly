@@ -84,7 +84,7 @@
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,cons,stat,thermo)
+        Call w_integrate_vv(0,cons,stat,thermo,tmr)
 
 ! Refresh mappings
 
@@ -94,7 +94,7 @@
 
 ! Evaluate forces
 
-     Call w_calculate_forces(cons,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh)
+     Call w_calculate_forces(cons,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
@@ -113,7 +113,7 @@
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,cons,stat,thermo)
+        Call w_integrate_vv(1,cons,stat,thermo,tmr)
 
 ! Apply kinetic options
 
