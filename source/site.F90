@@ -19,20 +19,52 @@ Module site
   Type, Public :: site_type
     Private
 
+    !> Maximum size of site arrays
     Integer( Kind = wi ), Public :: max_site
 
-    Integer( Kind = wi ), Public :: ntpmls = 0, &
-                                    ntpatm = 0, &
-                                    ntpshl = 0
+    !> Number of molecule types
+    Integer( Kind = wi ), Public :: ntype_mol = 0
+    !> Number of atom types
+    Integer( Kind = wi ), Public :: ntype_atom = 0
+    !> Number of shell types
+    Integer( Kind = wi ), Public :: ntype_shell = 0
 
-    Character( Len = 40 ), Allocatable, Public :: molnam(:)
-    Character( Len = 8 ), Allocatable, Public :: sitnam(:),unqatm(:),unqshl(:)
+    !> Molecule names
+    Character( Len = 40 ), Allocatable, Public :: mol_name(:)
 
-    Integer( Kind = wi ), Allocatable, Public :: nummols(:),numsit(:),numfrz(:)
-    Integer( Kind = wi ), Allocatable, Public :: typsit(:),frzsit(:),fresit(:)
+    !> Site names
+    Character( Len = 8 ), Allocatable, Public :: site_name(:)
+    !> Unique atom labels
+    Character( Len = 8 ), Allocatable, Public :: unique_atom(:)
+    !> Unique shell names
+    Character( Len = 8 ), Allocatable, Public :: unique_shell(:)
 
-    Real( Kind = wp ), Allocatable, Public :: wgtsit(:),chgsit(:),dofsit(:)
-    Real( Kind = wp ), Allocatable, Public :: numtyp(:),numtypnf(:),dens(:)
+    !> Number of molecules of each type
+    Integer( Kind = wi ), Allocatable, Public :: num_mols(:)
+    !> NUmber of sites (atoms) in molecules of each type?
+    Integer( Kind = wi ), Allocatable, Public :: num_site(:)
+    !> Number of frozen molecules of each type
+    Integer( Kind = wi ), Allocatable, Public :: num_freeze(:)
+
+    !> Type status
+    Integer( Kind = wi ), Allocatable, Public :: type_site(:)
+    !> Frozen status
+    Integer( Kind = wi ), Allocatable, Public :: freeze_site(:)
+    !> Free status?
+    Integer( Kind = wi ), Allocatable, Public :: free_site(:)
+    !> Weight
+    Real( Kind = wp ), Allocatable, Public :: weight_site(:)
+    !> Charge
+    Real( Kind = wp ), Allocatable, Public :: charge_site(:)
+    !> Degrees of freedom
+    Real( Kind = wp ), Allocatable, Public :: dof_site(:)
+
+    !> Number of atoms of each type?
+    Real( Kind = wp ), Allocatable, Public :: num_type(:)
+    !> Number of non-frozen atoms of each type?
+    Real( Kind = wp ), Allocatable, Public :: num_type_nf(:)
+    !> Density of atoms of each type?
+    Real( Kind = wp ), Allocatable, Public :: dens(:)
 
   Contains
     Private
@@ -46,7 +78,7 @@ Contains
   Subroutine allocate_site_arrays(T,mxtmls,mxatyp)
     Class( site_type ) :: T
     Integer( Kind = wi ), Intent( In    ) :: mxtmls,mxatyp
-    Integer, Dimension(1:7) :: fail
+    Integer, Dimension(1:6) :: fail
 
     fail = 0
 
@@ -60,13 +92,23 @@ Contains
     If (Any(fail > 0)) Call error(1026)
 
     T%molnam = ' '
-    T%sitnam = ' ' ; T%unqatm = ' ' ; T%unqshl = ' '
+    T%sitnam = ' '
+    T%unqatm = ' '
+    T%unqshl = ' '
 
-    T%nummols = 0 ; T%numsit = 0 ; T%numfrz = 0
-    T%typsit  = 0 ; T%frzsit = 0 ; T%fresit = 0
+    T%nummols = 0
+    T%numsit = 0
+    T%numfrz = 0
+    T%typsit  = 0
+    T%frzsit = 0
+    T%fresit = 0
 
-    T%wgtsit = 0.0_wp ; T%chgsit = 0.0_wp ; T%dofsit = 0.0_wp
-    T%numtyp = 0.0_wp ; T%numtypnf = 0.0_wp ; T%dens = 0.0_wp
+    T%wgtsit = 0.0_wp
+    T%chgsit = 0.0_wp
+    T%dofsit = 0.0_wp
+    T%numtyp = 0.0_wp
+    T%numtypnf = 0.0_wp
+    T%dens = 0.0_wp
   End Subroutine allocate_site_arrays
 
   !> Deallocate site_type arrays
