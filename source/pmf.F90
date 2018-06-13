@@ -323,7 +323,7 @@ End Subroutine deallocate_pmf_arrays
 
 ! Minimum image convention for bond vectors
 
-  Call images(imcon,cell,pmf%ntpmf,pmf%pxx,pmf%pyy,pmf%pzz)
+  Call images(imcon,cell,pmf%ntpmf,pxx,pyy,pzz)
 
   Deallocate (xxt,yyt,zzt,    Stat=fail(1))
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(2))
