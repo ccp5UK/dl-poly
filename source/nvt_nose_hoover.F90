@@ -206,9 +206,7 @@ Contains
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,lstitr,stat,pmf,cons,tmr,comm)
        End If
 
   ! check timestep for variable timestep

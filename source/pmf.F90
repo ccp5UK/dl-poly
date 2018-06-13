@@ -151,7 +151,7 @@ Subroutine allocate_work(T)
 End Subroutine deallocate_pmf_arrays
   
   
-  Subroutine pmf_coms(pmf,comm)
+  Subroutine pmf_coms(pmf,pxx,pyy,pzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -167,6 +167,7 @@ End Subroutine deallocate_pmf_arrays
 
 
   Type( pmf_type), Intent( InOut ) :: pmf
+  Real( Kind = wp ), Intent(   Out ) :: pxx(1:),pyy(1:),pzz(1:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                 :: safe(1:2)
@@ -204,7 +205,7 @@ End Subroutine deallocate_pmf_arrays
 ! Initialise PMF COMs' and inter-COMs' vector arrays
 
   xpmf = 0.0_wp ; ypmf = 0.0_wp ; zpmf = 0.0_wp
-  pmf%pxx  = 0.0_wp ; pmf%pyy  = 0.0_wp ; pmf%pzz  = 0.0_wp
+  pxx  = 0.0_wp ; pyy  = 0.0_wp ; pzz  = 0.0_wp
 
 ! Loop over all global PMF constraints
 
@@ -315,9 +316,9 @@ End Subroutine deallocate_pmf_arrays
 ! Loop over all PMF constraints on this node and calculate PMF constraint vectors
 
   Do ipmf=1,pmf%ntpmf
-     pmf%pxx(ipmf) = xpmf(2,ipmf) - xpmf(1,ipmf)
-     pmf%pyy(ipmf) = ypmf(2,ipmf) - ypmf(1,ipmf)
-     pmf%pzz(ipmf) = zpmf(2,ipmf) - zpmf(1,ipmf)
+     pxx(ipmf) = xpmf(2,ipmf) - xpmf(1,ipmf)
+     pyy(ipmf) = ypmf(2,ipmf) - ypmf(1,ipmf)
+     pzz(ipmf) = zpmf(2,ipmf) - zpmf(1,ipmf)
   End Do
 
 ! Minimum image convention for bond vectors
@@ -630,7 +631,7 @@ Subroutine pmf_tags(lstitr,pmf,comm)
 
 ! Get PMF units' COM vectors
 
-  Call pmf_coms(pmf,comm)
+  Call pmf_coms(pmf,pmf%pxx,pmf%pyy,pmf%pzz,comm)
 
 End Subroutine pmf_tags
 
@@ -967,7 +968,7 @@ Subroutine pmf_shake_vv          &
 
 ! calculate temporary PMF units' COM vectors
 
-     Call pmf_coms(pmf,comm)
+     Call pmf_coms(pmf,pxt,pyt,pzt,comm)
 
 ! calculate maximum error in bondlength
 
