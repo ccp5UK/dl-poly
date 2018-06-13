@@ -12,7 +12,7 @@ Module coul_mpole
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type
-  Use setup, Only : mxexcl,mxspl,mxompl,mximpl,mxatdm,mxatms, &
+  Use setup, Only : mxspl,mxompl,mximpl,mxatdm,mxatms, &
                             r4pie0, zero_plus, mxgele, nrite, sqrpi
   Use configuration, Only : imcon,natms,ltg,fxx,fyy,fzz,xxx,yyy,zzz,cell, &
                             chge

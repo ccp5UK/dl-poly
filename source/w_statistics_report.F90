@@ -106,19 +106,19 @@ If (nstep == nsteql) Then
     End If
   End If
 
-  If (megpmf > 0) Then
-    Call gmax(comm,passpmq(3:5))
-    If (passpmq(3) > 0.0_wp) Then
+  If (pmf%megpmf > 0) Then
+    Call gmax(comm,stat%passpmq(3:5))
+    If (stat%passpmq(3) > 0.0_wp) Then
       Write(message,'(2(a,f5.2),4(a,i3))') &
         'PMFs quench run statistics per call: average cycles ', &
-        passpmq(3),'/',passpmq(3), &
-        ' minimum cycles ',Nint(passpmq(4)),'/',Nint(passpmq(4)), &
-        ' maximum cycles ',Nint(passpmq(5)),'/',Nint(passpmq(5))
+        stat%passpmq(3),'/',stat%passpmq(3), &
+        ' minimum cycles ',Nint(stat%passpmq(4)),'/',Nint(stat%passpmq(4)), &
+        ' maximum cycles ',Nint(stat%passpmq(5)),'/',Nint(stat%passpmq(5))
       Call info(message,.true.)
     End If
   End If
 
-  If (nstep > 0 .or. cons%megcon > 0 .or. megpmf > 0) Then
+  If (nstep > 0 .or. cons%megcon > 0 .or. pmf%megpmf > 0) Then
     Call info(repeat('-',130),.true.)
   End If
 End If

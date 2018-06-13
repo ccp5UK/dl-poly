@@ -10,7 +10,7 @@
 ! Refresh mappings
 
         Call w_refresh_mappings &
-        (cons,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
+        (cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -134,12 +134,12 @@
         If (lmin .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
            If      (nstmin == 0 .and. nstep == 0) Then
               Call minimise_relax &
-           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,megpmf,megrgd, &
-           keymin,min_tol,tstep,stat%stpcfg,stat,cons,comm)
+           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,pmf%megpmf,megrgd, &
+           keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,comm)
            Else If (nstmin >  0 .and. nstep >  0) Then
               If (Mod(nstep-nsteql,nstmin) == 0) Call minimise_relax &
-           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,megpmf,megrgd, &
-           keymin,min_tol,tstep,stat%stpcfg,stat,cons,comm)
+           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,pmf%megpmf,megrgd, &
+           keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,comm)
            End If
         End If
 
@@ -149,7 +149,7 @@
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
            Call w_refresh_mappings &
-            (cons,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
+            (cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
 
            Go To 100
         End If

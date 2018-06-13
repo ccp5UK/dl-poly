@@ -17,23 +17,23 @@ Module build_chrm
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type
 
-  Use mpole, Only : keyind,lchatm ! equivalent to lexatm in configuration
+  Use mpole, Only : keyind,lchatm
   Use numerics, Only : local_index,shellsort
   Use build_excl, Only : add_exclusion
-  Use constraints, Only : constraints_type 
+  Use constraints, Only : constraints_type
   Implicit None
 
   Private
 
   Public :: build_chrm_intra
 Contains
-  Subroutine build_chrm_intra(cons,bond,angle,dihedral,inversion,comm)
+  Subroutine build_chrm_intra(max_exclude,cons,bond,angle,dihedral,inversion,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for constructing the global CHARMMing core-shell
-    ! units cross pair interactions neigh%list of the part of the MD system mapped
-    ! onto this node.  While building the neigh%list it is presumed that:
+    ! units cross pair interactions list of the part of the MD system mapped
+    ! onto this node.  While building the list it is presumed that:
     ! (1) constraint bonds are on top of chemical bonds
     ! (2) all 1-2 and 1-2-3 components of the conventional bonded
     !     interactions are checked out, i.e. 1-2-3 + 2-3-4 in a dihedral are
@@ -49,6 +49,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Integer( Kind = wi ), Intent( In    ) :: max_exclude
     Type( constraints_type ), Intent( In    ) :: cons
     Type( bonds_type ), Intent( In    ) :: bond
     Type( angles_type ), Intent( In    ) :: angle
@@ -69,7 +70,7 @@ Contains
     ibig=0
     safe=.true.
 
-    ! go over the extended neigh%list of core-shell units
+    ! go over the extended list of core-shell units
 
     Do i=1,ntshl2
       ia=listshl(1,i) ! This is the core
@@ -1097,29 +1098,29 @@ Contains
     Call gcheck(comm,safe)
     If (.not.safe) Then
       Call gmax(comm,ibig)
-      Call warning(250,Real(ibig,wp),Real(mxexcl,wp),0.0_wp)
+      Call warning(250,Real(ibig,wp),Real(max_exclude,wp),0.0_wp)
       Call error(65)
     End If
 
     ! EXCLUDE core sites mapped on the same RB unit
 
     Do i=1,natms                                                 ! on this node only (& below)
-      l=lchatm(0,i)                                             ! end of neigh%list tag
+      l=lchatm(0,i)                                             ! end of list tag
       If (l > 0 .and. legshl(0,i) > 0) Then                     ! this is a qualifying CHARMMing core
         ibig=ltg(i)
-        Do j=1,ntrgd1                                          ! loop over the extended neigh%list of all RB
+        Do j=1,ntrgd1                                          ! loop over the extended list of all RB
           k=listrgd(-1,j)
           If (Any(listrgd(1:k,j) == ibig)) Then               ! This core resides on a RB
             kk=l                                             ! running index
-            Do While (kk > 0)                                ! run down to the beginning of the neigh%list
-              If (Any(listrgd(1:k,j) == lchatm(kk,i))) Then ! any other cores in this RB neigh%list
+            Do While (kk > 0)                                ! run down to the beginning of the list
+              If (Any(listrgd(1:k,j) == lchatm(kk,i))) Then ! any other cores in this RB list
                 If (kk < l) lchatm(kk,i)=lchatm(l,i)       ! swap with last "valid"
                 lchatm(l,i)=0                              ! invalidate the last entry
-                l=l-1                                      ! reduce "the end of neigh%list" tag
+                l=l-1                                      ! reduce "the end of list" tag
               End If
               kk=kk-1                                       ! reduce the running index
             End Do
-            If (l < lchatm(0,i)) lchatm(0,i)=l               ! refresh the end of neigh%list tag
+            If (l < lchatm(0,i)) lchatm(0,i)=l               ! refresh the end of list tag
             If (l == 0) Exit                                 ! exit to main do loop
           End If
         End Do
@@ -1129,20 +1130,20 @@ Contains
     ! EXCLUDE core sites on basis of frozen-frozen interactions
 
     Do i=1,natms                                     ! on this node only (& below)
-      l=lchatm(0,i)                                 ! end of neigh%list tag
+      l=lchatm(0,i)                                 ! end of list tag
       If (l > 0 .and. lfrzn(i) > 0) Then            ! this is a qualifying CHARMMing core
         kk=l                                       ! running index
-        Do While (kk > 0)                          ! run down to the beginning of the neigh%list
+        Do While (kk > 0)                          ! run down to the beginning of the list
           k=lchatm(kk,i)
           j=local_index(k,nlast,lsi,lsa)
           If (lfrzn(j) > 0) Then                  ! any other frozen cores
             If (kk < l) lchatm(kk,i)=lchatm(l,i) ! swap with last "valid"
             lchatm(l,i)=0                        ! invalidate the last entry
-            l=l-1                                ! reduce "the end of neigh%list" tag
+            l=l-1                                ! reduce "the end of list" tag
           End If
           kk=kk-1                                 ! reduce the running index
         End Do
-        If (l < lchatm(0,i)) lchatm(0,i)=l         ! refresh the end of neigh%list tag
+        If (l < lchatm(0,i)) lchatm(0,i)=l         ! refresh the end of list tag
       End If
     End Do
 
