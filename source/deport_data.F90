@@ -10,8 +10,6 @@ Module deport_data
 
   Use configuration
 
-  Use pmf,          Only : ntpmf,listpmf,legpmf
-
   Use rigid_bodies, Only : ntrgd,listrgd,legrgd, &
                                   q0,q1,q2,q3,          &
                                   rgdvxx,rgdvyy,rgdvzz, &
@@ -48,7 +46,7 @@ Module deport_data
   Use errors_warnings, Only : error, warning
   Use mpoles_container, Only : rotate_mpoles, rotate_mpoles_d
   Use numerics, Only : local_index
-  Use pmf, Only : pmf_units_set
+  Use pmf, Only : pmf_units_set, pmf_type
   Use build_book, Only : compress_book_intra
   Use shared_units, Only : pass_shared_units, tag_legend
   Use thermostat, Only : thermostat_type
@@ -60,7 +58,8 @@ Module deport_data
   Contains
 
 
-Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
+    green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -79,6 +78,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
   Integer,            Intent( In    ) :: mdir
   Logical,            Intent( In    ) :: lbook
   Logical,            Intent( In    ) :: lmsd
+  Type( pmf_type) , Intent( InOut ) :: pmf 
   Type( constraints_type) , Intent( InOut ) :: cons 
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
@@ -534,23 +534,23 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
 
 ! pack PMF details
 
-           jj=legpmf(0,i)
+           jj=pmf%legpmf(0,i)
            If (jj > 0) Then
               Do ll=1,jj
-                 If (imove+mxtpmf(1)+mxtpmf(2)+2 <= iblock) Then
-                    kk=legpmf(ll,i)
+                 If (imove+pmf%mxtpmf(1)+pmf%mxtpmf(2)+2 <= iblock) Then
+                    kk=pmf%legpmf(ll,i)
 
-                    Do k=0,mxtpmf(1)
+                    Do k=0,pmf%mxtpmf(1)
                        imove=imove+1
-                       buffer(imove)=Real(listpmf(k,1,kk),wp)
+                       buffer(imove)=Real(pmf%listpmf(k,1,kk),wp)
                     End Do
 
-                    Do k=0,mxtpmf(2)
+                    Do k=0,pmf%mxtpmf(2)
                        imove=imove+1
-                       buffer(imove)=Real(listpmf(k,2,kk),wp)
+                       buffer(imove)=Real(pmf%listpmf(k,2,kk),wp)
                     End Do
                  Else
-                    imove=imove+mxtpmf(1)+mxtpmf(2)+2
+                    imove=imove+pmf%mxtpmf(1)+pmf%mxtpmf(2)+2
                     safe=.false.
                  End If
               End Do
@@ -898,7 +898,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
         legshl(:,keep)=legshl(:,i)
 
         cons%legcon(:,keep)=cons%legcon(:,i)
-        legpmf(:,keep)=legpmf(:,i)
+        pmf%legpmf(:,keep)=pmf%legpmf(:,i)
 
         legrgd(:,keep)=legrgd(:,i)
 
@@ -946,7 +946,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
   If (.not.safe) Call error(44)
 
   Deallocate (ind_on,ind_off,                        Stat=fail(1))
-  Allocate   (i1pmf(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)), Stat=fail(2))
+  Allocate   (i1pmf(1:pmf%mxtpmf(1)),i2pmf(1:pmf%mxtpmf(2)), Stat=fail(2))
   If (Any(fail(1:2) > 0)) Then
      Write(message,'(a)') 'deport_atomic_data de/allocation failure'
      Call error(0,message)
@@ -1116,7 +1116,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
         jshels=ntshl
 
         jconst=cons%ntcons
-        jpmf  =ntpmf
+        jpmf  =pmf%ntpmf
 
         jrigid=ntrgd
 
@@ -1212,17 +1212,17 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
 
 ! unpack PMF details
 
-        legpmf(:,newatm) = 0
+        pmf%legpmf(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
            jj=Nint(buffer(kmove+1)) ! PMF global identifier
            kmove=kmove+1
-           Do k=1,mxtpmf(1)
+           Do k=1,pmf%mxtpmf(1)
               kmove=kmove+1
               i1pmf(k)=Nint(buffer(kmove))
            End Do
 
            kmove=kmove+1            ! omit PMF units presence identifier
-           Do k=1,mxtpmf(2)         ! and deal with it in pmf_units_set
+           Do k=1,pmf%mxtpmf(2)         ! and deal with it in pmf_units_set
               kmove=kmove+1
               i2pmf(k)=Nint(buffer(kmove))
            End Do
@@ -1231,9 +1231,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
 
            kpmf=0
            check=.true.
-           Do While (check .and. kpmf < Min(jpmf,mxpmf))
+           Do While (check .and. kpmf < Min(jpmf,pmf%mxpmf))
               kpmf=kpmf+1
-              check=.not.(jj == listpmf(0,1,kpmf))
+              check=.not.(jj == pmf%listpmf(0,1,kpmf))
            End Do
 
 ! insert new PMF constraint
@@ -1241,27 +1241,27 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
            If (check) Then
               jpmf=jpmf+1
 
-              If (jpmf <= mxpmf) Then
-                 listpmf(0,1,jpmf)=jj
-                 Do k=1,mxtpmf(1)
-                    listpmf(k,1,jpmf)=i1pmf(k)
+              If (jpmf <= pmf%mxpmf) Then
+                 pmf%listpmf(0,1,jpmf)=jj
+                 Do k=1,pmf%mxtpmf(1)
+                    pmf%listpmf(k,1,jpmf)=i1pmf(k)
                  End Do
 
 ! PMF units presence identifier holds zero temporarily
 ! it's dealt with in pmf_units_set
 
-                 listpmf(0,2,jpmf)=0
-                 Do k=1,mxtpmf(2)
-                    listpmf(k,2,jpmf)=i2pmf(k)
+                 pmf%listpmf(0,2,jpmf)=0
+                 Do k=1,pmf%mxtpmf(2)
+                    pmf%listpmf(k,2,jpmf)=i2pmf(k)
                  End Do
 
-                 Call tag_legend(safe1,newatm,jpmf,legpmf,mxfpmf)
+                 Call tag_legend(safe1,newatm,jpmf,pmf%legpmf,pmf%mxfpmf)
               Else
                  safe=.false.
                  Call warning('too many PMF units')
               End If
            Else
-              Call tag_legend(safe1,newatm,kpmf,legpmf,mxfpmf)
+              Call tag_legend(safe1,newatm,kpmf,pmf%legpmf,pmf%mxfpmf)
            End If
         End Do
         kmove=kmove+1
@@ -1634,7 +1634,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,stats,ewld,thermo,green,bond,
         ntshl =jshels
 
         cons%ntcons=jconst
-        ntpmf =jpmf
+        pmf%ntpmf =jpmf
 
         ntrgd =jrigid
 
@@ -2526,9 +2526,9 @@ End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles       &
            (dvar,cutoff_extended,lbook,lmsd,megatm, &
-           megshl,megpmf,     &
+           megshl,     &
            m_rgd,megtet,            &
-           cons,  &
+           cons,pmf,  &
            stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2547,9 +2547,10 @@ Subroutine relocate_particles       &
   Logical,           Intent( In    ) :: lbook
   Logical,           Intent( In    ) :: lmsd
   Integer,           Intent( In    ) :: megatm,              &
-                                        megshl,megpmf, &
+                                        megshl, &
                                         m_rgd,megtet
-  Type( constraints_type), Intent( InOut ) :: cons
+  Type( pmf_type), Intent( InOut ) :: pmf
+  Type( constraints_type), Intent( InOut ) :: cons 
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2675,18 +2676,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,cons,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! check system for loss of atoms
 
@@ -2726,7 +2727,7 @@ Subroutine relocate_particles       &
 
         If (megshl > 0) safe(1)=(ntshl  <= mxshl )
         If (cons%m_con  > 0) safe(2)=(cons%ntcons <= cons%mxcons)
-        If (megpmf > 0) safe(3)=(ntpmf  <= mxpmf )
+        If (pmf%megpmf > 0) safe(3)=(pmf%ntpmf  <= pmf%mxpmf )
         If (m_rgd  > 0) safe(4)=(ntrgd  <= mxrgd )
         If (megtet > 0) safe(5)=(tether%ntteth <= tether%mxteth)
         If (bond%total > 0) safe(6)=(bond%n_types <= bond%max_bonds)
@@ -2739,7 +2740,7 @@ Subroutine relocate_particles       &
         If (Any(.not.safe)) Then
            itmp(1)=ntshl  ; jtmp(1)=mxshl
            itmp(2)=cons%ntcons ; jtmp(2)=cons%mxcons
-           itmp(3)=ntpmf  ; jtmp(3)=mxpmf
+           itmp(3)=pmf%ntpmf  ; jtmp(3)=pmf%mxpmf
            itmp(4)=ntrgd  ; jtmp(4)=mxrgd
            itmp(5)=tether%ntteth ; jtmp(5)=tether%mxteth
            itmp(6)=bond%n_types ; jtmp(6)=bond%max_bonds
@@ -2781,7 +2782,7 @@ Subroutine relocate_particles       &
      cons%lshmv_con,cons%lishp_con,cons%lashp_con,comm,&
      q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
-        If (megpmf > 0) Call pmf_units_set(comm)
+        If (pmf%megpmf > 0) Call pmf_units_set(pmf,comm)
 
         If (m_rgd  > 0) Call pass_shared_units &
      (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd,comm,&

@@ -25,7 +25,6 @@ Module statistics
   Use neighbours,  Only  : neighbours_type
 
   Use core_shell,  Only : passshl
-  Use pmf,         Only : passpmf
   Use z_density,   Only : z_density_type,z_density_collect
   Use msd,         Only : msd_type
   Use greenkubo,   Only : greenkubo_type
@@ -46,7 +45,7 @@ Module statistics
                                     engter  = 0.0_wp,engtbp = 0.0_wp,engfbp = 0.0_wp,&
                                     engshl = 0.0_wp,engtet = 0.0_wp,engbnd = 0.0_wp,&
                                     engang = 0.0_wp,engdih = 0.0_wp,enginv = 0.0_wp,&
-                                    engfld = 0.0_wp, engcon = 0.0_wp
+                                    engfld = 0.0_wp,engcon = 0.0_wp,engpmf = 0.0_wp
 
   Real( Kind = wp )              :: stptmp = 0.0_wp,stpprs = 0.0_wp,stpvol = 0.0_wp,&
                                     stpcfg = 0.0_wp,stpeng = 0.0_wp,stpeth = 0.0_wp,&
@@ -62,7 +61,7 @@ Module statistics
   Real( Kind = wp )              :: strtot(1:9) = 0.0_wp,strkin(1:9) = 0.0_wp,strknf(1:9) = 0.0_wp,&
                                     strknt(1:9) = 0.0_wp,strcom(1:9) = 0.0_wp,strcon(1:9) = 0.0_wp,&
                                     strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp,strdpd(1:9) = 0.0_wp
-                                     
+
   Real( Kind = wp )              :: clin(1:9) = 0.0_wp
   ! constraints accumulators
   Real( Kind = wp ),              Public :: passcnq(1:5) = (/ & ! QUENCHING per call
@@ -76,6 +75,18 @@ Module statistics
     0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
     0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
     0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
+
+  Real( Kind = wp ),              Public :: passpmq(1:5) = (/ & ! QUENCHING per call
+                                          0.0_wp         ,  & ! cycles counter
+                                          0.0_wp         ,  & ! access counter
+                                          0.0_wp         ,  & ! average cycles
+                                          999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
+                                          0.0_wp /)           ! maximum cycles
+  Real( Kind = wp ),              Public :: passpmf(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
 
   Real( Kind = wp ), Allocatable :: xin(:),yin(:),zin(:)
   Real( Kind = wp ), Allocatable :: xto(:),yto(:),zto(:),rsd(:)
@@ -1429,23 +1440,23 @@ Subroutine statistics_result                                    &
 ! PMF constraints iterative cycles statistics
 
   If (megpmf > 0) Then
-     Call gmax(comm,passpmf(3:5,1,1)) ; Call gmax(comm,passpmf(3:5,2,1))
-     If (passpmf(3,1,1) > 0.0_wp) Then
+     Call gmax(comm,stats%passpmf(3:5,1,1)) ; Call gmax(comm,stats%passpmf(3:5,2,1))
+     If (stats%passpmf(3,1,1) > 0.0_wp) Then
        Write(message,'(2(a,f5.2),4(a,i3))') &
          'PMFs shake  run statistics - cycles per call/timestep: average ', &
-         passpmf(3,1,1),' / ',passpmf(3,2,1), &
-         ' minimum ',Nint(passpmf(4,1,1)),' / ',Nint(passpmf(4,2,1)), &
-         ' maximum ',Nint(passpmf(5,1,1)),' / ',Nint(passpmf(5,2,1))
+         stats%passpmf(3,1,1),' / ',stats%passpmf(3,2,1), &
+         ' minimum ',Nint(stats%passpmf(4,1,1)),' / ',Nint(stats%passpmf(4,2,1)), &
+         ' maximum ',Nint(stats%passpmf(5,1,1)),' / ',Nint(stats%passpmf(5,2,1))
        Call info(message,.true.)
      EndIf
 
-     Call gmax(comm,passpmf(3:5,1,2)) ; Call gmax(comm,passpmf(3:5,2,2))
-     If (passpmf(3,1,2) > 0.0_wp) Then
+     Call gmax(comm,stats%passpmf(3:5,1,2)) ; Call gmax(comm,stats%passpmf(3:5,2,2))
+     If (stats%passpmf(3,1,2) > 0.0_wp) Then
        Write(message,'(2(a,f5.2),4(a,i3))') &
          'PMFs rattle  run statistics - cycles per call/timestep: average ', &
-         passpmf(3,1,2),' / ',passpmf(3,2,2), &
-         ' minimum ',Nint(passpmf(4,1,2)),' / ',Nint(passpmf(4,2,2)), &
-         ' maximum ',Nint(passpmf(5,1,2)),' / ',Nint(passpmf(5,2,2))
+         stats%passpmf(3,1,2),' / ',stats%passpmf(3,2,2), &
+         ' minimum ',Nint(stats%passpmf(4,1,2)),' / ',Nint(stats%passpmf(4,2,2)), &
+         ' maximum ',Nint(stats%passpmf(5,1,2)),' / ',Nint(stats%passpmf(5,2,2))
        Call info(message,.true.)
      End If
   End If

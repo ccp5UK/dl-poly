@@ -12,7 +12,7 @@ Module minimise
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gsum,gmax
   Use setup,           Only : engunit,nrite,output, &
-                              mxatms,mxtpmf,mxpmf,zero_plus, &
+                              mxatms,zero_plus, &
                               mxrgd,mxlrgd
   Use configuration,   Only : natms,nlast,nfree,          &
                               lsi,lsa,lfrzn,lfree,lstfre, &
@@ -29,7 +29,7 @@ Module minimise
   Use kinetics,        Only : getvom,getkin,getknf,getknt,getknr, &
                               kinstress,kinstresf,kinstrest
   Use numerics,        Only : images,invert
-  Use pmf,             Only : pmf_tags,pmf_pseudo_bonds
+  Use pmf,             Only : pmf_tags,pmf_pseudo_bonds,pmf_type
   Use shared_units,    Only : update_shared_units
   Use rigid_bodies,    Only : rigid_bodies_split_torque,rigid_bodies_move
   Use errors_warnings, Only : error,warning,info
@@ -83,7 +83,7 @@ Contains
   
   Subroutine minimise_relax &
            (l_str,relaxed,lrdf,megatm,megpmf,megrgd, &
-           keymin,min_tol,tstep,stpcfg,stat,cons,comm)
+           keymin,min_tol,tstep,stpcfg,stat,pmf,cons,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -109,6 +109,7 @@ Contains
                                         megpmf,megrgd,keymin
   Real( Kind = wp ), Intent( In    ) :: min_tol(1:2),tstep,stpcfg
   Type( stats_type ), Intent(InOut) :: stat
+  Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent(InOut) :: cons
   Type( comms_type ), Intent( inOut ) :: comm
 
@@ -118,7 +119,7 @@ Contains
   Integer,              Save :: keyopt
   Integer                    :: fail(1:8),i,j,levcfg
   Real( Kind = wp ),    Save :: total,grad_tol,eng_tol,dist_tol,step,           &
-                                eng_0,eng_min,engpmf,eng,eng0,eng1,eng2, &
+                                eng_0,eng_min,eng,eng0,eng1,eng2, &
                                 grad,grad0,grad1,grad2,onorm,sgn,stride,gamma
 
 ! OUTPUT existence
@@ -136,26 +137,16 @@ Contains
 ! Constraints and PMFs arrays
 
   Logical,           Allocatable :: lstitr(:)
-  Integer,           Allocatable :: lstopt(:,:),listot(:)
-  Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
-  Integer,           Allocatable :: indpmf(:,:,:)
-  Real( Kind = wp ), Allocatable :: pxx(:),pyy(:),pzz(:)
   Real( Kind = wp ), Allocatable :: txx(:),tyy(:),tzz(:)
   Real( Kind = wp ), Allocatable :: uxx(:),uyy(:),uzz(:)
   Character( Len = 256 ) :: message
 
 
   fail=0
-  If (cons%megcon > 0 .or. megpmf > 0) Then
+  If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
      Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
-     If (cons%megcon > 0) Then
-        Allocate (lstopt(0:2,1:cons%mxcons),listot(1:mxatms),          Stat=fail(2))
-        Allocate (dxx(1:cons%mxcons),dyy(1:cons%mxcons),dzz(1:cons%mxcons),      Stat=fail(3))
-     End If
-     If (megpmf > 0) Then
-        Allocate (indpmf(1:Max(mxtpmf(1),mxtpmf(2)),1:2,1:mxpmf), Stat=fail(4))
-        Allocate (pxx(1:mxpmf),pyy(1:mxpmf),pzz(1:mxpmf),         Stat=fail(5))
-     End If
+     call cons%allocate_work(mxatms)
+     Call pmf%allocate_work()
   End If
   If (megrgd > 0) Then
      Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),         Stat=fail(6))
@@ -287,15 +278,15 @@ Contains
      lstitr(1:natms)=.false. ! initialise lstitr
 
      If (cons%megcon > 0) Then
-        Call constraints_tags(lstitr,lstopt,dxx,dyy,dzz,listot,cons,comm)
-        Call constraints_pseudo_bonds(lstopt,dxx,dyy,dzz,gxx,gyy,gzz,stat,cons,comm)
+        Call constraints_tags(lstitr,cons,comm)
+        Call constraints_pseudo_bonds(gxx,gyy,gzz,stat,cons,comm)
         eng=eng+stat%engcon
      End If
 
-     If (megpmf > 0) Then
-        Call pmf_tags(lstitr,indpmf,pxx,pyy,pzz,comm)
-        Call pmf_pseudo_bonds(indpmf,pxx,pyy,pzz,gxx,gyy,gzz,engpmf,comm)
-        eng=eng+engpmf
+     If (pmf%megpmf > 0) Then
+        Call pmf_tags(lstitr,pmf,comm)
+        Call pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,comm)
+        eng=eng+stat%engpmf
      End If
   End If
 
@@ -588,16 +579,10 @@ Contains
 
   End If
 
-  If (cons%megcon > 0 .or. megpmf > 0) Then
+  If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
      Deallocate (lstitr,           Stat=fail(1))
-     If (cons%megcon > 0) Then
-        Deallocate (lstopt,listot, Stat=fail(2))
-        Deallocate (dxx,dyy,dzz,   Stat=fail(3))
-     End If
-     If (megpmf > 0) Then
-        Deallocate (indpmf,        Stat=fail(4))
-        Deallocate (pxx,pyy,pzz,   Stat=fail(5))
-     End If
+     call cons%deallocate_work()
+     Call pmf%Deallocate_work()
   End If
   If (megrgd > 0) Then
      Deallocate (txx,tyy,tzz,      Stat=fail(6))

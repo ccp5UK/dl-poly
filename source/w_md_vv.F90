@@ -84,21 +84,21 @@
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,cons,stat,thermo,tmr)
+        Call w_integrate_vv(0,cons,pmf,stat,thermo,tmr)
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(cons,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
+        Call w_refresh_mappings(cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
 ! Evaluate forces
 
-     Call w_calculate_forces(cons,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,tmr)
+     Call w_calculate_forces(cons,pmf,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-     If (nstep == 0) Call w_statistics_report(mxatdm_,cons,stat,msd_data,zdensity)
+     If (nstep == 0) Call w_statistics_report(mxatdm_,cons,pmf,stat,msd_data,zdensity)
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
@@ -113,11 +113,11 @@
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,cons,stat,thermo,tmr)
+        Call w_integrate_vv(1,cons,pmf,stat,thermo,tmr)
 
 ! Apply kinetic options
 
-        Call w_kinetic_options(cons,stat)
+        Call w_kinetic_options(cons,pmf,stat)
 
 ! Update total time of simulation
 
@@ -125,7 +125,7 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(mxatdm_,cons,stat,msd_data,zdensity)
+        Call w_statistics_report(mxatdm_,cons,pmf,stat,msd_data,zdensity)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 

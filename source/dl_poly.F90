@@ -75,7 +75,7 @@ program dl_poly
 
   Use core_shell
 
-  Use pmf
+  Use pmf, only : pmf_type,pmf_quench
 
   Use rigid_bodies
 
@@ -227,7 +227,7 @@ program dl_poly
     nsdef,isdef,nsrsd,isrsd,            &
     ndump,nstep,keyshl,                 &
     atmfre,atmfrz,megatm,megfrz,        &
-    megshl,megpmf,megrgd,        &
+    megshl,megrgd,        &
     megtet
 
   ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
@@ -268,6 +268,7 @@ program dl_poly
   Type( z_density_type ) :: zdensity
   Type( constraints_type ) :: cons
   Type( neighbours_type ) :: neigh
+  Type( pmf_type ) :: pmfs
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -335,7 +336,7 @@ program dl_poly
   ! (setup and domains)
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rvdw,rbin,nstfce,alpha,width,cons,stats, &
+    dvar,rvdw,rbin,nstfce,alpha,width,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,threebody,zdensity,neigh,comm)
 
   Call info('',.true.)
@@ -357,7 +358,7 @@ program dl_poly
   Call allocate_core_shell_arrays()
 
   Call cons%init(mxtmls,mxatdm,mxlshp,mxproc)
-  Call allocate_pmf_arrays()
+  Call pmfs%init(mxtmls,mxatdm)
 
   Call allocate_rigid_bodies_arrays()
 
@@ -410,7 +411,7 @@ program dl_poly
     nstbnd,nstang,nstdih,nstinv,nstrdf,  &
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,cons,stats,thermo,green,devel,plume,msd_data, &
+    ndump,pdplnc,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
@@ -422,8 +423,8 @@ program dl_poly
     lecx,lbook,lexcl,               &
     rcter,rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
-    megshl,megpmf,megrgd,    &
-    megtet,cons,thermo,met,bond,angle,   &
+    megshl,megrgd,    &
+    megtet,pmfs,cons,thermo,met,bond,angle,   &
     dihedral,inversion,tether,threebody,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
@@ -518,9 +519,9 @@ program dl_poly
     Call build_book_intra              &
       (l_str,l_top,lsim,dvar,      &
       megatm,megfrz,atmfre,atmfrz, &
-      megshl,megpmf,        &
+      megshl,        &
       megrgd,degrot,degtra,        &
-      megtet,cons,bond,angle,dihedral,inversion,tether,neigh,comm)
+      megtet,cons,pmfs,bond,angle,dihedral,inversion,tether,neigh,comm)
     If (mximpl > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion,comm) ! multipoles topology for internal coordinate system
       If (keyind == 1) Call build_chrm_intra &
@@ -530,8 +531,8 @@ program dl_poly
   Else
     Call report_topology                &
       (megatm,megfrz,atmfre,atmfrz, &
-      megshl,megpmf,megrgd,  &
-      megtet,cons,bond,angle,dihedral,inversion,tether,comm)
+      megshl,megrgd,  &
+      megtet,cons,pmfs,bond,angle,dihedral,inversion,tether,comm)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -539,7 +540,7 @@ program dl_poly
       Call deallocate_core_shell_arrays()
 
       Call cons%deallocate_constraints_temps()
-      Call deallocate_pmf_arrays()
+      Call pmfs%deallocate_pmf_tmp_arrays()
 
       Call deallocate_rigid_bodies_arrays()
 
@@ -562,9 +563,9 @@ program dl_poly
     lmin,nstep,nstrun,nstmin, &
     keyshl,     &
     atmfre,atmfrz,            &
-    megshl,megpmf,     &
+    megshl,     &
     megrgd,degtra,degrot,     &
-    degfre,degshl,stats%engrot,stats,cons,thermo,comm)
+    degfre,degshl,stats%engrot,stats,cons,pmfs,thermo,comm)
 
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
@@ -648,12 +649,12 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,cons,stats,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
+    Call w_md_vv(mxatdm,cons,pmfs,stats,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,cons,stats,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
+      Call w_replay_historf(mxatdm,cons,pmfs,stats,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
     Else
-      Call w_replay_history(mxatdm,cons,stats,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh)
+      Call w_replay_history(mxatdm,cons,pmfs,stats,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh)
     End If
   End If
 
@@ -720,7 +721,7 @@ program dl_poly
 
   Call statistics_result                                        &
     (lmin,msd_data%l_msd, &
-    nstrun,keyshl,cons%megcon,megpmf,              &
+    nstrun,keyshl,cons%megcon,pmfs%megpmf,              &
     nstep,tstep,time,tmst,mxatdm,stats,thermo,green,neigh,comm,passmin)
 
   ! Final anlysis
@@ -784,8 +785,9 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(cons,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,tmr)
+  Subroutine w_calculate_forces(cons,pmf,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Type(plumed_type), Intent(InOut) :: plume
     Type(poisson_type), Intent(InOut) :: pois
@@ -800,8 +802,9 @@ Contains
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings(cons,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
+  Subroutine w_refresh_mappings(cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Type(msd_type), Intent(InOut) :: msd_data
     Type( bonds_type ), Intent( InOut ) :: bond
@@ -813,9 +816,10 @@ Contains
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw,cons,stat,thermo,tmr)
+  Subroutine w_integrate_vv(isw,cons,pmf,stat,thermo,tmr)
     Integer, Intent( In    ) :: isw ! used for vv stage control
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type( timer_type ), Intent( InOut ) :: tmr
@@ -823,15 +827,17 @@ Contains
     Include 'w_integrate_vv.F90'
   End Subroutine w_integrate_vv
 
-  Subroutine w_kinetic_options(cons,stat)
+  Subroutine w_kinetic_options(cons,pmf,stat)
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
-  Subroutine w_statistics_report(mxatdm_,cons,stat,msd_data,zdensity)
+  Subroutine w_statistics_report(mxatdm_,cons,pmf,stat,msd_data,zdensity)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Type(msd_type), Intent(InOut) :: msd_data
     Type( z_density_type ), Intent( InOut ) :: zdensity
@@ -847,9 +853,10 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,cons,stat,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
-    Integer( Kind = wi ), Intent ( In ) :: mxatdm_
+  Subroutine w_md_vv(mxatdm_,cons,pmf,stat,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
+    Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(plumed_type), Intent(InOut) :: plume
@@ -864,9 +871,10 @@ Contains
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,cons,stat,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh)
+  Subroutine w_replay_history(mxatdm_,cons,pmf,stat,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(msd_type), Intent(InOut) :: msd_data
@@ -887,9 +895,10 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,cons,stat,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
+  Subroutine w_replay_historf(mxatdm_,cons,pmf,stat,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type(plumed_type), Intent(InOut) :: plume

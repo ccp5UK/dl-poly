@@ -54,6 +54,7 @@ Module kontrol
   Use statistics, Only : stats_type
   USe z_density, Only : z_density_type
   Use constraints, Only : constraints_type
+  Use pmf, Only : pmf_type
   Use neighbours, Only : neighbours_type
 
   Implicit None
@@ -83,7 +84,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,  &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,cons,stats,thermo,green,devel,plume,msd_data,met, &
+           ndump,pdplnc,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
            pois,bond,angle,dihedral,inversion,zdensity,neigh,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -137,6 +138,7 @@ Subroutine read_control                                &
                                              min_tol(1:2), quattol,&
                                              fmax,epsq,rlx_tol(1:2),     &
                                              rrsd,pdplnc
+  Type( pmf_type ), Intent (   InOut )   :: pmf
   Type( constraints_type ), Intent (   InOut )   :: cons
   Type( stats_type ), Intent (   InOut )   :: stats
   Type( impact_type ),     Intent(   Out ) :: impa
@@ -3068,7 +3070,7 @@ Subroutine read_control                                &
 
 ! report iteration length and tolerance condition for constraints and PMF algorithms
 
-  If ((cons%mxcons > 0 .or. mxpmf > 0) .and. comm%idnode == 0) Then
+  If ((cons%mxcons > 0 .or. pmf%mxpmf > 0) .and. comm%idnode == 0) Then
      Write(messages(1),'(a,i10)') 'iterations for shake/rattle ',cons%max_iter_shake
      Write(messages(2),'(a,1p,e12.4)') 'tolerance for shake/rattle (Angs) ',cons%tolerance
      Call info(messages,2,.true.)

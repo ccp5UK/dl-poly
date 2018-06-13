@@ -33,6 +33,7 @@ Module bounds
   Use poisson,         Only : poisson_type
   Use tethers,         Only : tethers_type
   Use constraints, Only : constraints_type
+  Use pmf, Only : pmf_type
   Use three_body,      Only : threebody_type
 
   Implicit None
@@ -43,7 +44,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rvdw,rbin,nstfce,      &
-           alpha,width,cons,stats,thermo,green,devel,      &
+           alpha,width,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,comm)
 
@@ -64,6 +65,7 @@ Subroutine set_bounds                                 &
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rbin,alpha,width
+  Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -105,7 +107,7 @@ Subroutine set_bounds                                 &
            mxsite,mxatyp,megatm,mxtmls,neigh%max_exclude,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
            mtcons,              &
-           mxtpmf,mxpmf,mxfpmf,l_usr,                &
+           l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
            mtteth, &
            mtbond, &
@@ -114,7 +116,7 @@ Subroutine set_bounds                                 &
            mtinv,  &
            mxrdf,mxvdw,rvdw,mxgvdw,                  &
            mxmet,mxmed,mxmds,                        &
-           mxter,rcter,mxfbp,rcfbp,lext,cons,met,bond,    &
+           mxter,rcter,mxfbp,rcfbp,lext,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
            tether,threebody,comm)
 
@@ -245,9 +247,9 @@ Subroutine set_bounds                                 &
   End If
 
 
-! maximum number of PMF constraints per MD cell - mxpmf
+! maximum number of PMF constraints per MD cell - pmf%mxpmf
 ! (only one type of PMF in only one type of molecule !!!)
-! maximum number of atoms per PMF unit - mxtpmf(1:2) (only two units per pmf)
+! maximum number of atoms per PMF unit - pmf%mxtpmf(1:2) (only two units per pmf)
 
 
 ! maximum number of RBs per node
@@ -820,7 +822,7 @@ Subroutine set_bounds                                 &
            mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (neigh%max_exclude+1) + &
            Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,keyind == 1),0,mximpl > 0) + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp  + &
-           4*mxshl+4*cons%mxcons+(Sum(mxtpmf(1:2)+3))*mxpmf+(mxlrgd+13)*mxrgd + &
+           4*mxshl+4*cons%mxcons+(Sum(pmf%mxtpmf(1:2)+3))*pmf%mxpmf+(mxlrgd+13)*mxrgd + &
            3*tether%mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)
 
 ! statistics connect deporting total per atom

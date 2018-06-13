@@ -16,7 +16,6 @@ Module build_book
 
   Use core_shell
 
-  Use pmf
 
   Use rigid_bodies
 
@@ -30,6 +29,7 @@ Module build_book
   Use numerics, Only : local_index
   Use ffield, Only : report_topology
   Use constraints, Only : constraints_type
+  Use pmf, Only : pmf_type
 
   Use errors_warnings, Only : error
 
@@ -47,10 +47,10 @@ Module build_book
 Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           megshl,megpmf,        &
+           megshl,       &
            megrgd,degrot,degtra,        &
            megtet,                      &
-           cons,bond,angle,dihedral,  &
+           cons,pmf,bond,angle,dihedral,  & 
            inversion,tether,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -69,11 +69,11 @@ Subroutine build_book_intra             &
   Real(Kind = wp),   Intent( In    ) :: dvar
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
-                                        megshl,megpmf, &
-                                        megtet
+                                        megshl,megtet
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( constraints_type), Intent(Inout) :: cons
+  Type( pmf_type), Intent(Inout) :: pmf
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
@@ -113,7 +113,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra(cons,bond,angle,dihedral,inversion,tether,neigh)
+  If (.not.(newjob .or. lsim)) Call init_intra(cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
 
 ! Initialise safety flags
 
@@ -139,7 +139,7 @@ Subroutine build_book_intra             &
   kconst=0
 
 ! No 'jpmf' and 'kpmf' needed since PMF is defined on one and only one
-! molecular type and therefore 'ntpmf' is enough and is used locally as 'jpmf'
+! molecular type and therefore 'pmf%ntpmf' is enough and is used locally as 'jpmf'
 
   ipmf  =0
 
@@ -328,52 +328,53 @@ Subroutine build_book_intra             &
 ! Note: This is executed for only one given molecular
 !       type as only one PMF type per MD system is allowed.
 
-           Do lpmf=1,numpmf(itmols) ! numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
-              Allocate (i1pmf(1:mxtpmf(1)),i1pmf0(1:mxtpmf(1)),i2pmf(1:mxtpmf(2)),i2pmf0(1:mxtpmf(2)), Stat=fail(1))
+           Do lpmf=1,pmf%numpmf(itmols) ! pmf%numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
+              Allocate (i1pmf(1:pmf%mxtpmf(1)),i1pmf0(1:pmf%mxtpmf(1)),i2pmf(1:pmf%mxtpmf(2)),i2pmf0(1:pmf%mxtpmf(2)), Stat=fail(1))
               If (fail(1) > 0) Then
                  Write(message,'(a)') 'build_book_intra PMF allocation failure'
                  Call error(0,message)
               End If
 
               i1pmf=0 ; i1pmf0=0
-              Do i=1,mxtpmf(1)
-                 i1pmf(i) =lstpmf(i,1)+isite
+              Do i=1,pmf%mxtpmf(1)
+                 i1pmf(i) =pmf%lstpmf(i,1)+isite
                  i1pmf0(i)=local_index(i1pmf(i),nlast,lsi,lsa)
                  If (i1pmf0(i) > natms) i1pmf0(i)=0
               End Do
 
               i2pmf=0 ; i2pmf0=0
-              Do i=1,mxtpmf(2)
-                 i2pmf(i) =lstpmf(i,2)+isite
+              Do i=1,pmf%mxtpmf(2)
+                 i2pmf(i) =pmf%lstpmf(i,2)+isite
                  i2pmf0(i)=local_index(i2pmf(i),nlast,lsi,lsa)
                  If (i2pmf0(i) > natms) i2pmf0(i)=0
               End Do
 
               If (Any(i1pmf0 > 0) .or. Any(i2pmf0 > 0)) Then
-                 ntpmf=ntpmf+1
-                 If (ntpmf <= mxpmf) Then
+                 pmf%ntpmf=pmf%ntpmf+1
+                 If (pmf%ntpmf <= pmf%mxpmf) Then
 
 ! This holds the global PMF index
 
-                    listpmf(0,1,ntpmf)=imols
+                    pmf%listpmf(0,1,pmf%ntpmf)=imols
 
 ! For presence of : PMF unit 1 only - this holds 1
 !                   PMF unit 2 only - this holds 2
 !                   both units 1&2  - this holds 3
 ! It CANNOT and MUST NOT hold ZERO
 
-                    listpmf(0,2,ntpmf)=0
+                    pmf%listpmf(0,2,pmf%ntpmf)=0
 
-                    Do i=1,mxtpmf(1)
-                       listpmf(i,1,ntpmf)=i1pmf(i)
+                    Do i=1,pmf%mxtpmf(1)
+                       pmf%listpmf(i,1,pmf%ntpmf)=i1pmf(i)
                        If (i1pmf0(i) > 0) Then
-                          Call tag_legend(safe(1),i1pmf0(i),ntpmf,legpmf,mxfpmf)
-                          If (legpmf(mxfpmf,i1pmf0(i)) > 0) Then
+                          Call tag_legend(safe(1),i1pmf0(i),pmf%ntpmf,pmf%legpmf,pmf%mxfpmf)
+                          If (pmf%legpmf(pmf%mxfpmf,i1pmf0(i)) > 0) Then
                              Call warning('too many PMF type neighbours')
-                             Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfpmf-1+legpmf(mxfpmf,i1pmf0(i))
-                             Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfpmf-1
+                             Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', & 
+                               pmf%mxfpmf-1+pmf%legpmf(pmf%mxfpmf,i1pmf0(i))
+                             Write(messages(2),'(a,i0)') 'but maximum length allowed: ', pmf%mxfpmf-1
                              Write(messages(3),'(a,i0)') 'for particle (global ID #): ', i1pmf(i)
-                             Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstpmf(i,1)
+                             Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', pmf%lstpmf(i,1)
                              Write(messages(5),'(a,i0)') 'of PMF unit  (1 or 2 only): ', 1
                              Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                              Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -381,18 +382,19 @@ Subroutine build_book_intra             &
                           End If
                        End If
                     End Do
-                    If (Any(i1pmf0 > 0)) listpmf(0,2,ntpmf)=listpmf(0,2,ntpmf)+1
+                    If (Any(i1pmf0 > 0)) pmf%listpmf(0,2,pmf%ntpmf)=pmf%listpmf(0,2,pmf%ntpmf)+1
 
-                    Do i=1,mxtpmf(2)
-                       listpmf(i,2,ntpmf)=i2pmf(i)
+                    Do i=1,pmf%mxtpmf(2)
+                       pmf%listpmf(i,2,pmf%ntpmf)=i2pmf(i)
                        If (i2pmf0(i) > 0) Then
-                          Call tag_legend(safe(1),i2pmf0(i),ntpmf,legpmf,mxfpmf)
-                          If (legpmf(mxfpmf,i2pmf0(i)) > 0) Then
+                          Call tag_legend(safe(1),i2pmf0(i),pmf%ntpmf,pmf%legpmf,pmf%mxfpmf)
+                          If (pmf%legpmf(pmf%mxfpmf,i2pmf0(i)) > 0) Then
                              Call warning('too many PMF type neighbours')
-                             Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfpmf-1+legpmf(mxfpmf,i2pmf0(i))
-                             Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfpmf-1
+                             Write(messages(1),'(a,i0)') 'requiring a neigh%list length of: ', &
+                               pmf%mxfpmf-1+pmf%legpmf(pmf%mxfpmf,i2pmf0(i))
+                             Write(messages(2),'(a,i0)') 'but maximum length allowed: ', pmf%mxfpmf-1
                              Write(messages(3),'(a,i0)') 'for particle (global ID #): ', i2pmf(i)
-                             Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstpmf(i,2)
+                             Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', pmf%lstpmf(i,2)
                              Write(messages(5),'(a,i0)') 'of PMF unit  (1 or 2 only): ', 2
                              Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                              Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -400,7 +402,7 @@ Subroutine build_book_intra             &
                           End If
                        End If
                     End Do
-                    If (Any(i2pmf0 > 0)) listpmf(0,2,ntpmf)=listpmf(0,2,ntpmf)+2
+                    If (Any(i2pmf0 > 0)) pmf%listpmf(0,2,pmf%ntpmf)=pmf%listpmf(0,2,pmf%ntpmf)+2
 
                  Else
                     ipmf=ipmf+1
@@ -903,7 +905,7 @@ Subroutine build_book_intra             &
   ntshl =jshels
 
   cons%ntcons=jconst
-! 'ntpmf' is updated locally as PMFs are global and one type only
+! 'pmf%ntpmf' is updated locally as PMFs are global and one type only
 
   ntrgd =jrigid
 
@@ -1605,7 +1607,7 @@ Subroutine build_book_intra             &
   If (Any(.not.safe)) Then
      itmp(1)=ishels ; jtmp(1)=mxshl
      itmp(2)=iconst ; jtmp(2)=cons%mxcons
-     itmp(3)=ipmf   ; jtmp(3)=mxpmf
+     itmp(3)=ipmf   ; jtmp(3)=pmf%mxpmf
      itmp(4)=irigid ; jtmp(4)=mxrgd
      itmp(5)=iteths ; jtmp(5)=tether%mxteth
      itmp(6)=ibonds ; jtmp(6)=bond%max_bonds
@@ -1653,8 +1655,8 @@ Subroutine build_book_intra             &
 
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
-           megshl,megpmf,megrgd,  &
-           megtet,cons,bond,angle,dihedral,inversion,tether,comm)
+           megshl,megrgd,  &
+           megtet,cons,pmf,bond,angle,dihedral,inversion,tether,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1662,7 +1664,7 @@ Subroutine build_book_intra             &
         Call deallocate_core_shell_arrays()
 
         Call cons%deallocate_constraints_temps()
-        Call deallocate_pmf_arrays()
+        Call pmf%deallocate_pmf_tmp_arrays()
 
         Call deallocate_rigid_bodies_arrays()
 
@@ -1788,7 +1790,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra(cons,bond,angle,dihedral,inversion,tether,neigh)
+Subroutine init_intra(cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1801,6 +1803,7 @@ Subroutine init_intra(cons,bond,angle,dihedral,inversion,tether,neigh)
 ! author    - i.t.todorov march 2016
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
@@ -1827,9 +1830,9 @@ Subroutine init_intra(cons,bond,angle,dihedral,inversion,tether,neigh)
 
 ! PMFs locals
 
-  ntpmf  = 0
-  listpmf = 0
-  legpmf  = 0
+  pmf%ntpmf  = 0
+  pmf%listpmf = 0
+  pmf%legpmf  = 0
 
 ! RBs locals
 
