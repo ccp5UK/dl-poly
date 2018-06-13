@@ -19,6 +19,7 @@ Module npt_mtk
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
+Use thermostat, Only : adjust_timestep
   Implicit None
 
   Private
@@ -74,7 +75,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
-    Logical                 :: safe,lcol,lfst,lv_up,lv_dn
+    Logical                 :: safe,lcol,lfst
     Integer,           Save :: mxiter,mxkit,kit
     Integer                 :: fail(1:9),iter,i
     Real( Kind = wp ), Save :: cell0(1:9),volm0,elrc0,virlrc0
@@ -169,8 +170,6 @@ Contains
     hstep = 0.5_wp*tstep
     qstep = 0.5_wp*hstep
     rstep = 1.0_wp/tstep
-    lv_up = .false.
-    lv_dn = .false.
 
   ! first pass of velocity verlet algorithm
 
@@ -300,57 +299,9 @@ Contains
   ! check timestep for variable timestep
 
        If (lvar) Then
-
-  ! update maximum distance a particle has travelled
-
-          mxdr = 0.0_wp
-          Do i=1,natms
-             If (legshl(0,i) >= 0) &
-                mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
-          End Do
-          mxdr=Sqrt(mxdr)
-          Call gmax(comm,mxdr)
-
-          If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
-
-  ! scale tstep and derivatives
-
-             If (mxdr > mxdis) Then
-                lv_up = .true.
-                If (lv_dn) Then
-                   tstep = 0.75_wp*tstep
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                Else
-                   tstep = hstep
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                End If
-                Write(message,'(a,1p,e12.4)') &
-                  'timestep decreased, new timestep is: ', tstep
-                Call info(message,.true.)
-             End If
-             If (mxdr < mndis) Then
-                lv_dn = .true.
-                If (lv_up) Then
-                   tstep = 1.50_wp*tstep
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                Else
-                   qstep = hstep
-                   hstep = tstep
-                   tstep = 2.00_wp*tstep
-                End If
-                If (tstep > mxstp) Then
-                   tstep = mxstp
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                End If
-                Write(message,'(a,1p,e12.4)') &
-                  'timestep increased, new timestep is: ', tstep
-                Call info(message,.true.)
-             End If
-             rstep = 1.0_wp/tstep
+If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+ xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+            Call info(message,.true.)
 
   ! restore initial conditions
 
@@ -531,7 +482,7 @@ Call pmf%deallocate_work()
 
     Logical,           Save :: newjob = .true. , &
                                unsafe = .false.
-    Logical                 :: safe,lcol,lfst,lv_up,lv_dn
+    Logical                 :: safe,lcol,lfst
     Integer,           Save :: mxiter,mxkit,kit
     Integer                 :: fail(1:14),matms,iter,i,j,i1,i2, &
                                irgd,jrgd,krgd,lrgd,rgdtyp
@@ -680,8 +631,6 @@ Call pmf%allocate_work()
     hstep = 0.5_wp*tstep
     qstep = 0.5_wp*hstep
     rstep = 1.0_wp/tstep
-    lv_up = .false.
-    lv_dn = .false.
 
   ! first pass of velocity verlet algorithm
 
@@ -1052,57 +1001,9 @@ Call pmf%allocate_work()
   ! check timestep for variable timestep
 
        If (lvar) Then
-
-  ! update maximum distance a particle has travelled
-
-          mxdr = 0.0_wp
-          Do i=1,natms
-             If (legshl(0,i) >= 0) &
-                mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
-          End Do
-          mxdr=Sqrt(mxdr)
-          Call gmax(comm,mxdr)
-
-          If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
-
-  ! scale tstep and derivatives
-
-             If (mxdr > mxdis) Then
-                lv_up = .true.
-                If (lv_dn) Then
-                   tstep = 0.75_wp*tstep
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                Else
-                   tstep = hstep
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                End If
-                Write(message,'(a,1p,e12.4)') &
-                  'timestep decreased, new timestep is: ', tstep
-                Call info(message,.true.)
-             End If
-             If (mxdr < mndis) Then
-                lv_dn = .true.
-                If (lv_up) Then
-                   tstep = 1.50_wp*tstep
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                Else
-                   qstep = hstep
-                   hstep = tstep
-                   tstep = 2.00_wp*tstep
-                End If
-                If (tstep > mxstp) Then
-                   tstep = mxstp
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                End If
-                Write(message,'(a,1p,e12.4)') &
-                  'timestep increased, new timestep is: ', tstep
-                Call info(message,.true.)
-             End If
-             rstep = 1.0_wp/tstep
+If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+ xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+            Call info(message,.true.)
 
   ! restore initial conditions
 
