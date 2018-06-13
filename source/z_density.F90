@@ -12,7 +12,7 @@ Module z_density
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gsum
   Use setup,  Only : mxgrdf,nrite,nzdndt,mxatyp
-  Use site,   Only : ntpatm,unqatm
+  Use site, Only : site_type
   Use configuration, Only : cfgname,cell,volm,natms,ltype,zzz
   Use errors_warnings, Only : error,info
   Implicit None
@@ -104,7 +104,7 @@ Contains
 End Subroutine z_density_collect
 
 
-Subroutine z_density_compute(zdensity,comm)
+Subroutine z_density_compute(zdensity,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -118,7 +118,9 @@ Subroutine z_density_compute(zdensity,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
+
   Integer           :: j,k
   Real( Kind = wp ) :: zlen,delr,dvolz,factor,rho,rho1,rrr,sum,sum1
   Character( Len = 256 ) :: messages(2)
@@ -132,7 +134,7 @@ Subroutine z_density_compute(zdensity,comm)
   If (comm%idnode == 0) Then
      Open(Unit=nzdndt, File='ZDNDAT', Status='replace')
      Write(nzdndt,'(a)') cfgname
-     Write(nzdndt,'(2i10)') ntpatm,mxgrdf
+     Write(nzdndt,'(2i10)') site%ntype_atom,mxgrdf
   End If
 
 ! length of cell in z direction
@@ -154,12 +156,12 @@ Subroutine z_density_compute(zdensity,comm)
 
 ! for every species
 
-  Do k=1,ntpatm
-     Write(messages(1),'(2x,a,a8)') 'rho(r): ',unqatm(k)
+  Do k=1,site%ntype_atom
+     Write(messages(1),'(2x,a,a8)') 'rho(r): ',site%unique_atom(k)
      Write(messages(2),'(9x,a1,6x,a3,9x,a4)') 'r','rho','n(r)'
      Call info(messages,2,.true.)
      If (comm%idnode == 0) Then
-        Write(nzdndt,'(a8)') unqatm(k)
+        Write(nzdndt,'(a8)') site%unique_atom(k)
      End If
 
 ! global sum of data on all nodes

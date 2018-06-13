@@ -16,7 +16,7 @@ Module angles
   Use setup,  Only : pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                      engunit,zero_plus,twopi, &
                      delth_max,ntable,mxatdm,mxtmls
-  Use site,   Only : unqatm,ntpatm
+  Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                             xxx,yyy,zzz,fxx,fyy,fzz,cfgname
   Use parse, Only : get_line,get_word,word_2_real
@@ -160,7 +160,7 @@ Contains
 
   End Subroutine allocate_angl_dst_arrays
   
-  Subroutine angles_compute(temp,angle,comm)
+  Subroutine angles_compute(temp,unique_atom,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -174,6 +174,7 @@ Contains
 
 
   Real( Kind = wp ),  Intent( In    ) :: temp
+  Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
   Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -258,7 +259,8 @@ Contains
         j=j+1
 
         Write(message,'(a,3(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-          unqatm(angle%typ(1,i)),unqatm(angle%typ(2,i)),unqatm(angle%typ(3,i)),j,angle%typ(0,i)
+          unique_atom(angle%typ(1,i)),unique_atom(angle%typ(2,i)), &
+          unique_atom(angle%typ(3,i)),j,angle%typ(0,i)
         Call info(message,.true.)
         Write(message,'(a,f8.5)') &
          'Theta(degrees)  PDF_ang(Theta)  Sum_PDF_ang(Theta)   @   dTheta_bin = ',delth*rad2dgr
@@ -266,7 +268,8 @@ Contains
 
         If (comm%idnode == 0) Then
            Write(npdfdt,'(/,a,3(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-                unqatm(angle%typ(1,i)),unqatm(angle%typ(2,i)),unqatm(angle%typ(3,i)),j,angle%typ(0,i)
+                unique_atom(angle%typ(1,i)),unique_atom(angle%typ(2,i)), &
+                unique_atom(angle%typ(3,i)),j,angle%typ(0,i)
         End If
 
 ! global sum of data on all nodes
@@ -364,11 +367,13 @@ Contains
 
         If (comm%idnode == 0) Then
            Write(npdgdt,'(/,a,3(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(angle%typ(1,i)),unqatm(angle%typ(2,i)),unqatm(angle%typ(3,i)),j,angle%typ(0,i), &
-                ' (type, index, instances)'
+             unique_atom(angle%typ(1,i)),unique_atom(angle%typ(2,i)), &
+             unique_atom(angle%typ(3,i)),j,angle%typ(0,i), &
+             ' (type, index, instances)'
            Write(npdfdt,'(/,a,3(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(angle%typ(1,i)),unqatm(angle%typ(2,i)),unqatm(angle%typ(3,i)),j,angle%typ(0,i), &
-                ' (type, index, instances)'
+             unique_atom(angle%typ(1,i)),unique_atom(angle%typ(2,i)), &
+             unique_atom(angle%typ(3,i)),j,angle%typ(0,i), &
+             ' (type, index, instances)'
         End If
 
 ! Smoothen and get derivatives
@@ -1091,7 +1096,7 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
 
 End Subroutine angles_forces
 
-Subroutine angles_table_read(angl_name,angle,comm)
+Subroutine angles_table_read(angl_name,angle,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1103,9 +1108,9 @@ Subroutine angles_table_read(angl_name,angle,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
   Type( angles_type ), Intent( InOut ) :: angle
   Character( Len = 24 ), Intent( In    ) :: angl_name(1:angle%max_types)
+  Type( site_type ), Intent( In    ) :: site
   Type(comms_type),      Intent( InOut ) :: comm
 
   Logical                :: safe,remake
@@ -1210,10 +1215,10 @@ Subroutine angles_table_read(angl_name,angle,comm)
      katom2=0
      katom3=0
 
-     Do jtpatm=1,ntpatm
-        If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-        If (atom2 == unqatm(jtpatm)) katom2=jtpatm
-        If (atom3 == unqatm(jtpatm)) katom3=jtpatm
+     Do jtpatm=1,site%ntype_atom
+        If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
+        If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+        If (atom3 == site%unique_atom(jtpatm)) katom3=jtpatm
      End Do
 
      If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0) Then

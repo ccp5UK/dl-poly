@@ -48,7 +48,7 @@ Module defects
                                 IO_ALLOCATION_ERROR,      &
                                 IO_UNKNOWN_WRITE_OPTION,  &
                                 IO_UNKNOWN_WRITE_LEVEL
-  Use site
+  Use site, Only : site_type
   Use domains,           Only : nprx,npry,nprz,            &
                                 nprx_r,npry_r,nprz_r,map,  &
                                 idx,idy,idz,r_nprx,r_npry, &
@@ -400,7 +400,7 @@ End Subroutine defects_reference_export
 
 !> defects_reference_read
 
-  Subroutine defects_reference_read(nstep,dfcts,comm)
+  Subroutine defects_reference_read(nstep,dfcts,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -415,6 +415,7 @@ End Subroutine defects_reference_export
   
   Integer,              Intent( In    ) :: nstep
   Type( defects_type ), Intent( InOut ) :: dfcts
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Logical                :: l_ind = .true.  , &
@@ -886,13 +887,13 @@ End Subroutine defects_reference_export
      nsite=0
      msite=0
      fsite=0
-     Do itmols=1,ntpmls
-        Do isite=1,numsit(itmols)
+     Do itmols=1,site%ntype_mol
+        Do isite=1,site%num_site(itmols)
            nsite=nsite+1
 
-           If (frzsit(nsite) /= 0) Then
-              Do nrept=1,nummols(itmols)
-                 ifrz=nsite+msite+(nrept-1)*numsit(itmols)
+           If (site%freeze_site(nsite) /= 0) Then
+              Do nrept=1,site%num_mols(itmols)
+                 ifrz=nsite+msite+(nrept-1)*site%num_site(itmols)
 
                  Do i=1,dfcts%nrefs
                     If (dfcts%indr(i) == ifrz) Then
@@ -910,8 +911,8 @@ End Subroutine defects_reference_export
            End If
         End Do
 
-        msite=msite+(nummols(itmols)-1)*numsit(itmols)
-        fsite=fsite+nummols(itmols)*numfrz(itmols)
+        msite=msite+(site%num_mols(itmols)-1)*site%num_site(itmols)
+        fsite=fsite+site%num_mols(itmols)*site%num_freeze(itmols)
      End Do
 
      If (fsite > 0) Then
@@ -2139,7 +2140,7 @@ Subroutine defects_reference_write(name,megref,dfcts,comm)
 End Subroutine defects_reference_write
 
 !> defects_write
-  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,dfcts,neigh,comm)
+  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,dfcts,neigh,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2156,6 +2157,7 @@ End Subroutine defects_reference_write
   Real( Kind = wp )   , Intent( In    ) :: tstep,time
   Type( defects_type ), Intent( InOut ) :: dfcts
   Type( neighbours_type ), Intent( In    ) :: neigh
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type)   , Intent( InOut ) :: comm
   
   Integer, Parameter :: recsz = 73 ! default record size
@@ -2222,7 +2224,7 @@ End Subroutine defects_reference_write
 
 ! Build lattice sites list from REFERENCE
      Call allocate_defects_arrays(dfcts)
-     Call defects_reference_read(nstep,dfcts,comm)
+     Call defects_reference_read(nstep,dfcts,site,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set

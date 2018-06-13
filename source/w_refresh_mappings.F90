@@ -18,11 +18,11 @@
            megshl,     &
            m_rgd,megtet,            &
            cons, pmf,& 
-           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,comm)
 
 ! Exchange atomic data in border regions
 
-           Call set_halo_particles(keyfce,neigh,comm) ! inducing in here only
+           Call set_halo_particles(keyfce,neigh,site,comm) ! inducing in here only
 
 ! Re-tag RBs when called again after the very first time
 ! when it's done in rigid_bodies_setup <- build_book_intra

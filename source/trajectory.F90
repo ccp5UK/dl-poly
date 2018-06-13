@@ -4,7 +4,7 @@ Module trajectory
                             gsum,gsend,grecv,offset_kind,mode_wronly, &
                             mode_rdonly, comm_self
   Use domains,       Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
-  Use site
+  Use site, Only : site_type
   Use setup
   Use parse,         Only : tabs_2_blanks, get_line, get_word, &
                             strip_blanks, word_2_real
@@ -50,7 +50,7 @@ Module trajectory
 Contains
 
 
-Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,comm)
+Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,6 +69,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
   Real( Kind = wp ),    Intent( In    ) :: dvar
   Real( Kind = wp ),    Intent( InOut ) :: tstep,time
   Integer,              Intent(   Out ) :: exout
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type),    Intent( InOut ) :: comm
 
   Logical,               Save :: newjob = .true.  , &
@@ -297,9 +298,9 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,co
 
      nattot=0
 
-     Do k=1,ntpmls
-        Do l=1,nummols(k)
-           Do m=1,numsit(k)
+     Do k=1,site%ntype_mol
+        Do l=1,site%num_mols(k)
+           Do m=1,site%num_site(k)
 
 ! Increase counters
 

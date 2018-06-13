@@ -3,7 +3,7 @@ Module nvt_anderson
   Use comms,         Only : comms_type,gsum,gmax
   Use domains,       Only : map
   Use setup,         Only : boltz,zero_plus,mxshl
-  Use site,          Only : dofsit
+  Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,nfree,lsite, &
                             lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
                             weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -36,7 +36,7 @@ Contains
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,keyshl,       &
              strkin,engke,                      &
-             cons,pmf,stat,thermo,tmr,comm)
+             cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -67,8 +67,9 @@ Contains
 
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
-Type( pmf_type ), Intent( InOut ) :: pmf
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut) :: comm
 
@@ -103,7 +104,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
        Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
        Call cons%allocate_work(mxatms)
        Call pmf%allocate_work()
-Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
+       Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
     Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 7))
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 8))
@@ -313,7 +314,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
                 j = j + 1
                 qn(i) = 1
 
-                If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
+                If (site%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site%dof_site(lsite(i))
 
   ! Get gaussian distribution (unit variance)
 
@@ -437,8 +438,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
        Deallocate (lstitr,           Stat=fail( 1))
        Call cons%deallocate_work()
-Call pmf%deallocate_work()
-Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
+       Call pmf%deallocate_work()
+       Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     End If
     Deallocate (xxt,yyt,zzt,         Stat=fail( 7))
     Deallocate (vxt,vyt,vzt,         Stat=fail( 8))
@@ -456,7 +457,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,keyshl,       &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cons,pmf,stat,thermo,tmr,comm)
+             strcom,vircom,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -491,8 +492,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
-Type( pmf_type ), Intent( InOut ) :: pmf
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -539,8 +541,8 @@ Type( pmf_type ), Intent( InOut ) :: pmf
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
        Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
        Call cons%allocate_work(mxatms)
-Call pmf%allocate_work()
-Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
+       Call pmf%allocate_work()
+       Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
     Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), &
                                                                     Stat=fail( 7))
@@ -669,7 +671,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
        End Do
 
   100  Continue
-  
+
     ! constraint virial and stress tensor
 
        If (cons%megcon > 0) Then
@@ -1197,7 +1199,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
        mxdr = 0.0_wp
        Do i=1,natms
           If (qn(i) == 1 .and. lfree(i) == 0) Then
-             If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
+             If (site%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site%dof_site(lsite(i))
 
   ! Get gaussian distribution (unit variance)
 
@@ -1223,7 +1225,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
                 Do jrgd=1,lrgd
                    i=indrgd(jrgd,irgd) ! particle index
                    If (i <= natms) Then
-                      If (dofsit(lsite(i)) > zero_plus) mxdr = mxdr + dofsit(lsite(i))
+                      If (site%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site%dof_site(lsite(i))
                    End If
                 End Do
 
@@ -1468,8 +1470,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
        Deallocate (lstitr,            Stat=fail( 1))
        Call cons%deallocate_work()
-Call pmf%deallocate_work()
-Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
+       Call pmf%deallocate_work()
+       Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     End If
     Deallocate (ggx,ggy,ggz,          Stat=fail( 7))
     Deallocate (xxt,yyt,zzt,          Stat=fail( 8))

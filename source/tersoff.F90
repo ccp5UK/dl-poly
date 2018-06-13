@@ -10,7 +10,7 @@ Module tersoff
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,   Only : comms_type,gsum
   Use setup
   Use domains, Only : idx,idy,idz, nprx,npry,nprz, &
@@ -39,7 +39,8 @@ Module tersoff
 
 Contains
 
-  Subroutine allocate_tersoff_arrays()
+  Subroutine allocate_tersoff_arrays(max_site)
+    Integer( Kind = wi ), Intent( In    ) :: max_site
 
     Integer                   :: nprter
     Integer, Dimension( 1:7 ) :: fail
@@ -48,7 +49,7 @@ Contains
 
     fail = 0
 
-    Allocate (lfrter(1:Merge(mxsite,0,mxter > 0)),    Stat = fail(1))
+    Allocate (lfrter(1:Merge(max_site,0,mxter > 0)),    Stat = fail(1))
     Allocate (lstter(1:mxter),                        Stat = fail(2))
     Allocate (ltpter(1:mxter),                        Stat = fail(3))
     Allocate (prmter(1:mxpter,1:mxter),               Stat = fail(4))

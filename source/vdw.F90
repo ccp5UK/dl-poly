@@ -12,14 +12,14 @@ Module vdw
   Use kinds, Only : wp
   Use comms,  Only : comms_type,gsum,gbcast
   Use setup
-  Use site,   Only : ntpatm,numtyp
+  Use site, Only : site_type
   Use configuration, Only : imcon,volm,natms,ltype,lfrzn, &
                             ltg,fxx,fyy,fzz
   Use mm3lrc
   Use zbl_pots,         Only : ab, intRadZBL, intdRadZBL, &
                            zbl,zbls,zblb
 
-  Use site,  Only : ntpatm,unqatm
+  Use site, Only : site_type
   Use parse, Only : get_line,get_word,word_2_real
   Use neighbours, Only : neighbours_type
   Use errors_warnings, Only : error,warning,info
@@ -107,7 +107,7 @@ Contains
 
   End Subroutine allocate_vdw_direct_fs_arrays
 
-  Subroutine vdw_lrc(rvdw,elrc,virlrc,comm)
+  Subroutine vdw_lrc(rvdw,elrc,virlrc,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -128,6 +128,7 @@ Contains
 
   Real( Kind = wp ), Intent( In    ) :: rvdw
   Real( Kind = wp ), Intent(   Out ) :: elrc,virlrc
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( inOut ) :: comm
 
   Integer           :: fail,i,j,k,ivdw,keypot,n,m
@@ -159,14 +160,14 @@ Contains
      k = ltype(i)
      If (lfrzn(i) /= 0) numfrz(k)=numfrz(k)+1.0_wp
   End Do
-  Call gsum(comm,numfrz(1:ntpatm))
+  Call gsum(comm,numfrz(1:site%ntype_atom))
 
 ! Evaluate only for 3D periodic systems
 
   If (imcon /= 0 .and. imcon /= 6) Then
      ivdw = 0
 
-     Do i=1,ntpatm
+     Do i=1,site%ntype_atom
         Do j=1,i
 
            eadd = 0.0_wp
@@ -386,7 +387,7 @@ Contains
               padd = padd*2.0_wp
            End If
 
-           denprd=twopi * (numtyp(i)*numtyp(j) - numfrz(i)*numfrz(j)) / volm**2
+           denprd=twopi * (site%num_type(i)*site%num_type(j) - numfrz(i)*numfrz(j)) / volm**2
 
            elrc = elrc + volm*denprd*eadd
            plrc = plrc + denprd*padd/3.0_wp
@@ -709,7 +710,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 End Subroutine vdw_direct_fs_generate
 
 
-Subroutine vdw_table_read(rvdw,comm)
+Subroutine vdw_table_read(rvdw,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -723,10 +724,10 @@ Subroutine vdw_table_read(rvdw,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
   Real( Kind = wp ), Intent( In    ) :: rvdw
-
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
+
   Logical                :: safe,remake
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word
@@ -826,9 +827,9 @@ Subroutine vdw_table_read(rvdw,comm)
         katom1=0
         katom2=0
 
-        Do jtpatm=1,ntpatm
-           If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-           If (atom2 == unqatm(jtpatm)) katom2=jtpatm
+        Do jtpatm=1,site%ntype_atom
+           If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
+           If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
         End Do
 
         If (katom1 == 0 .or. katom2 == 0) Then

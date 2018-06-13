@@ -17,7 +17,7 @@ Module dihedrals
                             engunit,zero_plus, mxtmls,     &
                             rtwopi,r4pie0,    &
                             mximpl, ntable,mxgvdw,mxatdm
-  Use site,   Only : unqatm,ntpatm
+  Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
                                 chge,xxx,yyy,zzz,fxx,fyy,fzz,cfgname
   Use vdw,    Only : ntpvdw,gvdw,vvdw,afs,prmvdw,bfs,ls_vdw,ld_vdw,  &
@@ -168,9 +168,9 @@ Contains
     dihedral%dst = 0.0_wp
 
   End Subroutine allocate_dihd_dst_arrays
-  
+
   Subroutine dihedrals_14_check &
-           (l_str,l_top,ntpmls,nummols,angle,dihedral,comm)
+           (l_str,l_top,angle,dihedral,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -182,11 +182,11 @@ Contains
 ! amended   - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   Logical,           Intent( In    ) :: l_str,l_top
-  Integer,           Intent( In    ) :: ntpmls,nummols(1:mxtmls)
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: l_print,l_reset,l_reset_l
@@ -203,11 +203,11 @@ Contains
 
 ! loop over molecular types
 
-  Do itmols=1,ntpmls
+  Do itmols=1,site%ntype_mol
 
 ! loop over molecules in system
 
-     Do imols=1,nummols(itmols)
+     Do imols=1,site%num_mols(itmols)
 
 ! check for valence angle on dihedral angle conflicts
 
@@ -310,7 +310,7 @@ Contains
 
 End Subroutine dihedrals_14_check
 
-Subroutine dihedrals_compute(temp,dihedral,comm)
+Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -324,6 +324,7 @@ Subroutine dihedrals_compute(temp,dihedral,comm)
 
 
   Real( Kind = wp ), Intent( In    ) :: temp
+  Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -411,15 +412,17 @@ Subroutine dihedrals_compute(temp,dihedral,comm)
 
         Write(messages(1),*) ''
         Write(messages(2),'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-           unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
-           unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i)
+          unique_atom(dihedral%typ(1,i)),unique_atom(dihedral%typ(2,i)), &
+          unique_atom(dihedral%typ(3,i)), &
+          unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i)
         Write(messages(3),'(a,f8.5)') &
-           'Theta(degrees)  P_dih(Theta)  Sum_P_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
+          'Theta(degrees)  P_dih(Theta)  Sum_P_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
         Call info(messages,3,.true.)
         If (comm%idnode == 0) Then
-           Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-              unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
-              unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i)
+          Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
+            unique_atom(dihedral%typ(1,i)),unique_atom(dihedral%typ(2,i)), &
+            unique_atom(dihedral%typ(3,i)), &
+            unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i)
         End If
 
 ! global sum of data on all nodes
@@ -510,12 +513,14 @@ Subroutine dihedrals_compute(temp,dihedral,comm)
         j=j+1
 
         If (comm%idnode == 0) Then
-           Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
-                unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
-           Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(dihedral%typ(1,i)),unqatm(dihedral%typ(2,i)),unqatm(dihedral%typ(3,i)), &
-                unqatm(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
+          Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+            unique_atom(dihedral%typ(1,i)),unique_atom(dihedral%typ(2,i)), &
+            unique_atom(dihedral%typ(3,i)), &
+            unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
+          Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+            unique_atom(dihedral%typ(1,i)),unique_atom(dihedral%typ(2,i)), &
+            unique_atom(dihedral%typ(3,i)), &
+            unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
         End If
 
 ! Smoothen and get derivatives
@@ -1721,7 +1726,7 @@ Subroutine dihedrals_forces &
 
 End Subroutine dihedrals_forces
 
-Subroutine dihedrals_table_read(dihd_name,dihedral,comm)
+Subroutine dihedrals_table_read(dihd_name,dihedral,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1737,6 +1742,7 @@ Subroutine dihedrals_table_read(dihd_name,dihedral,comm)
 
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Character( Len = 32 ), Intent( In    ) :: dihd_name(1:dihedral%max_types)
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,remake,zero
@@ -1843,11 +1849,11 @@ Subroutine dihedrals_table_read(dihd_name,dihedral,comm)
      katom3=0
      katom4=0
 
-     Do jtpatm=1,ntpatm
-        If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-        If (atom2 == unqatm(jtpatm)) katom2=jtpatm
-        If (atom3 == unqatm(jtpatm)) katom3=jtpatm
-        If (atom4 == unqatm(jtpatm)) katom4=jtpatm
+     Do jtpatm=1,site%ntype_atom
+        If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
+        If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+        If (atom3 == site%unique_atom(jtpatm)) katom3=jtpatm
+        If (atom4 == site%unique_atom(jtpatm)) katom4=jtpatm
      End Do
 
      If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0 .or. katom4 == 0) Then

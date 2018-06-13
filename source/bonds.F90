@@ -19,7 +19,7 @@ Module bonds
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                               chge,xxx,yyy,zzz,fxx,fyy,fzz, cfgname
-  Use site,            Only : ntpatm,unqatm
+  Use site, Only : site_type
   Use parse,           Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info
   Use numerics,        Only : images, local_index
@@ -168,7 +168,7 @@ Contains
   End Subroutine allocate_bond_dst_arrays
 
 
-  Subroutine bonds_compute(temp,bond,comm)
+  Subroutine bonds_compute(temp,unique_atom,bond,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -182,6 +182,7 @@ Contains
 
 
   Real( Kind = wp ), Intent( In    ) :: temp
+  Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -261,12 +262,12 @@ Contains
         j=j+1
 
         Write(messages(1),'(a,2(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-          unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i)
+          unique_atom(bond%typ(1,i)),unique_atom(bond%typ(2,i)),j,bond%typ(0,i)
         Write(messages(2),'(a,f8.5)') 'r(Angstroms)  P_bond(r)  Sum_P_bond(r)   @   dr_bin = ',delr
         Call info(messages,2,.true.)
         If (comm%idnode == 0) Then
-           Write(npdfdt,'(/,a,2(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-                unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i)
+          Write(npdfdt,'(/,a,2(a8,1x),2(i10,1x))') '# type, index, instances: ', &
+            unique_atom(bond%typ(1,i)),unique_atom(bond%typ(2,i)),j,bond%typ(0,i)
         End If
 
 ! global sum of data on all nodes
@@ -357,12 +358,12 @@ Contains
         j=j+1
 
         If (comm%idnode == 0)  Then
-           Write(npdgdt,'(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i), &
-                ' (type, index, instances)'
-           Write(npdfdt,'(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
-                unqatm(bond%typ(1,i)),unqatm(bond%typ(2,i)),j,bond%typ(0,i), &
-                ' (type, index, instances)'
+          Write(npdgdt,'(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
+            unique_atom(bond%typ(1,i)),unique_atom(bond%typ(2,i)),j,bond%typ(0,i), &
+            ' (type, index, instances)'
+          Write(npdfdt,'(/,a,2(a8,1x),2(i10,1x),a)') '# ', &
+            unique_atom(bond%typ(1,i)),unique_atom(bond%typ(2,i)),j,bond%typ(0,i), &
+            ' (type, index, instances)'
         End If
 
 ! Smoothen and get derivatives
@@ -969,7 +970,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 
 End Subroutine bonds_forces
 
-Subroutine bonds_table_read(bond_name,bond,comm)
+Subroutine bonds_table_read(bond_name,bond,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -983,6 +984,7 @@ Subroutine bonds_table_read(bond_name,bond,comm)
 
   Type( bonds_type ),    Intent( InOut ) :: bond
   Character( Len = 16 ), Intent( In    ) :: bond_name(1:bond%max_types)
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type),     Intent( InOut ) :: comm
 
   Logical                :: safe,remake
@@ -1085,9 +1087,9 @@ Subroutine bonds_table_read(bond_name,bond,comm)
      katom1=0
      katom2=0
 
-     Do jtpatm=1,ntpatm
-        If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-        If (atom2 == unqatm(jtpatm)) katom2=jtpatm
+     Do jtpatm=1,site%ntype_atom
+        If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
+        If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
      End Do
 
      If (katom1 == 0 .or. katom2 == 0) Then

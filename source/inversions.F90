@@ -14,7 +14,7 @@ Module inversions
   Use comms, Only : comms_type,gsum,gsync,gcheck,gbcast
   Use setup, Only : mxtmls,mxatdm,pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                     engunit,zero_plus,ntable
-  Use site,  Only : ntpatm,unqatm
+  Use site, Only : site_type
   Use configuration, Only : cfgname
   Use parse, Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info
@@ -158,7 +158,7 @@ Contains
 
   End Subroutine allocate_invr_dst_arrays
 
-  Subroutine inversions_compute(temp,inversion,comm)
+  Subroutine inversions_compute(temp,unique_atom,inversion,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -171,6 +171,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),  Intent( In    ) :: temp
+    Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -256,8 +257,9 @@ Contains
           j=j+1
 
           Write(message,'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-            unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)),unqatm(inversion%typ(3,i)), &
-            unqatm(inversion%typ(4,i)),j,inversion%typ(0,i)
+            unique_atom(inversion%typ(1,i)),unique_atom(inversion%typ(2,i)), &
+            unique_atom(inversion%typ(3,i)), &
+            unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i)
           Call info(message,.true.)
           Write(message,'(a,f8.5)') &
             'Theta(degrees)  P_inv(Theta)  Sum_P_inv(Theta)   @   dTheta_bin = ', &
@@ -265,8 +267,9 @@ Contains
           Call info(message,.true.)
           If (comm%idnode == 0) Then
             Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-              unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)), &
-              unqatm(inversion%typ(3,i)),unqatm(inversion%typ(4,i)),j,inversion%typ(0,i)
+              unique_atom(inversion%typ(1,i)),unique_atom(inversion%typ(2,i)), &
+              unique_atom(inversion%typ(3,i)), &
+              unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i)
           End If
 
   ! global sum of data on all nodes
@@ -359,12 +362,14 @@ Contains
           j=j+1
 
           If (comm%idnode == 0) Then
-             Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                  unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)),unqatm(inversion%typ(3,i)), &
-                  unqatm(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
-             Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                  unqatm(inversion%typ(1,i)),unqatm(inversion%typ(2,i)),unqatm(inversion%typ(3,i)), &
-                  unqatm(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
+            Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+              unique_atom(inversion%typ(1,i)),unique_atom(inversion%typ(2,i)), &
+              unique_atom(inversion%typ(3,i)), &
+              unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
+            Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+              unique_atom(inversion%typ(1,i)),unique_atom(inversion%typ(2,i)), &
+              unique_atom(inversion%typ(3,i)), &
+              unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
           End If
 
   ! Smoothen and get derivatives
@@ -1215,7 +1220,7 @@ Contains
 
   End Subroutine inversions_forces
 
-  Subroutine inversions_table_read(invr_name,inversion,comm)
+  Subroutine inversions_table_read(invr_name,inversion,site,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1229,6 +1234,7 @@ Contains
 
     Type( inversions_type ), Intent( InOut ) :: inversion
     Character( Len = 32 ), Intent( In    ) :: invr_name(1:inversion%max_types)
+    Type( site_type ), Intent( In    ) :: site
     Type( comms_type ),    Intent( InOut ) :: comm
 
     Logical                :: safe,remake
@@ -1334,11 +1340,11 @@ Contains
        katom3=0
        katom4=0
 
-       Do jtpatm=1,ntpatm
-          If (atom1 == unqatm(jtpatm)) katom1=jtpatm
-          If (atom2 == unqatm(jtpatm)) katom2=jtpatm
-          If (atom3 == unqatm(jtpatm)) katom3=jtpatm
-          If (atom4 == unqatm(jtpatm)) katom4=jtpatm
+       Do jtpatm=1,site%ntype_atom
+          If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
+          If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+          If (atom3 == site%unique_atom(jtpatm)) katom3=jtpatm
+          If (atom4 == site%unique_atom(jtpatm)) katom4=jtpatm
        End Do
 
        If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0 .or. katom4 == 0) Then

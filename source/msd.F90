@@ -12,7 +12,7 @@ Module msd
   Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync,gbcast, &
                     gsend,grecv,offset_kind,comm_self,mode_wronly
   Use setup
-  Use site,       Only : dofsit
+  Use site, Only : site_type
   Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
                                 weight
 
@@ -57,7 +57,7 @@ Module msd
   Public :: msd_write
   Contains
 
-  Subroutine msd_write(keyres,megatm,nstep,tstep,time,stpval,msd_data,comm)
+    Subroutine msd_write(keyres,megatm,nstep,tstep,time,stpval,dof_site,msd_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -74,6 +74,7 @@ Module msd
                                         megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time
   Real( Kind = wp ), Intent( InOut ) :: stpval(:)
+  Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
   Type( msd_type ), Intent( Inout ) :: msd_data
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -304,7 +305,7 @@ Module msd
     Do i=1,natms
         k=2*i
 
-        If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+        If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
 
         Write(record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') atmnam(i),ltg(i),Sqrt(stpval(27+k-1)),tmp,Repeat(' ',8),lf
         jj=jj+1
@@ -359,7 +360,7 @@ Module msd
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
@@ -410,7 +411,7 @@ Module msd
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
@@ -482,7 +483,7 @@ Module msd
 
         ddd(i)=Sqrt(stpval(27+k-1))
 
-        If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+        If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
         eee(i)=tmp
     End Do
 
@@ -549,7 +550,7 @@ Module msd
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
@@ -589,7 +590,7 @@ Module msd
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dofsit(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 

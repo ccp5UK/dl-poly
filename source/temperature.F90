@@ -2,7 +2,7 @@ Module temperature
   Use kinds,           Only : wp, li
   Use comms,           Only : comms_type,gsum
   Use setup,           Only : nrite,boltz,mxatms,mxshl,zero_plus
-  Use site,            Only : dofsit
+  Use site, Only : site_type
   Use configuration,   Only : imcon,natms,nlast,nfree,lsite,  &
                               lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                               weight,vxx,vyy,vzz,xxx,yyy,zzz
@@ -37,7 +37,7 @@ Contains
              atmfre,atmfrz,            &
              megshl,     &
              megrgd,degtra,degrot,     &
-             degfre,degshl,engrot,stat,cons,pmf,thermo,comm)
+             degfre,degshl,engrot,dof_site,stat,cons,pmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -60,6 +60,7 @@ Contains
 
     Integer(Kind=li),   Intent(   Out ) :: degfre,degshl
     Real( Kind = wp ),  Intent(   Out ) :: engrot
+    Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
     Type( stats_type ), Intent( InOut ) :: stat
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -143,8 +144,8 @@ Contains
 
     tmp=0.0_wp
     Do i=1,natms
-       If (dofsit(lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
-          tmp=tmp+dofsit(lsite(i))
+       If (dof_site(lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
+          tmp=tmp+dof_site(lsite(i))
     End Do
     Call gsum(comm,tmp)
     If (Nint(tmp,li)-non-com /= degfre) Call error(360)
@@ -527,7 +528,7 @@ Contains
        If (no_min_0) Then
           If (cons%megcon > 0) Then 
             Call constraints_quench(cons,stat,comm)
-          End If  
+          End If
           If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
        End If
 

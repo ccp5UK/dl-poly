@@ -40,27 +40,27 @@ Module three_body
 
 Contains
 
-  Subroutine allocate_three_body_arrays(threebody)
+  Subroutine allocate_three_body_arrays(max_site,threebody)
+    Integer( Kind = wi ), Intent( In    ) :: max_site
+    Type(threebody_type) , Intent( InOut )   :: threebody
 
-  Type(threebody_type) , Intent( InOut )   :: threebody
-  Integer, Dimension( 1:5 ) :: fail
- 
-  fail=0
+    Integer, Dimension( 1:5 ) :: fail
 
-  Allocate (threebody%lfrtbp(1:Merge(mxsite,0,threebody%mxtbp > 0)), Stat = fail(1))
-  Allocate (threebody%lsttbp(1:threebody%mxtbp),                     Stat = fail(2))
-  Allocate (threebody%ltptbp(1:threebody%mxtbp),                     Stat = fail(3))
-  Allocate (threebody%prmtbp(1:threebody%mxptbp,1:threebody%mxtbp),  Stat = fail(4))
-  Allocate (threebody%rcttbp(1:threebody%mxtbp),                     Stat = fail(5))
+    fail=0
 
-  If (Any(fail > 0)) Call error(1024)
+    Allocate (threebody%lfrtbp(1:Merge(max_site,0,threebody%mxtbp > 0)), Stat = fail(1))
+    Allocate (threebody%lsttbp(1:threebody%mxtbp),                     Stat = fail(2))
+    Allocate (threebody%ltptbp(1:threebody%mxtbp),                     Stat = fail(3))
+    Allocate (threebody%prmtbp(1:threebody%mxptbp,1:threebody%mxtbp),  Stat = fail(4))
+    Allocate (threebody%rcttbp(1:threebody%mxtbp),                     Stat = fail(5))
 
-  threebody%lfrtbp = .false.
-  threebody%lsttbp = 0
-  threebody%ltptbp = 0
-  threebody%prmtbp = 0.0_wp
-  threebody%rcttbp = 0.0_wp 
+    If (Any(fail > 0)) Call error(1024)
 
+    threebody%lfrtbp = .false.
+    threebody%lsttbp = 0
+    threebody%ltptbp = 0
+    threebody%prmtbp = 0.0_wp
+    threebody%rcttbp = 0.0_wp
   End Subroutine allocate_three_body_arrays
 
   Subroutine three_body_forces(stats,threebody,neigh,comm)

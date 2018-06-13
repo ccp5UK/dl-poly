@@ -2,7 +2,7 @@ Module nst_berendsen
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gmax
   Use setup,           Only : mxatyp,zero_plus
-  Use site,            Only : ntpatm,dens
+  Use site, Only : site_type
   Use configuration,   Only : imcon,cell,volm,natms,nlast,nfree, &
     lfrzn,lstfre,weight,               &
     xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -36,7 +36,7 @@ Contains
       (isw,lvar,mndis,mxdis,mxstp,tstep, &
       stress,                    &
       strkin,engke,                      &
-      elrc,virlrc,cons,pmf,stat,thermo,tmr,comm)
+      elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -77,6 +77,7 @@ Contains
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut) :: comm
 
@@ -139,8 +140,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
         Write(message,'(a)') 'dens0 allocation failure'
         Call error(0,message)
       End If
-      Do i=1,ntpatm
-        dens0(i) = dens(i)
+      Do i=1,site%ntype_atom
+        dens0(i) = site%dens(i)
       End Do
 
       ! Sort thermo%eta for thermo%iso>=1
@@ -370,8 +371,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
       tmp=(volm0/volm)
       elrc=elrc0*tmp
       virlrc=virlrc0*tmp
-      Do i=1,ntpatm
-        dens(i)=dens0(i)*tmp
+      Do i=1,site%ntype_atom
+        site%dens(i)=dens0(i)*tmp
       End Do
 
       ! get h_z for thermo%iso>1
@@ -446,7 +447,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
       stress,                    &
       strkin,strknf,strknt,engke,engrot, &
       strcom,vircom,                     &
-      elrc,virlrc,cons,pmf,stat,thermo,tmr,comm)
+      elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -491,6 +492,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut) :: comm
 
@@ -574,8 +576,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
         Write(message,'(a)') 'dens0 allocation failure'
         Call error(0,message)
       End If
-      Do i=1,ntpatm
-        dens0(i) = dens(i)
+      Do i=1,site%ntype_atom
+        dens0(i) = site%dens(i)
       End Do
 
       ! Sort thermo%eta for thermo%iso>=1
@@ -1073,12 +1075,12 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
       ! adjust long range corrections and number density
 
-      tmp=(volm0/volm)
-      elrc=elrc0*tmp
-      virlrc=virlrc0*tmp
-      Do i=1,ntpatm
-        dens(i)=dens0(i)*tmp
-      End Do
+       tmp=(volm0/volm)
+       elrc=elrc0*tmp
+       virlrc=virlrc0*tmp
+       Do i=1,site%ntype_atom
+          site%dens(i)=dens0(i)*tmp
+       End Do
 
       ! get h_z for thermo%iso>1
 

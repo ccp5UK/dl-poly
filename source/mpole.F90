@@ -1,9 +1,9 @@
 Module mpole
   Use kinds, Only : wp,wi
-  Use setup, Only : mxatdm, mxatms, mximpl, mxompl, mxsite, mxspl, &
+  Use setup, Only : mxatdm, mxatms, mximpl, mxompl, mxspl, &
                            sqrpi,r4pie0,zero_plus,nrite,nmpldt
   Use configuration,Only : natms
-  Use site
+  Use site, Only : site_type
   Use core_shell, Only : numshl,lstshl
   Use parse
   Use comms, Only : comms_type
@@ -69,7 +69,8 @@ Module mpole
 
 Contains
 
-  Subroutine allocate_mpoles_arrays(max_exclude)
+  Subroutine allocate_mpoles_arrays(max_site,max_exclude)
+    Integer( Kind = wi ), Intent( In    ) :: max_site
     Integer( Kind = wi ), Intent( In    ) :: max_exclude
 
     Integer           :: n,k,om1,numpl,fail(1:9)
@@ -86,9 +87,9 @@ Contains
     Allocate (mplflg(1:mxatdm),ltpatm(0:max_exclude,1:mxatdm),          Stat = fail(2))
     If (keyind == 1) &
     Allocate (lchatm(0:max_exclude,1:mxatdm),                           Stat = fail(3))
-    Allocate (mpllfr(1:mximpl,1:mxsite),mplgfr(1:mximpl,1:mxatms), Stat = fail(4))
-    Allocate (plrsit(1:mxsite),plratm(1:mxatms),                   Stat = fail(5))
-    Allocate (dmpsit(1:mxsite),dmpatm(1:mxatms),                   Stat = fail(6))
+    Allocate (mpllfr(1:mximpl,1:max_site),mplgfr(1:mximpl,1:mxatms), Stat = fail(4))
+    Allocate (plrsit(1:max_site),plratm(1:mxatms),                   Stat = fail(5))
+    Allocate (dmpsit(1:max_site),dmpatm(1:mxatms),                   Stat = fail(6))
     Allocate (mprotm(1:mxatdm),ncombk(0:mxspl,0:mxspl),            Stat = fail(7))
     Allocate (mptrqx(1:mxatdm),mptrqy(1:mxatdm),mptrqz(1:mxatdm),  Stat = fail(8))
     Allocate (mprotx(1:mximpl,1:mxatms), &
@@ -278,7 +279,7 @@ Contains
 
   End Subroutine allocate_mpoles_arrays
 
-  Subroutine read_mpoles(l_top,sumchg,comm)
+  Subroutine read_mpoles(l_top,sumchg,site,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -292,7 +293,9 @@ Contains
 
     Logical,           Intent ( In    ) :: l_top
     Real( Kind = wp ), Intent ( InOut ) :: sumchg
+    Type( site_type ), Intent( InOut ) :: site
     Type( comms_type ), Intent ( InOut ) :: comm
+
     Logical                :: safe,l_rsh,l_ord=.false.
 
     Character( Len = 200 ) :: record,record1,record2
@@ -351,20 +354,20 @@ Contains
           Call get_word(record,word) ; Call lower_case(word)
           If (word(1:4) == 'type') Call get_word(record,word)
 
-          If (ntpmls == Nint(word_2_real(word))) Then
-             Write(message,"('number of molecular types',6x,i10)") ntpmls
+          If (site%ntype_mol == Nint(word_2_real(word))) Then
+             Write(message,"('number of molecular types',6x,i10)") site%ntype_mol
              Call info(message,.true.)
           Else
             Call warning("number of molecular types mistmatch between FIELD and MPOLES",.true.)
             Write(message,'(2(a,i0))') &
-            "FIELD  reports: ", ntpmls, ", MPOLES reports: ", Nint(word_2_real(word))
+            "FIELD  reports: ", site%ntype_mol, ", MPOLES reports: ", Nint(word_2_real(word))
             Call info(message,.true.)
             Call error(623,master_only=.true.)
           End If
 
   ! read in molecular characteristics for every molecule
 
-          Do itmols=1,ntpmls
+          Do itmols=1,site%ntype_mol
 
             If (l_top) Then
               Write(message,"('molecular species type',9x,i10)") itmols
@@ -381,11 +384,11 @@ Contains
              End Do
              Call strip_blanks(record)
              record1=word(1:Len_Trim(word)+1)//record ; Call lower_case(record1)
-             record2=molnam(itmols) ;                   Call lower_case(record2)
+             record2=site%mol_name(itmols) ;                   Call lower_case(record2)
 
              If (record1 == record2) Then
                If (l_top) Then
-                 Write(message,"('name of species:',13x,a40)") molnam(itmols)
+                 Write(message,"('name of species:',13x,a40)") site%mol_name(itmols)
                  Call info(message,.true.)
                End If
              Else
@@ -410,15 +413,15 @@ Contains
 
                    Call get_word(record,word)
 
-                   If (nummols(itmols) == Nint(word_2_real(word))) Then
+                   If (site%num_mols(itmols) == Nint(word_2_real(word))) Then
                      If (l_top) Then
-                       Write(message,"('number of molecules  ',10x,i10)") nummols(itmols)
+                       Write(message,"('number of molecules  ',10x,i10)") site%num_mols(itmols)
                        Call info(message,.true.)
                      End If
                    Else
                      Call warning("number of molecules mistmatch between FIELD and MPOLES",.true.)
                      Write(message,'(2(a,i0))') &
-                     "FIELD  reports: ", nummols(itmols), ", MPOLES reports: ", Nint(word_2_real(word))
+                     "FIELD  reports: ", site%num_mols(itmols), ", MPOLES reports: ", Nint(word_2_real(word))
                      Call info(message,.true.)
                      Call error(623,master_only=.true.)
                    End If
@@ -429,9 +432,9 @@ Contains
 
                    Call get_word(record,word)
 
-                   If (numsit(itmols) == Nint(word_2_real(word))) Then
+                   If (site%num_site(itmols) == Nint(word_2_real(word))) Then
                       If (l_top) Then
-                        Write(message,"('number of atoms/sites',10x,i10)") numsit(itmols)
+                        Write(message,"('number of atoms/sites',10x,i10)") site%num_site(itmols)
                         Call info(message,.true.)
                         Write(message,"('atomic characteristics:', &
                           & /,/,15x,'site',4x,'name',2x,'multipolar order',2x,'repeat'/)")
@@ -440,7 +443,7 @@ Contains
                    Else
                      Call warning("number of molecules mistmatch between FIELD and MPOLES",.true.)
                      Write(message,'(2(a,i0))') &
-                     "FIELD  reports: ", nummols(itmols), ", MPOLES reports: ", Nint(word_2_real(word))
+                     "FIELD  reports: ", site%num_mols(itmols), ", MPOLES reports: ", Nint(word_2_real(word))
                      Call info(message,.true.)
                      Call error(623,master_only=.true.)
                    End If
@@ -448,8 +451,8 @@ Contains
   ! for every molecule of this type get site and atom description
 
                    ksite=0 ! reference point
-                   Do isite=1,numsit(itmols)
-                      If (ksite < numsit(itmols)) Then
+                   Do isite=1,site%num_site(itmols)
+                      If (ksite < site%num_site(itmols)) Then
 
   ! read atom name, highest pole order supplied, repeat
 
@@ -478,7 +481,7 @@ Contains
                          lsite=jsite+nrept-1
 
                          Do i=jsite,lsite
-                           If (sitnam(i) /= atom) Then ! detect mish-mash
+                           If (site%site_name(i) /= atom) Then ! detect mish-mash
                              Write(message,'(a,i0)') &
                                "site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite
                              Call error(623,message,.true.)
@@ -541,7 +544,7 @@ Contains
                          sitmpl = 1
 
                          charge=word_2_real(word)
-                         chgsit(jsite:lsite)=charge
+                         site%charge_site(jsite:lsite)=charge
                          mpllfr(sitmpl,jsite:lsite)=charge
                          If (l_rsh) Then
                             plrsit(jsite:lsite)=polarity
@@ -695,7 +698,7 @@ Contains
                          nsite=nsite+nrept
                          ksite=ksite+nrept
 
-                         If (ksite == numsit(itmols)) nshels=kshels
+                         If (ksite == site%num_site(itmols)) nshels=kshels
 
                       End If
                    End Do

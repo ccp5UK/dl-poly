@@ -12,7 +12,7 @@ Module rigid_bodies
   Use comms,           Only : comms_type,gsum,gmin,gmax,gsync,gcheck
   Use setup,           Only : mxtmls,mxtrgd,mxrgd,mxlrgd,mxfrgd,mxlshp,mxproc,mxatdm, &
                               mxatms,zero_plus
-  Use site
+  Use site, Only : site_type
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
                               ltg,lsite,lfrzn,fxx,fyy,fzz,nfree,lstfre,getcom
   Use neighbours,      Only : neighbours_type
@@ -666,7 +666,7 @@ Contains
     End If
   End Subroutine rigid_bodies_q_ench
 
-  Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot,comm)
+  Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot,site,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for constructing RBs' rotational inertia tesnors
@@ -680,6 +680,7 @@ Contains
     Integer,            Intent( In    ) :: megatm
     Integer,            Intent( InOut ) :: megfrz,megrgd
     Integer(Kind=li),   Intent( InOut ) :: degtra,degrot
+    Type( site_type ), Intent( InOut ) :: site
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: l_print,safe,pass1,pass2
@@ -1164,7 +1165,7 @@ Contains
 
     If (.not.safe) Then
        nrigid=0
-    S: Do itmols=1,ntpmls
+    S: Do itmols=1,site%ntype_mol
           Do i=1,numrgd(itmols)
              nrigid=nrigid+1
              If (nrigid == irgd) Exit S
@@ -1176,7 +1177,7 @@ Contains
     End If
 
   ! Sort out degrees of freedom (redundancy & corrections)
-  ! correct frzsit,dofsit,rgdwgt,rgdwg1 if needed
+  ! correct site%freeze_site,site%dof_site,rgdwgt,rgdwg1 if needed
 
     Allocate (lstsit(0:mxlrgd*mxtrgd), Stat = fail(1))
     If (fail(1) > 0) Then
@@ -1192,7 +1193,7 @@ Contains
 
     nsite =0
     nrigid=0
-    Do itmols=1,ntpmls
+    Do itmols=1,site%ntype_mol
        ifrz=0
 
        frzrgd=0
@@ -1271,11 +1272,11 @@ Contains
                 iatm1=lstrgd(jrgd,nrigid)
                 isite1=nsite+iatm1
 
-                If (frzsit(isite1) == 0) Then
+                If (site%freeze_site(isite1) == 0) Then
                    ifrz=ifrz+1
 
-                   frzsit(isite1)=1
-                   dofsit(isite1)=0.0_wp
+                   site%freeze_site(isite1)=1
+                   site%dof_site(isite1)=0.0_wp
 
                    lstsit(0)=lstsit(0)+1
                    lstsit(lstsit(0))=isite1
@@ -1285,20 +1286,20 @@ Contains
           End If
        End Do
 
-       megfrz=megfrz+ifrz*nummols(itmols)
+       megfrz=megfrz+ifrz*site%num_mols(itmols)
 
-       megrgd=megrgd-frzrgd*nummols(itmols)
-       degtra=degtra+Int(nummols(itmols),li)*Int(trargd,li)
-       degrot=degrot+Int(nummols(itmols),li)*Int(rotrgd,li)
+       megrgd=megrgd-frzrgd*site%num_mols(itmols)
+       degtra=degtra+Int(site%num_mols(itmols),li)*Int(trargd,li)
+       degrot=degrot+Int(site%num_mols(itmols),li)*Int(rotrgd,li)
 
-       nsite=nsite+numsit(itmols)
+       nsite=nsite+site%num_site(itmols)
     End Do
 
   ! In case of any refreezing changes refresh the local neigh%list of frozen atoms
 
     If (lstsit(0) > 0) Then
        Do i=1,nlast
-          lfrzn(i)=frzsit(lsite(i))
+          lfrzn(i)=site%freeze_site(lsite(i))
        End Do
     End If
 
@@ -1314,7 +1315,7 @@ Contains
        Call info('summary of rigid body set up',.true.)
 
        nrigid=0
-       Do itmols=1,ntpmls
+       Do itmols=1,site%ntype_mol
           Write(message,'(2x,a,i6)') 'in molecule',itmols
           Call info(message,.true.)
 
@@ -1387,7 +1388,7 @@ Contains
 
     nsite =0
     nrigid=0
-    Do itmols=1,ntpmls
+    Do itmols=1,site%ntype_mol
        Do irgd=1,numrgd(itmols)
           nrigid=nrigid+1
 
@@ -1403,7 +1404,7 @@ Contains
                 iatm1=lstrgd(jrgd,nrigid)
                 isite1=nsite+iatm1
 
-                If (dofsit(isite1) > zero_plus) ntmp=ntmp+1
+                If (site%dof_site(isite1) > zero_plus) ntmp=ntmp+1
              End Do
 
              If (rgdfrz(0,nrigid) == 0) Then
@@ -1414,7 +1415,7 @@ Contains
                    iatm1=lstrgd(jrgd,nrigid)
                    isite1=nsite+iatm1
 
-                   If (dofsit(isite1) > zero_plus) dofsit(isite1)=5.0_wp/Real(ntmp,wp)
+                   If (site%dof_site(isite1) > zero_plus) site%dof_site(isite1)=5.0_wp/Real(ntmp,wp)
                 End Do
 
              Else
@@ -1426,7 +1427,7 @@ Contains
                    iatm1=lstrgd(jrgd,nrigid)
                    isite1=nsite+iatm1
 
-                   If (dofsit(isite1) > zero_plus) dofsit(isite1)=1.0_wp/Real(ntmp,wp)
+                   If (site%dof_site(isite1) > zero_plus) site%dof_site(isite1)=1.0_wp/Real(ntmp,wp)
                 End Do
 
              End If
@@ -1438,7 +1439,7 @@ Contains
                 iatm1=lstrgd(jrgd,nrigid)
                 isite1=nsite+iatm1
 
-                If (dofsit(isite1) > zero_plus) ntmp=ntmp+1
+                If (site%dof_site(isite1) > zero_plus) ntmp=ntmp+1
              End Do
 
              If (rgdfrz(0,nrigid) == 0) Then
@@ -1449,7 +1450,7 @@ Contains
                    iatm1=lstrgd(jrgd,nrigid)
                    isite1=nsite+iatm1
 
-                   If (dofsit(isite1) > zero_plus) dofsit(isite1)=6.0_wp/Real(ntmp,wp)
+                   If (site%dof_site(isite1) > zero_plus) site%dof_site(isite1)=6.0_wp/Real(ntmp,wp)
                 End Do
 
              Else If (rgdfrz(0,nrigid) == 1) Then
@@ -1461,7 +1462,7 @@ Contains
                    iatm1=lstrgd(jrgd,nrigid)
                    isite1=nsite+iatm1
 
-                   If (dofsit(isite1) > zero_plus) dofsit(isite1)=3.0_wp/Real(ntmp,wp)
+                   If (site%dof_site(isite1) > zero_plus) site%dof_site(isite1)=3.0_wp/Real(ntmp,wp)
                 End Do
 
              Else
@@ -1470,7 +1471,7 @@ Contains
                    iatm1=lstrgd(jrgd,nrigid)
                    isite1=nsite+iatm1
 
-                   If (dofsit(isite1) > zero_plus) safe=.false.
+                   If (site%dof_site(isite1) > zero_plus) safe=.false.
                 End Do
 
              End If
@@ -1485,7 +1486,7 @@ Contains
           Call error(644)
        End If
 
-       nsite=nsite+numsit(itmols)
+       nsite=nsite+site%num_site(itmols)
     End Do
 
   ! OUT OF GLOBAL SCOPE & BACK IN DOMAIN SCOPE

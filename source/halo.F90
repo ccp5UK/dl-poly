@@ -6,7 +6,7 @@ Module halo
   Use configuration 
 
   Use domains
-  Use site
+  Use site, Only : site_type
   Use mpole
 
   Use neighbours,       Only : neighbours_type,vnl_set_check
@@ -85,7 +85,7 @@ Module halo
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(keyfce,neigh,comm)
+Subroutine set_halo_particles(keyfce,neigh,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -99,6 +99,7 @@ Subroutine set_halo_particles(keyfce,neigh,comm)
 
   Integer,           Intent( In    ) :: keyfce
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( site_type ), Intent( In    ) :: site
   Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ), Save :: cut
@@ -208,11 +209,11 @@ Subroutine set_halo_particles(keyfce,neigh,comm)
 ! assign incoming atom properties (of the halo only)
 
   Do i=natms+1,nlast
-     ltype(i)=typsit(lsite(i))
-     chge(i)=chgsit(lsite(i))
-     weight(i)=wgtsit(lsite(i))
-     lfrzn(i)=frzsit(lsite(i))
-     lfree(i)=fresit(lsite(i))
+     ltype(i)=site%type_site(lsite(i))
+     chge(i)=site%charge_site(lsite(i))
+     weight(i)=site%weight_site(lsite(i))
+     lfrzn(i)=site%freeze_site(lsite(i))
+     lfree(i)=site%free_site(lsite(i))
   End Do
 
 ! Assign polarisation and dumping factor

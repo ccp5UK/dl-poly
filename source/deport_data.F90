@@ -78,8 +78,8 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
   Integer,            Intent( In    ) :: mdir
   Logical,            Intent( In    ) :: lbook
   Logical,            Intent( In    ) :: lmsd
-  Type( pmf_type) , Intent( InOut ) :: pmf 
-  Type( constraints_type) , Intent( InOut ) :: cons 
+  Type( pmf_type) , Intent( InOut ) :: pmf
+  Type( constraints_type) , Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2529,7 +2529,7 @@ Subroutine relocate_particles       &
            megshl,     &
            m_rgd,megtet,            &
            cons,pmf,  &
-           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2550,7 +2550,7 @@ Subroutine relocate_particles       &
                                         megshl, &
                                         m_rgd,megtet
   Type( pmf_type), Intent( InOut ) :: pmf
-  Type( constraints_type), Intent( InOut ) :: cons 
+  Type( constraints_type), Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( thermostat_type ), Intent( In    ) :: thermo
@@ -2561,6 +2561,7 @@ Subroutine relocate_particles       &
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2698,12 +2699,12 @@ Subroutine relocate_particles       &
 ! reassign atom properties
 
      Do i=1,natms
-        atmnam(i)=sitnam(lsite(i))
-        ltype(i)=typsit(lsite(i))
-        chge(i)=chgsit(lsite(i))
-        weight(i)=wgtsit(lsite(i))
-        lfrzn(i)=frzsit(lsite(i))
-        lfree(i)=fresit(lsite(i))
+        atmnam(i)=site%site_name(lsite(i))
+        ltype(i)=site%type_site(lsite(i))
+        chge(i)=site%charge_site(lsite(i))
+        weight(i)=site%weight_site(lsite(i))
+        lfrzn(i)=site%freeze_site(lsite(i))
+        lfree(i)=site%free_site(lsite(i))
      End Do
 
      If (lbook) Then

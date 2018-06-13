@@ -1,5 +1,5 @@
 Module bounds
-  Use kinds,           Only : wp
+  Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type
 
   Use setup
@@ -44,7 +44,7 @@ Contains
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rvdw,rbin,nstfce,      &
-           alpha,width,cons,pmf,stats,thermo,green,devel,      &
+           alpha,width,max_site,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,comm)
 
@@ -65,6 +65,7 @@ Subroutine set_bounds                                 &
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rbin,alpha,width
+  Integer( Kind = wi ), Intent(   Out ) :: max_site
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
@@ -104,7 +105,7 @@ Subroutine set_bounds                                 &
 
   Call scan_field                                    &
            (l_n_e,mxompl,mximpl,                     &
-           mxsite,mxatyp,megatm,mxtmls,neigh%max_exclude,       &
+           max_site,mxatyp,megatm,mxtmls,neigh%max_exclude,       &
            mtshl,mxtshl,mxshl,mxfshl,                &
            mtcons,              &
            l_usr,                &

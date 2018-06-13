@@ -11,12 +11,12 @@ Module greenkubo
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
 
   Use comms,     Only : comms_type,gsum,gcheck
   Use setup,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt,mxatms
   Use configuration,    Only : natms,ltype,lfrzn,vxx,vyy,vzz,cfgname
-  Use site,      Only : unqatm,numtypnf
+  Use site, Only : site_type
 
   Use errors_warnings, Only : error,info
   Implicit None
@@ -31,17 +31,17 @@ Module greenkubo
     Logical, Public :: l_average
 
     !> VAF sampling frequency in steps
-    Integer, Public :: freq = 1
+    Integer( Kind = wi ), Public :: freq = 1
     !> VAF sample size
-    Integer, Public :: binsize = 0
+    Integer( Kind = wi ), Public :: binsize = 0
     !> VAF timestep start
-    Integer, Public :: t_start = -1
+    Integer( Kind = wi ), Public :: t_start = -1
     !> VAF simultaneously overlapping samples
-    Integer, Public :: samp = 0
+    Integer( Kind = wi ), Public :: samp = 0
 
     Real( Kind = wp ), Public :: vafcount = 0.0_wp
 
-    Integer,           Allocatable, Public :: step(:)
+    Integer( Kind = wi ), Allocatable, Public :: step(:)
     Real( Kind = wp ), Allocatable, Public :: vxi(:,:),vyi(:,:),vzi(:,:)
     Real( Kind = wp ), Allocatable, Public :: vafdata(:,:),time(:),vaf(:,:)
 
@@ -221,7 +221,7 @@ Contains
 
   End Subroutine vaf_collect
 
-  Subroutine vaf_compute(tstep,green,comm)
+  Subroutine vaf_compute(tstep,num_type_nf,green,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -234,8 +234,8 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
     Real( Kind = wp ), Intent( In    ) :: tstep
+    Real( Kind = wp ), Dimension(:), Intent( In    ) :: num_type_nf
     Type( greenkubo_type), Intent( In    ) :: green
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -254,7 +254,7 @@ Contains
     Call info(message,.true.)
 
     time0 = green%time(0)
-    numt = Sum(numtypnf(1:mxatyp))
+    numt = Sum(num_type_nf(1:mxatyp))
     factor = 1.0_wp/Sum(green%vaf(0,1:mxatyp))
     ovaf = Sum(green%vaf(0,1:mxatyp))/Real(numt,Kind=wp)
     If (green%l_average) ovaf = ovaf/green%vafcount
@@ -291,7 +291,7 @@ Contains
 
   End Subroutine vaf_compute
 
-  Subroutine vaf_write(keyres,nstep,tstep,green,comm)
+  Subroutine vaf_write(keyres,nstep,tstep,green,site,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -306,6 +306,7 @@ Contains
     Integer,           Intent( In    ) :: keyres,nstep
     Real( Kind = wp ), Intent( In    ) :: tstep
     Type( greenkubo_type), Intent( In    ) :: green
+    Type( site_type ), Intent( In    ) :: site
     Type( comms_type), Intent( InOut ) :: comm
 
     Logical,     Save :: newjob = .true.
@@ -326,7 +327,7 @@ Contains
       Do i=1,mxatyp
         lexist=.true.
         If (keyres == 1) Then
-          If (comm%idnode == 0) Inquire(File='VAFDAT_'//unqatm(i), Exist=lexist)
+          If (comm%idnode == 0) Inquire(File='VAFDAT_'//site%unique_atom(i), Exist=lexist)
           Call gcheck(comm,lexist)
         Else
           lexist=.false.
@@ -336,7 +337,7 @@ Contains
 
         If ((.not.lexist) .or. green%l_average) Then
           If (comm%idnode == 0) Then
-            Open(Unit=nvafdt, File='VAFDAT_'//unqatm(i), Status='replace')
+            Open(Unit=nvafdt, File='VAFDAT_'//site%unique_atom(i), Status='replace')
             Write(nvafdt,'(a)') cfgname
             Close(Unit=nvafdt)
           End If
@@ -349,7 +350,7 @@ Contains
     ! loop over species types
 
     Do j=1,mxatyp
-      numt = numtypnf(j)
+      numt = site%num_type_nf(j)
       factor = 1.0_wp
       If (Abs(green%vaf(0,j)) > 0.0e-6_wp) factor = 1.0_wp/green%vaf(0,j)
       ovaf = green%vaf(0,j)/Real(numt,Kind=wp)
@@ -359,12 +360,12 @@ Contains
 
       If (comm%idnode == 0) Then
         If (green%l_average) Then
-          Open(Unit=nvafdt, File='VAFDAT_'//unqatm(j), Status='replace')
+          Open(Unit=nvafdt, File='VAFDAT_'//site%unique_atom(j), Status='replace')
           Write(nvafdt,'(a)') cfgname
           Close(Unit=nvafdt)
         End If
-        Open(Unit=nvafdt, File='VAFDAT_'//unqatm(j), Position='append')
-        Write(nvafdt,'(a8,i10,1p,e16.8,f20.6)') unqatm(j),green%binsize,ovaf,time0
+        Open(Unit=nvafdt, File='VAFDAT_'//site%unique_atom(j), Position='append')
+        Write(nvafdt,'(a8,i10,1p,e16.8,f20.6)') site%unique_atom(j),green%binsize,ovaf,time0
       End If
 
       ! Then loop over time steps
