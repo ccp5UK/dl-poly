@@ -181,7 +181,7 @@ Contains
            keyres,                 &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
-           mxatdm,stats,thermo,zdensity,site_data,comm)
+           mxatdm,stats,thermo,zdensity,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -208,7 +208,7 @@ Contains
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( z_density_type ), Intent( InOut ) :: zdensity
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -413,7 +413,7 @@ Contains
         k=ltype(i)
         amsd(k)=amsd(k)+stats%rsd(i)**2
      End Do
-     Call gsum(comm,amsd(1:site_data%ntype_atom))
+     Call gsum(comm,amsd(1:site%ntype_atom))
   End If
 
   If (lmsd) Then
@@ -425,14 +425,14 @@ Contains
      iadd = iadd + 2*mxatdm
   End If
 
-  Do k=1,site_data%ntype_atom
-     If (site_data%num_type_nf(k) > zero_plus) Then
-        stats%stpval(iadd+k)=amsd(k)/site_data%num_type_nf(k)
+  Do k=1,site%ntype_atom
+     If (site%num_type_nf(k) > zero_plus) Then
+        stats%stpval(iadd+k)=amsd(k)/site%num_type_nf(k)
      Else
         stats%stpval(iadd+k)=0.0_wp
      End If
   End Do
-  iadd = iadd + site_data%ntype_atom
+  iadd = iadd + site%ntype_atom
 
 ! pressure tensor (derived for the stress tensor)
 
@@ -1343,7 +1343,7 @@ Subroutine statistics_result                                    &
            (lmin,lmsd, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
-           mxatdm,stats,thermo,green,neigh,site_data,comm,passmin)
+           mxatdm,stats,thermo,green,neigh,site,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1364,7 +1364,7 @@ Subroutine statistics_result                                    &
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( In    ) :: green
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
 
@@ -1496,7 +1496,7 @@ Subroutine statistics_result                                    &
 ! Print pressure tensor and jump to possible RDF and Z-Density
 
   If (nstep == 0 .and. nstrun == 0) Then
-     iadd = 27+2*Merge(mxatdm,0,lmsd)+site_data%ntype_atom
+     iadd = 27+2*Merge(mxatdm,0,lmsd)+site%ntype_atom
 
      If (comm%idnode == 0) Then
         Write(message,'(a)') 'pressure tensor  (katms):'
@@ -1566,8 +1566,8 @@ Subroutine statistics_result                                    &
 
     If (thermo%variable_cell) Then
       Write(message,"(a,1p,e12.4,5x,a,1p,e12.4)")           &
-        "<P*V> term:            ",stats%sumval(37+site_data%ntype_atom+2*Merge(mxatdm,0,lmsd)), &
-        " r.m.s. fluctuations:  ",stats%ssqval(37+site_data%ntype_atom+2*Merge(mxatdm,0,lmsd))
+        "<P*V> term:            ",stats%sumval(37+site%ntype_atom+2*Merge(mxatdm,0,lmsd)), &
+        " r.m.s. fluctuations:  ",stats%ssqval(37+site%ntype_atom+2*Merge(mxatdm,0,lmsd))
       Call info(message,.true.)
     End If
 
@@ -1587,22 +1587,22 @@ Subroutine statistics_result                                    &
     Write(messages(2),'(6x,a4,2x,a19,6x,a15)') 'atom','DC (10^-9 m^2 s^-1)','Sqrt[MSD] (Ang)'
     Call info(messages,2,.true.)
 
-    Do i=1,site_data%ntype_atom
-      If (site_data%num_type_nf(i) > zero_plus) Then
+    Do i=1,site%ntype_atom
+      If (site%num_type_nf(i) > zero_plus) Then
         dc = 10.0_wp * (stats%ravval(iadd+i)-stats%sumval(iadd+i)) / &
           (3.0_wp*Real(stats%numacc-Min(stats%mxstak,stats%numacc-1),wp)*tstep)
         If (dc < 1.0e-10_wp) dc = 0.0_wp
 
         srmsd = Sqrt(stats%ravval(iadd+i))
-        Write(message,'(2x,a8,1p,2(8x,e13.4))') site_data%unique_atom(i),dc,srmsd
+        Write(message,'(2x,a8,1p,2(8x,e13.4))') site%unique_atom(i),dc,srmsd
       Else
-        Write(message,'(2x,a8,1p,2(8x,e13.4))') site_data%unique_atom(i),0.0_wp,0.0_wp
+        Write(message,'(2x,a8,1p,2(8x,e13.4))') site%unique_atom(i),0.0_wp,0.0_wp
       End If
       Call info(message,.true.)
     End Do
     Call info('',.true.)
 
-    iadd = iadd+site_data%ntype_atom
+    iadd = iadd+site%ntype_atom
 
     ! print out average pressure tensor
 

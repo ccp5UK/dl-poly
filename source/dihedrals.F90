@@ -170,7 +170,7 @@ Contains
   End Subroutine allocate_dihd_dst_arrays
 
   Subroutine dihedrals_14_check &
-           (l_str,l_top,angle,dihedral,site_data,comm)
+           (l_str,l_top,angle,dihedral,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -186,7 +186,7 @@ Contains
   Logical,           Intent( In    ) :: l_str,l_top
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: l_print,l_reset,l_reset_l
@@ -203,11 +203,11 @@ Contains
 
 ! loop over molecular types
 
-  Do itmols=1,site_data%ntype_mol
+  Do itmols=1,site%ntype_mol
 
 ! loop over molecules in system
 
-     Do imols=1,site_data%num_mols(itmols)
+     Do imols=1,site%num_mols(itmols)
 
 ! check for valence angle on dihedral angle conflicts
 
@@ -1726,7 +1726,7 @@ Subroutine dihedrals_forces &
 
 End Subroutine dihedrals_forces
 
-Subroutine dihedrals_table_read(dihd_name,dihedral,site_data,comm)
+Subroutine dihedrals_table_read(dihd_name,dihedral,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1742,7 +1742,7 @@ Subroutine dihedrals_table_read(dihd_name,dihedral,site_data,comm)
 
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Character( Len = 32 ), Intent( In    ) :: dihd_name(1:dihedral%max_types)
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,remake,zero
@@ -1849,11 +1849,11 @@ Subroutine dihedrals_table_read(dihd_name,dihedral,site_data,comm)
      katom3=0
      katom4=0
 
-     Do jtpatm=1,site_data%ntype_atom
-        If (atom1 == site_data%unique_atom(jtpatm)) katom1=jtpatm
-        If (atom2 == site_data%unique_atom(jtpatm)) katom2=jtpatm
-        If (atom3 == site_data%unique_atom(jtpatm)) katom3=jtpatm
-        If (atom4 == site_data%unique_atom(jtpatm)) katom4=jtpatm
+     Do jtpatm=1,site%ntype_atom
+        If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
+        If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+        If (atom3 == site%unique_atom(jtpatm)) katom3=jtpatm
+        If (atom4 == site%unique_atom(jtpatm)) katom4=jtpatm
      End Do
 
      If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0 .or. katom4 == 0) Then

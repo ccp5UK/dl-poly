@@ -2529,7 +2529,7 @@ Subroutine relocate_particles       &
            megshl,     &
            m_rgd,megtet,            &
            cons,pmf,  &
-           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,site_data,comm)
+           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2560,8 +2560,8 @@ Subroutine relocate_particles       &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
-  Type( site_type ), Intent( In    ) :: site_data
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2699,12 +2699,12 @@ Subroutine relocate_particles       &
 ! reassign atom properties
 
      Do i=1,natms
-        atmnam(i)=site_data%site_name(lsite(i))
-        ltype(i)=site_data%type_site(lsite(i))
-        chge(i)=site_data%charge_site(lsite(i))
-        weight(i)=site_data%weight_site(lsite(i))
-        lfrzn(i)=site_data%freeze_site(lsite(i))
-        lfree(i)=site_data%free_site(lsite(i))
+        atmnam(i)=site%site_name(lsite(i))
+        ltype(i)=site%type_site(lsite(i))
+        chge(i)=site%charge_site(lsite(i))
+        weight(i)=site%weight_site(lsite(i))
+        lfrzn(i)=site%freeze_site(lsite(i))
+        lfree(i)=site%free_site(lsite(i))
      End Do
 
      If (lbook) Then

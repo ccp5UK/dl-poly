@@ -36,7 +36,7 @@ Contains
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,keyshl,       &
              strkin,engke,                      &
-             cons,pmf,stat,thermo,tmr,comm)
+             cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -69,6 +69,7 @@ Contains
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut) :: comm
 
@@ -313,7 +314,7 @@ Contains
                 j = j + 1
                 qn(i) = 1
 
-                If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
+                If (site%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site%dof_site(lsite(i))
 
   ! Get gaussian distribution (unit variance)
 
@@ -456,7 +457,7 @@ Contains
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,keyshl,       &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cons,pmf,stat,thermo,tmr,comm)
+             strcom,vircom,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -493,6 +494,7 @@ Contains
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -1197,7 +1199,7 @@ Contains
        mxdr = 0.0_wp
        Do i=1,natms
           If (qn(i) == 1 .and. lfree(i) == 0) Then
-             If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
+             If (site%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site%dof_site(lsite(i))
 
   ! Get gaussian distribution (unit variance)
 
@@ -1223,7 +1225,7 @@ Contains
                 Do jrgd=1,lrgd
                    i=indrgd(jrgd,irgd) ! particle index
                    If (i <= natms) Then
-                      If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
+                      If (site%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site%dof_site(lsite(i))
                    End If
                 End Do
 

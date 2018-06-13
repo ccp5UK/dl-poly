@@ -104,7 +104,7 @@ Contains
 End Subroutine z_density_collect
 
 
-Subroutine z_density_compute(zdensity,site_data,comm)
+Subroutine z_density_compute(zdensity,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -118,7 +118,7 @@ Subroutine z_density_compute(zdensity,site_data,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( z_density_type ), Intent( InOut ) :: zdensity
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer           :: j,k
@@ -134,7 +134,7 @@ Subroutine z_density_compute(zdensity,site_data,comm)
   If (comm%idnode == 0) Then
      Open(Unit=nzdndt, File='ZDNDAT', Status='replace')
      Write(nzdndt,'(a)') cfgname
-     Write(nzdndt,'(2i10)') site_data%ntype_atom,mxgrdf
+     Write(nzdndt,'(2i10)') site%ntype_atom,mxgrdf
   End If
 
 ! length of cell in z direction
@@ -156,12 +156,12 @@ Subroutine z_density_compute(zdensity,site_data,comm)
 
 ! for every species
 
-  Do k=1,site_data%ntype_atom
-     Write(messages(1),'(2x,a,a8)') 'rho(r): ',site_data%unique_atom(k)
+  Do k=1,site%ntype_atom
+     Write(messages(1),'(2x,a,a8)') 'rho(r): ',site%unique_atom(k)
      Write(messages(2),'(9x,a1,6x,a3,9x,a4)') 'r','rho','n(r)'
      Call info(messages,2,.true.)
      If (comm%idnode == 0) Then
-        Write(nzdndt,'(a8)') site_data%unique_atom(k)
+        Write(nzdndt,'(a8)') site%unique_atom(k)
      End If
 
 ! global sum of data on all nodes

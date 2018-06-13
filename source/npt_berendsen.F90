@@ -30,7 +30,7 @@ Contains
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              virtot,                            &
              strkin,engke,                      &
-             elrc,virlrc,cons,pmf,stat,thermo,tmr,comm)
+             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -61,6 +61,7 @@ Contains
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -119,8 +120,8 @@ Contains
           Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
-       Do i=1,site_data%ntype_atom
-          dens0(i) = dens(i)
+       Do i=1,site%ntype_atom
+          dens0(i) = site%dens(i)
        End Do
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
@@ -318,8 +319,8 @@ Contains
        tmp=(volm0/volm)
        elrc=elrc0*tmp
        virlrc=virlrc0*tmp
-       Do i=1,site_data%ntype_atom
-          dens(i)=dens0(i)*tmp
+       Do i=1,site%ntype_atom
+          site%dens(i)=dens0(i)*tmp
        End Do
 
   ! construct a 'mock' scaling tensor for xscale
@@ -397,7 +398,7 @@ Contains
              virtot,                            &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             elrc,virlrc,cons,pmf,stat,thermo,tmr,comm)
+             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -431,6 +432,7 @@ Contains
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -510,8 +512,8 @@ Contains
           Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
-       Do i=1,site_data%ntype_atom
-          dens0(i) = dens(i)
+       Do i=1,site%ntype_atom
+          dens0(i) = site%dens(i)
        End Do
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
@@ -978,8 +980,8 @@ Contains
        tmp=(volm0/volm)
        elrc=elrc0*tmp
        virlrc=virlrc0*tmp
-       Do i=1,site_data%ntype_atom
-          dens(i)=dens0(i)*tmp
+       Do i=1,site%ntype_atom
+          site%dens(i)=dens0(i)*tmp
        End Do
 
   ! construct a 'mock' scaling tensor for xscale

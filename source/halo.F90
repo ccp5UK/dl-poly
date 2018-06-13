@@ -85,7 +85,7 @@ Module halo
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(keyfce,neigh,site_data,comm)
+Subroutine set_halo_particles(keyfce,neigh,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -99,7 +99,7 @@ Subroutine set_halo_particles(keyfce,neigh,site_data,comm)
 
   Integer,           Intent( In    ) :: keyfce
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ), Save :: cut
@@ -209,11 +209,11 @@ Subroutine set_halo_particles(keyfce,neigh,site_data,comm)
 ! assign incoming atom properties (of the halo only)
 
   Do i=natms+1,nlast
-     ltype(i)=site_data%type_site(lsite(i))
-     chge(i)=site_data%charge_site(lsite(i))
-     weight(i)=site_data%weight_site(lsite(i))
-     lfrzn(i)=site_data%freeze_site(lsite(i))
-     lfree(i)=site_data%free_site(lsite(i))
+     ltype(i)=site%type_site(lsite(i))
+     chge(i)=site%charge_site(lsite(i))
+     weight(i)=site%weight_site(lsite(i))
+     lfrzn(i)=site%freeze_site(lsite(i))
+     lfree(i)=site%free_site(lsite(i))
   End Do
 
 ! Assign polarisation and dumping factor

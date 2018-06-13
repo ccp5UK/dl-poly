@@ -50,7 +50,7 @@ Module trajectory
 Contains
 
 
-Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,site_data,comm)
+Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,7 +69,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,si
   Real( Kind = wp ),    Intent( In    ) :: dvar
   Real( Kind = wp ),    Intent( InOut ) :: tstep,time
   Integer,              Intent(   Out ) :: exout
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type),    Intent( InOut ) :: comm
 
   Logical,               Save :: newjob = .true.  , &
@@ -298,9 +298,9 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,si
 
      nattot=0
 
-     Do k=1,site_data%ntype_mol
-        Do l=1,site_data%num_mols(k)
-           Do m=1,site_data%num_site(k)
+     Do k=1,site%ntype_mol
+        Do l=1,site%num_mols(k)
+           Do m=1,site%num_site(k)
 
 ! Increase counters
 

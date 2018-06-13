@@ -1220,7 +1220,7 @@ Contains
 
   End Subroutine inversions_forces
 
-  Subroutine inversions_table_read(invr_name,inversion,site_data,comm)
+  Subroutine inversions_table_read(invr_name,inversion,site,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1234,7 +1234,7 @@ Contains
 
     Type( inversions_type ), Intent( InOut ) :: inversion
     Character( Len = 32 ), Intent( In    ) :: invr_name(1:inversion%max_types)
-    Type( site_type ), Intent( In    ) :: site_data
+    Type( site_type ), Intent( In    ) :: site
     Type( comms_type ),    Intent( InOut ) :: comm
 
     Logical                :: safe,remake
@@ -1340,11 +1340,11 @@ Contains
        katom3=0
        katom4=0
 
-       Do jtpatm=1,site_data%ntype_atom
-          If (atom1 == site_data%unique_atom(jtpatm)) katom1=jtpatm
-          If (atom2 == site_data%unique_atom(jtpatm)) katom2=jtpatm
-          If (atom3 == site_data%unique_atom(jtpatm)) katom3=jtpatm
-          If (atom4 == site_data%unique_atom(jtpatm)) katom4=jtpatm
+       Do jtpatm=1,site%ntype_atom
+          If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
+          If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+          If (atom3 == site%unique_atom(jtpatm)) katom3=jtpatm
+          If (atom4 == site%unique_atom(jtpatm)) katom4=jtpatm
        End Do
 
        If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0 .or. katom4 == 0) Then

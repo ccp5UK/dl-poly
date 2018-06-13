@@ -170,7 +170,7 @@ Subroutine allocate_block_average_array(nstrun,ntype_atom)
 
 End Subroutine rdf_collect
 
-Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
+Subroutine rdf_compute(lpana,rcut,temp,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -186,7 +186,7 @@ Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
 
   Logical          , Intent( In    ) :: lpana
   Real( Kind = wp ), Intent( In    ) :: rcut,temp
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type(comms_type), Intent( InOut )  :: comm
 
   Logical           :: zero
@@ -241,8 +241,8 @@ Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
 
 ! for all possible unique type-to-type pairs
 
-  Do ia=1,site_data%ntype_atom
-     Do ib=ia,site_data%ntype_atom
+  Do ia=1,site%ntype_atom
+     Do ib=ia,site%ntype_atom
 
 ! number of the interaction by its rdf key
 
@@ -251,11 +251,11 @@ Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
 ! only for valid interactions specified for a look up
 
         If (kk > 0 .and. kk <= ntprdf) Then
-           Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',site_data%unique_atom(ia),site_data%unique_atom(ib)
+           Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',site%unique_atom(ia),site%unique_atom(ib)
            Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
            Call info(messages,2,.true.)
            If (comm%idnode == 0) Then
-              Write(nrdfdt,'(2a8)') site_data%unique_atom(ia),site_data%unique_atom(ib)
+              Write(nrdfdt,'(2a8)') site%unique_atom(ia),site%unique_atom(ib)
            End If
 
 ! global sum of data on all nodes
@@ -264,8 +264,8 @@ Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
 
 ! normalisation factor
 
-           factor1=volm*site_data%dens(ia)*site_data%dens(ib)*Real(ncfrdf,wp)
-           If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/site_data%num_type(ia))
+           factor1=volm*site%dens(ia)*site%dens(ib)*Real(ncfrdf,wp)
+           If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/site%num_type(ia))
 
 ! running integration of rdf
 
@@ -278,7 +278,7 @@ Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
               If (zero .and. i < (mxgrdf-3)) zero=(rdf(i+2,kk) <= 0.0_wp)
 
               gofr= rdf(i,kk)/factor1
-              sum = sum + gofr*site_data%dens(ib)
+              sum = sum + gofr*site%dens(ib)
 
               rrr = (Real(i,wp)-0.5_wp)*delr
               dvol= fourpi*delr*(rrr**2+delr**2/12.0_wp)
@@ -344,8 +344,8 @@ Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
 
 ! loop over all valid RDFs
 
-     Do ia=1,site_data%ntype_atom
-        Do ib=ia,site_data%ntype_atom
+     Do ia=1,site%ntype_atom
+        Do ib=ia,site%ntype_atom
 
 ! number of the interaction by its rdf key
 
@@ -355,8 +355,8 @@ Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
 
            If (kk > 0 .and. kk <= ntprdf) Then
               If (comm%idnode == 0) Then
-                 Write(npdgdt,'(/,a2,2a8)') '# ',site_data%unique_atom(ia),site_data%unique_atom(ib)
-                 Write(npdfdt,'(/,a2,2a8)') '# ',site_data%unique_atom(ia),site_data%unique_atom(ib)
+                 Write(npdgdt,'(/,a2,2a8)') '# ',site%unique_atom(ia),site%unique_atom(ib)
+                 Write(npdfdt,'(/,a2,2a8)') '# ',site%unique_atom(ia),site%unique_atom(ib)
               End If
 
 ! Smoothen and get derivatives
@@ -487,10 +487,10 @@ Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
 
 End Subroutine rdf_compute
 
-Subroutine calculate_block(temp,rcut,neigh,site_data)
+Subroutine calculate_block(temp,rcut,neigh,site)
   Real( Kind = wp ), Intent(in)            :: temp, rcut
   Type( neighbours_type), Intent( In    ) :: neigh
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
 
   Real( Kind = wp ), Dimension( 1:neigh%max_list ) :: rrt, xxt, yyt, zzt
   Real( Kind = wp )                        :: kT2engo, delr, rdlr, dgrid, pdfzero, factor1, rrr,dvol,gofr,gofr1
@@ -506,15 +506,15 @@ Subroutine calculate_block(temp,rcut,neigh,site_data)
   ngrid = Max(Nint(rcut/delr_max),mxgrdf)
   dgrid = rcut/Real(ngrid,wp)
   pdfzero = 1.0e-9_wp
-  Do ia=1,site_data%ntype_atom
-     Do ib=ia,site_data%ntype_atom
+  Do ia=1,site%ntype_atom
+     Do ib=ia,site%ntype_atom
 ! number of the interaction by its rdf key
         kk=lstrdf(ib*(ib-1)/2+ia)
 ! only for valid interactions specified for a look up
 ! global sum of data on all nodes
 ! normalisation factor
-        factor1=volm*site_data%dens(ia)*site_data%dens(ib)*Real(ncfrdf,wp)
-        If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/site_data%num_type(ia))
+        factor1=volm*site%dens(ia)*site%dens(ib)*Real(ncfrdf,wp)
+        If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/site%num_type(ia))
 ! loop over distances
         zero=.true.
         Do i=1,mxgrdf
@@ -537,11 +537,11 @@ Subroutine calculate_block(temp,rcut,neigh,site_data)
 
 End Subroutine calculate_block
 
-Subroutine calculate_errors(temp, rcut, num_steps, neigh, site_data, comm)
+Subroutine calculate_errors(temp, rcut, num_steps, neigh, site, comm)
 
   Real( Kind = wp ), Intent( In )                      :: temp, rcut
   Type( neighbours_type ), Intent( In    ) :: neigh
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type(comms_type), Intent( InOut )                    :: comm
 
   Real( Kind = wp )                                    :: test1, delr
@@ -563,8 +563,8 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site_data, comm)
      tmp_rdf_sync = .TRUE.
   End If
 
-  Allocate(averages(site_data%ntype_atom,site_data%ntype_atom, mxgrdf), stat = ierr2)
-  Allocate(errors(site_data%ntype_atom,site_data%ntype_atom, mxgrdf), stat = ierr3)
+  Allocate(averages(site%ntype_atom,site%ntype_atom, mxgrdf), stat = ierr2)
+  Allocate(errors(site%ntype_atom,site%ntype_atom, mxgrdf), stat = ierr3)
   If(ierr > 0 .or. ierr2 > 0 .or. ierr3 > 0) Then
      Call error(1084)
   End If
@@ -573,7 +573,7 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site_data, comm)
 
 !Compute the rdf for each of the blocks
   Do block_number=1, num_blocks+1
-     Call calculate_block(temp, rcut,neigh,site_data)
+     Call calculate_block(temp, rcut,neigh,site)
   End Do
   nr_blocks = num_blocks+1
 
@@ -581,8 +581,8 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site_data, comm)
   i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)
   Do k=1, nr_blocks
      Do l=1, mxgrdf
-        Do j=1, site_data%ntype_atom
-           Do i=1, site_data%ntype_atom
+        Do j=1, site%ntype_atom
+           Do i=1, site%ntype_atom
               averages(i,j,l) = averages(i,j,l) + block_averages(i,j,l,k) * i_nr_blocks
            End Do
         End Do
@@ -591,8 +591,8 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site_data, comm)
 
   i_nr_blocks = 1.0_wp / Real(nr_blocks *(nr_blocks-1), wp)
   Do i=1, nr_blocks
-     Do k=1, site_data%ntype_atom
-        Do j=1, site_data%ntype_atom
+     Do k=1, site%ntype_atom
+        Do j=1, site%ntype_atom
            Do l=1, mxgrdf
                errors(j,k,l) = errors(j,k,l) + ( (block_averages(j,k,l,i) - averages(j,k,l))**2 * i_nr_blocks )
            End Do
@@ -601,8 +601,8 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site_data, comm)
   End Do
 
   Do l=1, mxgrdf
-     Do j=1, site_data%ntype_atom
-        Do i = 1, site_data%ntype_atom
+     Do j=1, site%ntype_atom
+        Do i = 1, site%ntype_atom
            averages(i,j,l) = averages(i,j,l) * Real(nr_blocks,wp)
         End Do
     End Do
@@ -615,14 +615,14 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site_data, comm)
      Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
 
      delr = rcut/Real(mxgrdf,wp)
-     Do j =1, site_data%ntype_atom
-        Do k = j, site_data%ntype_atom
+     Do j =1, site%ntype_atom
+        Do k = j, site%ntype_atom
            kk=lstrdf(k*(k-1)/2+j)
            If (kk > 0 .and. kk <= ntprdf) Then
-              Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',site_data%unique_atom(j),site_data%unique_atom(k)
+              Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',site%unique_atom(j),site%unique_atom(k)
               Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
               Call info(messages,2,.true.)
-              Write(nrdfdt,'(2a8)') site_data%unique_atom(j),site_data%unique_atom(k)
+              Write(nrdfdt,'(2a8)') site%unique_atom(j),site%unique_atom(k)
               Do i=1,mxgrdf
                  Write(nrdfdt,"(1p,2e14.6,2e14.6)") ((Real(i,wp)-0.5_wp)*delr),averages(j,k,i),errors(j,k,i)
               End Do
@@ -634,11 +634,11 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site_data, comm)
   Deallocate(averages, errors)
 End Subroutine calculate_errors
 
-Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site_data,comm)
+Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site,comm)
 
   Real( Kind = wp ), Intent(In)                        :: temp, rcut
   Type( neighbours_type ), Intent( In    ) :: neigh
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type(comms_type), Intent( InOut )                    :: comm
 
   Real( Kind = wp )                                    :: test1
@@ -659,8 +659,8 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site_data,comm)
      tmp_rdf_sync = .TRUE.
   End If
 
-  Allocate(averages(site_data%ntype_atom,site_data%ntype_atom, mxgrdf), stat = ierr2)
-  Allocate(errors(site_data%ntype_atom,site_data%ntype_atom, mxgrdf), stat = ierr3)
+  Allocate(averages(site%ntype_atom,site%ntype_atom, mxgrdf), stat = ierr2)
+  Allocate(errors(site%ntype_atom,site%ntype_atom, mxgrdf), stat = ierr3)
   if(ierr > 0 .or. ierr2 > 0 .or. ierr3 > 0) then
      Call error(1084)
   end if
@@ -670,15 +670,15 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site_data,comm)
 
 !Compute the rdf for each of the blocks
   Do block_number=1,num_blocks+1
-     Call calculate_block(temp, rcut,neigh,site_data)
+     Call calculate_block(temp, rcut,neigh,site)
   End Do
   nr_blocks = num_blocks+1
   i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)
 
   Do k=1, nr_blocks
      Do l=1, mxgrdf
-        Do j=1, site_data%ntype_atom
-           Do i=1, site_data%ntype_atom
+        Do j=1, site%ntype_atom
+           Do i=1, site%ntype_atom
               averages(i,j,l) = averages(i,j,l) + block_averages(i,j,l,k) 
            End Do
         End Do
@@ -690,8 +690,8 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site_data,comm)
 !Create jackknife bins
   Do k=1, nr_blocks
      Do l=1, mxgrdf
-        Do j=1, site_data%ntype_atom
-           Do i=1, site_data%ntype_atom
+        Do j=1, site%ntype_atom
+           Do i=1, site%ntype_atom
               block_averages(i,j,l,k) = (averages(i,j,l) - block_averages(i,j,l,k)) * i_nr_blocks
            End Do
         End Do
@@ -701,8 +701,8 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site_data,comm)
 !Average
   i_nr_blocks = 1.0_wp / Real(nr_blocks,wp)
   Do l=1, mxgrdf
-    Do j=1, site_data%ntype_atom
-      Do i=1, site_data%ntype_atom
+    Do j=1, site%ntype_atom
+      Do i=1, site%ntype_atom
         averages(i,j,l) = averages(i,j,l) * i_nr_blocks
       End Do
     End Do
@@ -712,8 +712,8 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site_data,comm)
 !Compute the errors
   i_nr_blocks = Real((nr_blocks-1), wp) / Real(nr_blocks, wp)
   Do i=1, nr_blocks
-     Do k=1, site_data%ntype_atom
-        Do j=1, site_data%ntype_atom
+     Do k=1, site%ntype_atom
+        Do j=1, site%ntype_atom
            Do l=1, mxgrdf
               errors(j,k,l) = errors(j,k,l) + ( (block_averages(j,k,l,i) - averages(j,k,l))**2 * i_nr_blocks )
            End Do
@@ -722,8 +722,8 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site_data,comm)
   End Do
 
   Do l=1, mxgrdf
-     Do j=1, site_data%ntype_atom
-        Do i = 1, site_data%ntype_atom
+     Do j=1, site%ntype_atom
+        Do i = 1, site%ntype_atom
            averages(i,j,l) = averages(i,j,l)*Real(nr_blocks,wp)
         End Do
      End Do
@@ -736,14 +736,14 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site_data,comm)
      Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
 
      delr = rcut/Real(mxgrdf,wp)
-     Do j =1, site_data%ntype_atom
-        Do k = j, site_data%ntype_atom
+     Do j =1, site%ntype_atom
+        Do k = j, site%ntype_atom
            kk=lstrdf(k*(k-1)/2+j)
            If (kk > 0 .and. kk <= ntprdf) Then
-              Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',site_data%unique_atom(j),site_data%unique_atom(k)
+              Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',site%unique_atom(j),site%unique_atom(k)
               Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
               Call info(messages,2,.true.)
-              Write(nrdfdt,'(2a8)') site_data%unique_atom(j),site_data%unique_atom(k)
+              Write(nrdfdt,'(2a8)') site%unique_atom(j),site%unique_atom(k)
               Do i=1,mxgrdf
                  Write(nrdfdt,"(1p,2e14.6,2e14.6)") ((Real(i,wp)-0.5_wp)*delr),averages(j,k,i),errors(j,k,i)
               End Do

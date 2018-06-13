@@ -10,7 +10,7 @@
 ! Refresh mappings
 
         Call w_refresh_mappings &
-        (cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
+        (cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -32,7 +32,7 @@
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
            elrc,virlrc,               &
-           stat,ewld,devel,met,pois,neigh,tmr,comm)
+           stat,ewld,devel,met,pois,neigh,site,tmr,comm)
 
 ! Calculate tersoff forces
 
@@ -109,7 +109,7 @@
      If (thermo%l_pseudo) Then
            Call pseudo_vv                               &
            (0,keyshl,tstep, &
-           nstep,stat,thermo,comm)
+           nstep,site%dof_site,stat,thermo,comm)
      End If
 
 ! Cap forces in equilibration mode
@@ -149,7 +149,7 @@
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
            Call w_refresh_mappings &
-            (cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh)
+            (cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
 
            Go To 100
         End If

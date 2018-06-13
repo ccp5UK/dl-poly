@@ -10,7 +10,7 @@
         If (thermo%l_pseudo) Then
               Call pseudo_vv                            &
            (1,keyshl,tstep, &
-           nstep,stat,thermo,comm)
+           nstep,site%dof_site,stat,thermo,comm)
         End If
 
 ! Apply temperature regaussing

@@ -30,7 +30,7 @@ Contains
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
-             elrc,virlrc,cons,pmf,stat,thermo,site_data,tmr,comm)
+             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -74,7 +74,7 @@ Contains
     Type( pmf_type), Intent( InOut ) :: pmf
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type( site_type ), Intent( InOut ) :: site_data
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -134,8 +134,8 @@ Contains
           Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
-       Do i=1,site_data%ntype_atom
-          dens0(i) = site_data%dens(i)
+       Do i=1,site%ntype_atom
+          dens0(i) = site%dens(i)
        End Do
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
@@ -392,8 +392,8 @@ Contains
        tmp=(volm0/volm)
        elrc=elrc0*tmp
        virlrc=virlrc0*tmp
-       Do i=1,site_data%ntype_atom
-          site_data%dens(i)=dens0(i)*tmp
+       Do i=1,site%ntype_atom
+          site%dens(i)=dens0(i)*tmp
        End Do
 
   ! second stage of velocity verlet algorithm
@@ -496,7 +496,7 @@ Contains
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             elrc,virlrc,cons,pmf,stat,thermo,site_data,tmr,comm)
+             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -544,7 +544,7 @@ Contains
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type( site_type ), Intent( InOut ) :: site_data
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -623,8 +623,8 @@ Contains
           Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
-       Do i=1,site_data%ntype_atom
-          dens0(i) = site_data%dens(i)
+       Do i=1,site%ntype_atom
+          dens0(i) = site%dens(i)
        End Do
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
@@ -1174,8 +1174,8 @@ Contains
        tmp=(volm0/volm)
        elrc=elrc0*tmp
        virlrc=virlrc0*tmp
-       Do i=1,site_data%ntype_atom
-          site_data%dens(i)=dens0(i)*tmp
+       Do i=1,site%ntype_atom
+          site%dens(i)=dens0(i)*tmp
        End Do
 
   ! second stage of velocity verlet algorithm

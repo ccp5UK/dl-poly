@@ -36,7 +36,7 @@ Contains
       (isw,lvar,mndis,mxdis,mxstp,tstep, &
       stress,                    &
       strkin,engke,                      &
-      elrc,virlrc,cons,pmf,stat,thermo,tmr,comm)
+      elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -77,6 +77,7 @@ Contains
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut) :: comm
 
@@ -139,8 +140,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
         Write(message,'(a)') 'dens0 allocation failure'
         Call error(0,message)
       End If
-      Do i=1,ntpatm
-        dens0(i) = dens(i)
+      Do i=1,site%ntype_atom
+        dens0(i) = site%dens(i)
       End Do
 
       ! Sort thermo%eta for thermo%iso>=1
@@ -370,24 +371,15 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
       tmp=(volm0/volm)
       elrc=elrc0*tmp
       virlrc=virlrc0*tmp
-      Do i=1,ntpatm
-        dens(i)=dens0(i)*tmp
+      Do i=1,site%ntype_atom
+        site%dens(i)=dens0(i)*tmp
       End Do
 
       ! get h_z for thermo%iso>1
 
-<<<<<<< HEAD
-       tmp=(volm0/volm)
-       elrc=elrc0*tmp
-       virlrc=virlrc0*tmp
-       Do i=1,site_data%ntype_atom
-          dens(i)=dens0(i)*tmp
-       End Do
-=======
       If (thermo%iso > 1) Then
         h_z=celprp(9)
       End If
->>>>>>> refact
 
       ! second pass of velocity verlet algorithm
 
@@ -455,7 +447,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
       stress,                    &
       strkin,strknf,strknt,engke,engrot, &
       strcom,vircom,                     &
-      elrc,virlrc,cons,pmf,stat,thermo,tmr,comm)
+      elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -500,6 +492,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut) :: comm
 
@@ -570,52 +563,6 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
 
     If (newjob) Then
-<<<<<<< HEAD
-       newjob = .false.
-
-  ! store initial values of volume, long range corrections and density
-
-       volm0   = volm
-       elrc0   = elrc
-       virlrc0 = virlrc
-
-       Allocate (dens0(1:mxatyp), Stat=fail(1))
-       If (fail(1) > 0) Then
-          Write(message,'(a)') 'dens0 allocation failure'
-          Call error(0,message)
-       End If
-       Do i=1,site_data%ntype_atom
-          dens0(i) = dens(i)
-       End Do
-
-  ! Sort thermo%eta for thermo%iso>=1
-  ! Initialise and get h_z for thermo%iso>1
-
-       h_z=0
-       If      (thermo%iso == 1) Then
-          thermo%eta(1) = 1.0_wp ; thermo%eta(2:4) = 0.0_wp
-          thermo%eta(5) = 1.0_wp ; thermo%eta(6:8) = 0.0_wp
-       Else If (thermo%iso >  1) Then
-          thermo%eta(2:4) = 0.0_wp
-          thermo%eta(6:8) = 0.0_wp
-
-          Call dcell(cell,celprp)
-          h_z=celprp(9)
-       End If
-
-  ! set number of constraint+pmf shake iterations and general iteration cycles
-
-       mxiter=1
-       If (cons%megcon > 0 .or.  megpmf > 0) Then
-          mxkit=1
-          mxiter=mxiter+12
-       End If
-       If (cons%megcon > 0 .and. megpmf > 0) mxkit=cons%max_iter_shake
-
-  ! unsafe positioning due to possibly locally shared RBs
-
-       unsafe=(Any(map == comm%idnode))
-=======
       newjob = .false.
 
       ! store initial values of volume, long range corrections and density
@@ -629,8 +576,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
         Write(message,'(a)') 'dens0 allocation failure'
         Call error(0,message)
       End If
-      Do i=1,ntpatm
-        dens0(i) = dens(i)
+      Do i=1,site%ntype_atom
+        dens0(i) = site%dens(i)
       End Do
 
       ! Sort thermo%eta for thermo%iso>=1
@@ -660,7 +607,6 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
       ! unsafe positioning due to possibly locally shared RBs
 
       unsafe=(Any(map == comm%idnode))
->>>>>>> refact
     End If
 
     ! set matms
@@ -1129,21 +1075,12 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
       ! adjust long range corrections and number density
 
-<<<<<<< HEAD
        tmp=(volm0/volm)
        elrc=elrc0*tmp
        virlrc=virlrc0*tmp
-       Do i=1,site_data%ntype_atom
-          dens(i)=dens0(i)*tmp
+       Do i=1,site%ntype_atom
+          site%dens(i)=dens0(i)*tmp
        End Do
-=======
-      tmp=(volm0/volm)
-      elrc=elrc0*tmp
-      virlrc=virlrc0*tmp
-      Do i=1,ntpatm
-        dens(i)=dens0(i)*tmp
-      End Do
->>>>>>> refact
 
       ! get h_z for thermo%iso>1
 

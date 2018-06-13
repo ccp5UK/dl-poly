@@ -60,7 +60,7 @@
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,comm)
+     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,site,comm)
 
      If (newjb) Then
         newjb = .false.
@@ -84,7 +84,7 @@
 ! CHECK MD CONFIGURATION
 
            Call check_config &
-           (levcfg,l_str,keyfce,keyres,megatm,thermo,comm)
+           (levcfg,l_str,keyfce,keyres,megatm,thermo,site,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -109,7 +109,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(keyfce,neigh,comm)
+           Call set_halo_particles(keyfce,neigh,site,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -120,13 +120,13 @@
            megatm,megfrz,atmfre,atmfrz, &
            megshl,        &
            megrgd,degrot,degtra,        &
-           megtet,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,comm)
+           megtet,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,comm)
               If (lexcl) Call build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
            End If
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(cons,pmf,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,tmr)
+           Call w_calculate_forces(cons,pmf,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,site,tmr)
 
 ! Evaluate kinetics if available
 
@@ -156,7 +156,7 @@
 
 ! Apply kinetic options
 
-              Call w_kinetic_options(cons,pmf,stat)
+              Call w_kinetic_options(cons,pmf,stat,site)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
@@ -182,7 +182,7 @@
            keyres,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
-           mxatdm_,stat,thermo,zdensity,comm)
+           mxatdm_,stat,thermo,zdensity,site,comm)
 
 ! line-printer output
 ! Update cpu time
@@ -220,18 +220,18 @@
            (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write &
-             (keyres,thermo%ensemble,nstep,tstep,time,dfcts(1),neigh,comm)
+             (keyres,thermo%ensemble,nstep,tstep,time,dfcts(1),neigh,site,comm)
              If (dfcts(2)%ldef)Then
                Call defects_write &
-               (keyres,thermo%ensemble,nstep,tstep,time,dfcts(2),neigh,comm)
+               (keyres,thermo%ensemble,nstep,tstep,time,dfcts(2),neigh,site,comm)
              End If
            End If
            If (msd_data%l_msd) Call msd_write &
-           (keyres,megatm,nstep,tstep,time,stat%stpval,msd_data,comm)
+             (keyres,megatm,nstep,tstep,time,stat%stpval,site%dof_site,msd_data,comm)
            If (lrsd) Call rsd_write &
            (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,stat%rsd,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
-           (keyres,nstph,tsths,green,comm)
+           (keyres,nstph,tsths,green,site,comm)
 
 ! Save restart data in event of system crash
 
@@ -304,7 +304,7 @@
            atmfre,atmfrz,            &
            megshl,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,stat%engrot,stat,cons,pmf,thermo,comm)
+           degfre,degshl,stat%engrot,site%dof_site,stat,cons,pmf,thermo,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

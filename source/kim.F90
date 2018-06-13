@@ -26,7 +26,7 @@ Module kim
   Use domains, Only : map
   Use configuration,  Only : natms,nlast,lsi,lsa,ltg,lsite, &
                              xxx,yyy,zzz,fxx,fyy,fzz
-  Use setup,   Only : site_data%max_site,mxatdm,mxbfxp
+  Use setup,   Only : mxatdm,mxbfxp
   Use site, Only : site_type
   Use comms, Only : comms_type,export_tag,wp_mpi,gsend,gwait,girecv
   Use numerics, Only : local_index
@@ -139,7 +139,7 @@ Contains
 #endif
   End Subroutine  kim_cutoff
 
-  Subroutine kim_setup(num_types,model_types,model_name,max_list,comm)
+  Subroutine kim_setup(num_types,model_types,site_name,model_name,max_list,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -149,9 +149,10 @@ Contains
 !
 !-------------------------------------------------------------------------------
 
-    Character(Len = *),      Intent( In    ) :: model_name
     Integer( Kind = c_int ), Intent( In    ) :: num_types
     Character( Len = * ),    Intent( In    ) :: model_types(1:num_types)
+    Character( Len = * ),    Intent( In    ) :: site_name(1:)
+    Character(Len = *),      Intent( In    ) :: model_name
     Integer( Kind = wi ),    Intent( In    ) :: max_list
     Type(comms_type),        Intent( InOut ) :: comm
 
@@ -251,12 +252,12 @@ Contains
     Call c_f_Pointer(pPT,  particleSpecies, [nlast])
 
     numberOfParticles = nlast
-    numberOfSpecies = site_data%ntype_atom
+    numberOfSpecies = num_types
     If (HalfList) numberContributingParticles = natms
 
     Do i=1,nlast
        particleSpecies(i) = kim_api_get_species_code(pkim, &
-                                                     Trim(site_data%site_name(lsite(i))), ier)
+                                                     Trim(site_name(lsite(i))), ier)
        If (ier < KIM_STATUS_OK) Then
           idum = kim_api_report_error(__LINE__, THIS_FILE_NAME, &
                                       "kim_api_get_species", ier)

@@ -107,7 +107,7 @@ Contains
 
   End Subroutine allocate_vdw_direct_fs_arrays
 
-  Subroutine vdw_lrc(rvdw,elrc,virlrc,site_data,comm)
+  Subroutine vdw_lrc(rvdw,elrc,virlrc,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -128,7 +128,7 @@ Contains
 
   Real( Kind = wp ), Intent( In    ) :: rvdw
   Real( Kind = wp ), Intent(   Out ) :: elrc,virlrc
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( inOut ) :: comm
 
   Integer           :: fail,i,j,k,ivdw,keypot,n,m
@@ -160,14 +160,14 @@ Contains
      k = ltype(i)
      If (lfrzn(i) /= 0) numfrz(k)=numfrz(k)+1.0_wp
   End Do
-  Call gsum(comm,numfrz(1:site_data%ntype_atom))
+  Call gsum(comm,numfrz(1:site%ntype_atom))
 
 ! Evaluate only for 3D periodic systems
 
   If (imcon /= 0 .and. imcon /= 6) Then
      ivdw = 0
 
-     Do i=1,site_data%ntype_atom
+     Do i=1,site%ntype_atom
         Do j=1,i
 
            eadd = 0.0_wp
@@ -387,7 +387,7 @@ Contains
               padd = padd*2.0_wp
            End If
 
-           denprd=twopi * (site_data%num_type(i)*site_data%num_type(j) - numfrz(i)*numfrz(j)) / volm**2
+           denprd=twopi * (site%num_type(i)*site%num_type(j) - numfrz(i)*numfrz(j)) / volm**2
 
            elrc = elrc + volm*denprd*eadd
            plrc = plrc + denprd*padd/3.0_wp
@@ -710,7 +710,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 End Subroutine vdw_direct_fs_generate
 
 
-Subroutine vdw_table_read(rvdw,site_data,comm)
+Subroutine vdw_table_read(rvdw,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -725,7 +725,7 @@ Subroutine vdw_table_read(rvdw,site_data,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Real( Kind = wp ), Intent( In    ) :: rvdw
-  Type( site_type ), Intent( In    ) :: site_data
+  Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: safe,remake
@@ -827,9 +827,9 @@ Subroutine vdw_table_read(rvdw,site_data,comm)
         katom1=0
         katom2=0
 
-        Do jtpatm=1,site_data%ntype_atom
-           If (atom1 == site_data%unique_atom(jtpatm)) katom1=jtpatm
-           If (atom2 == site_data%unique_atom(jtpatm)) katom2=jtpatm
+        Do jtpatm=1,site%ntype_atom
+           If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
+           If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
         End Do
 
         If (katom1 == 0 .or. katom2 == 0) Then
