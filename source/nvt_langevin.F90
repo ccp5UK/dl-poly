@@ -27,6 +27,7 @@ Module nvt_langevin
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
+Use thermostat, Only : adjust_timestep
   Implicit None
 
   Private
@@ -79,7 +80,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
 
 
     Logical,           Save :: newjob = .true.
-    Logical                 :: safe,lcol,lfst,lv_up,lv_dn
+    Logical                 :: safe,lcol,lfst
     Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:9),i
     Real( Kind = wp )       :: hstep,rstep
@@ -141,8 +142,6 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! timestep derivatives
     hstep = 0.5_wp*tstep
     rstep = 1.0_wp/tstep
-    lv_up = .false.
-    lv_dn = .false.
 
   ! first pass of velocity verlet algorithm
     If (isw == 0) Then
@@ -267,57 +266,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! check timestep for variable timestep
 
        If (lvar) Then
-
-  ! update maximum distance a particle has travelled
-
-          mxdr = 0.0_wp
-          Do i=1,natms
-             If (legshl(0,i) >= 0) &
-                mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
-          End Do
-          mxdr=Sqrt(mxdr)
-          Call gmax(comm,mxdr)
-
-          If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
-
-  ! scale tstep and derivatives, and get scaler for Langevin random forces
-
-             If (mxdr > mxdis) Then
-                lv_up = .true.
-                If (lv_dn) Then
-                   tmp = Sqrt(4.0_wp/3.0_wp)
-                   tstep = 0.75_wp*tstep
-                   hstep = 0.50_wp*tstep
-                Else
-                   tmp = Sqrt(2.0_wp)
-                   tstep = hstep
-                   hstep = 0.50_wp*tstep
-                End If
-                Write(message,"( &
-                  & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
-                Call info(message,.true.)
-             End If
-             If (mxdr < mndis) Then
-                lv_dn = .true.
-                If (lv_up) Then
-                   tmp = Sqrt(2.0_wp/3.0_wp)
-                   tstep = 1.50_wp*tstep
-                   hstep = 0.50_wp*tstep
-                Else
-                   tmp = Sqrt(0.5_wp)
-                   hstep = tstep
-                   tstep = 2.00_wp*tstep
-                End If
-                If (tstep > mxstp) Then
-                   tmp = tmp*Sqrt(tstep/mxstp)
-                   tstep = mxstp
-                   hstep = 0.50_wp*tstep
-                End If
-                Write(message,"( &
-                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
-                Call info(message,.true.)
-             End If
-             rstep = 1.0_wp/tstep
+If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+ xxt,yyt,zzt,legshl,message,tmp,comm)) Then 
+            Call info(message,.true.)
 
   ! scale Langevin random forces
 
@@ -451,7 +402,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
 
     Logical,           Save :: newjob = .true. , &
                                unsafe = .false.
-    Logical                 :: safe,lcol,lfst,lv_up,lv_dn
+    Logical                 :: safe,lcol,lfst
     Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:14),matms,i,j,i1,i2, &
                                irgd,jrgd,krgd,lrgd,rgdtyp
@@ -578,8 +529,6 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
     hstep = 0.5_wp*tstep
     rstep = 1.0_wp/tstep
-    lv_up = .false.
-    lv_dn = .false.
 
   ! first pass of velocity verlet algorithm
 
@@ -977,57 +926,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! check timestep for variable timestep
 
        If (lvar) Then
-
-  ! update maximum distance a particle has travelled
-
-          mxdr = 0.0_wp
-          Do i=1,natms
-             If (legshl(0,i) >= 0) &
-                mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
-          End Do
-          mxdr=Sqrt(mxdr)
-          Call gmax(comm,mxdr)
-
-          If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
-
-  ! scale tstep and derivatives, and get scaler for Langevin random forces
-
-             If (mxdr > mxdis) Then
-                lv_up = .true.
-                If (lv_dn) Then
-                   tmp = Sqrt(4.0_wp/3.0_wp)
-                   tstep = 0.75_wp*tstep
-                   hstep = 0.50_wp*tstep
-                Else
-                   tmp = Sqrt(2.0_wp)
-                   tstep = hstep
-                   hstep = 0.50_wp*tstep
-                End If
-                Write(message,"( &
-                  & 'timestep decreased, new timestep is:',3x,1p,e12.4,/)") tstep
-                Call info(message,.true.)
-             End If
-             If (mxdr < mndis) Then
-                lv_dn = .true.
-                If (lv_up) Then
-                   tmp = Sqrt(2.0_wp/3.0_wp)
-                   tstep = 1.50_wp*tstep
-                   hstep = 0.50_wp*tstep
-                Else
-                   tmp = Sqrt(0.5_wp)
-                   hstep = tstep
-                   tstep = 2.00_wp*tstep
-                End If
-                If (tstep > mxstp) Then
-                   tmp = tmp*Sqrt(tstep/mxstp)
-                   tstep = mxstp
-                   hstep = 0.50_wp*tstep
-                End If
-                Write(message,"( &
-                  & 'timestep increased, new timestep is:',3x,1p,e12.4,/)") tstep
-                Call info(message,.true.)
-             End If
-             rstep = 1.0_wp/tstep
+If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+ xxt,yyt,zzt,legshl,message,tmp,comm)) Then 
+            Call info(message,.true.)
 
   ! scale Langevin random forces
 
@@ -1326,7 +1227,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
 
 
     Logical,           Save :: newjob = .true.
-    Logical                 :: safe,lcol,lfst,lv_up,lv_dn,lrand,lvel
+    Logical                 :: safe,lcol,lfst,lrand,lvel
     Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:9),i,ia,ja,ka,ijk
     Real( Kind = wp )       :: hstep,rstep,chi
@@ -1390,8 +1291,6 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! timestep derivatives
     hstep = 0.5_wp*tstep
     rstep = 1.0_wp/tstep
-    lv_up = .false.
-    lv_dn = .false.
 
   ! Rescale chi to match average electronic temperature if
   ! using homogeneous electron-phonon coupling
@@ -1722,57 +1621,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! check timestep for variable timestep
 
        If (lvar) Then
-
-  ! update maximum distance a particle has travelled
-
-          mxdr = 0.0_wp
-          Do i=1,natms
-             If (legshl(0,i) >= 0) &
-                mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
-          End Do
-          mxdr=Sqrt(mxdr)
-          Call gmax(comm,mxdr)
-
-          If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
-
-  ! scale tstep and derivatives, and get scaler for Langevin random forces
-
-             If (mxdr > mxdis) Then
-                lv_up = .true.
-                If (lv_dn) Then
-                   tmp = Sqrt(4.0_wp/3.0_wp)
-                   tstep = 0.75_wp*tstep
-                   hstep = 0.50_wp*tstep
-                Else
-                   tmp = Sqrt(2.0_wp)
-                   tstep = hstep
-                   hstep = 0.50_wp*tstep
-                End If
-                Write(message,"( &
-                  & 'timestep decreased, new timestep is:',3x,1p,e12.4)") tstep
-                Call info(message,.true.)
-             End If
-             If (mxdr < mndis) Then
-                lv_dn = .true.
-                If (lv_up) Then
-                   tmp = Sqrt(2.0_wp/3.0_wp)
-                   tstep = 1.50_wp*tstep
-                   hstep = 0.50_wp*tstep
-                Else
-                   tmp = Sqrt(0.5_wp)
-                   hstep = tstep
-                   tstep = 2.00_wp*tstep
-                End If
-                If (tstep > mxstp) Then
-                   tmp = tmp*Sqrt(tstep/mxstp)
-                   tstep = mxstp
-                   hstep = 0.50_wp*tstep
-                End If
-                Write(message,"( &
-                  & 'timestep increased, new timestep is:',3x,1p,e12.4)") tstep
-                Call info(message,.true.)
-             End If
-             rstep = 1.0_wp/tstep
+If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+ xxt,yyt,zzt,legshl,message,tmp,comm)) Then 
+            Call info(message,.true.)
 
   ! scale Langevin random forces
 
