@@ -114,6 +114,7 @@ Contains
       Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
       Call cons%allocate_work(mxatms)
       Call pmf%allocate_work()
+Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
     Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail(7))
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
@@ -428,6 +429,7 @@ Contains
       Deallocate (lstitr,           Stat=fail(1))
       Call cons%deallocate_work()
       Call pmf%deallocate_work()
+Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     End If
     Deallocate (xxt,yyt,zzt,         Stat=fail(7))
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
@@ -540,6 +542,7 @@ Contains
       Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
       Call cons%allocate_work(mxatms)
       Call pmf%allocate_work()
+Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
     Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), &
       Stat=fail( 7))
@@ -1299,6 +1302,7 @@ Contains
       Deallocate (lstitr,            Stat=fail( 1))
       Call cons%deallocate_work()
       Call pmf%deallocate_work()
+Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     End If
     Deallocate (ggx,ggy,ggz,          Stat=fail( 7))
     Deallocate (xxt,yyt,zzt,          Stat=fail( 8))

@@ -272,6 +272,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
       Deallocate (lstitr,           Stat=fail(1))
       Call cons%deallocate_work()
       Call pmf%deallocate_work()
+      Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     End If
     Deallocate (xxt,yyt,zzt,         Stat=fail(7))
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
@@ -351,7 +352,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
       Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
       Call cons%allocate_work(mxatms)
-Call pmf%allocate_work()
+      Call pmf%allocate_work()
     End If
     Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), &
       Stat=fail( 7))
@@ -927,7 +928,8 @@ Call pmf%allocate_work()
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
       Deallocate (lstitr,            Stat=fail( 1))
       Call cons%deallocate_work()
-Call pmf%deallocate_work()
+      Call pmf%deallocate_work()
+      Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     End If
     Deallocate (ggx,ggy,ggz,          Stat=fail( 7))
     Deallocate (xxt,yyt,zzt,          Stat=fail( 8))
