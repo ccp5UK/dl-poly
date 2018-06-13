@@ -51,8 +51,8 @@ Subroutine build_book_intra             &
            megshl,megpmf,        &
            megrgd,degrot,degtra,        &
            megtet,                      &
-           cons,bond,angle,dihedral,  & 
-           inversion,tether,comm)
+           cons,bond,angle,dihedral,  &
+           inversion,tether,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -80,6 +80,7 @@ Subroutine build_book_intra             &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( site_type ), Intent( InOut ) :: site_data
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -1649,12 +1650,12 @@ Subroutine build_book_intra             &
 
 ! Set RB particulars and quaternions
 
-     If (m_rgd > 0) Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot,comm)
+     If (m_rgd > 0) Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot,site_data,comm)
 
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
            megshl,megpmf,megrgd,  &
-           megtet,cons,bond,angle,dihedral,inversion,tether,comm)
+           megtet,cons,bond,angle,dihedral,inversion,tether,site_data,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 

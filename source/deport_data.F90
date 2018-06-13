@@ -2527,7 +2527,7 @@ Subroutine relocate_particles       &
            megshl,megpmf,     &
            m_rgd,megtet,            &
            cons,  &
-           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,comm)
+           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2557,6 +2557,7 @@ Subroutine relocate_particles       &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 

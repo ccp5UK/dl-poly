@@ -31,7 +31,7 @@ Contains
              consv,                             &
              strkin,engke,                      &
              megpmf,strpmf,virpmf,              &
-             elrc,virlrc,cons,stat,thermo,tmr,comm)
+             elrc,virlrc,cons,stat,thermo,site_data,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -76,6 +76,7 @@ Contains
     Type( constraints_type), Intent( InOut ) :: cons
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site_data
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -146,7 +147,7 @@ Contains
           Call error(0,message)
        End If
        Do i=1,site_data%ntype_atom
-          dens0(i) = dens(i)
+          dens0(i) = site_data%dens(i)
        End Do
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
@@ -498,7 +499,7 @@ Contains
        elrc=elrc0*tmp
        virlrc=virlrc0*tmp
        Do i=1,site_data%ntype_atom
-          dens(i)=dens0(i)*tmp
+          site_data%dens(i)=dens0(i)*tmp
        End Do
 
   ! second stage of velocity verlet algorithm
@@ -624,7 +625,7 @@ Contains
              strkin,strknf,strknt,engke,engrot, &
              megpmf,strpmf,virpmf,              &
              strcom,vircom,                     &
-             elrc,virlrc,cons,stat,thermo,tmr,comm)
+             elrc,virlrc,cons,stat,thermo,site_data,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -673,6 +674,7 @@ Contains
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( site_type ), Intent( InOut ) :: site_data
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -762,7 +764,7 @@ Contains
           Call error(0,message)
        End If
        Do i=1,site_data%ntype_atom
-          dens0(i) = dens(i)
+          dens0(i) = site_data%dens(i)
        End Do
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
@@ -1411,7 +1413,7 @@ Contains
        elrc=elrc0*tmp
        virlrc=virlrc0*tmp
        Do i=1,site_data%ntype_atom
-          dens(i)=dens0(i)*tmp
+          site_data%dens(i)=dens0(i)*tmp
        End Do
 
   ! second stage of velocity verlet algorithm

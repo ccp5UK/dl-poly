@@ -85,7 +85,7 @@ Module halo
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(keyfce,neigh,comm)
+Subroutine set_halo_particles(keyfce,neigh,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -99,6 +99,7 @@ Subroutine set_halo_particles(keyfce,neigh,comm)
 
   Integer,           Intent( In    ) :: keyfce
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( site_type ), Intent( In    ) :: site_data
   Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ), Save :: cut

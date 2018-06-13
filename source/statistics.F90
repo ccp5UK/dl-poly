@@ -170,7 +170,7 @@ Contains
            keyres,                 &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
-           mxatdm,stats,thermo,zdensity,comm)
+           mxatdm,stats,thermo,zdensity,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -190,13 +190,14 @@ Contains
 
   Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
 
-  Real( Kind = wp ), Intent( In    ) :: tstep,time                
+  Real( Kind = wp ), Intent( In    ) :: tstep,time
 
   Real( Kind = wp ), Intent( InOut ) :: tmst
   Integer( Kind = wi),Intent( In    ) :: mxatdm
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -1331,7 +1332,7 @@ Subroutine statistics_result                                    &
            (lmin,lmsd, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
-           mxatdm,stats,thermo,green,neigh,comm,passmin)
+           mxatdm,stats,thermo,green,neigh,site_data,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1352,8 +1353,10 @@ Subroutine statistics_result                                    &
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( In    ) :: green
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
+
   Logical           :: check
   Integer           :: i,iadd
   Real( Kind = wp ) :: avvol,dc,srmsd,timelp,tmp,h_z,tx,ty,temp

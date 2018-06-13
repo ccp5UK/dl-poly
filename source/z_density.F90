@@ -104,7 +104,7 @@ Contains
 End Subroutine z_density_collect
 
 
-Subroutine z_density_compute(zdensity,comm)
+Subroutine z_density_compute(zdensity,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -118,7 +118,9 @@ Subroutine z_density_compute(zdensity,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ), Intent( InOut ) :: comm
+
   Integer           :: j,k
   Real( Kind = wp ) :: zlen,delr,dvolz,factor,rho,rho1,rrr,sum,sum1
   Character( Len = 256 ) :: messages(2)

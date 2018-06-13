@@ -26,7 +26,7 @@ Contains
   !> Calculate and print final analysis
   Subroutine analysis_result(lrdf,lpana,lprdf, &
                              nstep,tstep,rcut,temp,ensemble, &
-                             bond,angle,dihedral,inversion,stats,green,zdensity,neigh,comm)
+                             bond,angle,dihedral,inversion,stats,green,zdensity,neigh,site_data,comm)
 
     Logical, Intent( In    ) :: lrdf,lpana,lprdf
     !> Number of simulation steps
@@ -55,6 +55,8 @@ Contains
     Type( z_density_type ), Intent( InOut ) :: zdensity
     !> Neighbours data
     Type( neighbours_type ), Intent( In    ) :: neigh
+    !> Site data
+    Type( site_type ), Intent( InOut ) :: site_data
     !> Comms
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -71,7 +73,7 @@ Contains
     avvol = stats%sumval(19)
     ! Scale densities for average volume and average volume and cell
     Do i = 1,site_data%ntype_atom
-      dens(i) = dens(i)*(volm/avvol)
+      site_data%dens(i) = site_data%dens(i)*(volm/avvol)
     End Do
 
     ! Redefine volume for analysis routines
@@ -86,39 +88,39 @@ Contains
     ! Calculate and print radial distribution functions
     ! If block average errors, output that, else if jackknife errors output those, else just RDF.
     If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_block) Then
-      Call calculate_errors(temp, rcut, nstep, neigh, comm)
+      Call calculate_errors(temp,rcut,nstep,neigh,site_data,comm)
     End If
     If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) Then
-      Call calculate_errors_jackknife(temp, rcut, nstep, neigh, comm)
+      Call calculate_errors_jackknife(temp,rcut,nstep,neigh,site_data,comm)
     End If
     If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_errors_block .or. l_errors_jack)) Then
-      Call rdf_compute(lpana,rcut,temp,comm)
+      Call rdf_compute(lpana,rcut,temp,site_data,comm)
     End IF
     If (ncfusr > 0) Call usr_compute(comm)
 
     ! calculate and print z-density profile
     If (zdensity%l_collect .and. zdensity%l_print .and. zdensity%n_samples > 0) Then
-      Call z_density_compute(zdensity,comm)
+      Call z_density_compute(zdensity,site_data,comm)
     End If
 
     ! calculate and print velocity autocorrelation function
     If (green%samp > 0 .and. green%l_print .and. green%vafcount > zero_plus) Then
-      Call vaf_compute(tstep,green,comm)
+      Call vaf_compute(tstep,site_data%num_type_nf,green,comm)
     End If
 
     ! Calculate and print PDFs
     If (lpana) Then
       If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Then
-        Call bonds_compute(temp,bond,comm)
+        Call bonds_compute(temp,site_data%unique_atom,bond,comm)
       End If
       If (angle%bin_adf > 0 .and. angle%n_frames > 0) Then
-        Call angles_compute(temp,angle,comm)
+        Call angles_compute(temp,site_data%unique_atom,angle,comm)
       End If
       If (dihedral%bin_adf > 0 .and. dihedral%n_frames > 0) Then
-        Call dihedrals_compute(temp,dihedral,comm)
+        Call dihedrals_compute(temp,site_data%unique_atom,dihedral,comm)
       End If
       If (inversion%bin_adf > 0 .and. inversion%n_frames > 0) Then
-        Call inversions_compute(temp,inversion,comm)
+        Call inversions_compute(temp,site_data%unique_atom,inversion,comm)
       End If
     End If
   End Subroutine analysis_result

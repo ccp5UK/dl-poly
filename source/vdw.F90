@@ -107,7 +107,7 @@ Contains
 
   End Subroutine allocate_vdw_direct_fs_arrays
 
-  Subroutine vdw_lrc(rvdw,elrc,virlrc,comm)
+  Subroutine vdw_lrc(rvdw,elrc,virlrc,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -128,6 +128,7 @@ Contains
 
   Real( Kind = wp ), Intent( In    ) :: rvdw
   Real( Kind = wp ), Intent(   Out ) :: elrc,virlrc
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ), Intent( inOut ) :: comm
 
   Integer           :: fail,i,j,k,ivdw,keypot,n,m
@@ -135,11 +136,11 @@ Contains
                        eadd,padd,denprd,plrc,t,kk,s9, &
                        z1,z2,rm,al
 
-  Real( Kind = wp ), Dimension( : ), Allocatable :: site_data%num_freeze
+  Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
   Character( Len = 256 ) :: message,messages(3)
 
   fail=0
-  Allocate (site_data%num_freeze(mxatyp), Stat=fail)
+  Allocate (numfrz(mxatyp), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'vdw_lrc allocation failure'
      Call error(0,message)
@@ -154,12 +155,12 @@ Contains
 
 ! initialise counter arrays and evaluate number density in system
 
-  site_data%num_freeze = 0.0_wp
+  numfrz = 0.0_wp
   Do i=1,natms
      k = ltype(i)
-     If (lfrzn(i) /= 0) site_data%num_freeze(k)=site_data%num_freeze(k)+1.0_wp
+     If (lfrzn(i) /= 0) numfrz(k)=numfrz(k)+1.0_wp
   End Do
-  Call gsum(comm,site_data%num_freeze(1:site_data%ntype_atom))
+  Call gsum(comm,numfrz(1:site_data%ntype_atom))
 
 ! Evaluate only for 3D periodic systems
 
@@ -386,7 +387,7 @@ Contains
               padd = padd*2.0_wp
            End If
 
-           denprd=twopi * (site_data%num_type(i)*site_data%num_type(j) - site_data%num_freeze(i)*site_data%num_freeze(j)) / volm**2
+           denprd=twopi * (site_data%num_type(i)*site_data%num_type(j) - numfrz(i)*numfrz(j)) / volm**2
 
            elrc = elrc + volm*denprd*eadd
            plrc = plrc + denprd*padd/3.0_wp
@@ -407,7 +408,7 @@ Contains
 
   virlrc = plrc*(-3.0_wp*volm)
 
-  Deallocate (site_data%num_freeze, Stat=fail)
+  Deallocate (numfrz, Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'vdw_lrc deallocation failure'
      Call error(0,message)
@@ -709,7 +710,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 End Subroutine vdw_direct_fs_generate
 
 
-Subroutine vdw_table_read(rvdw,comm)
+Subroutine vdw_table_read(rvdw,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -723,10 +724,10 @@ Subroutine vdw_table_read(rvdw,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
   Real( Kind = wp ), Intent( In    ) :: rvdw
-
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ), Intent( InOut ) :: comm
+
   Logical                :: safe,remake
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word

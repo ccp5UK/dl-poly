@@ -6,7 +6,6 @@ Module system
                     gtime,gsum,gcheck
   Use setup
   Use site, Only : site_type
-                                 site_data%num_mols
   Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz, &
                                  cfgname,imcon,cell,lsi,lsa,atmnam, &
                                  write_config
@@ -61,7 +60,7 @@ Module system
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,lrdf,keyres,megatm,    &
            time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met, &
-           bond,angle,dihedral,inversion,zdensity,comm)
+           bond,angle,dihedral,inversion,zdensity,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -93,6 +92,7 @@ Module system
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( site_type ), Intent( InOut ) :: site_data
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -609,7 +609,7 @@ Module system
 ! number densities
 
   Do i=1,site_data%ntype_atom
-     If (site_data%num_type(i) > zero_plus) dens(i) = site_data%num_type(i)/volm
+     If (site_data%num_type(i) > zero_plus) site_data%dens(i) = site_data%num_type(i)/volm
   End Do
 
 ! Get long-range corrections
@@ -617,15 +617,15 @@ Module system
 ! elrc & virlrc arrays are zeroed in vdw,
 ! no lrc when vdw interactions are force-shifted
 
-  If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(rvdw,elrc,virlrc,comm)
+  If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(rvdw,elrc,virlrc,site_data,comm)
 
 ! met%elrc & met%vlrc arrays are zeroed in metal_module
 
-  If (met%n_potentials > 0) Call metal_lrc(met,comm)
+  If (met%n_potentials > 0) Call metal_lrc(met,site_data,comm)
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inversion,comm)
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inversion,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -652,6 +652,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inv
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size

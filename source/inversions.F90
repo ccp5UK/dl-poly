@@ -158,7 +158,7 @@ Contains
 
   End Subroutine allocate_invr_dst_arrays
 
-  Subroutine inversions_compute(temp,inversion,comm)
+  Subroutine inversions_compute(temp,unique_atom,inversion,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -171,6 +171,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),  Intent( In    ) :: temp
+    Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -256,8 +257,9 @@ Contains
           j=j+1
 
           Write(message,'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-            site_data%unique_atom(inversion%typ(1,i)),site_data%unique_atom(inversion%typ(2,i)),site_data%unique_atom(inversion%typ(3,i)), &
-            site_data%unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i)
+            unique_atom(inversion%typ(1,i)),unique_atom(inversion%typ(2,i)), &
+            unique_atom(inversion%typ(3,i)), &
+            unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i)
           Call info(message,.true.)
           Write(message,'(a,f8.5)') &
             'Theta(degrees)  P_inv(Theta)  Sum_P_inv(Theta)   @   dTheta_bin = ', &
@@ -265,8 +267,9 @@ Contains
           Call info(message,.true.)
           If (comm%idnode == 0) Then
             Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-              site_data%unique_atom(inversion%typ(1,i)),site_data%unique_atom(inversion%typ(2,i)), &
-              site_data%unique_atom(inversion%typ(3,i)),site_data%unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i)
+              unique_atom(inversion%typ(1,i)),unique_atom(inversion%typ(2,i)), &
+              unique_atom(inversion%typ(3,i)), &
+              unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i)
           End If
 
   ! global sum of data on all nodes
@@ -359,12 +362,14 @@ Contains
           j=j+1
 
           If (comm%idnode == 0) Then
-             Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                  site_data%unique_atom(inversion%typ(1,i)),site_data%unique_atom(inversion%typ(2,i)),site_data%unique_atom(inversion%typ(3,i)), &
-                  site_data%unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
-             Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                  site_data%unique_atom(inversion%typ(1,i)),site_data%unique_atom(inversion%typ(2,i)),site_data%unique_atom(inversion%typ(3,i)), &
-                  site_data%unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
+            Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+              unique_atom(inversion%typ(1,i)),unique_atom(inversion%typ(2,i)), &
+              unique_atom(inversion%typ(3,i)), &
+              unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
+            Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+              unique_atom(inversion%typ(1,i)),unique_atom(inversion%typ(2,i)), &
+              unique_atom(inversion%typ(3,i)), &
+              unique_atom(inversion%typ(4,i)),j,inversion%typ(0,i),' (type, index, instances)'
           End If
 
   ! Smoothen and get derivatives
@@ -1215,7 +1220,7 @@ Contains
 
   End Subroutine inversions_forces
 
-  Subroutine inversions_table_read(invr_name,inversion,comm)
+  Subroutine inversions_table_read(invr_name,inversion,site_data,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1229,6 +1234,7 @@ Contains
 
     Type( inversions_type ), Intent( InOut ) :: inversion
     Character( Len = 32 ), Intent( In    ) :: invr_name(1:inversion%max_types)
+    Type( site_type ), Intent( In    ) :: site_data
     Type( comms_type ),    Intent( InOut ) :: comm
 
     Logical                :: safe,remake

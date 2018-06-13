@@ -37,7 +37,7 @@ Contains
              atmfre,atmfrz,            &
              megshl,megpmf,     &
              megrgd,degtra,degrot,     &
-             degfre,degshl,engrot,stat,cons,thermo,comm)
+             degfre,degshl,engrot,dof_site,stat,cons,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -61,6 +61,7 @@ Contains
 
     Integer(Kind=li),   Intent(   Out ) :: degfre,degshl
     Real( Kind = wp ),  Intent(   Out ) :: engrot
+    Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
     Type( stats_type ), Intent( InOut ) :: stat
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -143,8 +144,8 @@ Contains
 
     tmp=0.0_wp
     Do i=1,natms
-       If (site_data%dof_site(lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
-          tmp=tmp+site_data%dof_site(lsite(i))
+       If (dof_site(lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
+          tmp=tmp+dof_site(lsite(i))
     End Do
     Call gsum(comm,tmp)
     If (Nint(tmp,li)-non-com /= degfre) Call error(360)

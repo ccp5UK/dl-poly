@@ -13,7 +13,6 @@ Module drivers
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type
-  Use site, Only : site_type
   Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
 
   Use impacts, Only : impact_type, impact
@@ -28,7 +27,7 @@ Module drivers
   Public :: w_impact_option
   Public :: pseudo_vv
 
-  Contains 
+Contains
 
   Subroutine w_impact_option(levcfg,nstep,nsteql,megrgd,stats,impa,comm)
 
@@ -129,7 +128,7 @@ Module drivers
 
 Subroutine pseudo_vv                                      &
            (isw,keyshl,tstep, &
-           nstep,stats,thermo,comm)
+           nstep,dof_site,stats,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -153,6 +152,7 @@ Subroutine pseudo_vv                                      &
 
   Integer,           Intent( In    ) :: isw,keyshl,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep
+  Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
   Type( stats_type), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type), Intent( InOut ) :: comm
@@ -459,7 +459,7 @@ Subroutine pseudo_vv                                      &
         mxdr = 0.0_wp
         Do i=1,natms
            If (qn(i) == 1 .and. lfree(i) == 0) Then
-              If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
+              If (dof_site(lsite(i)) > zero_plus) mxdr = mxdr + dof_site(lsite(i))
 
 ! Get gaussian distribution (unit variance)
 
@@ -486,7 +486,7 @@ Subroutine pseudo_vv                                      &
                  Do jrgd=1,lrgd
                     i=indrgd(jrgd,irgd) ! particle index
                     If (i <= natms) Then
-                       If (site_data%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site_data%dof_site(lsite(i))
+                       If (dof_site(lsite(i)) > zero_plus) mxdr = mxdr + dof_site(lsite(i))
                     End If
                  End Do
 
@@ -950,7 +950,7 @@ Subroutine pseudo_vv                                      &
 
 ! Get particle kinetic energy and produce a scaler to target temperature
 
-              tmp = Sqrt(scale * site_data%dof_site(lsite(i)) / (weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)))
+              tmp = Sqrt(scale * dof_site(lsite(i)) / (weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)))
 
               vxx(i) = vxx(i)*tmp
               vyy(i) = vyy(i)*tmp

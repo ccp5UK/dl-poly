@@ -400,7 +400,7 @@ End Subroutine defects_reference_export
 
 !> defects_reference_read
 
-  Subroutine defects_reference_read(nstep,dfcts,comm)
+  Subroutine defects_reference_read(nstep,dfcts,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -415,6 +415,7 @@ End Subroutine defects_reference_export
   
   Integer,              Intent( In    ) :: nstep
   Type( defects_type ), Intent( InOut ) :: dfcts
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Logical                :: l_ind = .true.  , &
@@ -2139,7 +2140,7 @@ Subroutine defects_reference_write(name,megref,dfcts,comm)
 End Subroutine defects_reference_write
 
 !> defects_write
-  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,dfcts,neigh,comm)
+  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,dfcts,neigh,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2156,6 +2157,7 @@ End Subroutine defects_reference_write
   Real( Kind = wp )   , Intent( In    ) :: tstep,time
   Type( defects_type ), Intent( InOut ) :: dfcts
   Type( neighbours_type ), Intent( In    ) :: neigh
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type)   , Intent( InOut ) :: comm
   
   Integer, Parameter :: recsz = 73 ! default record size
@@ -2222,7 +2224,7 @@ End Subroutine defects_reference_write
 
 ! Build lattice sites list from REFERENCE
      Call allocate_defects_arrays(dfcts)
-     Call defects_reference_read(nstep,dfcts,comm)
+     Call defects_reference_read(nstep,dfcts,site_data,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set

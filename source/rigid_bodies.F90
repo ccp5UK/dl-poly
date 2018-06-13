@@ -666,7 +666,7 @@ Contains
     End If
   End Subroutine rigid_bodies_q_ench
 
-  Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot,comm)
+  Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot,site_data,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for constructing RBs' rotational inertia tesnors
@@ -680,6 +680,7 @@ Contains
     Integer,            Intent( In    ) :: megatm
     Integer,            Intent( InOut ) :: megfrz,megrgd
     Integer(Kind=li),   Intent( InOut ) :: degtra,degrot
+    Type( site_type ), Intent( InOut ) :: site_data
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: l_print,safe,pass1,pass2

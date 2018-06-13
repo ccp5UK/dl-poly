@@ -11,7 +11,7 @@ Module rdfs
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use site, Only : site_type
   Use configuration, Only : natms,ltg,ltype
   Use comms,  Only : comms_type,gsum
@@ -71,9 +71,10 @@ Contains
 
   End Subroutine allocate_rdf_arrays
 
-Subroutine allocate_block_average_array(nstrun)
+Subroutine allocate_block_average_array(nstrun,ntype_atom)
+  Integer( Kind = wi ), Intent( In    ) :: nstrun
+  Integer( Kind = wi ), Intent( In    ) :: ntype_atom
 
-  Integer, Intent( In ) :: nstrun
   Integer :: temp1, temp2
   
   Integer, Dimension( 1:2 ) :: fail
@@ -84,7 +85,7 @@ Subroutine allocate_block_average_array(nstrun)
 
   temp1 = mxrdf + 16-Mod(mxrdf,16)
   temp2 = mxgrdf + 16-Mod(mxgrdf,16)
-  Allocate(block_averages(1:site_data%ntype_atom,1:site_data%ntype_atom,1:mxgrdf,1:num_blocks+1), Stat = fail(1))
+  Allocate(block_averages(1:ntype_atom,1:ntype_atom,1:mxgrdf,1:num_blocks+1), Stat = fail(1))
   Allocate(tmp_rdf( 1:temp2,1:temp1, 1:num_blocks+1 ), Stat = fail(2))
 
   If (Any(fail > 0)) Call error(1016)
@@ -169,7 +170,7 @@ Subroutine allocate_block_average_array(nstrun)
 
 End Subroutine rdf_collect
 
-Subroutine rdf_compute(lpana,rcut,temp,comm)
+Subroutine rdf_compute(lpana,rcut,temp,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -185,6 +186,7 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 
   Logical          , Intent( In    ) :: lpana
   Real( Kind = wp ), Intent( In    ) :: rcut,temp
+  Type( site_type ), Intent( In    ) :: site_data
   Type(comms_type), Intent( InOut )  :: comm
 
   Logical           :: zero
@@ -262,7 +264,7 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 
 ! normalisation factor
 
-           factor1=volm*dens(ia)*dens(ib)*Real(ncfrdf,wp)
+           factor1=volm*site_data%dens(ia)*site_data%dens(ib)*Real(ncfrdf,wp)
            If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/site_data%num_type(ia))
 
 ! running integration of rdf
@@ -276,7 +278,7 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
               If (zero .and. i < (mxgrdf-3)) zero=(rdf(i+2,kk) <= 0.0_wp)
 
               gofr= rdf(i,kk)/factor1
-              sum = sum + gofr*dens(ib)
+              sum = sum + gofr*site_data%dens(ib)
 
               rrr = (Real(i,wp)-0.5_wp)*delr
               dvol= fourpi*delr*(rrr**2+delr**2/12.0_wp)
@@ -485,10 +487,11 @@ Subroutine rdf_compute(lpana,rcut,temp,comm)
 
 End Subroutine rdf_compute
 
-Subroutine calculate_block(temp, rcut,neigh)
-
-  Type( neighbours_type), Intent( In    ) :: neigh
+Subroutine calculate_block(temp,rcut,neigh,site_data)
   Real( Kind = wp ), Intent(in)            :: temp, rcut
+  Type( neighbours_type), Intent( In    ) :: neigh
+  Type( site_type ), Intent( In    ) :: site_data
+
   Real( Kind = wp ), Dimension( 1:neigh%max_list ) :: rrt, xxt, yyt, zzt
   Real( Kind = wp )                        :: kT2engo, delr, rdlr, dgrid, pdfzero, factor1, rrr,dvol,gofr,gofr1
 
@@ -510,7 +513,7 @@ Subroutine calculate_block(temp, rcut,neigh)
 ! only for valid interactions specified for a look up
 ! global sum of data on all nodes
 ! normalisation factor
-        factor1=volm*dens(ia)*dens(ib)*Real(ncfrdf,wp)
+        factor1=volm*site_data%dens(ia)*site_data%dens(ib)*Real(ncfrdf,wp)
         If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/site_data%num_type(ia))
 ! loop over distances
         zero=.true.
@@ -534,10 +537,11 @@ Subroutine calculate_block(temp, rcut,neigh)
 
 End Subroutine calculate_block
 
-Subroutine calculate_errors(temp, rcut, num_steps, neigh, comm)
+Subroutine calculate_errors(temp, rcut, num_steps, neigh, site_data, comm)
 
   Real( Kind = wp ), Intent( In )                      :: temp, rcut
   Type( neighbours_type ), Intent( In    ) :: neigh
+  Type( site_type ), Intent( In    ) :: site_data
   Type(comms_type), Intent( InOut )                    :: comm
 
   Real( Kind = wp )                                    :: test1, delr
@@ -569,7 +573,7 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, comm)
 
 !Compute the rdf for each of the blocks
   Do block_number=1, num_blocks+1
-     Call calculate_block(temp, rcut,neigh)
+     Call calculate_block(temp, rcut,neigh,site_data)
   End Do
   nr_blocks = num_blocks+1
 
@@ -630,10 +634,11 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, comm)
   Deallocate(averages, errors)
 End Subroutine calculate_errors
 
-Subroutine calculate_errors_jackknife(temp, rcut, num_steps,neigh,comm)
+Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site_data,comm)
 
   Real( Kind = wp ), Intent(In)                        :: temp, rcut
   Type( neighbours_type ), Intent( In    ) :: neigh
+  Type( site_type ), Intent( In    ) :: site_data
   Type(comms_type), Intent( InOut )                    :: comm
 
   Real( Kind = wp )                                    :: test1
@@ -665,7 +670,7 @@ Subroutine calculate_errors_jackknife(temp, rcut, num_steps,neigh,comm)
 
 !Compute the rdf for each of the blocks
   Do block_number=1,num_blocks+1
-     Call calculate_block(temp, rcut,neigh)
+     Call calculate_block(temp, rcut,neigh,site_data)
   End Do
   nr_blocks = num_blocks+1
   i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)

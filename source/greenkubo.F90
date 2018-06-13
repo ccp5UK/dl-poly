@@ -11,7 +11,7 @@ Module greenkubo
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
 
   Use comms,     Only : comms_type,gsum,gcheck
   Use setup,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt,mxatms
@@ -31,17 +31,17 @@ Module greenkubo
     Logical, Public :: l_average
 
     !> VAF sampling frequency in steps
-    Integer, Public :: freq = 1
+    Integer( Kind = wi ), Public :: freq = 1
     !> VAF sample size
-    Integer, Public :: binsize = 0
+    Integer( Kind = wi ), Public :: binsize = 0
     !> VAF timestep start
-    Integer, Public :: t_start = -1
+    Integer( Kind = wi ), Public :: t_start = -1
     !> VAF simultaneously overlapping samples
-    Integer, Public :: samp = 0
+    Integer( Kind = wi ), Public :: samp = 0
 
     Real( Kind = wp ), Public :: vafcount = 0.0_wp
 
-    Integer,           Allocatable, Public :: step(:)
+    Integer( Kind = wi ), Allocatable, Public :: step(:)
     Real( Kind = wp ), Allocatable, Public :: vxi(:,:),vyi(:,:),vzi(:,:)
     Real( Kind = wp ), Allocatable, Public :: vafdata(:,:),time(:),vaf(:,:)
 
@@ -221,7 +221,7 @@ Contains
 
   End Subroutine vaf_collect
 
-  Subroutine vaf_compute(tstep,green,comm)
+  Subroutine vaf_compute(tstep,num_type_nf,green,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -234,8 +234,8 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
     Real( Kind = wp ), Intent( In    ) :: tstep
+    Real( Kind = wp ), Dimension(:), Intent( In    ) :: num_type_nf
     Type( greenkubo_type), Intent( In    ) :: green
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -254,7 +254,7 @@ Contains
     Call info(message,.true.)
 
     time0 = green%time(0)
-    numt = Sum(site_data%num_type_nf(1:mxatyp))
+    numt = Sum(num_type_nf(1:mxatyp))
     factor = 1.0_wp/Sum(green%vaf(0,1:mxatyp))
     ovaf = Sum(green%vaf(0,1:mxatyp))/Real(numt,Kind=wp)
     If (green%l_average) ovaf = ovaf/green%vafcount
@@ -291,7 +291,7 @@ Contains
 
   End Subroutine vaf_compute
 
-  Subroutine vaf_write(keyres,nstep,tstep,green,comm)
+  Subroutine vaf_write(keyres,nstep,tstep,green,site_data,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -306,6 +306,7 @@ Contains
     Integer,           Intent( In    ) :: keyres,nstep
     Real( Kind = wp ), Intent( In    ) :: tstep
     Type( greenkubo_type), Intent( In    ) :: green
+    Type( site_type ), Intent( In    ) :: site_data
     Type( comms_type), Intent( InOut ) :: comm
 
     Logical,     Save :: newjob = .true.

@@ -155,7 +155,7 @@ Contains
   End Subroutine allocate_metal_erf_arrays
 
   Subroutine metal_forces &
-          (iatm,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,met,neigh)
+          (iatm,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,ntype_atom,met,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -175,6 +175,7 @@ Contains
   Real( Kind = wp ),                        Intent(   Out ) :: engmet,virmet
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Logical,                                  Intent( InOut ) :: safe
+  Integer( Kind = wi ), Intent( In    ) :: ntype_atom
   Type( metal_type ), Intent( InOut ) :: met
 
   Integer           :: m,idi,ai,ki,jatm,aj,kj, &
@@ -230,8 +231,8 @@ Contains
         ki=ai
         kj=aj
      Else If (met%tab == 2 .or. met%tab == 4) Then ! EEAM & 2BEEAM
-        ki=(aj-1)*site_data%ntype_atom+ai ! aj-ai
-        kj=(ai-1)*site_data%ntype_atom+aj ! ai-aj
+        ki=(aj-1)*ntype_atom+ai ! aj-ai
+        kj=(ai-1)*ntype_atom+aj ! ai-aj
      End If
 
      If (ai > aj) Then
@@ -830,7 +831,7 @@ Contains
   stress(9) = stress(9) + strs9
 End Subroutine metal_forces
 
-Subroutine metal_ld_compute(engden,virden,stress,met,neigh,comm)
+Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -849,6 +850,7 @@ Subroutine metal_ld_compute(engden,virden,stress,met,neigh,comm)
 
   Real( Kind = wp ),                        Intent(   Out ) :: engden,virden
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+  Integer( Kind = wi ), Intent( In    ) :: ntype_atom
   Type( metal_type ), Intent( InOut ) :: met
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( comms_type ),                       Intent( InOut ) :: comm
@@ -911,7 +913,7 @@ Subroutine metal_ld_compute(engden,virden,stress,met,neigh,comm)
 ! calculate contributions to local density
 
      If (met%tab > 0) Then         ! EAM contributions
-        Call metal_ld_collect_eam(i,rrt,safe,met,neigh)
+        Call metal_ld_collect_eam(i,rrt,safe,ntype_atom,met,neigh)
      Else ! If (met%tab == 0) Then ! FST contributions
         Call metal_ld_collect_fst(i,rrt,safe,met,neigh)
      End If
@@ -1178,7 +1180,7 @@ Subroutine metal_ld_compute(engden,virden,stress,met,neigh,comm)
   Call metal_ld_set_halo(met,comm)
 End Subroutine metal_ld_compute
 
-Subroutine metal_lrc(met,comm)
+Subroutine metal_lrc(met,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1192,6 +1194,7 @@ Subroutine metal_lrc(met,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( metal_type ), Intent( InOut ) :: met
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical, Save     :: newjob = .true.
@@ -1248,31 +1251,31 @@ Subroutine metal_lrc(met,comm)
                  vlrc0 = vlrc0*2.0_wp
               End If
 
-              met%elrc(0) = met%elrc(0) + twopi*volm*dens(i)*dens(j)*elrc0
-              met%vlrc(0) = met%vlrc(0) - twopi*volm*dens(i)*dens(j)*vlrc0
+              met%elrc(0) = met%elrc(0) + twopi*volm*site_data%dens(i)*site_data%dens(j)*elrc0
+              met%vlrc(0) = met%vlrc(0) - twopi*volm*site_data%dens(i)*site_data%dens(j)*vlrc0
 
               tmp=sig**3*(sig/met%rcut)**(mmm-3)/(mmmr-3.0_wp)
               If (i == j) Then
                  elrc1=tmp*(eps*ccc)**2
-                 met%elrc(i)=met%elrc(i)+fourpi*dens(i)*elrc1
-                 elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
+                 met%elrc(i)=met%elrc(i)+fourpi*site_data%dens(i)*elrc1
+                 elrcsum=elrcsum+twopi*volm*site_data%dens(i)**2*elrc1
 
                  vlrc1=mmmr*elrc1
-                 met%vlrc(i)=met%vlrc(i)+twopi*dens(i)*vlrc1
+                 met%vlrc(i)=met%vlrc(i)+twopi*site_data%dens(i)*vlrc1
               Else
                  k1=met%list((i*(i+1))/2)
                  k2=met%list((j*(j+1))/2)
 
                  elrc1=tmp*(met%prm(1,k1)*met%prm(5,k1))**2
                  elrc2=tmp*(met%prm(1,k2)*met%prm(5,k2))**2
-                 met%elrc(i)=met%elrc(i)+fourpi*dens(j)*elrc1
-                 met%elrc(j)=met%elrc(j)+fourpi*dens(i)*elrc2
-                 elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
+                 met%elrc(i)=met%elrc(i)+fourpi*site_data%dens(j)*elrc1
+                 met%elrc(j)=met%elrc(j)+fourpi*site_data%dens(i)*elrc2
+                 elrcsum=elrcsum+twopi*volm*site_data%dens(i)*site_data%dens(j)*(elrc1+elrc2)
 
                  vlrc1=mmmr*elrc1
                  vlrc2=mmmr*elrc2
-                 met%vlrc(i)=met%vlrc(i)+twopi*dens(j)*vlrc1
-                 met%vlrc(j)=met%vlrc(j)+twopi*dens(i)*vlrc2
+                 met%vlrc(i)=met%vlrc(i)+twopi*site_data%dens(j)*vlrc1
+                 met%vlrc(j)=met%vlrc(j)+twopi*site_data%dens(i)*vlrc2
               End If
 
            Else If (keypot == 4) Then
@@ -1297,33 +1300,33 @@ Subroutine metal_lrc(met,comm)
                  vlrc0=vlrc0*2.0_wp
               End If
 
-              met%elrc(0)=met%elrc(0)+twopi*volm*dens(i)*dens(j)*elrc0
-              met%vlrc(0)=met%vlrc(0)-twopi*volm*dens(i)*dens(j)*vlrc0
+              met%elrc(0)=met%elrc(0)+twopi*volm*site_data%dens(i)*site_data%dens(j)*elrc0
+              met%vlrc(0)=met%vlrc(0)-twopi*volm*site_data%dens(i)*site_data%dens(j)*vlrc0
 
               eee=Exp(-2.0_wp*qqq*(met%rcut-rr0)/rr0)
 
               If (i == j) Then
                  elrc1=(met%rcut**2+2.0_wp*met%rcut*(0.5_wp*rr0/qqq)+ &
                    2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
-                 met%elrc(i)=met%elrc(i)+fourpi*dens(i)*elrc1
-                 elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
+                 met%elrc(i)=met%elrc(i)+fourpi*site_data%dens(i)*elrc1
+                 elrcsum=elrcsum+twopi*volm*site_data%dens(i)**2*elrc1
 
                  vlrc1=(met%rcut**3+3.0_wp*met%rcut**2*(0.5_wp*rr0/qqq)+ &
                    6.0_wp*met%rcut*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
-                 met%vlrc(i)=met%vlrc(i)+twopi*dens(i)*vlrc1
+                 met%vlrc(i)=met%vlrc(i)+twopi*site_data%dens(i)*vlrc1
               Else
                  elrc1=(met%rcut**2+2.0_wp*met%rcut*(0.5_wp*rr0/qqq)+ &
                    2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
                  elrc2=elrc2
-                 met%elrc(i)=met%elrc(i)+fourpi*dens(j)*elrc1
-                 met%elrc(j)=met%elrc(j)+fourpi*dens(i)*elrc2
-                 elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
+                 met%elrc(i)=met%elrc(i)+fourpi*site_data%dens(j)*elrc1
+                 met%elrc(j)=met%elrc(j)+fourpi*site_data%dens(i)*elrc2
+                 elrcsum=elrcsum+twopi*volm*site_data%dens(i)*site_data%dens(j)*(elrc1+elrc2)
 
                  vlrc1=(met%rcut**3+3.0_wp*met%rcut**2*(0.5_wp*rr0/qqq)+ &
                    6.0_wp*met%rcut*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
                  vlrc2=vlrc1
-                 met%vlrc(i)=met%vlrc(i)+twopi*dens(j)*vlrc1
-                 met%vlrc(j)=met%vlrc(j)+twopi*dens(i)*vlrc2
+                 met%vlrc(i)=met%vlrc(i)+twopi*site_data%dens(j)*vlrc1
+                 met%vlrc(j)=met%vlrc(j)+twopi*site_data%dens(i)*vlrc2
               End If
 
            Else If (keypot == 5) Then
@@ -1347,31 +1350,31 @@ Subroutine metal_lrc(met,comm)
 !                 vlrc0 = vlrc0*2.0_wp
 !              End If
 
-!              met%elrc(0) = met%elrc(0) + twopi*volm*dens(i)*dens(j)*elrc0
-!              met%vlrc(0) = met%vlrc(0) - twopi*volm*dens(i)*dens(j)*vlrc0
+!              met%elrc(0) = met%elrc(0) + twopi*volm*site_data%dens(i)*site_data%dens(j)*elrc0
+!              met%vlrc(0) = met%vlrc(0) - twopi*volm*site_data%dens(i)*site_data%dens(j)*vlrc0
 
               tmp=sig/((mmmr-3.0_wp)*met%rcut**(mmm-3))
               If (i == j) Then
                  elrc1=tmp*eps**2
-                 met%elrc(i)=met%elrc(i)+fourpi*dens(i)*elrc1
-                 elrcsum=elrcsum+twopi*volm*dens(i)**2*elrc1
+                 met%elrc(i)=met%elrc(i)+fourpi*site_data%dens(i)*elrc1
+                 elrcsum=elrcsum+twopi*volm*site_data%dens(i)**2*elrc1
 
                  vlrc1=mmmr*elrc1
-                 met%vlrc(i)=met%vlrc(i)+twopi*dens(i)*vlrc1
+                 met%vlrc(i)=met%vlrc(i)+twopi*site_data%dens(i)*vlrc1
               Else
                  k1=met%list((i*(i+1))/2)
                  k2=met%list((j*(j+1))/2)
 
                  elrc1=tmp*met%prm(1,k1)**2
                  elrc2=tmp*met%prm(1,k2)**2
-                 met%elrc(i)=met%elrc(i)+fourpi*dens(j)*elrc1
-                 met%elrc(j)=met%elrc(j)+fourpi*dens(i)*elrc2
-                 elrcsum=elrcsum+twopi*volm*dens(i)*dens(j)*(elrc1+elrc2)
+                 met%elrc(i)=met%elrc(i)+fourpi*site_data%dens(j)*elrc1
+                 met%elrc(j)=met%elrc(j)+fourpi*site_data%dens(i)*elrc2
+                 elrcsum=elrcsum+twopi*volm*site_data%dens(i)*site_data%dens(j)*(elrc1+elrc2)
 
                  vlrc1=mmmr*elrc1
                  vlrc2=mmmr*elrc2
-                 met%vlrc(i)=met%vlrc(i)+twopi*dens(j)*vlrc1
-                 met%vlrc(j)=met%vlrc(j)+twopi*dens(i)*vlrc2
+                 met%vlrc(i)=met%vlrc(i)+twopi*site_data%dens(j)*vlrc1
+                 met%vlrc(j)=met%vlrc(j)+twopi*site_data%dens(i)*vlrc2
               End If
 
            End If
@@ -1405,7 +1408,7 @@ Subroutine metal_lrc(met,comm)
   End If
 End Subroutine metal_lrc
 
-Subroutine metal_table_read(l_top,met,comm)
+Subroutine metal_table_read(l_top,met,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1422,6 +1425,7 @@ Subroutine metal_table_read(l_top,met,comm)
 
   Logical, Intent( In    ) :: l_top
   Type( metal_type ), Intent( InOut ) :: met
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type ), Intent ( InOut ) :: comm
 
   Logical                :: safe
@@ -1835,7 +1839,7 @@ Subroutine metal_table_read(l_top,met,comm)
 End Subroutine metal_table_read
 
 
-Subroutine metal_generate(met)
+Subroutine metal_generate(ntype_atom,met)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1848,6 +1852,7 @@ Subroutine metal_generate(met)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Integer( Kind = wi ), Intent( In    ) :: ntype_atom
   Type( metal_type ), Intent( InOut ) :: met
 
   Integer           :: i,imet,kmet,keypot,katom1,katom2, &
@@ -1865,7 +1870,7 @@ Subroutine metal_generate(met)
 ! construct arrays for metal potentials
 
   kmet=0
-  Do katom1=1,site_data%ntype_atom
+  Do katom1=1,ntype_atom
      Do katom2=1,katom1
         kmet=kmet+1
 
@@ -2108,7 +2113,7 @@ Subroutine metal_generate_erf(met)
   End If
 End Subroutine metal_generate_erf
 
-Subroutine metal_ld_collect_eam(iatm,rrt,safe,met,neigh)
+Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2130,6 +2135,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,met,neigh)
   Type( neighbours_type ), Intent( In    ) :: neigh
   Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
   Logical,                                  Intent( InOut ) :: safe
+  Integer( Kind = wi ), Intent( In    ) :: ntype_atom
   Type( metal_type ), Intent( InOut ) :: met
 
   Integer           :: m,ai,ki,jatm,aj,kj,l,key,k0
@@ -2152,8 +2158,8 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,met,neigh)
         ki=ai
         kj=aj
      Else If (met%tab == 2 .or. met%tab == 4) Then ! EEAM & 2BEEAM
-        ki=(aj-1)*site_data%ntype_atom+ai ! aj-ai
-        kj=(ai-1)*site_data%ntype_atom+aj ! ai-aj
+        ki=(aj-1)*ntype_atom+ai ! aj-ai
+        kj=(ai-1)*ntype_atom+aj ! ai-aj
      End If
 
 ! interatomic distance

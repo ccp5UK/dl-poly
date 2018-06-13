@@ -10,14 +10,14 @@ Module four_body
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,          Only : wp
+  Use kinds,          Only : wp,wi
   Use comms,          Only : comms_type,gsum,gcheck
-  
+
   Use domains, Only : idx,idy,idz, nprx,npry,nprz, &
                              r_nprx,r_npry,r_nprz
   Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
-  Use setup, Only : site_data%max_site,mxfbp,mxpfbp,zero_plus,mx3fbp, &
+  Use setup, Only : mxfbp,mxpfbp,zero_plus,mx3fbp, &
                            mxatms,nrite
 
   Use errors_warnings, Only : error, warning
@@ -39,13 +39,14 @@ Module four_body
 
 Contains
 
-  Subroutine allocate_four_body_arrays()
+  Subroutine allocate_four_body_arrays(max_site)
+    Integer( Kind = wi ), Intent( In    ) :: max_site
 
     Integer, Dimension( 1:5 ) :: fail
 
     fail = 0
 
-    Allocate (lfrfbp(1:Merge(site_data%max_site,0,mxfbp > 0)), Stat = fail(1))
+    Allocate (lfrfbp(1:Merge(max_site,0,mxfbp > 0)), Stat = fail(1))
     Allocate (lstfbp(1:mxfbp),                     Stat = fail(2))
     Allocate (ltpfbp(1:mxfbp),                     Stat = fail(3))
     Allocate (prmfbp(1:mxpfbp,1:mxfbp),            Stat = fail(4))

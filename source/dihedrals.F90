@@ -168,9 +168,9 @@ Contains
     dihedral%dst = 0.0_wp
 
   End Subroutine allocate_dihd_dst_arrays
-  
+
   Subroutine dihedrals_14_check &
-           (l_str,l_top,site_data%ntype_mol,site_data%num_mols,angle,dihedral,comm)
+           (l_str,l_top,angle,dihedral,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -182,11 +182,11 @@ Contains
 ! amended   - i.t.todorov september 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+
   Logical,           Intent( In    ) :: l_str,l_top
-  Integer,           Intent( In    ) :: site_data%ntype_mol,site_data%num_mols(1:mxtmls)
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: l_print,l_reset,l_reset_l
@@ -310,7 +310,7 @@ Contains
 
 End Subroutine dihedrals_14_check
 
-Subroutine dihedrals_compute(temp,dihedral,comm)
+Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -324,6 +324,7 @@ Subroutine dihedrals_compute(temp,dihedral,comm)
 
 
   Real( Kind = wp ), Intent( In    ) :: temp
+  Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -411,15 +412,17 @@ Subroutine dihedrals_compute(temp,dihedral,comm)
 
         Write(messages(1),*) ''
         Write(messages(2),'(a,4(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-           site_data%unique_atom(dihedral%typ(1,i)),site_data%unique_atom(dihedral%typ(2,i)),site_data%unique_atom(dihedral%typ(3,i)), &
-           site_data%unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i)
+          unique_atom(dihedral%typ(1,i)),unique_atom(dihedral%typ(2,i)), &
+          unique_atom(dihedral%typ(3,i)), &
+          unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i)
         Write(messages(3),'(a,f8.5)') &
-           'Theta(degrees)  P_dih(Theta)  Sum_P_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
+          'Theta(degrees)  P_dih(Theta)  Sum_P_dih(Theta)   @   dTheta_bin = ',delth*rad2dgr
         Call info(messages,3,.true.)
         If (comm%idnode == 0) Then
-           Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-              site_data%unique_atom(dihedral%typ(1,i)),site_data%unique_atom(dihedral%typ(2,i)),site_data%unique_atom(dihedral%typ(3,i)), &
-              site_data%unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i)
+          Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x))') '# type, index, instances: ', &
+            unique_atom(dihedral%typ(1,i)),unique_atom(dihedral%typ(2,i)), &
+            unique_atom(dihedral%typ(3,i)), &
+            unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i)
         End If
 
 ! global sum of data on all nodes
@@ -510,12 +513,14 @@ Subroutine dihedrals_compute(temp,dihedral,comm)
         j=j+1
 
         If (comm%idnode == 0) Then
-           Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                site_data%unique_atom(dihedral%typ(1,i)),site_data%unique_atom(dihedral%typ(2,i)),site_data%unique_atom(dihedral%typ(3,i)), &
-                site_data%unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
-           Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
-                site_data%unique_atom(dihedral%typ(1,i)),site_data%unique_atom(dihedral%typ(2,i)),site_data%unique_atom(dihedral%typ(3,i)), &
-                site_data%unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
+          Write(npdgdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+            unique_atom(dihedral%typ(1,i)),unique_atom(dihedral%typ(2,i)), &
+            unique_atom(dihedral%typ(3,i)), &
+            unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
+          Write(npdfdt,'(/,a,4(a8,1x),2(i10,1x),a)') '# ', &
+            unique_atom(dihedral%typ(1,i)),unique_atom(dihedral%typ(2,i)), &
+            unique_atom(dihedral%typ(3,i)), &
+            unique_atom(dihedral%typ(4,i)),j,dihedral%typ(0,i),' (type, index, instances)'
         End If
 
 ! Smoothen and get derivatives
@@ -1721,7 +1726,7 @@ Subroutine dihedrals_forces &
 
 End Subroutine dihedrals_forces
 
-Subroutine dihedrals_table_read(dihd_name,dihedral,comm)
+Subroutine dihedrals_table_read(dihd_name,dihedral,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1737,6 +1742,7 @@ Subroutine dihedrals_table_read(dihd_name,dihedral,comm)
 
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Character( Len = 32 ), Intent( In    ) :: dihd_name(1:dihedral%max_types)
+  Type( site_type ), Intent( In    ) :: site_data
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,remake,zero

@@ -1,6 +1,6 @@
 Module mpole
-  Use kinds, Only : wp
-  Use setup, Only : mxatdm, mxatms, mxexcl, mximpl, mxompl, site_data%max_site, mxspl, &
+  Use kinds, Only : wp,wi
+  Use setup, Only : mxatdm, mxatms, mxexcl, mximpl, mxompl, mxspl, &
                            sqrpi,r4pie0,zero_plus,nrite,nmpldt
   Use configuration,Only : natms
   Use site, Only : site_type
@@ -69,7 +69,8 @@ Module mpole
 
 Contains
 
-  Subroutine allocate_mpoles_arrays()
+  Subroutine allocate_mpoles_arrays(max_site)
+    Integer( Kind = wi ), Intent( In    ) :: max_site
 
     Integer           :: n,k,om1,numpl,fail(1:9)
     Real( Kind = wp ) :: gearp(1:7),aspcp(1:7)
@@ -85,9 +86,9 @@ Contains
     Allocate (mplflg(1:mxatdm),ltpatm(0:mxexcl,1:mxatdm),          Stat = fail(2))
     If (keyind == 1) &
     Allocate (lchatm(0:mxexcl,1:mxatdm),                           Stat = fail(3))
-    Allocate (mpllfr(1:mximpl,1:site_data%max_site),mplgfr(1:mximpl,1:mxatms), Stat = fail(4))
-    Allocate (plrsit(1:site_data%max_site),plratm(1:mxatms),                   Stat = fail(5))
-    Allocate (dmpsit(1:site_data%max_site),dmpatm(1:mxatms),                   Stat = fail(6))
+    Allocate (mpllfr(1:mximpl,1:max_site),mplgfr(1:mximpl,1:mxatms), Stat = fail(4))
+    Allocate (plrsit(1:max_site),plratm(1:mxatms),                   Stat = fail(5))
+    Allocate (dmpsit(1:max_site),dmpatm(1:mxatms),                   Stat = fail(6))
     Allocate (mprotm(1:mxatdm),ncombk(0:mxspl,0:mxspl),            Stat = fail(7))
     Allocate (mptrqx(1:mxatdm),mptrqy(1:mxatdm),mptrqz(1:mxatdm),  Stat = fail(8))
     Allocate (mprotx(1:mximpl,1:mxatms), &
@@ -277,7 +278,7 @@ Contains
 
   End Subroutine allocate_mpoles_arrays
 
-  Subroutine read_mpoles(l_top,sumchg,comm)
+  Subroutine read_mpoles(l_top,sumchg,site_data,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -291,7 +292,9 @@ Contains
 
     Logical,           Intent ( In    ) :: l_top
     Real( Kind = wp ), Intent ( InOut ) :: sumchg
+    Type( site_type ), Intent( InOut ) :: site_data
     Type( comms_type ), Intent ( InOut ) :: comm
+
     Logical                :: safe,l_rsh,l_ord=.false.
 
     Character( Len = 200 ) :: record,record1,record2

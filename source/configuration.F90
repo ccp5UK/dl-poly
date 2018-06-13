@@ -283,7 +283,7 @@ Contains
 
   End Subroutine allocate_config_arrays
 
-  Subroutine check_config(levcfg,l_str,keyfce,keyres,megatm,thermo,comm)
+  Subroutine check_config(levcfg,l_str,keyfce,keyres,megatm,thermo,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -299,8 +299,9 @@ Contains
 
   Logical, Intent( In    ) :: l_str
   Integer, Intent( In    ) :: levcfg,keyfce,keyres,megatm
-  Type( comms_type ), Intent( InOut ) :: comm
   Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( site_type ), Intent( In    ) :: site_data
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Logical, Save     :: newjob = .true.
   Logical           :: safe

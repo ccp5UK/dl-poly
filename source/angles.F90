@@ -160,7 +160,7 @@ Contains
 
   End Subroutine allocate_angl_dst_arrays
   
-  Subroutine angles_compute(temp,angle,comm)
+  Subroutine angles_compute(temp,unique_atom,angle,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -174,6 +174,7 @@ Contains
 
 
   Real( Kind = wp ),  Intent( In    ) :: temp
+  Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
   Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -258,7 +259,8 @@ Contains
         j=j+1
 
         Write(message,'(a,3(a8,1x),2(i10,1x))') 'type, index, instances: ', &
-          site_data%unique_atom(angle%typ(1,i)),site_data%unique_atom(angle%typ(2,i)),site_data%unique_atom(angle%typ(3,i)),j,angle%typ(0,i)
+          unique_atom(angle%typ(1,i)),unique_atom(angle%typ(2,i)), &
+          unique_atom(angle%typ(3,i)),j,angle%typ(0,i)
         Call info(message,.true.)
         Write(message,'(a,f8.5)') &
          'Theta(degrees)  PDF_ang(Theta)  Sum_PDF_ang(Theta)   @   dTheta_bin = ',delth*rad2dgr
@@ -266,7 +268,8 @@ Contains
 
         If (comm%idnode == 0) Then
            Write(npdfdt,'(/,a,3(a8,1x),2(i10,1x))') '# type, index, instances: ', &
-                site_data%unique_atom(angle%typ(1,i)),site_data%unique_atom(angle%typ(2,i)),site_data%unique_atom(angle%typ(3,i)),j,angle%typ(0,i)
+                unique_atom(angle%typ(1,i)),unique_atom(angle%typ(2,i)), &
+                unique_atom(angle%typ(3,i)),j,angle%typ(0,i)
         End If
 
 ! global sum of data on all nodes
@@ -364,11 +367,13 @@ Contains
 
         If (comm%idnode == 0) Then
            Write(npdgdt,'(/,a,3(a8,1x),2(i10,1x),a)') '# ', &
-                site_data%unique_atom(angle%typ(1,i)),site_data%unique_atom(angle%typ(2,i)),site_data%unique_atom(angle%typ(3,i)),j,angle%typ(0,i), &
-                ' (type, index, instances)'
+             unique_atom(angle%typ(1,i)),unique_atom(angle%typ(2,i)), &
+             unique_atom(angle%typ(3,i)),j,angle%typ(0,i), &
+             ' (type, index, instances)'
            Write(npdfdt,'(/,a,3(a8,1x),2(i10,1x),a)') '# ', &
-                site_data%unique_atom(angle%typ(1,i)),site_data%unique_atom(angle%typ(2,i)),site_data%unique_atom(angle%typ(3,i)),j,angle%typ(0,i), &
-                ' (type, index, instances)'
+             unique_atom(angle%typ(1,i)),unique_atom(angle%typ(2,i)), &
+             unique_atom(angle%typ(3,i)),j,angle%typ(0,i), &
+             ' (type, index, instances)'
         End If
 
 ! Smoothen and get derivatives
@@ -1091,7 +1096,7 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
 
 End Subroutine angles_forces
 
-Subroutine angles_table_read(angl_name,angle,comm)
+Subroutine angles_table_read(angl_name,angle,site_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1103,9 +1108,9 @@ Subroutine angles_table_read(angl_name,angle,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
   Type( angles_type ), Intent( InOut ) :: angle
   Character( Len = 24 ), Intent( In    ) :: angl_name(1:angle%max_types)
+  Type( site_type ), Intent( In    ) :: site_data
   Type(comms_type),      Intent( InOut ) :: comm
 
   Logical                :: safe,remake
