@@ -11,8 +11,7 @@ Module two_body
   Use coul_mpole,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
                              coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
   Use poisson, Only : poisson_type,poisson_forces,poisson_excl_forces,poisson_frzn_forces
-  Use vdw,     Only : ntpvdw, &
-                      vdw_forces
+  Use vdw,     Only : vdw_type,vdw_forces
   Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
   Use kim
   Use rdfs,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack, block_number, &
@@ -33,18 +32,17 @@ Module two_body
 Contains
 
 Subroutine two_body_forces                        &
-           (rvdw,pdplnc,ensemble,    &
+           (pdplnc,ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
-           elrc,virlrc,               &
-           stats,ewld,devel,met,pois,neigh,site,tmr,comm)
+           stats,ewld,devel,met,pois,neigh,site,vdw,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating interatomic forces and rdf
 ! using the verlet neighbour list
 !
-! ntpvdw > 0 ------ switch for vdw potentials calculation
+! vdw%n_vdw > 0 ------ switch for vdw potentials calculation
 ! met%n_potentials > 0 ------ switch for metal local density and potentials
 !                   calculations
 !
@@ -76,9 +74,7 @@ Subroutine two_body_forces                        &
                                                                keyfce,nstfce, &
                                                                megfrz,nstrdf, &
                                                                nsteql,nstep
-  Real( Kind = wp ),                        Intent( In    ) :: rvdw, &
-                                                               pdplnc,alpha,epsq
-  Real( Kind = wp ),                        Intent( In    ) :: elrc,virlrc
+  Real( Kind = wp ),                        Intent( In    ) :: pdplnc,alpha,epsq
   Type( stats_type ), Intent( InOut )                       :: stats
   Type( ewald_type ),                       Intent( InOut ) :: ewld
   Type( development_type ),                 Intent( In    ) :: devel
@@ -86,6 +82,7 @@ Subroutine two_body_forces                        &
   Type( poisson_type ),                     Intent( InOut ) :: pois
   Type( neighbours_type ),                  Intent( InOut ) :: neigh
   Type( site_type ),                        Intent( In    ) :: site
+  Type( vdw_type ),                         Intent( InOut ) :: vdw
   Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( comms_type ),                       Intent( InOut ) :: comm
 
@@ -169,7 +166,7 @@ Subroutine two_body_forces                        &
 
 ! Set up non-bonded interaction (verlet) list using link cells
   If ((.not.induce) .and. neigh%update) Then
-    Call link_cell_pairs(rvdw,met%rcut,pdplnc,lbook,megfrz,devel,neigh,tmr,comm)
+    Call link_cell_pairs(vdw%cutoff,met%rcut,pdplnc,lbook,megfrz,devel,neigh,tmr,comm)
   End If
 ! Calculate all contributions from KIM
 
@@ -253,8 +250,8 @@ Subroutine two_body_forces                        &
 
 ! calculate short-range force and potential terms
 
-     If (ntpvdw > 0) Then
-        Call vdw_forces(i,rvdw,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh)
+     If (vdw%n_vdw > 0) Then
+        Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,vdw)
 
         engvdw=engvdw+engacc
         virvdw=virvdw+viracc
@@ -635,12 +632,12 @@ if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_siz
 ! Globalise short-range, KIM and metal interactions with
 ! their long-range corrections contributions: srp
 
-  stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + elrc)
-  stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + virlrc)
+  stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdw%elrc)
+  stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdw%vlrc)
 
 ! Add long-range corrections to diagonal terms of stress tensor (per node)
 
-  tmp = - (virlrc+met%vlrc(0))/(3.0_wp*Real(comm%mxnode,wp))
+  tmp = - (vdw%vlrc+met%vlrc(0))/(3.0_wp*Real(comm%mxnode,wp))
   stats%stress(1) = stats%stress(1) + tmp
   stats%stress(5) = stats%stress(5) + tmp
   stats%stress(9) = stats%stress(9) + tmp

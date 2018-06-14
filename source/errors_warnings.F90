@@ -166,7 +166,7 @@ Module errors_warnings
      Else If (kode ==  50) Then
 
         Write(ounit,'(2(/,1x,a),f12.6,a,/)') &
-        '*** warning - short-range cutoff reset ***', '*** new cutoff radius (rvdw) ', a, ' !!! ***'
+        '*** warning - short-range cutoff reset ***', '*** new cutoff radius (vdw%cutoff) ', a, ' !!! ***'
 
      Else If (kode ==  60) Then
 
