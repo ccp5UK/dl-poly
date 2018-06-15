@@ -203,7 +203,7 @@ Module setup
     mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
     mxrdf,mxgrdf,mxgele,                                        &
     mxmet,mxmed,mxmds,mxpmet,                            &
-    mxter,mxpter,mxgter,mxgrid,                                 &
+    mxgrid,                                 &
     mxtana,mxgana,              &
     mxfbp,mx3fbp,mxpfbp,                    &
     mxpfld,mxgusr,                                              &

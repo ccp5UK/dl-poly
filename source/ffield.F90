@@ -40,7 +40,7 @@ Module ffield
                   MIX_FUNCTIONAL,vdw_generate,vdw_table_read
   Use metal, Only : metal_type,allocate_metal_arrays,allocate_metal_table_arrays, &
                     metal_generate_erf,metal_table_read,metal_generate
-  Use tersoff
+  Use tersoff, Only : tersoff_type,tersoff_generate
   Use four_body
 
   Use external_field
@@ -74,12 +74,12 @@ Subroutine read_field                      &
            rcut,width,epsq, &
            keyfce,keyshl,           &
            lecx,lbook,lexcl,               &
-           rcter,rcfbp,              &
+           rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megshl,megrgd,    &
            megtet,    &
            pmf,cons,  &
-           thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw,comm)
+           thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw,tersoff,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -109,7 +109,7 @@ Subroutine read_field                      &
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
-  Real( Kind = wp ), Intent(   Out ) :: rcter,rcfbp
+  Real( Kind = wp ), Intent(   Out ) :: rcfbp
   Integer,           Intent(   Out ) :: keyshl,                             &
                                         atmfre,atmfrz,megatm,megfrz,        &
                                         megshl,megrgd,        &
@@ -126,6 +126,7 @@ Subroutine read_field                      &
   Type( threebody_type), Intent( InOut ) :: threebody
   Type( site_type ), Intent( InOut ) :: site
   Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -269,7 +270,7 @@ Subroutine read_field                      &
 
 ! Default potential cutoffs
 
-  rcter=0.0_wp
+  tersoff%cutoff=0.0_wp
   threebody%cutoff=0.0_wp
   rcfbp=0.0_wp
 
@@ -4143,9 +4144,9 @@ Subroutine read_field                      &
      Else If (word(1:7) == 'tersoff') Then
 
         Call get_word(record,word)
-        ntpter=Nint(word_2_real(word))
+        tersoff%n_potential=Nint(word_2_real(word))
 
-        Write(message,'(a,i10)') 'number of specified tersoff potentials ',ntpter
+        Write(message,'(a,i10)') 'number of specified tersoff potentials ',tersoff%n_potential
         Call info(message,.true.)
         If (l_top) Then
           Write(message,'(6x,a6,5x,a5,7x,a3,5x,a10)') &
@@ -4153,12 +4154,12 @@ Subroutine read_field                      &
           Call info(message,.true.)
         End If
 
-        If (ntpter > mxter) Call error(72)
+        If (tersoff%n_potential > tersoff%max_ter) Call error(72)
         If (.not.lunits) Call error(6)
         If (.not.lmols) Call error(13)
 
         lter_safe=.true.
-        Do itpter=1,ntpter
+        Do itpter=1,tersoff%n_potential
            parpot=0.0_wp
 
            word(1:1)='#'
@@ -4256,8 +4257,8 @@ Subroutine read_field                      &
                 Write(messages(1),'(2x,i10,5x,a8,3x,a4,1x,5(1p,e13.4))') &
                   itpter,atom0,keyword,parpot(1:5)
                 Write(messages(2),'(33x,6(1p,e13.4))') parpot(6:11)
-                Write(rfmt,'(a,i0,a)') '(33x,',mxpter-11,'(1p,e13.4))'
-                Write(messages(3),rfmt) parpot(12:mxpter)
+                Write(rfmt,'(a,i0,a)') '(33x,',tersoff%max_param-11,'(1p,e13.4))'
+                Write(messages(3),rfmt) parpot(12:tersoff%max_param)
                 Call info(messages,3,.true.)
               End If
            End If
@@ -4275,46 +4276,46 @@ Subroutine read_field                      &
            parpot(1)=parpot(1)*engunit
            parpot(3)=parpot(3)*engunit
 
-           If (lstter(katom0) > 0) Call error(76)
+           If (tersoff%list(katom0) > 0) Call error(76)
 
-           lfrter(katom0)=.true.
+           tersoff%lfr(katom0)=.true.
 
-           lstter(katom0)=itpter
-           ltpter(itpter)=keypot
+           tersoff%list(katom0)=itpter
+           tersoff%ltp(itpter)=keypot
 
            If (itpter > 1) Then
-              If (keypot /= ltpter(itpter-1)) lter_safe=.false.
+              If (keypot /= tersoff%ltp(itpter-1)) lter_safe=.false.
            End If
 
 ! calculate max tersoff cutoff
 
-           rcter=Max(rcter,parpot(6))
+           tersoff%cutoff=Max(tersoff%cutoff,parpot(6))
 
 ! store tersoff single atom potential parameters
 
-           Do i=1,mxpter
-              prmter(i,itpter)=parpot(i)
+           Do i=1,tersoff%max_param
+              tersoff%param(i,itpter)=parpot(i)
            End Do
 
         End Do
 
 ! test tersoff potentials mix-up and cutoff conditions
 
-        If (ntpter > 0) Then
-           If (.not.lter_safe) Call error(90) ! Now potter holds keypot globally
-           If (rcter < 1.0e-6_wp) Call error(79)
-           If (rcut < 2.0_wp*rcter) Call error(102)
+        If (tersoff%n_potential > 0) Then
+           If (.not.lter_safe) Call error(90) ! Now tersoff%key_pot holds keypot globally
+           If (tersoff%cutoff < 1.0e-6_wp) Call error(79)
+           If (rcut < 2.0_wp*tersoff%cutoff) Call error(102)
         End If
 
 ! generate tersoff interpolation arrays
 
-        If (ntpter > 0) Call tersoff_generate(rcter)
+        If (tersoff%n_potential > 0) Call tersoff_generate(tersoff)
 
 ! start processing cross atom potential parameters
 
         If (keypot == 1) Then
 
-          Write(message,'(a,i10)') 'number of tersoff cross terms ', (ntpter*(ntpter+1))/2
+          Write(message,'(a,i10)') 'number of tersoff cross terms ', (tersoff%n_potential*(tersoff%n_potential+1))/2
           Call info(message,.true.)
           If (l_top) Then
             Write(message,'(8x,a4,5x,a6,2x,a6,5x,a10)') &
@@ -4322,7 +4323,7 @@ Subroutine read_field                      &
             Call info(message,.true.)
           End If
 
-           Do icross=1,(ntpter*(ntpter+1))/2
+           Do icross=1,(tersoff%n_potential*(tersoff%n_potential+1))/2
 
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -4350,13 +4351,13 @@ Subroutine read_field                      &
 
               If (katom1 == 0 .or. katom2 == 0) Call error(74)
 
-              ka1=Max(lstter(katom1),lstter(katom2))
-              ka2=Min(lstter(katom1),lstter(katom2))
+              ka1=Max(tersoff%list(katom1),tersoff%list(katom2))
+              ka2=Min(tersoff%list(katom1),tersoff%list(katom2))
 
               keyter=(ka1*(ka1-1))/2+ka2
 
-              prmter2(keyter,1)=parpot(1)
-              prmter2(keyter,2)=parpot(2)
+              tersoff%param2(keyter,1)=parpot(1)
+              tersoff%param2(keyter,2)=parpot(2)
 
               If (l_top) Then
                 Write(message,'(2x,i10,5x,2a8,1x,2f15.6)') &
@@ -4802,12 +4803,12 @@ Subroutine read_field                      &
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
         If ( keyfce == 0 .and. vdw%n_vdw == 0 .and. &
-             met%n_potentials == 0 .and. ntpter == 0 .and. kimim == ' ') Call error(145)
+             met%n_potentials == 0 .and. tersoff%n_potential == 0 .and. kimim == ' ') Call error(145)
 
 ! test for mixing KIM model with external interactions
 
         If ( (keyfce /= 0 .or. vdw%n_vdw /= 0 .or. &
-              met%n_potentials /= 0 .or. ntpter /= 0) .and. kimim /= ' ') Then
+              met%n_potentials /= 0 .or. tersoff%n_potential /= 0) .and. kimim /= ' ') Then
           Call warning('open KIM model in use together with extra intermolecular interactions',.true.)
         End If
 
@@ -5063,8 +5064,8 @@ Subroutine scan_field                                &
            mtinv,         &
            mxrdf,                  &
            mxmet,mxmed,mxmds,            &
-           mxter,rcter,mxfbp,rcfbp,lext,cons,pmf,met,&
-           bond,angle,dihedral,inversion,tether,threebody,vdw,comm)
+           rcter,mxfbp,rcfbp,lext,cons,pmf,met,&
+           bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5081,6 +5082,7 @@ Subroutine scan_field                                &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Real( Kind = wp ), Intent(   Out ) :: rcter
   Integer( Kind = wi ), Intent(   Out ) :: max_site
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent( InOut ) :: cons
@@ -5092,6 +5094,7 @@ Subroutine scan_field                                &
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( threebody_type ), Intent( InOut ) :: threebody
   Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude
 ! Max number of different atom types
@@ -5122,9 +5125,9 @@ Subroutine scan_field                                &
                        numinv,mtinv,iinv,           &
                        mxrdf,itprdf,itpvdw,                       &
                        mxmet,mxmed,mxmds,itpmet,                        &
-                       mxter,itpter,itptbp,mxfbp,itpfbp,                 &
+                       itpter,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
-  Real( Kind = wp ) :: rcter,rcfbp,rct,tmp,tmp1,tmp2
+  Real( Kind = wp ) :: rcfbp,rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
   mxompl=0      ! default of maximum order of poles (charges)
@@ -5210,7 +5213,7 @@ Subroutine scan_field                                &
   met%rcut  =0.0_wp
   met%maxgrid=0
 
-  mxter=0
+  tersoff%max_ter=0
   rcter=0.0_wp
 
   threebody%mxtbp=0
@@ -5831,9 +5834,9 @@ Subroutine scan_field                                &
      Else If (word(1:7) == 'tersoff') Then
 
         Call get_word(record,word)
-        mxter=Nint(word_2_real(word))
+        tersoff%max_ter=Nint(word_2_real(word))
 
-        Do itpter=1,mxter
+        Do itpter=1,tersoff%max_ter
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
               Call get_line(safe,nfield,record,comm)
@@ -5844,9 +5847,9 @@ Subroutine scan_field                                &
 
            Call get_word(record,word)
            If      (word(1:4) == 'ters') Then
-              potter=1
+              tersoff%key_pot=1
            Else If (word(1:4) == 'kihs') Then
-              potter=2
+              tersoff%key_pot=2
            End If
 
            word(1:1)='#'
@@ -5859,7 +5862,7 @@ Subroutine scan_field                                &
            rct=word_2_real(word)
            rcter=Max(rcter,rct)
 
-           If (potter == 2) Then
+           If (tersoff%key_pot == 2) Then
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                  Call get_line(safe,nfield,record,comm)
@@ -5869,9 +5872,9 @@ Subroutine scan_field                                &
            End If
         End Do
 
-        If (mxter > 0) Then
-           If (potter == 1) Then
-              Do itpter=1,(mxter*(mxter+1))/2
+        If (tersoff%max_ter > 0) Then
+           If (tersoff%key_pot == 1) Then
+              Do itpter=1,(tersoff%max_ter*(tersoff%max_ter+1))/2
                  word(1:1)='#'
                  Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                     Call get_line(safe,nfield,record,comm)
@@ -5881,7 +5884,7 @@ Subroutine scan_field                                &
               End Do
            End If
 
-           mxter=Max(mxter,(mxatyp*(mxatyp+1))/2)
+           tersoff%max_ter=Max(tersoff%max_ter,(mxatyp*(mxatyp+1))/2)
         End If
 
      Else If (word(1:3) == 'tbp') Then

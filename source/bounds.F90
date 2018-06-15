@@ -16,7 +16,7 @@ Module bounds
   Use angles,          Only : angles_type
   Use dihedrals,       Only : dihedrals_type
   Use inversions,      Only : inversions_type
-  Use tersoff,         Only : potter
+  Use tersoff,         Only : tersoff_type
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
   Use mpole,           Only : keyind,induce
@@ -47,7 +47,7 @@ Subroutine set_bounds                                 &
            dvar,rbin,nstfce,      &
            alpha,width,max_site,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,threebody,zdensity,neigh,vdw,comm)
+           inversion,tether,threebody,zdensity,neigh,vdw,tersoff,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -85,6 +85,7 @@ Subroutine set_bounds                                 &
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -119,9 +120,9 @@ Subroutine set_bounds                                 &
            mtinv,  &
            mxrdf,                  &
            mxmet,mxmed,mxmds,                        &
-           mxter,rcter,mxfbp,rcfbp,lext,cons,pmf,met,bond,    &
+           rcter,mxfbp,rcfbp,lext,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
-           tether,threebody,vdw,comm)
+           tether,threebody,vdw,tersoff,comm)
 
 ! Get imc_r & set dvar
 
@@ -139,14 +140,14 @@ Subroutine set_bounds                                 &
 ! scan CONTROL file data
 
   Call scan_control                                        &
-           (mxrdf,mxmet,mxter,rcter, &
+           (mxrdf,mxmet,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo, &
-           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,comm)
+           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -441,11 +442,12 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for tersoff interaction arrays
 
-  mxgter = Merge(-1,Max(1004,Nint(rcter/delr_max)+4),mxter <= 0)
+  tersoff%max_grid = Merge(-1,Max(1004,Nint(rcter/delr_max)+4),tersoff%max_ter <= 0)
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab,inversion%bin_tab,mxgele,vdw%max_grid,met%maxgrid,mxgter)
+  mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab, &
+    inversion%bin_tab,mxgele,vdw%max_grid,met%maxgrid,tersoff%max_grid)
 
 
 
@@ -471,16 +473,16 @@ Subroutine set_bounds                                 &
   End If
 
 
-! maximum number of tersoff potentials (mxter = mxter) and parameters
+! maximum number of tersoff potentials (tersoff%max_ter = tersoff%max_ter) and parameters
 
-  If (mxter > 0) Then
-     If      (potter == 1) Then
-        mxpter = 11
-     Else If (potter == 2) Then
-        mxpter = 16
+  If (tersoff%max_ter > 0) Then
+     If      (tersoff%key_pot == 1) Then
+        tersoff%max_param = 11
+     Else If (tersoff%key_pot == 2) Then
+        tersoff%max_param = 16
      End If
   Else
-     mxpter = 0
+     tersoff%max_param = 0
   End If
 
 
@@ -852,9 +854,9 @@ Subroutine set_bounds                                 &
 ! reset (increase) link-cell maximum (neigh%max_cell)
 ! if tersoff or three- or four-body potentials exist
 
-  If (mxter > 0 .or. threebody%mxtbp > 0 .or. mxfbp > 0) Then
+  If (tersoff%max_ter > 0 .or. threebody%mxtbp > 0 .or. mxfbp > 0) Then
      cut=neigh%cutoff+1.0e-6_wp ! reduce cut
-     If (mxter > 0) cut = Min(cut,rcter+1.0e-6_wp)
+     If (tersoff%max_ter > 0) cut = Min(cut,rcter+1.0e-6_wp)
      If (threebody%mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
      If (mxfbp > 0) cut = Min(cut,rcfbp+1.0e-6_wp)
 
