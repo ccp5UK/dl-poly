@@ -202,7 +202,6 @@ Module setup
     mxtshl,mxshl,mxfshl,mxlshp,mxproc,     &
     mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
     mxrdf,mxgrdf,mxgele,                                        &
-    mxvdw,mxpvdw,mxgvdw,                                        &
     mxmet,mxmed,mxmds,mxpmet,                            &
     mxter,mxpter,mxgter,mxgrid,                                 &
     mxtana,mxgana,              &

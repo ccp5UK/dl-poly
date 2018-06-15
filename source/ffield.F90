@@ -35,7 +35,9 @@ Module ffield
                         dihedrals_14_check
   Use inversions, Only : inversions_type,inversions_table_read,allocate_invr_dst_arrays
   Use three_body, Only : threebody_type
-  Use vdw
+  Use vdw, Only : vdw_type,MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
+                  MIX_HALGREN,MIX_HOGERVORST,MIX_WALDMAN_HAGLER,MIX_TANG_TOENNIES, &
+                  MIX_FUNCTIONAL,vdw_generate,vdw_table_read
   Use metal, Only : metal_type,allocate_metal_arrays,allocate_metal_table_arrays, &
                     metal_generate_erf,metal_table_read,metal_generate
   Use tersoff
@@ -69,7 +71,7 @@ Module ffield
 Contains
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
-           rcut,rvdw,width,epsq, &
+           rcut,width,epsq, &
            keyfce,keyshl,           &
            lecx,lbook,lexcl,               &
            rcter,rcfbp,              &
@@ -77,7 +79,7 @@ Subroutine read_field                      &
            megshl,megrgd,    &
            megtet,    &
            pmf,cons,  &
-           thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,comm)
+           thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -103,7 +105,7 @@ Subroutine read_field                      &
 
   Logical,           Intent( In    ) :: l_str,l_top,l_n_v
   Integer,           Intent( InOut ) :: keyfce
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,width,epsq
+  Real( Kind = wp ), Intent( In    ) :: rcut,width,epsq
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
@@ -123,6 +125,7 @@ Subroutine read_field                      &
   Type( tethers_type), Intent( InOut ) :: tether
   Type( threebody_type), Intent( InOut ) :: threebody
   Type( site_type ), Intent( InOut ) :: site
+  Type( vdw_type ), Intent( InOut ) :: vdw
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -3370,10 +3373,10 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'vdw') Then
 
         Call get_word(record,word)
-        ntpvdw=Nint(word_2_real(word))
+        vdw%n_vdw=Nint(word_2_real(word))
         Call get_word(record,word)
 
-        Write(message,'(a,i10)') 'number of specified vdw potentials ',ntpvdw
+        Write(message,'(a,i10)') 'number of specified vdw potentials ',vdw%n_vdw
         Call info(message,.true.)
         If (l_top) Then
           Write(message,'(8x,a4,5x,a6,2x,a6,5x,a3,7x,a10)') &
@@ -3381,11 +3384,11 @@ Subroutine read_field                      &
           Call info(message,.true.)
         End If
 
-        If (ntpvdw > mxvdw) Call error(80)
+        If (vdw%n_vdw > vdw%max_vdw) Call error(80)
         If (.not.lunits) Call error(6)
         If (.not.lmols) Call error(13)
 
-        Do itpvdw=1,ntpvdw
+        Do itpvdw=1,vdw%n_vdw
 
            parpot=0.0_wp
 
@@ -3462,7 +3465,7 @@ Subroutine read_field                      &
                  End If
               End If
            Else
-              itmp=Merge(mxpvdw+1,mxpvdw,thermo%key_dpd > 0)
+              itmp=Merge(vdw%max_param+1,vdw%max_param,thermo%key_dpd > 0)
               Do i=1,itmp ! make sure thermo%gamdpd is read and reported for DPD
                  Call get_word(record,word)
                  parpot(i)=word_2_real(word)
@@ -3521,15 +3524,15 @@ Subroutine read_field                      &
 
            keyvdw=(ka1*(ka1-1))/2+ka2
 
-           If (keyvdw > mxvdw) Call error(82)
+           If (keyvdw > vdw%max_vdw) Call error(82)
 
-           If (lstvdw(keyvdw) /= 0) Call error(15)
+           If (vdw%list(keyvdw) /= 0) Call error(15)
 
-           lstvdw(keyvdw)=itpvdw
-           ltpvdw(itpvdw)=keypot
+           vdw%list(keyvdw)=itpvdw
+           vdw%ltp(itpvdw)=keypot
 
-           Do i=1,mxpvdw
-              prmvdw(i,itpvdw)=parpot(i)
+           Do i=1,vdw%max_param
+              vdw%param(i,itpvdw)=parpot(i)
            End Do
 
            If (thermo%key_dpd > 0) Then ! store possible specification of DPD's gamma_ij
@@ -3574,28 +3577,28 @@ Subroutine read_field                      &
            End If
         End Do
 
-        If (ntpvdw > 0) Then
+        If (vdw%n_vdw > 0) Then
 
 ! test for unspecified atom-atom potentials
 
            ntab=(site%ntype_atom*(site%ntype_atom+1))/2
-           If (ntpvdw < ntab) Then
+           If (vdw%n_vdw < ntab) Then
               Call warning(120,0.0_wp,0.0_wp,0.0_wp)
 
-              If (ntpvdw > mxvdw) Call error(80)
+              If (vdw%n_vdw > vdw%max_vdw) Call error(80)
 
 ! put undefined potentials outside range
 
               Do i=1,ntab
-                 If (lstvdw(i) == 0) lstvdw(i) = ntpvdw+1
+                 If (vdw%list(i) == 0) vdw%list(i) = vdw%n_vdw+1
               End Do
 
-              Do i=ntpvdw+1,ntab
-                 ltpvdw(i) = -1
+              Do i=vdw%n_vdw+1,ntab
+                 vdw%ltp(i) = -1
               End Do
 
               If (thermo%key_dpd > 0) Then
-                 If (All(thermo%gamdpd(1:mxvdw) <= zero_plus)) Then ! So thermo%gamdpd(0) <= zero_plus too
+                 If (All(thermo%gamdpd(1:vdw%max_vdw) <= zero_plus)) Then ! So thermo%gamdpd(0) <= zero_plus too
                     thermo%key_dpd = 0
                     Call info( &
                       'Ensemble NVT dpd defaulting to NVE (Microcanonical) ' &
@@ -3606,11 +3609,11 @@ Subroutine read_field                      &
                       Call warning('all defined interactions have their drag coefficient overridden',.true.)
                     End If
 
-                    If (mxtvdw == 0) Then
+                    If (vdw%mixing == MIX_NULL) Then
                       Call info('vdw/dpd cross terms mixing (for undefined mixed potentials) may be required',.true.)
 
                        If (thermo%gamdpd(0) > zero_plus .and. (.not.l_str)) Then
-                          mxtvdw = 1
+                          vdw%mixing = MIX_LORENTZ_BERTHELOT
                           Write(messages(1),'(a)') &
                             'type of mixing defaulted - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2'
                           Write(messages(2),'(a)') &
@@ -3625,7 +3628,7 @@ Subroutine read_field                      &
 
 ! If the user opted for possible vdw potential mixing or when required by DPD thermostat
 
-              If (mxtvdw > 0) Then
+              If (vdw%mixing /= MIX_NULL) Then
 
                 If (l_top .or. thermo%key_dpd > 0) Then
                   If (thermo%key_dpd > 0) Then
@@ -3641,23 +3644,23 @@ Subroutine read_field                      &
                  nsite=0 ! number of new cross pair potentials
                  Do i=1,site%ntype_atom
                     isite=(i*(i-1))/2+i
-                    If (lstvdw(isite) <= ntpvdw) Then ! if it exists
-                       ia=ltpvdw(lstvdw(isite))
+                    If (vdw%list(isite) <= vdw%n_vdw) Then ! if it exists
+                       ia=vdw%ltp(vdw%list(isite))
                        Do j=i+1,site%ntype_atom
                           jsite=(j*(j-1))/2+j
-                          If (lstvdw(jsite) <= ntpvdw) Then ! if it exists
-                             ja=ltpvdw(lstvdw(jsite))
+                          If (vdw%list(jsite) <= vdw%n_vdw) Then ! if it exists
+                             ja=vdw%ltp(vdw%list(jsite))
                              If (ia == ja .and.               & ! only if of the same type
                                  (ia == 1  .or. ia == 2  .or. & ! and the type is allowed mixing
                                   ia == 9  .or. ia == 10 .or. & ! LJ, 12-6, WCA, DPD, 14-7, LJC
                                   ia == 11 .or. ia == 12)) Then
                                 ksite=isite+j-i
-                                If (lstvdw(ksite) > ntpvdw) Then ! if it does not exist - no overriding
+                                If (vdw%list(ksite) > vdw%n_vdw) Then ! if it does not exist - no overriding
                                    nsite=nsite+1
-                                   lstvdw(ksite)=-1 ! set a temporary qualifier flag
+                                   vdw%list(ksite)=-1 ! set a temporary qualifier flag
                                 End If
                              Else
-                                If (lstvdw(ksite) > ntpvdw) Then
+                                If (vdw%list(ksite) > vdw%n_vdw) Then
                                   If (thermo%key_dpd > 0) Then
                                     If (thermo%gamdpd(0) <= zero_plus) Then
                                       If (l_str) Then
@@ -3706,23 +3709,23 @@ Subroutine read_field                      &
 ! put undefined potentials outside the new range
 
                     Do i=1,ntab
-                       If (lstvdw(i) == ntpvdw+1) lstvdw(i) = lstvdw(i) + nsite
+                       If (vdw%list(i) == vdw%n_vdw+1) vdw%list(i) = vdw%list(i) + nsite
                     End Do
 
 ! Apply mixing
 
                     Do i=1,site%ntype_atom
                        isite=(i*(i-1))/2+i
-                       ia=lstvdw(isite)
-                       keypot=ltpvdw(ia)
+                       ia=vdw%list(isite)
+                       keypot=vdw%ltp(ia)
                        Do j=i+1,site%ntype_atom
                           jsite=(j*(j-1))/2+j
-                          ja=lstvdw(jsite)
+                          ja=vdw%list(jsite)
                           ksite=isite+j-i
-                          If (lstvdw(ksite) == -1) Then ! filter for action
-                             ntpvdw = ntpvdw + 1        ! extend range
-                             lstvdw(ksite)=ntpvdw       ! connect
-                             ltpvdw(ntpvdw)=keypot
+                          If (vdw%list(ksite) == -1) Then ! filter for action
+                             vdw%n_vdw = vdw%n_vdw + 1        ! extend range
+                             vdw%list(ksite)=vdw%n_vdw       ! connect
+                             vdw%ltp(vdw%n_vdw)=keypot
 
 ! Get mixing in LJ's style characteristic energy(EPSILON) & distance(SIGMA) terms
 
@@ -3730,11 +3733,11 @@ Subroutine read_field                      &
                              If      (keypot == 1)  Then ! 12-6
                                 keyword='12-6'
 
-                                eps(1)=prmvdw(2,ia)**2/(4.0_wp*prmvdw(1,ia))
-                                sig(1)=(prmvdw(1,ia)/prmvdw(2,ia))**(1.0_wp/6.0_wp)
+                                eps(1)=vdw%param(2,ia)**2/(4.0_wp*vdw%param(1,ia))
+                                sig(1)=(vdw%param(1,ia)/vdw%param(2,ia))**(1.0_wp/6.0_wp)
 
-                                eps(2)=prmvdw(2,ja)**2/(4.0_wp*prmvdw(1,ja))
-                                sig(2)=(prmvdw(1,ja)/prmvdw(2,ja))**(1.0_wp/6.0_wp)
+                                eps(2)=vdw%param(2,ja)**2/(4.0_wp*vdw%param(1,ja))
+                                sig(2)=(vdw%param(1,ja)/vdw%param(2,ja))**(1.0_wp/6.0_wp)
                              Else If (keypot == 2  .or. keypot == 10 .or. &
                                       keypot == 11 .or. keypot == 12) Then ! LJ, DPD, 14-7, LJC
                                 If (keypot == 2 ) keyword='lj  '
@@ -3742,24 +3745,24 @@ Subroutine read_field                      &
                                 If (keypot == 11) keyword='14-7'
                                 If (keypot == 12) keyword='ljc '
 
-                                eps(1)=prmvdw(1,ia)
-                                sig(1)=prmvdw(2,ia)
+                                eps(1)=vdw%param(1,ia)
+                                sig(1)=vdw%param(2,ia)
 
-                                eps(2)=prmvdw(1,ja)
-                                sig(2)=prmvdw(2,ja)
+                                eps(2)=vdw%param(1,ja)
+                                sig(2)=vdw%param(2,ja)
                              Else If (keypot == 9) Then ! WCA
                                 keyword='wca '
 
-                                eps(1)=prmvdw(1,ia)
-                                sig(1)=prmvdw(2,ia)
-                                del(1)=prmvdw(3,ia)
+                                eps(1)=vdw%param(1,ia)
+                                sig(1)=vdw%param(2,ia)
+                                del(1)=vdw%param(3,ia)
 
-                                eps(2)=prmvdw(1,ja)
-                                sig(2)=prmvdw(2,ja)
-                                del(2)=prmvdw(3,ja)
+                                eps(2)=vdw%param(1,ja)
+                                sig(2)=vdw%param(2,ja)
+                                del(2)=vdw%param(3,ja)
                              End If
 
-                             If      (mxtvdw == 1) Then
+                             If      (vdw%mixing == MIX_LORENTZ_BERTHELOT) Then
 
 ! Lorentz–Berthelot: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2
 
@@ -3773,7 +3776,7 @@ Subroutine read_field                      &
                                 If (thermo%key_dpd > 0) &
                                 thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite)*thermo%gamdpd(jsite))
 
-                             Else If (mxtvdw == 2) Then
+                             Else If (vdw%mixing == MIX_FENDER_HASLEY) Then
 
 ! Fender-Halsey : e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2
 
@@ -3791,7 +3794,7 @@ Subroutine read_field                      &
                                   (thermo%gamdpd(isite)+thermo%gamdpd(jsite))
                               End If
 
-                             Else If (mxtvdw == 3) Then
+                             Else If (vdw%mixing == MIX_HOGERVORST) Then
 
 ! Hogervorst good hope : e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)
 
@@ -3805,7 +3808,7 @@ Subroutine read_field                      &
                                 If (thermo%key_dpd > 0) &
                                 thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite)*thermo%gamdpd(jsite))
 
-                             Else If (mxtvdw == 4) Then
+                             Else If (vdw%mixing == MIX_HALGREN) Then
 
 ! Halgren HHG: e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)
 
@@ -3826,7 +3829,7 @@ Subroutine read_field                      &
                                 End If
                               End If
 
-                             Else If (mxtvdw == 5) Then
+                             Else If (vdw%mixing == MIX_WALDMAN_HAGLER) Then
 
 ! Waldman–Hagler : e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ; s_ij=[(s_i^6+s_j^6)/2]^(1/6)
 
@@ -3842,7 +3845,7 @@ Subroutine read_field                      &
                                 If (thermo%key_dpd > 0) &
                                 thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite)*thermo%gamdpd(jsite)) * ((sig(1)*sig(2))**3) / tmp
 
-                             Else If (mxtvdw == 6) Then
+                             Else If (vdw%mixing == MIX_TANG_TOENNIES) Then
 
 ! Tang-Toennies : e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13 ;
 !                 s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)
@@ -3860,7 +3863,7 @@ Subroutine read_field                      &
                                 If (thermo%key_dpd > 0) &
                                 thermo%gamdpd(ksite) = 0.5_wp*eps(0)*(thermo%gamdpd(isite)/eps(1) + thermo%gamdpd(jsite)/eps(2))
 
-                             Else If (mxtvdw == 7) Then
+                             Else If (vdw%mixing == MIX_FUNCTIONAL) Then
 
 ! Functional : e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(6/(6-2L))} ;
 !              s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}
@@ -3889,27 +3892,27 @@ Subroutine read_field                      &
 ! Recover and/or paste in the vdw parameter array
 
                              If      (keypot == 1)  Then ! 12-6
-                                prmvdw(1,ntpvdw)=4.0_wp*eps(0)*(sig(0)**12)
-                                prmvdw(2,ntpvdw)=4.0_wp*eps(0)*(sig(0)**6)
+                                vdw%param(1,vdw%n_vdw)=4.0_wp*eps(0)*(sig(0)**12)
+                                vdw%param(2,vdw%n_vdw)=4.0_wp*eps(0)*(sig(0)**6)
                              Else If (keypot == 2  .or. keypot == 10 .or. &
                                       keypot == 11 .or. keypot == 12) Then ! LJ, DPD, 14-7, LJC
-                                prmvdw(1,ntpvdw)=eps(0)
-                                prmvdw(2,ntpvdw)=sig(0)
+                                vdw%param(1,vdw%n_vdw)=eps(0)
+                                vdw%param(2,vdw%n_vdw)=sig(0)
                              Else If (keypot == 9) Then ! WCA
-                                prmvdw(1,ntpvdw)=eps(0)
-                                prmvdw(2,ntpvdw)=sig(0)
-                                prmvdw(3,ntpvdw)=del(0)
+                                vdw%param(1,vdw%n_vdw)=eps(0)
+                                vdw%param(2,vdw%n_vdw)=sig(0)
+                                vdw%param(3,vdw%n_vdw)=del(0)
                              End If
 
                              If (l_top) Then
                                If (thermo%key_dpd > 0) Then
-                                 Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',mxpvdw+1,'f20.6)'
-                                 Write(message,rfmt) ntpvdw,site%unique_atom(i), &
-                                   site%unique_atom(j),keyword,parpot(1:mxpvdw+1)
+                                 Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',vdw%max_param+1,'f20.6)'
+                                 Write(message,rfmt) vdw%n_vdw,site%unique_atom(i), &
+                                   site%unique_atom(j),keyword,parpot(1:vdw%max_param+1)
                                Else
-                                 Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',mxpvdw,'f20.6)'
-                                 Write(message,rfmt) ntpvdw,site%unique_atom(i), &
-                                   site%unique_atom(j),keyword,parpot(1:mxpvdw)
+                                 Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',vdw%max_param,'f20.6)'
+                                 Write(message,rfmt) vdw%n_vdw,site%unique_atom(i), &
+                                   site%unique_atom(j),keyword,parpot(1:vdw%max_param)
                                End If
                                Call info(message,.true.)
                              End If
@@ -3928,26 +3931,26 @@ Subroutine read_field                      &
            End If
 
            If (thermo%key_dpd > 0) Then
-             If      (All(thermo%gamdpd(1:mxvdw) <= zero_plus)) Then
+             If      (All(thermo%gamdpd(1:vdw%max_vdw) <= zero_plus)) Then
                thermo%key_dpd = 0
 
                Call info('Ensemble NVT dpd defaulting to NVE (Microcanonical)' &
                  //'due to all drag coefficients equal to zero',.true.)
-             Else If (Any(thermo%gamdpd(1:mxvdw) <= zero_plus)) Then ! in principle we should come up with the error before here
+             Else If (Any(thermo%gamdpd(1:vdw%max_vdw) <= zero_plus)) Then ! in principle we should come up with the error before here
                Call warning('there is a two-body interaction with a' &
                  //'non-zero mutual drag coefficient',.true.)
-               sigdpd(1:mxvdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:mxvdw)) ! define sigdpd
+               sigdpd(1:vdw%max_vdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:vdw%max_vdw)) ! define sigdpd
              Else
-               sigdpd(1:mxvdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:mxvdw)) ! define sigdpd
+               sigdpd(1:vdw%max_vdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:vdw%max_vdw)) ! define sigdpd
              End If
            End If
 
 ! generate vdw force arrays
 
            If (.not.l_n_v) Then
-              If ((.not. ld_vdw) .or. lt_vdw) Call vdw_generate(rvdw)
-              If (lt_vdw) Call vdw_table_read(rvdw,site,comm)
-              If (ld_vdw .and. Any(ltpvdw(1:ntpvdw) > 0)) Call vdw_direct_fs_generate(rvdw)
+              If ((.not. vdw%l_direct) .or. vdw%l_tab) Call vdw_generate(vdw)
+              If (vdw%l_tab) Call vdw_table_read(vdw,site,comm)
+              If (vdw%l_direct .and. Any(vdw%ltp(1:vdw%n_vdw) > 0)) Call vdw%init_direct()
            End If
 
         End If
@@ -4776,7 +4779,7 @@ Subroutine read_field                      &
               Do ja=ia,site%ntype_atom
                  keyrdf=(ja*(ja-1))/2+ia
                  i=0
-                 If (ntpvdw > 0) i=Max(i,lstvdw(keyrdf))
+                 If (vdw%n_vdw > 0) i=Max(i,vdw%list(keyrdf))
                  If (met%n_potentials > 0) i=Max(i,met%list(keyrdf))
                  If (i > 0) Then
                     ntprdf = ntprdf+1
@@ -4786,10 +4789,10 @@ Subroutine read_field                      &
            End Do
         End If
 
-! Precautions: if vdw are cancelled, nullify ntpvdw as
+! Precautions: if vdw are cancelled, nullify vdw%n_vdw as
 ! it is a switch for vdw_lrc and vdw_forces
 
-        If (l_n_v) ntpvdw = 0
+        If (l_n_v) vdw%n_vdw = 0
 
 ! check and resolve any conflicting 14 dihedral specifications
 
@@ -4798,12 +4801,12 @@ Subroutine read_field                      &
 
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
-        If ( keyfce == 0 .and. ntpvdw == 0 .and. &
+        If ( keyfce == 0 .and. vdw%n_vdw == 0 .and. &
              met%n_potentials == 0 .and. ntpter == 0 .and. kimim == ' ') Call error(145)
 
 ! test for mixing KIM model with external interactions
 
-        If ( (keyfce /= 0 .or. ntpvdw /= 0 .or. &
+        If ( (keyfce /= 0 .or. vdw%n_vdw /= 0 .or. &
               met%n_potentials /= 0 .or. ntpter /= 0) .and. kimim /= ' ') Then
           Call warning('open KIM model in use together with extra intermolecular interactions',.true.)
         End If
@@ -5058,10 +5061,10 @@ Subroutine scan_field                                &
            mtangl,       &
            mtdihd,       &
            mtinv,         &
-           mxrdf,mxvdw,rvdw,mxgvdw,                  &
+           mxrdf,                  &
            mxmet,mxmed,mxmds,            &
            mxter,rcter,mxfbp,rcfbp,lext,cons,pmf,met,&
-           bond,angle,dihedral,inversion,tether,threebody,comm)
+           bond,angle,dihedral,inversion,tether,threebody,vdw,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5088,6 +5091,7 @@ Subroutine scan_field                                &
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( threebody_type ), Intent( InOut ) :: threebody
+  Type( vdw_type ), Intent( InOut ) :: vdw
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude
 ! Max number of different atom types
@@ -5116,11 +5120,11 @@ Subroutine scan_field                                &
                        numang,mtangl,iang,         &
                        numdih,mtdihd,idih,         &
                        numinv,mtinv,iinv,           &
-                       mxrdf,itprdf,mxvdw,itpvdw,mxgvdw,                       &
+                       mxrdf,itprdf,itpvdw,                       &
                        mxmet,mxmed,mxmds,itpmet,                        &
                        mxter,itpter,itptbp,mxfbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
-  Real( Kind = wp ) :: rvdw,rcter,rcfbp,rct,tmp,tmp1,tmp2
+  Real( Kind = wp ) :: rcter,rcfbp,rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
   mxompl=0      ! default of maximum order of poles (charges)
@@ -5196,9 +5200,9 @@ Subroutine scan_field                                &
 
   mxrdf =0
 
-  mxvdw =0
-  rvdw  =0.0_wp
-  mxgvdw=0
+  vdw%max_vdw =0
+  vdw%cutoff  =0.0_wp
+  vdw%max_grid=0
 
   mxmet =0
   mxmed =0
@@ -5659,16 +5663,16 @@ Subroutine scan_field                                &
 
      Else If (word(1:3) == 'vdw') Then
 
-!        lt_vdw=.false. ! initialised in vdw
+!        vdw%l_tab=.false. ! initialised in vdw
 
         Call get_word(record,word)
         If (word(1:3) == 'tab') Then
-           lt_vdw=.true.
+           vdw%l_tab=.true.
         Else
-           mxvdw=Nint(word_2_real(word))
+           vdw%max_vdw=Nint(word_2_real(word))
         End If
 
-        Do itpvdw=1,mxvdw
+        Do itpvdw=1,vdw%max_vdw
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
               Call get_line(safe,nfield,record,comm)
@@ -5681,29 +5685,29 @@ Subroutine scan_field                                &
            Call get_word(record,word)
 
            If      (word(1:3) == 'tab') Then
-              lt_vdw=.true.
+              vdw%l_tab=.true.
            Else If (word(1:3) == 'snm') Then
               Call get_word(record,word)
               Call get_word(record,word)
               Call get_word(record,word)
               Call get_word(record,word)
-              rvdw=Max(rvdw,word_2_real(word))
+              vdw%cutoff=Max(vdw%cutoff,word_2_real(word))
            Else If (word(1:3) == 'wca') Then
               Call get_word(record,word)
               Call get_word(record,word) ; tmp1=word_2_real(word)
               Call get_word(record,word) ; tmp2=word_2_real(word)
               tmp=tmp2+tmp1*2.0_wp**(1.0_wp/6.0_wp)
-              rvdw=Max(rvdw,tmp)
+              vdw%cutoff=Max(vdw%cutoff,tmp)
            Else If (word(1:3) == 'dpd') Then
               Call get_word(record,word)
-              rvdw=Max(rvdw,word_2_real(word))
+              vdw%cutoff=Max(vdw%cutoff,word_2_real(word))
            End If
         End Do
 
-        If (mxvdw > 0) Then
-           mxvdw=Max(mxvdw,(mxatyp*(mxatyp+1))/2)
+        If (vdw%max_vdw > 0) Then
+           vdw%max_vdw=Max(vdw%max_vdw,(mxatyp*(mxatyp+1))/2)
 
-           If (lt_vdw) Then
+           If (vdw%l_tab) Then
               If (comm%idnode == 0) Open(Unit=ntable, File='TABLE')
 
               Call get_line(safe,ntable,record,comm)
@@ -5714,11 +5718,11 @@ Subroutine scan_field                                &
               Call get_word(record,word)
 
               Call get_word(record,word)
-              rvdw=Max(rvdw,word_2_real(word))
+              vdw%cutoff=Max(vdw%cutoff,word_2_real(word))
 
               Call get_word(record,word)
               k=Nint(word_2_real(word))
-              mxgvdw=Max(mxgvdw,k)
+              vdw%max_grid=Max(vdw%max_grid,k)
 
               If (comm%idnode == 0) Close(Unit=ntable)
            End If

@@ -18,7 +18,8 @@ Module npt_berendsen
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type
   Use timer, Only: timer_type
-Use thermostat, Only : adjust_timestep
+  Use thermostat, Only : adjust_timestep
+  Use vdw, Only : vdw_type
   Implicit None
 
   Private
@@ -31,7 +32,7 @@ Contains
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              virtot,                            &
              strkin,engke,                      &
-             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
+             cons,pmf,stat,thermo,site,vdw,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -57,12 +58,12 @@ Contains
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
-    Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( stats_type), Intent( InOut ) :: stat
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( site_type ), Intent( InOut ) :: site
+    Type( vdw_type ), Intent( InOut ) :: vdw
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -113,8 +114,8 @@ Contains
   ! store initial values of volume, long range corrections and density
 
        volm0   = volm
-       elrc0   = elrc
-       virlrc0 = virlrc
+       elrc0   = vdw%elrc
+       virlrc0 = vdw%vlrc
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
@@ -274,8 +275,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! adjust long range corrections and number density
 
        tmp=(volm0/volm)
-       elrc=elrc0*tmp
-       virlrc=virlrc0*tmp
+       vdw%elrc=elrc0*tmp
+       vdw%vlrc=virlrc0*tmp
        Do i=1,site%ntype_atom
           site%dens(i)=dens0(i)*tmp
        End Do
@@ -355,7 +356,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
              virtot,                            &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
+             cons,pmf,stat,thermo,site,vdw,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -384,12 +385,12 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
 
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
-    Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( site_type ), Intent( InOut ) :: site
+    Type( vdw_type ), Intent( InOut ) :: vdw
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -461,8 +462,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! store initial values of volume, long range corrections and density
 
        volm0   = volm
-       elrc0   = elrc
-       virlrc0 = virlrc
+       elrc0   = vdw%elrc
+       virlrc0 = vdw%vlrc
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
@@ -891,8 +892,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! adjust long range corrections and number density
 
        tmp=(volm0/volm)
-       elrc=elrc0*tmp
-       virlrc=virlrc0*tmp
+       vdw%elrc=elrc0*tmp
+       vdw%vlrc=virlrc0*tmp
        Do i=1,site%ntype_atom
           site%dens(i)=dens0(i)*tmp
        End Do

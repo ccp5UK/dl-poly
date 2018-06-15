@@ -32,9 +32,10 @@ Module bounds
   Use metal,           Only : metal_type
   Use poisson,         Only : poisson_type
   Use tethers,         Only : tethers_type
-  Use constraints, Only : constraints_type
-  Use pmf, Only : pmf_type
+  Use constraints,     Only : constraints_type
+  Use pmf,             Only : pmf_type
   Use three_body,      Only : threebody_type
+  Use vdw,             Only : vdw_type
 
   Implicit None
   Private
@@ -43,10 +44,10 @@ Contains
 
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-           dvar,rvdw,rbin,nstfce,      &
+           dvar,rbin,nstfce,      &
            alpha,width,max_site,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,threebody,zdensity,neigh,comm)
+           inversion,tether,threebody,zdensity,neigh,vdw,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -64,7 +65,7 @@ Subroutine set_bounds                                 &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_e,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar
-  Real( Kind = wp ), Intent(   Out ) :: rvdw,rbin,alpha,width
+  Real( Kind = wp ), Intent(   Out ) :: rbin,alpha,width
   Integer( Kind = wi ), Intent(   Out ) :: max_site
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent( InOut ) :: cons
@@ -83,6 +84,7 @@ Subroutine set_bounds                                 &
   Type( threebody_type ), Intent( InOut ) :: threebody
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( vdw_type ), Intent( InOut ) :: vdw
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -115,11 +117,11 @@ Subroutine set_bounds                                 &
            mtangl, &
            mtdihd, &
            mtinv,  &
-           mxrdf,mxvdw,rvdw,mxgvdw,                  &
+           mxrdf,                  &
            mxmet,mxmed,mxmds,                        &
            mxter,rcter,mxfbp,rcfbp,lext,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
-           tether,threebody,comm)
+           tether,threebody,vdw,comm)
 
 ! Get imc_r & set dvar
 
@@ -137,14 +139,14 @@ Subroutine set_bounds                                 &
 ! scan CONTROL file data
 
   Call scan_control                                        &
-           (mxrdf,mxvdw,rvdw,mxmet,mxter,rcter, &
+           (mxrdf,mxmet,mxter,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                         &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,thermo, &
-           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,comm)
+           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -385,8 +387,8 @@ Subroutine set_bounds                                 &
 ! mxgrdf - maximum dimension of rdf and z-density arrays
 
   If ((.not. l_n_r) .or. lzdn) Then
-     If (((.not. l_n_r) .and. mxrdf == 0) .and. (mxvdw > 0 .or. mxmet > 0)) &
-        mxrdf = Max(mxvdw,mxmet) ! (vdw,met) == rdf scanning
+     If (((.not. l_n_r) .and. mxrdf == 0) .and. (vdw%max_vdw > 0 .or. mxmet > 0)) &
+        mxrdf = Max(vdw%max_vdw,mxmet) ! (vdw,met) == rdf scanning
      mxgrdf = Nint(neigh%cutoff/rbin)
   Else
      mxgrdf = 0 ! RDF and Z-density function MUST NOT get called!!!
@@ -405,7 +407,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgana,mxgvdw,met%maxgrid,mxgrdf,mxgusr,1004,Nint(neigh%cutoff/delr_max)+4)
+  mxgrid = Max(mxgana,vdw%max_grid,met%maxgrid,mxgrdf,mxgusr,1004,Nint(neigh%cutoff/delr_max)+4)
 
 ! grids setting and overrides
 
@@ -431,7 +433,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for vdw interactions - overwritten
 
-  mxgvdw = Merge(-1,Max(1004,Nint(rvdw/delr_max)+4),l_n_v)
+  vdw%max_grid = Merge(-1,Max(1004,Nint(vdw%cutoff/delr_max)+4),l_n_v)
 
 ! maximum number of grid points for metal interactions
 
@@ -443,7 +445,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab,inversion%bin_tab,mxgele,mxgvdw,met%maxgrid,mxgter)
+  mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab,inversion%bin_tab,mxgele,vdw%max_grid,met%maxgrid,mxgter)
 
 
 
@@ -451,11 +453,11 @@ Subroutine set_bounds                                 &
 
 ! maximum number of vdw potentials and parameters
 
-  If (mxvdw > 0) Then
-     mxvdw = mxvdw+1
-     mxpvdw = 7
+  If (vdw%max_vdw > 0) Then
+     vdw%max_vdw = vdw%max_vdw+1
+     vdw%max_param = 7
   Else
-     mxpvdw = 0
+     vdw%max_param = 0
   End If
 
 

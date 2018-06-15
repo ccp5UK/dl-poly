@@ -9,10 +9,10 @@ Module dpd
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,        Only : comms_type,gsum,gcheck,gmax,DpdVExp_tag,wp_mpi, &
                            gsend,gwait,girecv
-  Use setup,        Only : nrite,mxatdm,mxatms,mxbfxp,mxvdw
+  Use setup,        Only : nrite,mxatdm,mxatms,mxbfxp
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   weight,xxx,yyy,zzz,vxx,vyy,vzz, &
                                   fxx,fyy,fzz, ixyz
@@ -34,8 +34,9 @@ Module dpd
 
 Contains
 
-  Subroutine allocate_dpd_arrays(thermo)
+  Subroutine allocate_dpd_arrays(thermo,max_vdw)
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Integer( Kind = wi ), Intent( In    ) :: max_vdw
 
     Integer :: fail
 
@@ -43,7 +44,7 @@ Contains
 
     fail = 0
 
-    Allocate (thermo%gamdpd(0:mxvdw),sigdpd(1:mxvdw), Stat = fail)
+    Allocate (thermo%gamdpd(0:max_vdw),sigdpd(1:max_vdw), Stat = fail)
 
     If (fail > 0) Call error(1081)
 
