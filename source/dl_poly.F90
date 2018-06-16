@@ -91,7 +91,7 @@ program dl_poly
 
   Use vdw, Only : vdw_type
   Use metal, Only : metal_type,allocate_metal_arrays
-  Use tersoff
+  Use tersoff, Only : tersoff_type,tersoff_forces
   Use four_body
 
   Use kim
@@ -239,7 +239,7 @@ program dl_poly
   Real( Kind = wp ) :: tsths,                                     &
     tstep,time,tmst,      &
     dvar,                       &
-    rbin,rcter,rcfbp,          &
+    rbin,rcfbp,          &
     alpha,epsq,fmax,                           &
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),min_tol(1:2),                 &
@@ -271,6 +271,7 @@ program dl_poly
   Type( pmf_type ) :: pmfs
   Type( site_type ) :: site
   Type( vdw_type ) :: vdw
+  Type( tersoff_type ) :: tersoff
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -339,7 +340,8 @@ program dl_poly
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,alpha,width,site%max_site,cons,pmfs,stats, &
-    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,tether,threebody,zdensity,neigh,vdw,comm)
+    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
+    tether,threebody,zdensity,neigh,vdw,tersoff,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -377,7 +379,7 @@ program dl_poly
 
   Call vdw%init()
   Call allocate_metal_arrays(met)
-  Call allocate_tersoff_arrays(site%max_site)
+  Call tersoff%init(site%max_site)
   Call allocate_three_body_arrays(site%max_site,threebody)
   Call allocate_four_body_arrays(site%max_site)
 
@@ -414,7 +416,7 @@ program dl_poly
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
-    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tmr,comm)
+    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -423,11 +425,11 @@ program dl_poly
     neigh%cutoff,width,epsq, &
     keyfce,keyshl,           &
     lecx,lbook,lexcl,               &
-    rcter,rcfbp,              &
+    rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megshl,megrgd,    &
     megtet,pmfs,cons,thermo,met,bond,angle,   &
-    dihedral,inversion,tether,threebody,site,vdw,comm)
+    dihedral,inversion,tether,threebody,site,vdw,tersoff,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -655,7 +657,8 @@ program dl_poly
     Call w_md_vv(mxatdm,cons,pmfs,stats,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,tmr)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,cons,pmfs,stats,thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,tmr)
+      Call w_replay_historf(mxatdm,cons,pmfs,stats,thermo,plume,msd_data,bond, &
+        angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,tmr)
     Else
       Call w_replay_history(mxatdm,cons,pmfs,stats,thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw)
     End If
@@ -788,7 +791,7 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(cons,pmf,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,site,vdw,tmr)
+  Subroutine w_calculate_forces(cons,pmf,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,site,vdw,tersoff,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
@@ -803,6 +806,7 @@ Contains
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: site
     Type( vdw_type ), Intent( InOut ) :: vdw
+    Type( tersoff_type ), Intent( InOut )  :: tersoff
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
@@ -910,7 +914,7 @@ Contains
   End Subroutine w_replay_history
 
   Subroutine w_replay_historf(mxatdm_,cons,pmf,stat,thermo,plume,msd_data,bond, &
-    angle,dihedral,inversion,zdensity,neigh,site,vdw,tmr)
+    angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -926,6 +930,7 @@ Contains
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: site
     Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( tersoff_type ), Intent( InOut )  :: tersoff
     Type( timer_type ), Intent( InOut ) :: tmr
 
     Logical,     Save :: newjb = .true.

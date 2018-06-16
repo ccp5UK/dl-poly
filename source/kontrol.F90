@@ -12,6 +12,7 @@ Module kontrol
   Use vdw, Only : vdw_type,MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
                   MIX_HALGREN,MIX_HOGERVORST,MIX_WALDMAN_HAGLER,MIX_TANG_TOENNIES, &
                   MIX_FUNCTIONAL
+  Use tersoff, Only : tersoff_type
   Use metal,      Only : metal_type
   Use poisson,    Only : poisson_type
   Use msd,        Only : msd_type
@@ -87,7 +88,7 @@ Subroutine read_control                                &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
-           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tmr,comm)
+           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -158,6 +159,7 @@ Subroutine read_control                                &
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( tersoff_type ), Intent( In    )  :: tersoff
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( comms_type ),     Intent( InOut )  :: comm
@@ -3648,7 +3650,7 @@ Subroutine read_control                                &
 End Subroutine read_control
 
 Subroutine scan_control                                    &
-           (mxrdf,mxmet,mxter,rcter, &
+           (mxrdf,mxmet,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
@@ -3656,7 +3658,7 @@ Subroutine scan_control                                    &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
            thermo,green,devel,msd_data,met,pois,bond,angle, &
-           dihedral,inversion,zdensity,neigh,vdw,comm)
+           dihedral,inversion,zdensity,neigh,vdw,tersoff,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3676,7 +3678,7 @@ Subroutine scan_control                                    &
 
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
-  Integer,           Intent( In    ) :: mxrdf,mxmet,mxter,mxrgd,imcon,mxshl
+  Integer,           Intent( In    ) :: mxrdf,mxmet,mxrgd,imcon,mxshl
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
   Integer,           Intent(   Out ) :: mxgana, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
@@ -3697,6 +3699,7 @@ Subroutine scan_control                                    &
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( tersoff_type ), Intent( In    )  :: tersoff
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3758,7 +3761,7 @@ Subroutine scan_control                                    &
   l_n_m = .not.lmet
   lrmet = (met%rcut > 1.0e-6_wp)
 
-  lter  = (mxter > 0)
+  lter  = (tersoff%max_ter > 0)
 
   lrcut = .false.
   neigh%cutoff  = 0.0_wp

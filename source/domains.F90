@@ -39,7 +39,7 @@ Contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for obtaining charcteristics of a parallel
+! dl_poly_4 subroutine for obtaining chatersoff%cutoffistics of a parallel
 ! computer and constructing a domain mapping
 !
 ! copyright - daresbury laboratory

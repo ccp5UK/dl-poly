@@ -35,7 +35,7 @@
 
 ! Calculate tersoff forces
 
-     If (ntpter > 0) Call tersoff_forces(rcter,stat,neigh,comm)
+     If (tersoff%n_potential > 0) Call tersoff_forces(tersoff,stat,neigh,comm)
 
 ! Calculate three-body forces
 

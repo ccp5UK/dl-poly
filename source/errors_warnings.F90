@@ -1145,7 +1145,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  102) Then
 
-        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff < 2*rcter (maximum cutoff for tersoff potentials)'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff < 2*tersoff%cutoff (maximum cutoff for tersoff potentials)'
 
      Else If (kode ==  103) Then
 
