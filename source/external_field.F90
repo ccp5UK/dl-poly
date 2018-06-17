@@ -17,7 +17,6 @@ Module external_field
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetics, Only : getcom_mol
   Use rigid_bodies
-  Use core_shell
 
   Use errors_warnings, Only : error
   use numerics, Only : local_index,images

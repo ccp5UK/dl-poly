@@ -528,9 +528,11 @@ program dl_poly
       megrgd,degrot,degtra,        &
       megtet,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether,neigh,site,comm)
     If (mximpl > 0) Then
-      Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion,comm) ! multipoles topology for internal coordinate system
+      Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion,comm) 
+      ! multipoles topology for internal coordinate system
       If (keyind == 1) Call build_chrm_intra &
-         (neigh%max_exclude,core_shells,cons,bond,angle,dihedral,inversion,comm) ! CHARMM core-shell screened electrostatic induction interactions
+         (neigh%max_exclude,core_shells,cons,bond,angle,dihedral,inversion,comm) 
+       ! CHARMM core-shell screened electrostatic induction interactions
     End If
     If (lexcl) Call build_excl_intra(lecx,core_shells,cons,bond,angle,dihedral,inversion,neigh,comm)
   Else

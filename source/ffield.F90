@@ -3937,7 +3937,8 @@ Subroutine read_field                      &
 
                Call info('Ensemble NVT dpd defaulting to NVE (Microcanonical)' &
                  //'due to all drag coefficients equal to zero',.true.)
-             Else If (Any(thermo%gamdpd(1:vdw%max_vdw) <= zero_plus)) Then ! in principle we should come up with the error before here
+             Else If (Any(thermo%gamdpd(1:vdw%max_vdw) <= zero_plus)) Then 
+               ! in principle we should come up with the error before here
                Call warning('there is a two-body interaction with a' &
                  //'non-zero mutual drag coefficient',.true.)
                sigdpd(1:vdw%max_vdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:vdw%max_vdw)) ! define sigdpd
