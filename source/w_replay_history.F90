@@ -26,7 +26,7 @@
 ! nullify all two-body force switches = just do rdf calculation
 
   keyfce = 0
-  ntpvdw = 0
+  vdw%n_vdw = 0
   met%n_potentials = 0
 
 ! defect detection for every entry in HISTORY
@@ -147,11 +147,11 @@
 ! Make sure RDFs are complete (lbook=.false. - no exclusion lists)
 
            If (lrdf) Call two_body_forces         &
-           (rvdw,pdplnc,thermo%ensemble,    &
+           (pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstph,         &
            elrc,virlrc,cshell,               &
-           stat,ewld,devel,met,pois,neigh,site,tmr,comm)
+           stat,ewld,devel,met,pois,neigh,site,vdw,tmr,comm)
 
 ! Calculate bond forces
 
@@ -173,7 +173,7 @@
            If (dihedral%total > 0 .and. dihedral%bin_adf > 0) Then
               isw = 0
               Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
-           neigh%cutoff,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,comm)
+           neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,vdw,comm)
            End If
 
 ! Calculate inversion forces

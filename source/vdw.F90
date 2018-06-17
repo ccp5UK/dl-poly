@@ -2,14 +2,14 @@ Module vdw
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 module declaring global vdw interaction variables and arrays
+! dl_poly_4 module declaring global VdW interaction variables and arrays
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov november 2014
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gsum,gbcast
   Use setup
   Use site, Only : site_type
@@ -25,89 +25,141 @@ Module vdw
   Use errors_warnings, Only : error,warning,info
   Implicit None
 
-  Logical,                        Save :: lt_vdw = .false., & ! no tabulated potentials are present
-                                          ld_vdw = .false., & ! no direct calculations are opted
-                                          ls_vdw = .false.    ! no force-shifting is opted
+  Private
 
-  Integer,                        Save :: ntpvdw = 0, &       ! number of 2 body interactions
-                                          mxtvdw = 0          ! type of mixing
+  ! Mixing rule parameters
+  !> Null
+  Integer( Kind = wi), Parameter, Public :: MIX_NULL = 0
+  !> Lorentz-Berthelot: $e_{ij}=(e_i*e_j)^{1/2} \quad s_{ij}=(s_i+s_j)/2$
+  Integer( Kind = wi ), Parameter, Public :: MIX_LORENTZ_BERTHELOT = 1
+  !> Fender-Hasley: $e_{ij}=(2*e_i*e_j)/(e_i+e_j) \quad s_{ij}=(s_i+s_j)/2$
+  Integer( Kind = wi ), Parameter, Public :: MIX_FENDER_HASLEY = 2
+  !> Hogervorst Good-Hope: $e_{ij}=(e_i*e_j)^{1/2} \quad s_{ij}=(s_i*s_j)^{1/2}$
+  Integer( Kind = wi ), Parameter, Public :: MIX_HOGERVORST = 3
+  !> Halgren HHG: $e_{ij}=(4*e_i*e_j)/(e_i^{1/2}+e_j^{1/2})^2 \quad s_{ij}=(s_i^3+s_j^3)/(s_i^2+s_j^2)$
+  Integer( Kind = wi ), Parameter, Public :: MIX_HALGREN = 4
+  !> Waldman–Hagler: $e_{ij}=2*(e_i*e_j)^{1/2}*(s_i*s_j)^3/(s_i^6+s_j^6) \quad s_{ij}=[(s_i^6+s_j^6)/2]^{1/6}$
+  Integer( Kind = wi ), Parameter, Public :: MIX_WALDMAN_HAGLER = 5
+  !> Tang-Toennies: $e_{ij}=[(e_i*s_i^6)*(e_j*s_j^6)] / ([(e_i*s_i^12)^{1/13}+(e_j*s_j^12)^{1/13}]/2)^13$
+  !>                $s_{ij}=(1/3) \sum_{L=0}^2 [(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^{1/(6-2L)}$
+  Integer( Kind = wi ), Parameter, Public :: MIX_TANG_TOENNIES = 6
+  !> Functional: $e_{ij}=3*(e_i*e_j)^{1/2} * (s_i*s_j)^3 / \sum_{L=0}^2 [(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(6/(6-2L))$
+  !>             $s_ij=(1/3) \sum_{L=0}^2 [(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))$
+  Integer( Kind = wi ), Parameter, Public :: MIX_FUNCTIONAL = 7
 
+  !> Type containing Van der Waals data
+  Type, Public :: vdw_type
+    Private
 
-  Integer,           Allocatable, Save :: lstvdw(:),ltpvdw(:)
+    !> Flag for any tabulated potential
+    Logical, Public :: l_tab = .false.
+    !> Direct calculation flag
+    Logical, Public :: l_direct = .false.
+    !> Force shifting flag
+    Logical, Public :: l_force_shift = .false.
 
-  Real( Kind = wp ), Allocatable, Save :: prmvdw(:,:),sigeps(:,:)
+    !> Number of two body interactoins
+    Integer( Kind = wi ), Public :: n_vdw = 0
+    !> Mixing type
+    Integer( Kind = wi ), Public :: mixing = MIX_NULL
 
-  Real( Kind = wp ),              Save :: elrc   = 0.0_wp, &
-                                          virlrc = 0.0_wp
+    Integer( Kind = wi ), Allocatable, Public :: list(:)
+    Integer( Kind = wi ), Allocatable, Public :: ltp(:)
 
-! Possible tabulated calculation arrays
+    !> VdW parameters
+    Real( Kind = wp ), Allocatable, Public :: param(:,:)
+    !> VdW cut off
+    Real( Kind = wp ), Public :: cutoff
 
-  Real( Kind = wp ), Allocatable, Save :: vvdw(:,:),gvdw(:,:)
+    Real( Kind = wp ), Allocatable, Public :: sigeps(:,:)
 
-! Possible force-shifting arrays
+    !> Energy long range correction
+    Real( Kind = wp ), Public :: elrc
+    !> Virial long range correction
+    Real( Kind = wp ), Public :: vlrc
 
-  Real( Kind = wp ), Allocatable, Save :: afs(:),bfs(:)
+    ! Possible tabulated calculation arrays
+    !> Tabulated potential
+    Real( Kind = wp ), Allocatable, Public :: tab_potential(:,:)
+    !> Tabulated force
+    Real( Kind = wp ), Allocatable, Public :: tab_force(:,:)
+    !> Maximum number of grid points
+    Integer( Kind = wi ), Public :: max_grid
 
-  Public :: allocate_vdw_arrays, allocate_vdw_table_arrays, &
-            allocate_vdw_direct_fs_arrays
+    ! Possible force-shifting arrays
+    Real( Kind = wp ), Allocatable, Public :: afs(:)
+    Real( Kind = wp ), Allocatable, Public :: bfs(:)
+
+    !> Maximum number of VdW interations
+    Integer( Kind = wi ), Public :: max_vdw
+    !> Maximum number of VdW parameters
+    Integer( Kind = wi ), Public :: max_param
+  Contains
+    Private
+
+    Procedure, Public :: init => allocate_vdw_arrays
+    Procedure, Public :: init_table => allocate_vdw_table_arrays
+    Procedure, Public :: init_direct => allocate_vdw_direct_fs_arrays
+    Final :: cleanup
+  End Type vdw_type
+
+  Public :: vdw_forces,vdw_generate,vdw_table_read,vdw_lrc
 
 Contains
 
-  Subroutine allocate_vdw_arrays()
-
+  Subroutine allocate_vdw_arrays(T)
+    Class( vdw_type ) :: T
 
     Integer, Dimension( 1:4 ) :: fail
 
     fail = 0
 
-    Allocate (lstvdw(1:mxvdw),          Stat = fail(1))
-    Allocate (ltpvdw(1:mxvdw),          Stat = fail(2))
-    Allocate (prmvdw(1:mxpvdw,1:mxvdw), Stat = fail(3))
-    Allocate (sigeps(1:2,1:mxvdw),      Stat = fail(4))
+    Allocate (T%list(1:T%max_vdw),          Stat = fail(1))
+    Allocate (T%ltp(1:T%max_vdw),          Stat = fail(2))
+    Allocate (T%param(1:T%max_param,1:T%max_vdw), Stat = fail(3))
+    Allocate (T%sigeps(1:2,1:T%max_vdw),      Stat = fail(4))
 
     If (Any(fail > 0)) Call error(1022)
 
-    lstvdw = 0
-    ltpvdw = 0
+    T%list = 0
+    T%ltp = 0
 
-    prmvdw = 0.0_wp
-    sigeps = 0.0_wp
-
+    T%param = 0.0_wp
+    T%sigeps = 0.0_wp
   End Subroutine allocate_vdw_arrays
 
-  Subroutine allocate_vdw_table_arrays()
-
+  Subroutine allocate_vdw_table_arrays(T)
+    Class( vdw_type ) :: T
 
     Integer, Dimension( 1:2 ) :: fail
 
     fail = 0
 
-    Allocate (vvdw(0:mxgvdw,1:mxvdw),   Stat = fail(1))
-    Allocate (gvdw(0:mxgvdw,1:mxvdw),   Stat = fail(2))
+    Allocate (T%tab_potential(0:T%max_grid,1:T%max_vdw),   Stat = fail(1))
+    Allocate (T%tab_force(0:T%max_grid,1:T%max_vdw),   Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1063)
 
-    vvdw = 0.0_wp
-    gvdw = 0.0_wp
-
+    T%tab_potential = 0.0_wp
+    T%tab_force = 0.0_wp
   End Subroutine allocate_vdw_table_arrays
 
-  Subroutine allocate_vdw_direct_fs_arrays()
+  Subroutine allocate_vdw_direct_fs_arrays(T)
+    Class( vdw_type ) :: T
 
     Integer :: fail
 
     fail = 0
 
-    Allocate (afs(1:mxvdw),bfs(1:mxvdw), Stat = fail)
+    Allocate (T%afs(1:T%max_vdw),T%bfs(1:T%max_vdw), Stat = fail)
 
     If (fail > 0) Call error(1066)
 
-    afs  = 0.0_wp
-    bfs  = 0.0_wp
-
+    T%afs  = 0.0_wp
+    T%bfs  = 0.0_wp
   End Subroutine allocate_vdw_direct_fs_arrays
 
-  Subroutine vdw_lrc(rvdw,elrc,virlrc,site,comm)
+  Subroutine vdw_lrc(site,vdw,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -124,12 +176,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-
-  Real( Kind = wp ), Intent( In    ) :: rvdw
-  Real( Kind = wp ), Intent(   Out ) :: elrc,virlrc
   Type( site_type ), Intent( In    ) :: site
-  Type( comms_type ), Intent( inOut ) :: comm
+  Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( comms_type ), Intent( InOut ) :: comm
 
   Integer           :: fail,i,j,k,ivdw,keypot,n,m
   Real( Kind = wp ) :: a,b,c,d,e0,nr,mr,r0,r,eps,sig, &
@@ -149,9 +198,9 @@ Contains
 ! initialise long-range corrections to energy and pressure
 
   plrc = 0.0_wp
-  elrc = 0.0_wp
+  vdw%elrc = 0.0_wp
 
-  If (ls_vdw) Go To 10 ! force-shifting
+  If (vdw%l_force_shift) Go To 10 ! force-shifting
 
 ! initialise counter arrays and evaluate number density in system
 
@@ -174,23 +223,23 @@ Contains
            padd = 0.0_wp
 
            ivdw = ivdw + 1
-           k = lstvdw(ivdw)
+           k = vdw%list(ivdw)
 
-           keypot=ltpvdw(k)
+           keypot=vdw%ltp(k)
            If      (keypot ==  0) Then
 
 ! tabulated energy and pressure lrc
 
-              eadd = prmvdw(1,k)
-              padd =-prmvdw(2,k)
+              eadd = vdw%param(1,k)
+              padd =-vdw%param(2,k)
 
            Else If (keypot ==  1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
-              a=prmvdw(1,k)
-              b=prmvdw(2,k)
-              r=rvdw
+              a=vdw%param(1,k)
+              b=vdw%param(2,k)
+              r=vdw%cutoff
 
               eadd = a/(9.0_wp*r**9) - b/(3.0_wp*r**3)
               padd = 12.0_wp*a/(9.0_wp*r**9) - 6.0_wp*b/(3.0_wp*r**3)
@@ -199,9 +248,9 @@ Contains
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
-              eps=prmvdw(1,k)
-              sig=prmvdw(2,k)
-              r  =rvdw
+              eps=vdw%param(1,k)
+              sig=vdw%param(2,k)
+              r  =vdw%cutoff
 
               eadd = 4.0_wp*eps*(sig**12/(9.0_wp*r**9) - sig**6/(3.0_wp*r**3))
               padd = 8.0_wp*eps*(6.0_wp*sig**12/(9.0_wp*r**9) - sig**6/(r**3))
@@ -210,11 +259,11 @@ Contains
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
-              e0=prmvdw(1,k)
-              n =Nint(prmvdw(2,k)) ; nr=Real(n,wp)
-              m =Nint(prmvdw(3,k)) ; mr=Real(m,wp)
-              r0=prmvdw(4,k)
-              r =rvdw
+              e0=vdw%param(1,k)
+              n =Nint(vdw%param(2,k)) ; nr=Real(n,wp)
+              m =Nint(vdw%param(3,k)) ; mr=Real(m,wp)
+              r0=vdw%param(4,k)
+              r =vdw%cutoff
 
               eadd = e0/(nr-mr)*( mr*r0**n/((nr-3.0_wp)*r**(n-3)) - nr*r0**m/((mr-3.0_wp)*r**(m-3)) )
               padd = e0/(nr-mr)*nr*mr*( r0**n/((nr-3.0_wp)*r**(n-3)) - r0**m/((mr-3.0_wp)*r**(m-3)) )
@@ -223,8 +272,8 @@ Contains
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
-              c=prmvdw(3,k)
-              r=rvdw
+              c=vdw%param(3,k)
+              r=vdw%cutoff
 
               eadd = -c/(3.0_wp*r**3)
               padd = -2.0_wp*c/(r**3)
@@ -233,9 +282,9 @@ Contains
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
-              c=prmvdw(4,k)
-              d=prmvdw(5,k)
-              r=rvdw
+              c=vdw%param(4,k)
+              d=vdw%param(5,k)
+              r=vdw%cutoff
 
               eadd = -c/(3.0_wp*r**3) - d/(5.0_wp*r**5)
               padd = -2.0_wp*c/(r**3) - 8.0_wp*d/(5.0_wp*r**5)
@@ -244,9 +293,9 @@ Contains
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
-              a=prmvdw(1,k)
-              b=prmvdw(2,k)
-              r=rvdw
+              a=vdw%param(1,k)
+              b=vdw%param(2,k)
+              r=vdw%cutoff
 
               eadd = a/(9.0_wp*r**9) - b/(7.0_wp*r**7)
               padd = 12.0_wp*a/(9.0_wp*r**9) - 10.0_wp*b/(7.0_wp*r**7)
@@ -255,42 +304,42 @@ Contains
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
-              e0=prmvdw(1,k)
-              r0=prmvdw(2,k)
-              kk=prmvdw(3,k)
+              e0=vdw%param(1,k)
+              r0=vdw%param(2,k)
+              kk=vdw%param(3,k)
               If (kk > Tiny(kk)) Then
-                 t = Exp(-kk*(rvdw - r0))
+                 t = Exp(-kk*(vdw%cutoff - r0))
 
-                 eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*rvdw+1)**2 + 1) + &
-                    e0*t*t/(4.0_wp*kk*kk*kk)*((kk*rvdw+1)**2 + kk*kk*rvdw*rvdw)
-                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*rvdw**3 + &
-                      3*kk**2*rvdw**2 +6*kk*rvdw + 6) + &
+                 eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*vdw%cutoff+1)**2 + 1) + &
+                    e0*t*t/(4.0_wp*kk*kk*kk)*((kk*vdw%cutoff+1)**2 + kk*kk*vdw%cutoff*vdw%cutoff)
+                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*vdw%cutoff**3 + &
+                      3*kk**2*vdw%cutoff**2 +6*kk*vdw%cutoff + 6) + &
                       e0*t*t/(4.0_wp*kk*kk*kk)* & 
-                      (4.0_wp*kk**3*rvdw**3 + 6*kk**2*rvdw**2 + 6*kk*rvdw + 3)
+                      (4.0_wp*kk**3*vdw%cutoff**3 + 6*kk**2*vdw%cutoff**2 + 6*kk*vdw%cutoff + 3)
               End If
 
            Else If (keypot == 11) Then
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
 
-              eps=prmvdw(1,k)
-              sig=prmvdw(2,k)
+              eps=vdw%param(1,k)
+              sig=vdw%param(2,k)
 
               a =0.07_wp
               b =0.12_wp
               e0=1.0e-12_wp
 
-              eadd = intRadMM3(sig,a,b,eps,rvdw,e0)
-              padd = -intRaddMM3(sig,a,b,eps,rvdw,e0)
+              eadd = intRadMM3(sig,a,b,eps,vdw%cutoff,e0)
+              padd = -intRaddMM3(sig,a,b,eps,vdw%cutoff,e0)
 
            Else If (keypot ==  12) Then
 
 ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
-              eps=prmvdw(1,k)
-              sig=prmvdw(2,k)
-              c  =prmvdw(3,k)
-              r  =rvdw
+              eps=vdw%param(1,k)
+              sig=vdw%param(2,k)
+              c  =vdw%param(3,k)
+              r  =vdw%cutoff
 
               eadd = 4.0_wp*eps*(sig**12/(9.0_wp*r**9) - c*sig**6/(3.0_wp*r**3))
               padd = 8.0_wp*eps*(6.0_wp*sig**12/(9.0_wp*r**9) - c*sig**6/(r**3))
@@ -299,83 +348,83 @@ Contains
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
-              e0 = prmvdw(1,k)
-              r0 = prmvdw(2,k)
-              kk = prmvdw(3,k)
-               c = prmvdw(4,k)
+              e0 = vdw%param(1,k)
+              r0 = vdw%param(2,k)
+              kk = vdw%param(3,k)
+               c = vdw%param(4,k)
 
               If (kk>Tiny(kk)) Then
 
-                 t = Exp(-kk*(rvdw - r0))
-                 s9 = c/(9.0_wp*rvdw**9)
+                 t = Exp(-kk*(vdw%cutoff - r0))
+                 s9 = c/(9.0_wp*vdw%cutoff**9)
 
-                 eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*rvdw+1)**2 + 1) + &
-                     e0*t*t/(4.0_wp*kk*kk*kk)*((kk*rvdw+1)**2 + & 
-                     kk*kk*rvdw*rvdw) + s9
-                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*rvdw**3 + & 
-                       3*kk**2*rvdw**2 + 6*kk*rvdw + 6) + & 
-                       e0*t*t/(4.0_wp*kk*kk*kk)* (4.0_wp*kk**3*rvdw**3 + & 
-                       6*kk**2*rvdw**2 + 6*kk*rvdw + 3) + 12.0_wp*s9
+                 eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*vdw%cutoff+1)**2 + 1) + &
+                     e0*t*t/(4.0_wp*kk*kk*kk)*((kk*vdw%cutoff+1)**2 + & 
+                     kk*kk*vdw%cutoff*vdw%cutoff) + s9
+                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*vdw%cutoff**3 + & 
+                       3*kk**2*vdw%cutoff**2 + 6*kk*vdw%cutoff + 6) + & 
+                       e0*t*t/(4.0_wp*kk*kk*kk)* (4.0_wp*kk**3*vdw%cutoff**3 + & 
+                       6*kk**2*vdw%cutoff**2 + 6*kk*vdw%cutoff + 3) + 12.0_wp*s9
               End If
 
            Else If (keypot == 14) Then
 
 ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
 
-              a = prmvdw(1,k)
-              b = prmvdw(2,k)
-              c = prmvdw(3,k)
-              t = exp(-rvdw/c)
+              a = vdw%param(1,k)
+              b = vdw%param(2,k)
+              c = vdw%param(3,k)
+              t = exp(-vdw%cutoff/c)
 
-              eadd = (b*c*rvdw**3+(3*b*c**2+a*c)*rvdw**2+(6*b*c**3+2*a*c**2)*rvdw&
+              eadd = (b*c*vdw%cutoff**3+(3*b*c**2+a*c)*vdw%cutoff**2+(6*b*c**3+2*a*c**2)*vdw%cutoff&
                 +6*b*c**4+2*a*c**3)*t
-              padd = (b*rvdw**4+(3*b*c+a)*rvdw**3+(9*b*c**2+3*a*c)*rvdw**2+& 
-                (18*b*c**3+6*a*c**2)*rvdw+18*b*c**4+6*a*c**3)*t
+              padd = (b*vdw%cutoff**4+(3*b*c+a)*vdw%cutoff**3+(9*b*c**2+3*a*c)*vdw%cutoff**2+& 
+                (18*b*c**3+6*a*c**2)*vdw%cutoff+18*b*c**4+6*a*c**3)*t
 
            Else If (keypot == 15) Then
 
 ! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
 
-              z1 = prmvdw(1,k)
-              z2 = prmvdw(2,k)
+              z1 = vdw%param(1,k)
+              z2 = vdw%param(2,k)
 
         ! this is in fact inverse a
               a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
               kk = z1*z2*r4pie0
-              eadd = intRadZBL(kk,a,rvdw,1e-12_wp)
-              padd = intdRadZBL(kk,a,rvdw,1e-12_wp)
+              eadd = intRadZBL(kk,a,vdw%cutoff,1e-12_wp)
+              padd = intdRadZBL(kk,a,vdw%cutoff,1e-12_wp)
 
            Else If (keypot == 16) Then
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
-              e0 = prmvdw(5,k)
-              r0 = prmvdw(6,k)
-              kk = prmvdw(7,k)
+              e0 = vdw%param(5,k)
+              r0 = vdw%param(6,k)
+              kk = vdw%param(7,k)
 
               If (kk > Tiny(kk)) Then
-                 t = Exp(-kk*(rvdw - r0))
+                 t = Exp(-kk*(vdw%cutoff - r0))
 
-                 eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*rvdw+1)**2 + 1) + &
-                    e0*t*t/(4.0_wp*kk*kk*kk)*((kk*rvdw+1)**2 + kk*kk*rvdw*rvdw)
-                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*rvdw**3 + &
-                      3*kk**2*rvdw**2 +6*kk*rvdw + 6) + &
+                 eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*vdw%cutoff+1)**2 + 1) + &
+                    e0*t*t/(4.0_wp*kk*kk*kk)*((kk*vdw%cutoff+1)**2 + kk*kk*vdw%cutoff*vdw%cutoff)
+                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*vdw%cutoff**3 + &
+                      3*kk**2*vdw%cutoff**2 +6*kk*vdw%cutoff + 6) + &
                       e0*t*t/(4.0_wp*kk*kk*kk)* & 
-                      (4.0_wp*kk**3*rvdw**3 + 6*kk**2*rvdw**2 + 6*kk*rvdw + 3)
+                      (4.0_wp*kk**3*vdw%cutoff**3 + 6*kk**2*vdw%cutoff**2 + 6*kk*vdw%cutoff + 3)
               End If
 
            Else If (keypot == 17) Then
 
 ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
-              A = prmvdw(5,k)
-              r0 = prmvdw(6,k)
-              c = prmvdw(7,k)
+              A = vdw%param(5,k)
+              r0 = vdw%param(6,k)
+              c = vdw%param(7,k)
 
-              t=A*Exp(-rvdw/r0)
+              t=A*Exp(-vdw%cutoff/r0)
 
-              eadd = (rvdw**2+2*r0*rvdw+2*r0**2)*t*r0-c/(3.0_wp*rvdw**3)
-              padd = (rvdw**3+3*r0*rvdw**2+6*r0**2*rvdw+6*r0**3)*t -2.0_wp*c/(rvdw**3)
+              eadd = (vdw%cutoff**2+2*r0*vdw%cutoff+2*r0**2)*t*r0-c/(3.0_wp*vdw%cutoff**3)
+              padd = (vdw%cutoff**3+3*r0*vdw%cutoff**2+6*r0**2*vdw%cutoff+6*r0**3)*t -2.0_wp*c/(vdw%cutoff**3)
 
            End If
 
@@ -389,7 +438,7 @@ Contains
 
            denprd=twopi * (site%num_type(i)*site%num_type(j) - numfrz(i)*numfrz(j)) / volm**2
 
-           elrc = elrc + volm*denprd*eadd
+           vdw%elrc = vdw%elrc + volm*denprd*eadd
            plrc = plrc + denprd*padd/3.0_wp
 
         End Do
@@ -400,13 +449,13 @@ Contains
 10 Continue
 
   Write(messages(1),'(a)') 'long-range correction for:'
-  Write(messages(2),'(2x,a,e15.6)') 'vdw energy ',elrc/engunit
+  Write(messages(2),'(2x,a,e15.6)') 'vdw energy ',vdw%elrc/engunit
   Write(messages(3),'(2x,a,e15.6)') 'vdw pressure ',plrc*prsunt
   Call info(messages,3,.true.)
 
 ! convert plrc to a viral term
 
-  virlrc = plrc*(-3.0_wp*volm)
+  vdw%vlrc = plrc*(-3.0_wp*volm)
 
   Deallocate (numfrz, Stat=fail)
   If (fail > 0) Then
@@ -416,7 +465,7 @@ Contains
 
 End Subroutine vdw_lrc
 
-Subroutine vdw_direct_fs_generate(rvdw)
+Subroutine vdw_direct_fs_generate(vdw)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -431,9 +480,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 ! contrib   - a.m.elena december 2017 (zblb)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
-  Real( Kind = wp ), Intent( In    ) :: rvdw
+  Type( vdw_type ), Intent( InOut ) :: vdw
 
   Integer           :: ivdw,keypot,n,m
   Real( Kind = wp ) :: r0,r0rn,r0rm,r_6,sor6,   &
@@ -443,64 +490,64 @@ Subroutine vdw_direct_fs_generate(rvdw)
 
 ! allocate arrays for force-shifted corrections
 
-  Call allocate_vdw_direct_fs_arrays()
+  Call vdw%init_direct()
 
 ! construct arrays for all types of vdw potential
 
-  Do ivdw=1,ntpvdw
+  Do ivdw=1,vdw%n_vdw
 
-     keypot=ltpvdw(ivdw)
+     keypot=vdw%ltp(ivdw)
      If      (keypot == 1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
-        a=prmvdw(1,ivdw)
-        b=prmvdw(2,ivdw)
+        a=vdw%param(1,ivdw)
+        b=vdw%param(2,ivdw)
 
-        r_6=rvdw**(-6)
+        r_6=vdw%cutoff**(-6)
 
-        afs(ivdw) = 6.0_wp*r_6*(2.0_wp*a*r_6-b)
-        bfs(ivdw) =-r_6*(a*r_6-b) - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) = 6.0_wp*r_6*(2.0_wp*a*r_6-b)
+        vdw%bfs(ivdw) =-r_6*(a*r_6-b) - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 2) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
-        eps=prmvdw(1,ivdw)
-        sig=prmvdw(2,ivdw)
+        eps=vdw%param(1,ivdw)
+        sig=vdw%param(2,ivdw)
 
-        sor6=(sig/rvdw)**6
+        sor6=(sig/vdw%cutoff)**6
 
-        afs(ivdw) = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
-        bfs(ivdw) =-4.0_wp*eps*sor6*(sor6-1.0_wp) - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
+        vdw%bfs(ivdw) =-4.0_wp*eps*sor6*(sor6-1.0_wp) - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 3) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
-        e0=prmvdw(1,ivdw)
-        n =Nint(prmvdw(2,ivdw)) ; nr=Real(n,wp)
-        m =Nint(prmvdw(3,ivdw)) ; mr=Real(m,wp)
-        r0=prmvdw(4,ivdw)
+        e0=vdw%param(1,ivdw)
+        n =Nint(vdw%param(2,ivdw)) ; nr=Real(n,wp)
+        m =Nint(vdw%param(3,ivdw)) ; mr=Real(m,wp)
+        r0=vdw%param(4,ivdw)
 
-        a=r0/rvdw
+        a=r0/vdw%cutoff
         b=1.0_wp/Real(n-m,wp)
         r0rn=a**n
         r0rm=a**m
 
-        afs(ivdw) = e0*mr*nr*(r0rn-r0rm)*b
-        bfs(ivdw) =-e0*(mr*r0rn-nr*r0rm)*b - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) = e0*mr*nr*(r0rn-r0rm)*b
+        vdw%bfs(ivdw) =-e0*(mr*r0rn-nr*r0rm)*b - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 4) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
-        a  =prmvdw(1,ivdw)
-        rho=prmvdw(2,ivdw)
-        c  =prmvdw(3,ivdw)
+        a  =vdw%param(1,ivdw)
+        rho=vdw%param(2,ivdw)
+        c  =vdw%param(3,ivdw)
 
         If (Abs(rho) <= zero_plus) Then
            If (Abs(a) <= zero_plus) Then
@@ -510,45 +557,45 @@ Subroutine vdw_direct_fs_generate(rvdw)
            End If
         End If
 
-        b=rvdw/rho
+        b=vdw%cutoff/rho
         t1=a*Exp(-b)
-        t2=-c/rvdw**6
+        t2=-c/vdw%cutoff**6
 
-        afs(ivdw) = (t1*b+6.0_wp*t2)
-        bfs(ivdw) =-(t1+t2) - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) = (t1*b+6.0_wp*t2)
+        vdw%bfs(ivdw) =-(t1+t2) - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 5) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
-        a  =prmvdw(1,ivdw)
-        b  =prmvdw(2,ivdw)
-        sig=prmvdw(3,ivdw)
-        c  =prmvdw(4,ivdw)
-        d  =prmvdw(5,ivdw)
+        a  =vdw%param(1,ivdw)
+        b  =vdw%param(2,ivdw)
+        sig=vdw%param(3,ivdw)
+        c  =vdw%param(4,ivdw)
+        d  =vdw%param(5,ivdw)
 
-        t1=a*Exp(b*(sig-rvdw))
-        t2=-c/rvdw**6
-        t3=-d/rvdw**8
+        t1=a*Exp(b*(sig-vdw%cutoff))
+        t2=-c/vdw%cutoff**6
+        t3=-d/vdw%cutoff**8
 
-        afs(ivdw) = (t1*rvdw*b+6.0_wp*t2+8.0_wp*t3)
-        bfs(ivdw) =-(t1+t2+t3) - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) = (t1*vdw%cutoff*b+6.0_wp*t2+8.0_wp*t3)
+        vdw%bfs(ivdw) =-(t1+t2+t3) - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 6) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
-        a=prmvdw(1,ivdw)
-        b=prmvdw(2,ivdw)
+        a=vdw%param(1,ivdw)
+        b=vdw%param(2,ivdw)
 
-        t1=a/rvdw**12
-        t2=-b/rvdw**10
+        t1=a/vdw%cutoff**12
+        t2=-b/vdw%cutoff**10
 
-        afs(ivdw) = (12.0_wp*t1+10.0_wp*t2)
-        bfs(ivdw) =-(t1+t2) - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) = (12.0_wp*t1+10.0_wp*t2)
+        vdw%bfs(ivdw) =-(t1+t2) - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 7) Then
 
@@ -558,146 +605,146 @@ Subroutine vdw_direct_fs_generate(rvdw)
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
-        e0=prmvdw(1,ivdw)
-        r0=prmvdw(2,ivdw)
-        kk=prmvdw(3,ivdw)
+        e0=vdw%param(1,ivdw)
+        r0=vdw%param(2,ivdw)
+        kk=vdw%param(3,ivdw)
 
-        t1=Exp(-kk*(rvdw-r0))
+        t1=Exp(-kk*(vdw%cutoff-r0))
 
-        afs(ivdw) =-2.0_wp*e0*kk*t1*(1.0_wp-t1)*rvdw
-        bfs(ivdw) =-e0*t1*(t1-2.0_wp) - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) =-2.0_wp*e0*kk*t1*(1.0_wp-t1)*vdw%cutoff
+        vdw%bfs(ivdw) =-e0*t1*(t1-2.0_wp) - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 9) Then
 
 ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
 ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
 
-        eps=prmvdw(1,ivdw)
-        sig=prmvdw(2,ivdw)
-        d  =prmvdw(3,ivdw)
+        eps=vdw%param(1,ivdw)
+        sig=vdw%param(2,ivdw)
+        d  =vdw%param(3,ivdw)
 
-        sor6=(sig/(rvdw-d))**6
+        sor6=(sig/(vdw%cutoff-d))**6
 
-        afs(ivdw) = (24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)/(rvdw-d))*rvdw
-        bfs(ivdw) =-(4.0_wp*eps*sor6*(sor6-1.0_wp)+eps) - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) = (24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)/(vdw%cutoff-d))*vdw%cutoff
+        vdw%bfs(ivdw) =-(4.0_wp*eps*sor6*(sor6-1.0_wp)+eps) - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 10) Then ! all zeroed in vdw
 
 ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
 
-!       afs(ivdw) = 0.0_wp !initialised in vdw
-!       bfs(ivdw) = 0.0_wp !initialised in vdw
+!       vdw%afs(ivdw) = 0.0_wp !initialised in vdw
+!       vdw%bfs(ivdw) = 0.0_wp !initialised in vdw
 
      Else If (keypot == 11) Then
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
 
-        eps=prmvdw(1,ivdw)
-        sig=prmvdw(2,ivdw)
+        eps=vdw%param(1,ivdw)
+        sig=vdw%param(2,ivdw)
 
-        rho=sig/rvdw
+        rho=sig/vdw%cutoff
         t1=1.0_wp/(0.07_wp+rho)
         t2=1.0_wp/(0.12_wp+rho**7)
         t3=eps*(1.07_wp/t1**7)
 
-        afs(ivdw) =-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)
-        bfs(ivdw) =-t3*((1.12_wp/t2)-2.0_wp) - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) =-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)
+        vdw%bfs(ivdw) =-t3*((1.12_wp/t2)-2.0_wp) - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
       Else If (keypot == 12) Then
 
 ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
-        eps=prmvdw(1,ivdw)
-        sig=prmvdw(2,ivdw)
-        c  =prmvdw(3,ivdw)
+        eps=vdw%param(1,ivdw)
+        sig=vdw%param(2,ivdw)
+        c  =vdw%param(3,ivdw)
 
-        sor6=(sig/rvdw)**6
+        sor6=(sig/vdw%cutoff)**6
 
-        afs(ivdw) = 24.0_wp*eps*sor6*(2.0_wp*sor6-c)
-        bfs(ivdw) =-4.0_wp*eps*sor6*(sor6-c) - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) = 24.0_wp*eps*sor6*(2.0_wp*sor6-c)
+        vdw%bfs(ivdw) =-4.0_wp*eps*sor6*(sor6-c) - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 13) Then
 
 ! Morse potential with twelve term:: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
-        e0=prmvdw(1,ivdw)
-        r0=prmvdw(2,ivdw)
-        kk=prmvdw(3,ivdw)
-        c=prmvdw(4,ivdw)
+        e0=vdw%param(1,ivdw)
+        r0=vdw%param(2,ivdw)
+        kk=vdw%param(3,ivdw)
+        c=vdw%param(4,ivdw)
 
-        t1=Exp(-kk*(rvdw-r0))
-        sor6 = c/rvdw**12
+        t1=Exp(-kk*(vdw%cutoff-r0))
+        sor6 = c/vdw%cutoff**12
 
-        afs(ivdw) =-2.0_wp*e0*kk*t1*(1.0_wp-t1)*rvdw + 12.0_wp*sor6
-        bfs(ivdw) =-e0*t1*(t1-2.0_wp) + sor6 - afs(ivdw)
-        afs(ivdw) = afs(ivdw)/rvdw
+        vdw%afs(ivdw) =-2.0_wp*e0*kk*t1*(1.0_wp-t1)*vdw%cutoff + 12.0_wp*sor6
+        vdw%bfs(ivdw) =-e0*t1*(t1-2.0_wp) + sor6 - vdw%afs(ivdw)
+        vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
      Else If (keypot == 14) Then
 
 ! Morse potential with twelve term:: u=(a+b*r)Exp(-r/c)
 
-        a = prmvdw(1,ivdw)
-        b = prmvdw(2,ivdw)
-        c = prmvdw(3,ivdw)
+        a = vdw%param(1,ivdw)
+        b = vdw%param(2,ivdw)
+        c = vdw%param(3,ivdw)
 
         kk=1.0_wp/c
-        t1=Exp(-rvdw*kk)
-        afs(ivdw) = (a+b*rvdw)*kk*t1-b*t1
-        bfs(ivdw) = -(a*c+a*rvdw+b*rvdw*rvdw)*kk*t1
+        t1=Exp(-vdw%cutoff*kk)
+        vdw%afs(ivdw) = (a+b*vdw%cutoff)*kk*t1-b*t1
+        vdw%bfs(ivdw) = -(a*c+a*vdw%cutoff+b*vdw%cutoff*vdw%cutoff)*kk*t1
 
      Else If (keypot == 15) Then
 
 ! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
 
-        z1 = prmvdw(1,ivdw)
-        z2 = prmvdw(2,ivdw)
+        z1 = vdw%param(1,ivdw)
+        z2 = vdw%param(2,ivdw)
 
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
 
-        call zbl(rvdw,kk,a,z,dz)
-        afs(ivdw) = dz/rvdw
-        bfs(ivdw) = -z-dz
+        call zbl(vdw%cutoff,kk,a,z,dz)
+        vdw%afs(ivdw) = dz/vdw%cutoff
+        vdw%bfs(ivdw) = -z-dz
 
      Else If (keypot == 16) Then
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
-        z1 = prmvdw(1,ivdw)
-        z2 = prmvdw(2,ivdw)
-        rm = prmvdw(3,ivdw)
-        ic = 1.0_wp/prmvdw(4,ivdw)
-        e0 = prmvdw(5,ivdw)
-        r0 = prmvdw(6,ivdw)
-        k = prmvdw(7,ivdw)
+        z1 = vdw%param(1,ivdw)
+        z2 = vdw%param(2,ivdw)
+        rm = vdw%param(3,ivdw)
+        ic = 1.0_wp/vdw%param(4,ivdw)
+        e0 = vdw%param(5,ivdw)
+        r0 = vdw%param(6,ivdw)
+        k = vdw%param(7,ivdw)
 
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
-        Call zbls(rvdw,kk,a,rm,ic,e0,k,r0,z,dz)
-        afs(ivdw) = dz/rvdw
-        bfs(ivdw) = -z-dz
+        Call zbls(vdw%cutoff,kk,a,rm,ic,e0,k,r0,z,dz)
+        vdw%afs(ivdw) = dz/vdw%cutoff
+        vdw%bfs(ivdw) = -z-dz
 
      Else If (keypot == 17) Then
 
 ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
-        z1 = prmvdw(1,ivdw)
-        z2 = prmvdw(2,ivdw)
-        rm = prmvdw(3,ivdw)
-        ic = 1.0_wp/prmvdw(4,ivdw)
-        e0 = prmvdw(5,ivdw)
-        r0 = prmvdw(6,ivdw)
-        k = prmvdw(7,ivdw)
+        z1 = vdw%param(1,ivdw)
+        z2 = vdw%param(2,ivdw)
+        rm = vdw%param(3,ivdw)
+        ic = 1.0_wp/vdw%param(4,ivdw)
+        e0 = vdw%param(5,ivdw)
+        r0 = vdw%param(6,ivdw)
+        k = vdw%param(7,ivdw)
 
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
-        Call zblb(rvdw,kk,a,rm,ic,e0,r0,k,z,dz)
-        afs(ivdw) = dz/rvdw
-        bfs(ivdw) = -z-dz
+        Call zblb(vdw%cutoff,kk,a,rm,ic,e0,r0,k,z,dz)
+        vdw%afs(ivdw) = dz/vdw%cutoff
+        vdw%bfs(ivdw) = -z-dz
 
      Else
 
@@ -710,7 +757,7 @@ Subroutine vdw_direct_fs_generate(rvdw)
 End Subroutine vdw_direct_fs_generate
 
 
-Subroutine vdw_table_read(rvdw,site,comm)
+Subroutine vdw_table_read(vdw,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -724,7 +771,7 @@ Subroutine vdw_table_read(rvdw,site,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real( Kind = wp ), Intent( In    ) :: rvdw
+  Type( vdw_type ), Intent( InOut ) :: vdw
   Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -759,7 +806,7 @@ Subroutine vdw_table_read(rvdw,site,comm)
   Call get_word(record,word)
   ngrid = Nint(word_2_real(word))
 
-  dlrpot = rvdw/Real(mxgvdw-4,wp)
+  dlrpot = vdw%cutoff/Real(vdw%max_grid-4,wp)
 
 ! check grid spacing
 
@@ -771,7 +818,7 @@ Subroutine vdw_table_read(rvdw,site,comm)
   If (delpot > delr_max .and. (.not.safe)) Then
      Write(messages(1),'(a,1p,e15.7)') 'expected (maximum) radial increment: ',delr_max
      Write(messages(2),'(a,1p,e15.7)') 'TABLE  file actual radial increment: ',delpot
-     Write(messages(3),'(a,i10)') 'expected (minimum) number of grid points: ',mxgvdw
+     Write(messages(3),'(a,i10)') 'expected (minimum) number of grid points: ',vdw%max_grid
      Write(messages(4),'(a,i10)') 'TABLE  file actual number of grid points: ',ngrid
      Call info(messages,4,.true.)
      Call error(22)
@@ -782,18 +829,18 @@ Subroutine vdw_table_read(rvdw,site,comm)
   If (Abs(1.0_wp-(delpot/dlrpot)) > 1.0e-8_wp) Then
      remake=.true.
      rdr=1.0_wp/delpot
-     Write(message,'(a,i10)') 'TABLE arrays resized for mxgrid = ',mxgvdw-4
+     Write(message,'(a,i10)') 'TABLE arrays resized for mxgrid = ',vdw%max_grid-4
      Call info(message,.true.)
   End If
 
 ! compare grids dimensions
 
-  If (ngrid < mxgvdw-4) Then
-     Call warning(270,Real(ngrid,wp),Real(mxgvdw-4,wp),0.0_wp)
+  If (ngrid < vdw%max_grid-4) Then
+     Call warning(270,Real(ngrid,wp),Real(vdw%max_grid-4,wp),0.0_wp)
      Call error(48)
   End If
 
-  If (cutpot < rvdw) Call error(504)
+  If (cutpot < vdw%cutoff) Call error(504)
 
   fail=0
   Allocate (buffer(0:ngrid), Stat=fail)
@@ -804,11 +851,11 @@ Subroutine vdw_table_read(rvdw,site,comm)
 
 ! read potential arrays for all pairs
 
-  Do ivdw=1,ntpvdw
+  Do ivdw=1,vdw%n_vdw
 
 ! read potential arrays if potential not already defined
 
-     If (ltpvdw(ivdw) == 0) Then
+     If (vdw%ltp(ivdw) == 0) Then
 
 ! read pair potential labels and long-range corrections
 
@@ -819,10 +866,10 @@ Subroutine vdw_table_read(rvdw,site,comm)
         Call get_word(record,atom2)
 
         Call get_word(record,word)
-        prmvdw(1,ivdw)=word_2_real(word)*engunit
+        vdw%param(1,ivdw)=word_2_real(word)*engunit
 
         Call get_word(record,word)
-        prmvdw(2,ivdw)=word_2_real(word)*engunit
+        vdw%param(2,ivdw)=word_2_real(word)*engunit
 
         katom1=0
         katom2=0
@@ -842,7 +889,7 @@ Subroutine vdw_table_read(rvdw,site,comm)
 ! Only one vdw potential per pair is allowed
 ! (FIELD AND TABLE potentials overlapping)
 
-        If (lstvdw(keyvdw) /= ivdw) Call error(23)
+        If (vdw%list(keyvdw) /= ivdw) Call error(23)
 
 ! read in potential arrays
 
@@ -857,12 +904,12 @@ Subroutine vdw_table_read(rvdw,site,comm)
         Call gbcast(comm,buffer,0)
 ! linear extrapolation for grid point 0 at distances close to 0
 
-        vvdw(0,ivdw) = 2.0_wp*buffer(1)-buffer(2)
+        vdw%tab_potential(0,ivdw) = 2.0_wp*buffer(1)-buffer(2)
 
 ! reconstruct arrays using 3pt interpolation
 
         If (remake) Then
-           Do i=1,mxgvdw-4
+           Do i=1,vdw%max_grid-4
               rrr = Real(i,wp)*dlrpot
               l   = Int(rrr*rdr)
               ppp=rrr*rdr-Real(l,wp)
@@ -886,21 +933,23 @@ Subroutine vdw_table_read(rvdw,site,comm)
 
               t1 = vk  + (vk1 - vk)*ppp
               t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-              vvdw(i,ivdw) = t1 + (t2-t1)*ppp*0.5_wp
+              vdw%tab_potential(i,ivdw) = t1 + (t2-t1)*ppp*0.5_wp
            End Do
         Else
-           Do i=1,mxgvdw-4
-              vvdw(i,ivdw) = buffer(i)
+           Do i=1,vdw%max_grid-4
+              vdw%tab_potential(i,ivdw) = buffer(i)
            End Do
 
 ! linear extrapolation for the grid point just beyond the cutoff
 
-           vvdw(mxgvdw-3,ivdw) = 2.0_wp*vvdw(mxgvdw-4,ivdw) - vvdw(mxgvdw-5,ivdw)
+           vdw%tab_potential(vdw%max_grid-3,ivdw) = 2.0_wp*vdw%tab_potential(vdw%max_grid-4,ivdw) - &
+             vdw%tab_potential(vdw%max_grid-5,ivdw)
         End If
 
-! linear extrapolation for the grid point at mxgvdw-2
+! linear extrapolation for the grid point at vdw%max_grid-2
 
-        vvdw(mxgvdw-2,ivdw) = 2.0_wp*vvdw(mxgvdw-3,ivdw) - vvdw(mxgvdw-4,ivdw)
+        vdw%tab_potential(vdw%max_grid-2,ivdw) = 2.0_wp*vdw%tab_potential(vdw%max_grid-3,ivdw) - &
+          vdw%tab_potential(vdw%max_grid-4,ivdw)
 
 ! read in force arrays
 
@@ -915,12 +964,12 @@ Subroutine vdw_table_read(rvdw,site,comm)
         Call gbcast(comm,buffer,0)
 ! linear extrapolation for grid point 0 at distances close to 0
 
-        gvdw(0,ivdw) = (2.0_wp*buffer(1)-0.5_wp*buffer(2))/delpot
+        vdw%tab_force(0,ivdw) = (2.0_wp*buffer(1)-0.5_wp*buffer(2))/delpot
 
 ! reconstruct arrays using 3pt interpolation
 
         If (remake) Then
-           Do i=1,mxgvdw-4
+           Do i=1,vdw%max_grid-4
               rrr = Real(i,wp)*dlrpot
               l   = Int(rrr*rdr)
               ppp=rrr*rdr-Real(l,wp)
@@ -945,25 +994,29 @@ Subroutine vdw_table_read(rvdw,site,comm)
               t1 = vk  + (vk1 - vk)*ppp
               t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-              gvdw(i,ivdw) = t1 + (t2-t1)*ppp*0.5_wp
+              vdw%tab_force(i,ivdw) = t1 + (t2-t1)*ppp*0.5_wp
            End Do
         Else
-           Do i=1,mxgvdw-4
-              gvdw(i,ivdw) = buffer(i)
+           Do i=1,vdw%max_grid-4
+              vdw%tab_force(i,ivdw) = buffer(i)
            End Do
 
 ! linear extrapolation for the grid point just beyond the cutoff
 
-           gvdw(mxgvdw-3,ivdw) = 2.0_wp*gvdw(mxgvdw-4,ivdw) - gvdw(mxgvdw-5,ivdw)
+           vdw%tab_force(vdw%max_grid-3,ivdw) = 2.0_wp*vdw%tab_force(vdw%max_grid-4,ivdw) - &
+             vdw%tab_force(vdw%max_grid-5,ivdw)
         End If
 
-! linear extrapolation for the grid point at mxgvdw-2
+! linear extrapolation for the grid point at vdw%max_grid-2
 
-        gvdw(mxgvdw-2,ivdw) = 2.0_wp*gvdw(mxgvdw-3,ivdw) - gvdw(mxgvdw-4,ivdw)
+        vdw%tab_force(vdw%max_grid-2,ivdw) = 2.0_wp*vdw%tab_force(vdw%max_grid-3,ivdw) - &
+          vdw%tab_force(vdw%max_grid-4,ivdw)
 
 ! We must distinguish that something has been defined
 
-        If (Abs(vvdw(0,ivdw)) <= zero_plus) vvdw(0,ivdw) = Sign(Tiny(vvdw(0,ivdw)),vvdw(0,ivdw))
+        If (Abs(vdw%tab_potential(0,ivdw)) <= zero_plus) Then
+          vdw%tab_potential(0,ivdw) = Sign(Tiny(vdw%tab_potential(0,ivdw)),vdw%tab_potential(0,ivdw))
+        End If
 
      End If
 
@@ -976,69 +1029,69 @@ Subroutine vdw_table_read(rvdw,site,comm)
 
 ! convert to internal units
 
-  Do ivdw=1,ntpvdw
-     If (ltpvdw(ivdw) == 0) Then
+  Do ivdw=1,vdw%n_vdw
+     If (vdw%ltp(ivdw) == 0) Then
 
 ! Sigma-epsilon initialisation
 
-        sigeps(1,ivdw)=-1.0_wp
-        sigeps(2,ivdw)= 0.0_wp
+        vdw%sigeps(1,ivdw)=-1.0_wp
+        vdw%sigeps(2,ivdw)= 0.0_wp
 
-        Do i=0,mxgvdw
-           vvdw(i,ivdw)=vvdw(i,ivdw)*engunit
-           gvdw(i,ivdw)=gvdw(i,ivdw)*engunit
+        Do i=0,vdw%max_grid
+           vdw%tab_potential(i,ivdw)=vdw%tab_potential(i,ivdw)*engunit
+           vdw%tab_force(i,ivdw)=vdw%tab_force(i,ivdw)*engunit
 
 ! Sigma-epsilon search
 
-           If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
-              If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                 If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
-                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+           If ((.not.vdw%l_force_shift) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
+              If (Sign(1.0_wp,vdw%sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                 If (Nint(Sign(1.0_wp,vdw%tab_potential(i-1,ivdw))) == -Nint(Sign(1.0_wp,vdw%tab_potential(i,ivdw)))) &
+                    vdw%sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
               Else                                           ! find epsilon
-                 If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
-                       vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
-                      (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
-                       vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
-                       vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
-                    sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+                 If ( (vdw%tab_potential(i-2,ivdw) >= vdw%tab_potential(i-1,ivdw) .and.  &
+                       vdw%tab_potential(i-1,ivdw) <= vdw%tab_potential(i  ,ivdw)) .and. &
+                      (vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i-1,ivdw) .or.   &
+                       vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i  ,ivdw) .or.   &
+                       vdw%tab_potential(i-1,ivdw) /= vdw%tab_potential(i  ,ivdw)) )     &
+                    vdw%sigeps(2,ivdw)=-vdw%tab_potential(i-1,ivdw)
               End If
            End If
         End Do
      End If
   End Do
 
-  If (ls_vdw) Then
-     Do ivdw=1,ntpvdw
-        If (ltpvdw(ivdw) == 0) Then
+  If (vdw%l_force_shift) Then
+     Do ivdw=1,vdw%n_vdw
+        If (vdw%ltp(ivdw) == 0) Then
 
 ! Sigma-epsilon initialisation
 
-           sigeps(1,ivdw)=-1.0_wp
-           sigeps(2,ivdw)= 0.0_wp
+           vdw%sigeps(1,ivdw)=-1.0_wp
+           vdw%sigeps(2,ivdw)= 0.0_wp
 
 ! Sigma-epsilon search
 
-           Do i=1,mxgvdw-4
+           Do i=1,vdw%max_grid-4
               If (i > 20) Then ! Assumes some safety against numeric black holes!!!
-                 t  = vvdw(i  ,ivdw) + gvdw(mxgvdw-4,ivdw) * &
-                      (Real(i  ,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
-                 t1 = vvdw(i-1,ivdw) + gvdw(mxgvdw-4,ivdw) * &
-                      (Real(i-1,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
-                 If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                 t  = vdw%tab_potential(i  ,ivdw) + vdw%tab_force(vdw%max_grid-4,ivdw) * &
+                      (Real(i  ,wp)*dlrpot/vdw%cutoff-1.0_wp) - vdw%tab_potential(vdw%max_grid-4,ivdw)
+                 t1 = vdw%tab_potential(i-1,ivdw) + vdw%tab_force(vdw%max_grid-4,ivdw) * &
+                      (Real(i-1,wp)*dlrpot/vdw%cutoff-1.0_wp) - vdw%tab_potential(vdw%max_grid-4,ivdw)
+                 If (Sign(1.0_wp,vdw%sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
                     If (Nint(Sign(1.0_wp,t1)) == -Nint(Sign(1.0_wp,t))) &
-                       sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+                       vdw%sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
                  Else                                           ! find epsilon
-                    t2 = vvdw(i-2,ivdw) + gvdw(mxgvdw-4,ivdw) * &
-                         (Real(i-2,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
+                    t2 = vdw%tab_potential(i-2,ivdw) + vdw%tab_force(vdw%max_grid-4,ivdw) * &
+                         (Real(i-2,wp)*dlrpot/vdw%cutoff-1.0_wp) - vdw%tab_potential(vdw%max_grid-4,ivdw)
 
                     If ( (t2 >= t1 .and. t1 <= t) .and.         &
                          (t2 /= t1 .or. t2 /= t .or. t1 /= t) ) &
-                       sigeps(2,ivdw)=-t1
+                       vdw%sigeps(2,ivdw)=-t1
                  End If
               End If
            End Do
-           vvdw(mxgvdw-3,ivdw) = 0.0_wp ; vvdw(mxgvdw-2,ivdw) = 0.0_wp
-           gvdw(mxgvdw-3,ivdw) = 0.0_wp ; gvdw(mxgvdw-2,ivdw) = 0.0_wp
+           vdw%tab_potential(vdw%max_grid-3,ivdw) = 0.0_wp ; vdw%tab_potential(vdw%max_grid-2,ivdw) = 0.0_wp
+           vdw%tab_force(vdw%max_grid-3,ivdw) = 0.0_wp ; vdw%tab_force(vdw%max_grid-2,ivdw) = 0.0_wp
         End If
      End Do
   End If
@@ -1060,7 +1113,7 @@ Subroutine vdw_table_read(rvdw,site,comm)
 
 End Subroutine vdw_table_read
 
-Subroutine vdw_generate(rvdw)
+Subroutine vdw_generate(vdw)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1076,8 +1129,7 @@ Subroutine vdw_generate(rvdw)
 ! contrib   - a.m.elena december 2017 (zblb)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Real( Kind = wp ), Intent( In    ) :: rvdw
+  Type( vdw_type ), Intent( InOut ) :: vdw
 
   Integer           :: i,ivdw,keypot,n,m
   Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6,  &
@@ -1087,39 +1139,39 @@ Subroutine vdw_generate(rvdw)
 
 ! allocate arrays for tabulating
 
-  Call allocate_vdw_table_arrays()
+  Call vdw%init_table()
 
 ! define grid resolution for potential arrays
 
-  dlrpot=rvdw/Real(mxgvdw-4,wp)
+  dlrpot=vdw%cutoff/Real(vdw%max_grid-4,wp)
 
 ! construct arrays for all types of vdw potential
 
-  Do ivdw=1,ntpvdw
+  Do ivdw=1,vdw%n_vdw
 
-     keypot=ltpvdw(ivdw)
+     keypot=vdw%ltp(ivdw)
      If      (keypot == 1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
-        a=prmvdw(1,ivdw)
-        b=prmvdw(2,ivdw)
+        a=vdw%param(1,ivdw)
+        b=vdw%param(2,ivdw)
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            r_6=r**(-6)
 
-           vvdw(i,ivdw)=r_6*(a*r_6-b)
-           gvdw(i,ivdw)=6.0_wp*r_6*(2.0_wp*a*r_6-b)
+           vdw%tab_potential(i,ivdw)=r_6*(a*r_6-b)
+           vdw%tab_force(i,ivdw)=6.0_wp*r_6*(2.0_wp*a*r_6-b)
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-        If (.not.ls_vdw) Then
+        If (.not.vdw%l_force_shift) Then
            If (a*b > zero_plus) Then
-              sigeps(1,ivdw)=(a/b)**(1.0_wp/6.0_wp)
-              sigeps(2,ivdw)=b**2/(4.0_wp*a)
+              vdw%sigeps(1,ivdw)=(a/b)**(1.0_wp/6.0_wp)
+              vdw%sigeps(2,ivdw)=b**2/(4.0_wp*a)
            End If ! else leave undetermined
         End If
 
@@ -1127,35 +1179,35 @@ Subroutine vdw_generate(rvdw)
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
-        eps=prmvdw(1,ivdw)
-        sig=prmvdw(2,ivdw)
+        eps=vdw%param(1,ivdw)
+        sig=vdw%param(2,ivdw)
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            sor6=(sig/r)**6
 
-           vvdw(i,ivdw)=4.0_wp*eps*sor6*(sor6-1.0_wp)
-           gvdw(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
+           vdw%tab_potential(i,ivdw)=4.0_wp*eps*sor6*(sor6-1.0_wp)
+           vdw%tab_force(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=sig
-           sigeps(2,ivdw)=eps
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=sig
+           vdw%sigeps(2,ivdw)=eps
         End If
 
      Else If (keypot == 3) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
-        e0=prmvdw(1,ivdw)
-        n =Nint(prmvdw(2,ivdw)) ; nr=Real(n,wp)
-        m =Nint(prmvdw(3,ivdw)) ; mr=Real(m,wp)
-        r0=prmvdw(4,ivdw)
+        e0=vdw%param(1,ivdw)
+        n =Nint(vdw%param(2,ivdw)) ; nr=Real(n,wp)
+        m =Nint(vdw%param(3,ivdw)) ; mr=Real(m,wp)
+        r0=vdw%param(4,ivdw)
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            a=r0/r
@@ -1163,24 +1215,24 @@ Subroutine vdw_generate(rvdw)
            r0rn=(a)**n
            r0rm=(a)**m
 
-           vvdw(i,ivdw)=e0*(mr*r0rn-nr*r0rm)*b
-           gvdw(i,ivdw)=e0*mr*nr*(r0rn-r0rm)*b
+           vdw%tab_potential(i,ivdw)=e0*(mr*r0rn-nr*r0rm)*b
+           vdw%tab_force(i,ivdw)=e0*mr*nr*(r0rn-r0rm)*b
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=r0*(nr/mr)**(1.0_wp/(mr-nr))
-           sigeps(2,ivdw)=e0
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=r0*(nr/mr)**(1.0_wp/(mr-nr))
+           vdw%sigeps(2,ivdw)=e0
         End If
 
      Else If (keypot == 4) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
-        a  =prmvdw(1,ivdw)
-        rho=prmvdw(2,ivdw)
-        c  =prmvdw(3,ivdw)
+        a  =vdw%param(1,ivdw)
+        rho=vdw%param(2,ivdw)
+        c  =vdw%param(3,ivdw)
 
         If (Abs(rho) <= zero_plus) Then
            If (Abs(a) <= zero_plus) Then
@@ -1192,126 +1244,126 @@ Subroutine vdw_generate(rvdw)
 
 ! Sigma-epsilon initialisation
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=-1.0_wp
-           sigeps(2,ivdw)= 0.0_wp
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=-1.0_wp
+           vdw%sigeps(2,ivdw)= 0.0_wp
         End If
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            b=r/rho
            t1=a*Exp(-b)
            t2=-c/r**6
 
-           vvdw(i,ivdw)=t1+t2
-           gvdw(i,ivdw)=t1*b+6.0_wp*t2
+           vdw%tab_potential(i,ivdw)=t1+t2
+           vdw%tab_force(i,ivdw)=t1*b+6.0_wp*t2
 
 ! Sigma-epsilon search
 
-           If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
-              If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                 If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
-                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+           If ((.not.vdw%l_force_shift) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
+              If (Sign(1.0_wp,vdw%sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                 If (Nint(Sign(1.0_wp,vdw%tab_potential(i-1,ivdw))) == -Nint(Sign(1.0_wp,vdw%tab_potential(i,ivdw)))) &
+                    vdw%sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
               Else                                           ! find epsilon
-                 If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
-                       vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
-                      (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
-                       vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
-                       vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
-                    sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+                 If ( (vdw%tab_potential(i-2,ivdw) >= vdw%tab_potential(i-1,ivdw) .and.  &
+                       vdw%tab_potential(i-1,ivdw) <= vdw%tab_potential(i  ,ivdw)) .and. &
+                      (vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i-1,ivdw) .or.   &
+                       vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i  ,ivdw) .or.   &
+                       vdw%tab_potential(i-1,ivdw) /= vdw%tab_potential(i  ,ivdw)) )     &
+                    vdw%sigeps(2,ivdw)=-vdw%tab_potential(i-1,ivdw)
               End If
            End If
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
      Else If (keypot == 5) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
-        a  =prmvdw(1,ivdw)
-        b  =prmvdw(2,ivdw)
-        sig=prmvdw(3,ivdw)
-        c  =prmvdw(4,ivdw)
-        d  =prmvdw(5,ivdw)
+        a  =vdw%param(1,ivdw)
+        b  =vdw%param(2,ivdw)
+        sig=vdw%param(3,ivdw)
+        c  =vdw%param(4,ivdw)
+        d  =vdw%param(5,ivdw)
 
 ! Sigma-epsilon initialisation
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=-1.0_wp
-           sigeps(2,ivdw)= 0.0_wp
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=-1.0_wp
+           vdw%sigeps(2,ivdw)= 0.0_wp
         End If
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            t1=a*Exp(b*(sig-r))
            t2=-c/r**6
            t3=-d/r**8
 
-           vvdw(i,ivdw)=t1+t2+t3
-           gvdw(i,ivdw)=t1*r*b+6.0_wp*t2+8.0_wp*t3
+           vdw%tab_potential(i,ivdw)=t1+t2+t3
+           vdw%tab_force(i,ivdw)=t1*r*b+6.0_wp*t2+8.0_wp*t3
 
 ! Sigma-epsilon search
 
-           If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
-              If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                 If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
-                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+           If ((.not.vdw%l_force_shift) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
+              If (Sign(1.0_wp,vdw%sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                 If (Nint(Sign(1.0_wp,vdw%tab_potential(i-1,ivdw))) == -Nint(Sign(1.0_wp,vdw%tab_potential(i,ivdw)))) &
+                    vdw%sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
               Else                                           ! find epsilon
-                 If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
-                       vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
-                      (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
-                       vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
-                       vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
-                    sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+                 If ( (vdw%tab_potential(i-2,ivdw) >= vdw%tab_potential(i-1,ivdw) .and.  &
+                       vdw%tab_potential(i-1,ivdw) <= vdw%tab_potential(i  ,ivdw)) .and. &
+                      (vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i-1,ivdw) .or.   &
+                       vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i  ,ivdw) .or.   &
+                       vdw%tab_potential(i-1,ivdw) /= vdw%tab_potential(i  ,ivdw)) )     &
+                    vdw%sigeps(2,ivdw)=-vdw%tab_potential(i-1,ivdw)
               End If
            End If
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
      Else If (keypot == 6) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
-        a=prmvdw(1,ivdw)
-        b=prmvdw(2,ivdw)
+        a=vdw%param(1,ivdw)
+        b=vdw%param(2,ivdw)
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            t1=a/r**12
            t2=-b/r**10
 
-           vvdw(i,ivdw)=t1+t2
-           gvdw(i,ivdw)=12.0_wp*t1+10.0_wp*t2
+           vdw%tab_potential(i,ivdw)=t1+t2
+           vdw%tab_force(i,ivdw)=12.0_wp*t1+10.0_wp*t2
         End Do
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=Sqrt(a/b)
-           sigeps(2,ivdw)=((b/6.0_wp)**6)*((5.0_wp/a)**5)
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=Sqrt(a/b)
+           vdw%sigeps(2,ivdw)=((b/6.0_wp)**6)*((5.0_wp/a)**5)
         End If
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
      Else If (keypot == 7) Then
 
 ! shifted and force corrected n-m potential (w.smith) ::
 
-        e0=prmvdw(1,ivdw)
-        n =Nint(prmvdw(2,ivdw)) ; nr=Real(n,wp)
-        m =Nint(prmvdw(3,ivdw)) ; mr=Real(m,wp)
-        r0=prmvdw(4,ivdw)
-        rc=prmvdw(5,ivdw) ; If (rc < 1.0e-6_wp) rc=rvdw
+        e0=vdw%param(1,ivdw)
+        n =Nint(vdw%param(2,ivdw)) ; nr=Real(n,wp)
+        m =Nint(vdw%param(3,ivdw)) ; mr=Real(m,wp)
+        r0=vdw%param(4,ivdw)
+        rc=vdw%param(5,ivdw) ; If (rc < 1.0e-6_wp) rc=vdw%cutoff
 
         If (n <= m) Call error(470)
 
 ! Sigma-epsilon initialisation
 
-        sigeps(1,ivdw)=-1.0_wp
-        sigeps(2,ivdw)= 0.0_wp
+        vdw%sigeps(1,ivdw)=-1.0_wp
+        vdw%sigeps(2,ivdw)= 0.0_wp
 
         t=Real(n-m,wp)
 
@@ -1323,59 +1375,59 @@ Subroutine vdw_generate(rvdw)
                       -nr*(beta**m)*(1.0_wp+(mr/c-mr-1.0_wp)/c**m) )
         e0 = e0*alpha
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
            If (r <= rc) Then
               a=r0/r
 
-              vvdw(i,ivdw)=e0*(  mr*(beta**n)*(a**n-(1.0_wp/c)**n) &
+              vdw%tab_potential(i,ivdw)=e0*(  mr*(beta**n)*(a**n-(1.0_wp/c)**n) &
                                 -nr*(beta**m)*(a**m-(1.0_wp/c)**m) &
                                 +nr*mr*((r/rc-1.0_wp)*((beta/c)**n-(beta/c)**m)) )*b
-              gvdw(i,ivdw)=e0*mr*nr*( (beta**n)*a**n-(beta**m)*a**m &
+              vdw%tab_force(i,ivdw)=e0*mr*nr*( (beta**n)*a**n-(beta**m)*a**m &
                                     -r/rc*((beta/c)**n-(beta/c)**m) )*b
 
 ! Sigma-epsilon search
 
               If (i > 20) Then ! Assumes some safety against numeric black holes!!!
-                 If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                    If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
-                       sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+                 If (Sign(1.0_wp,vdw%sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                    If (Nint(Sign(1.0_wp,vdw%tab_potential(i-1,ivdw))) == -Nint(Sign(1.0_wp,vdw%tab_potential(i,ivdw)))) &
+                       vdw%sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
                  Else                                           ! find epsilon
-                    If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
-                          vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
-                         (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
-                          vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
-                          vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
-                       sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+                    If ( (vdw%tab_potential(i-2,ivdw) >= vdw%tab_potential(i-1,ivdw) .and.  &
+                          vdw%tab_potential(i-1,ivdw) <= vdw%tab_potential(i  ,ivdw)) .and. &
+                         (vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i-1,ivdw) .or.   &
+                          vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i  ,ivdw) .or.   &
+                          vdw%tab_potential(i-1,ivdw) /= vdw%tab_potential(i  ,ivdw)) )     &
+                       vdw%sigeps(2,ivdw)=-vdw%tab_potential(i-1,ivdw)
                  End If
               End If
            End If ! The else condition is satisfied by the vdw initialisation
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
      Else If (keypot == 8) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
-        e0=prmvdw(1,ivdw)
-        r0=prmvdw(2,ivdw)
-        kk=prmvdw(3,ivdw)
+        e0=vdw%param(1,ivdw)
+        r0=vdw%param(2,ivdw)
+        kk=vdw%param(3,ivdw)
 
-        Do i=0,mxgvdw
+        Do i=0,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            t1=Exp(-kk*(r-r0))
 
-           vvdw(i,ivdw)=e0*((1.0_wp-t1)**2-1.0_wp)
-           gvdw(i,ivdw)=-2.0_wp*r*e0*kk*(1.0_wp-t1)*t1
+           vdw%tab_potential(i,ivdw)=e0*((1.0_wp-t1)**2-1.0_wp)
+           vdw%tab_force(i,ivdw)=-2.0_wp*r*e0*kk*(1.0_wp-t1)*t1
         End Do
         t1=Exp(+kk*r0)
-        gvdw(0,ivdw)=-2.0_wp*e0*kk*(1.0_wp-t1)*t1
+        vdw%tab_force(0,ivdw)=-2.0_wp*e0*kk*(1.0_wp-t1)*t1
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=r0-log(2.0_wp)/kk
-           sigeps(2,ivdw)=e0
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=r0-log(2.0_wp)/kk
+           vdw%sigeps(2,ivdw)=e0
         End If
 
      Else If (keypot == 9) Then
@@ -1383,77 +1435,77 @@ Subroutine vdw_generate(rvdw)
 ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
 ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
 
-        eps=prmvdw(1,ivdw)
-        sig=prmvdw(2,ivdw)
-        d  =prmvdw(3,ivdw)
+        eps=vdw%param(1,ivdw)
+        sig=vdw%param(2,ivdw)
+        d  =vdw%param(3,ivdw)
 
 ! Sigma-epsilon initialisation
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=-1.0_wp
-           sigeps(2,ivdw)= 0.0_wp
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=-1.0_wp
+           vdw%sigeps(2,ivdw)= 0.0_wp
         End If
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
-           If (r < prmvdw(4,ivdw) .or. Abs(r-d) < 1.0e-10_wp) Then ! Else leave them zeros
+           If (r < vdw%param(4,ivdw) .or. Abs(r-d) < 1.0e-10_wp) Then ! Else leave them zeros
               sor6=(sig/(r-d))**6
 
-              vvdw(i,ivdw)=4.0_wp*eps*sor6*(sor6-1.0_wp)+eps
-              gvdw(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)*r/(r-d)
+              vdw%tab_potential(i,ivdw)=4.0_wp*eps*sor6*(sor6-1.0_wp)+eps
+              vdw%tab_force(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)*r/(r-d)
 
 ! Sigma-epsilon search
 
-              If ((.not.ls_vdw) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
-                 If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                    If (Nint(Sign(1.0_wp,vvdw(i-1,ivdw))) == -Nint(Sign(1.0_wp,vvdw(i,ivdw)))) &
-                       sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+              If ((.not.vdw%l_force_shift) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
+                 If (Sign(1.0_wp,vdw%sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                    If (Nint(Sign(1.0_wp,vdw%tab_potential(i-1,ivdw))) == -Nint(Sign(1.0_wp,vdw%tab_potential(i,ivdw)))) &
+                       vdw%sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
                  Else                                           ! find epsilon
-                    If ( (vvdw(i-2,ivdw) >= vvdw(i-1,ivdw) .and.  &
-                          vvdw(i-1,ivdw) <= vvdw(i  ,ivdw)) .and. &
-                         (vvdw(i-2,ivdw) /= vvdw(i-1,ivdw) .or.   &
-                          vvdw(i-2,ivdw) /= vvdw(i  ,ivdw) .or.   &
-                          vvdw(i-1,ivdw) /= vvdw(i  ,ivdw)) )     &
-                       sigeps(2,ivdw)=-vvdw(i-1,ivdw)
+                    If ( (vdw%tab_potential(i-2,ivdw) >= vdw%tab_potential(i-1,ivdw) .and.  &
+                          vdw%tab_potential(i-1,ivdw) <= vdw%tab_potential(i  ,ivdw)) .and. &
+                         (vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i-1,ivdw) .or.   &
+                          vdw%tab_potential(i-2,ivdw) /= vdw%tab_potential(i  ,ivdw) .or.   &
+                          vdw%tab_potential(i-1,ivdw) /= vdw%tab_potential(i  ,ivdw)) )     &
+                       vdw%sigeps(2,ivdw)=-vdw%tab_potential(i-1,ivdw)
                  End If
               End If
            End If
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
      Else If (keypot == 10) Then
 
 ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.rc.(1-r/rc)^2
 
-        a =prmvdw(1,ivdw)
-        rc=prmvdw(2,ivdw)
+        a =vdw%param(1,ivdw)
+        rc=vdw%param(2,ivdw)
 
-        Do i=0,mxgvdw
+        Do i=0,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            If (r < rc) Then
               t1=0.5_wp*a*rc
               t2=1.0_wp-r/rc
 
-              vvdw(i,ivdw)=t1*t2**2
-              gvdw(i,ivdw)=a*t2*r
+              vdw%tab_potential(i,ivdw)=t1*t2**2
+              vdw%tab_force(i,ivdw)=a*t2*r
            End If
         End Do
-        gvdw(0,ivdw)=a
+        vdw%tab_force(0,ivdw)=a
 
-        sigeps(1,ivdw)=rc
-        sigeps(2,ivdw)=a
+        vdw%sigeps(1,ivdw)=rc
+        vdw%sigeps(2,ivdw)=a
 
      Else If (keypot == 11) Then
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
 
-        eps=prmvdw(1,ivdw)
-        sig=prmvdw(2,ivdw)
+        eps=vdw%param(1,ivdw)
+        sig=vdw%param(2,ivdw)
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            rho=r/sig
@@ -1463,214 +1515,221 @@ Subroutine vdw_generate(rvdw)
 
            t=t3*((1.12_wp*t2) - 2.0_wp)
 
-           vvdw(i,ivdw)=t
-           gvdw(i,ivdw)=7.0_wp*(t1*t + 1.12_wp*t3*t2**2*rho**6)*rho
+           vdw%tab_potential(i,ivdw)=t
+           vdw%tab_force(i,ivdw)=7.0_wp*(t1*t + 1.12_wp*t3*t2**2*rho**6)*rho
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=sig
-           sigeps(2,ivdw)=eps
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=sig
+           vdw%sigeps(2,ivdw)=eps
         End If
 
       Else If (keypot == 12) Then
 
 ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
-        eps=prmvdw(1,ivdw)
-        sig=prmvdw(2,ivdw)
-        c  =prmvdw(3,ivdw)
+        eps=vdw%param(1,ivdw)
+        sig=vdw%param(2,ivdw)
+        c  =vdw%param(3,ivdw)
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            sor6=(sig/r)**6
 
-           vvdw(i,ivdw)=4.0_wp*eps*sor6*(sor6-c)
-           gvdw(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-c)
+           vdw%tab_potential(i,ivdw)=4.0_wp*eps*sor6*(sor6-c)
+           vdw%tab_force(i,ivdw)=24.0_wp*eps*sor6*(2.0_wp*sor6-c)
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=sig
-           sigeps(2,ivdw)=eps
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=sig
+           vdw%sigeps(2,ivdw)=eps
         End If
 
      Else If (keypot == 13) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
-        e0 = prmvdw(1,ivdw)
-        r0 = prmvdw(2,ivdw)
-        kk = prmvdw(3,ivdw)
-        c  = prmvdw(4,ivdw)
+        e0 = vdw%param(1,ivdw)
+        r0 = vdw%param(2,ivdw)
+        kk = vdw%param(3,ivdw)
+        c  = vdw%param(4,ivdw)
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            t1=Exp(-kk*(r - r0))
            sor6=c/r**12
 
-           vvdw(i,ivdw)=e0*((1.0_wp-t1)**2-1.0_wp)+sor6
-           gvdw(i,ivdw)=-2.0_wp*r*e0*kk*(1.0_wp-t1)*t1+12.0_wp*sor6
+           vdw%tab_potential(i,ivdw)=e0*((1.0_wp-t1)**2-1.0_wp)+sor6
+           vdw%tab_force(i,ivdw)=-2.0_wp*r*e0*kk*(1.0_wp-t1)*t1+12.0_wp*sor6
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-        If (.not.ls_vdw) Then !???
-           sigeps(1,ivdw)=r0-log(2.0_wp)/kk
-           sigeps(2,ivdw)=e0
+        If (.not.vdw%l_force_shift) Then !???
+           vdw%sigeps(1,ivdw)=r0-log(2.0_wp)/kk
+           vdw%sigeps(2,ivdw)=e0
         End If
 
      Else If (keypot == 14) Then
 
 ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
         
-        a = prmvdw(1,ivdw)
-        b = prmvdw(2,ivdw)
-        c = prmvdw(3,ivdw)
+        a = vdw%param(1,ivdw)
+        b = vdw%param(2,ivdw)
+        c = vdw%param(3,ivdw)
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            kk = r/c
            t1=Exp(-kk)           
 
-           vvdw(i,ivdw) = (a+b*r)*t1
-           gvdw(i,ivdw) = t1*kk*(a-b*c+b*r)
+           vdw%tab_potential(i,ivdw) = (a+b*r)*t1
+           vdw%tab_force(i,ivdw) = t1*kk*(a-b*c+b*r)
         End Do
-        vvdw(0,ivdw)= a
-        gvdw(0,ivdw)= 0
+        vdw%tab_potential(0,ivdw)= a
+        vdw%tab_force(0,ivdw)= 0
 
-        If (.not.ls_vdw) Then !???
-           sigeps(1,ivdw)=1.0_wp
-           sigeps(2,ivdw)=0.0_wp
+        If (.not.vdw%l_force_shift) Then !???
+           vdw%sigeps(1,ivdw)=1.0_wp
+           vdw%sigeps(2,ivdw)=0.0_wp
         End If
 
      Else If (keypot == 15) Then
 
 ! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
 
-        z1 = prmvdw(1,ivdw)
-        z2 = prmvdw(2,ivdw)
+        z1 = vdw%param(1,ivdw)
+        z2 = vdw%param(2,ivdw)
         
         ! this is in fact inverse a
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            call zbl(r,kk,a,phi,dphi)
 
-           vvdw(i,ivdw) = phi
-           gvdw(i,ivdw) = dphi
+           vdw%tab_potential(i,ivdw) = phi
+           vdw%tab_force(i,ivdw) = dphi
 
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=0.0_wp
-           sigeps(2,ivdw)=0.0_wp
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=0.0_wp
+           vdw%sigeps(2,ivdw)=0.0_wp
         End If
 
      Else If (keypot == 16) Then
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
-        z1 = prmvdw(1,ivdw)
-        z2 = prmvdw(2,ivdw)
-        rm = prmvdw(3,ivdw)
-        c = 1.0_wp/prmvdw(4,ivdw)
-        e0 = prmvdw(5,ivdw)
-        r0 = prmvdw(6,ivdw)
-        k = prmvdw(7,ivdw)
+        z1 = vdw%param(1,ivdw)
+        z2 = vdw%param(2,ivdw)
+        rm = vdw%param(3,ivdw)
+        c = 1.0_wp/vdw%param(4,ivdw)
+        e0 = vdw%param(5,ivdw)
+        r0 = vdw%param(6,ivdw)
+        k = vdw%param(7,ivdw)
 
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            Call zbls(r,kk,a,rm,c,e0,k,r0,phi,dphi)
-           vvdw(i,ivdw) = phi
-           gvdw(i,ivdw) = dphi
+           vdw%tab_potential(i,ivdw) = phi
+           vdw%tab_force(i,ivdw) = dphi
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=0.0_wp
-           sigeps(2,ivdw)=0.0_wp
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=0.0_wp
+           vdw%sigeps(2,ivdw)=0.0_wp
         End If
 
      Else If (keypot == 17) Then
 
 ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
-        z1 = prmvdw(1,ivdw)
-        z2 = prmvdw(2,ivdw)
-        rm = prmvdw(3,ivdw)
-        c = 1.0_wp/prmvdw(4,ivdw)
-        e0 = prmvdw(5,ivdw)
-        r0 = prmvdw(6,ivdw)
-        k = prmvdw(7,ivdw)
+        z1 = vdw%param(1,ivdw)
+        z2 = vdw%param(2,ivdw)
+        rm = vdw%param(3,ivdw)
+        c = 1.0_wp/vdw%param(4,ivdw)
+        e0 = vdw%param(5,ivdw)
+        r0 = vdw%param(6,ivdw)
+        k = vdw%param(7,ivdw)
 
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
 
-        Do i=1,mxgvdw
+        Do i=1,vdw%max_grid
            r=Real(i,wp)*dlrpot
 
            Call zblb(r,kk,a,rm,c,e0,r0,k,phi,dphi)
-           vvdw(i,ivdw) = phi
-           gvdw(i,ivdw) = dphi
+           vdw%tab_potential(i,ivdw) = phi
+           vdw%tab_force(i,ivdw) = dphi
         End Do
-        vvdw(0,ivdw)=Huge(vvdw(1,ivdw))
-        gvdw(0,ivdw)=Huge(gvdw(1,ivdw))
+        vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
+        vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-        If (.not.ls_vdw) Then
-           sigeps(1,ivdw)=0.0_wp
-           sigeps(2,ivdw)=0.0_wp
+        If (.not.vdw%l_force_shift) Then
+           vdw%sigeps(1,ivdw)=0.0_wp
+           vdw%sigeps(2,ivdw)=0.0_wp
         End If
 
      Else
 
-        If (.not.lt_vdw) Call error(150)
+        If (.not.vdw%l_tab) Call error(150)
 
      End If
 
-     If (ls_vdw .and. (keypot /= 7 .and. keypot /= 10)) Then ! no shifting to shifted n-m and DPD
+     If (vdw%l_force_shift .and. (keypot /= 7 .and. keypot /= 10)) Then ! no shifting to shifted n-m and DPD
 
-        sigeps(1,ivdw)=-1.0_wp
-        sigeps(2,ivdw)= 0.0_wp
+        vdw%sigeps(1,ivdw)=-1.0_wp
+        vdw%sigeps(2,ivdw)= 0.0_wp
 
-        Do i=1,mxgvdw-4
-           t  = vvdw(i  ,ivdw) + gvdw(mxgvdw-4,ivdw)*(Real(i  ,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
-           t1 = vvdw(i-1,ivdw) + gvdw(mxgvdw-4,ivdw)*(Real(i-1,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
+        Do i=1,vdw%max_grid-4
+          t  = vdw%tab_potential(i  ,ivdw) + &
+            vdw%tab_force(vdw%max_grid-4,ivdw)*(Real(i  ,wp)*dlrpot/vdw%cutoff-1.0_wp) - &
+            vdw%tab_potential(vdw%max_grid-4,ivdw)
+          t1 = vdw%tab_potential(i-1,ivdw) + &
+            vdw%tab_force(vdw%max_grid-4,ivdw)*(Real(i-1,wp)*dlrpot/vdw%cutoff-1.0_wp) - &
+            vdw%tab_potential(vdw%max_grid-4,ivdw)
 
-! Sigma-epsilon search
-
-           If (i > 20) Then ! Assumes some safety against numeric black holes!!!
-              If (Sign(1.0_wp,sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
-                 If (Nint(Sign(1.0_wp,t1)) == -Nint(Sign(1.0_wp,t))) &
-                    sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
-              Else                                           ! find epsilon
-                 t2 = vvdw(i-2,ivdw) + gvdw(mxgvdw-4,ivdw)*(Real(i-2,wp)*dlrpot/rvdw-1.0_wp) - vvdw(mxgvdw-4,ivdw)
-                 If ( (t2 >= t1 .and. t1 <= t) .and.         &
-                      (t2 /= t1 .or. t2 /= t .or. t1 /= t) ) &
-                    sigeps(2,ivdw)=-t1
-              End If
-           End If
+          ! Sigma-epsilon search
+          If (i > 20) Then ! Assumes some safety against numeric black holes!!!
+            If (Sign(1.0_wp,vdw%sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+              If (Nint(Sign(1.0_wp,t1)) == -Nint(Sign(1.0_wp,t))) &
+                vdw%sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+            Else                                           ! find epsilon
+              t2 = vdw%tab_potential(i-2,ivdw) + &
+                vdw%tab_force(vdw%max_grid-4,ivdw)*(Real(i-2,wp)*dlrpot/vdw%cutoff-1.0_wp) - &
+                vdw%tab_potential(vdw%max_grid-4,ivdw)
+              If ( (t2 >= t1 .and. t1 <= t) .and.         &
+                (t2 /= t1 .or. t2 /= t .or. t1 /= t) ) &
+                vdw%sigeps(2,ivdw)=-t1
+            End If
+          End If
         End Do
      End If
 
 ! Needed to distinguish that something has been defined
 
-     If (Abs(vvdw(0,ivdw)) <= zero_plus) vvdw(0,ivdw) = Sign(Tiny(vvdw(0,ivdw)),vvdw(0,ivdw))
+     If (Abs(vdw%tab_potential(0,ivdw)) <= zero_plus) Then
+       vdw%tab_potential(0,ivdw) = Sign(Tiny(vdw%tab_potential(0,ivdw)),vdw%tab_potential(0,ivdw))
+     End If
 
   End Do
 
@@ -1678,7 +1737,7 @@ End Subroutine vdw_generate
 
 
 Subroutine vdw_forces &
-           (iatm,rvdw,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh)
+           (iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdw)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1696,11 +1755,11 @@ Subroutine vdw_forces &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ),                        Intent( In    ) :: rvdw
   Type( neighbours_type ), Intent( In    ) :: neigh
   Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
   Real( Kind = wp ),                        Intent(   Out ) :: engvdw,virvdw
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+  Type( vdw_type ), Intent( InOut ) :: vdw
 
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: dlrpot,rdr
@@ -1721,7 +1780,7 @@ Subroutine vdw_forces &
   If (newjob) Then
      newjob = .false.
 
-     dlrpot = rvdw/Real(mxgvdw-4,wp)
+     dlrpot = vdw%cutoff/Real(vdw%max_grid-4,wp)
      rdr    = 1.0_wp/dlrpot
   End If
 
@@ -1765,7 +1824,7 @@ Subroutine vdw_forces &
         key=aj*(aj-1)/2 + ai
      End If
 
-     k=lstvdw(key)
+     k=vdw%list(key)
 
 ! interatomic distance
 
@@ -1773,13 +1832,13 @@ Subroutine vdw_forces &
 
 ! validity and truncation of potential
 
-     ityp=ltpvdw(k)
-     If (ityp >= 0 .and. rrr < rvdw) Then
+     ityp=vdw%ltp(k)
+     If (ityp >= 0 .and. rrr < vdw%cutoff) Then
 
 ! Distance derivatives
 
         r_rrr = 1.0_wp/rrr
-        r_rvdw= 1.0_wp/rvdw
+        r_rvdw= 1.0_wp/vdw%cutoff
         rsq   = rrr**2
         r_rsq = 1.0_wp/rsq
         r_rrv = r_rrr*r_rvdw
@@ -1790,14 +1849,14 @@ Subroutine vdw_forces &
         eng   = 0.0_wp
         gamma = 0.0_wp
 
-        If (ld_vdw) Then ! direct calculation
+        If (vdw%l_direct) Then ! direct calculation
 
            If      (ityp == 1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
-              a=prmvdw(1,k)
-              b=prmvdw(2,k)
+              a=vdw%param(1,k)
+              b=vdw%param(2,k)
 
               r_6=rrr**(-6)
 
@@ -1805,18 +1864,18 @@ Subroutine vdw_forces &
               eng   = r_6*(a*r_6-b)
               gamma = 6.0_wp*r_6*(2.0_wp*a*r_6-b)*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
            Else If (ityp == 2) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
-              eps=prmvdw(1,k)
-              sig=prmvdw(2,k)
+              eps=vdw%param(1,k)
+              sig=vdw%param(2,k)
 
               sor6=(sig*r_rrr)**6
 
@@ -1824,20 +1883,20 @@ Subroutine vdw_forces &
               eng   = 4.0_wp*eps*sor6*(sor6-1.0_wp)
               gamma = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
            Else If (ityp == 3) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
-              e0=prmvdw(1,k)
-              n =Nint(prmvdw(2,k)) ; nr=Real(n,wp)
-              m =Nint(prmvdw(3,k)) ; mr=Real(m,wp)
-              r0=prmvdw(4,k)
+              e0=vdw%param(1,k)
+              n =Nint(vdw%param(2,k)) ; nr=Real(n,wp)
+              m =Nint(vdw%param(3,k)) ; mr=Real(m,wp)
+              r0=vdw%param(4,k)
 
               a=r0*r_rrr
               b=1.0_wp/(nr-mr)
@@ -1848,19 +1907,19 @@ Subroutine vdw_forces &
               eng   = e0*(mr*r0rn-nr*r0rm)*b
               gamma = e0*mr*nr*(r0rn-r0rm)*b*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
            Else If (ityp == 4) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
-              a  =prmvdw(1,k)
-              rho=prmvdw(2,k)
-              c  =prmvdw(3,k)
+              a  =vdw%param(1,k)
+              rho=vdw%param(2,k)
+              c  =vdw%param(3,k)
 
               If (Abs(rho) <= zero_plus) Then
                  If (Abs(a) <= zero_plus) Then
@@ -1878,21 +1937,21 @@ Subroutine vdw_forces &
               eng   = t1+t2
               gamma = (t1*b+6.0_wp*t2)*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
            Else If (ityp == 5) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
-              a  =prmvdw(1,k)
-              b  =prmvdw(2,k)
-              sig=prmvdw(3,k)
-              c  =prmvdw(4,k)
-              d  =prmvdw(5,k)
+              a  =vdw%param(1,k)
+              b  =vdw%param(2,k)
+              sig=vdw%param(3,k)
+              c  =vdw%param(4,k)
+              d  =vdw%param(5,k)
 
               t1=a*Exp(b*(sig-rrr))
               t2=-c*r_rrr**6
@@ -1902,18 +1961,18 @@ Subroutine vdw_forces &
               eng   = t1+t2+t3
               gamma = (t1*rrr*b+6.0_wp*t2+8.0_wp*t3)*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
            Else If (ityp == 6) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
-              a=prmvdw(1,k)
-              b=prmvdw(2,k)
+              a=vdw%param(1,k)
+              b=vdw%param(2,k)
 
               t1= a*r_rrr**12
               t2=-b*r_rrr**10
@@ -1922,21 +1981,21 @@ Subroutine vdw_forces &
               eng   = t1+t2
               gamma = (12.0_wp*t1+10.0_wp*t2)*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
            Else If (ityp == 7) Then
 
 ! shifted and force corrected n-m potential (w.smith) ::
 
-              e0=prmvdw(1,k)
-              n =Nint(prmvdw(2,k)) ; nr=Real(n,wp)
-              m =Nint(prmvdw(3,k)) ; mr=Real(m,wp)
-              r0=prmvdw(4,k)
-              rc=prmvdw(5,k) ; If (rc < 1.0e-6_wp) rc=rvdw
+              e0=vdw%param(1,k)
+              n =Nint(vdw%param(2,k)) ; nr=Real(n,wp)
+              m =Nint(vdw%param(3,k)) ; mr=Real(m,wp)
+              r0=vdw%param(4,k)
+              rc=vdw%param(5,k) ; If (rc < 1.0e-6_wp) rc=vdw%cutoff
 
               If (n <= m) Call error(470)
 
@@ -1965,9 +2024,9 @@ Subroutine vdw_forces &
 
 ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}
 
-              e0=prmvdw(1,k)
-              r0=prmvdw(2,k)
-              kk=prmvdw(3,k)
+              e0=vdw%param(1,k)
+              r0=vdw%param(2,k)
+              kk=vdw%param(3,k)
 
               t1=Exp(-kk*(rrr-r0))
 
@@ -1975,10 +2034,10 @@ Subroutine vdw_forces &
               eng   = e0*t1*(t1-2.0_wp)
               gamma = -2.0_wp*e0*kk*t1*(1.0_wp-t1)*r_rrr
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
            Else If (ityp == 9) Then
@@ -1986,21 +2045,21 @@ Subroutine vdw_forces &
 ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
 ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
 
-              eps=prmvdw(1,k)
-              sig=prmvdw(2,k)
-              d  =prmvdw(3,k)
+              eps=vdw%param(1,k)
+              sig=vdw%param(2,k)
+              d  =vdw%param(3,k)
 
-              If (rrr < prmvdw(4,k) .or. Abs(rrr-d) < 1.0e-10_wp) Then ! Else leave them zeros
+              If (rrr < vdw%param(4,k) .or. Abs(rrr-d) < 1.0e-10_wp) Then ! Else leave them zeros
                  sor6=(sig/(rrr-d))**6
 
                  If (jatm <= natms .or. idi < ltg(jatm)) &
                  eng   = 4.0_wp*eps*sor6*(sor6-1.0_wp)+eps
                  gamma = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)/(rrr*(rrr-d))
 
-                 If (ls_vdw) Then ! force-shifting
+                 If (vdw%l_force_shift) Then ! force-shifting
                     If (jatm <= natms .or. idi < ltg(jatm)) &
-                    eng   = eng + afs(k)*rrr + bfs(k)
-                    gamma = gamma - afs(k)*r_rrr
+                    eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                    gamma = gamma - vdw%afs(k)*r_rrr
                  End If
               End If
 
@@ -2008,8 +2067,8 @@ Subroutine vdw_forces &
 
 ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
 
-              a =prmvdw(1,k)
-              rc=prmvdw(2,k)
+              a =vdw%param(1,k)
+              rc=vdw%param(2,k)
 
               If (rrr < rc) Then ! Else leave them zeros
                  t2=rrr/rc
@@ -2024,8 +2083,8 @@ Subroutine vdw_forces &
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
 
-              eps=prmvdw(1,k)
-              sig=prmvdw(2,k)
+              eps=vdw%param(1,k)
+              sig=vdw%param(2,k)
 
               rho=rrr/sig
               t1=1.0_wp/(0.07_wp+rho)
@@ -2038,19 +2097,19 @@ Subroutine vdw_forces &
               eng   = t
               gamma = 7.0_wp*(t1*t + 1.12_wp*t3*t2**2*rho**6)*rho*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
             Else If (ityp == 12) Then
 
 ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
-              eps=prmvdw(1,k)
-              sig=prmvdw(2,k)
-              c  =prmvdw(3,k)
+              eps=vdw%param(1,k)
+              sig=vdw%param(2,k)
+              c  =vdw%param(3,k)
 
               sor6=(sig*r_rrr)**6
 
@@ -2058,20 +2117,20 @@ Subroutine vdw_forces &
               eng   = 4.0_wp*eps*sor6*(sor6-c)
               gamma = 24.0_wp*eps*sor6*(2.0_wp*sor6-c)*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
             Else If (ityp == 13) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}+c/r^12
 
-              e0=prmvdw(1,k)
-              r0=prmvdw(2,k)
-              kk=prmvdw(3,k)
-              c=prmvdw(4,k)
+              e0=vdw%param(1,k)
+              r0=vdw%param(2,k)
+              kk=vdw%param(3,k)
+              c=vdw%param(4,k)
 
               t1=Exp(-kk*(rrr-r0))
               sor6 = c*r_rrr**12
@@ -2079,19 +2138,19 @@ Subroutine vdw_forces &
               eng   = e0*t1*(t1-2.0_wp)+sor6
               gamma = -2.0_wp*e0*kk*t1*(1.0_wp-t1)*r_rrr-12.0_wp*sor6*r_rrr
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
             Else If (ityp == 14) Then
 
 ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
 
-              a = prmvdw(1,k)
-              b = prmvdw(2,k)
-              c = prmvdw(3,k)
+              a = vdw%param(1,k)
+              b = vdw%param(2,k)
+              c = vdw%param(3,k)
 
               kk = rrr/c
               t1 = Exp(-kk)
@@ -2100,18 +2159,18 @@ Subroutine vdw_forces &
               eng   = (a+b*rrr)*t1
               gamma = kk*t1*(a-b*c+b*rrr)*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
             Else If (ityp == 15) Then
 
 ! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
 
-              z1 = prmvdw(1,k)
-              z2 = prmvdw(2,k)
+              z1 = vdw%param(1,k)
+              z2 = vdw%param(2,k)
         
         ! this is in fact inverse a
               a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
@@ -2122,23 +2181,23 @@ Subroutine vdw_forces &
               eng = t1
               gamma = gamma*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
             Else If (ityp == 16) Then
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
-              z1 = prmvdw(1,k)
-              z2 = prmvdw(2,k)
-              rm = prmvdw(3,k)
-              c = 1.0_wp/prmvdw(4,k)
-              e0 = prmvdw(5,k)
-              r0 = prmvdw(6,k)
-              t2 = prmvdw(7,k)
+              z1 = vdw%param(1,k)
+              z2 = vdw%param(2,k)
+              rm = vdw%param(3,k)
+              c = 1.0_wp/vdw%param(4,k)
+              e0 = vdw%param(5,k)
+              r0 = vdw%param(6,k)
+              t2 = vdw%param(7,k)
 
         ! this is in fact inverse a
               a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
@@ -2150,23 +2209,23 @@ Subroutine vdw_forces &
               eng = t1
               gamma = gamma*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
             Else If (ityp == 17) Then
 
 ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
-              z1 = prmvdw(1,k)
-              z2 = prmvdw(2,k)
-              rm = prmvdw(3,k)
-              c = 1.0_wp/prmvdw(4,k)
-              e0 = prmvdw(5,k)
-              r0 = prmvdw(6,k)
-              t2 = prmvdw(7,k)
+              z1 = vdw%param(1,k)
+              z2 = vdw%param(2,k)
+              rm = vdw%param(3,k)
+              c = 1.0_wp/vdw%param(4,k)
+              e0 = vdw%param(5,k)
+              r0 = vdw%param(6,k)
+              t2 = vdw%param(7,k)
 
         ! this is in fact inverse a
               a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
@@ -2178,13 +2237,13 @@ Subroutine vdw_forces &
               eng = t1
               gamma = gamma*r_rsq
 
-              If (ls_vdw) Then ! force-shifting
+              If (vdw%l_force_shift) Then ! force-shifting
                  If (jatm <= natms .or. idi < ltg(jatm)) &
-                 eng   = eng + afs(k)*rrr + bfs(k)
-                 gamma = gamma - afs(k)*r_rrr
+                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
+                 gamma = gamma - vdw%afs(k)*r_rrr
               End If
 
-           Else If (Abs(vvdw(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
+           Else If (Abs(vdw%tab_potential(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
 
               l   = Int(rrr*rdr)
               ppp = rrr*rdr - Real(l,wp)
@@ -2192,32 +2251,36 @@ Subroutine vdw_forces &
 ! calculate interaction energy using 3-point interpolation
 
               If (jatm <= natms .or. idi < ltg(jatm)) Then
-                 vk  = vvdw(l,k)
-                 vk1 = vvdw(l+1,k)
-                 vk2 = vvdw(l+2,k)
+                 vk  = vdw%tab_potential(l,k)
+                 vk1 = vdw%tab_potential(l+1,k)
+                 vk2 = vdw%tab_potential(l+2,k)
 
                  t1 = vk  + (vk1 - vk )*ppp
                  t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
                  eng = t1 + (t2-t1)*ppp*0.5_wp
-                 If (ls_vdw) eng = eng + gvdw(mxgvdw-4,k)*(rscl-1.0_wp) - vvdw(mxgvdw-4,k) ! force-shifting
+                 ! force-shifting
+                 If (vdw%l_force_shift) Then
+                   eng = eng + vdw%tab_force(vdw%max_grid-4,k)*(rscl-1.0_wp) - &
+                     vdw%tab_potential(vdw%max_grid-4,k)
+                 End If
               End If
 
 ! calculate forces using 3-point interpolation
 
-              gk  = gvdw(l,k) ; If (l == 0) gk = gk*rrr
-              gk1 = gvdw(l+1,k)
-              gk2 = gvdw(l+2,k)
+              gk  = vdw%tab_force(l,k) ; If (l == 0) gk = gk*rrr
+              gk1 = vdw%tab_force(l+1,k)
+              gk2 = vdw%tab_force(l+2,k)
 
               t1 = gk  + (gk1 - gk )*ppp
               t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
 
               gamma = (t1 + (t2-t1)*ppp*0.5_wp)*r_rsq
-              If (ls_vdw) gamma = gamma - gvdw(mxgvdw-4,k)*r_rrv ! force-shifting
+              If (vdw%l_force_shift) gamma = gamma - vdw%tab_force(vdw%max_grid-4,k)*r_rrv ! force-shifting
 
            End If
 
-        Else If (Abs(vvdw(0,k)) > zero_plus) Then ! no direct = fully tabulated calculation
+        Else If (Abs(vdw%tab_potential(0,k)) > zero_plus) Then ! no direct = fully tabulated calculation
 
            l   = Int(rrr*rdr)
            ppp = rrr*rdr - Real(l,wp)
@@ -2225,28 +2288,32 @@ Subroutine vdw_forces &
 ! calculate interaction energy using 3-point interpolation
 
            If (jatm <= natms .or. idi < ltg(jatm)) Then
-              vk  = vvdw(l,k)
-              vk1 = vvdw(l+1,k)
-              vk2 = vvdw(l+2,k)
+              vk  = vdw%tab_potential(l,k)
+              vk1 = vdw%tab_potential(l+1,k)
+              vk2 = vdw%tab_potential(l+2,k)
 
               t1 = vk  + (vk1 - vk )*ppp
               t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
               eng = t1 + (t2-t1)*ppp*0.5_wp
-              If (ls_vdw) eng = eng + gvdw(mxgvdw-4,k)*(rscl-1.0_wp) - vvdw(mxgvdw-4,k) ! force-shifting
+              ! force-shifting
+              If (vdw%l_force_shift) Then
+                eng = eng + vdw%tab_force(vdw%max_grid-4,k)*(rscl-1.0_wp) - &
+                  vdw%tab_potential(vdw%max_grid-4,k)
+              End If
            End If
 
 ! calculate forces using 3-point interpolation
 
-           gk  = gvdw(l,k) ; If (l == 0) gk = gk*rrr
-           gk1 = gvdw(l+1,k)
-           gk2 = gvdw(l+2,k)
+           gk  = vdw%tab_force(l,k) ; If (l == 0) gk = gk*rrr
+           gk1 = vdw%tab_force(l+1,k)
+           gk2 = vdw%tab_force(l+2,k)
 
            t1 = gk  + (gk1 - gk )*ppp
            t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
 
            gamma = (t1 + (t2-t1)*ppp*0.5_wp)*r_rsq
-           If (ls_vdw) gamma = gamma - gvdw(mxgvdw-4,k)*r_rrv ! force-shifting
+           If (vdw%l_force_shift) gamma = gamma - vdw%tab_force(vdw%max_grid-4,k)*r_rrv ! force-shifting
 
         End If
 
@@ -2313,5 +2380,36 @@ Subroutine vdw_forces &
 
 End Subroutine vdw_forces
 
+  Subroutine cleanup(T)
+    Type( vdw_type ) :: T
 
+    If (Allocated(T%list)) Then
+      Deallocate(T%list)
+    End If
+    If (Allocated(T%ltp)) Then
+      Deallocate(T%ltp)
+    End If
+
+    If (Allocated(T%param)) Then
+      Deallocate(T%param)
+    End If
+
+    If (Allocated(T%sigeps)) Then
+      Deallocate(T%sigeps)
+    End If
+
+    If (Allocated(T%tab_potential)) Then
+      Deallocate(T%tab_potential)
+    End If
+    If (Allocated(T%tab_force)) Then
+      Deallocate(T%tab_force)
+    End If
+
+    If (Allocated(T%afs)) Then
+      Deallocate(T%afs)
+    End If
+    If (Allocated(T%bfs)) Then
+      Deallocate(T%bfs)
+    End If
+  End Subroutine cleanup
 End Module vdw

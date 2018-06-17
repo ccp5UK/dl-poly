@@ -16,7 +16,7 @@ Module system
   Use angles,      Only : angles_type
   Use dihedrals,   Only : dihedrals_type
   Use inversions, Only : inversions_type
-  Use vdw,         Only : ls_vdw,ntpvdw
+  Use vdw,         Only : vdw_type,vdw_lrc
   Use metal,       Only : metal_type,metal_lrc
   Use greenkubo,   Only : greenkubo_type
   Use development,  Only : development_type
@@ -46,7 +46,6 @@ Module system
                                   IO_WRITE_SORTED_DIRECT,   &
                                   IO_WRITE_SORTED_NETCDF,   &
                                   IO_WRITE_SORTED_MASTER
-  Use vdw,             Only : vdw_lrc
   Use errors_warnings, Only : error, info, warning
   Use numerics, Only : dcell, images
   Use thermostat, Only : thermostat_type
@@ -58,9 +57,9 @@ Module system
   Contains
   
   Subroutine system_init                                             &
-           (levcfg,rcut,rvdw,rbin,lrdf,keyres,megatm,    &
-           time,tmst,nstep,tstep,elrc,virlrc,cshell,stats,devel,green,thermo,met, &
-           bond,angle,dihedral,inversion,zdensity,site,comm)
+           (levcfg,rcut,rbin,lrdf,keyres,megatm,    &
+           time,tmst,nstep,tstep,cshell,stats,devel,green,thermo,met, &
+           bond,angle,dihedral,inversion,zdensity,site,vdw,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -76,12 +75,11 @@ Module system
   Logical,           Intent( In    ) :: lrdf
   Integer,           Intent( InOut ) :: levcfg,keyres
   Integer,           Intent( In    ) :: megatm
-  Real( Kind = wp ), Intent( In    ) :: rcut,rvdw,rbin
+  Real( Kind = wp ), Intent( In    ) :: rcut,rbin
 
   Integer,           Intent(   Out ) :: nstep
   Real( Kind = wp ), Intent( InOut ) :: tstep
-  Real( Kind = wp ), Intent(   Out ) :: time,tmst,     &
-                                        elrc,virlrc
+  Real( Kind = wp ), Intent(   Out ) :: time,tmst
   Type( stats_type ), Intent( InOut ) :: stats
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( development_type ), Intent( In    ) :: devel
@@ -94,6 +92,7 @@ Module system
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( site_type ), Intent( InOut ) :: site
+  Type( vdw_type ), Intent( InOut ) :: vdw
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -615,10 +614,10 @@ Module system
 
 ! Get long-range corrections
 
-! elrc & virlrc arrays are zeroed in vdw,
+! vdw%elrc & vdw%vlrc arrays are zeroed in vdw,
 ! no lrc when vdw interactions are force-shifted
 
-  If (ntpvdw > 0 .and. (.not.ls_vdw)) Call vdw_lrc(rvdw,elrc,virlrc,site,comm)
+  If (vdw%n_vdw > 0 .and. (.not.vdw%l_force_shift)) Call vdw_lrc(site,vdw,comm)
 
 ! met%elrc & met%vlrc arrays are zeroed in metal_module
 

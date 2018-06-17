@@ -28,15 +28,15 @@
 
      If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) &
         Call two_body_forces                      &
-           (rvdw,pdplnc,thermo%ensemble,    &
+           (pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
-           elrc,virlrc,cshell,               &
-           stat,ewld,devel,met,pois,neigh,site,tmr,comm)
+           cshell,               &
+           stat,ewld,devel,met,pois,neigh,site,vdw,tmr,comm)
 
 ! Calculate tersoff forces
 
-     If (ntpter > 0) Call tersoff_forces(rcter,stat,neigh,comm)
+     If (tersoff%n_potential > 0) Call tersoff_forces(tersoff,stat,neigh,comm)
 
 ! Calculate three-body forces
 
@@ -79,7 +79,7 @@
 
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
-           neigh%cutoff,rvdw,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,comm)
+           neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,vdw,comm)
      End If
 
 ! Calculate inversion forces
@@ -173,9 +173,9 @@
 ! Total virial (excluding constraint, PMF and RB COM virials for npt routines)
 ! Total stress (excluding constraint, PMF, RB COM and kinetic stress for npt routines)
 !
-! NOTE(1):  virsrp already includes virlrc and vlrcm(0) and so
+! NOTE(1):  virsrp already includes vdw%vlrc and vlrcm(0) and so
 !           does the stress diagonal elements (by minus a third),
-!           engsrp includes elrc and elrcm(0)
+!           engsrp includes vdw%elrc and elrcm(0)
 !
 ! NOTE(2):  virfbp, virinv and virdih are allegedly always zero
 
