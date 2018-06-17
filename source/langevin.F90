@@ -15,7 +15,7 @@ Module langevin
   Use kinds, Only : wp
   Use setup,      Only : boltz,mxatms
   Use configuration,     Only : natms,ltg,lfrzn,weight,xxx,yyy,zzz
-  Use core_shell, Only : legshl
+  Use core_shell, Only : core_shell_type
   Use ttm,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
   Use ttm_utils,         Only : Gep
   Use numerics, Only : box_mueller_saru3
@@ -45,7 +45,7 @@ Contains
 
   End Subroutine langevin_allocate_arrays
   
-  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr)
+  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr,cshell)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,7 +69,7 @@ Contains
   Integer          , Intent( In    ) :: nstep
   Real( Kind = wp ), Intent( In    ) :: temp,tstep,chi
   Real( Kind = wp ), Intent(   Out ) :: fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms)
-
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Integer           :: i,ia,ja,ka,ijk
   Real( Kind = wp ) :: scale,tmp
 
@@ -84,7 +84,7 @@ Contains
     ! e-p coupling cases
       scale = Sqrt(2.0_wp * chi * boltz / tstep)
       Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
+        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
           Call box_mueller_saru3(ltg(i),nstep,fxr(i),fyr(i),fzr(i))
           ia = Floor((xxx(i)+zerocell(1))/delx) + 1
           ja = Floor((yyy(i)+zerocell(2))/dely) + 1
@@ -107,7 +107,7 @@ Contains
     ! chi value for each ionic temperature voxel (ignore input value)
       scale = Sqrt(2.0_wp * boltz / tstep)
       Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
+        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
           Call box_mueller_saru3(ltg(i),nstep,fxr(i),fyr(i),fzr(i))
           ia = Floor((xxx(i)+zerocell(1))/delx) + 1
           ja = Floor((yyy(i)+zerocell(2))/dely) + 1
@@ -137,7 +137,7 @@ Contains
 ! Make variance = target variance and nullify the rest
 
     Do i=1,natms
-       If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
+       If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
           Call box_mueller_saru3(ltg(i),nstep,fxr(i),fyr(i),fzr(i))
 
           tmp = scale*Sqrt(weight(i))

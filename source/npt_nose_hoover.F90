@@ -8,16 +8,17 @@ Module npt_nose_hoover
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains,     Only : map
   Use kinetics,     Only : getcom,getvom,kinstress,kinstresf,kinstrest
-  Use core_shell,  Only : legshl
   Use constraints, Only : constraints_type,constraints_tags, apply_shake, apply_rattle
   Use pmf,         Only :  pmf_tags,pmf_type
   Use nvt_nose_hoover, Only : nvt_h0_scl,nvt_h1_scl 
   Use rigid_bodies
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type
+Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
 Use thermostat, Only : adjust_timestep
+Use core_shell, Only : core_shell_type
   Implicit None
 
   Private
@@ -31,7 +32,7 @@ Contains
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
-             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
+             elrc,virlrc,cshell,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -71,6 +72,7 @@ Contains
 
 
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type), Intent( InOut ) :: pmf
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
@@ -312,7 +314,7 @@ Contains
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restore initial conditions
@@ -447,7 +449,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
+             elrc,virlrc,cshell,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -492,6 +494,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1029,7 +1032,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restore initial conditions

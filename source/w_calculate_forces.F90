@@ -3,14 +3,14 @@
 ! for new simulations when using the relaxed shell model
 ! set shells on top of their cores preventatively
 
-     If ( (megshl > 0 .and. keyshl == 2) .and. &
+     If ( (cshell%megshl > 0 .and. cshell%keyshl == SHELL_RELAXED) .and. &
           (keyres == 0 .and. nstep == 0 .and. nsteql > 0) ) Then
-        Call core_shell_on_top(comm)
+        Call core_shell_on_top(cshell,comm)
 
 ! Refresh mappings
 
         Call w_refresh_mappings &
-        (cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
+        (cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -31,7 +31,7 @@
            (rvdw,pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
-           elrc,virlrc,               &
+           elrc,virlrc,cshell,               &
            stat,ewld,devel,met,pois,neigh,site,tmr,comm)
 
 ! Calculate tersoff forces
@@ -48,7 +48,7 @@
      call start_timer(tmr%t_bonded)
 ! Calculate shell model forces
 
-     If (megshl > 0) Call core_shell_forces(stat%engshl,stat%virshl,stat%stress,comm)
+     If (cshell%megshl > 0) Call core_shell_forces(cshell,stat,comm)
 
 ! Calculate tethered atom forces
 
@@ -94,7 +94,7 @@
 
 ! Apply external field
 
-     If (keyfld > 0) Call external_field_apply(keyshl,time,leql,nsteql,nstep,stat,comm)
+     If (keyfld > 0) Call external_field_apply(time,leql,nsteql,nstep,cshell,stat,comm)
 
 ! Apply PLUMED driven dynamics
 
@@ -108,8 +108,8 @@
 
      If (thermo%l_pseudo) Then
            Call pseudo_vv                               &
-           (0,keyshl,tstep, &
-           nstep,site%dof_site,stat,thermo,comm)
+           (0,tstep, &
+           nstep,site%dof_site,cshell,stat,thermo,comm)
      End If
 
 ! Cap forces in equilibration mode
@@ -122,23 +122,23 @@
 
 ! Minimisation option and Relaxed shell model optimisation
 
-     If (lsim .and. (lmin .or. keyshl == 2)) Then
+     If (lsim .and. (lmin .or. cshell%keyshl == SHELL_RELAXED)) Then
         stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
                  stat%engshl + stat%engtet + stat%engfld +                   &
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
 
-        If (keyshl == 2) Call core_shell_relax(l_str,relaxed_shl,lrdf,rlx_tol,megshl,stat%stpcfg,comm)
+        If (cshell%keyshl == SHELL_RELAXED) Call core_shell_relax(l_str,relaxed_shl,lrdf,rlx_tol,stat%stpcfg,cshell,stat,comm)
 
         If (.not.relaxed_shl) Go To 200 ! Shells relaxation takes priority over minimisation
 
         If (lmin .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
            If      (nstmin == 0 .and. nstep == 0) Then
               Call minimise_relax &
-           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,pmf%megpmf,megrgd, &
+           (l_str .or. cshell%keyshl == SHELL_RELAXED,relaxed_min,lrdf,megatm,pmf%megpmf,megrgd, &
            keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,comm)
            Else If (nstmin >  0 .and. nstep >  0) Then
               If (Mod(nstep-nsteql,nstmin) == 0) Call minimise_relax &
-           (l_str .or. keyshl == 2,relaxed_min,lrdf,megatm,pmf%megpmf,megrgd, &
+           (l_str .or. cshell%keyshl == SHELL_RELAXED,relaxed_min,lrdf,megatm,pmf%megpmf,megrgd, &
            keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,comm)
            End If
         End If
@@ -149,7 +149,7 @@
 
         If (.not.(relaxed_shl .and. relaxed_min)) Then
            Call w_refresh_mappings &
-            (cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
+            (cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
 
            Go To 100
         End If
@@ -160,7 +160,7 @@
      If (newjob) Then
         If (megrgd > 0) Then
            If (thermo%l_langevin) Then
-              Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl)
+              Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
               If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
               Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
            Else

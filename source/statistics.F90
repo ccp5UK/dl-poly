@@ -22,9 +22,6 @@ Module statistics
                              xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
   Use domains,    Only : nprx,npry,nprz,map,r_nprx,r_npry,r_nprz,&
                                 nprx_r,npry_r,nprz_r,idx,idy,idz
-  Use neighbours,  Only  : neighbours_type
-
-  Use core_shell,  Only : passshl
   Use z_density,   Only : z_density_type,z_density_collect
   Use msd,         Only : msd_type
   Use greenkubo,   Only : greenkubo_type
@@ -87,6 +84,21 @@ Module statistics
                             0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
                             0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
                             0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
+  Real( Kind = wp ),              Public :: passshl(1:5) = (/ &
+    0.0_wp         ,  & ! cycles counter
+    0.0_wp         ,  & ! access counter
+    0.0_wp         ,  & ! average cycles
+    999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
+    0.0_wp /)           ! maximum cycles
+    !> Skips, elements are as follows
+    !>
+    !> - 1 skips counter
+    !> - 2 access counter
+    !> - 3 average skips
+    !> - 4 minimum skips ~Huge(1)
+    !> - 5 maximum skips
+    Real( Kind = wp ), Public :: neighskip(1:5) = [0.0_wp,0.0_wp,0.0_wp, &
+                                              999999999.0_wp,0.0_wp]
 
   Real( Kind = wp ), Allocatable :: xin(:),yin(:),zin(:)
   Real( Kind = wp ), Allocatable :: xto(:),yto(:),zto(:),rsd(:)
@@ -1343,7 +1355,7 @@ Subroutine statistics_result                                    &
            (lmin,lmsd, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
-           mxatdm,stats,thermo,green,neigh,site,comm,passmin)
+           mxatdm,neigh_uncond_update,stats,thermo,green,site,comm,passmin)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1360,10 +1372,10 @@ Subroutine statistics_result                                    &
   Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time,tmst
   Integer( Kind = wi ),    Intent( In    ) :: mxatdm
+  Logical, Intent( InOut ) :: neigh_uncond_update
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( greenkubo_type ), Intent( In    ) :: green
-  Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( In    ) ::  passmin(:)
@@ -1382,19 +1394,12 @@ Subroutine statistics_result                                    &
 
 ! VNL skipping statistics
 
-  If (neigh%unconditional_update .and. nstep > 0) Then
-     If (.not.neigh%update) Then ! Include the final skip in skipping statistics
-        neigh%skip(3)=neigh%skip(2)*neigh%skip(3)
-        neigh%skip(2)=neigh%skip(2)+1.0_wp
-        neigh%skip(3)=neigh%skip(3)/neigh%skip(2)+neigh%skip(1)/neigh%skip(2)
-        neigh%skip(4)=Min(neigh%skip(1),neigh%skip(4))
-        neigh%skip(5)=Max(neigh%skip(1),neigh%skip(5))
-     End If
+  If (neigh_uncond_update .and. nstep > 0) Then
 
      Write(message,'(a,f7.2,2(a,i4))') &
-       'VNL skipping run statistics - skips per timestep: average ',neigh%skip(3), &
-       ' minimum ',Nint(Merge(neigh%skip(4),neigh%skip(5),neigh%skip(4)<neigh%skip(5))), &
-       ' maximum ',Nint(neigh%skip(5))
+       'VNL skipping run statistics - skips per timestep: average ',stats%neighskip(3), &
+       ' minimum ',Nint(Merge(stats%neighskip(4),stats%neighskip(5),stats%neighskip(4)<stats%neighskip(5))), &
+       ' maximum ',Nint(stats%neighskip(5))
      Call info(message,.true.)
   End If
 
@@ -1411,8 +1416,8 @@ Subroutine statistics_result                                    &
 
   If (keyshl == 2) Then
      Write(message,'(a,f7.2,2(a,i4))') &
-       'hell relaxation run statistics - cycles per timestep: average ',passshl(3), &
-       ' minimum ',Nint(passshl(4)),' maximum ',Nint(passshl(5))
+       'hell relaxation run statistics - cycles per timestep: average ',stats%passshl(3), &
+       ' minimum ',Nint(stats%passshl(4)),' maximum ',Nint(stats%passshl(5))
     Call info(message,.true.)
   End If
 

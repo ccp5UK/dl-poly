@@ -11,7 +11,7 @@ Module external_field
 
   Use kinds, Only : wp
   Use comms,   Only : comms_type,gcheck,gsum
-  Use setup,   Only : twopi,nrite,mxshl,mxatms,mxpfld
+  Use setup,   Only : twopi,nrite,mxatms,mxpfld
   Use configuration,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
                              lfrzn,lstfre,weight,chge,           &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -24,6 +24,7 @@ Module external_field
   Use rdfs, Only : usr_compute, usr_collect
   Use shared_units, Only : update_shared_units
   Use statistics, Only : stats_type
+  Use core_shell, Only : core_shell_type,SHELL_ADIABATIC
   Implicit None
 
 ! Only one type of field can be applied on the system (keyfld is a scalar)
@@ -54,7 +55,7 @@ Contains
   End Subroutine allocate_external_field_arrays
   
   
-  Subroutine external_field_apply(keyshl,time,leql,nsteql,nstep,stats,comm)
+  Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -70,9 +71,10 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: leql
-  Integer,           Intent( In    ) :: keyshl,nsteql,nstep
+  Integer,           Intent( In    ) :: nsteql,nstep
   Real( Kind = wp ), Intent( In    ) :: time ! for oscillating fields
   Type( stats_type ), Intent( Inout ) :: stats
+  Type( core_shell_type ), Intent( Inout ) :: cshell
   Type( comms_type ), Intent( Inout ) :: comm
 
   Logical, Save     :: newjob = .true.
@@ -178,7 +180,7 @@ Contains
 
 ! gravitational field: field components given by prmfld(1-3)
 
-     If (keyshl == 1) Then
+     If (cshell%keyshl == SHELL_ADIABATIC) Then
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
@@ -191,16 +193,16 @@ Contains
      Else
 
         fail=0
-        Allocate (lstopt(1:2,1:mxshl),                       Stat=fail(1))
+        Allocate (lstopt(1:2,1:cshell%mxshl),                       Stat=fail(1))
         Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
            Write(message,'(a)') 'external_field_apply allocation failure'
            Call error(0,message)
         End If
 
-        Do i=1,ntshl
-           lstopt(1,i)=local_index(listshl(1,i),nlast,lsi,lsa)
-           lstopt(2,i)=local_index(listshl(2,i),nlast,lsi,lsa)
+        Do i=1,cshell%ntshl
+           lstopt(1,i)=local_index(cshell%listshl(1,i),nlast,lsi,lsa)
+           lstopt(2,i)=local_index(cshell%listshl(2,i),nlast,lsi,lsa)
         End Do
 
         Do i=1,natms
@@ -215,11 +217,11 @@ Contains
            End If
         End Do
 
-        If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,oxt,oyt,ozt,comm)
+        If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,oxt,oyt,ozt,comm)
 
 ! Transfer cores' forces to shells
 
-        Do i=1,ntshl
+        Do i=1,cshell%ntshl
            ia=lstopt(1,i)
            ib=lstopt(2,i)
            If (ia > 0 .and. (ib > 0 .and. ib <= natms)) Then
@@ -250,7 +252,7 @@ Contains
 
 ! magnetic field: field components given by prmfld(1-3)
 
-     If (keyshl == 1) Then
+     If (cshell%keyshl == SHELL_ADIABATIC) Then
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
@@ -263,16 +265,16 @@ Contains
      Else
 
         fail=0
-        Allocate (lstopt(1:2,1:mxshl),                       Stat=fail(1))
+        Allocate (lstopt(1:2,1:cshell%mxshl),                       Stat=fail(1))
         Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
            Write(message,'(a)') 'external_field_apply allocation failure'
            Call error(0,message)
         End If
 
-        Do i=1,ntshl
-           lstopt(1,i)=local_index(listshl(1,i),nlast,lsi,lsa)
-           lstopt(2,i)=local_index(listshl(2,i),nlast,lsi,lsa)
+        Do i=1,cshell%ntshl
+           lstopt(1,i)=local_index(cshell%listshl(1,i),nlast,lsi,lsa)
+           lstopt(2,i)=local_index(cshell%listshl(2,i),nlast,lsi,lsa)
         End Do
 
 ! cores' velocities
@@ -289,11 +291,11 @@ Contains
            End If
         End Do
 
-        If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,oxt,oyt,ozt,comm)
+        If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,oxt,oyt,ozt,comm)
 
 ! Transfer cores' velocities to shells
 
-        Do i=1,ntshl
+        Do i=1,cshell%ntshl
            ia=lstopt(1,i)
            ib=lstopt(2,i)
            If (ia > 0 .and. (ib > 0 .and. ib <= natms)) Then

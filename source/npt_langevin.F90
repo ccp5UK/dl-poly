@@ -11,7 +11,6 @@ Module npt_langevin
   Use langevin,      Only : fxl,fyl,fzl,fpl
   Use kinetics,      Only : getvom,getknf,getknt,getknr,getkin, &
                             kinstress,kinstresf,kinstrest
-  Use core_shell,      Only : legshl
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error,info
   Use numerics,        Only : box_mueller_saru1
@@ -20,9 +19,11 @@ Module npt_langevin
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h0_scl,npt_h1_scl
   Use langevin,        Only : langevin_forces
   Use thermostat, Only : thermostat_type
+Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
 Use thermostat, Only : adjust_timestep
+Use core_shell, Only : core_shell_type
 
   Implicit None
 
@@ -38,7 +39,7 @@ Contains
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
-             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
+             elrc,virlrc,cshell,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -74,6 +75,7 @@ Contains
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -322,7 +324,7 @@ Call pmf%allocate_work()
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,tmp,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,tmp,comm)) Then 
             Call info(message,.true.)
 
   ! scale Langevin random forces
@@ -372,7 +374,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! Generate Langevin forces for particles and
   ! Langevin pseudo-tensor force for barostat piston
 
-       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
 
        fpl=0.0_wp
        Call box_mueller_saru1(Int(degfre/3_li),nstep,tmp)
@@ -491,7 +493,7 @@ Call pmf%deallocate_work()
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
+             elrc,virlrc,cshell,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -531,6 +533,7 @@ Call pmf%deallocate_work()
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1135,7 +1138,7 @@ Call pmf%allocate_work()
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,tmp,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,tmp,comm)) Then 
             Call info(message,.true.)
 
   ! scale Langevin random forces
@@ -1201,7 +1204,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! Generate Langevin forces for particles and
   ! Langevin pseudo-tensor force for barostat piston
 
-       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
        If (lshmv_rgd)Then
          Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
        EndIf

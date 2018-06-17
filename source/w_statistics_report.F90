@@ -7,7 +7,7 @@ stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strco
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
-If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(stat%shlke,comm)
+If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Call core_shell_kinetic(stat%shlke,cshell,comm)
 
 ! Calculate physical quantities and collect statistics
 

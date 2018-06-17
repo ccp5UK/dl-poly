@@ -9,7 +9,6 @@ Module npt_mtk
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use rigid_bodies
   Use kinetics,      Only : getvom,kinstress,kinstresf,kinstrest
-  Use core_shell,    Only : legshl
   Use constraints,   Only : apply_shake, apply_rattle, &
                             constraints_tags,constraints_type
   Use pmf,           Only : pmf_tags,pmf_type
@@ -17,9 +16,11 @@ Module npt_mtk
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h1_scl 
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type
+Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
 Use thermostat, Only : adjust_timestep
+Use core_shell, Only : core_shell_type
   Implicit None
 
   Private
@@ -33,7 +34,7 @@ Contains
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
-             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
+             elrc,virlrc,cshell,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -67,6 +68,7 @@ Contains
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -300,7 +302,7 @@ Contains
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restore initial conditions
@@ -434,7 +436,7 @@ Call pmf%deallocate_work()
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             elrc,virlrc,cons,pmf,stat,thermo,site,tmr,comm)
+             elrc,virlrc,cshell,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -473,6 +475,7 @@ Call pmf%deallocate_work()
 
     Real( Kind = wp ),  Intent( InOut ) :: elrc,virlrc
     Type( stats_type ), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1002,7 +1005,7 @@ Call pmf%allocate_work()
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restore initial conditions

@@ -7,7 +7,6 @@ Module nvt_gst
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains,     Only : map
   Use kinetics,     Only : kinstress,kinstresf,kinstrest,getkin,getknf,getknt,getknr
-  Use core_shell,  Only : legshl
   Use constraints, Only : constraints_tags,apply_shake,&
                           apply_rattle, constraints_type
   Use pmf,         Only : pmf_tags,pmf_type
@@ -20,9 +19,11 @@ Module nvt_gst
   Use numerics, Only : images,box_mueller_saru2
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type
+Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only :  timer_type
 Use thermostat, Only : adjust_timestep
+Use core_shell, Only : core_shell_type
   Implicit None
 
   Private
@@ -36,7 +37,7 @@ Contains
              nstep,degfre,                 &
              consv,                             &
              strkin,engke,                      &
-             cons,pmf,stat,thermo,tmr,comm)
+             cshell,cons,pmf,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -70,6 +71,7 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
 Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -223,7 +225,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
 
@@ -304,7 +306,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              nstep,degfre,                 &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cons,pmf,stat,thermo,tmr,comm)
+             strcom,vircom,cshell,cons,pmf,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -341,6 +343,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
 Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -737,7 +740,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
 

@@ -20,7 +20,7 @@ Module system
   Use metal,       Only : metal_type,metal_lrc
   Use greenkubo,   Only : greenkubo_type
   Use development,  Only : development_type
-  Use core_shell,   Only : numshl,lstshl
+  Use core_shell,   Only : core_shell_type
   Use constraints,  Only : constraints_type
   Use rigid_bodies, Only : numrgd,lstrgd
   Use parse,        Only : tabs_2_blanks, get_word, strip_blanks, &
@@ -59,7 +59,7 @@ Module system
   
   Subroutine system_init                                             &
            (levcfg,rcut,rvdw,rbin,lrdf,keyres,megatm,    &
-           time,tmst,nstep,tstep,elrc,virlrc,stats,devel,green,thermo,met, &
+           time,tmst,nstep,tstep,elrc,virlrc,cshell,stats,devel,green,thermo,met, &
            bond,angle,dihedral,inversion,zdensity,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -83,6 +83,7 @@ Module system
   Real( Kind = wp ), Intent(   Out ) :: time,tmst,     &
                                         elrc,virlrc
   Type( stats_type ), Intent( InOut ) :: stats
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( development_type ), Intent( In    ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -625,7 +626,7 @@ Module system
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inversion,site,comm)
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle,dihedral,inversion,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -647,6 +648,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inv
   Integer,           Intent( In    ) :: nx,ny,megatm
   Real( Kind = wp ), Intent( In    ) :: rcut
   Integer,           Intent( InOut ) :: nz
+  Type( core_shell_type ), Intent( In ) :: cshell
   Type( constraints_type ), Intent( In    ) :: cons
   Type( bonds_type ), Intent( In    ) :: bond
   Type( angles_type ), Intent( In    ) :: angle
@@ -996,11 +998,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inv
            safe=.true.
 
            safel=.true.
-           Do ishls=1,numshl(itmols)
+           Do ishls=1,cshell%numshl(itmols)
               nshels=nshels+1
 
-              iatm=lstshl(1,nshels)-indatm1
-              jatm=lstshl(2,nshels)-indatm1
+              iatm=cshell%lstshl(1,nshels)-indatm1
+              jatm=cshell%lstshl(2,nshels)-indatm1
 
               safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
               safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
@@ -1462,7 +1464,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cons,bond,angle,dihedral,inv
 
            If ( ((.not.safe) .and. imols <= site%num_mols(itmols) .and. mxiter < 42) .or. &
                 imols < site%num_mols(itmols) ) Then
-              nshels=nshels-numshl(itmols)
+              nshels=nshels-cshell%numshl(itmols)
               nconst=nconst-cons%numcon(itmols)
               nrigid=nrigid-numrgd(itmols)
               nbonds=nbonds-bond%num(itmols)

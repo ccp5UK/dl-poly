@@ -16,7 +16,7 @@ Module constraints
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
     imcon,cell,xxx,yyy,zzz,fxx,fyy,fzz,nfree,lstfre
   Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
-  Use setup,           Only : mxatms,zero_plus
+  Use setup,           Only : mxatms,mxlshp,mxtmls,zero_plus
 
   Use errors_warnings, Only : error,warning,info
   Use shared_units,    Only : update_shared_units
@@ -36,7 +36,7 @@ Module constraints
       ntcons1 = 0 , &
       m_con   = 0 , megcon
 
-    Integer,                        Public :: mxtcon,mxcons,mxfcon
+    Integer,                        Public :: mxtcon,mxcons,mxfcon,mxproc
     Integer,                        Public :: max_iter_shake
     Real( Kind = wp ), Public :: tolerance
     Integer,           Allocatable, Public :: numcon(:)
@@ -101,7 +101,7 @@ Subroutine allocate_work(T,n)
 
   Subroutine allocate_constraints_arrays(T,mxtmls,mxatdm,mxlshp,mxproc)
   Class(constraints_type) :: T
-    Integer(kind=wi), Intent( In ) :: mxtmls,mxatdm,mxlshp,mxproc
+    Integer(kind=wi), Intent( In ) :: mxtmls,mxatdm,mxproc,mxlshp
 
     Integer :: fail(7)
 
@@ -112,7 +112,7 @@ Subroutine allocate_work(T,n)
     Allocate (T%listcon(0:2,1:T%mxcons),                   Stat = fail(3))
     Allocate (T%legcon(0:T%mxfcon,1:mxatdm),               Stat = fail(4))
     Allocate (T%lishp_con(1:mxlshp), Stat = fail(5))
-    Allocate (T%lashp_con(1:mxproc), Stat = fail(6))
+    Allocate (T%lashp_con(1:T%mxproc), Stat = fail(6))
     Allocate (T%prmcon(1:T%mxtcon),                        Stat = fail(7))
 
     If (Any(fail > 0)) Call error(1018)

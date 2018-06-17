@@ -7,7 +7,7 @@ Module impacts
                                   weight,vxx,vyy,vzz
   Use rigid_bodies, Only : ntrgd,rgdfrz,listrgd,indrgd, &
                                   rgdvxx,rgdvyy,rgdvzz
-  Use core_shell,   Only : ntshl,listshl
+  Use core_shell,   Only : core_shell_type
   Use kinetics,      Only : getvom,l_vom,chvom
 
   Use numerics, Only : local_index
@@ -24,7 +24,7 @@ Module impacts
   
   Contains
 
-Subroutine impact(megrgd,impa,comm)
+Subroutine impact(megrgd,cshell,impa,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -37,6 +37,7 @@ Subroutine impact(megrgd,impa,comm)
 
   Integer,             Intent( In    ) :: megrgd
   Type( impact_type ), Intent( In    ) :: impa 
+  Type( core_shell_type ), Intent( In    ) :: cshell
   Type( comms_type ) , Intent( InOut ) :: comm
   Logical           :: safe = .true.
 
@@ -48,7 +49,7 @@ Subroutine impact(megrgd,impa,comm)
 
   i=local_index(impa%imd,nlast,lsi,lsa)
   If (i > 0 .and. i <= natms) Then
-     If (lfrzn(i) == 0 .and. lfree(i) == 0 .and. All(listshl(2,1:ntshl) /= impa%imd)) Then
+     If (lfrzn(i) == 0 .and. lfree(i) == 0 .and. All(cshell%listshl(2,1:cshell%ntshl) /= impa%imd)) Then
         tmp=Sqrt(2000.0_wp*impa%emd*eu_ev/weight(i)/(impa%vmx**2+impa%vmy**2+impa%vmz**2)) !impa%emd is in keV=1000*eu_ev
         vxx(i)=tmp*impa%vmx
         vyy(i)=tmp*impa%vmy
