@@ -5145,7 +5145,7 @@ Subroutine scan_field                                &
   megatm=0
   mxtmls=0
 
-  cshell%numshl=0
+  numshl=0
   mtshl =0
   cshell%mxshl =0
   cshell%mxtshl=0
@@ -5353,7 +5353,7 @@ Subroutine scan_field                                &
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
-                 cshell%numshl=Nint(word_2_real(word))
+                 numshl=Nint(word_2_real(word))
                  mtshl=Max(mtshl,numshl)
                  cshell%mxtshl=cshell%mxtshl+numshl
                  cshell%mxshl=cshell%mxshl+nummols*numshl
