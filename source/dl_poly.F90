@@ -73,7 +73,9 @@ program dl_poly
 
   ! INTERACTION MODULES
 
-  Use core_shell, Only : core_shell_type,core_shell_relax,SHELL_RELAXED,SHELL_ADIABATIC
+  Use core_shell, Only : core_shell_type,core_shell_relax,SHELL_RELAXED,SHELL_ADIABATIC,&
+                         core_shell_kinetic,core_shell_quench,core_shell_on_top,&
+                         core_shell_forces        
 
   Use pmf, only : pmf_type,pmf_quench
 
