@@ -36,7 +36,7 @@ Module constraints
       ntcons1 = 0 , &
       m_con   = 0 , megcon
 
-    Integer,                        Public :: mxtcon,mxcons,mxfcon,mxproc
+    Integer,                        Public :: mxtcon,mxcons,mxfcon
     Integer,                        Public :: max_iter_shake
     Real( Kind = wp ), Public :: tolerance
     Integer,           Allocatable, Public :: numcon(:)
@@ -112,7 +112,7 @@ Subroutine allocate_work(T,n)
     Allocate (T%listcon(0:2,1:T%mxcons),                   Stat = fail(3))
     Allocate (T%legcon(0:T%mxfcon,1:mxatdm),               Stat = fail(4))
     Allocate (T%lishp_con(1:mxlshp), Stat = fail(5))
-    Allocate (T%lashp_con(1:T%mxproc), Stat = fail(6))
+    Allocate (T%lashp_con(1:mxproc), Stat = fail(6))
     Allocate (T%prmcon(1:T%mxtcon),                        Stat = fail(7))
 
     If (Any(fail > 0)) Call error(1018)
