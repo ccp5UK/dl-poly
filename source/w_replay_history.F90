@@ -150,7 +150,7 @@
            (pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstph,         &
-           elrc,virlrc,cshell,               &
+           cshell,               &
            stat,ewld,devel,met,pois,neigh,site,vdw,tmr,comm)
 
 ! Calculate bond forces
