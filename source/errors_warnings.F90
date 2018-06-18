@@ -1510,7 +1510,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  472) Then
 
-        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff < 2*rcfbp (maximum cutoff for four-body potentials)'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff < 2*fourbody%cutoff (maximum cutoff for four-body potentials)'
 
      Else If (kode ==  474) Then
 

@@ -94,7 +94,7 @@ program dl_poly
   Use vdw, Only : vdw_type
   Use metal, Only : metal_type,allocate_metal_arrays
   Use tersoff, Only : tersoff_type,tersoff_forces
-  Use four_body
+  Use four_body, Only : four_body_type,four_body_forces
 
   Use kim
   Use plumed, Only : plumed_type,plumed_init,plumed_finalize,plumed_apply
@@ -241,7 +241,7 @@ program dl_poly
   Real( Kind = wp ) :: tsths,                                     &
     tstep,time,tmst,      &
     dvar,                       &
-    rbin,rcfbp,          &
+    rbin,          &
     alpha,epsq,fmax,                           &
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),min_tol(1:2),                 &
@@ -275,6 +275,7 @@ program dl_poly
   Type( core_shell_type ) :: core_shells
   Type( vdw_type ) :: vdw
   Type( tersoff_type ) :: tersoff
+  Type( four_body_type ) :: fourbody
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -344,7 +345,7 @@ program dl_poly
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,alpha,width,site%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    tether,threebody,zdensity,neigh,vdw,tersoff,comm)
+    tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -384,7 +385,7 @@ program dl_poly
   Call allocate_metal_arrays(met)
   Call tersoff%init(site%max_site)
   Call allocate_three_body_arrays(site%max_site,threebody)
-  Call allocate_four_body_arrays(site%max_site)
+  Call fourbody%init(site%max_site)
 
   Call allocate_external_field_arrays()
 
@@ -428,11 +429,10 @@ program dl_poly
     neigh%cutoff,width,epsq, &
     keyfce,           &
     lecx,lbook,lexcl,               &
-    rcfbp,              &
     atmfre,atmfrz,megatm,megfrz,    &
     megrgd,    &
     megtet,core_shells,pmfs,cons,thermo,met,bond,angle,   &
-    dihedral,inversion,tether,threebody,site,vdw,tersoff,comm)
+    dihedral,inversion,tether,threebody,site,vdw,tersoff,fourbody,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(l_errors_jack .or. l_errors_block) then
@@ -657,11 +657,12 @@ program dl_poly
 
   If (lsim) Then
     Call w_md_vv(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
-      pois,bond,angle,dihedral,inversion,zdensity,neigh,site,tmr)
+      pois,bond,angle,dihedral,inversion,zdensity,neigh,site,fourbody,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
-        msd_data,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,tmr)
+        msd_data,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff, &
+        fourbody,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw)
@@ -806,7 +807,7 @@ program dl_poly
 Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-      inversion,tether,threebody,neigh,site,vdw,tersoff,tmr)
+      inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -823,6 +824,7 @@ Contains
     Type( site_type ), Intent( InOut ) :: site
     Type( vdw_type ), Intent( InOut ) :: vdw
     Type( tersoff_type ), Intent( InOut )  :: tersoff
+    Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
@@ -889,7 +891,8 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,tmr)
+  Subroutine w_md_vv(mxatdm_,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
+      dihedral,inversion,zdensity,neigh,site,fourbody,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -905,6 +908,7 @@ Contains
     Type( z_density_type ), Intent( InOut ) :: zdensity
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: site
+    Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
@@ -938,7 +942,7 @@ Contains
   End Subroutine w_replay_history
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
-    angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,tmr)
+    angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -955,7 +959,8 @@ Contains
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: site
     Type( vdw_type ), Intent( InOut ) :: vdw
-  Type( tersoff_type ), Intent( InOut )  :: tersoff
+    Type( tersoff_type ), Intent( InOut )  :: tersoff
+    Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( timer_type ), Intent( InOut ) :: tmr
 
     Logical,     Save :: newjb = .true.

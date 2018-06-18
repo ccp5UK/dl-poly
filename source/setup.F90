@@ -205,7 +205,6 @@ Module setup
     mxmet,mxmed,mxmds,mxpmet,                            &
     mxgrid,                                 &
     mxtana,mxgana,              &
-    mxfbp,mx3fbp,mxpfbp,                    &
     mxpfld,mxgusr,                                              &
     mxatms,mxatdm,                  &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff

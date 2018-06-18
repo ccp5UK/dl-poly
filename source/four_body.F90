@@ -12,60 +12,79 @@ Module four_body
 
   Use kinds,          Only : wp,wi
   Use comms,          Only : comms_type,gsum,gcheck
-
   Use domains, Only : idx,idy,idz, nprx,npry,nprz, &
                              r_nprx,r_npry,r_nprz
   Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
-  Use setup, Only : mxfbp,mxpfbp,zero_plus,mx3fbp, &
-                           mxatms,nrite
-
+  Use setup, Only : zero_plus,mxatms,nrite
   Use errors_warnings, Only : error, warning
   Use numerics, Only : invert, dcell
   Use statistics, Only : stats_type
   Use neighbours, Only : neighbours_type
   Implicit None
 
-  Integer,                        Save :: ntpfbp = 0
+  Private
 
+  Type, Public :: four_body_type
+    Private
 
-  Logical,           Allocatable, Save :: lfrfbp(:)
+    !> Number of four-body potentials
+    Integer( Kind = wi ), Public :: n_potential = 0
 
-  Integer,           Allocatable, Save :: lstfbp(:),ltpfbp(:)
+    Logical, Allocatable, Public :: lfr(:)
 
-  Real( Kind = wp ), Allocatable, Save :: prmfbp(:,:),rctfbp(:)
+    Integer( Kind = wi ), Allocatable, Public :: list(:)
+    Integer( Kind = wi ), Allocatable, Public :: ltp(:)
 
-  Public :: allocate_four_body_arrays
+    !> Four-body potential parameters
+    Real( Kind = wp ), Allocatable, Public :: param(:,:)
+    Real( Kind = wp ), Allocatable, Public :: rct(:)
+
+    !> Maximum number of four-body interactions
+    Integer( Kind = wi ), Public :: max_four_body
+    !> Maximum number of four-body parameters
+    Integer( Kind = wi ), Public :: max_param
+    Integer( Kind = wi ), Public :: mx3fbp
+
+    !> Four-body potential cutoff
+    Real( Kind = wp ), Public :: cutoff
+  Contains
+    Private
+
+    Procedure, Public :: init => allocate_four_body_arrays
+    Final :: cleanup
+  End Type
+
+  Public :: four_body_forces
 
 Contains
 
-  Subroutine allocate_four_body_arrays(max_site)
+  Subroutine allocate_four_body_arrays(T,max_site)
+    Class( four_body_type ) :: T
     Integer( Kind = wi ), Intent( In    ) :: max_site
 
-    Integer, Dimension( 1:5 ) :: fail
+    Integer, Dimension(1:5) :: fail
 
     fail = 0
 
-    Allocate (lfrfbp(1:Merge(max_site,0,mxfbp > 0)), Stat = fail(1))
-    Allocate (lstfbp(1:mxfbp),                     Stat = fail(2))
-    Allocate (ltpfbp(1:mxfbp),                     Stat = fail(3))
-    Allocate (prmfbp(1:mxpfbp,1:mxfbp),            Stat = fail(4))
-    Allocate (rctfbp(1:mxfbp),                     Stat = fail(5))
+    Allocate (T%lfr(1:Merge(max_site,0,T%max_four_body > 0)), stat = fail(1))
+    Allocate (T%list(1:T%max_four_body), stat = fail(2))
+    Allocate (T%ltp(1:T%max_four_body), stat = fail(3))
+    Allocate (T%param(1:T%max_param,1:T%max_four_body), stat = fail(4))
+    Allocate (T%rct(1:T%max_four_body), stat = fail(5))
 
     If (Any(fail > 0)) Call error(1024)
 
-    lfrfbp = .false.
+    T%lfr = .false.
 
-    lstfbp = 0
-    ltpfbp = 0
+    T%list = 0
+    T%ltp = 0
 
-    prmfbp = 0.0_wp
-    rctfbp = 0.0_wp
-
+    T%param = 0.0_wp
+    T%rct = 0.0_wp
   End Subroutine allocate_four_body_arrays
-  
-  
-  Subroutine four_body_forces(rcfbp,stats,neigh,comm)
+
+  Subroutine four_body_forces(fourbody,stats,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -83,12 +102,11 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-  Real( Kind = wp ),       Intent( In    ) :: rcfbp
+  Type( four_body_type ),  Intent( InOut ) :: fourbody
   Type( stats_type ),      Intent( InOut ) :: stats
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type ),      Intent( InOut ) :: comm
-  
+
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
 
   Integer           :: fail(1:2),                       &
@@ -137,9 +155,9 @@ Contains
 
 ! Calculate the number of link-cells per domain in every direction
 
-  nbx=Int(r_nprx*celprp(7)/(rcfbp+1.0e-6_wp))
-  nby=Int(r_npry*celprp(8)/(rcfbp+1.0e-6_wp))
-  nbz=Int(r_nprz*celprp(9)/(rcfbp+1.0e-6_wp))
+  nbx=Int(r_nprx*celprp(7)/(fourbody%cutoff+1.0e-6_wp))
+  nby=Int(r_npry*celprp(8)/(fourbody%cutoff+1.0e-6_wp))
+  nbz=Int(r_nprz*celprp(9)/(fourbody%cutoff+1.0e-6_wp))
 
 ! check for link cell algorithm violations
 
@@ -186,7 +204,7 @@ Contains
 ! the left-most link-cell
 
   Do i=1,nlast
-     If (lfrfbp(ltype(i))) Then
+     If (fourbody%lfr(ltype(i))) Then
         xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
         yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
         zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
@@ -223,7 +241,7 @@ Contains
 !***************************************************************
 
   Do i=1,nlast
-     If (lfrfbp(ltype(i))) Then
+     If (fourbody%lfr(ltype(i))) Then
 
 ! Push cell coordinates accordingly
 
@@ -390,11 +408,11 @@ Contains
 ! index of the primary atom (and table type)
 
               ia=listin(ii)
-              ifbp=mx3fbp*(ltype(ia)-1)
+              ifbp=fourbody%mx3fbp*(ltype(ia)-1)
 
 ! bypass if primary atom type is not involved in interaction
 
-              If (lstfbp(ifbp+1) >= 0) Then
+              If (fourbody%list(ifbp+1) >= 0) Then
 
 ! get all possible permutations of triplets and their indices
 
@@ -421,7 +439,7 @@ Contains
 
      kfbp=ltype(ib)+ltype(ic)+ltype(id)-jfbp-lfbp
      jklbd=ifbp+lfbp+(kfbp*(kfbp-1))/2+(jfbp*(jfbp**2-1))/6
-     kkfbp=lstfbp(jklbd)
+     kkfbp=fourbody%list(jklbd)
 
 ! check existence of interaction in system
 
@@ -436,13 +454,13 @@ Contains
            szab = zzt(ib)-zzt(ia)
 
            xab=cell(1)*sxab+cell(4)*syab+cell(7)*szab
-           If (Abs(xab) < rcfbp) Then
+           If (Abs(xab) < fourbody%cutoff) Then
 
               yab=cell(2)*sxab+cell(5)*syab+cell(8)*szab
-              If (Abs(yab) < rcfbp) Then
+              If (Abs(yab) < fourbody%cutoff) Then
 
                  zab=cell(3)*sxab+cell(6)*syab+cell(9)*szab
-                 If (Abs(zab) < rcfbp) Then
+                 If (Abs(zab) < fourbody%cutoff) Then
 
                     rab2=xab*xab+yab*yab+zab*zab
 
@@ -451,13 +469,13 @@ Contains
                     szac = zzt(ic)-zzt(ia)
 
                     xac=cell(1)*sxac+cell(4)*syac+cell(7)*szac
-                    If (Abs(xac) < rcfbp) Then
+                    If (Abs(xac) < fourbody%cutoff) Then
 
                        yac=cell(2)*sxac+cell(5)*syac+cell(8)*szac
-                       If (Abs(yac) < rcfbp) Then
+                       If (Abs(yac) < fourbody%cutoff) Then
 
                           zac=cell(3)*sxac+cell(6)*syac+cell(9)*szac
-                          If (Abs(zac) < rcfbp) Then
+                          If (Abs(zac) < fourbody%cutoff) Then
 
                              rac2=xac*xac+yac*yac+zac*zac
 
@@ -466,19 +484,19 @@ Contains
                              szad = zzt(id)-zzt(ia)
 
                              xad=cell(1)*sxad+cell(4)*syad+cell(7)*szad
-                             If (Abs(xad) < rcfbp) Then
+                             If (Abs(xad) < fourbody%cutoff) Then
 
                                 yad=cell(2)*sxad+cell(5)*syad+cell(8)*szad
-                                If (Abs(yad) < rcfbp) Then
+                                If (Abs(yad) < fourbody%cutoff) Then
 
                                    zad=cell(3)*sxad+cell(6)*syad+cell(9)*szad
-                                   If (Abs(zad) < rcfbp) Then
+                                   If (Abs(zad) < fourbody%cutoff) Then
 
                                       rad2=xad*xad+yad*yad+zad*zad
 
 ! (SECOND SHIFT TO LEFT)
 
-  If (Max(rab2,rac2,rad2) <= rctfbp(kkfbp)**2) Then
+  If (Max(rab2,rac2,rad2) <= fourbody%rct(kkfbp)**2) Then
 
      rrab=1.0_wp/Sqrt(rab2)
      rrac=1.0_wp/Sqrt(rac2)
@@ -555,7 +573,7 @@ Contains
 
 ! select potential energy function type
 
-     ktyp=ltpfbp(kkfbp)
+     ktyp=fourbody%ltp(kkfbp)
 
 ! calculate potential energy and scalar force term
 
@@ -563,8 +581,8 @@ Contains
 
 ! harmonic inversion potential
 
-        k0 =prmfbp(1,kkfbp)
-        th0=prmfbp(2,kkfbp)
+        k0 =fourbody%param(1,kkfbp)
+        th0=fourbody%param(2,kkfbp)
 
         thb=Acos(cosb)
         thc=Acos(cosc)
@@ -582,8 +600,8 @@ Contains
 
 ! harmonic cosine inversion potential
 
-        k0  =prmfbp(1,kkfbp)
-        cos0=prmfbp(2,kkfbp)
+        k0  =fourbody%param(1,kkfbp)
+        cos0=fourbody%param(2,kkfbp)
 
         potfbp=k0*((cosb-cos0)**2+(cosc-cos0)**2+(cosd-cos0)**2)/6.0_wp
         gamb=-k0*(cosb-cos0)/3.0_wp
@@ -594,7 +612,7 @@ Contains
 
 ! planar inversion potentials
 
-        k0=prmfbp(1,kkfbp)
+        k0=fourbody%param(1,kkfbp)
 
         potfbp=k0*(1.0_wp-(cosb+cosc+cosd)/3.0_wp)
         gamb=k0/3.0_wp
@@ -811,5 +829,25 @@ Contains
 
 End Subroutine four_body_forces
 
+  Subroutine cleanup(T)
+    Type( four_body_type ) :: T
 
+    If (Allocated(T%lfr)) Then
+      Deallocate(T%lfr)
+    End If
+
+    If (Allocated(T%list)) Then
+      Deallocate(T%list)
+    End If
+    If (Allocated(T%ltp)) Then
+      Deallocate(T%ltp)
+    End If
+
+    If (Allocated(T%param)) Then
+      Deallocate(T%param)
+    End If
+    If (Allocated(T%rct)) Then
+      Deallocate(T%rct)
+    End If
+  End Subroutine cleanup
 End Module four_body

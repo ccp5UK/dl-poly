@@ -37,6 +37,7 @@ Module bounds
   Use core_shell, Only : core_shell_type
   Use three_body,      Only : threebody_type
   Use vdw,             Only : vdw_type
+  Use four_body, Only : four_body_type
 
   Implicit None
   Private
@@ -48,7 +49,7 @@ Subroutine set_bounds                                 &
            dvar,rbin,nstfce,      &
            alpha,width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,threebody,zdensity,neigh,vdw,tersoff,comm)
+           inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -88,6 +89,7 @@ Subroutine set_bounds                                 &
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( InOut )  :: tersoff
+  Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -122,9 +124,9 @@ Subroutine set_bounds                                 &
            mtinv,  &
            mxrdf,                  &
            mxmet,mxmed,mxmds,                        &
-           rcter,mxfbp,rcfbp,lext,cshell,cons,pmf,met,bond,    &
+           rcter,rcfbp,lext,cshell,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
-           tether,threebody,vdw,tersoff,comm)
+           tether,threebody,vdw,tersoff,fourbody,comm)
 
 ! Get imc_r & set dvar
 
@@ -506,17 +508,17 @@ Subroutine set_bounds                                 &
 
 ! maximum number of four-body potentials and parameters
 
-  If (mxfbp > 0) Then
-     mx3fbp = (mxatyp*(mxatyp+1)*(mxatyp+2))/6
-     mxfbp  = mx3fbp*mxatyp
+  If (fourbody%max_four_body > 0) Then
+     fourbody%mx3fbp = (mxatyp*(mxatyp+1)*(mxatyp+2))/6
+     fourbody%max_four_body  = fourbody%mx3fbp*mxatyp
      If (rcfbp < 1.0e-6_wp) rcfbp=0.5_wp*neigh%cutoff
 
-     mxpfbp = 3
+     fourbody%max_param = 3
   Else
-     mx3fbp = 0
-     mxfbp  = 0
+     fourbody%mx3fbp = 0
+     fourbody%max_four_body  = 0
 
-     mxpfbp = 0
+     fourbody%max_param = 0
   End If
 
 
@@ -856,11 +858,11 @@ Subroutine set_bounds                                 &
 ! reset (increase) link-cell maximum (neigh%max_cell)
 ! if tersoff or three- or four-body potentials exist
 
-  If (tersoff%max_ter > 0 .or. threebody%mxtbp > 0 .or. mxfbp > 0) Then
+  If (tersoff%max_ter > 0 .or. threebody%mxtbp > 0 .or. fourbody%max_four_body > 0) Then
      cut=neigh%cutoff+1.0e-6_wp ! reduce cut
      If (tersoff%max_ter > 0) cut = Min(cut,rcter+1.0e-6_wp)
      If (threebody%mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
-     If (mxfbp > 0) cut = Min(cut,rcfbp+1.0e-6_wp)
+     If (fourbody%max_four_body > 0) cut = Min(cut,rcfbp+1.0e-6_wp)
 
      ilx=Int(r_nprx*celprp(7)/cut)
      ily=Int(r_npry*celprp(8)/cut)
