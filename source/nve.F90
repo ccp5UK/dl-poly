@@ -7,7 +7,6 @@ Module nve
     xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains,       Only : map
   Use kinetics,      Only : getknr,kinstresf,kinstrest,kinstress
-  Use core_shell,    Only : legshl
   Use constraints,   Only : constraints_tags,constraints_type, &
                             apply_shake, apply_rattle
   Use rigid_bodies,  Only : mxrgd,mxlrgd,ntrgd,listrgd,rgdfrz, &
@@ -21,6 +20,7 @@ Module nve
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
   Use thermostat, Only : adjust_timestep
+Use core_shell, Only : core_shell_type
   Implicit none
 
   Private
@@ -32,7 +32,7 @@ Contains
   Subroutine nve_0_vv                           &
       (isw,lvar,mndis,mxdis,mxstp,tstep, &
       strkin,engke,                      &
-      cons,pmf,stat,tmr,comm)
+      cshell,cons,pmf,stat,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -53,6 +53,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
 Type( pmf_type ), Intent( InOut ) :: pmf
     Type( timer_type ), Intent( InOut ) :: tmr
@@ -185,7 +186,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
 
       If (lvar) Then
         If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
-           xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+           xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
            Call info(message,.true.)
            Go To 100
         End If
@@ -240,7 +241,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
   Subroutine nve_1_vv                           &
       (isw,lvar,mndis,mxdis,mxstp,tstep, &
       strkin,strknf,strknt,engke,engrot, &
-      strcom,vircom,cons,pmf,stat,tmr,comm)
+      strcom,vircom,cshell,cons,pmf,stat,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -265,6 +266,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
 
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
 Type( pmf_type ), Intent( InOut ) :: pmf
     Type( timer_type ), Intent( InOut ) :: tmr
@@ -639,7 +641,7 @@ Type( pmf_type ), Intent( InOut ) :: pmf
 
       If (lvar) Then
         If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
-           xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+           xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
            Call info(message,.true.)
 
 

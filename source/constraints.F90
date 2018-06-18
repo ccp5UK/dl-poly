@@ -16,7 +16,7 @@ Module constraints
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
     imcon,cell,xxx,yyy,zzz,fxx,fyy,fzz,nfree,lstfre
   Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
-  Use setup,           Only : mxatms,zero_plus
+  Use setup,           Only : mxatms,mxlshp,mxtmls,zero_plus
 
   Use errors_warnings, Only : error,warning,info
   Use shared_units,    Only : update_shared_units
@@ -101,7 +101,7 @@ Subroutine allocate_work(T,n)
 
   Subroutine allocate_constraints_arrays(T,mxtmls,mxatdm,mxlshp,mxproc)
   Class(constraints_type) :: T
-    Integer(kind=wi), Intent( In ) :: mxtmls,mxatdm,mxlshp,mxproc
+    Integer(kind=wi), Intent( In ) :: mxtmls,mxatdm,mxproc,mxlshp
 
     Integer :: fail(7)
 

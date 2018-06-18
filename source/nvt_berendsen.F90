@@ -7,7 +7,6 @@ Module nvt_berendsen
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains,     Only : map
   Use kinetics,     Only : getvom,getknr,kinstresf,kinstrest,kinstress
-  Use core_shell,  Only : legshl
   Use constraints, Only : constraints_tags,apply_shake, &
                           apply_rattle, constraints_type
   Use pmf,         Only : pmf_tags,pmf_type,pmf_type,pmf_type,pmf_type
@@ -19,10 +18,10 @@ Module nvt_berendsen
                             no_squish,rigid_bodies_stress
   Use numerics, Only : images
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-Use thermostat, Only : adjust_timestep
+Use thermostat, Only : thermostat_type,adjust_timestep
+Use core_shell, Only : core_shell_type
   Implicit None
 
   Private
@@ -33,7 +32,7 @@ Contains
 
   Subroutine nvt_b0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             strkin,engke,                      &
+             strkin,engke,cshell,               &
              cons,pmf,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -57,6 +56,7 @@ Contains
 
 
     Type( stats_type), Intent( InOut ) :: stat
+    Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -194,7 +194,7 @@ Contains
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
 
@@ -268,7 +268,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   Subroutine nvt_b1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cons,pmf,stat,thermo,tmr,comm)
+             strcom,vircom,cshell,cons,pmf,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -292,6 +292,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
                                           strknf(1:9),strknt(1:9),engrot
 
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
+    Type( core_shell_type), Intent( InOut ) :: cshell
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( constraints_type), Intent( InOut ) :: cons
     Type( stats_type), Intent( Inout ) :: stat
@@ -669,7 +670,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
 

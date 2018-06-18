@@ -2,13 +2,12 @@ Module nvt_anderson
   Use kinds,         Only : wp
   Use comms,         Only : comms_type,gsum,gmax
   Use domains,       Only : map
-  Use setup,         Only : boltz,zero_plus,mxshl
+  Use setup,         Only : boltz,zero_plus
   Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,nfree,lsite, &
                             lsi,lsa,ltg,lfrzn,lfree,lstfre,     &
                             weight,xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetics,      Only : getvom,getknr,kinstress,kinstresf,kinstrest
-  Use core_shell,    Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
   Use constraints,   Only : constraints_tags,apply_shake, &
                             apply_rattle,constraints_type
   Use pmf,           Only : pmf_tags,pmf_type
@@ -22,9 +21,11 @@ Module nvt_anderson
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type
+Use core_shell, Only : core_shell_type,SHELL_ADIABATIC
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
 Use thermostat, Only : adjust_timestep
+Use core_shell, Only : core_shell_type
   Implicit None
 
   Private
@@ -35,8 +36,8 @@ Contains
 
   Subroutine nvt_a0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,keyshl,       &
-             strkin,engke,                      &
+             nstep,      &
+             strkin,engke,cshell,                      &
              cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -62,11 +63,12 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Integer,            Intent( In    ) :: nstep,keyshl
+    Integer,            Intent( In    ) :: nstep
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
@@ -111,7 +113,7 @@ Contains
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 8))
     Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail( 9))
     Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),                    Stat=fail(10))
-    Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1),                 Stat=fail(11))
+    Allocate (qs(0:2,1:cshell%mxshl),tps(0:comm%mxnode-1),                 Stat=fail(11))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'nvt_a0 allocation failure'
        Call error(0,message)
@@ -217,7 +219,7 @@ Contains
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restart vv1
@@ -258,14 +260,14 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! ntp - grand total of non-shell, non-frozen particles to thermostat
 
        qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
-       qs(0:2,1:ntshl) = 0 ! unqualified core-shell unit with a local shell
+       qs(0:2,1:cshell%ntshl) = 0 ! unqualified core-shell unit with a local shell
 
        j = 0
        tkin = 0.0_wp
        mxdr = 0.0_wp
        scale = tstep/thermo%tau_t
        Do i=1,natms
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
+          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
              If (sarurnd(ltg(i),0,nstep) <= scale) Then
                 j = j + 1
                 qn(i) = 1
@@ -323,16 +325,16 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! stp - grand total of core-shell units to thermostat
 
        j = 0
-       If (keyshl == 1) Then
-          If (lshmv_shl) Then ! refresh the q array for shared core-shell units
+       If (cshell%keyshl == SHELL_ADIABATIC) Then
+          If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
           End If
 
-          If (ntshl > 0) Then
-             Do k=1,ntshl
-                i1=local_index(listshl(1,k),matms,lsi,lsa)
-                i2=local_index(listshl(2,k),matms,lsi,lsa)
+          If (cshell%ntshl > 0) Then
+             Do k=1,cshell%ntshl
+                i1=local_index(cshell%listshl(1,k),matms,lsi,lsa)
+                i2=local_index(cshell%listshl(2,k),matms,lsi,lsa)
 
                 If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
                    j = j + 1
@@ -354,10 +356,10 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! Thermalise the shells on hit cores
 
        If (stp > 0) Then
-          If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
+          If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
 
           If (tps(comm%idnode) > 0) Then
-             Do k=1,ntshl
+             Do k=1,cshell%ntshl
                 If (qs(0,k) == 1) Then
                    i1=qs(1,k)
                    i2=qs(2,k)
@@ -411,9 +413,9 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
   Subroutine nvt_a1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,keyshl,       &
+             nstep,       &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cons,pmf,stat,thermo,site,tmr,comm)
+             strcom,vircom,cshell,cons,pmf,stat,thermo,site,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -439,7 +441,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
 
-    Integer,            Intent( In    ) :: nstep,keyshl
+    Integer,            Intent( In    ) :: nstep
 
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
@@ -447,6 +449,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
@@ -510,7 +513,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
     Allocate (rgdvxt(1:mxrgd),rgdvyt(1:mxrgd),rgdvzt(1:mxrgd),      Stat=fail(13))
     Allocate (rgdoxt(1:mxrgd),rgdoyt(1:mxrgd),rgdozt(1:mxrgd),      Stat=fail(14))
     Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),                    Stat=fail(15))
-    Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1),                 Stat=fail(16))
+    Allocate (qs(0:2,1:cshell%mxshl),tps(0:comm%mxnode-1),                 Stat=fail(16))
     Allocate (qr(1:mxrgd),tpr(0:comm%mxnode-1),                     Stat=fail(17))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'nvt_a1 allocation failure'
@@ -830,7 +833,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restore initial conditions
@@ -1018,13 +1021,13 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! ntp - grand total of non-shell, non-frozen particles to thermostat
 
        qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
-       qs(0:2,1:ntshl) = 0 ! unqualified core-shell unit with a local shell
+       qs(0:2,1:cshell%ntshl) = 0 ! unqualified core-shell unit with a local shell
        qr(1:ntrgd)     = 0 ! unqualified RB
 
        j = 0
        scale = tstep/thermo%tau_t
        Do i=1,natms
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
+          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
              If (sarurnd(ltg(i),0,nstep) <= scale) Then
                 j = j + 1
                 qn(i) = 1
@@ -1280,16 +1283,16 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! stp - grand total of core-shell units to thermostat
 
        j = 0
-       If (keyshl == 1) Then
-          If (lshmv_shl) Then ! refresh the q array for shared core-shell units
+       If (cshell%keyshl == SHELL_ADIABATIC) Then
+          If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
           End If
 
-          If (ntshl > 0) Then
-             Do k=1,ntshl
-                i1=local_index(listshl(1,k),matms,lsi,lsa)
-                i2=local_index(listshl(2,k),matms,lsi,lsa)
+          If (cshell%ntshl > 0) Then
+             Do k=1,cshell%ntshl
+                i1=local_index(cshell%listshl(1,k),matms,lsi,lsa)
+                i2=local_index(cshell%listshl(2,k),matms,lsi,lsa)
 
                 If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
                    j = j + 1
@@ -1311,10 +1314,10 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! Thermalise the shells on hit cores
 
        If (stp > 0) Then
-          If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
+          If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
 
           If (tps(comm%idnode) > 0) Then
-             Do k=1,ntshl
+             Do k=1,cshell%ntshl
                 If (qs(0,k) == 1) Then
                    i1=qs(1,k)
                    i2=qs(2,k)

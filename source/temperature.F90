@@ -1,7 +1,7 @@
 Module temperature
   Use kinds,           Only : wp, li
   Use comms,           Only : comms_type,gsum
-  Use setup,           Only : nrite,boltz,mxatms,mxshl,zero_plus
+  Use setup,           Only : nrite,boltz,mxatms,zero_plus
   Use site, Only : site_type
   Use configuration,   Only : imcon,natms,nlast,nfree,lsite,  &
                               lsi,lsa,ltg,lfrzn,lfree,lstfre, &
@@ -13,8 +13,7 @@ Module temperature
                               rgdfrz,listrgd,indrgd,getrotmat,rigid_bodies_quench
   Use constraints,     Only : constraints_type, constraints_quench
   Use pmf,             Only : pmf_quench, pmf_type
-  Use core_shell,      Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl, &
-                              lashp_shl,core_shell_quench
+  Use core_shell,      Only : core_shell_type,core_shell_quench,SHELL_ADIABATIC
   Use kinetics,        Only : l_vom,chvom,getcom,getvom,getkin,getknf,getknt,getknr
   Use numerics,        Only : invert,uni,local_index,box_mueller_saru3
   use shared_units,    Only : update_shared_units,update_shared_units_int
@@ -33,11 +32,9 @@ Contains
   Subroutine set_temperature           &
              (levcfg,keyres,      &
              lmin,nstep,nstrun,nstmin, &
-             keyshl,     &
              atmfre,atmfrz,            &
-             megshl,     &
              megrgd,degtra,degrot,     &
-             degfre,degshl,engrot,dof_site,stat,cons,pmf,thermo,comm)
+             degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -50,9 +47,7 @@ Contains
 
     Logical,            Intent( In    ) :: lmin
     Integer,            Intent( In    ) :: nstep,nstrun,nstmin, &
-                                           keyshl,       &
                                            atmfre,atmfrz,       &
-                                           megshl,              &
                                            megrgd
 
     Integer,            Intent( InOut ) :: keyres,levcfg
@@ -61,6 +56,7 @@ Contains
     Integer(Kind=li),   Intent(   Out ) :: degfre,degshl
     Real( Kind = wp ),  Intent(   Out ) :: engrot
     Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
+    Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( stats_type ), Intent( InOut ) :: stat
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -116,7 +112,7 @@ Contains
 
   ! lost to shells
 
-    degshl=Int(3,li)*Int(megshl,li)
+    degshl=Int(3,li)*Int(cshell%megshl,li)
 
   ! lost to constrained atoms and PMF constraints
 
@@ -182,7 +178,7 @@ Contains
     If (keyres == 0) Then
 
        Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),    Stat=fail(1))
-       Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
+       Allocate (qs(0:2,1:cshell%mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'set_temperature allocation failure'
           Call error(0,message)
@@ -192,11 +188,11 @@ Contains
   ! ntp - grand total of non-shell, non-frozen particles
 
        qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
-       qs(0:2,1:ntshl) = 0 ! unqualified core-shell unit with a local shell
+       qs(0:2,1:cshell%ntshl) = 0 ! unqualified core-shell unit with a local shell
 
        j = 0
        Do i=1,natms
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0) Then
+          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
              j = j + 1
              qn(i) = 1
           End If
@@ -213,17 +209,17 @@ Contains
   ! stp - grand total of core-shell units to thermostat
 
        j = 0
-       If (keyshl == 1) Then ! just for the adiabatic shell model
-          If (lshmv_shl) Then ! refresh the q array for shared core-shell units
+       If (cshell%keyshl == SHELL_ADIABATIC) Then ! just for the adiabatic shell model
+          If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
-             Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
+             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
           End If
 
-          If (ntshl > 0) Then
-             Do k=1,ntshl
-                i1=local_index(listshl(1,k),nlast,lsi,lsa)
-                i2=local_index(listshl(2,k),nlast,lsi,lsa)
+          If (cshell%ntshl > 0) Then
+             Do k=1,cshell%ntshl
+                i1=local_index(cshell%listshl(1,k),nlast,lsi,lsa)
+                i2=local_index(cshell%listshl(2,k),nlast,lsi,lsa)
 
                 If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
                    j = j + 1
@@ -426,14 +422,14 @@ Contains
        End If
 
        If (stp > 0) Then
-          If (lshmv_shl) Then ! refresh the q array for shared core-shell units
+          If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
-             Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
+             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
           End If
 
           If (tps(comm%idnode) > 0) Then
-             Do k=1,ntshl
+             Do k=1,cshell%ntshl
                 If (qs(0,k) == 1) Then
                    i1=qs(1,k)
                    i2=qs(2,k)
@@ -534,10 +530,10 @@ Contains
 
   ! quench core-shell units in adiabatic model
 
-       If (megshl > 0 .and. keyshl == 1 .and. no_min_0) Then
+       If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC .and. no_min_0) Then
           Do
              Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
-             Call core_shell_quench(safe,thermo%temp,comm)
+             Call core_shell_quench(safe,thermo%temp,cshell,comm)
              If (cons%megcon > 0) Then
                Call constraints_quench(cons,stat,comm)
              End If

@@ -8,7 +8,6 @@ Module npt_berendsen
   Use setup
   Use site, Only : site_type
   Use kinetics,        Only : getvom
-  Use core_shell,      Only : legshl
   Use constraints,     Only : constraints_type,apply_rattle,&
             constraints_tags,apply_shake
   Use statistics, Only : stats_type
@@ -17,6 +16,7 @@ Module npt_berendsen
   Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type
+Use core_shell, Only : core_shell_type
   Use timer, Only: timer_type
   Use thermostat, Only : adjust_timestep
   Use vdw, Only : vdw_type
@@ -32,7 +32,7 @@ Contains
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              virtot,                            &
              strkin,engke,                      &
-             cons,pmf,stat,thermo,site,vdw,tmr,comm)
+             cshell,cons,pmf,stat,thermo,site,vdw,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -59,6 +59,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
 
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -246,7 +247,7 @@ Contains
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
 
@@ -356,7 +357,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
              virtot,                            &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             cons,pmf,stat,thermo,site,vdw,tmr,comm)
+             cshell,cons,pmf,stat,thermo,site,vdw,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -387,6 +388,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( site_type ), Intent( InOut ) :: site
@@ -860,7 +862,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,mxdr,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
 

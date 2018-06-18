@@ -19,7 +19,6 @@ Module defects
                                 comm_self,mode_create,mode_rdonly
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
                                 atmnam,ltg,lfrzn,xxx,yyy,zzz
-  Use core_shell,        Only : ntshl,listshl
   Use parse,             Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
   Use io,                Only : io_set_parameters,        &
                                 io_get_parameters,        &
@@ -56,6 +55,7 @@ Module defects
   Use numerics,          Only : pbcshift,invert,dcell, shellsort2
   Use errors_warnings,   Only : error,warning
   Use neighbours,        Only : neighbours_type,defects_link_cells
+  Use core_shell,        Only : core_shell_type
 
   Implicit None
 
@@ -2140,7 +2140,7 @@ Subroutine defects_reference_write(name,megref,dfcts,comm)
 End Subroutine defects_reference_write
 
 !> defects_write
-  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,dfcts,neigh,site,comm)
+  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2158,6 +2158,7 @@ End Subroutine defects_reference_write
   Type( defects_type ), Intent( InOut ) :: dfcts
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( site_type ), Intent( In    ) :: site
+  Type( core_shell_type ), Intent( In    ) :: cshell
   Type( comms_type)   , Intent( InOut ) :: comm
   
   Integer, Parameter :: recsz = 73 ! default record size
@@ -2390,7 +2391,7 @@ End Subroutine defects_reference_write
 
 ! Exclude frozen and shell particles from consideration
 
-     If ( j == 1 .and. (lfrzn(i) /= 0 .or. Any(listshl(2,1:ntshl) == ltg(i))) ) j=0
+     If ( j == 1 .and. (lfrzn(i) /= 0 .or. Any(cshell%listshl(2,1:cshell%ntshl) == ltg(i))) ) j=0
 
 ! Assume that every considered particles (1) is an interstitial
 ! and (2) does not occupy a site yet
@@ -2447,7 +2448,7 @@ End Subroutine defects_reference_write
 
 ! Bypass if the site is a shell
 
-              If (Any(listshl(2,1:ntshl) == ltg(i))) Go To 400
+              If (Any(cshell%listshl(2,1:cshell%ntshl) == ltg(i))) Go To 400
 
 ! Assume the site is vacant
 

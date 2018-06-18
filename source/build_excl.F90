@@ -11,7 +11,7 @@ Module build_excl
 
 ! INTERACTION MODULES
 
-  Use core_shell
+  Use core_shell, Only : core_shell_type
 
 
   Use rigid_bodies
@@ -31,7 +31,7 @@ Module build_excl
 
 Contains
 
-Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
+Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -54,6 +54,7 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
   Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type( inversions_type ), Intent( In    ) :: inversion
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( comms_type ),  Intent( InOut ) :: comm
 
   Logical :: safe
@@ -270,9 +271,9 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
 
 ! exclude sites on basis of core-shell units
 
-  Do i=1,ntshl2
-     ia=listshl(1,i) ! This is the core
-     ib=listshl(2,i) ! This is the shell
+  Do i=1,cshell%ntshl2
+     ia=cshell%listshl(1,i) ! This is the core
+     ib=cshell%listshl(2,i) ! This is the shell
 
      ia0=local_index(ia,nlast,lsi,lsa)
      ib0=local_index(ib,nlast,lsi,lsa)
@@ -307,23 +308,23 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
         kb = 0 ; kb0 = 0
 
         If (lecx) Then
-           Do j=1,ntshl2
-              If (listshl(1,j) == ja) Then
-                 ka=listshl(2,j)
+           Do j=1,cshell%ntshl2
+              If (cshell%listshl(1,j) == ja) Then
+                 ka=cshell%listshl(2,j)
                  ka0=local_index(ka,nlast,lsi,lsa)
                  If (ka0 > natms) ka0=0
-!              Else If (listshl(2,j) == ja) Then
-!                 ka=listshl(1,j)
+!              Else If (cshell%listshl(2,j) == ja) Then
+!                 ka=cshell%listshl(1,j)
 !                 ka0=local_index(ka,nlast,lsi,lsa)
 !                 If (ka0 > natms) ka0=0
               End If
 
-              If (listshl(1,j) == jb) Then
-                 kb=listshl(2,j)
+              If (cshell%listshl(1,j) == jb) Then
+                 kb=cshell%listshl(2,j)
                  kb0=local_index(kb,nlast,lsi,lsa)
                  If (kb0 > natms) kb0=0
-!              Else If (listshl(2,j) == jb) Then
-!                 kb=listshl(1,j)
+!              Else If (cshell%listshl(2,j) == jb) Then
+!                 kb=cshell%listshl(1,j)
 !                 kb0=local_index(kb,nlast,lsi,lsa)
 !                 If (kb0 > natms) kb0=0
               End If
@@ -385,14 +386,14 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
         jrgd = 0 ; jrgd0 = 0
 
         If (lecx) Then
-           Do kk=1,ntshl2
+           Do kk=1,cshell%ntshl2
               Do k=1,listrgd(-1,j)
-                 If (irgd(k,j) == listshl(1,kk)) Then
-                    jrgd(k,j)=listshl(2,kk)
+                 If (irgd(k,j) == cshell%listshl(1,kk)) Then
+                    jrgd(k,j)=cshell%listshl(2,kk)
                     jrgd0(k,j)=local_index(jrgd(k,j),nlast,lsi,lsa)
                     If (jrgd0(k,j) > natms) jrgd0(k,j)=0
-!                 Else If (irgd(k,j) == listshl(2,kk)) Then
-!                    jrgd(k,j)=listshl(2,kk)
+!                 Else If (irgd(k,j) == cshell%listshl(2,kk)) Then
+!                    jrgd(k,j)=cshell%listshl(2,kk)
 !                    jrgd0(k,j)=local_index(jrgd(k,j),nlast,lsi,lsa)
 !                    If (jrgd0(k,j) > natms) jrgd0(k,j)=0
                  End If
@@ -449,23 +450,23 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
            kb = 0 ; kb0 = 0
 
            If (lecx) Then
-              Do j=1,ntshl2
-                 If (listshl(1,j) == ja) Then
-                    ka=listshl(2,j)
+              Do j=1,cshell%ntshl2
+                 If (cshell%listshl(1,j) == ja) Then
+                    ka=cshell%listshl(2,j)
                     ka0=local_index(ka,nlast,lsi,lsa)
                     If (ka0 > natms) ka0=0
-                 Else If (listshl(2,j) == ja) Then
-                    ka=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == ja) Then
+                    ka=cshell%listshl(1,j)
                     ka0=local_index(ka,nlast,lsi,lsa)
                     If (ka0 > natms) ka0=0
                  End If
 
-                 If (listshl(1,j) == jb) Then
-                    kb=listshl(2,j)
+                 If (cshell%listshl(1,j) == jb) Then
+                    kb=cshell%listshl(2,j)
                     kb0=local_index(kb,nlast,lsi,lsa)
                     If (kb0 > natms) kb0=0
-                 Else If (listshl(2,j) == jb) Then
-                    kb=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == jb) Then
+                    kb=cshell%listshl(1,j)
                     kb0=local_index(kb,nlast,lsi,lsa)
                     If (kb0 > natms) kb0=0
                  End If
@@ -534,33 +535,33 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
            kc = 0 ; kc0 = 0
 
            If (lecx) Then
-              Do j=1,ntshl2
-                 If (listshl(1,j) == ja) Then
-                    ka=listshl(2,j)
+              Do j=1,cshell%ntshl2
+                 If (cshell%listshl(1,j) == ja) Then
+                    ka=cshell%listshl(2,j)
                     ka0=local_index(ka,nlast,lsi,lsa)
                     If (ka0 > natms) ka0=0
-                 Else If (listshl(2,j) == ja) Then
-                    ka=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == ja) Then
+                    ka=cshell%listshl(1,j)
                     ka0=local_index(ka,nlast,lsi,lsa)
                     If (ka0 > natms) ka0=0
                  End If
 
-                 If (listshl(1,j) == jb) Then
-                    kb=listshl(2,j)
+                 If (cshell%listshl(1,j) == jb) Then
+                    kb=cshell%listshl(2,j)
                     kb0=local_index(kb,nlast,lsi,lsa)
                     If (kb0 > natms) kb0=0
-                 Else If (listshl(2,j) == jb) Then
-                    kb=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == jb) Then
+                    kb=cshell%listshl(1,j)
                     kb0=local_index(kb,nlast,lsi,lsa)
                     If (kb0 > natms) kb0=0
                  End If
 
-                 If (listshl(1,j) == jc) Then
-                    kc=listshl(2,j)
+                 If (cshell%listshl(1,j) == jc) Then
+                    kc=cshell%listshl(2,j)
                     kc0=local_index(kc,nlast,lsi,lsa)
                     If (kc0 > natms) kc0=0
-                 Else If (listshl(2,j) == jc) Then
-                    kc=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == jc) Then
+                    kc=cshell%listshl(1,j)
                     kc0=local_index(kc,nlast,lsi,lsa)
                     If (kc0 > natms) kc0=0
                  End If
@@ -693,43 +694,43 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
            kd = 0 ; kd0 = 0
 
            If (lecx) Then
-              Do j=1,ntshl2
-                 If (listshl(1,j) == ja) Then
-                    ka=listshl(2,j)
+              Do j=1,cshell%ntshl2
+                 If (cshell%listshl(1,j) == ja) Then
+                    ka=cshell%listshl(2,j)
                     ka0=local_index(ka,nlast,lsi,lsa)
                     If (ka0 > natms) ka0=0
-                 Else If (listshl(2,j) == ja) Then
-                    ka=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == ja) Then
+                    ka=cshell%listshl(1,j)
                     ka0=local_index(ka,nlast,lsi,lsa)
                     If (ka0 > natms) ka0=0
                  End If
 
-                 If (listshl(1,j) == jb) Then
-                    kb=listshl(2,j)
+                 If (cshell%listshl(1,j) == jb) Then
+                    kb=cshell%listshl(2,j)
                     kb0=local_index(kb,nlast,lsi,lsa)
                     If (kb0 > natms) kb0=0
-                 Else If (listshl(2,j) == jb) Then
-                    kb=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == jb) Then
+                    kb=cshell%listshl(1,j)
                     kb0=local_index(kb,nlast,lsi,lsa)
                     If (kb0 > natms) kb0=0
                  End If
 
-                 If (listshl(1,j) == jc) Then
-                    kc=listshl(2,j)
+                 If (cshell%listshl(1,j) == jc) Then
+                    kc=cshell%listshl(2,j)
                     kc0=local_index(kc,nlast,lsi,lsa)
                     If (kc0 > natms) kc0=0
-                 Else If (listshl(2,j) == jc) Then
-                    kc=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == jc) Then
+                    kc=cshell%listshl(1,j)
                     kc0=local_index(kc,nlast,lsi,lsa)
                     If (kc0 > natms) kc0=0
                  End If
 
-                 If (listshl(1,j) == jd) Then
-                    kd=listshl(2,j)
+                 If (cshell%listshl(1,j) == jd) Then
+                    kd=cshell%listshl(2,j)
                     kd0=local_index(kd,nlast,lsi,lsa)
                     If (kd0 > natms) kd0=0
-                 Else If (listshl(2,j) == jd) Then
-                    kd=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == jd) Then
+                    kd=cshell%listshl(1,j)
                     kd0=local_index(kd,nlast,lsi,lsa)
                     If (kd0 > natms) kd0=0
                  End If
@@ -942,43 +943,43 @@ Subroutine build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
            kd = 0 ; kd0 = 0
 
            If (lecx) Then
-              Do j=1,ntshl2
-                 If (listshl(1,j) == ja) Then
-                    ka=listshl(2,j)
+              Do j=1,cshell%ntshl2
+                 If (cshell%listshl(1,j) == ja) Then
+                    ka=cshell%listshl(2,j)
                     ka0=local_index(ka,nlast,lsi,lsa)
                     If (ka0 > natms) ka0=0
-                 Else If (listshl(2,j) == ja) Then
-                    ka=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == ja) Then
+                    ka=cshell%listshl(1,j)
                     ka0=local_index(ka,nlast,lsi,lsa)
                     If (ka0 > natms) ka0=0
                  End If
 
-                 If (listshl(1,j) == jb) Then
-                    kb=listshl(2,j)
+                 If (cshell%listshl(1,j) == jb) Then
+                    kb=cshell%listshl(2,j)
                     kb0=local_index(kb,nlast,lsi,lsa)
                     If (kb0 > natms) kb0=0
-                 Else If (listshl(2,j) == jb) Then
-                    kb=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == jb) Then
+                    kb=cshell%listshl(1,j)
                     kb0=local_index(kb,nlast,lsi,lsa)
                     If (kb0 > natms) kb0=0
                  End If
 
-                 If (listshl(1,j) == jc) Then
-                    kc=listshl(2,j)
+                 If (cshell%listshl(1,j) == jc) Then
+                    kc=cshell%listshl(2,j)
                     kc0=local_index(kc,nlast,lsi,lsa)
                     If (kc0 > natms) kc0=0
-                 Else If (listshl(2,j) == jc) Then
-                    kc=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == jc) Then
+                    kc=cshell%listshl(1,j)
                     kc0=local_index(kc,nlast,lsi,lsa)
                     If (kc0 > natms) kc0=0
                  End If
 
-                 If (listshl(1,j) == jd) Then
-                    kd=listshl(2,j)
+                 If (cshell%listshl(1,j) == jd) Then
+                    kd=cshell%listshl(2,j)
                     kd0=local_index(kd,nlast,lsi,lsa)
                     If (kd0 > natms) kd0=0
-                 Else If (listshl(2,j) == jd) Then
-                    kd=listshl(1,j)
+                 Else If (cshell%listshl(2,j) == jd) Then
+                    kd=cshell%listshl(1,j)
                     kd0=local_index(kd,nlast,lsi,lsa)
                     If (kd0 > natms) kd0=0
                  End If

@@ -7,7 +7,6 @@ Module nvt_langevin
                               xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use domains,         Only : map
   Use kinetics,        Only : kinstress,kinstresf,kinstrest,getvom,getknr
-  Use core_shell,      Only : legshl
   Use constraints,     Only : constraints_tags,apply_shake,&
                               apply_rattle,constraints_type
   Use pmf,             Only : pmf_tags,pmf_type
@@ -25,9 +24,11 @@ Module nvt_langevin
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type
+Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
 Use thermostat, Only : adjust_timestep
+Use core_shell, Only : core_shell_type
   Implicit None
 
   Private
@@ -40,7 +41,7 @@ Contains
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,                    &
              strkin,engke,                      &
-             cons,pmf,stat,thermo,tmr,comm)
+             cshell,cons,pmf,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -72,6 +73,7 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
 Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
@@ -170,8 +172,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           Call error(0,message)
        End If
 
-       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr)
-       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr,cshell)
+       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
 
   100  Continue
 
@@ -267,7 +269,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,tmp,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,tmp,comm)) Then 
             Call info(message,.true.)
 
   ! scale Langevin random forces
@@ -357,7 +359,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,                    &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cons,pmf,stat,thermo,tmr,comm)
+             strcom,vircom,cshell,cons,pmf,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -393,6 +395,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
 Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
@@ -578,8 +581,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           Call error(0,message)
        End If
 
-       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr)
-       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl)
+       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr,cshell)
+       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
        If (lshmv_rgd) Then
           Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxr,fyr,fzr,comm)
           Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
@@ -927,7 +930,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,tmp,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,tmp,comm)) Then 
             Call info(message,.true.)
 
   ! scale Langevin random forces
@@ -1186,7 +1189,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,  &
              strkin,engke,                      &
-             cons,pmf,stat,thermo,tmr,comm)
+             cshell,cons,pmf,stat,thermo,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1219,6 +1222,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
     Type( stats_type), Intent( InOut ) :: stat
+Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
 Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1330,8 +1334,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
        End If
 
        If (lrand) Then
-         Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi_ep,fxr,fyr,fzr)
-         Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi_ep,fxl,fyl,fzl)
+         Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi_ep,fxr,fyr,fzr,cshell)
+         Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi_ep,fxl,fyl,fzl,cshell)
        Else
          fxr = 0.0_wp; fyr = 0.0_wp; fzr = 0.0_wp
          fxl = 0.0_wp; fyl = 0.0_wp; fzl = 0.0_wp
@@ -1622,7 +1626,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        If (lvar) Then
 If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,legshl,message,tmp,comm)) Then 
+ xxt,yyt,zzt,cshell%legshl,message,tmp,comm)) Then 
             Call info(message,.true.)
 
   ! scale Langevin random forces

@@ -59,6 +59,7 @@ Module kontrol
   Use constraints, Only : constraints_type
   Use pmf, Only : pmf_type
   Use neighbours, Only : neighbours_type
+  Use core_shell, Only : core_shell_type
 
   Implicit None
   Private
@@ -87,7 +88,7 @@ Subroutine read_control                                &
            nstbnd,nstang,nstdih,nstinv,nstrdf,  &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
+           ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
            pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -142,6 +143,7 @@ Subroutine read_control                                &
                                              fmax,epsq,rlx_tol(1:2),     &
                                              rrsd,pdplnc
   Type( pmf_type ), Intent (   InOut )   :: pmf
+  Type( core_shell_type ), Intent (   In  )   :: cshell
   Type( constraints_type ), Intent (   InOut )   :: cons
   Type( stats_type ), Intent (   InOut )   :: stats
   Type( impact_type ),     Intent(   Out ) :: impa
@@ -1157,11 +1159,11 @@ Subroutine read_control                                &
            If (mximpl == 0 ) Then
              Call warning('scheme deselected due to switched off electrostatics',.true.)
            End If
-           If (mxshl == 0) Then
+           If (cshell%mxshl == 0) Then
              Call warning('scheme disabled due to lack of core-shell defined interatcions',.true.)
            End If
 
-           If (mximpl == 0 .or. mxshl == 0) Then
+           If (mximpl == 0 .or. cshell%mxshl == 0) Then
 !              keyind=0 ! done in scan_control
            Else
               lecx = .true. ! enable extended coulombic exclusion
@@ -3655,8 +3657,8 @@ Subroutine scan_control                                    &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                          &
-           mxshl,mxompl,mximpl,keyind,                     &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,stats,  &
+           mxompl,mximpl,keyind,                     &
+           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,cshell,stats,  &
            thermo,green,devel,msd_data,met,pois,bond,angle, &
            dihedral,inversion,zdensity,neigh,vdw,tersoff,comm)
 
@@ -3678,13 +3680,14 @@ Subroutine scan_control                                    &
 
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
-  Integer,           Intent( In    ) :: mxrdf,mxmet,mxrgd,imcon,mxshl
+  Integer,           Intent( In    ) :: mxrdf,mxmet,mxrgd,imcon
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
   Integer,           Intent(   Out ) :: mxgana, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rbin,alpha
+  Type( core_shell_type ), Intent (   In  )   :: cshell
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( development_type ), Intent( InOut ) :: devel
@@ -4068,7 +4071,7 @@ Subroutine scan_control                                    &
         Call get_word(record,word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
-        If (word(1:6) == 'charmm' .and. mxshl > 0) keyind=1
+        If (word(1:6) == 'charmm' .and. cshell%mxshl > 0) keyind=1
 
      Else If (word(1:2) == 'no') Then
 

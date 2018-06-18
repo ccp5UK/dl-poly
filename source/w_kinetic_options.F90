@@ -9,8 +9,8 @@
 
         If (thermo%l_pseudo) Then
               Call pseudo_vv                            &
-           (1,keyshl,tstep, &
-           nstep,site%dof_site,stat,thermo,comm)
+           (1,tstep, &
+           nstep,site%dof_site,cshell,stat,thermo,comm)
         End If
 
 ! Apply temperature regaussing
@@ -29,11 +29,11 @@
 
 ! quench core-shell units in adiabatic model
 
-           If (megshl > 0 .and. keyshl == 1) Then
+           If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Then
               stat%stptmp = 2.0_wp*(stat%engke+stat%engrot) / (boltz*Real(degfre,wp))
               Do
                  Call scale_temperature(stat%engke+stat%engrot,degtra,degrot,degfre,comm)
-                 Call core_shell_quench(safe,stat%stptmp,comm)
+                 Call core_shell_quench(safe,stat%stptmp,cshell,comm)
                  If (cons%megcon > 0) Call constraints_quench(cons,stat,comm)
                  If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
                  If (megrgd > 0) Call rigid_bodies_quench(comm)
@@ -72,10 +72,10 @@
 
 ! quench core-shell units in adiabatic model
 
-           If (megshl > 0 .and. keyshl == 1) Then
+           If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Then
               Do
                  Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
-                 Call core_shell_quench(safe,stat%stptmp,comm)
+                 Call core_shell_quench(safe,stat%stptmp,cshell,comm)
                  If (cons%megcon > 0) Call constraints_quench(cons,stat,comm)
                  If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
                  If (megrgd > 0) Call rigid_bodies_quench(comm)

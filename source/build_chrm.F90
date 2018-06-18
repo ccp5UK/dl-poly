@@ -8,7 +8,7 @@ Module build_chrm
 
   Use configuration, Only : natms,nlast,lsi,lsa,ltg,lfrzn
 
-  Use core_shell
+  Use core_shell, Only : core_shell_type
 
   Use rigid_bodies
 
@@ -27,7 +27,7 @@ Module build_chrm
 
   Public :: build_chrm_intra
 Contains
-  Subroutine build_chrm_intra(max_exclude,cons,bond,angle,dihedral,inversion,comm)
+  Subroutine build_chrm_intra(max_exclude,cshell,cons,bond,angle,dihedral,inversion,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -55,6 +55,7 @@ Contains
     Type( angles_type ), Intent( In    ) :: angle
     Type( dihedrals_type ), Intent( In    ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( comms_type ),  Intent( InOut) :: comm
 
     Logical :: safe
@@ -72,9 +73,9 @@ Contains
 
     ! go over the extended list of core-shell units
 
-    Do i=1,ntshl2
-      ia=listshl(1,i) ! This is the core
-      ib=listshl(2,i) ! This is the shell
+    Do i=1,cshell%ntshl2
+      ia=cshell%listshl(1,i) ! This is the core
+      ib=cshell%listshl(2,i) ! This is the shell
 
       ia0=local_index(ia,nlast,lsi,lsa)
       ib0=local_index(ib,nlast,lsi,lsa)
@@ -103,23 +104,23 @@ Contains
         ka = 0 ; ka0 = 0
         kb = 0 ; kb0 = 0
 
-        Do j=1,ntshl2
-          If (listshl(1,j) == ja) Then
-            ka=listshl(2,j)
+        Do j=1,cshell%ntshl2
+          If (cshell%listshl(1,j) == ja) Then
+            ka=cshell%listshl(2,j)
             ka0=local_index(ka,nlast,lsi,lsa)
             If (ka0 > natms) ka0=0
-            !           Else If (listshl(2,j) == ja) Then
-            !              ka=listshl(1,j)
+            !           Else If (cshell%listshl(2,j) == ja) Then
+            !              ka=cshell%listshl(1,j)
             !              ka0=local_index(ka,nlast,lsi,lsa)
             !              If (ka0 > natms) ka0=0
           End If
 
-          If (listshl(1,j) == jb) Then
-            kb=listshl(2,j)
+          If (cshell%listshl(1,j) == jb) Then
+            kb=cshell%listshl(2,j)
             kb0=local_index(kb,nlast,lsi,lsa)
             If (kb0 > natms) kb0=0
-            !           Else If (listshl(2,j) == jb) Then
-            !              kb=listshl(1,j)
+            !           Else If (cshell%listshl(2,j) == jb) Then
+            !              kb=cshell%listshl(1,j)
             !              kb0=local_index(kb,nlast,lsi,lsa)
             !              If (kb0 > natms) kb0=0
           End If
@@ -183,23 +184,23 @@ Contains
           ka = 0 ; ka0 = 0
           kb = 0 ; kb0 = 0
 
-          Do j=1,ntshl2
-            If (listshl(1,j) == ja) Then
-              ka=listshl(2,j)
+          Do j=1,cshell%ntshl2
+            If (cshell%listshl(1,j) == ja) Then
+              ka=cshell%listshl(2,j)
               ka0=local_index(ka,nlast,lsi,lsa)
               If (ka0 > natms) ka0=0
-            Else If (listshl(2,j) == ja) Then
-              ka=listshl(1,j)
+            Else If (cshell%listshl(2,j) == ja) Then
+              ka=cshell%listshl(1,j)
               ka0=local_index(ka,nlast,lsi,lsa)
               If (ka0 > natms) ka0=0
             End If
 
-            If (listshl(1,j) == jb) Then
-              kb=listshl(2,j)
+            If (cshell%listshl(1,j) == jb) Then
+              kb=cshell%listshl(2,j)
               kb0=local_index(kb,nlast,lsi,lsa)
               If (kb0 > natms) kb0=0
-            Else If (listshl(2,j) == jb) Then
-              kb=listshl(1,j)
+            Else If (cshell%listshl(2,j) == jb) Then
+              kb=cshell%listshl(1,j)
               kb0=local_index(kb,nlast,lsi,lsa)
               If (kb0 > natms) kb0=0
             End If
@@ -268,33 +269,33 @@ Contains
           kb = 0 ; kb0 = 0
           kc = 0 ; kc0 = 0
 
-          Do j=1,ntshl2
-            If (listshl(1,j) == ja) Then
-              ka=listshl(2,j)
+          Do j=1,cshell%ntshl2
+            If (cshell%listshl(1,j) == ja) Then
+              ka=cshell%listshl(2,j)
               ka0=local_index(ka,nlast,lsi,lsa)
               If (ka0 > natms) ka0=0
-            Else If (listshl(2,j) == ja) Then
-              ka=listshl(1,j)
+            Else If (cshell%listshl(2,j) == ja) Then
+              ka=cshell%listshl(1,j)
               ka0=local_index(ka,nlast,lsi,lsa)
               If (ka0 > natms) ka0=0
             End If
 
-            If (listshl(1,j) == jb) Then
-              kb=listshl(2,j)
+            If (cshell%listshl(1,j) == jb) Then
+              kb=cshell%listshl(2,j)
               kb0=local_index(kb,nlast,lsi,lsa)
               If (kb0 > natms) kb0=0
-            Else If (listshl(2,j) == jb) Then
-              kb=listshl(1,j)
+            Else If (cshell%listshl(2,j) == jb) Then
+              kb=cshell%listshl(1,j)
               kb0=local_index(kb,nlast,lsi,lsa)
               If (kb0 > natms) kb0=0
             End If
 
-            If (listshl(1,j) == jc) Then
-              kc=listshl(2,j)
+            If (cshell%listshl(1,j) == jc) Then
+              kc=cshell%listshl(2,j)
               kc0=local_index(kc,nlast,lsi,lsa)
               If (kc0 > natms) kc0=0
-            Else If (listshl(2,j) == jc) Then
-              kc=listshl(1,j)
+            Else If (cshell%listshl(2,j) == jc) Then
+              kc=cshell%listshl(1,j)
               kc0=local_index(kc,nlast,lsi,lsa)
               If (kc0 > natms) kc0=0
             End If
@@ -473,43 +474,43 @@ Contains
           kc = 0 ; kc0 = 0
           kd = 0 ; kd0 = 0
 
-          Do j=1,ntshl2
-            If (listshl(1,j) == ja) Then
-              ka=listshl(2,j)
+          Do j=1,cshell%ntshl2
+            If (cshell%listshl(1,j) == ja) Then
+              ka=cshell%listshl(2,j)
               ka0=local_index(ka,nlast,lsi,lsa)
               If (ka0 > natms) ka0=0
-            Else If (listshl(2,j) == ja) Then
-              ka=listshl(1,j)
+            Else If (cshell%listshl(2,j) == ja) Then
+              ka=cshell%listshl(1,j)
               ka0=local_index(ka,nlast,lsi,lsa)
               If (ka0 > natms) ka0=0
             End If
 
-            If (listshl(1,j) == jb) Then
-              kb=listshl(2,j)
+            If (cshell%listshl(1,j) == jb) Then
+              kb=cshell%listshl(2,j)
               kb0=local_index(kb,nlast,lsi,lsa)
               If (kb0 > natms) kb0=0
-            Else If (listshl(2,j) == jb) Then
-              kb=listshl(1,j)
+            Else If (cshell%listshl(2,j) == jb) Then
+              kb=cshell%listshl(1,j)
               kb0=local_index(kb,nlast,lsi,lsa)
               If (kb0 > natms) kb0=0
             End If
 
-            If (listshl(1,j) == jc) Then
-              kc=listshl(2,j)
+            If (cshell%listshl(1,j) == jc) Then
+              kc=cshell%listshl(2,j)
               kc0=local_index(kc,nlast,lsi,lsa)
               If (kc0 > natms) kc0=0
-            Else If (listshl(2,j) == jc) Then
-              kc=listshl(1,j)
+            Else If (cshell%listshl(2,j) == jc) Then
+              kc=cshell%listshl(1,j)
               kc0=local_index(kc,nlast,lsi,lsa)
               If (kc0 > natms) kc0=0
             End If
 
-            If (listshl(1,j) == jd) Then
-              kd=listshl(2,j)
+            If (cshell%listshl(1,j) == jd) Then
+              kd=cshell%listshl(2,j)
               kd0=local_index(kd,nlast,lsi,lsa)
               If (kd0 > natms) kd0=0
-            Else If (listshl(2,j) == jd) Then
-              kd=listshl(1,j)
+            Else If (cshell%listshl(2,j) == jd) Then
+              kd=cshell%listshl(1,j)
               kd0=local_index(kd,nlast,lsi,lsa)
               If (kd0 > natms) kd0=0
             End If
@@ -776,43 +777,43 @@ Contains
           kc = 0 ; kc0 = 0
           kd = 0 ; kd0 = 0
 
-          Do j=1,ntshl2
-            If (listshl(1,j) == ja) Then
-              ka=listshl(2,j)
+          Do j=1,cshell%ntshl2
+            If (cshell%listshl(1,j) == ja) Then
+              ka=cshell%listshl(2,j)
               ka0=local_index(ka,nlast,lsi,lsa)
               If (ka0 > natms) ka0=0
-            Else If (listshl(2,j) == ja) Then
-              ka=listshl(1,j)
+            Else If (cshell%listshl(2,j) == ja) Then
+              ka=cshell%listshl(1,j)
               ka0=local_index(ka,nlast,lsi,lsa)
               If (ka0 > natms) ka0=0
             End If
 
-            If (listshl(1,j) == jb) Then
-              kb=listshl(2,j)
+            If (cshell%listshl(1,j) == jb) Then
+              kb=cshell%listshl(2,j)
               kb0=local_index(kb,nlast,lsi,lsa)
               If (kb0 > natms) kb0=0
-            Else If (listshl(2,j) == jb) Then
-              kb=listshl(1,j)
+            Else If (cshell%listshl(2,j) == jb) Then
+              kb=cshell%listshl(1,j)
               kb0=local_index(kb,nlast,lsi,lsa)
               If (kb0 > natms) kb0=0
             End If
 
-            If (listshl(1,j) == jc) Then
-              kc=listshl(2,j)
+            If (cshell%listshl(1,j) == jc) Then
+              kc=cshell%listshl(2,j)
               kc0=local_index(kc,nlast,lsi,lsa)
               If (kc0 > natms) kc0=0
-            Else If (listshl(2,j) == jc) Then
-              kc=listshl(1,j)
+            Else If (cshell%listshl(2,j) == jc) Then
+              kc=cshell%listshl(1,j)
               kc0=local_index(kc,nlast,lsi,lsa)
               If (kc0 > natms) kc0=0
             End If
 
-            If (listshl(1,j) == jd) Then
-              kd=listshl(2,j)
+            If (cshell%listshl(1,j) == jd) Then
+              kd=cshell%listshl(2,j)
               kd0=local_index(kd,nlast,lsi,lsa)
               If (kd0 > natms) kd0=0
-            Else If (listshl(2,j) == jd) Then
-              kd=listshl(1,j)
+            Else If (cshell%listshl(2,j) == jd) Then
+              kd=cshell%listshl(1,j)
               kd0=local_index(kd,nlast,lsi,lsa)
               If (kd0 > natms) kd0=0
             End If
@@ -1106,7 +1107,7 @@ Contains
 
     Do i=1,natms                                                 ! on this node only (& below)
       l=lchatm(0,i)                                             ! end of list tag
-      If (l > 0 .and. legshl(0,i) > 0) Then                     ! this is a qualifying CHARMMing core
+      If (l > 0 .and. cshell%legshl(0,i) > 0) Then                     ! this is a qualifying CHARMMing core
         ibig=ltg(i)
         Do j=1,ntrgd1                                          ! loop over the extended list of all RB
           k=listrgd(-1,j)

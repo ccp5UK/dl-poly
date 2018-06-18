@@ -118,15 +118,14 @@
               Call build_book_intra     &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           megshl,        &
            megrgd,degrot,degtra,        &
-           megtet,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,comm)
-              If (lexcl) Call build_excl_intra(lecx,cons,bond,angle,dihedral,inversion,neigh,comm)
+           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,comm)
+              If (lexcl) Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,comm)
            End If
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(cons,pmf,stat,plume,pois,bond,angle,dihedral, &
+           Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,site,vdw,tersoff,tmr)
 
 ! Evaluate kinetics if available
@@ -157,11 +156,11 @@
 
 ! Apply kinetic options
 
-              Call w_kinetic_options(cons,pmf,stat,site)
+              Call w_kinetic_options(cshell,cons,pmf,stat,site)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
-              If (megshl > 0 .and. keyshl == 1) Call core_shell_kinetic(stat%shlke,comm)
+              If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Call core_shell_kinetic(stat%shlke,cshell,comm)
            End If
 
 ! Get complete stress tensor
@@ -221,16 +220,16 @@
            (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write &
-             (keyres,thermo%ensemble,nstep,tstep,time,dfcts(1),neigh,site,comm)
+             (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(1),neigh,site,comm)
              If (dfcts(2)%ldef)Then
                Call defects_write &
-               (keyres,thermo%ensemble,nstep,tstep,time,dfcts(2),neigh,site,comm)
+               (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(2),neigh,site,comm)
              End If
            End If
            If (msd_data%l_msd) Call msd_write &
              (keyres,megatm,nstep,tstep,time,stat%stpval,site%dof_site,msd_data,comm)
            If (lrsd) Call rsd_write &
-           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,stat%rsd,comm)
+           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,stat%rsd,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (keyres,nstph,tsths,green,site,comm)
 
@@ -301,11 +300,9 @@
      Call set_temperature            &
            (levcfg,keyres,      &
            lmin,nstep,nstrun,nstmin, &
-           keyshl,     &
            atmfre,atmfrz,            &
-           megshl,     &
            megrgd,degtra,degrot,     &
-           degfre,degshl,stat%engrot,site%dof_site,stat,cons,pmf,thermo,comm)
+           degfre,degshl,stat%engrot,site%dof_site,cshell,stat,cons,pmf,thermo,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

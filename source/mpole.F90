@@ -4,7 +4,7 @@ Module mpole
                            sqrpi,r4pie0,zero_plus,nrite,nmpldt
   Use configuration,Only : natms
   Use site, Only : site_type
-  Use core_shell, Only : numshl,lstshl
+  Use core_shell, Only : core_shell_type
   Use parse
   Use comms, Only : comms_type
   Use numerics, Only : factorial
@@ -279,7 +279,7 @@ Contains
 
   End Subroutine allocate_mpoles_arrays
 
-  Subroutine read_mpoles(l_top,sumchg,site,comm)
+  Subroutine read_mpoles(l_top,sumchg,cshell,site,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -294,6 +294,7 @@ Contains
     Logical,           Intent ( In    ) :: l_top
     Real( Kind = wp ), Intent ( InOut ) :: sumchg
     Type( site_type ), Intent( InOut ) :: site
+    Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( comms_type ), Intent ( InOut ) :: comm
 
     Logical                :: safe,l_rsh,l_ord=.false.
@@ -495,10 +496,10 @@ Contains
 
                          l_rsh=.true. ! regular or no shelling (Drude)
                          kshels=nshels
-                         Do ishls=1,numshl(itmols) ! detect beyond charge shelling
+                         Do ishls=1,cshell%numshl(itmols) ! detect beyond charge shelling
                             kshels=kshels+1
 
-                            isite2=nsite+lstshl(2,kshels)
+                            isite2=nsite+cshell%lstshl(2,kshels)
                             If ((isite2 >= jsite .and. isite2 <= lsite)) Then
                                l_rsh=.false.
                                If (ordmpl > 0) Write(message,'(a)') &

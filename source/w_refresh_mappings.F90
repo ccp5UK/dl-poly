@@ -7,7 +7,7 @@
 
 ! Check VNL conditioning
 
-        Call vnl_check(l_str,width,neigh,comm)
+        Call vnl_check(l_str,width,neigh,stat,comm)
 
         If (neigh%update) Then
 
@@ -15,9 +15,8 @@
 
            Call relocate_particles  &
            (dvar,neigh%cutoff_extended,lbook,msd_data%l_msd,megatm, &
-           megshl,     &
            m_rgd,megtet,            &
-           cons, pmf,& 
+           cshell,cons, pmf,& 
            stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,comm)
 
 ! Exchange atomic data in border regions

@@ -199,7 +199,7 @@ Module setup
   Integer, Save ::                                              &
     mxatyp,mxtmls,mxompl,mximpl,                  &
     mxspl,mxspl1,mxspl2,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1, &
-    mxtshl,mxshl,mxfshl,mxlshp,mxproc,     &
+    mxlshp,mxproc,     &
     mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
     mxrdf,mxgrdf,mxgele,                                        &
     mxmet,mxmed,mxmds,mxpmet,                            &

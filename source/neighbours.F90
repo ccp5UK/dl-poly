@@ -12,12 +12,13 @@ Module neighbours
                             nprx_r,npry_r,nprz_r
   Use configuration,  Only : imcon,cell,natms,nlast,ltg,lfrzn, &
                              xxx,yyy,zzz
-  Use core_shell,    Only : listshl,legshl
+  Use core_shell,    Only : core_shell_type
   Use mpole,         Only : keyind,lchatm
   Use development, Only : development_type
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : dcell,images,invert,match
   Use timer,  Only : timer_type,start_timer,stop_timer
+  Use statistics, Only : stats_type
   Implicit None
 
   Private
@@ -32,15 +33,6 @@ Module neighbours
     !> Unconditional update flag
     Logical, Public :: unconditional_update = .false.
 
-    !> Skips, elements are as follows
-    !>
-    !> - 1 skips counter
-    !> - 2 access counter
-    !> - 3 average skips
-    !> - 4 minimum skips ~Huge(1)
-    !> - 5 maximum skips
-    Real( Kind = wp ), Public :: skip(1:5) = [0.0_wp,0.0_wp,0.0_wp, &
-                                              999999999.0_wp,0.0_wp]
 
     !> Tracking points for Verlet neighbour list
     Real( Kind = wp ), Allocatable, Public :: xbg(:),ybg(:),zbg(:)
@@ -94,10 +86,11 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !>
   !> Contrib   - I.J.Bush february 2014
-  Subroutine vnl_check(l_str,width,neigh,comm)
+  Subroutine vnl_check(l_str,width,neigh,stat,comm)
     Logical,           Intent ( In    ) :: l_str
     Real( Kind = wp ), Intent ( InOut ) :: width
     Type( neighbours_type ), Intent( InOut ) :: neigh
+    Type( stats_type ), Intent( InOut) :: stat
     Type( comms_type ), Intent ( InOut ) :: comm
 
     Logical, Save :: newstart=.true.
@@ -223,19 +216,19 @@ Contains
     End If
 
     If (neigh%update) Then ! Deal with skipping statistics
-      neigh%skip(3)=neigh%skip(2)*neigh%skip(3)
-      neigh%skip(2)=neigh%skip(2)+1.0_wp
-      neigh%skip(3)=neigh%skip(3)/neigh%skip(2)+neigh%skip(1)/neigh%skip(2)
+      stat%neighskip(3)=stat%neighskip(2)*stat%neighskip(3)
+      stat%neighskip(2)=stat%neighskip(2)+1.0_wp
+      stat%neighskip(3)=stat%neighskip(3)/stat%neighskip(2)+stat%neighskip(1)/stat%neighskip(2)
       If (.not.newstart) Then ! avoid first compulsory force evaluation
-        neigh%skip(4)=Min(neigh%skip(1),neigh%skip(4))
+        stat%neighskip(4)=Min(stat%neighskip(1),stat%neighskip(4))
       Else
         newstart=.false.
       End If
-      neigh%skip(5)=Max(neigh%skip(1),neigh%skip(5))
+      stat%neighskip(5)=Max(stat%neighskip(1),stat%neighskip(5))
 
-      neigh%skip(1) = 0.0_wp              ! Reset here, checkpoit set by vnl_set_check in set_halo_particles
+      stat%neighskip(1) = 0.0_wp              ! Reset here, checkpoit set by vnl_set_check in set_halo_particles
     Else            ! Enjoy telephoning
-      neigh%skip(1) = neigh%skip(1) + 1.0_wp ! Increment, telephony done for xxx,yyy,zzz in set_halo_positions
+      stat%neighskip(1) = stat%neighskip(1) + 1.0_wp ! Increment, telephony done for xxx,yyy,zzz in set_halo_positions
     End If
   End Subroutine vnl_check
 
@@ -267,11 +260,11 @@ Contains
       ! CVNL state and skippage accumulators are initialised in vnl_module
       !
       !    neigh%update = .true.
-      !    neigh%skip(1) - cycles counter
-      !    neigh%skip(2) - access counter
-      !    neigh%skip(3) - average cycles
-      !    neigh%skip(4) - minimum cycles
-      !    neigh%skip(5) - maximum cycles
+      !    stat%neighskip(1) - cycles counter
+      !    stat%neighskip(2) - access counter
+      !    stat%neighskip(3) - average cycles
+      !    stat%neighskip(4) - minimum cycles
+      !    stat%neighskip(5) - maximum cycles
     End If
 
     ! set tracking point
@@ -287,12 +280,13 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !>
   !> Contrib   - I.J.Bush february 2014
-  Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,devel,neigh,tmr,comm)
+  Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,cshell,devel,neigh,tmr,comm)
     Logical,            Intent( In    ) :: lbook
     Integer,            Intent( In    ) :: megfrz
     Real( Kind = wp ) , Intent( In    ) :: rvdw,rmet,pdplnc
     Type( development_type ), Intent( In    ) :: devel
     Type( neighbours_type ), Intent( InOut ) :: neigh
+    Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( timer_type ),                       Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -1057,7 +1051,7 @@ Contains
       cnt=0.0_wp
       Do i=1,natms
         ii=ltg(i)
-        ll=legshl(0,i)
+        ll=cshell%legshl(0,i)
 
         !        iz=(which_cell(i)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
         !        iy=(which_cell(i)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*iz
@@ -1073,14 +1067,14 @@ Contains
           ! Exclude core-shell units' pairs from the check
           If (ll /= 0) Then ! the primary particle is part of a unit
             If (j <= natms) Then ! can check directly if the pair is part of the same unit
-              If (legshl(0,j) /= 0) Then ! the secondary particle is part of a unit
-                If (legshl(1,i) == legshl(1,j)) Cycle ! both are part of the same unit
+              If (cshell%legshl(0,j) /= 0) Then ! the secondary particle is part of a unit
+                If (cshell%legshl(1,i) == cshell%legshl(1,j)) Cycle ! both are part of the same unit
               End If
             Else                 ! cannot check directly
               If (ll > 0) Then ! the primary particle is a core
-                If (listshl(2,legshl(1,i)) == jj) Cycle ! jj is the shell of that core
+                If (cshell%listshl(2,cshell%legshl(1,i)) == jj) Cycle ! jj is the shell of that core
               Else               ! the primary particle is a shell
-                If (listshl(1,legshl(1,i)) == jj) Cycle ! jj is the core of that shell
+                If (cshell%listshl(1,cshell%legshl(1,i)) == jj) Cycle ! jj is the core of that shell
               End If
             End If
           End If

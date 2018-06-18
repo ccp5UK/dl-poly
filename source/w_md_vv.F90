@@ -28,7 +28,7 @@
         If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz,comm)
 
         If (thermo%l_langevin) Then
-           Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl)
+           Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
            If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
            Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
         Else
@@ -50,7 +50,7 @@
 
 ! Apply impact
 
-     Call w_impact_option(levcfg,nstep,nsteql,megrgd,stat,impa,comm)
+     Call w_impact_option(levcfg,nstep,nsteql,megrgd,cshell,stat,impa,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 ! levcfg == 2 avoids application twice when forces are calculated at (re)start
@@ -59,7 +59,7 @@
         If (levcfg == 2) Then
            newjob = .false.
 
-           If (keyres /= 1) Call w_write_options(stat,site)
+           If (keyres /= 1) Call w_write_options(cshell,stat,site)
 
            If (nstep == 0 .and. nstep == nstrun) Go To 1000
         End If
@@ -84,21 +84,22 @@
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,cons,pmf,stat,thermo,site,vdw,tmr)
+        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,site,vdw,tmr)
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
+        Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
 ! Evaluate forces
 
-     Call w_calculate_forces(cons,pmf,stat,plume,pois,bond,angle,dihedral,inversion,tether,threebody,neigh,site,vdw,tersoff,tmr)
+     Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+       inversion,tether,threebody,neigh,site,vdw,tersoff,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-     If (nstep == 0) Call w_statistics_report(mxatdm_,cons,pmf,stat,msd_data,zdensity,site)
+     If (nstep == 0) Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,site)
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
@@ -113,11 +114,11 @@
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,cons,pmf,stat,thermo,site,vdw,tmr)
+        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,site,vdw,tmr)
 
 ! Apply kinetic options
 
-        Call w_kinetic_options(cons,pmf,stat,site)
+        Call w_kinetic_options(cshell,cons,pmf,stat,site)
 
 ! Update total time of simulation
 
@@ -125,11 +126,11 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(mxatdm_,cons,pmf,stat,msd_data,zdensity,site)
+        Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,site)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options(stat,site)
+        Call w_write_options(cshell,stat,site)
 
 ! Save restart data in event of system crash
 

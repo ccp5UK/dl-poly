@@ -9,11 +9,11 @@ Module drivers
                            indrgd,listrgd,rgdfrz,rgdx,rgdy,rgdz,q0,q1,q2,q3,&
                            rgdriz,rgdwgt,rgdrix,rgdriy,rgdriz,rgdind,rgdzzz,rgdyyy,&
                            rgdxxx,rgdmeg,ntrgd,lshmv_rgd,lishp_rgd,lashp_rgd
-  Use setup, Only : boltz,mxatms,mxshl,mxlrgd,mxrgd,zero_plus
+  Use setup, Only : boltz,mxatms,mxlrgd,mxrgd,zero_plus
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type
-  Use core_shell,  Only : ntshl,listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
+  Use core_shell,  Only : core_shell_type,SHELL_ADIABATIC 
 
   Use impacts, Only : impact_type, impact
   Use errors_warnings, Only : error,warning,info
@@ -29,10 +29,11 @@ Module drivers
 
 Contains
 
-  Subroutine w_impact_option(levcfg,nstep,nsteql,megrgd,stats,impa,comm)
+  Subroutine w_impact_option(levcfg,nstep,nsteql,megrgd,cshell,stats,impa,comm)
 
     Integer( Kind = wi ),   Intent( InOut ) :: levcfg,nstep,nsteql,megrgd
     Type(stats_type)   ,   Intent( InOut ) :: stats
+    Type(core_shell_type)   ,   Intent( InOut ) :: cshell
     Type(impact_type)   ,   Intent( InOut ) :: impa
     Type(comms_type)    ,   Intent( InOut ) :: comm
 
@@ -54,7 +55,7 @@ Contains
 
         If (nstep+1 <= nsteql) Call warning(380,Real(nsteql,wp),0.0_wp,0.0_wp)
 
-        Call impact(megrgd,impa,comm)
+        Call impact(megrgd,cshell,impa,comm)
 
 ! Correct kinetic stress and energy
 
@@ -127,8 +128,8 @@ Contains
 !  End Subroutine w_replay_historf
 
 Subroutine pseudo_vv                                      &
-           (isw,keyshl,tstep, &
-           nstep,dof_site,stats,thermo,comm)
+           (isw,tstep, &
+           nstep,dof_site,cshell,stats,thermo,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -150,10 +151,11 @@ Subroutine pseudo_vv                                      &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: isw,keyshl,nstep
+  Integer,           Intent( In    ) :: isw,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep
   Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
   Type( stats_type), Intent( InOut ) :: stats
+  Type( core_shell_type), Intent( InOut ) :: cshell
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -206,7 +208,7 @@ Subroutine pseudo_vv                                      &
            megrgd=rgdmeg
 
            Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),    Stat=fail(1))
-           Allocate (qs(0:2,1:mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
+           Allocate (qs(0:2,1:cshell%mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
            Allocate (qr(1:mxrgd),tpr(0:comm%mxnode-1),     Stat=fail(3))
            If (Any(fail > 0)) Then
               Write(message,'(a)') 'pseudo (q. and tp.) allocation failure'
@@ -242,7 +244,7 @@ Subroutine pseudo_vv                                      &
 ! ntp - grand total of non-shell, non-frozen particles to thermostat
 
      qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
-     qs(0:2,1:ntshl) = 0 ! unqualified core-shell unit with a local shell
+     qs(0:2,1:cshell%ntshl) = 0 ! unqualified core-shell unit with a local shell
      qr(1:ntrgd)     = 0 ! unqualified RB
 
      j = 0
@@ -255,7 +257,7 @@ Subroutine pseudo_vv                                      &
         ssy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i) ; ssy=Abs(ssy-Anint(ssy))
         ssz=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i) ; ssz=Abs(ssz-Anint(ssz))
 
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. legshl(0,i) >= 0 .and. &
+        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0 .and. &
             (ssx >= sx .or. ssy >= sy .or. ssz >= sz)) Then
            j = j + 1
            qn(i) = 1
@@ -406,16 +408,16 @@ Subroutine pseudo_vv                                      &
 ! stp - grand total of core-shell units to thermostat
 
      j = 0
-     If (keyshl == 1) Then
-        If (lshmv_shl) Then ! refresh the q array for shared core-shell units
+     If (cshell%keyshl == SHELL_ADIABATIC) Then
+        If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
            qn(natms+1:nlast) = 0
-           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,qn,comm)
+           Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
         End If
 
-        If (ntshl > 0) Then
-           Do k=1,ntshl
-              i1=local_index(listshl(1,k),matms,lsi,lsa)
-              i2=local_index(listshl(2,k),matms,lsi,lsa)
+        If (cshell%ntshl > 0) Then
+           Do k=1,cshell%ntshl
+              i1=local_index(cshell%listshl(1,k),matms,lsi,lsa)
+              i2=local_index(cshell%listshl(2,k),matms,lsi,lsa)
 
               If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
                  j = j + 1
@@ -632,11 +634,11 @@ Subroutine pseudo_vv                                      &
 ! Thermalise the shells on hit cores
 
         If (stp > 0) Then
-           If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
+           If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
 
            If (tps(comm%idnode) > 0) Then
               j = 0
-              Do k=1,ntshl
+              Do k=1,cshell%ntshl
                  If (qs(0,k) == 1) Then
                     j = j + 1
 
@@ -858,7 +860,7 @@ Subroutine pseudo_vv                                      &
 
            If (stp > 0) Then
               If (tps(comm%idnode) > 0) Then
-                 Do k=1,ntshl
+                 Do k=1,cshell%ntshl
                     If (qs(0,k) == 1) Then
                        i2=qs(2,k)
 
@@ -913,7 +915,7 @@ Subroutine pseudo_vv                                      &
 
            If (stp > 0) Then
               If (tps(comm%idnode) > 0) Then
-                 Do k=1,ntshl
+                 Do k=1,cshell%ntshl
                     If (qs(0,k) == 1) Then
                        i2=qs(2,k)
 
@@ -1028,10 +1030,10 @@ Subroutine pseudo_vv                                      &
 ! Thermalise the shells on hit cores
 
         If (stp > 0) Then
-           If (lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,lishp_shl,lashp_shl,vxx,vyy,vzz,comm)
+           If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
 
            If (tps(comm%idnode) > 0) Then
-              Do k=1,ntshl
+              Do k=1,cshell%ntshl
                  If (qs(0,k) == 1) Then
                     i1=qs(1,k)
                     i2=qs(2,k)

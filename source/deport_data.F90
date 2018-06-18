@@ -39,7 +39,7 @@ Module deport_data
   Use kim,    Only : kimim,idhalo
 
 
-  Use core_shell,   Only : ntshl, listshl,legshl,lshmv_shl,lishp_shl,lashp_shl
+  Use core_shell,   Only : core_shell_type 
 
   Use constraints,  Only : constraints_type 
 
@@ -58,7 +58,7 @@ Module deport_data
   Contains
 
 
-Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
+Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,&
     green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -89,6 +89,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -479,18 +480,18 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
 
 ! pack core-shell details
 
-           jj=legshl(0,i) ; ii=Sign(1,jj) ; jj=Abs(jj)
+           jj=cshell%legshl(0,i) ; ii=Sign(1,jj) ; jj=Abs(jj)
            If (jj > 0) Then
               Do ll=1,jj
                  If (imove+3 <= iblock) Then
-                    kk=legshl(ll,i)
+                    kk=cshell%legshl(ll,i)
 
                     imove=imove+1
-                    buffer(imove)=Real(ii*listshl(0,kk),wp) ! negative for a shell particle
+                    buffer(imove)=Real(ii*cshell%listshl(0,kk),wp) ! negative for a shell particle
 
                     Do k=1,2
                        imove=imove+1
-                       buffer(imove)=Real(listshl(k,kk),wp)
+                       buffer(imove)=Real(cshell%listshl(k,kk),wp)
                     End Do
                  Else
                     imove=imove+3
@@ -895,7 +896,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
 
         neigh%list_excl(:,keep)=neigh%list_excl(:,i)
 
-        legshl(:,keep)=legshl(:,i)
+        cshell%legshl(:,keep)=cshell%legshl(:,i)
 
         cons%legcon(:,keep)=cons%legcon(:,i)
         pmf%legpmf(:,keep)=pmf%legpmf(:,i)
@@ -1113,7 +1114,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
 
 ! set initial intra counters
 
-        jshels=ntshl
+        jshels=cshell%ntshl
 
         jconst=cons%ntcons
         jpmf  =pmf%ntpmf
@@ -1129,7 +1130,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
 
 ! unpack core-shell details
 
-        legshl(:,newatm) = 0
+        cshell%legshl(:,newatm) = 0
         Do While (Abs(buffer(kmove+1)) > 0.0_wp .and. safe)
            jj=Nint(buffer(kmove+1)) ; ll=Sign(1,jj) ; jj=Abs(jj)
            iatm=Nint(buffer(kmove+2)) ! ll=1
@@ -1140,10 +1141,10 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
 
            kshels=0
            check=.true.
-           Do While (check .and. kshels < Min(jshels,mxshl))
+           Do While (check .and. kshels < Min(jshels,cshell%mxshl))
               kshels=kshels+1
-              check=.not.( jj   == listshl(0,kshels) .and. & ! core-shell units don't intersect
-                           iatm == listshl(1,kshels))        ! .and. jatm == listshl(2,kshels) )
+              check=.not.( jj   == cshell%listshl(0,kshels) .and. & ! core-shell units don't intersect
+                           iatm == cshell%listshl(1,kshels))        ! .and. jatm == cshell%listshl(2,kshels) )
            End Do
 
 ! add new core-shell unit
@@ -1151,12 +1152,12 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
            If (check) Then
               jshels=jshels+1
 
-              If (jshels <= mxshl) Then
-                 listshl(0,jshels)=jj
-                 listshl(1,jshels)=iatm
-                 listshl(2,jshels)=jatm
+              If (jshels <= cshell%mxshl) Then
+                 cshell%listshl(0,jshels)=jj
+                 cshell%listshl(1,jshels)=iatm
+                 cshell%listshl(2,jshels)=jatm
 
-                 Call tag_legend(safe1,newatm,ll*jshels,legshl,mxfshl)
+                 Call tag_legend(safe1,newatm,ll*jshels,cshell%legshl,cshell%mxfshl)
               Else
                  safe=.false.
                  Write(message,'(a)') "too many core-shell units"
@@ -1164,7 +1165,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
 
               End If
            Else
-              Call tag_legend(safe1,newatm,ll*kshels,legshl,mxfshl)
+              Call tag_legend(safe1,newatm,ll*kshels,cshell%legshl,cshell%mxfshl)
            End If
         End Do
         kmove=kmove+1
@@ -1631,7 +1632,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cons,pmf,stats,ewld,thermo,&
 
 ! redefine intra counters
 
-        ntshl =jshels
+        cshell%ntshl =jshels
 
         cons%ntcons=jconst
         pmf%ntpmf =jpmf
@@ -2526,9 +2527,8 @@ End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles       &
            (dvar,cutoff_extended,lbook,lmsd,megatm, &
-           megshl,     &
            m_rgd,megtet,            &
-           cons,pmf,  &
+           cshell,cons,pmf,  &
            stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2547,9 +2547,9 @@ Subroutine relocate_particles       &
   Logical,           Intent( In    ) :: lbook
   Logical,           Intent( In    ) :: lmsd
   Integer,           Intent( In    ) :: megatm,              &
-                                        megshl, &
                                         m_rgd,megtet
   Type( pmf_type), Intent( InOut ) :: pmf
+  Type( core_shell_type), Intent( InOut ) :: cshell
   Type( constraints_type), Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
@@ -2677,18 +2677,18 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
 
 ! check system for loss of atoms
 
@@ -2726,7 +2726,7 @@ Subroutine relocate_particles       &
 
 ! Check safety of working arrays for all active bookkeeping arrays
 
-        If (megshl > 0) safe(1)=(ntshl  <= mxshl )
+        If (cshell%megshl > 0) safe(1)=(cshell%ntshl  <= cshell%mxshl )
         If (cons%m_con  > 0) safe(2)=(cons%ntcons <= cons%mxcons)
         If (pmf%megpmf > 0) safe(3)=(pmf%ntpmf  <= pmf%mxpmf )
         If (m_rgd  > 0) safe(4)=(ntrgd  <= mxrgd )
@@ -2739,7 +2739,7 @@ Subroutine relocate_particles       &
         Call gcheck(comm,safe)
 
         If (Any(.not.safe)) Then
-           itmp(1)=ntshl  ; jtmp(1)=mxshl
+           itmp(1)=cshell%ntshl  ; jtmp(1)=cshell%mxshl
            itmp(2)=cons%ntcons ; jtmp(2)=cons%mxcons
            itmp(3)=pmf%ntpmf  ; jtmp(3)=pmf%mxpmf
            itmp(4)=ntrgd  ; jtmp(4)=mxrgd
@@ -2774,8 +2774,9 @@ Subroutine relocate_particles       &
 
 ! Update shared core-shell, constraint, PMF and RB units
 
-        If (megshl > 0) Call pass_shared_units &
-     (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl,comm,&
+        If (cshell%megshl > 0) Call pass_shared_units &
+     (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl, cshell%listshl,cshell%mxfshl,&
+     cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
      q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
         If (cons%m_con  > 0) Call pass_shared_units &

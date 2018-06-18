@@ -5,7 +5,7 @@ Module rsds
   Use setup
   Use configuration,     Only : cfgname,imcon,cell,natms, &
                                 atmnam,ltg,xxx,yyy,zzz
-  Use core_shell, Only : legshl
+  Use core_shell, Only : core_shell_type
   ! this is assymetric with respect to the rest. will need probably rsd defined in this type
 
   Use parse,      Only : tabs_2_blanks, get_word, word_2_real
@@ -29,7 +29,7 @@ Module rsds
 Contains
 
 
-Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,rsd,comm)
+Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -43,6 +43,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,rsd,comm)
 
   Integer,           Intent( In    ) :: keyres,nsrsd,isrsd,nstep
   Real( Kind = wp ), Intent( In    ) :: rrsd,tstep,time
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Real( Kind = wp ), Intent( InOut ) :: rsd(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -211,7 +212,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,rsd,comm)
 
   n=0
   Do i=1,natms
-     If (rsd(i) > rrsd .and. legshl(0,i) >= 0) Then
+     If (rsd(i) > rrsd .and. cshell%legshl(0,i) >= 0) Then
         n=n+1
         nam(n)=atmnam(i)
         ind(n)=ltg(i)

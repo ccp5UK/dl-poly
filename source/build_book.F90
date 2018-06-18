@@ -47,10 +47,9 @@ Module build_book
 Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           megshl,       &
            megrgd,degrot,degtra,        &
            megtet,                      &
-           cons,pmf,bond,angle,dihedral,  &
+           cshell,cons,pmf,bond,angle,dihedral,  &
            inversion,tether,neigh,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -69,7 +68,7 @@ Subroutine build_book_intra             &
   Real(Kind = wp),   Intent( In    ) :: dvar
 
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
-                                        megshl,megtet
+                                        megtet
   Integer,           Intent( InOut ) :: megfrz,megrgd
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( constraints_type), Intent(Inout) :: cons
@@ -80,6 +79,7 @@ Subroutine build_book_intra             &
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( site_type ), Intent( InOut ) :: site
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -114,7 +114,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra(cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
+  If (.not.(newjob .or. lsim)) Call init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
 
 ! Initialise safety flags
 
@@ -214,9 +214,9 @@ Subroutine build_book_intra             &
 
 ! Construct core-shell list
 
-           Do lshels=1,numshl(itmols)
-              iatm=lstshl(1,lshels+kshels)+isite
-              jatm=lstshl(2,lshels+kshels)+isite
+           Do lshels=1,cshell%numshl(itmols)
+              iatm=cshell%lstshl(1,lshels+kshels)+isite
+              jatm=cshell%lstshl(2,lshels+kshels)+isite
 
               iat0=local_index(iatm,nlast,lsi,lsa)
               jat0=local_index(jatm,nlast,lsi,lsa)
@@ -227,19 +227,20 @@ Subroutine build_book_intra             &
               If (iat0 > 0 .or. jat0 > 0) Then
                  jshels=jshels+1
 
-                 If (jshels <= mxshl) Then
-                    listshl(0,jshels)=lshels+kshels
-                    listshl(1,jshels)=iatm
-                    listshl(2,jshels)=jatm
+                 If (jshels <= cshell%mxshl) Then
+                    cshell%listshl(0,jshels)=lshels+kshels
+                    cshell%listshl(1,jshels)=iatm
+                    cshell%listshl(2,jshels)=jatm
 
                     If (iat0 > 0) Then
-                       Call tag_legend(safe(1),iat0,jshels,legshl,mxfshl)
-                       If (legshl(mxfshl,iat0) > 0) Then
+                       Call tag_legend(safe(1),iat0,jshels,cshell%legshl,cshell%mxfshl)
+                       If (cshell%legshl(cshell%mxfshl,iat0) > 0) Then
                           Call warning('too many core-shell type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfshl-1+legshl(mxfshl,iat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfshl-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            cshell%mxfshl-1+cshell%legshl(cshell%mxfshl,iat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', cshell%mxfshl-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', iatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstshl(1,lshels+kshels)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', cshell%lstshl(1,lshels+kshels)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', lshels
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -248,13 +249,14 @@ Subroutine build_book_intra             &
                     End If
 
                     If (jat0 > 0) Then
-                       Call tag_legend(safe(1),jat0,-jshels,legshl,mxfshl)
-                       If (legshl(mxfshl,jat0) > 0) Then
+                       Call tag_legend(safe(1),jat0,-jshels,cshell%legshl,cshell%mxfshl)
+                       If (cshell%legshl(cshell%mxfshl,jat0) > 0) Then
                           Call warning('too many core-shell type neighbours')
-                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfshl-1+legshl(mxfshl,jat0)
-                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfshl-1
+                          Write(messages(1),'(a,i0)') 'requiring a list length of: ', &
+                            cshell%mxfshl-1+cshell%legshl(cshell%mxfshl,jat0)
+                          Write(messages(2),'(a,i0)') 'but maximum length allowed: ', cshell%mxfshl-1
                           Write(messages(3),'(a,i0)') 'for particle (global ID #): ', jatm
-                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstshl(2,lshels+kshels)
+                          Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', cshell%lstshl(2,lshels+kshels)
                           Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', lshels
                           Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                           Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -885,7 +887,7 @@ Subroutine build_book_intra             &
 
 ! Update global unit numbers for all passed molecules so far
 
-     kshels=kshels+numshl(itmols)
+     kshels=kshels+cshell%numshl(itmols)
 
      kconst=kconst+cons%numcon(itmols)
 ! No 'kpmf' needed since PMF is defined on one and only one molecular type
@@ -903,7 +905,7 @@ Subroutine build_book_intra             &
 
 ! Store array counters for bookkeeping
 
-  ntshl =jshels
+  cshell%ntshl =jshels
 
   cons%ntcons=jconst
 ! 'pmf%ntpmf' is updated locally as PMFs are global and one type only
@@ -917,8 +919,8 @@ Subroutine build_book_intra             &
   dihedral%n_types=jdihed
   inversion%n_types =jinver
 
-  If (megshl == 0) Then
-     ntshl1 =ntshl
+  If (cshell%megshl == 0) Then
+     cshell%ntshl1 =cshell%ntshl
 
      cons%ntcons1=cons%ntcons
 
@@ -929,7 +931,7 @@ Subroutine build_book_intra             &
      dihedral%n_types1=dihedral%n_types
      inversion%n_types1 =inversion%n_types
 
-     ntshl2 =ntshl1
+     cshell%ntshl2 =cshell%ntshl1
 
      Go To 400
   End If
@@ -1115,23 +1117,23 @@ Subroutine build_book_intra             &
         End Do
 
 ! If there is a non-local atom iwrk(1:mshels) on this
-! molecule on this node, extend listshl
+! molecule on this node, extend cshell%listshl
 
         If (i > 0) Then
 
 ! Extend core-shell units interaction list
 
-           Do lshels=1,numshl(itmols)
-              iatm=lstshl(1,lshels+kshels)+isite
-              jatm=lstshl(2,lshels+kshels)+isite
+           Do lshels=1,cshell%numshl(itmols)
+              iatm=cshell%lstshl(1,lshels+kshels)+isite
+              jatm=cshell%lstshl(2,lshels+kshels)+isite
 
               If ( Any(iwrk(1:mshels) == iatm) .or. &
                    Any(iwrk(1:mshels) == jatm) ) Then
                  jshels=jshels+1
-                 If (jshels <= mxshl) Then
-                    listshl(0,jshels)=lshels+kshels
-                    listshl(1,jshels)=iatm
-                    listshl(2,jshels)=jatm
+                 If (jshels <= cshell%mxshl) Then
+                    cshell%listshl(0,jshels)=lshels+kshels
+                    cshell%listshl(1,jshels)=iatm
+                    cshell%listshl(2,jshels)=jatm
                  Else
                     safe(2)=.false.
                  End If
@@ -1146,7 +1148,7 @@ Subroutine build_book_intra             &
 
 ! Update core-shell units number for all passed molecules so far
 
-     kshels=kshels+numshl(itmols)
+     kshels=kshels+cshell%numshl(itmols)
   End Do
 
 100 Continue
@@ -1154,7 +1156,7 @@ Subroutine build_book_intra             &
 ! Store first (local+non-local) extended array counter
 ! for bookkeeping and exclusion of core-shell units
 
-  ntshl1 =jshels
+  cshell%ntshl1 =jshels
 
 ! Cycle through all local and partly shared core-shell units on
 ! this node and record the non-local indices of cross-domained
@@ -1162,9 +1164,9 @@ Subroutine build_book_intra             &
 
   iwrk=0
   mshels=0
-  Do i=1,ntshl
-     iatm=listshl(1,i)
-     jatm=listshl(2,i)
+  Do i=1,cshell%ntshl
+     iatm=cshell%listshl(1,i)
+     jatm=cshell%listshl(2,i)
 
      iat0=local_index(iatm,nlast,lsi,lsa) ! This is a core
      jat0=local_index(jatm,nlast,lsi,lsa) ! This is a shell
@@ -1555,23 +1557,23 @@ Subroutine build_book_intra             &
         End Do
 
 ! If there is a non-local atom iwrk(1:mshels) on this
-! molecule on this node, extend listshl
+! molecule on this node, extend cshell%listshl
 
         If (i > 0) Then
 
 ! Extend core-shell units interaction list
 
-           Do lshels=1,numshl(itmols)
-              iatm=lstshl(1,lshels+kshels)+isite
-              jatm=lstshl(2,lshels+kshels)+isite
+           Do lshels=1,cshell%numshl(itmols)
+              iatm=cshell%lstshl(1,lshels+kshels)+isite
+              jatm=cshell%lstshl(2,lshels+kshels)+isite
 
               If ( Any(iwrk(1:mshels) == iatm) .or. &
                    Any(iwrk(1:mshels) == jatm) ) Then
                  jshels=jshels+1
-                 If (jshels <= mxshl) Then
-                    listshl(0,jshels)=lshels+kshels
-                    listshl(1,jshels)=iatm
-                    listshl(2,jshels)=jatm
+                 If (jshels <= cshell%mxshl) Then
+                    cshell%listshl(0,jshels)=lshels+kshels
+                    cshell%listshl(1,jshels)=iatm
+                    cshell%listshl(2,jshels)=jatm
                  Else
                     safe(2)=.false.
                  End If
@@ -1586,7 +1588,7 @@ Subroutine build_book_intra             &
 
 ! Update core-shell units number for all passed molecules so far
 
-     kshels=kshels+numshl(itmols)
+     kshels=kshels+cshell%numshl(itmols)
   End Do
 
 300 Continue
@@ -1594,7 +1596,7 @@ Subroutine build_book_intra             &
 ! Store second (local+non-local+foreign) extended array counter
 ! for bookkeeping and exclusion of core-shell units
 
-  ntshl2 =jshels
+  cshell%ntshl2 =jshels
 
 !  If (dihedral%l_core_shell) dihedral%n_types=dihedral%n_types1 ! extend the dihedrals' set
 
@@ -1606,7 +1608,7 @@ Subroutine build_book_intra             &
   If (.not.safe( 1)) Call error( 88)
 
   If (Any(.not.safe)) Then
-     itmp(1)=ishels ; jtmp(1)=mxshl
+     itmp(1)=ishels ; jtmp(1)=cshell%mxshl
      itmp(2)=iconst ; jtmp(2)=cons%mxcons
      itmp(3)=ipmf   ; jtmp(3)=pmf%mxpmf
      itmp(4)=irigid ; jtmp(4)=mxrgd
@@ -1656,13 +1658,13 @@ Subroutine build_book_intra             &
 
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
-           megshl,megrgd,  &
-           megtet,cons,pmf,bond,angle,dihedral,inversion,tether,site,comm)
+           megrgd,  &
+           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,site,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
      If (lsim) Then
-        Call deallocate_core_shell_arrays()
+        Call cshell%deallocate_core_shell_tmp_arrays()
 
         Call cons%deallocate_constraints_temps()
         Call pmf%deallocate_pmf_tmp_arrays()
@@ -1689,8 +1691,9 @@ Subroutine build_book_intra             &
 ! Update shared core-shell, constraint and RB units
 ! (pmf data updated by construction)
 
-  If (megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (mxshl, Lbound(listshl,Dim=1),Ubound(listshl,Dim=1),ntshl, listshl,mxfshl,legshl,lshmv_shl,lishp_shl,lashp_shl,comm,&
+  If (cshell%megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
+     (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl,&
+     cshell%listshl,cshell%mxfshl,cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
    q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
 
   If (cons%m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
@@ -1791,7 +1794,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra(cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
+Subroutine init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1811,6 +1814,7 @@ Subroutine init_intra(cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
 
 ! exclusions locals
@@ -1819,9 +1823,9 @@ Subroutine init_intra(cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
 
 ! core-shell locals
 
-  ntshl  = 0 ; ntshl1 = 0 ; ntshl2 = 0
-  listshl = 0
-  legshl  = 0
+  cshell%ntshl  = 0 ; cshell%ntshl1 = 0 ; cshell%ntshl2 = 0
+  cshell%listshl = 0
+  cshell%legshl  = 0
 
 ! constraints locals
 

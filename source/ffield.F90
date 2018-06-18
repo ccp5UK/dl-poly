@@ -20,10 +20,8 @@ Module ffield
 
 ! INTERACTION MODULES
 
-  Use core_shell
+  Use core_shell, Only : core_shell_type,SHELL_ADIABATIC, SHELL_RELAXED
   Use mpole, Only : keyind,thole,mpllfr,plrsit,dmpsit
-
-  Use pmf
 
   Use rigid_bodies
 
@@ -72,13 +70,13 @@ Contains
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
            rcut,width,epsq, &
-           keyfce,keyshl,           &
+           keyfce,           &
            lecx,lbook,lexcl,               &
            rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
-           megshl,megrgd,    &
+           megrgd,    &
            megtet,    &
-           pmf,cons,  &
+           cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw,tersoff,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -110,9 +108,8 @@ Subroutine read_field                      &
 
   Logical,           Intent(   Out ) :: lbook,lexcl
   Real( Kind = wp ), Intent(   Out ) :: rcfbp
-  Integer,           Intent(   Out ) :: keyshl,                             &
-                                        atmfre,atmfrz,megatm,megfrz,        &
-                                        megshl,megrgd,        &
+  Integer,           Intent(   Out ) :: atmfre,atmfrz,megatm,megfrz,        &
+                                        megrgd,        &
                                         megtet
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( pmf_type ), Intent( InOut ) :: pmf
@@ -125,6 +122,7 @@ Subroutine read_field                      &
   Type( tethers_type), Intent( InOut ) :: tether
   Type( threebody_type), Intent( InOut ) :: threebody
   Type( site_type ), Intent( InOut ) :: site
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( comms_type), Intent( InOut ) :: comm
@@ -239,7 +237,7 @@ Subroutine read_field                      &
   megatm = 0
   megfrz = 0
 
-  megshl = 0
+  cshell%megshl = 0
 
   cons%megcon = 0
   pmf%megpmf = 0
@@ -264,7 +262,7 @@ Subroutine read_field                      &
 
 ! default shell model - none
 
-  keyshl   = 0
+  cshell%keyshl   = 0
   lshl_one = .false. ! A massless shell existence indicator
   lshl_all = .true.  ! All shells are massless indicator
 
@@ -549,7 +547,7 @@ Subroutine read_field                      &
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
                  ntmp=Nint(word_2_real(word))
-                 numshl(itmols)=numshl(itmols)+ntmp
+                 cshell%numshl(itmols)=cshell%numshl(itmols)+ntmp
 
                  Write(message,'(a,5x,i10)') 'number of core-shell units', ntmp
                  Call info(message,.true.)
@@ -560,9 +558,9 @@ Subroutine read_field                      &
                    Call info(message,.true.)
                  End If
 
-                 Do ishls=1,numshl(itmols)
+                 Do ishls=1,cshell%numshl(itmols)
                     nshels=nshels+1
-                    If (nshels > mxtshl) Call error(57)
+                    If (nshels > cshell%mxtshl) Call error(57)
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -577,14 +575,14 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     iatm2=Nint(word_2_real(word))
 
-                    lstshl(1,nshels)=iatm1
-                    lstshl(2,nshels)=iatm2
+                    cshell%lstshl(1,nshels)=iatm1
+                    cshell%lstshl(2,nshels)=iatm2
 
                     Call get_word(record,word)
-                    prmshl(1,nshels)=word_2_real(word)
+                    cshell%prmshl(1,nshels)=word_2_real(word)
 
                     Call get_word(record,word)
-                    prmshl(2,nshels)=word_2_real(word)
+                    cshell%prmshl(2,nshels)=word_2_real(word)
 
                     isite1 = nsite - site%num_site(itmols) + iatm1
                     isite2 = nsite - site%num_site(itmols) + iatm2
@@ -594,19 +592,21 @@ Subroutine read_field                      &
                     If (l_top) Then
                       If (site%freeze_site(isite1)*site%freeze_site(isite2) /= 0) Then
                         Write(message,'(2x,3i10,2f15.6,1x,a8)') &
-                          ishls,lstshl(1,nshels),lstshl(2,nshels), &
-                          prmshl(1,nshels),prmshl(2,nshels),'*frozen*'
+                          ishls,cshell%lstshl(1,nshels),cshell%lstshl(2,nshels), &
+                          cshell%prmshl(1,nshels),cshell%prmshl(2,nshels),'*frozen*'
                       Else
                         Write(message,'(2x,3i10,2f15.6)') &
-                          ishls,lstshl(1,nshels),lstshl(2,nshels), &
-                          prmshl(1,nshels),prmshl(2,nshels)
+                          ishls,cshell%lstshl(1,nshels),cshell%lstshl(2,nshels), &
+                          cshell%prmshl(1,nshels),cshell%prmshl(2,nshels)
                       End If
                       Call info(message,.true.)
                     End If
 
 ! catch unidentified entry
 
-                    If (Any(lstshl(1:2,nshels) < 1) .or. Any(lstshl(1:2,nshels) > site%num_site(itmols))) Call error(27)
+                    If (Any(cshell%lstshl(1:2,nshels) < 1) .or. Any(cshell%lstshl(1:2,nshels) > site%num_site(itmols))) Then 
+                      Call error(27)
+                    End If   
 
 ! abort if a shell is frozen
 
@@ -632,19 +632,19 @@ Subroutine read_field                      &
 
 ! convert energy units to internal units
 
-                    prmshl(1:2,nshels)=prmshl(1:2,nshels)*engunit
-                    smax=Max(smax,prmshl(1,nshels)+6.0_wp*prmshl(2,nshels))
+                    cshell%prmshl(1:2,nshels)=cshell%prmshl(1:2,nshels)*engunit
+                    cshell%smax=Max(cshell%smax,cshell%prmshl(1,nshels)+6.0_wp*cshell%prmshl(2,nshels))
                  End Do
 
 ! Check for mixed or multiple core-shell entries (no inter units linkage!)
 
-                 Do i=nshels-numshl(itmols)+1,nshels
-                    is(1)=lstshl(1,i)
-                    is(2)=lstshl(2,i)
+                 Do i=nshels-cshell%numshl(itmols)+1,nshels
+                    is(1)=cshell%lstshl(1,i)
+                    is(2)=cshell%lstshl(2,i)
 
                     Do j=i+1,nshels
-                       js(1)=lstshl(1,j)
-                       js(2)=lstshl(2,j)
+                       js(1)=cshell%lstshl(1,j)
+                       js(2)=cshell%lstshl(2,j)
 
                        If (js(1) == is(1) .or. js(2) == is(2) .or. &
                            js(1) == is(2) .or. js(2) == is(1)) Then
@@ -2196,7 +2196,7 @@ Subroutine read_field                      &
                  megatm=megatm+site%num_mols(itmols)*site%num_site(itmols)
                  megfrz=megfrz+site%num_mols(itmols)*site%num_freeze(itmols)
 
-                 megshl=megshl+site%num_mols(itmols)*numshl(itmols)
+                 cshell%megshl=cshell%megshl+site%num_mols(itmols)*cshell%numshl(itmols)
 
                  cons%megcon=cons%megcon+site%num_mols(itmols)*(cons%numcon(itmols)-frzcon)
                  pmf%megpmf=pmf%megpmf+site%num_mols(itmols)*pmf%numpmf(itmols)
@@ -2816,13 +2816,13 @@ Subroutine read_field                      &
 
 ! test shells masses and define model
 
-        If (megshl > 0) Then
+        If (cshell%megshl > 0) Then
            If (.not.lshl_one) Then
-              keyshl = 1
+              cshell%keyshl = SHELL_ADIABATIC
               Call info('adiabatic shell model in operation',.true.)
            Else
               If (lshl_all) Then
-                 keyshl = 2
+                 cshell%keyshl = SHELL_RELAXED
                  Call info('relaxed shell model in operation',.true.)
               Else
                  Call error(476)
@@ -2834,11 +2834,11 @@ Subroutine read_field                      &
 
 ! Process MPOLES
 
-        If (mximpl > 0) Call read_mpoles(l_top,sumchg,site,comm)
+        If (mximpl > 0) Call read_mpoles(l_top,sumchg,cshell,site,comm)
 
-! check charmming shells (megshl) globalisation
+! check charmming shells (cshell%megshl) globalisation
 
-        If (megshl > 0) Then
+        If (cshell%megshl > 0) Then
            nsite =0
            nshels=0
 
@@ -2849,10 +2849,10 @@ Subroutine read_field                      &
            p_core_p = 1.0_wp ; p_core_s = 0.0_wp
            d_core_p = 1.0_wp ; d_core_s = 0.0_wp
            Do itmols=1,site%ntype_mol
-              Do ishls=1,numshl(itmols)
+              Do ishls=1,cshell%numshl(itmols)
                  nshels=nshels+1
-                 iatm1=lstshl(1,nshels) ! core
-                 iatm2=lstshl(2,nshels) ! shell
+                 iatm1=cshell%lstshl(1,nshels) ! core
+                 iatm2=cshell%lstshl(2,nshels) ! shell
 
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
@@ -2863,8 +2863,8 @@ Subroutine read_field                      &
                  q_shel_p=q_shel_p*site%charge_site(isite2)
                  q_shel_s=q_shel_s+Abs(site%charge_site(isite2))
 
-                 k_crsh_p=k_crsh_p*prmshl(1,nshels)
-                 k_crsh_s=k_crsh_s+prmshl(1,nshels)
+                 k_crsh_p=k_crsh_p*cshell%prmshl(1,nshels)
+                 k_crsh_s=k_crsh_s+cshell%prmshl(1,nshels)
 
                  If (mximpl > 0) Then
                     p_core_p=p_core_p*plrsit(isite1)
@@ -2896,7 +2896,7 @@ Subroutine read_field                      &
                  If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus) Then
                     If (keyind > 0) Then
                        k_crsh_p = 1000 * eu_kcpm ! reset to k_charmm = 1000 kcal*mol^−1*Å^−2
-                       smax=k_crsh_p             ! set smax
+                       cshell%smax=k_crsh_p             ! set cshell%smax
                        Call warning('all core-shell force constants and shell ' &
                          //'charges are zero force constants to use 1000' &
                          //'kcal*mol^−1*Å^−2 CHARMM default',.true.)
@@ -2924,10 +2924,10 @@ Subroutine read_field                      &
               nshels=0
 
               Do itmols=1,site%ntype_mol
-                 Do ishls=1,numshl(itmols)
+                 Do ishls=1,cshell%numshl(itmols)
                     nshels=nshels+1
-                    iatm1=lstshl(1,nshels) ! core
-                    iatm2=lstshl(2,nshels) ! shell
+                    iatm1=cshell%lstshl(1,nshels) ! core
+                    iatm2=cshell%lstshl(2,nshels) ! shell
 
                     isite1 = nsite + iatm1
                     isite2 = nsite + iatm2
@@ -2938,10 +2938,10 @@ Subroutine read_field                      &
                     q_shel=site%charge_site(isite2)
                     If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus .and. &
                         k_crsh_p > zero_plus) Then
-                       prmshl(1,nshels)=k_crsh_p
-                       prmshl(2,nshels)=0.0_wp
+                       cshell%prmshl(1,nshels)=k_crsh_p
+                       cshell%prmshl(2,nshels)=0.0_wp
                     End If
-                    k_crsh=prmshl(1,nshels)
+                    k_crsh=cshell%prmshl(1,nshels)
 
                     If (d_core_s <= zero_plus .and. thole >= -zero_plus) dmpsit(isite1) = thole
                     d_core=dmpsit(isite1)
@@ -2969,8 +2969,8 @@ Subroutine read_field                      &
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
-                          prmshl(1,nshels)=(r4pie0/epsq)*q_shel**2/p_core
-                          prmshl(2,nshels)=0.0_wp
+                          cshell%prmshl(1,nshels)=(r4pie0/epsq)*q_shel**2/p_core
+                          cshell%prmshl(2,nshels)=0.0_wp
                        End If
                     End If
 
@@ -2995,17 +2995,17 @@ Subroutine read_field                      &
               nshels=0
 
               Do itmols=1,site%ntype_mol
-                 Do ishls=1,numshl(itmols)
+                 Do ishls=1,cshell%numshl(itmols)
                     nshels=nshels+1
-                    iatm1=lstshl(1,nshels) ! core
-                    iatm2=lstshl(2,nshels) ! shell
+                    iatm1=cshell%lstshl(1,nshels) ! core
+                    iatm2=cshell%lstshl(2,nshels) ! shell
 
                     isite1 = nsite + iatm1
                     isite2 = nsite + iatm2
 
                     q_core=site%charge_site(isite1)
                     q_shel=site%charge_site(isite2)
-                    k_crsh=prmshl(1,nshels)
+                    k_crsh=cshell%prmshl(1,nshels)
 
                     If (Abs(q_core*q_shel*k_crsh) <= zero_plus) Then
                        lshl_abort=.true.
@@ -3042,9 +3042,9 @@ Subroutine read_field                      &
 
         If (Abs(sumchg) > 1.0e-6_wp .and. comm%idnode == 0) Call warning(5,sumchg,0.0_wp,0.0_wp)
 
-! check (megshl) shell topological irregularities
+! check (cshell%megshl) shell topological irregularities
 
-        If (megshl > 0) Then
+        If (cshell%megshl > 0) Then
            nsite =0
            nshels=0
            nconst=0
@@ -3056,10 +3056,10 @@ Subroutine read_field                      &
            ninver=0
 
            Do itmols=1,site%ntype_mol
-              Do ishls=1,numshl(itmols)
+              Do ishls=1,cshell%numshl(itmols)
                  nshels=nshels+1
-                 ia=lstshl(1,nshels) ! core
-                 ja=lstshl(2,nshels) ! shell
+                 ia=cshell%lstshl(1,nshels) ! core
+                 ja=cshell%lstshl(2,nshels) ! shell
 
 ! shells have no DoF, even if they are moved dynamically
 ! their DoFs don't contribute towards any dynamical properties
@@ -3076,7 +3076,7 @@ Subroutine read_field                      &
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) nconst=nconst-cons%numcon(itmols)
+                 If (ishls /= cshell%numshl(itmols)) nconst=nconst-cons%numcon(itmols)
 
                  Do i=1,pmf%numpmf(itmols)
                     If (Any(pmf%lstpmf(1:pmf%mxtpmf(1),1) == ja) .or. Any(pmf%lstpmf(1:pmf%mxtpmf(2),2) == ja)) Then
@@ -3094,7 +3094,7 @@ Subroutine read_field                      &
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) nrigid=nrigid-numrgd(itmols)
+                 If (ishls /= cshell%numshl(itmols)) nrigid=nrigid-numrgd(itmols)
 
                  Do iteth=1,tether%numteth(itmols)
                     nteth=nteth+1
@@ -3104,7 +3104,7 @@ Subroutine read_field                      &
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) nteth=nteth-tether%numteth(itmols)
+                 If (ishls /= cshell%numshl(itmols)) nteth=nteth-tether%numteth(itmols)
 
 ! test for core-shell units fully overlapped on angles, dihedrals and inversions
 
@@ -3116,7 +3116,7 @@ Subroutine read_field                      &
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) nangle=nangle-angle%num(itmols)
+                 If (ishls /= cshell%numshl(itmols)) nangle=nangle-angle%num(itmols)
 
                  Do idih=1,dihedral%num(itmols)
                     ndihed=ndihed+1
@@ -3148,7 +3148,7 @@ Subroutine read_field                      &
                        End If
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) ndihed=ndihed-dihedral%num(itmols)
+                 If (ishls /= cshell%numshl(itmols)) ndihed=ndihed-dihedral%num(itmols)
 
                  Do iinv=1,inversion%num(itmols)
                     ninver=ninver+1
@@ -3158,7 +3158,7 @@ Subroutine read_field                      &
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= numshl(itmols)) ninver=ninver-inversion%num(itmols)
+                 If (ishls /= cshell%numshl(itmols)) ninver=ninver-inversion%num(itmols)
               End Do
               nsite=nsite+site%num_site(itmols)
            End Do
@@ -3937,7 +3937,8 @@ Subroutine read_field                      &
 
                Call info('Ensemble NVT dpd defaulting to NVE (Microcanonical)' &
                  //'due to all drag coefficients equal to zero',.true.)
-             Else If (Any(thermo%gamdpd(1:vdw%max_vdw) <= zero_plus)) Then ! in principle we should come up with the error before here
+             Else If (Any(thermo%gamdpd(1:vdw%max_vdw) <= zero_plus)) Then 
+               ! in principle we should come up with the error before here
                Call warning('there is a two-body interaction with a' &
                  //'non-zero mutual drag coefficient',.true.)
                sigdpd(1:vdw%max_vdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:vdw%max_vdw)) ! define sigdpd
@@ -4843,9 +4844,9 @@ End Subroutine read_field
 
 Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
-           megshl,megrgd,  &
+           megrgd,  &
            megtet,  &
-           cons,pmf, &
+           cshell,cons,pmf, &
            bond,angle,dihedral,inversion,tether,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4858,7 +4859,7 @@ Subroutine report_topology               &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
-                              megshl,megrgd, &
+                              megrgd, &
                               megtet
   Type( constraints_type ), Intent( In    ) :: cons
   Type( pmf_type ), Intent( In    ) :: pmf
@@ -4868,6 +4869,7 @@ Subroutine report_topology               &
   Type( inversions_type ), Intent( In    ) :: inversion
   Type(tethers_type), Intent( InOut ) :: tether
   Type( site_type ), Intent( InOut ) :: site
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Type(comms_type), Intent( InOut ) :: comm
 
   Integer :: itmols,nsite,                &
@@ -4915,10 +4917,10 @@ Subroutine report_topology               &
   nsite  = 0
   Do itmols=1,site%ntype_mol
      frzshl=0
-     Do ishls=1,numshl(itmols)
+     Do ishls=1,cshell%numshl(itmols)
         nshels=nshels+1
 
-        iatm1=lstshl(1,nshels)
+        iatm1=cshell%lstshl(1,nshels)
 
         isite1 = nsite + iatm1
 
@@ -5037,7 +5039,7 @@ Subroutine report_topology               &
   Write(banner(6),fmt1) '||-------------------------+--------------+---------------------||'
   Write(banner(7),fmt2) '||  all particles/sites    | ',megatm,'  |  F  ',megfrz,'     ||'
   Write(banner(8),fmt2) '||  free particles         | ',atmfre,'  |  F  ',atmfrz,'     ||'
-  Write(banner(9),fmt2) '||  core-shell units       | ',megshl,'  |  P  ',mgfrsh,'     ||'
+  Write(banner(9),fmt2) '||  core-shell units       | ',cshell%megshl,'  |  P  ',mgfrsh,'     ||'
   Write(banner(10),fmt2) '||  constraint bond units  | ',mgcon,'  |  F  ',mgcon-cons%megcon,'     ||'
   Write(banner(11),fmt3) '||  PMF units              | ',pmf%megpmf,'  |  P         ',frzpmf,'     ||'
   Write(banner(12),fmt2) '||  rigid body units       | ',mgrgd,'  |  F  ',mgrgd-megrgd,'     ||'
@@ -5053,7 +5055,7 @@ End Subroutine report_topology
 Subroutine scan_field                                &
            (l_n_e,mxompl,mximpl,                     &
            max_site,mxatyp,megatm,mxtmls,max_exclude,       &
-           mtshl,mxtshl,mxshl,mxfshl,                &
+           mtshl,                &
            mtcons,              &
            l_usr,                &
            mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
@@ -5064,7 +5066,7 @@ Subroutine scan_field                                &
            mtinv,         &
            mxrdf,                  &
            mxmet,mxmed,mxmds,            &
-           rcter,mxfbp,rcfbp,lext,cons,pmf,met,&
+           rcter,mxfbp,rcfbp,lext,cshell,cons,pmf,met,&
            bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -5093,10 +5095,11 @@ Subroutine scan_field                                &
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( threebody_type ), Intent( InOut ) :: threebody
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( comms_type ), Intent( InOut ) :: comm
-  Integer( Kind = wi ), Intent(   Out ) :: max_exclude
+  Integer( Kind = wi ), Intent(   Out ) :: max_exclude,mtshl
 ! Max number of different atom types
 
   Integer, Parameter :: mmk = 1000
@@ -5114,7 +5117,7 @@ Subroutine scan_field                                &
   Logical           :: l_n_e,check,safe,l_usr,lext
   Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,ksite,nrept,        &
                        mxompl,mximpl,mxatyp,megatm,i,j,k,        &
-                       numshl,mtshl,mxtshl,mxshl,ishls,mxfshl,                 &
+                       numshl,ishls,                 &
                        numcon,mtcons,icon,                &
                        ipmf,jpmf,                     &
                        numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
@@ -5145,9 +5148,9 @@ Subroutine scan_field                                &
 
   numshl=0
   mtshl =0
-  mxshl =0
-  mxtshl=0
-  mxfshl=0
+  cshell%mxshl =0
+  cshell%mxtshl=0
+  cshell%mxfshl=0
 
   numcon=0
   mtcons=0
@@ -5353,8 +5356,8 @@ Subroutine scan_field                                &
                  If (word(1:5) == 'units') Call get_word(record,word)
                  numshl=Nint(word_2_real(word))
                  mtshl=Max(mtshl,numshl)
-                 mxtshl=mxtshl+numshl
-                 mxshl=mxshl+nummols*numshl
+                 cshell%mxtshl=cshell%mxtshl+numshl
+                 cshell%mxshl=cshell%mxshl+nummols*numshl
 
                  Do ishls=1,numshl
                     word(1:1)='#'
@@ -5965,8 +5968,8 @@ Subroutine scan_field                                &
 ! Define legend arrays lengths.  If length > 0 then
 ! length=Max(length)+1 for the violation excess element
 
-  If (mxshl >  0) mxfshl=1+1 ! One shell per core
-  mxf(1)=mxfshl
+  If (cshell%mxshl >  0) cshell%mxfshl=1+1 ! One shell per core
+  mxf(1)=cshell%mxfshl
 
   If (cons%mxcons > 0) cons%mxfcon=mxb+1
   mxf(2)=cons%mxfcon
@@ -5995,7 +5998,7 @@ Subroutine scan_field                                &
   Do i=1,9
      mxt(i)=Min(1,mxf(i))
   End Do
-  max_exclude = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Max(1,mxshl)+1) )
+  max_exclude = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Max(1,cshell%mxshl)+1) )
   If (max_exclude > 0) max_exclude=max_exclude+1 ! violation excess element
 
   Return
@@ -6017,7 +6020,7 @@ Subroutine scan_field                                &
 
 End Subroutine scan_field
 
-  Subroutine read_mpoles(l_top,sumchg,site,comm)
+  Subroutine read_mpoles(l_top,sumchg,cshell,site,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -6032,6 +6035,7 @@ End Subroutine scan_field
     Logical,            Intent( In    ) :: l_top
     Real( Kind = wp ),  Intent( InOut ) :: sumchg
     Type( site_type ), Intent( InOut ) :: site
+    Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical                :: safe,l_rsh,l_ord=.false.
@@ -6234,10 +6238,10 @@ End Subroutine scan_field
 
                          l_rsh=.true. ! regular or no shelling (Drude)
                          kshels=nshels
-                         Do ishls=1,numshl(itmols) ! detect beyond charge shelling
+                         Do ishls=1,cshell%numshl(itmols) ! detect beyond charge shelling
                             kshels=kshels+1
 
-                            isite2=nsite+lstshl(2,kshels)
+                            isite2=nsite+cshell%lstshl(2,kshels)
                             If ((isite2 >= jsite .and. isite2 <= lsite)) Then
                               l_rsh=.false.
                               If (comm%idnode == 0) Then

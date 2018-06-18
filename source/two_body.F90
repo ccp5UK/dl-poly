@@ -24,6 +24,7 @@ Module two_body
   Use timer,  Only : timer_type,start_timer,stop_timer
   Use development, Only : development_type
   Use statistics, Only : stats_type
+  Use core_shell, Only : core_shell_type
   Implicit None
 
   Private
@@ -35,6 +36,7 @@ Subroutine two_body_forces                        &
            (pdplnc,ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
            lrdf,nstrdf,leql,nsteql,nstep,         &
+           cshell,               &
            stats,ewld,devel,met,pois,neigh,site,vdw,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -74,6 +76,7 @@ Subroutine two_body_forces                        &
                                                                keyfce,nstfce, &
                                                                megfrz,nstrdf, &
                                                                nsteql,nstep
+  Type( core_shell_type ), Intent( InOut ) :: cshell
   Real( Kind = wp ),                        Intent( In    ) :: pdplnc,alpha,epsq
   Type( stats_type ), Intent( InOut )                       :: stats
   Type( ewald_type ),                       Intent( InOut ) :: ewld
@@ -166,7 +169,7 @@ Subroutine two_body_forces                        &
 
 ! Set up non-bonded interaction (verlet) list using link cells
   If ((.not.induce) .and. neigh%update) Then
-    Call link_cell_pairs(vdw%cutoff,met%rcut,pdplnc,lbook,megfrz,devel,neigh,tmr,comm)
+    Call link_cell_pairs(vdw%cutoff,met%rcut,pdplnc,lbook,megfrz,cshell,devel,neigh,tmr,comm)
   End If
 ! Calculate all contributions from KIM
 
