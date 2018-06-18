@@ -35,7 +35,12 @@ Module ffield
   Use three_body, Only : threebody_type
   Use vdw, Only : vdw_type,MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
                   MIX_HALGREN,MIX_HOGERVORST,MIX_WALDMAN_HAGLER,MIX_TANG_TOENNIES, &
-                  MIX_FUNCTIONAL,vdw_generate,vdw_table_read
+                  MIX_FUNCTIONAL, &
+                  VDW_TAB,VDW_12_6,VDW_LENNARD_JONES,VDW_N_M,VDW_BUCKINGHAM, &
+                  VDW_BORN_HUGGINS_MEYER, VDW_HYDROGEN_BOND,VDW_N_M_SHIFT, &
+                  VDW_MORSE,VDW_WCA,VDW_DPD,VDW_AMOEBA,VDW_LENNARD_JONES_COHESIVE, &
+                  VDW_MORSE_12,VDW_RYDBERG,VDW_ZBL,VDW_ZBL_SWITCH_MORSE, &
+                  VDW_ZBL_SWITCH_BUCKINGHAM,vdw_generate,vdw_table_read
   Use metal, Only : metal_type,allocate_metal_arrays,allocate_metal_table_arrays, &
                     metal_generate_erf,metal_table_read,metal_generate
   Use tersoff, Only : tersoff_type,tersoff_generate
@@ -3409,47 +3414,47 @@ Subroutine read_field                      &
            keyword=word(1:4)
 
            If      (keyword == 'tab' ) Then
-              keypot=0
+              keypot=VDW_TAB
            Else If (keyword == '12-6') Then
-              keypot=1
+              keypot=VDW_12_6
            Else If (keyword == 'lj'  ) Then
-              keypot=2
+              keypot=VDW_LENNARD_JONES
            Else If (keyword == 'nm'  ) Then
-              keypot=3
+              keypot=VDW_N_M
            Else If (keyword == 'buck') Then
-              keypot=4
+              keypot=VDW_BUCKINGHAM
            Else If (keyword == 'bhm' ) Then
-              keypot=5
+              keypot=VDW_BORN_HUGGINS_MEYER
            Else If (keyword == 'hbnd') Then
-              keypot=6
+              keypot=VDW_HYDROGEN_BOND
            Else If (keyword == 'snm' ) Then
-              keypot=7
+              keypot=VDW_N_M_SHIFT
            Else If (keyword == 'mors') Then
-              keypot=8
+              keypot=VDW_MORSE
            Else If (keyword == 'wca' ) Then
-              keypot=9
+              keypot=VDW_WCA
            Else If (keyword == 'dpd' ) Then
-              keypot=10
+              keypot=VDW_DPD
            Else If (keyword == '14-7') Then
-              keypot=11
+              keypot=VDW_AMOEBA
            Else If (keyword == 'ljc') Then
-              keypot=12
+              keypot=VDW_LENNARD_JONES_COHESIVE
            Else If (keyword == 'mstw') Then
-              keypot=13
+              keypot=VDW_MORSE_12
            Else If (keyword == 'ryd') Then
-              keypot=14
+              keypot=VDW_RYDBERG
            Else If (keyword == 'zbl') Then
-              keypot=15
+              keypot=VDW_ZBL
            Else If (keyword == 'zbls') Then
-              keypot=16
+              keypot=VDW_ZBL_SWITCH_MORSE
            Else If (keyword == 'zblb') Then
-              keypot=17
+              keypot=VDW_ZBL_SWITCH_BUCKINGHAM
            Else
               Call info(keyword,.true.)
               Call error(452)
            End If
 
-           If (keypot == 0) Then
+           If (keypot == VDW_TAB) Then
               If (thermo%key_dpd > 0) Then ! make sure thermo%gamdpd is read and reported for DPD
                  Call get_word(record,word)
                  parpot(1)=word_2_real(word)
@@ -3481,30 +3486,30 @@ Subroutine read_field                      &
 
               parpot(1) = parpot(1)*engunit
 
-              If      (keypot == 1) Then
+              If      (keypot == VDW_12_6) Then
                  parpot(2)=parpot(2)*engunit
-              Else If (keypot == 4) Then
+              Else If (keypot == VDW_BUCKINGHAM) Then
                  parpot(3)=parpot(3)*engunit
-              Else If (keypot == 5) Then
+              Else If (keypot == VDW_BORN_HUGGINS_MEYER) Then
                  parpot(4)=parpot(4)*engunit
                  parpot(5)=parpot(5)*engunit
-              Else If (keypot == 6) Then
+              Else If (keypot == VDW_HYDROGEN_BOND) Then
                  parpot(2)=parpot(2)*engunit
-              Else If (keypot == 9) Then
+              Else If (keypot == VDW_WCA) Then
                  parpot(2)=Abs(parpot(2))
                  If (parpot(3) > parpot(2)/2.0_wp) &
                     parpot(3)=Sign(1.0_wp,parpot(3))*parpot(2)/2.0_wp
                  parpot(4)=2.0_wp**(1.0_wp/6.0_wp)*parpot(2)+parpot(3)
-              Else If (keypot == 13) Then
+              Else If (keypot == VDW_MORSE_12) Then
                  parpot(4)=parpot(4)*engunit
-              Else If (keypot == 14) Then
+              Else If (keypot == VDW_RYDBERG) Then
                  parpot(2)=parpot(2)*engunit
-              Else If (keypot == 15) Then
+              Else If (keypot == VDW_ZBL) Then
                  parpot(1)=parpot(1)/engunit
-              Else If (keypot == 16) Then
+              Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
                  parpot(1)=parpot(1)/engunit
                  parpot(5)=parpot(5)*engunit
-              Else If (keypot == 17) Then
+              Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
                  parpot(1)=parpot(1)/engunit
                  parpot(5)=parpot(5)*engunit
               End If
@@ -3537,41 +3542,41 @@ Subroutine read_field                      &
            End Do
 
            If (thermo%key_dpd > 0) Then ! store possible specification of DPD's gamma_ij
-              If      (keypot ==  0) Then
+              If      (keypot ==  VDW_TAB) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(1))
-              Else If (keypot ==  1) Then
+              Else If (keypot ==  VDW_12_6) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(3))
-              Else If (keypot ==  2) Then
+              Else If (keypot ==  VDW_LENNARD_JONES) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(3))
-              Else If (keypot ==  3) Then
+              Else If (keypot ==  VDW_N_M) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(5))
-              Else If (keypot ==  4) Then
+              Else If (keypot ==  VDW_BUCKINGHAM) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(4))
-              Else If (keypot ==  5) Then
+              Else If (keypot ==  VDW_BORN_HUGGINS_MEYER) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(6))
-              Else If (keypot ==  6) Then
+              Else If (keypot ==  VDW_HYDROGEN_BOND) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(3))
-              Else If (keypot ==  7) Then
+              Else If (keypot ==  VDW_N_M_SHIFT) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(6))
-              Else If (keypot ==  8) Then
+              Else If (keypot ==  VDW_MORSE) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(4))
-              Else If (keypot ==  9) Then
+              Else If (keypot ==  VDW_WCA) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(4))
-              Else If (keypot == 10) Then
+              Else If (keypot == VDW_DPD) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(3))
-              Else If (keypot == 11) Then
+              Else If (keypot == VDW_AMOEBA) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(3))
-              Else If (keypot == 12) Then
+              Else If (keypot == VDW_LENNARD_JONES_COHESIVE) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(4))
-              Else If (keypot == 13) Then
+              Else If (keypot == VDW_MORSE_12) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(5))
-              Else If (keypot == 14) Then
+              Else If (keypot == VDW_RYDBERG) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(4))
-              Else If (keypot == 15) Then
+              Else If (keypot == VDW_ZBL) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(5))
-              Else If (keypot == 16) Then
+              Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(8))
-              Else If (keypot == 17) Then
+              Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(8))
               End If
               If (thermo%gamdpd(0) > zero_plus) thermo%gamdpd(keyvdw)=thermo%gamdpd(0) ! override
@@ -3731,7 +3736,7 @@ Subroutine read_field                      &
 ! Get mixing in LJ's style characteristic energy(EPSILON) & distance(SIGMA) terms
 
                              eps = 0.0_wp ; sig = 0.0_wp ; del = 0.0_wp
-                             If      (keypot == 1)  Then ! 12-6
+                             If      (keypot == VDW_12_6)  Then ! 12-6
                                 keyword='12-6'
 
                                 eps(1)=vdw%param(2,ia)**2/(4.0_wp*vdw%param(1,ia))
@@ -3739,19 +3744,19 @@ Subroutine read_field                      &
 
                                 eps(2)=vdw%param(2,ja)**2/(4.0_wp*vdw%param(1,ja))
                                 sig(2)=(vdw%param(1,ja)/vdw%param(2,ja))**(1.0_wp/6.0_wp)
-                             Else If (keypot == 2  .or. keypot == 10 .or. &
-                                      keypot == 11 .or. keypot == 12) Then ! LJ, DPD, 14-7, LJC
-                                If (keypot == 2 ) keyword='lj  '
-                                If (keypot == 10) keyword='dpd '
-                                If (keypot == 11) keyword='14-7'
-                                If (keypot == 12) keyword='ljc '
+                             Else If (keypot == VDW_LENNARD_JONES  .or. keypot == VDW_DPD .or. &
+                                      keypot == VDW_AMOEBA .or. keypot == VDW_LENNARD_JONES_COHESIVE) Then ! LJ, DPD, 14-7, LJC
+                                If (keypot == VDW_LENNARD_JONES) keyword='lj  '
+                                If (keypot == VDW_DPD) keyword='dpd '
+                                If (keypot == VDW_AMOEBA) keyword='14-7'
+                                If (keypot == VDW_LENNARD_JONES_COHESIVE) keyword='ljc '
 
                                 eps(1)=vdw%param(1,ia)
                                 sig(1)=vdw%param(2,ia)
 
                                 eps(2)=vdw%param(1,ja)
                                 sig(2)=vdw%param(2,ja)
-                             Else If (keypot == 9) Then ! WCA
+                             Else If (keypot == VDW_WCA) Then ! WCA
                                 keyword='wca '
 
                                 eps(1)=vdw%param(1,ia)
@@ -3892,14 +3897,14 @@ Subroutine read_field                      &
 
 ! Recover and/or paste in the vdw parameter array
 
-                             If      (keypot == 1)  Then ! 12-6
+                             If      (keypot == VDW_12_6)  Then ! 12-6
                                 vdw%param(1,vdw%n_vdw)=4.0_wp*eps(0)*(sig(0)**12)
                                 vdw%param(2,vdw%n_vdw)=4.0_wp*eps(0)*(sig(0)**6)
-                             Else If (keypot == 2  .or. keypot == 10 .or. &
-                                      keypot == 11 .or. keypot == 12) Then ! LJ, DPD, 14-7, LJC
+                             Else If (keypot == VDW_LENNARD_JONES  .or. keypot == VDW_DPD .or. &
+                                      keypot == VDW_AMOEBA .or. keypot == VDW_LENNARD_JONES_COHESIVE) Then ! LJ, DPD, 14-7, LJC
                                 vdw%param(1,vdw%n_vdw)=eps(0)
                                 vdw%param(2,vdw%n_vdw)=sig(0)
-                             Else If (keypot == 9) Then ! WCA
+                             Else If (keypot == VDW_WCA) Then ! WCA
                                 vdw%param(1,vdw%n_vdw)=eps(0)
                                 vdw%param(2,vdw%n_vdw)=sig(0)
                                 vdw%param(3,vdw%n_vdw)=del(0)

@@ -27,9 +27,48 @@ Module vdw
 
   Private
 
+  ! VdW potential parameters
+  !> Tabulated potential
+  Integer( Kind = wi ), Parameter, Public :: VDW_TAB = 0
+  !> 12-6 potential (Lennard-Jones A B form): $u=A/r^12-B/r^6$
+  Integer( Kind = wi ), Parameter, Public :: VDW_12_6 = 1
+  !> Lennard-Jones potential: $u=4*\epsilon*[(\sigma/r)^12-(\sigma/r)^6]$
+  Integer( Kind = wi ), Parameter, Public :: VDW_LENNARD_JONES = 2
+  !> n-m potential: $u=[e_0/(n-m)]*[m*(r_0/r)^n-n*(d/r)^c]$
+  Integer( Kind = wi ), Parameter, Public :: VDW_N_M = 3
+  !> Buckingham exp-6 potential: $u=a*\exp(-r/\rho)-c/r^6$
+  Integer( Kind = wi ), Parameter, Public :: VDW_BUCKINGHAM = 4
+  !> Born-Huggins-Meyer exp-6-8 potential: $u=a*\exp(b*(\sigma-r)) - c/r^6 - d/r^8$
+  Integer( Kind = wi ), Parameter, Public :: VDW_BORN_HUGGINS_MEYER = 5
+  !> Hydrogen-bond 12-10 potential: $u=a/r^12-b/r^10$
+  Integer( Kind = wi ), Parameter, Public :: VDW_HYDROGEN_BOND = 6
+  !> n-m potential shift forced
+  Integer( Kind = wi ), Parameter, Public :: VDW_N_M_SHIFT = 7
+  !> Morse potential: $u=e_0*([1-\exp(-k(r-r_0))]^2-1)$
+  Integer( Kind = wi ), Parameter, Public :: VDW_MORSE = 8
+  !> Shifted Weeks-Chandler-Anderson potential
+  Integer( Kind = wi ), Parameter, Public :: VDW_WCA = 9
+  !> DPD potential
+  Integer( Kind = wi ), Parameter, Public :: VDW_DPD = 10
+  !> AMOEBA 14-7: $u=eps * [1.07/((\sigma/r)+0.07)]^7 * [(1.12/((\sigma/r)^7+0.12))-2]$
+  Integer( Kind = wi ), Parameter, Public :: VDW_AMOEBA = 11
+  !> Lennard-Jones cohesive potential: $u=4*eps*[(\sigma/r)^12-c*(\sigma/r)^6]$
+  Integer( Kind = wi ), Parameter, Public :: VDW_LENNARD_JONES_COHESIVE = 12
+  !> Morse potential with r^12 repulsion (mstw): $u=e_0*{[1-\exp(-k(r-r_0))]^2-1}+c/r^12$
+  Integer( Kind = wi ), Parameter, Public :: VDW_MORSE_12 = 13
+  !> Rydberg potential: $u=(a+b*r) \exp(-r/c)$
+  Integer( Kind = wi ), Parameter, Public :: VDW_RYDBERG = 14
+  !> ZBL potential: $u=Z_1 Z_2/(4 \pi \epsilon_0 r) \sum_{i=1}^4 b_i e^{-c_i*r/a}$
+  Integer( Kind = wi ), Parameter, Public :: VDW_ZBL = 15
+  !> ZBL swithched with Morse: $u=f(r)\mathrm{zbl}(r)+(1-f(r))*\mathrm{morse}(r)$
+  Integer( Kind = wi ), Parameter, Public :: VDW_ZBL_SWITCH_MORSE = 16
+  !> ZBL swithched with Buckingham: $u=f(r)\mathrm{zbl}(r)+(1-f(r))*\mathrm{buckingham}(r)$
+  Integer( Kind = wi ), Parameter, Public :: VDW_ZBL_SWITCH_BUCKINGHAM = 17
+
+
   ! Mixing rule parameters
   !> Null
-  Integer( Kind = wi), Parameter, Public :: MIX_NULL = 0
+  Integer( Kind = wi ), Parameter, Public :: MIX_NULL = 0
   !> Lorentz-Berthelot: $e_{ij}=(e_i*e_j)^{1/2} \quad s_{ij}=(s_i+s_j)/2$
   Integer( Kind = wi ), Parameter, Public :: MIX_LORENTZ_BERTHELOT = 1
   !> Fender-Hasley: $e_{ij}=(2*e_i*e_j)/(e_i+e_j) \quad s_{ij}=(s_i+s_j)/2$
@@ -226,14 +265,14 @@ Contains
            k = vdw%list(ivdw)
 
            keypot=vdw%ltp(k)
-           If      (keypot ==  0) Then
+           If      (keypot == VDW_TAB) Then
 
 ! tabulated energy and pressure lrc
 
               eadd = vdw%param(1,k)
               padd =-vdw%param(2,k)
 
-           Else If (keypot ==  1) Then
+           Else If (keypot == VDW_12_6) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -244,7 +283,7 @@ Contains
               eadd = a/(9.0_wp*r**9) - b/(3.0_wp*r**3)
               padd = 12.0_wp*a/(9.0_wp*r**9) - 6.0_wp*b/(3.0_wp*r**3)
 
-           Else If (keypot ==  2) Then
+           Else If (keypot == VDW_LENNARD_JONES) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -255,7 +294,7 @@ Contains
               eadd = 4.0_wp*eps*(sig**12/(9.0_wp*r**9) - sig**6/(3.0_wp*r**3))
               padd = 8.0_wp*eps*(6.0_wp*sig**12/(9.0_wp*r**9) - sig**6/(r**3))
 
-           Else If (keypot ==  3) Then
+           Else If (keypot == VDW_N_M) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -268,7 +307,7 @@ Contains
               eadd = e0/(nr-mr)*( mr*r0**n/((nr-3.0_wp)*r**(n-3)) - nr*r0**m/((mr-3.0_wp)*r**(m-3)) )
               padd = e0/(nr-mr)*nr*mr*( r0**n/((nr-3.0_wp)*r**(n-3)) - r0**m/((mr-3.0_wp)*r**(m-3)) )
 
-           Else If (keypot ==  4) Then
+           Else If (keypot == VDW_BUCKINGHAM) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -278,7 +317,7 @@ Contains
               eadd = -c/(3.0_wp*r**3)
               padd = -2.0_wp*c/(r**3)
 
-           Else If (keypot ==  5) Then
+           Else If (keypot == VDW_BORN_HUGGINS_MEYER) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -289,7 +328,7 @@ Contains
               eadd = -c/(3.0_wp*r**3) - d/(5.0_wp*r**5)
               padd = -2.0_wp*c/(r**3) - 8.0_wp*d/(5.0_wp*r**5)
 
-           Else If (keypot ==  6) Then
+           Else If (keypot == VDW_HYDROGEN_BOND) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -300,7 +339,7 @@ Contains
               eadd = a/(9.0_wp*r**9) - b/(7.0_wp*r**7)
               padd = 12.0_wp*a/(9.0_wp*r**9) - 10.0_wp*b/(7.0_wp*r**7)
 
-           Else If (keypot == 8) Then
+           Else If (keypot == VDW_MORSE) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
@@ -318,7 +357,7 @@ Contains
                       (4.0_wp*kk**3*vdw%cutoff**3 + 6*kk**2*vdw%cutoff**2 + 6*kk*vdw%cutoff + 3)
               End If
 
-           Else If (keypot == 11) Then
+           Else If (keypot == VDW_AMOEBA) Then
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
 
@@ -332,7 +371,7 @@ Contains
               eadd = intRadMM3(sig,a,b,eps,vdw%cutoff,e0)
               padd = -intRaddMM3(sig,a,b,eps,vdw%cutoff,e0)
 
-           Else If (keypot ==  12) Then
+           Else If (keypot == VDW_LENNARD_JONES_COHESIVE) Then
 
 ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
@@ -344,8 +383,7 @@ Contains
               eadd = 4.0_wp*eps*(sig**12/(9.0_wp*r**9) - c*sig**6/(3.0_wp*r**3))
               padd = 8.0_wp*eps*(6.0_wp*sig**12/(9.0_wp*r**9) - c*sig**6/(r**3))
 
-           Else If (keypot == 13) Then
-
+           Else If (keypot == VDW_MORSE_12) Then
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
               e0 = vdw%param(1,k)
@@ -367,7 +405,7 @@ Contains
                        6*kk**2*vdw%cutoff**2 + 6*kk*vdw%cutoff + 3) + 12.0_wp*s9
               End If
 
-           Else If (keypot == 14) Then
+           Else If (keypot == VDW_RYDBERG) Then
 
 ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
 
@@ -381,7 +419,7 @@ Contains
               padd = (b*vdw%cutoff**4+(3*b*c+a)*vdw%cutoff**3+(9*b*c**2+3*a*c)*vdw%cutoff**2+& 
                 (18*b*c**3+6*a*c**2)*vdw%cutoff+18*b*c**4+6*a*c**3)*t
 
-           Else If (keypot == 15) Then
+           Else If (keypot == VDW_ZBL) Then
 
 ! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
 
@@ -394,7 +432,7 @@ Contains
               eadd = intRadZBL(kk,a,vdw%cutoff,1e-12_wp)
               padd = intdRadZBL(kk,a,vdw%cutoff,1e-12_wp)
 
-           Else If (keypot == 16) Then
+           Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
@@ -413,7 +451,7 @@ Contains
                       (4.0_wp*kk**3*vdw%cutoff**3 + 6*kk**2*vdw%cutoff**2 + 6*kk*vdw%cutoff + 3)
               End If
 
-           Else If (keypot == 17) Then
+           Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
 
 ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
@@ -497,7 +535,7 @@ Subroutine vdw_direct_fs_generate(vdw)
   Do ivdw=1,vdw%n_vdw
 
      keypot=vdw%ltp(ivdw)
-     If      (keypot == 1) Then
+     If      (keypot == VDW_12_6) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -510,7 +548,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-r_6*(a*r_6-b) - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 2) Then
+     Else If (keypot == VDW_LENNARD_JONES) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -523,7 +561,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-4.0_wp*eps*sor6*(sor6-1.0_wp) - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 3) Then
+     Else If (keypot == VDW_N_M) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -541,7 +579,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-e0*(mr*r0rn-nr*r0rm)*b - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 4) Then
+     Else If (keypot == VDW_BUCKINGHAM) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -565,7 +603,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-(t1+t2) - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 5) Then
+     Else If (keypot == VDW_BORN_HUGGINS_MEYER) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -583,7 +621,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-(t1+t2+t3) - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 6) Then
+     Else If (keypot == VDW_HYDROGEN_BOND) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -597,11 +635,11 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-(t1+t2) - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 7) Then
+     Else If (keypot == VDW_N_M_SHIFT) Then
 
 ! shifted and force corrected n-m potential (w.smith) ::
 
-     Else If (keypot == 8) Then
+     Else If (keypot == VDW_MORSE) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
@@ -615,7 +653,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-e0*t1*(t1-2.0_wp) - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 9) Then
+     Else If (keypot == VDW_WCA) Then
 
 ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
 ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
@@ -630,14 +668,14 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-(4.0_wp*eps*sor6*(sor6-1.0_wp)+eps) - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 10) Then ! all zeroed in vdw
+     Else If (keypot == VDW_DPD) Then ! all zeroed in vdw
 
 ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
 
 !       vdw%afs(ivdw) = 0.0_wp !initialised in vdw
 !       vdw%bfs(ivdw) = 0.0_wp !initialised in vdw
 
-     Else If (keypot == 11) Then
+     Else If (keypot == VDW_AMOEBA) Then
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
 
@@ -653,7 +691,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-t3*((1.12_wp/t2)-2.0_wp) - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-      Else If (keypot == 12) Then
+      Else If (keypot == VDW_LENNARD_JONES_COHESIVE) Then
 
 ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
@@ -667,7 +705,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-4.0_wp*eps*sor6*(sor6-c) - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 13) Then
+     Else If (keypot == VDW_MORSE_12) Then
 
 ! Morse potential with twelve term:: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
@@ -683,7 +721,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%bfs(ivdw) =-e0*t1*(t1-2.0_wp) + sor6 - vdw%afs(ivdw)
         vdw%afs(ivdw) = vdw%afs(ivdw)/vdw%cutoff
 
-     Else If (keypot == 14) Then
+     Else If (keypot == VDW_RYDBERG) Then
 
 ! Morse potential with twelve term:: u=(a+b*r)Exp(-r/c)
 
@@ -696,7 +734,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%afs(ivdw) = (a+b*vdw%cutoff)*kk*t1-b*t1
         vdw%bfs(ivdw) = -(a*c+a*vdw%cutoff+b*vdw%cutoff*vdw%cutoff)*kk*t1
 
-     Else If (keypot == 15) Then
+     Else If (keypot == VDW_ZBL) Then
 
 ! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
 
@@ -710,7 +748,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%afs(ivdw) = dz/vdw%cutoff
         vdw%bfs(ivdw) = -z-dz
 
-     Else If (keypot == 16) Then
+     Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
@@ -728,7 +766,7 @@ Subroutine vdw_direct_fs_generate(vdw)
         vdw%afs(ivdw) = dz/vdw%cutoff
         vdw%bfs(ivdw) = -z-dz
 
-     Else If (keypot == 17) Then
+     Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
 
 ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
@@ -1150,7 +1188,7 @@ Subroutine vdw_generate(vdw)
   Do ivdw=1,vdw%n_vdw
 
      keypot=vdw%ltp(ivdw)
-     If      (keypot == 1) Then
+     If      (keypot == VDW_12_6) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -1175,7 +1213,7 @@ Subroutine vdw_generate(vdw)
            End If ! else leave undetermined
         End If
 
-     Else If (keypot == 2) Then
+     Else If (keypot == VDW_LENNARD_JONES) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -1198,7 +1236,7 @@ Subroutine vdw_generate(vdw)
            vdw%sigeps(2,ivdw)=eps
         End If
 
-     Else If (keypot == 3) Then
+     Else If (keypot == VDW_N_M) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -1226,7 +1264,7 @@ Subroutine vdw_generate(vdw)
            vdw%sigeps(2,ivdw)=e0
         End If
 
-     Else If (keypot == 4) Then
+     Else If (keypot == VDW_BUCKINGHAM) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -1278,7 +1316,7 @@ Subroutine vdw_generate(vdw)
         vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
         vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-     Else If (keypot == 5) Then
+     Else If (keypot == VDW_BORN_HUGGINS_MEYER) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -1324,7 +1362,7 @@ Subroutine vdw_generate(vdw)
         vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
         vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-     Else If (keypot == 6) Then
+     Else If (keypot == VDW_HYDROGEN_BOND) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -1348,7 +1386,7 @@ Subroutine vdw_generate(vdw)
         vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
         vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-     Else If (keypot == 7) Then
+     Else If (keypot == VDW_N_M_SHIFT) Then
 
 ! shifted and force corrected n-m potential (w.smith) ::
 
@@ -1406,7 +1444,7 @@ Subroutine vdw_generate(vdw)
         vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
         vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-     Else If (keypot == 8) Then
+     Else If (keypot == VDW_MORSE) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}
 
@@ -1430,7 +1468,7 @@ Subroutine vdw_generate(vdw)
            vdw%sigeps(2,ivdw)=e0
         End If
 
-     Else If (keypot == 9) Then
+     Else If (keypot == VDW_WCA) Then
 
 ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
 ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
@@ -1475,7 +1513,7 @@ Subroutine vdw_generate(vdw)
         vdw%tab_potential(0,ivdw)=Huge(vdw%tab_potential(1,ivdw))
         vdw%tab_force(0,ivdw)=Huge(vdw%tab_force(1,ivdw))
 
-     Else If (keypot == 10) Then
+     Else If (keypot == VDW_DPD) Then
 
 ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.rc.(1-r/rc)^2
 
@@ -1498,7 +1536,7 @@ Subroutine vdw_generate(vdw)
         vdw%sigeps(1,ivdw)=rc
         vdw%sigeps(2,ivdw)=a
 
-     Else If (keypot == 11) Then
+     Else If (keypot == VDW_AMOEBA) Then
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
 
@@ -1526,7 +1564,7 @@ Subroutine vdw_generate(vdw)
            vdw%sigeps(2,ivdw)=eps
         End If
 
-      Else If (keypot == 12) Then
+      Else If (keypot == VDW_LENNARD_JONES_COHESIVE) Then
 
 ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
@@ -1550,7 +1588,7 @@ Subroutine vdw_generate(vdw)
            vdw%sigeps(2,ivdw)=eps
         End If
 
-     Else If (keypot == 13) Then
+     Else If (keypot == VDW_MORSE_12) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-k(r-r0))]^2-1}+c/r^12
 
@@ -1576,10 +1614,10 @@ Subroutine vdw_generate(vdw)
            vdw%sigeps(2,ivdw)=e0
         End If
 
-     Else If (keypot == 14) Then
+     Else If (keypot == VDW_RYDBERG) Then
 
 ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
-        
+
         a = vdw%param(1,ivdw)
         b = vdw%param(2,ivdw)
         c = vdw%param(3,ivdw)
@@ -1601,13 +1639,13 @@ Subroutine vdw_generate(vdw)
            vdw%sigeps(2,ivdw)=0.0_wp
         End If
 
-     Else If (keypot == 15) Then
+     Else If (keypot == VDW_ZBL) Then
 
 ! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
 
         z1 = vdw%param(1,ivdw)
         z2 = vdw%param(2,ivdw)
-        
+
         ! this is in fact inverse a
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
@@ -1629,7 +1667,7 @@ Subroutine vdw_generate(vdw)
            vdw%sigeps(2,ivdw)=0.0_wp
         End If
 
-     Else If (keypot == 16) Then
+     Else If (keypot == VDW_ZBL_SWITCH_MORSE) Then
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
@@ -1659,7 +1697,7 @@ Subroutine vdw_generate(vdw)
            vdw%sigeps(2,ivdw)=0.0_wp
         End If
 
-     Else If (keypot == 17) Then
+     Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
 
 ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
@@ -1695,7 +1733,8 @@ Subroutine vdw_generate(vdw)
 
      End If
 
-     If (vdw%l_force_shift .and. (keypot /= 7 .and. keypot /= 10)) Then ! no shifting to shifted n-m and DPD
+     ! no shifting to shifted n-m and DPD
+     If (vdw%l_force_shift .and. (keypot /= VDW_N_M_SHIFT .and. keypot /= VDW_DPD)) Then
 
         vdw%sigeps(1,ivdw)=-1.0_wp
         vdw%sigeps(2,ivdw)= 0.0_wp
