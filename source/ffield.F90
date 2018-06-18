@@ -41,8 +41,7 @@ Module ffield
                   VDW_MORSE,VDW_WCA,VDW_DPD,VDW_AMOEBA,VDW_LENNARD_JONES_COHESIVE, &
                   VDW_MORSE_12,VDW_RYDBERG,VDW_ZBL,VDW_ZBL_SWITCH_MORSE, &
                   VDW_ZBL_SWITCH_BUCKINGHAM,vdw_generate,vdw_table_read
-  Use metal, Only : metal_type,allocate_metal_arrays,allocate_metal_table_arrays, &
-                    metal_generate_erf,metal_table_read,metal_generate
+  Use metal, Only : metal_type,metal_generate_erf,metal_table_read,metal_generate
   Use tersoff, Only : tersoff_type,tersoff_generate
   Use four_body, Only : four_body_type
 
@@ -3977,7 +3976,7 @@ Subroutine read_field                      &
           Call info(message,.true.)
         End If
 
-        If (met%n_potentials > mxmet) Call error(71)
+        If (met%n_potentials > met%max_metal) Call error(71)
         If (.not.lunits) Call error(6)
         If (.not.lmols) Call error(13)
 
@@ -4049,8 +4048,8 @@ Subroutine read_field                      &
               parpot(9)=word_2_real(word)
 
               If (l_top) Then
-                Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',mxpmet,'f15.6)'
-                Write(message,rfmt) itpmet,atom1,atom2,keyword,parpot(1:mxpmet)
+                Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',met%max_param,'f15.6)'
+                Write(message,rfmt) itpmet,atom1,atom2,keyword,parpot(1:met%max_param)
                 Call info(message,.true.)
               End If
            End If
@@ -4070,7 +4069,7 @@ Subroutine read_field                      &
 
            keymet=(ka1*(ka1-1))/2+ka2
 
-           If (keymet > mxmet) Call error(82)
+           If (keymet > met%max_metal) Call error(82)
            If (met%list(keymet) /= 0) Call error(141)
 
            met%list(keymet)=itpmet
@@ -4099,7 +4098,7 @@ Subroutine read_field                      &
                  parpot(4)=parpot(4)*engunit
               End If
 
-              Do i=1,mxpmet
+              Do i=1,met%max_param
                  met%prm(i,itpmet)=parpot(i)
               End Do
            End If
@@ -4118,7 +4117,7 @@ Subroutine read_field                      &
            If (met%n_potentials < ntab) Then
               Call warning(120,0.0_wp,0.0_wp,0.0_wp)
 
-              If (met%n_potentials > mxmet) Call error(71)
+              If (met%n_potentials > met%max_metal) Call error(71)
 
 ! put undefined potentials outside range
 
@@ -4135,7 +4134,7 @@ Subroutine read_field                      &
 
            Call metal_generate_erf(met)
            If (.not.met%l_direct) Then
-              Call allocate_metal_table_arrays(met)
+              Call met%init_table(mxatyp)
               If (met%tab > 0) Then ! keypot == 0
                  Call metal_table_read(l_top,met,site,comm)
               Else ! If (met%tab == 0) Then
@@ -5070,7 +5069,6 @@ Subroutine scan_field                                &
            mtdihd,       &
            mtinv,         &
            mxrdf,                  &
-           mxmet,mxmed,mxmds,            &
            rcter,rcfbp,lext,cshell,cons,pmf,met,&
            bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,fourbody,comm)
 
@@ -5134,7 +5132,7 @@ Subroutine scan_field                                &
                        numdih,mtdihd,idih,         &
                        numinv,mtinv,iinv,           &
                        mxrdf,itprdf,itpvdw,                       &
-                       mxmet,mxmed,mxmds,itpmet,                        &
+                       itpmet,                        &
                        itpter,itptbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
   Real( Kind = wp ) :: rct,tmp,tmp1,tmp2
@@ -5217,9 +5215,9 @@ Subroutine scan_field                                &
   vdw%cutoff  =0.0_wp
   vdw%max_grid=0
 
-  mxmet =0
-  mxmed =0
-  mxmds =0
+  met%max_metal =0
+  met%max_med =0
+  met%max_mds =0
   met%rcut  =0.0_wp
   met%maxgrid=0
 
@@ -5746,9 +5744,9 @@ Subroutine scan_field                                &
 !        met%tab=-1 ! initialised in metal_module
 
         Call get_word(record,word)
-        mxmet=Nint(word_2_real(word))
+        met%max_metal=Nint(word_2_real(word))
 
-        Do itpmet=1,mxmet
+        Do itpmet=1,met%max_metal
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
               Call get_line(safe,nfield,record,comm)
@@ -5784,21 +5782,21 @@ Subroutine scan_field                                &
            End If
         End Do
 
-        If (mxmet > 0) Then
-           mxmet=Max(mxmet,(mxatyp*(mxatyp+1))/2)
+        If (met%max_metal > 0) Then
+           met%max_metal=Max(met%max_metal,(mxatyp*(mxatyp+1))/2)
 
            If      (met%tab == 0) Then
-              mxmed=mxmet
+              met%max_med=met%max_metal
            Else If (met%tab == 1) Then
-              mxmed=mxatyp
+              met%max_med=mxatyp
            Else If (met%tab == 2) Then
-              mxmed=mxatyp**2
+              met%max_med=mxatyp**2
            Else If (met%tab == 3) Then
-              mxmed=mxatyp
-              mxmds=mxatyp*(mxatyp+1)/2
+              met%max_med=mxatyp
+              met%max_mds=mxatyp*(mxatyp+1)/2
            Else If (met%tab == 4) Then
-              mxmed=mxatyp**2
-              mxmds=mxatyp**2
+              met%max_med=mxatyp**2
+              met%max_mds=mxatyp**2
            End If
 
            If (met%tab > 0) Then

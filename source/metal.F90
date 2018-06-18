@@ -65,40 +65,51 @@ Module metal
     ! Atomic density [reused as embedding derivative(s)] helper array(s)
     Real( Kind = wp ), Allocatable, Dimension(:), Public :: rho,rhs
 
+    !> Maximum number of metal interactions
+    Integer( Kind = wi ), Public :: max_metal
+    !> Maximum number of metal interaction parameters
+    Integer( Kind = wi ), Public :: max_param
     !> Maximum number of grid points
     Integer( Kind = wi ), Public :: maxgrid
+
+    Integer( Kind = wi ), Public :: max_med
+    Integer( Kind = wi ), Public :: max_mds
 
     ! Many-body perturbation potential error function and derivative arrays
     Real( Kind = wp ), Allocatable, Dimension(:), Public :: merf,mfer
   Contains
     Private
 
+    Procedure, Public :: init => allocate_metal_arrays
+    Procedure, Public :: init_table => allocate_metal_table_arrays
     Final :: cleanup
   End Type metal_Type
 
-  Public :: allocate_metal_arrays, allocate_metal_table_arrays, &
-            metal_generate, metal_generate_erf, metal_table_read, &
+  Public :: metal_generate, metal_generate_erf, metal_table_read, &
             metal_lrc, metal_forces, metal_ld_compute, erfgen_met
 
 Contains
 
-  Subroutine allocate_metal_arrays(met)
-    Type( metal_type ), Intent( InOut ) :: met
+  Subroutine allocate_metal_arrays(met,mxatms,mxatyp)
+    Class( metal_type ) :: met
+    Integer( Kind = wi ), Intent( In    ) :: mxatms,mxatyp
 
-    Integer, Dimension( 1:7 ) :: fail
+    Integer, Dimension(1:7) :: fail
 
     If (met%tab == 3 .or. met%tab == 4) met%l_2b=.true.
 
     fail = 0
 
-    Allocate (met%list(1:mxmet),                  Stat = fail(1))
-    Allocate (met%ltp(1:mxmet),                  Stat = fail(2))
-    Allocate (met%prm(1:mxpmet,1:mxmet),         Stat = fail(3))
-    Allocate (met%rho(1:Merge(mxatms,0,mxmet > 0)), Stat = fail(4))
-    If (met%l_2b) & ! the new S-band density
-    Allocate (met%rhs(1:Merge(mxatms,0,mxmet > 0)), Stat = fail(5))
-    Allocate (met%elrc(0:mxatyp),                  Stat = fail(6))
-    Allocate (met%vlrc(0:mxatyp),                  Stat = fail(7))
+    Allocate (met%list(1:met%max_metal), stat = fail(1))
+    Allocate (met%ltp(1:met%max_metal), stat = fail(2))
+    Allocate (met%prm(1:met%max_param,1:met%max_metal), stat = fail(3))
+    Allocate (met%rho(1:Merge(mxatms,0,met%max_metal > 0)), stat = fail(4))
+    ! the new S-band density
+    If (met%l_2b) Then
+      Allocate (met%rhs(1:Merge(mxatms,0,met%max_metal > 0)), stat = fail(5))
+    End If
+    Allocate (met%elrc(0:mxatyp), stat = fail(6))
+    Allocate (met%vlrc(0:mxatyp), stat = fail(7))
 
     If (Any(fail > 0)) Call error(1023)
 
@@ -113,19 +124,20 @@ Contains
     met%vlrc  = 0.0_wp
   End Subroutine allocate_metal_arrays
 
-  Subroutine allocate_metal_table_arrays(met)
-    Type( metal_type ), Intent( InOut ) :: met
+  Subroutine allocate_metal_table_arrays(met,mxatyp)
+    Class( metal_type ) :: met
+    Integer( Kind = wi ), Intent( In    ) :: mxatyp
 
-    Integer, Dimension( 1:5 ) :: fail
+    Integer, Dimension(1:5) :: fail
 
     fail = 0
 
-    Allocate (met%vmet(1:met%maxgrid,1:mxmet, 1:2),    Stat = fail(1))
-    Allocate (met%dmet(1:met%maxgrid,1:mxmed, 1:2),    Stat = fail(2))
-    Allocate (met%fmet(1:met%maxgrid,1:mxatyp,1:2),    Stat = fail(3))
+    Allocate (met%vmet(1:met%maxgrid,1:met%max_metal, 1:2), stat = fail(1))
+    Allocate (met%dmet(1:met%maxgrid,1:met%max_med, 1:2), stat = fail(2))
+    Allocate (met%fmet(1:met%maxgrid,1:mxatyp,1:2), stat = fail(3))
     If (met%tab == 3 .or. met%tab == 4) Then ! the new S-band density and embedding
-       Allocate (met%dmes(1:met%maxgrid,1:mxmds, 1:2), Stat = fail(4))
-       Allocate (met%fmes(1:met%maxgrid,1:mxatyp,1:2), Stat = fail(5))
+       Allocate (met%dmes(1:met%maxgrid,1:met%max_mds, 1:2), stat = fail(4))
+       Allocate (met%fmes(1:met%maxgrid,1:mxatyp,1:2), stat = fail(5))
     End If
 
     If (Any(fail > 0)) Call error(1069)
