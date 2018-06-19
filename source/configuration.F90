@@ -24,6 +24,7 @@ Module configuration
   Use domains, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r,idx,idy,idz
   Use development, Only : development_type
 
+  Use netcdf_wrap, Only : netcdf_param
   Use io,     Only : io_set_parameters,         &
                             io_get_parameters,         &
                             io_init, io_nc_create,     &
@@ -2307,7 +2308,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
 
 End Subroutine scan_config
 
-Subroutine scale_config(megatm,devel,comm)
+Subroutine scale_config(megatm,devel,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2325,6 +2326,7 @@ Subroutine scale_config(megatm,devel,comm)
   Integer               :: i,nstep
   Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
   Type( development_type ), Intent( In    ) :: devel
+  Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type ), Intent( InOut ) :: comm
 
 ! Get the inverse cell matrix
@@ -2359,13 +2361,13 @@ Subroutine scale_config(megatm,devel,comm)
   time   = 0.0_wp   ! time is not relevant
 
   rcell = cell ; cell = devel%cels
-  Call write_config(name,devel%lvcfscl,megatm,nstep,tstep,time,comm)
+  Call write_config(name,devel%lvcfscl,megatm,nstep,tstep,time,netcdf,comm)
   cell = rcell
 
 End Subroutine scale_config
 
 
-Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
+Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2380,6 +2382,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
   Character( Len = * ), Intent( In    ) :: name
   Integer,              Intent( In    ) :: levcfg,megatm,nstep
   Real( Kind = wp ),    Intent( In    ) :: tstep,time
+  Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Integer, Parameter :: recsz    =   73 ! default record size
@@ -2761,7 +2764,9 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,comm)
         Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
         Call io_delete( fname,comm ) ! Sort existence issues
-        If (io_write == IO_WRITE_SORTED_NETCDF) Call io_nc_create( comm_self, fname, cfgname, megatm )
+        If (io_write == IO_WRITE_SORTED_NETCDF) Then
+          Call io_nc_create( netcdf, comm_self, fname, cfgname, megatm )
+        End If
         Call io_open( io_write, comm_self, fname, mode_wronly + mode_create, fh )
 
 ! Non netCDF
@@ -3189,7 +3194,7 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
 
   End Subroutine freeze_atoms
 
-  Subroutine origin_config(megatm,devel,comm)
+  Subroutine origin_config(megatm,devel,netcdf,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -3204,6 +3209,7 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
 
     Integer,            Intent( In    ) :: megatm
     Type( development_type ), Intent( In    ) :: devel
+    Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( comms_type ), Intent( InOut ) :: comm
 
     Character ( Len = 6 ) :: name
@@ -3229,7 +3235,7 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
     tstep  = 0.0_wp   ! no step exists
     time   = 0.0_wp   ! time is not relevant
 
-    Call write_config(name,devel%lvcforg,megatm,nstep,tstep,time,comm)
+    Call write_config(name,devel%lvcforg,megatm,nstep,tstep,time,netcdf,comm)
 
   End Subroutine origin_config
 End Module configuration

@@ -237,13 +237,13 @@
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
            If (ltraj) Call trajectory_write &
-           (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,comm)
+           (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,netcdf,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write &
-             (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(1),neigh,site,comm)
+             (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(1),neigh,site,netcdf,comm)
              If (dfcts(2)%ldef)Then
                Call defects_write &
-               (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(2),neigh,site,comm)
+               (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(2),neigh,site,netcdf,comm)
              End If
            End If  
            If (msd_data%l_msd) Call msd_write &
@@ -267,7 +267,7 @@
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,comm)
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -340,7 +340,7 @@
 
   If (.not. devel%l_tor) Call system_revive                         &
            (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,comm)
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

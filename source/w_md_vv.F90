@@ -59,7 +59,7 @@
         If (levcfg == 2) Then
            newjob = .false.
 
-           If (keyres /= 1) Call w_write_options(cshell,stat,site)
+           If (keyres /= 1) Call w_write_options(cshell,stat,site,netcdf)
 
            If (nstep == 0 .and. nstep == nstrun) Go To 1000
         End If
@@ -95,7 +95,7 @@
 ! Evaluate forces
 
      Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,tmr)
+       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
@@ -130,14 +130,14 @@
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options(cshell,stat,site)
+        Call w_write_options(cshell,stat,site,netcdf)
 
 ! Save restart data in event of system crash
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
            (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,comm)
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 

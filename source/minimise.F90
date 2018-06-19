@@ -35,6 +35,7 @@ Module minimise
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
   Use constraints, Only : constraints_type,constraints_tags,constraints_pseudo_bonds
+  Use netcdf_wrap, Only : netcdf_param
 
   Implicit None
 
@@ -83,7 +84,7 @@ Contains
 
   Subroutine minimise_relax &
            (l_str,relaxed,rdf_collect,megatm,megpmf,megrgd, &
-           keymin,min_tol,tstep,stpcfg,stat,pmf,cons,comm)
+           keymin,min_tol,tstep,stpcfg,stat,pmf,cons,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -111,6 +112,7 @@ Contains
   Type( stats_type ), Intent(InOut) :: stat
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent(InOut) :: cons
+  Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type ), Intent( inOut ) :: comm
 
   Logical,              Save :: newjob = .true. , l_rdf, l_mov
@@ -565,7 +567,7 @@ Contains
         name = 'CFGMIN' ! file name
         levcfg = 0      ! define level of information in file
 
-        Call write_config(name,levcfg,megatm,i-1,eng_min/engunit,eng_0/engunit,comm)
+        Call write_config(name,levcfg,megatm,i-1,eng_min/engunit,eng_0/engunit,netcdf,comm)
      End If
 
 ! setup new quaternions

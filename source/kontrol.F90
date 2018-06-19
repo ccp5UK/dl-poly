@@ -1,5 +1,5 @@
 Module kontrol
-  Use kinds, only : wp
+  Use kinds, only : wp,real32,real64
   Use comms,      Only : comms_type,gcheck
   Use timer,      Only : timer_type
   Use configuration,     Only : sysname
@@ -46,6 +46,7 @@ Module kontrol
                             IO_WRITE_SORTED_DIRECT,   &
                             IO_WRITE_SORTED_NETCDF,   &
                             IO_WRITE_SORTED_MASTER
+  Use netcdf_wrap, Only : netcdf_param
   Use numerics, Only : dcell, invert
   Use thermostat, Only : thermostat_type, &
                          ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
@@ -4881,7 +4882,7 @@ Subroutine scan_control_pre(imc_n,dvar,comm)
 
 End Subroutine scan_control_pre
 
-Subroutine scan_control_io(comm)
+Subroutine scan_control_io(netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4893,11 +4894,13 @@ Subroutine scan_control_io(comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( netcdf_param ), Intent( InOut ) :: netcdf
+  Type( comms_type ), Intent( InOut ) :: comm
+
   Logical                :: carry,safe
   Character( Len = 200 ) :: record,record1
   Character( Len = 40  ) :: word,word1
   Real( Kind = wp )      :: tmp
-  Type( comms_type ), Intent( InOut ) :: comm
 
 ! Some parameters and variables needed for dealing with I/O options
 
@@ -5109,11 +5112,11 @@ Subroutine scan_control_io(comm)
                  ! Use 32-bit quantities in output for real numbers
                  If (comm%idnode == 0) &
                  Call info('I/O write method: parallel by using netCDF in the amber-like/32-bit format',.true.)
-                 Call io_nc_set_real_precision( Precision( 1.0 ), Range( 1.0 ), err_r )
+                 Call io_nc_set_real_precision( real32, netcdf, err_r )
               Else
                  ! Use 64-bit quantities in output for real numbers
                  Call info('I/O write method: parallel by using netCDF in 64-bit format',.true.)
-                 Call io_nc_set_real_precision( Precision( 1.0d0 ), Range( 1.0d0 ), err_r )
+                 Call io_nc_set_real_precision( real64, netcdf, err_r )
                  record1=' '
                  record1=word(1:Len_Trim(word)+1) // record ! back up
                  record=record1
