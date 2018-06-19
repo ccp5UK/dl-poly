@@ -80,9 +80,9 @@ Contains
     If (fail > 0) Call error(1039)
 
   End Subroutine deallocate_minimise_arrays
-  
+
   Subroutine minimise_relax &
-           (l_str,relaxed,lrdf,megatm,megpmf,megrgd, &
+           (l_str,relaxed,rdf_collect,megatm,megpmf,megrgd, &
            keymin,min_tol,tstep,stpcfg,stat,pmf,cons,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -104,7 +104,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: l_str
-  Logical,           Intent( InOut ) :: relaxed,lrdf
+  Logical,           Intent( InOut ) :: relaxed,rdf_collect
   Integer,           Intent( In    ) :: megatm, &
                                         megpmf,megrgd,keymin
   Real( Kind = wp ), Intent( In    ) :: min_tol(1:2),tstep,stpcfg
@@ -236,8 +236,8 @@ Contains
 
 ! Avoid rdf calculation redundancy
 
-     l_rdf=lrdf
-     If (lrdf) lrdf=.false.
+     l_rdf=rdf_collect
+     If (rdf_collect) rdf_collect=.false.
 
 ! Determine optimisation
 
@@ -549,9 +549,9 @@ Contains
      keyopt =0
      passmin(1)=0.0_wp
 
-! Resume rdf calculations
+! Resume rdf%rdf calculations
 
-     If (l_rdf) lrdf=l_rdf
+     If (l_rdf) rdf_collect=l_rdf
 
 ! Deallocate working arrays
 

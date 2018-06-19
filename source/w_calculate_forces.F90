@@ -26,13 +26,13 @@
 
 ! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
 
-     If (.not.(met%max_metal == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) &
+     If (.not.(met%max_metal == 0 .and. keyfce == 0 .and. l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) &
         Call two_body_forces                      &
            (pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
-           lrdf,nstrdf,leql,nsteql,nstep,         &
+           leql,nsteql,nstep,         &
            cshell,               &
-           stat,ewld,devel,met,pois,neigh,site,vdw,tmr,comm)
+           stat,ewld,devel,met,pois,neigh,site,vdw,rdf,tmr,comm)
 
 ! Calculate tersoff forces
 
@@ -94,7 +94,7 @@
 
 ! Apply external field
 
-     If (keyfld > 0) Call external_field_apply(time,leql,nsteql,nstep,cshell,stat,comm)
+     If (keyfld > 0) Call external_field_apply(time,leql,nsteql,nstep,cshell,stat,rdf,comm)
 
 ! Apply PLUMED driven dynamics
 
@@ -127,18 +127,20 @@
                  stat%engshl + stat%engtet + stat%engfld +                   &
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
 
-        If (cshell%keyshl == SHELL_RELAXED) Call core_shell_relax(l_str,relaxed_shl,lrdf,rlx_tol,stat%stpcfg,cshell,stat,comm)
+        If (cshell%keyshl == SHELL_RELAXED) Then
+          Call core_shell_relax(l_str,relaxed_shl,rdf%l_collect,rlx_tol,stat%stpcfg,cshell,stat,comm)
+        End If
 
         If (.not.relaxed_shl) Go To 200 ! Shells relaxation takes priority over minimisation
 
         If (lmin .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
            If      (nstmin == 0 .and. nstep == 0) Then
               Call minimise_relax &
-           (l_str .or. cshell%keyshl == SHELL_RELAXED,relaxed_min,lrdf,megatm,pmf%megpmf,megrgd, &
+           (l_str .or. cshell%keyshl == SHELL_RELAXED,relaxed_min,rdf%l_collect,megatm,pmf%megpmf,megrgd, &
            keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,comm)
            Else If (nstmin >  0 .and. nstep >  0) Then
               If (Mod(nstep-nsteql,nstmin) == 0) Call minimise_relax &
-           (l_str .or. cshell%keyshl == SHELL_RELAXED,relaxed_min,lrdf,megatm,pmf%megpmf,megrgd, &
+           (l_str .or. cshell%keyshl == SHELL_RELAXED,relaxed_min,rdf%l_collect,megatm,pmf%megpmf,megrgd, &
            keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,comm)
            End If
         End If

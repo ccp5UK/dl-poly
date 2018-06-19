@@ -20,10 +20,11 @@ Module external_field
 
   Use errors_warnings, Only : error
   use numerics, Only : local_index,images
-  Use rdfs, Only : usr_compute, usr_collect
+  Use rdfs, Only : rdf_type,usr_compute,usr_collect
   Use shared_units, Only : update_shared_units
   Use statistics, Only : stats_type
   Use core_shell, Only : core_shell_type,SHELL_ADIABATIC
+  Use rdfs, Only : rdf_type,usr_collect,usr_compute
   Implicit None
 
 ! Only one type of field can be applied on the system (keyfld is a scalar)
@@ -52,9 +53,8 @@ Contains
     prmfld = 0.0_wp
 
   End Subroutine allocate_external_field_arrays
-  
-  
-  Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,comm)
+
+  Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -74,6 +74,7 @@ Contains
   Real( Kind = wp ), Intent( In    ) :: time ! for oscillating fields
   Type( stats_type ), Intent( Inout ) :: stats
   Type( core_shell_type ), Intent( Inout ) :: cshell
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( Inout ) :: comm
 
   Logical, Save     :: newjob = .true.
@@ -563,8 +564,8 @@ Contains
 ! refresh USRDAT every 500 timesteps
 
      If ((.not.leql) .or. nstep >= nsteql) Then
-        If (Mod(nstep,50)  == 0) Call usr_collect(rrr)
-        If (Mod(nstep,500) == 0) Call usr_compute(comm)
+        If (Mod(nstep,50)  == 0) Call usr_collect(rrr,rdf)
+        If (Mod(nstep,500) == 0) Call usr_compute(rdf,comm)
      End If
 
 ! get force magnitude

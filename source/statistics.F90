@@ -193,7 +193,7 @@ Contains
            keyres,                 &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
-           mxatdm,stats,thermo,zdensity,site,comm)
+           mxatdm,max_grid_rdf,stats,thermo,zdensity,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -216,7 +216,8 @@ Contains
   Real( Kind = wp ), Intent( In    ) :: tstep,time
 
   Real( Kind = wp ), Intent( InOut ) :: tmst
-  Integer( Kind = wi),Intent( In    ) :: mxatdm
+  Integer( Kind = wi), Intent( In    ) :: mxatdm
+  Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( z_density_type ), Intent( InOut ) :: zdensity
@@ -563,7 +564,7 @@ Contains
 ! z-density collection
 
   If ( zdensity%l_collect .and. ((.not.leql) .or. nstep >= nsteql) .and. &
-       Mod(nstep,zdensity%frequency) == 0 ) Call z_density_collect(zdensity)
+       Mod(nstep,zdensity%frequency) == 0 ) Call z_density_collect(max_grid_rdf,zdensity)
 
 ! Catch time of starting statistical averages
 

@@ -11,7 +11,7 @@ Module z_density
 
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gsum
-  Use setup,  Only : mxgrdf,nrite,nzdndt,mxatyp
+  Use setup,  Only : nrite,nzdndt
   Use site, Only : site_type
   Use configuration, Only : cfgname,cell,volm,natms,ltype,zzz
   Use errors_warnings, Only : error,info
@@ -45,14 +45,16 @@ Module z_density
 
 Contains
 
-  Subroutine allocate_z_density_arrays(zdensity)
+  Subroutine allocate_z_density_arrays(zdensity,max_grid_rdf,mxatyp)
     Type( z_density_type ), Intent( InOut ) :: zdensity
+    Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
+    Integer( Kind = wi ), Intent( In    ) :: mxatyp
 
     Integer :: fail
 
     fail = 0
 
-    Allocate (zdensity%density(1:mxgrdf,1:mxatyp), Stat = fail)
+    Allocate (zdensity%density(1:max_grid_rdf,1:mxatyp), Stat = fail)
 
     If (fail > 0) Call error(1016)
 
@@ -60,7 +62,7 @@ Contains
 
   End Subroutine allocate_z_density_arrays
 
-  Subroutine z_density_collect(zdensity)
+  Subroutine z_density_collect(max_grid_rdf,zdensity)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -71,7 +73,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
   Type( z_density_type ), Intent( InOut ) :: zdensity
+
   Integer           :: i,k,l
   Real( Kind = wp ) :: zlen,zleno2,rdelr
 
@@ -89,14 +93,14 @@ Contains
 
 ! grid interval for density profiles
 
-  rdelr=Real(mxgrdf,wp)/zlen
+  rdelr=Real(max_grid_rdf,wp)/zlen
 
 ! set up atom iatm type and accumulate statistic
 
   Do i=1,natms
      k=ltype(i)
 
-     l=Min(1+Int((zzz(i)+zleno2)*rdelr),mxgrdf)
+     l=Min(1+Int((zzz(i)+zleno2)*rdelr),max_grid_rdf)
 
      zdensity%density(l,k)=zdensity%density(l,k) + 1.0_wp
   End Do
@@ -104,7 +108,7 @@ Contains
 End Subroutine z_density_collect
 
 
-Subroutine z_density_compute(zdensity,site,comm)
+Subroutine z_density_compute(max_grid_rdf,zdensity,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -117,6 +121,7 @@ Subroutine z_density_compute(zdensity,site,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
@@ -134,7 +139,7 @@ Subroutine z_density_compute(zdensity,site,comm)
   If (comm%idnode == 0) Then
      Open(Unit=nzdndt, File='ZDNDAT', Status='replace')
      Write(nzdndt,'(a)') cfgname
-     Write(nzdndt,'(2i10)') site%ntype_atom,mxgrdf
+     Write(nzdndt,'(2i10)') site%ntype_atom,max_grid_rdf
   End If
 
 ! length of cell in z direction
@@ -143,7 +148,7 @@ Subroutine z_density_compute(zdensity,site,comm)
 
 ! grid interval for density profiles
 
-  delr=zlen/Real(mxgrdf,wp)
+  delr=zlen/Real(max_grid_rdf,wp)
 
 ! volume of z-strip
 
@@ -166,7 +171,7 @@ Subroutine z_density_compute(zdensity,site,comm)
 
 ! global sum of data on all nodes
 
-     Call gsum(comm,zdensity%density(1:mxgrdf,k))
+     Call gsum(comm,zdensity%density(1:max_grid_rdf,k))
 
 ! running integration of z-density
 
@@ -174,7 +179,7 @@ Subroutine z_density_compute(zdensity,site,comm)
 
 ! loop over distances
 
-     Do j=1,mxgrdf
+     Do j=1,max_grid_rdf
         rrr=(Real(j,wp)-0.5_wp)*delr - zlen*0.5_wp
         rho=zdensity%density(j,k)*factor
         sum=sum + rho*dvolz
