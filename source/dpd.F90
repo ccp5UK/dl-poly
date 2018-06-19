@@ -25,32 +25,13 @@ Module dpd
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
   Use neighbours, Only : neighbours_type
-
   Implicit None
 
-  Real( Kind = wp ), Allocatable, Save :: sigdpd(:)
+  Private
 
-  Public :: allocate_dpd_arrays
+  Public :: dpd_thermostat
 
 Contains
-
-  Subroutine allocate_dpd_arrays(thermo,max_vdw)
-    Type( thermostat_type ), Intent( InOut ) :: thermo
-    Integer( Kind = wi ), Intent( In    ) :: max_vdw
-
-    Integer :: fail
-
-    If (thermo%key_dpd == 0) Return
-
-    fail = 0
-
-    Allocate (thermo%gamdpd(0:max_vdw),sigdpd(1:max_vdw), Stat = fail)
-
-    If (fail > 0) Call error(1081)
-
-    thermo%gamdpd = 0.0_wp ; sigdpd = 0.0_wp
-
-  End Subroutine allocate_dpd_arrays
 
   Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,comm)
 
@@ -219,7 +200,7 @@ Contains
 
           ! Calculate force component
 
-          rgamma =  sigdpd(key) * scrn      * gauss * rstsq
+          rgamma =  thermo%sigdpd(key) * scrn * gauss * rstsq
 
           tmp    =  thermo%gamdpd(key) * (scrn**2)
           dgamma = -tmp * ( xxt(k)*(vxx(i)-vxx(j)) + yyt(k)*(vyy(i)-vyy(j)) + zzt(k)*(vzz(i)-vzz(j)) )
@@ -397,7 +378,7 @@ Contains
 
           ! Calculate force component
 
-          rgamma =  sigdpd(key) * scrn      * gauss * rstsq
+          rgamma =  thermo%sigdpd(key) * scrn * gauss * rstsq
 
           tmp    =  thermo%gamdpd(key) * (scrn**2)
           scl    =  tmp / (1.0_wp+tmp*tst_p)

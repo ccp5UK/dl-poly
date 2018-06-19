@@ -1,36 +1,39 @@
 Module thermostat
   Use kinds, Only : wp,wi
   Use comms, Only : gmax,comms_type
+  Use errors_warnings, Only : error
   Implicit None
 
   Private
 
   !> Type containing thermostat and barostat variables
   Type, Public :: thermostat_type
+    Private
+
     !> Ensemble key
-    Integer( Kind = wi ) :: ensemble
+    Integer( Kind = wi ), Public :: ensemble
     !> Flag for variable cell size e.g. NPT ensembles
-    Logical :: variable_cell = .false.
+    Logical, Public :: variable_cell = .false.
     !> Flag for anisotropic pressure
-    Logical :: anisotropic_pressure = .false.
+    Logical, Public :: anisotropic_pressure = .false.
 
     !> Simulation temperature
-    Real( Kind = wp ) :: temp
+    Real( Kind = wp ), Public :: temp
     !> Simulation pressure
-    Real( Kind = wp ) :: press
+    Real( Kind = wp ), Public :: press
     !> Simulation stress
-    Real( Kind = wp ) :: stress(1:9)
+    Real( Kind = wp ), Public :: stress(1:9)
     !> Average total energy due to equipartition
-    Real( Kind = wp ) :: sigma
+    Real( Kind = wp ), Public :: sigma
 
 
     !> Thermostat relaxation time
-    Real( Kind = wp ) :: tau_t
+    Real( Kind = wp ), Public :: tau_t
     !> Barostat relxation time
-    Real( Kind = wp ) :: tau_p
+    Real( Kind = wp ), Public :: tau_p
 
-    !> Surface tensionsionsion
-    Real( Kind = wp ) :: tension
+    !> Surface tension
+    Real( Kind = wp ), Public :: tension
 
     !> Constraint type for anisotropic barostats
     !>
@@ -39,79 +42,81 @@ Module thermostat
     !> - 2 semi-isotropic barostat to constant normal pressure & surface tension
     !>     or with orthorhombic constraints (thermo%tension=0.0_wp)
     !> - 3 semi-isotropic barostat with semi-orthorhombic constraints
-    Integer( Kind = wi ) :: iso
+    Integer( Kind = wi ), Public :: iso
 
     !> Andersen thermostat softness
-    Real( Kind = wp ) :: soft
+    Real( Kind = wp ), Public :: soft
 
     !> Langevin switch
-    Logical :: l_langevin
+    Logical, Public :: l_langevin
 
     !> Gentle Stochastic dynamics (Langevin) thermostat friction
-    Real( Kind = wp ) :: gama
+    Real( Kind = wp ), Public :: gama
 
     !> Stochastic Dynamics (SD Langevin) thermostat friction
-    Real( Kind = wp ) :: chi
+    Real( Kind = wp ), Public :: chi
     !> Inhomogeneous Stochastic Dynamics (SD Langevin)
     !> thermostat/electron-phonon friction
-    Real( Kind = wp ) :: chi_ep
+    Real( Kind = wp ), Public :: chi_ep
     !> Inhomogeneous Stochastic Dynamics (SD Langevin)
     !> thermostat/electronic stopping friction
-    Real( Kind = wp ) :: chi_es
+    Real( Kind = wp ), Public :: chi_es
     !> Stochastic Dynamics (SD Langevin) barostat friction
-    Real( Kind = wp ) :: tai
+    Real( Kind = wp ), Public :: tai
     !> Square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
-    Real( Kind = wp ) :: vel_es2
+    Real( Kind = wp ), Public :: vel_es2
 
     !> Instantaneous thermostat friction
-    Real( Kind = wp ) :: chi_t
+    Real( Kind = wp ), Public :: chi_t
     !> Instantaneous barostat friction
-    Real( Kind = wp ) :: chi_p
+    Real( Kind = wp ), Public :: chi_p
     !> Friction integral for thermostat/barostat
-    Real( Kind = wp ) :: cint
+    Real( Kind = wp ), Public :: cint
     !> Cell parameter scaling factor for barostats
-    Real( Kind = wp ) :: eta(1:9)
+    Real( Kind = wp ), Public :: eta(1:9)
 
     !> DPD switch
     !>
     !> - 0 no DPD
     !> - 1 first order splitting
     !> - 2 second order splitting
-    Integer :: key_dpd
+    Integer, Public :: key_dpd
     !> DPD drag?
-    Real( Kind = wp ), Allocatable :: gamdpd(:)
+    Real( Kind = wp ), Allocatable, Public :: gamdpd(:)
+    Real( Kind = wp ), Allocatable, Public :: sigdpd(:)
 
     !> Pseudo thermostat switch
-    Logical :: l_pseudo
+    Logical, Public :: l_pseudo
     !> Pseudo thermostat type
     !>
     !> - 0 Langevin + direct temperature scaling
     !> - 1 Langevin temperature scaling
     !> - 2 Gaussian temperature scaling
     !> - 3 direct temperature scaling
-    Integer :: key_pseudo
+    Integer, Public :: key_pseudo
     !> Pseudo thermostat temperature
-    Real( Kind = wp ) :: temp_pseudo
+    Real( Kind = wp ), Public :: temp_pseudo
     !> Pseudo thermostat thickness
-    Real( Kind = wp ) :: width_pseudo
+    Real( Kind = wp ), Public :: width_pseudo
 
     !> Temperature scaling switch
-    Logical :: l_tscale
+    Logical, Public :: l_tscale
     !> Temperature scaling frequency
-    Integer :: freq_tscale
+    Integer, Public :: freq_tscale
 
     !> Temperature regaussing switch
-    Logical :: l_tgaus
+    Logical, Public :: l_tgaus
     !> Temperature regaussing frequency
-    Integer :: freq_tgaus
+    Integer, Public :: freq_tgaus
 
     !> Zero temperature optimisation switch
-    Logical :: l_zero
+    Logical, Public :: l_zero
     !> Zero temperature regaussing frequency
-    Integer :: freq_zero
+    Integer, Public :: freq_zero
   Contains
     Private
 
+    Procedure, Public :: init_dpd => allocate_dpd_arrays
     Final :: cleanup
   End Type thermostat_type
 
@@ -151,18 +156,42 @@ Module thermostat
   Integer( Kind = wi ), Parameter, Public :: ENS_NPT_NOSE_HOOVER_ANISO = 32
   !> Isobaric isothermal ensemble anistropic Martyna-Tuckerman-Klein
   Integer( Kind = wi ), Parameter, Public :: ENS_NPT_MTK_ANISO = 33
-  Public :: adjust_timestep
+
   Interface adjust_timestep
     Module Procedure adjust_timestep_1
     Module Procedure adjust_timestep_2
   End Interface
+
+  Public :: adjust_timestep
+
 Contains
+
+  Subroutine allocate_dpd_arrays(thermo,max_vdw)
+    Class( thermostat_type ) :: thermo
+    Integer( Kind = wi ), Intent( In    ) :: max_vdw
+
+    Integer :: fail
+
+    If (thermo%key_dpd == 0) Return
+
+    fail = 0
+
+    Allocate (thermo%gamdpd(0:max_vdw),thermo%sigdpd(1:max_vdw), stat=fail)
+
+    If (fail > 0) Call error(1081)
+
+    thermo%gamdpd = 0.0_wp
+    thermo%sigdpd = 0.0_wp
+  End Subroutine allocate_dpd_arrays
 
   Subroutine cleanup(thermo)
     Type(thermostat_type) :: thermo
 
     If (Allocated(thermo%gamdpd)) Then
       Deallocate(thermo%gamdpd)
+    End If
+    If (Allocated(thermo%sigdpd)) Then
+      Deallocate(thermo%sigdpd)
     End If
   End Subroutine cleanup
 
