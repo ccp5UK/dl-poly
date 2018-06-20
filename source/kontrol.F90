@@ -61,6 +61,7 @@ Module kontrol
   Use pmf, Only : pmf_type
   Use neighbours, Only : neighbours_type
   Use core_shell, Only : core_shell_type
+  Use minimise, Only : minimise_type
 
   Implicit None
   Private
@@ -76,21 +77,20 @@ Module kontrol
 Subroutine read_control                                &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
            rbin,nstfce,alpha,width,     &
-           l_exp,lecx,lfcap,l_top,lmin,          &
+           l_exp,lecx,lfcap,l_top,          &
            lvar,leql,               &
            lfce,lpana,           &
            ltraj,lrsd,               &
            nx,ny,nz,impa,                            &
            keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-           keymin,nstmin,min_tol,                      &
            fmax,nstbpo,keyfce,epsq,             &
            rlx_tol,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,  &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
-           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,tmr,comm)
+           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,minimise,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -118,7 +118,6 @@ Subroutine read_control                                &
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
                                              lfcap,l_top,           &
-                                             lmin, &
                                              lvar,leql,lfce,   &
                                              lpana,                 &
                                              ltraj,lrsd
@@ -127,7 +126,6 @@ Subroutine read_control                                &
   Integer,                Intent(   Out ) :: nx,ny,nz,             &
                                              keyres,nstrun,        &
                                              nsteql,       &
-                                             keymin,nstmin,        &
                                              nstbpo,        &
                                              keyfce,        &
                                              mxquat,        &
@@ -138,7 +136,7 @@ Subroutine read_control                                &
                                              ndump
 
   Real( Kind = wp ),      Intent(   Out ) :: tstep,mndis,mxdis,mxstp,    &
-                                             min_tol(1:2), quattol,&
+                                              quattol,&
                                              fmax,epsq,rlx_tol(1:2),     &
                                              rrsd,pdplnc
   Type( pmf_type ), Intent (   InOut )   :: pmf
@@ -162,6 +160,7 @@ Subroutine read_control                                &
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( In    )  :: tersoff
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( minimise_type ), Intent( InOut ) :: minimise
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( comms_type ),     Intent( InOut )  :: comm
@@ -263,10 +262,11 @@ Subroutine read_control                                &
 
 ! default switch for conjugate gradient minimisation during equilibration
 
-  lmin   = .false.
-  keymin = -1
-  nstmin = 0
-  min_tol(1:2) = (/ 0.0_wp , -1.0_wp /) ! tolerance, optional CGM step
+  minimise%minimise   = .false.
+  minimise%key = -1
+  minimise%freq = 0
+  minimise%tolerance = 0.0_wp
+  minimise%step_length = -1.0_wp
 
 ! default switch for regaussing temperature and default number of
 ! steps when to be applied
@@ -1033,18 +1033,18 @@ Subroutine read_control                                &
 
      Else If (word(1:5) == 'minim' .or. word(1:5) == 'optim') Then
 
-        lmin=.true.
+        minimise%minimise=.true.
         word2=' ' ; word2=word
         Call get_word(record,word)
 
         If      (word(1:4) == 'forc') Then
-           keymin=0
+           minimise%key=0
            word1='force   '
         Else If (word(1:4) == 'ener') Then
-           keymin=1
+           minimise%key=1
            word1='energy  '
         Else If (word(1:4) == 'dist') Then
-           keymin=2
+           minimise%key=2
            word1='distance'
         Else
            Call strip_blanks(record)
@@ -1055,58 +1055,59 @@ Subroutine read_control                                &
 
         If (word2(1:5) == 'minim') Then
            Call get_word(record,word)
-           nstmin = Abs(Nint(word_2_real(word,0.0_wp)))
+           minimise%freq = Abs(Nint(word_2_real(word,0.0_wp)))
         End If
 
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
 
         itmp=0
-        If      (keymin == 0) Then
+        If      (minimise%key == 0) Then
            If (tmp < 1.0_wp .or. tmp > 1000.0_wp) Then
-              min_tol(1)=50.0_wp
+              minimise%tolerance=50.0_wp
               itmp=1
            Else
-              min_tol(1)=tmp
+              minimise%tolerance=tmp
            End If
-        Else If (keymin == 1) Then
+        Else If (minimise%key == 1) Then
            If (tmp < zero_plus .or. tmp > 0.01_wp) Then
-              min_tol(1)=0.005_wp
+              minimise%tolerance=0.005_wp
               itmp=1
            Else
-              min_tol=tmp
+             minimise%tolerance = tmp
+             minimise%step_length = tmp
            End If
-        Else If (keymin == 2) Then
+        Else If (minimise%key == 2) Then
            If (tmp < 1.0e-6_wp .or. tmp > 0.1_wp) Then
-              min_tol(1)=0.005_wp
+              minimise%tolerance=0.005_wp
               itmp=1
            Else
-              min_tol(1)=tmp
+              minimise%tolerance=tmp
            End If
         End If
 
-        If (itmp == 1) Call warning(360,tmp,min_tol(1),0.0_wp)
+        If (itmp == 1) Call warning(360,tmp,minimise%tolerance,0.0_wp)
 
         Call get_word(record,word3)
-        min_tol(2) = word_2_real(word3,-1.0_wp)
+        minimise%step_length = word_2_real(word3,-1.0_wp)
 
         If (word2(1:5) == 'minim') Then
            Write(messages(1),'(a)') 'minimisation option on (during equilibration)'
            Write(messages(2),'(a,a8)') 'minimisation criterion        ',word1(1:8)
-           Write(messages(3),'(a,i10)') 'minimisation frequency (steps)',nstmin
-           Write(messages(4),'(a,1p,e12.4)') 'minimisation tolerance        ',min_tol(1)
+           Write(messages(3),'(a,i10)') 'minimisation frequency (steps)',minimise%freq
+           Write(messages(4),'(a,1p,e12.4)') 'minimisation tolerance        ',minimise%tolerance
            Call info(messages,4,.true.)
-           If (min_tol(2) > zero_plus) Then
-             Write(message,'(a,1p,e12.4)') 'minimisation CGM step         ',min_tol(2)
+           If (minimise%step_length > zero_plus) Then
+             Write(message,'(a,1p,e12.4)') 'minimisation CGM step         ',minimise%step_length
              Call info(message,.true.)
            End If
         Else
            Write(messages(1),'(a)') 'optimisation at start'
            Write(messages(2),'(a,a8)') 'optimisation criterion        ',word(1:8)
-           Write(messages(4),'(a,1p,e12.4)') 'optimisation tolerance        ',min_tol(1)
+           Write(messages(4),'(a,1p,e12.4)') 'optimisation tolerance        ',minimise%tolerance
            Call info(messages,3,.true.)
-           If (min_tol(2) > zero_plus) Then
-             Write(message,'(a,1p,e12.4)')'optimisation CGM step         ',min_tol(2)
+           If (minimise%step_length > zero_plus) Then
+             Write(message,'(a,1p,e12.4)')'optimisation CGM step         ',minimise%step_length
            End If
         End If
 
@@ -3005,7 +3006,7 @@ Subroutine read_control                                &
 !!! FIXES !!!
 ! fix on step-dependent options
 
-  If (nstmin  == 0) nstmin  = nsteql+1
+  If (minimise%freq  == 0) minimise%freq  = nsteql+1
   If (thermo%freq_zero == 0) thermo%freq_zero = nsteql+1
   If (thermo%freq_tgaus == 0) thermo%freq_tgaus = nsteql+1
   If (thermo%freq_tscale == 0) thermo%freq_tscale = nsteql+1

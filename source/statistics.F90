@@ -99,6 +99,13 @@ Module statistics
     !> - 5 maximum skips
     Real( Kind = wp ), Public :: neighskip(1:5) = [0.0_wp,0.0_wp,0.0_wp, &
                                               999999999.0_wp,0.0_wp]
+  Real( Kind = wp ), Public :: passmin(1:5) = [ &
+                                 0.0_wp         , & ! cycles counter
+                                 0.0_wp         , & ! access counter
+                                 0.0_wp         , & ! average cycles
+                                 999999999.0_wp , & ! minimum cycles : ~Huge(1)
+                                 0.0_wp ]           ! maximum cycles
+
 
   Real( Kind = wp ), Allocatable :: xin(:),yin(:),zin(:)
   Real( Kind = wp ), Allocatable :: xto(:),yto(:),zto(:),rsd(:)
@@ -1353,10 +1360,10 @@ Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
 End Subroutine statistics_connect_spread
 
 Subroutine statistics_result                                    &
-           (lmin,lmsd, &
+           (minimise,lmsd, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
-           mxatdm,neigh_uncond_update,stats,thermo,green,site,comm,passmin)
+           mxatdm,neigh_uncond_update,stats,thermo,green,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1369,7 +1376,7 @@ Subroutine statistics_result                                    &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: lmin,lmsd
+  Logical,           Intent( In    ) :: minimise,lmsd
   Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time,tmst
   Integer( Kind = wi ),    Intent( In    ) :: mxatdm
@@ -1379,7 +1386,6 @@ Subroutine statistics_result                                    &
   Type( greenkubo_type ), Intent( In    ) :: green
   Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
-  Real( Kind = wp ), Intent( In    ) ::  passmin(:)
 
   Logical           :: check
   Integer           :: i,iadd
@@ -1406,10 +1412,10 @@ Subroutine statistics_result                                    &
 
 ! minimisation convergence statistics
 
-  If (lmin) Then
+  If (minimise) Then
      Write(message,'(a,f7.2,2(a,i4))') &
-       'minimisation run statistics - cycles per call: average ',passmin(3), &
-       ' minimum ',Nint(passmin(4)),' maximum ',Nint(passmin(5))
+       'minimisation run statistics - cycles per call: average ',stats%passmin(3), &
+       ' minimum ',Nint(stats%passmin(4)),' maximum ',Nint(stats%passmin(5))
     Call info(message,.true.)
   End If
 

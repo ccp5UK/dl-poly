@@ -25,7 +25,7 @@ Module deport_data
 
   Use statistics, Only : stats_type
 
-  Use minimise,     Only : l_x,oxx,oyy,ozz
+  Use minimise,     Only : minimise_type
   Use langevin,     Only : fxl,fyl,fzl
 
   Use ewald,               Only : ewald_type
@@ -59,7 +59,7 @@ Module deport_data
 
 
 Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,&
-    green,bond,angle,dihedral,inversion,tether,neigh,comm)
+    green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -91,6 +91,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( minimise_type ), Intent( InOut ) :: minimise
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -329,11 +330,11 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! pack minimisation arrays
 
-        If (l_x) Then
+        If (minimise%transport) Then
            If (imove+3 <= iblock) Then
-              buffer(imove+1)=oxx(i)
-              buffer(imove+2)=oyy(i)
-              buffer(imove+3)=ozz(i)
+              buffer(imove+1)=minimise%oxx(i)
+              buffer(imove+2)=minimise%oyy(i)
+              buffer(imove+3)=minimise%ozz(i)
            Else
               safe=.false.
            End If
@@ -843,10 +844,10 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
         fzl(keep)=fzl(i)
      End If
 
-     If (l_x) Then
-        oxx(keep)=oxx(i)
-        oyy(keep)=oyy(i)
-        ozz(keep)=ozz(i)
+     If (minimise%transport) Then
+        minimise%oxx(keep)=minimise%oxx(i)
+        minimise%oyy(keep)=minimise%oyy(i)
+        minimise%ozz(keep)=minimise%ozz(i)
      End If
 
      If (ewld%lf_cp) Then
@@ -1008,10 +1009,10 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! unpack minimisation arrays
 
-     If (l_x) Then
-        oxx(newatm)=buffer(kmove+1)
-        oyy(newatm)=buffer(kmove+2)
-        ozz(newatm)=buffer(kmove+3)
+     If (minimise%transport) Then
+        minimise%oxx(newatm)=buffer(kmove+1)
+        minimise%oyy(newatm)=buffer(kmove+2)
+        minimise%ozz(newatm)=buffer(kmove+3)
 
         kmove=kmove+3
      End If
@@ -2526,10 +2527,9 @@ Subroutine mpoles_rotmat_set_halo(comm)
 End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles       &
-           (dvar,cutoff_extended,lbook,lmsd,megatm, &
-           m_rgd,megtet,            &
-           cshell,cons,pmf,  &
-           stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,comm)
+           (dvar,cutoff_extended,lbook,lmsd,megatm,m_rgd,megtet,cshell,cons, &
+           pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
+           neigh,site,minimise,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2562,6 +2562,7 @@ Subroutine relocate_particles       &
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( site_type ), Intent( In    ) :: site
+  Type( minimise_type ), Intent( InOut ) :: minimise
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2677,18 +2678,24 @@ Subroutine relocate_particles       &
 
 ! exchange atom data in -/+ x directions
 
-     Call deport_atomic_data(-1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
-     Call deport_atomic_data( 1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data(-1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+     Call deport_atomic_data( 1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
 
 ! exchange atom data in -/+ y directions
 
-     Call deport_atomic_data(-2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
-     Call deport_atomic_data( 2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data(-2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+     Call deport_atomic_data( 2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
 
 ! exchange atom data in -/+ z directions
 
-     Call deport_atomic_data(-3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
-     Call deport_atomic_data( 3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,comm)
+     Call deport_atomic_data(-3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+     Call deport_atomic_data( 3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
 
 ! check system for loss of atoms
 

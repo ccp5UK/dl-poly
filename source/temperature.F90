@@ -20,6 +20,7 @@ Module temperature
   Use errors_warnings, Only : error,warning,info
   Use thermostat,      Only : thermostat_type
   Use statistics, Only : stats_type
+  Use minimise, Only : minimise_type
 
   Implicit None
 
@@ -31,10 +32,10 @@ Contains
 
   Subroutine set_temperature           &
              (levcfg,keyres,      &
-             lmin,nstep,nstrun,nstmin, &
+             nstep,nstrun, &
              atmfre,atmfrz,            &
              megrgd,degtra,degrot,     &
-             degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,comm)
+             degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minimise,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -45,8 +46,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,            Intent( In    ) :: lmin
-    Integer,            Intent( In    ) :: nstep,nstrun,nstmin, &
+    Integer,            Intent( In    ) :: nstep,nstrun, &
                                            atmfre,atmfrz,       &
                                            megrgd
 
@@ -61,6 +61,7 @@ Contains
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( minimise_type ), Intent( In    ) :: minimise
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: no_min_0,safe
@@ -517,7 +518,7 @@ Contains
   ! Detect pure molecular statics only == CGM minimisation at zero timestep
   ! and no rescaling
 
-       no_min_0 = .not.(lmin .and. nstmin == 0 .and. nstep == 0 .and. nstrun == 0 .and. keyres == 2)
+       no_min_0 = .not.(minimise%minimise .and. minimise%freq == 0 .and. nstep == 0 .and. nstrun == 0 .and. keyres == 2)
 
   ! quench constraints & PMFs
 

@@ -2008,10 +2008,6 @@ Subroutine info_sl(message,master_only)
 
         Write(ounit,'(/,1x,a)') 'error - allocation failure in minimise_module -> allocate_minimise_arrays'
 
-     Else If (kode == 1039) Then
-
-        Write(ounit,'(/,1x,a)') 'error - deallocation failure in minimise_module -> deallocate_minimise_arrays'
-
      Else If (kode == 1040) Then
 
         Write(ounit,'(/,1x,a)') 'error - allocation failure in ewald_module -> ewald_allocate_kall_arrays'

@@ -9,10 +9,10 @@ Module minimise
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,           Only : wp
+  Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type,gsum,gmax
   Use setup,           Only : engunit,nrite,output, &
-                              mxatms,zero_plus, &
+                              zero_plus,mxatms, &
                               mxrgd,mxlrgd
   Use configuration,   Only : natms,nlast,nfree,          &
                               lsi,lsa,lfrzn,lfree,lstfre, &
@@ -39,52 +39,84 @@ Module minimise
 
   Implicit None
 
-  Logical,                        Save :: l_x = .false.
+  Private
 
-  Real( Kind = wp ),              Save :: passmin(1:5) = (/ &
-                                          0.0_wp         ,  & ! cycles counter
-                                          0.0_wp         ,  & ! access counter
-                                          0.0_wp         ,  & ! average cycles
-                                          999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
-                                          0.0_wp /)           ! maximum cycles
+  ! Minimisation keys
+  !> Force minimisation
+  Integer( Kind = wi ), Parameter, Public :: MIN_FORCE = 1
+  !> Energy minimisation
+  Integer( Kind = wi ), Parameter, Public :: MIN_ENERGY = 2
+  !> Distance minimisation
+  Integer( Kind = wi ), Parameter, Public :: MIN_DISTANCE = 3
 
+  Type, Public :: minimise_type
+    Private
 
-  Real( Kind = wp ), Allocatable, Save :: oxx(:),oyy(:),ozz(:)
+    !> Minimisation switch
+    Logical, Public :: minimise
+    !> Minimisation key
+    Integer( Kind = wi ), Public :: key
 
-  Public :: allocate_minimise_arrays,deallocate_minimise_arrays, minimise_relax
+    !> Relaxed indicator?
+    Logical, Public :: relaxed = .true.
+    !> Transport switch
+    Logical, Public :: transport
 
+    !> Minimisation fequency (steps)
+    Integer( Kind = wi ), Public :: freq
+
+    !> Minimisation tolerance
+    Real( Kind = wp ), Public :: tolerance
+    !> Conjugate gradients method step length
+    Real( Kind = wp ), Public :: step_length
+
+    !> Coordinate arrays?
+    Real( Kind = wp ), Allocatable, Public :: oxx(:),oyy(:),ozz(:)
+  Contains
+    Private
+
+    Procedure, Public :: init => allocate_minimise_arrays
+    Final ::  deallocate_minimise_arrays
+  End Type minimise_type
+
+  Public :: minimise_relax,zero_k_optimise
 
 Contains
 
-  Subroutine allocate_minimise_arrays()
+  Subroutine allocate_minimise_arrays(T,mxatms)
+    Class( minimise_type ) :: T
+    Integer( Kind = wi ), Intent( In    ) :: mxatms
 
     Integer :: fail
 
     fail = 0
 
-    Allocate (oxx(1:mxatms),oyy(1:mxatms),ozz(1:mxatms), Stat = fail)
+    Allocate (T%oxx(1:mxatms),T%oyy(1:mxatms),T%ozz(1:mxatms), Stat = fail)
 
     If (fail > 0) Call error(1038)
 
-    oxx = 0.0_wp ; oyy = 0.0_wp ; ozz = 0.0_wp
-
+    T%oxx = 0.0_wp
+    T%oyy = 0.0_wp
+    T%ozz = 0.0_wp
   End Subroutine allocate_minimise_arrays
 
-  Subroutine deallocate_minimise_arrays()
+  Subroutine deallocate_minimise_arrays(T)
+    Type( minimise_type ) :: T
 
-    Integer :: fail
-
-    fail = 0
-
-    Deallocate (oxx,oyy,ozz, Stat = fail)
-
-    If (fail > 0) Call error(1039)
-
+    If (Allocated(T%oxx)) Then
+      Deallocate (T%oxx)
+    End If
+    If (Allocated(T%oyy)) Then
+      Deallocate (T%oyy)
+    End If
+    If (Allocated(T%ozz)) Then
+      Deallocate (T%ozz)
+    End If
   End Subroutine deallocate_minimise_arrays
 
   Subroutine minimise_relax &
-           (l_str,relaxed,rdf_collect,megatm,megpmf,megrgd, &
-           keymin,min_tol,tstep,stpcfg,stat,pmf,cons,netcdf,comm)
+           (l_str,rdf_collect,megatm,megpmf,megrgd, &
+           tstep,stpcfg,stats,pmf,cons,netcdf,minimise,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -92,9 +124,9 @@ Contains
 ! gradient method (CGM).
 !
 ! Note: minimisation type and criterion:
-!       keymin=0 : absolute force
-!       keymin=1 : relative energy
-!       keymin=2 : absolute displacement
+!       minimise%key=0 : absolute force
+!       minimise%key=1 : relative energy
+!       minimise%key=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov & w.smith february 2014
@@ -105,14 +137,15 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: l_str
-  Logical,           Intent( InOut ) :: relaxed,rdf_collect
+  Logical,           Intent( InOut ) :: rdf_collect
   Integer,           Intent( In    ) :: megatm, &
-                                        megpmf,megrgd,keymin
-  Real( Kind = wp ), Intent( In    ) :: min_tol(1:2),tstep,stpcfg
-  Type( stats_type ), Intent(InOut) :: stat
+                                        megpmf,megrgd
+  Real( Kind = wp ), Intent( In    ) :: tstep,stpcfg
+  Type( stats_type ), Intent(InOut) :: stats
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent(InOut) :: cons
   Type( netcdf_param ), Intent( In    ) :: netcdf
+  Type( minimise_type ), Intent( InOut ) :: minimise
   Type( comms_type ), Intent( inOut ) :: comm
 
   Logical,              Save :: newjob = .true. , l_rdf, l_mov
@@ -172,11 +205,11 @@ Contains
      eng_min = Huge(0.0_wp)
 
 ! Passage accumulators are initialised in minimise_module
-! passmin(1) - cycles counter
-! passmin(2) - access counter
-! passmin(3) - average cycles
-! passmin(4) - minimum cycles
-! passmin(5) - maximum cycles
+! stats%passmin(1) - cycles counter
+! stats%passmin(2) - access counter
+! stats%passmin(3) - average cycles
+! stats%passmin(4) - minimum cycles
+! stats%passmin(5) - maximum cycles
 
 ! total number of active particles (excluding frozen sites and massless shells)
 
@@ -190,11 +223,11 @@ Contains
 
 ! Step length for relaxation
 
-  If (min_tol(2) > zero_plus) Then
+  If (minimise%step_length > zero_plus) Then
 
 ! Optionally specified
 
-     step=min_tol(2)
+     step=minimise%step_length
 
   Else
 
@@ -222,11 +255,11 @@ Contains
 
 ! Allocate working arrays
 
-     Call allocate_minimise_arrays()
+     Call minimise%init(mxatms)
 
 ! No minimisation is yet attempted
 
-     relaxed=.false.
+     minimise%relaxed=.false.
 
 ! No RB move is yet attempted
 
@@ -243,11 +276,11 @@ Contains
 
 ! Determine optimisation
 
-     If      (keymin == 0) Then
+     If      (minimise%key == 0) Then
         word='force   '
-     Else If (keymin == 1) Then
+     Else If (minimise%key == 1) Then
         word='energy  '
-     Else If (keymin == 2) Then
+     Else If (minimise%key == 2) Then
         word='distance'
      End If
 
@@ -255,7 +288,7 @@ Contains
 
     If (l_str) Then
       Write(message,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
+        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minimise%tolerance,'step=',step
       Call info(message,.true.)
       Write(message,"(1x,130('-'))")
       Call info(message,.true.)
@@ -281,14 +314,14 @@ Contains
 
      If (cons%megcon > 0) Then
         Call constraints_tags(lstitr,cons,comm)
-        Call constraints_pseudo_bonds(gxx,gyy,gzz,stat,cons,comm)
-        eng=eng+stat%engcon
+        Call constraints_pseudo_bonds(gxx,gyy,gzz,stats,cons,comm)
+        eng=eng+stats%engcon
      End If
 
      If (pmf%megpmf > 0) Then
         Call pmf_tags(lstitr,pmf,comm)
-        Call pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,comm)
-        eng=eng+stat%engpmf
+        Call pmf_pseudo_bonds(gxx,gyy,gzz,stats,pmf,comm)
+        eng=eng+stats%engpmf
      End If
   End If
 
@@ -306,7 +339,7 @@ Contains
   eng_tol=0.0_wp
   If (keyopt > 0) Then
      eng_tol=Abs(1.0_wp-eng2/eng)
-     If (keymin == 1) relaxed=(eng_tol < min_tol(1))
+     If (minimise%key == 1) minimise%relaxed=(eng_tol < minimise%tolerance)
   End If
 
 ! Current gradient (modulus of the total force)
@@ -322,7 +355,7 @@ Contains
 ! Get grad_tol & verify relaxed condition
 
   grad_tol=grad/total
-  If (keymin == 0) relaxed=(grad_tol < min_tol(1))
+  If (minimise%key == 0) minimise%relaxed=(grad_tol < minimise%tolerance)
 
 ! Initialise dist_tol
 
@@ -330,19 +363,19 @@ Contains
 
 ! CHECK FOR CONVERGENCE
 
-  If (.not.relaxed) Then
+  If (.not.minimise%relaxed) Then
 
 ! Increment main passage counter
 
-     passmin(1)=passmin(1)+1.0_wp
+     stats%passmin(1)=stats%passmin(1)+1.0_wp
 
 ! min_pass = Min(min_pass,._tol)
 
-     If      (keymin == 0) Then
+     If      (minimise%key == 0) Then
         min_pass = Min(min_pass,grad_tol)
-     Else If (keymin == 1) Then
+     Else If (minimise%key == 1) Then
         If (keyopt > 0) min_pass = Min(min_pass,eng_tol)
-     Else If (keymin == 2) Then
+     Else If (minimise%key == 2) Then
         min_pass = Min(min_pass,dist_tol)
      End If
 
@@ -350,14 +383,14 @@ Contains
 ! allow for thermo%tension-fold boost in iteration cycle length
 ! for the very first MD step
 
-     If (Nint(passmin(2)) == 0) Then
-        If (Nint(passmin(1)) >= 10*mxpass) Then
-           Call warning(330,min_tol(1),min_pass,0.0_wp)
+     If (Nint(stats%passmin(2)) == 0) Then
+        If (Nint(stats%passmin(1)) >= 10*mxpass) Then
+           Call warning(330,minimise%tolerance,min_pass,0.0_wp)
            Call error(474)
         End If
      Else
-        If (Nint(passmin(1)) >= mxpass) Then
-           Call warning(330,min_tol(1),min_pass,0.0_wp)
+        If (Nint(stats%passmin(1)) >= mxpass) Then
+           Call warning(330,minimise%tolerance,min_pass,0.0_wp)
            Call error(474)
         End If
      End If
@@ -385,9 +418,9 @@ Contains
 ! Set original search direction
 
      Do i=1,natms
-        oxx(i)=gxx(i)
-        oyy(i)=gyy(i)
-        ozz(i)=gzz(i)
+        minimise%oxx(i)=gxx(i)
+        minimise%oyy(i)=gyy(i)
+        minimise%ozz(i)=gzz(i)
      End Do
 
      keyopt=1
@@ -404,7 +437,7 @@ Contains
      grad1=grad2
      grad2=0.0_wp
      Do i=1,natms
-        grad2=grad2+oxx(i)*gxx(i)+oyy(i)*gyy(i)+ozz(i)*gzz(i)
+        grad2=grad2+minimise%oxx(i)*gxx(i)+minimise%oyy(i)*gyy(i)+minimise%ozz(i)*gzz(i)
      End Do
      Call gsum(comm,grad2)
      grad2=sgn*grad2/onorm
@@ -430,12 +463,12 @@ Contains
      grad2=0.0_wp
      onorm=0.0_wp
      Do i=1,natms
-        oxx(i)=gxx(i)+gamma*oxx(i)
-        oyy(i)=gyy(i)+gamma*oyy(i)
-        ozz(i)=gzz(i)+gamma*ozz(i)
+        minimise%oxx(i)=gxx(i)+gamma*minimise%oxx(i)
+        minimise%oyy(i)=gyy(i)+gamma*minimise%oyy(i)
+        minimise%ozz(i)=gzz(i)+gamma*minimise%ozz(i)
 
-        onorm=onorm+oxx(i)**2+oyy(i)**2+ozz(i)**2
-        grad2=grad2+oxx(i)*gxx(i)+oyy(i)*gyy(i)+ozz(i)*gzz(i)
+        onorm=onorm+minimise%oxx(i)**2+minimise%oyy(i)**2+minimise%ozz(i)**2
+        grad2=grad2+minimise%oxx(i)*gxx(i)+minimise%oyy(i)*gyy(i)+minimise%ozz(i)*gzz(i)
      End Do
      Call gsum(comm,onorm)
      onorm=Sqrt(onorm)
@@ -459,17 +492,17 @@ Contains
         i=lstfre(j)
 
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           xxx(i)=xxx(i)+stride*oxx(i)
-           yyy(i)=yyy(i)+stride*oyy(i)
-           zzz(i)=zzz(i)+stride*ozz(i)
-           dist_tol=Max(dist_tol,oxx(i)**2+oyy(i)**2+ozz(i)**2)
+           xxx(i)=xxx(i)+stride*minimise%oxx(i)
+           yyy(i)=yyy(i)+stride*minimise%oyy(i)
+           zzz(i)=zzz(i)+stride*minimise%ozz(i)
+           dist_tol=Max(dist_tol,minimise%oxx(i)**2+minimise%oyy(i)**2+minimise%ozz(i)**2)
         End If
      End Do
      dist_tol=Sqrt(dist_tol)*Abs(stride)
 
 ! RB particles
 
-     Call rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol)
+     Call rigid_bodies_move(stride,minimise%oxx,minimise%oyy,minimise%ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol)
      l_mov=.true.
 
   Else
@@ -478,10 +511,10 @@ Contains
 
      Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           xxx(i)=xxx(i)+stride*oxx(i)
-           yyy(i)=yyy(i)+stride*oyy(i)
-           zzz(i)=zzz(i)+stride*ozz(i)
-           dist_tol=Max(dist_tol,oxx(i)**2+oyy(i)**2+ozz(i)**2)
+           xxx(i)=xxx(i)+stride*minimise%oxx(i)
+           yyy(i)=yyy(i)+stride*minimise%oyy(i)
+           zzz(i)=zzz(i)+stride*minimise%ozz(i)
+           dist_tol=Max(dist_tol,minimise%oxx(i)**2+minimise%oyy(i)**2+minimise%ozz(i)**2)
         End If
      End Do
      dist_tol=Sqrt(dist_tol)*Abs(stride)
@@ -489,11 +522,11 @@ Contains
   End If
   Call gmax(comm,dist_tol)
 
-  If (keymin == 2) relaxed=(dist_tol < min_tol(1))
+  If (minimise%key == 2) minimise%relaxed=(dist_tol < minimise%tolerance)
 
 ! Fit headers in and Close and Open OUTPUT at every 25th print-out
 
-  i=Nint(passmin(1))
+  i=Nint(stats%passmin(1))
   If (l_str) Then
     Write(message,'(1x,i23,1p,4e18.8)') i-1,eng/engunit,grad_tol,eng_tol,dist_tol
     Call info(message,.true.)
@@ -501,7 +534,7 @@ Contains
       Write(message,"(1x,130('-'))")
       Call info(message,.true.)
       Write(message,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
+        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minimise%tolerance,'step=',step
       Call info(message,.true.)
       Write(message,"(1x,130('-'))")
       Call info(message,.true.)
@@ -520,15 +553,15 @@ Contains
 
 100 Continue
 
-  l_x=(.not.relaxed) ! Transportation flag
-  If (relaxed) Then
+  minimise%transport=(.not.minimise%relaxed) ! Transportation flag
+  If (minimise%relaxed) Then
 
 ! Final/Only printout
 
-     i=Nint(passmin(1))
+     i=Nint(stats%passmin(1))
      If (.not.l_str) Then
        Write(message,'(3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-         'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', min_tol(1),'step=',step
+         'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minimise%tolerance,'step=',step
        Call info(message,.true.)
        Write(message,"(1x,130('-'))")
        Call info(message,.true.)
@@ -540,16 +573,16 @@ Contains
 
 ! Collect passage statistics
 
-     passmin(3)=passmin(2)*passmin(3)
-     passmin(2)=passmin(2)+1.0_wp
-     passmin(3)=passmin(3)/passmin(2)+passmin(1)/passmin(2)
-     passmin(4)=Min(passmin(1),passmin(4))
-     passmin(5)=Max(passmin(1),passmin(5))
+     stats%passmin(3)=stats%passmin(2)*stats%passmin(3)
+     stats%passmin(2)=stats%passmin(2)+1.0_wp
+     stats%passmin(3)=stats%passmin(3)/stats%passmin(2)+stats%passmin(1)/stats%passmin(2)
+     stats%passmin(4)=Min(stats%passmin(1),stats%passmin(4))
+     stats%passmin(5)=Max(stats%passmin(1),stats%passmin(5))
 
 ! Rewind keyopt and main passage counter
 
      keyopt =0
-     passmin(1)=0.0_wp
+     stats%passmin(1)=0.0_wp
 
 ! Resume rdf%rdf calculations
 
@@ -557,7 +590,7 @@ Contains
 
 ! Deallocate working arrays
 
-     Call deallocate_minimise_arrays()
+     Call deallocate_minimise_arrays(minimise)
 
 ! Dump the lowest energy configuration
 
@@ -1359,6 +1392,4 @@ Subroutine zero_k_optimise(stats,comm)
   End If
 
 End Subroutine zero_k_optimise
-
-
 End Module minimise
