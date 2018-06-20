@@ -122,7 +122,7 @@ Module setup
 
   Integer, Parameter :: ndefdt = 24
 
-! rdf file channel number
+! rdf%rdf file channel number
 
   Integer, Parameter :: nrdfdt = 25
 
@@ -201,10 +201,10 @@ Module setup
     mxspl,mxspl1,mxspl2,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1, &
     mxlshp,mxproc,     &
     mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
-    mxrdf,mxgrdf,mxgele,                                        &
+    mxgele,                                        &
     mxgrid,                                 &
     mxtana,mxgana,              &
-    mxpfld,mxgusr,                                              &
+    mxpfld,                                              &
     mxatms,mxatdm,                  &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
 

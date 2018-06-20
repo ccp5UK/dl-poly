@@ -23,7 +23,7 @@
   fyy = 0.0_wp
   fzz = 0.0_wp
 
-! nullify all two-body force switches = just do rdf calculation
+! nullify all two-body force switches = just do rdf%rdf calculation
 
   keyfce = 0
   vdw%n_vdw = 0
@@ -53,10 +53,10 @@
   nstdih = 1
   nstinv = 1
 
-! rdf and z-density detection for every entry in HISTORF
+! rdf%rdf and z-density detection for every entry in HISTORF
 ! enforce printing and collection if the calculation exists
 
-  lprdf=lrdf ; nstrdf = 1
+  rdf%l_print=rdf%l_collect ; rdf%freq = 1
   zdensity%l_print=zdensity%l_collect ; zdensity%frequency = 1
 
 ! Calculate kinetic tensor and energy at restart as it may not exists later
@@ -146,12 +146,12 @@
 ! Accumulate RDFs if needed (nstep->nstph)
 ! Make sure RDFs are complete (lbook=.false. - no exclusion lists)
 
-           If (lrdf) Call two_body_forces         &
+           If (rdf%l_collect) Call two_body_forces         &
            (pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
-           lrdf,nstrdf,leql,nsteql,nstph,         &
+           leql,nsteql,nstph,         &
            cshell,               &
-           stat,ewld,devel,met,pois,neigh,site,vdw,tmr,comm)
+           stat,ewld,devel,met,pois,neigh,site,vdw,rdf,tmr,comm)
 
 ! Calculate bond forces
 
@@ -232,7 +232,7 @@
            keyres,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
-           mxatdm_,stat,thermo,zdensity,site,comm)
+           mxatdm_,rdf%max_grid,stat,thermo,zdensity,site,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
@@ -266,8 +266,8 @@
 
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
-           (neigh%cutoff,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
+           (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -339,8 +339,8 @@
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
   If (.not. devel%l_tor) Call system_revive                         &
-           (neigh%cutoff,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
+           (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

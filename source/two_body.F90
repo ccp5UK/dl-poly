@@ -14,8 +14,8 @@ Module two_body
   Use vdw,     Only : vdw_type,vdw_forces
   Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
   Use kim
-  Use rdfs,    Only : ncfrdf, block_size, l_errors_block, l_errors_jack, block_number, &
-                      rdf_collect,rdf_excl_collect,rdf_frzn_collect
+  Use rdfs,    Only : rdf_type,rdf_collect,rdf_excl_collect,rdf_frzn_collect, &
+                      rdf_increase_block_number
   Use errors_warnings, Only : error
   Use ewald_spole, Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces, ewald_excl_forces
   Use ewald_mpole, Only : ewald_spme_mforces, ewald_real_mforces,ewald_frzn_mforces,ewald_excl_mforces, &
@@ -35,13 +35,13 @@ Contains
 Subroutine two_body_forces                        &
            (pdplnc,ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &
-           lrdf,nstrdf,leql,nsteql,nstep,         &
+           leql,nsteql,nstep,         &
            cshell,               &
-           stats,ewld,devel,met,pois,neigh,site,vdw,tmr,comm)
+           stats,ewld,devel,met,pois,neigh,site,vdw,rdf,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine for calculating interatomic forces and rdf
+! dl_poly_4 subroutine for calculating interatomic forces and rdf%rdf
 ! using the verlet neighbour list
 !
 ! vdw%n_vdw > 0 ------ switch for vdw potentials calculation
@@ -71,10 +71,10 @@ Subroutine two_body_forces                        &
 
 
 
-  Logical,                                  Intent( In    ) :: lbook,lrdf,leql
+  Logical,                                  Intent( In    ) :: lbook,leql
   Integer,                                  Intent( In    ) :: ensemble,        &
                                                                keyfce,nstfce, &
-                                                               megfrz,nstrdf, &
+                                                               megfrz, &
                                                                nsteql,nstep
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Real( Kind = wp ),                        Intent( In    ) :: pdplnc,alpha,epsq
@@ -86,6 +86,7 @@ Subroutine two_body_forces                        &
   Type( neighbours_type ),                  Intent( InOut ) :: neigh
   Type( site_type ),                        Intent( In    ) :: site
   Type( vdw_type ),                         Intent( InOut ) :: vdw
+  Type( rdf_type ),                         Intent( InOut ) :: rdf
   Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( comms_type ),                       Intent( InOut ) :: comm
 
@@ -113,7 +114,7 @@ Subroutine two_body_forces                        &
      Call error(0,message)
   End If
 
-  l_do_rdf = (lrdf .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstrdf) == 0)
+  l_do_rdf = (rdf%l_collect .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,rdf%freq) == 0)
 
 ! If k-space SPME is evaluated infrequently check whether
 ! at this timestep to evaluate or "refresh" with old values.
@@ -372,7 +373,7 @@ Subroutine two_body_forces                        &
 
 ! accumulate radial distribution functions
 
-     If (l_do_rdf) Call rdf_collect(i,rrt,neigh)
+     If (l_do_rdf) Call rdf_collect(i,rrt,neigh,rdf)
 
   End Do
 
@@ -426,7 +427,7 @@ Subroutine two_body_forces                        &
 
 ! accumulate radial distribution functions
 
-           If (l_do_rdf) Call rdf_excl_collect(i,rrt,neigh)
+           If (l_do_rdf) Call rdf_excl_collect(i,rrt,neigh,rdf)
 
            If (keyfce == 2) Then ! Ewald corrections
               If (mximpl > 0) Then
@@ -458,8 +459,8 @@ Subroutine two_body_forces                        &
      End Do
   End If
 
-! counter for rdf statistics outside loop structures
-! and frozen-frozen rdf completeness
+! counter for rdf%rdf statistics outside loop structures
+! and frozen-frozen rdf%rdf completeness
 
   If (l_do_rdf) Then
      If (megfrz /= 0) Then
@@ -495,14 +496,14 @@ Subroutine two_body_forces                        &
 
 ! accumulate radial distribution functions
 
-              Call rdf_frzn_collect(i,rrt,neigh)
+              Call rdf_frzn_collect(i,rrt,neigh,rdf)
            End If
 
         End Do
 
      End If
 
-     ncfrdf = ncfrdf + 1
+     rdf%n_configs = rdf%n_configs + 1
   End If
 
   Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
@@ -511,8 +512,10 @@ Subroutine two_body_forces                        &
      Call error(0,message)
   End If
 
-!Increase block_number when required
-if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_size) == 0) block_number = block_number + 1
+!Increase rdf%block_number when required
+  If (l_do_rdf) Then
+    Call rdf_increase_block_number(rdf,nstep)
+  End If
 
 ! Further Ewald/Poisson Solver corrections or an infrequent refresh
 

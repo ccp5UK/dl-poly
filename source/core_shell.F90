@@ -574,7 +574,7 @@ Contains
 
   End Subroutine core_shell_quench
 
-  Subroutine core_shell_relax(l_str,relaxed,lrdf,rlx_tol,stpcfg,cshell,stat,comm)
+  Subroutine core_shell_relax(l_str,relaxed,rdf_collect,rlx_tol,stpcfg,cshell,stat,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -589,7 +589,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Logical,            Intent( In    ) :: l_str
-    Logical,            Intent( InOut ) :: relaxed,lrdf
+    Logical,            Intent( InOut ) :: relaxed,rdf_collect
     Real( Kind = wp ),  Intent( In    ) :: rlx_tol(1:2),stpcfg
     Type(core_shell_type), Intent( InOut ) :: cshell
     Type( stats_type ), Intent( InOut ) :: stat
@@ -676,8 +676,8 @@ Contains
 
       ! Avoid rdf calculation redundancy
 
-      l_rdf=lrdf
-      If (lrdf) lrdf=.false.
+      l_rdf=rdf_collect
+      If (rdf_collect) rdf_collect=.false.
 
       ! Print header
 
@@ -957,7 +957,7 @@ Contains
 
       ! Resume rdf calculations
 
-      If (l_rdf) lrdf=l_rdf
+      If (l_rdf) rdf_collect=l_rdf
 
       ! Zero shells' velocities and forces and redistribute
       ! the residual force to the rest of the system to prevent

@@ -95,11 +95,11 @@
 ! Evaluate forces
 
      Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,tmr)
+       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-     If (nstep == 0) Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,site)
+     If (nstep == 0) Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,site,rdf)
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
@@ -126,7 +126,7 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,site)
+        Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,site,rdf)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
@@ -136,8 +136,8 @@
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
-           (neigh%cutoff,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
+           (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 

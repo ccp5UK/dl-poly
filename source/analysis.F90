@@ -10,8 +10,8 @@ Module analysis
   Use dihedrals,     Only : dihedrals_type,dihedrals_compute
   Use inversions,    Only : inversions_type,inversions_compute
   Use greenkubo,     Only : greenkubo_type,vaf_compute
-  Use rdfs,          Only : ncfrdf,ncfusr,l_errors_block,l_errors_jack,rdf_compute, &
-                            usr_compute,calculate_errors,calculate_errors_jackknife
+  Use rdfs,          Only : rdf_type,rdf_compute,usr_compute,calculate_errors, &
+                            calculate_errors_jackknife
   Use z_density,     Only : z_density_type,z_density_compute
   Use neighbours,    Only : neighbours_type
   Use comms,         Only : comms_type
@@ -24,11 +24,11 @@ Module analysis
 Contains
 
   !> Calculate and print final analysis
-  Subroutine analysis_result(lrdf,lpana,lprdf, &
+  Subroutine analysis_result(lpana, &
                              nstep,tstep,rcut,temp,ensemble, &
-                             bond,angle,dihedral,inversion,stats,green,zdensity,neigh,site,comm)
+                             bond,angle,dihedral,inversion,stats,green,zdensity,neigh,site,rdf,comm)
 
-    Logical, Intent( In    ) :: lrdf,lpana,lprdf
+    Logical, Intent( In    ) :: lpana
     !> Number of simulation steps
     Integer( Kind = wi ), Intent( In    ) :: nstep
     !> Simulation tiime step (ps)
@@ -57,6 +57,8 @@ Contains
     Type( neighbours_type ), Intent( In    ) :: neigh
     !> Site data
     Type( site_type ), Intent( InOut ) :: site
+    !> RDF data
+    Type( rdf_type ), Intent( InOut ) :: rdf
     !> Comms
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -87,20 +89,20 @@ Contains
 
     ! Calculate and print radial distribution functions
     ! If block average errors, output that, else if jackknife errors output those, else just RDF.
-    If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_block) Then
-      Call calculate_errors(temp,rcut,nstep,neigh,site,comm)
+    If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. rdf%l_errors_block) Then
+      Call calculate_errors(temp,rcut,nstep,neigh,site,rdf,comm)
     End If
-    If (lrdf .and. lprdf .and. ncfrdf > 0 .and. l_errors_jack .and. .not. l_errors_block) Then
-      Call calculate_errors_jackknife(temp,rcut,nstep,neigh,site,comm)
+    If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. rdf%l_errors_jack .and. .not. rdf%l_errors_block) Then
+      Call calculate_errors_jackknife(temp,rcut,nstep,neigh,site,rdf,comm)
     End If
-    If (lrdf .and. lprdf .and. ncfrdf > 0 .and. .not.(l_errors_block .or. l_errors_jack)) Then
-      Call rdf_compute(lpana,rcut,temp,site,comm)
+    If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. .not.(rdf%l_errors_block .or. rdf%l_errors_jack)) Then
+      Call rdf_compute(lpana,rcut,temp,site,rdf,comm)
     End IF
-    If (ncfusr > 0) Call usr_compute(comm)
+    If (rdf%n_configs_usr > 0) Call usr_compute(rdf,comm)
 
     ! calculate and print z-density profile
     If (zdensity%l_collect .and. zdensity%l_print .and. zdensity%n_samples > 0) Then
-      Call z_density_compute(zdensity,site,comm)
+      Call z_density_compute(rdf%max_grid,zdensity,site,comm)
     End If
 
     ! calculate and print velocity autocorrelation function

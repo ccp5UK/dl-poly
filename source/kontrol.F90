@@ -25,7 +25,7 @@ Module kontrol
   
   Use kim,         Only : kimim,rkim
   Use greenkubo,   Only : greenkubo_type
-  Use rdfs,         Only : l_errors_jack, l_errors_block
+  Use rdfs,        Only : rdf_type
   Use development, Only : development_type
   Use ttm
   Use impacts,     Only : impact_type
@@ -77,7 +77,7 @@ Subroutine read_control                                &
            rbin,nstfce,alpha,width,     &
            l_exp,lecx,lfcap,l_top,lmin,          &
            lvar,leql,               &
-           lfce,lpana,lrdf,lprdf,           &
+           lfce,lpana,           &
            ltraj,lrsd,               &
            nx,ny,nz,impa,                            &
            keyres,                   &
@@ -85,11 +85,11 @@ Subroutine read_control                                &
            keymin,nstmin,min_tol,                      &
            fmax,nstbpo,keyfce,epsq,             &
            rlx_tol,mxquat,quattol,       &
-           nstbnd,nstang,nstdih,nstinv,nstrdf,  &
+           nstbnd,nstang,nstdih,nstinv,  &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
-           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,tmr,comm)
+           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -120,7 +120,6 @@ Subroutine read_control                                &
                                              lmin, &
                                              lvar,leql,lfce,   &
                                              lpana,                 &
-                                             lrdf,lprdf, &
                                              ltraj,lrsd
 
 
@@ -133,7 +132,6 @@ Subroutine read_control                                &
                                              mxquat,        &
                                              nstbnd,nstang,        &
                                              nstdih,nstinv,        &
-                                             nstrdf,        &
                                              nstraj,istraj,keytrj, &
                                              nsrsd,isrsd,          &
                                              ndump
@@ -162,6 +160,7 @@ Subroutine read_control                                &
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( In    )  :: tersoff
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( comms_type ),     Intent( InOut )  :: comm
@@ -441,9 +440,9 @@ Subroutine read_control                                &
 ! default switch for calculation of rdfs, default number of steps
 ! when to be collected and default switch for printing them
 
-  lrdf   = .false.
-  nstrdf = 1
-  lprdf  = .false.
+  rdf%l_collect   = .false.
+  rdf%freq = 1
+  rdf%l_print  = .false.
 
 ! default switch for calculation of z-density profile, default number of steps
 ! when to be collected and default switch for printing it
@@ -2630,17 +2629,17 @@ Subroutine read_control                                &
         End If
         grdana=Max(grdana,grdbnd,grdang,grddih,grdinv)
 
-! read rdf calculation option
+! read rdf%rdf calculation option
 
-     Else If (word(1:3) == 'rdf') Then
+     Else If (word(1:3) == 'rdf%rdf') Then
 
-        lrdf = .true.
+        rdf%l_collect = .true.
 
         Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-        nstrdf = Abs(Nint(word_2_real(word,1.0_wp)))
+        rdf%freq = Abs(Nint(word_2_real(word,1.0_wp)))
 
 ! read z-density profile option
 
@@ -2681,8 +2680,8 @@ Subroutine read_control                                &
 
         If      (word(1:3) == 'ana' ) Then
            lpana = .true.
-        Else If (word(1:3) == 'rdf' ) Then
-           lprdf = .true.
+        Else If (word(1:3) == 'rdf%rdf' ) Then
+           rdf%l_print = .true.
         Else If (word(1:4) == 'zden') Then
            zdensity%l_print = .true.
         Else If (word(1:3) == 'vaf') Then
@@ -3290,37 +3289,37 @@ Subroutine read_control                                &
 
 ! report rdf
 
-  If (lrdf .or. lprdf) Then
-     If (lrdf) Then
+  If (rdf%l_collect .or. rdf%l_print) Then
+     If (rdf%l_collect) Then
         Write(messages(1),'(a)') 'rdf collection requested:'
-        Write(messages(2),'(2x,a,i10)') 'rdf collection interval ',nstrdf
+        Write(messages(2),'(2x,a,i10)') 'rdf collection interval ',rdf%freq
         Write(messages(3),'(2x,a,1p,e12.4)') 'rdf binsize (Angstroms) ',rbin
         Call info(messages,3,.true.)
      Else
-        Call info('no rdf collection requested',.true.)
+        Call info('no rdf%rdf collection requested',.true.)
      End If
 
-     If (lprdf) Then
-        Call info('rdf printing requested',.true.)
+     If (rdf%l_print) Then
+        Call info('rdf%rdf printing requested',.true.)
      Else
         If (lpana) Then
-           Call info('rdf printing triggered due to a PDA printing request',.true.)
-           lprdf=lpana
+           Call info('rdf%rdf printing triggered due to a PDA printing request',.true.)
+           rdf%l_print=lpana
         Else
-           Call info('no rdf printing requested',.true.)
+           Call info('no rdf%rdf printing requested',.true.)
         End If
      End If
 
-     If (mxrdf == 0) Then
-        Call info('no rdf pairs specified in FIELD',.true.)
+     If (rdf%max_rdf == 0) Then
+        Call info('no rdf%rdf pairs specified in FIELD',.true.)
      Else
-        Call info('rdf pairs specified in FIELD',.true.)
+        Call info('rdf%rdf pairs specified in FIELD',.true.)
      End If
 
-     If ((.not.lrdf) .or. mxrdf == 0) Then
-        Call info('rdf routines not to be activated',.true.)
-        lrdf=.false.
-        lprdf=.false.
+     If ((.not.rdf%l_collect) .or. rdf%max_rdf == 0) Then
+        Call info('rdf%rdf routines not to be activated',.true.)
+        rdf%l_collect=.false.
+        rdf%l_print=.false.
      End If
   End If
 
@@ -3403,7 +3402,9 @@ Subroutine read_control                                &
         Write(messages(2),'(a)') '*** with structural properties will be recalculated ***'
         Call info(messages,2,.true.)
 ! abort if there's no structural property to recalculate
-        If (.not.(lrdf .or. zdensity%l_collect .or. dfcts(1)%ldef .or. msd_data%l_msd .or. lrsd .or. (mxgana > 0))) Call error(580)
+        If (.not.(rdf%l_collect .or. zdensity%l_collect .or. dfcts(1)%ldef .or. msd_data%l_msd .or. lrsd .or. (mxgana > 0))) Then
+          Call error(580)
+        End If
      End If
 
      If (keyres /= 0) Then
@@ -3652,7 +3653,7 @@ Subroutine read_control                                &
 End Subroutine read_control
 
 Subroutine scan_control                                    &
-           (mxrdf,rcter, &
+           (rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
@@ -3660,7 +3661,7 @@ Subroutine scan_control                                    &
            mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,cshell,stats,  &
            thermo,green,devel,msd_data,met,pois,bond,angle, &
-           dihedral,inversion,zdensity,neigh,vdw,tersoff,comm)
+           dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3680,7 +3681,7 @@ Subroutine scan_control                                    &
 
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
-  Integer,           Intent( In    ) :: mxrdf,mxrgd,imcon
+  Integer,           Intent( In    ) :: mxrgd,imcon
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
   Integer,           Intent(   Out ) :: mxgana, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
@@ -3703,10 +3704,11 @@ Subroutine scan_control                                    &
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( In    )  :: tersoff
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
-                            lrcut,lrpad,lrvdw,lrmet,lelec,lrdf,lvdw,lmet,l_n_m,lter,l_exp
+                            lrcut,lrpad,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word,word1,word2,akey
   Integer                :: i,itmp,nstrun,mxspl2
@@ -3753,8 +3755,8 @@ Subroutine scan_control                                    &
   lelec = .false.
 ! l_n_e is now first determined in scan_field l_n_e = (.false.)
 
-  lrdf  = (mxrdf > 0)
-  l_n_r = .not.lrdf
+  rdf%l_collect  = (rdf%max_rdf > 0)
+  l_n_r = .not.rdf%l_collect
 
   lvdw  = (vdw%max_vdw > 0)
   l_n_v = .false.
@@ -4163,8 +4165,8 @@ Subroutine scan_control                                    &
 
      Else If (word(1:3) == 'rdf') Then
 
-        lrdf = .true.
-        l_n_r = .not.lrdf
+        rdf%l_collect = .true.
+        l_n_r = .not.rdf%l_collect
 
 ! read z-density profile option
 
@@ -4350,9 +4352,9 @@ Subroutine scan_control                                    &
        Call lower_case(record)
        Call get_word(record,word)
        If(word(1:4) == 'jack') Then
-          l_errors_jack = .TRUE.
+          rdf%l_errors_jack = .TRUE.
        Else
-          l_errors_block = .TRUE.
+          rdf%l_errors_block = .TRUE.
        End If
      End If
 
@@ -4765,8 +4767,8 @@ Subroutine scan_control                                    &
   devel%l_trm = (l_exp .and. nstrun == 0)
   If (((.not.lsim) .or. devel%l_trm) .and. lrpad) neigh%padding=0.0_wp
 
-  l_errors_block = l_errors_block .and. lrdf
-  l_errors_jack = l_errors_jack .and. lrdf
+  rdf%l_errors_block = rdf%l_errors_block .and. rdf%l_collect
+  rdf%l_errors_jack = rdf%l_errors_jack .and. rdf%l_collect
   Return
 
 ! CONTROL file does not exist

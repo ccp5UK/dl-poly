@@ -16,7 +16,7 @@ Module rdfs
   Use configuration, Only : natms,ltg,ltype
   Use comms,  Only : comms_type,gsum
   Use setup,  Only : fourpi,boltz,delr_max,nrdfdt,npdfdt,npdgdt, &
-                            mxgrdf,engunit,zero_plus,mxrdf,mxgusr
+                     engunit,zero_plus
   Use site, Only : site_type
   Use configuration, Only : cfgname,volm
   Use parse
@@ -26,151 +26,179 @@ Module rdfs
 
   Implicit None
 
-  Public  :: rdf_compute, calculate_errors, calculate_errors_jackknife
-  Private :: calculate_block
+  Private
 
-  Integer,                        Save :: ncfrdf = 0 , &
-                                          ntprdf = 0
+  !> Total number of blocks?
+  Integer( Kind = wi ), Parameter :: num_blocks = 25
 
-  Integer,                        Save :: ncfusr = 0
+  !> Type containing RDF and USR RDF data
+  Type, Public :: rdf_type
+    Private
 
-  Real( Kind = wp ),              Save :: rusr   = 0.0_wp ! USR RDF cutoff
+    !> RDF collection flag
+    Logical, Public :: l_collect
+    !> RDF recording flag
+    Logical, Public :: l_print
 
-  Integer,           Allocatable, Save :: lstrdf(:)
+    !> RDF collection frequency (in steps)
+    Integer( Kind = wi ), Public :: freq
 
-  Real( Kind = wp ), Allocatable, Save :: rdf(:,:),usr(:)
+    !> Number of configurations used in RDF calculation
+    Integer( Kind = wi ), Public :: n_configs = 0
+    !> Number of rdf look up pairs
+    Integer( Kind = wi ), Public :: n_pairs = 0
 
-  Real( Kind = wp ), Allocatable, Save :: block_averages(:,:,:,:)
-  Integer, Parameter                   :: num_blocks = 25
-  Integer, Save                        :: block_size
-  Integer,                        Save :: block_number = 1
-  Real( Kind = wp ), Allocatable, Save :: tmp_rdf(:,:,:)
-  Logical,                        Save :: tmp_rdf_sync = .FALSE.
-  Logical,                        Save :: l_errors_block = .FALSE., l_errors_jack = .FALSE.
+    !> Number of configurations used in USR RDF calculation
+    Integer( Kind = wi ), Public :: n_configs_usr = 0
+    !> USR RDF cutoff
+    Real( Kind = wp ), Public :: cutoff_usr   = 0.0_wp
 
-  Public :: allocate_rdf_arrays, allocate_block_average_array
+    Integer( Kind = wi ), Allocatable, Public :: list(:)
+
+    !> RDF array
+    Real( Kind = wp ), Allocatable, Public :: rdf(:,:)
+    !> USR RDF array
+    Real( Kind = wp ), Allocatable, Public :: usr(:)
+
+    !> Block averages
+    Real( Kind = wp ), Allocatable :: block_averages(:,:,:,:)
+    !> Size of a block
+    Integer( Kind = wi ) :: block_size
+    !> Current block number
+    Integer( Kind = wi ) :: block_number = 1
+
+    !> Temporary rdf array
+    Real( Kind = wp ), Allocatable :: tmp_rdf(:,:,:)
+    Logical :: tmp_rdf_sync = .false.
+
+    Logical, Public :: l_errors_block = .false.
+    Logical, Public :: l_errors_jack = .false.
+
+    !> Maximum number of RDF pairs
+    Integer( Kind = wi ), Public :: max_rdf
+    !> Maximum number of RDF grid points
+    Integer( Kind = wi ), Public :: max_grid
+    !> Maximum number of USR RDF grid points
+    Integer( Kind = wi ), Public :: max_grid_usr
+
+  Contains
+    Private
+
+    Procedure, Public :: init => allocate_rdf_arrays
+    Procedure, Public :: init_block => allocate_block_average_array
+    Final :: cleanup
+  End Type rdf_type
+
+  Public :: rdf_compute, calculate_errors, calculate_errors_jackknife, &
+            usr_compute, usr_collect, rdf_collect, rdf_excl_collect, &
+            rdf_frzn_collect, rdf_increase_block_number
 
 Contains
 
-  Subroutine allocate_rdf_arrays()
-
-
-    Integer, Dimension( 1:3 ) :: fail
+  Subroutine allocate_rdf_arrays(T)
+    Class( rdf_type ) :: T
+    Integer, Dimension(1:3) :: fail
 
     fail = 0
 
-    Allocate (lstrdf(1:mxrdf),       Stat = fail(1))
-    Allocate (rdf(1:mxgrdf,1:mxrdf), Stat = fail(2))
-    Allocate (usr(1:mxgusr),         Stat = fail(3))
+    Allocate (T%list(1:T%max_rdf), stat=fail(1))
+    Allocate (T%rdf(1:T%max_grid,1:T%max_rdf), stat=fail(2))
+    Allocate (T%usr(1:T%max_grid_usr), stat=fail(3))
 
     If (Any(fail > 0)) Call error(1016)
 
-    lstrdf = 0
+    T%list = 0
 
-    rdf = 0.0_wp ; usr = 0.0_wp
-
+    T%rdf = 0.0_wp
+    T%usr = 0.0_wp
   End Subroutine allocate_rdf_arrays
 
-Subroutine allocate_block_average_array(nstrun,ntype_atom)
-  Integer( Kind = wi ), Intent( In    ) :: nstrun
-  Integer( Kind = wi ), Intent( In    ) :: ntype_atom
+  Subroutine allocate_block_average_array(T,nstrun,ntype_atom)
+    Class( rdf_type) :: T
+    Integer( Kind = wi ), Intent( In    ) :: nstrun
+    Integer( Kind = wi ), Intent( In    ) :: ntype_atom
 
-  Integer :: temp1, temp2
-  
-  Integer, Dimension( 1:2 ) :: fail
-  block_size = nstrun/(num_blocks-1)
-  if(block_size < 2) then
-    block_size = 2
-  endif
+    Integer :: temp1, temp2
+    Integer, Dimension(1:2) :: fail
 
-  temp1 = mxrdf + 16-Mod(mxrdf,16)
-  temp2 = mxgrdf + 16-Mod(mxgrdf,16)
-  Allocate(block_averages(1:ntype_atom,1:ntype_atom,1:mxgrdf,1:num_blocks+1), Stat = fail(1))
-  Allocate(tmp_rdf( 1:temp2,1:temp1, 1:num_blocks+1 ), Stat = fail(2))
+    T%block_size = nstrun/(num_blocks-1)
+    if(T%block_size < 2) then
+      T%block_size = 2
+    endif
 
-  If (Any(fail > 0)) Call error(1016)
-  block_averages = 0.0_wp
-  tmp_rdf = 0.0_wp
+    temp1 = T%max_rdf + 16-Mod(T%max_rdf,16)
+    temp2 = T%max_grid + 16-Mod(T%max_grid,16)
 
+    Allocate(T%block_averages(1:ntype_atom,1:ntype_atom,1:T%max_grid,1:num_blocks+1), Stat = fail(1))
+    Allocate(T%tmp_rdf( 1:temp2,1:temp1, 1:num_blocks+1 ), Stat = fail(2))
+
+    If (Any(fail > 0)) Call error(1016)
+    T%block_averages = 0.0_wp
+    T%tmp_rdf = 0.0_wp
   End Subroutine allocate_block_average_array
 
+  Subroutine rdf_collect(iatm,rrt,neigh,rdf)
 
-  Subroutine rdf_collect(iatm,rrt,neigh)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for accumulating statistic for radial
-! distribution functions
-!
-! Note: to be used as part of two_body_forces
-!
-! copyright - daresbury laboratory
-! author    - t.forester march 1994
-! amended   - i.t.todorov november 2014
-! contrib   - a.b.g.chalk january 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for accumulating statistic for radial
+    ! distribution functions
+    !
+    ! Note: to be used as part of two_body_forces
+    !
+    ! copyright - daresbury laboratory
+    ! author    - t.forester march 1994
+    ! amended   - i.t.todorov november 2014
+    ! contrib   - a.b.g.chalk january 2017
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Type( neighbours_type), Intent( In    ) :: neigh
-  Integer,                                  Intent( In    ) :: iatm
-  Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
+    Type( neighbours_type), Intent( In    ) :: neigh
+    Integer,                                  Intent( In    ) :: iatm
+    Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
+    Type( rdf_type ), Intent( InOut ) :: rdf
 
-  Integer                 :: idi,jatm,ai,aj,keyrdf,kk,ll,m
-  Real( Kind = wp )       :: rdelr,rrr
+    Integer                 :: idi,jatm,ai,aj,keyrdf,kk,ll,m
+    Real( Kind = wp )       :: rdelr,rrr
 
-! set cutoff condition for pair forces and grid interval for rdf tables
+    ! set cutoff condition for pair forces and grid interval for rdf%rdf tables
+    rdelr= Real(rdf%max_grid,wp)/neigh%cutoff
 
-  rdelr= Real(mxgrdf,wp)/neigh%cutoff
+    ! global identity and type of iatm
+    idi=ltg(iatm)
+    ai=ltype(iatm)
 
-! global identity and type of iatm
+    ! start of primary loop for rdf%rdf accumulation
+    Do m=1,neigh%list(0,iatm)
+      ! atomic and type indices
+      jatm=neigh%list(m,iatm)
+      aj=ltype(jatm)
 
-  idi=ltg(iatm)
-  ai=ltype(iatm)
-
-! start of primary loop for rdf accumulation
-
-  Do m=1,neigh%list(0,iatm)
-
-! atomic and type indices
-
-     jatm=neigh%list(m,iatm)
-     aj=ltype(jatm)
-
-     If (jatm <= natms .or. idi < ltg(jatm)) Then
-
-! rdf function indices
-
+      If (jatm <= natms .or. idi < ltg(jatm)) Then
+        ! rdf%rdf function indices
         keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
-        kk=lstrdf(keyrdf)
-
-! only for valid interactions specified for a look up
-
-        If (kk > 0 .and. kk <= ntprdf) Then
-
-! apply truncation of potential
-
-           rrr=rrt(m)
-
-           If (rrr < neigh%cutoff) Then
-              ll=Min(1+Int(rrr*rdelr),mxgrdf)
-
-! accumulate correlation
-
-              rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
-              If(l_errors_block .or. l_errors_jack) tmp_rdf(ll,kk,block_number) = tmp_rdf(ll,kk,block_number) + 1.0_wp
-
-           End If
-
+        kk=rdf%list(keyrdf)
+        ! only for valid interactions specified for a look up
+        If (kk > 0 .and. kk <= rdf%n_pairs) Then
+          ! apply truncation of potential
+          rrr=rrt(m)
+          If (rrr < neigh%cutoff) Then
+            ll=Min(1+Int(rrr*rdelr),rdf%max_grid)
+            ! accumulate correlation
+            rdf%rdf(ll,kk) = rdf%rdf(ll,kk) + 1.0_wp
+            If(rdf%l_errors_block .or. rdf%l_errors_jack) Then
+              rdf%tmp_rdf(ll,kk,rdf%block_number) = rdf%tmp_rdf(ll,kk,rdf%block_number) + 1.0_wp
+            End If
+          End If
         End If
+      End If
 
-     End If
+    End Do
 
-  End Do
+  End Subroutine rdf_collect
 
-End Subroutine rdf_collect
-
-Subroutine rdf_compute(lpana,rcut,temp,site,comm)
+Subroutine rdf_compute(lpana,rcut,temp,site,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -187,6 +215,7 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
   Logical          , Intent( In    ) :: lpana
   Real( Kind = wp ), Intent( In    ) :: rcut,temp
   Type( site_type ), Intent( In    ) :: site
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type(comms_type), Intent( InOut )  :: comm
 
   Logical           :: zero
@@ -202,7 +231,7 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
 
   If (lpana) Then
      fail = 0
-     Allocate (dstdrdf(0:mxgrdf,1:ntprdf),pmf(0:mxgrdf+2),vir(0:mxgrdf+2), Stat = fail)
+     Allocate (dstdrdf(0:rdf%max_grid,1:rdf%n_pairs),pmf(0:rdf%max_grid+2),vir(0:rdf%max_grid+2), Stat = fail)
      If (fail > 0) Then
         Write(message,'(a)') 'rdf_compute - allocation failure'
         Call error(0,message)
@@ -213,18 +242,18 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
 
   kT2engo = boltz*temp/engunit
 
-! grid interval for rdf tables
+! grid interval for rdf%rdf tables
 
-  delr = rcut/Real(mxgrdf,wp)
+  delr = rcut/Real(rdf%max_grid,wp)
   rdlr = 1.0_wp/delr
 
-! resampling grid and grid interval for rdf tables
+! resampling grid and grid interval for rdf%rdf tables
 
-  ngrid = Max(Nint(rcut/delr_max),mxgrdf)
+  ngrid = Max(Nint(rcut/delr_max),rdf%max_grid)
   dgrid = rcut/Real(ngrid,wp)
 
   Write(messages(1),'(a)') 'radial distribution functions:'
-  Write(messages(2),'(2x,a,i8,a)') 'calculated using ', ncfrdf, ' configurations'
+  Write(messages(2),'(2x,a,i8,a)') 'calculated using ', rdf%n_configs, ' configurations'
   Call info(messages,2,.true.)
 
 ! open RDF file and Write headers
@@ -232,7 +261,7 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
   If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
      Write(nrdfdt,'(a)') cfgname
-     Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
+     Write(nrdfdt,'(2i10)') rdf%n_pairs,rdf%max_grid
   End If
 
 ! the lower bound to nullify the nearly-zero histogram (PDF) values
@@ -244,13 +273,13 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
   Do ia=1,site%ntype_atom
      Do ib=ia,site%ntype_atom
 
-! number of the interaction by its rdf key
+! number of the interaction by its rdf%rdf key
 
-        kk=lstrdf(ib*(ib-1)/2+ia)
+        kk=rdf%list(ib*(ib-1)/2+ia)
 
 ! only for valid interactions specified for a look up
 
-        If (kk > 0 .and. kk <= ntprdf) Then
+        If (kk > 0 .and. kk <= rdf%n_pairs) Then
            Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',site%unique_atom(ia),site%unique_atom(ib)
            Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
            Call info(messages,2,.true.)
@@ -260,24 +289,24 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
 
 ! global sum of data on all nodes
 
-           Call gsum(comm,rdf(1:mxgrdf,kk))
+           Call gsum(comm,rdf%rdf(1:rdf%max_grid,kk))
 
 ! normalisation factor
 
-           factor1=volm*site%dens(ia)*site%dens(ib)*Real(ncfrdf,wp)
+           factor1=volm*site%dens(ia)*site%dens(ib)*Real(rdf%n_configs,wp)
            If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/site%num_type(ia))
 
-! running integration of rdf
+! running integration of rdf%rdf
 
            sum=0.0_wp
 
 ! loop over distances
 
            zero=.true.
-           Do i=1,mxgrdf
-              If (zero .and. i < (mxgrdf-3)) zero=(rdf(i+2,kk) <= 0.0_wp)
+           Do i=1,rdf%max_grid
+              If (zero .and. i < (rdf%max_grid-3)) zero=(rdf%rdf(i+2,kk) <= 0.0_wp)
 
-              gofr= rdf(i,kk)/factor1
+              gofr= rdf%rdf(i,kk)/factor1
               sum = sum + gofr*site%dens(ib)
 
               rrr = (Real(i,wp)-0.5_wp)*delr
@@ -309,8 +338,8 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
               End If
 
 ! We use the non-normalised tail-truncated RDF version,
-! rdf...1 (not pdf...) in order to exclude the nearly-zero
-! rdf... noise in PMF, otherwise the PMF = -ln(PDF)
+! rdf%rdf...1 (not pdf...) in order to exclude the nearly-zero
+! rdf%rdf... noise in PMF, otherwise the PMF = -ln(PDF)
 ! would have poorly-defined noisy "borders/walls"
 
                 If (lpana) dstdrdf(i,kk) = gofr1 ! RDFs density
@@ -333,12 +362,12 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
      If (comm%idnode == 0) Then
         Open(Unit=npdgdt, File='VDWPMF', Status='replace')
         Write(npdgdt,'(a)') '# '//cfgname
-        Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*Real(mxgrdf,wp),mxgrdf,delr,ntprdf, &
+        Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*Real(rdf%max_grid,wp),rdf%max_grid,delr,rdf%n_pairs, &
              '   conversion factor(kT -> energy units) =',kT2engo
 
         Open(Unit=npdfdt, File='VDWTAB', Status='replace')
         Write(npdfdt,'(a)') '# '//cfgname
-        Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*Real(ngrid,wp),ngrid,dgrid,ntprdf, &
+        Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*Real(ngrid,wp),ngrid,dgrid,rdf%n_pairs, &
           '   conversion factor(kT -> energy units) =',kT2engo
      End If
 
@@ -347,13 +376,13 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
      Do ia=1,site%ntype_atom
         Do ib=ia,site%ntype_atom
 
-! number of the interaction by its rdf key
+! number of the interaction by its rdf%rdf key
 
-           kk=lstrdf(ib*(ib-1)/2+ia)
+           kk=rdf%list(ib*(ib-1)/2+ia)
 
 ! only for valid interactions specified for a look up
 
-           If (kk > 0 .and. kk <= ntprdf) Then
+           If (kk > 0 .and. kk <= rdf%n_pairs) Then
               If (comm%idnode == 0) Then
                  Write(npdgdt,'(/,a2,2a8)') '# ',site%unique_atom(ia),site%unique_atom(ib)
                  Write(npdfdt,'(/,a2,2a8)') '# ',site%unique_atom(ia),site%unique_atom(ib)
@@ -369,7 +398,7 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
               dfed0 = 10.0_wp
               dfed  = 10.0_wp
 
-              Do ig=1,mxgrdf
+              Do ig=1,rdf%max_grid
                  tmp = Real(ig,wp)-0.5_wp
                  rrr = tmp*delr
 
@@ -381,7 +410,7 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
 !                       fed = 0.0_wp
                     End If
 
-                    If (ig < mxgrdf-1) Then
+                    If (ig < rdf%max_grid-1) Then
                        If (dstdrdf(ig+1,kk) <= zero_plus .and. dstdrdf(ig+2,kk) > zero_plus) &
                           dstdrdf(ig+1,kk) = 0.5_wp*(dstdrdf(ig,kk)+dstdrdf(ig+2,kk))
                     End If
@@ -398,7 +427,7 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
                     Else
                        dfed =-dfed0
                     End If
-                 Else If (ig == mxgrdf) Then
+                 Else If (ig == rdf%max_grid) Then
                     If      (dstdrdf(ig,kk) > zero_plus .and. dstdrdf(ig-1,kk) > zero_plus) Then
                        dfed = Log(dstdrdf(ig,kk)/dstdrdf(ig-1,kk))
                     Else If (dfed > 0.0_wp) Then
@@ -433,10 +462,10 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
 
               pmf(0)        = 2.0_wp*pmf(1)       -pmf(2)
               vir(0)        = 2.0_wp*vir(1)       -vir(2)
-              pmf(mxgrdf+1) = 2.0_wp*pmf(mxgrdf)  -pmf(mxgrdf-1)
-              vir(mxgrdf+1) = 2.0_wp*vir(mxgrdf)  -vir(mxgrdf-1)
-              pmf(mxgrdf+2) = 2.0_wp*pmf(mxgrdf+1)-pmf(mxgrdf)
-              vir(mxgrdf+2) = 2.0_wp*vir(mxgrdf+1)-vir(mxgrdf)
+              pmf(rdf%max_grid+1) = 2.0_wp*pmf(rdf%max_grid)  -pmf(rdf%max_grid-1)
+              vir(rdf%max_grid+1) = 2.0_wp*vir(rdf%max_grid)  -vir(rdf%max_grid-1)
+              pmf(rdf%max_grid+2) = 2.0_wp*pmf(rdf%max_grid+1)-pmf(rdf%max_grid)
+              vir(rdf%max_grid+2) = 2.0_wp*vir(rdf%max_grid+1)-vir(rdf%max_grid)
 
 ! resample using 3pt interpolation
 
@@ -487,10 +516,11 @@ Subroutine rdf_compute(lpana,rcut,temp,site,comm)
 
 End Subroutine rdf_compute
 
-Subroutine calculate_block(temp,rcut,neigh,site)
+Subroutine calculate_block(temp,rcut,neigh,site,rdf)
   Real( Kind = wp ), Intent(in)            :: temp, rcut
   Type( neighbours_type), Intent( In    ) :: neigh
   Type( site_type ), Intent( In    ) :: site
+  Type( rdf_type ), Intent( InOut ) :: rdf
 
   Real( Kind = wp ), Dimension( 1:neigh%max_list ) :: rrt, xxt, yyt, zzt
   Real( Kind = wp )                        :: kT2engo, delr, rdlr, dgrid, pdfzero, factor1, rrr,dvol,gofr,gofr1
@@ -499,27 +529,27 @@ Subroutine calculate_block(temp,rcut,neigh,site)
   Logical :: zero
 
   kT2engo = boltz*temp/engunit
-! grid interval for rdf tables
-  delr = rcut/Real(mxgrdf,wp)
+! grid interval for rdf%rdf tables
+  delr = rcut/Real(rdf%max_grid,wp)
   rdlr = 1.0_wp/delr
-! resampling grid and grid interval for rdf tables
-  ngrid = Max(Nint(rcut/delr_max),mxgrdf)
+! resampling grid and grid interval for rdf%rdf tables
+  ngrid = Max(Nint(rcut/delr_max),rdf%max_grid)
   dgrid = rcut/Real(ngrid,wp)
   pdfzero = 1.0e-9_wp
   Do ia=1,site%ntype_atom
      Do ib=ia,site%ntype_atom
-! number of the interaction by its rdf key
-        kk=lstrdf(ib*(ib-1)/2+ia)
+! number of the interaction by its rdf%rdf key
+        kk=rdf%list(ib*(ib-1)/2+ia)
 ! only for valid interactions specified for a look up
 ! global sum of data on all nodes
 ! normalisation factor
-        factor1=volm*site%dens(ia)*site%dens(ib)*Real(ncfrdf,wp)
+        factor1=volm*site%dens(ia)*site%dens(ib)*Real(rdf%n_configs,wp)
         If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/site%num_type(ia))
 ! loop over distances
         zero=.true.
-        Do i=1,mxgrdf
-           If (zero .and. i < (mxgrdf-3)) zero=(tmp_rdf(i+2,kk, block_number) <= 0.0_wp)
-           gofr= tmp_rdf(i,kk, block_number)/factor1
+        Do i=1,rdf%max_grid
+           If (zero .and. i < (rdf%max_grid-3)) zero=(rdf%tmp_rdf(i+2,kk, rdf%block_number) <= 0.0_wp)
+           gofr= rdf%tmp_rdf(i,kk, rdf%block_number)/factor1
            rrr = (Real(i,wp)-0.5_wp)*delr
            dvol= fourpi*delr*(rrr**2+delr**2/12.0_wp)
            gofr= gofr/dvol
@@ -530,18 +560,19 @@ Subroutine calculate_block(temp,rcut,neigh,site)
               gofr1 = gofr
            End If
 ! Store information to compute block average
-           block_averages(ia, ib,i, block_number) = block_averages(ia,ib,i, block_number) + gofr1  
+           rdf%block_averages(ia, ib,i, rdf%block_number) = rdf%block_averages(ia,ib,i, rdf%block_number) + gofr1  
         End Do
      End Do
   End Do
 
 End Subroutine calculate_block
 
-Subroutine calculate_errors(temp, rcut, num_steps, neigh, site, comm)
+Subroutine calculate_errors(temp, rcut, num_steps, neigh, site, rdf, comm)
 
   Real( Kind = wp ), Intent( In )                      :: temp, rcut
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( site_type ), Intent( In    ) :: site
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type(comms_type), Intent( InOut )                    :: comm
 
   Real( Kind = wp )                                    :: test1, delr
@@ -554,17 +585,17 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site, comm)
   Character ( Len = 256 )  :: messages(2)
 
   test1 = 0.0_wp
-  block_number = 1
+  rdf%block_number = 1
 
-  If(comm%mxnode > 1 .and. .not. tmp_rdf_sync) Then
+  If(comm%mxnode > 1 .and. .not. rdf%tmp_rdf_sync) Then
      Do i=1, num_blocks+1
-        Call gsum(comm,tmp_rdf(:,:,i))
+        Call gsum(comm,rdf%tmp_rdf(:,:,i))
      End Do
-     tmp_rdf_sync = .TRUE.
+     rdf%tmp_rdf_sync = .TRUE.
   End If
 
-  Allocate(averages(site%ntype_atom,site%ntype_atom, mxgrdf), stat = ierr2)
-  Allocate(errors(site%ntype_atom,site%ntype_atom, mxgrdf), stat = ierr3)
+  Allocate(averages(site%ntype_atom,site%ntype_atom, rdf%max_grid), stat = ierr2)
+  Allocate(errors(site%ntype_atom,site%ntype_atom, rdf%max_grid), stat = ierr3)
   If(ierr > 0 .or. ierr2 > 0 .or. ierr3 > 0) Then
      Call error(1084)
   End If
@@ -572,18 +603,18 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site, comm)
   errors = 0.0_wp
 
 !Compute the rdf for each of the blocks
-  Do block_number=1, num_blocks+1
-     Call calculate_block(temp, rcut,neigh,site)
+  Do nr_blocks=1, num_blocks+1
+     Call calculate_block(temp, rcut,neigh,site,rdf)
   End Do
-  nr_blocks = num_blocks+1
+  rdf%block_number = nr_blocks
 
 !Compute the errors.
   i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)
   Do k=1, nr_blocks
-     Do l=1, mxgrdf
+     Do l=1, rdf%max_grid
         Do j=1, site%ntype_atom
            Do i=1, site%ntype_atom
-              averages(i,j,l) = averages(i,j,l) + block_averages(i,j,l,k) * i_nr_blocks
+              averages(i,j,l) = averages(i,j,l) + rdf%block_averages(i,j,l,k) * i_nr_blocks
            End Do
         End Do
      End Do
@@ -593,14 +624,14 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site, comm)
   Do i=1, nr_blocks
      Do k=1, site%ntype_atom
         Do j=1, site%ntype_atom
-           Do l=1, mxgrdf
-               errors(j,k,l) = errors(j,k,l) + ( (block_averages(j,k,l,i) - averages(j,k,l))**2 * i_nr_blocks )
+           Do l=1, rdf%max_grid
+               errors(j,k,l) = errors(j,k,l) + ( (rdf%block_averages(j,k,l,i) - averages(j,k,l))**2 * i_nr_blocks )
            End Do
         End Do
      End Do
   End Do
 
-  Do l=1, mxgrdf
+  Do l=1, rdf%max_grid
      Do j=1, site%ntype_atom
         Do i = 1, site%ntype_atom
            averages(i,j,l) = averages(i,j,l) * Real(nr_blocks,wp)
@@ -612,18 +643,18 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site, comm)
   If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
      Write(nrdfdt,'(a)') cfgname
-     Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
+     Write(nrdfdt,'(2i10)') rdf%n_pairs,rdf%max_grid
 
-     delr = rcut/Real(mxgrdf,wp)
+     delr = rcut/Real(rdf%max_grid,wp)
      Do j =1, site%ntype_atom
         Do k = j, site%ntype_atom
-           kk=lstrdf(k*(k-1)/2+j)
-           If (kk > 0 .and. kk <= ntprdf) Then
+           kk=rdf%list(k*(k-1)/2+j)
+           If (kk > 0 .and. kk <= rdf%n_pairs) Then
               Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',site%unique_atom(j),site%unique_atom(k)
               Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
               Call info(messages,2,.true.)
               Write(nrdfdt,'(2a8)') site%unique_atom(j),site%unique_atom(k)
-              Do i=1,mxgrdf
+              Do i=1,rdf%max_grid
                  Write(nrdfdt,"(1p,2e14.6,2e14.6)") ((Real(i,wp)-0.5_wp)*delr),averages(j,k,i),errors(j,k,i)
               End Do
            End If
@@ -634,11 +665,12 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, site, comm)
   Deallocate(averages, errors)
 End Subroutine calculate_errors
 
-Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site,comm)
+Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site,rdf,comm)
 
   Real( Kind = wp ), Intent(In)                        :: temp, rcut
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( site_type ), Intent( In    ) :: site
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type(comms_type), Intent( InOut )                    :: comm
 
   Real( Kind = wp )                                    :: test1
@@ -651,35 +683,35 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site,comm)
   Character( Len = 256 ) :: messages(2)
 
   test1 = 0.0_wp
-  block_number = 1
-  If(comm%mxnode > 1 .and. .not. tmp_rdf_sync) Then
+  rdf%block_number = 1
+  If(comm%mxnode > 1 .and. .not. rdf%tmp_rdf_sync) Then
      Do i=1, num_blocks+1
-        Call gsum(comm,tmp_rdf(:,:,i))
+        Call gsum(comm,rdf%tmp_rdf(:,:,i))
      End Do
-     tmp_rdf_sync = .TRUE.
+     rdf%tmp_rdf_sync = .TRUE.
   End If
 
-  Allocate(averages(site%ntype_atom,site%ntype_atom, mxgrdf), stat = ierr2)
-  Allocate(errors(site%ntype_atom,site%ntype_atom, mxgrdf), stat = ierr3)
+  Allocate(averages(site%ntype_atom,site%ntype_atom, rdf%max_grid), stat = ierr2)
+  Allocate(errors(site%ntype_atom,site%ntype_atom, rdf%max_grid), stat = ierr3)
   if(ierr > 0 .or. ierr2 > 0 .or. ierr3 > 0) then
      Call error(1084)
   end if
   averages = 0.0_wp
   errors = 0.0_wp
-  block_averages =0.0_wp
+  rdf%block_averages =0.0_wp
 
-!Compute the rdf for each of the blocks
-  Do block_number=1,num_blocks+1
-     Call calculate_block(temp, rcut,neigh,site)
+!Compute the rdf%rdf for each of the blocks
+  Do nr_blocks=1,num_blocks+1
+     Call calculate_block(temp, rcut,neigh,site,rdf)
   End Do
-  nr_blocks = num_blocks+1
+  rdf%block_number = nr_blocks
   i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)
 
   Do k=1, nr_blocks
-     Do l=1, mxgrdf
+     Do l=1, rdf%max_grid
         Do j=1, site%ntype_atom
            Do i=1, site%ntype_atom
-              averages(i,j,l) = averages(i,j,l) + block_averages(i,j,l,k) 
+              averages(i,j,l) = averages(i,j,l) + rdf%block_averages(i,j,l,k) 
            End Do
         End Do
      End Do
@@ -689,10 +721,10 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site,comm)
   i_nr_blocks = 1.0_wp / Real(nr_blocks-1, wp)
 !Create jackknife bins
   Do k=1, nr_blocks
-     Do l=1, mxgrdf
+     Do l=1, rdf%max_grid
         Do j=1, site%ntype_atom
            Do i=1, site%ntype_atom
-              block_averages(i,j,l,k) = (averages(i,j,l) - block_averages(i,j,l,k)) * i_nr_blocks
+              rdf%block_averages(i,j,l,k) = (averages(i,j,l) - rdf%block_averages(i,j,l,k)) * i_nr_blocks
            End Do
         End Do
      End Do
@@ -700,7 +732,7 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site,comm)
 
 !Average
   i_nr_blocks = 1.0_wp / Real(nr_blocks,wp)
-  Do l=1, mxgrdf
+  Do l=1, rdf%max_grid
     Do j=1, site%ntype_atom
       Do i=1, site%ntype_atom
         averages(i,j,l) = averages(i,j,l) * i_nr_blocks
@@ -714,14 +746,14 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site,comm)
   Do i=1, nr_blocks
      Do k=1, site%ntype_atom
         Do j=1, site%ntype_atom
-           Do l=1, mxgrdf
-              errors(j,k,l) = errors(j,k,l) + ( (block_averages(j,k,l,i) - averages(j,k,l))**2 * i_nr_blocks )
+           Do l=1, rdf%max_grid
+              errors(j,k,l) = errors(j,k,l) + ( (rdf%block_averages(j,k,l,i) - averages(j,k,l))**2 * i_nr_blocks )
            End Do
         End Do
      End Do
   End Do
 
-  Do l=1, mxgrdf
+  Do l=1, rdf%max_grid
      Do j=1, site%ntype_atom
         Do i = 1, site%ntype_atom
            averages(i,j,l) = averages(i,j,l)*Real(nr_blocks,wp)
@@ -733,18 +765,18 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site,comm)
   If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
      Write(nrdfdt,'(a)') cfgname
-     Write(nrdfdt,'(2i10)') ntprdf,mxgrdf
+     Write(nrdfdt,'(2i10)') rdf%n_pairs,rdf%max_grid
 
-     delr = rcut/Real(mxgrdf,wp)
+     delr = rcut/Real(rdf%max_grid,wp)
      Do j =1, site%ntype_atom
         Do k = j, site%ntype_atom
-           kk=lstrdf(k*(k-1)/2+j)
-           If (kk > 0 .and. kk <= ntprdf) Then
+           kk=rdf%list(k*(k-1)/2+j)
+           If (kk > 0 .and. kk <= rdf%n_pairs) Then
               Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',site%unique_atom(j),site%unique_atom(k)
               Write(messages(2),'(8x,a1,6x,a4,9x,a4)') 'r','g(r)','n(r)'
               Call info(messages,2,.true.)
               Write(nrdfdt,'(2a8)') site%unique_atom(j),site%unique_atom(k)
-              Do i=1,mxgrdf
+              Do i=1,rdf%max_grid
                  Write(nrdfdt,"(1p,2e14.6,2e14.6)") ((Real(i,wp)-0.5_wp)*delr),averages(j,k,i),errors(j,k,i)
               End Do
            End If
@@ -754,160 +786,131 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,site,comm)
   End If
 End Subroutine calculate_errors_jackknife
 
-  Subroutine rdf_excl_collect(iatm,rrt,neigh)
+Subroutine rdf_excl_collect(iatm,rrt,neigh,rdf)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for accumulating statistic for radial
-! distribution functions of excluded pairs
-!
-! Note: to be used as part of two_body_forces
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
-! contrib   - a.b.g.chalk january 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for accumulating statistic for radial
+  ! distribution functions of excluded pairs
+  !
+  ! Note: to be used as part of two_body_forces
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov november 2014
+  ! contrib   - a.b.g.chalk january 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( neighbours_type), Intent( In    ) :: neigh
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
+  Type( rdf_type ), Intent( InOut ) :: rdf
 
   Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
   Real( Kind = wp )       :: rdelr,rrr
 
-! set cutoff condition for pair forces and grid interval for rdf tables
+  ! set cutoff condition for pair forces and grid interval for rdf%rdf tables
+  rdelr= Real(rdf%max_grid,wp)/neigh%cutoff
 
-  rdelr= Real(mxgrdf,wp)/neigh%cutoff
-
-! global identity and type of iatm
-
+  ! global identity and type of iatm
   idi=ltg(iatm)
   ai=ltype(iatm)
 
-! Get neigh%list limit
-
+  ! Get neigh%list limit
   limit=neigh%list(-1,iatm)-neigh%list(0,iatm)
 
-! start of primary loop for rdf accumulation
-
+  ! start of primary loop for rdf%rdf accumulation
   Do m=1,limit
 
-! atomic and type indices
-
-     jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
-     aj=ltype(jatm)
-
-     If (jatm <= natms .or. idi < ltg(jatm)) Then
-
-! rdf function indices
-
-        keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
-        kk=lstrdf(keyrdf)
-
-! only for valid interactions specified for a look up
-
-        If (kk > 0 .and. kk <= ntprdf) Then
-
-! apply truncation of potential
-
-           rrr=rrt(m)
-
-           If (rrr < neigh%cutoff) Then
-              ll=Min(1+Int(rrr*rdelr),mxgrdf)
-
-! accumulate correlation
-
-              rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
-              If(l_errors_block .or. l_errors_jack) tmp_rdf(ll,kk,block_number) = tmp_rdf(ll,kk,block_number) + 1.0_wp
-           End If
-
+    ! atomic and type indices
+    jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
+    aj=ltype(jatm)
+    If (jatm <= natms .or. idi < ltg(jatm)) Then
+      ! rdf%rdf function indices
+      keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
+      kk=rdf%list(keyrdf)
+      ! only for valid interactions specified for a look up
+      If (kk > 0 .and. kk <= rdf%n_pairs) Then
+        ! apply truncation of potential
+        rrr=rrt(m)
+        If (rrr < neigh%cutoff) Then
+          ll=Min(1+Int(rrr*rdelr),rdf%max_grid)
+          ! accumulate correlation
+          rdf%rdf(ll,kk) = rdf%rdf(ll,kk) + 1.0_wp
+          If(rdf%l_errors_block .or. rdf%l_errors_jack) Then
+            rdf%tmp_rdf(ll,kk,rdf%block_number) = rdf%tmp_rdf(ll,kk,rdf%block_number) + 1.0_wp
+          End If
         End If
-
-     End If
+      End If
+    End If
 
   End Do
 
 End Subroutine rdf_excl_collect
 
-Subroutine rdf_frzn_collect(iatm,rrt,neigh)
+Subroutine rdf_frzn_collect(iatm,rrt,neigh,rdf)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for accumulating statistic for radial
-! distribution functions of frozen pairs
-!
-! Note: to be used as part of two_body_forces
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov november 2014
-! contrib   - a.b.g.chalk january 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for accumulating statistic for radial
+  ! distribution functions of frozen pairs
+  !
+  ! Note: to be used as part of two_body_forces
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov november 2014
+  ! contrib   - a.b.g.chalk january 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( neighbours_type), Intent( In    ) :: neigh
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
+  Type( rdf_type ), Intent( InOut ) :: rdf
 
   Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
   Real( Kind = wp )       :: rdelr,rrr
 
-! set cutoff condition for pair forces and grid interval for rdf tables
+  ! set cutoff condition for pair forces and grid interval for rdf%rdf tables
+  rdelr= Real(rdf%max_grid,wp)/neigh%cutoff
 
-  rdelr= Real(mxgrdf,wp)/neigh%cutoff
-
-! global identity and type of iatm
-
+  ! global identity and type of iatm
   idi=ltg(iatm)
   ai=ltype(iatm)
 
-! Get neigh%list limit
-
+  ! Get neigh%list limit
   limit=neigh%list(-2,iatm)-neigh%list(-1,iatm)
 
-! start of primary loop for rdf accumulation
-
+  ! start of primary loop for rdf%rdf accumulation
   Do m=1,limit
+    ! atomic and type indices
+    jatm=neigh%list(neigh%list(-1,iatm)+m,iatm)
+    aj=ltype(jatm)
 
-! atomic and type indices
-
-     jatm=neigh%list(neigh%list(-1,iatm)+m,iatm)
-     aj=ltype(jatm)
-
-     If (jatm <= natms .or. idi < ltg(jatm)) Then
-
-! rdf function indices
-
-        keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
-        kk=lstrdf(keyrdf)
-
-! only for valid interactions specified for a look up
-
-        If (kk > 0 .and. kk <= ntprdf) Then
-
-! apply truncation of potential
-
-           rrr=rrt(m)
-
-           If (rrr < neigh%cutoff) Then
-              ll=Min(1+Int(rrr*rdelr),mxgrdf)
-
-! accumulate correlation
-
-              rdf(ll,kk) = rdf(ll,kk) + 1.0_wp
-              If(l_errors_block .or. l_errors_jack) tmp_rdf(ll,kk,block_number) = tmp_rdf(ll,kk,block_number) + 1.0_wp
-           End If
-
+    If (jatm <= natms .or. idi < ltg(jatm)) Then
+      ! rdf%rdf function indices
+      keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
+      kk=rdf%list(keyrdf)
+      ! only for valid interactions specified for a look up
+      If (kk > 0 .and. kk <= rdf%n_pairs) Then
+        ! apply truncation of potential
+        rrr=rrt(m)
+        If (rrr < neigh%cutoff) Then
+          ll=Min(1+Int(rrr*rdelr),rdf%max_grid)
+          ! accumulate correlation
+          rdf%rdf(ll,kk) = rdf%rdf(ll,kk) + 1.0_wp
+          If(rdf%l_errors_block .or. rdf%l_errors_jack) Then
+            rdf%tmp_rdf(ll,kk,rdf%block_number) = rdf%tmp_rdf(ll,kk,rdf%block_number) + 1.0_wp
+          End If
         End If
-
-     End If
+      End If
+    End If
 
   End Do
 
 End Subroutine rdf_frzn_collect
 
-
-Subroutine usr_collect(rrt)
+Subroutine usr_collect(rrt,rdf)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -920,25 +923,25 @@ Subroutine usr_collect(rrt)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
   Real( Kind = wp ), Intent( In    ) :: rrt
+  Type( rdf_type ), Intent( InOut ) :: rdf
 
   Integer           :: ll
   Real( Kind = wp ) :: rdelr
 
-! set cutoff condition for pair forces and grid interval for rdf tables
+! set cutoff condition for pair forces and grid interval for rdf%rdf tables
 
-  rdelr= Real(mxgusr,wp)/rusr
+  rdelr= Real(rdf%max_grid_usr,wp)/rdf%cutoff_usr
 
-  If (rrt < rusr) Then ! apply truncation of potential
-     ll=Min(1+Int(rrt*rdelr),mxgusr)
-     usr(ll) = usr(ll) + 1.0_wp ! accumulate correlation
-     ncfusr = ncfusr + 1        ! Increment sample
+  If (rrt < rdf%cutoff_usr) Then ! apply truncation of potential
+     ll=Min(1+Int(rrt*rdelr),rdf%max_grid_usr)
+     rdf%usr(ll) = rdf%usr(ll) + 1.0_wp ! accumulate correlation
+     rdf%n_configs_usr = rdf%n_configs_usr + 1        ! Increment sample
   End If
 
 End Subroutine usr_collect
 
-Subroutine usr_compute(comm)
+Subroutine usr_compute(rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -952,13 +955,15 @@ Subroutine usr_compute(comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( InOut ) :: comm
+
   Integer           :: i
   Real( Kind = wp ) :: delr,rdlr,factor1,rrr,dvol,gofr,sum0,sum1
 
-! grid interval for rdf tables
+! grid interval for rdf%rdf tables
 
-  delr = rusr/Real(mxgusr,wp)
+  delr = rdf%cutoff_usr/Real(rdf%max_grid_usr,wp)
   rdlr = 1.0_wp/delr
 
 ! open RDF file and Write headers
@@ -967,27 +972,28 @@ Subroutine usr_compute(comm)
      Open(Unit=nrdfdt, File='USRDAT', Status='replace')
      Write(nrdfdt,'(2a)') '# '//cfgname
      Write(nrdfdt,'(a)')  "# RDF for the two fragments' COMs (umbrella sampling)"
-     Write(nrdfdt,'(a,i10,f12.6,i10,e15.6,/)') '# bins, cutoff, frames, volume: ',mxgusr,rusr,ncfusr,volm
+     Write(nrdfdt,'(a,i10,f12.6,i10,e15.6,/)') '# bins, cutoff, frames, volume: ', &
+       rdf%max_grid_usr,rdf%cutoff_usr,rdf%n_configs_usr,volm
      Write(nrdfdt,'(a)') '#'
   End If
 
 ! global sum of data on all nodes
 
-  Call gsum(comm,usr(1:mxgusr))
+  Call gsum(comm,rdf%usr(1:rdf%max_grid_usr))
 
 ! get normalisation factor
 
-  factor1 = Sum(usr(1:mxgusr))
+  factor1 = Sum(rdf%usr(1:rdf%max_grid_usr))
 
-! running integration of rdf
+! running integration of rdf%rdf
 
   sum0 = 0.0_wp
   sum1 = 0.0_wp
 
 ! loop over distances
 
-  Do i=1,mxgusr
-     gofr = usr(i)/factor1
+  Do i=1,rdf%max_grid_usr
+     gofr = rdf%usr(i)/factor1
      sum0 = sum0 + gofr
 
      rrr  = (Real(i,wp)-0.5_wp)*delr
@@ -1003,10 +1009,34 @@ Subroutine usr_compute(comm)
 
   If (comm%idnode == 0) Close(Unit=nrdfdt)
 
-! distribute usr between nodes
+! distribute rdf%usr between nodes
 
-  usr(:) = usr(:) / Real(comm%mxnode,wp)
+  rdf%usr(:) = rdf%usr(:) / Real(comm%mxnode,wp)
 
 End Subroutine usr_compute
 
+  !> Increase block number when required
+  Subroutine rdf_increase_block_number(rdf,nstep)
+    Type( rdf_type ), Intent( InOut ) :: rdf
+    Integer( Kind = wi ), Intent( In    ) :: nstep
+
+    If ((rdf%l_errors_block .or. rdf%l_errors_jack) .and. &
+        mod(nstep, rdf%block_size) == 0) Then
+      rdf%block_number = rdf%block_number + 1
+    End If
+  End Subroutine rdf_increase_block_number
+
+  Subroutine cleanup(T)
+    Type( rdf_type ) :: T
+
+    If (Allocated(T%list)) Then
+      Deallocate(T%list)
+    End If
+    If (Allocated(T%rdf)) Then
+      Deallocate(T%rdf)
+    End If
+    If (Allocated(T%usr)) Then
+      Deallocate(T%usr)
+    End If
+  End Subroutine cleanup
 End Module rdfs

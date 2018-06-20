@@ -1165,19 +1165,19 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  107) Then
 
-        Write(ounit,'(/,1x,a)') 'error - too many pairs for rdf look up specified'
+        Write(ounit,'(/,1x,a)') 'error - too many pairs for rdf%rdf look up specified'
 
      Else If (kode ==  108) Then
 
-        Write(ounit,'(/,1x,a)') 'error - unidentified atom in rdf look up neigh%list'
+        Write(ounit,'(/,1x,a)') 'error - unidentified atom in rdf%rdf look up neigh%list'
 
      Else If (kode ==  109) Then
 
-        Write(ounit,'(/,1x,a)') 'error - calculated pair rdf index too large'
+        Write(ounit,'(/,1x,a)') 'error - calculated pair rdf%rdf index too large'
 
      Else If (kode ==  110) Then
 
-        Write(ounit,'(/,1x,a)') 'error - duplicate rdf look up pair specified'
+        Write(ounit,'(/,1x,a)') 'error - duplicate rdf%rdf look up pair specified'
 
      Else If (kode ==  111) Then
 
@@ -1313,7 +1313,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  200) Then
 
-        Write(ounit,'(/,1x,a)') 'error - rdf||z-density||bond%dst||angle%dst||dihedral%dst||inversion%dst'// &
+        Write(ounit,'(/,1x,a)') 'error - rdf%rdf||z-density||bond%dst||angle%dst||dihedral%dst||inversion%dst'// &
           'buffer array too small in system_revive'
 
      Else If (kode ==  210) Then

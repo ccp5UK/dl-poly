@@ -51,7 +51,7 @@ Module ffield
 
 ! RDF MODULE
 
-  Use rdfs
+  Use rdfs, Only : rdf_type
 
 ! PARSE MODULE
 
@@ -70,7 +70,9 @@ Module ffield
   Public :: read_mpoles
   Public :: report_topology
   Public :: scan_field
+
 Contains
+
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
            rcut,width,epsq, &
@@ -81,7 +83,7 @@ Subroutine read_field                      &
            megtet,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw, &
-           tersoff,fourbody,comm)
+           tersoff,fourbody,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -129,6 +131,7 @@ Subroutine read_field                      &
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( four_body_type ), Intent( InOut ) :: fourbody
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -3321,18 +3324,18 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'rdf') Then
 
         Call get_word(record,word)
-        ntprdf=Nint(word_2_real(word))
+        rdf%n_pairs=Nint(word_2_real(word))
 
-        Write(message,'(a,i10)') 'number of specified rdf look up pairs ',ntprdf
+        Write(message,'(a,i10)') 'number of specified rdf look up pairs ',rdf%n_pairs
         Call info(message,.true.)
         If (l_top) Then
           write(message,'(8x,a4,2(2x,a6))') 'pair','atom 1','atom 2'
           Call info(message,.true.)
         End If
 
-        If (ntprdf > mxrdf) Call error(107)
+        If (rdf%n_pairs > rdf%max_rdf) Call error(107)
 
-        Do itprdf=1,ntprdf
+        Do itprdf=1,rdf%n_pairs
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -3365,11 +3368,11 @@ Subroutine read_field                      &
 
            keyrdf=(ka1*(ka1-1))/2+ka2
 
-           If (keyrdf > mxrdf) Call error(109)
+           If (keyrdf > rdf%max_rdf) Call error(109)
 
-           If (lstrdf(keyrdf) /= 0) Call error(110)
+           If (rdf%list(keyrdf) /= 0) Call error(110)
 
-           lstrdf(keyrdf)=itprdf
+           rdf%list(keyrdf)=itprdf
 
         End Do
 
@@ -4778,9 +4781,9 @@ Subroutine read_field                      &
 
         If (comm%idnode == 0) Close(Unit=nfield)
 
-! Precautions: (vdw,met) may have led to rdf scanning (mxrdf > 0), see set_bounds
+! Precautions: (vdw,met) may have led to rdf scanning (rdf%max_rdf > 0), see set_bounds
 
-        If (ntprdf == 0 .and. mxrdf > 0) Then
+        If (rdf%n_pairs == 0 .and. rdf%max_rdf > 0) Then
            Do ia=1,site%ntype_atom
               Do ja=ia,site%ntype_atom
                  keyrdf=(ja*(ja-1))/2+ia
@@ -4788,8 +4791,8 @@ Subroutine read_field                      &
                  If (vdw%n_vdw > 0) i=Max(i,vdw%list(keyrdf))
                  If (met%n_potentials > 0) i=Max(i,met%list(keyrdf))
                  If (i > 0) Then
-                    ntprdf = ntprdf+1
-                    lstrdf(keyrdf) = ntprdf
+                    rdf%n_pairs = rdf%n_pairs+1
+                    rdf%list(keyrdf) = rdf%n_pairs
                  End If
               End Do
            End Do
@@ -5068,9 +5071,8 @@ Subroutine scan_field                                &
            mtangl,       &
            mtdihd,       &
            mtinv,         &
-           mxrdf,                  &
            rcter,rcfbp,lext,cshell,cons,pmf,met,&
-           bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,fourbody,comm)
+           bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,fourbody,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5103,6 +5105,7 @@ Subroutine scan_field                                &
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( four_body_type ), Intent( InOut ) :: fourbody
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude,mtshl
 ! Max number of different atom types
@@ -5131,7 +5134,7 @@ Subroutine scan_field                                &
                        numang,mtangl,iang,         &
                        numdih,mtdihd,idih,         &
                        numinv,mtinv,iinv,           &
-                       mxrdf,itprdf,itpvdw,                       &
+                       itprdf,itpvdw,                       &
                        itpmet,                        &
                        itpter,itptbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
@@ -5209,7 +5212,7 @@ Subroutine scan_field                                &
   inversion%max_legend=0
   inversion%bin_tab=-2
 
-  mxrdf =0
+  rdf%max_rdf =0
 
   vdw%max_vdw =0
   vdw%cutoff  =0.0_wp
@@ -5659,9 +5662,9 @@ Subroutine scan_field                                &
      Else If (word(1:3) == 'rdf') Then
 
         Call get_word(record,word)
-        mxrdf=Nint(word_2_real(word))
+        rdf%max_rdf=Nint(word_2_real(word))
 
-        Do itprdf=1,mxrdf
+        Do itprdf=1,rdf%max_rdf
             word(1:1)='#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
                Call get_line(safe,nfield,record,comm)
@@ -5670,7 +5673,7 @@ Subroutine scan_field                                &
             End Do
         End Do
 
-        If (mxrdf > 0) mxrdf=Max(mxrdf,(mxatyp*(mxatyp+1))/2)
+        If (rdf%max_rdf > 0) rdf%max_rdf=Max(rdf%max_rdf,(mxatyp*(mxatyp+1))/2)
 
      Else If (word(1:3) == 'vdw') Then
 

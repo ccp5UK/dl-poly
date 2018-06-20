@@ -10,7 +10,7 @@ Module system
                                  cfgname,imcon,cell,lsi,lsa,atmnam, &
                                  write_config
   Use statistics, Only : stats_type
-  Use rdfs,        Only : ncfrdf,rdf,ncfusr,rusr,usr
+  Use rdfs,        Only : rdf_type
   Use z_density,   Only : z_density_type
   Use bonds,       Only : bonds_type
   Use angles,      Only : angles_type
@@ -55,11 +55,11 @@ Module system
   Public :: system_init
   Public :: system_expand
   Contains
-  
+
   Subroutine system_init                                             &
-           (levcfg,rcut,rbin,lrdf,keyres,megatm,    &
+           (levcfg,rcut,rbin,keyres,megatm,    &
            time,tmst,nstep,tstep,cshell,stats,devel,green,thermo,met, &
-           bond,angle,dihedral,inversion,zdensity,site,vdw,comm)
+           bond,angle,dihedral,inversion,zdensity,site,vdw,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -72,7 +72,6 @@ Module system
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: lrdf
   Integer,           Intent( InOut ) :: levcfg,keyres
   Integer,           Intent( In    ) :: megatm
   Real( Kind = wp ), Intent( In    ) :: rcut,rbin
@@ -93,6 +92,7 @@ Module system
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( site_type ), Intent( InOut ) :: site
   Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -107,7 +107,7 @@ Module system
 
   If (devel%l_rin) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(stats%mxstak*stats%mxnstk,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
+     j = Max(stats%mxstak*stats%mxnstk,rdf%max_grid*rdf%max_rdf,rdf%max_grid_usr,mxgana*mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -157,15 +157,15 @@ Module system
         stats%ravval=0.0_wp
         stats%stkval=0.0_wp
 
-        If (lrdf) Then
-           ncfrdf=0
-           rdf   =0.0_wp
+        If (rdf%l_collect) Then
+           rdf%n_configs=0
+           rdf%rdf   =0.0_wp
         End If
 
-        If (mxgusr > 0) Then
-           rusr  =0.0_wp
-           ncfusr=0
-           usr   =0
+        If (rdf%max_grid_usr > 0) Then
+           rdf%cutoff_usr  =0.0_wp
+           rdf%n_configs_usr=0
+           rdf%usr   =0
         End If
 
         If (zdensity%l_collect) Then
@@ -250,8 +250,8 @@ Module system
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%strpmf
            Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stress
 
-           If (lrdf) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf
-           If (mxgusr > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
+           If (rdf%l_collect) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf%rdf
+           If (rdf%max_grid_usr > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,rdf%usr
            If (zdensity%l_collect) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfzdn,zdensity%density
            If (green%samp > 0) Then
              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vafcount
@@ -280,8 +280,8 @@ Module system
            Read(Unit=nrest, IOStat=keyio, End=100) stats%strpmf
            Read(Unit=nrest, IOStat=keyio, End=100) stats%stress
 
-           If (lrdf) Read(Unit=nrest, IOStat=keyio, End=100) dncfrdf,rdf
-           If (mxgusr > 0) Read(Unit=nrest, IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,usr
+           If (rdf%l_collect) Read(Unit=nrest, IOStat=keyio, End=100) dncfrdf,rdf%rdf
+           If (rdf%max_grid_usr > 0) Read(Unit=nrest, IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,rdf%usr
            If (zdensity%l_collect) Read(Unit=nrest, IOStat=keyio, End=100) dncfzdn,zdensity%density
            If (green%samp > 0) Then
              Read(Unit=nrest, IOStat=keyio, End=100) green%vafcount
@@ -301,11 +301,11 @@ Module system
 
         stats%numacc=Nint(dnumacc)
 
-        If (lrdf) ncfrdf=Nint(dncfrdf)
-        If (mxgusr > 0) Then
-           mxgusr=Nint(dmxgusr)
-           rusr  =drusr
-           ncfusr=Nint(dncfusr)
+        If (rdf%l_collect) rdf%n_configs=Nint(dncfrdf)
+        If (rdf%max_grid_usr > 0) Then
+           rdf%max_grid_usr=Nint(dmxgusr)
+           rdf%cutoff_usr  =drusr
+           rdf%n_configs_usr=Nint(dncfusr)
         End If
         If (zdensity%l_collect) zdensity%n_samples=Nint(dncfzdn)
         If (green%samp > 0) green%step=Nint(dvafstep)
@@ -371,24 +371,24 @@ Module system
 
         r_mxnode=1.0_wp/Real(comm%mxnode,wp)
 
-! rdf table - broadcast and normalise
+! rdf%rdf table - broadcast and normalise
 
-        If (lrdf) Then
-           Call gbcast(comm,ncfrdf,0)
-           Do k=1,mxrdf
-              Call gbcast(comm,rdf(:,k),0)
-              rdf(:,k) = rdf(:,k) * r_mxnode
+        If (rdf%l_collect) Then
+           Call gbcast(comm,rdf%n_configs,0)
+           Do k=1,rdf%max_rdf
+              Call gbcast(comm,rdf%rdf(:,k),0)
+              rdf%rdf(:,k) = rdf%rdf(:,k) * r_mxnode
            End Do
         End If
 
 ! USR RDF table - broadcast and normalise
 
-        If (mxgusr > 0) Then
-           Call gbcast(comm,mxgusr,0)
-           Call gbcast(comm,rusr,0)
-           Call gbcast(comm,ncfusr,0)
-           Call gbcast(comm,usr,0)
-           usr(:) = usr(:) * r_mxnode
+        If (rdf%max_grid_usr > 0) Then
+           Call gbcast(comm,rdf%max_grid_usr,0)
+           Call gbcast(comm,rdf%cutoff_usr,0)
+           Call gbcast(comm,rdf%n_configs_usr,0)
+           Call gbcast(comm,rdf%usr,0)
+           rdf%usr(:) = rdf%usr(:) * r_mxnode
         End If
 
 ! z-density table - broadcast and normalise
@@ -1810,8 +1810,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle,dihed
 End Subroutine system_expand
 
 Subroutine system_revive                                      &
-           (rcut,rbin,lrdf,megatm,nstep,tstep,time,tmst, &
-           stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,comm)
+           (rcut,rbin,megatm,nstep,tstep,time,tmst, &
+           stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1826,7 +1826,6 @@ Subroutine system_revive                                      &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,           Intent( In    ) :: megatm,nstep
-  Logical,           Intent( In    ) :: lrdf
   Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
@@ -1837,6 +1836,7 @@ Subroutine system_revive                                      &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready
@@ -1865,7 +1865,7 @@ Subroutine system_revive                                      &
 
   If (devel%l_rout) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(stats%mxstak*stats%mxnstk+1,mxgrdf*mxrdf,mxgusr,mxgana*mxtana)
+     j = Max(stats%mxstak*stats%mxnstk+1,rdf%max_grid*rdf%max_rdf,rdf%max_grid_usr,mxgana*mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -1875,22 +1875,22 @@ Subroutine system_revive                                      &
 
 ! globally sum RDF information before saving
 
-     If (lrdf) Then
+     If (rdf%l_collect) Then
 
 ! maximum rdfs that can be summed in each step
 
-        nsum = mxbuff/mxgrdf
+        nsum = mxbuff/rdf%max_grid
         If (nsum == 0) Call error(200)
 
-        Do i=1,mxrdf,nsum
-           Call gsum(comm,rdf(:,i:Min(i+nsum-1,mxrdf)))
+        Do i=1,rdf%max_rdf,nsum
+           Call gsum(comm,rdf%rdf(:,i:Min(i+nsum-1,rdf%max_rdf)))
         End Do
 
      End If
 
 ! globally sum USR RDF information before saving
 
-     If (mxgusr > 0) Call gsum(comm,usr(1:mxgusr))
+     If (rdf%max_grid_usr > 0) Call gsum(comm,rdf%usr(1:rdf%max_grid_usr))
 
 ! globally sum z-density information before saving
 
@@ -1898,7 +1898,7 @@ Subroutine system_revive                                      &
 
 ! maximum zdensity%density that can be summed in each step
 
-        nsum = mxbuff/mxgrdf
+        nsum = mxbuff/rdf%max_grid
         If (nsum == 0) Call error(200)
 
         Do i=1,mxatyp,nsum
@@ -2018,8 +2018,11 @@ Subroutine system_revive                                      &
         Write(Unit=nrest, Fmt=forma, Advance='No') stats%strpmf
         Write(Unit=nrest, Fmt=forma, Advance='No') stats%stress
 
-        If (lrdf) Write(Unit=nrest, Fmt=forma, Advance='No') Real(ncfrdf,wp),rdf
-        If (mxgusr > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(mxgusr),rusr,Real(ncfusr,wp),usr
+        If (rdf%l_collect) Write(Unit=nrest, Fmt=forma, Advance='No') Real(rdf%n_configs,wp),rdf%rdf
+        If (rdf%max_grid_usr > 0) Then
+          Write(Unit=nrest, Fmt=forma, Advance='No') Real(rdf%max_grid_usr), &
+            rdf%cutoff_usr,Real(rdf%n_configs_usr,wp),rdf%usr
+        End If
         If (zdensity%l_collect) Write(Unit=nrest, Fmt=forma, Advance='No') Real(zdensity%n_samples,wp),zdensity%density
         If (green%samp > 0) Then
           Write(Unit=nrest, Fmt=forma, Advance='No') green%vafcount
@@ -2051,8 +2054,8 @@ Subroutine system_revive                                      &
         Write(Unit=nrest) stats%strpmf
         Write(Unit=nrest) stats%stress
 
-        If (lrdf) Write(Unit=nrest) Real(ncfrdf,wp),rdf
-        If (mxgusr > 0) Write(Unit=nrest) Real(mxgusr),rusr,Real(ncfusr,wp),usr
+        If (rdf%l_collect) Write(Unit=nrest) Real(rdf%n_configs,wp),rdf%rdf
+        If (rdf%max_grid_usr > 0) Write(Unit=nrest) Real(rdf%max_grid_usr),rdf%cutoff_usr,Real(rdf%n_configs_usr,wp),rdf%usr
         If (zdensity%l_collect) Write(Unit=nrest) Real(zdensity%n_samples,wp),zdensity%density
         If (green%samp > 0) Then
           Write(Unit=nrest) green%vafcount
@@ -2200,13 +2203,13 @@ Subroutine system_revive                                      &
 
        r_mxnode=1.0_wp/Real(comm%mxnode,wp)
 
-! globally divide rdf data between nodes
+! globally divide rdf%rdf data between nodes
 
-     If (lrdf) rdf = rdf * r_mxnode
+     If (rdf%l_collect) rdf%rdf = rdf%rdf * r_mxnode
 
-! globally divide USR rdf data between nodes
+! globally divide USR rdf%rdf data between nodes
 
-     If (mxgusr > 0) usr = usr * r_mxnode
+     If (rdf%max_grid_usr > 0) rdf%usr = rdf%usr * r_mxnode
 
 ! globally divide z-density data between nodes
 
@@ -2237,7 +2240,4 @@ Subroutine system_revive                                      &
   End If
 
 End Subroutine system_revive
-
-
-
 End Module system

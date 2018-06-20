@@ -7,8 +7,7 @@ Module bounds
   Use configuration,   Only : imcon,imc_n,cfgname,cell,volm
   Use neighbours,      Only : neighbours_type
   Use msd,             Only : msd_type
-  Use rdfs,            Only : rusr
-
+  Use rdfs,            Only : rdf_type
   Use msd,             Only : msd_type
   Use z_density,       Only : z_density_type
   Use kim,             Only : kimim
@@ -38,6 +37,7 @@ Module bounds
   Use three_body,      Only : threebody_type
   Use vdw,             Only : vdw_type
   Use four_body, Only : four_body_type
+  Use rdfs,            Only : rdf_type
 
   Implicit None
   Private
@@ -49,7 +49,7 @@ Subroutine set_bounds                                 &
            dvar,rbin,nstfce,      &
            alpha,width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,comm)
+           inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -90,6 +90,7 @@ Subroutine set_bounds                                 &
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( four_body_type ), Intent( InOut ) :: fourbody
+  Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -122,10 +123,9 @@ Subroutine set_bounds                                 &
            mtangl, &
            mtdihd, &
            mtinv,  &
-           mxrdf,                  &
            rcter,rcfbp,lext,cshell,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
-           tether,threebody,vdw,tersoff,fourbody,comm)
+           tether,threebody,vdw,tersoff,fourbody,rdf,comm)
 
 ! Get imc_r & set dvar
 
@@ -143,14 +143,14 @@ Subroutine set_bounds                                 &
 ! scan CONTROL file data
 
   Call scan_control                                        &
-           (mxrdf,rcter, &
+           (rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                         &
            mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,cshell,stats,thermo, &
-           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,comm)
+           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -387,31 +387,31 @@ Subroutine set_bounds                                 &
   End If
   mxtana = 0 ! initialise for buffer size purposes, set in read_field
 
-! maximum number of rdf potentials (mxrdf = mxrdf)
-! mxgrdf - maximum dimension of rdf and z-density arrays
+! maximum number of rdf potentials (rdf%max_rdf = rdf%max_rdf)
+! rdf%max_grid - maximum dimension of rdf%rdf and z-density arrays
 
   If ((.not. l_n_r) .or. lzdn) Then
-     If (((.not. l_n_r) .and. mxrdf == 0) .and. (vdw%max_vdw > 0 .or. met%max_metal > 0)) &
-        mxrdf = Max(vdw%max_vdw,met%max_metal) ! (vdw,met) == rdf scanning
-     mxgrdf = Nint(neigh%cutoff/rbin)
+     If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdw%max_vdw > 0 .or. met%max_metal > 0)) &
+        rdf%max_rdf = Max(vdw%max_vdw,met%max_metal) ! (vdw,met) == rdf scanning
+     rdf%max_grid = Nint(neigh%cutoff/rbin)
   Else
-     mxgrdf = 0 ! RDF and Z-density function MUST NOT get called!!!
+     rdf%max_grid = 0 ! RDF and Z-density function MUST NOT get called!!!
   End If
 
 ! RDFs particulars for USR (umbrella sampling restraints)
 
   If (l_usr) Then
-     rusr   = 0.45_wp*width
-     mxgusr = Nint(rusr/rbin)      ! allows for up to ~75% system volume shrinkage
-     rusr   = Real(mxgusr,wp)*rbin ! round up and beautify for Andrey Brukhno's sake
+     rdf%cutoff_usr   = 0.45_wp*width
+     rdf%max_grid_usr = Nint(rdf%cutoff_usr/rbin)      ! allows for up to ~75% system volume shrinkage
+     rdf%cutoff_usr   = Real(rdf%max_grid_usr,wp)*rbin ! round up and beautify for Andrey Brukhno's sake
   Else
-     rusr   = 0.0_wp
-     mxgusr = 0 ! decider on calling USR RDF
+     rdf%cutoff_usr   = 0.0_wp
+     rdf%max_grid_usr = 0 ! decider on calling USR RDF
   End If
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgana,vdw%max_grid,met%maxgrid,mxgrdf,mxgusr,1004,Nint(neigh%cutoff/delr_max)+4)
+  mxgrid = Max(mxgana,vdw%max_grid,met%maxgrid,rdf%max_grid,rdf%max_grid_usr,1004,Nint(neigh%cutoff/delr_max)+4)
 
 ! grids setting and overrides
 
@@ -640,7 +640,7 @@ Subroutine set_bounds                                 &
      End If
   Else ! push/reset the limits in 'no strict' mode
      If (.not.l_str) Then
-        If (.not.(met%max_metal == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) Then ! 2b link-cells are needed
+        If (.not.(met%max_metal == 0 .and. l_n_e .and. l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then ! 2b link-cells are needed
            If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
               neigh%padding = 0.95_wp * (0.5_wp*width - neigh%cutoff - 1.0e-6_wp)
               neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up
@@ -852,7 +852,7 @@ Subroutine set_bounds                                 &
   mxbfsh = Merge( 1, 0, comm%mxnode > 1) * Nint(Real(Max(2*cshell%mxshl,2*cons%mxcons,mxlrgd*mxrgd),wp) * dens0)
 
   mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
-                stats%mxnstk*stats%mxstak , mxgrid , mxgrdf , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )
+                stats%mxnstk*stats%mxstak , mxgrid , rdf%max_grid , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )
 
 ! reset (increase) link-cell maximum (neigh%max_cell)
 ! if tersoff or three- or four-body potentials exist
