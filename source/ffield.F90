@@ -44,7 +44,7 @@ Module ffield
   Use metal, Only : metal_type,allocate_metal_arrays,allocate_metal_table_arrays, &
                     metal_generate_erf,metal_table_read,metal_generate
   Use tersoff, Only : tersoff_type,tersoff_generate
-  Use four_body
+  Use four_body, Only : four_body_type
 
   Use external_field
 
@@ -77,12 +77,12 @@ Subroutine read_field                      &
            rcut,width,epsq, &
            keyfce,           &
            lecx,lbook,lexcl,               &
-           rcfbp,              &
            atmfre,atmfrz,megatm,megfrz,    &
            megrgd,    &
            megtet,    &
            cshell,pmf,cons,  &
-           thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw,tersoff,comm)
+           thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw, &
+           tersoff,fourbody,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -112,7 +112,6 @@ Subroutine read_field                      &
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
-  Real( Kind = wp ), Intent(   Out ) :: rcfbp
   Integer,           Intent(   Out ) :: atmfre,atmfrz,megatm,megfrz,        &
                                         megrgd,        &
                                         megtet
@@ -130,6 +129,7 @@ Subroutine read_field                      &
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( InOut )  :: tersoff
+  Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -275,7 +275,7 @@ Subroutine read_field                      &
 
   tersoff%cutoff=0.0_wp
   threebody%cutoff=0.0_wp
-  rcfbp=0.0_wp
+  fourbody%cutoff=0.0_wp
 
 
 ! open force field data file
@@ -4517,9 +4517,9 @@ Subroutine read_field                      &
      Else If (word(1:3) == 'fbp') Then
 
         Call get_word(record,word)
-        ntpfbp=Nint(word_2_real(word))
+        fourbody%n_potential=Nint(word_2_real(word))
 
-        Write(message,'(a,i10)') 'number of specified four-body potentials ',ntpfbp
+        Write(message,'(a,i10)') 'number of specified four-body potentials ',fourbody%n_potential
         Call info(message,.true.)
         If (l_top) Then
           Write(message,'(5x,a7,5x,a6,3(2x,a6),5x,a3,5x,a10)') &
@@ -4527,17 +4527,17 @@ Subroutine read_field                      &
           Call info(message,.true.)
         End If
 
-        If (ntpfbp > mxfbp) Call error(89)
+        If (fourbody%n_potential > fourbody%max_four_body) Call error(89)
         If (.not.lunits) Call error(6)
         If (.not.lmols) Call error(13)
 
 ! Initialise head of group atom to not participating in an interaction
 
-        Do ifbp=1,mxfbp,mx3fbp
-           lstfbp(ifbp)=-1
+        Do ifbp=1,fourbody%max_four_body,fourbody%mx3fbp
+           fourbody%list(ifbp)=-1
         End Do
 
-        Do itpfbp=1,ntpfbp
+        Do itpfbp=1,fourbody%n_potential
 
            parpot=0.0_wp
 
@@ -4581,8 +4581,8 @@ Subroutine read_field                      &
            parpot(3)=word_2_real(word)
 
            If (l_top) Then
-             Write(rfmt,'(a,i0,a)') '(2x,i10,3x,4a8,3x,a4,2x,',mxpfbp,'f15.6)'
-             Write(message,rfmt) itpfbp,atom0,atom1,atom2,atom3,keyword,parpot(1:mxpfbp)
+             Write(rfmt,'(a,i0,a)') '(2x,i10,3x,4a8,3x,a4,2x,',fourbody%max_param,'f15.6)'
+             Write(message,rfmt) itpfbp,atom0,atom1,atom2,atom3,keyword,parpot(1:fourbody%max_param)
              Call info(message,.true.)
            End If
 
@@ -4600,18 +4600,18 @@ Subroutine read_field                      &
 
            If (katom0 == 0 .or. katom1 == 0 .or. katom2 == 0 .or. katom3 == 0) Call error(91)
 
-           lfrfbp(katom0)=.true.
-           lfrfbp(katom1)=.true.
-           lfrfbp(katom2)=.true.
-           lfrfbp(katom3)=.true.
+           fourbody%lfr(katom0)=.true.
+           fourbody%lfr(katom1)=.true.
+           fourbody%lfr(katom2)=.true.
+           fourbody%lfr(katom3)=.true.
 
            ka1=Max(katom1,katom2,katom3)
            ka3=Min(katom1,katom2,katom3)
            ka2=katom1+katom2+katom3-ka1-ka3
 
-           keyfbp=ka3+(ka2*(ka2-1))/2+(ka1*(ka1**2-1))/6+(katom0-1)*mx3fbp
+           keyfbp=ka3+(ka2*(ka2-1))/2+(ka1*(ka1**2-1))/6+(katom0-1)*fourbody%mx3fbp
 
-           If (keyfbp > mxfbp) Call error(101)
+           If (keyfbp > fourbody%max_four_body) Call error(101)
 
 ! convert parameters to internal units and angles to radians
 
@@ -4622,34 +4622,34 @@ Subroutine read_field                      &
               parpot(2)=Cos(parpot(2))
            End If
 
-           If (lstfbp(keyfbp) > 0) Call error(19)
+           If (fourbody%list(keyfbp) > 0) Call error(19)
 
-           lstfbp(keyfbp)=itpfbp
-           kfbp=mx3fbp*((keyfbp-1)/mx3fbp)+1 ! == mx3fbp*(katom0-1)+1
-           If (lstfbp(kfbp) < 0) lstfbp(kfbp)=0
+           fourbody%list(keyfbp)=itpfbp
+           kfbp=fourbody%mx3fbp*((keyfbp-1)/fourbody%mx3fbp)+1 ! == fourbody%mx3fbp*(katom0-1)+1
+           If (fourbody%list(kfbp) < 0) fourbody%list(kfbp)=0
 
-           ltpfbp(itpfbp)=keypot
+           fourbody%ltp(itpfbp)=keypot
 
 ! calculate max four-body cutoff
 
-           rcfbp=Max(rcfbp,parpot(3))
+           fourbody%cutoff=Max(fourbody%cutoff,parpot(3))
            If (parpot(3) < 1.0e-6_wp) Then
-              rctfbp(itpfbp)=rcfbp
-              parpot(3)=rcfbp
+              fourbody%rct(itpfbp)=fourbody%cutoff
+              parpot(3)=fourbody%cutoff
            Else
-              rctfbp(itpfbp)=parpot(3)
+              fourbody%rct(itpfbp)=parpot(3)
            End If
 
 ! store four-body potential parameters
 
-           Do i=1,mxpfbp
-              prmfbp(i,itpfbp)=parpot(i)
+           Do i=1,fourbody%max_param
+              fourbody%param(i,itpfbp)=parpot(i)
            End Do
         End Do
 
-        If (ntpfbp > 0) Then
-           If (rcfbp < 1.0e-6_wp) Call error(453)
-           If (rcut < 2.0_wp*rcfbp) Call error(472)
+        If (fourbody%n_potential > 0) Then
+           If (fourbody%cutoff < 1.0e-6_wp) Call error(453)
+           If (rcut < 2.0_wp*fourbody%cutoff) Call error(472)
         End If
 
 ! read kim interaction data - kim and rkim set in scan_field
@@ -5071,8 +5071,8 @@ Subroutine scan_field                                &
            mtinv,         &
            mxrdf,                  &
            mxmet,mxmed,mxmds,            &
-           rcter,mxfbp,rcfbp,lext,cshell,cons,pmf,met,&
-           bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,comm)
+           rcter,rcfbp,lext,cshell,cons,pmf,met,&
+           bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,fourbody,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5090,6 +5090,7 @@ Subroutine scan_field                                &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Real( Kind = wp ), Intent(   Out ) :: rcter
+  Real( Kind = wp ), Intent(   Out ) :: rcfbp
   Integer( Kind = wi ), Intent(   Out ) :: max_site
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent( InOut ) :: cons
@@ -5103,6 +5104,7 @@ Subroutine scan_field                                &
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( InOut )  :: tersoff
+  Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude,mtshl
 ! Max number of different atom types
@@ -5133,9 +5135,9 @@ Subroutine scan_field                                &
                        numinv,mtinv,iinv,           &
                        mxrdf,itprdf,itpvdw,                       &
                        mxmet,mxmed,mxmds,itpmet,                        &
-                       itpter,itptbp,mxfbp,itpfbp,                 &
+                       itpter,itptbp,itpfbp,                 &
                        mxt(1:9),mxf(1:9)
-  Real( Kind = wp ) :: rcfbp,rct,tmp,tmp1,tmp2
+  Real( Kind = wp ) :: rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
   mxompl=0      ! default of maximum order of poles (charges)
@@ -5227,7 +5229,7 @@ Subroutine scan_field                                &
   threebody%mxtbp=0
   threebody%cutoff=0.0_wp
 
-  mxfbp=0
+  fourbody%max_four_body=0
   rcfbp=0.0_wp
 
   max_exclude=0
@@ -5919,9 +5921,9 @@ Subroutine scan_field                                &
      Else If (word(1:3) == 'fbp') Then
 
         Call get_word(record,word)
-        mxfbp=Nint(word_2_real(word))
+        fourbody%max_four_body=Nint(word_2_real(word))
 
-        Do itpfbp=1,mxfbp
+        Do itpfbp=1,fourbody%max_four_body
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
               Call get_line(safe,nfield,record,comm)

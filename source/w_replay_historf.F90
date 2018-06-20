@@ -126,7 +126,7 @@
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
            Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
-             inversion,tether,threebody,neigh,site,vdw,tersoff,tmr)
+             inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,tmr)
 
 ! Evaluate kinetics if available
 
