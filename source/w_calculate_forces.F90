@@ -26,7 +26,7 @@
 
 ! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
 
-     If (.not.(mxmet == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) &
+     If (.not.(met%max_metal == 0 .and. keyfce == 0 .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) &
         Call two_body_forces                      &
            (pdplnc,thermo%ensemble,    &
            alpha,epsq,keyfce,nstfce,lbook,megfrz, &

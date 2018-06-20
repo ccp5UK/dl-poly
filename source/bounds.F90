@@ -123,7 +123,6 @@ Subroutine set_bounds                                 &
            mtdihd, &
            mtinv,  &
            mxrdf,                  &
-           mxmet,mxmed,mxmds,                        &
            rcter,rcfbp,lext,cshell,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
            tether,threebody,vdw,tersoff,fourbody,comm)
@@ -144,7 +143,7 @@ Subroutine set_bounds                                 &
 ! scan CONTROL file data
 
   Call scan_control                                        &
-           (mxrdf,mxmet,rcter, &
+           (mxrdf,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
@@ -392,8 +391,8 @@ Subroutine set_bounds                                 &
 ! mxgrdf - maximum dimension of rdf and z-density arrays
 
   If ((.not. l_n_r) .or. lzdn) Then
-     If (((.not. l_n_r) .and. mxrdf == 0) .and. (vdw%max_vdw > 0 .or. mxmet > 0)) &
-        mxrdf = Max(vdw%max_vdw,mxmet) ! (vdw,met) == rdf scanning
+     If (((.not. l_n_r) .and. mxrdf == 0) .and. (vdw%max_vdw > 0 .or. met%max_metal > 0)) &
+        mxrdf = Max(vdw%max_vdw,met%max_metal) ! (vdw,met) == rdf scanning
      mxgrdf = Nint(neigh%cutoff/rbin)
   Else
      mxgrdf = 0 ! RDF and Z-density function MUST NOT get called!!!
@@ -469,11 +468,11 @@ Subroutine set_bounds                                 &
 
 ! maximum number of metal potentials and parameters
 
-  If (mxmet > 0) Then
-     mxmet = mxmet+1
-     mxpmet = 9
+  If (met%max_metal > 0) Then
+     met%max_metal = met%max_metal+1
+     met%max_param = 9
   Else
-     mxpmet = 0
+     met%max_param = 0
   End If
 
 
@@ -641,7 +640,7 @@ Subroutine set_bounds                                 &
      End If
   Else ! push/reset the limits in 'no strict' mode
      If (.not.l_str) Then
-        If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) Then ! 2b link-cells are needed
+        If (.not.(met%max_metal == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kimim == ' ')) Then ! 2b link-cells are needed
            If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
               neigh%padding = 0.95_wp * (0.5_wp*width - neigh%cutoff - 1.0e-6_wp)
               neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up

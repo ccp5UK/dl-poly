@@ -92,7 +92,7 @@ program dl_poly
   Use mpole
 
   Use vdw, Only : vdw_type
-  Use metal, Only : metal_type,allocate_metal_arrays
+  Use metal, Only : metal_type
   Use tersoff, Only : tersoff_type,tersoff_forces
   Use four_body, Only : four_body_type,four_body_forces
 
@@ -382,7 +382,7 @@ program dl_poly
   ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
 
   Call vdw%init()
-  Call allocate_metal_arrays(met)
+  Call met%init(mxatms,mxatyp)
   Call tersoff%init(site%max_site)
   Call allocate_three_body_arrays(site%max_site,threebody)
   Call fourbody%init(site%max_site)

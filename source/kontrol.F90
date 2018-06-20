@@ -3652,7 +3652,7 @@ Subroutine read_control                                &
 End Subroutine read_control
 
 Subroutine scan_control                                    &
-           (mxrdf,mxmet,rcter, &
+           (mxrdf,rcter, &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
@@ -3680,7 +3680,7 @@ Subroutine scan_control                                    &
 
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
-  Integer,           Intent( In    ) :: mxrdf,mxmet,mxrgd,imcon
+  Integer,           Intent( In    ) :: mxrdf,mxrgd,imcon
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
   Integer,           Intent(   Out ) :: mxgana, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
@@ -3760,7 +3760,7 @@ Subroutine scan_control                                    &
   l_n_v = .false.
   lrvdw = .false. ! Even though it vdw%cutoff may have been read from TABLE
 
-  lmet  = (mxmet > 0)
+  lmet  = (met%max_metal > 0)
   l_n_m = .not.lmet
   lrmet = (met%rcut > 1.0e-6_wp)
 
