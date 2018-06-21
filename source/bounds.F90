@@ -18,7 +18,7 @@ Module bounds
   Use tersoff,         Only : tersoff_type
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
-  Use mpole,           Only : keyind,induce
+  Use mpole,           Only : keyind
   Use ttm,             Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
   Use numerics,        Only : dcell
   Use Kontrol,         Only : scan_control, scan_control_pre

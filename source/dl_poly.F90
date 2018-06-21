@@ -438,10 +438,6 @@ program dl_poly
     Call rdf%init_block(nstrun,site%ntype_atom)
   End If
 
-  ! If using induced dipoles then read in atomic polarizability
-
-  !  If (induce) Call read_polarity()
-
   ! CHECK MD CONFIGURATION
 
   Call check_config(levcfg,l_str,keyfce,keyres,megatm,thermo,site,comm)
