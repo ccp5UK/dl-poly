@@ -29,7 +29,11 @@ Module io
 #else
   Use mpi
 #endif
-  Use netcdf_wrap
+  Use netcdf_wrap, Only : netcdf_param,netcdf_desc,netcdf_set_real_precision, &
+                          netcdf_get_real_precision,netcdf_set_def,netcdf_compiled, &
+                          netcdf_get_file_real_precision,netcdf_get_att, &
+                          netcdf_get_var,netcdf_put_var,netcdf_close,netcdf_open, &
+                          netcdf_get_def,netcdf_get_dim,netcdf_create
 
   Implicit None
 
@@ -235,10 +239,11 @@ Contains
 
   End Subroutine io_finalize
 
-  Subroutine io_nc_create( comm, file_name, title, n )
+  Subroutine io_nc_create( param, comm, file_name, title, n )
 
     ! Create a netCDF file.  Note it will overwrite any existing file.
 
+    Type( netcdf_param ), Intent( In    ) :: param
     Integer             , Intent( In    ) :: comm
     Character( Len = * ), Intent( In    ) :: file_name
     Character( Len = * ), Intent( In    ) :: title
@@ -247,7 +252,7 @@ Contains
     Type( netcdf_desc ) :: desc
 
     Call netcdf_create( Trim( file_name ), desc, comm, MPI_INFO_NULL )
-    Call netcdf_set_def( title, n, desc )
+    Call netcdf_set_def(title, n, param, desc )
     Call netcdf_close( desc )
 
   End Subroutine io_nc_create
@@ -2139,13 +2144,14 @@ Contains
 
   End Subroutine io_read_batch
 
-  Subroutine io_nc_set_def( io_file_handle, title, n )
+  Subroutine io_nc_set_def( param, io_file_handle, title, n )
 
+    Type( netcdf_param ), Intent( InOut ) :: param
     Integer              , Intent( In    ) :: io_file_handle
     Character( Len = * ) , Intent( In    ) :: title
     Integer              , Intent( In    ) :: n
 
-    Call netcdf_set_def( title, n, known_files( io_file_handle )%desc )
+    Call netcdf_set_def( title, n, param, known_files( io_file_handle )%desc )
 
   End Subroutine io_nc_set_def
 
@@ -2366,23 +2372,24 @@ Contains
 
   End Subroutine io_nc_get_att_chr
 
-  Subroutine io_nc_set_real_precision( p, r, error )
+  Subroutine io_nc_set_real_precision( k, param, error )
 
-    Integer, Intent( In    ) :: p
-    Integer, Intent( In    ) :: r
+    Integer, Intent( In    ) :: k
+    Type( netcdf_param ), Intent( InOut ) :: param
     Integer, Intent(   Out ) :: error
 
-    Call netcdf_set_real_precision( p, r, error )
+    Call netcdf_set_real_precision( k, param, error )
 
   End Subroutine io_nc_set_real_precision
 
-  Subroutine io_nc_get_real_precision( p, r, error )
+  Subroutine io_nc_get_real_precision( param, p, r, error )
 
+    Type( netcdf_param ), Intent( In    ) :: param
     Integer, Intent(   Out ) :: p
     Integer, Intent(   Out ) :: r
     Integer, Intent(   Out ) :: error
 
-    Call netcdf_get_real_precision( p, r, error )
+    Call netcdf_get_real_precision( param, p, r, error )
 
   End Subroutine io_nc_get_real_precision
 

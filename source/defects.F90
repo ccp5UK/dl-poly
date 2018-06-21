@@ -47,6 +47,7 @@ Module defects
                                 IO_ALLOCATION_ERROR,      &
                                 IO_UNKNOWN_WRITE_OPTION,  &
                                 IO_UNKNOWN_WRITE_LEVEL
+  Use netcdf_wrap, Only : netcdf_param
   Use site, Only : site_type
   Use domains,           Only : nprx,npry,nprz,            &
                                 nprx_r,npry_r,nprz_r,map,  &
@@ -400,7 +401,7 @@ End Subroutine defects_reference_export
 
 !> defects_reference_read
 
-  Subroutine defects_reference_read(nstep,dfcts,site,comm)
+  Subroutine defects_reference_read(nstep,dfcts,site,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -416,6 +417,7 @@ End Subroutine defects_reference_export
   Integer,              Intent( In    ) :: nstep
   Type( defects_type ), Intent( InOut ) :: dfcts
   Type( site_type ), Intent( In    ) :: site
+  Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Logical                :: l_ind = .true.  , &
@@ -925,7 +927,7 @@ End Subroutine defects_reference_export
 ! MATCH glitch fix
 
   If (.not.match) Then
-     Call defects_reference_write(fname,megref,dfcts,comm)
+     Call defects_reference_write(fname,megref,dfcts,netcdf,comm)
      Go To 5
   End If
 
@@ -1560,7 +1562,7 @@ Subroutine defects_reference_set_halo(cut,dfcts,comm)
 End Subroutine defects_reference_set_halo
 
 
-Subroutine defects_reference_write(name,megref,dfcts,comm)
+Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1576,6 +1578,7 @@ Subroutine defects_reference_write(name,megref,dfcts,comm)
   Character( Len = * ), Intent( In    ) :: name
   Integer,              Intent( In    ) :: megref
   Type( defects_type),  Intent( InOut ) :: dfcts
+  Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type),    Intent( InOut ) :: comm
   Integer, Parameter :: recsz = 73 ! default record size
 
@@ -1899,9 +1902,9 @@ Subroutine defects_reference_write(name,megref,dfcts,comm)
         Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
         Call io_delete( name, comm ) ! Sort existence issues
-        If (io_write == IO_WRITE_SORTED_NETCDF) &
-        Call io_nc_create( comm_self, name, cfgname, megref )
-
+        If (io_write == IO_WRITE_SORTED_NETCDF) Then
+          Call io_nc_create( netcdf, comm_self, name, cfgname, megref )
+        End If
         Call io_open( io_write, comm_self, name, mode_wronly + mode_create, fh )
 
 ! Non netCDF
@@ -2140,7 +2143,7 @@ Subroutine defects_reference_write(name,megref,dfcts,comm)
 End Subroutine defects_reference_write
 
 !> defects_write
-  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh,site,comm)
+  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh,site,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2159,6 +2162,7 @@ End Subroutine defects_reference_write
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( site_type ), Intent( In    ) :: site
   Type( core_shell_type ), Intent( In    ) :: cshell
+  Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type)   , Intent( InOut ) :: comm
   
   Integer, Parameter :: recsz = 73 ! default record size
@@ -2225,7 +2229,7 @@ End Subroutine defects_reference_write
 
 ! Build lattice sites list from REFERENCE
      Call allocate_defects_arrays(dfcts)
-     Call defects_reference_read(nstep,dfcts,site,comm)
+     Call defects_reference_read(nstep,dfcts,site,netcdf,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set

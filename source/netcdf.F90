@@ -11,20 +11,21 @@ Module netcdf_wrap
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,  Only    : wp
+  Use, Intrinsic :: iso_fortran_env, Only : real32,real64
+  Use kinds, Only : wp,wi
   Use errors_warnings, Only : error
 #ifdef NETCDF
-  Use netcdf   , Only : NF90_NETCDF4, NF90_CLOBBER, NF90_WRITE,              &
-                        NF90_GLOBAL, NF90_UNLIMITED, NF90_INDEPENDENT,       &
-                        NF90_CHAR, NF90_INT, NF90_DOUBLE, NF90_FLOAT,        &
-                        nf90_create, nf90_create_par,                        &
-                        nf90_open, nf90_open_par, nf90_close,                &
-                        nf90_redef, nf90_def_var, nf90_def_dim, nf90_enddef, &
-                        nf90_put_att, nf90_put_var,                          &
-                        nf90_get_att, nf90_get_var, nf90_var_par_access,     &
-                        nf90_inquire_dimension, nf90_inq_dimid,              &
-                        nf90_inq_varid, nf90_inquire_variable,               &
-                        nf90_noerr, nf90_strerror
+  Use netcdf, Only : NF90_NETCDF4, NF90_CLOBBER, NF90_WRITE,              &
+                     NF90_GLOBAL, NF90_UNLIMITED, NF90_INDEPENDENT,       &
+                     NF90_CHAR, NF90_INT, NF90_DOUBLE, NF90_FLOAT,        &
+                     nf90_create, nf90_create_par,                        &
+                     nf90_open, nf90_open_par, nf90_close,                &
+                     nf90_redef, nf90_def_var, nf90_def_dim, nf90_enddef, &
+                     nf90_put_att, nf90_put_var,                          &
+                     nf90_get_att, nf90_get_var, nf90_var_par_access,     &
+                     nf90_inquire_dimension, nf90_inq_dimid,              &
+                     nf90_inq_varid, nf90_inquire_variable,               &
+                     nf90_noerr, nf90_strerror
 #endif
   Implicit None
 
@@ -44,23 +45,26 @@ Module netcdf_wrap
   Public :: netcdf_get_file_real_precision
   Public :: netcdf_compiled
 
+  Type, Public :: netcdf_param
+    Private
+    !> The printing precision for reals. Affects only entities of dimension "atom" size
+    Integer( Kind = wi ) :: pp = wp
+    !> The netCDF handle corresponding to the real printing precision
+#ifdef NETCDF
+    Integer( Kind = wi ) :: ncp = NF90_DOUBLE
+#endif
+  End Type netcdf_param
+
   Type, Public :: netcdf_desc
-     Private
-     Integer :: ncid
-     Integer :: spatial_id, atom_id, frame_id, cell_spatial_id, cell_angular_id, label_id
-     Integer :: spatial_var_id, cell_spatial_var_id, cell_angular_var_id
-     Integer :: form_id, imcon_id, time_step_id, time_id, step_id, cell_id, cell_lengths_id, cell_angles_id
-     Integer :: coords_id, vels_id, forces_id, name_id, index_id, w_id, q_id, rsd_id
-     Integer :: dummy_id
+    Private
+    Integer( Kind = wi ) :: ncid
+    Integer( Kind = wi ) :: spatial_id, atom_id, frame_id, cell_spatial_id, cell_angular_id, label_id
+    Integer( Kind = wi ) :: spatial_var_id, cell_spatial_var_id, cell_angular_var_id
+    Integer( Kind = wi ) :: form_id, imcon_id, time_step_id, time_id, step_id, cell_id, cell_lengths_id, cell_angles_id
+    Integer( Kind = wi ) :: coords_id, vels_id, forces_id, name_id, index_id, w_id, q_id, rsd_id
+    Integer( Kind = wi ) :: dummy_id
   End Type netcdf_desc
 
-
-  ! The printing precision for reals. Affects only entities of dimension "atom" size
-  Integer :: pp = wp
-  ! The netCDF handle corresponding to the real printing precision
-#ifdef NETCDF
-  Integer :: ncp = NF90_DOUBLE
-#endif
 
   Interface netcdf_put_var
      Module Procedure netcdf_put_var_rwp_0d
@@ -194,11 +198,12 @@ Contains
 #endif
   End Subroutine netcdf_close
 
-  Subroutine netcdf_set_def( title, n, desc )
+  Subroutine netcdf_set_def( title, n, param, desc )
 
-    Character( Len = * )  , Intent( In    ) :: title
-    Integer               , Intent( In    ) :: n
-    Type( netcdf_desc )   , Intent( InOut ) :: desc
+    Character( Len = * ), Intent( In    ) :: title
+    Integer,              Intent( In    ) :: n
+    Type( netcdf_param ), Intent( In    ) :: param
+    Type( netcdf_desc ),  Intent( InOut ) :: desc
 
 #ifdef NETCDF
     Character( Len = 10 ) :: earth_time
@@ -277,17 +282,17 @@ Contains
     Call check( nf90_var_par_access( desc%ncid, desc%cell_angles_id, NF90_INDEPENDENT ) )
     Call check( nf90_put_att( desc%ncid, desc%cell_angles_id, "units", "degree" ) )
 
-    Call check( nf90_def_var( desc%ncid, "coordinates", ncp, &
+    Call check( nf90_def_var( desc%ncid, "coordinates", param%ncp, &
          (/ desc%spatial_id, desc%atom_id, desc%frame_id /), desc%coords_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%coords_id, NF90_INDEPENDENT ) )
     Call check( nf90_put_att( desc%ncid, desc%coords_id, "units", "Angstrom" ) )
 
-    Call check( nf90_def_var( desc%ncid, "velocities", ncp, &
+    Call check( nf90_def_var( desc%ncid, "velocities", param%ncp, &
          (/ desc%spatial_id, desc%atom_id, desc%frame_id /), desc%vels_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%vels_id, NF90_INDEPENDENT ) )
     Call check( nf90_put_att( desc%ncid, desc%vels_id, "units", "Angstrom/picosecond" ) )
 
-    Call check( nf90_def_var( desc%ncid, "forces", ncp, &
+    Call check( nf90_def_var( desc%ncid, "forces", param%ncp, &
          (/ desc%spatial_id, desc%atom_id, desc%frame_id /), desc%forces_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%forces_id, NF90_INDEPENDENT ) )
     Call check( nf90_put_att( desc%ncid, desc%forces_id, "units", "Dalton*Angstrom/picosecond^2" ) )
@@ -300,18 +305,18 @@ Contains
          (/ desc%atom_id, desc%dummy_id /), desc%index_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%index_id, NF90_INDEPENDENT ) )
 
-    Call check( nf90_def_var( desc%ncid, "masses", ncp, &
+    Call check( nf90_def_var( desc%ncid, "masses", param%ncp, &
          (/ desc%atom_id, desc%dummy_id /), desc%w_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%w_id, NF90_INDEPENDENT ) )
 
     Call check( nf90_put_att( desc%ncid, desc%w_id, "units", "Dalton" ) )
 
-    Call check( nf90_def_var( desc%ncid, "charges", ncp, &
+    Call check( nf90_def_var( desc%ncid, "charges", param%ncp, &
          (/ desc%atom_id, desc%dummy_id /), desc%q_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%q_id, NF90_INDEPENDENT ) )
     Call check( nf90_put_att( desc%ncid, desc%q_id, "units", "atomic charge units" ) )
 
-    Call check( nf90_def_var( desc%ncid, "RSD", ncp,    &
+    Call check( nf90_def_var( desc%ncid, "RSD", param%ncp,    &
          (/ desc%atom_id, desc%frame_id /), desc%rsd_id ) )
     Call check( nf90_var_par_access( desc%ncid, desc%rsd_id, NF90_INDEPENDENT ) )
     Call check( nf90_put_att( desc%ncid, desc%rsd_id, "units", "Angstrom" ) )
@@ -983,41 +988,34 @@ Contains
 
   End Subroutine netcdf_compiled
 
-  Subroutine netcdf_set_real_precision( p, r, error )
+  Subroutine netcdf_set_real_precision( k, param, error )
 
-    Integer, Intent( In    ) :: p
-    Integer, Intent( In    ) :: r
+    Integer, Intent( In    ) :: k
+    Type( netcdf_param ), Intent( InOut ) :: param
     Integer, Intent(   Out ) :: error
 
     error = 0
 
-#ifdef NETCDF
-    pp = Selected_real_kind( p, r )
+    param%pp = k
 
-    !In the following the use of 1.0d0 is deliberate - do NOT change them to use wp !!!!!!!!!
-    !The reasons are that:
-    ! 1) The working precision is independent of the printing precision
-    ! 2) I am not allowed to say things like p = Precision( 1.0_pp ) because the kind must be an
-    !    initialization expression, essentially one known at compile time
-    ! 3) So I must check against the available real kinds, and the only definitely supported ones
-    !    in FORTRAN are Kind( 1.0 ) and Kind( 1.0d0 )
-    Select Case( pp )
-    Case( Kind( 1.0 ) )
-       ncp = NF90_FLOAT
-    Case( Kind( 1.0d0 ) )
-       ncp = NF90_DOUBLE
+#ifdef NETCDF
+    Select Case( k )
+    Case( real32 )
+      param%ncp = NF90_FLOAT
+    Case( real64 )
+      param%ncp = NF90_DOUBLE
+    Case Default
+      error = k
     End Select
 
-    If ( pp < 0 ) Then
-       error = pp
-    End If
 #else
     Call netcdf_compiled()
 #endif
   End Subroutine netcdf_set_real_precision
 
-  Subroutine netcdf_get_real_precision( p, r, error )
+  Subroutine netcdf_get_real_precision( param, p, r, error )
 
+    Type( netcdf_param ), Intent( In    ) :: param
     Integer, Intent(   Out ) :: p
     Integer, Intent(   Out ) :: r
     Integer, Intent(   Out ) :: error
@@ -1025,20 +1023,13 @@ Contains
 #ifdef NETCDF
     error = 0
 
-    !In the following the use of 1.0d0 is deliberate - do NOT change them to use wp !!!!!!!!!
-    !The reasons are that:
-    ! 1) The working precision is independent of the printing precision
-    ! 2) I am not allowed to say things like p = Precision( 1.0_pp ) because the kind must be an
-    !    initialization expression, essentially one known at compile time
-    ! 3) So I must check against the available real kinds, and the only definitely supported ones
-    !    in FORTRAN are Kind( 1.0 ) and Kind( 1.0d0 )
-    Select Case( pp )
-    Case( Kind( 1.0 ) )
-       p = Precision( 1.0 )
-       r = Range( 1.0 )
-    Case( Kind( 1.0d0 ) )
-       p = Precision( 1.0d0 )
-       r = Range( 1.0d0 )
+    Select Case( param%pp )
+    Case( real32 )
+       p = Precision( 1.0_real32 )
+       r = Range( 1.0_real32 )
+    Case( real64 )
+       p = Precision( 1.0_real64 )
+       r = Range( 1.0_real64 )
     Case Default
 #endif
        p = -1
@@ -1067,11 +1058,11 @@ Contains
 
     Select Case( file_real )
     Case( NF90_FLOAT )
-       p = Precision( 1.0 )
-       r = Range( 1.0 )
+       p = Precision( 1.0_real32 )
+       r = Range( 1.0_real32 )
     Case( NF90_DOUBLE )
-       p = Precision( 1.0d0 )
-       r = Range( 1.0d0 )
+       p = Precision( 1.0_real64 )
+       r = Range( 1.0_real64 )
     Case Default
 #endif
        p = -1

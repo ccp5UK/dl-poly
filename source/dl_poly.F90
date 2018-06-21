@@ -55,6 +55,7 @@ program dl_poly
   ! IO & DOMAINS MODULES
 
   Use io
+  Use netcdf_wrap, Only : netcdf_param
   Use domains
 
   ! SITE & CONFIG MODULES
@@ -276,6 +277,7 @@ program dl_poly
   Type( tersoff_type ) :: tersoff
   Type( four_body_type ) :: fourbody
   Type( rdf_type ) :: rdf
+  Type( netcdf_param ) :: netcdf
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -337,7 +339,7 @@ program dl_poly
 
   ! TEST I/O
 
-  Call scan_control_io(comm)
+  Call scan_control_io(netcdf,comm)
 
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
@@ -457,7 +459,7 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
 
-    Call origin_config(megatm,devel,comm)
+    Call origin_config(megatm,devel,netcdf,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -469,7 +471,7 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
 
-    Call scale_config(megatm,devel,comm)
+    Call scale_config(megatm,devel,netcdf,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -486,7 +488,7 @@ program dl_poly
     nstraj = 0 ; istraj = 1 ; keytrj = 0  ! default trajectory
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stats%rsd,comm)
+    Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stats%rsd,netcdf,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -494,7 +496,8 @@ program dl_poly
 
   ! Expand current system if opted for
 
-  If (l_exp) Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,core_shells,cons,bond,angle,dihedral,inversion,site,comm)
+  If (l_exp) Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,core_shells, &
+    cons,bond,angle,dihedral,inversion,site,netcdf,comm)
 
   ! EXIT gracefully
 
@@ -657,15 +660,15 @@ program dl_poly
 
   If (lsim) Then
     Call w_md_vv(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
-      pois,bond,angle,dihedral,inversion,zdensity,neigh,site,fourbody,rdf,tmr)
+      pois,bond,angle,dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff, &
-        fourbody,rdf,tmr)
+        fourbody,rdf,netcdf,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
-        met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf)
+        met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf)
     End If
   End If
 
@@ -724,7 +727,7 @@ program dl_poly
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
       (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
-      stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,comm)
+      stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -807,7 +810,7 @@ program dl_poly
 Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-      inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,tmr)
+      inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -826,6 +829,7 @@ Contains
     Type( tersoff_type ), Intent( InOut )  :: tersoff
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
@@ -882,10 +886,11 @@ Contains
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
-  Subroutine w_write_options(cshell,stat,site)
+  Subroutine w_write_options(cshell,stat,site,netcdf)
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type(stats_type), Intent(InOut) :: stat
     Type( site_type ), Intent( InOut ) :: site
+    Type( netcdf_param ), Intent( In    ) :: netcdf
     Include 'w_write_options.F90'
   End Subroutine w_write_options
 
@@ -894,7 +899,7 @@ Contains
   End Subroutine w_refresh_output
 
   Subroutine w_md_vv(mxatdm_,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
-      dihedral,inversion,zdensity,neigh,site,fourbody,rdf,tmr)
+      dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -912,12 +917,13 @@ Contains
     Type( site_type ), Intent( InOut ) :: site
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
-      bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf)
+      bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -936,6 +942,7 @@ Contains
     Type( site_type ), Intent( InOut ) :: site
     Type( vdw_type ), Intent( InOut ) :: vdw
     Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( netcdf_param ), Intent( In    ) :: netcdf
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -946,7 +953,7 @@ Contains
   End Subroutine w_replay_history
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
-    angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,rdf,tmr)
+    angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -966,6 +973,7 @@ Contains
     Type( tersoff_type ), Intent( InOut )  :: tersoff
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( timer_type ), Intent( InOut ) :: tmr
 
     Logical,     Save :: newjb = .true.

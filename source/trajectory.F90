@@ -12,6 +12,7 @@ Module trajectory
                             ltg,atmnam,chge,weight,   &
                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,&
                             lsa,lsi,ltg,nlast
+  Use netcdf_wrap,   Only : netcdf_param
   Use io,            Only : io_set_parameters,             &
                             io_get_parameters,             &
                             io_init, io_nc_create,         &
@@ -686,7 +687,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,si
 
 End Subroutine read_history
 
-Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,rsd,comm)
+Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
+                            time,rsd,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -706,6 +708,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
                                         megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time
   Real( Kind = wp ), Intent( In    ) :: rsd(:)
+  Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -798,7 +801,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
         Else
            If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = comm_self )
-              Call io_nc_create( comm_self, fname, cfgname, megatm )
+              Call io_nc_create( netcdf, comm_self, fname, cfgname, megatm )
            End If
         End If
 
@@ -914,7 +917,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
 
            If (comm%idnode == 0) Then
-              Call io_nc_get_real_precision( io_p, io_r, ierr )
+              Call io_nc_get_real_precision( netcdf, io_p, io_r, ierr )
               safe = (ierr == 0)
            End If
            Call gcheck(comm,safe)
@@ -1644,7 +1647,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
         Else
            If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = comm_self )
-              Call io_nc_create( comm_self, fname, cfgname, megatm )
+              Call io_nc_create( netcdf, comm_self, fname, cfgname, megatm )
            End If
         End If
 
@@ -1755,7 +1758,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,
            End If
 
            If (comm%idnode == 0) Then
-              Call io_nc_get_real_precision( io_p, io_r, ierr )
+              Call io_nc_get_real_precision( netcdf, io_p, io_r, ierr )
               safe = (ierr == 0)
            End If
            Call gcheck(comm,safe)

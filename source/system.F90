@@ -25,6 +25,7 @@ Module system
   Use rigid_bodies, Only : numrgd,lstrgd
   Use parse,        Only : tabs_2_blanks, get_word, strip_blanks, &
                                   lower_case, word_2_real
+  Use netcdf_wrap,  Only : netcdf_param
   Use io,           Only : io_set_parameters,        &
                                   io_get_parameters,        &
                                   io_init, io_nc_create,    &
@@ -625,7 +626,8 @@ Module system
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle,dihedral,inversion,site,comm)
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
+                         dihedral,inversion,site,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -654,6 +656,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle,dihed
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( site_type ), Intent( In    ) :: site
+  Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size
@@ -824,7 +827,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle,dihed
         Call io_set_parameters( user_comm = comm_self )
         Call io_init( recsz )
         Call io_delete( fcfg(1:Len_Trim(fcfg) ),comm )
-        If (io_write == IO_WRITE_SORTED_NETCDF) Call io_nc_create( comm_self, fcfg(1:Len_Trim(fcfg)), cfgname, megatm*nall )
+        If (io_write == IO_WRITE_SORTED_NETCDF) Then
+          Call io_nc_create( netcdf, comm_self, fcfg(1:Len_Trim(fcfg)), cfgname, megatm*nall )
+        End If
         Call io_open( io_write, comm_self, fcfg(1:Len_Trim(fcfg)), mode_wronly + mode_create, fh )
 
      Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
@@ -1811,7 +1816,8 @@ End Subroutine system_expand
 
 Subroutine system_revive                                      &
            (rcut,rbin,megatm,nstep,tstep,time,tmst, &
-           stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,comm)
+           stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity, &
+           rdf,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1837,6 +1843,7 @@ Subroutine system_revive                                      &
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready
@@ -1992,7 +1999,7 @@ Subroutine system_revive                                      &
   name = Trim(revcon) ! file name
   levcfg = 2      ! define level of information in REVCON
 
-  Call write_config(name,levcfg,megatm,nstep,tstep,time,comm)
+  Call write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! node 0 handles I/O
 

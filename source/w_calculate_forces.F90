@@ -137,11 +137,11 @@
            If      (nstmin == 0 .and. nstep == 0) Then
               Call minimise_relax &
            (l_str .or. cshell%keyshl == SHELL_RELAXED,relaxed_min,rdf%l_collect,megatm,pmf%megpmf,megrgd, &
-           keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,comm)
+           keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,netcdf,comm)
            Else If (nstmin >  0 .and. nstep >  0) Then
               If (Mod(nstep-nsteql,nstmin) == 0) Call minimise_relax &
            (l_str .or. cshell%keyshl == SHELL_RELAXED,relaxed_min,rdf%l_collect,megatm,pmf%megpmf,megrgd, &
-           keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,comm)
+           keymin,min_tol,tstep,stat%stpcfg,stat,pmf,cons,netcdf,comm)
            End If
         End If
 
