@@ -30,7 +30,6 @@ Module deport_data
 
   Use ewald,               Only : ewald_type
   Use mpole ,              Only : keyind,ltpatm,lchatm, &
-                                 induce,indipx,indipy,indipz,rsdx,rsdy,rsdz, &
                                  mplgfr,mprotx,mproty,mprotz, mplflg
 
   Use msd, Only : msd_type
@@ -1695,9 +1694,9 @@ Subroutine export_atomic_data(mdir,comm)
 
 ! Number of transported quantities per particle
 
-  iadd=6+Merge(6,0,induce)
-
-  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  iadd=6
+  fail=0
+  limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'export_atomic_data allocation failure'
@@ -1842,19 +1841,6 @@ Subroutine export_atomic_data(mdir,comm)
               buffer(imove+4)=Real(ltg(i),wp)
               buffer(imove+5)=Real(lsite(i),wp)
 
-! pack induced dipoles data
-
-              If (induce) Then
-                 kmove=imove+5
-
-                 buffer(kmove+1)=indipx(i)
-                 buffer(kmove+2)=indipy(i)
-                 buffer(kmove+3)=indipz(i)
-                 buffer(kmove+4)=rsdx(i)
-                 buffer(kmove+5)=rsdy(i)
-                 buffer(kmove+6)=rsdz(i)
-              End If
-
 ! Use the corrected halo reduction factor when the particle is halo to both +&- sides
 
               buffer(imove+iadd)=Real(ixyz(i)-Merge(jxyz,kxyz,j == jxyz),wp)
@@ -1940,19 +1926,6 @@ Subroutine export_atomic_data(mdir,comm)
 
      ltg(nlast)  =Nint(buffer(j+4))
      lsite(nlast)=Nint(buffer(j+5))
-
-! unpack induced dipoles data
-
-     If (induce) Then
-        k=j+5
-
-        indipx(nlast)=buffer(k+1)
-        indipy(nlast)=buffer(k+2)
-        indipz(nlast)=buffer(k+3)
-        rsdx(nlast)  =buffer(k+4)
-        rsdy(nlast)  =buffer(k+5)
-        rsdz(nlast)  =buffer(k+6)
-     End If
 
 ! unpack remaining halo indexing
 

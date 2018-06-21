@@ -111,14 +111,6 @@ Module ewald_mpole
 
     imp=mplgfr(:,iatm)
 
-    If (mxompl > 0 .and. induce) Then
-
-       imp(2)=imp(2)+indipx(iatm)
-       imp(3)=imp(3)+indipy(iatm)
-       imp(4)=imp(4)+indipz(iatm)
-
-    End If
-
   ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
@@ -158,14 +150,6 @@ Module ewald_mpole
   ! get the multipoles for site j
 
           jmp=mplgfr(:,jatm)
-
-          If (mxompl > 0 .and. induce) Then
-
-             jmp(2)=jmp(2)+indipx(jatm)
-             jmp(3)=jmp(3)+indipy(jatm)
-             jmp(4)=jmp(4)+indipz(jatm)
-
-          End If
 
   ! interatomic distance
 
@@ -533,14 +517,6 @@ Module ewald_mpole
 
     imp=mplgfr(:,iatm)
 
-    If (mxompl > 0 .and. induce) Then
-
-       imp(2)=imp(2)+indipx(iatm)
-       imp(3)=imp(3)+indipy(iatm)
-       imp(4)=imp(4)+indipz(iatm)
-
-    End If
-
     tx0 = 0.0_wp ; ty0 = 0.0_wp ; tz0 = 0.0_wp
 
   ! ignore interaction if the charge is zero
@@ -649,14 +625,6 @@ Module ewald_mpole
   ! get the multipoles for site j and the components for its infinitesimal rotations
 
           jmp=mplgfr(:,jatm)
-
-          If (mxompl > 0 .and. induce) Then
-
-             jmp(2)=jmp(2)+indipx(jatm)
-             jmp(3)=jmp(3)+indipy(jatm)
-             jmp(4)=jmp(4)+indipz(jatm)
-
-          End If
 
           jmpx=mprotx(:,jatm)
           jmpy=mproty(:,jatm)
@@ -1336,14 +1304,6 @@ Module ewald_mpole
 
        imp=mplgfr(:,i)
 
-       If (mxompl > 0 .and. induce) Then
-
-          imp(2)=imp(2)+indipx(i)
-          imp(3)=imp(3)+indipy(i)
-          imp(4)=imp(4)+indipz(i)
-
-       End If
-
   ! ignore interaction if the charge is zero
 
        If (Maxval(Abs(imp)) > zero_plus) Then
@@ -1528,14 +1488,6 @@ Module ewald_mpole
 
              imp=mplgfr(:,i)
 
-             If (mxompl > 0 .and. induce) Then
-
-                imp(2)=imp(2)+indipx(i)
-                imp(3)=imp(3)+indipy(i)
-                imp(4)=imp(4)+indipz(i)
-
-             End If
-
              llb = Max( izb, izz(i) - mxspl + 2 )
              llt = Min( izt, izz(i) + 1 )
 
@@ -1643,14 +1595,6 @@ Module ewald_mpole
   ! get the multipoles for site i
 
              imp=mplgfr(:,i)
-
-             If (mxompl > 0 .and. induce) Then
-
-                imp(2)=imp(2)+indipx(i)
-                imp(3)=imp(3)+indipy(i)
-                imp(4)=imp(4)+indipz(i)
-
-             End If
 
              llb = Max( izb, izz(i) - mxspl + 2 )
              llt = Min( izt, izz(i) + 1 )
@@ -2035,14 +1979,6 @@ Module ewald_mpole
 
             imp=mplgfr(:,i)
 
-            If (mxompl > 0 .and. induce) Then
-
-               imp(2)=imp(2)+indipx(i)
-               imp(3)=imp(3)+indipy(i)
-               imp(4)=imp(4)+indipz(i)
-
-            End If
-
             If (Maxval(Abs(imp)) > zero_plus) Then
 
   ! scale imp multipoles
@@ -2134,14 +2070,6 @@ Module ewald_mpole
   ! get the multipoles for site i
 
             imp=mplgfr(:,i)
-
-            If (mxompl > 0 .and. induce) Then
-
-               imp(2)=imp(2)+indipx(i)
-               imp(3)=imp(3)+indipy(i)
-               imp(4)=imp(4)+indipz(i)
-
-            End If
 
             If (Maxval(Abs(imp)) > zero_plus) Then
 
@@ -2599,14 +2527,6 @@ Module ewald_mpole
   ! get the multipoles for site i
 
           imp=mplgfr(:,i)
-
-          If (mxompl > 0 .and. induce) Then
-
-             imp(2)=imp(2)+indipx(i)
-             imp(3)=imp(3)+indipy(i)
-             imp(4)=imp(4)+indipz(i)
-
-          End If
 
           imp1=imp(1)
 
@@ -4349,14 +4269,6 @@ Module ewald_mpole
 
          imp=mplgfr(:,i)
 
-         If (mxompl > 0 .and. induce) Then
-
-           imp(2)=imp(2)+indipx(i)
-           imp(3)=imp(3)+indipy(i)
-           imp(4)=imp(4)+indipz(i)
-
-         End If
-
          If (Maxval(Abs(imp)) > zero_plus) Then
 
   ! scale imp multipoles
@@ -4612,14 +4524,6 @@ Module ewald_mpole
 
     imp=mplgfr(:,iatm)
 
-    If (mxompl > 0 .and. induce) Then
-
-       imp(2)=imp(2)+indipx(iatm)
-       imp(3)=imp(3)+indipy(iatm)
-       imp(4)=imp(4)+indipz(iatm)
-
-    End If
-
   ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
@@ -4663,14 +4567,6 @@ Module ewald_mpole
   ! get the multipoles for site j
 
           jmp=mplgfr(:,jatm)
-
-          If (mxompl > 0 .and. induce) Then
-
-             jmp(2)=jmp(2)+indipx(jatm)
-             jmp(3)=jmp(3)+indipy(jatm)
-             jmp(4)=jmp(4)+indipz(jatm)
-
-          End If
 
   ! interatomic distance
 
@@ -5045,14 +4941,6 @@ Module ewald_mpole
 
     imp=mplgfr(:,iatm)
 
-    If (mxompl > 0 .and. induce) Then
-
-       imp(2)=imp(2)+indipx(iatm)
-       imp(3)=imp(3)+indipy(iatm)
-       imp(4)=imp(4)+indipz(iatm)
-
-    End If
-
   ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
@@ -5118,14 +5006,6 @@ Module ewald_mpole
   ! get the multipoles for site j and the components for its infinitesimal rotations
 
           jmp=mplgfr(:,jatm)
-
-          If (mxompl > 0 .and. induce) Then
-
-             jmp(2)=jmp(2)+indipx(jatm)
-             jmp(3)=jmp(3)+indipy(jatm)
-             jmp(4)=jmp(4)+indipz(jatm)
-
-          End If
 
           jmpx=mprotx(:,jatm)
           jmpy=mproty(:,jatm)
@@ -5745,14 +5625,6 @@ Module ewald_mpole
   ! if using multipoles then get them in global frame for atom ii
 
           mmp(:,ii)=mplgfr(:,l_ind(i))
-
-          If (mxompl > 0 .and. induce) Then
-
-             mmp(2,ii)=mmp(2,ii)+indipx(l_ind(i))
-             mmp(3,ii)=mmp(3,ii)+indipy(l_ind(i))
-             mmp(4,ii)=mmp(4,ii)+indipz(l_ind(i))
-
-          End If
 
   ! get the components for site ii infinitesimal rotations
 

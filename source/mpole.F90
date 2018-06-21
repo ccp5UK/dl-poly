@@ -34,11 +34,6 @@ Module mpole
 
 ! variables for multipolar interactions
 
-  Logical,           Save :: induce=.false. , &
-                             gear,aspc,lstsq
-  Integer,           Save :: numcof,politer
-  Real( Kind = wp ), Save :: convcrit,enepol
-
   Integer,           Allocatable, Save :: mplmap(:,:,:),mplltg(:) ! mappings from three indices multipole to a one index multipole
   Integer,           Allocatable, Save :: mplflg(:)               ! rotation counter flag
   Integer,           Allocatable, Save :: ltpatm(:,:)             ! bonded connectivity
@@ -57,15 +52,7 @@ Module mpole
 
   Real( Kind = wp ), Allocatable, Save :: ncombk(:,:)                         ! n combination k values for usage 
                                                                               ! in computing the reciprocal space Ewald sum
-
-  Real( Kind = wp ), Allocatable, Save :: mpfldx(:),mpfldy(:),mpfldz(:)       ! field
-
-  Real( Kind = wp ), Allocatable, Save :: muindx(:),muindy(:),muindz(:)
-  Real( Kind = wp ), Allocatable, Save :: indipx(:),indipy(:),indipz(:)
-
-  Real( Kind = wp ), Allocatable, Save :: upidpx(:,:),upidpy(:,:),upidpz(:,:)
-  Real( Kind = wp ), Allocatable, Save :: rsdx(:),rsdy(:),rsdz(:)
-  Real( Kind = wp ), Allocatable, Save :: polcof(:)
+                                                                              ! field
 
 Contains
 
@@ -215,67 +202,6 @@ Contains
     End Do
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    If (induce) Then
-
-       Allocate (mpfldx(1:mxatms),mpfldy(1:mxatms),mpfldz(1:mxatms),            Stat = fail(1))
-       Allocate (muindx(1:mxatms),muindy(1:mxatms),muindz(1:mxatms),            Stat = fail(2))
-       Allocate (indipx(1:mxatms),indipy(1:mxatms),indipz(1:mxatms),            Stat = fail(3))
-       Allocate (polcof(numcof),                                                Stat = fail(4))
-       Allocate (upidpx(1:numcof,1:mxatms),upidpy(1:numcof,1:mxatms),upidpz(1:numcof,1:mxatms),&
-                                                                                Stat = fail(5))
-       Allocate (rsdx(1:mxatms),rsdy(1:mxatms),rsdz(1:mxatms),                  Stat = fail(6))
-
-       If (Any(fail > 0)) Call error(1025)
-
-       mpfldx = 0.0_wp; mpfldy = 0.0_wp; mpfldz = 0.0_wp
-
-       muindx = 0.0_wp; muindy = 0.0_wp; muindz = 0.0_wp
-
-       indipx = 0.0_wp; indipy = 0.0_wp; indipz = 0.0_wp
-
-       upidpx = 0.0_wp; upidpy = 0.0_wp; upidpz = 0.0_wp
-
-       rsdx   = 0.0_wp; rsdy   = 0.0_wp; rsdz   = 0.0_wp  ! arrays to store
-                                                          ! residuals for
-                                                          ! conjugate gradient
-                                                          ! minimization of
-                                                          ! polarization energy
-
-! Coefficients for polynomial predictor
-
-       polcof = 0.0_wp
-
-! Gear predictor-corrector
-
-       gearp = 0.0_wp
-
-       gearp(1) =   6.0_wp ; gearp(2) = -15.0_wp ; gearp(3) =  20.0_wp
-       gearp(4) = -15.0_wp ; gearp(5) =   6.0_wp ; gearp(6) =  -1.0_wp
-
-
-! Always stable predictor-corrector (aspc)
-
-       aspcp = 0.0_wp
-
-       aspcp(1) =  22.0_wp/ 7.0_wp ; aspcp(2) = -55.0_wp/14.0_wp; aspcp(3) =  55.0_wp/21.0_wp
-       aspcp(4) = -22.0_wp/21.0_wp ; aspcp(5) =   5.0_wp/21.0_wp; aspcp(6) =  -1.0_wp/42.0_wp
-
-       If (gear) Then
-
-          Do n = 1, numcof
-             polcof(n) = gearp(n)
-          End Do
-
-       Else If (aspc) Then
-
-          Do n = 1, numcof
-             polcof(n) = aspcp(n)
-          End Do
-
-       End If
-
-    End If
 
   End Subroutine allocate_mpoles_arrays
 

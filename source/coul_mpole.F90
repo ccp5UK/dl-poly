@@ -128,18 +128,6 @@ Contains
 
     If (Maxval(Abs(imp)) <= zero_plus .or. Maxval(Abs(jmp)) <= zero_plus) Return
 
-    If(mxompl > 0 .and. induce) Then
-
-      imp(2)=imp(2)+indipx(iatm)
-      imp(3)=imp(3)+indipy(iatm)
-      imp(4)=imp(4)+indipz(iatm)
-
-      jmp(2)=jmp(2)+indipx(jatm)
-      jmp(3)=jmp(3)+indipy(jatm)
-      jmp(4)=jmp(4)+indipz(jatm)
-
-    End If
-
     ! get the components for site i and j infinitesimal rotations
 
     impx=mprotx(:,iatm)
@@ -544,14 +532,6 @@ Contains
 
     imp=mplgfr(:,iatm)
 
-    If (mxompl > 0 .and. induce) Then
-
-       imp(2)=imp(2)+indipx(iatm)
-       imp(3)=imp(3)+indipy(iatm)
-       imp(4)=imp(4)+indipz(iatm)
-
-    End If
-
   ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
@@ -591,14 +571,6 @@ Contains
   ! get the multipoles for site j
 
           jmp=mplgfr(:,jatm)
-
-          If (mxompl > 0 .and. induce) Then
-
-             jmp(2)=jmp(2)+indipx(jatm)
-             jmp(3)=jmp(3)+indipy(jatm)
-             jmp(4)=jmp(4)+indipz(jatm)
-
-          End If
 
   ! interatomic distance
 
@@ -1138,14 +1110,6 @@ Contains
 
     imp=mplgfr(:,iatm)
 
-    If (mxompl > 0 .and. induce) Then
-
-       imp(2)=imp(2)+indipx(iatm)
-       imp(3)=imp(3)+indipy(iatm)
-       imp(4)=imp(4)+indipz(iatm)
-
-    End If
-
   ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
@@ -1183,14 +1147,6 @@ Contains
   ! get the multipoles for site j
 
           jmp=mplgfr(:,jatm)
-
-          If (mxompl > 0 .and. induce) Then
-
-             jmp(2)=jmp(2)+indipx(jatm)
-             jmp(3)=jmp(3)+indipy(jatm)
-             jmp(4)=jmp(4)+indipz(jatm)
-
-          End If
 
   ! interatomic distance
 
@@ -1678,14 +1634,6 @@ Contains
 
     imp=mplgfr(:,iatm)
 
-    If (mxompl > 0 .and. induce) Then
-
-       imp(2)=imp(2)+indipx(iatm)
-       imp(3)=imp(3)+indipy(iatm)
-       imp(4)=imp(4)+indipz(iatm)
-
-    End If
-
   ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
@@ -1725,14 +1673,6 @@ Contains
   ! get the multipoles for site j
 
           jmp=mplgfr(:,jatm)
-
-          If (mxompl > 0 .and. induce) Then
-
-             jmp(2)=jmp(2)+indipx(jatm)
-             jmp(3)=jmp(3)+indipy(jatm)
-             jmp(4)=jmp(4)+indipz(jatm)
-
-          End If
 
   ! truncation of potential - rrt(m) is the interatomic distance
 
@@ -1998,14 +1938,6 @@ Contains
 
     imp=mplgfr(:,iatm)
 
-    If (mxompl > 0 .and. induce) Then
-
-       imp(2)=imp(2)+indipx(iatm)
-       imp(3)=imp(3)+indipy(iatm)
-       imp(4)=imp(4)+indipz(iatm)
-
-    End If
-
   ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
@@ -2045,14 +1977,6 @@ Contains
   ! get the multipoles for site j
 
           jmp=mplgfr(:,jatm)
-
-          If (mxompl > 0 .and. induce) Then
-
-             jmp(2)=jmp(2)+indipx(jatm)
-             jmp(3)=jmp(3)+indipy(jatm)
-             jmp(4)=jmp(4)+indipz(jatm)
-
-          End If
 
   ! truncation of potential - rrt(m) is the interatomic distance
 

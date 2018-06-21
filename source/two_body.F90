@@ -6,7 +6,7 @@ Module two_body
   Use configuration,  Only : volm,sumchg,natms,xxx,yyy,zzz
   Use neighbours,     Only : neighbours_type,link_cell_pairs
   Use ewald,           Only : ewald_type
-  Use mpole,          Only : induce,keyind
+  Use mpole,          Only : keyind
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
   Use coul_mpole,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
                              coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
@@ -169,7 +169,7 @@ Subroutine two_body_forces                        &
   stats%vircpe    = 0.0_wp
 
 ! Set up non-bonded interaction (verlet) list using link cells
-  If ((.not.induce) .and. neigh%update) Then
+  If (neigh%update) Then
     Call link_cell_pairs(vdw%cutoff,met%rcut,pdplnc,lbook,megfrz,cshell,devel,neigh,tmr,comm)
   End If
 ! Calculate all contributions from KIM

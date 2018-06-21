@@ -1990,29 +1990,6 @@ Subroutine read_control                                &
         Write(message,'(a,1p,e12.4)') 'relative dielectric constant ',epsq
         Call info(message,.true.)
 
-!     Else If (word(1:6) == 'induce') Then
-!
-!        Write(messages(1),'(a)') 'Employing induced dipoles'
-!        Write(messages(2),'(a)') 'Induced dipole conjugate gradient :'
-!        Write(messages(3),'(a,i0)') 'max number of steps = ',politer
-!        Write(messages(4),'(a,e7.3') 'convergence criterion = ',convcrit
-!        Call info(messages,4,.true.)
-!
-!     Else If (word(1:4) == 'gear') Then
-!
-!       Write(message,'(a,i0,a)') "Using gear predictor with ",numcof," points"
-!       Call info(message,.true.)
-!
-!     Else If (word(1:4) == 'aspc') Then
-!
-!       Write(message,'(a,i0,a)') Using always stable predictor corrector with ",numcof," points"
-!       Call info(message,.true.)
-!
-!     Else If (word(1:5) == 'lstsq') Then
-!
-!       Write(message,'(a,i0,a)' "Using least squares predictor with ",numcof," points"
-!       Call info(message,.true.)
-
 ! read option for accounting for extended coulombic exclusion
 
      Else If (word(1:5) == 'exclu') Then
@@ -3789,8 +3766,6 @@ Subroutine scan_control                                    &
   kmaxb1 = 0
   kmaxc1 = 0
 
-!  induce = .false.
-
 ! default number of steps and expansion option
 
   nstrun = 0
@@ -4037,35 +4012,6 @@ Subroutine scan_control                                    &
      Else If (word(1:8) == 'reaction') Then
 
         lelec = .true.
-
-!     Else If (word(1:6) == 'induce') Then
-!
-!        induce=.true.
-!        Call get_word(record,word1)
-!        politer = Min(500,Nint(Abs(word_2_real(word1))))
-!
-!        Call get_word(record,word2)
-!        convcrit = Abs(word_2_real(word2)) !Min(0.001_wp,(Abs(word_2_real(word2))))
-
-!     Else If (word(1:4) == 'gear') Then
-!
-!         gear=.true.
-!         Call get_word(record,word)
-!         numcof = Max(0,1+Nint(Abs(word_2_real(word))))
-!         numcof = Min(numcof,7)
-!
-!     Else If (word(1:4) == 'aspc') Then
-!
-!         aspc=.true.
-!         Call get_word(record,word)
-!         numcof = Max(0,1+Nint(Abs(word_2_real(word))))
-!         numcof = Min(numcof,7)
-!
-!     Else If (word(1:5) == 'lstsq') Then
-!
-!         lstsq=.true.
-!         Call get_word(record,word)
-!         numcof = Max(0,1+Nint(Abs(word_2_real(word))))
 
 ! read "no vdw", "no elec" and "no str" options
 
