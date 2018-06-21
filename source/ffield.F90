@@ -14,10 +14,6 @@ Module ffield
 
   Use configuration, Only : imcon,cell,sumchg
 
-! DPD module
-
-  Use dpd,    Only : sigdpd
-
 ! INTERACTION MODULES
 
   Use core_shell, Only : core_shell_type,SHELL_ADIABATIC, SHELL_RELAXED
@@ -3948,9 +3944,9 @@ Subroutine read_field                      &
                ! in principle we should come up with the error before here
                Call warning('there is a two-body interaction with a' &
                  //'non-zero mutual drag coefficient',.true.)
-               sigdpd(1:vdw%max_vdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:vdw%max_vdw)) ! define sigdpd
+               thermo%sigdpd(1:vdw%max_vdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:vdw%max_vdw)) ! define thermo%sigdpd
              Else
-               sigdpd(1:vdw%max_vdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:vdw%max_vdw)) ! define sigdpd
+               thermo%sigdpd(1:vdw%max_vdw) = Sqrt(2.0_wp*boltz*thermo%temp*thermo%gamdpd(1:vdw%max_vdw)) ! define thermo%sigdpd
              End If
            End If
 

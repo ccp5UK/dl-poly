@@ -69,7 +69,7 @@ program dl_poly
 
   ! DPD module
 
-  Use dpd
+  Use dpd, Only : dpd_thermostat
 
   ! INTERACTION MODULES
 
@@ -359,7 +359,7 @@ program dl_poly
 
   ! ALLOCATE DPD ARRAYS
 
-  Call allocate_dpd_arrays(thermo,vdw%max_vdw)
+  Call thermo%init_dpd(vdw%max_vdw)
 
   ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
 
