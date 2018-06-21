@@ -133,7 +133,7 @@ program dl_poly
   Use drivers
   Use errors_warnings, Only : init_error_system
   
-  Use minimise, Only : passmin, minimise_relax,zero_k_optimise
+  Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
   Use ewald, Only : ewald_type
 
@@ -210,18 +210,15 @@ program dl_poly
   Logical           :: ltmp,l_vv,l_n_e,l_n_v,       &
     l_ind,l_str,l_top,           &
     l_exp,lecx,lfcap,      &
-    lmin,          &
     lvar,leql,lsim,lfce,    &
     lpana, &
     ltraj,lrsd,             &
     safe,lbook,lexcl,            &
-    relaxed_shl = .true.,        &
-    relaxed_min = .true.
+    relaxed_shl = .true.
 
   Integer           :: i,j,isw,levcfg,nstfce,              &
     nx,ny,nz,                           &
     keyres,nstrun,nsteql,               &
-    keymin,nstmin,                      &
     nstbpo,    &
     keyfce,mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
@@ -244,7 +241,7 @@ program dl_poly
     rbin,          &
     alpha,epsq,fmax,                           &
     width,mndis,mxdis,mxstp,     &
-    rlx_tol(1:2),min_tol(1:2),                 &
+    rlx_tol(1:2),                 &
     quattol,rdef,rrsd,                  &
     pdplnc
 
@@ -278,6 +275,7 @@ program dl_poly
   Type( four_body_type ) :: fourbody
   Type( rdf_type ) :: rdf
   Type( netcdf_param ) :: netcdf
+  Type( minimise_type ) :: minimise
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -408,21 +406,20 @@ program dl_poly
   Call read_control                                    &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
     rbin,nstfce,alpha,width,     &
-    l_exp,lecx,lfcap,l_top,lmin,          &
+    l_exp,lecx,lfcap,l_top,          &
     lvar,leql,               &
     lfce,lpana,           &
     ltraj,lrsd,               &
     nx,ny,nz,impa,                            &
     keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-    keymin,nstmin,min_tol,                      &
     fmax,nstbpo,keyfce,epsq,             &
     rlx_tol,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
-    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,tmr,comm)
+    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,minimise,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -572,10 +569,10 @@ program dl_poly
 
   Call set_temperature               &
     (levcfg,keyres,      &
-    lmin,nstep,nstrun,nstmin, &
+    nstep,nstrun, &
     atmfre,atmfrz,            &
     megrgd,degtra,degrot,     &
-    degfre,degshl,stats%engrot,site%dof_site,core_shells,stats,cons,pmfs,thermo,comm)
+    degfre,degshl,stats%engrot,site%dof_site,core_shells,stats,cons,pmfs,thermo,minimise,comm)
 
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
@@ -665,10 +662,11 @@ program dl_poly
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff, &
-        fourbody,rdf,netcdf,tmr)
+        fourbody,rdf,netcdf,minimise,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
-        met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf)
+        met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf, &
+        netcdf,minimise)
     End If
   End If
 
@@ -740,13 +738,13 @@ program dl_poly
         stats%neighskip(4)=Min(stats%neighskip(1),stats%neighskip(4))
         stats%neighskip(5)=Max(stats%neighskip(1),stats%neighskip(5))
      End If
-  End If   
+  End If
 
   Call statistics_result                                        &
-    (lmin,msd_data%l_msd, &
+    (minimise%minimise,msd_data%l_msd, &
     nstrun,core_shells%keyshl,cons%megcon,pmfs%megpmf,              &
     nstep,tstep,time,tmst,mxatdm,neigh%unconditional_update,&
-    stats,thermo,green,site,comm,passmin)
+    stats,thermo,green,site,comm)
 
   ! Final anlysis
   Call analysis_result(lpana, &
@@ -810,7 +808,7 @@ program dl_poly
 Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-      inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,tmr)
+      inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -830,6 +828,7 @@ Contains
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
+    Type( minimise_type ), Intent( InOut ) :: minimise
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
@@ -923,7 +922,7 @@ Contains
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
-      bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf)
+      bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf,minimise)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -943,6 +942,7 @@ Contains
     Type( vdw_type ), Intent( InOut ) :: vdw
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
+    Type( minimise_type ), Intent( InOut ) :: minimise
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -953,7 +953,7 @@ Contains
   End Subroutine w_replay_history
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
-    angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,tmr)
+    angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -975,6 +975,7 @@ Contains
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( timer_type ), Intent( InOut ) :: tmr
+    Type( minimise_type ), Intent( InOut ) :: minimise
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

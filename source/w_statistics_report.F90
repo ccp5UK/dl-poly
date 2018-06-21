@@ -73,8 +73,8 @@ If (nstep == nsteql) Then
       Call info(message,.true.)
     End If
 
-    If (lmin) Then
-      lmin=.false.
+    If (minimise%minimise) Then
+      minimise%minimise=.false.
       Write(message,'(a,i10)') 'switching off CGM minimiser at step ',nstep
       Call info(message,.true.)
     End If

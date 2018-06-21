@@ -17,7 +17,7 @@
            (dvar,neigh%cutoff_extended,lbook,msd_data%l_msd,megatm, &
            m_rgd,megtet,            &
            cshell,cons, pmf,& 
-           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,comm)
+           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,minimise,comm)
 
 ! Exchange atomic data in border regions
 
