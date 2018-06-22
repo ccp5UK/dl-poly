@@ -14,7 +14,7 @@ Module bonds
   Use kinds,           Only : wp,wi
   Use setup,           Only : mxtmls,mxatdm, &
                               fourpi,boltz,delr_max,nrite,npdfdt,npdgdt, &
-                              engunit,zero_plus,r4pie0,mximpl,ntable,delr_max,nrite, &
+                              engunit,zero_plus,r4pie0,ntable,delr_max,nrite, &
                               zero_plus,engunit
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
@@ -25,6 +25,7 @@ Module bonds
   Use numerics,        Only : images, local_index
   Use coul_mpole,      Only : intra_mcoul
   Use coul_spole,      Only : intra_coul
+  Use mpole,           Only : mpole_type
   Implicit None
 
   Private
@@ -486,7 +487,8 @@ Contains
 
 End Subroutine bonds_compute
 
-Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,vircpe,bond,comm)
+Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe, &
+    vircpe,bond,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -511,6 +513,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
   Integer,                             Intent( In    ) :: keyfce
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe
   Type( bonds_type ),                  Intent( InOut ) :: bond
+  Type( mpole_type ),                  Intent( InOut ) :: mpole
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical           :: safe(1:3)
@@ -775,10 +778,10 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 ! scaled charge product times dielectric constants
 
            chgprd=bond%param(1,kk)*chge(ia)*chge(ib)*r4pie0/epsq
-           If ((Abs(chgprd) > zero_plus .or. mximpl > 0) .and. keyfce > 0) Then
-              If (mximpl > 0) Then
+           If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. keyfce > 0) Then
+              If (mpole%max_mpoles > 0) Then
                  Call intra_mcoul(keyfce,rcut,alpha,epsq,ia,ib,chgprd, &
-                      rab,xdab(i),ydab(i),zdab(i),omega,viracc,fx,fy,fz,safe(1))
+                      rab,xdab(i),ydab(i),zdab(i),omega,viracc,fx,fy,fz,safe(1),mpole)
               Else
                  Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rab,rab2,omega,gamma,safe(1))
 

@@ -3,7 +3,7 @@ Module kontrol
   Use comms,      Only : comms_type,gcheck
   Use timer,      Only : timer_type
   Use configuration,     Only : sysname
-  Use mpole,     Only : thole
+  Use mpole,     Only : mpole_type,POLARISATION_DEFAULT,POLARISATION_CHARMM
   Use langevin,   Only : langevin_allocate_arrays
   Use bonds,      Only : bonds_type
   Use angles,     Only : angles_type
@@ -90,7 +90,7 @@ Subroutine read_control                                &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
-           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,minimise,tmr,comm)
+           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,minimise,mpole,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -161,6 +161,7 @@ Subroutine read_control                                &
   Type( tersoff_type ), Intent( In    )  :: tersoff
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( minimise_type ), Intent( InOut ) :: minimise
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( comms_type ),     Intent( InOut )  :: comm
@@ -1150,22 +1151,22 @@ Subroutine read_control                                &
               Call get_word(record,word)
               If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
               If (word(1:4) == 'dump' .or. word(1:6) == 'factor') Call get_word(record,word)
-              thole = Abs(word_2_real(word,0.0_wp))
+              mpole%thole = Abs(word_2_real(word,0.0_wp))
            End If
 
            Write(message,'(a,f5.2)') &
              'CHARMM polarisation scheme selected with optional atomic thole dumping of ', &
-             thole
+             mpole%thole
            Call info(message,.true.)
-           If (mximpl == 0 ) Then
+           If (mpole%max_mpoles == 0 ) Then
              Call warning('scheme deselected due to switched off electrostatics',.true.)
            End If
            If (cshell%mxshl == 0) Then
              Call warning('scheme disabled due to lack of core-shell defined interatcions',.true.)
            End If
 
-           If (mximpl == 0 .or. cshell%mxshl == 0) Then
-!              keyind=0 ! done in scan_control
+           If (mpole%max_mpoles == 0 .or. cshell%mxshl == 0) Then
+!              mpole%key=POLARISATION_DEFAULT ! done in scan_control
            Else
               lecx = .true. ! enable extended coulombic exclusion
               Call info('Extended Coulombic eXclusion activated for CHARMM polarisation',.true.)
@@ -3637,10 +3638,9 @@ Subroutine scan_control                                    &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                          &
-           mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,cshell,stats,  &
            thermo,green,devel,msd_data,met,pois,bond,angle, &
-           dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,comm)
+           dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3661,7 +3661,7 @@ Subroutine scan_control                                    &
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: mxrgd,imcon
-  Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
+  Integer,           Intent( InOut ) :: imc_n
   Integer,           Intent(   Out ) :: mxgana, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
@@ -3684,6 +3684,7 @@ Subroutine scan_control                                    &
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( In    )  :: tersoff
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -4021,7 +4022,7 @@ Subroutine scan_control                                    &
         Call get_word(record,word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
         If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
-        If (word(1:6) == 'charmm' .and. cshell%mxshl > 0) keyind=1
+        If (word(1:6) == 'charmm' .and. cshell%mxshl > 0) mpole%key=POLARISATION_CHARMM
 
      Else If (word(1:2) == 'no') Then
 
@@ -4345,9 +4346,9 @@ Subroutine scan_control                                    &
 ! reinitialise multipolar electrostatics indicators
 
   If (l_n_e) Then
-     mximpl = 0
-     mxompl = 0
-     keyind = 0
+     mpole%max_mpoles = 0
+     mpole%max_order = 0
+     mpole%key = POLARISATION_DEFAULT
   End If
 
 ! Sort vdw
@@ -4494,11 +4495,11 @@ Subroutine scan_control                                    &
 ! Only even order splines are allowed so pick the even=odd+1 if resulting in odd!!!
 
               If (mxspl == 0) Then
-                 mxspl  = mxspl_def+mxompl
+                 mxspl  = mxspl_def+mpole%max_order
                  mxspl2 = mxspl
               Else
                  mxspl  = Max(mxspl,mxspl_min)
-                 mxspl2 = mxspl+mxompl
+                 mxspl2 = mxspl+mpole%max_order
                  mxspl2 = 2*Ceiling(0.5_wp*Real(mxspl2,wp))
               End If
               mxspl=2*Ceiling(0.5_wp*Real(mxspl,wp))

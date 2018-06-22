@@ -13,7 +13,7 @@ Module neighbours
   Use configuration,  Only : imcon,cell,natms,nlast,ltg,lfrzn, &
                              xxx,yyy,zzz
   Use core_shell,    Only : core_shell_type
-  Use mpole,         Only : keyind,lchatm
+  Use mpole,         Only : mpole_type,POLARISATION_CHARMM
   Use development, Only : development_type
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : dcell,images,invert,match
@@ -280,14 +280,16 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !>
   !> Contrib   - I.J.Bush february 2014
-  Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,cshell,devel,neigh,tmr,comm)
+  Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,cshell,devel,neigh, &
+      mpole,tmr,comm)
     Logical,            Intent( In    ) :: lbook
     Integer,            Intent( In    ) :: megfrz
     Real( Kind = wp ) , Intent( In    ) :: rvdw,rmet,pdplnc
+    Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( development_type ), Intent( In    ) :: devel
     Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( timer_type ),                       Intent( InOut ) :: tmr
+    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -995,19 +997,19 @@ Contains
 
       ! CHARMM core-shell screened electrostatic induction interactions
       ! Push up CHARMM pairs at the top of the bonded part of the neigh%list
-      If (keyind == 1) Then
+      If (mpole%key == POLARISATION_CHARMM) Then
         Do i=1,natms
           l_end=neigh%list(-1,i) ! search marker to move up
           m_end=neigh%list( 0,i) ! CHARMM marker to move down
 
-          ii=lchatm(0,i)
+          ii=mpole%charmm(0,i)
           If (ii > 0) Then ! find what the local sublist CHARMM marker is
             outside:      Do While (l_end > m_end+1)    ! Only when space for swap exists
 
               ! Check for space at the top
               j =neigh%list(m_end+1,i)
               jj=ltg(j)
-              If (match(jj,ii,lchatm(1:ii,i))) Then
+              If (match(jj,ii,mpole%charmm(1:ii,i))) Then
                 m_end=m_end+1    ! move down CHARMM marker
                 Cycle outside
               End If
@@ -1017,7 +1019,7 @@ Contains
               inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
                 j =neigh%list(l_end,i)
                 jj=ltg(j)
-                If (match(jj,ii,lchatm(1:ii,i))) Then
+                If (match(jj,ii,mpole%charmm(1:ii,i))) Then
                   ibig            = neigh%list(m_end+1,i)
                   neigh%list(m_end+1,i) = neigh%list(l_end,i)
                   neigh%list(l_end,i)   = ibig

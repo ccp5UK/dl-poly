@@ -29,8 +29,7 @@ Module deport_data
   Use langevin,     Only : fxl,fyl,fzl
 
   Use ewald,               Only : ewald_type
-  Use mpole ,              Only : keyind,ltpatm,lchatm, &
-                                 mplgfr,mprotx,mproty,mprotz, mplflg
+  Use mpole ,              Only : mpole_type,POLARISATION_CHARMM
 
   Use msd, Only : msd_type
   Use greenkubo,    Only : greenkubo_type
@@ -58,7 +57,7 @@ Module deport_data
 
 
 Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,&
-    green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+    green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -91,6 +90,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( minimise_type ), Intent( InOut ) :: minimise
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -414,8 +414,8 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
         If (lbook) Then
 
-           If (mximpl > 0) Then ! pack topological array
-              kk=ltpatm(0,i)
+           If (mpole%max_mpoles > 0) Then ! pack topological array
+              kk=mpole%ltp(0,i)
               If (imove+1 <= iblock) Then
                  imove=imove+1
                  buffer(imove)=Real(kk,wp)
@@ -426,15 +426,15 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
               If (imove+kk <= iblock) Then
                  Do k=1,kk
                     imove=imove+1
-                    buffer(imove)=Real(ltpatm(k,i),wp)
+                    buffer(imove)=Real(mpole%ltp(k,i),wp)
                  End Do
               Else
                  imove=imove+kk
                  safe=.false.
               End If
 
-              If (keyind == 1) Then ! pack CHARMMing core-shell interactions array
-                 kk=lchatm(0,i)
+              If (mpole%key == POLARISATION_CHARMM) Then ! pack CHARMMing core-shell interactions array
+                 kk=mpole%charmm(0,i)
                  If (imove+1 <= iblock) Then
                     imove=imove+1
                     buffer(imove)=Real(kk,wp)
@@ -445,7 +445,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
                  If (imove+kk <= iblock) Then
                     Do k=1,kk
                        imove=imove+1
-                       buffer(imove)=Real(lchatm(k,i),wp)
+                       buffer(imove)=Real(mpole%charmm(k,i),wp)
                     End Do
                  Else
                     imove=imove+kk
@@ -889,9 +889,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
      End If
 
      If (lbook) Then
-        If (mximpl > 0) Then
-           ltpatm(:,keep)=ltpatm(:,i)
-           If (keyind == 1) lchatm(:,keep)=lchatm(:,i)
+        If (mpole%max_mpoles > 0) Then
+           mpole%ltp(:,keep)=mpole%ltp(:,i)
+           If (mpole%key == POLARISATION_CHARMM) mpole%charmm(:,keep)=mpole%charmm(:,i)
         End If
 
         neigh%list_excl(:,keep)=neigh%list_excl(:,i)
@@ -1075,25 +1075,25 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
      If (lbook) Then
 
-        If (mximpl > 0) Then ! unpack topological array
+        If (mpole%max_mpoles > 0) Then ! unpack topological array
            kmove=kmove+1
            kk=Nint(buffer(kmove))
-           ltpatm(0,newatm)=kk
+           mpole%ltp(0,newatm)=kk
            Do k=1,kk
               kmove=kmove+1
-              ltpatm(k,newatm)=Nint(buffer(kmove))
+              mpole%ltp(k,newatm)=Nint(buffer(kmove))
            End Do
-           ltpatm(kk+1:neigh%max_exclude,newatm)=0
+           mpole%ltp(kk+1:neigh%max_exclude,newatm)=0
 
-           If (keyind == 1) Then ! unpack CHARMMing core-shell interactions array
+           If (mpole%key == POLARISATION_CHARMM) Then ! unpack CHARMMing core-shell interactions array
               kmove=kmove+1
               kk=Nint(buffer(kmove))
-              lchatm(0,newatm)=kk
+              mpole%charmm(0,newatm)=kk
               Do k=1,kk
                  kmove=kmove+1
-                 lchatm(k,newatm)=Nint(buffer(kmove))
+                 mpole%charmm(k,newatm)=Nint(buffer(kmove))
               End Do
-              lchatm(kk+1:neigh%max_exclude,newatm)=0
+              mpole%charmm(kk+1:neigh%max_exclude,newatm)=0
            End If
         End If
 
@@ -2195,7 +2195,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
 End Subroutine export_atomic_positions
 
-Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
+Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2209,6 +2209,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
   Integer, Intent( In    ) :: mdir
   Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -2224,8 +2225,8 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
 ! Number of transported quantities per particle
 
-  iadd=4*mximpl+1
-  idl1=mximpl ; idl2=2*mximpl ; idl3=3*mximpl ; idl4=4*mximpl
+  iadd=4*mpole%max_mpoles+1
+  idl1=mpole%max_mpoles ; idl2=2*mpole%max_mpoles ; idl3=3*mpole%max_mpoles ; idl4=4*mpole%max_mpoles
 
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
@@ -2333,10 +2334,10 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
 ! pack rotation matrices and infinitely rotated matrices
 
-              buffer(imove+1        : imove + idl1) = mplgfr(:,i)
-              buffer(imove+1 + idl1 : imove + idl2) = mprotx(:,i)
-              buffer(imove+1 + idl2 : imove + idl3) = mproty(:,i)
-              buffer(imove+1 + idl3 : imove + idl4) = mprotz(:,i)
+              buffer(imove+1        : imove + idl1) = mpole%global_frame(:,i)
+              buffer(imove+1 + idl1 : imove + idl2) = mpole%rotation_x(:,i)
+              buffer(imove+1 + idl2 : imove + idl3) = mpole%rotation_y(:,i)
+              buffer(imove+1 + idl3 : imove + idl4) = mpole%rotation_z(:,i)
 
 ! Use the corrected halo reduction factor when the particle is halo to both +&- sides
 
@@ -2407,10 +2408,10 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
 ! unpack rotation matrices and infinitesimal rotation matrices
 
-     mplgfr(:,mlast) = buffer(j+1        : j + idl1)
-     mprotx(:,mlast) = buffer(j+1 + idl1 : j + idl2)
-     mproty(:,mlast) = buffer(j+1 + idl2 : j + idl3)
-     mprotz(:,mlast) = buffer(j+1 + idl3 : j + idl4)
+     mpole%global_frame(:,mlast) = buffer(j+1        : j + idl1)
+     mpole%rotation_x(:,mlast) = buffer(j+1 + idl1 : j + idl2)
+     mpole%rotation_y(:,mlast) = buffer(j+1 + idl2 : j + idl3)
+     mpole%rotation_z(:,mlast) = buffer(j+1 + idl3 : j + idl4)
 
      ixyz0(mlast)=Nint(buffer(j+iadd))
      j=j+iadd
@@ -2424,7 +2425,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,comm)
 
 End Subroutine mpoles_rotmat_export
 
-Subroutine mpoles_rotmat_set_halo(comm)
+Subroutine mpoles_rotmat_set_halo(mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2438,6 +2439,7 @@ Subroutine mpoles_rotmat_set_halo(comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: safe
@@ -2448,11 +2450,11 @@ Subroutine mpoles_rotmat_set_halo(comm)
   Character ( Len = 256 )  ::  message
 
   Do i=1,natms
-     mplflg(i)=0
-     If (mxompl < 3) Then
-        Call rotate_mpoles_d(i,comm)
+     mpole%flg(i)=0
+     If (mpole%max_order < 3) Then
+        Call rotate_mpoles_d(i,mpole,comm)
      Else
-        Call rotate_mpoles(i,comm)
+        Call rotate_mpoles(i,mpole,comm)
      End If
   End Do
 
@@ -2472,18 +2474,18 @@ Subroutine mpoles_rotmat_set_halo(comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call mpoles_rotmat_export(-1,mlast,ixyz0,comm)
-  Call mpoles_rotmat_export( 1,mlast,ixyz0,comm)
+  Call mpoles_rotmat_export(-1,mlast,ixyz0,mpole,comm)
+  Call mpoles_rotmat_export( 1,mlast,ixyz0,mpole,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call mpoles_rotmat_export(-2,mlast,ixyz0,comm)
-  Call mpoles_rotmat_export( 2,mlast,ixyz0,comm)
+  Call mpoles_rotmat_export(-2,mlast,ixyz0,mpole,comm)
+  Call mpoles_rotmat_export( 2,mlast,ixyz0,mpole,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call mpoles_rotmat_export(-3,mlast,ixyz0,comm)
-  Call mpoles_rotmat_export( 3,mlast,ixyz0,comm)
+  Call mpoles_rotmat_export(-3,mlast,ixyz0,mpole,comm)
+  Call mpoles_rotmat_export( 3,mlast,ixyz0,mpole,comm)
 
 ! check atom totals after data transfer
 
@@ -2502,7 +2504,7 @@ End Subroutine mpoles_rotmat_set_halo
 Subroutine relocate_particles       &
            (dvar,cutoff_extended,lbook,lmsd,megatm,m_rgd,megtet,cshell,cons, &
            pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
-           neigh,site,minimise,comm)
+           neigh,site,minimise,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2536,6 +2538,7 @@ Subroutine relocate_particles       &
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( site_type ), Intent( In    ) :: site
   Type( minimise_type ), Intent( InOut ) :: minimise
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2652,23 +2655,23 @@ Subroutine relocate_particles       &
 ! exchange atom data in -/+ x directions
 
      Call deport_atomic_data(-1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
      Call deport_atomic_data( 1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
 
 ! exchange atom data in -/+ y directions
 
      Call deport_atomic_data(-2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
      Call deport_atomic_data( 2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
 
 ! exchange atom data in -/+ z directions
 
      Call deport_atomic_data(-3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
      Call deport_atomic_data( 3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
 
 ! check system for loss of atoms
 

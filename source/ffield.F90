@@ -17,7 +17,7 @@ Module ffield
 ! INTERACTION MODULES
 
   Use core_shell, Only : core_shell_type,SHELL_ADIABATIC, SHELL_RELAXED
-  Use mpole, Only : keyind,thole,mpllfr,plrsit,dmpsit
+  Use mpole, Only : mpole_type,read_mpoles,POLARISATION_DEFAULT,POLARISATION_CHARMM
 
   Use rigid_bodies
 
@@ -79,7 +79,7 @@ Subroutine read_field                      &
            megtet,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw, &
-           tersoff,fourbody,rdf,comm)
+           tersoff,fourbody,rdf,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -128,6 +128,7 @@ Subroutine read_field                      &
   Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -341,13 +342,13 @@ Subroutine read_field                      &
            "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word))
         Call info(message,.true.)
 
-        If (Nint(word_2_real(word)) > mxompl) Then
+        If (Nint(word_2_real(word)) > mpole%max_order) Then
            Call warning("supplied multipolar expansion order reduced to the maximum allowed - 4",.true.)
         End If
 
         Call info("MPOLES file scheduled for reading after reading all intramolecular topology in FIELD",.true.)
 
-        If (mximpl == 0) Then
+        If (mpole%max_mpoles == 0) Then
           Call info('MPOLES file scheduling abandoned due to the "no elec" option in CONTROL',.true.)
         End If
 
@@ -2837,7 +2838,9 @@ Subroutine read_field                      &
 
 ! Process MPOLES
 
-        If (mximpl > 0) Call read_mpoles(l_top,sumchg,cshell,site,comm)
+        If (mpole%max_mpoles > 0) Then
+          Call read_mpoles(l_top,sumchg,cshell,site,mpole,comm)
+        End If
 
 ! check charmming shells (cshell%megshl) globalisation
 
@@ -2869,12 +2872,12 @@ Subroutine read_field                      &
                  k_crsh_p=k_crsh_p*cshell%prmshl(1,nshels)
                  k_crsh_s=k_crsh_s+cshell%prmshl(1,nshels)
 
-                 If (mximpl > 0) Then
-                    p_core_p=p_core_p*plrsit(isite1)
-                    p_core_s=p_core_s+plrsit(isite1)
+                 If (mpole%max_mpoles > 0) Then
+                    p_core_p=p_core_p*mpole%polarisation_site(isite1)
+                    p_core_s=p_core_s+mpole%polarisation_site(isite1)
 
-                    d_core_p=d_core_p*dmpsit(isite1)
-                    d_core_s=d_core_s+dmpsit(isite1)
+                    d_core_p=d_core_p*mpole%dump_site(isite1)
+                    d_core_s=d_core_s+mpole%dump_site(isite1)
                  End If
               End Do
               nsite=nsite+site%num_site(itmols)
@@ -2889,7 +2892,7 @@ Subroutine read_field                      &
               Call warning('a core of a core-shell unit bears a zero charge',.true.)
            End If
 
-           If (mximpl > 0) Then ! sort k_charm
+           If (mpole%max_mpoles > 0) Then ! sort k_charm
               If (p_core_s <= zero_plus .and. &
                   k_crsh_s <= zero_plus .and. &
                   q_shel_s <= zero_plus) Then
@@ -2897,7 +2900,7 @@ Subroutine read_field                      &
                  Call warning('core-shell units polarisability is compromised',.true.)
               Else
                  If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus) Then
-                    If (keyind > 0) Then
+                    If (mpole%key /= POLARISATION_DEFAULT) Then
                        k_crsh_p = 1000 * eu_kcpm ! reset to k_charmm = 1000 kcal*mol^−1*Å^−2
                        cshell%smax=k_crsh_p             ! set cshell%smax
                        Call warning('all core-shell force constants and shell ' &
@@ -2920,7 +2923,7 @@ Subroutine read_field                      &
               End If
            End If
 
-           If (mximpl > 0) Then ! Time for possible resets
+           If (mpole%max_mpoles > 0) Then ! Time for possible resets
               d_core_p=0.0_wp ! the new d_core_s check for switching charming off!!!
 
               nsite =0
@@ -2936,7 +2939,7 @@ Subroutine read_field                      &
                     isite2 = nsite + iatm2
 
                     q_core=site%charge_site(isite1)
-                    p_core=plrsit(isite1)
+                    p_core=mpole%polarisation_site(isite1)
 
                     q_shel=site%charge_site(isite2)
                     If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus .and. &
@@ -2946,8 +2949,8 @@ Subroutine read_field                      &
                     End If
                     k_crsh=cshell%prmshl(1,nshels)
 
-                    If (d_core_s <= zero_plus .and. thole >= -zero_plus) dmpsit(isite1) = thole
-                    d_core=dmpsit(isite1)
+                    If (d_core_s <= zero_plus .and. mpole%thole >= -zero_plus) mpole%dump_site(isite1) = mpole%thole
+                    d_core=mpole%dump_site(isite1)
                     d_core_p=d_core_p+d_core
 
                     If      (Abs(q_shel) <= zero_plus) Then ! set shell's charge
@@ -2957,7 +2960,7 @@ Subroutine read_field                      &
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
                           site%charge_site(isite2)=charge
-                          mpllfr(1,isite2)=charge
+                          mpole%local_frame(1,isite2)=charge
                           sumchg=sumchg+Abs(charge)
                        End If
                     Else If (p_core <= zero_plus) Then ! set drude force constants
@@ -2965,7 +2968,7 @@ Subroutine read_field                      &
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
-                          plrsit(isite1)=(r4pie0/epsq)*q_shel**2/k_crsh
+                          mpole%polarisation_site(isite1)=(r4pie0/epsq)*q_shel**2/k_crsh
                        End If
                     Else If (k_crsh <= zero_plus) Then ! set polarisability
                        If (p_core <= zero_plus) Then
@@ -2977,20 +2980,20 @@ Subroutine read_field                      &
                        End If
                     End If
 
-! Redefine plrsit as reciprocal of polarisability
+! Redefine mpole%polarisation_site as reciprocal of polarisability
 
-                    plrsit(isite1)=1.0_wp/plrsit(isite1)
+                    mpole%polarisation_site(isite1)=1.0_wp/mpole%polarisation_site(isite1)
 
 ! copy polarisability and dumping from cores to their shells
 
-                    plrsit(isite2)=plrsit(isite1)
-                    dmpsit(isite2)=dmpsit(isite1)
+                    mpole%polarisation_site(isite2)=mpole%polarisation_site(isite1)
+                    mpole%dump_site(isite2)=mpole%dump_site(isite1)
                  End Do
                  nsite=nsite+site%num_site(itmols)
               End Do
 
-              If (keyind == 1 .and. d_core_p <= zero_plus) Then
-                 keyind = 0
+              If (mpole%key == POLARISATION_CHARMM .and. d_core_p <= zero_plus) Then
+                 mpole%key = POLARISATION_DEFAULT
                  Call warning('CHARMM polarisation scheme deselected due to zero dumping factor',.true.)
               End If
            Else
@@ -5056,7 +5059,7 @@ Subroutine report_topology               &
 End Subroutine report_topology
 
 Subroutine scan_field                                &
-           (l_n_e,mxompl,mximpl,                     &
+           (l_n_e,                     &
            max_site,mxatyp,megatm,mxtmls,max_exclude,       &
            mtshl,                &
            mtcons,              &
@@ -5068,7 +5071,7 @@ Subroutine scan_field                                &
            mtdihd,       &
            mtinv,         &
            rcter,rcfbp,lext,cshell,cons,pmf,met,&
-           bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,fourbody,rdf,comm)
+           bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,fourbody,rdf,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5102,6 +5105,7 @@ Subroutine scan_field                                &
   Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude,mtshl
 ! Max number of different atom types
@@ -5120,7 +5124,7 @@ Subroutine scan_field                                &
 
   Logical           :: l_n_e,check,safe,l_usr,lext
   Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,ksite,nrept,        &
-                       mxompl,mximpl,mxatyp,megatm,i,j,k,        &
+                       mxatyp,megatm,i,j,k,        &
                        numshl,ishls,                 &
                        numcon,mtcons,icon,                &
                        ipmf,jpmf,                     &
@@ -5137,8 +5141,8 @@ Subroutine scan_field                                &
   Real( Kind = wp ) :: rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
-  mxompl=0      ! default of maximum order of poles (charges)
-  mximpl=0      ! default maximum number of independent poles values
+  mpole%max_order=0      ! default of maximum order of poles (charges)
+  mpole%max_mpoles=0      ! default maximum number of independent poles values
                 ! it initialises to 0 if no MULT directive exists in FIELD
 
   nummols=0
@@ -5271,9 +5275,9 @@ Subroutine scan_field                                &
 
         l_n_e=.false. ! abandon assumptions
 
-        mxompl = Min(Max(0,Nint(word_2_real(word))),4)
+        mpole%max_order = Min(Max(0,Nint(word_2_real(word))),4)
 
-        mximpl = (mxompl+3)*(mxompl+2)*(mxompl+1)/6
+        mpole%max_mpoles = (mpole%max_order+3)*(mpole%max_order+2)*(mpole%max_order+1)/6
 
      Else If (word(1:7) == 'molecul') Then
 
@@ -6023,505 +6027,4 @@ Subroutine scan_field                                &
   Call error(24)
 
 End Subroutine scan_field
-
-  Subroutine read_mpoles(l_top,sumchg,cshell,site,comm)
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for reading in the molecular mulitpole
-  ! specifications of the system to be simulated
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov february 2017
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Logical,            Intent( In    ) :: l_top
-    Real( Kind = wp ),  Intent( InOut ) :: sumchg
-    Type( site_type ), Intent( InOut ) :: site
-    Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( comms_type ), Intent( InOut ) :: comm
-
-    Logical                :: safe,l_rsh,l_ord=.false.
-
-    Character( Len = 200 ) :: record,record1,record2
-    Character( Len = 40  ) :: word
-    Character( Len = 8   ) :: atom
-
-    Integer                :: itmols,nrept,i,j,k,l,                 &
-                              isite,jsite,ksite,lsite,nsite,sitmpl, &
-                              ishls,nshels,kshels,isite2,           &
-                              ordmpl,ordmpl_start,ordmpl_next,      &
-                              ordmpl_min,ordmpl_max,                &
-                              indmpl,indmpl_start,indmpl_final
-
-    Real( Kind = wp )      :: charge,scl,polarity,dumping
-
-    Character( Len = 256 ) :: message,messages(3)
-
-  ! open MPOLES data file
-
-    If (comm%idnode == 0) Then
-       Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
-    End If
-    Call info('electrostatics multipoles specification',.true.)
-    If (.not.l_top) Then
-      Call info('detailed specification opted out',.true.)
-    End If
-
-
-    Call get_line(safe,nmpldt,record,comm)
-    If (.not.safe) Go To 2000
-
-  ! omit first line
-
-    nsite  = 0
-    nshels = 0
-    sumchg = 0.0_wp
-
-    ordmpl_min = 4
-    ordmpl_max = 0
-
-  ! read and process directives from mpols/field file
-
-    Do
-
-       word(1:1)='#'
-       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-          Call get_line(safe,nmpldt,record,comm)
-          If (.not.safe) Go To 2000
-          Call get_word(record,word) ; Call lower_case(word)
-       End Do
-
-  ! specify molecular species
-
-       If (word(1:7) == 'molecul') Then
-
-          Call get_word(record,word) ; Call lower_case(word)
-          If (word(1:4) == 'type') Call get_word(record,word)
-
-          If (site%ntype_mol == Nint(word_2_real(word))) Then
-            Write(message,'(a,i10)') 'number of molecular types ',site%ntype_mol
-            Call info(message,.true.)
-          Else
-            Write(message,'(2(a,i0),a)') &
-              'number of molecular types mismatch between FIELD(',site%ntype_mol, &
-              ') and MPOLES(',Nint(word_2_real(word)),')'
-            Call warning(message,.true.)
-            Call error(623)
-          End If
-
-  ! read in molecular characteristics for every molecule
-
-          Do itmols=1,site%ntype_mol
-
-             If (l_top) Then
-               Write(message,'(a,i10)') 'molecular species type ',itmols
-               Call info(message,.true.)
-             End If
-
-  ! name of molecular species
-
-             word(1:1)='#'
-             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                Call get_line(safe,nmpldt,record,comm)
-                If (.not.safe) Go To 2000
-                Call get_word(record,word)
-             End Do
-             Call strip_blanks(record)
-             record1=word(1:Len_Trim(word)+1)//record ; Call lower_case(record1)
-             record2=site%mol_name(itmols) ;                   Call lower_case(record2)
-
-             If (record1 == record2) Then
-               If (l_top) Then
-                 Write(message,'(2a)') 'name of species: ',Trim(site%mol_name(itmols))
-                 Call info(message,.true.)
-               End If
-             Else
-               Call warning('molecular names mismatch between FIELD and MPOLES for type',.true.)
-               Call error(623)
-             End If
-
-  ! read molecular data
-
-             Do
-
-                word(1:1)='#'
-                Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                   Call get_line(safe,nmpldt,record,comm)
-                   If (.not.safe) Go To 2000
-                   Call get_word(record,word) ; Call lower_case(word)
-                End Do
-
-  ! number of molecules of this type
-
-                If (word(1:6) == 'nummol') Then
-
-                   Call get_word(record,word)
-
-                   If (site%num_mols(itmols) == Nint(word_2_real(word))) Then
-                     If (l_top) Then
-                       Write(message,'(a,i10)') 'number of molecules ',site%num_mols(itmols)
-                       Call info(message,.true.)
-                     End If
-                   Else
-                     Write(message,'(2(a,i0),a)') &
-                       'number of molecular types mismatch between FIELD(',site%ntype_mol, &
-                       ') and MPOLES(',Nint(word_2_real(word)),')'
-                     Call warning(message,.true.)
-                     Call error(623)
-                   End If
-
-  ! read in atomic details
-
-                Else If (word(1:5) == 'atoms') Then
-
-                   Call get_word(record,word)
-
-                   If (site%num_site(itmols) == Nint(word_2_real(word))) Then
-                     If (l_top) Then
-                       Write(messages(1),'(a,i10)') 'number of atoms/sites ',site%num_site(itmols)
-                       Write(messages(2),'(a)') 'atomic characteristics:'
-                       Write(messages(3),'(8x,a4,4x,a4,2x,a16,2x,a6)') &
-                         'site','name','multipolar order','repeat'
-                       Call info(messages,3,.true.)
-                     End If
-                   Else
-                     Write(message,'(2(a,i0),a)') &
-                       'number of molecular types mismatch between FIELD(',site%ntype_mol, &
-                       ') and MPOLES(',Nint(word_2_real(word)),')'
-                     Call warning(message,.true.)
-                     Call error(623)
-                   End If
-
-  ! for every molecule of this type get site and atom description
-
-                   ksite=0 ! reference point
-                   Do isite=1,site%num_site(itmols)
-                      If (ksite < site%num_site(itmols)) Then
-
-  ! read atom name, highest pole order supplied, repeat
-
-                         word(1:1)='#'
-                         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                            Call get_line(safe,nmpldt,record,comm)
-                            If (.not.safe) Go To 2000
-                            Call get_word(record,word)
-                         End Do
-
-                         atom=word(1:8)
-
-  ! read supplied pole order
-
-                         Call get_word(record,word)
-                         ordmpl=Abs(Nint(word_2_real(word)))
-                         indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
-
-  ! read supplied repetition
-
-                         Call get_word(record,word)
-                         nrept=Abs(Nint(word_2_real(word)))
-                         If (nrept == 0) nrept=1
-
-                         jsite=nsite+1
-                         lsite=jsite+nrept-1
-
-                         Do i=jsite,lsite
-                           If (site%site_name(i) /= atom) Then ! detect mish-mash
-                             Write(message,'(a,i0)') &
-                               'site names mismatch between FIELD and MPOLES for site ',ksite+1+i-jsite
-                             Call warning(message,.true.)
-                             Call error(623)
-                           End If
-                         End Do
-
-  ! read supplied site polarisation and dumping factor
-
-                         Call get_word(record,word) ; polarity=Abs(word_2_real(word,0.0_wp))
-                         Call get_word(record,word) ; dumping =Abs(word_2_real(word,0.0_wp))
-
-                         l_rsh=.true. ! regular or no shelling (Drude)
-                         kshels=nshels
-                         Do ishls=1,cshell%numshl(itmols) ! detect beyond charge shelling
-                            kshels=kshels+1
-
-                            isite2=nsite+cshell%lstshl(2,kshels)
-                            If ((isite2 >= jsite .and. isite2 <= lsite)) Then
-                              l_rsh=.false.
-                              If (comm%idnode == 0) Then
-                                If (ordmpl > 0) Then
-                                  Call warning( &
-                                    'a shell (of a polarisable multipolar ion)' &
-                                    //'can only bear a charge to emulate a' &
-                                    //'self-iduced dipole',.true.)
-                                End If
-                                If (polarity > zero_plus) Then
-                                  Call warning( &
-                                    'a shell (of a polarisable multipolar ion)' &
-                                    //'cannot have its own associated polarisability', &
-                                    .true.)
-                                End If
-                                If (dumping  > zero_plus) Then
-                                  Call warning( &
-                                    'a shell (of a polarisable multipolar ion)' &
-                                    //'cannot have its own associated dumping factor', &
-                                    .true.)
-                                End IF
-                              End If
-                            End If
-                         End Do
-
-  ! get the min and max order defined for cores/nucleus, ignore irregular shells
-
-                         If (l_rsh) Then
-                            ordmpl_min=Min(ordmpl_min,ordmpl)
-                            ordmpl_max=Max(ordmpl_max,ordmpl)
-                         End If
-
-                         If (l_top) Then
-                           If (l_rsh) Then
-                             Write(message,'(2x,i10,4x,a8,4x,i2,5x,i10,2f7.3)') &
-                               ksite+1,atom,ordmpl,nrept,polarity,dumping
-                           Else
-                             Write(message,'(2x,i10,4x,a8,4x,i2,5x,i10,2a)') &
-                               ksite+1,atom,ordmpl,nrept,polarity,dumping, &
-                               Merge(' *ignored* ','           ',polarity>zero_plus), &
-                               Merge(' *ignored* ','           ',dumping >zero_plus)
-                           End If
-                         End If
-
-  ! monopole=charge
-
-                         word(1:1)='#'
-                         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                            Call get_line(safe,nmpldt,record,comm)
-                            If (.not.safe) Go To 2000
-                            Call get_word(record,word)
-                         End Do
-
-                         sitmpl = 1
-
-                         charge=word_2_real(word)
-
-                         site%charge_site(jsite:lsite)=charge
-                         mpllfr(sitmpl,jsite:lsite)=charge
-                         If (l_rsh) Then
-                            plrsit(jsite:lsite)=polarity
-                            dmpsit(jsite:lsite)=dumping
-  !                      Else ! initilised to zero in mpoles_module
-                         End If
-
-  ! sum absolute charges
-
-                         sumchg=sumchg+Abs(charge)
-
-  ! report
-
-                         If (l_top) Then
-                           Write(message,'(2x,a,f10.5)') 'charge ',charge
-                           Call info(message,.true.)
-                         End If
-
-  ! higher poles counters
-
-                         ordmpl_start = 0
-                         ordmpl_next  = ordmpl_start+1
-                         indmpl_start = sitmpl+1
-                         indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
-
-                         Do While (ordmpl_next <= ordmpl)
-
-  ! read line per pole order
-
-                            word(1:1)='#'
-                            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                               Call get_line(safe,nmpldt,record,comm)
-                               If (.not.safe) Go To 2000
-                               Call get_word(record,word)
-                            End Do
-
-  ! Only assign what FIELD says is needed or it is a shell
-
-                            If (ordmpl_next <= Merge(mxompl,1,l_rsh)) Then
-
-                              Do i=indmpl_start,indmpl_final
-                                sitmpl = sitmpl+1
-                                mpllfr(sitmpl,jsite:lsite)=word_2_real(word)
-                                Call get_word(record,word)
-                              End Do
-
-  ! report
-
-                              If (l_top) Then
-                                If      (ordmpl_next == 1) Then
-                                  Write(message,'(2x,a12,1x,3f10.5)') 'dipole', &
-                                    mpllfr(indmpl_start:indmpl_final,jsite)
-                                Else If (ordmpl_next == 2) Then
-                                  Write(message,'(2x,a12,1x,6f10.5)') 'quadrupole', &
-                                    mpllfr(indmpl_start:indmpl_final,jsite)
-                                Else If (ordmpl_next == 3) Then
-                                  Write(message,'(2x,a12,1x,10f10.5)') 'octupole', &
-                                    mpllfr(indmpl_start:indmpl_final,jsite)
-                                Else If (ordmpl_next == 4) Then
-                                  Write(message,'(2x,a12,1x,15f10.5)') 'hexadecapole', &
-                                    mpllfr(indmpl_start:indmpl_final,jsite)
-                                End If
-                                Call info(message,.true.)
-                              End If
-
-  ! rescale poles values by their degeneracy
-
-                               If (ordmpl_next > 1) Then
-                                  sitmpl=sitmpl-(indmpl_final-indmpl_start+1) ! rewind
-                                  Do i=ordmpl_next,0,-1
-                                     l=ordmpl_next-i
-                                     Do j=l,0,-1
-                                        k=l-j
-
-                                        scl=Exp(factorial(ordmpl_next)-factorial(k)-factorial(j)-factorial(i))
-                                        sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
-                                        If (Nint(scl) /= 1) mpllfr(sitmpl,jsite:lsite)=mpllfr(sitmpl,jsite:lsite)/scl
-                                     End Do
-                                  End Do
-                               End If
-
-                            Else
-
-                               l_ord=.true.
-
-  ! update actual order marker
-
-                               sitmpl=indmpl_final
-
-  ! report
-
-                               If (l_top) Then
-                                 If (l_rsh) Then
-                                   If      (ordmpl_next == 1) Then
-                                     Write(message,'(2x,a12,1x,a)') &
-                                       'dipole',' supplied but not required'
-                                   Else If (ordmpl_next == 2) Then
-                                     Write(message,'(2x,a12,1x,a)') &
-                                       'quadrupole',' supplied but not required'
-                                   Else If (ordmpl_next == 3) Then
-                                     Write(message,'(2x,a12,1x,a)') &
-                                       'octupole',' supplied but not required'
-                                   Else If (ordmpl_next == 4) Then
-                                     Write(message,'(2x,a12,1x,a)') &
-                                       'hexadecapole',' supplied but not required'
-                                   Else
-                                     Write(message,'(2x,a12,i0,a)') &
-                                       'pole order ',ordmpl_next,' supplied but not required'
-                                   End If
-                                 Else
-                                   If      (ordmpl_next == 1) Then
-                                     Write(message,'(2x,a12,1x,a)') &
-                                       'dipole',' supplied but ignored as invalid'
-                                   Else If (ordmpl_next == 2) Then
-                                     Write(message,'(2x,a12,1x,a)') &
-                                       'quadrupole',' supplied but ignored as invalid'
-                                   Else If (ordmpl_next == 3) Then
-                                     Write(message,'(2x,a12,1x,a)') &
-                                       'octupole',' supplied but ignored as invalid'
-                                   Else If (ordmpl_next == 4) Then
-                                     Write(message,'(2x,a12,1x,a)') &
-                                       'hexadecapole',' supplied but ignored as invalid'
-                                   Else
-                                     Write(message,'(2x,a11,i0,a)') &
-                                       'pole order ',ordmpl_next,' supplied but ignored as invalid'
-                                   End If
-                                 End If
-                                 Call info(message,.true.)
-                               End If
-
-                            End If
-
-  ! update poles counters
-
-                            ordmpl_next  = ordmpl_next+1
-                            indmpl_start = sitmpl+1
-                            indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
-
-                         End Do
-
-                         nsite=nsite+nrept
-                         ksite=ksite+nrept
-
-                         If (ksite == site%num_site(itmols)) nshels=kshels
-
-                      End If
-                   End Do
-
-  ! finish of data for one molecular type
-
-                Else If (word(1:6) == 'finish') Then
-
-                  Write(message,'(3(a,i0))') &
-                    'multipolar electrostatics requested up to order ', &
-                    mxompl, ' with specified interactions up order ',  &
-                    ordmpl_max,' and least order ', ordmpl_min
-                  Call warning(message,.true.)
-
-                  If (ordmpl_max*mxompl == 0) Then
-                    Call warning( &
-                      'multipolar electrostatics machinery to be used for monompoles ' &
-                      //'only electrostatic interactions (point charges only)', &
-                      .true.)
-                  End If
-                  If (ordmpl_max > 4) Then
-                    Call warning( &
-                      'electrostatic interactions beyond hexadecapole order can ' &
-                      //'not be considered and are thus ignored',.true.)
-                  End If
-
-                  Go To 1000
-
-                Else
-
-  ! error exit for unidentified directive in molecular data
-
-                   Call strip_blanks(record)
-                   Write(message,'(2a)') word(1:Len_Trim(word)+1),record
-                   Call info(message,.true.)
-                   Call error(12)
-
-                End If
-
-             End Do
-
-  ! just finished with this type molecule data
-
-  1000       Continue
-
-          End Do
-
-  ! close MPOLES data file
-
-       Else If (word(1:5) == 'close') Then
-
-          If (comm%idnode == 0) Close(Unit=nmpldt)
-
-  ! EXIT IF ALL IS OK
-
-          Return
-
-       Else
-
-  ! error exit for unidentified directive
-
-          Call info(word(1:Len_Trim(word)),.true.)
-          Call error(4)
-
-       End If
-
-    End Do
-
-    Return
-
-  2000 Continue
-
-    If (comm%idnode == 0) Close(Unit=nmpldt)
-    Call error(52)
-
-  End Subroutine read_mpoles
 End Module ffield

@@ -129,7 +129,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(keyfce,neigh,site,comm)
+           Call set_halo_particles(keyfce,neigh,site,mpole,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -139,7 +139,7 @@
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
            megrgd,degrot,degtra,        &
-           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,comm)
+           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,mpole,comm)
               If (lexcl) Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,comm)
            End If
 
@@ -151,14 +151,14 @@
            alpha,epsq,keyfce,nstfce,.false.,megfrz, &
            leql,nsteql,nstph,         &
            cshell,               &
-           stat,ewld,devel,met,pois,neigh,site,vdw,rdf,tmr,comm)
+           stat,ewld,devel,met,pois,neigh,site,vdw,rdf,mpole,tmr,comm)
 
 ! Calculate bond forces
 
            If (bond%total > 0 .and. bond%bin_pdf > 0) Then
               isw = 0
               Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress, &
-              neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,comm)
+              neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,mpole,comm)
            End If
 
 ! Calculate valence angle forces
@@ -173,7 +173,8 @@
            If (dihedral%total > 0 .and. dihedral%bin_adf > 0) Then
               isw = 0
               Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
-           neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,vdw,comm)
+                neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe, &
+                stat%engsrp,stat%virsrp,dihedral,vdw,mpole,comm)
            End If
 
 ! Calculate inversion forces

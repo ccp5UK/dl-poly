@@ -18,7 +18,7 @@ Module bounds
   Use tersoff,         Only : tersoff_type
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
-  Use mpole,           Only : keyind
+  Use mpole,           Only : mpole_type,POLARISATION_CHARMM
   Use ttm,             Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
   Use numerics,        Only : dcell
   Use Kontrol,         Only : scan_control, scan_control_pre
@@ -49,7 +49,8 @@ Subroutine set_bounds                                 &
            dvar,rbin,nstfce,      &
            alpha,width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,comm)
+           inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf, &
+           mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -91,6 +92,7 @@ Subroutine set_bounds                                 &
   Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -112,7 +114,7 @@ Subroutine set_bounds                                 &
 ! scan the FIELD file data
 
   Call scan_field                                    &
-           (l_n_e,mxompl,mximpl,                     &
+           (l_n_e,                     &
            max_site,mxatyp,megatm,mxtmls,neigh%max_exclude,       &
            mtshl,                &
            mtcons,              &
@@ -125,7 +127,7 @@ Subroutine set_bounds                                 &
            mtinv,  &
            rcter,rcfbp,lext,cshell,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
-           tether,threebody,vdw,tersoff,fourbody,rdf,comm)
+           tether,threebody,vdw,tersoff,fourbody,rdf,mpole,comm)
 
 ! Get imc_r & set dvar
 
@@ -148,9 +150,9 @@ Subroutine set_bounds                                 &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                         &
-           mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,cshell,stats,thermo, &
-           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,comm)
+           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
+           zdensity,neigh,vdw,tersoff,rdf,mpole,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -828,7 +830,7 @@ Subroutine set_bounds                                 &
   dens0 = dens0/Max(neigh%cutoff_extended/0.2_wp,1.0_wp)
   mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real( &
            mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (neigh%max_exclude+1) + &
-           Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,keyind == 1),0,mximpl > 0) + &
+           Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,mpole%key == POLARISATION_CHARMM),0,mpole%max_mpoles > 0) + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp  + &
            4*cshell%mxshl+4*cons%mxcons+(Sum(pmf%mxtpmf(1:2)+3))*pmf%mxpmf+(mxlrgd+13)*mxrgd + &
            3*tether%mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)

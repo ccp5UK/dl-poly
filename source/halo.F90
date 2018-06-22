@@ -7,7 +7,7 @@ Module halo
 
   Use domains
   Use site, Only : site_type
-  Use mpole
+  Use mpole, Only : mpole_type
 
   Use neighbours,       Only : neighbours_type,vnl_set_check
   Use errors_warnings,  Only : error
@@ -85,7 +85,7 @@ Module halo
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(keyfce,neigh,site,comm)
+Subroutine set_halo_particles(keyfce,neigh,site,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -100,6 +100,7 @@ Subroutine set_halo_particles(keyfce,neigh,site,comm)
   Integer,           Intent( In    ) :: keyfce
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( site_type ), Intent( In    ) :: site
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ), Save :: cut
@@ -218,10 +219,10 @@ Subroutine set_halo_particles(keyfce,neigh,site,comm)
 
 ! Assign polarisation and dumping factor
 
-  If (mximpl > 0) Then
+  If (mpole%max_mpoles > 0) Then
      Do i=natms+1,nlast
-        plratm(i)=plrsit(lsite(i))
-        dmpatm(i)=dmpsit(lsite(i))
+        mpole%polarisation_atom(i)=mpole%polarisation_site(lsite(i))
+        mpole%dump_atom(i)=mpole%dump_site(lsite(i))
      End Do
   End If
 

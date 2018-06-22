@@ -1,6 +1,6 @@
 Module mpole
   Use kinds, Only : wp,wi
-  Use setup, Only : mxatdm, mxatms, mximpl, mxompl, mxspl, &
+  Use setup, Only : mxatdm, mxatms,mxspl, &
                            sqrpi,r4pie0,zero_plus,nrite,nmpldt
   Use configuration,Only : natms
   Use site, Only : site_type
@@ -12,200 +12,307 @@ Module mpole
 
   Implicit None
 
-  !Type, Public mpole_type
-  !
-  !End Type mpole_type
+  Private
 
-! A derived data type for defining the rotation matrix for multipolar sites
-
-  Type rot_mat
+  !> A derived data type for defining the rotation matrix for multipolar sites
+  Type, Public :: rot_mat
      Real( Kind = wp ), Dimension(1:9) :: mtrxa
      Real( Kind = wp ), Dimension(1:3) :: p1,p2
      Integer                           :: flag,mbnd(1:2)
   End Type rot_mat
 
-! Type of inducible (self-polarisation) scheme
+  ! Polarisation keys
+  !> Default polarisation, unscreened & undamped - iAMOEBA like
+  Integer( Kind = wi ), Parameter, Public :: POLARISATION_DEFAULT = 0
+  !> CHARMM polarisation:
+  !>
+  !> - $q_\text{shell} = -\lvert q_core \rvert * \sqrt(\alpha * k)
+  !> - $k_\text{CHARMM} = 1000 \, \mathrm{kcal} \mathrm{mol}^−1 \mathrm{Å}^−2
+  Integer( Kind = wi ), Parameter, Public :: POLARISATION_CHARMM = 1
 
-  Integer,           Save :: keyind = 0 ! 0 - default :: unscreened & undamped - iAMOEBA like
-                                        ! 1 - CHARMM  :: q_shell == -Sign(q_core) * Sqrt(alpha * k) ; 
-                                        !                k_CHARMM = 1000 kcal*mol^−1*Å^−2
+  !> Type containing multipole data
+  Type, Public :: mpole_type
+    Private
 
-  Real( Kind = wp ), Save :: thole  = 1.3_wp  ! default thole dumping for CHARMM representation
+    !> Type of inducible (self-polarisation) scheme
+    Integer( Kind = wi ), Public :: key = POLARISATION_DEFAULT
 
-! variables for multipolar interactions
+    !> Default thole dumping for CHARMM representation
+    Real( Kind = wp ), Public :: thole  = 1.3_wp
 
-  Integer,           Allocatable, Save :: mplmap(:,:,:),mplltg(:) ! mappings from three indices multipole to a one index multipole
-  Integer,           Allocatable, Save :: mplflg(:)               ! rotation counter flag
-  Integer,           Allocatable, Save :: ltpatm(:,:)             ! bonded connectivity
-  Integer,           Allocatable, Save :: lchatm(:,:)             ! CHARMM core-shell screened electrostatics induction neigh%list
+    ! Variables for multipolar interactions
+    !> Mappings from three indices multipole to a one index multipole
+    Integer( Kind = wi ), Allocatable, Public :: map(:,:,:)
+    Integer( Kind = wi ), Allocatable, Public :: ltg(:)
+    !> Rotation counter flag
+    Integer( Kind = wi ), Allocatable, Public :: flg(:)
+    !> Bonded connectivity
+    Integer( Kind = wi ), Allocatable, Public :: ltp(:,:)
+    !> CHARMM core-shell screened electrostatics induction list
+    Integer( Kind = wi ), Allocatable, Public :: charmm(:,:)
 
-  Real( Kind = wp ), Allocatable, Save :: mpllfr(:,:),mplgfr(:,:) ! local/lab(site) and global(atom) frames
-  Real( Kind = wp ), Allocatable, Save :: plrsit(:),plratm(:)     ! induced dipole polarisation for sites 
-                                                                  ! and atoms (inversed if non-zero)
-  Real( Kind = wp ), Allocatable, Save :: dmpsit(:),dmpatm(:)     ! sites' and atoms' (thole) dumping 
-                                                                  ! coefficient/factor (for self-polarisation)
+    !> Local frame
+    Real( Kind = wp ), Allocatable, Public :: local_frame(:,:)
+    !> Global frame
+    Real( Kind = wp ), Allocatable, Public :: global_frame(:,:)
 
-  Type( rot_mat ),   Allocatable, Save :: mprotm(:)                           ! rotation matrices
+    !> Induced dipole polarisation for sites (inversed if non-zero)
+    Real( Kind = wp ), Allocatable, Public :: polarisation_site(:)
+    !> Induced dipole polarisation for atoms (inversed if non-zero)
+    Real( Kind = wp ), Allocatable, Public :: polarisation_atom(:)
 
-  Real( Kind = wp ), Allocatable, Save :: mprotx(:,:),mproty(:,:),mprotz(:,:) ! infinitesimal rotations
-  Real( Kind = wp ), Allocatable, Save :: mptrqx(:),mptrqy(:),mptrqz(:)       ! torques due to infinitesimal rotations
+    !> thole dumping coefficient/factor (for self-polarisation) for sites
+    Real( Kind = wp ), Allocatable, Public :: dump_site(:)
+    !> thole dumping coefficient/factor (for self-polarisation) for atoms
+    Real( Kind = wp ), Allocatable, Public :: dump_atom(:)
 
-  Real( Kind = wp ), Allocatable, Save :: ncombk(:,:)                         ! n combination k values for usage 
-                                                                              ! in computing the reciprocal space Ewald sum
-                                                                              ! field
+    !> Rotation matrices
+    Type( rot_mat ),   Allocatable, Public :: rotation(:)
+
+    !> Infinitesimal rotations about x
+    Real( Kind = wp ), Allocatable, Public :: rotation_x(:,:)
+    !> Infinitesimal rotations about y
+    Real( Kind = wp ), Allocatable, Public :: rotation_y(:,:)
+    !> Infinitesimal rotations about z
+    Real( Kind = wp ), Allocatable, Public :: rotation_z(:,:)
+
+    !> Torques due to infinitesimal rotations about x
+    Real( Kind = wp ), Allocatable, Public :: torque_x(:)
+    !> Torques due to infinitesimal rotations about y
+    Real( Kind = wp ), Allocatable, Public :: torque_y(:)
+    !> Torques due to infinitesimal rotations about z
+    Real( Kind = wp ), Allocatable, Public :: torque_z(:)
+
+    !> n choose k values, used in computing the reciprocal space Ewald sum field
+    Real ( Kind = wp ), Allocatable, Public :: n_choose_k(:,:)
+
+    !> Maxmimum number of multipoles
+    Integer( Kind = wi ), Public :: max_mpoles
+    !> Maxmimum multipolar order
+    Integer( Kind = wi ), Public :: max_order
+
+  Contains
+    Private
+
+    Procedure, Public :: init => allocate_mpoles_arrays
+    Final :: cleanup
+  End Type mpole_type
+
+  Public :: read_mpoles
 
 Contains
 
-  Subroutine allocate_mpoles_arrays(max_site,max_exclude)
+  Subroutine allocate_mpoles_arrays(T,max_site,max_exclude,mxatdm,mxspl,mxatms)
+  Class( mpole_type ) :: T
     Integer( Kind = wi ), Intent( In    ) :: max_site
     Integer( Kind = wi ), Intent( In    ) :: max_exclude
+    Integer( Kind = wi ), Intent( In    ) :: mxatdm
+    Integer( Kind = wi ), Intent( In    ) :: mxspl
+    Integer( Kind = wi ), Intent( In    ) :: mxatms
 
     Integer           :: n,k,om1,numpl,fail(1:9)
-    Real( Kind = wp ) :: gearp(1:7),aspcp(1:7)
 
-    If (mximpl < 1) Return ! no MPOLES file read <= no multipoles directive in FIELD
+    ! No MPOLES file read <= no multipoles directive in FIELD
+    If (T%max_mpoles < 1) Return
 
-    om1 = mxompl + 1
+    om1 = T%max_order + 1
     numpl = (3**om1 - 1)/2
 
     fail = 0
 
-    Allocate (mplmap(0:mxompl,0:mxompl,0:mxompl),mplltg(1:numpl),  Stat = fail(1))
-    Allocate (mplflg(1:mxatdm),ltpatm(0:max_exclude,1:mxatdm),          Stat = fail(2))
-    If (keyind == 1) &
-    Allocate (lchatm(0:max_exclude,1:mxatdm),                           Stat = fail(3))
-    Allocate (mpllfr(1:mximpl,1:max_site),mplgfr(1:mximpl,1:mxatms), Stat = fail(4))
-    Allocate (plrsit(1:max_site),plratm(1:mxatms),                   Stat = fail(5))
-    Allocate (dmpsit(1:max_site),dmpatm(1:mxatms),                   Stat = fail(6))
-    Allocate (mprotm(1:mxatdm),ncombk(0:mxspl,0:mxspl),            Stat = fail(7))
-    Allocate (mptrqx(1:mxatdm),mptrqy(1:mxatdm),mptrqz(1:mxatdm),  Stat = fail(8))
-    Allocate (mprotx(1:mximpl,1:mxatms), &
-              mproty(1:mximpl,1:mxatms), &
-              mprotz(1:mximpl,1:mxatms),                           Stat = fail(9))
+    Allocate (T%map(0:T%max_order,0:T%max_order,0:T%max_order),T%ltg(1:numpl), stat=fail(1))
+    Allocate (T%flg(1:mxatdm),T%ltp(0:max_exclude,1:mxatdm), stat=fail(2))
+    If (T%key == 1) Then
+      Allocate (T%charmm(0:max_exclude,1:mxatdm), stat=fail(3))
+    End If
+    Allocate (T%local_frame(1:T%max_mpoles,1:max_site),T%global_frame(1:T%max_mpoles,1:mxatms), stat=fail(4))
+    Allocate (T%polarisation_site(1:max_site),T%polarisation_atom(1:mxatms), stat=fail(5))
+    Allocate (T%dump_site(1:max_site),T%dump_atom(1:mxatms), stat=fail(6))
+    Allocate (T%rotation(1:mxatdm),T%n_choose_k(0:mxspl,0:mxspl), stat=fail(7))
+    Allocate (T%torque_x(1:mxatdm),T%torque_y(1:mxatdm),T%torque_z(1:mxatdm), stat=fail(8))
+    Allocate (T%rotation_x(1:T%max_mpoles,1:mxatms), &
+      T%rotation_y(1:T%max_mpoles,1:mxatms), &
+      T%rotation_z(1:T%max_mpoles,1:mxatms), stat=fail(9))
 
     If (Any(fail > 0)) Call error(1025)
 
-    mplflg = 0 ; ltpatm = 0
-    If (keyind == 1) lchatm = 0
+    T%flg = 0 ; T%ltp = 0
+    If (T%key == 1) Then
+      T%charmm = 0
+    End If
 
-    mpllfr = 0.0_wp ; mplgfr = 0.0_wp
-    plrsit = 0.0_wp ; plratm = 0.0_wp
-    dmpsit = 0.0_wp ; dmpatm = 0.0_wp
+    T%local_frame = 0.0_wp ; T%global_frame = 0.0_wp
+    T%polarisation_site = 0.0_wp ; T%polarisation_atom = 0.0_wp
+    T%dump_site = 0.0_wp ; T%dump_atom = 0.0_wp
 
     Do n=1,mxatdm
-       mprotm(n)%mtrxa = 0.0_wp
-       mprotm(n)%p1    = 0.0_wp
-       mprotm(n)%p2    = 0.0_wp
-       mprotm(n)%flag  = 0
-       mprotm(n)%mbnd  = 0
+      T%rotation(n)%mtrxa = 0.0_wp
+      T%rotation(n)%p1    = 0.0_wp
+      T%rotation(n)%p2    = 0.0_wp
+      T%rotation(n)%flag  = 0
+      T%rotation(n)%mbnd  = 0
     End Do
 
-    mptrqx = 0.0_wp ; mptrqy = 0.0_wp ; mptrqz = 0.0_wp
+    T%torque_x = 0.0_wp ; T%torque_y = 0.0_wp ; T%torque_z = 0.0_wp
 
-    mprotx = 0.0_wp ; mproty = 0.0_wp ; mprotz = 0.0_wp
+    T%rotation_x = 0.0_wp ; T%rotation_y = 0.0_wp ; T%rotation_z = 0.0_wp
 
-! Build the multipole map (polymap) and compute the constants ncombk
-! Also build the map (mplltg) that converts between index of a local
-! multipole to the index of the corresponding global multipole
+    ! Build the multipole map (polymap) and compute the constants T%n_choose_k
+    ! Also build the map (T%ltg) that converts between index of a local
+    ! multipole to the index of the corresponding global multipole
+    T%map(0,0,0)=1
 
-    mplmap(0,0,0)=1
+    T%ltg(1)=1
 
-    mplltg(1)=1
+    If (T%max_order >= 1) Then
+      T%map(1,0,0)=2 ; T%map(0,1,0)=3 ; T%map(0,0,1)=4
 
-    If (mxompl >= 1) Then
-
-       mplmap(1,0,0)=2 ; mplmap(0,1,0)=3 ; mplmap(0,0,1)=4
-
-       mplltg(2)=2 ; mplltg(3)=3 ; mplltg(4)=4
-
+      T%ltg(2)=2 ; T%ltg(3)=3 ; T%ltg(4)=4
     End If
 
-    If (mxompl >= 2) Then
+    If (T%max_order >= 2) Then
+      T%map(2,0,0)=5 ; T%map(1,1,0)=6 ; T%map(1,0,1)=7
+      T%map(0,2,0)=8 ; T%map(0,1,1)=9 ; T%map(0,0,2)=10
 
-       mplmap(2,0,0)=5 ; mplmap(1,1,0)=6 ; mplmap(1,0,1)=7
-       mplmap(0,2,0)=8 ; mplmap(0,1,1)=9 ; mplmap(0,0,2)=10
-
-       mplltg(5) =5 ; mplltg(6) =6 ; mplltg(7) =7
-       mplltg(8) =6 ; mplltg(9) =8 ; mplltg(10)=9
-       mplltg(11)=7 ; mplltg(12)=9 ; mplltg(13)=10
-
+      T%ltg(5) =5 ; T%ltg(6) =6 ; T%ltg(7) =7
+      T%ltg(8) =6 ; T%ltg(9) =8 ; T%ltg(10)=9
+      T%ltg(11)=7 ; T%ltg(12)=9 ; T%ltg(13)=10
     End If
 
-    If (mxompl >= 3) Then
+    If (T%max_order >= 3) Then
+      T%map(3,0,0)=11 ; T%map(2,1,0)=12 ; T%map(2,0,1)=13
+      T%map(1,2,0)=14 ; T%map(1,1,1)=15 ; T%map(1,0,2)=16
+      T%map(0,3,0)=17 ; T%map(0,2,1)=18 ; T%map(0,1,2)=19
+      T%map(0,0,3)=20
 
-       mplmap(3,0,0)=11 ; mplmap(2,1,0)=12 ; mplmap(2,0,1)=13
-       mplmap(1,2,0)=14 ; mplmap(1,1,1)=15 ; mplmap(1,0,2)=16
-       mplmap(0,3,0)=17 ; mplmap(0,2,1)=18 ; mplmap(0,1,2)=19
-       mplmap(0,0,3)=20
-
-       mplltg(14)=11 ; mplltg(15)=12 ; mplltg(16)=13
-       mplltg(17)=12 ; mplltg(18)=14 ; mplltg(19)=15
-       mplltg(20)=13 ; mplltg(21)=15 ; mplltg(22)=16
-       mplltg(23)=12 ; mplltg(24)=14 ; mplltg(25)=15
-       mplltg(26)=14 ; mplltg(27)=17 ; mplltg(28)=18
-       mplltg(29)=15 ; mplltg(30)=18 ; mplltg(31)=19
-       mplltg(32)=13 ; mplltg(33)=15 ; mplltg(34)=16
-       mplltg(35)=15 ; mplltg(36)=18 ; mplltg(37)=19
-       mplltg(38)=16 ; mplltg(39)=19 ; mplltg(40)=20
-
+      T%ltg(14)=11 ; T%ltg(15)=12 ; T%ltg(16)=13
+      T%ltg(17)=12 ; T%ltg(18)=14 ; T%ltg(19)=15
+      T%ltg(20)=13 ; T%ltg(21)=15 ; T%ltg(22)=16
+      T%ltg(23)=12 ; T%ltg(24)=14 ; T%ltg(25)=15
+      T%ltg(26)=14 ; T%ltg(27)=17 ; T%ltg(28)=18
+      T%ltg(29)=15 ; T%ltg(30)=18 ; T%ltg(31)=19
+      T%ltg(32)=13 ; T%ltg(33)=15 ; T%ltg(34)=16
+      T%ltg(35)=15 ; T%ltg(36)=18 ; T%ltg(37)=19
+      T%ltg(38)=16 ; T%ltg(39)=19 ; T%ltg(40)=20
     End If
 
-    If (mxompl >=4) Then
+    If (T%max_order >=4) Then
+      T%map(4,0,0)=21 ; T%map(3,1,0)=22 ; T%map(3,0,1)=23
+      T%map(2,2,0)=24 ; T%map(2,1,1)=25 ; T%map(2,0,2)=26
+      T%map(1,3,0)=27 ; T%map(1,2,1)=28 ; T%map(1,1,2)=29
+      T%map(1,0,3)=30 ; T%map(0,4,0)=31 ; T%map(0,3,1)=32
+      T%map(0,2,2)=33 ; T%map(0,1,3)=34 ; T%map(0,0,4)=35
 
-       mplmap(4,0,0)=21 ; mplmap(3,1,0)=22 ; mplmap(3,0,1)=23
-       mplmap(2,2,0)=24 ; mplmap(2,1,1)=25 ; mplmap(2,0,2)=26
-       mplmap(1,3,0)=27 ; mplmap(1,2,1)=28 ; mplmap(1,1,2)=29
-       mplmap(1,0,3)=30 ; mplmap(0,4,0)=31 ; mplmap(0,3,1)=32
-       mplmap(0,2,2)=33 ; mplmap(0,1,3)=34 ; mplmap(0,0,4)=35
+      T%ltg(41)=21 ; T%ltg(42)=22 ; T%ltg(43)=23
+      T%ltg(44)=22 ; T%ltg(45)=24 ; T%ltg(46)=25
+      T%ltg(47)=23 ; T%ltg(48)=25 ; T%ltg(49)=26
+      T%ltg(50)=22 ; T%ltg(51)=24 ; T%ltg(52)=25
+      T%ltg(53)=24 ; T%ltg(54)=27 ; T%ltg(55)=28
+      T%ltg(56)=25 ; T%ltg(57)=28 ; T%ltg(58)=29
+      T%ltg(59)=23 ; T%ltg(60)=25 ; T%ltg(61)=26
+      T%ltg(62)=25 ; T%ltg(63)=28 ; T%ltg(64)=29
+      T%ltg(65)=26 ; T%ltg(66)=29 ; T%ltg(67)=30
+      T%ltg(68)=22 ; T%ltg(69)=24 ; T%ltg(70)=25
+      T%ltg(71)=24 ; T%ltg(72)=27 ; T%ltg(73)=28
+      T%ltg(74)=25 ; T%ltg(75)=28 ; T%ltg(76)=29
+      T%ltg(77)=24 ; T%ltg(78)=27 ; T%ltg(79)=28
+      T%ltg(80)=27 ; T%ltg(81)=31 ; T%ltg(82)=32
+      T%ltg(83)=28 ; T%ltg(84)=32 ; T%ltg(85)=33
+      T%ltg(86)=25 ; T%ltg(87)=28 ; T%ltg(88)=29
+      T%ltg(89)=28 ; T%ltg(90)=32 ; T%ltg(91)=33
+      T%ltg(92)=29 ; T%ltg(93)=33 ; T%ltg(94)=34
+      T%ltg(95)=23 ; T%ltg(96)=25 ; T%ltg(97)=26
+      T%ltg(98)=25 ; T%ltg(99)=28 ; T%ltg(100)=29
 
-       mplltg(41)=21 ; mplltg(42)=22 ; mplltg(43)=23
-       mplltg(44)=22 ; mplltg(45)=24 ; mplltg(46)=25
-       mplltg(47)=23 ; mplltg(48)=25 ; mplltg(49)=26
-       mplltg(50)=22 ; mplltg(51)=24 ; mplltg(52)=25
-       mplltg(53)=24 ; mplltg(54)=27 ; mplltg(55)=28
-       mplltg(56)=25 ; mplltg(57)=28 ; mplltg(58)=29
-       mplltg(59)=23 ; mplltg(60)=25 ; mplltg(61)=26
-       mplltg(62)=25 ; mplltg(63)=28 ; mplltg(64)=29
-       mplltg(65)=26 ; mplltg(66)=29 ; mplltg(67)=30
-       mplltg(68)=22 ; mplltg(69)=24 ; mplltg(70)=25
-       mplltg(71)=24 ; mplltg(72)=27 ; mplltg(73)=28
-       mplltg(74)=25 ; mplltg(75)=28 ; mplltg(76)=29
-       mplltg(77)=24 ; mplltg(78)=27 ; mplltg(79)=28
-       mplltg(80)=27 ; mplltg(81)=31 ; mplltg(82)=32
-       mplltg(83)=28 ; mplltg(84)=32 ; mplltg(85)=33
-       mplltg(86)=25 ; mplltg(87)=28 ; mplltg(88)=29
-       mplltg(89)=28 ; mplltg(90)=32 ; mplltg(91)=33
-       mplltg(92)=29 ; mplltg(93)=33 ; mplltg(94)=34
-       mplltg(95)=23 ; mplltg(96)=25 ; mplltg(97)=26
-       mplltg(98)=25 ; mplltg(99)=28 ; mplltg(100)=29
-
-       mplltg(101)=26 ; mplltg(102)=29 ; mplltg(103)=30
-       mplltg(104)=25 ; mplltg(105)=28 ; mplltg(106)=29
-       mplltg(107)=28 ; mplltg(108)=32 ; mplltg(109)=33
-       mplltg(110)=29 ; mplltg(111)=33 ; mplltg(112)=34
-       mplltg(113)=26 ; mplltg(114)=29 ; mplltg(115)=30
-       mplltg(116)=29 ; mplltg(117)=33 ; mplltg(118)=34
-       mplltg(119)=30 ; mplltg(120)=34 ; mplltg(121)=35
-
+      T%ltg(101)=26 ; T%ltg(102)=29 ; T%ltg(103)=30
+      T%ltg(104)=25 ; T%ltg(105)=28 ; T%ltg(106)=29
+      T%ltg(107)=28 ; T%ltg(108)=32 ; T%ltg(109)=33
+      T%ltg(110)=29 ; T%ltg(111)=33 ; T%ltg(112)=34
+      T%ltg(113)=26 ; T%ltg(114)=29 ; T%ltg(115)=30
+      T%ltg(116)=29 ; T%ltg(117)=33 ; T%ltg(118)=34
+      T%ltg(119)=30 ; T%ltg(120)=34 ; T%ltg(121)=35
     End If
 
-    If (mxompl < 0 .or. mxompl >=5) Call error(2071)
+    If (T%max_order < 0 .or. T%max_order >=5) Call error(2071)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! compute n choose k
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    ! compute n choose k
     Do k = 0, mxspl
-       Do n = 0, mxspl
-          ncombk(n,k) = Exp(Factorial(n)-Factorial(n-k)-Factorial(k))
-       End Do
+      Do n = 0, mxspl
+        T%n_choose_k(n,k) = Exp(Factorial(n)-Factorial(n-k)-Factorial(k))
+      End Do
     End Do
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
   End Subroutine allocate_mpoles_arrays
 
-  Subroutine read_mpoles(l_top,sumchg,cshell,site,comm)
+  Subroutine cleanup(T)
+    Type( mpole_type ) :: T
+
+    If (Allocated(T%map)) Then
+      Deallocate(T%map)
+    End If
+    If (Allocated(T%ltg)) Then
+      Deallocate(T%ltg)
+    End If
+    If (Allocated(T%flg)) Then
+      Deallocate(T%flg)
+    End If
+    If (Allocated(T%ltp)) Then
+      Deallocate(T%ltp)
+    End If
+    If (Allocated(T%charmm)) Then
+      Deallocate(T%charmm)
+    End If
+
+    If (Allocated(T%local_frame)) Then
+      Deallocate(T%local_frame)
+    End If
+    If (Allocated(T%global_frame)) Then
+      Deallocate(T%global_frame)
+    End If
+
+    If (Allocated(T%polarisation_site)) Then
+      Deallocate(T%polarisation_site)
+    End If
+    If (Allocated(T%polarisation_atom)) Then
+      Deallocate(T%polarisation_atom)
+    End If
+
+    If (Allocated(T%dump_site)) Then
+      Deallocate(T%dump_site)
+    End If
+    If (Allocated(T%dump_atom)) Then
+      Deallocate(T%dump_atom)
+    End If
+
+    If (Allocated(T%rotation)) Then
+      Deallocate(T%rotation)
+    End If
+
+    If (Allocated(T%rotation_x)) Then
+      Deallocate(T%rotation_x)
+    End If
+    If (Allocated(T%rotation_y)) Then
+      Deallocate(T%rotation_y)
+    End If
+    If (Allocated(T%rotation_z)) Then
+      Deallocate(T%rotation_z)
+    End If
+
+    If (Allocated(T%torque_x)) Then
+      Deallocate(T%torque_x)
+    End If
+    If (Allocated(T%torque_y)) Then
+      Deallocate(T%torque_y)
+    End If
+    If (Allocated(T%torque_z)) Then
+      Deallocate(T%torque_z)
+    End If
+
+    If (Allocated(T%n_choose_k)) Then
+      Deallocate(T%n_choose_k)
+    End If
+  End Subroutine cleanup
+
+  Subroutine read_mpoles(l_top,sumchg,cshell,site,mpole,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -217,11 +324,12 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,           Intent ( In    ) :: l_top
-    Real( Kind = wp ), Intent ( InOut ) :: sumchg
+    Logical,            Intent( In    ) :: l_top
+    Real( Kind = wp ),  Intent( InOut ) :: sumchg
     Type( site_type ), Intent( InOut ) :: site
     Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( comms_type ), Intent ( InOut ) :: comm
+    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( comms_type ), Intent( InOut ) :: comm
 
     Logical                :: safe,l_rsh,l_ord=.false.
 
@@ -237,19 +345,19 @@ Contains
                               indmpl,indmpl_start,indmpl_final
 
     Real( Kind = wp )      :: charge,scl,polarity,dumping
-    Character( Len = 256 ) :: message
+
+    Character( Len = 256 ) :: message,messages(3)
 
   ! open MPOLES data file
 
-  If (comm%idnode == 0) Then
-    Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
-  End If
-  Write(message,"('ELECTROSTATICS MULTIPOLES SPECIFICATION')")
-  Call info(message,.true.)
-  If (.not.l_top) Then
-    Write(message,"('detailed specification opted out')")
-    Call info(message,.true.)
-  End If
+    If (comm%idnode == 0) Then
+       Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
+    End If
+    Call info('electrostatics multipoles specification',.true.)
+    If (.not.l_top) Then
+      Call info('detailed specification opted out',.true.)
+    End If
+
 
     Call get_line(safe,nmpldt,record,comm)
     If (.not.safe) Go To 2000
@@ -282,24 +390,24 @@ Contains
           If (word(1:4) == 'type') Call get_word(record,word)
 
           If (site%ntype_mol == Nint(word_2_real(word))) Then
-             Write(message,"('number of molecular types',6x,i10)") site%ntype_mol
-             Call info(message,.true.)
-          Else
-            Call warning("number of molecular types mistmatch between FIELD and MPOLES",.true.)
-            Write(message,'(2(a,i0))') &
-            "FIELD  reports: ", site%ntype_mol, ", MPOLES reports: ", Nint(word_2_real(word))
+            Write(message,'(a,i10)') 'number of molecular types ',site%ntype_mol
             Call info(message,.true.)
-            Call error(623,master_only=.true.)
+          Else
+            Write(message,'(2(a,i0),a)') &
+              'number of molecular types mismatch between FIELD(',site%ntype_mol, &
+              ') and MPOLES(',Nint(word_2_real(word)),')'
+            Call warning(message,.true.)
+            Call error(623)
           End If
 
   ! read in molecular characteristics for every molecule
 
           Do itmols=1,site%ntype_mol
 
-            If (l_top) Then
-              Write(message,"('molecular species type',9x,i10)") itmols
-              Call info(message,.true.)
-            End If
+             If (l_top) Then
+               Write(message,'(a,i10)') 'molecular species type ',itmols
+               Call info(message,.true.)
+             End If
 
   ! name of molecular species
 
@@ -315,12 +423,12 @@ Contains
 
              If (record1 == record2) Then
                If (l_top) Then
-                 Write(message,"('name of species:',13x,a40)") site%mol_name(itmols)
+                 Write(message,'(2a)') 'name of species: ',Trim(site%mol_name(itmols))
                  Call info(message,.true.)
                End If
              Else
-               Write(message,'(a)') 'molecular names mistmatch between FIELD and MPOLES for type'
-               Call error(623,message,.true.)
+               Call warning('molecular names mismatch between FIELD and MPOLES for type',.true.)
+               Call error(623)
              End If
 
   ! read molecular data
@@ -342,15 +450,15 @@ Contains
 
                    If (site%num_mols(itmols) == Nint(word_2_real(word))) Then
                      If (l_top) Then
-                       Write(message,"('number of molecules  ',10x,i10)") site%num_mols(itmols)
+                       Write(message,'(a,i10)') 'number of molecules ',site%num_mols(itmols)
                        Call info(message,.true.)
                      End If
                    Else
-                     Call warning("number of molecules mistmatch between FIELD and MPOLES",.true.)
-                     Write(message,'(2(a,i0))') &
-                     "FIELD  reports: ", site%num_mols(itmols), ", MPOLES reports: ", Nint(word_2_real(word))
-                     Call info(message,.true.)
-                     Call error(623,master_only=.true.)
+                     Write(message,'(2(a,i0),a)') &
+                       'number of molecular types mismatch between FIELD(',site%ntype_mol, &
+                       ') and MPOLES(',Nint(word_2_real(word)),')'
+                     Call warning(message,.true.)
+                     Call error(623)
                    End If
 
   ! read in atomic details
@@ -360,19 +468,19 @@ Contains
                    Call get_word(record,word)
 
                    If (site%num_site(itmols) == Nint(word_2_real(word))) Then
-                      If (l_top) Then
-                        Write(message,"('number of atoms/sites',10x,i10)") site%num_site(itmols)
-                        Call info(message,.true.)
-                        Write(message,"('atomic characteristics:', &
-                          & /,/,15x,'site',4x,'name',2x,'multipolar order',2x,'repeat'/)")
-                        Call info(message,.true.)
-                      End If
+                     If (l_top) Then
+                       Write(messages(1),'(a,i10)') 'number of atoms/sites ',site%num_site(itmols)
+                       Write(messages(2),'(a)') 'atomic characteristics:'
+                       Write(messages(3),'(8x,a4,4x,a4,2x,a16,2x,a6)') &
+                         'site','name','multipolar order','repeat'
+                       Call info(messages,3,.true.)
+                     End If
                    Else
-                     Call warning("number of molecules mistmatch between FIELD and MPOLES",.true.)
-                     Write(message,'(2(a,i0))') &
-                     "FIELD  reports: ", site%num_mols(itmols), ", MPOLES reports: ", Nint(word_2_real(word))
-                     Call info(message,.true.)
-                     Call error(623,master_only=.true.)
+                     Write(message,'(2(a,i0),a)') &
+                       'number of molecular types mismatch between FIELD(',site%ntype_mol, &
+                       ') and MPOLES(',Nint(word_2_real(word)),')'
+                     Call warning(message,.true.)
+                     Call error(623)
                    End If
 
   ! for every molecule of this type get site and atom description
@@ -410,8 +518,9 @@ Contains
                          Do i=jsite,lsite
                            If (site%site_name(i) /= atom) Then ! detect mish-mash
                              Write(message,'(a,i0)') &
-                               "site names mistmatch between FIELD and MPOLES for site ", ksite+1+i-jsite
-                             Call error(623,message,.true.)
+                               'site names mismatch between FIELD and MPOLES for site ',ksite+1+i-jsite
+                             Call warning(message,.true.)
+                             Call error(623)
                            End If
                          End Do
 
@@ -427,16 +536,27 @@ Contains
 
                             isite2=nsite+cshell%lstshl(2,kshels)
                             If ((isite2 >= jsite .and. isite2 <= lsite)) Then
-                               l_rsh=.false.
-                               If (ordmpl > 0) Write(message,'(a)') &
-                                 "a shell (of a polarisable multipolar ion) can only bear a charge to emulate a self-iduced dipole"
-                               Call warning(message,.true.)
-                               If (polarity > zero_plus) Write(message,'(a)') &
-                                 "a shell (of a polarisable multipolar ion) cannot have its own associated polarisability"
-                               Call warning(message,.true.)
-                               If (dumping  > zero_plus) Write(message,'(a)') &
-                                 "a shell (of a polarisable multipolar ion) cannot have its own associated dumping factor"
-                               Call warning(message,.true.)
+                              l_rsh=.false.
+                              If (comm%idnode == 0) Then
+                                If (ordmpl > 0) Then
+                                  Call warning( &
+                                    'a shell (of a polarisable multipolar ion)' &
+                                    //'can only bear a charge to emulate a' &
+                                    //'self-iduced dipole',.true.)
+                                End If
+                                If (polarity > zero_plus) Then
+                                  Call warning( &
+                                    'a shell (of a polarisable multipolar ion)' &
+                                    //'cannot have its own associated polarisability', &
+                                    .true.)
+                                End If
+                                If (dumping  > zero_plus) Then
+                                  Call warning( &
+                                    'a shell (of a polarisable multipolar ion)' &
+                                    //'cannot have its own associated dumping factor', &
+                                    .true.)
+                                End IF
+                              End If
                             End If
                          End Do
 
@@ -449,13 +569,13 @@ Contains
 
                          If (l_top) Then
                            If (l_rsh) Then
-                             Write(message,"(9x,i10,4x,a8,4x,i2,5x,i10,2f7.3)") ksite+1,atom,ordmpl,nrept,polarity,dumping
-                             Call info(message,.true.)
+                             Write(message,'(2x,i10,4x,a8,4x,i2,5x,i10,2f7.3)') &
+                               ksite+1,atom,ordmpl,nrept,polarity,dumping
                            Else
-                             Write(message,"(9x,i10,4x,a8,4x,i2,5x,i10,2a)") ksite+1,atom,1,nrept,                                 &
-                               Merge(' *ignored* ','           ',polarity > zero_plus), &
-                               Merge(' *ignored* ','           ',dumping  > zero_plus)
-                             Call info(message,.true.)
+                             Write(message,'(2x,i10,4x,a8,4x,i2,5x,i10,2a)') &
+                               ksite+1,atom,ordmpl,nrept,polarity,dumping, &
+                               Merge(' *ignored* ','           ',polarity>zero_plus), &
+                               Merge(' *ignored* ','           ',dumping >zero_plus)
                            End If
                          End If
 
@@ -471,11 +591,12 @@ Contains
                          sitmpl = 1
 
                          charge=word_2_real(word)
+
                          site%charge_site(jsite:lsite)=charge
-                         mpllfr(sitmpl,jsite:lsite)=charge
+                         mpole%local_frame(sitmpl,jsite:lsite)=charge
                          If (l_rsh) Then
-                            plrsit(jsite:lsite)=polarity
-                            dmpsit(jsite:lsite)=dumping
+                            mpole%polarisation_site(jsite:lsite)=polarity
+                            mpole%dump_site(jsite:lsite)=dumping
   !                      Else ! initilised to zero in mpoles_module
                          End If
 
@@ -485,10 +606,10 @@ Contains
 
   ! report
 
-                          If (l_top) Then
-                            Write(message,"(3x,a12,3x,f10.5)") 'charge',charge
-                            Call info(message,.true.)
-                          End If
+                         If (l_top) Then
+                           Write(message,'(2x,a,f10.5)') 'charge ',charge
+                           Call info(message,.true.)
+                         End If
 
   ! higher poles counters
 
@@ -510,31 +631,32 @@ Contains
 
   ! Only assign what FIELD says is needed or it is a shell
 
-                            If (ordmpl_next <= Merge(mxompl,1,l_rsh)) Then
+                            If (ordmpl_next <= Merge(mpole%max_order,1,l_rsh)) Then
 
-                               Do i=indmpl_start,indmpl_final
-                                  sitmpl = sitmpl+1
-                                  mpllfr(sitmpl,jsite:lsite)=word_2_real(word)
-                                  Call get_word(record,word)
-                               End Do
+                              Do i=indmpl_start,indmpl_final
+                                sitmpl = sitmpl+1
+                                mpole%local_frame(sitmpl,jsite:lsite)=word_2_real(word)
+                                Call get_word(record,word)
+                              End Do
 
   ! report
 
-                               If (l_top) Then
-                                 If      (ordmpl_next == 1) Then
-                                   Write(message,"(3x,a12,3x, 3f10.5)") 'dipole',       mpllfr(indmpl_start:indmpl_final,jsite)
-                                   Call info(message,.true.)
-                                 Else If (ordmpl_next == 2) Then
-                                   Write(message,"(3x,a12,3x, 6f10.5)") 'quadrupole',   mpllfr(indmpl_start:indmpl_final,jsite)
-                                   Call info(message,.true.)
-                                 Else If (ordmpl_next == 3) Then
-                                   Write(message,"(3x,a12,3x,10f10.5)") 'octupole',     mpllfr(indmpl_start:indmpl_final,jsite)
-                                   Call info(message,.true.)
-                                 Else If (ordmpl_next == 4) Then
-                                   Write(message,"(3x,a12,3x,15f10.5)") 'hexadecapole', mpllfr(indmpl_start:indmpl_final,jsite)
-                                   Call info(message,.true.)
-                                 End If
-                               End If
+                              If (l_top) Then
+                                If      (ordmpl_next == 1) Then
+                                  Write(message,'(2x,a12,1x,3f10.5)') 'dipole', &
+                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                Else If (ordmpl_next == 2) Then
+                                  Write(message,'(2x,a12,1x,6f10.5)') 'quadrupole', &
+                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                Else If (ordmpl_next == 3) Then
+                                  Write(message,'(2x,a12,1x,10f10.5)') 'octupole', &
+                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                Else If (ordmpl_next == 4) Then
+                                  Write(message,'(2x,a12,1x,15f10.5)') 'hexadecapole', &
+                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                End If
+                                Call info(message,.true.)
+                              End If
 
   ! rescale poles values by their degeneracy
 
@@ -545,11 +667,12 @@ Contains
                                      Do j=l,0,-1
                                         k=l-j
 
-                                        scl=Exp(Factorial(ordmpl_next)-Factorial(k)-Factorial(j)-Factorial(i))
-  !                                      Write(*,*) i,j,k,Nint(scl)
-
+                                        scl=Exp(factorial(ordmpl_next)-factorial(k)-factorial(j)-factorial(i))
                                         sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
-                                        If (Nint(scl) /= 1) mpllfr(sitmpl,jsite:lsite)=mpllfr(sitmpl,jsite:lsite)/scl
+                                        If (Nint(scl) /= 1) Then
+                                          mpole%local_frame(sitmpl,jsite:lsite)= &
+                                            mpole%local_frame(sitmpl,jsite:lsite)/scl
+                                        End If
                                      End Do
                                   End Do
                                End If
@@ -567,49 +690,40 @@ Contains
                                If (l_top) Then
                                  If (l_rsh) Then
                                    If      (ordmpl_next == 1) Then
-                                     Write(message,"(3x,a12,1x,a)") &
-                                       'dipole', '     *** supplied but not required ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a12,1x,a)') &
+                                       'dipole',' supplied but not required'
                                    Else If (ordmpl_next == 2) Then
-                                     Write(message,"(3x,a12,1x,a)") &
-                                       'quadrupole', '     *** supplied but not required ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a12,1x,a)') &
+                                       'quadrupole',' supplied but not required'
                                    Else If (ordmpl_next == 3) Then
-                                     Write(message,"(3x,a12,1x,a)") &
-                                       'octupole', '     *** supplied but not required ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a12,1x,a)') &
+                                       'octupole',' supplied but not required'
                                    Else If (ordmpl_next == 4) Then
-                                     Write(message,"(3x,a12,1x,a)") &
-                                       'hexadecapole', '     *** supplied but not required ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a12,1x,a)') &
+                                       'hexadecapole',' supplied but not required'
                                    Else
-                                     Write(message,"(3x,a12,i0,a)") &
-                                       'pole order ',ordmpl_next,'     *** supplied but not required ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a12,i0,a)') &
+                                       'pole order ',ordmpl_next,' supplied but not required'
                                    End If
                                  Else
                                    If      (ordmpl_next == 1) Then
-                                     Write(message,"(3x,a12,1x,a)") &
-                                       'dipole', '     *** supplied but ignored as invalid ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a12,1x,a)') &
+                                       'dipole',' supplied but ignored as invalid'
                                    Else If (ordmpl_next == 2) Then
-                                     Write(message,"(3x,a12,1x,a)") &
-                                       'quadrupole', '     *** supplied but ignored as invalid ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a12,1x,a)') &
+                                       'quadrupole',' supplied but ignored as invalid'
                                    Else If (ordmpl_next == 3) Then
-                                     Write(message,"(3x,a12,1x,a)") &
-                                       'octupole', '     *** supplied but ignored as invalid ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a12,1x,a)') &
+                                       'octupole',' supplied but ignored as invalid'
                                    Else If (ordmpl_next == 4) Then
-                                     Write(message,"(3x,a12,1x,a)") &
-                                       'hexadecapole', '     *** supplied but ignored as invalid ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a12,1x,a)') &
+                                       'hexadecapole',' supplied but ignored as invalid'
                                    Else
-                                     Write(message,"(3x,a12,i0,a)") &
-                                       'pole order ',ordmpl_next,'     *** supplied but ignored as invalid ***'
-                                     Call info(message,.true.)
+                                     Write(message,'(2x,a11,i0,a)') &
+                                       'pole order ',ordmpl_next,' supplied but ignored as invalid'
                                    End If
                                  End If
+                                 Call info(message,.true.)
                                End If
 
                             End If
@@ -635,24 +749,24 @@ Contains
                 Else If (word(1:6) == 'finish') Then
 
                   Write(message,'(3(a,i0))') &
-                    "multipolar electrostatics requested up to order ", &
-                    mxompl, " with specified interactions up order ", &
-                    ordmpl_max," and least order ", ordmpl_min
+                    'multipolar electrostatics requested up to order ', &
+                    mpole%max_order, ' with specified interactions up order ',  &
+                    ordmpl_max,' and least order ', ordmpl_min
                   Call warning(message,.true.)
-                  If (ordmpl_max*mxompl == 0) Then
-                    Write(message,'(1x,2a)') &
-                      "multipolar electrostatics machinery to be used for ", &
-                      "monopoles only electrostatic interactions (point charges only)"
-                    Call warning(message,.true.)
+
+                  If (ordmpl_max*mpole%max_order == 0) Then
+                    Call warning( &
+                      'multipolar electrostatics machinery to be used for monompoles ' &
+                      //'only electrostatic interactions (point charges only)', &
+                      .true.)
                   End If
                   If (ordmpl_max > 4) Then
-                    Write(message,'(1x,2a)')     &
-                      "electrostatic interactions beyond hexadecapole ", &
-                      "order can not be considered and are thus ignored"
-                    Call warning(message,.true.)
+                    Call warning( &
+                      'electrostatic interactions beyond hexadecapole order can ' &
+                      //'not be considered and are thus ignored',.true.)
                   End If
 
-                   Go To 1000
+                  Go To 1000
 
                 Else
 
@@ -660,7 +774,8 @@ Contains
 
                    Call strip_blanks(record)
                    Write(message,'(2a)') word(1:Len_Trim(word)+1),record
-                   Call error(12,message,.true.)
+                   Call info(message,.true.)
+                   Call error(12)
 
                 End If
 
@@ -686,8 +801,8 @@ Contains
 
   ! error exit for unidentified directive
 
-          Write(message,'(a)') word(1:Len_Trim(word))
-          Call error(4,message,.true.)
+          Call info(word(1:Len_Trim(word)),.true.)
+          Call error(4)
 
        End If
 
@@ -701,4 +816,5 @@ Contains
     Call error(52)
 
   End Subroutine read_mpoles
+
 End Module mpole

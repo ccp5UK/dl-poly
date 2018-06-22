@@ -8,7 +8,7 @@ Module link_cells
   Use configuration, Only : cell,natms,nlast,ltg,lfrzn, &
                             xxx,yyy,zzz,neigh%list_excl,neigh%list
   Use core_shell,    Only : listshl,legshl
-  Use mpole,         Only : keyind,lchatm
+  Use mpole,         Only : mpole_type
   Use development,   Only : development_type
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : dcell, invert,match
