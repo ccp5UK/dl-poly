@@ -90,7 +90,7 @@ program dl_poly
   Use inversions, Only : inversions_type,allocate_inversions_arrays,inversions_forces
   Use three_body, Only : threebody_type, allocate_three_body_arrays, three_body_forces
 
-  Use mpole
+  Use mpole, Only : mpole_type,POLARISATION_CHARMM
 
   Use vdw, Only : vdw_type
   Use metal, Only : metal_type
@@ -276,6 +276,7 @@ program dl_poly
   Type( rdf_type ) :: rdf
   Type( netcdf_param ) :: netcdf
   Type( minimise_type ) :: minimise
+  Type( mpole_type ) :: mpole
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -345,7 +346,7 @@ program dl_poly
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,alpha,width,site%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,comm)
+    tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,mpole,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -377,7 +378,7 @@ program dl_poly
   Call allocate_dihedrals_arrays(dihedral)
   Call allocate_inversions_arrays(inversion)
 
-  Call allocate_mpoles_arrays(site%max_site,neigh%max_exclude)
+  Call mpole%init(site%max_site,neigh%max_exclude,mxatdm,mxspl,mxatms)
 
   ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
 
@@ -419,7 +420,8 @@ program dl_poly
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
-    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,minimise,tmr,comm)
+    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf, &
+    minimise,mpole,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -431,7 +433,7 @@ program dl_poly
     atmfre,atmfrz,megatm,megfrz,    &
     megrgd,    &
     megtet,core_shells,pmfs,cons,thermo,met,bond,angle,   &
-    dihedral,inversion,tether,threebody,site,vdw,tersoff,fourbody,rdf,comm)
+    dihedral,inversion,tether,threebody,site,vdw,tersoff,fourbody,rdf,mpole,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -510,7 +512,7 @@ program dl_poly
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(keyfce,neigh,site,comm)
+  Call set_halo_particles(keyfce,neigh,site,mpole,comm)
 
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
@@ -524,15 +526,22 @@ program dl_poly
       (l_str,l_top,lsim,dvar,      &
       megatm,megfrz,atmfre,atmfrz, &
       megrgd,degrot,degtra,        &
-      megtet,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether,neigh,site,comm)
-    If (mximpl > 0) Then
-      Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion,comm) 
+      megtet,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether,neigh, &
+      site,mpole,comm)
+    If (mpole%max_mpoles > 0) Then
+      Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
+        mpole,comm)
       ! multipoles topology for internal coordinate system
-      If (keyind == 1) Call build_chrm_intra &
-         (neigh%max_exclude,core_shells,cons,bond,angle,dihedral,inversion,comm) 
+      If (mpole%key == POLARISATION_CHARMM) Then
+        Call build_chrm_intra(neigh%max_exclude,core_shells,cons,bond,angle, &
+          dihedral,inversion,mpole,comm)
+      End If
        ! CHARMM core-shell screened electrostatic induction interactions
     End If
-    If (lexcl) Call build_excl_intra(lecx,core_shells,cons,bond,angle,dihedral,inversion,neigh,comm)
+    If (lexcl) Then
+      Call build_excl_intra(lecx,core_shells,cons,bond,angle,dihedral, &
+        inversion,neigh,comm)
+    End If
   Else
     Call report_topology                &
       (megatm,megfrz,atmfre,atmfrz, &
@@ -559,7 +568,7 @@ program dl_poly
 
   ! set and halo rotational matrices and their infinitesimal rotations
 
-  If (mximpl > 0) Call mpoles_rotmat_set_halo(comm)
+  If (mpole%max_mpoles > 0) Call mpoles_rotmat_set_halo(mpole,comm)
 
   ! SET initial system temperature
 
@@ -653,16 +662,16 @@ program dl_poly
 
   If (lsim) Then
     Call w_md_vv(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
-      pois,bond,angle,dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,tmr)
+      pois,bond,angle,dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,mpole,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff, &
-        fourbody,rdf,netcdf,minimise,tmr)
+        fourbody,rdf,netcdf,minimise,mpole,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf, &
-        netcdf,minimise)
+        netcdf,minimise,mpole)
     End If
   End If
 
@@ -774,7 +783,7 @@ program dl_poly
     Write(banner(3),fmt1) '****     https://doi.org/10.1016/j.cpc.2006.05.001            ****'
     Call info(banner,3,.true.)
   End If
-  If (mximpl > 0) Then
+  If (mpole%max_mpoles > 0) Then
     Write(banner(1),fmt1) '****   - H.A. Boateng & I.T. Todorov,                         ****'
     Write(banner(2),fmt1) '****     J. Chem. Phys., 142, 034117 (2015),                  ****'
     Write(banner(3),fmt1) '****     https://doi.org/10.1063/1.4905952                    ****'
@@ -804,7 +813,8 @@ program dl_poly
 Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-      inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,tmr)
+      inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
+      minimise,mpole,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -825,11 +835,13 @@ Contains
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( minimise_type ), Intent( InOut ) :: minimise
+    Type( mpole_type ), Intent( InOut ) :: mpole
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
+  Subroutine w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
+      dihedral,inversion,tether,neigh,site,mpole)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -842,6 +854,7 @@ Contains
     Type( tethers_type ), Intent( InOut ) :: tether
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: site
+    Type( mpole_type ), Intent( InOut ) :: mpole
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
@@ -894,7 +907,7 @@ Contains
   End Subroutine w_refresh_output
 
   Subroutine w_md_vv(mxatdm_,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
-      dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,tmr)
+      dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,mpole,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -913,12 +926,14 @@ Contains
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
+    Type( mpole_type ), Intent( InOut ) :: mpole
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
-      bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf,minimise)
+      bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf,minimise &
+      ,mpole)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -939,6 +954,7 @@ Contains
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( minimise_type ), Intent( InOut ) :: minimise
+    Type( mpole_type ), Intent( InOut ) :: mpole
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -949,7 +965,8 @@ Contains
   End Subroutine w_replay_history
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
-    angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,tmr)
+    angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
+    minimise,mpole,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -972,6 +989,7 @@ Contains
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( minimise_type ), Intent( InOut ) :: minimise
+    Type( mpole_type ), Intent( InOut ) :: mpole
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

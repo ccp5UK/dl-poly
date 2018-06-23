@@ -9,8 +9,8 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings &
-        (cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
+        Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
+          dihedral,inversion,tether,neigh,site,mpole)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -19,20 +19,21 @@
 ! and stress tensor (these are all additive in the force subroutines)
 
      fxx = 0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
-     If (mximpl > 0) Then
-        mptrqx=0.0_wp ; mptrqy=0.0_wp ; mptrqz=0.0_wp
+     If (mpole%max_mpoles > 0) Then
+        mpole%torque_x=0.0_wp ; mpole%torque_y=0.0_wp ; mpole%torque_z=0.0_wp
      End If
      stat%stress = 0.0_wp
 
 ! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
 
-     If (.not.(met%max_metal == 0 .and. keyfce == 0 .and. l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) &
-        Call two_body_forces                      &
-           (pdplnc,thermo%ensemble,    &
-           alpha,epsq,keyfce,nstfce,lbook,megfrz, &
-           leql,nsteql,nstep,         &
-           cshell,               &
-           stat,ewld,devel,met,pois,neigh,site,vdw,rdf,tmr,comm)
+     If (.not.(met%max_metal == 0 .and. keyfce == 0 .and. l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then
+       Call two_body_forces                      &
+         (pdplnc,thermo%ensemble,    &
+         alpha,epsq,keyfce,nstfce,lbook,megfrz, &
+         leql,nsteql,nstep,         &
+         cshell,               &
+         stat,ewld,devel,met,pois,neigh,site,vdw,rdf,mpole,tmr,comm)
+     End If
 
 ! Calculate tersoff forces
 
@@ -60,7 +61,8 @@
         ltmp = (bond%bin_pdf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,comm)
+        Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff, &
+          keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,mpole,comm)
      End If
 
 ! Calculate valence angle forces
@@ -79,7 +81,8 @@
 
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
-           neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp,dihedral,vdw,comm)
+           neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp, &
+           stat%virsrp,dihedral,vdw,mpole,comm)
      End If
 
 ! Calculate inversion forces
@@ -151,7 +154,7 @@
 
         If (.not.(relaxed_shl .and. minimise%relaxed)) Then
            Call w_refresh_mappings &
-            (cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
+            (cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site,mpole)
 
            Go To 100
         End If

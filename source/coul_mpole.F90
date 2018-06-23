@@ -12,16 +12,17 @@ Module coul_mpole
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type
-  Use setup, Only : mxspl,mxompl,mximpl,mxatdm,mxatms, &
+  Use setup, Only : mxspl,mxatdm,mxatms, &
                             r4pie0, zero_plus, mxgele, nrite, sqrpi
   Use configuration, Only : imcon,natms,ltg,fxx,fyy,fzz,xxx,yyy,zzz,cell, &
                             chge
-  Use mpole
+  Use mpole, Only : mpole_type
   Use mpoles_container, Only : coul_deriv, ewald_deriv, &
                                explicit_fscp_rfp_loops, explicit_ewald_real_loops, &
                                explicit_ewald_real_loops
   Use numerics,         Only : erfcgen, images_s
   Use neighbours,       Only : neighbours_type
+  Use errors_warnings, Only : error
 
   Implicit None
 
@@ -33,7 +34,7 @@ Module coul_mpole
 Contains
 
   Subroutine intra_mcoul(keyfce,rcut,alpha,epsq,iatm,jatm,scale, &
-      rrr,xdf,ydf,zdf,coul,virele,fx,fy,fz,safe)
+      rrr,xdf,ydf,zdf,coul,virele,fx,fy,fz,safe,mpole)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -50,6 +51,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: xdf,ydf,zdf,rrr
     Real( Kind = wp ), Intent(   Out ) :: coul,virele,fx,fy,fz
     Logical,           Intent( InOut ) :: safe
+    Type( mpole_type ), Intent( InOut ) :: mpole
 
     Integer                 :: k1,k2,k3,s1,s2,s3,n
     Integer                 :: ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -65,12 +67,12 @@ Contains
       tix,tiy,tiz,tjx,tjy,tjz, &
       talpha,alphan,tmp,tmpi,tmpj,t1,t2,sx,sy,sz,kx,ky,kz,txyz
 
-    Real( Kind = wp ) :: d1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-    Real( Kind = wp ) :: b1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-    Real( Kind = wp ) :: a1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-    Real( Kind = wp ) :: imp(1:mximpl),jmp(1:mximpl)
-    Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
-    Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
+    Real( Kind = wp ) :: d1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
+    Real( Kind = wp ) :: b1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
+    Real( Kind = wp ) :: a1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
+    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
 
     Real( Kind = wp ), Parameter :: aa1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: aa2 = -0.284496736_wp
@@ -121,8 +123,8 @@ Contains
 
     ! get the multipoles for sites i and j
 
-    imp=mplgfr(:,iatm)
-    jmp=mplgfr(:,jatm)
+    imp=mpole%global_frame(:,iatm)
+    jmp=mpole%global_frame(:,jatm)
 
     ! ignore interaction if the charge is zero
 
@@ -130,13 +132,13 @@ Contains
 
     ! get the components for site i and j infinitesimal rotations
 
-    impx=mprotx(:,iatm)
-    impy=mproty(:,iatm)
-    impz=mprotz(:,iatm)
+    impx=mpole%rotation_x(:,iatm)
+    impy=mpole%rotation_y(:,iatm)
+    impz=mpole%rotation_z(:,iatm)
 
-    jmpx=mprotx(:,jatm)
-    jmpy=mproty(:,jatm)
-    jmpz=mprotz(:,jatm)
+    jmpx=mpole%rotation_x(:,jatm)
+    jmpy=mpole%rotation_y(:,jatm)
+    jmpz=mpole%rotation_z(:,jatm)
 
     ! default convergence factor and derivative of 'r'
 
@@ -153,7 +155,7 @@ Contains
 
       ! compute derivatives of 1/r kernel
 
-      Call coul_deriv(1,2*mxompl+1,xdf,ydf,zdf,rrr,d1)
+      Call coul_deriv(1,2*mpole%max_order+1,xdf,ydf,zdf,rrr,d1)
 
       ! distance dependent dielectric
 
@@ -161,7 +163,7 @@ Contains
 
       ! Compute derivatives of 1/r^2 kernel
 
-      Call coul_deriv(2,2*mxompl+1,xdf,ydf,zdf,rrr,d1)
+      Call coul_deriv(2,2*mpole%max_order+1,xdf,ydf,zdf,rrr,d1)
 
       ! force shifted coulombic and reaction field
 
@@ -171,7 +173,7 @@ Contains
 
         ! compute derivatives of 'r'
 
-        Call coul_deriv(-1,2*mxompl+1,xdf,ydf,zdf,rrr,a1)
+        Call coul_deriv(-1,2*mpole%max_order+1,xdf,ydf,zdf,rrr,a1)
 
         ! scale the derivatives of 'r'
 
@@ -184,7 +186,8 @@ Contains
 
         ! compute derivatives of the ewald real space kernel
 
-        Call ewald_deriv(-2,2*mxompl+1,1,fer,alpha*xdf,alpha*ydf,alpha*zdf,alpha*rrr,d1)
+        Call ewald_deriv(-2,2*mpole%max_order+1,1,fer,alpha*xdf,alpha*ydf, &
+          alpha*zdf,alpha*rrr,mpole%max_order,d1)
 
         ! scale the derivatives into the right form
 
@@ -197,11 +200,11 @@ Contains
 
           ! compute derivatives of '1/r'
 
-          Call coul_deriv(1,2*mxompl+1,xdf,ydf,zdf,rrr,d1)
+          Call coul_deriv(1,2*mpole%max_order+1,xdf,ydf,zdf,rrr,d1)
 
           ! compute derivatives of 'r'
 
-          Call coul_deriv(-1,2*mxompl+1,xdf,ydf,zdf,rrr,a1)
+          Call coul_deriv(-1,2*mpole%max_order+1,xdf,ydf,zdf,rrr,a1)
 
           ! scale the derivatives of 'r' and add to d1
 
@@ -218,11 +221,11 @@ Contains
 
           ! compute derivatives of '1/r'
 
-          Call coul_deriv(1,2*mxompl+1,xdf,ydf,zdf,rrr,d1)
+          Call coul_deriv(1,2*mpole%max_order+1,xdf,ydf,zdf,rrr,d1)
 
           ! compute derivatives of 'r^2'
 
-          Call coul_deriv(-2,2*mxompl+1,xdf,ydf,zdf,rrr,a1)
+          Call coul_deriv(-2,2*mpole%max_order+1,xdf,ydf,zdf,rrr,a1)
 
           ! scale the derivatives of 'r' and add to d1
 
@@ -233,7 +236,7 @@ Contains
 
           ! compute derivatives of 'r^2'
 
-          Call coul_deriv(-2,2*mxompl+1,xdf,ydf,zdf,rrr,b1)
+          Call coul_deriv(-2,2*mpole%max_order+1,xdf,ydf,zdf,rrr,b1)
 
           ! scale the derivatives of 'r^2' and add to scaled derivatives of 'r'
 
@@ -253,36 +256,36 @@ Contains
     If (safe) Then
 
       kz = 1.0_wp
-      Do k3=0,mxompl
+      Do k3=0,mpole%max_order
 
         ky = kz
-        Do k2=0,mxompl-k3
+        Do k2=0,mpole%max_order-k3
 
           kx = ky
-          Do k1=0,mxompl-k3-k2
+          Do k1=0,mpole%max_order-k3-k2
 
-            jj = mplmap(k1,k2,k3)
+            jj = mpole%map(k1,k2,k3)
 
             If (Abs(jmp(jj)) > zero_plus) Then
 
               txyz=kx*jmp(jj)
 
               sz = 1.0_wp
-              Do s3=0,mxompl
+              Do s3=0,mpole%max_order
                 ks3=k3+s3; ks31=ks3+1
 
                 sy = sz
-                Do s2=0,mxompl-s3
+                Do s2=0,mpole%max_order-s3
                   ks2=k2+s2; ks21=ks2+1
 
                   sx = sy
-                  Do s1=0,mxompl-s3-s2
+                  Do s1=0,mpole%max_order-s3-s2
                     ks1=k1+s1; ks11=ks1+1
 
                     n      = ks1+ks2+ks3
                     alphan = talpha**n
 
-                    ii     = mplmap(s1,s2,s3)
+                    ii     = mpole%map(s1,s2,s3)
 
                     tmp    = alphan * d1(ks1,ks2,ks3) + a1(ks1,ks2,ks3)
 
@@ -391,17 +394,17 @@ Contains
 
       If (iatm <= natms) Then
 
-        mptrqx(iatm)=mptrqx(iatm)+tix
-        mptrqy(iatm)=mptrqy(iatm)+tiy
-        mptrqz(iatm)=mptrqz(iatm)+tiz
+        mpole%torque_x(iatm)=mpole%torque_x(iatm)+tix
+        mpole%torque_y(iatm)=mpole%torque_y(iatm)+tiy
+        mpole%torque_z(iatm)=mpole%torque_z(iatm)+tiz
 
       End If
 
       If (jatm <= natms) Then
 
-        mptrqx(jatm)=mptrqx(jatm)+tjx
-        mptrqy(jatm)=mptrqy(jatm)+tjy
-        mptrqz(jatm)=mptrqz(jatm)+tjz
+        mpole%torque_x(jatm)=mpole%torque_x(jatm)+tjx
+        mpole%torque_y(jatm)=mpole%torque_y(jatm)+tjy
+        mpole%torque_z(jatm)=mpole%torque_z(jatm)+tjz
 
       End If
 
@@ -409,7 +412,7 @@ Contains
   End Subroutine intra_mcoul
 
   Subroutine coul_fscp_mforces &
-             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,comm)
+             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -438,6 +441,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( mpole_type ), Intent( InOut ) :: mpole
     Type( comms_type ),                       Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true. , damp
@@ -457,11 +461,11 @@ Contains
 
     Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
 
-    Real( Kind = wp ) :: d1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-    Real( Kind = wp ) :: a1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-    Real( Kind = wp ) :: imp(1:mximpl),jmp(1:mximpl)
-    Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
-    Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
+    Real( Kind = wp ) :: d1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
+    Real( Kind = wp ) :: a1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
+    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
 
     Character ( Len = 256 )  ::  message
 
@@ -530,7 +534,7 @@ Contains
 
   ! get the multipoles for site i
 
-    imp=mplgfr(:,iatm)
+    imp=mpole%global_frame(:,iatm)
 
   ! ignore interaction if the charge is zero
 
@@ -538,9 +542,9 @@ Contains
 
   ! get the components for site i infinitesimal rotations
 
-       impx=mprotx(:,iatm)
-       impy=mproty(:,iatm)
-       impz=mprotz(:,iatm)
+       impx=mpole%rotation_x(:,iatm)
+       impy=mpole%rotation_y(:,iatm)
+       impz=mpole%rotation_z(:,iatm)
 
   ! multipole scaler
 
@@ -570,7 +574,7 @@ Contains
 
   ! get the multipoles for site j
 
-          jmp=mplgfr(:,jatm)
+          jmp=mpole%global_frame(:,jatm)
 
   ! interatomic distance
 
@@ -582,9 +586,9 @@ Contains
 
   ! get the components for site j infinitesimal rotations
 
-             jmpx=mprotx(:,jatm)
-             jmpy=mproty(:,jatm)
-             jmpz=mprotz(:,jatm)
+             jmpx=mpole%rotation_x(:,jatm)
+             jmpy=mpole%rotation_y(:,jatm)
+             jmpz=mpole%rotation_z(:,jatm)
 
   ! compute derivatives of kernel
 
@@ -592,7 +596,7 @@ Contains
 
   ! compute derivatives of 'r'
 
-                Call coul_deriv(-1,2*mxompl+1,xxt(m),yyt(m),zzt(m),rrr,a1)
+                Call coul_deriv(-1,2*mpole%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
 
   ! scale the derivatives of 'r'
 
@@ -614,7 +618,8 @@ Contains
 
   ! compute derivatives of the ewald real space kernel
 
-                Call ewald_deriv(-2,2*mxompl+1,1,erfcr,alpha*xxt(m),alpha*yyt(m),alpha*zzt(m),alpha*rrr,d1)
+                Call ewald_deriv(-2,2*mpole%max_order+1,1,erfcr,alpha*xxt(m), &
+                  alpha*yyt(m),alpha*zzt(m),alpha*rrr,mpole%max_order,d1)
 
   ! scale the derivatives into the right form
 
@@ -626,25 +631,25 @@ Contains
                 fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
                 tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-                If (mxompl < 5) Then
+                If (mpole%max_order < 5) Then
 
                    kz = 1.0_wp
-                   Do k3=0,mxompl
+                   Do k3=0,mpole%max_order
 
                       ky = kz
-                      Do k2=0,mxompl-k3
+                      Do k2=0,mpole%max_order-k3
 
                          kx = ky
-                         Do k1=0,mxompl-k3-k2
+                         Do k1=0,mpole%max_order-k3-k2
 
-                            jj = mplmap(k1,k2,k3)
+                            jj = mpole%map(k1,k2,k3)
 
                             If (Abs(jmp(jj)) > zero_plus) Then
                               Call explicit_fscp_rfp_loops &
-                               (2*mxompl+1, k1,k2,k3, alpha, d1,a1,               &
+                               (2*mpole%max_order+1, k1,k2,k3, alpha, d1,a1,               &
                                imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                                kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                               engmpl,fx,fy,fz)
+                               engmpl,fx,fy,fz,mpole)
                            End If
 
                             kx = -kx
@@ -662,36 +667,36 @@ Contains
                 Else
 
                    kz = 1.0_wp
-                   Do k3=0,mxompl
+                   Do k3=0,mpole%max_order
 
                       ky = kz
-                      Do k2=0,mxompl-k3
+                      Do k2=0,mpole%max_order-k3
 
                          kx = ky
-                         Do k1=0,mxompl-k3-k2
+                         Do k1=0,mpole%max_order-k3-k2
 
-                            jj = mplmap(k1,k2,k3)
+                            jj = mpole%map(k1,k2,k3)
 
                             If (Abs(jmp(jj)) > zero_plus) Then
 
                                txyz=kx*jmp(jj)
 
                                sz = 1.0_wp
-                               Do s3=0,mxompl
+                               Do s3=0,mpole%max_order
                                   ks3=k3+s3; ks31=ks3+1
 
                                   sy = sz
-                                  Do s2=0,mxompl-s3
+                                  Do s2=0,mpole%max_order-s3
                                   ks2=k2+s2; ks21=ks2+1
 
                                      sx = sy
-                                     Do s1=0,mxompl-s3-s2
+                                     Do s1=0,mpole%max_order-s3-s2
                                         ks1=k1+s1; ks11=ks1+1
 
                                         n      = ks1+ks2+ks3
                                         alphan = alpha**n
 
-                                        ii     = mplmap(s1,s2,s3)
+                                        ii     = mpole%map(s1,s2,s3)
 
                                         tmp    = alphan*d1(ks1,ks2,ks3) + a1(ks1,ks2,ks3)
 
@@ -753,11 +758,11 @@ Contains
 
   ! compute derivatives of '1/r'
 
-                Call coul_deriv( 1,2*mxompl+1,xxt(m),yyt(m),zzt(m),rrr,d1)
+                Call coul_deriv( 1,2*mpole%max_order+1,xxt(m),yyt(m),zzt(m),rrr,d1)
 
   ! compute derivatives of 'r'
 
-                Call coul_deriv(-1,2*mxompl+1,xxt(m),yyt(m),zzt(m),rrr,a1)
+                Call coul_deriv(-1,2*mpole%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
 
   ! scale the derivatives of 'r' and add to d1
 
@@ -769,25 +774,25 @@ Contains
                 fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
                 tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-                If (mxompl < 5) Then
+                If (mpole%max_order < 5) Then
 
                    kz = 1.0_wp
-                   Do k3=0,mxompl
+                   Do k3=0,mpole%max_order
 
                       ky = kz
-                      Do k2=0,mxompl-k3
+                      Do k2=0,mpole%max_order-k3
 
                          kx = ky
-                         Do k1=0,mxompl-k3-k2
+                         Do k1=0,mpole%max_order-k3-k2
 
-                            jj = mplmap(k1,k2,k3)
+                            jj = mpole%map(k1,k2,k3)
 
                             If (Abs(jmp(jj)) > zero_plus)  Then
                               Call explicit_ewald_real_loops &
-                               (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
+                               (-2,2*mpole%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
                                imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                                kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                               engmpl,fx,fy,fz)
+                               engmpl,fx,fy,fz,mpole)
                            End If
 
                             kx = -kx
@@ -805,35 +810,35 @@ Contains
                 Else
 
                    kz = 1.0_wp
-                   Do k3=0,mxompl
+                   Do k3=0,mpole%max_order
 
                       ky = kz
-                      Do k2=0,mxompl-k3
+                      Do k2=0,mpole%max_order-k3
 
                          kx = ky
-                         Do k1=0,mxompl-k3-k2
+                         Do k1=0,mpole%max_order-k3-k2
 
-                            jj=mplmap(k1,k2,k3)
+                            jj=mpole%map(k1,k2,k3)
 
                             If (Abs(jmp(jj)) > zero_plus) Then
 
                                txyz=kx*jmp(jj)
 
                                sz = 1.0_wp
-                               Do s3=0,mxompl
+                               Do s3=0,mpole%max_order
                                   ks3=k3+s3; ks31=ks3+1
 
                                   sy = sz
-                                  Do s2=0,mxompl-s3
+                                  Do s2=0,mpole%max_order-s3
                                   ks2=k2+s2; ks21=ks2+1
 
                                      sx = sy
-                                     Do s1=0,mxompl-s3-s2
+                                     Do s1=0,mpole%max_order-s3-s2
                                         ks1=k1+s1; ks11=ks1+1
 
                                         n    = ks1+ks2+ks3
 
-                                        ii   = mplmap(s1,s2,s3)
+                                        ii   = mpole%map(s1,s2,s3)
 
                                         tmp  = d1(ks1,ks2,ks3)
 
@@ -918,9 +923,9 @@ Contains
                 fyy(jatm)=fyy(jatm)-fy
                 fzz(jatm)=fzz(jatm)-fz
 
-                mptrqx(jatm)=mptrqx(jatm)+tjx
-                mptrqy(jatm)=mptrqy(jatm)+tjy
-                mptrqz(jatm)=mptrqz(jatm)+tjz
+                mpole%torque_x(jatm)=mpole%torque_x(jatm)+tjx
+                mpole%torque_y(jatm)=mpole%torque_y(jatm)+tjy
+                mpole%torque_z(jatm)=mpole%torque_z(jatm)+tjz
 
              End If
 
@@ -957,9 +962,9 @@ Contains
 
   ! and torques due to multipoles
 
-       mptrqx(iatm)=mptrqx(iatm)+scl*tix
-       mptrqy(iatm)=mptrqy(iatm)+scl*tiy
-       mptrqz(iatm)=mptrqz(iatm)+scl*tiz
+       mpole%torque_x(iatm)=mpole%torque_x(iatm)+scl*tix
+       mpole%torque_y(iatm)=mpole%torque_y(iatm)+scl*tiy
+       mpole%torque_z(iatm)=mpole%torque_z(iatm)+scl*tiz
 
   ! complete stress tensor
 
@@ -978,7 +983,7 @@ Contains
   End Subroutine coul_fscp_mforces
 
   Subroutine coul_rfp_mforces &
-             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,comm)
+             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1005,6 +1010,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( mpole_type ), Intent( InOut ) :: mpole
     Type( comms_type ),                       Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true. , damp
@@ -1028,11 +1034,11 @@ Contains
 
     Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
 
-    Real( Kind = wp ) :: d1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-    Real( Kind = wp ) :: a1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-    Real( Kind = wp ) :: imp(1:mximpl),jmp(1:mximpl)
-    Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
-    Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
+    Real( Kind = wp ) :: d1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
+    Real( Kind = wp ) :: a1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
+    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
 
     Character ( Len = 256 )   ::  message
 
@@ -1108,7 +1114,7 @@ Contains
 
   ! get the multipoles for site i
 
-    imp=mplgfr(:,iatm)
+    imp=mpole%global_frame(:,iatm)
 
   ! ignore interaction if the charge is zero
 
@@ -1116,9 +1122,9 @@ Contains
 
   ! get the components for site i infinitesimal rotations
 
-       impx=mprotx(:,iatm)
-       impy=mproty(:,iatm)
-       impz=mprotz(:,iatm)
+       impx=mpole%rotation_x(:,iatm)
+       impy=mpole%rotation_y(:,iatm)
+       impz=mpole%rotation_z(:,iatm)
 
   ! multipole scaler
 
@@ -1146,7 +1152,7 @@ Contains
 
   ! get the multipoles for site j
 
-          jmp=mplgfr(:,jatm)
+          jmp=mpole%global_frame(:,jatm)
 
   ! interatomic distance
 
@@ -1158,9 +1164,9 @@ Contains
 
   ! get the components for site j infinitesimal rotations
 
-             jmpx=mprotx(:,jatm)
-             jmpy=mproty(:,jatm)
-             jmpz=mprotz(:,jatm)
+             jmpx=mpole%rotation_x(:,jatm)
+             jmpy=mpole%rotation_y(:,jatm)
+             jmpz=mpole%rotation_z(:,jatm)
 
   ! compute derivatives of kernel
 
@@ -1168,7 +1174,7 @@ Contains
 
   ! compute derivatives of 'r^2'
 
-                Call coul_deriv(-2,2*mxompl+1,xxt(m),yyt(m),zzt(m),rrr,a1)
+                Call coul_deriv(-2,2*mpole%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
 
   ! scale the derivatives of 'r^2'
 
@@ -1176,7 +1182,7 @@ Contains
 
   ! compute derivatives of 'r'
 
-                Call coul_deriv(-1,2*mxompl+1,xxt(m),yyt(m),zzt(m),rrr,d1)
+                Call coul_deriv(-1,2*mpole%max_order+1,xxt(m),yyt(m),zzt(m),rrr,d1)
 
   ! scale the derivatives of 'r' and add to a1
 
@@ -1198,7 +1204,8 @@ Contains
 
   ! compute derivatives of the ewald real space kernel
 
-                Call ewald_deriv(-2,2*mxompl+1,1,erfcr,alpha*xxt(m),alpha*yyt(m),alpha*zzt(m),alpha*rrr,d1)
+                Call ewald_deriv(-2,2*mpole%max_order+1,1,erfcr,alpha*xxt(m), &
+                  alpha*yyt(m),alpha*zzt(m),alpha*rrr,mpole%max_order,d1)
 
   ! scale the derivatives into the right form
 
@@ -1210,25 +1217,25 @@ Contains
                 fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
                 tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-                If (mxompl < 5) Then
+                If (mpole%max_order < 5) Then
 
                    kz = 1.0_wp
-                   Do k3=0,mxompl
+                   Do k3=0,mpole%max_order
 
                       ky = kz
-                      Do k2=0,mxompl-k3
+                      Do k2=0,mpole%max_order-k3
 
                          kx = ky
-                         Do k1=0,mxompl-k3-k2
+                         Do k1=0,mpole%max_order-k3-k2
 
-                            jj = mplmap(k1,k2,k3)
+                            jj = mpole%map(k1,k2,k3)
 
                             If (Abs(jmp(jj)) > zero_plus) Then
                               Call explicit_fscp_rfp_loops &
-                               (2*mxompl+1, k1,k2,k3, alpha, d1,a1,               &
+                               (2*mpole%max_order+1, k1,k2,k3, alpha, d1,a1,               &
                                imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                                kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                               engmpl,fx,fy,fz)
+                               engmpl,fx,fy,fz,mpole)
                            End If
 
                             kx = -kx
@@ -1246,36 +1253,36 @@ Contains
                 Else
 
                    kz = 1.0_wp
-                   Do k3=0,mxompl
+                   Do k3=0,mpole%max_order
 
                       ky = kz
-                      Do k2=0,mxompl-k3
+                      Do k2=0,mpole%max_order-k3
 
                          kx = ky
-                         Do k1=0,mxompl-k3-k2
+                         Do k1=0,mpole%max_order-k3-k2
 
-                            jj = mplmap(k1,k2,k3)
+                            jj = mpole%map(k1,k2,k3)
 
                             If (Abs(jmp(jj)) > zero_plus) Then
 
                                txyz=kx*jmp(jj)
 
                                sz = 1.0_wp
-                               Do s3=0,mxompl
+                               Do s3=0,mpole%max_order
                                   ks3=k3+s3; ks31=ks3+1
 
                                   sy = sz
-                                  Do s2=0,mxompl-s3
+                                  Do s2=0,mpole%max_order-s3
                                   ks2=k2+s2; ks21=ks2+1
 
                                      sx = sy
-                                     Do s1=0,mxompl-s3-s2
+                                     Do s1=0,mpole%max_order-s3-s2
                                         ks1=k1+s1; ks11=ks1+1
 
                                         n      = ks1+ks2+ks3
                                         alphan = alpha**n
 
-                                        ii     = mplmap(s1,s2,s3)
+                                        ii     = mpole%map(s1,s2,s3)
 
                                         tmp    = alphan*d1(ks1,ks2,ks3) + a1(ks1,ks2,ks3)
 
@@ -1354,11 +1361,11 @@ Contains
 
   ! compute derivatives of '1/r'
 
-                Call coul_deriv( 1,2*mxompl+1,xxt(m),yyt(m),zzt(m),rrr,d1)
+                Call coul_deriv( 1,2*mpole%max_order+1,xxt(m),yyt(m),zzt(m),rrr,d1)
 
   ! compute derivatives of 'r^2'
 
-                Call coul_deriv(-2,2*mxompl+1,xxt(m),yyt(m),zzt(m),rrr,a1)
+                Call coul_deriv(-2,2*mpole%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
 
   ! scale the derivatives of 'r' and add to d1
 
@@ -1370,25 +1377,25 @@ Contains
                 fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
                 tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-                If (mxompl < 5) Then
+                If (mpole%max_order < 5) Then
 
                    kz = 1.0_wp
-                   Do k3=0,mxompl
+                   Do k3=0,mpole%max_order
 
                       ky = kz
-                      Do k2=0,mxompl-k3
+                      Do k2=0,mpole%max_order-k3
 
                          kx = ky
-                         Do k1=0,mxompl-k3-k2
+                         Do k1=0,mpole%max_order-k3-k2
 
-                            jj = mplmap(k1,k2,k3)
+                            jj = mpole%map(k1,k2,k3)
 
                             If (Abs(jmp(jj)) > zero_plus) Then
                               Call explicit_ewald_real_loops &
-                               (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
+                               (-2,2*mpole%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
                                imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                                kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                               engmpl,fx,fy,fz)
+                               engmpl,fx,fy,fz,mpole)
                            End If
 
                             kx = -kx
@@ -1406,35 +1413,35 @@ Contains
                 Else
 
                    kz = 1.0_wp
-                   Do k3=0,mxompl
+                   Do k3=0,mpole%max_order
 
                       ky = kz
-                      Do k2=0,mxompl-k3
+                      Do k2=0,mpole%max_order-k3
 
                          kx = ky
-                         Do k1=0,mxompl-k3-k2
+                         Do k1=0,mpole%max_order-k3-k2
 
-                            jj = mplmap(k1,k2,k3)
+                            jj = mpole%map(k1,k2,k3)
 
                             If (Abs(jmp(jj)) > zero_plus) Then
 
                                txyz=kx*jmp(jj)
 
                                sz = 1.0_wp
-                               Do s3=0,mxompl
+                               Do s3=0,mpole%max_order
                                   ks3=k3+s3; ks31=ks3+1
 
                                   sy = sz
-                                  Do s2=0,mxompl-s3
+                                  Do s2=0,mpole%max_order-s3
                                   ks2=k2+s2; ks21=ks2+1
 
                                      sx = sy
-                                     Do s1=0,mxompl-s3-s2
+                                     Do s1=0,mpole%max_order-s3-s2
                                         ks1=k1+s1; ks11=ks1+1
 
                                         n    = ks1+ks2+ks3
 
-                                        ii   = mplmap(s1,s2,s3)
+                                        ii   = mpole%map(s1,s2,s3)
 
                                         tmp  = d1(ks1,ks2,ks3)
 
@@ -1518,9 +1525,9 @@ Contains
                 fyy(jatm)=fyy(jatm)-fy
                 fzz(jatm)=fzz(jatm)-fz
 
-                mptrqx(jatm)=mptrqx(jatm)+tjx
-                mptrqy(jatm)=mptrqy(jatm)+tjy
-                mptrqz(jatm)=mptrqz(jatm)+tjz
+                mpole%torque_x(jatm)=mpole%torque_x(jatm)+tjx
+                mpole%torque_y(jatm)=mpole%torque_y(jatm)+tjy
+                mpole%torque_z(jatm)=mpole%torque_z(jatm)+tjz
 
              End If
 
@@ -1557,9 +1564,9 @@ Contains
 
   ! and torques due to multipoles
 
-       mptrqx(iatm)=mptrqx(iatm)+scl*tix
-       mptrqy(iatm)=mptrqy(iatm)+scl*tiy
-       mptrqz(iatm)=mptrqz(iatm)+scl*tiz
+       mpole%torque_x(iatm)=mpole%torque_x(iatm)+scl*tix
+       mpole%torque_y(iatm)=mpole%torque_y(iatm)+scl*tiy
+       mpole%torque_z(iatm)=mpole%torque_z(iatm)+scl*tiz
 
   ! complete stress tensor
 
@@ -1578,7 +1585,7 @@ Contains
   End Subroutine coul_rfp_mforces
 
   Subroutine coul_cp_mforces &
-             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
+             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1598,6 +1605,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( mpole_type ), Intent( InOut ) :: mpole
 
     Integer           :: idi,jatm,k1,k2,k3,s1,s2,s3,m, &
                          ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -1607,10 +1615,10 @@ Contains
                          t1,kx,ky,kz,txyz,tix,tiy,tiz,tjx,    &
                          tjy,tjz,tmp,tmpi,tmpj,sx,sy,sz
 
-    Real( Kind = wp ) :: d1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-    Real( Kind = wp ) :: imp(1:mximpl),jmp(1:mximpl)
-    Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
-    Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
+    Real( Kind = wp ) :: d1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
+    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
 
   ! initialise potential energy and virial
 
@@ -1632,7 +1640,7 @@ Contains
 
   ! get the multipoles for site i
 
-    imp=mplgfr(:,iatm)
+    imp=mpole%global_frame(:,iatm)
 
   ! ignore interaction if the charge is zero
 
@@ -1640,9 +1648,9 @@ Contains
 
   ! get the components for site i infinitesimal rotations
 
-       impx=mprotx(:,iatm)
-       impy=mproty(:,iatm)
-       impz=mprotz(:,iatm)
+       impx=mpole%rotation_x(:,iatm)
+       impy=mpole%rotation_y(:,iatm)
+       impz=mpole%rotation_z(:,iatm)
 
   ! multipole scaler
 
@@ -1672,7 +1680,7 @@ Contains
 
   ! get the multipoles for site j
 
-          jmp=mplgfr(:,jatm)
+          jmp=mpole%global_frame(:,jatm)
 
   ! truncation of potential - rrt(m) is the interatomic distance
 
@@ -1680,13 +1688,13 @@ Contains
 
   ! get the components for site j infinitesimal rotations
 
-             jmpx=mprotx(:,jatm)
-             jmpy=mproty(:,jatm)
-             jmpz=mprotz(:,jatm)
+             jmpx=mpole%rotation_x(:,jatm)
+             jmpy=mpole%rotation_y(:,jatm)
+             jmpz=mpole%rotation_z(:,jatm)
 
   ! compute derivatives of kernel
 
-             Call coul_deriv(1,2*mxompl+1,xxt(m),yyt(m),zzt(m),rrt(m),d1)
+             Call coul_deriv(1,2*mpole%max_order+1,xxt(m),yyt(m),zzt(m),rrt(m),d1)
 
   ! calculate forces
 
@@ -1694,25 +1702,25 @@ Contains
              fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
              tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-             If (mxompl < 5) Then
+             If (mpole%max_order < 5) Then
 
                 kz = 1.0_wp
-                Do k3=0,mxompl
+                Do k3=0,mpole%max_order
 
                    ky = kz
-                   Do k2=0,mxompl-k3
+                   Do k2=0,mpole%max_order-k3
 
                       kx = ky
-                      Do k1=0,mxompl-k3-k2
+                      Do k1=0,mpole%max_order-k3-k2
 
-                         jj = mplmap(k1,k2,k3)
+                         jj = mpole%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Then
                            Call explicit_ewald_real_loops &
-                             (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
+                             (-2,2*mpole%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
                              imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                              kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                             engmpl,fx,fy,fz)
+                             engmpl,fx,fy,fz,mpole)
                          End If
 
                          kx = -kx
@@ -1730,33 +1738,33 @@ Contains
              Else
 
                 kz = 1.0_wp
-                Do k3=0,mxompl
+                Do k3=0,mpole%max_order
 
                    ky = kz
-                   Do k2=0,mxompl-k3
+                   Do k2=0,mpole%max_order-k3
 
                       kx = ky
-                      Do k1=0,mxompl-k3-k2
+                      Do k1=0,mpole%max_order-k3-k2
 
-                         jj = mplmap(k1,k2,k3)
+                         jj = mpole%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Then
 
                             txyz=kx*jmp(jj)
 
                             sz = 1.0_wp
-                            Do s3=0,mxompl
+                            Do s3=0,mpole%max_order
                                ks3=k3+s3; ks31=ks3+1
 
                                sy = sz
-                               Do s2=0,mxompl-s3
+                               Do s2=0,mpole%max_order-s3
                                   ks2=k2+s2; ks21=ks2+1
 
                                   sx = sy
-                                  Do s1=0,mxompl-s3-s2
+                                  Do s1=0,mpole%max_order-s3-s2
                                      ks1=k1+s1; ks11=ks1+1
 
-                                     ii   = mplmap(s1,s2,s3)
+                                     ii   = mpole%map(s1,s2,s3)
 
                                      tmp  = d1(ks1,ks2,ks3)
 
@@ -1822,9 +1830,9 @@ Contains
                 fyy(jatm)=fyy(jatm)-fy
                 fzz(jatm)=fzz(jatm)-fz
 
-                mptrqx(jatm)=mptrqx(jatm)+tjx
-                mptrqy(jatm)=mptrqy(jatm)+tjy
-                mptrqz(jatm)=mptrqz(jatm)+tjz
+                mpole%torque_x(jatm)=mpole%torque_x(jatm)+tjx
+                mpole%torque_y(jatm)=mpole%torque_y(jatm)+tjy
+                mpole%torque_z(jatm)=mpole%torque_z(jatm)+tjz
 
              End If
 
@@ -1857,9 +1865,9 @@ Contains
 
   ! and torques due to multipoles
 
-       mptrqx(iatm)=mptrqx(iatm)+scl*tix
-       mptrqy(iatm)=mptrqy(iatm)+scl*tiy
-       mptrqz(iatm)=mptrqz(iatm)+scl*tiz
+       mpole%torque_x(iatm)=mpole%torque_x(iatm)+scl*tix
+       mpole%torque_y(iatm)=mpole%torque_y(iatm)+scl*tiy
+       mpole%torque_z(iatm)=mpole%torque_z(iatm)+scl*tiz
 
   ! virial
 
@@ -1882,7 +1890,7 @@ Contains
   End Subroutine coul_cp_mforces
 
   Subroutine coul_dddp_mforces &
-             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
+             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1902,6 +1910,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( mpole_type ), Intent( InOut ) :: mpole
 
     Integer           :: idi,jatm,k1,k2,k3,s1,s2,s3,m, &
                          ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -1911,10 +1920,10 @@ Contains
                          t1,kx,ky,kz,txyz,tix,tiy,tiz,tjx,    &
                          tjy,tjz,tmp,tmpi,tmpj,sx,sy,sz
 
-    Real( Kind = wp ) :: d1(-2:2*mxompl+1,-2:2*mxompl+1,-2:2*mxompl+1)
-    Real( Kind = wp ) :: imp(1:mximpl),jmp(1:mximpl)
-    Real( Kind = wp ) :: impx(1:mximpl),impy(1:mximpl),impz(1:mximpl)
-    Real( Kind = wp ) :: jmpx(1:mximpl),jmpy(1:mximpl),jmpz(1:mximpl)
+    Real( Kind = wp ) :: d1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
+    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
 
   ! initialise potential energy and virial
 
@@ -1936,7 +1945,7 @@ Contains
 
   ! get the multipoles for site i
 
-    imp=mplgfr(:,iatm)
+    imp=mpole%global_frame(:,iatm)
 
   ! ignore interaction if the charge is zero
 
@@ -1944,9 +1953,9 @@ Contains
 
   ! get the components for site i infinitesimal rotations
 
-       impx=mprotx(:,iatm)
-       impy=mproty(:,iatm)
-       impz=mprotz(:,iatm)
+       impx=mpole%rotation_x(:,iatm)
+       impy=mpole%rotation_y(:,iatm)
+       impz=mpole%rotation_z(:,iatm)
 
   ! multipole scaler
 
@@ -1976,7 +1985,7 @@ Contains
 
   ! get the multipoles for site j
 
-          jmp=mplgfr(:,jatm)
+          jmp=mpole%global_frame(:,jatm)
 
   ! truncation of potential - rrt(m) is the interatomic distance
 
@@ -1984,13 +1993,13 @@ Contains
 
   ! get the components for site j infinitesimal rotations
 
-             jmpx=mprotx(:,jatm)
-             jmpy=mproty(:,jatm)
-             jmpz=mprotz(:,jatm)
+             jmpx=mpole%rotation_x(:,jatm)
+             jmpy=mpole%rotation_y(:,jatm)
+             jmpz=mpole%rotation_z(:,jatm)
 
   ! compute derivatives of kernel
 
-             Call coul_deriv(2,2*mxompl+1,xxt(m),yyt(m),zzt(m),rrt(m),d1)
+             Call coul_deriv(2,2*mpole%max_order+1,xxt(m),yyt(m),zzt(m),rrt(m),d1)
 
   ! calculate forces
 
@@ -1998,25 +2007,25 @@ Contains
              fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
              tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-             If (mxompl < 5) Then
+             If (mpole%max_order < 5) Then
 
                 kz = 1.0_wp
-                Do k3=0,mxompl
+                Do k3=0,mpole%max_order
 
                    ky = kz
-                   Do k2=0,mxompl-k3
+                   Do k2=0,mpole%max_order-k3
 
                       kx = ky
-                      Do k1=0,mxompl-k3-k2
+                      Do k1=0,mpole%max_order-k3-k2
 
-                         jj = mplmap(k1,k2,k3)
+                         jj = mpole%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Then
                            Call explicit_ewald_real_loops &
-                             (-2,2*mxompl+1, k1,k2,k3, 1.0_wp, d1,              &
+                             (-2,2*mpole%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
                              imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                              kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                             engmpl,fx,fy,fz)
+                             engmpl,fx,fy,fz,mpole)
                          End If
 
                          kx = -kx
@@ -2034,33 +2043,33 @@ Contains
              Else
 
                 kz = 1.0_wp
-                Do k3=0,mxompl
+                Do k3=0,mpole%max_order
 
                    ky = kz
-                   Do k2=0,mxompl-k3
+                   Do k2=0,mpole%max_order-k3
 
                       kx = ky
-                      Do k1=0,mxompl-k3-k2
+                      Do k1=0,mpole%max_order-k3-k2
 
-                         jj = mplmap(k1,k2,k3)
+                         jj = mpole%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Then
 
                             txyz=kx*jmp(jj)
 
                             sz = 1.0_wp
-                            Do s3=0,mxompl
+                            Do s3=0,mpole%max_order
                                ks3=k3+s3; ks31=ks3+1
 
                                sy = sz
-                               Do s2=0,mxompl-s3
+                               Do s2=0,mpole%max_order-s3
                                   ks2=k2+s2; ks21=ks2+1
 
                                   sx = sy
-                                  Do s1=0,mxompl-s3-s2
+                                  Do s1=0,mpole%max_order-s3-s2
                                      ks1=k1+s1; ks11=ks1+1
 
-                                     ii   = mplmap(s1,s2,s3)
+                                     ii   = mpole%map(s1,s2,s3)
 
                                      tmp  = d1(ks1,ks2,ks3)
 
@@ -2126,9 +2135,9 @@ Contains
                 fyy(jatm)=fyy(jatm)-fy
                 fzz(jatm)=fzz(jatm)-fz
 
-                mptrqx(jatm)=mptrqx(jatm)+tjx
-                mptrqy(jatm)=mptrqy(jatm)+tjy
-                mptrqz(jatm)=mptrqz(jatm)+tjz
+                mpole%torque_x(jatm)=mpole%torque_x(jatm)+tjx
+                mpole%torque_y(jatm)=mpole%torque_y(jatm)+tjy
+                mpole%torque_z(jatm)=mpole%torque_z(jatm)+tjz
 
              End If
 
@@ -2161,9 +2170,9 @@ Contains
 
   ! and torques due to multipoles
 
-       mptrqx(iatm)=mptrqx(iatm)+scl*tix
-       mptrqy(iatm)=mptrqy(iatm)+scl*tiy
-       mptrqz(iatm)=mptrqz(iatm)+scl*tiz
+       mpole%torque_x(iatm)=mpole%torque_x(iatm)+scl*tix
+       mpole%torque_y(iatm)=mpole%torque_y(iatm)+scl*tiy
+       mpole%torque_z(iatm)=mpole%torque_z(iatm)+scl*tiz
 
   ! virial
 
@@ -2185,7 +2194,7 @@ Contains
 
   End Subroutine coul_dddp_mforces
 
-  Subroutine coul_chrm_forces(iatm,epsq,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress,neigh)
+  Subroutine coul_chrm_forces(iatm,epsq,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress,neigh,mpole)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2210,6 +2219,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ch,vircpe_ch
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( mpole_type ), Intent( InOut ) :: mpole
 
     Integer           :: limit,idi,jatm,m
 
@@ -2239,8 +2249,8 @@ Contains
   ! charge, inverse polarisability and dumping
 
     chgea = chge(iatm)
-    plra  = plratm(iatm)
-    dmpa  = dmpatm(iatm)
+    plra  = mpole%polarisation_atom(iatm)
+    dmpa  = mpole%dump_atom(iatm)
 
   ! scale main charge
 
@@ -2270,8 +2280,8 @@ Contains
 
        jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
        chgprd=chgea*chge(jatm)
-       plrprd=plra*plratm(jatm)
-       dmpsum=dmpa+dmpatm(jatm)
+       plrprd=plra*mpole%polarisation_atom(jatm)
+       dmpsum=dmpa+mpole%dump_atom(jatm)
 
        u = (dmpsum*plrprd**6) * rrr         ! dimensionless
 
@@ -2342,7 +2352,7 @@ Contains
   End Subroutine coul_chrm_forces
 
 
-  Subroutine d_ene_trq_mpoles(vircpe_dt,stress)
+  Subroutine d_ene_trq_mpoles(vircpe_dt,stress,mpole)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2361,6 +2371,7 @@ Contains
 
     Real( Kind = wp ),                   Intent(   Out ) :: vircpe_dt
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+    Type( mpole_type ), Intent( InOut ) :: mpole
 
     Integer           :: idi,j,iatm,jatm
 
@@ -2400,12 +2411,12 @@ Contains
 
        idi=ltg(iatm)
 
-       If (mprotm(iatm)%flag == 1) Then
+       If (mpole%rotation(iatm)%flag == 1) Then
 
   ! p1 and p2 define the local frame
 
-          p1 = mprotm(iatm)%p1
-          p2 = mprotm(iatm)%p2
+          p1 = mpole%rotation(iatm)%p1
+          p2 = mpole%rotation(iatm)%p2
 
           magp1 = Sqrt(p1(1)*p1(1)+p1(2)*p1(2)+p1(3)*p1(3))
           magp2 = Sqrt(p2(1)*p2(1)+p2(2)*p2(2)+p2(3)*p2(3))
@@ -2414,26 +2425,26 @@ Contains
 
   ! standard basis for coordinate system
 
-          u(1)  = mprotm(iatm)%mtrxa(1)
-          u(2)  = mprotm(iatm)%mtrxa(4)
-          u(3)  = mprotm(iatm)%mtrxa(7)
+          u(1)  = mpole%rotation(iatm)%mtrxa(1)
+          u(2)  = mpole%rotation(iatm)%mtrxa(4)
+          u(3)  = mpole%rotation(iatm)%mtrxa(7)
 
-          v(1)  = mprotm(iatm)%mtrxa(2)
-          v(2)  = mprotm(iatm)%mtrxa(5)
-          v(3)  = mprotm(iatm)%mtrxa(8)
+          v(1)  = mpole%rotation(iatm)%mtrxa(2)
+          v(2)  = mpole%rotation(iatm)%mtrxa(5)
+          v(3)  = mpole%rotation(iatm)%mtrxa(8)
 
-          w(1)  = mprotm(iatm)%mtrxa(3)
-          w(2)  = mprotm(iatm)%mtrxa(6)
-          w(3)  = mprotm(iatm)%mtrxa(9)
+          w(1)  = mpole%rotation(iatm)%mtrxa(3)
+          w(2)  = mpole%rotation(iatm)%mtrxa(6)
+          w(3)  = mpole%rotation(iatm)%mtrxa(9)
 
   ! change in energy (E) due to infinitesimal rotation (torque => \tau) dE_{\omega} = -\tau * d\omega
   ! we omit the negative here and introduce it in the final force computation, i.e., because force is
   ! the negative of the change in energy with respect to energy, we'll add the magnitude of the force
   ! computed instead of subtracting the magnitude
 
-          tmptx = mptrqx(iatm)
-          tmpty = mptrqy(iatm)
-          tmptz = mptrqz(iatm)
+          tmptx = mpole%torque_x(iatm)
+          tmpty = mpole%torque_y(iatm)
+          tmptz = mpole%torque_z(iatm)
 
           tx = tmptx*u(1) + tmpty*u(2) + tmptz*u(3)
           ty = (tmptx*p2(1) + tmpty*p2(2) + tmptz*p2(3)) / magp2
@@ -2474,7 +2485,7 @@ Contains
 
           Do j = 1, 2
 
-             jatm = mprotm(iatm)%mbnd(j)
+             jatm = mpole%rotation(iatm)%mbnd(j)
 
              If (jatm > 0) Then
                 xdf = xxx(jatm) - xxx(iatm)

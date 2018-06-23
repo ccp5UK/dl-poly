@@ -9,14 +9,12 @@ Module ewald
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds,           Only : wp
+  Use kinds,           Only : wp,wi
   Use comms,           Only : ExchgGrid_tag,comms_type,wp_mpi,gsend,gwait, &
                               girecv
   Use setup,           Only : mxatms,nrite,mxspl,mxspl2,twopi,kmaxa,kmaxb,kmaxc
   Use configuration,   Only : natms,fxx,fyy,fzz,imcon
   Use domains,         Only : map
-  Use mpole,           Only : ncombk
-
   Use errors_warnings, Only : error
 
   Implicit None
@@ -643,7 +641,8 @@ Contains
 
   End Subroutine bspgen
 
-  Subroutine bspgen_mpoles(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,comm)
+  Subroutine bspgen_mpoles(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz, &
+      bsddx,bsddy,bsddz,n_choose_k,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -661,6 +660,7 @@ Contains
 
     Real( Kind = wp ), Dimension( 1:mxspl , 1:mxatms ),           Intent(   Out ) :: bspx,bspy,bspz
     Real( Kind = wp ), Dimension( 0:mxspl , 1:mxspl , 1:mxatms ), Intent(   Out ) :: bsddx,bsddy,bsddz
+    Real( Kind = wp ), Dimension(1:,1:) :: n_choose_k
     Type( comms_type),                                            Intent( In    ) :: comm
 
     Integer           :: fail,i,j,k,m,n,p,r,s
@@ -719,7 +719,7 @@ Contains
 
           Do r=m,n
              s     = j - r
-             pcombr= pmo_no(r)*ncombk(p,r)
+             pcombr= pmo_no(r)*n_choose_k(p,r)
 
              tempx = tempx + pcombr*bspx(s,i)
              tempy = tempy + pcombr*bspy(s,i)
@@ -779,7 +779,7 @@ Contains
 
              Do r=m,n
                 s     = j - r
-                pcombr= pmo_no(r)*ncombk(p,r)
+                pcombr= pmo_no(r)*n_choose_k(p,r)
 
                 tempx = tempx + pcombr*bspx(s,i)
                 tempy = tempy + pcombr*bspy(s,i)
@@ -842,7 +842,7 @@ Contains
 
   End Subroutine bspgen_mpoles
 
-  Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz)
+  Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz,n_choose_k)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -860,6 +860,7 @@ Contains
     Integer,                                 Intent( In   ) :: s1,s2,s3
     Real( Kind = wp ),                       Intent( In   ) :: rcell(9)
     Real( Kind = wp ), Dimension( 0:mxspl ), Intent( In   ) :: bsddx,bsddy,bsddz
+    Real( Kind = wp ), Intent( In    ) :: n_choose_k(1:,1:)
 
     Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz
     Real( Kind = wp ) :: ka11,ka12,ka13,kb21,kb22,kb23,kc31,kc32,kc33
@@ -887,26 +888,26 @@ Contains
 
        tz = 1.0_wp
        Do k3 = 0, s3
-          ty = tz * ncombk(s3,k3); sk3=s3-k3
+          ty = tz * n_choose_k(s3,k3); sk3=s3-k3
 
           Do k2 = 0, s2
-             tx = ty * ncombk(s2,k2); sk2=s2-k2
+             tx = ty * n_choose_k(s2,k2); sk2=s2-k2
 
              Do k1 = 0, s1
                 kk = k1+k2+k3; sk1=s1-k1; sk=sk1+sk2+sk3
 
-                sz = tx * ncombk(s1,k1)*bsddx(kk)
+                sz = tx * n_choose_k(s1,k1)*bsddx(kk)
 
                 Do j3 = 0, sk3
-                   sy = sz * ncombk(sk3,j3)*kc33**(sk3-j3)
+                   sy = sz * n_choose_k(sk3,j3)*kc33**(sk3-j3)
 
                    Do j2 = 0, sk2
-                      sx = sy * ncombk(sk2,j2)*kc32**(sk2-j2)
+                      sx = sy * n_choose_k(sk2,j2)*kc32**(sk2-j2)
 
                       Do j1 = 0, sk1
                          jj = j1+j2+j3
 
-                         Dtpbsp = Dtpbsp + sx * kc31**(sk1-j1) * ncombk(sk1,j1)*bsddy(jj)*bsddz(sk-jj)
+                         Dtpbsp = Dtpbsp + sx * kc31**(sk1-j1) * n_choose_k(sk1,j1)*bsddy(jj)*bsddz(sk-jj)
 
                          sx=sx*kb21
                       End Do

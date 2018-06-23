@@ -30,6 +30,7 @@ Module build_book
   Use ffield, Only : report_topology
   Use constraints, Only : constraints_type
   Use pmf, Only : pmf_type
+  Use mpole, Only : mpole_type
 
   Use errors_warnings, Only : error
 
@@ -50,7 +51,7 @@ Subroutine build_book_intra             &
            megrgd,degrot,degtra,        &
            megtet,                      &
            cshell,cons,pmf,bond,angle,dihedral,  &
-           inversion,tether,neigh,site,comm)
+           inversion,tether,neigh,site,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -81,6 +82,7 @@ Subroutine build_book_intra             &
   Type( site_type ), Intent( InOut ) :: site
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( mpole_type ), Intent( InOut ) :: mpole
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.

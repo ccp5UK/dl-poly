@@ -88,14 +88,14 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site)
+        Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site,mpole)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
 ! Evaluate forces
 
      Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,tmr)
+       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,mpole,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 

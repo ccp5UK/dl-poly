@@ -109,7 +109,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(keyfce,neigh,site,comm)
+           Call set_halo_particles(keyfce,neigh,site,mpole,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -119,14 +119,14 @@
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
            megrgd,degrot,degtra,        &
-           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,comm)
+           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,mpole,comm)
               If (lexcl) Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,comm)
            End If
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
            Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
-             inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,tmr)
+             inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,mpole,tmr)
 
 ! Evaluate kinetics if available
 
