@@ -17,7 +17,7 @@ Module configuration
                     offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
   Use site, Only : site_type
 
-  Use setup,   Only : nconf,nrite,config,mxatms,half_minus,mxrgd,zero_plus, &
+  Use setup,   Only : nconf,nrite,config,mxatms,half_minus,zero_plus, &
                       mxatdm
   Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line

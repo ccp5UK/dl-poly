@@ -9,9 +9,9 @@
 
 ! Calculate kinetic tensor and energy at restart
 
-  If (megrgd > 0) Then
+  If (rigid%total > 0) Then
      Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
-     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
+     Call kinstrest(rigid,stat%strknt,comm)
 
      stat%strkin=stat%strknf+stat%strknt
   Else
@@ -24,19 +24,23 @@
 ! forces are calculated at (re)start
 
   If (levcfg == 2) Then
-     If (megrgd > 0) Then
-        If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz,comm)
+    If (rigid%total > 0) Then
+      If (rigid%share) Then
+        Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxx,fyy,fzz,comm)
+      End If
 
-        If (thermo%l_langevin) Then
-           Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
-           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
-           Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
-        Else
-           Call rigid_bodies_str_ss(stat%strcom,comm)
+      If (thermo%l_langevin) Then
+        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
+        If (rigid%share) Then
+          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxl,fyl,fzl,comm)
         End If
+        Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,rigid,comm)
+      Else
+        Call rigid_bodies_str_ss(stat%strcom,rigid,comm)
+      End If
 
-        stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
-     End If
+      stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
+    End If
   End If
 
 
@@ -50,7 +54,7 @@
 
 ! Apply impact
 
-     Call w_impact_option(levcfg,nstep,nsteql,megrgd,cshell,stat,impa,comm)
+     Call w_impact_option(levcfg,nstep,nsteql,rigid,cshell,stat,impa,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 ! levcfg == 2 avoids application twice when forces are calculated at (re)start
@@ -75,8 +79,9 @@
 
 ! zero Kelvin structure optimisation
 
-        If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_zero) == 0) &
-           Call zero_k_optimise(stat,comm)
+        If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_zero) == 0) Then
+          Call zero_k_optimise(stat,rigid,comm)
+        End If
 
 ! Switch on electron-phonon coupling only after time offset
 
@@ -84,11 +89,12 @@
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,site,vdw,tmr)
+        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,site,vdw,rigid,tmr)
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site,mpole)
+        Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
+          dihedral,inversion,tether,neigh,site,mpole,rigid)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
@@ -96,7 +102,7 @@
 
      Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
        inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
-       minimise,mpole,ext_field,tmr)
+       minimise,mpole,ext_field,rigid,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
@@ -115,7 +121,7 @@
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,site,vdw,tmr)
+        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,site,vdw,rigid,tmr)
 
 ! Apply kinetic options
 

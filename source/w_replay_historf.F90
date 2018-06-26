@@ -41,9 +41,9 @@
 
 ! Calculate kinetic tensor and energy at restart as it may not exists later
 
-  If (megrgd > 0) Then
+  If (rigid%total > 0) Then
      Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
-     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
+     Call kinstrest(rigid,stat%strknt,comm)
 
      stat%strkin=stat%strknf+stat%strknt
   Else
@@ -118,37 +118,40 @@
               Call build_book_intra     &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           megrgd,degrot,degtra,        &
-           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,mpole,comm)
-              If (lexcl) Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,comm)
+           degrot,degtra,        &
+           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,mpole,rigid,comm)
+              If (lexcl) Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,rigid,comm)
            End If
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
            Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf, &
-             netcdf,minimise,mpole,ext_field,tmr)
+             netcdf,minimise,mpole,ext_field,rigid,tmr)
 
 ! Evaluate kinetics if available
 
            If (levcfg > 0 .and. levcfg < 3) Then
-              If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,thermo%freq_zero) == 0) &
-                 Call zero_k_optimise(stat,comm)
+              If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,thermo%freq_zero) == 0) Then
+                Call zero_k_optimise(stat,rigid,comm)
+              End If
 
-              If (thermo%l_zero .and. nstep <= nsteql) Call zero_k_optimise(stat,comm)
+              If (thermo%l_zero .and. nstep <= nsteql) Then
+                Call zero_k_optimise(stat,rigid,comm)
+              End If
 
 ! Calculate kinetic stress and energy if available
 
-              If (megrgd > 0) Then
-                 Call rigid_bodies_quench(comm)
+              If (rigid%total > 0) Then
+                 Call rigid_bodies_quench(rigid,comm)
 
                  Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
-                 Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
+                 Call kinstrest(rigid,stat%strknt,comm)
 
                  stat%strkin=stat%strknf+stat%strknt
 
-                 stat%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
-                 Call rigid_bodies_str_ss(stat%strcom,comm)
+                 stat%engrot=getknr(rigid,comm)
+                 Call rigid_bodies_str_ss(stat%strcom,rigid,comm)
                  stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
               Else
                  Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
@@ -302,8 +305,8 @@
            (levcfg,keyres,      &
            nstep,nstrun, &
            atmfre,atmfrz,            &
-           megrgd,degtra,degrot,     &
-           degfre,degshl,stat%engrot,site%dof_site,cshell,stat,cons,pmf,thermo,minimise,comm)
+           degtra,degrot,     &
+           degfre,degshl,stat%engrot,site%dof_site,cshell,stat,cons,pmf,thermo,minimise,rigid,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

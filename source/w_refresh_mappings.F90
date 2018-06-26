@@ -3,7 +3,7 @@
 
 ! Scale t=0 reference positions
 
-        If (nstep > 0) Call xscale(m_rgd,tstep,thermo,stat,neigh,comm)
+        If (nstep > 0) Call xscale(tstep,thermo,stat,neigh,rigid,comm)
 
 ! Check VNL conditioning
 
@@ -15,9 +15,9 @@
 
            Call relocate_particles  &
            (dvar,neigh%cutoff_extended,lbook,msd_data%l_msd,megatm, &
-           m_rgd,megtet,            &
-           cshell,cons, pmf,& 
-           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,minimise,mpole,comm)
+           megtet,            &
+           cshell,cons,pmf,&
+           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,minimise,mpole,rigid,comm)
 
 ! Exchange atomic data in border regions
 
@@ -26,9 +26,9 @@
 ! Re-tag RBs when called again after the very first time
 ! when it's done in rigid_bodies_setup <- build_book_intra
 
-           If (m_rgd > 0) Then
-              Call rigid_bodies_tags(comm)
-              Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,comm)
+           If (rigid%on) Then
+              Call rigid_bodies_tags(rigid,comm)
+              Call rigid_bodies_coms(xxx,yyy,zzz,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
            End If
 
         Else

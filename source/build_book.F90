@@ -17,7 +17,8 @@ Module build_book
   Use core_shell
 
 
-  Use rigid_bodies
+  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_setup,rigid_bodies_tags, &
+                           rigid_bodies_coms,rigid_bodies_widths
 
   Use tethers, Only : tethers_type, deallocate_tethers_arrays
 
@@ -31,8 +32,9 @@ Module build_book
   Use constraints, Only : constraints_type
   Use pmf, Only : pmf_type
   Use mpole, Only : mpole_type
+  Use neighbours, Only : neighbours_type
 
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,warning,info
 
   Implicit None
 
@@ -48,10 +50,10 @@ Module build_book
 Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           megrgd,degrot,degtra,        &
+           degrot,degtra,        &
            megtet,                      &
            cshell,cons,pmf,bond,angle,dihedral,  &
-           inversion,tether,neigh,site,mpole,comm)
+           inversion,tether,neigh,site,mpole,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -67,10 +69,9 @@ Subroutine build_book_intra             &
 
   Logical,           Intent( In    ) :: l_str,l_top,lsim
   Real(Kind = wp),   Intent( In    ) :: dvar
-
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
                                         megtet
-  Integer,           Intent( InOut ) :: megfrz,megrgd
+  Integer,           Intent( InOut ) :: megfrz
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( constraints_type), Intent(Inout) :: cons
   Type( pmf_type), Intent(Inout) :: pmf
@@ -83,6 +84,7 @@ Subroutine build_book_intra             &
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -101,7 +103,7 @@ Subroutine build_book_intra             &
              idihed,jdihed,kdihed,ldihed,           &
              iinver,jinver,kinver,linver,           &
              itmp(1:9),jtmp(1:9)
-  Real(Kind = wp) :: rcut,tmp
+  Real(Kind = wp) :: tmp
 
   Integer, Dimension( : ), Allocatable :: iwrk,irgd,irgd0, &
                                           i1pmf,i1pmf0,i2pmf,i2pmf0
@@ -110,13 +112,18 @@ Subroutine build_book_intra             &
 
   fail=0
   Allocate (iwrk(1:mxatms),                                Stat=fail(1))
-  If (m_rgd > 0) Allocate (irgd(1:mxlrgd),irgd0(1:mxlrgd), Stat=fail(2))
+  If (rigid%on) Then
+    Allocate (irgd(1:rigid%max_list), &
+      irgd0(1:rigid%max_list), Stat=fail(2))
+  End If
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'build_book_intra allocation failure'
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Call init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
+  If (.not.(newjob .or. lsim)) Then
+    Call init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,rigid)
+  End If
 
 ! Initialise safety flags
 
@@ -424,31 +431,32 @@ Subroutine build_book_intra             &
 
 ! Construct RBs list
 
-           Do lrigid=1,numrgd(itmols)
-              mrigid=lstrgd(0,lrigid+krigid)
+           Do lrigid=1,rigid%num(itmols)
+              mrigid=rigid%lst(0,lrigid+krigid)
 
               irgd=0 ; irgd0=0
               Do irigid=1,mrigid
-                 irgd(irigid)=lstrgd(irigid,lrigid+krigid)+isite
+                 irgd(irigid)=rigid%lst(irigid,lrigid+krigid)+isite
                  irgd0(irigid)=local_index(irgd(irigid),nlast,lsi,lsa)
                  If (irgd0(irigid) > natms) irgd0(irigid)=0
               End Do
 
               If (Any(irgd0 > 0)) Then
                  jrigid=jrigid+1
-                 If (jrigid <= mxrgd) Then
-                    listrgd(-1,jrigid)=mrigid
-                    listrgd( 0,jrigid)=lrigid+krigid
+                 If (jrigid <= rigid%max_rigid) Then
+                    rigid%list(-1,jrigid)=mrigid
+                    rigid%list( 0,jrigid)=lrigid+krigid
                     Do irigid=1,mrigid
-                       listrgd(irigid,jrigid)=irgd(irigid)
+                       rigid%list(irigid,jrigid)=irgd(irigid)
                        If (irgd0(irigid) > 0) Then
-                          Call tag_legend(safe(1),irgd0(irigid),jrigid,legrgd,mxfrgd)
-                          If (legrgd(mxfrgd,irgd0(irigid)) > 0) Then
+                          Call tag_legend(safe(1),irgd0(irigid),jrigid,rigid%legend,rigid%max_frozen)
+                          If (rigid%legend(rigid%max_frozen,irgd0(irigid)) > 0) Then
                              Call warning('too many RB type neighbours')
-                             Write(messages(1),'(a,i0)') 'requiring a list length of: ', mxfrgd-1+legrgd(mxfrgd,irgd0(irigid))
-                             Write(messages(2),'(a,i0)') 'but maximum length allowed: ', mxfrgd-1
+                             Write(messages(1),'(a,i0)') 'requiring a list length of: ',  &
+                               rigid%max_frozen-1+rigid%legend(rigid%max_frozen,irgd0(irigid))
+                             Write(messages(2),'(a,i0)') 'but maximum length allowed: ', rigid%max_frozen-1
                              Write(messages(3),'(a,i0)') 'for particle (global ID #): ', irgd(irigid)
-                             Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', lstrgd(irigid,lrigid+krigid)
+                             Write(messages(4),'(a,i0)') 'on mol. site (local  ID #): ', rigid%lst(irigid,lrigid+krigid)
                              Write(messages(5),'(a,i0)') 'of unit      (local  ID #): ', lrigid
                              Write(messages(6),'(a,i0)') 'in molecule  (local  ID #): ', imols
                              Write(messages(7),'(a,i0)') 'of type      (       ID #): ', itmols
@@ -894,7 +902,7 @@ Subroutine build_book_intra             &
      kconst=kconst+cons%numcon(itmols)
 ! No 'kpmf' needed since PMF is defined on one and only one molecular type
 
-     krigid=krigid+numrgd(itmols)
+     krigid=krigid+rigid%num(itmols)
 
      kteths=kteths+tether%numteth(itmols)
 
@@ -912,7 +920,7 @@ Subroutine build_book_intra             &
   cons%ntcons=jconst
 ! 'pmf%ntpmf' is updated locally as PMFs are global and one type only
 
-  ntrgd =jrigid
+  rigid%n_types =jrigid
 
   tether%ntteth=jteths
 
@@ -926,7 +934,7 @@ Subroutine build_book_intra             &
 
      cons%ntcons1=cons%ntcons
 
-     ntrgd1 =ntrgd
+     rigid%n_types_book =rigid%n_types
 
      bond%n_types1=bond%n_types
      angle%n_types1=angle%n_types
@@ -960,11 +968,11 @@ Subroutine build_book_intra             &
         iwrk(mshels)=jatm
      End If
   End Do
-  Do i=1,ntrgd
-     mrigid=listrgd(-1,i)
+  Do i=1,rigid%n_types
+     mrigid=rigid%list(-1,i)
 
      Do lrigid=1,mrigid
-        iatm=listrgd(lrigid,i)
+        iatm=rigid%list(lrigid,i)
         iat0=local_index(iatm,nlast,lsi,lsa)
 
         If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
@@ -1217,7 +1225,7 @@ Subroutine build_book_intra             &
         End Do
 
 ! If there is a non-local, cross-domained core-shell unit atom on this
-! molecule on this node, extend cons%listcon, listrgd, bond%list and angle%list
+! molecule on this node, extend cons%listcon, rigid%list, bond%list and angle%list
 
         If (i > 0) Then
 
@@ -1242,22 +1250,22 @@ Subroutine build_book_intra             &
 
 ! Extend RB list
 
-           Do lrigid=1,numrgd(itmols)
-              mrigid=lstrgd(0,lrigid+krigid)
+           Do lrigid=1,rigid%num(itmols)
+              mrigid=rigid%lst(0,lrigid+krigid)
 
               irgd=0 ; irgd0=0 ; go=.false.
               Do irigid=1,mrigid
-                 irgd(irigid)=lstrgd(irigid,lrigid+krigid)+isite
+                 irgd(irigid)=rigid%lst(irigid,lrigid+krigid)+isite
                  go=(go .or. Any(iwrk(1:mshels) == irgd(irigid)))
               End Do
 
               If (go) Then
                  jrigid=jrigid+1
-                 If (jrigid <= mxrgd) Then
-                    listrgd(-1,jrigid)=lstrgd(0,lrigid+krigid)
-                    listrgd( 0,jrigid)=lrigid+krigid
+                 If (jrigid <= rigid%max_rigid) Then
+                    rigid%list(-1,jrigid)=rigid%lst(0,lrigid+krigid)
+                    rigid%list( 0,jrigid)=lrigid+krigid
                     Do irigid=1,mrigid
-                       listrgd(irigid,jrigid)=irgd(irigid)
+                       rigid%list(irigid,jrigid)=irgd(irigid)
                     End Do
                  Else
                     safe(5)=.false.
@@ -1379,7 +1387,7 @@ Subroutine build_book_intra             &
 
      kconst=kconst+cons%numcon(itmols)
 
-     krigid=krigid+numrgd(itmols)
+     krigid=krigid+rigid%num(itmols)
 
      kbonds=kbonds+bond%num(itmols)
      kangle=kangle+angle%num(itmols)
@@ -1394,7 +1402,7 @@ Subroutine build_book_intra             &
 
   cons%ntcons1=jconst
 
-  ntrgd1 =jrigid
+  rigid%n_types_book =jrigid
 
   bond%n_types1=jbonds
   angle%n_types1=jangle
@@ -1421,11 +1429,11 @@ Subroutine build_book_intra             &
         iwrk(mshels)=jatm
      End If
   End Do
-  Do i=ntrgd+1,ntrgd1
-     mrigid=listrgd(-1,i)
+  Do i=rigid%n_types+1,rigid%n_types_book
+     mrigid=rigid%list(-1,i)
 
      Do j=1,mrigid
-        iatm=listrgd(j,i)
+        iatm=rigid%list(j,i)
         If (.not.Any(iwrk(1:mshels) == iatm)) Then
            mshels=mshels+1
            iwrk(mshels)=iatm
@@ -1613,7 +1621,7 @@ Subroutine build_book_intra             &
      itmp(1)=ishels ; jtmp(1)=cshell%mxshl
      itmp(2)=iconst ; jtmp(2)=cons%mxcons
      itmp(3)=ipmf   ; jtmp(3)=pmf%mxpmf
-     itmp(4)=irigid ; jtmp(4)=mxrgd
+     itmp(4)=irigid ; jtmp(4)=rigid%max_rigid
      itmp(5)=iteths ; jtmp(5)=tether%mxteth
      itmp(6)=ibonds ; jtmp(6)=bond%max_bonds
      itmp(7)=iangle ; jtmp(7)=angle%max_angles
@@ -1643,8 +1651,10 @@ Subroutine build_book_intra             &
   If (.not.safe(10)) Call error( 77)
   If (.not.safe(11)) Call error( 64)
 
-  Deallocate (iwrk,                      Stat=fail(1))
-  If (m_rgd > 0) Deallocate (irgd,irgd0, Stat=fail(2))
+  Deallocate (iwrk, Stat=fail(1))
+  If (rigid%on) Then
+    Deallocate (irgd,irgd0, Stat=fail(2))
+  End If
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'build_book_intra deallocation failure'
      Call error(0,message)
@@ -1656,12 +1666,13 @@ Subroutine build_book_intra             &
 
 ! Set RB particulars and quaternions
 
-     If (m_rgd > 0) Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,megrgd,degtra,degrot,site,comm)
+     If (rigid%on) Then
+       Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,neigh%cutoff,site,rigid,comm)
+     End If
 
      Call report_topology                &
            (megatm,megfrz,atmfre,atmfrz, &
-           megrgd,  &
-           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,site,comm)
+           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,site,rigid,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1671,22 +1682,18 @@ Subroutine build_book_intra             &
         Call cons%deallocate_constraints_temps()
         Call pmf%deallocate_pmf_tmp_arrays()
 
-        Call deallocate_rigid_bodies_arrays()
+        Call rigid%deallocate_temp()
 
         Call deallocate_tethers_arrays(tether)
      End If
 
   Else
 
-! Recover/localise rcut
+! Tag RBs, find their COMs and check their widths to neigh%cutoff (system cutoff)
 
-     rcut=rgdrct
-
-! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
-
-     Call rigid_bodies_tags(comm)
-     Call rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,comm)
-     Call rigid_bodies_widths(rcut,comm)
+     Call rigid_bodies_tags(rigid,comm)
+     Call rigid_bodies_coms(xxx,yyy,zzz,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+     Call rigid_bodies_widths(neigh%cutoff,rigid,comm)
 
   End If
 
@@ -1696,17 +1703,22 @@ Subroutine build_book_intra             &
   If (cshell%megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
      (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl,&
      cshell%listshl,cshell%mxfshl,cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
-   q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
+   rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+   rigid%oxx,rigid%oyy,rigid%ozz)
 
   If (cons%m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
      (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,&
      cons%legcon,cons%lshmv_con,&
      cons%lishp_con,cons%lashp_con,comm,&
-   q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
+   rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+   rigid%oxx,rigid%oyy,rigid%ozz)
 
-  If (m_rgd > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd,comm,&
-   q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
+  If (rigid%on .and. comm%mxnode > 1) Call pass_shared_units &
+     (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
+     rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
+     rigid%map_shared,comm,&
+   rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+   rigid%oxx,rigid%oyy,rigid%ozz)
 
 End Subroutine build_book_intra
 
@@ -1796,7 +1808,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,comm)
 
 End Subroutine compress_book_intra
 
-Subroutine init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh)
+Subroutine init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,rigid)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1818,6 +1830,7 @@ Subroutine init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
 
 ! exclusions locals
 
@@ -1843,22 +1856,22 @@ Subroutine init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh
 
 ! RBs locals
 
-  ntrgd  = 0 ; ntrgd1 = 0
-  listrgd = 0
-  legrgd  = 0
+  rigid%n_types  = 0 ; rigid%n_types_book = 0
+  rigid%list = 0
+  rigid%legend  = 0
 
-  rgdfrz = 0 ; rgdind = 0 ; indrgd = 0
+  rigid%frozen = 0 ; rigid%index_global = 0 ; rigid%index_local = 0
 
-  rgdwgt = 0.0_wp ; rgdwg1 = 0.0_wp
-  rgdx   = 0.0_wp ; rgdy   = 0.0_wp ; rgdz   = 0.0_wp
-  rgdrix = 0.0_wp ; rgdriy = 0.0_wp ; rgdriz = 0.0_wp
-  rgdaxs = 0.0_wp
+  rigid%weight = 0.0_wp ; rigid%weightless = 0.0_wp
+  rigid%x   = 0.0_wp ; rigid%y   = 0.0_wp ; rigid%z   = 0.0_wp
+  rigid%rix = 0.0_wp ; rigid%riy = 0.0_wp ; rigid%riz = 0.0_wp
+  rigid%axs = 0.0_wp
 
-  q0 = 0.0_wp ; q1 = 0.0_wp ; q2 = 0.0_wp ; q3 = 0.0_wp
+  rigid%q0 = 0.0_wp ; rigid%q1 = 0.0_wp ; rigid%q2 = 0.0_wp ; rigid%q3 = 0.0_wp
 
-  rgdxxx = 0.0_wp ; rgdyyy = 0.0_wp ; rgdzzz = 0.0_wp
-  rgdvxx = 0.0_wp ; rgdvyy = 0.0_wp ; rgdvzz = 0.0_wp
-  rgdoxx = 0.0_wp ; rgdoyy = 0.0_wp ; rgdozz = 0.0_wp
+  rigid%xxx = 0.0_wp ; rigid%yyy = 0.0_wp ; rigid%zzz = 0.0_wp
+  rigid%vxx = 0.0_wp ; rigid%vyy = 0.0_wp ; rigid%vzz = 0.0_wp
+  rigid%oxx = 0.0_wp ; rigid%oyy = 0.0_wp ; rigid%ozz = 0.0_wp
 
 ! tethers locals
 
@@ -1891,6 +1904,4 @@ Subroutine init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh
   inversion%legend  = 0
 
 End Subroutine init_intra
-
-
 End Module build_book

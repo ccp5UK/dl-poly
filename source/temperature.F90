@@ -6,11 +6,7 @@ Module temperature
   Use configuration,   Only : imcon,natms,nlast,nfree,lsite,  &
                               lsi,lsa,ltg,lfrzn,lfree,lstfre, &
                               weight,vxx,vyy,vzz,xxx,yyy,zzz
-  Use rigid_bodies,    Only : rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-                              rgdxxx,rgdyyy,rgdzzz,rgdx,rgdy,rgdz, &
-                              rgdrix,rgdriy,rgdriz,rgdwgt,q0,q1,q2,q3, &
-                              ntrgd,rgdmeg,lashp_rgd,lishp_rgd,lshmv_rgd, &
-                              rgdfrz,listrgd,indrgd,getrotmat,rigid_bodies_quench
+  Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,rigid_bodies_quench
   Use constraints,     Only : constraints_type, constraints_quench
   Use pmf,             Only : pmf_quench, pmf_type
   Use core_shell,      Only : core_shell_type,core_shell_quench,SHELL_ADIABATIC
@@ -34,8 +30,8 @@ Contains
              (levcfg,keyres,      &
              nstep,nstrun, &
              atmfre,atmfrz,            &
-             megrgd,degtra,degrot,     &
-             degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minimise,comm)
+             degtra,degrot,     &
+             degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minimise,rigid,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -47,12 +43,9 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: nstep,nstrun, &
-                                           atmfre,atmfrz,       &
-                                           megrgd
-
+                                           atmfre,atmfrz
     Integer,            Intent( InOut ) :: keyres,levcfg
     Integer(Kind=li),   Intent( InOut ) :: degtra,degrot
-
     Integer(Kind=li),   Intent(   Out ) :: degfre,degshl
     Real( Kind = wp ),  Intent(   Out ) :: engrot
     Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
@@ -62,6 +55,7 @@ Contains
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( minimise_type ), Intent( In    ) :: minimise
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: no_min_0,safe
@@ -84,7 +78,7 @@ Contains
   ! initialise rotational and translational DoF if no RB are present
   ! or re-initialise if all are frozen (does no harm)
 
-    If (megrgd == 0) Then
+    If (rigid%total == 0) Then
        degtra=Int(0,li)
        degrot=Int(0,li)
     End If
@@ -160,11 +154,11 @@ Contains
 
   ! avoid user defined 0K field to break up anything
 
-    If (megrgd > 0) Then
+    If (rigid%total > 0) Then
        engf=getknf(vxx,vyy,vzz,comm)/Real(Max(1_li,degfre),wp)
-       engt=getknt(rgdvxx,rgdvyy,rgdvzz,comm)/Real(Max(1_li,degtra),wp)
+       engt=getknt(rigid,comm)/Real(Max(1_li,degtra),wp)
 
-       engr=getknr(rgdoxx,rgdoyy,rgdozz,comm)/Real(Max(1_li,degrot),wp)
+       engr=getknr(rigid,comm)/Real(Max(1_li,degrot),wp)
        engk=engf+engt
     Else
        engk=getkin(vxx,vyy,vzz,comm)/Real(Max(1_li,degfre),wp)
@@ -239,24 +233,24 @@ Contains
        Call gsum(comm,tps)
        stp = Sum(tps)
 
-       If (megrgd > 0) Then
+       If (rigid%total > 0) Then
 
           k = 0
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
   ! For all good RBs
 
-             lrgd=listrgd(-1,irgd)
-             If (rgdfrz(0,rgdtyp) < lrgd) Then
+             lrgd=rigid%list(-1,irgd)
+             If (rigid%frozen(0,rgdtyp) < lrgd) Then
                 Do jrgd=1,lrgd
-                   i=indrgd(jrgd,irgd) ! local index of particle/site
+                   i=rigid%index_local(jrgd,irgd) ! local index of particle/site
                    If (i <= natms) tpn(comm%idnode) = tpn(comm%idnode) - 1 ! Less free particles are hit
                 End Do
 
-                i1=indrgd(1,irgd) ! particle to bare the random RB COM momentum
-                i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
-                If (rgdfrz(0,rgdtyp) == 0) Then
+                i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
+                i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
+                If (rigid%frozen(0,rgdtyp) == 0) Then
                    If (i1 <= natms) k = k + 1
                 End If
                 If (i2 <= natms) k = k + 1
@@ -294,22 +288,22 @@ Contains
              End If
           End Do
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
   ! For all good RBs
 
-             lrgd=listrgd(-1,irgd)
-             If (rgdfrz(0,rgdtyp) < lrgd) Then
-                i1=indrgd(1,irgd) ! particle to bare the random RB COM momentum
-                i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
+             lrgd=rigid%list(-1,irgd)
+             If (rigid%frozen(0,rgdtyp) < lrgd) Then
+                i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
+                i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
 
-                If (rgdfrz(0,rgdtyp) == 0 .and. i1 <= natms) Then
+                If (rigid%frozen(0,rgdtyp) == 0 .and. i1 <= natms) Then
                    Call box_mueller_saru3(ltg(i1),0,vxx(i1),vyy(i1),vzz(i1))
 
   ! Get scaler to target variance/Sqrt(weight)
 
-                   tmp = 1.0_wp/Sqrt(rgdwgt(0,rgdtyp))
+                   tmp = 1.0_wp/Sqrt(rigid%weight(0,rgdtyp))
                    vxx(i1) = vxx(i1)*tmp
                    vyy(i1) = vyy(i1)*tmp
                    vzz(i1) = vzz(i1)*tmp
@@ -321,40 +315,40 @@ Contains
   ! Get scaler to target variance/Sqrt(weight) -
   ! 3 different reciprocal moments of inertia
 
-                   vxx(i2) = vxx(i2)*Sqrt(rgdrix(2,rgdtyp))
-                   vyy(i2) = vyy(i2)*Sqrt(rgdriy(2,rgdtyp))
-                   vzz(i2) = vzz(i2)*Sqrt(rgdriz(2,rgdtyp))
+                   vxx(i2) = vxx(i2)*Sqrt(rigid%rix(2,rgdtyp))
+                   vyy(i2) = vyy(i2)*Sqrt(rigid%riy(2,rgdtyp))
+                   vzz(i2) = vzz(i2)*Sqrt(rigid%riz(2,rgdtyp))
                 End If
              End If
           End Do
 
   ! Update shared RBs' velocities
 
-          If (lshmv_rgd) Then
-            Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,vxx,vyy,vzz,comm)
+          If (rigid%share) Then
+            Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,vxx,vyy,vzz,comm)
           End If
 
   ! calculate new RBs' COM and angular velocities
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
   ! For all good RBs
 
-             lrgd=listrgd(-1,irgd)
-             If (rgdfrz(0,rgdtyp) < lrgd) Then
-                i1=indrgd(1,irgd) ! particle to bare the random RB COM momentum
-                i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
+             lrgd=rigid%list(-1,irgd)
+             If (rigid%frozen(0,rgdtyp) < lrgd) Then
+                i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
+                i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
 
-                If (rgdfrz(0,rgdtyp) == 0) Then
-                   rgdvxx(irgd) = vxx(i1)
-                   rgdvyy(irgd) = vyy(i1)
-                   rgdvzz(irgd) = vzz(i1)
+                If (rigid%frozen(0,rgdtyp) == 0) Then
+                   rigid%vxx(irgd) = vxx(i1)
+                   rigid%vyy(irgd) = vyy(i1)
+                   rigid%vzz(irgd) = vzz(i1)
                 End If
 
-                rgdoxx(irgd) = vxx(i2)
-                rgdoyy(irgd) = vyy(i2)
-                rgdozz(irgd) = vzz(i2)
+                rigid%oxx(irgd) = vxx(i2)
+                rigid%oyy(irgd) = vyy(i2)
+                rigid%ozz(irgd) = vzz(i2)
                 If (i2 <= natms) Then
                    If (lfrzn(i2) > 0 .or. weight(i) < 1.0e-6_wp) Then
                       vxx(i2) = 0.0_wp
@@ -365,31 +359,31 @@ Contains
 
   ! get new rotation matrix
 
-                Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
+                Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
   ! update RB members new velocities
 
-                lrgd=listrgd(-1,irgd)
+                lrgd=rigid%list(-1,irgd)
                 Do jrgd=1,lrgd
-                   If (rgdfrz(jrgd,rgdtyp) == 0) Then
-                      i=indrgd(jrgd,irgd) ! local index of particle/site
+                   If (rigid%frozen(jrgd,rgdtyp) == 0) Then
+                      i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                       If (i <= natms) Then
-                         x(1)=rgdx(jrgd,rgdtyp)
-                         y(1)=rgdy(jrgd,rgdtyp)
-                         z(1)=rgdz(jrgd,rgdtyp)
+                         x(1)=rigid%x(jrgd,rgdtyp)
+                         y(1)=rigid%y(jrgd,rgdtyp)
+                         z(1)=rigid%z(jrgd,rgdtyp)
 
   ! new atomic velocities in body frame
 
-                         vpx=rgdoyy(irgd)*z(1)-rgdozz(irgd)*y(1)
-                         vpy=rgdozz(irgd)*x(1)-rgdoxx(irgd)*z(1)
-                         vpz=rgdoxx(irgd)*y(1)-rgdoyy(irgd)*x(1)
+                         vpx=rigid%oyy(irgd)*z(1)-rigid%ozz(irgd)*y(1)
+                         vpy=rigid%ozz(irgd)*x(1)-rigid%oxx(irgd)*z(1)
+                         vpz=rigid%oxx(irgd)*y(1)-rigid%oyy(irgd)*x(1)
 
   ! new atomic velocities in lab frame
 
-                         vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rgdvxx(irgd)
-                         vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rgdvyy(irgd)
-                         vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rgdvzz(irgd)
+                         vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                         vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                         vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                       End If
                    End If
                 End Do
@@ -452,8 +446,8 @@ Contains
 
   ! remove centre of mass motion
 
-       If (megrgd > 0) Then
-          Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
+       If (rigid%total > 0) Then
+          Call getvom(vom,vxx,vyy,vzz,rigid,comm)
 
           Do j=1,nfree
              i=lstfre(j)
@@ -465,17 +459,17 @@ Contains
              End If
           End Do
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
-             If (rgdfrz(0,rgdtyp) == 0) Then
-                rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
-                rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
-                rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
+             If (rigid%frozen(0,rgdtyp) == 0) Then
+                rigid%vxx(irgd) = rigid%vxx(irgd) - vom(1)
+                rigid%vyy(irgd) = rigid%vyy(irgd) - vom(2)
+                rigid%vzz(irgd) = rigid%vzz(irgd) - vom(3)
 
-                lrgd=listrgd(-1,irgd)
+                lrgd=rigid%list(-1,irgd)
                 Do jrgd=1,lrgd
-                   i=indrgd(jrgd,irgd) ! local index of particle/site
+                   i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                    If (i <= natms) Then
                       vxx(i) = vxx(i) - vom(1)
@@ -501,8 +495,8 @@ Contains
 
   ! quench RBs
 
-       If (megrgd > 0) Then
-         Call rigid_bodies_quench(comm)
+       If (rigid%total > 0) Then
+         Call rigid_bodies_quench(rigid,comm)
        End If
 
     End If
@@ -533,7 +527,7 @@ Contains
 
        If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC .and. no_min_0) Then
           Do
-             Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
+             Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,comm)
              Call core_shell_quench(safe,thermo%temp,cshell,comm)
              If (cons%megcon > 0) Then
                Call constraints_quench(cons,stat,comm)
@@ -541,13 +535,13 @@ Contains
              If (pmf%megpmf > 0) Then
                Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
              End If
-             If (megrgd > 0) Then
-               Call rigid_bodies_quench(comm)
+             If (rigid%total > 0) Then
+               Call rigid_bodies_quench(rigid,comm)
              End If
              If (safe) Exit
           End Do
        Else
-          Call scale_temperature(thermo%sigma,degtra,degrot,degfre,comm)
+          Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,comm)
        End If
 
     End If
@@ -556,8 +550,8 @@ Contains
 
   ! remove centre of mass motion
 
-       If (megrgd > 0) Then
-          Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
+       If (rigid%total > 0) Then
+          Call getvom(vom,vxx,vyy,vzz,rigid,comm)
 
           Do j=1,nfree
              i=lstfre(j)
@@ -569,17 +563,17 @@ Contains
              End If
           End Do
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
-             If (rgdfrz(0,rgdtyp) == 0) Then
-                rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
-                rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
-                rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
+             If (rigid%frozen(0,rgdtyp) == 0) Then
+                rigid%vxx(irgd) = rigid%vxx(irgd) - vom(1)
+                rigid%vyy(irgd) = rigid%vyy(irgd) - vom(2)
+                rigid%vzz(irgd) = rigid%vzz(irgd) - vom(3)
 
-                lrgd=listrgd(-1,irgd)
+                lrgd=rigid%list(-1,irgd)
                 Do jrgd=1,lrgd
-                   i=indrgd(jrgd,irgd) ! local index of particle/site
+                   i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                    If (i <= natms) Then
                       vxx(i) = vxx(i) - vom(1)
@@ -607,11 +601,11 @@ Contains
   ! Initialise engrot and if RBs exist calculate it
 
     engrot=0.0_wp
-    If (megrgd > 0) engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+    If (rigid%total > 0) engrot=getknr(rigid,comm)
 
   End Subroutine set_temperature
 
-  Subroutine regauss_temperature(megrgd,comm)
+  Subroutine regauss_temperature(rigid,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -624,14 +618,14 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: megrgd
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,j,k,l,is,irgd,jrgd,lrgd,rgdtyp
     Real( Kind = wp ) :: vom(1:3),tmp
 
     Integer, Allocatable :: ind(:),pair(:,:)
- 
+
     Character ( Len = 256 )  :: message
 
     fail=0
@@ -707,15 +701,15 @@ Contains
        vzz(l)=vom(3)*tmp
     End Do
 
-    If (megrgd > 0) Then
+    If (rigid%total > 0) Then
 
   ! quench RBs
 
-       Call rigid_bodies_quench(comm)
+       Call rigid_bodies_quench(rigid,comm)
 
   ! remove centre of mass motion
 
-       Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
+       Call getvom(vom,vxx,vyy,vzz,rigid,comm)
 
        Do j=1,nfree
           i=lstfre(j)
@@ -727,17 +721,17 @@ Contains
           End If
        End Do
 
-       Do irgd=1,ntrgd
-          rgdtyp=listrgd(0,irgd)
+       Do irgd=1,rigid%n_types
+          rgdtyp=rigid%list(0,irgd)
 
-          If (rgdfrz(0,rgdtyp) == 0) Then
-             rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
-             rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
-             rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
+          If (rigid%frozen(0,rgdtyp) == 0) Then
+             rigid%vxx(irgd) = rigid%vxx(irgd) - vom(1)
+             rigid%vyy(irgd) = rigid%vyy(irgd) - vom(2)
+             rigid%vzz(irgd) = rigid%vzz(irgd) - vom(3)
 
-             lrgd=listrgd(-1,irgd)
+             lrgd=rigid%list(-1,irgd)
              Do jrgd=1,lrgd
-                i=indrgd(jrgd,irgd) ! local index of particle/site
+                i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                 If (i <= natms) Then
                    vxx(i) = vxx(i) - vom(1)
@@ -772,7 +766,7 @@ Contains
 
   End Subroutine regauss_temperature
 
-  Subroutine scale_temperature(sigma,degtra,degrot,degfre,comm)
+  Subroutine scale_temperature(sigma,degtra,degrot,degfre,rigid,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -790,10 +784,11 @@ Contains
 
     Real( Kind = wp ),   Intent( In    ) :: sigma
     Integer( Kind=li ),  Intent( In    ) :: degtra,degrot,degfre
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type ( comms_type ), Intent( InOut ) :: comm
 
 
-    Integer           :: fail,i,j,irgd,jrgd,lrgd,rgdtyp,megrgd
+    Integer           :: fail,i,j,irgd,jrgd,lrgd,rgdtyp
     Real( Kind = wp ) :: engke,engkf,engkt,engrot,         &
                          amx,amy,amz,wxx,wyy,wzz,tmp,tmp1, &
                          com(1:3),vom(1:3),rot(1:9),rotinv(1:9),x,y,z
@@ -802,14 +797,10 @@ Contains
 
     Character ( Len = 256 )  ::  message
 
-  ! recover megrgd
-
-    megrgd=rgdmeg
-
   ! remove centre of mass motion
 
-    If (megrgd > 0) Then
-       Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
+    If (rigid%total > 0) Then
+       Call getvom(vom,vxx,vyy,vzz,rigid,comm)
 
        Do j=1,nfree
           i=lstfre(j)
@@ -821,17 +812,17 @@ Contains
           End If
        End Do
 
-       Do irgd=1,ntrgd
-          rgdtyp=listrgd(0,irgd)
+       Do irgd=1,rigid%n_types
+          rgdtyp=rigid%list(0,irgd)
 
-          If (rgdfrz(0,rgdtyp) == 0) Then
-             rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
-             rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
-             rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
+          If (rigid%frozen(0,rgdtyp) == 0) Then
+             rigid%vxx(irgd) = rigid%vxx(irgd) - vom(1)
+             rigid%vyy(irgd) = rigid%vyy(irgd) - vom(2)
+             rigid%vzz(irgd) = rigid%vzz(irgd) - vom(3)
 
-             lrgd=listrgd(-1,irgd)
+             lrgd=rigid%list(-1,irgd)
              Do jrgd=1,lrgd
-                i=indrgd(jrgd,irgd) ! local index of particle/site
+                i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                 If (i <= natms) Then
                    vxx(i) = vxx(i) - vom(1)
@@ -867,7 +858,7 @@ Contains
 
        Call getcom(xxx,yyy,zzz,com,comm)
 
-       If (megrgd > 0) Then
+       If (rigid%total > 0) Then
 
   ! move to centre of mass origin
 
@@ -881,13 +872,13 @@ Contains
              End If
           End Do
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
-             If (rgdfrz(0,rgdtyp) == 0) Then
-                rgdxxx(irgd) = rgdxxx(irgd) - com(1)
-                rgdyyy(irgd) = rgdyyy(irgd) - com(2)
-                rgdzzz(irgd) = rgdzzz(irgd) - com(3)
+             If (rigid%frozen(0,rgdtyp) == 0) Then
+                rigid%xxx(irgd) = rigid%xxx(irgd) - com(1)
+                rigid%yyy(irgd) = rigid%yyy(irgd) - com(2)
+                rigid%zzz(irgd) = rigid%zzz(irgd) - com(3)
              End If
           End Do
 
@@ -919,26 +910,26 @@ Contains
              End If
           End Do
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
-             If (rgdfrz(0,rgdtyp) == 0) Then
-                lrgd=listrgd(-1,irgd)
+             If (rigid%frozen(0,rgdtyp) == 0) Then
+                lrgd=rigid%list(-1,irgd)
 
-                tmp1=rgdwgt(0,rgdtyp)*Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
+                tmp1=rigid%weight(0,rgdtyp)*Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
 
-                amx = amx + tmp1*(rgdyyy(irgd)*rgdvzz(irgd) - rgdzzz(irgd)*rgdvyy(irgd))
-                amy = amy + tmp1*(rgdzzz(irgd)*rgdvxx(irgd) - rgdxxx(irgd)*rgdvzz(irgd))
-                amz = amz + tmp1*(rgdxxx(irgd)*rgdvyy(irgd) - rgdyyy(irgd)*rgdvxx(irgd))
+                amx = amx + tmp1*(rigid%yyy(irgd)*rigid%vzz(irgd) - rigid%zzz(irgd)*rigid%vyy(irgd))
+                amy = amy + tmp1*(rigid%zzz(irgd)*rigid%vxx(irgd) - rigid%xxx(irgd)*rigid%vzz(irgd))
+                amz = amz + tmp1*(rigid%xxx(irgd)*rigid%vyy(irgd) - rigid%yyy(irgd)*rigid%vxx(irgd))
 
-                tmp = rgdxxx(irgd)**2 + rgdyyy(irgd)**2 + rgdzzz(irgd)**2
+                tmp = rigid%xxx(irgd)**2 + rigid%yyy(irgd)**2 + rigid%zzz(irgd)**2
 
-                rot(1) = rot(1) + tmp1*(rgdxxx(irgd)*rgdxxx(irgd) - tmp)
-                rot(2) = rot(2) + tmp1* rgdxxx(irgd)*rgdyyy(irgd)
-                rot(3) = rot(3) + tmp1* rgdxxx(irgd)*rgdzzz(irgd)
-                rot(5) = rot(5) + tmp1*(rgdyyy(irgd)*rgdyyy(irgd) - tmp)
-                rot(6) = rot(6) + tmp1* rgdyyy(irgd)*rgdzzz(irgd)
-                rot(9) = rot(9) + tmp1*(rgdzzz(irgd)*rgdzzz(irgd) - tmp)
+                rot(1) = rot(1) + tmp1*(rigid%xxx(irgd)*rigid%xxx(irgd) - tmp)
+                rot(2) = rot(2) + tmp1* rigid%xxx(irgd)*rigid%yyy(irgd)
+                rot(3) = rot(3) + tmp1* rigid%xxx(irgd)*rigid%zzz(irgd)
+                rot(5) = rot(5) + tmp1*(rigid%yyy(irgd)*rigid%yyy(irgd) - tmp)
+                rot(6) = rot(6) + tmp1* rigid%yyy(irgd)*rigid%zzz(irgd)
+                rot(9) = rot(9) + tmp1*(rigid%zzz(irgd)*rigid%zzz(irgd) - tmp)
              End If
           End Do
 
@@ -988,21 +979,21 @@ Contains
              End If
           End Do
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
-             If (rgdfrz(0,rgdtyp) == 0) Then
-                x=(wyy*rgdzzz(irgd) - wzz*rgdyyy(irgd))
-                y=(wzz*rgdxxx(irgd) - wxx*rgdzzz(irgd))
-                z=(wxx*rgdyyy(irgd) - wyy*rgdxxx(irgd))
+             If (rigid%frozen(0,rgdtyp) == 0) Then
+                x=(wyy*rigid%zzz(irgd) - wzz*rigid%yyy(irgd))
+                y=(wzz*rigid%xxx(irgd) - wxx*rigid%zzz(irgd))
+                z=(wxx*rigid%yyy(irgd) - wyy*rigid%xxx(irgd))
 
-                rgdvxx(irgd) = rgdvxx(irgd) + x
-                rgdvyy(irgd) = rgdvyy(irgd) + y
-                rgdvzz(irgd) = rgdvzz(irgd) + z
+                rigid%vxx(irgd) = rigid%vxx(irgd) + x
+                rigid%vyy(irgd) = rigid%vyy(irgd) + y
+                rigid%vzz(irgd) = rigid%vzz(irgd) + z
 
-                lrgd=listrgd(-1,irgd)
+                lrgd=rigid%list(-1,irgd)
                 Do jrgd=1,lrgd
-                   i=indrgd(jrgd,irgd) ! local index of particle/site
+                   i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                    If (i <= natms) Then
                       vxx(i) = vxx(i) + x
@@ -1025,13 +1016,13 @@ Contains
              End If
           End Do
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
-             If (rgdfrz(0,rgdtyp) == 0) Then
-                rgdxxx(irgd) = rgdxxx(irgd) + com(1)
-                rgdyyy(irgd) = rgdyyy(irgd) + com(2)
-                rgdzzz(irgd) = rgdzzz(irgd) + com(3)
+             If (rigid%frozen(0,rgdtyp) == 0) Then
+                rigid%xxx(irgd) = rigid%xxx(irgd) + com(1)
+                rigid%yyy(irgd) = rigid%yyy(irgd) + com(2)
+                rigid%zzz(irgd) = rigid%zzz(irgd) + com(3)
              End If
           End Do
 
@@ -1140,11 +1131,11 @@ Contains
   ! calculate energy: free particles and RB translational and rotational
 
     engrot=0.0_wp
-    If (megrgd > 0) Then
+    If (rigid%total > 0) Then
        engkf=getknf(vxx,vyy,vzz,comm)
-       engkt=getknt(rgdvxx,rgdvyy,rgdvzz,comm)
+       engkt=getknt(rigid,comm)
 
-       engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+       engrot=getknr(rigid,comm)
 
   ! temporary replacement for small engrot
 
@@ -1156,14 +1147,14 @@ Contains
        If (degtra > Int(0,li)) Then ! engkt > 0 (degrot > 0 and tmp1(engrot) > 0)
           tmp=Sqrt((engkt*Real(degrot,wp))/(tmp1*Real(degtra,wp)))
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
-             lrgd=listrgd(-1,irgd)
-             If (rgdfrz(0,rgdtyp) < lrgd) Then
-                rgdoxx(irgd)=rgdoxx(irgd)*tmp
-                rgdoyy(irgd)=rgdoyy(irgd)*tmp
-                rgdozz(irgd)=rgdozz(irgd)*tmp
+             lrgd=rigid%list(-1,irgd)
+             If (rigid%frozen(0,rgdtyp) < lrgd) Then
+                rigid%oxx(irgd)=rigid%oxx(irgd)*tmp
+                rigid%oyy(irgd)=rigid%oyy(irgd)*tmp
+                rigid%ozz(irgd)=rigid%ozz(irgd)*tmp
              End If
           End Do
           engrot=engrot*tmp**2
@@ -1175,19 +1166,19 @@ Contains
        If (degfre-degtra-degrot > Int(0,li)) Then ! engkf > 0
           tmp=Sqrt((engkf*Real(degrot,wp))/(tmp1*Real(degfre-degtra-degrot,wp)))
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
-             lrgd=listrgd(-1,irgd)
-             If (rgdfrz(0,rgdtyp) < lrgd) Then
-                rgdoxx(irgd)=rgdoxx(irgd)*tmp
-                rgdoyy(irgd)=rgdoyy(irgd)*tmp
-                rgdozz(irgd)=rgdozz(irgd)*tmp
+             lrgd=rigid%list(-1,irgd)
+             If (rigid%frozen(0,rgdtyp) < lrgd) Then
+                rigid%oxx(irgd)=rigid%oxx(irgd)*tmp
+                rigid%oyy(irgd)=rigid%oyy(irgd)*tmp
+                rigid%ozz(irgd)=rigid%ozz(irgd)*tmp
 
-                If (rgdfrz(0,rgdtyp) == 0) Then
-                   rgdvxx(irgd)=rgdvxx(irgd)*tmp
-                   rgdvyy(irgd)=rgdvyy(irgd)*tmp
-                   rgdvzz(irgd)=rgdvzz(irgd)*tmp
+                If (rigid%frozen(0,rgdtyp) == 0) Then
+                   rigid%vxx(irgd)=rigid%vxx(irgd)*tmp
+                   rigid%vyy(irgd)=rigid%vyy(irgd)*tmp
+                   rigid%vzz(irgd)=rigid%vzz(irgd)*tmp
                 End If
              End If
           End Do
@@ -1205,7 +1196,7 @@ Contains
     If (engke+engrot > 1.0e-6_wp .and. sigma > zero_plus) Then
        tmp=Sqrt(sigma/(engke+engrot))
 
-       If (megrgd > 0) Then
+       If (rigid%total > 0) Then
           Do j=1,nfree
              i=lstfre(j)
 
@@ -1216,50 +1207,50 @@ Contains
              End If
           End Do
 
-          Do irgd=1,ntrgd
-             rgdtyp=listrgd(0,irgd)
+          Do irgd=1,rigid%n_types
+             rgdtyp=rigid%list(0,irgd)
 
-             lrgd=listrgd(-1,irgd)
-             If (rgdfrz(0,rgdtyp) < lrgd) Then
+             lrgd=rigid%list(-1,irgd)
+             If (rigid%frozen(0,rgdtyp) < lrgd) Then
 
   ! new angular velocity
 
-                rgdoxx(irgd)=rgdoxx(irgd)*tmp
-                rgdoyy(irgd)=rgdoyy(irgd)*tmp
-                rgdozz(irgd)=rgdozz(irgd)*tmp
+                rigid%oxx(irgd)=rigid%oxx(irgd)*tmp
+                rigid%oyy(irgd)=rigid%oyy(irgd)*tmp
+                rigid%ozz(irgd)=rigid%ozz(irgd)*tmp
 
   ! new translational velocity
 
-                If (rgdfrz(0,rgdtyp) == 0) Then
-                   rgdvxx(irgd)=rgdvxx(irgd)*tmp
-                   rgdvyy(irgd)=rgdvyy(irgd)*tmp
-                   rgdvzz(irgd)=rgdvzz(irgd)*tmp
+                If (rigid%frozen(0,rgdtyp) == 0) Then
+                   rigid%vxx(irgd)=rigid%vxx(irgd)*tmp
+                   rigid%vyy(irgd)=rigid%vyy(irgd)*tmp
+                   rigid%vzz(irgd)=rigid%vzz(irgd)*tmp
                 End If
 
   ! new rotational matrix
 
-                Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
+                Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
                 Do jrgd=1,lrgd
-                   If (rgdfrz(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-                      i=indrgd(jrgd,irgd) ! local index of particle/site
+                   If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
+                      i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                       If (i <= natms) Then
-                         x=rgdx(jrgd,rgdtyp)
-                         y=rgdy(jrgd,rgdtyp)
-                         z=rgdz(jrgd,rgdtyp)
+                         x=rigid%x(jrgd,rgdtyp)
+                         y=rigid%y(jrgd,rgdtyp)
+                         z=rigid%z(jrgd,rgdtyp)
 
   ! site velocity in body frame
 
-                         wxx=rgdoyy(irgd)*z-rgdozz(irgd)*y
-                         wyy=rgdozz(irgd)*x-rgdoxx(irgd)*z
-                         wzz=rgdoxx(irgd)*y-rgdoyy(irgd)*x
+                         wxx=rigid%oyy(irgd)*z-rigid%ozz(irgd)*y
+                         wyy=rigid%ozz(irgd)*x-rigid%oxx(irgd)*z
+                         wzz=rigid%oxx(irgd)*y-rigid%oyy(irgd)*x
 
   ! new atomic velocities in lab frame
 
-                         vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rgdvxx(irgd)
-                         vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rgdvyy(irgd)
-                         vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rgdvzz(irgd)
+                         vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
+                         vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
+                         vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
                       End If
                    End If
                 End Do
@@ -1279,10 +1270,10 @@ Contains
           vxx(i)=0.0_wp ; vyy(i)=0.0_wp ; vzz(i)=0.0_wp
        End Do
 
-       If (megrgd > 0) Then
-          Do irgd=1,ntrgd
-             rgdvxx(irgd)=0.0_wp ; rgdvyy(irgd)=0.0_wp ; rgdvzz(irgd)=0.0_wp
-             rgdoxx(irgd)=0.0_wp ; rgdoyy(irgd)=0.0_wp ; rgdozz(irgd)=0.0_wp
+       If (rigid%total > 0) Then
+          Do irgd=1,rigid%n_types
+             rigid%vxx(irgd)=0.0_wp ; rigid%vyy(irgd)=0.0_wp ; rigid%vzz(irgd)=0.0_wp
+             rigid%oxx(irgd)=0.0_wp ; rigid%oyy(irgd)=0.0_wp ; rigid%ozz(irgd)=0.0_wp
           End Do
        End If
     End If

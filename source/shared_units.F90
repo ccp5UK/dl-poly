@@ -22,7 +22,7 @@ Module shared_units
 
   Subroutine pass_shared_units &
            (mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv,lishp,lashp,comm,&
-           q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
+           q0,q1,q2,q3,vxx,vyy,vzz,oxx,oyy,ozz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -51,8 +51,8 @@ Module shared_units
   Logical, Intent(   Out ) :: lshmv
   Integer, Intent(   Out ) :: lishp(1:mxlshp),lashp(1:mxproc)
   Type( comms_type ), Intent( InOut ) :: comm
-  Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,rgdvxx,rgdvyy,&
-                                                      rgdvzz,rgdoxx,rgdoyy,rgdozz
+  Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,vxx,vyy,&
+                                                      vzz,oxx,oyy,ozz
 
   Logical, Save :: oldjob = .false.
 
@@ -91,7 +91,7 @@ Module shared_units
 ! initialise lshmv and lishp and lashp arrays
 
   lshmv=.false. ! sharing flag
-!  lishp=0       ! neigh%list of shared particles (DEBUG)
+!  lishp=0       ! list of shared particles (DEBUG)
 !  lashp=0       ! break-down of lishp onto a DD map around comm%idnode (DEBUG)
 
 ! zero neigh%list arrays and last element pointers
@@ -109,7 +109,7 @@ Module shared_units
 ! define members-per-unit limit
 
      If (b_l == -1) Then
-        n_k=list_u(-1,k) ! This can vary but is >= 2 and <= mxlrgd
+        n_k=list_u(-1,k) ! This can vary but is >= 2 and <= rigid%max_list
      Else
         n_k=b_u          ! This is 2 for core-shell and constraint units
      End If
@@ -132,7 +132,7 @@ Module shared_units
 ! define members-per-unit limit
 
            If (b_l == -1) Then
-              n_nt=list_u(-1,nt_u) ! This can vary but is >= 2 and <= mxlrgd
+              n_nt=list_u(-1,nt_u) ! This can vary but is >= 2 and <= rigid%max_list
            Else
               n_nt=b_u             ! This is 2 for core-shell and constraint units
            End If
@@ -165,13 +165,13 @@ Module shared_units
                  q2(k)=q2(nt_u)
                  q3(k)=q3(nt_u)
 
-                 rgdvxx(k)=rgdvxx(nt_u)
-                 rgdvyy(k)=rgdvyy(nt_u)
-                 rgdvzz(k)=rgdvzz(nt_u)
+                 vxx(k)=vxx(nt_u)
+                 vyy(k)=vyy(nt_u)
+                 vzz(k)=vzz(nt_u)
 
-                 rgdoxx(k)=rgdoxx(nt_u)
-                 rgdoyy(k)=rgdoyy(nt_u)
-                 rgdozz(k)=rgdozz(nt_u)
+                 oxx(k)=oxx(nt_u)
+                 oyy(k)=oyy(nt_u)
+                 ozz(k)=ozz(nt_u)
               End If
 
               list_u(:,nt_u)=0           ! Remove neigh%list content in 'nt_u'
@@ -182,13 +182,13 @@ Module shared_units
                  q2(nt_u)=0.0_wp
                  q3(nt_u)=0.0_wp
 
-                 rgdvxx(nt_u)=0.0_wp
-                 rgdvyy(nt_u)=0.0_wp
-                 rgdvzz(nt_u)=0.0_wp
+                 vxx(nt_u)=0.0_wp
+                 vyy(nt_u)=0.0_wp
+                 vzz(nt_u)=0.0_wp
 
-                 rgdoxx(nt_u)=0.0_wp
-                 rgdoyy(nt_u)=0.0_wp
-                 rgdozz(nt_u)=0.0_wp
+                 oxx(nt_u)=0.0_wp
+                 oyy(nt_u)=0.0_wp
+                 ozz(nt_u)=0.0_wp
               End If
 
               nt_u=nt_u-1                ! Reduce 'nt_u' pointer
@@ -203,13 +203,13 @@ Module shared_units
                  q2(nt_u)=0.0_wp
                  q3(nt_u)=0.0_wp
 
-                 rgdvxx(nt_u)=0.0_wp
-                 rgdvyy(nt_u)=0.0_wp
-                 rgdvzz(nt_u)=0.0_wp
+                 vxx(nt_u)=0.0_wp
+                 vyy(nt_u)=0.0_wp
+                 vzz(nt_u)=0.0_wp
 
-                 rgdoxx(nt_u)=0.0_wp
-                 rgdoyy(nt_u)=0.0_wp
-                 rgdozz(nt_u)=0.0_wp
+                 oxx(nt_u)=0.0_wp
+                 oyy(nt_u)=0.0_wp
+                 ozz(nt_u)=0.0_wp
               End If
 
               nt_u=nt_u-1                ! Reduce 'nt_u' pointer
@@ -230,13 +230,13 @@ Module shared_units
               q2(nt_u)=0.0_wp
               q3(nt_u)=0.0_wp
 
-              rgdvxx(nt_u)=0.0_wp
-              rgdvyy(nt_u)=0.0_wp
-              rgdvzz(nt_u)=0.0_wp
+              vxx(nt_u)=0.0_wp
+              vyy(nt_u)=0.0_wp
+              vzz(nt_u)=0.0_wp
 
-              rgdoxx(nt_u)=0.0_wp
-              rgdoyy(nt_u)=0.0_wp
-              rgdozz(nt_u)=0.0_wp
+              oxx(nt_u)=0.0_wp
+              oyy(nt_u)=0.0_wp
+              ozz(nt_u)=0.0_wp
            End If
 
            nt_u=nt_u-1                ! Reduce 'nt_u' pointer

@@ -1,7 +1,7 @@
 Module build_chrm
   ! SETUP MODULES
 
-  Use kinds, only : wp
+  Use kinds, only : wp,wi
   Use comms,  Only : comms_type,gcheck,gmax,gsum
   Use setup
 
@@ -10,7 +10,7 @@ Module build_chrm
 
   Use core_shell, Only : core_shell_type
 
-  Use rigid_bodies
+  Use rigid_bodies, Only : rigid_bodies_type
 
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
@@ -21,6 +21,7 @@ Module build_chrm
   Use numerics, Only : local_index,shellsort
   Use build_excl, Only : add_exclusion
   Use constraints, Only : constraints_type
+  Use errors_warnings, Only : error,warning,info
   Implicit None
 
   Private
@@ -28,7 +29,7 @@ Module build_chrm
   Public :: build_chrm_intra
 Contains
   Subroutine build_chrm_intra(max_exclude,cshell,cons,bond,angle,dihedral, &
-      inversion,mpole,comm)
+      inversion,mpole,rigid,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -58,6 +59,7 @@ Contains
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Type( comms_type ),  Intent( InOut) :: comm
 
     Logical :: safe
@@ -1111,12 +1113,12 @@ Contains
       l=mpole%charmm(0,i)                                             ! end of list tag
       If (l > 0 .and. cshell%legshl(0,i) > 0) Then                     ! this is a qualifying CHARMMing core
         ibig=ltg(i)
-        Do j=1,ntrgd1                                          ! loop over the extended list of all RB
-          k=listrgd(-1,j)
-          If (Any(listrgd(1:k,j) == ibig)) Then               ! This core resides on a RB
+        Do j=1,rigid%n_types_book                                          ! loop over the extended list of all RB
+          k=rigid%list(-1,j)
+          If (Any(rigid%list(1:k,j) == ibig)) Then               ! This core resides on a RB
             kk=l                                             ! running index
             Do While (kk > 0)                                ! run down to the beginning of the list
-              If (Any(listrgd(1:k,j) == mpole%charmm(kk,i))) Then ! any other cores in this RB list
+              If (Any(rigid%list(1:k,j) == mpole%charmm(kk,i))) Then ! any other cores in this RB list
                 If (kk < l) mpole%charmm(kk,i)=mpole%charmm(l,i)       ! swap with last "valid"
                 mpole%charmm(l,i)=0                              ! invalidate the last entry
                 l=l-1                                      ! reduce "the end of list" tag

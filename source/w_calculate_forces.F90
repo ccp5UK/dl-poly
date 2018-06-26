@@ -10,7 +10,7 @@
 ! Refresh mappings
 
         Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,site,mpole)
+          dihedral,inversion,tether,neigh,site,mpole,rigid)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -98,7 +98,8 @@
 ! Apply external field
 
      If (ext_field%key /= FIELD_NULL) Then
-       Call external_field_apply(time,leql,nsteql,nstep,cshell,stat,rdf,ext_field,comm)
+       Call external_field_apply(time,leql,nsteql,nstep,cshell,stat,rdf, &
+         ext_field,rigid,comm)
      End If
 
 ! Apply PLUMED driven dynamics
@@ -112,9 +113,7 @@
 ! Apply pseudo thermostat - force cycle (0)
 
      If (thermo%l_pseudo) Then
-           Call pseudo_vv                               &
-           (0,tstep, &
-           nstep,site%dof_site,cshell,stat,thermo,comm)
+       Call pseudo_vv(0,tstep,nstep,site%dof_site,cshell,stat,thermo,rigid,comm)
      End If
 
 ! Cap forces in equilibration mode
@@ -139,15 +138,17 @@
         If (.not.relaxed_shl) Go To 200 ! Shells relaxation takes priority over minimisation
 
         If (minimise%minimise .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
-           If      (minimise%freq == 0 .and. nstep == 0) Then
-              Call minimise_relax &
-           (l_str .or. cshell%keyshl == SHELL_RELAXED,rdf%l_collect,megatm,pmf%megpmf,megrgd, &
-           tstep,stat%stpcfg,stat,pmf,cons,netcdf,minimise,comm)
-           Else If (minimise%freq >  0 .and. nstep >  0) Then
-              If (Mod(nstep-nsteql,minimise%freq) == 0) Call minimise_relax &
-           (l_str .or. cshell%keyshl == SHELL_RELAXED,rdf%l_collect,megatm,pmf%megpmf,megrgd, &
-           tstep,stat%stpcfg,stat,pmf,cons,netcdf,minimise,comm)
-           End If
+          If      (minimise%freq == 0 .and. nstep == 0) Then
+            Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
+              rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
+              netcdf,minimise,rigid,comm)
+          Else If (minimise%freq >  0 .and. nstep >  0) Then
+            If (Mod(nstep-nsteql,minimise%freq) == 0) Then
+              Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
+                rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
+                netcdf,minimise,rigid,comm)
+            End If
+          End If
         End If
 
 200     Continue
@@ -155,9 +156,8 @@
 ! Refresh mappings
 
         If (.not.(relaxed_shl .and. minimise%relaxed)) Then
-           Call w_refresh_mappings &
-            (cshell,cons,pmf,stat,msd_data,bond,angle,dihedral,inversion,tether,neigh,site,mpole)
-
+           Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
+             dihedral,inversion,tether,neigh,site,mpole,rigid)
            Go To 100
         End If
      End If
@@ -165,13 +165,15 @@
 ! Get RB COM stress and virial at restart only - also available at w_at_start_vv for levcfg==2
 
      If (newjob) Then
-        If (megrgd > 0) Then
+        If (rigid%total > 0) Then
            If (thermo%l_langevin) Then
               Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
-              If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxl,fyl,fzl,comm)
-              Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,comm)
+              If (rigid%share) Then
+                Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxl,fyl,fzl,comm)
+              End If
+              Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,rigid,comm)
            Else
-              Call rigid_bodies_str_ss(stat%strcom,comm)
+              Call rigid_bodies_str_ss(stat%strcom,rigid,comm)
            End If
            stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
         End If
@@ -194,7 +196,9 @@
 
 ! If RBs are present update forces on shared ones
 
-     If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz,comm)
+     If (rigid%share) Then
+       Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxx,fyy,fzz,comm)
+     End If
 
 
 !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

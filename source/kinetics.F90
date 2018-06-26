@@ -24,12 +24,11 @@ Module kinetics
 
   Use kinds, only : wp
   Use comms, Only : comms_type, gsum
-  Use setup,  Only : nrite,zero_plus,mxatms,mxrgd,boltz
+  Use setup,  Only : nrite,zero_plus,mxatms,boltz
   Use configuration, Only : imcon,cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight,&
                             nfree, lstfre, vxx,vyy,vzz,fxx,fyy,fzz,getcom, &
                             getcom_mol
-  Use rigid_bodies, Only : ntrgd,rgdfrz,rgdwgt,listrgd,indrgd, &
-                                   rgdrix,rgdriy,rgdriz
+  Use rigid_bodies, Only : rigid_bodies_type
   Implicit None
 
 ! Remove COM motion defaults
@@ -116,7 +115,7 @@ Contains
 
   End Function getknf
 
-  Function getknt(rgdvxx,rgdvyy,rgdvzz,comm)
+  Function getknt(rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -130,7 +129,7 @@ Contains
 
     Real( Kind = wp )                                    :: getknt
 
-    Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: rgdvxx,rgdvyy,rgdvzz
+    Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Type(comms_type), Intent ( InOut )                     :: comm
 
     Integer           :: irgd,lrgd,rgdtyp
@@ -138,15 +137,15 @@ Contains
 
     engtra = 0.0_wp
 
-    Do irgd=1,ntrgd
-       rgdtyp=listrgd(0,irgd)
+    Do irgd=1,rigid%n_types
+       rgdtyp=rigid%list(0,irgd)
 
-       If (rgdfrz(0,rgdtyp) == 0) Then
-          lrgd=listrgd(-1,irgd)
+       If (rigid%frozen(0,rgdtyp) == 0) Then
+          lrgd=rigid%list(-1,irgd)
 
-          tmp=rgdwgt(0,rgdtyp)*Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
+          tmp=rigid%weight(0,rgdtyp)*Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
 
-          engtra = engtra + tmp*(rgdvxx(irgd)**2+rgdvyy(irgd)**2+rgdvzz(irgd)**2)
+          engtra = engtra + tmp*(rigid%vxx(irgd)**2+rigid%vyy(irgd)**2+rigid%vzz(irgd)**2)
        End If
     End Do
 
@@ -156,7 +155,7 @@ Contains
 
   End Function getknt
 
-  Function getknr(rgdoxx,rgdoyy,rgdozz,comm)
+  Function getknr(rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -170,7 +169,7 @@ Contains
 
     Real( Kind = wp )                                    :: getknr
 
-    Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: rgdoxx,rgdoyy,rgdozz
+    Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Type(comms_type), Intent ( InOut )                   :: comm
 
     Integer           :: irgd,lrgd,rgdtyp
@@ -178,17 +177,17 @@ Contains
 
     engrot = 0.0_wp
 
-    Do irgd=1,ntrgd
-       rgdtyp=listrgd(0,irgd)
+    Do irgd=1,rigid%n_types
+       rgdtyp=rigid%list(0,irgd)
 
-       lrgd=listrgd(-1,irgd)
-       If (rgdfrz(0,rgdtyp) < lrgd) Then
-          tmp=Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
+       lrgd=rigid%list(-1,irgd)
+       If (rigid%frozen(0,rgdtyp) < lrgd) Then
+          tmp=Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
 
           engrot = engrot + tmp *                     &
-                   (rgdrix(1,rgdtyp)*rgdoxx(irgd)**2+ &
-                    rgdriy(1,rgdtyp)*rgdoyy(irgd)**2+ &
-                    rgdriz(1,rgdtyp)*rgdozz(irgd)**2)
+                   (rigid%rix(1,rgdtyp)*rigid%oxx(irgd)**2+ &
+                    rigid%riy(1,rgdtyp)*rigid%oyy(irgd)**2+ &
+                    rigid%riz(1,rgdtyp)*rigid%ozz(irgd)**2)
        End If
     End Do
 
@@ -282,7 +281,7 @@ Contains
 
   End Subroutine kinstresf
 
-  Subroutine kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+  Subroutine kinstrest(rigid,strknt,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -294,7 +293,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: rgdvxx,rgdvyy,rgdvzz
+    Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: strknt
     Type(comms_type), Intent ( InOut )                   :: comm
 
@@ -303,20 +302,20 @@ Contains
 
     strknt = 0.0_wp
 
-    Do irgd=1,ntrgd
-       rgdtyp=listrgd(0,irgd)
+    Do irgd=1,rigid%n_types
+       rgdtyp=rigid%list(0,irgd)
 
-       If (rgdfrz(0,rgdtyp) == 0) Then
-          lrgd=listrgd(-1,irgd)
+       If (rigid%frozen(0,rgdtyp) == 0) Then
+          lrgd=rigid%list(-1,irgd)
 
-          tmp=rgdwgt(0,rgdtyp)*Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
+          tmp=rigid%weight(0,rgdtyp)*Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
 
-          strknt(1) = strknt(1) + tmp*rgdvxx(irgd)*rgdvxx(irgd)
-          strknt(2) = strknt(2) + tmp*rgdvxx(irgd)*rgdvyy(irgd)
-          strknt(3) = strknt(3) + tmp*rgdvxx(irgd)*rgdvzz(irgd)
-          strknt(5) = strknt(5) + tmp*rgdvyy(irgd)*rgdvyy(irgd)
-          strknt(6) = strknt(6) + tmp*rgdvyy(irgd)*rgdvzz(irgd)
-          strknt(9) = strknt(9) + tmp*rgdvzz(irgd)*rgdvzz(irgd)
+          strknt(1) = strknt(1) + tmp*rigid%vxx(irgd)*rigid%vxx(irgd)
+          strknt(2) = strknt(2) + tmp*rigid%vxx(irgd)*rigid%vyy(irgd)
+          strknt(3) = strknt(3) + tmp*rigid%vxx(irgd)*rigid%vzz(irgd)
+          strknt(5) = strknt(5) + tmp*rigid%vyy(irgd)*rigid%vyy(irgd)
+          strknt(6) = strknt(6) + tmp*rigid%vyy(irgd)*rigid%vzz(irgd)
+          strknt(9) = strknt(9) + tmp*rigid%vzz(irgd)*rigid%vzz(irgd)
        End If
     End Do
 
@@ -407,7 +406,7 @@ Contains
 
   End Subroutine getvom
 
-  Subroutine getvom_rgd(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
+  Subroutine getvom_rgd(vom,vxx,vyy,vzz,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -420,7 +419,7 @@ Contains
 
     Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
     Real( Kind = wp ), Intent( In    ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
-    Real( Kind = wp ), Intent( In    ) :: rgdvxx(1:mxrgd),rgdvyy(1:mxrgd),rgdvzz(1:mxrgd)
+    Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Type(comms_type), Intent ( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -448,12 +447,12 @@ Contains
 ! These with some frozen only turn and
 ! have zero net momentum enforced!
 
-       Do irgd=1,ntrgd
-          rgdtyp=listrgd(0,irgd)
+       Do irgd=1,rigid%n_types
+          rgdtyp=rigid%list(0,irgd)
 
-          lrgd=listrgd(-1,irgd)
-          If (rgdfrz(0,rgdtyp) == 0) &
-             totmas = totmas + rgdwgt(0,rgdtyp)*Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
+          lrgd=rigid%list(-1,irgd)
+          If (rigid%frozen(0,rgdtyp) == 0) &
+             totmas = totmas + rigid%weight(0,rgdtyp)*Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
        End Do
 
        Call gsum(comm,totmas)
@@ -476,18 +475,18 @@ Contains
        End If
     End Do
 
-    Do irgd=1,ntrgd
-       rgdtyp=listrgd(0,irgd)
+    Do irgd=1,rigid%n_types
+       rgdtyp=rigid%list(0,irgd)
 
 ! For all RBs without any frozen particles
 
-       lrgd=listrgd(-1,irgd)
-       If (rgdfrz(0,rgdtyp) == 0) Then
-          tmp=rgdwgt(0,rgdtyp)*Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
+       lrgd=rigid%list(-1,irgd)
+       If (rigid%frozen(0,rgdtyp) == 0) Then
+          tmp=rigid%weight(0,rgdtyp)*Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
 
-          vom(1) = vom(1) + tmp*rgdvxx(irgd)
-          vom(2) = vom(2) + tmp*rgdvyy(irgd)
-          vom(3) = vom(3) + tmp*rgdvzz(irgd)
+          vom(1) = vom(1) + tmp*rigid%vxx(irgd)
+          vom(2) = vom(2) + tmp*rigid%vyy(irgd)
+          vom(3) = vom(3) + tmp*rigid%vzz(irgd)
        End If
     End Do
 

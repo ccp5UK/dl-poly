@@ -38,6 +38,7 @@ Module bounds
   Use four_body, Only : four_body_type
   Use rdfs,            Only : rdf_type
   Use external_field, Only : external_field_type
+  Use rigid_bodies, Only : rigid_bodies_type
 
   Implicit None
   Private
@@ -50,7 +51,7 @@ Subroutine set_bounds                                 &
            alpha,width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf, &
-           mpole,ext_field,comm)
+           mpole,ext_field,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -94,6 +95,7 @@ Subroutine set_bounds                                 &
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpole
   Type( external_field_type ), Intent( InOut ) :: ext_field
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -120,7 +122,7 @@ Subroutine set_bounds                                 &
            mtshl,                &
            mtcons,              &
            l_usr,                &
-           mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
+           mtrgd,         &
            mtteth, &
            mtbond, &
            mtangl, &
@@ -128,7 +130,7 @@ Subroutine set_bounds                                 &
            mtinv,  &
            rcter,rcfbp,lext,cshell,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
-           tether,threebody,vdw,tersoff,fourbody,rdf,mpole,comm)
+           tether,threebody,vdw,tersoff,fourbody,rdf,mpole,rigid,comm)
 
 ! Get imc_r & set dvar
 
@@ -147,7 +149,7 @@ Subroutine set_bounds                                 &
 
   Call scan_control                                        &
            (rcter, &
-           mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
+           rigid%max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                         &
@@ -264,9 +266,9 @@ Subroutine set_bounds                                 &
 
 ! maximum number of RBs per node
 
-  If (mxrgd > 0 .and. comm%mxnode > 1) Then
-     mxrgd = Max(mxrgd,comm%mxnode*mtrgd)
-     mxrgd = (3*(Nint(fdvar*Real(mxrgd,wp))+comm%mxnode-1))/comm%mxnode
+  If (rigid%max_rigid > 0 .and. comm%mxnode > 1) Then
+     rigid%max_rigid = Max(rigid%max_rigid,comm%mxnode*mtrgd)
+     rigid%max_rigid = (3*(Nint(fdvar*Real(rigid%max_rigid,wp))+comm%mxnode-1))/comm%mxnode
   End If
 
 
@@ -275,7 +277,7 @@ Subroutine set_bounds                                 &
 ! and maximum number of neighbouring domains/nodes in 3D DD (3^3 - 1)
 
   If (comm%mxnode > 1) Then
-     mxlshp = Max((2*cshell%mxshl)/2,(2*cons%mxcons)/2,(mxlrgd*mxrgd)/2)
+     mxlshp = Max((2*cshell%mxshl)/2,(2*cons%mxcons)/2,(rigid%max_list*rigid%max_rigid)/2)
      mxproc = 26
   Else ! nothing is to be shared on one node
      mxlshp = 0
@@ -833,7 +835,7 @@ Subroutine set_bounds                                 &
            mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (neigh%max_exclude+1) + &
            Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,mpole%key == POLARISATION_CHARMM),0,mpole%max_mpoles > 0) + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp  + &
-           4*cshell%mxshl+4*cons%mxcons+(Sum(pmf%mxtpmf(1:2)+3))*pmf%mxpmf+(mxlrgd+13)*mxrgd + &
+           4*cshell%mxshl+4*cons%mxcons+(Sum(pmf%mxtpmf(1:2)+3))*pmf%mxpmf+(rigid%max_list+13)*rigid%max_rigid + &
            3*tether%mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)
 
 ! statistics connect deporting total per atom
@@ -852,10 +854,13 @@ Subroutine set_bounds                                 &
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) - 1.0_wp
   dens0 = dens0/Max(neigh%cutoff_extended/2.0_wp,1.0_wp)
-  mxbfsh = Merge( 1, 0, comm%mxnode > 1) * Nint(Real(Max(2*cshell%mxshl,2*cons%mxcons,mxlrgd*mxrgd),wp) * dens0)
+  mxbfsh = Merge( 1, 0, comm%mxnode > 1) * &
+    Nint(Real(Max(2*cshell%mxshl,2*cons%mxcons,rigid%max_list*rigid%max_rigid),wp) * dens0)
 
   mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
-                stats%mxnstk*stats%mxstak , mxgrid , rdf%max_grid , mxlrgd*Max(mxrgd,mxtrgd), mxtrgd*(4+3*mxlrgd), 10000 )
+                stats%mxnstk*stats%mxstak , mxgrid , rdf%max_grid ,  &
+                rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
+                rigid%max_type*(4+3*rigid%max_list), 10000 )
 
 ! reset (increase) link-cell maximum (neigh%max_cell)
 ! if tersoff or three- or four-body potentials exist

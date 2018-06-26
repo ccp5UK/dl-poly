@@ -3634,7 +3634,7 @@ End Subroutine read_control
 
 Subroutine scan_control                                    &
            (rcter, &
-           mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
+           max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                          &
@@ -3660,7 +3660,7 @@ Subroutine scan_control                                    &
 
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
-  Integer,           Intent( In    ) :: mxrgd,imcon
+  Integer,           Intent( In    ) :: max_rigid,imcon
   Integer,           Intent( InOut ) :: imc_n
   Integer,           Intent(   Out ) :: mxgana, &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
@@ -4607,7 +4607,7 @@ Subroutine scan_control                                    &
               vdw%cutoff=0.0_wp
               met%rcut=0.0_wp
               If (.not.l_str) Then
-                 If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>vdw%cutoff
+                 If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdw%cutoff
                     neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
                  Else
                     neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
@@ -4630,7 +4630,7 @@ Subroutine scan_control                                    &
            If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
                 (lrvdw .or. lrmet .or. lter .or. kimim /= ' ') ) Then
               lrcut=.true.
-              If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>vdw%cutoff
+              If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdw%cutoff
                  neigh%cutoff=Max(vdw%cutoff,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
               Else
                  neigh%cutoff=Max(neigh%cutoff,vdw%cutoff,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
@@ -4645,7 +4645,7 @@ Subroutine scan_control                                    &
               met%rcut=0.0_wp
               If (.not.l_str) Then
                  lrcut=.true.
-                 If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>vdw%cutoff
+                 If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdw%cutoff
                     neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
                  Else
                     neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)

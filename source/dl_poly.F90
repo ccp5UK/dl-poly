@@ -76,11 +76,13 @@ program dl_poly
 
   Use core_shell, Only : core_shell_type,core_shell_relax,SHELL_RELAXED,SHELL_ADIABATIC,&
                          core_shell_kinetic,core_shell_quench,core_shell_on_top,&
-                         core_shell_forces        
+                         core_shell_forces
 
   Use pmf, only : pmf_type,pmf_quench
 
-  Use rigid_bodies
+  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_str_ss, &
+                           rigid_bodies_str__s,xscale,rigid_bodies_tags, &
+                           rigid_bodies_coms
 
   Use tethers, Only : tethers_type, allocate_tethers_arrays, deallocate_tethers_arrays, tethers_forces
 
@@ -191,6 +193,7 @@ program dl_poly
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type, constraints_quench
+  Use shared_units, Only : update_shared_units
 
     ! MAIN PROGRAM VARIABLES
   Implicit None
@@ -233,7 +236,6 @@ program dl_poly
     nsdef,isdef,nsrsd,isrsd,            &
     ndump,nstep,                 &
     atmfre,atmfrz,megatm,megfrz,        &
-    megrgd,        &
     megtet
 
   ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
@@ -285,6 +287,7 @@ program dl_poly
   Type( minimise_type ) :: minimise
   Type( mpole_type ) :: mpole
   Type( external_field_type ) :: ext_field
+  Type( rigid_bodies_type ) :: rigid
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -354,7 +357,8 @@ program dl_poly
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,alpha,width,site%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,mpole,ext_field,comm)
+    tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,mpole,ext_field, &
+    rigid,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -377,7 +381,7 @@ program dl_poly
   Call cons%init(mxtmls,mxatdm,mxlshp,mxproc)
   Call pmfs%init(mxtmls,mxatdm)
 
-  Call allocate_rigid_bodies_arrays()
+  Call rigid%init(mxtmls,mxatms)
 
   Call allocate_tethers_arrays(tether)
 
@@ -439,10 +443,9 @@ program dl_poly
     keyfce,           &
     lecx,lbook,lexcl,               &
     atmfre,atmfrz,megatm,megfrz,    &
-    megrgd,    &
     megtet,core_shells,pmfs,cons,thermo,met,bond,angle,   &
     dihedral,inversion,tether,threebody,site,vdw,tersoff,fourbody,rdf,mpole, &
-    ext_field,comm)
+    ext_field,rigid,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -500,8 +503,10 @@ program dl_poly
 
   ! Expand current system if opted for
 
-  If (l_exp) Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,core_shells, &
-    cons,bond,angle,dihedral,inversion,site,netcdf,comm)
+  If (l_exp) Then
+    Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,core_shells, &
+      cons,bond,angle,dihedral,inversion,site,netcdf,rigid,comm)
+  End If
 
   ! EXIT gracefully
 
@@ -534,28 +539,26 @@ program dl_poly
     Call build_book_intra              &
       (l_str,l_top,lsim,dvar,      &
       megatm,megfrz,atmfre,atmfrz, &
-      megrgd,degrot,degtra,        &
+      degrot,degtra,        &
       megtet,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether,neigh, &
-      site,mpole,comm)
+      site,mpole,rigid,comm)
     If (mpole%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
         mpole,comm)
       ! multipoles topology for internal coordinate system
       If (mpole%key == POLARISATION_CHARMM) Then
         Call build_chrm_intra(neigh%max_exclude,core_shells,cons,bond,angle, &
-          dihedral,inversion,mpole,comm)
+          dihedral,inversion,mpole,rigid,comm)
       End If
        ! CHARMM core-shell screened electrostatic induction interactions
     End If
     If (lexcl) Then
       Call build_excl_intra(lecx,core_shells,cons,bond,angle,dihedral, &
-        inversion,neigh,comm)
+        inversion,neigh,rigid,comm)
     End If
   Else
-    Call report_topology                &
-      (megatm,megfrz,atmfre,atmfrz, &
-      megrgd,  &
-      megtet,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether,site,comm)
+    Call report_topology(megatm,megfrz,atmfre,atmfrz,megtet,core_shells,cons, &
+      pmfs,bond,angle,dihedral,inversion,tether,site,rigid,comm)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -565,7 +568,7 @@ program dl_poly
       Call cons%deallocate_constraints_temps()
       Call pmfs%deallocate_pmf_tmp_arrays()
 
-      Call deallocate_rigid_bodies_arrays()
+      Call rigid%deallocate_temp()
 
       Call deallocate_tethers_arrays(tether)
     End If
@@ -585,8 +588,9 @@ program dl_poly
     (levcfg,keyres,      &
     nstep,nstrun, &
     atmfre,atmfrz,            &
-    megrgd,degtra,degrot,     &
-    degfre,degshl,stats%engrot,site%dof_site,core_shells,stats,cons,pmfs,thermo,minimise,comm)
+    degtra,degrot,     &
+    degfre,degshl,stats%engrot,site%dof_site,core_shells,stats,cons,pmfs, &
+    thermo,minimise,rigid,comm)
 
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
@@ -672,16 +676,16 @@ program dl_poly
   If (lsim) Then
     Call w_md_vv(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,site,fourbody,rdf, &
-      netcdf,mpole,ext_field,tmr)
+      netcdf,mpole,ext_field,rigid,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff, &
-        fourbody,rdf,netcdf,minimise,mpole,ext_field,tmr)
+        fourbody,rdf,netcdf,minimise,mpole,ext_field,rigid,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf, &
-        netcdf,minimise,mpole,ext_field)
+        netcdf,minimise,mpole,ext_field,rigid)
     End If
   End If
 
@@ -824,7 +828,7 @@ Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
-      minimise,mpole,ext_field,tmr)
+      minimise,mpole,ext_field,rigid,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -847,12 +851,13 @@ Contains
     Type( minimise_type ), Intent( InOut ) :: minimise
     Type( mpole_type ), Intent( InOut ) :: mpole
     Type( external_field_type ), Intent( InOut ) :: ext_field
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
   Subroutine w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-      dihedral,inversion,tether,neigh,site,mpole)
+      dihedral,inversion,tether,neigh,site,mpole,rigid)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -866,10 +871,11 @@ Contains
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: site
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw,cshell,cons,pmf,stat,thermo,site,vdw,tmr)
+  Subroutine w_integrate_vv(isw,cshell,cons,pmf,stat,thermo,site,vdw,rigid,tmr)
     Integer, Intent( In    ) :: isw ! used for vv stage control
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -878,8 +884,8 @@ Contains
     Type(thermostat_type), Intent(InOut) :: thermo
     Type( site_type ), Intent( InOut ) :: site
     Type( vdw_type ), Intent( InOut ) :: vdw
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( timer_type ), Intent( InOut ) :: tmr
-
     Include 'w_integrate_vv.F90'
   End Subroutine w_integrate_vv
 
@@ -920,7 +926,7 @@ Contains
 
   Subroutine w_md_vv(mxatdm_,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
       dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,mpole, &
-      ext_field,tmr)
+      ext_field,rigid,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -941,13 +947,14 @@ Contains
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( mpole_type ), Intent( InOut ) :: mpole
     Type( external_field_type ), Intent( InOut ) :: ext_field
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
       bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf,minimise, &
-      mpole,ext_field)
+      mpole,ext_field,rigid)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -970,6 +977,7 @@ Contains
     Type( minimise_type ), Intent( InOut ) :: minimise
     Type( mpole_type ), Intent( InOut ) :: mpole
     Type( external_field_type ), Intent( InOut ) :: ext_field
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -981,7 +989,7 @@ Contains
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
     angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
-    minimise,mpole,ext_field,tmr)
+    minimise,mpole,ext_field,rigid,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -1006,6 +1014,7 @@ Contains
     Type( minimise_type ), Intent( InOut ) :: minimise
     Type( mpole_type ), Intent( InOut ) :: mpole
     Type( external_field_type ), Intent( InOut ) :: ext_field
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
