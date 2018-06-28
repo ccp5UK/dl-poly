@@ -126,3 +126,22 @@ FFLAGS="-O3" cmake ../ -DWITH_PLUMED=ON
 make -j10
 make install
 ```
+
+
+# FAQ
+
+## On Ubuntu machines
+
+it was noticed that for some mpi implementations the linking stage fails. You will see a lot of errors claiming undefined references to MPI_*
+**solution**
+
+```sh
+FC=mpif90 FFLAGS="-O3" cmake ../
+```
+
+## Intel MPI
+
+Intel MPI Fortran wrapper breaks ifort preprocessing
+you will get an erro on the lines Len_trim(xxx) not supported or similar.
+**solution**
+do not use FC=mpiifort
