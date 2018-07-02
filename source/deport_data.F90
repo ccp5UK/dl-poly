@@ -2482,8 +2482,7 @@ Subroutine mpoles_rotmat_set_halo(mpole,comm)
 
 End Subroutine mpoles_rotmat_set_halo
 
-Subroutine relocate_particles       &
-           (dvar,cutoff_extended,lbook,lmsd,megatm,megtet,cshell,cons, &
+Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons, &
            pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
            neigh,site,minimise,mpole,rigid,comm)
 
@@ -2502,7 +2501,7 @@ Subroutine relocate_particles       &
   Real( Kind = wp ), Intent( In    ) :: dvar,cutoff_extended
   Logical,           Intent( In    ) :: lbook
   Logical,           Intent( In    ) :: lmsd
-  Integer,           Intent( In    ) :: megatm,megtet
+  Integer,           Intent( In    ) :: megatm
   Type( pmf_type), Intent( InOut ) :: pmf
   Type( core_shell_type), Intent( InOut ) :: cshell
   Type( constraints_type), Intent( InOut ) :: cons
@@ -2694,7 +2693,7 @@ Subroutine relocate_particles       &
         If (cons%m_con  > 0) safe(2)=(cons%ntcons <= cons%mxcons)
         If (pmf%megpmf > 0) safe(3)=(pmf%ntpmf  <= pmf%mxpmf )
         If (rigid%on) safe(4)=(rigid%n_types  <= rigid%max_rigid )
-        If (megtet > 0) safe(5)=(tether%ntteth <= tether%mxteth)
+        If (tether%total > 0) safe(5)=(tether%ntteth <= tether%mxteth)
         If (bond%total > 0) safe(6)=(bond%n_types <= bond%max_bonds)
         If (angle%total > 0) safe(7)=(angle%n_types <= angle%max_angles)
         If (dihedral%total > 0) safe(8)=(dihedral%n_types <= dihedral%max_angles)
@@ -2739,29 +2738,29 @@ Subroutine relocate_particles       &
 ! Update shared core-shell, constraint, PMF and RB units
 
         If (cshell%megshl > 0) Call pass_shared_units &
-     (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl, cshell%listshl,cshell%mxfshl,&
-     cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
-     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
-     rigid%oxx,rigid%oyy,rigid%ozz)
+          (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl, cshell%listshl,cshell%mxfshl,&
+          cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
+          rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+          rigid%oxx,rigid%oyy,rigid%ozz)
 
         If (cons%m_con  > 0) Call pass_shared_units &
-     (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,cons%legcon,&
-     cons%lshmv_con,cons%lishp_con,cons%lashp_con,comm,&
-     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
-     rigid%oxx,rigid%oyy,rigid%ozz)
+          (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,cons%legcon,&
+          cons%lshmv_con,cons%lishp_con,cons%lashp_con,comm,&
+          rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+          rigid%oxx,rigid%oyy,rigid%ozz)
 
         If (pmf%megpmf > 0) Call pmf_units_set(pmf,comm)
 
         If (rigid%on) Call pass_shared_units &
-     (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
-     rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
-     rigid%map_shared,comm,&
-   rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
-   rigid%oxx,rigid%oyy,rigid%ozz   )
+          (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
+          rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
+          rigid%map_shared,comm,&
+          rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+          rigid%oxx,rigid%oyy,rigid%ozz   )
 
 ! Compress the rest of the bookkeeping arrays if needed
 
-        If (megtet > 0) Call compress_book_intra &
+        If (tether%total > 0) Call compress_book_intra &
            (tether%mxteth,tether%ntteth,Ubound(tether%listtet,Dim=1),&
             tether%listtet,tether%mxftet,tether%legtet,cons,comm)
         If (bond%total > 0) Then

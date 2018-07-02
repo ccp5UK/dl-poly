@@ -13,11 +13,10 @@
 
 ! Relocate atoms to new domains and restore bonding description
 
-           Call relocate_particles  &
-           (dvar,neigh%cutoff_extended,lbook,msd_data%l_msd,megatm, &
-           megtet,            &
-           cshell,cons,pmf,&
-           stat,ewld,thermo,green,bond,angle,dihedral,inversion,tether,neigh,site,minimise,mpole,rigid,comm)
+           Call relocate_particles(dvar,neigh%cutoff_extended,lbook, &
+             msd_data%l_msd,megatm,cshell,cons,pmf, stat,ewld,thermo,green, &
+             bond,angle,dihedral,inversion,tether,neigh,site,minimise,mpole, &
+             rigid,comm)
 
 ! Exchange atomic data in border regions
 

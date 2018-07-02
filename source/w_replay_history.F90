@@ -135,13 +135,12 @@
 ! exclusion arrays for overlapped two-body inter-like interactions
 
            If (lbook) Then
-             Call build_book_intra     &
-               (l_str,l_top,lsim,dvar,      &
-               megatm,megfrz,atmfre,atmfrz, &
-               degrot,degtra,        &
-               megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,mpole,rigid,comm)
+             Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
+               atmfrz,degrot,degtra,cshell,cons,pmf,bond,angle,dihedral, &
+               inversion,tether,neigh,site,mpole,rigid,comm)
              If (lexcl) Then
-               Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,rigid,comm)
+               Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
+                 inversion,neigh,rigid,comm)
              End If
            End If
 
@@ -329,12 +328,9 @@
      End Do
      cell=stat%clin
 
-     Call set_temperature            &
-           (levcfg,keyres,      &
-           nstep,nstrun, &
-           atmfre,atmfrz,            &
-           degtra,degrot,     &
-           degfre,degshl,stat%engrot,site%dof_site,cshell,stat,cons,pmf,thermo,minimise,rigid,comm)
+     Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
+       degrot,degfre,degshl,stat%engrot,site%dof_site,cshell,stat,cons,pmf, &
+       thermo,minimise,rigid,comm)
 
   End If
   Call deallocate_statistics_connect(stat)
