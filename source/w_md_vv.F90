@@ -95,7 +95,8 @@
 ! Evaluate forces
 
      Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,mpole,tmr)
+       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
+       minimise,mpole,ext_field,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
@@ -118,7 +119,7 @@
 
 ! Apply kinetic options
 
-        Call w_kinetic_options(cshell,cons,pmf,stat,site)
+        Call w_kinetic_options(cshell,cons,pmf,stat,site,ext_field)
 
 ! Update total time of simulation
 

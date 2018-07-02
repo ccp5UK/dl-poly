@@ -41,7 +41,13 @@ Module ffield
   Use tersoff, Only : tersoff_type,tersoff_generate
   Use four_body, Only : four_body_type
 
-  Use external_field
+  Use external_field, Only : external_field_type, &
+                             FIELD_NULL, FIELD_ELECTRIC, FIELD_SHEAR_OSCILLATING, &
+                             FIELD_SHEAR_CONTINUOUS, FIELD_GRAVITATIONAL, &
+                             FIELD_MAGNETIC, FIELD_SPHERE, FIELD_WALL, &
+                             FIELD_WALL_PISTON, FIELD_ZRES, FIELD_ZRES_MINUS, &
+                             FIELD_ZRES_PLUS, FIELD_ELECTRIC_OSCILLATING, &
+                             FIELD_UMBRELLA
 
   Use kinetics, Only : l_vom
 
@@ -79,7 +85,7 @@ Subroutine read_field                      &
            megtet,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw, &
-           tersoff,fourbody,rdf,mpole,comm)
+           tersoff,fourbody,rdf,mpole,ext_field,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -129,6 +135,7 @@ Subroutine read_field                      &
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -4680,21 +4687,21 @@ Subroutine read_field                      &
         keyword=word(1:4)
 
         If      (keyword == 'elec') Then
-           keyfld=1
+           ext_field%key=FIELD_ELECTRIC
         Else If (keyword == 'oshr') Then
-           keyfld=2
+           ext_field%key=FIELD_SHEAR_OSCILLATING
         Else If (keyword == 'shrx') Then
-           keyfld=3
+           ext_field%key=FIELD_SHEAR_CONTINUOUS
         Else If (keyword == 'grav') Then
-           keyfld=4
+           ext_field%key=FIELD_GRAVITATIONAL
         Else If (keyword == 'magn') Then
-           keyfld=5
+           ext_field%key=FIELD_MAGNETIC
         Else If (keyword == 'sphr') Then
-           keyfld=6
+           ext_field%key=FIELD_SPHERE
         Else If (keyword == 'zbnd') Then
-           keyfld=7
+           ext_field%key=FIELD_WALL
         Else If (keyword == 'xpis') Then
-           keyfld=8
+           ext_field%key=FIELD_WALL_PISTON
            If (l_vom) Then
              Call info('"no vom" option auto-switched on - COM momentum removal will be abandoned',.true.)
              Call warning('this may lead to a build up of the COM momentum' &
@@ -4702,15 +4709,15 @@ Subroutine read_field                      &
               l_vom=.false. ! exclude COM momentum rescaling by default
            End If
         Else If (keyword == 'zres') Then
-           keyfld=9
+           ext_field%key=FIELD_ZRES
         Else If (keyword == 'zrs-') Then
-           keyfld=10
+           ext_field%key=FIELD_ZRES_MINUS
         Else If (keyword == 'zrs+') Then
-           keyfld=11
+           ext_field%key=FIELD_ZRES_PLUS
         Else If (keyword == 'osel') Then
-           keyfld=12
+           ext_field%key=FIELD_ELECTRIC_OSCILLATING
         Else If (keyword == 'ushr') Then
-           keyfld=13
+           ext_field%key=FIELD_UMBRELLA
         Else
            Call info(keyword,.true.)
            Call error(454)
@@ -4718,61 +4725,51 @@ Subroutine read_field                      &
 
         Do i=1,nfld
            Call get_word(record,word)
-           prmfld(i)=word_2_real(word)
+           ext_field%param(i)=word_2_real(word)
         End Do
 
         Write(message,'(2a)') 'external field key ',keyword
         Call info(message,.true.)
         If (l_top) Then
           Write(messages(1),'(2x,a)') 'parameters'
-          Write(rfmt,'(a,i0,a)') '(2x,',mxpfld,'f15.6)'
-          Write(messages(2),rfmt) prmfld(1:mxpfld)
+          Write(rfmt,'(a,i0,a)') '(2x,',ext_field%max_param,'f15.6)'
+          Write(messages(2),rfmt) ext_field%param(1:ext_field%max_param)
           Call info(messages,2,.true.)
         End If
 
 ! convert to internal units
 
-        If      (keyfld == 1 .or. keyfld == 4 .or. keyfld == 5 .or. keyfld == 12) Then
-
+        If (Any([FIELD_ELECTRIC,FIELD_GRAVITATIONAL,FIELD_MAGNETIC,FIELD_ELECTRIC_OSCILLATING] == ext_field%key)) Then
            If (.not.lunits) Call error(6)
 
            Do i=1,3
-              prmfld(i) = prmfld(i)*engunit
+              ext_field%param(i) = ext_field%param(i)*engunit
            End Do
-
-        Else If (keyfld == 2 .or. keyfld == 6 .or. keyfld == 7) Then
-
+        Else If (Any([FIELD_SHEAR_OSCILLATING,FIELD_SPHERE,FIELD_WALL] == ext_field%key)) Then
            If (.not.lunits) Call error(6)
 
-           prmfld(1) = prmfld(1)*engunit
-
-        Else If (keyfld == 8) Then
-
-           prmfld(3) = prmfld(3)/prsunt ! piston pressure specified in k-atm
-           prmfld(3) = prmfld(3)*cell(5)*cell(9) ! convert to force
-
-        Else If (keyfld == 9 .or. keyfld == 10 .or. keyfld == 11) Then
-
+           ext_field%param(1) = ext_field%param(1)*engunit
+        Else If (ext_field%key == FIELD_WALL_PISTON) Then
+           ext_field%param(3) = ext_field%param(3)/prsunt ! piston pressure specified in k-atm
+           ext_field%param(3) = ext_field%param(3)*cell(5)*cell(9) ! convert to force
+        Else If (Any([FIELD_ZRES,FIELD_ZRES_MINUS,FIELD_ZRES_PLUS] == ext_field%key)) Then
            If (.not.lunits) Call error(6)
 
-           prmfld(3) = prmfld(3)*engunit
-
-        Else If (keyfld == 13) Then
-
+           ext_field%param(3) = ext_field%param(3)*engunit
+        Else If (ext_field%key == FIELD_UMBRELLA) Then
            If (.not.lunits) Call error(6)
 
-           prmfld(5) = prmfld(5)*engunit
-
+           ext_field%param(5) = ext_field%param(5)*engunit
         End If
 
-        If ((keyfld == 2 .or. keyfld == 8) .and. (imcon /= 1 .and. imcon /= 2)) Then
+        If (Any([FIELD_SHEAR_OSCILLATING,FIELD_WALL_PISTON] == ext_field%key) .and. (imcon /= 1 .and. imcon /= 2)) Then
           Call warning('external field is ignored as only applicable for imcon=1,2 (orthorhombic geometry)',.true.)
         End If
-        If (keyfld == 3 .and. imcon /= 6) Then
+        If (ext_field%key == FIELD_SHEAR_CONTINUOUS .and. imcon /= 6) Then
           Call warning('external field is ignored as only applicable for imcon=6 (SLAB geometry)',.true.)
         End If
 
-        If (keyfld == 8 .and. thermo%ensemble /= ENS_NVE) Call error(7)
+        If (ext_field%key == FIELD_WALL_PISTON .and. thermo%ensemble /= ENS_NVE) Call error(7)
 
 ! close force field file
 

@@ -207,7 +207,7 @@
 
 ! Apply kinetic options
 
-              Call w_kinetic_options(cshell,cons,pmf,stat,site)
+              Call w_kinetic_options(cshell,cons,pmf,stat,site,ext_field)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 

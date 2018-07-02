@@ -9,15 +9,14 @@ Module external_field
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,   Only : comms_type,gcheck,gsum
-  Use setup,   Only : twopi,nrite,mxatms,mxpfld
+  Use setup,   Only : twopi,nrite,mxatms
   Use configuration,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
                              lfrzn,lstfre,weight,chge,           &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetics, Only : getcom_mol
   Use rigid_bodies
-
   Use errors_warnings, Only : error
   use numerics, Only : local_index,images
   Use rdfs, Only : rdf_type,usr_compute,usr_collect
@@ -27,34 +26,87 @@ Module external_field
   Use rdfs, Only : rdf_type,usr_collect,usr_compute
   Implicit None
 
-! Only one type of field can be applied on the system (keyfld is a scalar)
+  Private
 
-  Integer,                        Save :: keyfld = 0
+  ! External field type keys
+  !> Null, no field
+  Integer( Kind = wi ), Parameter, Public :: FIELD_NULL = 0
+  !> Electric field
+  Integer( Kind = wi ), Parameter, Public :: FIELD_ELECTRIC = 1
+  !> Oscillating shear, orthorhombic box, $F_{x} = a * \cos (b*2*\pi*z/L)$
+  Integer( Kind = wi ), Parameter, Public :: FIELD_SHEAR_OSCILLATING = 2
+  !> Continuous shear, 2D perioidic box
+  Integer( Kind = wi ), Parameter, Public :: FIELD_SHEAR_CONTINUOUS = 3
+  !> Gravitational field
+  Integer( Kind = wi ), Parameter, Public :: FIELD_GRAVITATIONAL = 4
+  !> Magnetic field
+  Integer( Kind = wi ), Parameter, Public :: FIELD_MAGNETIC = 5
+  !> Containing sphere, $r^{-n}$ potential
+  Integer( Kind = wi ), Parameter, Public :: FIELD_SPHERE = 6
+  !> Repulsive wall (harmonic) starting at z0
+  Integer( Kind = wi ), Parameter, Public :: FIELD_WALL = 7
+  !> Piston wall pushing along the X=bxc direction
+  Integer( Kind = wi ), Parameter, Public :: FIELD_WALL_PISTON = 8
+  !> zres external field. Restrain molecule z-position (push in)
+  Integer( Kind = wi ), Parameter, Public :: FIELD_ZRES = 9
+  !> zres- external field (push out)
+  Integer( Kind = wi ), Parameter, Public :: FIELD_ZRES_MINUS = 10
+  !> zres+ external field (pull in)
+  Integer( Kind = wi ), Parameter, Public :: FIELD_ZRES_PLUS = 11
+  !> Oscillating electric field
+  Integer( Kind = wi ), Parameter, Public :: FIELD_ELECTRIC_OSCILLATING = 12
+  !> Umbrella potential harmonic restraint (pull in)
+  Integer( Kind = wi ), Parameter, Public :: FIELD_UMBRELLA = 13
 
-  Real( Kind = wp ),              Save :: mass = 0.0_wp
+  !> Type to hold external field data
+  Type, Public :: external_field_type
+    Private
 
-  Real( Kind = wp ), Allocatable, Save :: prmfld(:)
+    !> Type of external field
+    Integer( Kind = wi ), Public :: key = FIELD_NULL
 
-  Public :: allocate_external_field_arrays
+    !> Mass?
+    Real( Kind = wp ) :: mass = 0.0_wp
+
+    !> Field parameters
+    Real( Kind = wp ), Allocatable, Public :: param(:)
+    !> Number of parameters
+    Integer( Kind = wi ), Public :: max_param
+
+  Contains
+    Private
+
+    Procedure, Public :: init => allocate_external_field_arrays
+    Final :: cleanup
+  End Type external_field_type
+
+  Public :: external_field_apply, external_field_correct
 
 Contains
 
-  Subroutine allocate_external_field_arrays()
+  !> Allocate and initialise the arrays of the external field type
+  Subroutine allocate_external_field_arrays(T)
+    Class( external_field_type) :: T
 
-
-    Integer, Dimension( 1:1 ) :: fail
+    Integer :: fail
 
     fail = 0
 
-    Allocate (prmfld(mxpfld), Stat = fail(1))
+    Allocate (T%param(T%max_param), stat=fail)
+    If (fail > 0) Call error(1019)
 
-    If (Any(fail > 0)) Call error(1019)
-
-    prmfld = 0.0_wp
-
+    T%param = 0.0_wp
   End Subroutine allocate_external_field_arrays
 
-  Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,rdf,comm)
+  Subroutine cleanup(T)
+    Type( external_field_type ) :: T
+
+    If (Allocated(T%param)) Then
+      Deallocate(T%param)
+    End If
+  End subroutine cleanup
+
+  Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,rdf,ext_field,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -75,6 +127,7 @@ Contains
   Type( stats_type ), Intent( Inout ) :: stats
   Type( core_shell_type ), Intent( Inout ) :: cshell
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( comms_type ), Intent( Inout ) :: comm
 
   Logical, Save     :: newjob = .true.
@@ -97,19 +150,19 @@ Contains
   stats%engfld=0.0_wp
   stats%virfld=0.0_wp
 
-  If (keyfld == 1) Then
+  If (ext_field%key == FIELD_ELECTRIC) Then
 
-! electric field: prmfld(1-3) are field components
+! electric field: ext_field%param(1-3) are field components
 
      Do i=1,natms
         If (lfrzn(i) == 0) Then
-           fxx(i)=fxx(i) + chge(i)*prmfld(1)
-           fyy(i)=fyy(i) + chge(i)*prmfld(2)
-           fzz(i)=fzz(i) + chge(i)*prmfld(3)
+           fxx(i)=fxx(i) + chge(i)*ext_field%param(1)
+           fyy(i)=fyy(i) + chge(i)*ext_field%param(2)
+           fzz(i)=fzz(i) + chge(i)*ext_field%param(3)
         End If
      End Do
 
-  Else If (keyfld == 2) Then
+  Else If (ext_field%key == FIELD_SHEAR_OSCILLATING) Then
 
 ! oscillating shear: orthorhombic box:  Fx=a*Cos(b.2.pi.z/L)
 
@@ -118,17 +171,17 @@ Contains
      rz=twopi/cell(9)
 
      Do i=1,natms
-        If (lfrzn(i) == 0) fxx(i)=fxx(i) + prmfld(1)*Cos(prmfld(2)*zzz(i)*rz)
+        If (lfrzn(i) == 0) fxx(i)=fxx(i) + ext_field%param(1)*Cos(ext_field%param(2)*zzz(i)*rz)
      End Do
 
-  Else If (keyfld == 3) Then
+  Else If (ext_field%key == FIELD_SHEAR_CONTINUOUS) Then
 
 ! continuous shear of walls : 2D periodic box (imcon=6)
 
      If (imcon /= 6) Return
 
-! shear rate=prmfld(1) angstrom per ps for non-frozen
-! and non-weightless atoms at Abs(z) > prmfld(2)
+! shear rate=ext_field%param(1) angstrom per ps for non-frozen
+! and non-weightless atoms at Abs(z) > ext_field%param(2)
 
      If (megrgd > 0) Then
 
@@ -136,8 +189,8 @@ Contains
         Do j=1,nfree
            i=lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > prmfld(2)) &
-           vxx(i)=0.5_wp*Sign(prmfld(1),zzz(i))
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > ext_field%param(2)) &
+           vxx(i)=0.5_wp*Sign(ext_field%param(1),zzz(i))
         End Do
 
 ! RBs
@@ -153,8 +206,8 @@ Contains
               Call images(imcon,cell,1,x,y,z)
 
               rz=z(1)
-              If (Abs(rz) > prmfld(2)) Then
-                 tmp=0.5_wp*Sign(prmfld(1),rz)
+              If (Abs(rz) > ext_field%param(2)) Then
+                 tmp=0.5_wp*Sign(ext_field%param(1),rz)
                  vxt=tmp-rgdvxx(irgd)
 
                  rgdvxx(irgd)=tmp
@@ -170,23 +223,23 @@ Contains
      Else
 
         Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > prmfld(2)) &
-           vxx(i)=0.5_wp*Sign(prmfld(1),zzz(i))
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > ext_field%param(2)) &
+           vxx(i)=0.5_wp*Sign(ext_field%param(1),zzz(i))
         End Do
 
      End If
 
-  Else If (keyfld == 4) Then
+  Else If (ext_field%key == FIELD_GRAVITATIONAL) Then
 
-! gravitational field: field components given by prmfld(1-3)
+! gravitational field: field components given by ext_field%param(1-3)
 
      If (cshell%keyshl == SHELL_ADIABATIC) Then
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
-              fxx(i)=fxx(i) + prmfld(1)*weight(i)
-              fyy(i)=fyy(i) + prmfld(2)*weight(i)
-              fzz(i)=fzz(i) + prmfld(3)*weight(i)
+              fxx(i)=fxx(i) + ext_field%param(1)*weight(i)
+              fyy(i)=fyy(i) + ext_field%param(2)*weight(i)
+              fzz(i)=fzz(i) + ext_field%param(3)*weight(i)
            End If
         End Do
 
@@ -207,9 +260,9 @@ Contains
 
         Do i=1,natms
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              oxt(i)=prmfld(1)*weight(i)
-              oyt(i)=prmfld(2)*weight(i)
-              ozt(i)=prmfld(3)*weight(i)
+              oxt(i)=ext_field%param(1)*weight(i)
+              oyt(i)=ext_field%param(2)*weight(i)
+              ozt(i)=ext_field%param(3)*weight(i)
            Else ! for the sake of massless sites of RBs
               oxt(i)=0.0_wp
               oyt(i)=0.0_wp
@@ -248,17 +301,17 @@ Contains
 
      End If
 
-  Else If (keyfld == 5) Then
+  Else If (ext_field%key == FIELD_MAGNETIC) Then
 
-! magnetic field: field components given by prmfld(1-3)
+! magnetic field: field components given by ext_field%param(1-3)
 
      If (cshell%keyshl == SHELL_ADIABATIC) Then
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
-              fxx(i)=fxx(i) + (vyy(i)*prmfld(3)-vzz(i)*prmfld(2))*chge(i)
-              fyy(i)=fyy(i) + (vzz(i)*prmfld(1)-vxx(i)*prmfld(3))*chge(i)
-              fzz(i)=fzz(i) + (vxx(i)*prmfld(2)-vyy(i)*prmfld(1))*chge(i)
+              fxx(i)=fxx(i) + (vyy(i)*ext_field%param(3)-vzz(i)*ext_field%param(2))*chge(i)
+              fyy(i)=fyy(i) + (vzz(i)*ext_field%param(1)-vxx(i)*ext_field%param(3))*chge(i)
+              fzz(i)=fzz(i) + (vxx(i)*ext_field%param(2)-vyy(i)*ext_field%param(1))*chge(i)
            End If
         End Do
 
@@ -307,9 +360,9 @@ Contains
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
-              fxx(i)=fxx(i) + (oyt(i)*prmfld(3)-ozt(i)*prmfld(2))*chge(i)
-              fyy(i)=fyy(i) + (ozt(i)*prmfld(1)-oxt(i)*prmfld(3))*chge(i)
-              fzz(i)=fzz(i) + (oxt(i)*prmfld(2)-oyt(i)*prmfld(1))*chge(i)
+              fxx(i)=fxx(i) + (oyt(i)*ext_field%param(3)-ozt(i)*ext_field%param(2))*chge(i)
+              fyy(i)=fyy(i) + (ozt(i)*ext_field%param(1)-oxt(i)*ext_field%param(3))*chge(i)
+              fzz(i)=fzz(i) + (oxt(i)*ext_field%param(2)-oyt(i)*ext_field%param(1))*chge(i)
            End If
         End Do
 
@@ -322,20 +375,20 @@ Contains
 
      End If
 
-  Else If (keyfld == 6) Then
+  Else If (ext_field%key == FIELD_SPHERE) Then
 
 ! containing sphere : r^(-n) potential
 
      Do i=1,natms
         If (lfrzn(i) == 0) Then
            rrr=Sqrt(xxx(i)**2+yyy(i)**2+zzz(i)**2)
-           If (rrr > prmfld(4)) Then
-              rrr=prmfld(2)-rrr
+           If (rrr > ext_field%param(4)) Then
+              rrr=ext_field%param(2)-rrr
               If (rrr < 0.0_wp) rrr=0.1_wp
 
-              gamma=prmfld(1)*rrr**(-prmfld(3))
+              gamma=ext_field%param(1)*rrr**(-ext_field%param(3))
               stats%engfld=stats%engfld + gamma
-              gamma=-prmfld(3)*gamma/(rrr*rrr)
+              gamma=-ext_field%param(3)*gamma/(rrr*rrr)
 
               fxx(i)=fxx(i) + gamma*xxx(i)
               fyy(i)=fyy(i) + gamma*yyy(i)
@@ -346,14 +399,14 @@ Contains
 
      stats%virfld=-9.0_wp*stats%engfld
 
-  Else If (keyfld == 7) Then
+  Else If (ext_field%key == FIELD_WALL) Then
 
 ! repulsive wall (harmonic) starting at z0
 
      Do i=1,natms
-        If (lfrzn(i) == 0 .and. prmfld(3)*zzz(i) > prmfld(3)*prmfld(2)) Then
-           zdif=zzz(i)-prmfld(2)
-           gamma=-prmfld(1)*zdif
+        If (lfrzn(i) == 0 .and. ext_field%param(3)*zzz(i) > ext_field%param(3)*ext_field%param(2)) Then
+           zdif=zzz(i)-ext_field%param(2)
+           gamma=-ext_field%param(1)*zdif
 
            fzz(i)=fzz(i) + gamma
            stats%engfld=stats%engfld - gamma*zdif
@@ -362,33 +415,33 @@ Contains
 
      stats%engfld=0.5_wp*stats%engfld
 
-  Else If (keyfld == 8) Then
+  Else If (ext_field%key == FIELD_WALL_PISTON) Then
 
 ! xpist - piston wall pushing down along the X=bxc direction
-! prmfld(1) is the first atom of the layer of molecules (membrane) to be pushed
-! prmfld(2) is the last atom of the layer of molecules (membrane) to be pushed
-! prmfld(3) is the pressure applied to the layer of molecules (membrane) in the
+! ext_field%param(1) is the first atom of the layer of molecules (membrane) to be pushed
+! ext_field%param(2) is the last atom of the layer of molecules (membrane) to be pushed
+! ext_field%param(3) is the pressure applied to the layer of molecules (membrane) in the
 ! +X=bxc direction - i.e. left to right.  The layer plane is defined as _|_ bxc
 
      If (imcon /= 1 .and. imcon /= 2) Return
 
-     ia = Nint(prmfld(1))
-     ib = Nint(prmfld(2))
+     ia = Nint(ext_field%param(1))
+     ib = Nint(ext_field%param(2))
 
      If (newjob) Then
         newjob=.false.
 
-!        mass=0.0_wp ! defined and initialise in external_field_module
+!        ext_field%mass=0.0_wp ! defined and initialise in external_field_module
         safe=.true.
         Do i=1,natms
            If ((ltg(i) >= ia .and. ltg(i) <= ib) .and. lfrzn(i) > 0) Then
               safe=.false.
            Else
-              mass=mass+weight(i)
+              ext_field%mass=ext_field%mass+weight(i)
            End If
         End Do
 
-        Call gsum(comm,mass)
+        Call gsum(comm,ext_field%mass)
         Call gcheck(comm,safe)
         If (.not.safe) Call error(456)
      End If
@@ -403,8 +456,8 @@ Contains
      End Do
      Call gsum(comm,rtmp) ! net velocity and force to ensure solid wall behaviour
 
-     rtmp(1)=rtmp(1)/mass             ! averaged velocity per particle
-     rtmp(2)=(rtmp(2)+prmfld(3))/mass ! averaged acceleration of the slab
+     rtmp(1)=rtmp(1)/ext_field%mass             ! averaged velocity per particle
+     rtmp(2)=(rtmp(2)+ext_field%param(3))/ext_field%mass ! averaged acceleration of the slab
 
      Do i=1,natms
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
@@ -416,18 +469,18 @@ Contains
 
      stats%engfld=0.5_wp*stats%engfld
 
-  Else If (keyfld == 9) Then
+  Else If (ext_field%key == FIELD_ZRES) Then
 
 ! zres external field: restrain molecule z-position (pull in)
-! prmfld(1) is the index of first atom of restrained molecule
-! prmfld(2) is the index of last atom of restrained molecule
-! prmfld(3) is the restraining constant
-! prmfld(4) is z-min (min limit in z-direction)
-! prmfld(5) is z-max (max limit in z-direction)
-! where prmfld(4) < prmfld(5)
+! ext_field%param(1) is the index of first atom of restrained molecule
+! ext_field%param(2) is the index of last atom of restrained molecule
+! ext_field%param(3) is the restraining constant
+! ext_field%param(4) is z-min (min limit in z-direction)
+! ext_field%param(5) is z-max (max limit in z-direction)
+! where ext_field%param(4) < ext_field%param(5)
 
-     ia = Nint(prmfld(1))
-     ib = Nint(prmfld(2))
+     ia = Nint(ext_field%param(1))
+     ib = Nint(ext_field%param(2))
 
 ! Get molecule's weight and COM
 
@@ -437,11 +490,11 @@ Contains
 
      Do i=1,natms
         If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-           If (cmm(3) < prmfld(4) .or. cmm(3) > prmfld(5)) Then
-              If (cmm(3) < prmfld(4)) zdif = cmm(3) - prmfld(4)
-              If (cmm(3) > prmfld(5)) zdif = cmm(3) - prmfld(5)
+           If (cmm(3) < ext_field%param(4) .or. cmm(3) > ext_field%param(5)) Then
+              If (cmm(3) < ext_field%param(4)) zdif = cmm(3) - ext_field%param(4)
+              If (cmm(3) > ext_field%param(5)) zdif = cmm(3) - ext_field%param(5)
 
-              gamma=-prmfld(3)*zdif*weight(i)/cmm(0)
+              gamma=-ext_field%param(3)*zdif*weight(i)/cmm(0)
               fzz(i)=fzz(i) + gamma
               stats%engfld=stats%engfld - gamma*zdif
            End If
@@ -450,32 +503,32 @@ Contains
 
      stats%engfld=0.5_wp*stats%engfld
 
-  Else If (keyfld == 10) Then
+  Else If (ext_field%key == FIELD_ZRES_MINUS) Then
 
 ! extension to zrs- external field (push out)
-! prmfld(1) is the index of first atom of the water molecules to be restrained
-! prmfld(2) is the index of last atom of the water molecules to be restrained
-! prmfld(3) is the restraining constant
-! prmfld(4) is z-min (min limit in z-direction)
-! prmfld(5) is z-max (max limit in z-direction)
-! where prmfld(4) < prmfld(5)
+! ext_field%param(1) is the index of first atom of the water molecules to be restrained
+! ext_field%param(2) is the index of last atom of the water molecules to be restrained
+! ext_field%param(3) is the restraining constant
+! ext_field%param(4) is z-min (min limit in z-direction)
+! ext_field%param(5) is z-max (max limit in z-direction)
+! where ext_field%param(4) < ext_field%param(5)
 ! This will keep water away from the membrane region, and allow
 ! the DMPC to slowly fill in the gaps before water molecules are let loose.
 
-      ia = Nint(prmfld(1))
-      ib = Nint(prmfld(2))
+      ia = Nint(ext_field%param(1))
+      ib = Nint(ext_field%param(2))
       Do i=1,natms
          If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-            If (zzz(i) > prmfld(4) .and. zzz(i) < prmfld(5)) Then
-               tmp = prmfld(5) + prmfld(4)
+            If (zzz(i) > ext_field%param(4) .and. zzz(i) < ext_field%param(5)) Then
+               tmp = ext_field%param(5) + ext_field%param(4)
 
                If (zzz(i) <  tmp) Then
-                  zdif = zzz(i) - prmfld(4)
+                  zdif = zzz(i) - ext_field%param(4)
                Else
-                  zdif = zzz(i) - prmfld(5)
+                  zdif = zzz(i) - ext_field%param(5)
                End If
 
-               gamma=-prmfld(3)*zdif
+               gamma=-ext_field%param(3)*zdif
                fzz(i)=fzz(i) + gamma
                stats%engfld=stats%engfld - gamma*zdif
             End If
@@ -484,26 +537,26 @@ Contains
 
       stats%engfld=0.5_wp*stats%engfld
 
-  Else If (keyfld == 11) Then
+  Else If (ext_field%key == FIELD_ZRES_PLUS) Then
 
 ! extension to zrs+ external field (pull in)
-! prmfld(1) is the index of first atom of the water molecules to be restrained
-! prmfld(2) is the index of last atom of the water molecules to be restrained
-! prmfld(3) is the restraining constant
-! prmfld(4) is z-min (min limit in z-direction)
-! prmfld(5) is z-max (max limit in z-direction)
-! where prmfld(4) < prmfld(5)
+! ext_field%param(1) is the index of first atom of the water molecules to be restrained
+! ext_field%param(2) is the index of last atom of the water molecules to be restrained
+! ext_field%param(3) is the restraining constant
+! ext_field%param(4) is z-min (min limit in z-direction)
+! ext_field%param(5) is z-max (max limit in z-direction)
+! where ext_field%param(4) < ext_field%param(5)
 ! This will keep water within this region.
 
-     ia = Nint(prmfld(1))
-     ib = Nint(prmfld(2))
+     ia = Nint(ext_field%param(1))
+     ib = Nint(ext_field%param(2))
      Do i=1,natms
         If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-           If (zzz(i) < prmfld(4) .or. zzz(i) > prmfld(5)) Then
-              If (zzz(i) < prmfld(4)) zdif = zzz(i) - prmfld(4)
-              If (zzz(i) > prmfld(5)) zdif = zzz(i) - prmfld(5)
+           If (zzz(i) < ext_field%param(4) .or. zzz(i) > ext_field%param(5)) Then
+              If (zzz(i) < ext_field%param(4)) zdif = zzz(i) - ext_field%param(4)
+              If (zzz(i) > ext_field%param(5)) zdif = zzz(i) - ext_field%param(5)
 
-              gamma=-prmfld(3)*zdif
+              gamma=-ext_field%param(3)*zdif
               fzz(i)=fzz(i) + gamma
               stats%engfld=stats%engfld - gamma*zdif
            End If
@@ -512,39 +565,39 @@ Contains
 
      stats%engfld=0.5_wp*stats%engfld
 
-  Else If (keyfld == 12) Then
+  Else If (ext_field%key == FIELD_ELECTRIC_OSCILLATING) Then
 
-! extension to oscillating electric field: prmfld(1-3) are field components
-! prmfld(4) is the oscillating frequency defined in ps^-1!
+! extension to oscillating electric field: ext_field%param(1-3) are field components
+! ext_field%param(4) is the oscillating frequency defined in ps^-1!
 
-     tmp=Sin(time*prmfld(4)*twopi)
+     tmp=Sin(time*ext_field%param(4)*twopi)
      Do i=1,natms
         If (lfrzn(i) == 0) Then
-           fxx(i)=fxx(i) + chge(i)*prmfld(1)*tmp
-           fyy(i)=fyy(i) + chge(i)*prmfld(2)*tmp
-           fzz(i)=fzz(i) + chge(i)*prmfld(3)*tmp
+           fxx(i)=fxx(i) + chge(i)*ext_field%param(1)*tmp
+           fyy(i)=fyy(i) + chge(i)*ext_field%param(2)*tmp
+           fzz(i)=fzz(i) + chge(i)*ext_field%param(3)*tmp
         End If
      End Do
 
-  Else If (keyfld == 13) Then
+  Else If (ext_field%key == FIELD_UMBRELLA) Then
 
 ! uphr external field: umbrella potential harmonic restraint (pull in)
-! prmfld(1) is the index of first atom of the first atom group/molecule
-! prmfld(2) is the index of last atom of the first atom group/molecule
-! prmfld(3) is the index of first atom of the second atom group/molecule
-! prmfld(4) is the index of last atom of the second atom group/molecule
-! prmfld(5) is the umbrella force constant
-! prmfld(6) is the com separation at the minimum of umbrella potential
+! ext_field%param(1) is the index of first atom of the first atom group/molecule
+! ext_field%param(2) is the index of last atom of the first atom group/molecule
+! ext_field%param(3) is the index of first atom of the second atom group/molecule
+! ext_field%param(4) is the index of last atom of the second atom group/molecule
+! ext_field%param(5) is the umbrella force constant
+! ext_field%param(6) is the com separation at the minimum of umbrella potential
 
-     ia = Nint(prmfld(1))
-     ib = Nint(prmfld(2))
+     ia = Nint(ext_field%param(1))
+     ib = Nint(ext_field%param(2))
 
 ! Get first molecule's weight and COM
 
      Call getcom_mol(ia,ib,cmm,comm)
 
-     ic = Nint(prmfld(3))
-     id = Nint(prmfld(4))
+     ic = Nint(ext_field%param(3))
+     id = Nint(ext_field%param(4))
 
 ! Get second molecule's weight and COM
 
@@ -570,8 +623,8 @@ Contains
 
 ! get force magnitude
 
-     zdif  =rrr-prmfld(6)
-     stats%engfld=-prmfld(5)*zdif/rrr
+     zdif  =rrr-ext_field%param(6)
+     stats%engfld=-ext_field%param(5)*zdif/rrr
 
 ! Apply force corrections
 
@@ -594,8 +647,8 @@ Contains
         End If
      End Do
 
-     stats%virfld=-prmfld(5)*zdif*rrr
-     stats%engfld=0.5_wp*prmfld(5)*zdif**2
+     stats%virfld=-ext_field%param(5)*zdif*rrr
+     stats%engfld=0.5_wp*ext_field%param(5)*zdif**2
 
   Else
 
@@ -607,7 +660,6 @@ Contains
 
 ! sum up energy and virial contributions
 
-  
      rtmp(1) = stats%engfld
      rtmp(2) = stats%virfld
 
@@ -615,11 +667,9 @@ Contains
 
      stats%engfld = rtmp(1)
      stats%virfld = rtmp(2)
-  
-
 End Subroutine external_field_apply
 
-Subroutine external_field_correct(engfld,comm)
+Subroutine external_field_correct(engfld,ext_field,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -634,6 +684,7 @@ Subroutine external_field_correct(engfld,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Real( Kind = wp ), Intent(   Out ) :: engfld
+  Type( external_field_type ), Intent( In    ) :: ext_field
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp,megrgd
@@ -644,14 +695,14 @@ Subroutine external_field_correct(engfld,comm)
 
   megrgd=rgdmeg
 
-  If (keyfld == 3) Then
+  If (ext_field%key == FIELD_SHEAR_CONTINUOUS) Then
 
 ! continuous shear of walls : 2D periodic box (imcon=6)
 
      If (imcon /= 6) Return
 
-! shear rate=prmfld(1) angstrom per ps for non-frozen
-! and non-weightless atoms at Abs(z) > prmfld(2)
+! shear rate=ext_field%param(1) angstrom per ps for non-frozen
+! and non-weightless atoms at Abs(z) > ext_field%param(2)
 
      If (megrgd > 0) Then
 
@@ -659,8 +710,8 @@ Subroutine external_field_correct(engfld,comm)
         Do j=1,nfree
            i=lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > prmfld(2)) &
-           vxx(i)=0.5_wp*Sign(prmfld(1),zzz(i))
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > ext_field%param(2)) &
+           vxx(i)=0.5_wp*Sign(ext_field%param(1),zzz(i))
         End Do
 
 ! RBs
@@ -676,8 +727,8 @@ Subroutine external_field_correct(engfld,comm)
               Call images(imcon,cell,1,x,y,z)
 
               rz=z(1)
-              If (Abs(rz) > prmfld(2)) Then
-                 tmp=0.5_wp*Sign(prmfld(1),rz)
+              If (Abs(rz) > ext_field%param(2)) Then
+                 tmp=0.5_wp*Sign(ext_field%param(1),rz)
                  vxt=tmp-rgdvxx(irgd)
 
                  rgdvxx(irgd)=tmp
@@ -693,26 +744,26 @@ Subroutine external_field_correct(engfld,comm)
      Else
 
         Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > prmfld(2)) &
-           vxx(i)=0.5_wp*Sign(prmfld(1),zzz(i))
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > ext_field%param(2)) &
+           vxx(i)=0.5_wp*Sign(ext_field%param(1),zzz(i))
         End Do
 
      End If
 
-  Else If (keyfld == 8) Then
+  Else If (ext_field%key == FIELD_WALL_PISTON) Then
 
      engfld = 0.0_wp
 
 ! xpist - piston wall pushing down along the X=bxc direction
-! prmfld(1) is the first atom of the layer of molecules (membrane) to be pushed
-! prmfld(2) is the last atom of the layer of molecules (membrane) to be pushed
-! prmfld(3) is the pressure applied to the layer of molecules (membrane) in the
+! ext_field%param(1) is the first atom of the layer of molecules (membrane) to be pushed
+! ext_field%param(2) is the last atom of the layer of molecules (membrane) to be pushed
+! ext_field%param(3) is the pressure applied to the layer of molecules (membrane) in the
 ! +X=bxc direction - i.e. left to right.  The layer plane is defined as _|_ bxc
 
      If (imcon /= 1 .and. imcon /= 2) Return
 
-     ia = Nint(prmfld(1))
-     ib = Nint(prmfld(2))
+     ia = Nint(ext_field%param(1))
+     ib = Nint(ext_field%param(2))
 
      rtmp=0.0_wp  ! average velocity and force per atom in x direction of the piston
      Do i=1,natms ! preserve momentum and velocity in the direction of the push
@@ -724,8 +775,8 @@ Subroutine external_field_correct(engfld,comm)
      End Do
      Call gsum(comm,rtmp) ! net velocity and force to ensure solid wall behaviour
 
-     rtmp(1)=rtmp(1)/mass             ! averaged velocity per particle
-     rtmp(2)=(rtmp(2)+prmfld(3))/mass ! averaged acceleration of the slab
+     rtmp(1)=rtmp(1)/ext_field%mass             ! averaged velocity per particle
+     rtmp(2)=(rtmp(2)+ext_field%param(3))/ext_field%mass ! averaged acceleration of the slab
 
      Do i=1,natms
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
@@ -736,12 +787,7 @@ Subroutine external_field_correct(engfld,comm)
      End Do
 
      engfld=0.5_wp*engfld
-
      Call gsum(comm,engfld)
-
   End If
-
 End Subroutine external_field_correct
-
-
 End Module external_field
