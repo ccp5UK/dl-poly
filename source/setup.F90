@@ -204,7 +204,6 @@ Module setup
     mxgele,                                        &
     mxgrid,                                 &
     mxtana,mxgana,              &
-    mxpfld,                                              &
     mxatms,mxatdm,                  &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
 

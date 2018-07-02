@@ -97,7 +97,9 @@
 
 ! Apply external field
 
-     If (keyfld > 0) Call external_field_apply(time,leql,nsteql,nstep,cshell,stat,rdf,comm)
+     If (ext_field%key /= FIELD_NULL) Then
+       Call external_field_apply(time,leql,nsteql,nstep,cshell,stat,rdf,ext_field,comm)
+     End If
 
 ! Apply PLUMED driven dynamics
 

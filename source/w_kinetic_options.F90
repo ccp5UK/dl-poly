@@ -3,7 +3,9 @@
 
 ! Apply external field
 
-        If (keyfld > 0) Call external_field_correct(stat%engfld,comm)
+        If (ext_field%key /= FIELD_NULL) Then
+          Call external_field_correct(stat%engfld,ext_field,comm)
+        End If
 
 ! Apply pseudo thermostat - velocity cycle (1)
 

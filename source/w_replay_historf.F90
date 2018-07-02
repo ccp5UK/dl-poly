@@ -126,7 +126,8 @@
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
            Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
-             inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf,minimise,mpole,tmr)
+             inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf, &
+             netcdf,minimise,mpole,ext_field,tmr)
 
 ! Evaluate kinetics if available
 
@@ -156,7 +157,7 @@
 
 ! Apply kinetic options
 
-              Call w_kinetic_options(cshell,cons,pmf,stat,site)
+              Call w_kinetic_options(cshell,cons,pmf,stat,site,ext_field)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 

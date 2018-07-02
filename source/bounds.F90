@@ -1,7 +1,6 @@
 Module bounds
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type
-
   Use setup
   Use domains,         Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
   Use configuration,   Only : imcon,imc_n,cfgname,cell,volm
@@ -38,6 +37,7 @@ Module bounds
   Use vdw,             Only : vdw_type
   Use four_body, Only : four_body_type
   Use rdfs,            Only : rdf_type
+  Use external_field, Only : external_field_type
 
   Implicit None
   Private
@@ -50,7 +50,7 @@ Subroutine set_bounds                                 &
            alpha,width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf, &
-           mpole,comm)
+           mpole,ext_field,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -93,6 +93,7 @@ Subroutine set_bounds                                 &
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -526,9 +527,9 @@ Subroutine set_bounds                                 &
 ! maximum number of external field parameters
 
   If (lext) Then
-     mxpfld = 6
+     ext_field%max_param = 6
   Else
-     mxpfld = 0
+     ext_field%max_param = 0
   End If
 
 

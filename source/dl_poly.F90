@@ -100,7 +100,14 @@ program dl_poly
   Use kim
   Use plumed, Only : plumed_type,plumed_init,plumed_finalize,plumed_apply
 
-  Use external_field
+  Use external_field, Only : external_field_type, external_field_apply, &
+                             external_field_correct, &
+                             FIELD_NULL, FIELD_ELECTRIC, FIELD_SHEAR_OSCILLATING, &
+                             FIELD_SHEAR_CONTINUOUS, FIELD_GRAVITATIONAL, &
+                             FIELD_MAGNETIC, FIELD_SPHERE, FIELD_WALL, &
+                             FIELD_WALL_PISTON, FIELD_ZRES, FIELD_ZRES_MINUS, &
+                             FIELD_ZRES_PLUS, FIELD_ELECTRIC_OSCILLATING, &
+                             FIELD_UMBRELLA
 
   ! STATISTICS MODULES
 
@@ -277,6 +284,7 @@ program dl_poly
   Type( netcdf_param ) :: netcdf
   Type( minimise_type ) :: minimise
   Type( mpole_type ) :: mpole
+  Type( external_field_type ) :: ext_field
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -346,7 +354,7 @@ program dl_poly
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,alpha,width,site%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,mpole,comm)
+    tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,mpole,ext_field,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -388,7 +396,7 @@ program dl_poly
   Call allocate_three_body_arrays(site%max_site,threebody)
   Call fourbody%init(site%max_site)
 
-  Call allocate_external_field_arrays()
+  Call ext_field%init()
 
   ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
 
@@ -433,7 +441,8 @@ program dl_poly
     atmfre,atmfrz,megatm,megfrz,    &
     megrgd,    &
     megtet,core_shells,pmfs,cons,thermo,met,bond,angle,   &
-    dihedral,inversion,tether,threebody,site,vdw,tersoff,fourbody,rdf,mpole,comm)
+    dihedral,inversion,tether,threebody,site,vdw,tersoff,fourbody,rdf,mpole, &
+    ext_field,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -662,16 +671,17 @@ program dl_poly
 
   If (lsim) Then
     Call w_md_vv(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
-      pois,bond,angle,dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,mpole,tmr)
+      pois,bond,angle,dihedral,inversion,zdensity,neigh,site,fourbody,rdf, &
+      netcdf,mpole,ext_field,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff, &
-        fourbody,rdf,netcdf,minimise,mpole,tmr)
+        fourbody,rdf,netcdf,minimise,mpole,ext_field,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf, &
-        netcdf,minimise,mpole)
+        netcdf,minimise,mpole,ext_field)
     End If
   End If
 
@@ -814,7 +824,7 @@ Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
-      minimise,mpole,tmr)
+      minimise,mpole,ext_field,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -836,6 +846,7 @@ Contains
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( minimise_type ), Intent( InOut ) :: minimise
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
@@ -872,12 +883,13 @@ Contains
     Include 'w_integrate_vv.F90'
   End Subroutine w_integrate_vv
 
-  Subroutine w_kinetic_options(cshell,cons,pmf,stat,site)
+  Subroutine w_kinetic_options(cshell,cons,pmf,stat,site,ext_field)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Type( site_type ), Intent( InOut ) :: site
+    Type( external_field_type ), Intent( In    ) :: ext_field
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
@@ -907,7 +919,8 @@ Contains
   End Subroutine w_refresh_output
 
   Subroutine w_md_vv(mxatdm_,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
-      dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,mpole,tmr)
+      dihedral,inversion,zdensity,neigh,site,fourbody,rdf,netcdf,mpole, &
+      ext_field,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -927,13 +940,14 @@ Contains
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
-      bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf,minimise &
-      ,mpole)
+      bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf,minimise, &
+      mpole,ext_field)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -955,6 +969,7 @@ Contains
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( minimise_type ), Intent( InOut ) :: minimise
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( external_field_type ), Intent( InOut ) :: ext_field
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -966,7 +981,7 @@ Contains
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
     angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
-    minimise,mpole,tmr)
+    minimise,mpole,ext_field,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -990,6 +1005,7 @@ Contains
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( minimise_type ), Intent( InOut ) :: minimise
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( external_field_type ), Intent( InOut ) :: ext_field
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
