@@ -64,6 +64,7 @@ Module ffield
   Use thermostat, Only : thermostat_type,ENS_NVE
   Use constraints, Only : constraints_type
   Use pmf, Only : pmf_type
+  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
 
   Implicit None
 
@@ -77,13 +78,12 @@ Contains
 
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
-           rcut,width,epsq, &
-           keyfce,           &
+           rcut,width, &
            lecx,lbook,lexcl,               &
            atmfre,atmfrz,megatm,megfrz,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw, &
-           tersoff,fourbody,rdf,mpole,ext_field,rigid,comm)
+           tersoff,fourbody,rdf,mpole,ext_field,rigid,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -108,8 +108,7 @@ Subroutine read_field                      &
 
 
   Logical,           Intent( In    ) :: l_str,l_top,l_n_v
-  Integer,           Intent( InOut ) :: keyfce
-  Real( Kind = wp ), Intent( In    ) :: rcut,width,epsq
+  Real( Kind = wp ), Intent( In    ) :: rcut,width
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
@@ -133,6 +132,7 @@ Subroutine read_field                      &
   Type( mpole_type ), Intent( InOut ) :: mpole
   Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -2958,7 +2958,7 @@ Subroutine read_field                      &
                     d_core_p=d_core_p+d_core
 
                     If      (Abs(q_shel) <= zero_plus) Then ! set shell's charge
-                       charge=-Sign(1.0_wp,q_core)*Sqrt(p_core*k_crsh/(r4pie0/epsq))
+                       charge=-Sign(1.0_wp,q_core)*Sqrt(p_core*k_crsh/(r4pie0/electro%eps))
                        If (Abs(charge) <= zero_plus) Then
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
@@ -2972,14 +2972,14 @@ Subroutine read_field                      &
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
-                          mpole%polarisation_site(isite1)=(r4pie0/epsq)*q_shel**2/k_crsh
+                          mpole%polarisation_site(isite1)=(r4pie0/electro%eps)*q_shel**2/k_crsh
                        End If
                     Else If (k_crsh <= zero_plus) Then ! set polarisability
                        If (p_core <= zero_plus) Then
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
-                          cshell%prmshl(1,nshels)=(r4pie0/epsq)*q_shel**2/p_core
+                          cshell%prmshl(1,nshels)=(r4pie0/electro%eps)*q_shel**2/p_core
                           cshell%prmshl(2,nshels)=0.0_wp
                        End If
                     End If
@@ -3029,12 +3029,12 @@ Subroutine read_field                      &
            If (lshl_abort) Call error(615)
         End If
 
-! check (keyfce) for charges in the system
+! check (electro%key) for charges in the system
 
-        If (keyfce /= 0 .and. Abs(sumchg) <= zero_plus) Then
+        If (electro%key /= ELECTROSTATIC_NULL .and. Abs(sumchg) <= zero_plus) Then
            If (comm%idnode == 0) Call warning(4,sumchg,0.0_wp,0.0_wp)
            If (l_str) Then
-              keyfce=0
+              electro%key=ELECTROSTATIC_NULL
               Call info('Electrostatics switched off!!!',.true.)
            End If
         End If
@@ -4797,12 +4797,12 @@ Subroutine read_field                      &
 
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
-        If ( keyfce == 0 .and. vdw%n_vdw == 0 .and. &
+        If ( electro%key == ELECTROSTATIC_NULL .and. vdw%n_vdw == 0 .and. &
              met%n_potentials == 0 .and. tersoff%n_potential == 0 .and. kimim == ' ') Call error(145)
 
 ! test for mixing KIM model with external interactions
 
-        If ( (keyfce /= 0 .or. vdw%n_vdw /= 0 .or. &
+        If ( (electro%key /= ELECTROSTATIC_NULL .or. vdw%n_vdw /= 0 .or. &
               met%n_potentials /= 0 .or. tersoff%n_potential /= 0) .and. kimim /= ' ') Then
           Call warning('open KIM model in use together with extra intermolecular interactions',.true.)
         End If

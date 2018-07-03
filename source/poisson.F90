@@ -13,6 +13,7 @@ Module poisson
   Use numerics,        Only : dcell,invert
   Use parallel_fft,    Only : adjust_kmax
   Use neighbours,      Only : neighbours_type
+  Use electrostatic,   Only : electrostatic_type
   Implicit None
 
   Private
@@ -70,12 +71,12 @@ Module poisson
 
 Contains
 
-  Subroutine poisson_forces(alpha,epsq,engcpe,vircpe,stress,pois,comm)
+  Subroutine poisson_forces(engcpe,vircpe,stress,pois,electro,comm)
 
-    Real( Kind = wp ), Intent( In    ) :: epsq,alpha
     Real( Kind = wp ), Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( poisson_type ), Intent( InOut ) :: pois
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type(comms_type), Intent( InOut )   :: comm
 
     Real( Kind = wp ) :: eng,virr
@@ -85,10 +86,10 @@ Contains
 
        pois%converged=.false.
        pois%maxbicgst =0 ! the number of steps to solve eq. without a guess (pois%phi=0)
-       pois%delta=1.0_wp/alpha
+       pois%delta=1.0_wp/electro%alpha
        Call biCGStab_init(pois)
 
-       Call biCGStab_charge_density(alpha,epsq,pois,comm)
+       Call biCGStab_charge_density(pois,electro,comm)
 
        If (pois%normb > zero_plus) Then
           Call biCGStab_solver_omp(pois,comm)
@@ -100,7 +101,7 @@ Contains
 
     Else
 
-       Call biCGStab_charge_density(alpha,epsq,pois,comm)
+       Call biCGStab_charge_density(pois,electro,comm)
 
     End If
 
@@ -218,19 +219,18 @@ Contains
 
   End Subroutine biCGStab_init
 
-  Subroutine biCGStab_charge_density(alpha,epsq,pois,comm)
+  Subroutine biCGStab_charge_density(pois,electro,comm)
 
 ! calculates charge dansity at 0th order
 
-    Real( Kind = wp ), Intent( In    ) :: alpha
-    Real( Kind = wp ), Intent( In    ) :: epsq
     Type( poisson_type ), Intent( InOut ) :: pois
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type(comms_type), Intent( InOut ) :: comm
 
     Integer           :: i,j,k,n
     Real( Kind = wp ) :: reps0dv, txx,tyy,tzz, det,rcell(9)
 
-    reps0dv=fourpi*r4pie0*alpha/epsq ! dv collapsed to dr=pois%delta=1/alpha
+    reps0dv=fourpi*r4pie0*electro%alpha/electro%eps ! dv collapsed to dr=pois%delta=1/electro%alpha
 
     ! get reciprocal cell
     Call invert(cell,rcell,det)
@@ -1079,8 +1079,7 @@ Contains
 
   End Function d2PhidZ2
 
-  Subroutine poisson_excl_forces &
-             (iatm,rcut,epsq,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress,neigh)
+  Subroutine poisson_excl_forces(iatm,rcut,eps,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress,neigh)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1094,7 +1093,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,epsq
+    Real( Kind = wp ),                        Intent( In    ) :: rcut,eps
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
@@ -1129,7 +1128,7 @@ Contains
 
     If (Abs(chgea) > zero_plus) Then
 
-       chgea = chgea*r4pie0/epsq
+       chgea = chgea*r4pie0/eps
 
 ! load forces
 
@@ -1230,7 +1229,7 @@ Contains
 
   End Subroutine poisson_excl_forces
 
-  Subroutine poisson_frzn_forces(epsq,engcpe_fr,vircpe_fr,stress,ewld,neigh,comm)
+  Subroutine poisson_frzn_forces(eps,engcpe_fr,vircpe_fr,stress,ewld,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1250,7 +1249,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),                   Intent( In    ) :: epsq
+    Real( Kind = wp ),                   Intent( In    ) :: eps
     Real( Kind = wp ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
     Type(ewald_type), Intent( InOut )                    :: ewld
@@ -1377,7 +1376,7 @@ Contains
              rsq=xrr**2+yrr**2+zrr**2
 
              rrr=Sqrt(rsq)
-             chgprd=-cfr(ii)*cfr(jj)/epsq*r4pie0 ! the MINUS signifies the exclusion!!!
+             chgprd=-cfr(ii)*cfr(jj)/eps*r4pie0 ! the MINUS signifies the exclusion!!!
 
 ! calculate forces
 
@@ -1435,7 +1434,7 @@ Contains
              rsq=xrr**2+yrr**2+zrr**2
 
              rrr=Sqrt(rsq)
-             chgprd=-cfr(ii)*cfr(jj)/epsq*r4pie0 ! the MINUS signifies the exclusion!!!
+             chgprd=-cfr(ii)*cfr(jj)/eps*r4pie0 ! the MINUS signifies the exclusion!!!
 
 ! calculate forces
 
@@ -1516,7 +1515,7 @@ Contains
              rsq=xrr**2+yrr**2+zrr**2
 
              rrr=Sqrt(rsq)
-             chgprd=-cfr(ii)*cfr(jj)/epsq*r4pie0 ! the MINUS signifies the exclusion!!!
+             chgprd=-cfr(ii)*cfr(jj)/eps*r4pie0 ! the MINUS signifies the exclusion!!!
 
 ! calculate forces
 
@@ -1613,7 +1612,7 @@ Contains
 
                 rrr=rrt(k)
                 If (Abs(chge(j)) > zero_plus .and. rrr < neigh%cutoff) Then
-                   chgprd=-chge(i)*chge(j)/epsq*r4pie0 ! the MINUS signifies the exclusion!!!
+                   chgprd=-chge(i)*chge(j)/eps*r4pie0 ! the MINUS signifies the exclusion!!!
                    rsq=rrr**2
 
 ! calculate forces

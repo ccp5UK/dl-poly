@@ -12,6 +12,7 @@ Module ewald_spole
   Use domains, Only : nprx,npry,nprz,idx,idy,idz
   Use parallel_fft, Only : initialize_fft, pfft, pfft_indices
   Use neighbours, Only : neighbours_type
+  Use electrostatic, Only : electrostatic_type
   Implicit None
 
   Private
@@ -19,8 +20,8 @@ Module ewald_spole
   Public :: ewald_real_forces, ewald_spme_forces, ewald_excl_forces, ewald_frzn_forces
   Contains
 
-  Subroutine ewald_real_forces &
-             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress,neigh,comm)
+  Subroutine ewald_real_forces(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress, &
+      neigh,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -36,11 +37,11 @@ Module ewald_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type),                        Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -76,7 +77,7 @@ Module ewald_spole
 
   ! generate error function complement tables for ewald sum
 
-       Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
+       Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
     End If
 
   ! initialise potential energy and virial
@@ -103,7 +104,7 @@ Module ewald_spole
 
     If (Abs(chgea) > zero_plus) Then
 
-       chgea = chgea*r4pie0/epsq
+       chgea = chgea*r4pie0/electro%eps
 
   ! load forces
 
@@ -220,7 +221,7 @@ Module ewald_spole
 
   End Subroutine ewald_real_forces
 
-  Subroutine ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,comm)
+  Subroutine ewald_spme_forces(engcpe_rc,vircpe_rc,stress,ewld,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -235,11 +236,11 @@ Module ewald_spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Intent( In    ) :: alpha,epsq
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
-    Type( comms_type), Intent( InOut ) :: comm
     Type( ewald_type), Intent( InOut ) :: ewld
+    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( comms_type), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
     Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
@@ -415,7 +416,7 @@ Module ewald_spole
           ewld%engsic=ewld%engsic+chge(i)**2
        End Do
        Call gsum(comm,ewld%engsic)
-       ewld%engsic=-r4pie0/epsq * alpha*ewld%engsic/sqrpi
+       ewld%engsic=-r4pie0/electro%eps * electro%alpha*ewld%engsic/sqrpi
     End If
 
     Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
@@ -435,11 +436,11 @@ Module ewald_spole
   ! set working parameters
 
     rvolm=twopi/volm
-    ralph=-0.25_wp/alpha**2
+    ralph=-0.25_wp/electro%alpha**2
 
   ! set scaling constant
 
-    scale=rvolm*r4pie0/epsq
+    scale=rvolm*r4pie0/electro%eps
 
   ! Convert cell coordinates to fractional coordinates intervalled [0,1)
   ! (bottom left corner of MD cell) and stretch over kmaxs in different
@@ -1318,8 +1319,8 @@ Module ewald_spole
 
   End Subroutine ewald_spme_forces
 
-  Subroutine ewald_excl_forces &
-             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress,neigh)
+  Subroutine ewald_excl_forces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
+      neigh,electro)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1335,11 +1336,11 @@ Module ewald_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( electrostatic_type ), Intent( In    ) :: electro
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -1382,7 +1383,7 @@ Module ewald_spole
 
     If (Abs(chgea) > zero_plus) Then
 
-       chgea = chgea*r4pie0/epsq
+       chgea = chgea*r4pie0/electro%eps
 
   ! load forces
 
@@ -1421,7 +1422,7 @@ Module ewald_spole
 
   ! calculate forces
 
-             alpr =rrr*alpha
+             alpr =rrr*electro%alpha
              alpr2=alpr*alpr
 
   ! calculate error function and derivative
@@ -1430,23 +1431,23 @@ Module ewald_spole
 
   ! close particles (core-shell units) - small distances limit
 
-                erfr=2.0_wp*chgprd*(alpha/sqrpi) * &
+                erfr=2.0_wp*chgprd*(electro%alpha/sqrpi) * &
                 (1.0_wp+alpr2*(-rr3+alpr2*(r10+alpr2*(-r42+alpr2*r216))))
 
-                egamma=-4.0_wp*chgprd*(alpha**3/sqrpi) * &
+                egamma=-4.0_wp*chgprd*(electro%alpha**3/sqrpi) * &
                 (rr3+alpr2*(-2.0_wp*r10+alpr2*(3.0_wp*r42-4.0_wp*alpr2*r216)))
 
              Else
 
   ! distant particles - traditional
 
-                exp1=Exp(-(alpha*rrr)**2)
-                tt  =1.0_wp/(1.0_wp+pp*alpha*rrr)
+                exp1=Exp(-(electro%alpha*rrr)**2)
+                tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
                 erfr=chgprd * &
                 (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/rrr
 
-                egamma=-(erfr-2.0_wp*chgprd*(alpha/sqrpi)*exp1)/rsq
+                egamma=-(erfr-2.0_wp*chgprd*(electro%alpha/sqrpi)*exp1)/rsq
 
              End If
 
@@ -1512,7 +1513,7 @@ Module ewald_spole
 
   End Subroutine ewald_excl_forces
 
-  Subroutine ewald_frzn_forces(alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld,neigh,comm)
+  Subroutine ewald_frzn_forces(engcpe_fr,vircpe_fr,stress,ewld,neigh,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1531,11 +1532,11 @@ Module ewald_spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp  ),                   Intent( In    ) :: alpha,epsq
     Real( Kind = wp  ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp  ), Dimension( 1:9 ), Intent( InOut ) :: stress
     Type( ewald_type ),                   Intent( InOut ) :: ewld
     Type( neighbours_type ),              Intent( In    ) :: neigh
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                   Intent( InOut ) :: comm
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
@@ -1613,7 +1614,7 @@ Module ewald_spole
     Call gsum(comm, nz_fr)
     nz_fr(0) = Sum(nz_fr(0:comm%idnode)) ! Offset
 
-    scl=r4pie0/epsq
+    scl=r4pie0/electro%eps
     nzfr = Sum(nz_fr(1:comm%mxnode))     ! Total
     If (nzfr <= 10*mxatms) Then
 
@@ -1669,13 +1670,13 @@ Module ewald_spole
 
   ! calculate error function and derivative
 
-             exp1 =Exp(-(alpha*rrr)**2)
-             tt   =1.0_wp/(1.0_wp+pp*alpha*rrr)
+             exp1 =Exp(-(electro%alpha*rrr)**2)
+             tt   =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
              erfr=chgprd * &
              (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/rrr
 
-             egamma=-(erfr-2.0_wp*chgprd*(alpha/sqrpi)*exp1)/rsq
+             egamma=-(erfr-2.0_wp*chgprd*(electro%alpha/sqrpi)*exp1)/rsq
 
              fx = egamma*xrr
              fy = egamma*yrr
@@ -1732,13 +1733,13 @@ Module ewald_spole
 
   ! calculate error function and derivative
 
-             exp1 =Exp(-(alpha*rrr)**2)
-             tt   =1.0_wp/(1.0_wp+pp*alpha*rrr)
+             exp1 =Exp(-(electro%alpha*rrr)**2)
+             tt   =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
              erfr=chgprd * &
              (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/rrr
 
-             egamma=-(erfr-2.0_wp*chgprd*(alpha/sqrpi)*exp1)/rsq
+             egamma=-(erfr-2.0_wp*chgprd*(electro%alpha/sqrpi)*exp1)/rsq
 
              fx = egamma*xrr
              fy = egamma*yrr
@@ -1819,13 +1820,13 @@ Module ewald_spole
 
   ! calculate error function and derivative
 
-             exp1 =Exp(-(alpha*rrr)**2)
-             tt   =1.0_wp/(1.0_wp+pp*alpha*rrr)
+             exp1 =Exp(-(electro%alpha*rrr)**2)
+             tt   =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
              erfr=chgprd * &
              (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/rrr
 
-             egamma=-(erfr-2.0_wp*chgprd*(alpha/sqrpi)*exp1)/rsq
+             egamma=-(erfr-2.0_wp*chgprd*(electro%alpha/sqrpi)*exp1)/rsq
 
              fx = egamma*xrr
              fy = egamma*yrr
@@ -1925,13 +1926,13 @@ Module ewald_spole
 
   ! calculate error function and derivative
 
-                   exp1 =Exp(-(alpha*rrr)**2)
-                   tt   =1.0_wp/(1.0_wp+pp*alpha*rrr)
+                   exp1 =Exp(-(electro%alpha*rrr)**2)
+                   tt   =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
                    erfr=chgprd * &
                    (1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/rrr
 
-                   egamma=-(erfr-2.0_wp*chgprd*(alpha/sqrpi)*exp1)/rsq
+                   egamma=-(erfr-2.0_wp*chgprd*(electro%alpha/sqrpi)*exp1)/rsq
 
                    fx = egamma*xxt(k)
                    fy = egamma*yyt(k)

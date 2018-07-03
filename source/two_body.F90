@@ -25,6 +25,10 @@ Module two_body
   Use development, Only : development_type
   Use statistics, Only : stats_type
   Use core_shell, Only : core_shell_type
+  Use electrostatic, Only : electrostatic_type, &
+                            ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
+                            ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
+                            ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
   Implicit None
 
   Private
@@ -34,10 +38,10 @@ Contains
 
 Subroutine two_body_forces                        &
            (pdplnc,ensemble,    &
-           alpha,epsq,keyfce,nstfce,lbook,megfrz, &
+           nstfce,lbook,megfrz, &
            leql,nsteql,nstep,         &
            cshell,               &
-           stats,ewld,devel,met,pois,neigh,site,vdw,rdf,mpole,tmr,comm)
+           stats,ewld,devel,met,pois,neigh,site,vdw,rdf,mpole,electro,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -47,16 +51,6 @@ Subroutine two_body_forces                        &
 ! vdw%n_vdw > 0 ------ switch for vdw potentials calculation
 ! met%n_potentials > 0 ------ switch for metal local density and potentials
 !                   calculations
-!
-! ELECTROSTATICS KEYS
-!
-! keyfce = 0 ------ no electrostatics
-! keyfce = 2 ------ Ewald sum (ewald_spme,ewald_real,ewald_excl)
-! keyfce = 4 ------ distance dependent dielectric potential (coul_dddp)
-! keyfce = 6 ------ coulombic 1/r potential (coul_cp)
-! keyfce = 8 ------ force-shifted and damped coulombic potential (coul_fscp)
-! keyfce =10 ------ reaction field and damped coulombic potential (coul_rfp)
-! keyfce =12 ------ direct space Poisson solver (possion_module)
 !
 ! nstfce - the rate at which the k-space contributions of SPME are
 !          refreshed.  Once every 1 <= nstfce <= 7 steps.
@@ -73,11 +67,11 @@ Subroutine two_body_forces                        &
 
   Logical,                                  Intent( In    ) :: lbook,leql
   Integer,                                  Intent( In    ) :: ensemble,        &
-                                                               keyfce,nstfce, &
+                                                               nstfce, &
                                                                megfrz, &
                                                                nsteql,nstep
   Type( core_shell_type ), Intent( InOut ) :: cshell
-  Real( Kind = wp ),                        Intent( In    ) :: pdplnc,alpha,epsq
+  Real( Kind = wp ),                        Intent( In    ) :: pdplnc
   Type( stats_type ), Intent( InOut )                       :: stats
   Type( ewald_type ),                       Intent( InOut ) :: ewld
   Type( development_type ),                 Intent( In    ) :: devel
@@ -89,6 +83,7 @@ Subroutine two_body_forces                        &
   Type( rdf_type ),                         Intent( InOut ) :: rdf
   Type( mpole_type ),                       Intent( InOut ) :: mpole
   Type( timer_type ),                       Intent( InOut ) :: tmr
+  Type( electrostatic_type ), Intent( In    ) :: electro
   Type( comms_type ),                       Intent( InOut ) :: comm
 
 
@@ -123,7 +118,7 @@ Subroutine two_body_forces                        &
 ! evaluation.  Repeat the same but only for the SPME k-space
 ! frozen-frozen evaluations in constant volume ensembles only.
 
-  If (keyfce == 2 .or. keyfce == 12) Then
+  If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) Then
     Call ewld%check(ensemble,megfrz,nsteql,nstfce,nstep)
   End If
 
@@ -198,15 +193,15 @@ Subroutine two_body_forces                        &
   Call start_timer(tmr%t_longrange)
 #endif
 
-  If (keyfce == 2 .and. ewld%l_fce) Then
+  If (electro%key == ELECTROSTATIC_EWALD .and. ewld%l_fce) Then
      If (mpole%max_mpoles > 0) Then
         If (mpole%max_order <= 2) Then
-           Call ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stats%stress,ewld,mpole,comm)
+           Call ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stats%stress,ewld,mpole,electro,comm)
         Else
-           Call ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stats%stress,ewld,mpole,comm)
+           Call ewald_spme_mforces(engcpe_rc,vircpe_rc,stats%stress,ewld,mpole,electro,comm)
         End If
      Else
-        Call ewald_spme_forces(alpha,epsq,engcpe_rc,vircpe_rc,stats%stress,ewld,comm)
+        Call ewald_spme_forces(engcpe_rc,vircpe_rc,stats%stress,ewld,electro,comm)
      End If
   End If
 #ifdef CHRONO
@@ -270,53 +265,53 @@ Subroutine two_body_forces                        &
 
 !!! MULTIPOLAR ATOMIC SITES
 
-        If (keyfce == 2) Then
+        If (electro%key == ELECTROSTATIC_EWALD) Then
 
 ! calculate coulombic forces, Ewald sum - real space contribution
 
            If (mpole%max_order <= 2) Then
-              Call ewald_real_mforces_d(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc, &
-                viracc,stats%stress,ewld,neigh,mpole,comm)
+              Call ewald_real_mforces_d(i,xxt,yyt,zzt,rrt,engacc, &
+                viracc,stats%stress,ewld,neigh,mpole,electro,comm)
            Else
-              Call ewald_real_mforces(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc, &
-                viracc,stats%stress,neigh,mpole,comm)
+              Call ewald_real_mforces(i,xxt,yyt,zzt,rrt,engacc, &
+                viracc,stats%stress,neigh,mpole,electro,comm)
            End If
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
 
-        Else If (keyfce == 4) Then
+        Else If (electro%key == ELECTROSTATIC_DDDP) Then
 
 ! distance dependant dielectric potential
 
-           Call coul_dddp_mforces(i,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
+           Call coul_dddp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
 
-        Else If (keyfce == 6) Then
+        Else If (electro%key == ELECTROSTATIC_COULOMB) Then
 
 ! coulombic 1/r potential with no truncation or damping
 
-           Call coul_cp_mforces(i,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
+           Call coul_cp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
 
-        Else If (keyfce == 8) Then
+        Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_mforces(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,comm)
+           Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,electro,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
 
-        Else If (keyfce == 10) Then
+        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
 
 ! reaction field potential
 
-           Call coul_rfp_mforces(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,comm)
+           Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,electro,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -325,47 +320,47 @@ Subroutine two_body_forces                        &
 
      Else
 
-        If (keyfce == 2) Then
+        If (electro%key == ELECTROSTATIC_EWALD) Then
 
 ! calculate coulombic forces, Ewald sum - real space contribution
 
-           Call ewald_real_forces(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,comm)
+           Call ewald_real_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
 
-        Else If (keyfce == 4) Then
+        Else If (electro%key == ELECTROSTATIC_DDDP) Then
 
 ! distance dependant dielectric potential
 
-           Call coul_dddp_forces(i,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh)
+           Call coul_dddp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
 
-        Else If (keyfce == 6) Then
+        Else If (electro%key == ELECTROSTATIC_COULOMB) Then
 
 ! coulombic 1/r potential with no truncation or damping
 
-           Call coul_cp_forces(i,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh)
+           Call coul_cp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
 
-        Else If (keyfce == 8) Then
+        Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_forces(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,comm)
+           Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
 
-        Else If (keyfce == 10) Then
+        Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
 
 ! reaction field potential
 
-           Call coul_rfp_forces(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,comm)
+           Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -382,8 +377,8 @@ Subroutine two_body_forces                        &
 
 ! Poisson solver alternative to Ewald
 
-  If (keyfce == 12) Then
-     Call poisson_forces(alpha,epsq,engacc,viracc,stats%stress,pois,comm)
+  If (electro%key == ELECTROSTATIC_POISSON) Then
+     Call poisson_forces(engacc,viracc,stats%stress,pois,electro,comm)
 
      engcpe_rl=engcpe_rl+engacc
      vircpe_rl=vircpe_rl+viracc
@@ -403,7 +398,9 @@ Subroutine two_body_forces                        &
 ! (2) Ewald corrections due to short-range exclusions
 ! (3) CHARMM core-shell self-induction additions
 
-  If ( lbook .and. (l_do_rdf .or. (keyfce == 2 .or. keyfce == 12) .or. mpole%key == POLARISATION_CHARMM) ) Then
+  If ( lbook .and. &
+    (l_do_rdf .or. (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) &
+    .or. mpole%key == POLARISATION_CHARMM) ) Then
      Do i=1,natms ! outer loop over atoms
         limit=neigh%list(-1,i)-neigh%list(0,i) ! Get neigh%list limit
         If (limit > 0) Then
@@ -432,15 +429,15 @@ Subroutine two_body_forces                        &
 
            If (l_do_rdf) Call rdf_excl_collect(i,rrt,neigh,rdf)
 
-           If (keyfce == 2) Then ! Ewald corrections
+           If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald corrections
               If (mpole%max_mpoles > 0) Then
                  If (mpole%max_order <= 2) Then
-                    Call ewald_excl_mforces_d(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
+                    Call ewald_excl_mforces_d(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,electro)
                  Else
-                    Call ewald_excl_mforces(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
+                    Call ewald_excl_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,electro)
                  End If
               Else
-                 Call ewald_excl_forces(i,alpha,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh)
+                 Call ewald_excl_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro)
               End If
 
               engcpe_ex=engcpe_ex+engacc
@@ -451,7 +448,7 @@ Subroutine two_body_forces                        &
 
            If (mpole%key == POLARISATION_CHARMM) Then
               If (neigh%list(-3,i)-neigh%list(0,i) > 0) Then
-                 Call coul_chrm_forces(i,epsq,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
+                 Call coul_chrm_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
 
                  engcpe_ch=engcpe_ch+engacc
                  vircpe_ch=vircpe_ch+viracc
@@ -522,20 +519,20 @@ Subroutine two_body_forces                        &
 
 ! Further Ewald/Poisson Solver corrections or an infrequent refresh
 
-  If (keyfce == 2 .or. keyfce == 12) Then
+  If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) Then
      If (ewld%l_fce) Then
 
 ! frozen pairs corrections to coulombic forces
 
         If (megfrz /= 0) Then
-           If (keyfce == 2) Then ! Ewald
+           If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald
               If (mpole%max_mpoles > 0) Then
-                 Call ewald_frzn_mforces(alpha,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,mpole,comm)
+                 Call ewald_frzn_mforces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,mpole,electro,comm)
               Else
-                 Call ewald_frzn_forces(alpha,epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,comm)
+                 Call ewald_frzn_forces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,electro,comm)
               End If
-           Else !If (keyfce == 12) Then ! Poisson Solver
-              Call poisson_frzn_forces(epsq,engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,comm)
+           Else !If (electro%key == ELECTROSTATIC_POISSON) Then ! Poisson Solver
+              Call poisson_frzn_forces(electro%eps,engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,comm)
            End If
         End If
 
@@ -553,7 +550,7 @@ Subroutine two_body_forces                        &
      If (Abs(sumchg) > 1.0e-6_wp) Then
         If (new_nz) Then
            new_nz = .false.
-           factor_nz = -0.5_wp * (pi*r4pie0/epsq) * (sumchg/alpha)**2
+           factor_nz = -0.5_wp * (pi*r4pie0/electro%eps) * (sumchg/electro%alpha)**2
         End If
 
         engcpe_nz=factor_nz/volm
@@ -621,7 +618,7 @@ Subroutine two_body_forces                        &
 
 ! Self-interaction is constant for the default charges only SPME
 
-  If (keyfce == 2) Then ! Sum it up for multipolar SPME
+  If (electro%key == ELECTROSTATIC_EWALD) Then ! Sum it up for multipolar SPME
      If (mpole%max_mpoles > 0 .and. mpole%max_order <= 2) Call gsum(comm,ewld%engsic)
      !Write(message,'(a,1p,e18.10)') 'Self-interaction term: ',engsic
      !Call info(message,.true.)

@@ -25,7 +25,7 @@
 
 ! nullify all two-body force switches = just do rdf%rdf calculation
 
-  keyfce = 0
+  electro%key = ELECTROSTATIC_NULL
   vdw%n_vdw = 0
   met%n_potentials = 0
 
@@ -104,7 +104,7 @@
 ! CHECK MD CONFIGURATION
 
            Call check_config &
-           (levcfg,l_str,keyfce,keyres,megatm,thermo,site,comm)
+           (levcfg,l_str,electro%key,keyres,megatm,thermo,site,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -129,7 +129,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(keyfce,neigh,site,mpole,comm)
+           Call set_halo_particles(electro%key,neigh,site,mpole,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -147,19 +147,18 @@
 ! Accumulate RDFs if needed (nstep->nstph)
 ! Make sure RDFs are complete (lbook=.false. - no exclusion lists)
 
-           If (rdf%l_collect) Call two_body_forces         &
-           (pdplnc,thermo%ensemble,    &
-           alpha,epsq,keyfce,nstfce,.false.,megfrz, &
-           leql,nsteql,nstph,         &
-           cshell,               &
-           stat,ewld,devel,met,pois,neigh,site,vdw,rdf,mpole,tmr,comm)
+           If (rdf%l_collect) Then
+             Call two_body_forces(pdplnc,thermo%ensemble,nstfce,.false.,megfrz, &
+               leql,nsteql,nstph,cshell,stat,ewld,devel,met,pois,neigh,site, &
+               vdw,rdf,mpole,electro,tmr,comm)
+           End If
 
 ! Calculate bond forces
 
            If (bond%total > 0 .and. bond%bin_pdf > 0) Then
               isw = 0
               Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress, &
-              neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,mpole,comm)
+              neigh%cutoff,stat%engcpe,stat%vircpe,bond,mpole,electro,comm)
            End If
 
 ! Calculate valence angle forces
@@ -174,8 +173,8 @@
            If (dihedral%total > 0 .and. dihedral%bin_adf > 0) Then
               isw = 0
               Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
-                neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe, &
-                stat%engsrp,stat%virsrp,dihedral,vdw,mpole,comm)
+                neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp, &
+                dihedral,vdw,mpole,electro,comm)
            End If
 
 ! Calculate inversion forces

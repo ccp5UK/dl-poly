@@ -26,6 +26,7 @@ Module bonds
   Use coul_mpole,      Only : intra_mcoul
   Use coul_spole,      Only : intra_coul
   Use mpole,           Only : mpole_type
+  Use electrostatic,   Only : electrostatic_type,ELECTROSTATIC_NULL
   Implicit None
 
   Private
@@ -487,8 +488,8 @@ Contains
 
 End Subroutine bonds_compute
 
-Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe, &
-    vircpe,bond,mpole,comm)
+Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
+    mpole,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -509,11 +510,11 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe, 
   Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: engbnd,virbnd
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
-  Real( Kind = wp ),                   Intent( In    ) :: rcut,alpha,epsq
-  Integer,                             Intent( In    ) :: keyfce
+  Real( Kind = wp ),                   Intent( In    ) :: rcut
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe
   Type( bonds_type ),                  Intent( InOut ) :: bond
   Type( mpole_type ),                  Intent( InOut ) :: mpole
+  Type( electrostatic_type ), Intent( In    ) :: electro
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical           :: safe(1:3)
@@ -777,13 +778,13 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe, 
 
 ! scaled charge product times dielectric constants
 
-           chgprd=bond%param(1,kk)*chge(ia)*chge(ib)*r4pie0/epsq
-           If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. keyfce > 0) Then
+           chgprd=bond%param(1,kk)*chge(ia)*chge(ib)*r4pie0/electro%eps
+           If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
               If (mpole%max_mpoles > 0) Then
-                 Call intra_mcoul(keyfce,rcut,alpha,epsq,ia,ib,chgprd, &
-                      rab,xdab(i),ydab(i),zdab(i),omega,viracc,fx,fy,fz,safe(1),mpole)
+                 Call intra_mcoul(rcut,ia,ib,chgprd,rab,xdab(i),ydab(i),zdab(i), &
+                   omega,viracc,fx,fy,fz,safe(1),mpole,electro)
               Else
-                 Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rab,rab2,omega,gamma,safe(1))
+                 Call intra_coul(rcut,chgprd,rab,rab2,omega,gamma,safe(1),electro)
 
                  fx = gamma*xdab(i)
                  fy = gamma*ydab(i)

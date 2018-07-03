@@ -57,6 +57,7 @@ Module configuration
   Use errors_warnings, Only : error,warning,info
   use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
   Use thermostat, Only : thermostat_type
+  Use electrostatic, Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
   Implicit None
 
   Character( Len = 72 ), Save :: cfgname = ' ' , &
@@ -283,7 +284,7 @@ Contains
 
   End Subroutine allocate_config_arrays
 
-  Subroutine check_config(levcfg,l_str,keyfce,keyres,megatm,thermo,site,comm)
+  Subroutine check_config(levcfg,l_str,electro_key,keyres,megatm,thermo,site,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -298,7 +299,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical, Intent( In    ) :: l_str
-  Integer, Intent( In    ) :: levcfg,keyfce,keyres,megatm
+  Integer, Intent( In    ) :: levcfg,electro_key,keyres,megatm
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( site_type ), Intent( In    ) :: site
   Type( comms_type ), Intent( InOut ) :: comm
@@ -332,9 +333,9 @@ Contains
 ! Check things for non-periodic systems
 
   If (imcon == 0 .or. imcon == 6) Then
-     If (keyfce == 2) Then
+     If (electro_key == ELECTROSTATIC_EWALD) Then
         Call warning(220,0.0_wp,0.0_wp,0.0_wp)
-     Else If (keyfce > 0) Then
+     Else If (electro_key /= ELECTROSTATIC_NULL) Then
         Call warning(30,0.0_wp,0.0_wp,0.0_wp)
      End If
 
