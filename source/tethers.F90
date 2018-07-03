@@ -15,29 +15,43 @@ Module tethers
   Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
                                 xxx,yyy,zzz,fxx,fyy,fzz
   Use statistics, Only : stats_type
-  Use setup, Only : mxtmls,mxatdm,nrite
+  Use setup, Only : nrite
   Use errors_warnings, Only : error, warning
   Use numerics, Only : images,local_index
-
-
   Implicit None
+
   Private
+
+  !> Type containing tethers data
   Type, Public :: tethers_type
-    Integer( Kind =  wi )               :: ntteth = 0
-    Integer( Kind =  wi )               :: mxtteth,mxteth,mxftet,mxpteth
-    Integer( Kind =  wi ),  Allocatable :: numteth(:),keytet(:)
-    Integer( Kind =  wi ),  Allocatable :: lsttet(:),listtet(:,:),legtet(:,:)
-    Real( Kind = wp ),      Allocatable :: prmtet(:,:)
+    Private
+    !> Number of types of tether
+    Integer( Kind =  wi ), Public :: ntteth = 0
+    Integer( Kind =  wi ), Public :: mxtteth,mxteth,mxftet,mxpteth
+    Integer( Kind =  wi ), Allocatable, Public :: numteth(:),keytet(:)
+    Integer( Kind =  wi ), Allocatable, Public :: lsttet(:),listtet(:,:),legtet(:,:)
+
+    !> Tether parameters
+    Real( Kind = wp ), Allocatable, Public :: prmtet(:,:)
+
+    !> Total number of tehters
+    Integer( Kind = wi ), Public :: total
+  Contains
+    Private
+
+    Procedure, Public :: init => allocate_tethers_arrays
+    Procedure, Public :: deallocate_temp => deallocate_tethers_arrays
+    Final :: cleanup
   End Type
 
-  Public :: allocate_tethers_arrays , deallocate_tethers_arrays
   Public :: tethers_forces
 
 Contains
 
-  Subroutine allocate_tethers_arrays(tether)
+  Subroutine allocate_tethers_arrays(tether,mxtmls,mxatdm)
+    Class(tethers_type) :: tether
+    Integer( Kind = wi ), Intent( In    ) :: mxtmls,mxatdm
 
-    Type(tethers_type) , Intent( InOut )   :: tether
     Integer, Dimension( 1:6 ) :: fail
 
     fail = 0
@@ -58,21 +72,46 @@ Contains
     tether%legtet  = 0
 
     tether%prmtet  = 0.0_wp
-
   End Subroutine allocate_tethers_arrays
 
   Subroutine deallocate_tethers_arrays(tether)
+    Class(tethers_type) :: tether
 
-    Type(tethers_type) , Intent( InOut )   :: tether
-    Integer:: fail
+    Integer :: fail(1:2)
 
     fail = 0
 
-    Deallocate (tether%numteth,tether%lsttet, Stat = fail)
+    If (Allocated(tether%numteth)) Then
+      Deallocate (tether%numteth, Stat = fail(1))
+    End If
+    If (Allocated(tether%lsttet)) Then
+      Deallocate (tether%lsttet, Stat = fail(2))
+    End If
 
-    If (fail > 0) Call error(1031)
-
+    If (Any(fail > 0)) Call error(1031)
   End Subroutine deallocate_tethers_arrays
+
+  Subroutine cleanup(tether)
+    Type( tethers_type ) :: tether
+
+    If (Allocated(tether%numteth)) Then
+      Deallocate (tether%numteth)
+    End If
+
+    If (Allocated(tether%keytet)) Then
+      Deallocate (tether%keytet)
+    End If
+
+    If (Allocated(tether%lsttet)) Then
+      Deallocate (tether%lsttet)
+    End If
+    If (Allocated(tether%listtet)) Then
+      Deallocate (tether%listtet)
+    End If
+    If (Allocated(tether%legtet)) Then
+      Deallocate (tether%legtet)
+    End If
+  End Subroutine cleanup
 
   Subroutine tethers_forces(stats,tether,comm)
 

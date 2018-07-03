@@ -84,7 +84,7 @@ program dl_poly
                            rigid_bodies_str__s,xscale,rigid_bodies_tags, &
                            rigid_bodies_coms
 
-  Use tethers, Only : tethers_type, allocate_tethers_arrays, deallocate_tethers_arrays, tethers_forces
+  Use tethers, Only : tethers_type, tethers_forces
 
   Use bonds, Only : bonds_type,allocate_bonds_arrays,bonds_forces
   Use angles, Only : angles_type,allocate_angles_arrays,angles_forces
@@ -235,8 +235,7 @@ program dl_poly
     nstraj,istraj,keytrj, &
     nsdef,isdef,nsrsd,isrsd,            &
     ndump,nstep,                 &
-    atmfre,atmfrz,megatm,megfrz,        &
-    megtet
+    atmfre,atmfrz,megatm,megfrz
 
   ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
 
@@ -383,7 +382,7 @@ program dl_poly
 
   Call rigid%init(mxtmls,mxatms)
 
-  Call allocate_tethers_arrays(tether)
+  Call tether%init(mxtmls,mxatdm)
 
   Call allocate_bonds_arrays(bond)
   Call allocate_angles_arrays(angle)
@@ -443,7 +442,7 @@ program dl_poly
     keyfce,           &
     lecx,lbook,lexcl,               &
     atmfre,atmfrz,megatm,megfrz,    &
-    megtet,core_shells,pmfs,cons,thermo,met,bond,angle,   &
+    core_shells,pmfs,cons,thermo,met,bond,angle,   &
     dihedral,inversion,tether,threebody,site,vdw,tersoff,fourbody,rdf,mpole, &
     ext_field,rigid,comm)
 
@@ -536,12 +535,9 @@ program dl_poly
   ! exclusion arrays for overlapped two-body inter-like interactions
 
   If (lbook) Then
-    Call build_book_intra              &
-      (l_str,l_top,lsim,dvar,      &
-      megatm,megfrz,atmfre,atmfrz, &
-      degrot,degtra,        &
-      megtet,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether,neigh, &
-      site,mpole,rigid,comm)
+    Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre,atmfrz, &
+      degrot,degtra,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
+      neigh,site,mpole,rigid,comm)
     If (mpole%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
         mpole,comm)
@@ -557,7 +553,7 @@ program dl_poly
         inversion,neigh,rigid,comm)
     End If
   Else
-    Call report_topology(megatm,megfrz,atmfre,atmfrz,megtet,core_shells,cons, &
+    Call report_topology(megatm,megfrz,atmfre,atmfrz,core_shells,cons, &
       pmfs,bond,angle,dihedral,inversion,tether,site,rigid,comm)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
@@ -570,7 +566,7 @@ program dl_poly
 
       Call rigid%deallocate_temp()
 
-      Call deallocate_tethers_arrays(tether)
+      Call tether%deallocate_temp()
     End If
   End If
 

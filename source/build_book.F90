@@ -19,9 +19,7 @@ Module build_book
 
   Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_setup,rigid_bodies_tags, &
                            rigid_bodies_coms,rigid_bodies_widths
-
-  Use tethers, Only : tethers_type, deallocate_tethers_arrays
-
+  Use tethers, Only : tethers_type
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
@@ -33,7 +31,6 @@ Module build_book
   Use pmf, Only : pmf_type
   Use mpole, Only : mpole_type
   Use neighbours, Only : neighbours_type
-
   Use errors_warnings, Only : error,warning,info
 
   Implicit None
@@ -51,7 +48,6 @@ Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
            degrot,degtra,        &
-           megtet,                      &
            cshell,cons,pmf,bond,angle,dihedral,  &
            inversion,tether,neigh,site,mpole,rigid,comm)
 
@@ -69,8 +65,7 @@ Subroutine build_book_intra             &
 
   Logical,           Intent( In    ) :: l_str,l_top,lsim
   Real(Kind = wp),   Intent( In    ) :: dvar
-  Integer,           Intent( In    ) :: megatm,atmfre,atmfrz, &
-                                        megtet
+  Integer,           Intent( In    ) :: megatm,atmfre,atmfrz
   Integer,           Intent( InOut ) :: megfrz
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( constraints_type), Intent(Inout) :: cons
@@ -1670,9 +1665,8 @@ Subroutine build_book_intra             &
        Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,neigh%cutoff,site,rigid,comm)
      End If
 
-     Call report_topology                &
-           (megatm,megfrz,atmfre,atmfrz, &
-           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,site,rigid,comm)
+     Call report_topology(megatm,megfrz,atmfre,atmfrz, &
+           cshell,cons,pmf,bond,angle,dihedral,inversion,tether,site,rigid,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1684,7 +1678,7 @@ Subroutine build_book_intra             &
 
         Call rigid%deallocate_temp()
 
-        Call deallocate_tethers_arrays(tether)
+        Call tether%deallocate_temp()
      End If
 
   Else
@@ -1701,24 +1695,24 @@ Subroutine build_book_intra             &
 ! (pmf data updated by construction)
 
   If (cshell%megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl,&
-     cshell%listshl,cshell%mxfshl,cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
-   rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
-   rigid%oxx,rigid%oyy,rigid%ozz)
+    (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl,&
+    cshell%listshl,cshell%mxfshl,cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
+    rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+    rigid%oxx,rigid%oyy,rigid%ozz)
 
   If (cons%m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-     (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,&
-     cons%legcon,cons%lshmv_con,&
-     cons%lishp_con,cons%lashp_con,comm,&
-   rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
-   rigid%oxx,rigid%oyy,rigid%ozz)
+    (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,&
+    cons%legcon,cons%lshmv_con,&
+    cons%lishp_con,cons%lashp_con,comm,&
+    rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+    rigid%oxx,rigid%oyy,rigid%ozz)
 
   If (rigid%on .and. comm%mxnode > 1) Call pass_shared_units &
-     (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
-     rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
-     rigid%map_shared,comm,&
-   rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
-   rigid%oxx,rigid%oyy,rigid%ozz)
+    (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
+    rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
+    rigid%map_shared,comm,&
+    rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+    rigid%oxx,rigid%oyy,rigid%ozz)
 
 End Subroutine build_book_intra
 

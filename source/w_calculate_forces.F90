@@ -53,7 +53,7 @@
 
 ! Calculate tethered atom forces
 
-     If (megtet > 0) Call tethers_forces(stat,tether,comm)
+     If (tether%total > 0) Call tethers_forces(stat,tether,comm)
 
 ! Calculate bond forces
 

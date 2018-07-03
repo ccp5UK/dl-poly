@@ -81,7 +81,6 @@ Subroutine read_field                      &
            keyfce,           &
            lecx,lbook,lexcl,               &
            atmfre,atmfrz,megatm,megfrz,    &
-           megtet,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw, &
            tersoff,fourbody,rdf,mpole,ext_field,rigid,comm)
@@ -114,8 +113,7 @@ Subroutine read_field                      &
   Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
-  Integer,           Intent(   Out ) :: atmfre,atmfrz,megatm,megfrz,        &
-                                        megtet
+  Integer,           Intent(   Out ) :: atmfre,atmfrz,megatm,megfrz
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -254,7 +252,7 @@ Subroutine read_field                      &
 
   rigid%total = 0
 
-  megtet = 0
+  tether%total = 0
 
   bond%total = 0
   angle%total = 0
@@ -2213,7 +2211,7 @@ Subroutine read_field                      &
 
                  rigid%total=rigid%total+site%num_mols(itmols)*(rigid%num(itmols)-frzrgd)
 
-                 megtet=megtet+site%num_mols(itmols)*tether%numteth(itmols)
+                 tether%total=tether%total+site%num_mols(itmols)*tether%numteth(itmols)
 
                  bond%total=bond%total+site%num_mols(itmols)*bond%num(itmols)
                  angle%total=angle%total+site%num_mols(itmols)*angle%num(itmols)
@@ -4838,11 +4836,8 @@ Subroutine read_field                      &
 
 End Subroutine read_field
 
-Subroutine report_topology               &
-           (megatm,megfrz,atmfre,atmfrz, &
-           megtet,  &
-           cshell,cons,pmf, &
-           bond,angle,dihedral,inversion,tether,site,rigid,comm)
+Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
+    angle,dihedral,inversion,tether,site,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4853,8 +4848,7 @@ Subroutine report_topology               &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
-                              megtet
+  Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz
   Type( constraints_type ), Intent( In    ) :: cons
   Type( pmf_type ), Intent( In    ) :: pmf
   Type( bonds_type ), Intent( In    ) :: bond
@@ -5038,7 +5032,7 @@ Subroutine report_topology               &
   Write(banner(10),fmt2) '||  constraint bond units  | ',mgcon,'  |  F  ',mgcon-cons%megcon,'     ||'
   Write(banner(11),fmt3) '||  PMF units              | ',pmf%megpmf,'  |  P         ',frzpmf,'     ||'
   Write(banner(12),fmt2) '||  rigid body units       | ',mgrgd,'  |  F  ',mgrgd-rigid%total,'     ||'
-  Write(banner(13),fmt2) '||  tethered atom units    | ',megtet,'  |  F  ',mgfrtt,'     ||'
+  Write(banner(13),fmt2) '||  tethered atom units    | ',tether%total,'  |  F  ',mgfrtt,'     ||'
   Write(banner(14),fmt2) '||  chemical bond units    | ',bond%total,'  |  F  ',mgfrbn,'     ||'
   Write(banner(15),fmt2) '||  bond angle units       | ',angle%total,'  |  F  ',mgfran,'     ||'
   Write(banner(16),fmt2) '||  dihedral angle units   | ',dihedral%total,'  |  F  ',mgfrdh,'     ||'
