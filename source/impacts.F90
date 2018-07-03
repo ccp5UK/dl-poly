@@ -5,8 +5,7 @@ Module impacts
   Use configuration,       Only : natms,nlast,nfree,          &
                                   lfrzn,lfree,lstfre,lsi,lsa, &
                                   weight,vxx,vyy,vzz
-  Use rigid_bodies, Only : ntrgd,rgdfrz,listrgd,indrgd, &
-                                  rgdvxx,rgdvyy,rgdvzz
+  Use rigid_bodies, Only : rigid_bodies_type
   Use core_shell,   Only : core_shell_type
   Use kinetics,      Only : getvom,l_vom,chvom
 
@@ -24,7 +23,7 @@ Module impacts
   
   Contains
 
-Subroutine impact(megrgd,cshell,impa,comm)
+Subroutine impact(rigid,cshell,impa,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -35,8 +34,8 @@ Subroutine impact(megrgd,cshell,impa,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,             Intent( In    ) :: megrgd
-  Type( impact_type ), Intent( In    ) :: impa 
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( impact_type ), Intent( In    ) :: impa
   Type( core_shell_type ), Intent( In    ) :: cshell
   Type( comms_type ) , Intent( InOut ) :: comm
   Logical           :: safe = .true.
@@ -66,8 +65,8 @@ Subroutine impact(megrgd,cshell,impa,comm)
 
 ! remove centre of mass motion
 
-  If (megrgd > 0) Then
-     Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
+  If (rigid%total > 0) Then
+     Call getvom(vom,vxx,vyy,vzz,rigid,comm)
 
      Do j=1,nfree
         i=lstfre(j)
@@ -79,17 +78,17 @@ Subroutine impact(megrgd,cshell,impa,comm)
         End If
      End Do
 
-     Do irgd=1,ntrgd
-        rgdtyp=listrgd(0,irgd)
+     Do irgd=1,rigid%n_types
+        rgdtyp=rigid%list(0,irgd)
 
-        If (rgdfrz(0,rgdtyp) == 0) Then
-           rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
-           rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
-           rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
+        If (rigid%frozen(0,rgdtyp) == 0) Then
+           rigid%vxx(irgd) = rigid%vxx(irgd) - vom(1)
+           rigid%vyy(irgd) = rigid%vyy(irgd) - vom(2)
+           rigid%vzz(irgd) = rigid%vzz(irgd) - vom(3)
 
-           lrgd=listrgd(-1,irgd)
+           lrgd=rigid%list(-1,irgd)
            Do jrgd=1,lrgd
-              i=indrgd(jrgd,irgd) ! local index of particle/site
+              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
               If (i <= natms) Then
                  vxx(i) = vxx(i) - vom(1)

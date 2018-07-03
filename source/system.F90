@@ -22,7 +22,7 @@ Module system
   Use development,  Only : development_type
   Use core_shell,   Only : core_shell_type
   Use constraints,  Only : constraints_type
-  Use rigid_bodies, Only : numrgd,lstrgd
+  Use rigid_bodies, Only : rigid_bodies_type
   Use parse,        Only : tabs_2_blanks, get_word, strip_blanks, &
                                   lower_case, word_2_real
   Use netcdf_wrap,  Only : netcdf_param
@@ -627,7 +627,7 @@ Module system
 End Subroutine system_init
 
 Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
-                         dihedral,inversion,site,netcdf,comm)
+                         dihedral,inversion,site,netcdf,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -657,6 +657,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( site_type ), Intent( In    ) :: site
   Type( netcdf_param ), Intent( In    ) :: netcdf
+  Type( rigid_bodies_type ), Intent( In    ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size
@@ -1120,15 +1121,15 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
            safe=(safe .and. safel)
 
            safel=.true.
-           Do irgd=1,numrgd(itmols)
+           Do irgd=1,rigid%num(itmols)
               nrigid=nrigid+1
 
               safem=.true.
-              lrgd=lstrgd(0,nrigid)
+              lrgd=rigid%lst(0,nrigid)
               Do i=1,lrgd-1
-                 iatm=lstrgd(i,nrigid)-indatm1
+                 iatm=rigid%lst(i,nrigid)-indatm1
                  Do j=i+1,lrgd
-                    jatm=lstrgd(j,nrigid)-indatm1
+                    jatm=rigid%lst(j,nrigid)-indatm1
 
                     safex=(Abs(xm(jatm)-xm(iatm)) < hwx)
                     safey=(Abs(ym(jatm)-ym(iatm)) < hwy)
@@ -1174,7 +1175,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                  Call info(messages,2,.true.)
 
                  Do i=1,lrgd
-                   iatm=lstrgd(i,nrigid)-indatm1
+                   iatm=rigid%lst(i,nrigid)-indatm1
                    Write(message,'(2i10,3f10.1)') i,nattot+iatm,xm(iatm),ym(iatm),zm(iatm)
                    Call info(message,.true.)
                  End Do
@@ -1470,7 +1471,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                 imols < site%num_mols(itmols) ) Then
               nshels=nshels-cshell%numshl(itmols)
               nconst=nconst-cons%numcon(itmols)
-              nrigid=nrigid-numrgd(itmols)
+              nrigid=nrigid-rigid%num(itmols)
               nbonds=nbonds-bond%num(itmols)
               nangle=nangle-angle%num(itmols)
               ndihed=ndihed-dihedral%num(itmols)

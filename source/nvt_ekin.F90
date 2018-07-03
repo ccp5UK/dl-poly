@@ -1,7 +1,7 @@
 Module nvt_ekin
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gmax,gsum
-  Use setup,           Only : zero_plus
+  Use setup,           Only : zero_plus,mxatms
   Use configuration,   Only : imcon,cell,natms,nlast,nfree, &
                               lstfre,weight,                &
                               xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -10,18 +10,13 @@ Module nvt_ekin
   Use constraints,     Only : constraints_tags,apply_shake,&
                               apply_rattle,constraints_type
   Use pmf,             Only : pmf_tags,pmf_type
-  Use rigid_bodies,    Only : lashp_rgd,lishp_rgd,lshmv_rgd,mxatms,mxlrgd, &
-                              ntrgd,rgdx,rgdy,rgdz,rgdxxx,rgdyyy,rgdzzz, &
-                              rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz, &
-                              q0,q1,q2,q3,indrgd,listrgd,rgdfrz,rgdwgt, &
-                              rgdrix,rgdriy,rgdriz,mxrgd,rgdind,getrotmat, &
-                              no_squish,rigid_bodies_stress
+  Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use numerics,        Only : images
   Use errors_warnings, Only : error,info
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-Use thermostat, Only : adjust_timestep
-Use core_shell, Only : core_shell_type
+  Use thermostat, Only : adjust_timestep
+  Use core_shell, Only : core_shell_type
   Implicit None
 
   Private
@@ -58,9 +53,9 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
     Type( stats_type), Intent( InOut ) :: stat
-Type( core_shell_type), Intent( InOut ) :: cshell
+    Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
-Type( pmf_type ), Intent( InOut ) :: pmf
+    Type( pmf_type ), Intent( InOut ) :: pmf
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -268,7 +263,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              chit,                              &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cshell,cons,pmf,stat,tmr,comm)
+             strcom,vircom,cshell,cons,pmf,stat,rigid,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -293,12 +288,12 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                           strknf(1:9),strknt(1:9),engrot
 
-
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
     Type( stats_type), Intent( InOut ) :: stat
-Type( core_shell_type), Intent( InOut ) :: cshell
+    Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
-Type( pmf_type ), Intent( InOut ) :: pmf
+    Type( pmf_type ), Intent( InOut ) :: pmf
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -342,17 +337,31 @@ Type( pmf_type ), Intent( InOut ) :: pmf
 Call pmf%allocate_work()
 Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
-    Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), &
-                                                                    Stat=fail( 7))
+    Allocate (ggx(1:rigid%max_list*rigid%max_rigid), &
+      ggy(1:rigid%max_list*rigid%max_rigid), &
+      ggz(1:rigid%max_list*rigid%max_rigid), Stat=fail( 7))
     Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 8))
     Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 9))
     Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(10))
-    Allocate (q0t(1:mxrgd),q1t(1:mxrgd),q2t(1:mxrgd),q3t(1:mxrgd),  Stat=fail(11))
-    Allocate (rgdxxt(1:mxrgd),rgdyyt(1:mxrgd),rgdzzt(1:mxrgd),      Stat=fail(12))
-    Allocate (rgdvxt(1:mxrgd),rgdvyt(1:mxrgd),rgdvzt(1:mxrgd),      Stat=fail(13))
-    Allocate (rgdoxt(1:mxrgd),rgdoyt(1:mxrgd),rgdozt(1:mxrgd),      Stat=fail(14))
-    Allocate (rgdfxx(1:mxrgd),rgdfyy(1:mxrgd),rgdfzz(1:mxrgd),      Stat=fail(15))
-    Allocate (rgdtxx(1:mxrgd),rgdtyy(1:mxrgd),rgdtzz(1:mxrgd),      Stat=fail(16))
+    Allocate (q0t(1:rigid%max_rigid), &
+      q1t(1:rigid%max_rigid), &
+      q2t(1:rigid%max_rigid), &
+      q3t(1:rigid%max_rigid),  Stat=fail(11))
+    Allocate (rgdxxt(1:rigid%max_rigid), &
+      rgdyyt(1:rigid%max_rigid), &
+      rgdzzt(1:rigid%max_rigid),      Stat=fail(12))
+    Allocate (rgdvxt(1:rigid%max_rigid), &
+      rgdvyt(1:rigid%max_rigid), &
+      rgdvzt(1:rigid%max_rigid),      Stat=fail(13))
+    Allocate (rgdoxt(1:rigid%max_rigid), &
+      rgdoyt(1:rigid%max_rigid), &
+      rgdozt(1:rigid%max_rigid),      Stat=fail(14))
+    Allocate (rgdfxx(1:rigid%max_rigid), &
+      rgdfyy(1:rigid%max_rigid), &
+      rgdfzz(1:rigid%max_rigid),      Stat=fail(15))
+    Allocate (rgdtxx(1:rigid%max_rigid), &
+      rgdtyy(1:rigid%max_rigid), &
+      rgdtzz(1:rigid%max_rigid),      Stat=fail(16))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'nvt_e1 allocation failure'
        Call error(0,message)
@@ -398,23 +407,23 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! Get the RB particles vectors wrt the RB's COM
 
     krgd=0
-    Do irgd=1,ntrgd
-       rgdtyp=listrgd(0,irgd)
+    Do irgd=1,rigid%n_types
+       rgdtyp=rigid%list(0,irgd)
 
   ! For all good RBs
 
-       lrgd=listrgd(-1,irgd)
-       If (rgdfrz(0,rgdtyp) < lrgd) Then
+       lrgd=rigid%list(-1,irgd)
+       If (rigid%frozen(0,rgdtyp) < lrgd) Then
           Do jrgd=1,lrgd
              krgd=krgd+1
 
-             i=indrgd(jrgd,irgd) ! local index of particle/site
+             i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
   ! COM distances
 
-             ggx(krgd)=xxx(i)-rgdxxx(irgd)
-             ggy(krgd)=yyy(i)-rgdyyy(irgd)
-             ggz(krgd)=zzz(i)-rgdzzz(irgd)
+             ggx(krgd)=xxx(i)-rigid%xxx(irgd)
+             ggy(krgd)=yyy(i)-rigid%yyy(irgd)
+             ggz(krgd)=zzz(i)-rigid%zzz(irgd)
           End Do
        End If
     End Do
@@ -431,13 +440,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! Get RB force and torque
 
     krgd=0
-    Do irgd=1,ntrgd
-       rgdtyp=listrgd(0,irgd)
+    Do irgd=1,rigid%n_types
+       rgdtyp=rigid%list(0,irgd)
 
   ! For all good RBs
 
-       lrgd=listrgd(-1,irgd)
-       If (rgdfrz(0,rgdtyp) < lrgd) Then ! Not that it matters
+       lrgd=rigid%list(-1,irgd)
+       If (rigid%frozen(0,rgdtyp) < lrgd) Then ! Not that it matters
 
   ! calculate COM force and torque
 
@@ -446,11 +455,11 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           Do jrgd=1,lrgd
              krgd=krgd+1
 
-             i=indrgd(jrgd,irgd) ! local index of particle/site
+             i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
   ! If the RB has a frozen particle then no net force
 
-             If (rgdfrz(0,rgdtyp) == 0) Then
+             If (rigid%frozen(0,rgdtyp) == 0) Then
                 fmx=fmx+fxx(i)
                 fmy=fmy+fyy(i)
                 fmz=fmz+fzz(i)
@@ -464,9 +473,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! If the RB has 2+ frozen particles (ill=1) the net torque
   ! must align along the axis of rotation
 
-          If (rgdfrz(0,rgdtyp) > 1) Then
-             i1=indrgd(rgdind(1,rgdtyp),irgd)
-             i2=indrgd(rgdind(2,rgdtyp),irgd)
+          If (rigid%frozen(0,rgdtyp) > 1) Then
+             i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
+             i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
              x(1)=xxx(i1)-xxx(i2)
              y(1)=yyy(i1)-yyy(i2)
@@ -482,7 +491,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! current rotation matrix
 
-          Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
+          Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
   ! calculate torque in principal frame
 
@@ -533,23 +542,23 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           fzt(i) = fzz(i)
        End Do
 
-       Do irgd=1,ntrgd
-          q0t(irgd)=q0(irgd)
-          q1t(irgd)=q1(irgd)
-          q2t(irgd)=q2(irgd)
-          q3t(irgd)=q3(irgd)
+       Do irgd=1,rigid%n_types
+          q0t(irgd)=rigid%q0(irgd)
+          q1t(irgd)=rigid%q1(irgd)
+          q2t(irgd)=rigid%q2(irgd)
+          q3t(irgd)=rigid%q3(irgd)
 
-          rgdxxt(irgd) = rgdxxx(irgd)
-          rgdyyt(irgd) = rgdyyy(irgd)
-          rgdzzt(irgd) = rgdzzz(irgd)
+          rgdxxt(irgd) = rigid%xxx(irgd)
+          rgdyyt(irgd) = rigid%yyy(irgd)
+          rgdzzt(irgd) = rigid%zzz(irgd)
 
-          rgdvxt(irgd) = rgdvxx(irgd)
-          rgdvyt(irgd) = rgdvyy(irgd)
-          rgdvzt(irgd) = rgdvzz(irgd)
+          rgdvxt(irgd) = rigid%vxx(irgd)
+          rgdvyt(irgd) = rigid%vyy(irgd)
+          rgdvzt(irgd) = rigid%vzz(irgd)
 
-          rgdoxt(irgd) = rgdoxx(irgd)
-          rgdoyt(irgd) = rgdoyy(irgd)
-          rgdozt(irgd) = rgdozz(irgd)
+          rgdoxt(irgd) = rigid%oxx(irgd)
+          rgdoyt(irgd) = rigid%oyy(irgd)
+          rgdozt(irgd) = rigid%ozz(irgd)
        End Do
 
   100  Continue
@@ -573,8 +582,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
        Call nvt_e1_scl &
              (1,hstep,fxt,fyt,fzt,vxx,vyy,vzz,          &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
-             rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,engke,engrot,comm)
+             chit,engke,engrot,rigid,comm)
 
   ! update velocity and position of FPs
 
@@ -604,13 +612,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! update velocity and position of RBs
 
        krgd=0
-       Do irgd=1,ntrgd
-          rgdtyp=listrgd(0,irgd)
+       Do irgd=1,rigid%n_types
+          rgdtyp=rigid%list(0,irgd)
 
   ! For all good RBs
 
-          lrgd=listrgd(-1,irgd)
-          If (rgdfrz(0,rgdtyp) < lrgd) Then
+          lrgd=rigid%list(-1,irgd)
+          If (rigid%frozen(0,rgdtyp) < lrgd) Then
 
   ! recover COM force and torque in principal frame
 
@@ -631,9 +639,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! recover quaternion momenta
 
-             opx=rgdoxx(irgd)*rgdrix(1,rgdtyp)
-             opy=rgdoyy(irgd)*rgdriy(1,rgdtyp)
-             opz=rgdozz(irgd)*rgdriz(1,rgdtyp)
+             opx=rigid%oxx(irgd)*rigid%rix(1,rgdtyp)
+             opy=rigid%oyy(irgd)*rigid%riy(1,rgdtyp)
+             opz=rigid%ozz(irgd)*rigid%riz(1,rgdtyp)
 
              p0=2.0_wp*(-q1t(irgd)*opx-q2t(irgd)*opy-q3t(irgd)*opz)
              p1=2.0_wp*( q0t(irgd)*opx-q3t(irgd)*opy+q2t(irgd)*opz)
@@ -651,53 +659,53 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! and get new rotation matrix
 
              Call no_squish                                             &
-             (tstep,rgdrix(2,rgdtyp),rgdriy(2,rgdtyp),rgdriz(2,rgdtyp), &
-             q0(irgd),q1(irgd),q2(irgd),q3(irgd),p0,p1,p2,p3)
-             Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
+             (tstep,rigid%rix(2,rgdtyp),rigid%riy(2,rgdtyp),rigid%riz(2,rgdtyp), &
+             rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),p0,p1,p2,p3)
+             Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
   ! update RB angular & COM velocities to half step
 
-             opx=0.5_wp*(-q1(irgd)*p0+q0(irgd)*p1+q3(irgd)*p2-q2(irgd)*p3)
-             opy=0.5_wp*(-q2(irgd)*p0-q3(irgd)*p1+q0(irgd)*p2+q1(irgd)*p3)
-             opz=0.5_wp*(-q3(irgd)*p0+q2(irgd)*p1-q1(irgd)*p2+q0(irgd)*p3)
+             opx=0.5_wp*(-rigid%q1(irgd)*p0+rigid%q0(irgd)*p1+rigid%q3(irgd)*p2-rigid%q2(irgd)*p3)
+             opy=0.5_wp*(-rigid%q2(irgd)*p0-rigid%q3(irgd)*p1+rigid%q0(irgd)*p2+rigid%q1(irgd)*p3)
+             opz=0.5_wp*(-rigid%q3(irgd)*p0+rigid%q2(irgd)*p1-rigid%q1(irgd)*p2+rigid%q0(irgd)*p3)
 
-             rgdoxx(irgd)=opx*rgdrix(2,rgdtyp)
-             rgdoyy(irgd)=opy*rgdriy(2,rgdtyp)
-             rgdozz(irgd)=opz*rgdriz(2,rgdtyp)
+             rigid%oxx(irgd)=opx*rigid%rix(2,rgdtyp)
+             rigid%oyy(irgd)=opy*rigid%riy(2,rgdtyp)
+             rigid%ozz(irgd)=opz*rigid%riz(2,rgdtyp)
 
-             tmp=hstep/rgdwgt(0,rgdtyp)
-             rgdvxx(irgd)=rgdvxx(irgd)+tmp*fmx
-             rgdvyy(irgd)=rgdvyy(irgd)+tmp*fmy
-             rgdvzz(irgd)=rgdvzz(irgd)+tmp*fmz
+             tmp=hstep/rigid%weight(0,rgdtyp)
+             rigid%vxx(irgd)=rigid%vxx(irgd)+tmp*fmx
+             rigid%vyy(irgd)=rigid%vyy(irgd)+tmp*fmy
+             rigid%vzz(irgd)=rigid%vzz(irgd)+tmp*fmz
 
   ! update RB COM to full step
 
-             rgdxxx(irgd)=rgdxxt(irgd)+tstep*rgdvxx(irgd)
-             rgdyyy(irgd)=rgdyyt(irgd)+tstep*rgdvyy(irgd)
-             rgdzzz(irgd)=rgdzzt(irgd)+tstep*rgdvzz(irgd)
+             rigid%xxx(irgd)=rgdxxt(irgd)+tstep*rigid%vxx(irgd)
+             rigid%yyy(irgd)=rgdyyt(irgd)+tstep*rigid%vyy(irgd)
+             rigid%zzz(irgd)=rgdzzt(irgd)+tstep*rigid%vzz(irgd)
 
   ! update RB members positions and halfstep velocities
 
              Do jrgd=1,lrgd
-                i=indrgd(jrgd,irgd) ! local index of particle/site
+                i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                 If (i <= natms) Then
-                   If (rgdfrz(jrgd,rgdtyp) == 0) Then
-                      x(1)=rgdx(jrgd,rgdtyp)
-                      y(1)=rgdy(jrgd,rgdtyp)
-                      z(1)=rgdz(jrgd,rgdtyp)
+                   If (rigid%frozen(jrgd,rgdtyp) == 0) Then
+                      x(1)=rigid%x(jrgd,rgdtyp)
+                      y(1)=rigid%y(jrgd,rgdtyp)
+                      z(1)=rigid%z(jrgd,rgdtyp)
 
   ! new atomic positions
 
-                      xxx(i)=rot(1)*x(1)+rot(2)*y(1)+rot(3)*z(1) + rgdxxx(irgd)
-                      yyy(i)=rot(4)*x(1)+rot(5)*y(1)+rot(6)*z(1) + rgdyyy(irgd)
-                      zzz(i)=rot(7)*x(1)+rot(8)*y(1)+rot(9)*z(1) + rgdzzz(irgd)
+                      xxx(i)=rot(1)*x(1)+rot(2)*y(1)+rot(3)*z(1) + rigid%xxx(irgd)
+                      yyy(i)=rot(4)*x(1)+rot(5)*y(1)+rot(6)*z(1) + rigid%yyy(irgd)
+                      zzz(i)=rot(7)*x(1)+rot(8)*y(1)+rot(9)*z(1) + rigid%zzz(irgd)
 
   ! new atomic velocities in body frame
 
-                      vpx=rgdoyy(irgd)*z(1)-rgdozz(irgd)*y(1)
-                      vpy=rgdozz(irgd)*x(1)-rgdoxx(irgd)*z(1)
-                      vpz=rgdoxx(irgd)*y(1)-rgdoyy(irgd)*x(1)
+                      vpx=rigid%oyy(irgd)*z(1)-rigid%ozz(irgd)*y(1)
+                      vpy=rigid%ozz(irgd)*x(1)-rigid%oxx(irgd)*z(1)
+                      vpz=rigid%oxx(irgd)*y(1)-rigid%oyy(irgd)*x(1)
 
   ! DD bound positions
 
@@ -713,9 +721,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! new atomic velocities in lab frame
 
-                      vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rgdvxx(irgd)
-                      vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rgdvyy(irgd)
-                      vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rgdvzz(irgd)
+                      vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                      vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                      vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                    End If
                 End If
              End Do
@@ -739,19 +747,19 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
                 vzz(i) = vzt(i)
              End Do
 
-             Do irgd=1,ntrgd
-                q0(irgd)=q0t(irgd)
-                q1(irgd)=q1t(irgd)
-                q2(irgd)=q2t(irgd)
-                q3(irgd)=q3t(irgd)
+             Do irgd=1,rigid%n_types
+                rigid%q0(irgd)=q0t(irgd)
+                rigid%q1(irgd)=q1t(irgd)
+                rigid%q2(irgd)=q2t(irgd)
+                rigid%q3(irgd)=q3t(irgd)
 
-                rgdvxx(irgd) = rgdvxt(irgd)
-                rgdvyy(irgd) = rgdvyt(irgd)
-                rgdvzz(irgd) = rgdvzt(irgd)
+                rigid%vxx(irgd) = rgdvxt(irgd)
+                rigid%vyy(irgd) = rgdvyt(irgd)
+                rigid%vzz(irgd) = rgdvzt(irgd)
 
-                rgdoxx(irgd) = rgdoxt(irgd)
-                rgdoyy(irgd) = rgdoyt(irgd)
-                rgdozz(irgd) = rgdozt(irgd)
+                rigid%oxx(irgd) = rgdoxt(irgd)
+                rigid%oyy(irgd) = rgdoyt(irgd)
+                rigid%ozz(irgd) = rgdozt(irgd)
              End Do
 
   ! restart vv1
@@ -787,19 +795,19 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
   ! Get RB COM stress and virial
 
-       Call rigid_bodies_stress(strcom,ggx,ggy,ggz,comm)
+       Call rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,comm)
        vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   ! update velocity of RBs
 
        krgd=0
-       Do irgd=1,ntrgd
-          rgdtyp=listrgd(0,irgd)
+       Do irgd=1,rigid%n_types
+          rgdtyp=rigid%list(0,irgd)
 
   ! For all good RBs
 
-          lrgd=listrgd(-1,irgd)
-          If (rgdfrz(0,rgdtyp) < lrgd) Then ! Not that it matters
+          lrgd=rigid%list(-1,irgd)
+          If (rigid%frozen(0,rgdtyp) < lrgd) Then ! Not that it matters
 
   ! recover COM force and torque in principal frame
 
@@ -813,21 +821,21 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
   ! calculate quaternion torques
 
-             qt0=2.0_wp*(-q1(irgd)*trx-q2(irgd)*try-q3(irgd)*trz)
-             qt1=2.0_wp*( q0(irgd)*trx-q3(irgd)*try+q2(irgd)*trz)
-             qt2=2.0_wp*( q3(irgd)*trx+q0(irgd)*try-q1(irgd)*trz)
-             qt3=2.0_wp*(-q2(irgd)*trx+q1(irgd)*try+q0(irgd)*trz)
+             qt0=2.0_wp*(-rigid%q1(irgd)*trx-rigid%q2(irgd)*try-rigid%q3(irgd)*trz)
+             qt1=2.0_wp*( rigid%q0(irgd)*trx-rigid%q3(irgd)*try+rigid%q2(irgd)*trz)
+             qt2=2.0_wp*( rigid%q3(irgd)*trx+rigid%q0(irgd)*try-rigid%q1(irgd)*trz)
+             qt3=2.0_wp*(-rigid%q2(irgd)*trx+rigid%q1(irgd)*try+rigid%q0(irgd)*trz)
 
   ! recover quaternion momenta at half time step
 
-             opx=rgdoxx(irgd)*rgdrix(1,rgdtyp)
-             opy=rgdoyy(irgd)*rgdriy(1,rgdtyp)
-             opz=rgdozz(irgd)*rgdriz(1,rgdtyp)
+             opx=rigid%oxx(irgd)*rigid%rix(1,rgdtyp)
+             opy=rigid%oyy(irgd)*rigid%riy(1,rgdtyp)
+             opz=rigid%ozz(irgd)*rigid%riz(1,rgdtyp)
 
-             p0=2.0_wp*(-q1(irgd)*opx-q2(irgd)*opy-q3(irgd)*opz)
-             p1=2.0_wp*( q0(irgd)*opx-q3(irgd)*opy+q2(irgd)*opz)
-             p2=2.0_wp*( q3(irgd)*opx+q0(irgd)*opy-q1(irgd)*opz)
-             p3=2.0_wp*(-q2(irgd)*opx+q1(irgd)*opy+q0(irgd)*opz)
+             p0=2.0_wp*(-rigid%q1(irgd)*opx-rigid%q2(irgd)*opy-rigid%q3(irgd)*opz)
+             p1=2.0_wp*( rigid%q0(irgd)*opx-rigid%q3(irgd)*opy+rigid%q2(irgd)*opz)
+             p2=2.0_wp*( rigid%q3(irgd)*opx+rigid%q0(irgd)*opy-rigid%q1(irgd)*opz)
+             p3=2.0_wp*(-rigid%q2(irgd)*opx+rigid%q1(irgd)*opy+rigid%q0(irgd)*opz)
 
   ! update quaternion momenta to full step
 
@@ -838,45 +846,45 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
   ! update RB angular & COM velocities to full step
 
-             opx=0.5_wp*(-q1(irgd)*p0+q0(irgd)*p1+q3(irgd)*p2-q2(irgd)*p3)
-             opy=0.5_wp*(-q2(irgd)*p0-q3(irgd)*p1+q0(irgd)*p2+q1(irgd)*p3)
-             opz=0.5_wp*(-q3(irgd)*p0+q2(irgd)*p1-q1(irgd)*p2+q0(irgd)*p3)
+             opx=0.5_wp*(-rigid%q1(irgd)*p0+rigid%q0(irgd)*p1+rigid%q3(irgd)*p2-rigid%q2(irgd)*p3)
+             opy=0.5_wp*(-rigid%q2(irgd)*p0-rigid%q3(irgd)*p1+rigid%q0(irgd)*p2+rigid%q1(irgd)*p3)
+             opz=0.5_wp*(-rigid%q3(irgd)*p0+rigid%q2(irgd)*p1-rigid%q1(irgd)*p2+rigid%q0(irgd)*p3)
 
-             rgdoxx(irgd)=opx*rgdrix(2,rgdtyp)
-             rgdoyy(irgd)=opy*rgdriy(2,rgdtyp)
-             rgdozz(irgd)=opz*rgdriz(2,rgdtyp)
+             rigid%oxx(irgd)=opx*rigid%rix(2,rgdtyp)
+             rigid%oyy(irgd)=opy*rigid%riy(2,rgdtyp)
+             rigid%ozz(irgd)=opz*rigid%riz(2,rgdtyp)
 
-             tmp=hstep/rgdwgt(0,rgdtyp)
-             rgdvxx(irgd)=rgdvxx(irgd)+tmp*fmx
-             rgdvyy(irgd)=rgdvyy(irgd)+tmp*fmy
-             rgdvzz(irgd)=rgdvzz(irgd)+tmp*fmz
+             tmp=hstep/rigid%weight(0,rgdtyp)
+             rigid%vxx(irgd)=rigid%vxx(irgd)+tmp*fmx
+             rigid%vyy(irgd)=rigid%vyy(irgd)+tmp*fmy
+             rigid%vzz(irgd)=rigid%vzz(irgd)+tmp*fmz
 
   ! current rotation matrix
 
-             Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
+             Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
   ! update RB members velocities
 
              Do jrgd=1,lrgd
-                If (rgdfrz(jrgd,rgdtyp) == 0) Then
-                   i=indrgd(jrgd,irgd) ! local index of particle/site
+                If (rigid%frozen(jrgd,rgdtyp) == 0) Then
+                   i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                    If (i <= natms) Then
-                      x(1)=rgdx(jrgd,rgdtyp)
-                      y(1)=rgdy(jrgd,rgdtyp)
-                      z(1)=rgdz(jrgd,rgdtyp)
+                      x(1)=rigid%x(jrgd,rgdtyp)
+                      y(1)=rigid%y(jrgd,rgdtyp)
+                      z(1)=rigid%z(jrgd,rgdtyp)
 
   ! new atomic velocities in body frame
 
-                      vpx=rgdoyy(irgd)*z(1)-rgdozz(irgd)*y(1)
-                      vpy=rgdozz(irgd)*x(1)-rgdoxx(irgd)*z(1)
-                      vpz=rgdoxx(irgd)*y(1)-rgdoyy(irgd)*x(1)
+                      vpx=rigid%oyy(irgd)*z(1)-rigid%ozz(irgd)*y(1)
+                      vpy=rigid%ozz(irgd)*x(1)-rigid%oxx(irgd)*z(1)
+                      vpz=rigid%oxx(irgd)*y(1)-rigid%oyy(irgd)*x(1)
 
   ! new atomic velocities in lab frame
 
-                      vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rgdvxx(irgd)
-                      vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rgdvyy(irgd)
-                      vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rgdvzz(irgd)
+                      vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                      vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                      vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                    End If
                 End If
              End Do
@@ -889,13 +897,12 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
        Call nvt_e1_scl &
              (1,hstep,fxx,fyy,fzz,vxx,vyy,vzz,          &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
-             rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,engke,engrot,comm)
+             chit,engke,engrot,rigid,comm)
 
   ! kinetic contributions to stress tensor
 
        Call kinstresf(vxx,vyy,vzz,strknf,comm)
-       Call kinstrest(rgdvxx,rgdvyy,rgdvzz,strknt,comm)
+       Call kinstrest(rigid,strknt,comm)
 
        strkin=strknf+strknt
 
@@ -990,8 +997,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   Subroutine nvt_e1_scl &
              (isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,        &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
-             rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz, &
-             chit,engke,engrot,comm)
+             chit,engke,engrot,rigid,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1007,10 +1013,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ),                        Intent( In    ) :: tstep
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: fxx,fyy,fzz
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
-    Real( Kind = wp ), Dimension( 1:mxrgd  ), Intent( In    ) :: rgdfxx,rgdfyy,rgdfzz, &
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Real( Kind = wp ), Dimension( 1:rigid%max_rigid  ), Intent( In    ) :: rgdfxx,rgdfyy,rgdfzz, &
                                                                  rgdtxx,rgdtyy,rgdtzz
-    Real( Kind = wp ), Dimension( 1:mxrgd  ), Intent( InOut ) :: rgdvxx,rgdvyy,rgdvzz, &
-                                                                 rgdoxx,rgdoyy,rgdozz
     Real( Kind = wp ),                        Intent(   Out ) :: chit,engke,engrot
     Type( comms_type ), Intent ( InOut ) :: comm
 
@@ -1033,22 +1038,34 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! RBs
 
-    Do irgd=1,ntrgd
-       rgdtyp=listrgd(0,irgd)
+    Do irgd=1,rigid%n_types
+       rgdtyp=rigid%list(0,irgd)
 
   ! For all good RBs
 
-       lrgd=listrgd(-1,irgd)
-       If (rgdfrz(0,rgdtyp) < lrgd) Then
-          tmp=Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
+       lrgd=rigid%list(-1,irgd)
+       If (rigid%frozen(0,rgdtyp) < lrgd) Then
+          tmp=Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
 
-          If (rgdfrz(0,rgdtyp) == 0) Then
-             engke = engke+tmp*rgdwgt(0,rgdtyp)*(rgdvxx(irgd)**2+rgdvyy(irgd)**2+rgdvzz(irgd)**2)
-             vdotf = vdotf+tmp*(rgdvxx(irgd)*rgdfxx(irgd)+rgdvyy(irgd)*rgdfyy(irgd)+rgdvzz(irgd)*rgdfzz(irgd))
+          If (rigid%frozen(0,rgdtyp) == 0) Then
+             engke = engke + &
+               tmp*rigid%weight(0,rgdtyp)*(rigid%vxx(irgd)**2 + &
+               rigid%vyy(irgd)**2 + &
+               rigid%vzz(irgd)**2)
+             vdotf = vdotf + &
+               tmp*(rigid%vxx(irgd)*rgdfxx(irgd) + &
+               rigid%vyy(irgd)*rgdfyy(irgd) + &
+               rigid%vzz(irgd)*rgdfzz(irgd))
           End If
 
-          engrot= engrot+tmp*(rgdrix(1,rgdtyp)*rgdoxx(irgd)**2+rgdriy(1,rgdtyp)*rgdoyy(irgd)**2+rgdriz(1,rgdtyp)*rgdozz(irgd)**2)
-          odott = odott+tmp*(rgdoxx(irgd)*rgdtxx(irgd)+rgdoyy(irgd)*rgdtyy(irgd)+rgdozz(irgd)*rgdtzz(irgd))
+          engrot= engrot + &
+            tmp*(rigid%rix(1,rgdtyp)*rigid%oxx(irgd)**2 + &
+            rigid%riy(1,rgdtyp)*rigid%oyy(irgd)**2 + &
+            rigid%riz(1,rgdtyp)*rigid%ozz(irgd)**2)
+          odott = odott + &
+            tmp*(rigid%oxx(irgd)*rgdtxx(irgd) + &
+            rigid%oyy(irgd)*rgdtyy(irgd) + &
+            rigid%ozz(irgd)*rgdtzz(irgd))
        End If
     End Do
 
@@ -1086,14 +1103,14 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
        vzz(i)=vzz(i)*scale
     End Do
 
-    Do irgd=1,ntrgd
-       rgdvxx(irgd)=rgdvxx(irgd)*scale
-       rgdvyy(irgd)=rgdvyy(irgd)*scale
-       rgdvzz(irgd)=rgdvzz(irgd)*scale
+    Do irgd=1,rigid%n_types
+       rigid%vxx(irgd)=rigid%vxx(irgd)*scale
+       rigid%vyy(irgd)=rigid%vyy(irgd)*scale
+       rigid%vzz(irgd)=rigid%vzz(irgd)*scale
 
-       rgdoxx(irgd)=rgdoxx(irgd)*scale
-       rgdoyy(irgd)=rgdoyy(irgd)*scale
-       rgdozz(irgd)=rgdozz(irgd)*scale
+       rigid%oxx(irgd)=rigid%oxx(irgd)*scale
+       rigid%oyy(irgd)=rigid%oyy(irgd)*scale
+       rigid%ozz(irgd)=rigid%ozz(irgd)*scale
     End Do
 
   ! thermostat kinetic and rotational energy

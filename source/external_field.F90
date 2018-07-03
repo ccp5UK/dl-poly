@@ -16,7 +16,7 @@ Module external_field
                              lfrzn,lstfre,weight,chge,           &
                              xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
   Use kinetics, Only : getcom_mol
-  Use rigid_bodies
+  Use rigid_bodies, Only : rigid_bodies_type
   Use errors_warnings, Only : error
   use numerics, Only : local_index,images
   Use rdfs, Only : rdf_type,usr_compute,usr_collect
@@ -106,7 +106,8 @@ Contains
     End If
   End subroutine cleanup
 
-  Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,rdf,ext_field,comm)
+  Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,rdf, &
+      ext_field,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -128,22 +129,20 @@ Contains
   Type( core_shell_type ), Intent( Inout ) :: cshell
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( external_field_type ), Intent( InOut ) :: ext_field
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( Inout ) :: comm
 
   Logical, Save     :: newjob = .true.
 
   Logical           :: safe,l1,l2
   Integer           :: i,j,ia,ib,ic,id,fail(1:2), &
-                       irgd,jrgd,lrgd,rgdtyp,megrgd
+                       irgd,jrgd,lrgd,rgdtyp
   Real( Kind = wp ) :: gamma,rrr,rz,zdif,vxt,vyt,vzt,tmp,rtmp(1:2), &
                        x(1:1),y(1:1),z(1:1),cmm(0:3),cm2(0:3)
 
   Integer,           Allocatable :: lstopt(:,:)
   Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
   Character( Len = 256 ) :: message
-! Recover megrgd
-
-  megrgd=rgdmeg
 
 ! energy and virial accumulators
 
@@ -183,7 +182,7 @@ Contains
 ! shear rate=ext_field%param(1) angstrom per ps for non-frozen
 ! and non-weightless atoms at Abs(z) > ext_field%param(2)
 
-     If (megrgd > 0) Then
+     If (rigid%total > 0) Then
 
 ! FPs
         Do j=1,nfree
@@ -195,24 +194,24 @@ Contains
 
 ! RBs
 
-        Do irgd=1,ntrgd
-           rgdtyp=listrgd(0,irgd)
+        Do irgd=1,rigid%n_types
+           rgdtyp=rigid%list(0,irgd)
 
 ! For all good RBs
 
-           lrgd=listrgd(-1,irgd)
-           If (rgdfrz(0,rgdtyp) == 0) Then
-              x=rgdxxx(irgd) ; y=rgdyyy(irgd) ; z=rgdzzz(irgd)
+           lrgd=rigid%list(-1,irgd)
+           If (rigid%frozen(0,rgdtyp) == 0) Then
+              x=rigid%xxx(irgd) ; y=rigid%yyy(irgd) ; z=rigid%zzz(irgd)
               Call images(imcon,cell,1,x,y,z)
 
               rz=z(1)
               If (Abs(rz) > ext_field%param(2)) Then
                  tmp=0.5_wp*Sign(ext_field%param(1),rz)
-                 vxt=tmp-rgdvxx(irgd)
+                 vxt=tmp-rigid%vxx(irgd)
 
-                 rgdvxx(irgd)=tmp
+                 rigid%vxx(irgd)=tmp
                  Do jrgd=1,lrgd
-                    i=indrgd(jrgd,irgd) ! local index of particle/site
+                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                     If (i <= natms) vxx(i)=vxx(i)+vxt
                  End Do
@@ -669,7 +668,7 @@ Contains
      stats%virfld = rtmp(2)
 End Subroutine external_field_apply
 
-Subroutine external_field_correct(engfld,ext_field,comm)
+Subroutine external_field_correct(engfld,ext_field,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -685,15 +684,12 @@ Subroutine external_field_correct(engfld,ext_field,comm)
 
   Real( Kind = wp ), Intent(   Out ) :: engfld
   Type( external_field_type ), Intent( In    ) :: ext_field
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
 
-  Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp,megrgd
+  Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp
   Real( Kind = wp ) :: rz,vxt,tmp,rtmp(1:2), &
                        x(1:1),y(1:1),z(1:1)
-
-! Recover megrgd
-
-  megrgd=rgdmeg
 
   If (ext_field%key == FIELD_SHEAR_CONTINUOUS) Then
 
@@ -704,7 +700,7 @@ Subroutine external_field_correct(engfld,ext_field,comm)
 ! shear rate=ext_field%param(1) angstrom per ps for non-frozen
 ! and non-weightless atoms at Abs(z) > ext_field%param(2)
 
-     If (megrgd > 0) Then
+     If (rigid%total > 0) Then
 
 ! FPs
         Do j=1,nfree
@@ -716,24 +712,24 @@ Subroutine external_field_correct(engfld,ext_field,comm)
 
 ! RBs
 
-        Do irgd=1,ntrgd
-           rgdtyp=listrgd(0,irgd)
+        Do irgd=1,rigid%n_types
+           rgdtyp=rigid%list(0,irgd)
 
 ! For all good RBs
 
-           lrgd=listrgd(-1,irgd)
-           If (rgdfrz(0,rgdtyp) == 0) Then
-              x=rgdxxx(irgd) ; y=rgdyyy(irgd) ; z=rgdzzz(irgd)
+           lrgd=rigid%list(-1,irgd)
+           If (rigid%frozen(0,rgdtyp) == 0) Then
+              x=rigid%xxx(irgd) ; y=rigid%yyy(irgd) ; z=rigid%zzz(irgd)
               Call images(imcon,cell,1,x,y,z)
 
               rz=z(1)
               If (Abs(rz) > ext_field%param(2)) Then
                  tmp=0.5_wp*Sign(ext_field%param(1),rz)
-                 vxt=tmp-rgdvxx(irgd)
+                 vxt=tmp-rigid%vxx(irgd)
 
-                 rgdvxx(irgd)=tmp
+                 rigid%vxx(irgd)=tmp
                  Do jrgd=1,lrgd
-                    i=indrgd(jrgd,irgd) ! local index of particle/site
+                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                     If (i <= natms) vxx(i)=vxx(i)+vxt
                  End Do

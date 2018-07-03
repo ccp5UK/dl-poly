@@ -200,7 +200,6 @@ Module setup
     mxatyp,mxtmls,                  &
     mxspl,mxspl1,mxspl2,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1, &
     mxlshp,mxproc,     &
-    mxtrgd,mxrgd,mxlrgd,mxfrgd,        &
     mxgele,                                        &
     mxgrid,                                 &
     mxtana,mxgana,              &

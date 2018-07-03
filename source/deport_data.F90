@@ -1,46 +1,27 @@
-Module deport_data 
-
+Module deport_data
   Use kinds,            Only : wp
   Use comms,            Only : comms_type,gcheck,wp_mpi, Deport_tag, &
                                Export_tag, MetLdExp_tag, ExpMplRM_tag, &
                                PassUnit_tag,gsend,gwait,girecv
-
   Use setup
   Use domains
-
   Use configuration
-
-  Use rigid_bodies, Only : ntrgd,listrgd,legrgd, &
-                                  q0,q1,q2,q3,          &
-                                  rgdvxx,rgdvyy,rgdvzz, &
-                                  rgdoxx,rgdoyy,rgdozz, &
-                                  legrgd,lshmv_rgd,lishp_rgd,lashp_rgd
-
+  Use rigid_bodies, Only : rigid_bodies_type
   Use tethers,      Only : tethers_type
-
   Use bonds,        Only : bonds_type
   Use angles,       Only : angles_type
   Use dihedrals,    Only : dihedrals_type
   Use inversions, Only : inversions_type
-
   Use statistics, Only : stats_type
-
   Use minimise,     Only : minimise_type
   Use langevin,     Only : fxl,fyl,fzl
-
   Use ewald,               Only : ewald_type
   Use mpole ,              Only : mpole_type,POLARISATION_CHARMM
-
   Use msd, Only : msd_type
   Use greenkubo,    Only : greenkubo_type
-
   Use kim,    Only : kimim,idhalo
-
-
   Use core_shell,   Only : core_shell_type 
-
   Use constraints,  Only : constraints_type 
-
   Use errors_warnings, Only : error, warning
   Use mpoles_container, Only : rotate_mpoles, rotate_mpoles_d
   Use numerics, Only : local_index
@@ -55,9 +36,8 @@ Module deport_data
 
   Contains
 
-
 Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,&
-    green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
+    green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -91,6 +71,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( minimise_type ), Intent( InOut ) :: minimise
   Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -114,7 +95,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   Character( Len = 256 ) :: message
   fail=0
   Allocate (buffer(1:mxbfdp),                   Stat=fail(1))
-  Allocate (lrgd(-1:Max(mxlrgd,mxrgd)),         Stat=fail(2))
+  Allocate (lrgd(-1:Max(rigid%max_list,rigid%max_rigid)),         Stat=fail(2))
   Allocate (ind_on(0:mxatms),ind_off(0:mxatms), Stat=fail(3))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'deport_atomic_data allocation failure 1'
@@ -218,7 +199,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! Initialise RB data set for preventing duplication
 
-  lrgd(-1:ntrgd)=0
+  lrgd(-1:rigid%n_types)=0
 
 ! LOOP OVER ALL PARTICLES ON THIS NODE
 
@@ -566,35 +547,35 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! pack RB details
 
-!           jj=legrgd(0,i)
+!           jj=rigid%legend(0,i)
 !           If (jj > 0) Then
 !              l=12
 !              Do ll=1,jj
-!                 If (imove+mxlrgd+l <= iblock) Then
-!                    kk=legrgd(ll,i)
+!                 If (imove+rigid%max_list+l <= iblock) Then
+!                    kk=rigid%legend(ll,i)
 !
-!                    Do k=-1,listrgd(-1,kk)
+!                    Do k=-1,rigid%list(-1,kk)
 !                       imove=imove+1
-!                       buffer(imove)=Real(listrgd(k,kk),wp)
+!                       buffer(imove)=Real(rigid%list(k,kk),wp)
 !                    End Do
 !
-!                    buffer(imove+1)=q0(kk)
-!                    buffer(imove+2)=q1(kk)
-!                    buffer(imove+3)=q2(kk)
-!                    buffer(imove+4)=q3(kk)
+!                    buffer(imove+1)=rigid%q0(kk)
+!                    buffer(imove+2)=rigid%q1(kk)
+!                    buffer(imove+3)=rigid%q2(kk)
+!                    buffer(imove+4)=rigid%q3(kk)
 !                    imove=imove+4
 !
-!                    buffer(imove+1)=rgdvxx(kk)
-!                    buffer(imove+2)=rgdvyy(kk)
-!                    buffer(imove+3)=rgdvzz(kk)
+!                    buffer(imove+1)=rigid%vxx(kk)
+!                    buffer(imove+2)=rigid%vyy(kk)
+!                    buffer(imove+3)=rigid%vzz(kk)
 !                    imove=imove+3
 !
-!                    buffer(imove+1)=rgdoxx(kk)
-!                    buffer(imove+2)=rgdoyy(kk)
-!                    buffer(imove+3)=rgdozz(kk)
+!                    buffer(imove+1)=rigid%oxx(kk)
+!                    buffer(imove+2)=rigid%oyy(kk)
+!                    buffer(imove+3)=rigid%ozz(kk)
 !                    imove=imove+3
 !                 Else
-!                    imove=imove+mxlrgd+l
+!                    imove=imove+rigid%max_list+l
 !                    safe=.false.
 !                 End If
 !              End Do
@@ -607,46 +588,46 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 !              safe=.false.
 !           End If
 
-           jj=legrgd(0,i)
+           jj=rigid%legend(0,i)
            If (jj > 0) Then
               l=12
               Do ll=1,jj
-                 If (imove+mxlrgd+l <= iblock) Then
-                    kk=legrgd(ll,i)
+                 If (imove+rigid%max_list+l <= iblock) Then
+                    kk=rigid%legend(ll,i)
 
                     Do k=-1,1
                        imove=imove+1
-                       buffer(imove)=Real(listrgd(k,kk),wp)
+                       buffer(imove)=Real(rigid%list(k,kk),wp)
                     End Do
 
 ! Bypass if the data has already been sent
 
                     If (lrgd(kk) == 0) Then
-                       Do k=2,listrgd(-1,kk)
+                       Do k=2,rigid%list(-1,kk)
                           imove=imove+1
-                          buffer(imove)=Real(listrgd(k,kk),wp)
+                          buffer(imove)=Real(rigid%list(k,kk),wp)
                        End Do
 
-                       buffer(imove+1)=q0(kk)
-                       buffer(imove+2)=q1(kk)
-                       buffer(imove+3)=q2(kk)
-                       buffer(imove+4)=q3(kk)
+                       buffer(imove+1)=rigid%q0(kk)
+                       buffer(imove+2)=rigid%q1(kk)
+                       buffer(imove+3)=rigid%q2(kk)
+                       buffer(imove+4)=rigid%q3(kk)
                        imove=imove+4
 
-                       buffer(imove+1)=rgdvxx(kk)
-                       buffer(imove+2)=rgdvyy(kk)
-                       buffer(imove+3)=rgdvzz(kk)
+                       buffer(imove+1)=rigid%vxx(kk)
+                       buffer(imove+2)=rigid%vyy(kk)
+                       buffer(imove+3)=rigid%vzz(kk)
                        imove=imove+3
 
-                       buffer(imove+1)=rgdoxx(kk)
-                       buffer(imove+2)=rgdoyy(kk)
-                       buffer(imove+3)=rgdozz(kk)
+                       buffer(imove+1)=rigid%oxx(kk)
+                       buffer(imove+2)=rigid%oyy(kk)
+                       buffer(imove+3)=rigid%ozz(kk)
                        imove=imove+3
 
                        lrgd(kk)=1
                     End If
                  Else
-                    imove=imove+mxlrgd+l
+                    imove=imove+rigid%max_list+l
                     safe=.false.
                  End If
               End Do
@@ -901,7 +882,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
         cons%legcon(:,keep)=cons%legcon(:,i)
         pmf%legpmf(:,keep)=pmf%legpmf(:,i)
 
-        legrgd(:,keep)=legrgd(:,i)
+        rigid%legend(:,keep)=rigid%legend(:,i)
 
         tether%legtet(:,keep)=tether%legtet(:,i)
 
@@ -1119,7 +1100,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
         jconst=cons%ntcons
         jpmf  =pmf%ntpmf
 
-        jrigid=ntrgd
+        jrigid=rigid%n_types
 
         jteths=tether%ntteth
 
@@ -1271,9 +1252,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! Initialise RB data set for preventing duplication
 
-        lrgd(-1:mxlrgd)=0
+        lrgd(-1:rigid%max_list)=0
 
-!        legrgd(:,newatm) = 0
+!        rigid%legend(:,newatm) = 0
 !        Do While (buffer(kmove+1) > 0.0_wp .and. safe)
 !           lrgd(-1)=Nint(buffer(kmove+1))
 !           kmove=kmove+1
@@ -1286,11 +1267,11 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 !
 !           krigid=0
 !           check=.true.
-!           Do While (check .and. krigid < Min(jrigid,mxrgd))
+!           Do While (check .and. krigid < Min(jrigid,rigid%max_rigid))
 !              krigid=krigid+1
-!              check=( lrgd( 0) == listrgd( 0,krigid) .and. & ! Type
-!                      lrgd(-1) == listrgd(-1,krigid) .and. & ! Size
-!                      lrgd( 1) == listrgd( 1,krigid) )       ! Global ID of just the first
+!              check=( lrgd( 0) == rigid%list( 0,krigid) .and. & ! Type
+!                      lrgd(-1) == rigid%list(-1,krigid) .and. & ! Size
+!                      lrgd( 1) == rigid%list( 1,krigid) )       ! Global ID of just the first
 !!                                                            ! member as RBs don't intersect
 !              check=.not.check
 !           End Do
@@ -1300,27 +1281,27 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 !           If (check) Then
 !              jrigid=jrigid+1
 !
-!              If (jrigid <= mxrgd) Then
+!              If (jrigid <= rigid%max_rigid) Then
 !                 Do k=-1,lrgd(-1)
-!                    listrgd(k,jrigid)=lrgd(k)
+!                    rigid%list(k,jrigid)=lrgd(k)
 !                 End Do
 !
-!                 Call tag_legend(safe1,newatm,jrigid,legrgd,mxfrgd)
+!                 Call tag_legend(safe1,newatm,jrigid,rigid%legend,rigid%max_frozen)
 !
-!                 q0(jrigid)=buffer(kmove+1)
-!                 q1(jrigid)=buffer(kmove+2)
-!                 q2(jrigid)=buffer(kmove+3)
-!                 q3(jrigid)=buffer(kmove+4)
+!                 rigid%q0(jrigid)=buffer(kmove+1)
+!                 rigid%q1(jrigid)=buffer(kmove+2)
+!                 rigid%q2(jrigid)=buffer(kmove+3)
+!                 rigid%q3(jrigid)=buffer(kmove+4)
 !                 kmove=kmove+4
 !
-!                 rgdvxx(jrigid)=buffer(kmove+1)
-!                 rgdvyy(jrigid)=buffer(kmove+2)
-!                 rgdvzz(jrigid)=buffer(kmove+3)
+!                 rigid%vxx(jrigid)=buffer(kmove+1)
+!                 rigid%vyy(jrigid)=buffer(kmove+2)
+!                 rigid%vzz(jrigid)=buffer(kmove+3)
 !                 kmove=kmove+3
 !
-!                 rgdoxx(jrigid)=buffer(kmove+1)
-!                 rgdoyy(jrigid)=buffer(kmove+2)
-!                 rgdozz(jrigid)=buffer(kmove+3)
+!                 rigid%oxx(jrigid)=buffer(kmove+1)
+!                 rigid%oyy(jrigid)=buffer(kmove+2)
+!                 rigid%ozz(jrigid)=buffer(kmove+3)
 !                 kmove=kmove+3
 !              Else
 !                 safe=.false.
@@ -1328,12 +1309,12 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 !           Else
 !              l=10
 !              kmove=kmove+l ! Compensate for the 'l' extra unread buffers
-!              Call tag_legend(safe1,newatm,krigid,legrgd,mxfrgd)
+!              Call tag_legend(safe1,newatm,krigid,rigid%legend,rigid%max_frozen)
 !           End If
 !        End Do
 !        kmove=kmove+1
 
-        legrgd(:,newatm) = 0
+        rigid%legend(:,newatm) = 0
         Do While (buffer(kmove+1) > 0.0_wp .and. safe)
            lrgd(-1)=Nint(buffer(kmove+1))
            kmove=kmove+1
@@ -1346,11 +1327,11 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
            krigid=0
            check=.true.
-           Do While (check .and. krigid < Min(jrigid,mxrgd))
+           Do While (check .and. krigid < Min(jrigid,rigid%max_rigid))
               krigid=krigid+1
-              check=( lrgd( 0) == listrgd( 0,krigid) .and. & ! Type
-                      lrgd(-1) == listrgd(-1,krigid) .and. & ! Size
-                      lrgd( 1) == listrgd( 1,krigid) )       ! Global ID of just the first
+              check=( lrgd( 0) == rigid%list( 0,krigid) .and. & ! Type
+                      lrgd(-1) == rigid%list(-1,krigid) .and. & ! Size
+                      lrgd( 1) == rigid%list( 1,krigid) )       ! Global ID of just the first
 !                                                            ! member as RBs don't intersect
               check=.not.check
            End Do
@@ -1365,27 +1346,27 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
               jrigid=jrigid+1
 
-              If (jrigid <= mxrgd) Then
+              If (jrigid <= rigid%max_rigid) Then
                  Do k=-1,lrgd(-1)
-                    listrgd(k,jrigid)=lrgd(k)
+                    rigid%list(k,jrigid)=lrgd(k)
                  End Do
 
-                 Call tag_legend(safe1,newatm,jrigid,legrgd,mxfrgd)
+                 Call tag_legend(safe1,newatm,jrigid,rigid%legend,rigid%max_frozen)
 
-                 q0(jrigid)=buffer(kmove+1)
-                 q1(jrigid)=buffer(kmove+2)
-                 q2(jrigid)=buffer(kmove+3)
-                 q3(jrigid)=buffer(kmove+4)
+                 rigid%q0(jrigid)=buffer(kmove+1)
+                 rigid%q1(jrigid)=buffer(kmove+2)
+                 rigid%q2(jrigid)=buffer(kmove+3)
+                 rigid%q3(jrigid)=buffer(kmove+4)
                  kmove=kmove+4
 
-                 rgdvxx(jrigid)=buffer(kmove+1)
-                 rgdvyy(jrigid)=buffer(kmove+2)
-                 rgdvzz(jrigid)=buffer(kmove+3)
+                 rigid%vxx(jrigid)=buffer(kmove+1)
+                 rigid%vyy(jrigid)=buffer(kmove+2)
+                 rigid%vzz(jrigid)=buffer(kmove+3)
                  kmove=kmove+3
 
-                 rgdoxx(jrigid)=buffer(kmove+1)
-                 rgdoyy(jrigid)=buffer(kmove+2)
-                 rgdozz(jrigid)=buffer(kmove+3)
+                 rigid%oxx(jrigid)=buffer(kmove+1)
+                 rigid%oyy(jrigid)=buffer(kmove+2)
+                 rigid%ozz(jrigid)=buffer(kmove+3)
                  kmove=kmove+3
               Else
                  safe=.false.
@@ -1398,7 +1379,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
                  l=10                 ! Compensate for the 'l' extra unread buffers
                  kmove=kmove+l+lrgd(-1)-2
               End If
-              Call tag_legend(safe1,newatm,krigid,legrgd,mxfrgd)
+              Call tag_legend(safe1,newatm,krigid,rigid%legend,rigid%max_frozen)
            End If
         End Do
         kmove=kmove+1
@@ -1637,7 +1618,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
         cons%ntcons=jconst
         pmf%ntpmf =jpmf
 
-        ntrgd =jrigid
+        rigid%n_types =jrigid
 
         tether%ntteth=jteths
 
@@ -2502,9 +2483,9 @@ Subroutine mpoles_rotmat_set_halo(mpole,comm)
 End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles       &
-           (dvar,cutoff_extended,lbook,lmsd,megatm,m_rgd,megtet,cshell,cons, &
+           (dvar,cutoff_extended,lbook,lmsd,megatm,megtet,cshell,cons, &
            pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
-           neigh,site,minimise,mpole,comm)
+           neigh,site,minimise,mpole,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2521,8 +2502,7 @@ Subroutine relocate_particles       &
   Real( Kind = wp ), Intent( In    ) :: dvar,cutoff_extended
   Logical,           Intent( In    ) :: lbook
   Logical,           Intent( In    ) :: lmsd
-  Integer,           Intent( In    ) :: megatm,              &
-                                        m_rgd,megtet
+  Integer,           Intent( In    ) :: megatm,megtet
   Type( pmf_type), Intent( InOut ) :: pmf
   Type( core_shell_type), Intent( InOut ) :: cshell
   Type( constraints_type), Intent( InOut ) :: cons
@@ -2539,6 +2519,7 @@ Subroutine relocate_particles       &
   Type( site_type ), Intent( In    ) :: site
   Type( minimise_type ), Intent( InOut ) :: minimise
   Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2655,23 +2636,23 @@ Subroutine relocate_particles       &
 ! exchange atom data in -/+ x directions
 
      Call deport_atomic_data(-1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
      Call deport_atomic_data( 1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
 
 ! exchange atom data in -/+ y directions
 
      Call deport_atomic_data(-2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
      Call deport_atomic_data( 2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
 
 ! exchange atom data in -/+ z directions
 
      Call deport_atomic_data(-3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
      Call deport_atomic_data( 3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
 
 ! check system for loss of atoms
 
@@ -2712,7 +2693,7 @@ Subroutine relocate_particles       &
         If (cshell%megshl > 0) safe(1)=(cshell%ntshl  <= cshell%mxshl )
         If (cons%m_con  > 0) safe(2)=(cons%ntcons <= cons%mxcons)
         If (pmf%megpmf > 0) safe(3)=(pmf%ntpmf  <= pmf%mxpmf )
-        If (m_rgd  > 0) safe(4)=(ntrgd  <= mxrgd )
+        If (rigid%on) safe(4)=(rigid%n_types  <= rigid%max_rigid )
         If (megtet > 0) safe(5)=(tether%ntteth <= tether%mxteth)
         If (bond%total > 0) safe(6)=(bond%n_types <= bond%max_bonds)
         If (angle%total > 0) safe(7)=(angle%n_types <= angle%max_angles)
@@ -2725,7 +2706,7 @@ Subroutine relocate_particles       &
            itmp(1)=cshell%ntshl  ; jtmp(1)=cshell%mxshl
            itmp(2)=cons%ntcons ; jtmp(2)=cons%mxcons
            itmp(3)=pmf%ntpmf  ; jtmp(3)=pmf%mxpmf
-           itmp(4)=ntrgd  ; jtmp(4)=mxrgd
+           itmp(4)=rigid%n_types  ; jtmp(4)=rigid%max_rigid
            itmp(5)=tether%ntteth ; jtmp(5)=tether%mxteth
            itmp(6)=bond%n_types ; jtmp(6)=bond%max_bonds
            itmp(7)=angle%n_types ; jtmp(7)=angle%max_angles
@@ -2760,18 +2741,23 @@ Subroutine relocate_particles       &
         If (cshell%megshl > 0) Call pass_shared_units &
      (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl, cshell%listshl,cshell%mxfshl,&
      cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
-     q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
+     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+     rigid%oxx,rigid%oyy,rigid%ozz)
 
         If (cons%m_con  > 0) Call pass_shared_units &
      (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,cons%legcon,&
      cons%lshmv_con,cons%lishp_con,cons%lashp_con,comm,&
-     q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz)
+     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+     rigid%oxx,rigid%oyy,rigid%ozz)
 
         If (pmf%megpmf > 0) Call pmf_units_set(pmf,comm)
 
-        If (m_rgd  > 0) Call pass_shared_units &
-     (mxrgd, Lbound(listrgd,Dim=1),Ubound(listrgd,Dim=1),ntrgd, listrgd,mxfrgd,legrgd,lshmv_rgd,lishp_rgd,lashp_rgd,comm,&
-   q0,q1,q2,q3,rgdvxx,rgdvyy,rgdvzz,rgdoxx,rgdoyy,rgdozz   )
+        If (rigid%on) Call pass_shared_units &
+     (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
+     rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
+     rigid%map_shared,comm,&
+   rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
+   rigid%oxx,rigid%oyy,rigid%ozz   )
 
 ! Compress the rest of the bookkeeping arrays if needed
 

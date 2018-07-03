@@ -61,9 +61,9 @@
 
 ! Calculate kinetic tensor and energy at restart as it may not exists later
 
-  If (megrgd > 0) Then
+  If (rigid%total > 0) Then
      Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
-     Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
+     Call kinstrest(rigid,stat%strknt,comm)
 
      stat%strkin=stat%strknf+stat%strknt
   Else
@@ -135,12 +135,14 @@
 ! exclusion arrays for overlapped two-body inter-like interactions
 
            If (lbook) Then
-              Call build_book_intra     &
-           (l_str,l_top,lsim,dvar,      &
-           megatm,megfrz,atmfre,atmfrz, &
-           megrgd,degrot,degtra,        &
-           megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,mpole,comm)
-              If (lexcl) Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,comm)
+             Call build_book_intra     &
+               (l_str,l_top,lsim,dvar,      &
+               megatm,megfrz,atmfre,atmfrz, &
+               degrot,degtra,        &
+               megtet,cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,site,mpole,rigid,comm)
+             If (lexcl) Then
+               Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,rigid,comm)
+             End If
            End If
 
 ! Accumulate RDFs if needed (nstep->nstph)
@@ -187,17 +189,17 @@
 ! Calculate kinetic stress and energy if available
 
            If (levcfg > 0 .and. levcfg < 3) Then
-              If (megrgd > 0) Then
-                 Call rigid_bodies_quench(comm)
+              If (rigid%total > 0) Then
+                 Call rigid_bodies_quench(rigid,comm)
 
                  Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
-                 Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stat%strknt,comm)
+                 Call kinstrest(rigid,stat%strknt,comm)
 
                  stat%strkin=stat%strknf+stat%strknt
 
-                 stat%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+                 stat%engrot=getknr(rigid,comm)
                  If (levcfg == 2) Then
-                    Call rigid_bodies_str_ss(stat%strcom,comm)
+                    Call rigid_bodies_str_ss(stat%strcom,rigid,comm)
                     stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
                  End If
               Else
@@ -331,8 +333,8 @@
            (levcfg,keyres,      &
            nstep,nstrun, &
            atmfre,atmfrz,            &
-           megrgd,degtra,degrot,     &
-           degfre,degshl,stat%engrot,site%dof_site,cshell,stat,cons,pmf,thermo,minimise,comm)
+           degtra,degrot,     &
+           degfre,degshl,stat%engrot,site%dof_site,cshell,stat,cons,pmf,thermo,minimise,rigid,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

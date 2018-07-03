@@ -1,7 +1,7 @@
 Module build_excl
 ! SETUP MODULES
 
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gcheck,gmax
   Use setup
 
@@ -14,7 +14,7 @@ Module build_excl
   Use core_shell, Only : core_shell_type
 
 
-  Use rigid_bodies
+  Use rigid_bodies, Only : rigid_bodies_type
 
   Use bonds, Only : bonds_type
   Use angles, Only : angles_type
@@ -23,6 +23,7 @@ Module build_excl
   Use numerics, Only : local_index,shellsort
   Use constraints, Only : constraints_type
   Use neighbours, Only : neighbours_type
+  Use errors_warnings, Only : error,warning,info
 
   Implicit None
 
@@ -31,7 +32,7 @@ Module build_excl
 
 Contains
 
-Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,comm)
+Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -55,6 +56,7 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
   Type( inversions_type ), Intent( In    ) :: inversion
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( core_shell_type ), Intent( InOut ) :: cshell
+  Type( rigid_bodies_type ), Intent( In    ) :: rigid
   Type( comms_type ),  Intent( InOut ) :: comm
 
   Logical :: safe
@@ -66,10 +68,12 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
   Integer, Dimension( : , : ), Allocatable :: irgd,irgd0,jrgd,jrgd0
   Character ( Len = 256 )  ::  message
 
-  If (mxrgd > 0) Then
+  If (rigid%max_rigid > 0) Then
      fail=0
-     Allocate (irgd(1:mxlrgd,1:mxrgd),irgd0(1:mxlrgd,1:mxrgd), Stat=fail(1))
-     Allocate (jrgd(1:mxlrgd,1:mxrgd),jrgd0(1:mxlrgd,1:mxrgd), Stat=fail(2))
+     Allocate (irgd(1:rigid%max_list,1:rigid%max_rigid), &
+       irgd0(1:rigid%max_list,1:rigid%max_rigid), Stat=fail(1))
+     Allocate (jrgd(1:rigid%max_list,1:rigid%max_rigid), &
+       jrgd0(1:rigid%max_list,1:rigid%max_rigid), Stat=fail(2))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'build_excl_intra allocation failure'
         Call error(0,message)
@@ -101,18 +105,18 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
 
 ! exclude sites on basis of RBs
 
-  Do i=1,ntrgd
-     Do j=1,listrgd(-1,i)
-        irgd(j,i)=listrgd(j,i)
-        irgd0(j,i)=local_index(listrgd(j,i),nlast,lsi,lsa)
+  Do i=1,rigid%n_types
+     Do j=1,rigid%list(-1,i)
+        irgd(j,i)=rigid%list(j,i)
+        irgd0(j,i)=local_index(rigid%list(j,i),nlast,lsi,lsa)
         If (irgd0(j,i) > natms) irgd0(j,i)=0
      End Do
 
 ! add atoms to exclusion list
 
-     Do j=1,listrgd(-1,i)
+     Do j=1,rigid%list(-1,i)
         If (irgd0(j,i) > 0) Then
-           Do k=1,listrgd(-1,i)
+           Do k=1,rigid%list(-1,i)
               If (k /= j) Call add_exclusion(safe,irgd0(j,i),irgd(k,i),ibig,neigh%list_excl)
            End Do
         End If
@@ -370,10 +374,10 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
 
 ! exclude sites on basis of RBs to core-shell units
 
-     Do j=1,ntrgd1
-        Do k=1,listrgd(-1,j)
-           irgd(k,j)=listrgd(k,j)
-           irgd0(k,j)=local_index(listrgd(k,j),nlast,lsi,lsa)
+     Do j=1,rigid%n_types_book
+        Do k=1,rigid%list(-1,j)
+           irgd(k,j)=rigid%list(k,j)
+           irgd0(k,j)=local_index(rigid%list(k,j),nlast,lsi,lsa)
            If (irgd0(k,j) > natms) irgd0(k,j)=0
         End Do
 
@@ -387,7 +391,7 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
 
         If (lecx) Then
            Do kk=1,cshell%ntshl2
-              Do k=1,listrgd(-1,j)
+              Do k=1,rigid%list(-1,j)
                  If (irgd(k,j) == cshell%listshl(1,kk)) Then
                     jrgd(k,j)=cshell%listshl(2,kk)
                     jrgd0(k,j)=local_index(jrgd(k,j),nlast,lsi,lsa)
@@ -401,9 +405,9 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
            End Do
         End If
 
-        Do k=1,listrgd(-1,j)
+        Do k=1,rigid%list(-1,j)
            If (irgd(k,j) == ia) Then
-              Do l=1,listrgd(-1,j)
+              Do l=1,rigid%list(-1,j)
                  If (l /= k) Then
                     If (ib0 > 0) Then
                        Call add_exclusion(safe,ib0,irgd(l,j),ibig,neigh%list_excl)
@@ -416,7 +420,7 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
            End If
 
 !           If (irgd(k,j) == ib) Then
-!              Do l=1,listrgd(-1,j)
+!              Do l=1,rigid%list(-1,j)
 !                 If (l /= k) Then
 !                    If (ia0 > 0) Then
 !                       Call add_exclusion(safe,ia0,irgd(l,j),ibig,neigh%list_excl)
@@ -1181,7 +1185,7 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
      If (j > 0) Call shellsort(j,neigh%list_excl(1:j,i))
   End Do
 
-  If (mxrgd > 0) Then
+  If (rigid%max_rigid > 0) Then
      Deallocate (irgd,irgd0, Stat=fail(1))
      Deallocate (jrgd,jrgd0, Stat=fail(2))
      If (Any(fail > 0)) Then

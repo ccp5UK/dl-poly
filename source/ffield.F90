@@ -1,5 +1,5 @@
 Module ffield
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
   Use comms, Only : comms_type
   Use setup
   Use kim,   Only : kimim,rkim,kim_cutoff
@@ -19,7 +19,7 @@ Module ffield
   Use core_shell, Only : core_shell_type,SHELL_ADIABATIC, SHELL_RELAXED
   Use mpole, Only : mpole_type,read_mpoles,POLARISATION_DEFAULT,POLARISATION_CHARMM
 
-  Use rigid_bodies
+  Use rigid_bodies, Only : rigid_bodies_type
 
   Use tethers, Only : tethers_type
 
@@ -81,11 +81,10 @@ Subroutine read_field                      &
            keyfce,           &
            lecx,lbook,lexcl,               &
            atmfre,atmfrz,megatm,megfrz,    &
-           megrgd,    &
            megtet,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw, &
-           tersoff,fourbody,rdf,mpole,ext_field,comm)
+           tersoff,fourbody,rdf,mpole,ext_field,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -116,7 +115,6 @@ Subroutine read_field                      &
 
   Logical,           Intent(   Out ) :: lbook,lexcl
   Integer,           Intent(   Out ) :: atmfre,atmfrz,megatm,megfrz,        &
-                                        megrgd,        &
                                         megtet
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( pmf_type ), Intent( InOut ) :: pmf
@@ -136,6 +134,7 @@ Subroutine read_field                      &
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpole
   Type( external_field_type ), Intent( InOut ) :: ext_field
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -253,7 +252,7 @@ Subroutine read_field                      &
   cons%megcon = 0
   pmf%megpmf = 0
 
-  megrgd = 0
+  rigid%total = 0
 
   megtet = 0
 
@@ -971,7 +970,7 @@ Subroutine read_field                      &
 
                  If (.not.l_rgd) Call error(625)
                  l_rgd=.false.
-                 m_rgd=1
+                 rigid%on=.true.
 
                  lbook=.true.
                  lexcl=.true.
@@ -979,7 +978,7 @@ Subroutine read_field                      &
                  Call get_word(record,word)
                  If (word(1:5) == 'units' .or. word(1:3) == 'bod') Call get_word(record,word)
                  ntmp=Nint(word_2_real(word))
-                 numrgd(itmols)=numrgd(itmols)+ntmp
+                 rigid%num(itmols)=rigid%num(itmols)+ntmp
 
                  Write(message,'(a,9x,i10)') 'number of rigid bodies', ntmp
                  Call info(message,.true.)
@@ -991,9 +990,9 @@ Subroutine read_field                      &
                  End If
 
 
-                 Do irgd=1,numrgd(itmols)
+                 Do irgd=1,rigid%num(itmols)
                     nrigid=nrigid+1
-                    If (nrigid > mxtrgd) Call error(630)
+                    If (nrigid > rigid%max_type) Call error(630)
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -1005,7 +1004,7 @@ Subroutine read_field                      &
 ! read RB size and indices
 
                     lrgd=Nint(word_2_real(word))
-                    If (lrgd < 2 .or. lrgd > mxlrgd) Call error(632)
+                    If (lrgd < 2 .or. lrgd > rigid%max_list) Call error(632)
 
                     Do jrgd=1,lrgd
                        If (Mod(jrgd,16) == 0) Then
@@ -1020,30 +1019,30 @@ Subroutine read_field                      &
                        End If
 
                        iatm1=Nint(word_2_real(word))
-                       lstrgd(jrgd,nrigid)=iatm1
+                       rigid%lst(jrgd,nrigid)=iatm1
 
                        isite1 = nsite - site%num_site(itmols) + iatm1
 
 ! test for frozen and weightless atoms
 
-                       rgdfrz(jrgd,nrigid)=site%freeze_site(isite1)
-                       rgdwgt(jrgd,nrigid)=site%weight_site(isite1)
+                       rigid%frozen(jrgd,nrigid)=site%freeze_site(isite1)
+                       rigid%weight(jrgd,nrigid)=site%weight_site(isite1)
                     End Do
-                    lstrgd(0,nrigid)=lrgd
-                    rgdfrz(0,nrigid)=Sum(rgdfrz(1:lrgd,nrigid))
-                    If (rgdfrz(0,nrigid) /= 0) Then
-                       If (rgdfrz(0,nrigid) == lrgd) frzrgd=frzrgd+1
+                    rigid%lst(0,nrigid)=lrgd
+                    rigid%frozen(0,nrigid)=Sum(rigid%frozen(1:lrgd,nrigid))
+                    If (rigid%frozen(0,nrigid) /= 0) Then
+                       If (rigid%frozen(0,nrigid) == lrgd) frzrgd=frzrgd+1
                        Do jrgd=1,lrgd
-                          rgdwg1(jrgd,nrigid)=Real(rgdfrz(jrgd,nrigid),wp)
+                          rigid%weightless(jrgd,nrigid)=Real(rigid%frozen(jrgd,nrigid),wp)
                        End Do
                        Do jrgd=1,lrgd
-                          rgdwgt(0,nrigid)=rgdwgt(0,nrigid) + &
-                                           Real(1-rgdfrz(jrgd,nrigid),wp)*rgdwgt(jrgd,nrigid)
+                          rigid%weight(0,nrigid)=rigid%weight(0,nrigid) + &
+                                           Real(1-rigid%frozen(jrgd,nrigid),wp)*rigid%weight(jrgd,nrigid)
                        End Do
-                       rgdwg1(0,nrigid)=Sum(rgdwg1(1:lrgd,nrigid))
+                       rigid%weightless(0,nrigid)=Sum(rigid%weightless(1:lrgd,nrigid))
                     Else
-                       rgdwgt(0,nrigid)=Sum(rgdwgt(1:lrgd,nrigid))
-                       rgdwg1(0:lrgd,nrigid)=rgdwgt(0:lrgd,nrigid)
+                       rigid%weight(0,nrigid)=Sum(rigid%weight(1:lrgd,nrigid))
+                       rigid%weightless(0:lrgd,nrigid)=rigid%weight(0:lrgd,nrigid)
                     End If
 
 ! print RB unit
@@ -1052,7 +1051,7 @@ Subroutine read_field                      &
                       rwidth = lrgd+1
                       Write(rfmt,'(a,i0,a)') '(26x,',rwidth,'i10)'
 
-                      If (rgdfrz(0,nrigid) /= 0) Then
+                      If (rigid%frozen(0,nrigid) /= 0) Then
                         Write(message,'(2x,i10,2x,a)') irgd, '*frozen*'
                       Else
                         Write(message,'(2x,i10)') irgd
@@ -1060,43 +1059,43 @@ Subroutine read_field                      &
                       Call info(message,.true.)
 
                       Do iter = 1, nrigid
-                        Write(message,rfmt) lstrgd(0:lrgd,iter)
+                        Write(message,rfmt) rigid%lst(0:lrgd,iter)
                         Call info(message,.true.)
                       End Do
 
 ! test for weightless RB
 
-                       If (rgdwg1(0,nrigid) < 1.0e-6_wp) Call error(634)
+                       If (rigid%weightless(0,nrigid) < 1.0e-6_wp) Call error(634)
 
 ! catch unidentified entry
 
-                       If (Any(lstrgd(1:lrgd,nrigid) < 1) .or. &
-                           Any(lstrgd(1:lrgd,nrigid) > site%num_site(itmols))) Then
+                       If (Any(rigid%lst(1:lrgd,nrigid) < 1) .or. &
+                           Any(rigid%lst(1:lrgd,nrigid) > site%num_site(itmols))) Then
                          Call error(27)
                        End If
 
 ! test for frozen RB
 !
-!                       If (rgdfrz(0,nrigid) > 0) Call error(636)
+!                       If (rigid%frozen(0,nrigid) > 0) Call error(636)
                     End If
 
 ! test for mistyped RB unit
 
                     Do jrgd=1,lrgd
                        Do krgd=jrgd+1,lrgd
-                          If (lstrgd(krgd,nrigid) == lstrgd(jrgd,nrigid)) Call error(638)
+                          If (rigid%lst(krgd,nrigid) == rigid%lst(jrgd,nrigid)) Call error(638)
                        End Do
                     End Do
                  End Do
 
 ! Check for duplicate or joined RB entries
 
-                 Do irgd=nrigid-numrgd(itmols)+1,nrigid
-                    lrgd=lstrgd(0,irgd)
+                 Do irgd=nrigid-rigid%num(itmols)+1,nrigid
+                    lrgd=rigid%lst(0,irgd)
                     Do jrgd=irgd+1,nrigid
-                       krgd=lstrgd(0,jrgd)
+                       krgd=rigid%lst(0,jrgd)
                        Do jsite=1,krgd
-                          If (Any(lstrgd(1:lrgd,irgd) == lstrgd(jsite,jrgd))) Then
+                          If (Any(rigid%lst(1:lrgd,irgd) == rigid%lst(jsite,jrgd))) Then
                               Call warning(400,Real(irgd,wp),Real(jrgd,wp),0.0_wp)
                               Call error(620)
                           End If
@@ -2212,7 +2211,7 @@ Subroutine read_field                      &
                  cons%megcon=cons%megcon+site%num_mols(itmols)*(cons%numcon(itmols)-frzcon)
                  pmf%megpmf=pmf%megpmf+site%num_mols(itmols)*pmf%numpmf(itmols)
 
-                 megrgd=megrgd+site%num_mols(itmols)*(numrgd(itmols)-frzrgd)
+                 rigid%total=rigid%total+site%num_mols(itmols)*(rigid%num(itmols)-frzrgd)
 
                  megtet=megtet+site%num_mols(itmols)*tether%numteth(itmols)
 
@@ -3098,16 +3097,16 @@ Subroutine read_field                      &
                     End If
                  End Do
 
-                 Do irgd=1,numrgd(itmols)
+                 Do irgd=1,rigid%num(itmols)
                     nrigid=nrigid+1
 
-                    lrgd=lstrgd(0,nrigid)
-                    If (Any(lstrgd(1:lrgd,nrigid) == ja)) Then
+                    lrgd=rigid%lst(0,nrigid)
+                    If (Any(rigid%lst(1:lrgd,nrigid) == ja)) Then
                        Call warning(302,Real(ishls,wp),Real(irgd,wp),Real(itmols,wp))
                        Call error(99)
                     End If
                  End Do
-                 If (ishls /= cshell%numshl(itmols)) nrigid=nrigid-numrgd(itmols)
+                 If (ishls /= cshell%numshl(itmols)) nrigid=nrigid-rigid%num(itmols)
 
                  Do iteth=1,tether%numteth(itmols)
                     nteth=nteth+1
@@ -3194,7 +3193,7 @@ Subroutine read_field                      &
 
 ! RB particulars
 
-        If (m_rgd > 0) Then
+        If (rigid%on) Then
 
 ! test for constraint units on RB units
 
@@ -3208,15 +3207,15 @@ Subroutine read_field                      &
                     iatm1=cons%lstcon(1,nconst)
                     iatm2=cons%lstcon(2,nconst)
 
-                    Do irgd=1,numrgd(itmols)
+                    Do irgd=1,rigid%num(itmols)
                        nrigid=nrigid+1
-                       lrgd=lstrgd(0,nrigid)
-                       If (Any(lstrgd(1:lrgd,nrigid) == iatm1) .and. Any(lstrgd(1:lrgd,nrigid) == iatm2)) Then
+                       lrgd=rigid%lst(0,nrigid)
+                       If (Any(rigid%lst(1:lrgd,nrigid) == iatm1) .and. Any(rigid%lst(1:lrgd,nrigid) == iatm2)) Then
                           Call warning(304,Real(icnst,wp),Real(irgd,wp),Real(itmols,wp))
                           Call error(97)
                        End If
                     End Do
-                    If (icnst /= cons%numcon(itmols)) nrigid=nrigid-numrgd(itmols)
+                    If (icnst /= cons%numcon(itmols)) nrigid=nrigid-rigid%num(itmols)
                  End Do
                  nsite=nsite+site%num_site(itmols)
               End Do
@@ -3234,17 +3233,17 @@ Subroutine read_field                      &
                           iatm1=pmf%lstpmf(jpmf,ipmf)
                           isite1=nsite+iatm1
 
-                          Do irgd=1,numrgd(itmols)
+                          Do irgd=1,rigid%num(itmols)
                              nrigid=nrigid+1
 
-                             lrgd=lstrgd(0,nrigid)
-                             If (Any(lstrgd(1:lrgd,nrigid) == iatm1)) Then
+                             lrgd=rigid%lst(0,nrigid)
+                             If (Any(rigid%lst(1:lrgd,nrigid) == iatm1)) Then
                                 Call warning(295,Real(ipmf,wp),Real(irgd,wp),Real(itmols,wp))
 
                                 Call error(93)
                              End If
                           End Do
-                          If (i /= pmf%numpmf(itmols) .and. ipmf /= 2) nrigid=nrigid-numrgd(itmols)
+                          If (i /= pmf%numpmf(itmols) .and. ipmf /= 2) nrigid=nrigid-rigid%num(itmols)
                        End Do
                     End Do
                  End Do
@@ -3255,7 +3254,7 @@ Subroutine read_field                      &
 ! Index RBs' sites (site%free_site=1), correct atmfre & atmfrz
 ! and test for unfrozen weightless members of a RB unit type
 ! (partly frozen RB but with unfrozen members being weightless)
-! and correct site%freeze_site,site%dof_site,rgdwg1,frzrgd,megfrz,megrgd if needed
+! and correct site%freeze_site,site%dof_site,rigid%weightless,frzrgd,megfrz,rigid%total if needed
 
            nsite =0
            nrigid=0
@@ -3268,19 +3267,19 @@ Subroutine read_field                      &
 
               frzrgd=0
 
-              Do irgd=1,numrgd(itmols)
+              Do irgd=1,rigid%num(itmols)
                  nrigid=nrigid+1
 
-                 lrgd=lstrgd(0,nrigid)
+                 lrgd=rigid%lst(0,nrigid)
 
                  ntmp=ntmp+lrgd
 
                  krgd=0
-                 If (rgdwgt(0,nrigid) < 1.0e-6_wp .and. rgdfrz(0,nrigid) < lrgd) Then
+                 If (rigid%weight(0,nrigid) < 1.0e-6_wp .and. rigid%frozen(0,nrigid) < lrgd) Then
                     krgd=1
 
-                    rgdfrz(0,nrigid)=lrgd
-                    rgdwg1(0,nrigid)=Real(lrgd,wp)
+                    rigid%frozen(0,nrigid)=lrgd
+                    rigid%weightless(0,nrigid)=Real(lrgd,wp)
 
                     Call warning(305,Real(irgd,wp),Real(itmols,wp),0.0_wp)
 
@@ -3288,7 +3287,7 @@ Subroutine read_field                      &
                  End If
 
                  Do jrgd=1,lrgd
-                    iatm1=lstrgd(jrgd,nrigid)
+                    iatm1=rigid%lst(jrgd,nrigid)
                     isite1=nsite+iatm1
 
                     site%free_site(isite1)=1
@@ -3302,7 +3301,7 @@ Subroutine read_field                      &
                           site%freeze_site(isite1)=1
                           site%dof_site(isite1)=0.0_wp
 
-                          rgdfrz(jrgd,nrigid)=1
+                          rigid%frozen(jrgd,nrigid)=1
                        End If
                     End If
                  End Do
@@ -3313,16 +3312,10 @@ Subroutine read_field                      &
 
               megfrz=megfrz+ifrz  *site%num_mols(itmols)
 
-              megrgd=megrgd-frzrgd*site%num_mols(itmols)
+              rigid%total=rigid%total-frzrgd*site%num_mols(itmols)
 
               nsite=nsite+site%num_site(itmols)
            End Do
-
-! Globalise megrgd & rcut for RBs
-
-           rgdmeg=megrgd
-           rgdrct=rcut
-
         End If
 
 ! read in rdf pairs
@@ -4847,10 +4840,9 @@ End Subroutine read_field
 
 Subroutine report_topology               &
            (megatm,megfrz,atmfre,atmfrz, &
-           megrgd,  &
            megtet,  &
            cshell,cons,pmf, &
-           bond,angle,dihedral,inversion,tether,site,comm)
+           bond,angle,dihedral,inversion,tether,site,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4862,7 +4854,6 @@ Subroutine report_topology               &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer, Intent( In    ) :: megatm,megfrz,atmfre,atmfrz, &
-                              megrgd, &
                               megtet
   Type( constraints_type ), Intent( In    ) :: cons
   Type( pmf_type ), Intent( In    ) :: pmf
@@ -4872,6 +4863,7 @@ Subroutine report_topology               &
   Type( inversions_type ), Intent( In    ) :: inversion
   Type(tethers_type), Intent( InOut ) :: tether
   Type( site_type ), Intent( InOut ) :: site
+  Type( rigid_bodies_type ), Intent( In    ) :: rigid
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type(comms_type), Intent( InOut ) :: comm
 
@@ -5018,7 +5010,7 @@ Subroutine report_topology               &
      End Do
 
      mgcon=mgcon+site%num_mols(itmols)*cons%numcon(itmols)
-     mgrgd=mgrgd+site%num_mols(itmols)*numrgd(itmols)
+     mgrgd=mgrgd+site%num_mols(itmols)*rigid%num(itmols)
 
      mgfrsh=mgfrsh+site%num_mols(itmols)*frzshl
      mgfrtt=mgfrtt+site%num_mols(itmols)*frztet
@@ -5045,7 +5037,7 @@ Subroutine report_topology               &
   Write(banner(9),fmt2) '||  core-shell units       | ',cshell%megshl,'  |  P  ',mgfrsh,'     ||'
   Write(banner(10),fmt2) '||  constraint bond units  | ',mgcon,'  |  F  ',mgcon-cons%megcon,'     ||'
   Write(banner(11),fmt3) '||  PMF units              | ',pmf%megpmf,'  |  P         ',frzpmf,'     ||'
-  Write(banner(12),fmt2) '||  rigid body units       | ',mgrgd,'  |  F  ',mgrgd-megrgd,'     ||'
+  Write(banner(12),fmt2) '||  rigid body units       | ',mgrgd,'  |  F  ',mgrgd-rigid%total,'     ||'
   Write(banner(13),fmt2) '||  tethered atom units    | ',megtet,'  |  F  ',mgfrtt,'     ||'
   Write(banner(14),fmt2) '||  chemical bond units    | ',bond%total,'  |  F  ',mgfrbn,'     ||'
   Write(banner(15),fmt2) '||  bond angle units       | ',angle%total,'  |  F  ',mgfran,'     ||'
@@ -5061,14 +5053,14 @@ Subroutine scan_field                                &
            mtshl,                &
            mtcons,              &
            l_usr,                &
-           mtrgd,mxtrgd,mxrgd,mxlrgd,mxfrgd,         &
+           mtrgd,         &
            mtteth,             &
            mtbond, &
            mtangl,       &
            mtdihd,       &
            mtinv,         &
            rcter,rcfbp,lext,cshell,cons,pmf,met,&
-           bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,fourbody,rdf,mpole,comm)
+           bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,fourbody,rdf,mpole,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5103,6 +5095,7 @@ Subroutine scan_field                                &
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude,mtshl
 ! Max number of different atom types
@@ -5125,7 +5118,7 @@ Subroutine scan_field                                &
                        numshl,ishls,                 &
                        numcon,mtcons,icon,                &
                        ipmf,jpmf,                     &
-                       numrgd,mtrgd,mxtrgd,mxlrgd,mxrgd,irgd,jrgd,lrgd,mxfrgd, &
+                       numrgd,mtrgd,irgd,jrgd,lrgd, &
                        inumteth,mtteth,iteth,  &
                        numbonds,mtbond,ibonds, &
                        numang,mtangl,iang,         &
@@ -5169,10 +5162,10 @@ Subroutine scan_field                                &
 
   numrgd=0
   mtrgd =0
-  mxrgd =0
-  mxtrgd=0
-  mxlrgd=0
-  mxfrgd=0
+  rigid%max_rigid =0
+  rigid%max_type=0
+  rigid%max_list=0
+  rigid%max_frozen=0
 
   inumteth=0
   mtteth =0
@@ -5432,8 +5425,8 @@ Subroutine scan_field                                &
                  If (word(1:5) == 'units' .or. word(1:3) == 'bod') Call get_word(record,word)
                  numrgd=Nint(word_2_real(word))
                  mtrgd=Max(mtrgd,numrgd)
-                 mxtrgd=mxtrgd+numrgd
-                 mxrgd=mxrgd+nummols*numrgd
+                 rigid%max_type=rigid%max_type+numrgd
+                 rigid%max_rigid=rigid%max_rigid+nummols*numrgd
 
                  Do irgd=1,numrgd
                     word(1:1)='#'
@@ -5443,7 +5436,7 @@ Subroutine scan_field                                &
                        Call get_word(record,word)
                     End Do
                     jrgd=Nint(word_2_real(word))
-                    mxlrgd=Max(mxlrgd,jrgd)
+                    rigid%max_list=Max(rigid%max_list,jrgd)
 
                     Do lrgd=1,jrgd
                        If (Mod(lrgd,16) == 0) Then
@@ -5982,8 +5975,8 @@ Subroutine scan_field                                &
   If (pmf%mxpmf  > 0) pmf%mxfpmf=1+1 ! PMFs are global
   mxf(3)=pmf%mxfpmf
 
-  If (mxrgd  > 0) mxfrgd=1+1 ! One RB per particle
-  mxf(4)=mxlrgd
+  If (rigid%max_rigid  > 0) rigid%max_frozen=1+1 ! One RB per particle
+  mxf(4)=rigid%max_list
 
   If (tether%mxteth > 0) tether%mxftet=1+1 ! One tether per particle
   mxf(5)=tether%mxftet
@@ -6003,7 +5996,7 @@ Subroutine scan_field                                &
   Do i=1,9
      mxt(i)=Min(1,mxf(i))
   End Do
-  max_exclude = Min( mxnmst , Max( mxfrgd , Sum(mxf)/Max(1,Sum(mxt)) ) * (Max(1,cshell%mxshl)+1) )
+  max_exclude = Min( mxnmst , Max( rigid%max_frozen , Sum(mxf)/Max(1,Sum(mxt)) ) * (Max(1,cshell%mxshl)+1) )
   If (max_exclude > 0) max_exclude=max_exclude+1 ! violation excess element
 
   Return

@@ -16,7 +16,7 @@ Module dpd
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
                                   weight,xxx,yyy,zzz,vxx,vyy,vzz, &
                                   fxx,fyy,fzz, ixyz
-  Use rigid_bodies, Only : lshmv_rgd,lishp_rgd,lashp_rgd
+  Use rigid_bodies, Only : rigid_bodies_type
   Use domains
 
   Use shared_units,    Only : update_shared_units
@@ -33,7 +33,7 @@ Module dpd
 
 Contains
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,comm)
+  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -55,6 +55,7 @@ Contains
     Type( stats_type ), Intent( InOut ) :: stats
     Type( thermostat_type ), Intent( In    ) :: thermo
     Type( neighbours_type ), Intent( In    ) :: neigh
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -464,7 +465,9 @@ Contains
 
     ! Update forces on RBs
 
-    If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,fxx,fyy,fzz,comm)
+    If (rigid%share) Then
+      Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxx,fyy,fzz,comm)
+    End If
 
     ! globalise stats%virdpd
 

@@ -5,11 +5,8 @@ Module drivers
   Use configuration, Only : xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,cell,natms,&
                             weight,lfrzn,lstfre,lsite,lfree,ltg,nlast,nfree,&
                             lsi,lsa,imcon
-  Use rigid_bodies, Only : rgdoxx,rgdoyy,rgdozz,rgdvxx,rgdvyy,rgdvzz,&
-                           indrgd,listrgd,rgdfrz,rgdx,rgdy,rgdz,q0,q1,q2,q3,&
-                           rgdriz,rgdwgt,rgdrix,rgdriy,rgdriz,rgdind,rgdzzz,rgdyyy,&
-                           rgdxxx,rgdmeg,ntrgd,lshmv_rgd,lishp_rgd,lashp_rgd
-  Use setup, Only : boltz,mxatms,mxlrgd,mxrgd,zero_plus
+  Use rigid_bodies, Only : rigid_bodies_type,getrotmat
+  Use setup, Only : boltz,mxatms,zero_plus
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type
@@ -19,7 +16,6 @@ Module drivers
   Use errors_warnings, Only : error,warning,info
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
-  Use rigid_bodies, Only : getrotmat
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
   Implicit None
@@ -29,9 +25,10 @@ Module drivers
 
 Contains
 
-  Subroutine w_impact_option(levcfg,nstep,nsteql,megrgd,cshell,stats,impa,comm)
+  Subroutine w_impact_option(levcfg,nstep,nsteql,rigid,cshell,stats,impa,comm)
 
-    Integer( Kind = wi ),   Intent( InOut ) :: levcfg,nstep,nsteql,megrgd
+    Integer( Kind = wi ),   Intent( InOut ) :: levcfg,nstep,nsteql
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type(stats_type)   ,   Intent( InOut ) :: stats
     Type(core_shell_type)   ,   Intent( InOut ) :: cshell
     Type(impact_type)   ,   Intent( InOut ) :: impa
@@ -55,17 +52,17 @@ Contains
 
         If (nstep+1 <= nsteql) Call warning(380,Real(nsteql,wp),0.0_wp,0.0_wp)
 
-        Call impact(megrgd,cshell,impa,comm)
+        Call impact(rigid,cshell,impa,comm)
 
 ! Correct kinetic stress and energy
 
-        If (megrgd > 0) Then
+        If (rigid%total > 0) Then
            Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
-           Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stats%strknt,comm)
+           Call kinstrest(rigid,stats%strknt,comm)
 
            stats%strkin=stats%strknf+stats%strknt
 
-           stats%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+           stats%engrot=getknr(rigid,comm)
         Else
            Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
         End If
@@ -129,7 +126,7 @@ Contains
 
 Subroutine pseudo_vv                                      &
            (isw,tstep, &
-           nstep,dof_site,cshell,stats,thermo,comm)
+           nstep,dof_site,cshell,stats,thermo,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -157,10 +154,11 @@ Subroutine pseudo_vv                                      &
   Type( stats_type), Intent( InOut ) :: stats
   Type( core_shell_type), Intent( InOut ) :: cshell
   Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
-  Integer,           Save :: ntp,stp,rtp,megrgd
+  Integer,           Save :: ntp,stp,rtp
   Integer                 :: fail(1:3),matms, &
                              i,j,k,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp )       :: celprp(1:10),ssx,ssy,ssz,      &
@@ -203,13 +201,9 @@ Subroutine pseudo_vv                                      &
         If (newjob) Then
            newjob = .false.
 
-! recover megrgd
-
-           megrgd=rgdmeg
-
            Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),    Stat=fail(1))
            Allocate (qs(0:2,1:cshell%mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
-           Allocate (qr(1:mxrgd),tpr(0:comm%mxnode-1),     Stat=fail(3))
+           Allocate (qr(1:rigid%max_rigid),tpr(0:comm%mxnode-1),     Stat=fail(3))
            If (Any(fail > 0)) Then
               Write(message,'(a)') 'pseudo (q. and tp.) allocation failure'
               Call error(0,message)
@@ -245,7 +239,7 @@ Subroutine pseudo_vv                                      &
 
      qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
      qs(0:2,1:cshell%ntshl) = 0 ! unqualified core-shell unit with a local shell
-     qr(1:ntrgd)     = 0 ! unqualified RB
+     qr(1:rigid%n_types)     = 0 ! unqualified RB
 
      j = 0
      Do i=1,natms
@@ -346,25 +340,25 @@ Subroutine pseudo_vv                                      &
 
 ! tpr(comm%idnode) number of thermostatted RB units on this node (comm%idnode)
 ! rtp - grand total of RB units to thermostat
-! (can be larger than megrgd due to sharing)
+! (can be larger than rigid%total due to sharing)
 
      k = 0
      If (j > 0) Then
-        If (lshmv_rgd) Then
+        If (rigid%share) Then
            qn(natms+1:nlast) = 0 ! refresh the q array for shared RB units
-           Call update_shared_units_int(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,qn,comm)
+           Call update_shared_units_int(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,qn,comm)
         End If
 
         j = 0
-        Do irgd=1,ntrgd
-           rgdtyp=listrgd(0,irgd)
+        Do irgd=1,rigid%n_types
+           rgdtyp=rigid%list(0,irgd)
 
 ! For all good RBs
 
-           lrgd=listrgd(-1,irgd)
-           If (rgdfrz(0,rgdtyp) < lrgd) Then
+           lrgd=rigid%list(-1,irgd)
+           If (rigid%frozen(0,rgdtyp) < lrgd) Then
               Do jrgd=1,lrgd
-                 i=indrgd(jrgd,irgd) ! local index of particle/site
+                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
                  If (qn(i) == 1) Then
                     If (qr(irgd) == 0) Then ! An overall hit is registered
                        qr(irgd) = 1
@@ -376,9 +370,9 @@ Subroutine pseudo_vv                                      &
               End Do
 
               If (qr(irgd) == 1) Then ! accounting for a random kick on the RB
-                 i1=indrgd(1,irgd) ! particle to bare the random RB COM momentum
-                 i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
-                 If (rgdfrz(0,rgdtyp) == 0) Then
+                 i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
+                 i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
+                 If (rigid%frozen(0,rgdtyp) == 0) Then
                     If (i1 <= natms) k = k + 1
                  End If
                  If (i2 <= natms) k = k + 1
@@ -480,22 +474,22 @@ Subroutine pseudo_vv                                      &
         End Do
 
         If (rtp > 0) Then
-           Do irgd=1,ntrgd
+           Do irgd=1,rigid%n_types
               If (qr(irgd) == 1) Then
-                 rgdtyp=listrgd(0,irgd)
+                 rgdtyp=rigid%list(0,irgd)
 
-                 lrgd=listrgd(-1,irgd)
+                 lrgd=rigid%list(-1,irgd)
                  Do jrgd=1,lrgd
-                    i=indrgd(jrgd,irgd) ! particle index
+                    i=rigid%index_local(jrgd,irgd) ! particle index
                     If (i <= natms) Then
                        If (dof_site(lsite(i)) > zero_plus) mxdr = mxdr + dof_site(lsite(i))
                     End If
                  End Do
 
-                 i1=indrgd(1,irgd) ! particle to bare the random RB COM momentum
-                 i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
+                 i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
+                 i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
 
-                 If (rgdfrz(0,rgdtyp) == 0 .and. i1 <= natms) Then
+                 If (rigid%frozen(0,rgdtyp) == 0 .and. i1 <= natms) Then
 
 ! Get gaussian distribution (unit variance)
 
@@ -503,13 +497,13 @@ Subroutine pseudo_vv                                      &
 
 ! Get scaler to target variance/Sqrt(weight)
 
-                    tmp = 1.0_wp/Sqrt(rgdwgt(0,rgdtyp))
+                    tmp = 1.0_wp/Sqrt(rigid%weight(0,rgdtyp))
 
                     xxt(i1) = xxt(i1)*tmp
                     yyt(i1) = yyt(i1)*tmp
                     zzt(i1) = zzt(i1)*tmp
 
-                    tkin = tkin + rgdwgt(0,rgdtyp)*(xxt(i1)**2+yyt(i1)**2+zzt(i1)**2)
+                    tkin = tkin + rigid%weight(0,rgdtyp)*(xxt(i1)**2+yyt(i1)**2+zzt(i1)**2)
 
                  End If
 
@@ -522,11 +516,13 @@ Subroutine pseudo_vv                                      &
 ! Get scaler to target variance/Sqrt(weight) -
 ! 3 different reciprocal moments of inertia
 
-                    xxt(i2) = xxt(i2)*Sqrt(rgdrix(2,rgdtyp))
-                    yyt(i2) = yyt(i2)*Sqrt(rgdriy(2,rgdtyp))
-                    zzt(i2) = zzt(i2)*Sqrt(rgdriz(2,rgdtyp))
+                    xxt(i2) = xxt(i2)*Sqrt(rigid%rix(2,rgdtyp))
+                    yyt(i2) = yyt(i2)*Sqrt(rigid%riy(2,rgdtyp))
+                    zzt(i2) = zzt(i2)*Sqrt(rigid%riz(2,rgdtyp))
 
-                    tkin = tkin + (rgdrix(1,rgdtyp)*xxt(i2)**2+rgdriy(1,rgdtyp)*yyt(i2)**2+rgdriz(1,rgdtyp)*zzt(i2)**2)
+                    tkin = tkin + (rigid%rix(1,rgdtyp)*xxt(i2)**2+ &
+                      rigid%riy(1,rgdtyp)*yyt(i2)**2+ &
+                      rigid%riz(1,rgdtyp)*zzt(i2)**2)
 
                  End If
               End If
@@ -559,62 +555,64 @@ Subroutine pseudo_vv                                      &
 
 ! Update shared RBs' velocities
 
-           If (lshmv_rgd) Call update_shared_units(natms,nlast,lsi,lsa,lishp_rgd,lashp_rgd,xxt,yyt,zzt,comm)
+           If (rigid%share) Then
+             Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,xxt,yyt,zzt,comm)
+           End If
 
 ! calculate new RBs' COM and angular velocities
 
-           Do irgd=1,ntrgd
+           Do irgd=1,rigid%n_types
               If (qr(irgd) == 1) Then
-                 rgdtyp=listrgd(0,irgd)
+                 rgdtyp=rigid%list(0,irgd)
 
-                 i1=indrgd(1,irgd) ! particle to bare the random RB COM momentum
-                 i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
+                 i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
+                 i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
 
-                 If (rgdfrz(0,rgdtyp) == 0) Then
+                 If (rigid%frozen(0,rgdtyp) == 0) Then
                     tmp = scale * Sqrt( (xxt(i1)**2+yyt(i1)**2+zzt(i1)**2) / &
-                                        (rgdvxx(irgd)**2+rgdvyy(irgd)**2+rgdvzz(irgd)**2) )
-                    rgdvxx(irgd) = rgdvxx(irgd)*tmp
-                    rgdvyy(irgd) = rgdvyy(irgd)*tmp
-                    rgdvzz(irgd) = rgdvzz(irgd)*tmp
+                                        (rigid%vxx(irgd)**2+rigid%vyy(irgd)**2+rigid%vzz(irgd)**2) )
+                    rigid%vxx(irgd) = rigid%vxx(irgd)*tmp
+                    rigid%vyy(irgd) = rigid%vyy(irgd)*tmp
+                    rigid%vzz(irgd) = rigid%vzz(irgd)*tmp
                  End If
 
-                 tmp = scale * Sqrt( (rgdrix(1,rgdtyp)*xxt(i2)**2+      &
-                                      rgdriy(1,rgdtyp)*yyt(i2)**2+      &
-                                      rgdriz(1,rgdtyp)*zzt(i2)**2) /    &
-                                     (rgdrix(1,rgdtyp)*rgdoxx(irgd)**2+ &
-                                      rgdriy(1,rgdtyp)*rgdoyy(irgd)**2+ &
-                                      rgdriz(1,rgdtyp)*rgdozz(irgd)**2) )
-                 rgdoxx(irgd) = rgdoxx(irgd)*tmp
-                 rgdoyy(irgd) = rgdoyy(irgd)*tmp
-                 rgdozz(irgd) = rgdozz(irgd)*tmp
+                 tmp = scale * Sqrt( (rigid%rix(1,rgdtyp)*xxt(i2)**2+      &
+                                      rigid%riy(1,rgdtyp)*yyt(i2)**2+      &
+                                      rigid%riz(1,rgdtyp)*zzt(i2)**2) /    &
+                                     (rigid%rix(1,rgdtyp)*rigid%oxx(irgd)**2+ &
+                                      rigid%riy(1,rgdtyp)*rigid%oyy(irgd)**2+ &
+                                      rigid%riz(1,rgdtyp)*rigid%ozz(irgd)**2) )
+                 rigid%oxx(irgd) = rigid%oxx(irgd)*tmp
+                 rigid%oyy(irgd) = rigid%oyy(irgd)*tmp
+                 rigid%ozz(irgd) = rigid%ozz(irgd)*tmp
 
 ! get new rotation matrix
 
-                 Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
+                 Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
 ! update RB members new velocities
 
-                 lrgd=listrgd(-1,irgd)
+                 lrgd=rigid%list(-1,irgd)
                  Do jrgd=1,lrgd
-                    If (rgdfrz(jrgd,rgdtyp) == 0) Then
-                       i=indrgd(jrgd,irgd) ! local index of particle/site
+                    If (rigid%frozen(jrgd,rgdtyp) == 0) Then
+                       i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                        If (i <= natms) Then
-                          x(1)=rgdx(jrgd,rgdtyp)
-                          y(1)=rgdy(jrgd,rgdtyp)
-                          z(1)=rgdz(jrgd,rgdtyp)
+                          x(1)=rigid%x(jrgd,rgdtyp)
+                          y(1)=rigid%y(jrgd,rgdtyp)
+                          z(1)=rigid%z(jrgd,rgdtyp)
 
 ! new atomic velocities in body frame
 
-                          vpx=rgdoyy(irgd)*z(1)-rgdozz(irgd)*y(1)
-                          vpy=rgdozz(irgd)*x(1)-rgdoxx(irgd)*z(1)
-                          vpz=rgdoxx(irgd)*y(1)-rgdoyy(irgd)*x(1)
+                          vpx=rigid%oyy(irgd)*z(1)-rigid%ozz(irgd)*y(1)
+                          vpy=rigid%ozz(irgd)*x(1)-rigid%oxx(irgd)*z(1)
+                          vpz=rigid%oxx(irgd)*y(1)-rigid%oyy(irgd)*x(1)
 
 ! new atomic velocities in lab frame
 
-                          vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rgdvxx(irgd)
-                          vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rgdvyy(irgd)
-                          vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rgdvzz(irgd)
+                          vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                          vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                          vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                        End If
                     End If
                  End Do
@@ -634,7 +632,9 @@ Subroutine pseudo_vv                                      &
 ! Thermalise the shells on hit cores
 
         If (stp > 0) Then
-           If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+           If (cshell%lshmv_shl) Then
+             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+           End If
 
            If (tps(comm%idnode) > 0) Then
               j = 0
@@ -653,11 +653,11 @@ Subroutine pseudo_vv                                      &
            End If
         End If
 
-        If (megrgd > 0) Then
+        If (rigid%total > 0) Then
 
 ! remove system centre of mass velocity (random momentum walk)
 
-           Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
+           Call getvom(vom,vxx,vyy,vzz,rigid,comm)
 
            Do j=1,nfree
               i=lstfre(j)
@@ -669,17 +669,17 @@ Subroutine pseudo_vv                                      &
               End If
            End Do
 
-           Do irgd=1,ntrgd
-              rgdtyp=listrgd(0,irgd)
+           Do irgd=1,rigid%n_types
+              rgdtyp=rigid%list(0,irgd)
 
-              If (rgdfrz(0,rgdtyp) == 0) Then
-                 rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
-                 rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
-                 rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
+              If (rigid%frozen(0,rgdtyp) == 0) Then
+                 rigid%vxx(irgd) = rigid%vxx(irgd) - vom(1)
+                 rigid%vyy(irgd) = rigid%vyy(irgd) - vom(2)
+                 rigid%vzz(irgd) = rigid%vzz(irgd) - vom(3)
 
-                 lrgd=listrgd(-1,irgd)
+                 lrgd=rigid%list(-1,irgd)
                  Do jrgd=1,lrgd
-                    i=indrgd(jrgd,irgd) ! local index of particle/site
+                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                     If (i <= natms) Then
                        vxx(i) = vxx(i) - vom(1)
@@ -711,9 +711,15 @@ Subroutine pseudo_vv                                      &
 ! RBs
 
            If (rtp > 0) Then
-              Allocate (ggx(1:mxlrgd*mxrgd),ggy(1:mxlrgd*mxrgd),ggz(1:mxlrgd*mxrgd), Stat=fail(1))
-              Allocate (rgdfxx(1:mxrgd),rgdfyy(1:mxrgd),rgdfzz(1:mxrgd),             Stat=fail(2))
-              Allocate (rgdtxx(1:mxrgd),rgdtyy(1:mxrgd),rgdtzz(1:mxrgd),             Stat=fail(3))
+              Allocate (ggx(1:rigid%max_list*rigid%max_rigid), &
+                ggy(1:rigid%max_list*rigid%max_rigid), &
+                ggz(1:rigid%max_list*rigid%max_rigid), Stat=fail(1))
+              Allocate (rgdfxx(1:rigid%max_rigid), &
+                rgdfyy(1:rigid%max_rigid), &
+                rgdfzz(1:rigid%max_rigid), Stat=fail(2))
+              Allocate (rgdtxx(1:rigid%max_rigid), &
+                rgdtyy(1:rigid%max_rigid), &
+                rgdtzz(1:rigid%max_rigid), Stat=fail(3))
               If (Any(fail > 0)) Then
                  Write(message,'(a)') 'pseudo (RB) allocation failure'
                  Call error(0,message)
@@ -722,21 +728,21 @@ Subroutine pseudo_vv                                      &
 ! Get the RB particles vectors wrt the RB's COM
 
               krgd=0
-              Do irgd=1,ntrgd
+              Do irgd=1,rigid%n_types
                  If (qr(irgd) == 1) Then
-                    rgdtyp=listrgd(0,irgd)
-                    lrgd=listrgd(-1,irgd)
+                    rgdtyp=rigid%list(0,irgd)
+                    lrgd=rigid%list(-1,irgd)
 
                     Do jrgd=1,lrgd
                        krgd=krgd+1
 
-                       i=indrgd(jrgd,irgd) ! local index of particle/site
+                       i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
 ! COM distances
 
-                       ggx(krgd)=xxx(i)-rgdxxx(irgd)
-                       ggy(krgd)=yyy(i)-rgdyyy(irgd)
-                       ggz(krgd)=zzz(i)-rgdzzz(irgd)
+                       ggx(krgd)=xxx(i)-rigid%xxx(irgd)
+                       ggy(krgd)=yyy(i)-rigid%yyy(irgd)
+                       ggz(krgd)=zzz(i)-rigid%zzz(irgd)
                     End Do
                  End If
               End Do
@@ -748,10 +754,10 @@ Subroutine pseudo_vv                                      &
 ! Get RB force and torque
 
               krgd=0
-              Do irgd=1,ntrgd
+              Do irgd=1,rigid%n_types
                  If (qr(irgd) == 1) Then
-                    rgdtyp=listrgd(0,irgd)
-                    lrgd=listrgd(-1,irgd)
+                    rgdtyp=rigid%list(0,irgd)
+                    lrgd=rigid%list(-1,irgd)
 
 ! calculate COM force and torque
 
@@ -760,11 +766,11 @@ Subroutine pseudo_vv                                      &
                     Do jrgd=1,lrgd
                        krgd=krgd+1
 
-                       i=indrgd(jrgd,irgd) ! local index of particle/site
+                       i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
 ! If the RB has a frozen particle then no net force
 
-                       If (rgdfrz(0,rgdtyp) == 0) Then
+                       If (rigid%frozen(0,rgdtyp) == 0) Then
                           fmx=fmx+fxx(i)
                           fmy=fmy+fyy(i)
                           fmz=fmz+fzz(i)
@@ -778,9 +784,9 @@ Subroutine pseudo_vv                                      &
 ! If the RB has 2+ frozen particles (ill=1) the net torque
 ! must align along the axis of rotation
 
-                    If (rgdfrz(0,rgdtyp) > 1) Then
-                       i1=indrgd(rgdind(1,rgdtyp),irgd)
-                       i2=indrgd(rgdind(2,rgdtyp),irgd)
+                    If (rigid%frozen(0,rgdtyp) > 1) Then
+                       i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
+                       i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
                        x(1)=xxx(i1)-xxx(i2)
                        y(1)=yyy(i1)-yyy(i2)
@@ -796,7 +802,7 @@ Subroutine pseudo_vv                                      &
 
 ! current rotation matrix
 
-                    Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
+                    Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
 ! calculate torque in principal frame
 
@@ -826,24 +832,31 @@ Subroutine pseudo_vv                                      &
 
 ! Energetics
 
-              Do irgd=1,ntrgd
+              Do irgd=1,rigid%n_types
                  If (qr(irgd) == 1) Then
-                    rgdtyp=listrgd(0,irgd)
-                    lrgd=listrgd(-1,irgd)
+                    rgdtyp=rigid%list(0,irgd)
+                    lrgd=rigid%list(-1,irgd)
 
-                    tmp=Real(indrgd(0,irgd),wp)/Real(lrgd,wp)
+                    tmp=Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
 
-                    If (rgdfrz(0,rgdtyp) == 0) Then
+                    If (rigid%frozen(0,rgdtyp) == 0) Then
                        tkin  = tkin  + tmp * &
-                       rgdwgt(0,rgdtyp)*(rgdvxx(irgd)**2+rgdvyy(irgd)**2+rgdvzz(irgd)**2)
+                       rigid%weight(0,rgdtyp)*(rigid%vxx(irgd)**2+ &
+                       rigid%vyy(irgd)**2+rigid%vzz(irgd)**2)
                        vdotf = vdotf + tmp * &
-                       (rgdvxx(irgd)*rgdfxx(irgd)+rgdvyy(irgd)*rgdfyy(irgd)+rgdvzz(irgd)*rgdfzz(irgd))
+                       (rigid%vxx(irgd)*rgdfxx(irgd)+ &
+                       rigid%vyy(irgd)*rgdfyy(irgd)+ &
+                       rigid%vzz(irgd)*rgdfzz(irgd))
                     End If
 
                     trot  = trot  + tmp * &
-                    (rgdrix(1,rgdtyp)*rgdoxx(irgd)**2+rgdriy(1,rgdtyp)*rgdoyy(irgd)**2+rgdriz(1,rgdtyp)*rgdozz(irgd)**2)
+                    (rigid%rix(1,rgdtyp)*rigid%oxx(irgd)**2+ &
+                    rigid%riy(1,rgdtyp)*rigid%oyy(irgd)**2+ &
+                    rigid%riz(1,rgdtyp)*rigid%ozz(irgd)**2)
                     odott = odott + tmp * &
-                    (rgdoxx(irgd)*rgdtxx(irgd)+rgdoyy(irgd)*rgdtyy(irgd)+rgdozz(irgd)*rgdtzz(irgd))
+                    (rigid%oxx(irgd)*rgdtxx(irgd)+ &
+                    rigid%oyy(irgd)*rgdtyy(irgd)+ &
+                    rigid%ozz(irgd)*rgdtzz(irgd))
                  End If
               End Do
 
@@ -964,61 +977,61 @@ Subroutine pseudo_vv                                      &
 
 ! calculate new RBs' COM and angular velocities
 
-           Do irgd=1,ntrgd
+           Do irgd=1,rigid%n_types
               If (qr(irgd) == 1) Then
-                 rgdtyp=listrgd(0,irgd)
+                 rgdtyp=rigid%list(0,irgd)
 
-                 i1=indrgd(1,irgd) ! particle to bare the random RB COM momentum
-                 i2=indrgd(2,irgd) ! particle to bare the random RB angular momentum
+                 i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
+                 i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
 
                  mxdr = 3.0_wp
-                 If      (rgdfrz(0,rgdtyp) == 0) Then
+                 If      (rigid%frozen(0,rgdtyp) == 0) Then
                     tmp = Sqrt( scale * mxdr / &
-                    (rgdwgt(0,irgd)*(rgdvxx(irgd)**2+rgdvyy(irgd)**2+rgdvzz(irgd)**2)) )
-                    rgdvxx(irgd) = rgdvxx(irgd)*tmp
-                    rgdvyy(irgd) = rgdvyy(irgd)*tmp
-                    rgdvzz(irgd) = rgdvzz(irgd)*tmp
-                 Else If (rgdfrz(0,rgdtyp) == 1) Then
+                    (rigid%weight(0,irgd)*(rigid%vxx(irgd)**2+rigid%vyy(irgd)**2+rigid%vzz(irgd)**2)) )
+                    rigid%vxx(irgd) = rigid%vxx(irgd)*tmp
+                    rigid%vyy(irgd) = rigid%vyy(irgd)*tmp
+                    rigid%vzz(irgd) = rigid%vzz(irgd)*tmp
+                 Else If (rigid%frozen(0,rgdtyp) == 1) Then
                     mxdr = 2.0_wp
-                 Else If (rgdfrz(0,rgdtyp) > 1) Then
+                 Else If (rigid%frozen(0,rgdtyp) > 1) Then
                     mxdr = 1.0_wp
                  End If
 
                  tmp = Sqrt( scale * mxdr / &
-                 (rgdrix(1,rgdtyp)*rgdoxx(irgd)**2+ &
-                  rgdriy(1,rgdtyp)*rgdoyy(irgd)**2+ &
-                  rgdriz(1,rgdtyp)*rgdozz(irgd)**2) )
-                 rgdoxx(irgd) = rgdoxx(irgd)*tmp
-                 rgdoyy(irgd) = rgdoyy(irgd)*tmp
-                 rgdozz(irgd) = rgdozz(irgd)*tmp
+                 (rigid%rix(1,rgdtyp)*rigid%oxx(irgd)**2+ &
+                  rigid%riy(1,rgdtyp)*rigid%oyy(irgd)**2+ &
+                  rigid%riz(1,rgdtyp)*rigid%ozz(irgd)**2) )
+                 rigid%oxx(irgd) = rigid%oxx(irgd)*tmp
+                 rigid%oyy(irgd) = rigid%oyy(irgd)*tmp
+                 rigid%ozz(irgd) = rigid%ozz(irgd)*tmp
 
 ! get new rotation matrix
 
-                 Call getrotmat(q0(irgd),q1(irgd),q2(irgd),q3(irgd),rot)
+                 Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
 ! update RB members new velocities
 
-                 lrgd=listrgd(-1,irgd)
+                 lrgd=rigid%list(-1,irgd)
                  Do jrgd=1,lrgd
-                    If (rgdfrz(jrgd,rgdtyp) == 0) Then
-                       i=indrgd(jrgd,irgd) ! local index of particle/site
+                    If (rigid%frozen(jrgd,rgdtyp) == 0) Then
+                       i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                        If (i <= natms) Then
-                          x(1)=rgdx(jrgd,rgdtyp)
-                          y(1)=rgdy(jrgd,rgdtyp)
-                          z(1)=rgdz(jrgd,rgdtyp)
+                          x(1)=rigid%x(jrgd,rgdtyp)
+                          y(1)=rigid%y(jrgd,rgdtyp)
+                          z(1)=rigid%z(jrgd,rgdtyp)
 
 ! new atomic velocities in body frame
 
-                          vpx=rgdoyy(irgd)*z(1)-rgdozz(irgd)*y(1)
-                          vpy=rgdozz(irgd)*x(1)-rgdoxx(irgd)*z(1)
-                          vpz=rgdoxx(irgd)*y(1)-rgdoyy(irgd)*x(1)
+                          vpx=rigid%oyy(irgd)*z(1)-rigid%ozz(irgd)*y(1)
+                          vpy=rigid%ozz(irgd)*x(1)-rigid%oxx(irgd)*z(1)
+                          vpz=rigid%oxx(irgd)*y(1)-rigid%oyy(irgd)*x(1)
 
 ! new atomic velocities in lab frame
 
-                          vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rgdvxx(irgd)
-                          vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rgdvyy(irgd)
-                          vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rgdvzz(irgd)
+                          vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                          vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                          vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                        End If
                     End If
                  End Do
@@ -1048,9 +1061,9 @@ Subroutine pseudo_vv                                      &
 
 ! remove system centre of mass velocity (random momentum walk)
 
-        If (megrgd > 0) Then
+        If (rigid%total > 0) Then
 
-           Call getvom(vom,vxx,vyy,vzz,rgdvxx,rgdvyy,rgdvzz,comm)
+           Call getvom(vom,vxx,vyy,vzz,rigid,comm)
 
            Do j=1,nfree
               i=lstfre(j)
@@ -1062,17 +1075,17 @@ Subroutine pseudo_vv                                      &
               End If
            End Do
 
-           Do irgd=1,ntrgd
-              rgdtyp=listrgd(0,irgd)
+           Do irgd=1,rigid%n_types
+              rgdtyp=rigid%list(0,irgd)
 
-              If (rgdfrz(0,rgdtyp) == 0) Then
-                 rgdvxx(irgd) = rgdvxx(irgd) - vom(1)
-                 rgdvyy(irgd) = rgdvyy(irgd) - vom(2)
-                 rgdvzz(irgd) = rgdvzz(irgd) - vom(3)
+              If (rigid%frozen(0,rgdtyp) == 0) Then
+                 rigid%vxx(irgd) = rigid%vxx(irgd) - vom(1)
+                 rigid%vyy(irgd) = rigid%vyy(irgd) - vom(2)
+                 rigid%vzz(irgd) = rigid%vzz(irgd) - vom(3)
 
-                 lrgd=listrgd(-1,irgd)
+                 lrgd=rigid%list(-1,irgd)
                  Do jrgd=1,lrgd
-                    i=indrgd(jrgd,irgd) ! local index of particle/site
+                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
                     If (i <= natms) Then
                        vxx(i) = vxx(i) - vom(1)
@@ -1101,15 +1114,15 @@ Subroutine pseudo_vv                                      &
 
 ! Update total kinetic stress and energy
 
-     If (megrgd > 0) Then
+     If (rigid%total > 0) Then
         Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
-        Call kinstrest(rgdvxx,rgdvyy,rgdvzz,stats%strknt,comm)
+        Call kinstrest(rigid,stats%strknt,comm)
 
         stats%strkin=stats%strknf+stats%strknt
 
 ! update rotational energy
 
-        stats%engrot=getknr(rgdoxx,rgdoyy,rgdozz,comm)
+        stats%engrot=getknr(rigid,comm)
      Else
         Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
      End If
