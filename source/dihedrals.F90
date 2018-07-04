@@ -28,6 +28,7 @@ Module dihedrals
   Use coul_mpole, Only : intra_mcoul
   Use angles, Only : angles_type
   Use mpole, Only : mpole_type
+  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
   Implicit None
 
   Private
@@ -642,8 +643,8 @@ Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
 
 End Subroutine dihedrals_compute
 
-Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,keyfce,alpha,epsq, &
-    engcpe,vircpe,engsrp,virsrp,dihedral,vdw,mpole,comm)
+Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
+    engsrp,virsrp,dihedral,vdw,mpole,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -666,14 +667,13 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,keyfce,alpha,epsq, &
   Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: engdih,virdih
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
-  Real( Kind = wp ),                   Intent( In    ) :: rcut, &
-                                                          alpha,epsq
-  Integer,                             Intent( In    ) :: keyfce
+  Real( Kind = wp ),                   Intent( In    ) :: rcut
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe, &
                                                           engsrp,virsrp
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( vdw_type ), Intent( In    ) :: vdw
   Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( electrostatic_type ), Intent( In    ) :: electro
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical                 :: safe(1:3),csa,csd
@@ -1286,14 +1286,14 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,keyfce,alpha,epsq, &
 
 ! scaled charge product times dielectric constants
 
-        chgprd=scale*chge(ia)*chge(id)*r4pie0/epsq
-        If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. keyfce > 0) Then
+        chgprd=scale*chge(ia)*chge(id)*r4pie0/electro%eps
+        If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
 
            If (mpole%max_mpoles > 0) Then
-              Call intra_mcoul(keyfce,rcut,alpha,epsq,ia,id,scale, &
-                      rad(0),xad,yad,zad,coul,virele,fx,fy,fz,safe(3),mpole)
+              Call intra_mcoul(rcut,ia,id,scale,rad(0),xad,yad,zad,coul, &
+                virele,fx,fy,fz,safe(3),mpole,electro)
            Else
-              Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(0),rad2(0),coul,fcoul,safe(3))
+              Call intra_coul(rcut,chgprd,rad(0),rad2(0),coul,fcoul,safe(3),electro)
 
               fx = fcoul*xad
               fy = fcoul*yad
@@ -1336,13 +1336,13 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,keyfce,alpha,epsq, &
 
         If (dihedral%l_core_shell) Then
            If (lad(1,i)) Then
-              chgprd=scale*chge(ia0)*chge(id)*r4pie0/epsq
-              If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. keyfce > 0) Then
+              chgprd=scale*chge(ia0)*chge(id)*r4pie0/electro%eps
+              If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
                  If (mpole%max_mpoles > 0) Then
-                    Call intra_mcoul(keyfce,rcut,alpha,epsq,ia0,id,scale, &
-                      rad(1),xdad(1,i),ydad(1,i),zdad(1,i),coul,virele,fx,fy,fz,safe(3),mpole)
+                    Call intra_mcoul(rcut,ia0,id,scale,rad(1),xdad(1,i), &
+                      ydad(1,i),zdad(1,i),coul,virele,fx,fy,fz,safe(3),mpole,electro)
                  Else
-                    Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(1),rad2(1),coul,fcoul,safe(3))
+                    Call intra_coul(rcut,chgprd,rad(1),rad2(1),coul,fcoul,safe(3),electro)
 
                     fx = fcoul*xdad(1,i)
                     fy = fcoul*ydad(1,i)
@@ -1385,13 +1385,13 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,keyfce,alpha,epsq, &
            End If
 
            If (lad(2,i)) Then
-              chgprd=scale*chge(ia)*chge(id0)*r4pie0/epsq
-              If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. keyfce > 0) Then
+              chgprd=scale*chge(ia)*chge(id0)*r4pie0/electro%eps
+              If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
                  If (mpole%max_mpoles > 0) Then
-                    Call intra_mcoul(keyfce,rcut,alpha,epsq,ia,id0,scale, &
-                      rad(2),xdad(2,i),ydad(2,i),zdad(2,i),coul,virele,fx,fy,fz,safe(3),mpole)
+                    Call intra_mcoul(rcut,ia,id0,scale,rad(2),xdad(2,i), &
+                      ydad(2,i),zdad(2,i),coul,virele,fx,fy,fz,safe(3),mpole,electro)
                  Else
-                    Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(2),rad2(2),coul,fcoul,safe(3))
+                    Call intra_coul(rcut,chgprd,rad(2),rad2(2),coul,fcoul,safe(3),electro)
 
                     fx = fcoul*xdad(2,i)
                     fy = fcoul*ydad(2,i)
@@ -1433,13 +1433,13 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,keyfce,alpha,epsq, &
            End If
 
            If (lad(3,i)) Then
-              chgprd=scale*chge(ia0)*chge(id0)*r4pie0/epsq
-              If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. keyfce > 0) Then
+              chgprd=scale*chge(ia0)*chge(id0)*r4pie0/electro%eps
+              If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
                  If (mpole%max_mpoles > 0) Then
-                    Call intra_mcoul(keyfce,rcut,alpha,epsq,ia0,id0,scale, &
-                      rad(3),xdad(3,i),ydad(3,i),zdad(3,i),coul,virele,fx,fy,fz,safe(3),mpole)
+                    Call intra_mcoul(rcut,ia0,id0,scale,rad(3),xdad(3,i), &
+                      ydad(3,i),zdad(3,i),coul,virele,fx,fy,fz,safe(3),mpole,electro)
                  Else
-                    Call intra_coul(keyfce,rcut,alpha,epsq,chgprd,rad(3),rad2(3),coul,fcoul,safe(3))
+                    Call intra_coul(rcut,chgprd,rad(3),rad2(3),coul,fcoul,safe(3),electro)
 
                     fx = fcoul*xdad(3,i)
                     fy = fcoul*ydad(3,i)

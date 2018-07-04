@@ -22,6 +22,10 @@ Module coul_mpole
                                explicit_ewald_real_loops
   Use numerics,         Only : erfcgen, images_s
   Use neighbours,       Only : neighbours_type
+  Use electrostatic, Only : electrostatic_type, &
+                            ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
+                            ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
+                            ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
   Use errors_warnings, Only : error
 
   Implicit None
@@ -33,8 +37,8 @@ Module coul_mpole
 
 Contains
 
-  Subroutine intra_mcoul(keyfce,rcut,alpha,epsq,iatm,jatm,scale, &
-      rrr,xdf,ydf,zdf,coul,virele,fx,fy,fz,safe,mpole)
+  Subroutine intra_mcoul(rcut,iatm,jatm,scale, &
+      rrr,xdf,ydf,zdf,coul,virele,fx,fy,fz,safe,mpole,electro)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -46,12 +50,13 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: keyfce,iatm,jatm
-    Real( Kind = wp ), Intent( In    ) :: rcut,alpha,epsq,scale
+    Integer,           Intent( In    ) :: iatm,jatm
+    Real( Kind = wp ), Intent( In    ) :: rcut,scale
     Real( Kind = wp ), Intent( In    ) :: xdf,ydf,zdf,rrr
     Real( Kind = wp ), Intent(   Out ) :: coul,virele,fx,fy,fz
     Logical,           Intent( InOut ) :: safe
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( electrostatic_type ), Intent( In    ) :: electro
 
     Integer                 :: k1,k2,k3,s1,s2,s3,n
     Integer                 :: ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -88,26 +93,26 @@ Contains
       ! and set force and potential shifting parameters dependingly
 
       damp=.false.
-      If (alpha > zero_plus) Then
+      If (electro%alpha > zero_plus) Then
         damp=.true.
 
-        exp1= Exp(-(alpha*rcut)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*alpha*rcut)
+        exp1= Exp(-(electro%alpha*rcut)**2)
+        tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rcut)
 
         erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
-        fer = (erc + 2.0_wp*(alpha/sqrpi)*exp1)/rcut**2
+        fer = (erc + 2.0_wp*(electro%alpha/sqrpi)*exp1)/rcut**2
 
         aa  = fer*rcut
         bb  = -(erc + aa*rcut)
-      Else If (keyfce == 8) Then
+      Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
         aa =  1.0_wp/rcut**2
         bb = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
       End If
 
       ! set reaction field terms for RFC
 
-      If (keyfce == 10) Then
-        b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
+      If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
+        b0    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
         rfld0 = b0/rcut**3
         rfld1 = (1.0_wp + 0.5_wp*b0)/rcut
         rfld2 = 0.5_wp*rfld0
@@ -147,11 +152,11 @@ Contains
 
     ! scale imp multipoles
 
-    imp = scale*imp*r4pie0/epsq
+    imp = scale*imp*r4pie0/electro%eps
 
     ! Electrostatics by ewald sum = direct coulombic
 
-    If      (keyfce ==  2 .or. keyfce ==  6) Then
+    If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_COULOMB] == electro%key)) Then
 
       ! compute derivatives of 1/r kernel
 
@@ -159,7 +164,7 @@ Contains
 
       ! distance dependent dielectric
 
-    Else If (keyfce ==  4) Then
+    Else If (electro%key ==  ELECTROSTATIC_DDDP) Then
 
       ! Compute derivatives of 1/r^2 kernel
 
@@ -167,7 +172,7 @@ Contains
 
       ! force shifted coulombic and reaction field
 
-    Else If (keyfce ==  8 .or. keyfce == 10) Then
+    Else If (Any([ELECTROSTATIC_COULOMB_FORCE_SHIFT,ELECTROSTATIC_COULOMB_REACTION_FIELD] == electro%key)) Then
 
       If (damp) Then ! calculate damping contributions
 
@@ -179,23 +184,23 @@ Contains
 
         a1 = aa*a1
 
-        exp1= Exp(-(alpha*rrr)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*alpha*rrr)
+        exp1= Exp(-(electro%alpha*rrr)**2)
+        tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
-        fer = erc/alpha
+        fer = erc/electro%alpha
 
         ! compute derivatives of the ewald real space kernel
 
-        Call ewald_deriv(-2,2*mpole%max_order+1,1,fer,alpha*xdf,alpha*ydf, &
-          alpha*zdf,alpha*rrr,mpole%max_order,d1)
+        Call ewald_deriv(-2,2*mpole%max_order+1,1,fer,electro%alpha*xdf,electro%alpha*ydf, &
+          electro%alpha*zdf,electro%alpha*rrr,mpole%max_order,d1)
 
         ! scale the derivatives into the right form
 
-        d1 = 2.0_wp*alpha*d1/sqrpi
+        d1 = 2.0_wp*electro%alpha*d1/sqrpi
 
       End If
 
-      If      (keyfce ==  8) Then ! force shifted coulombic
+      If (electro%key ==  ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then ! force shifted coulombic
         If (.not.damp) Then ! pure
 
           ! compute derivatives of '1/r'
@@ -213,10 +218,10 @@ Contains
 
         Else                ! damped
 
-          talpha = alpha
+          talpha = electro%alpha
 
         End If
-      Else If (keyfce == 10) Then ! reaction field
+      Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then ! reaction field
         If (.not.damp) Then ! pure
 
           ! compute derivatives of '1/r'
@@ -242,7 +247,7 @@ Contains
 
           a1 = a1 + rfld2*b1
 
-          talpha = alpha
+          talpha = electro%alpha
 
         End If
       End If
@@ -341,11 +346,11 @@ Contains
 
       End Do
 
-      If (keyfce == 2 .or. keyfce == 4 .or. keyfce == 6) Then
+      If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP,ELECTROSTATIC_COULOMB] == electro%key)) Then
 
         virele = -coul
 
-      Else If (keyfce ==  8) Then ! force shifted coulombic
+      Else If (electro%key ==  ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then ! force shifted coulombic
 
         virele = -(fx*xdf + fy*ydf + fz*zdf)
 
@@ -366,7 +371,7 @@ Contains
         tjy    = tjy    + jmpy(1)*tmpj
         tjz    = tjz    + jmpz(1)*tmpj
 
-      Else If (keyfce == 10) Then ! reaction field
+      Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then ! reaction field
 
         virele = -(fx*xdf + fy*ydf + fz*zdf)
 
@@ -388,9 +393,9 @@ Contains
 
       End If
 
-      tix = tix*r4pie0/epsq
-      tiy = tiy*r4pie0/epsq
-      tiz = tiz*r4pie0/epsq
+      tix = tix*r4pie0/electro%eps
+      tiy = tiy*r4pie0/electro%eps
+      tiz = tiz*r4pie0/electro%eps
 
       If (iatm <= natms) Then
 
@@ -411,8 +416,8 @@ Contains
     End If
   End Subroutine intra_mcoul
 
-  Subroutine coul_fscp_mforces &
-             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole,comm)
+  Subroutine coul_fscp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
+      mpole,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -425,7 +430,7 @@ Contains
   !
   ! Note: FS potential can be generalised (R1) by using a damping function
   ! as used for damping the real space coulombic interaction in the
-  ! standard Ewald summation.  This generalisation applies when alpha > 0.
+  ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
   !
   ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
   !
@@ -436,12 +441,12 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true. , damp
@@ -472,7 +477,7 @@ Contains
     If (newjob) Then
        newjob = .false.
 
-       If (alpha > zero_plus) Then
+       If (electro%alpha > zero_plus) Then
           damp = .true.
        Else
           damp = .false.
@@ -497,7 +502,7 @@ Contains
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
@@ -548,7 +553,7 @@ Contains
 
   ! multipole scaler
 
-       scl=r4pie0/epsq
+       scl=r4pie0/electro%eps
 
   ! scale imp multipoles
 
@@ -614,16 +619,16 @@ Contains
                 t1 = vk0 + (vk1 - vk0)*ppp
                 t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-                erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/alpha
+                erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
 
   ! compute derivatives of the ewald real space kernel
 
-                Call ewald_deriv(-2,2*mpole%max_order+1,1,erfcr,alpha*xxt(m), &
-                  alpha*yyt(m),alpha*zzt(m),alpha*rrr,mpole%max_order,d1)
+                Call ewald_deriv(-2,2*mpole%max_order+1,1,erfcr,electro%alpha*xxt(m), &
+                  electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpole%max_order,d1)
 
   ! scale the derivatives into the right form
 
-                d1 = 2.0_wp*alpha*d1/sqrpi
+                d1 = 2.0_wp*electro%alpha*d1/sqrpi
 
   ! calculate forces
 
@@ -646,7 +651,7 @@ Contains
 
                             If (Abs(jmp(jj)) > zero_plus) Then
                               Call explicit_fscp_rfp_loops &
-                               (2*mpole%max_order+1, k1,k2,k3, alpha, d1,a1,               &
+                               (2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1,a1,               &
                                imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                                kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
                                engmpl,fx,fy,fz,mpole)
@@ -694,7 +699,7 @@ Contains
                                         ks1=k1+s1; ks11=ks1+1
 
                                         n      = ks1+ks2+ks3
-                                        alphan = alpha**n
+                                        alphan = electro%alpha**n
 
                                         ii     = mpole%map(s1,s2,s3)
 
@@ -711,7 +716,7 @@ Contains
                                         engmpl = engmpl + t1*d1(ks1,ks2,ks3) + t2*a1(ks1,ks2,ks3)
 
   ! force
-                                        t1     = t1*alpha
+                                        t1     = t1*electro%alpha
 
                                         fx     = fx     - t1*d1(ks11,ks2,ks3) + t2*a1(ks11,ks2,ks3)
                                         fy     = fy     - t1*d1(ks1,ks21,ks3) + t2*a1(ks1,ks21,ks3)
@@ -982,8 +987,8 @@ Contains
 
   End Subroutine coul_fscp_mforces
 
-  Subroutine coul_rfp_mforces &
-             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole,comm)
+  Subroutine coul_rfp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
+      mpole,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -993,7 +998,7 @@ Contains
   !
   ! Note: RF potential can be generalised (R1) by using a damping function
   ! as used for damping the real space coulombic interaction in the
-  ! standard Ewald summation.  This generalisation applies when alpha > 0.
+  ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
   !
   ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
   ! R2: M Neumann, J Chem Phys, 82 (12), 5663, (1985)
@@ -1005,12 +1010,12 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true. , damp
@@ -1045,7 +1050,7 @@ Contains
     If (newjob) Then
        newjob = .false.
 
-       If (alpha > zero_plus) Then
+       If (electro%alpha > zero_plus) Then
           damp = .true.
        Else
           damp = .false.
@@ -1053,7 +1058,7 @@ Contains
 
   ! reaction field terms
 
-       b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
+       b0    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
        rfld0 = b0/neigh%cutoff**3
        rfld1 = (1.0_wp + 0.5_wp*b0)/neigh%cutoff
        rfld2 = 0.5_wp*rfld0
@@ -1077,7 +1082,7 @@ Contains
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
@@ -1128,7 +1133,7 @@ Contains
 
   ! multipole scaler
 
-       scl=r4pie0/epsq
+       scl=r4pie0/electro%eps
 
   ! scale imp multipoles
 
@@ -1200,16 +1205,16 @@ Contains
                 t1 = vk0 + (vk1 - vk0)*ppp
                 t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-                erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/alpha
+                erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
 
   ! compute derivatives of the ewald real space kernel
 
-                Call ewald_deriv(-2,2*mpole%max_order+1,1,erfcr,alpha*xxt(m), &
-                  alpha*yyt(m),alpha*zzt(m),alpha*rrr,mpole%max_order,d1)
+                Call ewald_deriv(-2,2*mpole%max_order+1,1,erfcr,electro%alpha*xxt(m), &
+                  electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpole%max_order,d1)
 
   ! scale the derivatives into the right form
 
-                d1 = 2.0_wp*alpha*d1/sqrpi
+                d1 = 2.0_wp*electro%alpha*d1/sqrpi
 
   ! calculate forces
 
@@ -1232,7 +1237,7 @@ Contains
 
                             If (Abs(jmp(jj)) > zero_plus) Then
                               Call explicit_fscp_rfp_loops &
-                               (2*mpole%max_order+1, k1,k2,k3, alpha, d1,a1,               &
+                               (2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1,a1,               &
                                imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                                kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
                                engmpl,fx,fy,fz,mpole)
@@ -1280,7 +1285,7 @@ Contains
                                         ks1=k1+s1; ks11=ks1+1
 
                                         n      = ks1+ks2+ks3
-                                        alphan = alpha**n
+                                        alphan = electro%alpha**n
 
                                         ii     = mpole%map(s1,s2,s3)
 
@@ -1297,7 +1302,7 @@ Contains
                                         engmpl = engmpl + t1*d1(ks1,ks2,ks3) + t2*a1(ks1,ks2,ks3)
 
   ! force
-                                        t1     = t1*alpha
+                                        t1     = t1*electro%alpha
 
                                         fx     = fx     - t1*d1(ks11,ks2,ks3) + t2*a1(ks11,ks2,ks3)
                                         fy     = fy     - t1*d1(ks1,ks21,ks3) + t2*a1(ks1,ks21,ks3)
@@ -1585,7 +1590,7 @@ Contains
   End Subroutine coul_rfp_mforces
 
   Subroutine coul_cp_mforces &
-             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole)
+             (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1600,7 +1605,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: epsq
+    Real( Kind = wp ),                        Intent( In    ) :: eps
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
@@ -1654,7 +1659,7 @@ Contains
 
   ! multipole scaler
 
-       scl=r4pie0/epsq
+       scl=r4pie0/eps
 
   ! scale imp multipoles
 
@@ -1890,7 +1895,7 @@ Contains
   End Subroutine coul_cp_mforces
 
   Subroutine coul_dddp_mforces &
-             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole)
+             (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpole)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1905,7 +1910,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: epsq
+    Real( Kind = wp ),                        Intent( In    ) :: eps
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
@@ -1959,7 +1964,7 @@ Contains
 
   ! multipole scaler
 
-       scl=r4pie0/epsq
+       scl=r4pie0/eps
 
   ! scale imp multipoles
 
@@ -2194,7 +2199,7 @@ Contains
 
   End Subroutine coul_dddp_mforces
 
-  Subroutine coul_chrm_forces(iatm,epsq,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress,neigh,mpole)
+  Subroutine coul_chrm_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress,neigh,mpole)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2214,7 +2219,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: epsq
+    Real( Kind = wp ),                        Intent( In    ) :: eps
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ch,vircpe_ch
@@ -2254,7 +2259,7 @@ Contains
 
   ! scale main charge
 
-    chgea = chgea*r4pie0/epsq
+    chgea = chgea*r4pie0/eps
 
   ! load forces
 

@@ -39,19 +39,22 @@ Module bounds
   Use rdfs,            Only : rdf_type
   Use external_field, Only : external_field_type
   Use rigid_bodies, Only : rigid_bodies_type
-
+  Use electrostatic, Only : electrostatic_type
   Implicit None
+
   Private
+
   Public :: set_bounds
+
 Contains
 
 Subroutine set_bounds                                 &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rbin,nstfce,      &
-           alpha,width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
+           width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf, &
-           mpole,ext_field,rigid,comm)
+           mpole,ext_field,rigid,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,7 +72,7 @@ Subroutine set_bounds                                 &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_e,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar
-  Real( Kind = wp ), Intent(   Out ) :: rbin,alpha,width
+  Real( Kind = wp ), Intent(   Out ) :: rbin,width
   Integer( Kind = wi ), Intent(   Out ) :: max_site
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -96,6 +99,7 @@ Subroutine set_bounds                                 &
   Type( mpole_type ), Intent( InOut ) :: mpole
   Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -153,9 +157,9 @@ Subroutine set_bounds                                 &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                         &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,cshell,stats,thermo, &
+           nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1,cshell,stats,thermo, &
            green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-           zdensity,neigh,vdw,tersoff,rdf,mpole,comm)
+           zdensity,neigh,vdw,tersoff,rdf,mpole,electro,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)

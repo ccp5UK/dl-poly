@@ -6,6 +6,10 @@ Module coul_spole
   Use errors_warnings, Only : error
   Use numerics,        Only : erfcgen
   Use neighbours,      Only : neighbours_type
+  Use electrostatic,   Only : electrostatic_type, &
+                            ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
+                            ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
+                            ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
 
   Implicit None
 
@@ -15,7 +19,7 @@ Module coul_spole
 
   Contains
 
-  Subroutine intra_coul(keyfce,rcut,alpha,epsq,chgprd,rrr,rsq,coul,fcoul,safe)
+  Subroutine intra_coul(rcut,chgprd,rrr,rsq,coul,fcoul,safe,electro)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -27,10 +31,10 @@ Module coul_spole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: keyfce
-    Real( Kind = wp ), Intent( In    ) :: chgprd,rcut,alpha,epsq,rrr,rsq
+    Real( Kind = wp ), Intent( In    ) :: chgprd,rcut,rrr,rsq
     Real( Kind = wp ), Intent(   Out ) :: coul,fcoul
     Logical,           Intent( InOut ) :: safe
+    Type( electrostatic_type ), Intent( In    ) :: electro
 
     Logical,           Save :: newjob = .true. , damp
     Real( Kind = wp ), Save :: aa     = 0.0_wp , &
@@ -55,26 +59,26 @@ Module coul_spole
   ! and set force and potential shifting parameters dependingly
 
        damp=.false.
-       If (alpha > zero_plus) Then
+       If (electro%alpha > zero_plus) Then
           damp=.true.
 
-          exp1= Exp(-(alpha*rcut)**2)
-          tt  = 1.0_wp/(1.0_wp+pp*alpha*rcut)
+          exp1= Exp(-(electro%alpha*rcut)**2)
+          tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rcut)
 
           erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
-          fer = (erc + 2.0_wp*(alpha/sqrpi)*exp1)/rcut**2
+          fer = (erc + 2.0_wp*(electro%alpha/sqrpi)*exp1)/rcut**2
 
           aa  = fer*rcut
           bb  = -(erc + aa*rcut)
-       Else If (keyfce == 8) Then
+       Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
           aa =  1.0_wp/rcut**2
           bb = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
        End If
 
   ! set reaction field terms for RFC
 
-       If (keyfce == 10) Then
-          b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
+       If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
+          b0    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
           rfld0 = b0/rcut**3
           rfld1 = (1.0_wp + 0.5_wp*b0)/rcut
           rfld2 = 0.5_wp*rfld0
@@ -88,34 +92,34 @@ Module coul_spole
 
   ! Electrostatics by ewald sum = direct coulombic
 
-    If      (keyfce ==  2 .or. keyfce ==  6) Then
+    If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_COULOMB] == electro%key)) Then
 
        coul = chgprd/rrr
        fcoul= coul/rsq
 
   ! distance dependent dielectric
 
-    Else If (keyfce ==  4) Then
+    Else If (electro%key ==  ELECTROSTATIC_DDDP) Then
 
        coul = chgprd/rsq
        fcoul= 2.0_wp*coul/rsq
 
   ! force shifted coulombic and reaction field
 
-    Else If (keyfce ==  8 .or. keyfce == 10) Then
+    Else If (Any([ELECTROSTATIC_COULOMB_FORCE_SHIFT,ELECTROSTATIC_COULOMB_REACTION_FIELD] == electro%key)) Then
 
        If (damp) Then ! calculate damping contributions
-          exp1= Exp(-(alpha*rrr)**2)
-          tt  = 1.0_wp/(1.0_wp+pp*alpha*rrr)
+          exp1= Exp(-(electro%alpha*rrr)**2)
+          tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
           erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rrr
-          fer = (erc + 2.0_wp*(alpha/sqrpi)*exp1)/rsq
+          fer = (erc + 2.0_wp*(electro%alpha/sqrpi)*exp1)/rsq
 
           coul = chgprd*(erc + aa*rrr + bb)
           fcoul= chgprd*(fer - aa/rrr)
        End If
 
-       If      (keyfce ==  8) Then ! force shifted coulombic
+       If (electro%key ==  ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then ! force shifted coulombic
           If (.not.damp) Then ! pure
              coul = chgprd*(1.0_wp/rrr + aa*rrr+ bb)
              fcoul= chgprd*(1.0_wp/rsq - aa)/rrr
@@ -123,7 +127,7 @@ Module coul_spole
              coul = coul
              fcoul= fcoul
           End If
-       Else If (keyfce == 10) Then ! reaction field
+       Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then ! reaction field
           If (.not.damp) Then ! pure
              coul = chgprd*(1.0_wp/rrr + rfld2*rsq - rfld1)
              fcoul= chgprd*(1.0_wp/rsq/rrr - rfld0)
@@ -140,8 +144,8 @@ Module coul_spole
     End If
   End Subroutine intra_coul
 
-  Subroutine coul_fscp_forces &
-             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,comm)
+  Subroutine coul_fscp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
+      electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -153,7 +157,7 @@ Module coul_spole
   !
   ! Note: FS potential can be generalised (R1) by using a damping function
   ! as used for damping the real space coulombic interaction in the
-  ! standard Ewald summation.  This generalisation applies when alpha > 0.
+  ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
   !
   ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
   !
@@ -164,11 +168,11 @@ Module coul_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true. , damp
@@ -190,7 +194,7 @@ Module coul_spole
     If (newjob) Then
        newjob = .false.
 
-       If (alpha > zero_plus) Then
+       If (electro%alpha > zero_plus) Then
           damp = .true.
        Else
           damp = .false.
@@ -215,7 +219,7 @@ Module coul_spole
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
@@ -256,7 +260,7 @@ Module coul_spole
 
     If (Abs(chgea) > zero_plus) Then
 
-       chgea = chgea*r4pie0/epsq
+       chgea = chgea*r4pie0/electro%eps
 
   ! load forces
 
@@ -386,8 +390,8 @@ Module coul_spole
     End If
   End Subroutine coul_fscp_forces
 
-  Subroutine coul_rfp_forces &
-             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,comm)
+  Subroutine coul_rfp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
+      electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -397,7 +401,7 @@ Module coul_spole
   !
   ! Note: RF potential can be generalised (R1) by using a damping function
   ! as used for damping the real space coulombic interaction in the
-  ! standard Ewald summation.  This generalisation applies when alpha > 0.
+  ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
   !
   ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
   ! R2: M. Neumann, J. Chem. Phys., 82 (12), 5663, (1985)
@@ -409,11 +413,11 @@ Module coul_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true. , damp
@@ -442,7 +446,7 @@ Module coul_spole
     If (newjob) Then
        newjob = .false.
 
-       If (alpha > zero_plus) Then
+       If (electro%alpha > zero_plus) Then
           damp = .true.
        Else
           damp = .false.
@@ -450,7 +454,7 @@ Module coul_spole
 
   ! reaction field terms
 
-       b0    = 2.0_wp*(epsq - 1.0_wp)/(2.0_wp*epsq + 1.0_wp)
+       b0    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
        rfld0 = b0/neigh%cutoff**3
        rfld1 = (1.0_wp + 0.5_wp*b0)/neigh%cutoff
        rfld2 = 0.5_wp*rfld0
@@ -474,7 +478,7 @@ Module coul_spole
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
@@ -512,7 +516,7 @@ Module coul_spole
 
     If (Abs(chgea) > zero_plus) Then
 
-       chgea = chgea*r4pie0/epsq
+       chgea = chgea*r4pie0/electro%eps
 
   ! load forces
 
@@ -643,8 +647,7 @@ Module coul_spole
     End If
   End Subroutine coul_rfp_forces
 
-  Subroutine coul_cp_forces &
-             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
+  Subroutine coul_cp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -658,7 +661,7 @@ Module coul_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: epsq
+    Real( Kind = wp ),                        Intent( In    ) :: eps
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
@@ -694,7 +697,7 @@ Module coul_spole
 
     If (Abs(chgea) > zero_plus) Then
 
-       chgea = chgea*r4pie0/epsq
+       chgea = chgea*r4pie0/eps
 
   ! load forces
 
@@ -790,8 +793,7 @@ Module coul_spole
     End If
   End Subroutine coul_cp_forces
 
-  Subroutine coul_dddp_forces &
-             (iatm,epsq,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
+  Subroutine coul_dddp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -806,7 +808,7 @@ Module coul_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: epsq
+    Real( Kind = wp ),                        Intent( In    ) :: eps
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
@@ -842,7 +844,7 @@ Module coul_spole
 
     If (Abs(chgea) > zero_plus) Then
 
-       chgea = chgea*r4pie0/epsq
+       chgea = chgea*r4pie0/eps
 
   ! load forces
 

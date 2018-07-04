@@ -26,13 +26,11 @@
 
 ! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
 
-     If (.not.(met%max_metal == 0 .and. keyfce == 0 .and. l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then
-       Call two_body_forces                      &
-         (pdplnc,thermo%ensemble,    &
-         alpha,epsq,keyfce,nstfce,lbook,megfrz, &
-         leql,nsteql,nstep,         &
-         cshell,               &
-         stat,ewld,devel,met,pois,neigh,site,vdw,rdf,mpole,tmr,comm)
+     If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
+       l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then
+       Call two_body_forces(pdplnc,thermo%ensemble,nstfce,lbook,megfrz, &
+         leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,site,vdw,rdf, &
+         mpole,electro,tmr,comm)
      End If
 
 ! Calculate tersoff forces
@@ -62,7 +60,7 @@
 
         isw = 1 + Merge(1,0,ltmp)
         Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff, &
-          keyfce,alpha,epsq,stat%engcpe,stat%vircpe,bond,mpole,comm)
+          stat%engcpe,stat%vircpe,bond,mpole,electro,comm)
      End If
 
 ! Calculate valence angle forces
@@ -81,8 +79,8 @@
 
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
-           neigh%cutoff,keyfce,alpha,epsq,stat%engcpe,stat%vircpe,stat%engsrp, &
-           stat%virsrp,dihedral,vdw,mpole,comm)
+           neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp, &
+           stat%virsrp,dihedral,vdw,mpole,electro,comm)
      End If
 
 ! Calculate inversion forces

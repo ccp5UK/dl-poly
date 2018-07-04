@@ -83,8 +83,7 @@
 
 ! CHECK MD CONFIGURATION
 
-           Call check_config &
-           (levcfg,l_str,keyfce,keyres,megatm,thermo,site,comm)
+           Call check_config(levcfg,l_str,electro%key,keyres,megatm,thermo,site,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -109,7 +108,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(keyfce,neigh,site,mpole,comm)
+           Call set_halo_particles(electro%key,neigh,site,mpole,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -128,7 +127,7 @@
 
            Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf, &
-             netcdf,minimise,mpole,ext_field,rigid,tmr)
+             netcdf,minimise,mpole,ext_field,rigid,electro,tmr)
 
 ! Evaluate kinetics if available
 

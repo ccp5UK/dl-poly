@@ -10,6 +10,7 @@ Module halo
   Use mpole, Only : mpole_type
 
   Use neighbours,       Only : neighbours_type,vnl_set_check
+  Use electrostatic, Only : ELECTROSTATIC_EWALD
   Use errors_warnings,  Only : error
   
   Implicit None
@@ -85,7 +86,7 @@ Module halo
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(keyfce,neigh,site,mpole,comm)
+Subroutine set_halo_particles(electro_key,neigh,site,mpole,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -97,7 +98,7 @@ Subroutine set_halo_particles(keyfce,neigh,site,mpole,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( In    ) :: keyfce
+  Integer,           Intent( In    ) :: electro_key
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( site_type ), Intent( In    ) :: site
   Type( mpole_type ), Intent( InOut ) :: mpole
@@ -138,7 +139,7 @@ Subroutine set_halo_particles(keyfce,neigh,site,mpole,comm)
 ! Larger widths may be needed by SPME for the b-splines -
 ! used in the halo transport in NEGATIVE DIRECTIONS ONLY!!!
 
-  If (keyfce == 2) Then
+  If (electro_key == ELECTROSTATIC_EWALD) Then
      ecwx=Real(mxspl1,wp)/Real(kmaxa,wp)
      ecwy=Real(mxspl1,wp)/Real(kmaxb,wp)
      ecwz=Real(mxspl1,wp)/Real(kmaxc,wp)

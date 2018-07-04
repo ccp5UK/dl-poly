@@ -194,6 +194,7 @@ program dl_poly
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type, constraints_quench
   Use shared_units, Only : update_shared_units
+  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD,ELECTROSTATIC_NULL
 
     ! MAIN PROGRAM VARIABLES
   Implicit None
@@ -230,7 +231,7 @@ program dl_poly
     nx,ny,nz,                           &
     keyres,nstrun,nsteql,               &
     nstbpo,    &
-    keyfce,mxquat,               &
+    mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
     nstraj,istraj,keytrj, &
     nsdef,isdef,nsrsd,isrsd,            &
@@ -247,7 +248,7 @@ program dl_poly
     tstep,time,tmst,      &
     dvar,                       &
     rbin,          &
-    alpha,epsq,fmax,                           &
+    fmax,                           &
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),                 &
     quattol,rdef,rrsd,                  &
@@ -287,6 +288,7 @@ program dl_poly
   Type( mpole_type ) :: mpole
   Type( external_field_type ) :: ext_field
   Type( rigid_bodies_type ) :: rigid
+  Type( electrostatic_type ) :: electro
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -354,10 +356,10 @@ program dl_poly
   ! (setup and domains)
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rbin,nstfce,alpha,width,site%max_site,core_shells,cons,pmfs,stats, &
+    dvar,rbin,nstfce,width,site%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,mpole,ext_field, &
-    rigid,comm)
+    rigid,electro,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -417,7 +419,7 @@ program dl_poly
 
   Call read_control                                    &
     (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
-    rbin,nstfce,alpha,width,     &
+    rbin,nstfce,width,     &
     l_exp,lecx,lfcap,l_top,          &
     lvar,leql,               &
     lfce,lpana,           &
@@ -425,26 +427,25 @@ program dl_poly
     nx,ny,nz,impa,                            &
     keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-    fmax,nstbpo,keyfce,epsq,             &
+    fmax,nstbpo,             &
     rlx_tol,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf, &
-    minimise,mpole,tmr,comm)
+    minimise,mpole,electro,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
   Call read_field                          &
     (l_str,l_top,l_n_v,             &
-    neigh%cutoff,width,epsq, &
-    keyfce,           &
+    neigh%cutoff,width, &
     lecx,lbook,lexcl,               &
     atmfre,atmfrz,megatm,megfrz,    &
     core_shells,pmfs,cons,thermo,met,bond,angle,   &
     dihedral,inversion,tether,threebody,site,vdw,tersoff,fourbody,rdf,mpole, &
-    ext_field,rigid,comm)
+    ext_field,rigid,electro,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -453,7 +454,7 @@ program dl_poly
 
   ! CHECK MD CONFIGURATION
 
-  Call check_config(levcfg,l_str,keyfce,keyres,megatm,thermo,site,comm)
+  Call check_config(levcfg,l_str,electro%key,keyres,megatm,thermo,site,comm)
 
   Call info('',.true.)
   Call info("*** all reading and connectivity checks DONE ***",.true.)
@@ -525,7 +526,7 @@ program dl_poly
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(keyfce,neigh,site,mpole,comm)
+  Call set_halo_particles(electro%key,neigh,site,mpole,comm)
 
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
@@ -677,11 +678,11 @@ program dl_poly
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff, &
-        fourbody,rdf,netcdf,minimise,mpole,ext_field,rigid,tmr)
+        fourbody,rdf,netcdf,minimise,mpole,ext_field,rigid,electro,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf, &
-        netcdf,minimise,mpole,ext_field,rigid)
+        netcdf,minimise,mpole,ext_field,rigid,electro)
     End If
   End If
 
@@ -787,7 +788,7 @@ program dl_poly
   Write(banner(7),fmt1) '****     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
   Write(banner(8),fmt1) '****     https://doi.org/10.1039/B517931A                     ****'
   Call info(banner,8,.true.)
-  If (keyfce == 2) Then
+  If (electro%key == ELECTROSTATIC_EWALD) Then
     Write(banner(1),fmt1) '****   - I.J. Bush, I.T. Todorov & W. Smith,                  ****'
     Write(banner(2),fmt1) '****     Comp. Phys. Commun., 175, 323-329 (2006),            ****'
     Write(banner(3),fmt1) '****     https://doi.org/10.1016/j.cpc.2006.05.001            ****'
@@ -824,7 +825,7 @@ Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
-      minimise,mpole,ext_field,rigid,tmr)
+      minimise,mpole,ext_field,rigid,electro,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -848,6 +849,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpole
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
@@ -950,7 +952,7 @@ Contains
 
   Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
       bond,angle,dihedral,inversion,zdensity,neigh,site,vdw,rdf,netcdf,minimise, &
-      mpole,ext_field,rigid)
+      mpole,ext_field,rigid,electro)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -974,6 +976,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpole
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( electrostatic_type ), Intent( InOut ) :: electro
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -985,7 +988,7 @@ Contains
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
     angle,dihedral,inversion,zdensity,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
-    minimise,mpole,ext_field,rigid,tmr)
+    minimise,mpole,ext_field,rigid,electro,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -1011,6 +1014,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpole
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( electrostatic_type ), Intent( In    ) :: electro
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

@@ -62,21 +62,26 @@ Module kontrol
   Use neighbours, Only : neighbours_type
   Use core_shell, Only : core_shell_type
   Use minimise, Only : minimise_type
-
+  Use electrostatic, Only : electrostatic_type, ELECTROSTATIC_NULL, &
+                            ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
+                            ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
+                            ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
   Implicit None
+
   Private
+
   Public :: read_control
   Public :: scan_control_output
   Public :: scan_control_io
   Public :: scan_control
   Public :: scan_control_pre
-  
+
   Contains
 
 
 Subroutine read_control                                &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
-           rbin,nstfce,alpha,width,     &
+           rbin,nstfce,width,     &
            l_exp,lecx,lfcap,l_top,          &
            lvar,leql,               &
            lfce,lpana,           &
@@ -84,13 +89,14 @@ Subroutine read_control                                &
            nx,ny,nz,impa,                            &
            keyres,                   &
            tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-           fmax,nstbpo,keyfce,epsq,             &
+           fmax,nstbpo,             &
            rlx_tol,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,  &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
-           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,minimise,mpole,tmr,comm)
+           ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
+           met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff, &
+           rdf,minimise,mpole,electro,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -114,7 +120,6 @@ Subroutine read_control                                &
   Integer,                Intent( In    ) :: levcfg
   Integer,                Intent( InOut ) :: nstfce
   Real( Kind = wp ),      Intent( In    ) :: rbin,width
-  Real( Kind = wp ),      Intent( InOut ) :: alpha
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
                                              lfcap,l_top,           &
@@ -127,7 +132,6 @@ Subroutine read_control                                &
                                              keyres,nstrun,        &
                                              nsteql,       &
                                              nstbpo,        &
-                                             keyfce,        &
                                              mxquat,        &
                                              nstbnd,nstang,        &
                                              nstdih,nstinv,        &
@@ -137,7 +141,7 @@ Subroutine read_control                                &
 
   Real( Kind = wp ),      Intent(   Out ) :: tstep,mndis,mxdis,mxstp,    &
                                               quattol,&
-                                             fmax,epsq,rlx_tol(1:2),     &
+                                             fmax,rlx_tol(1:2),     &
                                              rrsd,pdplnc
   Type( pmf_type ), Intent (   InOut )   :: pmf
   Type( core_shell_type ), Intent (   In  )   :: cshell
@@ -164,6 +168,7 @@ Subroutine read_control                                &
   Type( mpole_type ), Intent( InOut ) :: mpole
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
+  Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( comms_type ),     Intent( InOut )  :: comm
 
 
@@ -335,9 +340,9 @@ Subroutine read_control                                &
 ! defaults for: force key = no electrostatics,
 ! specified force field = not yet, relative dielectric constant = 1
 
-  keyfce = 0
+  electro%key = ELECTROSTATIC_NULL
   lforc  = .false.
-  epsq   = 1.0_wp
+  electro%eps   = 1.0_wp
 
 ! default maximum number of iterations and maximum tolerance
 ! for constraint algorithms
@@ -1803,7 +1808,7 @@ Subroutine read_control                                &
 
         Else
 
-           keyfce = 2
+           electro%key = ELECTROSTATIC_EWALD
 
            Call info('Electrostatics : Smooth Particle Mesh Ewald',.true.)
 
@@ -1816,7 +1821,7 @@ Subroutine read_control                                &
 
 ! This is sorted in set_bounds -> scan_control
 
-           Write(messages(1),'(a,1p,e12.4)') 'Ewald convergence parameter (A^-1) ',alpha
+           Write(messages(1),'(a,1p,e12.4)') 'Ewald convergence parameter (A^-1) ',electro%alpha
            Write(messages(2),'(a,3i5)') 'Ewald kmax1 kmax2 kmax3   (x2) ',kmaxa1,kmaxb1,kmaxc1
            If (kmaxa /= kmaxa1 .or. kmaxb /= kmaxb1 .or. kmaxc /= kmaxc1) Then
              Write(messages(3),'(a,3i5)') 'DaFT adjusted kmax values (x2) ',kmaxa,kmaxb,kmaxc
@@ -1850,7 +1855,7 @@ Subroutine read_control                                &
 
      Else If (word(1:6) == 'distan') Then
 
-        keyfce = 4
+        electro%key = ELECTROSTATIC_DDDP
         Call info('Electrostatics : Distance Dependent Dielectric',.true.)
 
         If (lforc) Call error(416)
@@ -1860,7 +1865,7 @@ Subroutine read_control                                &
 
      Else If (word(1:4) == 'coul') Then
 
-        keyfce = 6
+        electro%key = ELECTROSTATIC_COULOMB
         Call info('Electrostatics : Coulombic Potential',.true.)
 
         If (lforc) Call error(416)
@@ -1870,15 +1875,15 @@ Subroutine read_control                                &
 
      Else If (word(1:5) == 'shift') Then
 
-        keyfce = 8
+        electro%key = ELECTROSTATIC_COULOMB_FORCE_SHIFT
         Call info('Electrostatics : Force-Shifted Coulombic Potential',.true.)
 
         Call get_word(record,word)
 
         If      (word(1:4) == 'damp') Then
            Call get_word(record,word)
-           alpha = Abs(word_2_real(word))
-           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) ', alpha
+           electro%alpha = Abs(word_2_real(word))
+           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) ', electro%alpha
            Call info(message,.true.)
         Else If (word(1:9) == 'precision') Then
            Call get_word(record,word)
@@ -1887,11 +1892,11 @@ Subroutine read_control                                &
            Call info(message,.true.)
            eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
            tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
-           alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
-           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) derived ', alpha
+           electro%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) derived ', electro%alpha
            Call info(message,.true.)
         End If
-        If (alpha > zero_plus) Then
+        If (electro%alpha > zero_plus) Then
            Call info('Fennell damping applied',.true.)
            If (neigh%cutoff < 12.0_wp) Call warning(7,neigh%cutoff,12.0_wp,0.0_wp)
         End If
@@ -1903,7 +1908,7 @@ Subroutine read_control                                &
 
      Else If (word(1:8) == 'reaction') Then
 
-        keyfce = 10
+        electro%key = ELECTROSTATIC_COULOMB_REACTION_FIELD
         Call info('Electrostatics : Reaction Field',.true.)
 
         If (word(1:5) == 'field') Call get_word(record,word)
@@ -1911,8 +1916,8 @@ Subroutine read_control                                &
 
         If      (word(1:4) == 'damp') Then
            Call get_word(record,word)
-           alpha = Abs(word_2_real(word))
-           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) ', alpha
+           electro%alpha = Abs(word_2_real(word))
+           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) ', electro%alpha
            Call info(message,.true.)
         Else If (word(1:9) == 'precision') Then
            Call get_word(record,word)
@@ -1921,11 +1926,11 @@ Subroutine read_control                                &
            Call info(message,.true.)
            eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
            tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
-           alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
-           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) derived ', alpha
+           electro%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+           Write(message,'(a,1p,e12.4)') 'damping parameter (A^-1) derived ', electro%alpha
            Call info(message,.true.)
         End If
-        If (alpha > zero_plus) Then
+        If (electro%alpha > zero_plus) Then
            Call info('Fennell damping applied',.true.)
            If (neigh%cutoff < 12.0_wp) Call warning(7,neigh%cutoff,12.0_wp,0.0_wp)
         End If
@@ -1935,7 +1940,7 @@ Subroutine read_control                                &
 
      Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv' ) Then
 
-        keyfce = 12
+        electro%key = ELECTROSTATIC_POISSON
         Call info('Electrostatics : Poisson equation solver',.true.)
 
         prmps=0.0_wp
@@ -1969,10 +1974,10 @@ Subroutine read_control                                &
         Write(messages(4),'(a,1p,i5)') 'max # of Jacobi  iterations ',Nint(prmps(4))
         Call info(messages,4,.true.)
 
-        If ( Abs(prmps(1)-1.0_wp/alpha) > 1.0e-6_wp .or. Abs(prmps(2)-pois%eps) > 1.0e-6_wp .or. &
+        If ( Abs(prmps(1)-1.0_wp/electro%alpha) > 1.0e-6_wp .or. Abs(prmps(2)-pois%eps) > 1.0e-6_wp .or. &
              Nint(prmps(3)) == 0 .or. Nint(prmps(4)) == 0 ) Then
            Call warning('parameters reset to safe defaults occurred',.true.)
-           Write(messages(1),'(a,1p,e12.4)') 'gridspacing parameter (A) ',1.0_wp/alpha
+           Write(messages(1),'(a,1p,e12.4)') 'gridspacing parameter (A) ',1.0_wp/electro%alpha
            Write(messages(2),'(a,1p,e12.4)') 'convergance epsilon ',pois%eps
            Write(messages(3),'(a,1p,i5)') 'max # of Psolver iterations ',pois%mxitcg
            Write(messages(4),'(a,1p,i5)') 'max # of Jacobi  iterations ',pois%mxitjb
@@ -1988,8 +1993,8 @@ Subroutine read_control                                &
 
         Call get_word(record,word)
         If (word(1:8) == 'constant') Call get_word(record,word)
-        epsq = word_2_real(word)
-        Write(message,'(a,1p,e12.4)') 'relative dielectric constant ',epsq
+        electro%eps = word_2_real(word)
+        Write(message,'(a,1p,e12.4)') 'relative dielectric constant ',electro%eps
         Call info(message,.true.)
 
 ! read option for accounting for extended coulombic exclusion
@@ -3065,15 +3070,15 @@ Subroutine read_control                                &
 ! report electrostatics
 
   If (l_n_e) Then
-     keyfce=0
+     electro%key=ELECTROSTATIC_NULL
      Call info('Electrostatics switched off!!!',.true.)
-  Else If (keyfce == 0) Then
+  Else If (electro%key == ELECTROSTATIC_NULL) Then
      Call info('Electrostatics : None Assumed',.true.)
   End If
 
 ! report for extended coulombic exclusion if needed
 
-  If (keyfce /= 0) Then
+  If (electro%key /= ELECTROSTATIC_NULL) Then
      If (lecx) Then
         Call info('Extended Coulombic eXclusion : YES',.true.)
      Else
@@ -3638,9 +3643,9 @@ Subroutine scan_control                                    &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                          &
-           nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1,cshell,stats,  &
+           nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1,cshell,stats,  &
            thermo,green,devel,msd_data,met,pois,bond,angle, &
-           dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,mpole,comm)
+           dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,mpole,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3666,7 +3671,7 @@ Subroutine scan_control                                    &
                                         nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
-  Real( Kind = wp ), Intent(   Out ) :: rbin,alpha
+  Real( Kind = wp ), Intent(   Out ) :: rbin
   Type( core_shell_type ), Intent (   In  )   :: cshell
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -3685,6 +3690,7 @@ Subroutine scan_control                                    &
   Type( tersoff_type ), Intent( In    )  :: tersoff
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3763,7 +3769,7 @@ Subroutine scan_control                                    &
 ! Ewald/Poisson Solver sum parameters defaults
 
   mxspl = 0
-  alpha = 0.0_wp
+  electro%alpha = 0.0_wp
   kmaxa1 = 0
   kmaxb1 = 0
   kmaxc1 = 0
@@ -4449,15 +4455,15 @@ Subroutine scan_control                                    &
                  mxspl = Abs(Nint(word_2_real(word)))
 
                  tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
-                 alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
-                 tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*alpha)**2))
+                 electro%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
+                 tol1 = Sqrt(-Log(eps0*neigh%cutoff*(2.0_wp*tol*electro%alpha)**2))
 
                  fac = 1.0_wp
                  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp/3.0_wp)
 
-                 kmaxa1 = 2*Nint(0.25_wp + fac*celprp(7)*alpha*tol1/pi)
-                 kmaxb1 = 2*Nint(0.25_wp + fac*celprp(8)*alpha*tol1/pi)
-                 kmaxc1 = 2*Nint(0.25_wp + fac*celprp(9)*alpha*tol1/pi)
+                 kmaxa1 = 2*Nint(0.25_wp + fac*celprp(7)*electro%alpha*tol1/pi)
+                 kmaxb1 = 2*Nint(0.25_wp + fac*celprp(8)*electro%alpha*tol1/pi)
+                 kmaxc1 = 2*Nint(0.25_wp + fac*celprp(9)*electro%alpha*tol1/pi)
 
 ! neigh%cutoff is needed directly for the SPME and it MUST exist
 
@@ -4466,7 +4472,7 @@ Subroutine scan_control                                    &
               Else
 
                  If (word(1:3) == 'sum') Call get_word(record,word)
-                 alpha = Abs(word_2_real(word))
+                 electro%alpha = Abs(word_2_real(word))
 
                  Call get_word(record,word)
                  kmaxa1 = itmp*Nint(Abs(word_2_real(word)))
@@ -4482,7 +4488,7 @@ Subroutine scan_control                                    &
 
 ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
 
-                 tol=alpha*Real(kmaxa1,wp)*Real(kmaxa1,wp)*Real(kmaxa1,wp)
+                 tol=electro%alpha*Real(kmaxa1,wp)*Real(kmaxa1,wp)*Real(kmaxa1,wp)
                  If (Nint(tol) < 1) Call error(9)
 
 ! neigh%cutoff is not needed directly for the SPME but it's needed
@@ -4510,7 +4516,7 @@ Subroutine scan_control                                    &
               Do i=1,4
                  If (word(1:5) == 'delta') Then   ! spacing
                     Call get_word(record,word)
-                    alpha=1.0_wp/Abs(word_2_real(word))
+                    electro%alpha=1.0_wp/Abs(word_2_real(word))
                  End If
 
                  If (word(1:3) == 'eps') Then     ! tolerance
@@ -4533,9 +4539,9 @@ Subroutine scan_control                                    &
 
 ! Check for undefined and ill defined parameters
 
-!             0.1 Angs <= delta=1/alpha <= Min(3 Angs,neigh%cutoff/3) - 3 grid points within a link-cell
-              If (alpha > 10.0_wp)                       alpha = 10.0_wp
-              If (alpha < 1.0_wp/Min(3.0_wp,cut/3.0_wp)) alpha = 1.0_wp/Min(3.0_wp,cut/3.0_wp)
+!             0.1 Angs <= delta=1/electro%alpha <= Min(3 Angs,neigh%cutoff/3) - 3 grid points within a link-cell
+              If (electro%alpha > 10.0_wp)                       electro%alpha = 10.0_wp
+              If (electro%alpha < 1.0_wp/Min(3.0_wp,cut/3.0_wp)) electro%alpha = 1.0_wp/Min(3.0_wp,cut/3.0_wp)
 
               If (pois%mxitcg == 0) pois%mxitcg = 1000 ! default
               If (pois%mxitjb == 0) pois%mxitjb = 1000 ! default
@@ -4543,9 +4549,9 @@ Subroutine scan_control                                    &
 ! Derive grid spacing represented as a k-vector
 
               Call dcell(cell,celprp)
-              kmaxa1 = Nint(celprp(7)*alpha)
-              kmaxb1 = Nint(celprp(8)*alpha)
-              kmaxc1 = Nint(celprp(9)*alpha)
+              kmaxa1 = Nint(celprp(7)*electro%alpha)
+              kmaxb1 = Nint(celprp(8)*electro%alpha)
+              kmaxc1 = Nint(celprp(9)*electro%alpha)
 
 ! Define stencil halo size (7) as a spline order (7/2==3)
 
@@ -4587,14 +4593,14 @@ Subroutine scan_control                                    &
 
 ! (1) to Max(neigh%cutoff,Max(cell_width*mxspl/kmax),mxspl*delta) satisfying SPME b-splines
 ! propagation width or the Poisson Solver extra halo relation to cutoff
-! delta=1/alpha is the grid spacing and mxspl is the grid length needed for the
+! delta=1/electro%alpha is the grid spacing and mxspl is the grid length needed for the
 ! 3 haloed stencil of differentiation
 
            If (.not.lrcut) Then
               lrcut=.true.
 
               Call dcell(cell,celprp)
-              neigh%cutoff=Max( neigh%cutoff, Merge(Real(mxspl,wp)/alpha,                          &
+              neigh%cutoff=Max( neigh%cutoff, Merge(Real(mxspl,wp)/electro%alpha,                          &
                                     Max(celprp(7)*Real(mxspl,wp)/Real(kmaxa1,wp),  &
                                         celprp(8)*Real(mxspl,wp)/Real(kmaxb1,wp),  &
                                         celprp(9)*Real(mxspl,wp)/Real(kmaxc1,wp)), &

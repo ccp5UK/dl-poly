@@ -14,7 +14,7 @@ Module ewald_mpole
   Use errors_warnings, Only : error
   Use mpole, Only : mpole_type
   Use neighbours, Only : neighbours_type
-
+  Use electrostatic, Only : electrostatic_type
   Implicit None
 
   Private
@@ -24,8 +24,8 @@ Module ewald_mpole
 
   Contains
 
-  Subroutine ewald_real_mforces &
-             (iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress,neigh,mpole,comm)
+  Subroutine ewald_real_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress, &
+      neigh,mpole,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -39,12 +39,12 @@ Module ewald_mpole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -87,7 +87,7 @@ Module ewald_mpole
 
   ! generate error function complement tables for ewald sum
 
-       Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
+       Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
     End If
 
   ! initialise potential energy and virial
@@ -124,7 +124,7 @@ Module ewald_mpole
 
   ! multipole scaler
 
-       scl=2.0_wp*alpha*r4pie0/(sqrpi*epsq)
+       scl=2.0_wp*electro%alpha*r4pie0/(sqrpi*electro%eps)
 
   ! scale imp multipoles
 
@@ -178,12 +178,12 @@ Module ewald_mpole
              t1 = vk0 + (vk1 - vk0)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-             erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/alpha
+             erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
 
   ! compute derivatives of kernel
 
-             Call ewald_deriv(0,2*mpole%max_order+1,1,erfcr,alpha*xxt(m), &
-               alpha*yyt(m),alpha*zzt(m),alpha*rrr,mpole%max_order,d1)
+             Call ewald_deriv(0,2*mpole%max_order+1,1,erfcr,electro%alpha*xxt(m), &
+               electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpole%max_order,d1)
 
   ! calculate forces
 
@@ -205,7 +205,7 @@ Module ewald_mpole
                          jj = mpole%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Call explicit_ewald_real_loops &
-             ( 0,2*mpole%max_order+1, k1,k2,k3, alpha, d1,               &
+             ( 0,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1,               &
              imp,       impx,    impy,    impz,    tix,tiy,tiz, &
              kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
              engmpl,fx,fy,fz,mpole)
@@ -252,7 +252,7 @@ Module ewald_mpole
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n      = ks1+ks2+ks3
-                                     alphan = alpha**n
+                                     alphan = electro%alpha**n
 
                                      ii     = mpole%map(s1,s2,s3)
 
@@ -269,7 +269,7 @@ Module ewald_mpole
 
   ! force
 
-                                     t1      = t1*alpha
+                                     t1      = t1*electro%alpha
 
                                      fx      = fx      - t1*d1(ks11,ks2,ks3)
                                      fy      = fy      - t1*d1(ks1,ks21,ks3)
@@ -381,8 +381,8 @@ Module ewald_mpole
 
   End Subroutine ewald_real_mforces
 
-  Subroutine ewald_real_mforces_d(iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_rl, &
-      vircpe_rl,stress,ewld,neigh,mpole,comm)
+  Subroutine ewald_real_mforces_d(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl, &
+      stress,ewld,neigh,mpole,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -397,13 +397,13 @@ Module ewald_mpole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                          Intent( In    ) :: iatm
-    Real( Kind = wp ),                                Intent( In    ) :: alpha,epsq
     Type( neighbours_type ),                          Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                                Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),              Intent( InOut ) :: stress
     Type( ewald_type ),                               Intent( InOut ) :: ewld
     Type( mpole_type ),                               Intent( InOut ) :: mpole
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                               Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -475,12 +475,12 @@ Module ewald_mpole
 
   ! generate error function complement tables for ewald sum
 
-       Call erfcgen(neigh%cutoff,alpha,mxgele,erc,fer)
+       Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
 
   ! coefficients for exponential in recurrence relation
 
-       talp2 = 2.0_wp*alpha*alpha
-       alpsqrpi = 1.0_wp/(alpha*sqrpi)
+       talp2 = 2.0_wp*electro%alpha*electro%alpha
+       alpsqrpi = 1.0_wp/(electro%alpha*sqrpi)
 
        co1 = talp2*alpsqrpi
        co2 = talp2*co1
@@ -488,13 +488,13 @@ Module ewald_mpole
        co4 = talp2*co3
        co5 = talp2*co4
 
-       alp2 = alpha*alpha
+       alp2 = electro%alpha*electro%alpha
 
-       exclcoef = r4pie0*alpha /sqrpi/epsq
+       exclcoef = r4pie0*electro%alpha /sqrpi/electro%eps
 
-       twzz=-2.0_wp*alpha**3 *r4pie0/(3.0_wp*sqrpi*epsq)
-       twtwz=4.0_wp*alpha**5 *r4pie0/(5.0_wp*sqrpi*epsq)
-       fozz=12.0_wp*alpha**5 *r4pie0/(5.0_wp*sqrpi*epsq)
+       twzz=-2.0_wp*electro%alpha**3 *r4pie0/(3.0_wp*sqrpi*electro%eps)
+       twtwz=4.0_wp*electro%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
+       fozz=12.0_wp*electro%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
     End If
 
   ! initialise potential energy and virial
@@ -578,7 +578,7 @@ Module ewald_mpole
 
   ! multipole scaler
 
-       scl=r4pie0/epsq
+       scl=r4pie0/electro%eps
 
   ! rescale multipoles
 
@@ -1077,7 +1077,7 @@ Module ewald_mpole
 
   End Subroutine ewald_real_mforces_d
 
-  Subroutine ewald_spme_mforces(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,mpole,comm)
+  Subroutine ewald_spme_mforces(engcpe_rc,vircpe_rc,stress,ewld,mpole,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1095,11 +1095,11 @@ Module ewald_mpole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Intent( In    ) :: alpha,epsq
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( ewald_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -1285,7 +1285,7 @@ Module ewald_mpole
 
   ! compute derivatives of kernel
 
-       Call limit_erfr_deriv(8,alpha,d1)
+       Call limit_erfr_deriv(8,electro%alpha,d1)
     End If
 
     Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
@@ -1301,7 +1301,7 @@ Module ewald_mpole
 
   ! compute self-interaction energy (per node) and torques
 
-    ewld%engsic=0.0_wp; exclcoef = 0.5_wp*r4pie0/epsq
+    ewld%engsic=0.0_wp; exclcoef = 0.5_wp*r4pie0/electro%eps
     Do i=1,natms
 
   ! get the multipoles for site i
@@ -1397,11 +1397,11 @@ Module ewald_mpole
   ! set working parameters
 
     rvolm=twopi/volm
-    ralph=-0.25_wp/alpha**2
+    ralph=-0.25_wp/electro%alpha**2
 
   ! set scaling constant
 
-    scale=rvolm*r4pie0/epsq
+    scale=rvolm*r4pie0/electro%eps
 
   ! Convert cell coordinates to fractional coordinates intervalled [0,1)
   ! (bottom left corner of MD cell) and stretch over kmaxs in different
@@ -2208,7 +2208,7 @@ Module ewald_mpole
 
   End Subroutine ewald_spme_mforces
 
-  Subroutine ewald_spme_mforces_d(alpha,epsq,engcpe_rc,vircpe_rc,stress,ewld,mpole,comm)
+  Subroutine ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stress,ewld,mpole,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2226,11 +2226,11 @@ Module ewald_mpole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Intent( In    ) :: alpha,epsq
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( ewald_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -2435,11 +2435,11 @@ Module ewald_mpole
   ! set working parameters
 
     rvolm=twopi/volm
-    ralph=-0.25_wp/alpha**2
+    ralph=-0.25_wp/electro%alpha**2
 
   ! set scaling constant
 
-    scale=rvolm*r4pie0/epsq
+    scale=rvolm*r4pie0/electro%eps
 
   ! Convert cell coordinates to fractional coordinates intervalled [0,1)
   ! (bottom left corner of MD cell) and stretch over kmaxs in different
@@ -4462,8 +4462,8 @@ Module ewald_mpole
 
   End Subroutine ewald_spme_mforces_d
 
-  Subroutine ewald_excl_mforces(iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_ex, &
-      vircpe_ex,stress,neigh,mpole)
+  Subroutine ewald_excl_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
+      neigh,mpole,electro)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -4480,11 +4480,11 @@ Module ewald_mpole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( mpole_type ), Intent( InOut ) :: mpole
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
@@ -4547,7 +4547,7 @@ Module ewald_mpole
 
   ! multipole scaler
 
-       scl=2.0_wp*alpha*r4pie0/(sqrpi*epsq)
+       scl=2.0_wp*electro%alpha*r4pie0/(sqrpi*electro%eps)
 
   ! scale imp multipoles
 
@@ -4595,7 +4595,7 @@ Module ewald_mpole
 
   ! get the value of the kernel using 3pt interpolation
 
-             alpr =rrr*alpha
+             alpr =rrr*electro%alpha
              alpr2=alpr*alpr
 
   ! calculate error function and derivative
@@ -4610,30 +4610,29 @@ Module ewald_mpole
   ! compute derivatives of kernel using a regularization
 
                 If (rrr < rreg) Then
-
-                   Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,alpha*xxt(m),alpha*yyt(m),alpha*zzt(m), &
-                        alpha*sqrt(rrr**2+rreg**2),mpole%max_order,d1)
-
+                  Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr, &
+                    electro%alpha*xxt(m),electro%alpha*yyt(m),electro%alpha*zzt(m), &
+                    electro%alpha*sqrt(rrr**2+rreg**2),mpole%max_order,d1)
                 Else
-
-                   Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,alpha*xxt(m),alpha*yyt(m),alpha*zzt(m), &
-                        alpha*rrr,mpole%max_order,d1)
-
+                  Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr, &
+                    electro%alpha*xxt(m),electro%alpha*yyt(m),electro%alpha*zzt(m), &
+                    electro%alpha*rrr,mpole%max_order,d1)
                 End If
 
              Else
 
   ! distant particles - traditional
 
-                exp1=Exp(-(alpha*rrr)**2)
-                tt  =1.0_wp/(1.0_wp+pp*alpha*rrr)
+                exp1=Exp(-(electro%alpha*rrr)**2)
+                tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
-                erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(alpha*rrr)
+                erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
 
   ! compute derivatives of kernel
 
-                Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,alpha*xxt(m),alpha*yyt(m),alpha*zzt(m), &
-                     alpha*rrr,mpole%max_order,d1)
+                Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr, &
+                  electro%alpha*xxt(m),electro%alpha*yyt(m),electro%alpha*zzt(m), &
+                  electro%alpha*rrr,mpole%max_order,d1)
 
              End If
 
@@ -4657,7 +4656,7 @@ Module ewald_mpole
                          jj = mpole%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Call explicit_ewald_real_loops &
-             (-2,2*mpole%max_order+1, k1,k2,k3, alpha, d1,               &
+             (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1,               &
              imp,       impx,    impy,    impz,    tix,tiy,tiz, &
              kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
              engmpl,fx,fy,fz,mpole)
@@ -4704,7 +4703,7 @@ Module ewald_mpole
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n      = ks1+ks2+ks3
-                                     alphan = alpha**n
+                                     alphan = electro%alpha**n
 
                                      ii     = mpole%map(s1,s2,s3)
 
@@ -4721,7 +4720,7 @@ Module ewald_mpole
 
   ! force
 
-                                     t1      = t1*alpha
+                                     t1      = t1*electro%alpha
 
                                      fx      = fx      - t1*d1(ks11,ks2,ks3)
                                      fy      = fy      - t1*d1(ks1,ks21,ks3)
@@ -4833,8 +4832,8 @@ Module ewald_mpole
 
   End Subroutine ewald_excl_mforces
 
-  Subroutine ewald_excl_mforces_d(iatm,alpha,epsq,xxt,yyt,zzt,rrt,engcpe_ex, &
-      vircpe_ex,stress,neigh,mpole)
+  Subroutine ewald_excl_mforces_d(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex, &
+      stress,neigh,mpole,electro)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -4851,11 +4850,11 @@ Module ewald_mpole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
-    Real( Kind = wp ),                        Intent( In    ) :: alpha,epsq
     Type( neighbours_type ), Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( mpole_type ), Intent( InOut ) :: mpole
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
@@ -4918,8 +4917,8 @@ Module ewald_mpole
 
   ! coefficients for exponential in recurrence relation
 
-       talp2    = 2.0_wp*alpha*alpha
-       alpsqrpi = 1.0_wp/(alpha*sqrpi)
+       talp2    = 2.0_wp*electro%alpha*electro%alpha
+       alpsqrpi = 1.0_wp/(electro%alpha*sqrpi)
 
        co1 = talp2*alpsqrpi
        co2 = talp2*co1
@@ -4928,7 +4927,7 @@ Module ewald_mpole
        co5 = talp2*co4
        co6 = talp2*co5
 
-       alp2= alpha*alpha
+       alp2= electro%alpha*electro%alpha
     End If
 
   ! initialise potential energy and virial
@@ -4965,7 +4964,7 @@ Module ewald_mpole
 
   ! multipole scaler
 
-       scl=r4pie0/epsq
+       scl=r4pie0/electro%eps
 
   ! rescale multipoles
 
@@ -5070,9 +5069,9 @@ Module ewald_mpole
 
              exparr = Exp(-alp2*rsq)
 
-  ! get the value of the kernel-erf(alpha*r)/r
+  ! get the value of the kernel-erf(electro%alpha*r)/r
 
-             alpr =rrr*alpha
+             alpr =rrr*electro%alpha
              alpr2=alpr*alpr
 
   ! calculate error function and derivative
@@ -5081,7 +5080,7 @@ Module ewald_mpole
 
   ! close particles (core-shell units) - small distances limit
 
-                b0 = 2.0_wp*(alpha/sqrpi) * &
+                b0 = 2.0_wp*(electro%alpha/sqrpi) * &
                 (1.0_wp+alpr2*(-rr3+alpr2*(r10+alpr2*(-r42+alpr2*r216))))
 
                 b1 = co2*(1.0_wp/3.0_wp-alpr2*(1.0_wp/5.0_wp-alpr2 * &
@@ -5492,8 +5491,8 @@ Module ewald_mpole
 
   End Subroutine ewald_excl_mforces_d
 
-  Subroutine ewald_frzn_mforces(alpha,epsq,engcpe_fr,vircpe_fr,stress,ewld, &
-      neigh,mpole,comm)
+  Subroutine ewald_frzn_mforces(engcpe_fr,vircpe_fr,stress,ewld,neigh,mpole, &
+      electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -5512,12 +5511,12 @@ Module ewald_mpole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),                     Intent( In    ) :: alpha,epsq
     Real( Kind = wp ),                     Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp ), Dimension( 1:9 ),   Intent( InOut ) :: stress
     Type( ewald_type ),                    Intent( InOut ) :: ewld
     Type( neighbours_type ),               Intent( In    ) :: neigh
     Type( mpole_type ),                    Intent( InOut ) :: mpole
+    Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                    Intent( InOut ) :: comm
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
@@ -5618,7 +5617,7 @@ Module ewald_mpole
     Call gsum(comm, nz_fr)
     nz_fr(0) = Sum(nz_fr(0:comm%idnode)) ! Offset
 
-    scl=2.0_wp*alpha*r4pie0/(sqrpi*epsq)
+    scl=2.0_wp*electro%alpha*r4pie0/(sqrpi*electro%eps)
     nzfr = Sum(nz_fr(1:comm%mxnode))     ! Total
     If (nzfr <= 10*mxatms) Then
 
@@ -5705,15 +5704,15 @@ Module ewald_mpole
 
   ! calculate error function and derivative
 
-             exp1=Exp(-(alpha*rrr)**2)
-             tt  =1.0_wp/(1.0_wp+pp*alpha*rrr)
+             exp1=Exp(-(electro%alpha*rrr)**2)
+             tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
-             erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(alpha*rrr)
+             erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
 
   ! compute derivatives of kernel
 
-             Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,alpha*xrr,alpha*yrr, &
-               alpha*zrr,alpha*rrr,mpole%max_order,d1)
+             Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,electro%alpha*xrr,electro%alpha*yrr, &
+               electro%alpha*zrr,electro%alpha*rrr,mpole%max_order,d1)
 
   ! calculate forces
 
@@ -5734,11 +5733,13 @@ Module ewald_mpole
 
                          nn = mpole%map(k1,k2,k3)
 
-                         If (Abs(jmp(nn)) > zero_plus) Call explicit_ewald_real_loops &
-             (-2,2*mpole%max_order+1, k1,k2,k3, alpha, d1,               &
-             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-             kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz,mpole)
+                         If (Abs(jmp(nn)) > zero_plus) Then
+                           Call explicit_ewald_real_loops &
+                             (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1, &
+                             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                             kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
+                             engmpl,fx,fy,fz,mpole)
+                         End If
 
                          kx = -kx
 
@@ -5782,7 +5783,7 @@ Module ewald_mpole
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n       = ks1+ks2+ks3
-                                     alphan  = alpha**n
+                                     alphan  = electro%alpha**n
 
                                      mm      = mpole%map(s1,s2,s3)
 
@@ -5796,7 +5797,7 @@ Module ewald_mpole
   ! energy
                                      engmpl  = engmpl  + t1*d1(ks1,ks2,ks3)
 
-                                     t1      = t1*alpha
+                                     t1      = t1*electro%alpha
 
   ! force
 
@@ -5899,15 +5900,15 @@ Module ewald_mpole
 
   ! calculate error function and derivative
 
-             exp1=Exp(-(alpha*rrr)**2)
-             tt  =1.0_wp/(1.0_wp+pp*alpha*rrr)
+             exp1=Exp(-(electro%alpha*rrr)**2)
+             tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
-             erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(alpha*rrr)
+             erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
 
   ! compute derivatives of kernel
 
-             Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,alpha*xrr, &
-               alpha*yrr,alpha*zrr,alpha*rrr,mpole%max_order,d1)
+             Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,electro%alpha*xrr, &
+               electro%alpha*yrr,electro%alpha*zrr,electro%alpha*rrr,mpole%max_order,d1)
 
   ! calculate forces
 
@@ -5929,10 +5930,10 @@ Module ewald_mpole
                          nn = mpole%map(k1,k2,k3)
 
                          If (Abs(jmp(nn)) > zero_plus) Call explicit_ewald_real_loops &
-             (-2,2*mpole%max_order+1, k1,k2,k3, alpha, d1,               &
-             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-             kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz,mpole)
+                           (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1, &
+                           imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                           kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
+                           engmpl,fx,fy,fz,mpole)
 
                          kx = -kx
 
@@ -5976,7 +5977,7 @@ Module ewald_mpole
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n       = ks1+ks2+ks3
-                                     alphan  = alpha**n
+                                     alphan  = electro%alpha**n
 
                                      mm      = mpole%map(s1,s2,s3)
 
@@ -5990,7 +5991,7 @@ Module ewald_mpole
   ! energy
                                      engmpl  = engmpl  + t1*d1(ks1,ks2,ks3)
 
-                                     t1      = t1*alpha
+                                     t1      = t1*electro%alpha
 
   ! force
 
@@ -6121,15 +6122,15 @@ Module ewald_mpole
 
   ! calculate error function and derivative
 
-             exp1=Exp(-(alpha*rrr)**2)
-             tt  =1.0_wp/(1.0_wp+pp*alpha*rrr)
+             exp1=Exp(-(electro%alpha*rrr)**2)
+             tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
-             erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(alpha*rrr)
+             erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
 
   ! compute derivatives of kernel
 
-             Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,alpha*xrr, &
-               alpha*yrr,alpha*zrr,alpha*rrr,mpole%max_order,d1)
+             Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,electro%alpha*xrr, &
+               electro%alpha*yrr,electro%alpha*zrr,electro%alpha*rrr,mpole%max_order,d1)
 
   ! calculate forces
 
@@ -6151,7 +6152,7 @@ Module ewald_mpole
                          nn = mpole%map(k1,k2,k3)
 
                          If (Abs(jmp(nn)) > zero_plus) Call explicit_ewald_real_loops &
-             (-2,2*mpole%max_order+1, k1,k2,k3, alpha, d1,               &
+             (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1,               &
              imp,       impx,    impy,    impz,    tix,tiy,tiz, &
              kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
              engmpl,fx,fy,fz,mpole)
@@ -6198,7 +6199,7 @@ Module ewald_mpole
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n       = ks1+ks2+ks3
-                                     alphan  = alpha**n
+                                     alphan  = electro%alpha**n
 
                                      mm      = mpole%map(s1,s2,s3)
 
@@ -6212,7 +6213,7 @@ Module ewald_mpole
   ! energy
                                      engmpl  = engmpl  + t1*d1(ks1,ks2,ks3)
 
-                                     t1      = t1*alpha
+                                     t1      = t1*electro%alpha
 
   ! force
 
@@ -6374,15 +6375,15 @@ Module ewald_mpole
 
   ! calculate error function and derivative
 
-                   exp1=Exp(-(alpha*rrr)**2)
-                   tt  =1.0_wp/(1.0_wp+pp*alpha*rrr)
+                   exp1=Exp(-(electro%alpha*rrr)**2)
+                   tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
 
-                   erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(alpha*rrr)
+                   erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
 
   ! compute derivatives of kernel
 
-                   Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,alpha*xxt(k), &
-                     alpha*yyt(k),alpha*zzt(k),alpha*rrr,mpole%max_order,d1)
+                   Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,electro%alpha*xxt(k), &
+                     electro%alpha*yyt(k),electro%alpha*zzt(k),electro%alpha*rrr,mpole%max_order,d1)
 
   ! calculate forces
 
@@ -6403,11 +6404,13 @@ Module ewald_mpole
 
                                nn = mpole%map(k1,k2,k3)
 
-                               If (Abs(jmp(nn)) > zero_plus) Call explicit_ewald_real_loops &
-             (-2,2*mpole%max_order+1, k1,k2,k3, alpha, d1,               &
-             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-             kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz,mpole)
+                               If (Abs(jmp(nn)) > zero_plus) Then
+                                 Call explicit_ewald_real_loops &
+                                   (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1, &
+                                   imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                                   kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
+                                   engmpl,fx,fy,fz,mpole)
+                               End If
 
                                kx = -kx
 
@@ -6451,7 +6454,7 @@ Module ewald_mpole
                                            ks1=k1+s1; ks11=ks1+1
 
                                            n      = ks1+ks2+ks3
-                                           alphan = alpha**n
+                                           alphan = electro%alpha**n
 
                                            mm     = mpole%map(s1,s2,s3)
 
@@ -6468,7 +6471,7 @@ Module ewald_mpole
 
   ! force
 
-                                           t1      = t1*alpha
+                                           t1      = t1*electro%alpha
 
                                            fx      = fx      - t1*d1(ks11,ks2,ks3)
                                            fy      = fy      - t1*d1(ks1,ks21,ks3)
