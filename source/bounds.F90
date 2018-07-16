@@ -108,7 +108,7 @@ Subroutine set_bounds                                 &
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
                        dens0,dens,fdens,fdvar,  &
                        test,vcell,tol,          &
-                       rcter,rcfbp,       &
+                       rcter,rctbp,rcfbp,       &
                        xhi,yhi,zhi
   Character( Len = 256 ) :: message
 
@@ -132,7 +132,7 @@ Subroutine set_bounds                                 &
            mtangl, &
            mtdihd, &
            mtinv,  &
-           rcter,rcfbp,lext,cshell,cons,pmf,met,bond,    &
+           rcter,rctbp,rcfbp,lext,cshell,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
            tether,threebody,vdw,tersoff,fourbody,rdf,mpole,rigid,comm)
 
@@ -503,7 +503,7 @@ Subroutine set_bounds                                 &
   If (threebody%mxtbp > 0) Then
      threebody%mx2tbp = (mxatyp*(mxatyp+1))/2
      threebody%mxtbp  = threebody%mx2tbp*mxatyp
-     If (threebody%cutoff < 1.0e-6_wp) threebody%cutoff=0.5_wp*neigh%cutoff
+     If (rctbp < 1.0e-6_wp) rctbp=0.5_wp*neigh%cutoff
 
      threebody%mxptbp = 5
   Else
@@ -872,7 +872,7 @@ Subroutine set_bounds                                 &
   If (tersoff%max_ter > 0 .or. threebody%mxtbp > 0 .or. fourbody%max_four_body > 0) Then
      cut=neigh%cutoff+1.0e-6_wp ! reduce cut
      If (tersoff%max_ter > 0) cut = Min(cut,rcter+1.0e-6_wp)
-     If (threebody%mxtbp > 0) cut = Min(cut,threebody%cutoff+1.0e-6_wp)
+     If (threebody%mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
      If (fourbody%max_four_body > 0) cut = Min(cut,rcfbp+1.0e-6_wp)
 
      ilx=Int(r_nprx*celprp(7)/cut)

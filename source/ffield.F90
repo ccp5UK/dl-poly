@@ -5053,7 +5053,7 @@ Subroutine scan_field                                &
            mtangl,       &
            mtdihd,       &
            mtinv,         &
-           rcter,rcfbp,lext,cshell,cons,pmf,met,&
+           rcter,rctbp,rcfbp,lext,cshell,cons,pmf,met,&
            bond,angle,dihedral,inversion,tether,threebody,vdw,tersoff,fourbody,rdf,mpole,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -5072,6 +5072,7 @@ Subroutine scan_field                                &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Real( Kind = wp ), Intent(   Out ) :: rcter
+  Real( Kind = wp ), Intent(   Out ) :: rctbp
   Real( Kind = wp ), Intent(   Out ) :: rcfbp
   Integer( Kind = wi ), Intent(   Out ) :: max_site
   Type( pmf_type ), Intent( InOut ) :: pmf
@@ -5212,7 +5213,7 @@ Subroutine scan_field                                &
   rcter=0.0_wp
 
   threebody%mxtbp=0
-  threebody%cutoff=0.0_wp
+  rctbp=0.0_wp
 
   fourbody%max_four_body=0
   rcfbp=0.0_wp
@@ -5900,7 +5901,7 @@ Subroutine scan_field                                &
            End Do
 
            rct=word_2_real(word)
-           threebody%cutoff=Max(threebody%cutoff,rct)
+           rctbp=Max(rctbp,rct)
         End Do
 
      Else If (word(1:3) == 'fbp') Then
