@@ -41,7 +41,7 @@ Subroutine two_body_forces                        &
            nstfce,lbook,megfrz, &
            leql,nsteql,nstep,         &
            cshell,               &
-           stats,ewld,devel,met,pois,neigh,site,vdw,rdf,mpole,electro,tmr,comm)
+           stats,ewld,devel,met,pois,neigh,sites,vdw,rdf,mpole,electro,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -78,7 +78,7 @@ Subroutine two_body_forces                        &
   Type( metal_type ),                       Intent( InOut ) :: met
   Type( poisson_type ),                     Intent( InOut ) :: pois
   Type( neighbours_type ),                  Intent( InOut ) :: neigh
-  Type( site_type ),                        Intent( In    ) :: site
+  Type( site_type ),                        Intent( In    ) :: sites
   Type( vdw_type ),                         Intent( InOut ) :: vdw
   Type( rdf_type ),                         Intent( InOut ) :: rdf
   Type( mpole_type ),                       Intent( InOut ) :: mpole
@@ -171,7 +171,7 @@ Subroutine two_body_forces                        &
 ! Calculate all contributions from KIM
 
   If (kimim /= ' ') Then
-     Call kim_setup(site%ntype_atom,site%unique_atom,site%site_name,kimim,neigh%max_list,comm)
+     Call kim_setup(sites%ntype_atom,sites%unique_atom,sites%site_name,kimim,neigh%max_list,comm)
      Call kim_forces(engkim,virkim,stats%stress,neigh%list,comm)
      Call kim_cleanup(comm)
   End If
@@ -180,11 +180,11 @@ Subroutine two_body_forces                        &
 
 ! Reset metal long-range corrections (constant pressure/stress only)
 
-     If (ensemble >= 20) Call metal_lrc(met,site,comm)
+     If (ensemble >= 20) Call metal_lrc(met,sites,comm)
 
 ! calculate local density in metals
 
-     Call metal_ld_compute(engden,virden,stats%stress,site%ntype_atom,met,neigh,comm)
+     Call metal_ld_compute(engden,virden,stats%stress,sites%ntype_atom,met,neigh,comm)
 
   End If
 
@@ -242,7 +242,7 @@ Subroutine two_body_forces                        &
 ! calculate metal forces and potential
 
      If (met%n_potentials > 0) Then
-        Call metal_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,safe,site%ntype_atom,met,neigh)
+        Call metal_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,safe,sites%ntype_atom,met,neigh)
 
         engmet=engmet+engacc
         virmet=virmet+viracc

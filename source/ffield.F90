@@ -82,7 +82,7 @@ Subroutine read_field                      &
            lecx,lbook,lexcl,               &
            atmfre,atmfrz,megatm,megfrz,    &
            cshell,pmf,cons,  &
-           thermo,met,bond,angle,dihedral,inversion,tether,threebody,site,vdw, &
+           thermo,met,bond,angle,dihedral,inversion,tether,threebody,sites,vdw, &
            tersoff,fourbody,rdf,mpole,ext_field,rigid,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -123,7 +123,7 @@ Subroutine read_field                      &
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type), Intent( InOut ) :: tether
   Type( threebody_type), Intent( InOut ) :: threebody
-  Type( site_type ), Intent( InOut ) :: site
+  Type( site_type ), Intent( InOut ) :: sites
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( tersoff_type ), Intent( InOut )  :: tersoff
@@ -175,9 +175,9 @@ Subroutine read_field                      &
   Character ( Len = 100 )             :: rfmt
 
 ! Initialise number of unique atom and shell types and of different types of molecules
-  site%ntype_atom = 0
-  site%ntype_shell = 0
-  site%ntype_mol = 0
+  sites%ntype_atom = 0
+  sites%ntype_shell = 0
+  sites%ntype_mol = 0
 
 ! Default flag for existence of molecules
 
@@ -376,18 +376,18 @@ Subroutine read_field                      &
           Call error(11)
         End If
         lmols=.true.
-        site%ntype_mol=Nint(word_2_real(word))
+        sites%ntype_mol=Nint(word_2_real(word))
 
-        Write(message,'(a,6x,i10)') 'number of molecular types', site%ntype_mol
+        Write(message,'(a,6x,i10)') 'number of molecular types', sites%ntype_mol
         Call info(message,.true.)
 
-        If (site%ntype_mol > mxtmls) Then
+        If (sites%ntype_mol > mxtmls) Then
           Call error(10)
         End If
 
 ! read in molecular characteristics for every molecule
 
-        Do itmols=1,site%ntype_mol
+        Do itmols=1,sites%ntype_mol
 
 ! initialise frozen constraints & RBs counters
 
@@ -412,9 +412,9 @@ Subroutine read_field                      &
               Call get_word(record,word)
            End Do
            Call strip_blanks(record)
-           site%mol_name(itmols)=word(1:Len_Trim(word)+1)//record
+           sites%mol_name(itmols)=word(1:Len_Trim(word)+1)//record
 
-           Write(message,'(a,13x,a40)') 'name of species:', site%mol_name(itmols)
+           Write(message,'(a,13x,a40)') 'name of species:', sites%mol_name(itmols)
 
 ! stop processing if energy unit has not been specified
 
@@ -437,18 +437,18 @@ Subroutine read_field                      &
               If (word(1:6) == 'nummol') Then
 
                  Call get_word(record,word)
-                 site%num_mols(itmols)=Nint(word_2_real(word))
+                 sites%num_mols(itmols)=Nint(word_2_real(word))
 
-                 Write(message,'(a,10x,i10)') 'number of molecules  ', site%num_mols(itmols)
+                 Write(message,'(a,10x,i10)') 'number of molecules  ', sites%num_mols(itmols)
 
 ! read in atomic details
 
               Else If (word(1:5) == 'atoms') Then
 
                  Call get_word(record,word)
-                 site%num_site(itmols)=Nint(word_2_real(word))
+                 sites%num_site(itmols)=Nint(word_2_real(word))
 
-                 Write(message,'(a,10x,i10)') 'number of atoms/sites', site%num_site(itmols)
+                 Write(message,'(a,10x,i10)') 'number of atoms/sites', sites%num_site(itmols)
                  Call info(message,.true.)
 
                  Write(messages(1),'(a)') 'atomic characteristics:'
@@ -461,8 +461,8 @@ Subroutine read_field                      &
 ! reference point
 
                  ksite=0
-                 Do isite=1,site%num_site(itmols)
-                    If (ksite < site%num_site(itmols)) Then
+                 Do isite=1,sites%num_site(itmols)
+                    If (ksite < sites%num_site(itmols)) Then
 
 ! read atom name, mass, charge, repeat, freeze option
 
@@ -493,7 +493,7 @@ Subroutine read_field                      &
                        ifrz=Nint(word_2_real(word))
                        If (ifrz /= 0) ifrz=1
 
-                       site%num_freeze(itmols)=site%num_freeze(itmols)+ifrz*nrept
+                       sites%num_freeze(itmols)=sites%num_freeze(itmols)+ifrz*nrept
 
                        Write(message,'(2x,i10,4x,a8,2f15.6,2i10)') &
                          ksite+1,atom1,weight,charge,nrept,ifrz
@@ -501,39 +501,39 @@ Subroutine read_field                      &
 
                        Do irept=1,nrept
                           ksite=ksite+1
-                          If (ksite > site%num_site(itmols)) Call error(21)
+                          If (ksite > sites%num_site(itmols)) Call error(21)
 
                           nsite=nsite+1
-                          If (nsite > site%max_site) Call error(20)
+                          If (nsite > sites%max_site) Call error(20)
 
-                          site%site_name(nsite)=atom1
-                          site%weight_site(nsite)=weight
-                          site%charge_site(nsite)=charge
-                          site%freeze_site(nsite)=ifrz
-                          If (site%weight_site(nsite) > 1.0e-6_wp) site%dof_site(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
+                          sites%site_name(nsite)=atom1
+                          sites%weight_site(nsite)=weight
+                          sites%charge_site(nsite)=charge
+                          sites%freeze_site(nsite)=ifrz
+                          If (sites%weight_site(nsite) > 1.0e-6_wp) sites%dof_site(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
                        End Do
 
 ! establish list of unique atom types
 
                        atmchk=.true.
-                       Do jsite=1,site%ntype_atom
-                          If (atom1 == site%unique_atom(jsite)) Then
+                       Do jsite=1,sites%ntype_atom
+                          If (atom1 == sites%unique_atom(jsite)) Then
                              atmchk=.false.
 
                              Do irept=nsite,nsite-nrept+1,-1
-                                site%type_site(irept)=jsite
+                                sites%type_site(irept)=jsite
                              End Do
                           End If
                        End Do
 
                        If (atmchk) Then
-                          site%ntype_atom=site%ntype_atom+1
-                          If (site%ntype_atom > mxatyp) Call error(14)
+                          sites%ntype_atom=sites%ntype_atom+1
+                          If (sites%ntype_atom > mxatyp) Call error(14)
 
-                          site%unique_atom(site%ntype_atom)=atom1
+                          sites%unique_atom(sites%ntype_atom)=atom1
 
                           Do irept=nsite,nsite-nrept+1,-1
-                             site%type_site(irept)=site%ntype_atom
+                             sites%type_site(irept)=sites%ntype_atom
                           End Do
                        End If
 
@@ -592,13 +592,13 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     cshell%prmshl(2,nshels)=word_2_real(word)
 
-                    isite1 = nsite - site%num_site(itmols) + iatm1
-                    isite2 = nsite - site%num_site(itmols) + iatm2
+                    isite1 = nsite - sites%num_site(itmols) + iatm1
+                    isite2 = nsite - sites%num_site(itmols) + iatm2
 
 ! test for frozen core-shell unit and print unit
 
                     If (l_top) Then
-                      If (site%freeze_site(isite1)*site%freeze_site(isite2) /= 0) Then
+                      If (sites%freeze_site(isite1)*sites%freeze_site(isite2) /= 0) Then
                         Write(message,'(2x,3i10,2f15.6,1x,a8)') &
                           ishls,cshell%lstshl(1,nshels),cshell%lstshl(2,nshels), &
                           cshell%prmshl(1,nshels),cshell%prmshl(2,nshels),'*frozen*'
@@ -612,27 +612,27 @@ Subroutine read_field                      &
 
 ! catch unidentified entry
 
-                    If (Any(cshell%lstshl(1:2,nshels) < 1) .or. Any(cshell%lstshl(1:2,nshels) > site%num_site(itmols))) Then 
+                    If (Any(cshell%lstshl(1:2,nshels) < 1) .or. Any(cshell%lstshl(1:2,nshels) > sites%num_site(itmols))) Then 
                       Call error(27)
                     End If   
 
 ! abort if a shell is frozen
 
-                    If (site%freeze_site(isite2) /= 0) Call error(49)
+                    If (sites%freeze_site(isite2) /= 0) Call error(49)
 
-! establish list of unique shell types (most certainly site%ntype_shell <= site%ntype_atom <= mxatyp)
+! establish list of unique shell types (most certainly sites%ntype_shell <= sites%ntype_atom <= mxatyp)
 
-                    If (.not.Any(site%unique_shell(1:site%ntype_shell) == site%site_name(isite2))) Then
-                       site%ntype_shell=site%ntype_shell+1
-                       site%unique_shell(site%ntype_shell)=site%site_name(isite2)
+                    If (.not.Any(sites%unique_shell(1:sites%ntype_shell) == sites%site_name(isite2))) Then
+                       sites%ntype_shell=sites%ntype_shell+1
+                       sites%unique_shell(sites%ntype_shell)=sites%site_name(isite2)
 
-                       If (site%ntype_shell > mxatyp) Call error(14)
+                       If (sites%ntype_shell > mxatyp) Call error(14)
                     End If
 
 ! There is a massless shell, all shells are massless
 
-                    lshl_one=lshl_one .or.  (site%weight_site(isite2) < 1.0e-6_wp)
-                    lshl_all=lshl_all .and. (site%weight_site(isite2) < 1.0e-6_wp)
+                    lshl_one=lshl_one .or.  (sites%weight_site(isite2) < 1.0e-6_wp)
+                    lshl_all=lshl_all .and. (sites%weight_site(isite2) < 1.0e-6_wp)
 
 ! test for mistyped core-shell unit (core must be /= shell)
 
@@ -711,28 +711,28 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     cons%prmcon(nconst)=word_2_real(word)
 
-                    isite1 = nsite - site%num_site(itmols) + iatm1
-                    isite2 = nsite - site%num_site(itmols) + iatm2
+                    isite1 = nsite - sites%num_site(itmols) + iatm1
+                    isite2 = nsite - sites%num_site(itmols) + iatm2
 
 ! number of completely frozen constraints
 
-                    If (site%freeze_site(isite1)+site%freeze_site(isite2) == 2) Then
+                    If (sites%freeze_site(isite1)+sites%freeze_site(isite2) == 2) Then
                        frzcon=frzcon+1
-                    Else If (site%freeze_site(isite1) == 1) Then
-                       site%dof_site(isite2)=site%dof_site(isite2)-1.0_wp
-                    Else If (site%freeze_site(isite2) == 1) Then
-                       site%dof_site(isite1)=site%dof_site(isite1)-1.0_wp
+                    Else If (sites%freeze_site(isite1) == 1) Then
+                       sites%dof_site(isite2)=sites%dof_site(isite2)-1.0_wp
+                    Else If (sites%freeze_site(isite2) == 1) Then
+                       sites%dof_site(isite1)=sites%dof_site(isite1)-1.0_wp
                     Else
-                       site%dof_site(isite2)=site%dof_site(isite2)-0.5_wp
-                       site%dof_site(isite1)=site%dof_site(isite1)-0.5_wp
+                       sites%dof_site(isite2)=sites%dof_site(isite2)-0.5_wp
+                       sites%dof_site(isite1)=sites%dof_site(isite1)-0.5_wp
                     End If
 
-                    If (site%dof_site(isite1) < -zero_plus) Then
+                    If (sites%dof_site(isite1) < -zero_plus) Then
                        Call warning(308,Real(isite1,wp),Real(icnst,wp),Real(itmols,wp))
                        Call error(646)
                     End If
 
-                    If (site%dof_site(isite2) < -zero_plus) Then
+                    If (sites%dof_site(isite2) < -zero_plus) Then
                        Call warning(308,Real(isite2,wp),Real(icnst,wp),Real(itmols,wp))
                        Call error(646)
                     End If
@@ -740,7 +740,7 @@ Subroutine read_field                      &
 ! test for frozen atoms and print unit
 
                     If (l_top) Then
-                      If (site%freeze_site(isite1)*site%freeze_site(isite2) /= 0) Then
+                      If (sites%freeze_site(isite1)*sites%freeze_site(isite2) /= 0) Then
                         Write(message,'(2x,3i10,f15.6,1x,a8)') &
                           icnst,cons%lstcon(1,nconst),cons%lstcon(2,nconst), &
                           cons%prmcon(nconst),'*frozen*'
@@ -755,7 +755,7 @@ Subroutine read_field                      &
 ! catch unidentified entry
 
                     If (Any(cons%lstcon(1:2,nconst) < 1) .or. &
-                        Any(cons%lstcon(1:2,nconst) > site%num_site(itmols))) Then
+                        Any(cons%lstcon(1:2,nconst) > sites%num_site(itmols))) Then
                       Call error(27)
                     End If
 
@@ -840,11 +840,11 @@ Subroutine read_field                      &
 
                        iatm1=Nint(word_2_real(word))
                        pmf%lstpmf(jpmf,ipmf)=iatm1
-                       isite1 = nsite - site%num_site(itmols) + iatm1
+                       isite1 = nsite - sites%num_site(itmols) + iatm1
 
 ! test for frozen units
 
-                       pmf%pmffrz(ipmf)=pmf%pmffrz(ipmf)+site%freeze_site(isite1)
+                       pmf%pmffrz(ipmf)=pmf%pmffrz(ipmf)+sites%freeze_site(isite1)
 
                        Call get_word(record,word)
                        weight=word_2_real(word)
@@ -861,10 +861,10 @@ Subroutine read_field                      &
 
                  Do ipmf=1,2
                     Do jpmf=1,pmf%mxtpmf(ipmf)
-                       isite1 = nsite - site%num_site(itmols) + pmf%lstpmf(jpmf,ipmf)
+                       isite1 = nsite - sites%num_site(itmols) + pmf%lstpmf(jpmf,ipmf)
 
-                       pmf%pmfwg1(jpmf,ipmf)=site%weight_site(isite1)
-                       If (pmf_tmp(ipmf) < 1.0e-6_wp) pmf%pmfwgt(jpmf,ipmf)=site%weight_site(isite1)
+                       pmf%pmfwg1(jpmf,ipmf)=sites%weight_site(isite1)
+                       If (pmf_tmp(ipmf) < 1.0e-6_wp) pmf%pmfwgt(jpmf,ipmf)=sites%weight_site(isite1)
                     End Do
 
 ! if a PMF unit is still weightless set all members' masses to 1
@@ -889,8 +889,8 @@ Subroutine read_field                      &
 
                     Do ipmf=1,2
                        Do jpmf=1,pmf%mxtpmf(ipmf)
-                          isite1 = nsite - site%num_site(itmols) + pmf%lstpmf(jpmf,ipmf)
-                          If (site%freeze_site(isite1) /= 0) Then
+                          isite1 = nsite - sites%num_site(itmols) + pmf%lstpmf(jpmf,ipmf)
+                          If (sites%freeze_site(isite1) /= 0) Then
                             Write(message,'(2x,2i10,f15.6,1x,a8)') &
                               ipmf,pmf%lstpmf(jpmf,ipmf),pmf%pmfwgt(jpmf,ipmf),'*frozen*'
                           Else
@@ -906,9 +906,9 @@ Subroutine read_field                      &
 ! catch unidentified entry
 
                  If ( (Any(pmf%lstpmf(1:pmf%mxtpmf(1),1) < 1) .or. &
-                       Any(pmf%lstpmf(1:pmf%mxtpmf(1),1) > site%num_site(itmols))) .or. &
+                       Any(pmf%lstpmf(1:pmf%mxtpmf(1),1) > sites%num_site(itmols))) .or. &
                       (Any(pmf%lstpmf(1:pmf%mxtpmf(2),2) < 1) .or. &
-                       Any(pmf%lstpmf(1:pmf%mxtpmf(2),2) > site%num_site(itmols))) ) Then
+                       Any(pmf%lstpmf(1:pmf%mxtpmf(2),2) > sites%num_site(itmols))) ) Then
                    Call error(27)
                  End If
 
@@ -935,11 +935,11 @@ Subroutine read_field                      &
                        If (ntmp > 0) Then
                           tmp=charge/Real(ntmp,wp)
                           Do jpmf=1,pmf%mxtpmf(ipmf)
-                             isite1 = nsite - site%num_site(itmols) + pmf%lstpmf(jpmf,ipmf)
-                             If (site%freeze_site(isite1) == 0) Then
-                                site%dof_site(isite1)=site%dof_site(isite1)-tmp
+                             isite1 = nsite - sites%num_site(itmols) + pmf%lstpmf(jpmf,ipmf)
+                             If (sites%freeze_site(isite1) == 0) Then
+                                sites%dof_site(isite1)=sites%dof_site(isite1)-tmp
 
-                                If (site%dof_site(isite1) < -zero_plus) Then
+                                If (sites%dof_site(isite1) < -zero_plus) Then
                                    Call warning(309,Real(isite1,wp),Real(jpmf,wp),Real(ipmf,wp))
                                    Call error(949)
                                 End If
@@ -1019,12 +1019,12 @@ Subroutine read_field                      &
                        iatm1=Nint(word_2_real(word))
                        rigid%lst(jrgd,nrigid)=iatm1
 
-                       isite1 = nsite - site%num_site(itmols) + iatm1
+                       isite1 = nsite - sites%num_site(itmols) + iatm1
 
 ! test for frozen and weightless atoms
 
-                       rigid%frozen(jrgd,nrigid)=site%freeze_site(isite1)
-                       rigid%weight(jrgd,nrigid)=site%weight_site(isite1)
+                       rigid%frozen(jrgd,nrigid)=sites%freeze_site(isite1)
+                       rigid%weight(jrgd,nrigid)=sites%weight_site(isite1)
                     End Do
                     rigid%lst(0,nrigid)=lrgd
                     rigid%frozen(0,nrigid)=Sum(rigid%frozen(1:lrgd,nrigid))
@@ -1068,7 +1068,7 @@ Subroutine read_field                      &
 ! catch unidentified entry
 
                        If (Any(rigid%lst(1:lrgd,nrigid) < 1) .or. &
-                           Any(rigid%lst(1:lrgd,nrigid) > site%num_site(itmols))) Then
+                           Any(rigid%lst(1:lrgd,nrigid) > sites%num_site(itmols))) Then
                          Call error(27)
                        End If
 
@@ -1167,12 +1167,12 @@ Subroutine read_field                      &
                     Call get_word(record,word)
                     tether%prmtet(3,nteth)=word_2_real(word)
 
-                    isite1 = nsite - site%num_site(itmols) + iatm1
+                    isite1 = nsite - sites%num_site(itmols) + iatm1
 
 ! test for frozen atom and print unit
 
                     If (l_top) Then
-                       If (site%freeze_site(isite1) /= 0) Then
+                       If (sites%freeze_site(isite1) /= 0) Then
                          Write(rfmt,'(a,i0,a)') '(2x,i10,a8,i10,2x,',tether%mxpteth,'f15.6,2x,a8)'
                          Write(message,rfmt) iteth,keyword,tether%lsttet(nteth),tether%prmtet(1:tether%mxpteth,nteth),'*frozen*'
                        Else
@@ -1184,7 +1184,7 @@ Subroutine read_field                      &
 
 ! catch unidentified entry
 
-                    If (tether%lsttet(nteth) < 1 .or. tether%lsttet(nteth) > site%num_site(itmols)) Call error(27)
+                    If (tether%lsttet(nteth) < 1 .or. tether%lsttet(nteth) > sites%num_site(itmols)) Call error(27)
 
 ! convert energy units to internal units
 
@@ -1309,8 +1309,8 @@ Subroutine read_field                      &
                     bond%lst(1,nbonds)=iatm1
                     bond%lst(2,nbonds)=iatm2
 
-                    isite1 = nsite - site%num_site(itmols) + iatm1
-                    isite2 = nsite - site%num_site(itmols) + iatm2
+                    isite1 = nsite - sites%num_site(itmols) + iatm1
+                    isite2 = nsite - sites%num_site(itmols) + iatm2
 
                     If (Abs(bond%key(nbonds)) /= 20) Then
 
@@ -1332,7 +1332,7 @@ Subroutine read_field                      &
 ! test for frozen atoms and print unit
 
                        If (l_top) Then
-                          If (site%freeze_site(isite1)*site%freeze_site(isite2) /= 0) Then
+                          If (sites%freeze_site(isite1)*sites%freeze_site(isite2) /= 0) Then
                             Write(rfmt,'(a,i0,a)') '(2x,i10,a8,2i10,',bond%max_param,'f15.6,2x,a8)'
                             Write(message,rfmt) ibond,keyword,bond%lst(1,nbonds), &
                               bond%lst(2,nbonds),bond%param(1:bond%max_param,nbonds),'*frozen*'
@@ -1368,15 +1368,15 @@ Subroutine read_field                      &
 
 ! Construct unique name for the tabulated bond
 
-                       Do jsite=1,site%ntype_atom
-                          If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                          If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
+                       Do jsite=1,sites%ntype_atom
+                          If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                          If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
                        End Do
 
                        If (katom1 <= katom2) Then
-                          idbond = site%site_name(iatm1)//site%site_name(iatm2)
+                          idbond = sites%site_name(iatm1)//sites%site_name(iatm2)
                        Else
-                          idbond = site%site_name(iatm2)//site%site_name(iatm1)
+                          idbond = sites%site_name(iatm2)//sites%site_name(iatm1)
                        End If
 
 ! ntpbnd total number of unique table potentials to read from TABBND
@@ -1397,7 +1397,7 @@ Subroutine read_field                      &
                        End If
 
                        If (l_top) Then
-                          If (site%freeze_site(isite1)*site%freeze_site(isite2) /= 0) Then
+                          If (sites%freeze_site(isite1)*sites%freeze_site(isite2) /= 0) Then
                             Write(message,'(2x,i10,a8,2i10,2x,a9,2x,a8)') &
                               ibond,keyword,bond%lst(1,nbonds),bond%lst(2,nbonds), &
                               "tabulated",'*frozen*'
@@ -1414,7 +1414,7 @@ Subroutine read_field                      &
 
 ! catch unidentified entry
 
-                    If (Any(bond%lst(1:2,nbonds) < 1) .or. Any(bond%lst(1:2,nbonds) > site%num_site(itmols))) Call error(27)
+                    If (Any(bond%lst(1:2,nbonds) < 1) .or. Any(bond%lst(1:2,nbonds) > sites%num_site(itmols))) Call error(27)
 
 ! test for mistyped chemical bond unit
 
@@ -1559,9 +1559,9 @@ Subroutine read_field                      &
                     angle%lst(2,nangle)=iatm2
                     angle%lst(3,nangle)=iatm3
 
-                    isite1 = nsite - site%num_site(itmols) + iatm1
-                    isite2 = nsite - site%num_site(itmols) + iatm2
-                    isite3 = nsite - site%num_site(itmols) + iatm3
+                    isite1 = nsite - sites%num_site(itmols) + iatm1
+                    isite2 = nsite - sites%num_site(itmols) + iatm2
+                    isite3 = nsite - sites%num_site(itmols) + iatm3
 
                     If (Abs(angle%key(nangle)) /= 20) Then
 
@@ -1581,7 +1581,7 @@ Subroutine read_field                      &
 ! test for frozen atoms and print unit
 
                        If (l_top) Then
-                         If (site%freeze_site(isite1)*site%freeze_site(isite2)*site%freeze_site(isite3) /= 0) Then
+                         If (sites%freeze_site(isite1)*sites%freeze_site(isite2)*sites%freeze_site(isite3) /= 0) Then
                            write(rfmt,'(a,i0,a)') '(2x,i10,a8,3i10,',angle%max_param,'f15.6,2x,a8)'
                            write(message,rfmt) iang,keyword,angle%lst(1:3,nangle),angle%param(1:angle%max_param,nangle),'*frozen*'
                          Else
@@ -1615,15 +1615,15 @@ Subroutine read_field                      &
 
 ! Construct unique name for the tabulated angle
 
-                       Do jsite=1,site%ntype_atom
-                          If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                          If (site%site_name(isite3) == site%unique_atom(jsite)) katom3=jsite
+                       Do jsite=1,sites%ntype_atom
+                          If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                          If (sites%site_name(isite3) == sites%unique_atom(jsite)) katom3=jsite
                        End Do
 
                        If (katom1 <= katom3) Then
-                          idangl = site%site_name(iatm1)//site%site_name(iatm2)//site%site_name(iatm3)
+                          idangl = sites%site_name(iatm1)//sites%site_name(iatm2)//sites%site_name(iatm3)
                        Else
-                          idangl = site%site_name(iatm3)//site%site_name(iatm2)//site%site_name(iatm1)
+                          idangl = sites%site_name(iatm3)//sites%site_name(iatm2)//sites%site_name(iatm1)
                        End If
 
 ! ntpang total number of unique table potentials to read from TABANG
@@ -1646,7 +1646,7 @@ Subroutine read_field                      &
 ! test for frozen atoms and print unit
 
                        If (l_top) Then
-                          If (site%freeze_site(isite1)*site%freeze_site(isite2)*site%freeze_site(isite3) /= 0) Then
+                          If (sites%freeze_site(isite1)*sites%freeze_site(isite2)*sites%freeze_site(isite3) /= 0) Then
                             Write(message,'(2x,i10,a8,3i10,2x,a9,2x,a8)') &
                               iang,keyword,angle%lst(1:3,nangle),'tabulated','*frozen*'
                           Else
@@ -1660,7 +1660,7 @@ Subroutine read_field                      &
 
 ! catch unidentified entry
 
-                    If (Any(angle%lst(1:3,nangle) < 1) .or. Any(angle%lst(1:3,nangle) > site%num_site(itmols))) Call error(27)
+                    If (Any(angle%lst(1:3,nangle) < 1) .or. Any(angle%lst(1:3,nangle) > sites%num_site(itmols))) Call error(27)
 
 ! test for mistyped bond angle unit
 
@@ -1783,10 +1783,10 @@ Subroutine read_field                      &
                     dihedral%lst(3,ndihed)=iatm3
                     dihedral%lst(4,ndihed)=iatm4
 
-                    isite1 = nsite - site%num_site(itmols) + iatm1
-                    isite2 = nsite - site%num_site(itmols) + iatm2
-                    isite3 = nsite - site%num_site(itmols) + iatm3
-                    isite4 = nsite - site%num_site(itmols) + iatm4
+                    isite1 = nsite - sites%num_site(itmols) + iatm1
+                    isite2 = nsite - sites%num_site(itmols) + iatm2
+                    isite3 = nsite - sites%num_site(itmols) + iatm3
+                    isite4 = nsite - sites%num_site(itmols) + iatm4
 
                     If (dihedral%key(ndihed) /= 20) Then
 
@@ -1808,8 +1808,8 @@ Subroutine read_field                      &
 ! test for frozen atoms and print unit
 
                        If (l_top) Then
-                          If (site%freeze_site(isite1)*site%freeze_site(isite2)* &
-                              site%freeze_site(isite3)*site%freeze_site(isite4) /= 0) Then
+                          If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
+                              sites%freeze_site(isite3)*sites%freeze_site(isite4) /= 0) Then
                             Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',dihedral%max_param,'f15.6,2x,a8)'
                             Write(message,rfmt) idih,keyword,dihedral%lst(1:4,ndihed), &
                               dihedral%param(1:dihedral%max_param,ndihed),'*frozen*'
@@ -1841,35 +1841,35 @@ Subroutine read_field                      &
 
 ! Construct unique name for the tabulated dihedral
 
-                       Do jsite=1,site%ntype_atom
-                          If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                          If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
-                          If (site%site_name(isite3) == site%unique_atom(jsite)) katom3=jsite
-                          If (site%site_name(isite4) == site%unique_atom(jsite)) katom4=jsite
+                       Do jsite=1,sites%ntype_atom
+                          If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                          If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
+                          If (sites%site_name(isite3) == sites%unique_atom(jsite)) katom3=jsite
+                          If (sites%site_name(isite4) == sites%unique_atom(jsite)) katom4=jsite
                        End Do
 
                        If      (katom1 == katom4) Then
                           If (katom2 <= katom3) Then
-                             iddihd = site%site_name(iatm1)// &
-                               site%site_name(iatm2)// &
-                               site%site_name(iatm3)// &
-                               site%site_name(iatm4)
+                             iddihd = sites%site_name(iatm1)// &
+                               sites%site_name(iatm2)// &
+                               sites%site_name(iatm3)// &
+                               sites%site_name(iatm4)
                           Else
-                             iddihd = site%site_name(iatm1)// &
-                               site%site_name(iatm3)// &
-                               site%site_name(iatm2)// &
-                               site%site_name(iatm4)
+                             iddihd = sites%site_name(iatm1)// &
+                               sites%site_name(iatm3)// &
+                               sites%site_name(iatm2)// &
+                               sites%site_name(iatm4)
                           End If
                        Else If (katom1 <  katom4) Then
-                          iddihd = site%site_name(iatm1)// &
-                            site%site_name(iatm2)// &
-                            site%site_name(iatm3)// &
-                            site%site_name(iatm4)
+                          iddihd = sites%site_name(iatm1)// &
+                            sites%site_name(iatm2)// &
+                            sites%site_name(iatm3)// &
+                            sites%site_name(iatm4)
                        Else
-                          iddihd = site%site_name(iatm4)// &
-                            site%site_name(iatm3)// &
-                            site%site_name(iatm2)// &
-                            site%site_name(iatm1)
+                          iddihd = sites%site_name(iatm4)// &
+                            sites%site_name(iatm3)// &
+                            sites%site_name(iatm2)// &
+                            sites%site_name(iatm1)
                        End If
 
 ! ntpdih total number of unique table potentials to read from TABDIH
@@ -1892,8 +1892,8 @@ Subroutine read_field                      &
 ! test for frozen atoms and print unit
 
                        If (l_top) Then
-                          If (site%freeze_site(isite1)*site%freeze_site(isite2)* &
-                              site%freeze_site(isite3)*site%freeze_site(isite4) /= 0) Then
+                          If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
+                              sites%freeze_site(isite3)*sites%freeze_site(isite4) /= 0) Then
                             Write(message,'(2x,i10,a8,4i10,2x,a9,2x,a8)') &
                               idih,keyword,dihedral%lst(1:4,ndihed),'tabulated','*frozen*'
                           Else
@@ -1908,7 +1908,7 @@ Subroutine read_field                      &
 ! catch unidentified entry
 
                     If (Any(dihedral%lst(1:4,ndihed) < 1) .or. Any(dihedral%lst(1:4,ndihed) > &
-                        site%num_site(itmols))) Then
+                        sites%num_site(itmols))) Then
                       Call error(27)
                     End If
 
@@ -2031,10 +2031,10 @@ Subroutine read_field                      &
                     inversion%lst(3,ninver)=iatm3
                     inversion%lst(4,ninver)=iatm4
 
-                    isite1 = nsite - site%num_site(itmols) + iatm1
-                    isite2 = nsite - site%num_site(itmols) + iatm2
-                    isite3 = nsite - site%num_site(itmols) + iatm3
-                    isite4 = nsite - site%num_site(itmols) + iatm4
+                    isite1 = nsite - sites%num_site(itmols) + iatm1
+                    isite2 = nsite - sites%num_site(itmols) + iatm2
+                    isite3 = nsite - sites%num_site(itmols) + iatm3
+                    isite4 = nsite - sites%num_site(itmols) + iatm4
 
                     If (inversion%key(ninver) /= 20) Then
 
@@ -2048,8 +2048,8 @@ Subroutine read_field                      &
 ! test for frozen atoms and print unit
 
                        If (comm%idnode == 0 .and. l_top) Then
-                          If (site%freeze_site(isite1)*site%freeze_site(isite2)* &
-                              site%freeze_site(isite3)*site%freeze_site(isite4) /= 0) Then
+                          If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
+                              sites%freeze_site(isite3)*sites%freeze_site(isite4) /= 0) Then
                             Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',inversion%max_param,'f15.6,2x,a8)'
                             Write(message,rfmt) iinv,keyword,inversion%lst(1:4,ninver), &
                               inversion%param(1:inversion%max_param,ninver),'*frozen*'
@@ -2077,47 +2077,47 @@ Subroutine read_field                      &
 
 ! Construct unique name for the tabulated inversions
 
-                       Do jsite=1,site%ntype_atom
-                          If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
-                          If (site%site_name(isite3) == site%unique_atom(jsite)) katom3=jsite
-                          If (site%site_name(isite4) == site%unique_atom(jsite)) katom4=jsite
+                       Do jsite=1,sites%ntype_atom
+                          If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
+                          If (sites%site_name(isite3) == sites%unique_atom(jsite)) katom3=jsite
+                          If (sites%site_name(isite4) == sites%unique_atom(jsite)) katom4=jsite
                        End Do
 
                        If      (Min(katom2,katom3,katom4) == katom2) Then
                           If (katom3 <= katom4) Then
-                             idinvr = site%site_name(iatm1)// &
-                               site%site_name(iatm2)// &
-                               site%site_name(iatm3)// &
-                               site%site_name(iatm4)
+                             idinvr = sites%site_name(iatm1)// &
+                               sites%site_name(iatm2)// &
+                               sites%site_name(iatm3)// &
+                               sites%site_name(iatm4)
                           Else
-                             idinvr = site%site_name(iatm1)// &
-                               site%site_name(iatm2)// &
-                               site%site_name(iatm4)// &
-                               site%site_name(iatm3)
+                             idinvr = sites%site_name(iatm1)// &
+                               sites%site_name(iatm2)// &
+                               sites%site_name(iatm4)// &
+                               sites%site_name(iatm3)
                           End If
                        Else If (Min(katom2,katom3,katom4) == katom3) Then
                           If (katom2 <= katom4) Then
-                             idinvr = site%site_name(iatm1)// &
-                               site%site_name(iatm3)// &
-                               site%site_name(iatm2)// &
-                               site%site_name(iatm4)
+                             idinvr = sites%site_name(iatm1)// &
+                               sites%site_name(iatm3)// &
+                               sites%site_name(iatm2)// &
+                               sites%site_name(iatm4)
                           Else
-                             idinvr = site%site_name(iatm1)// &
-                               site%site_name(iatm3)// &
-                               site%site_name(iatm4)// &
-                               site%site_name(iatm2)
+                             idinvr = sites%site_name(iatm1)// &
+                               sites%site_name(iatm3)// &
+                               sites%site_name(iatm4)// &
+                               sites%site_name(iatm2)
                           End If
                        Else
                           If (katom2 <= katom3) Then
-                             idinvr = site%site_name(iatm1)// &
-                               site%site_name(iatm4)// &
-                               site%site_name(iatm2)// &
-                               site%site_name(iatm3)
+                             idinvr = sites%site_name(iatm1)// &
+                               sites%site_name(iatm4)// &
+                               sites%site_name(iatm2)// &
+                               sites%site_name(iatm3)
                           Else
-                             idinvr = site%site_name(iatm1)// &
-                               site%site_name(iatm4)// &
-                               site%site_name(iatm3)// &
-                               site%site_name(iatm2)
+                             idinvr = sites%site_name(iatm1)// &
+                               sites%site_name(iatm4)// &
+                               sites%site_name(iatm3)// &
+                               sites%site_name(iatm2)
                           End If
                        End If
 
@@ -2141,8 +2141,8 @@ Subroutine read_field                      &
 ! test for frozen atoms and print unit
 
                        If (comm%idnode == 0 .and. l_top) Then
-                          If (site%freeze_site(isite1)*site%freeze_site(isite2)* &
-                              site%freeze_site(isite3)*site%freeze_site(isite4) /= 0) Then
+                          If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
+                              sites%freeze_site(isite3)*sites%freeze_site(isite4) /= 0) Then
                             Write(message,'(2x,i10,a8,4i10,2x,a9,2x,a8)') &
                               iinv,keyword,inversion%lst(1:4,ninver),'tabulated','*frozen*'
                           Else
@@ -2157,7 +2157,7 @@ Subroutine read_field                      &
 ! catch unidentified entry
 
                     If (Any(inversion%lst(1:4,ninver) < 1) .or. Any(inversion%lst(1:4,ninver) > &
-                        site%num_site(itmols))) Then
+                        sites%num_site(itmols))) Then
                       Call error(27)
                     End If
 
@@ -2201,22 +2201,22 @@ Subroutine read_field                      &
 ! running totals of number of atoms and frozen atoms, and general types of
 ! intra-like interactions in system
 
-                 megatm=megatm+site%num_mols(itmols)*site%num_site(itmols)
-                 megfrz=megfrz+site%num_mols(itmols)*site%num_freeze(itmols)
+                 megatm=megatm+sites%num_mols(itmols)*sites%num_site(itmols)
+                 megfrz=megfrz+sites%num_mols(itmols)*sites%num_freeze(itmols)
 
-                 cshell%megshl=cshell%megshl+site%num_mols(itmols)*cshell%numshl(itmols)
+                 cshell%megshl=cshell%megshl+sites%num_mols(itmols)*cshell%numshl(itmols)
 
-                 cons%megcon=cons%megcon+site%num_mols(itmols)*(cons%numcon(itmols)-frzcon)
-                 pmf%megpmf=pmf%megpmf+site%num_mols(itmols)*pmf%numpmf(itmols)
+                 cons%megcon=cons%megcon+sites%num_mols(itmols)*(cons%numcon(itmols)-frzcon)
+                 pmf%megpmf=pmf%megpmf+sites%num_mols(itmols)*pmf%numpmf(itmols)
 
-                 rigid%total=rigid%total+site%num_mols(itmols)*(rigid%num(itmols)-frzrgd)
+                 rigid%total=rigid%total+sites%num_mols(itmols)*(rigid%num(itmols)-frzrgd)
 
-                 tether%total=tether%total+site%num_mols(itmols)*tether%numteth(itmols)
+                 tether%total=tether%total+sites%num_mols(itmols)*tether%numteth(itmols)
 
-                 bond%total=bond%total+site%num_mols(itmols)*bond%num(itmols)
-                 angle%total=angle%total+site%num_mols(itmols)*angle%num(itmols)
-                 dihedral%total=dihedral%total+site%num_mols(itmols)*dihedral%num(itmols)
-                 inversion%total=inversion%total+site%num_mols(itmols)*inversion%num(itmols)
+                 bond%total=bond%total+sites%num_mols(itmols)*bond%num(itmols)
+                 angle%total=angle%total+sites%num_mols(itmols)*angle%num(itmols)
+                 dihedral%total=dihedral%total+sites%num_mols(itmols)*dihedral%num(itmols)
+                 inversion%total=inversion%total+sites%num_mols(itmols)*inversion%num(itmols)
 
                  Go To 1000
 
@@ -2241,17 +2241,17 @@ Subroutine read_field                      &
 
 ! report total molecules and sites
 
-        Write(messages(1),'(a,i10)') 'total number of molecules ',Sum(site%num_mols(1:site%ntype_mol))
+        Write(messages(1),'(a,i10)') 'total number of molecules ',Sum(sites%num_mols(1:sites%ntype_mol))
         Write(messages(2),'(a,i10)') 'total number of sites ',nsite
         Call info(messages,2,.true.)
 
 ! Deal with intarmolecular potential tables:
 ! read & generate intramolecular potential & virial arrays
 
-        If (bond%l_tab) Call bonds_table_read(bond_name,bond,site,comm)
-        If (angle%l_tab) Call angles_table_read(angl_name,angle,site,comm)
-        If (dihedral%l_tab) Call dihedrals_table_read(dihd_name,dihedral,site,comm)
-        If (inversion%l_tab) Call inversions_table_read(invr_name,inversion,site,comm)
+        If (bond%l_tab) Call bonds_table_read(bond_name,bond,sites,comm)
+        If (angle%l_tab) Call angles_table_read(angl_name,angle,sites,comm)
+        If (dihedral%l_tab) Call dihedrals_table_read(dihd_name,dihedral,sites,comm)
+        If (inversion%l_tab) Call inversions_table_read(invr_name,inversion,sites,comm)
 
 ! If some intramolecular PDFs analysis is opted for
 
@@ -2282,7 +2282,7 @@ Subroutine read_field                      &
            nangle=0
            ndihed=0
            ninver=0
-           Do itmols=1,site%ntype_mol
+           Do itmols=1,sites%ntype_mol
               Do ibond=1,bond%num(itmols)*Merge(1,0,bond%bin_pdf > 0)
                  nbonds=nbonds+1
 
@@ -2294,15 +2294,15 @@ Subroutine read_field                      &
 
 ! Construct unique name for the bond
 
-                 Do jsite=1,site%ntype_atom
-                    If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                    If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
+                 Do jsite=1,sites%ntype_atom
+                    If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                    If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
                  End Do
 
                  If (katom1 <= katom2) Then
-                    idbond = site%site_name(iatm1)//site%site_name(iatm2)
+                    idbond = sites%site_name(iatm1)//sites%site_name(iatm2)
                  Else
-                    idbond = site%site_name(iatm2)//site%site_name(iatm1)
+                    idbond = sites%site_name(iatm2)//sites%site_name(iatm1)
                  End If
 
 ! ntpbnd total number of unique BPDFs
@@ -2336,15 +2336,15 @@ Subroutine read_field                      &
 
 ! Construct unique name for the angle
 
-                 Do jsite=1,site%ntype_atom
-                    If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                    If (site%site_name(isite3) == site%unique_atom(jsite)) katom3=jsite
+                 Do jsite=1,sites%ntype_atom
+                    If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                    If (sites%site_name(isite3) == sites%unique_atom(jsite)) katom3=jsite
                  End Do
 
                  If (katom1 <= katom3) Then
-                    idangl = site%site_name(iatm1)//site%site_name(iatm2)//site%site_name(iatm3)
+                    idangl = sites%site_name(iatm1)//sites%site_name(iatm2)//sites%site_name(iatm3)
                  Else
-                    idangl = site%site_name(iatm3)//site%site_name(iatm2)//site%site_name(iatm1)
+                    idangl = sites%site_name(iatm3)//sites%site_name(iatm2)//sites%site_name(iatm1)
                  End If
 
 ! ntpang total number of unique APDFs
@@ -2380,35 +2380,35 @@ Subroutine read_field                      &
 
 ! Construct unique name for the dihedral
 
-                 Do jsite=1,site%ntype_atom
-                    If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                    If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
-                    If (site%site_name(isite3) == site%unique_atom(jsite)) katom3=jsite
-                    If (site%site_name(isite4) == site%unique_atom(jsite)) katom4=jsite
+                 Do jsite=1,sites%ntype_atom
+                    If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                    If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
+                    If (sites%site_name(isite3) == sites%unique_atom(jsite)) katom3=jsite
+                    If (sites%site_name(isite4) == sites%unique_atom(jsite)) katom4=jsite
                  End Do
 
                  If      (katom1 == katom4) Then
                     If (katom2 <= katom3) Then
-                       iddihd = site%site_name(iatm1)// &
-                         site%site_name(iatm2)// &
-                         site%site_name(iatm3)// &
-                         site%site_name(iatm4)
+                       iddihd = sites%site_name(iatm1)// &
+                         sites%site_name(iatm2)// &
+                         sites%site_name(iatm3)// &
+                         sites%site_name(iatm4)
                     Else
-                       iddihd = site%site_name(iatm1)// &
-                         site%site_name(iatm3)// &
-                         site%site_name(iatm2)// &
-                         site%site_name(iatm4)
+                       iddihd = sites%site_name(iatm1)// &
+                         sites%site_name(iatm3)// &
+                         sites%site_name(iatm2)// &
+                         sites%site_name(iatm4)
                     End If
                  Else If (katom1 <  katom4) Then
-                    iddihd = site%site_name(iatm1)// &
-                      site%site_name(iatm2)// &
-                      site%site_name(iatm3)// &
-                      site%site_name(iatm4)
+                    iddihd = sites%site_name(iatm1)// &
+                      sites%site_name(iatm2)// &
+                      sites%site_name(iatm3)// &
+                      sites%site_name(iatm4)
                  Else
-                    iddihd = site%site_name(iatm4)// &
-                      site%site_name(iatm3)// &
-                      site%site_name(iatm2)// &
-                      site%site_name(iatm1)
+                    iddihd = sites%site_name(iatm4)// &
+                      sites%site_name(iatm3)// &
+                      sites%site_name(iatm2)// &
+                      sites%site_name(iatm1)
                  End If
 
 ! ntpdih total number of unique DPDFs
@@ -2446,47 +2446,47 @@ Subroutine read_field                      &
 
 ! Construct unique name for the tabulated inversions
 
-                 Do jsite=1,site%ntype_atom
-                    If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
-                    If (site%site_name(isite3) == site%unique_atom(jsite)) katom3=jsite
-                    If (site%site_name(isite4) == site%unique_atom(jsite)) katom4=jsite
+                 Do jsite=1,sites%ntype_atom
+                    If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
+                    If (sites%site_name(isite3) == sites%unique_atom(jsite)) katom3=jsite
+                    If (sites%site_name(isite4) == sites%unique_atom(jsite)) katom4=jsite
                  End Do
 
                  If      (Min(katom2,katom3,katom4) == katom2) Then
                     If (katom3 <= katom4) Then
-                       idinvr = site%site_name(iatm1)// &
-                         site%site_name(iatm2)// &
-                         site%site_name(iatm3)// &
-                         site%site_name(iatm4)
+                       idinvr = sites%site_name(iatm1)// &
+                         sites%site_name(iatm2)// &
+                         sites%site_name(iatm3)// &
+                         sites%site_name(iatm4)
                     Else
-                       idinvr = site%site_name(iatm1)// &
-                         site%site_name(iatm2)// &
-                         site%site_name(iatm4)// &
-                         site%site_name(iatm3)
+                       idinvr = sites%site_name(iatm1)// &
+                         sites%site_name(iatm2)// &
+                         sites%site_name(iatm4)// &
+                         sites%site_name(iatm3)
                     End If
                  Else If (Min(katom2,katom3,katom4) == katom3) Then
                     If (katom2 <= katom4) Then
-                       idinvr = site%site_name(iatm1)// &
-                         site%site_name(iatm3)// &
-                         site%site_name(iatm2)// &
-                         site%site_name(iatm4)
+                       idinvr = sites%site_name(iatm1)// &
+                         sites%site_name(iatm3)// &
+                         sites%site_name(iatm2)// &
+                         sites%site_name(iatm4)
                     Else
-                       idinvr = site%site_name(iatm1)// &
-                         site%site_name(iatm3)// &
-                         site%site_name(iatm4)// &
-                         site%site_name(iatm2)
+                       idinvr = sites%site_name(iatm1)// &
+                         sites%site_name(iatm3)// &
+                         sites%site_name(iatm4)// &
+                         sites%site_name(iatm2)
                     End If
                  Else
                     If (katom2 <= katom3) Then
-                       idinvr = site%site_name(iatm1)// &
-                         site%site_name(iatm4)// &
-                         site%site_name(iatm2)// &
-                         site%site_name(iatm3)
+                       idinvr = sites%site_name(iatm1)// &
+                         sites%site_name(iatm4)// &
+                         sites%site_name(iatm2)// &
+                         sites%site_name(iatm3)
                     Else
-                       idinvr = site%site_name(iatm1)// &
-                         site%site_name(iatm4)// &
-                         site%site_name(iatm3)// &
-                         site%site_name(iatm2)
+                       idinvr = sites%site_name(iatm1)// &
+                         sites%site_name(iatm4)// &
+                         sites%site_name(iatm3)// &
+                         sites%site_name(iatm2)
                     End If
                  End If
 
@@ -2508,7 +2508,7 @@ Subroutine read_field                      &
                  End If
               End Do
 
-              nsite=nsite+site%num_site(itmols)
+              nsite=nsite+sites%num_site(itmols)
            End Do
 
 ! Only for the requested types of PDFs (re)initialise number of unique intramolecular PDFs
@@ -2540,7 +2540,7 @@ Subroutine read_field                      &
            nangle=0
            ndihed=0
            ninver=0
-           Do itmols=1,site%ntype_mol
+           Do itmols=1,sites%ntype_mol
               Do ibond=1,bond%num(itmols)*Merge(1,0,bond%bin_pdf > 0)
                  nbonds=nbonds+1
 
@@ -2559,9 +2559,9 @@ Subroutine read_field                      &
 
                     ntpbnd=ntpbnd+1
 
-                    Do jsite=1,site%ntype_atom
-                       If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                       If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
+                    Do jsite=1,sites%ntype_atom
+                       If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                       If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
                     End Do
 
                     If (katom1 <= katom2) Then
@@ -2572,20 +2572,20 @@ Subroutine read_field                      &
                        bond%typ(2,ntpbnd)=katom1
                     End If
 
-                    If (site%freeze_site(isite1)*site%freeze_site(isite2) == 0) Then
-                       bond%typ(0,ntpbnd)=bond%typ(0,ntpbnd)+site%num_mols(itmols)
+                    If (sites%freeze_site(isite1)*sites%freeze_site(isite2) == 0) Then
+                       bond%typ(0,ntpbnd)=bond%typ(0,ntpbnd)+sites%num_mols(itmols)
                     Else
-                       bond%typ(-1,ntpbnd)=bond%typ(-1,ntpbnd)+site%num_mols(itmols)
+                       bond%typ(-1,ntpbnd)=bond%typ(-1,ntpbnd)+sites%num_mols(itmols)
                     End If
 
                  Else If (j > 0) Then
 
 ! accumulate the existing type and presence(frozen and non-frozen)
 
-                    If (site%freeze_site(isite1)*site%freeze_site(isite2) == 0) Then
-                       bond%typ(0,j)=bond%typ(0,j)+site%num_mols(itmols)
+                    If (sites%freeze_site(isite1)*sites%freeze_site(isite2) == 0) Then
+                       bond%typ(0,j)=bond%typ(0,j)+sites%num_mols(itmols)
                     Else
-                       bond%typ(-1,j)=bond%typ(-1,j)+site%num_mols(itmols)
+                       bond%typ(-1,j)=bond%typ(-1,j)+sites%num_mols(itmols)
                     End If
 
                  End If
@@ -2609,10 +2609,10 @@ Subroutine read_field                      &
 
                     ntpang=ntpang+1
 
-                    Do jsite=1,site%ntype_atom
-                       If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                       If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
-                       If (site%site_name(isite3) == site%unique_atom(jsite)) katom3=jsite
+                    Do jsite=1,sites%ntype_atom
+                       If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                       If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
+                       If (sites%site_name(isite3) == sites%unique_atom(jsite)) katom3=jsite
                     End Do
 
                     angle%typ(2,ntpang)=katom2
@@ -2624,20 +2624,20 @@ Subroutine read_field                      &
                        angle%typ(3,ntpang)=katom1
                     End If
 
-                    If (site%freeze_site(isite1)*site%freeze_site(isite2)*site%freeze_site(isite3) == 0) Then
-                       angle%typ(0,ntpang)=angle%typ(0,ntpang)+site%num_mols(itmols)
+                    If (sites%freeze_site(isite1)*sites%freeze_site(isite2)*sites%freeze_site(isite3) == 0) Then
+                       angle%typ(0,ntpang)=angle%typ(0,ntpang)+sites%num_mols(itmols)
                     Else
-                       angle%typ(-1,ntpang)=angle%typ(-1,ntpang)+site%num_mols(itmols)
+                       angle%typ(-1,ntpang)=angle%typ(-1,ntpang)+sites%num_mols(itmols)
                     End If
 
                  Else If (j > 0) Then
 
 ! accumulate the existing type and presence(frozen and non-frozen)
 
-                    If (site%freeze_site(isite1)*site%freeze_site(isite2)*site%freeze_site(isite3) == 0) Then
-                       angle%typ(0,j)=angle%typ(0,j)+site%num_mols(itmols)
+                    If (sites%freeze_site(isite1)*sites%freeze_site(isite2)*sites%freeze_site(isite3) == 0) Then
+                       angle%typ(0,j)=angle%typ(0,j)+sites%num_mols(itmols)
                     Else
-                       angle%typ(-1,j)=angle%typ(-1,j)+site%num_mols(itmols)
+                       angle%typ(-1,j)=angle%typ(-1,j)+sites%num_mols(itmols)
                     End If
 
                  End If
@@ -2663,11 +2663,11 @@ Subroutine read_field                      &
 
                     ntpdih=ntpdih+1
 
-                    Do jsite=1,site%ntype_atom
-                       If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                       If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
-                       If (site%site_name(isite3) == site%unique_atom(jsite)) katom3=jsite
-                       If (site%site_name(isite4) == site%unique_atom(jsite)) katom4=jsite
+                    Do jsite=1,sites%ntype_atom
+                       If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                       If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
+                       If (sites%site_name(isite3) == sites%unique_atom(jsite)) katom3=jsite
+                       If (sites%site_name(isite4) == sites%unique_atom(jsite)) katom4=jsite
                     End Do
 
                     If      (katom1 == katom4) Then
@@ -2692,22 +2692,22 @@ Subroutine read_field                      &
                        dihedral%typ(4,ntpdih)=katom1
                     End If
 
-                    If (site%freeze_site(isite1)*site%freeze_site(isite2)* &
-                        site%freeze_site(isite3)*site%freeze_site(isite4) == 0) Then
-                       dihedral%typ(0,ntpdih)=dihedral%typ(0,ntpdih)+site%num_mols(itmols)
+                    If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
+                        sites%freeze_site(isite3)*sites%freeze_site(isite4) == 0) Then
+                       dihedral%typ(0,ntpdih)=dihedral%typ(0,ntpdih)+sites%num_mols(itmols)
                     Else
-                       dihedral%typ(-1,ntpdih)=dihedral%typ(-1,ntpdih)+site%num_mols(itmols)
+                       dihedral%typ(-1,ntpdih)=dihedral%typ(-1,ntpdih)+sites%num_mols(itmols)
                     End If
 
                  Else If (j > 0) Then
 
 ! accumulate the existing type and presence(frozen and non-frozen)
 
-                    If (site%freeze_site(isite1)*site%freeze_site(isite2)* &
-                      site%freeze_site(isite3)*site%freeze_site(isite4) == 0) Then
-                       dihedral%typ(0,j)=dihedral%typ(0,j)+site%num_mols(itmols)
+                    If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
+                      sites%freeze_site(isite3)*sites%freeze_site(isite4) == 0) Then
+                       dihedral%typ(0,j)=dihedral%typ(0,j)+sites%num_mols(itmols)
                     Else
-                       dihedral%typ(-1,j)=dihedral%typ(-1,j)+site%num_mols(itmols)
+                       dihedral%typ(-1,j)=dihedral%typ(-1,j)+sites%num_mols(itmols)
                     End If
                  End If
               End Do
@@ -2734,11 +2734,11 @@ Subroutine read_field                      &
 
                     ntpinv=ntpinv+1
 
-                    Do jsite=1,site%ntype_atom
-                       If (site%site_name(isite1) == site%unique_atom(jsite)) katom1=jsite
-                       If (site%site_name(isite2) == site%unique_atom(jsite)) katom2=jsite
-                       If (site%site_name(isite3) == site%unique_atom(jsite)) katom3=jsite
-                       If (site%site_name(isite4) == site%unique_atom(jsite)) katom4=jsite
+                    Do jsite=1,sites%ntype_atom
+                       If (sites%site_name(isite1) == sites%unique_atom(jsite)) katom1=jsite
+                       If (sites%site_name(isite2) == sites%unique_atom(jsite)) katom2=jsite
+                       If (sites%site_name(isite3) == sites%unique_atom(jsite)) katom3=jsite
+                       If (sites%site_name(isite4) == sites%unique_atom(jsite)) katom4=jsite
                     End Do
 
                     inversion%typ(1,ntpinv)=katom1
@@ -2774,27 +2774,27 @@ Subroutine read_field                      &
                        End If
                     End If
 
-                    If (site%freeze_site(isite1)*site%freeze_site(isite2)* &
-                        site%freeze_site(isite3)*site%freeze_site(isite4) == 0) Then
-                       inversion%typ(0,ntpinv)=inversion%typ(0,ntpinv)+site%num_mols(itmols)
+                    If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
+                        sites%freeze_site(isite3)*sites%freeze_site(isite4) == 0) Then
+                       inversion%typ(0,ntpinv)=inversion%typ(0,ntpinv)+sites%num_mols(itmols)
                     Else
-                       inversion%typ(-1,ntpinv)=inversion%typ(-1,ntpinv)+site%num_mols(itmols)
+                       inversion%typ(-1,ntpinv)=inversion%typ(-1,ntpinv)+sites%num_mols(itmols)
                     End If
 
                  Else If (j > 0) Then
 
 ! accumulate the existing type and presence(frozen and non-frozen)
 
-                    If (site%freeze_site(isite1)*site%freeze_site(isite2)* &
-                        site%freeze_site(isite3)*site%freeze_site(isite4) == 0) Then
-                       inversion%typ(0,j)=inversion%typ(0,j)+site%num_mols(itmols)
+                    If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
+                        sites%freeze_site(isite3)*sites%freeze_site(isite4) == 0) Then
+                       inversion%typ(0,j)=inversion%typ(0,j)+sites%num_mols(itmols)
                     Else
-                       inversion%typ(-1,j)=inversion%typ(-1,j)+site%num_mols(itmols)
+                       inversion%typ(-1,j)=inversion%typ(-1,j)+sites%num_mols(itmols)
                     End If
                  End If
               End Do
 
-              nsite=nsite+site%num_site(itmols)
+              nsite=nsite+sites%num_site(itmols)
            End Do
 
            mxtana = Max(ntpbnd*Merge(1,0,bond%bin_pdf > 0), &
@@ -2843,7 +2843,7 @@ Subroutine read_field                      &
 ! Process MPOLES
 
         If (mpole%max_mpoles > 0) Then
-          Call read_mpoles(l_top,sumchg,cshell,site,mpole,comm)
+          Call read_mpoles(l_top,sumchg,cshell,sites,mpole,comm)
         End If
 
 ! check charmming shells (cshell%megshl) globalisation
@@ -2858,7 +2858,7 @@ Subroutine read_field                      &
            k_crsh_p = 1.0_wp ; k_crsh_s = 0.0_wp
            p_core_p = 1.0_wp ; p_core_s = 0.0_wp
            d_core_p = 1.0_wp ; d_core_s = 0.0_wp
-           Do itmols=1,site%ntype_mol
+           Do itmols=1,sites%ntype_mol
               Do ishls=1,cshell%numshl(itmols)
                  nshels=nshels+1
                  iatm1=cshell%lstshl(1,nshels) ! core
@@ -2867,11 +2867,11 @@ Subroutine read_field                      &
                  isite1 = nsite + iatm1
                  isite2 = nsite + iatm2
 
-                 q_core_p=q_core_p*site%charge_site(isite1)
-                 q_core_s=q_core_s+Abs(site%charge_site(isite1))
+                 q_core_p=q_core_p*sites%charge_site(isite1)
+                 q_core_s=q_core_s+Abs(sites%charge_site(isite1))
 
-                 q_shel_p=q_shel_p*site%charge_site(isite2)
-                 q_shel_s=q_shel_s+Abs(site%charge_site(isite2))
+                 q_shel_p=q_shel_p*sites%charge_site(isite2)
+                 q_shel_s=q_shel_s+Abs(sites%charge_site(isite2))
 
                  k_crsh_p=k_crsh_p*cshell%prmshl(1,nshels)
                  k_crsh_s=k_crsh_s+cshell%prmshl(1,nshels)
@@ -2884,7 +2884,7 @@ Subroutine read_field                      &
                     d_core_s=d_core_s+mpole%dump_site(isite1)
                  End If
               End Do
-              nsite=nsite+site%num_site(itmols)
+              nsite=nsite+sites%num_site(itmols)
            End Do
 
 ! Checks for ABORTS
@@ -2933,7 +2933,7 @@ Subroutine read_field                      &
               nsite =0
               nshels=0
 
-              Do itmols=1,site%ntype_mol
+              Do itmols=1,sites%ntype_mol
                  Do ishls=1,cshell%numshl(itmols)
                     nshels=nshels+1
                     iatm1=cshell%lstshl(1,nshels) ! core
@@ -2942,10 +2942,10 @@ Subroutine read_field                      &
                     isite1 = nsite + iatm1
                     isite2 = nsite + iatm2
 
-                    q_core=site%charge_site(isite1)
+                    q_core=sites%charge_site(isite1)
                     p_core=mpole%polarisation_site(isite1)
 
-                    q_shel=site%charge_site(isite2)
+                    q_shel=sites%charge_site(isite2)
                     If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus .and. &
                         k_crsh_p > zero_plus) Then
                        cshell%prmshl(1,nshels)=k_crsh_p
@@ -2963,7 +2963,7 @@ Subroutine read_field                      &
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
-                          site%charge_site(isite2)=charge
+                          sites%charge_site(isite2)=charge
                           mpole%local_frame(1,isite2)=charge
                           sumchg=sumchg+Abs(charge)
                        End If
@@ -2993,7 +2993,7 @@ Subroutine read_field                      &
                     mpole%polarisation_site(isite2)=mpole%polarisation_site(isite1)
                     mpole%dump_site(isite2)=mpole%dump_site(isite1)
                  End Do
-                 nsite=nsite+site%num_site(itmols)
+                 nsite=nsite+sites%num_site(itmols)
               End Do
 
               If (mpole%key == POLARISATION_CHARMM .and. d_core_p <= zero_plus) Then
@@ -3004,7 +3004,7 @@ Subroutine read_field                      &
               nsite =0
               nshels=0
 
-              Do itmols=1,site%ntype_mol
+              Do itmols=1,sites%ntype_mol
                  Do ishls=1,cshell%numshl(itmols)
                     nshels=nshels+1
                     iatm1=cshell%lstshl(1,nshels) ! core
@@ -3013,8 +3013,8 @@ Subroutine read_field                      &
                     isite1 = nsite + iatm1
                     isite2 = nsite + iatm2
 
-                    q_core=site%charge_site(isite1)
-                    q_shel=site%charge_site(isite2)
+                    q_core=sites%charge_site(isite1)
+                    q_shel=sites%charge_site(isite2)
                     k_crsh=cshell%prmshl(1,nshels)
 
                     If (Abs(q_core*q_shel*k_crsh) <= zero_plus) Then
@@ -3022,7 +3022,7 @@ Subroutine read_field                      &
                        Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                     End If
                  End Do
-                 nsite=nsite+site%num_site(itmols)
+                 nsite=nsite+sites%num_site(itmols)
               End Do
            End If
 
@@ -3043,10 +3043,10 @@ Subroutine read_field                      &
 
         sumchg=0.0_wp
         jsite=0
-        Do itmols=1,site%ntype_mol
-           Do msite=1,site%num_site(itmols)
+        Do itmols=1,sites%ntype_mol
+           Do msite=1,sites%num_site(itmols)
               jsite=jsite+1
-              sumchg=sumchg+Real(site%num_mols(itmols),wp)*site%charge_site(jsite)
+              sumchg=sumchg+Real(sites%num_mols(itmols),wp)*sites%charge_site(jsite)
            End Do
         End Do
 
@@ -3065,7 +3065,7 @@ Subroutine read_field                      &
            ndihed=0
            ninver=0
 
-           Do itmols=1,site%ntype_mol
+           Do itmols=1,sites%ntype_mol
               Do ishls=1,cshell%numshl(itmols)
                  nshels=nshels+1
                  ia=cshell%lstshl(1,nshels) ! core
@@ -3074,7 +3074,7 @@ Subroutine read_field                      &
 ! shells have no DoF, even if they are moved dynamically
 ! their DoFs don't contribute towards any dynamical properties
 
-                 site%dof_site(nsite+ja)=-3.0_wp
+                 sites%dof_site(nsite+ja)=-3.0_wp
 
 ! test for constrained, RBed and tethered shells
 
@@ -3170,7 +3170,7 @@ Subroutine read_field                      &
                  End Do
                  If (ishls /= cshell%numshl(itmols)) ninver=ninver-inversion%num(itmols)
               End Do
-              nsite=nsite+site%num_site(itmols)
+              nsite=nsite+sites%num_site(itmols)
            End Do
 
 ! if core-shelling up has occurred to 1 or/and 4 members then
@@ -3178,7 +3178,7 @@ Subroutine read_field                      &
 
            If (dihedral%l_core_shell) Then
               ndihed=0 ! initialise unshelled units
-              Do itmols=1,site%ntype_mol
+              Do itmols=1,sites%ntype_mol
                  Do idih=1,dihedral%num(itmols)
                     ndihed=ndihed+1
 
@@ -3199,7 +3199,7 @@ Subroutine read_field                      &
               nsite =0
               nconst=0
               nrigid=0
-              Do itmols=1,site%ntype_mol
+              Do itmols=1,sites%ntype_mol
                  Do icnst=1,cons%numcon(itmols)
                     nconst=nconst+1
                     iatm1=cons%lstcon(1,nconst)
@@ -3215,7 +3215,7 @@ Subroutine read_field                      &
                     End Do
                     If (icnst /= cons%numcon(itmols)) nrigid=nrigid-rigid%num(itmols)
                  End Do
-                 nsite=nsite+site%num_site(itmols)
+                 nsite=nsite+sites%num_site(itmols)
               End Do
            End If
 
@@ -3224,7 +3224,7 @@ Subroutine read_field                      &
            If (pmf%megpmf > 0) Then
               nsite =0
               nrigid=0
-              Do itmols=1,site%ntype_mol
+              Do itmols=1,sites%ntype_mol
                  Do i=1,pmf%numpmf(itmols)
                     Do ipmf=1,2
                        Do jpmf=1,pmf%mxtpmf(ipmf)
@@ -3245,18 +3245,18 @@ Subroutine read_field                      &
                        End Do
                     End Do
                  End Do
-                 nsite=nsite+site%num_site(itmols)
+                 nsite=nsite+sites%num_site(itmols)
               End Do
            End If
 
-! Index RBs' sites (site%free_site=1), correct atmfre & atmfrz
+! Index RBs' sites (sites%free_site=1), correct atmfre & atmfrz
 ! and test for unfrozen weightless members of a RB unit type
 ! (partly frozen RB but with unfrozen members being weightless)
-! and correct site%freeze_site,site%dof_site,rigid%weightless,frzrgd,megfrz,rigid%total if needed
+! and correct sites%freeze_site,sites%dof_site,rigid%weightless,frzrgd,megfrz,rigid%total if needed
 
            nsite =0
            nrigid=0
-           Do itmols=1,site%ntype_mol
+           Do itmols=1,sites%ntype_mol
               ntmp=0
               ntab=0
 
@@ -3288,16 +3288,16 @@ Subroutine read_field                      &
                     iatm1=rigid%lst(jrgd,nrigid)
                     isite1=nsite+iatm1
 
-                    site%free_site(isite1)=1
+                    sites%free_site(isite1)=1
 
-                    If (site%freeze_site(isite1) == 1) Then
+                    If (sites%freeze_site(isite1) == 1) Then
                        ntab=ntab+1
                     Else
                        If (krgd == 1) Then
                           ifrz=ifrz+1
 
-                          site%freeze_site(isite1)=1
-                          site%dof_site(isite1)=0.0_wp
+                          sites%freeze_site(isite1)=1
+                          sites%dof_site(isite1)=0.0_wp
 
                           rigid%frozen(jrgd,nrigid)=1
                        End If
@@ -3305,14 +3305,14 @@ Subroutine read_field                      &
                  End Do
               End Do
 
-              atmfre=atmfre-ntmp  *site%num_mols(itmols)
-              atmfrz=atmfrz-ntab  *site%num_mols(itmols)
+              atmfre=atmfre-ntmp  *sites%num_mols(itmols)
+              atmfrz=atmfrz-ntab  *sites%num_mols(itmols)
 
-              megfrz=megfrz+ifrz  *site%num_mols(itmols)
+              megfrz=megfrz+ifrz  *sites%num_mols(itmols)
 
-              rigid%total=rigid%total-frzrgd*site%num_mols(itmols)
+              rigid%total=rigid%total-frzrgd*sites%num_mols(itmols)
 
-              nsite=nsite+site%num_site(itmols)
+              nsite=nsite+sites%num_site(itmols)
            End Do
         End If
 
@@ -3353,9 +3353,9 @@ Subroutine read_field                      &
            katom1=0
            katom2=0
 
-           Do jtpatm=1,site%ntype_atom
-              If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
-              If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+           Do jtpatm=1,sites%ntype_atom
+              If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+              If (atom2 == sites%unique_atom(jtpatm)) katom2=jtpatm
            End Do
 
            If (katom1 == 0 .or. katom2 == 0) Call error(108)
@@ -3517,9 +3517,9 @@ Subroutine read_field                      &
            katom1=0
            katom2=0
 
-           Do jtpatm=1,site%ntype_atom
-              If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
-              If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+           Do jtpatm=1,sites%ntype_atom
+              If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+              If (atom2 == sites%unique_atom(jtpatm)) katom2=jtpatm
            End Do
 
            If (katom1 == 0 .or. katom2 == 0) Call error(81)
@@ -3586,7 +3586,7 @@ Subroutine read_field                      &
 
 ! test for unspecified atom-atom potentials
 
-           ntab=(site%ntype_atom*(site%ntype_atom+1))/2
+           ntab=(sites%ntype_atom*(sites%ntype_atom+1))/2
            If (vdw%n_vdw < ntab) Then
               Call warning(120,0.0_wp,0.0_wp,0.0_wp)
 
@@ -3647,11 +3647,11 @@ Subroutine read_field                      &
 
                  ldpd_safe = .true. ! safe flag for DPD thermostats
                  nsite=0 ! number of new cross pair potentials
-                 Do i=1,site%ntype_atom
+                 Do i=1,sites%ntype_atom
                     isite=(i*(i-1))/2+i
                     If (vdw%list(isite) <= vdw%n_vdw) Then ! if it exists
                        ia=vdw%ltp(vdw%list(isite))
-                       Do j=i+1,site%ntype_atom
+                       Do j=i+1,sites%ntype_atom
                           jsite=(j*(j-1))/2+j
                           If (vdw%list(jsite) <= vdw%n_vdw) Then ! if it exists
                              ja=vdw%ltp(vdw%list(jsite))
@@ -3671,13 +3671,13 @@ Subroutine read_field                      &
                                       If (l_str) Then
                                         ldpd_safe = .false. ! test for non-definable interactions
                                         Call warning('the interaction between bead types: ' &
-                                          //site%unique_atom(i)//' & '//site%unique_atom(j) &
+                                          //sites%unique_atom(i)//' & '//sites%unique_atom(j) &
                                           //' is unresolved and thus thermostating' &
                                           //' is ill defined in a DPD context', &
                                           .true.)
                                       Else
                                         Call warning('the interaction between bead types: ' &
-                                          //site%unique_atom(i)//' & '//site%unique_atom(j) &
+                                          //sites%unique_atom(i)//' & '//sites%unique_atom(j) &
                                           //' is unresolved and thus thermostating is ill ' &
                                           //'defined in a DPD context but may be OK in CG MD', &
                                           .true.)
@@ -3685,7 +3685,7 @@ Subroutine read_field                      &
                                     End If
                                   Else
                                     Call warning('the interaction between atom types: ' &
-                                      //site%unique_atom(i)//' & '//site%unique_atom(j) &
+                                      //sites%unique_atom(i)//' & '//sites%unique_atom(j) &
                                       //' is unresolved and thus this ' &
                                       //'cross-interaction will be left undefined', &
                                       .true.)
@@ -3719,11 +3719,11 @@ Subroutine read_field                      &
 
 ! Apply mixing
 
-                    Do i=1,site%ntype_atom
+                    Do i=1,sites%ntype_atom
                        isite=(i*(i-1))/2+i
                        ia=vdw%list(isite)
                        keypot=vdw%ltp(ia)
-                       Do j=i+1,site%ntype_atom
+                       Do j=i+1,sites%ntype_atom
                           jsite=(j*(j-1))/2+j
                           ja=vdw%list(jsite)
                           ksite=isite+j-i
@@ -3912,12 +3912,12 @@ Subroutine read_field                      &
                              If (l_top) Then
                                If (thermo%key_dpd > 0) Then
                                  Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',vdw%max_param+1,'f20.6)'
-                                 Write(message,rfmt) vdw%n_vdw,site%unique_atom(i), &
-                                   site%unique_atom(j),keyword,parpot(1:vdw%max_param+1)
+                                 Write(message,rfmt) vdw%n_vdw,sites%unique_atom(i), &
+                                   sites%unique_atom(j),keyword,parpot(1:vdw%max_param+1)
                                Else
                                  Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',vdw%max_param,'f20.6)'
-                                 Write(message,rfmt) vdw%n_vdw,site%unique_atom(i), &
-                                   site%unique_atom(j),keyword,parpot(1:vdw%max_param)
+                                 Write(message,rfmt) vdw%n_vdw,sites%unique_atom(i), &
+                                   sites%unique_atom(j),keyword,parpot(1:vdw%max_param)
                                End If
                                Call info(message,.true.)
                              End If
@@ -3955,7 +3955,7 @@ Subroutine read_field                      &
 
            If (.not.l_n_v) Then
               If ((.not. vdw%l_direct) .or. vdw%l_tab) Call vdw_generate(vdw)
-              If (vdw%l_tab) Call vdw_table_read(vdw,site,comm)
+              If (vdw%l_tab) Call vdw_table_read(vdw,sites,comm)
               If (vdw%l_direct .and. Any(vdw%ltp(1:vdw%n_vdw) > 0)) Call vdw%init_direct()
            End If
 
@@ -4057,9 +4057,9 @@ Subroutine read_field                      &
            katom1=0
            katom2=0
 
-           Do jtpatm=1,site%ntype_atom
-              If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
-              If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+           Do jtpatm=1,sites%ntype_atom
+              If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+              If (atom2 == sites%unique_atom(jtpatm)) katom2=jtpatm
            End Do
 
            If (katom1 == 0 .or. katom2 == 0) Call error(81)
@@ -4113,7 +4113,7 @@ Subroutine read_field                      &
 
 ! test for unspecified atom-atom potentials
 
-           ntab=(site%ntype_atom*(site%ntype_atom+1))/2
+           ntab=(sites%ntype_atom*(sites%ntype_atom+1))/2
            If (met%n_potentials < ntab) Then
               Call warning(120,0.0_wp,0.0_wp,0.0_wp)
 
@@ -4136,9 +4136,9 @@ Subroutine read_field                      &
            If (.not.met%l_direct) Then
               Call met%init_table(mxatyp)
               If (met%tab > 0) Then ! keypot == 0
-                 Call metal_table_read(l_top,met,site,comm)
+                 Call metal_table_read(l_top,met,sites,comm)
               Else ! If (met%tab == 0) Then
-                 Call metal_generate(site%ntype_atom,met)
+                 Call metal_generate(sites%ntype_atom,met)
               End If
            End If
 
@@ -4270,8 +4270,8 @@ Subroutine read_field                      &
 
            katom0=0
 
-           Do jtpatm=1,site%ntype_atom
-              If (atom0 == site%unique_atom(jtpatm)) katom0=jtpatm
+           Do jtpatm=1,sites%ntype_atom
+              If (atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
            End Do
 
            If (katom0 == 0) Call error(74)
@@ -4349,9 +4349,9 @@ Subroutine read_field                      &
               katom1=0
               katom2=0
 
-              Do jtpatm=1,site%ntype_atom
-                 If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
-                 If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+              Do jtpatm=1,sites%ntype_atom
+                 If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+                 If (atom2 == sites%unique_atom(jtpatm)) katom2=jtpatm
               End Do
 
               If (katom1 == 0 .or. katom2 == 0) Call error(74)
@@ -4457,10 +4457,10 @@ Subroutine read_field                      &
            katom1=0
            katom2=0
 
-           Do jtpatm=1,site%ntype_atom
-              If (atom0 == site%unique_atom(jtpatm)) katom0=jtpatm
-              If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
-              If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+           Do jtpatm=1,sites%ntype_atom
+              If (atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
+              If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+              If (atom2 == sites%unique_atom(jtpatm)) katom2=jtpatm
            End Do
 
            If (katom0 == 0 .or. katom1 == 0 .or. katom2 == 0) Call error(84)
@@ -4590,11 +4590,11 @@ Subroutine read_field                      &
            katom2=0
            katom3=0
 
-           Do jtpatm=1,site%ntype_atom
-              If (atom0 == site%unique_atom(jtpatm)) katom0=jtpatm
-              If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
-              If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
-              If (atom3 == site%unique_atom(jtpatm)) katom3=jtpatm
+           Do jtpatm=1,sites%ntype_atom
+              If (atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
+              If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+              If (atom2 == sites%unique_atom(jtpatm)) katom2=jtpatm
+              If (atom3 == sites%unique_atom(jtpatm)) katom3=jtpatm
            End Do
 
            If (katom0 == 0 .or. katom1 == 0 .or. katom2 == 0 .or. katom3 == 0) Call error(91)
@@ -4771,8 +4771,8 @@ Subroutine read_field                      &
 ! Precautions: (vdw,met) may have led to rdf scanning (rdf%max_rdf > 0), see set_bounds
 
         If (rdf%n_pairs == 0 .and. rdf%max_rdf > 0) Then
-           Do ia=1,site%ntype_atom
-              Do ja=ia,site%ntype_atom
+           Do ia=1,sites%ntype_atom
+              Do ja=ia,sites%ntype_atom
                  keyrdf=(ja*(ja-1))/2+ia
                  i=0
                  If (vdw%n_vdw > 0) i=Max(i,vdw%list(keyrdf))
@@ -4793,7 +4793,7 @@ Subroutine read_field                      &
 ! check and resolve any conflicting 14 dihedral specifications
 
         Call dihedrals_14_check &
-           (l_str,l_top,angle,dihedral,site,comm)
+           (l_str,l_top,angle,dihedral,sites,comm)
 
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
@@ -4837,7 +4837,7 @@ Subroutine read_field                      &
 End Subroutine read_field
 
 Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
-    angle,dihedral,inversion,tether,site,rigid,comm)
+    angle,dihedral,inversion,tether,sites,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4856,7 +4856,7 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
   Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type( inversions_type ), Intent( In    ) :: inversion
   Type(tethers_type), Intent( InOut ) :: tether
-  Type( site_type ), Intent( InOut ) :: site
+  Type( site_type ), Intent( InOut ) :: sites
   Type( rigid_bodies_type ), Intent( In    ) :: rigid
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type(comms_type), Intent( InOut ) :: comm
@@ -4904,7 +4904,7 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
   mgfrin = 0
 
   nsite  = 0
-  Do itmols=1,site%ntype_mol
+  Do itmols=1,sites%ntype_mol
      frzshl=0
      Do ishls=1,cshell%numshl(itmols)
         nshels=nshels+1
@@ -4913,7 +4913,7 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
 
         isite1 = nsite + iatm1
 
-        If (site%freeze_site(isite1) == 1) frzshl=frzshl+1
+        If (sites%freeze_site(isite1) == 1) frzshl=frzshl+1
      End Do
 
      Do lpmf=1,pmf%numpmf(itmols) ! pmf%numpmf can only be 1 or 0, so the 'Do' loop is used as an 'If' condition
@@ -4923,7 +4923,7 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
 
               isite1 = nsite + iatm1
 
-              If (site%freeze_site(isite1) == 1) frzpmf='ALL'
+              If (sites%freeze_site(isite1) == 1) frzpmf='ALL'
            End Do
         End Do
      End Do
@@ -4936,7 +4936,7 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
 
         isite1 = nsite + iatm1
 
-        If (site%freeze_site(isite1) == 1) frztet=frztet+1
+        If (sites%freeze_site(isite1) == 1) frztet=frztet+1
      End Do
 
      frzbnd=0
@@ -4949,7 +4949,7 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
         isite1 = nsite + iatm1
         isite2 = nsite + iatm2
 
-        If (site%freeze_site(isite1)+site%freeze_site(isite2) == 2) frzbnd=frzbnd+1
+        If (sites%freeze_site(isite1)+sites%freeze_site(isite2) == 2) frzbnd=frzbnd+1
      End Do
 
      frzang=0
@@ -4964,7 +4964,7 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
         isite2 = nsite + iatm2
         isite3 = nsite + iatm3
 
-        If (site%freeze_site(isite1)+site%freeze_site(isite2)+site%freeze_site(isite3) == 3) frzang=frzang+1
+        If (sites%freeze_site(isite1)+sites%freeze_site(isite2)+sites%freeze_site(isite3) == 3) frzang=frzang+1
      End Do
 
      frzdih=0
@@ -4981,8 +4981,8 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
         isite3 = nsite + iatm3
         isite4 = nsite + iatm4
 
-        If (site%freeze_site(isite1)+site%freeze_site(isite2)+ &
-          site%freeze_site(isite3)+site%freeze_site(isite4) == 4) frzdih=frzdih+1
+        If (sites%freeze_site(isite1)+sites%freeze_site(isite2)+ &
+          sites%freeze_site(isite3)+sites%freeze_site(isite4) == 4) frzdih=frzdih+1
      End Do
 
      frzinv=0
@@ -4999,21 +4999,21 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
         isite3 = nsite + iatm3
         isite4 = nsite + iatm4
 
-        If (site%freeze_site(isite1)+site%freeze_site(isite2)+ &
-          site%freeze_site(isite3)+site%freeze_site(isite4) == 4) frzinv=frzinv+1
+        If (sites%freeze_site(isite1)+sites%freeze_site(isite2)+ &
+          sites%freeze_site(isite3)+sites%freeze_site(isite4) == 4) frzinv=frzinv+1
      End Do
 
-     mgcon=mgcon+site%num_mols(itmols)*cons%numcon(itmols)
-     mgrgd=mgrgd+site%num_mols(itmols)*rigid%num(itmols)
+     mgcon=mgcon+sites%num_mols(itmols)*cons%numcon(itmols)
+     mgrgd=mgrgd+sites%num_mols(itmols)*rigid%num(itmols)
 
-     mgfrsh=mgfrsh+site%num_mols(itmols)*frzshl
-     mgfrtt=mgfrtt+site%num_mols(itmols)*frztet
-     mgfrbn=mgfrbn+site%num_mols(itmols)*frzbnd
-     mgfran=mgfran+site%num_mols(itmols)*frzang
-     mgfrdh=mgfrdh+site%num_mols(itmols)*frzdih
-     mgfrin=mgfrin+site%num_mols(itmols)*frzinv
+     mgfrsh=mgfrsh+sites%num_mols(itmols)*frzshl
+     mgfrtt=mgfrtt+sites%num_mols(itmols)*frztet
+     mgfrbn=mgfrbn+sites%num_mols(itmols)*frzbnd
+     mgfran=mgfran+sites%num_mols(itmols)*frzang
+     mgfrdh=mgfrdh+sites%num_mols(itmols)*frzdih
+     mgfrin=mgfrin+sites%num_mols(itmols)*frzinv
 
-     nsite=nsite+site%num_site(itmols)
+     nsite=nsite+sites%num_site(itmols)
   End Do
 
   fmt1 = '(a66)'

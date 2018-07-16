@@ -60,7 +60,7 @@
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,site,comm)
+     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,sites,comm)
 
      If (newjb) Then
         newjb = .false.
@@ -83,7 +83,7 @@
 
 ! CHECK MD CONFIGURATION
 
-           Call check_config(levcfg,l_str,electro%key,keyres,megatm,thermo,site,comm)
+           Call check_config(levcfg,l_str,electro%key,keyres,megatm,thermo,sites,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -108,7 +108,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(electro%key,neigh,site,mpole,comm)
+           Call set_halo_particles(electro%key,neigh,sites,mpole,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -116,7 +116,7 @@
            If (lbook) Then
              Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
                atmfrz,degrot,degtra,cshell,cons,pmf,bond,angle,dihedral, &
-               inversion,tether,neigh,site,mpole,rigid,comm)
+               inversion,tether,neigh,sites,mpole,rigid,comm)
               If (lexcl) Then
                 Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
                   inversion,neigh,rigid,comm)
@@ -126,7 +126,7 @@
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
            Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
-             inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf, &
+             inversion,tether,threebody,neigh,sites,vdw,tersoff,fourbody,rdf, &
              netcdf,minimise,mpole,ext_field,rigid,electro,tmr)
 
 ! Evaluate kinetics if available
@@ -160,7 +160,7 @@
 
 ! Apply kinetic options
 
-              Call w_kinetic_options(cshell,cons,pmf,stat,site,ext_field)
+              Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
@@ -186,7 +186,7 @@
            keyres,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
-           mxatdm_,rdf%max_grid,stat,thermo,zdensity,site,comm)
+           mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,comm)
 
 ! line-printer output
 ! Update cpu time
@@ -224,18 +224,18 @@
            (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,netcdf,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write &
-             (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(1),neigh,site,netcdf,comm)
+             (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(1),neigh,sites,netcdf,comm)
              If (dfcts(2)%ldef)Then
                Call defects_write &
-               (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(2),neigh,site,netcdf,comm)
+               (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(2),neigh,sites,netcdf,comm)
              End If
            End If
            If (msd_data%l_msd) Call msd_write &
-             (keyres,megatm,nstep,tstep,time,stat%stpval,site%dof_site,msd_data,comm)
+             (keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site,msd_data,comm)
            If (lrsd) Call rsd_write &
            (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,stat%rsd,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
-           (keyres,nstph,tsths,green,site,comm)
+           (keyres,nstph,tsths,green,sites,comm)
 
 ! Save restart data in event of system crash
 
@@ -302,7 +302,7 @@
      cell=stat%clin
 
      Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
-       degrot,degfre,degshl,stat%engrot,site%dof_site,cshell,stat,cons,pmf, &
+       degrot,degfre,degshl,stat%engrot,sites%dof_site,cshell,stat,cons,pmf, &
        thermo,minimise,rigid,comm)
 
   End If

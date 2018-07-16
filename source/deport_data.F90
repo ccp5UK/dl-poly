@@ -2484,7 +2484,7 @@ End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons, &
            pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
-           neigh,site,minimise,mpole,rigid,comm)
+           neigh,sites,minimise,mpole,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2515,7 +2515,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( site_type ), Intent( In    ) :: site
+  Type( site_type ), Intent( In    ) :: sites
   Type( minimise_type ), Intent( InOut ) :: minimise
   Type( mpole_type ), Intent( InOut ) :: mpole
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
@@ -2662,12 +2662,12 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
 ! reassign atom properties
 
      Do i=1,natms
-        atmnam(i)=site%site_name(lsite(i))
-        ltype(i)=site%type_site(lsite(i))
-        chge(i)=site%charge_site(lsite(i))
-        weight(i)=site%weight_site(lsite(i))
-        lfrzn(i)=site%freeze_site(lsite(i))
-        lfree(i)=site%free_site(lsite(i))
+        atmnam(i)=sites%site_name(lsite(i))
+        ltype(i)=sites%type_site(lsite(i))
+        chge(i)=sites%charge_site(lsite(i))
+        weight(i)=sites%weight_site(lsite(i))
+        lfrzn(i)=sites%freeze_site(lsite(i))
+        lfree(i)=sites%free_site(lsite(i))
      End Do
 
      If (lbook) Then

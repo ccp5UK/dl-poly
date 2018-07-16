@@ -198,7 +198,7 @@ Contains
     T%bfs  = 0.0_wp
   End Subroutine allocate_vdw_direct_fs_arrays
 
-  Subroutine vdw_lrc(site,vdw,comm)
+  Subroutine vdw_lrc(sites,vdw,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -215,7 +215,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( site_type ), Intent( In    ) :: site
+  Type( site_type ), Intent( In    ) :: sites
   Type( vdw_type ), Intent( InOut ) :: vdw
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -248,14 +248,14 @@ Contains
      k = ltype(i)
      If (lfrzn(i) /= 0) numfrz(k)=numfrz(k)+1.0_wp
   End Do
-  Call gsum(comm,numfrz(1:site%ntype_atom))
+  Call gsum(comm,numfrz(1:sites%ntype_atom))
 
 ! Evaluate only for 3D periodic systems
 
   If (imcon /= 0 .and. imcon /= 6) Then
      ivdw = 0
 
-     Do i=1,site%ntype_atom
+     Do i=1,sites%ntype_atom
         Do j=1,i
 
            eadd = 0.0_wp
@@ -474,7 +474,7 @@ Contains
               padd = padd*2.0_wp
            End If
 
-           denprd=twopi * (site%num_type(i)*site%num_type(j) - numfrz(i)*numfrz(j)) / volm**2
+           denprd=twopi * (sites%num_type(i)*sites%num_type(j) - numfrz(i)*numfrz(j)) / volm**2
 
            vdw%elrc = vdw%elrc + volm*denprd*eadd
            plrc = plrc + denprd*padd/3.0_wp
@@ -795,7 +795,7 @@ Subroutine vdw_direct_fs_generate(vdw)
 End Subroutine vdw_direct_fs_generate
 
 
-Subroutine vdw_table_read(vdw,site,comm)
+Subroutine vdw_table_read(vdw,sites,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -810,7 +810,7 @@ Subroutine vdw_table_read(vdw,site,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( vdw_type ), Intent( InOut ) :: vdw
-  Type( site_type ), Intent( In    ) :: site
+  Type( site_type ), Intent( In    ) :: sites
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: safe,remake
@@ -912,9 +912,9 @@ Subroutine vdw_table_read(vdw,site,comm)
         katom1=0
         katom2=0
 
-        Do jtpatm=1,site%ntype_atom
-           If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
-           If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+        Do jtpatm=1,sites%ntype_atom
+           If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+           If (atom2 == sites%unique_atom(jtpatm)) katom2=jtpatm
         End Do
 
         If (katom1 == 0 .or. katom2 == 0) Then

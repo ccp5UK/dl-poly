@@ -1096,7 +1096,7 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
 
 End Subroutine angles_forces
 
-Subroutine angles_table_read(angl_name,angle,site,comm)
+Subroutine angles_table_read(angl_name,angle,sites,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1110,7 +1110,7 @@ Subroutine angles_table_read(angl_name,angle,site,comm)
 
   Type( angles_type ), Intent( InOut ) :: angle
   Character( Len = 24 ), Intent( In    ) :: angl_name(1:angle%max_types)
-  Type( site_type ), Intent( In    ) :: site
+  Type( site_type ), Intent( In    ) :: sites
   Type(comms_type),      Intent( InOut ) :: comm
 
   Logical                :: safe,remake
@@ -1215,10 +1215,10 @@ Subroutine angles_table_read(angl_name,angle,site,comm)
      katom2=0
      katom3=0
 
-     Do jtpatm=1,site%ntype_atom
-        If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
-        If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
-        If (atom3 == site%unique_atom(jtpatm)) katom3=jtpatm
+     Do jtpatm=1,sites%ntype_atom
+        If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+        If (atom2 == sites%unique_atom(jtpatm)) katom2=jtpatm
+        If (atom3 == sites%unique_atom(jtpatm)) katom3=jtpatm
      End Do
 
      If (katom1 == 0 .or. katom2 == 0 .or. katom3 == 0) Then

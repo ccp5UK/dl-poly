@@ -10,7 +10,7 @@
 ! Refresh mappings
 
         Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,site,mpole,rigid)
+          dihedral,inversion,tether,neigh,sites,mpole,rigid)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -29,7 +29,7 @@
      If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
        l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then
        Call two_body_forces(pdplnc,thermo%ensemble,nstfce,lbook,megfrz, &
-         leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,site,vdw,rdf, &
+         leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,sites,vdw,rdf, &
          mpole,electro,tmr,comm)
      End If
 
@@ -111,7 +111,7 @@
 ! Apply pseudo thermostat - force cycle (0)
 
      If (thermo%l_pseudo) Then
-       Call pseudo_vv(0,tstep,nstep,site%dof_site,cshell,stat,thermo,rigid,comm)
+       Call pseudo_vv(0,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,comm)
      End If
 
 ! Cap forces in equilibration mode
@@ -155,7 +155,7 @@
 
         If (.not.(relaxed_shl .and. minimise%relaxed)) Then
            Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-             dihedral,inversion,tether,neigh,site,mpole,rigid)
+             dihedral,inversion,tether,neigh,sites,mpole,rigid)
            Go To 100
         End If
      End If

@@ -63,7 +63,7 @@
         If (levcfg == 2) Then
            newjob = .false.
 
-           If (keyres /= 1) Call w_write_options(cshell,stat,site,netcdf)
+           If (keyres /= 1) Call w_write_options(cshell,stat,sites,netcdf)
 
            If (nstep == 0 .and. nstep == nstrun) Go To 1000
         End If
@@ -89,24 +89,24 @@
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,site,vdw,rigid,tmr)
+        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,sites,vdw,rigid,tmr)
 
 ! Refresh mappings
 
         Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,site,mpole,rigid)
+          dihedral,inversion,tether,neigh,sites,mpole,rigid)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
 ! Evaluate forces
 
      Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-       inversion,tether,threebody,neigh,site,vdw,tersoff,fourbody,rdf,netcdf, &
+       inversion,tether,threebody,neigh,sites,vdw,tersoff,fourbody,rdf,netcdf, &
        minimise,mpole,ext_field,rigid,electro,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-     If (nstep == 0) Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,site,rdf)
+     If (nstep == 0) Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,sites,rdf)
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
@@ -121,11 +121,11 @@
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,site,vdw,rigid,tmr)
+        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,sites,vdw,rigid,tmr)
 
 ! Apply kinetic options
 
-        Call w_kinetic_options(cshell,cons,pmf,stat,site,ext_field)
+        Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field)
 
 ! Update total time of simulation
 
@@ -133,11 +133,11 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,site,rdf)
+        Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,sites,rdf)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options(cshell,stat,site,netcdf)
+        Call w_write_options(cshell,stat,sites,netcdf)
 
 ! Save restart data in event of system crash
 
