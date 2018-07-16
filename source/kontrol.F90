@@ -95,7 +95,7 @@ Subroutine read_control                                &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
-           met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff, &
+           met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoff, &
            rdf,minimise,mpole,electro,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -161,7 +161,7 @@ Subroutine read_control                                &
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( In    ) :: neigh
-  Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( vdw_type ), Intent( InOut ) :: vdws
   Type( tersoff_type ), Intent( In    )  :: tersoff
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( minimise_type ), Intent( InOut ) :: minimise
@@ -201,9 +201,9 @@ Subroutine read_control                                &
 ! defaults for direct evaluation, force-shifting of VDW interactions
 ! and type of mixing for undefined cross interaction of certain type
 !
-! vdw%l_direct = .false. ! (initialised in vdw)
-! vdw%l_force_shift = .false. ! (initialised in vdw)
-  vdw%mixing = MIX_NULL       ! (initialised in vdw)
+! vdws%l_direct = .false. ! (initialised in vdw)
+! vdws%l_force_shift = .false. ! (initialised in vdw)
+  vdws%mixing = MIX_NULL       ! (initialised in vdw)
 !
 ! defaults for direct evaluation of metal interactions
 !
@@ -664,7 +664,7 @@ Subroutine read_control                                &
 
 ! direct evaluation option
 
-           vdw%l_direct = .true.
+           vdws%l_direct = .true.
            Call info('vdw direct option on',.true.)
 
         Else If (word1(1:6) == 'mixing') Then
@@ -678,30 +678,30 @@ Subroutine read_control                                &
            Call get_word(record,word2)
 
            If      (word2(1:4) == 'lore') Then
-              vdw%mixing = MIX_LORENTZ_BERTHELOT
+              vdws%mixing = MIX_LORENTZ_BERTHELOT
               Call info('type of mixing selected - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2',.true.)
            Else If (word2(1:4) == 'fend') Then
-              vdw%mixing = MIX_FENDER_HASLEY
+              vdws%mixing = MIX_FENDER_HASLEY
               Call info('type of mixing selected - Fender-Halsey :: e_ij=2*e_i*e_j/(e_i+e_j) ; s_ij=(s_i+s_j)/2',.true.)
            Else If (word2(1:4) == 'hoge') Then
-              vdw%mixing = MIX_HOGERVORST
+              vdws%mixing = MIX_HOGERVORST
               Call info('type of mixing selected - Hogervorst (good hope) :: ' &
                 //'e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i*s_j)^(1/2)',.true.)
            Else If (word2(1:4) == 'halg') Then
-              vdw%mixing = MIX_HALGREN
+              vdws%mixing = MIX_HALGREN
               Call info('type of mixing selected - Halgren HHG :: ' &
                 //'e_ij=4*e_i*e_j/[e_i^(1/2)+e_j^(1/2)]^2 ; s_ij=(s_i^3+s_j^3)/(s_i^2+s_j^2)',.true.)
            Else If (word2(1:4) == 'wald') Then
-              vdw%mixing = MIX_WALDMAN_HAGLER
+              vdws%mixing = MIX_WALDMAN_HAGLER
               Call info('type of mixing selected - Waldman–Hagler :: ' &
                 //'e_ij=2*(e_i*e_j)^(1/2)*(s_i*s_j)^3/(s_i^6+s_j^6) ;s_ij=[(s_i^6+s_j^6)/2]^(1/6)',.true.)
            Else If (word2(1:4) == 'tang') Then
-              vdw%mixing = MIX_TANG_TOENNIES
+              vdws%mixing = MIX_TANG_TOENNIES
               Call info('type of mixing selected - Tang-Toennies :: ' &
                 //' e_ij=[(e_i*s_i^6)*(e_j*s_j^6)] / {[(e_i*s_i^12)^(1/13)+(e_j*s_j^12)^(1/13)]/2}^13',.true.)
               Call info(Repeat(' ',43)//'s_ij={[(e_i*s_i^6)*(e_j*s_j^6)]^(1/2) / e_ij}^(1/6)',.true.)
            Else If (word2(1:4) == 'func') Then
-              vdw%mixing = MIX_FUNCTIONAL
+              vdws%mixing = MIX_FUNCTIONAL
               Call info('type of mixing selected - Functional :: ' &
                 //'e_ij=3 * (e_i*e_j)^(1/2) * (s_i*s_j)^3 / SUM_L=0^2{[(s_i^3+s_j^3)^2 / (4*(s_i*s_j)^L)]^(6/(6-2L))}',.true.)
               Call info(Repeat(' ',40)//'s_ij=(1/3) * SUM_L=0^2{[(s_i^3+s_j^3)^2/(4*(s_i*s_j)^L)]^(1/(6-2L))}',.true.)
@@ -715,7 +715,7 @@ Subroutine read_control                                &
 
         Else If (word1(1:5) == 'shift') Then
 ! force-shifting option
-           vdw%l_force_shift = .true.
+           vdws%l_force_shift = .true.
            Call info('vdw force-shifting option on',.true.)
         Else
            Call strip_blanks(record)
@@ -3108,10 +3108,10 @@ Subroutine read_control                                &
     Call info('vdw potential terms switched off',.true.)
   End If
 
-! report if vdw%cutoff is reset (measures taken in scan_config)
+! report if vdws%cutoff is reset (measures taken in scan_config)
 
-  If ((.not.l_n_v) .and. Abs(vdw%cutoff-rvdw1) > 1.0e-6_wp) Then
-    Write(message,'(a,1p,e12.4)') 'vdw cutoff reset to (Angs) ',vdw%cutoff
+  If ((.not.l_n_v) .and. Abs(vdws%cutoff-rvdw1) > 1.0e-6_wp) Then
+    Write(message,'(a,1p,e12.4)') 'vdw cutoff reset to (Angs) ',vdws%cutoff
     Call info(message,.true.)
   End If
 
@@ -3645,7 +3645,7 @@ Subroutine scan_control                                    &
            rbin,                          &
            nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1,cshell,stats,  &
            thermo,green,devel,msd_data,met,pois,bond,angle, &
-           dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf,mpole,electro,comm)
+           dihedral,inversion,zdensity,neigh,vdws,tersoff,rdf,mpole,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3686,7 +3686,7 @@ Subroutine scan_control                                    &
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( vdw_type ), Intent( InOut ) :: vdws
   Type( tersoff_type ), Intent( In    )  :: tersoff
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpole
@@ -3734,7 +3734,7 @@ Subroutine scan_control                                    &
   la_dih = .false. ; dihedral%bin_adf = 0
   la_inv = .false. ; inversion%bin_adf = 0
 
-! electrostatics and no electrostatics, rdf and no rdf, vdw and no vdw,
+! electrostatics and no electrostatics, rdf and no rdf, vdw and no vdws,
 ! metal and no metal, tersoff and no tersoff interactions,
 ! cutoff and padding, and binsize defaults
 
@@ -3744,9 +3744,9 @@ Subroutine scan_control                                    &
   rdf%l_collect  = (rdf%max_rdf > 0)
   l_n_r = .not.rdf%l_collect
 
-  lvdw  = (vdw%max_vdw > 0)
+  lvdw  = (vdws%max_vdw > 0)
   l_n_v = .false.
-  lrvdw = .false. ! Even though it vdw%cutoff may have been read from TABLE
+  lrvdw = .false. ! Even though it vdws%cutoff may have been read from TABLE
 
   lmet  = (met%max_metal > 0)
   l_n_m = .not.lmet
@@ -3878,12 +3878,12 @@ Subroutine scan_control                                    &
         lrvdw=.true.
         Call get_word(record,word)
         If (word(1:3) == 'cut') Call get_word(record,word)
-        If (vdw%cutoff > 1.0e-6_wp) Then
-           vdw%cutoff = Min(vdw%cutoff,word_2_real(word))
+        If (vdws%cutoff > 1.0e-6_wp) Then
+           vdws%cutoff = Min(vdws%cutoff,word_2_real(word))
         Else
-           vdw%cutoff = Abs(word_2_real(word))
+           vdws%cutoff = Abs(word_2_real(word))
         End If
-        lrvdw = (vdw%cutoff > zero_plus) ! if zero or nothing is entered
+        lrvdw = (vdws%cutoff > zero_plus) ! if zero or nothing is entered
 
 ! read binsize option
 
@@ -4361,8 +4361,8 @@ Subroutine scan_control                                    &
 
   If (lvdw) Then
      If (.not.lrvdw) Then
-        lrvdw = (vdw%cutoff > 1.0e-6_wp)
-        vdw%cutoff = Min(vdw%cutoff,Max(neigh%cutoff,rcut_def))
+        lrvdw = (vdws%cutoff > 1.0e-6_wp)
+        vdws%cutoff = Min(vdws%cutoff,Max(neigh%cutoff,rcut_def))
      End If
 
      If (l_n_v) lvdw = .not.l_n_v
@@ -4372,7 +4372,7 @@ Subroutine scan_control                                    &
 
 ! Sort neigh%cutoff as the maximum of all valid cutoffs
 
-  neigh%cutoff=Max(neigh%cutoff,vdw%cutoff,met%rcut,rkim,2.0_wp*Max(rcter,bond%rcut)+1.0e-6_wp)
+  neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,rkim,2.0_wp*Max(rcter,bond%rcut)+1.0e-6_wp)
 
   If (comm%idnode == 0) Rewind(nread)
 
@@ -4563,12 +4563,12 @@ Subroutine scan_control                                    &
 
      Else If (word(1:6) == 'finish') Then
 
-! Sort vdw%cutoff
+! Sort vdws%cutoff
 
         If ((.not.lrvdw) .and. lvdw) Then
            If (lrcut) Then
               lrvdw=.true.
-              vdw%cutoff=neigh%cutoff
+              vdws%cutoff=neigh%cutoff
            Else
               Call error(402)
            End If
@@ -4579,7 +4579,7 @@ Subroutine scan_control                                    &
         If ((.not.lrmet) .and. lmet) Then
            If (lrcut .or. lrvdw) Then
               lrmet=.true.
-              met%rcut=Max(neigh%cutoff,vdw%cutoff)
+              met%rcut=Max(neigh%cutoff,vdws%cutoff)
            Else
               Call error(382)
            End If
@@ -4607,13 +4607,13 @@ Subroutine scan_control                                    &
                                     itmp == 0) )
            End If
 
-! Reset vdw%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
+! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
 
            If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r) Then
-              vdw%cutoff=0.0_wp
+              vdws%cutoff=0.0_wp
               met%rcut=0.0_wp
               If (.not.l_str) Then
-                 If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdw%cutoff
+                 If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
                     neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
                  Else
                     neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
@@ -4636,22 +4636,22 @@ Subroutine scan_control                                    &
            If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
                 (lrvdw .or. lrmet .or. lter .or. kimim /= ' ') ) Then
               lrcut=.true.
-              If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdw%cutoff
-                 neigh%cutoff=Max(vdw%cutoff,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+              If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
+                 neigh%cutoff=Max(vdws%cutoff,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
               Else
-                 neigh%cutoff=Max(neigh%cutoff,vdw%cutoff,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                 neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
               End If
            End If
 
-! Reset vdw%cutoff and met%rcut when only tersoff potentials are opted for and
+! Reset vdws%cutoff and met%rcut when only tersoff potentials are opted for and
 ! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
            If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. kimim == ' ') Then
-              vdw%cutoff=0.0_wp
+              vdws%cutoff=0.0_wp
               met%rcut=0.0_wp
               If (.not.l_str) Then
                  lrcut=.true.
-                 If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdw%cutoff
+                 If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
                     neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
                  Else
                     neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
@@ -4696,9 +4696,9 @@ Subroutine scan_control                                    &
 
         If (lmet) met%rcut = neigh%cutoff
 
-! Sort vdw%cutoff=neigh%cutoff if VDW interactions are in play
+! Sort vdws%cutoff=neigh%cutoff if VDW interactions are in play
 
-        If (lvdw .and. vdw%cutoff > neigh%cutoff) vdw%cutoff = neigh%cutoff
+        If (lvdw .and. vdws%cutoff > neigh%cutoff) vdws%cutoff = neigh%cutoff
 
 ! Sort rbin as now neigh%cutoff is already pinned down
 

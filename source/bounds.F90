@@ -53,7 +53,7 @@ Subroutine set_bounds                                 &
            dvar,rbin,nstfce,      &
            width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf, &
+           inversion,tether,threebody,zdensity,neigh,vdws,tersoff,fourbody,rdf, &
            mpole,ext_field,rigid,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -92,7 +92,7 @@ Subroutine set_bounds                                 &
   Type( threebody_type ), Intent( InOut ) :: threebody
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( vdw_type ), Intent( InOut ) :: vdws
   Type( tersoff_type ), Intent( InOut )  :: tersoff
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
@@ -134,7 +134,7 @@ Subroutine set_bounds                                 &
            mtinv,  &
            rcter,rctbp,rcfbp,lext,cshell,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
-           tether,threebody,vdw,tersoff,fourbody,rdf,mpole,rigid,comm)
+           tether,threebody,vdws,tersoff,fourbody,rdf,mpole,rigid,comm)
 
 ! Get imc_r & set dvar
 
@@ -159,7 +159,7 @@ Subroutine set_bounds                                 &
            rbin,                         &
            nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1,cshell,stats,thermo, &
            green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-           zdensity,neigh,vdw,tersoff,rdf,mpole,electro,comm)
+           zdensity,neigh,vdws,tersoff,rdf,mpole,electro,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -400,8 +400,8 @@ Subroutine set_bounds                                 &
 ! rdf%max_grid - maximum dimension of rdf%rdf and z-density arrays
 
   If ((.not. l_n_r) .or. lzdn) Then
-     If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdw%max_vdw > 0 .or. met%max_metal > 0)) &
-        rdf%max_rdf = Max(vdw%max_vdw,met%max_metal) ! (vdw,met) == rdf scanning
+     If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdws%max_vdw > 0 .or. met%max_metal > 0)) &
+        rdf%max_rdf = Max(vdws%max_vdw,met%max_metal) ! (vdws,met) == rdf scanning
      rdf%max_grid = Nint(neigh%cutoff/rbin)
   Else
      rdf%max_grid = 0 ! RDF and Z-density function MUST NOT get called!!!
@@ -420,7 +420,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgana,vdw%max_grid,met%maxgrid,rdf%max_grid,rdf%max_grid_usr,1004,Nint(neigh%cutoff/delr_max)+4)
+  mxgrid = Max(mxgana,vdws%max_grid,met%maxgrid,rdf%max_grid,rdf%max_grid_usr,1004,Nint(neigh%cutoff/delr_max)+4)
 
 ! grids setting and overrides
 
@@ -446,7 +446,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for vdw interactions - overwritten
 
-  vdw%max_grid = Merge(-1,Max(1004,Nint(vdw%cutoff/delr_max)+4),l_n_v)
+  vdws%max_grid = Merge(-1,Max(1004,Nint(vdws%cutoff/delr_max)+4),l_n_v)
 
 ! maximum number of grid points for metal interactions
 
@@ -459,7 +459,7 @@ Subroutine set_bounds                                 &
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
   mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab, &
-    inversion%bin_tab,mxgele,vdw%max_grid,met%maxgrid,tersoff%max_grid)
+    inversion%bin_tab,mxgele,vdws%max_grid,met%maxgrid,tersoff%max_grid)
 
 
 
@@ -467,11 +467,11 @@ Subroutine set_bounds                                 &
 
 ! maximum number of vdw potentials and parameters
 
-  If (vdw%max_vdw > 0) Then
-     vdw%max_vdw = vdw%max_vdw+1
-     vdw%max_param = 7
+  If (vdws%max_vdw > 0) Then
+     vdws%max_vdw = vdws%max_vdw+1
+     vdws%max_param = 7
   Else
-     vdw%max_param = 0
+     vdws%max_param = 0
   End If
 
 

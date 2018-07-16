@@ -26,7 +26,7 @@
 ! nullify all two-body force switches = just do rdf%rdf calculation
 
   electro%key = ELECTROSTATIC_NULL
-  vdw%n_vdw = 0
+  vdws%n_vdw = 0
   met%n_potentials = 0
 
 ! defect detection for every entry in HISTORY
@@ -150,7 +150,7 @@
            If (rdf%l_collect) Then
              Call two_body_forces(pdplnc,thermo%ensemble,nstfce,.false.,megfrz, &
                leql,nsteql,nstph,cshell,stat,ewld,devel,met,pois,neigh,sites, &
-               vdw,rdf,mpole,electro,tmr,comm)
+               vdws,rdf,mpole,electro,tmr,comm)
            End If
 
 ! Calculate bond forces
@@ -174,7 +174,7 @@
               isw = 0
               Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
                 neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp, &
-                dihedral,vdw,mpole,electro,comm)
+                dihedral,vdws,mpole,electro,comm)
            End If
 
 ! Calculate inversion forces

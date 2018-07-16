@@ -60,7 +60,7 @@ Module system
   Subroutine system_init                                             &
            (levcfg,rcut,rbin,keyres,megatm,    &
            time,tmst,nstep,tstep,cshell,stats,devel,green,thermo,met, &
-           bond,angle,dihedral,inversion,zdensity,sites,vdw,rdf,comm)
+           bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -92,7 +92,7 @@ Module system
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( site_type ), Intent( InOut ) :: sites
-  Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( vdw_type ), Intent( InOut ) :: vdws
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -615,10 +615,10 @@ Module system
 
 ! Get long-range corrections
 
-! vdw%elrc & vdw%vlrc arrays are zeroed in vdw,
+! vdws%elrc & vdws%vlrc arrays are zeroed in vdws,
 ! no lrc when vdw interactions are force-shifted
 
-  If (vdw%n_vdw > 0 .and. (.not.vdw%l_force_shift)) Call vdw_lrc(sites,vdw,comm)
+  If (vdws%n_vdw > 0 .and. (.not.vdws%l_force_shift)) Call vdw_lrc(sites,vdws,comm)
 
 ! met%elrc & met%vlrc arrays are zeroed in metal_module
 

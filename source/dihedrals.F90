@@ -644,7 +644,7 @@ Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
 End Subroutine dihedrals_compute
 
 Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
-    engsrp,virsrp,dihedral,vdw,mpole,electro,comm)
+    engsrp,virsrp,dihedral,vdws,mpole,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -671,7 +671,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe, &
                                                           engsrp,virsrp
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
-  Type( vdw_type ), Intent( In    ) :: vdw
+  Type( vdw_type ), Intent( In    ) :: vdws
   Type( mpole_type ), Intent( InOut ) :: mpole
   Type( electrostatic_type ), Intent( In    ) :: electro
   Type( comms_type),                   Intent( InOut ) :: comm
@@ -1482,17 +1482,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
         End If
 
 ! 1-4 short-range (vdw) interactions: adjust by weighting factor
-! assumes 1-4 interactions are in the exclude neigh%list and Rad < vdw%cutoff
+! assumes 1-4 interactions are in the exclude neigh%list and Rad < vdws%cutoff
 
         scale=dihedral%param(5,kk)
-        If (Abs(scale) > zero_plus .and. vdw%n_vdw > 0) Then
+        If (Abs(scale) > zero_plus .and. vdws%n_vdw > 0) Then
 
 ! atomic type indices
 
            ai=ltype(ia)
            aj=ltype(id)
 
-           Call dihedrals_14_vdw(ai,aj,rad(0),rad2(0),eng,gamma,vdw)
+           Call dihedrals_14_vdw(ai,aj,rad(0),rad2(0),eng,gamma,vdws)
 
            gamma = scale*gamma
            eng   = scale*eng
@@ -1536,7 +1536,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                  ai=ltype(ia0)
                  aj=ltype(id)
 
-                 Call dihedrals_14_vdw(ai,aj,rad(1),rad2(1),eng,gamma,vdw)
+                 Call dihedrals_14_vdw(ai,aj,rad(1),rad2(1),eng,gamma,vdws)
 
                  gamma = scale*gamma
                  eng   = scale*eng
@@ -1580,7 +1580,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                  ai=ltype(ia)
                  aj=ltype(id0)
 
-                 Call dihedrals_14_vdw(ai,aj,rad(2),rad2(2),eng,gamma,vdw)
+                 Call dihedrals_14_vdw(ai,aj,rad(2),rad2(2),eng,gamma,vdws)
 
                  gamma = scale*gamma
                  eng   = scale*eng
@@ -1624,7 +1624,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                  ai=ltype(ia0)
                  aj=ltype(id0)
 
-                 Call dihedrals_14_vdw(ai,aj,rad(3),rad2(3),eng,gamma,vdw)
+                 Call dihedrals_14_vdw(ai,aj,rad(3),rad2(3),eng,gamma,vdws)
 
                  gamma = scale*gamma
                  eng   = scale*eng
@@ -2074,7 +2074,7 @@ Subroutine dihedrals_table_read(dihd_name,dihedral,sites,comm)
 
 End Subroutine dihedrals_table_read
 
-Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
+Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdws)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2089,7 +2089,7 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
   Integer,           Intent( In    ) :: ai,aj
   Real( Kind = wp ), Intent( In    ) :: rad,rad2
   Real( Kind = wp ), Intent(   Out ) :: eng,gamma
-  Type( vdw_type ), Intent( In    ) :: vdw
+  Type( vdw_type ), Intent( In    ) :: vdws
 
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: dlrpot,rdr
@@ -2106,7 +2106,7 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
 
 ! define grid resolution for potential arrays and interpolation spacing
 
-     dlrpot = vdw%cutoff/Real(vdw%max_grid-4,wp)
+     dlrpot = vdws%cutoff/Real(vdws%max_grid-4,wp)
      rdr    = 1.0_wp/dlrpot
   End If
 
@@ -2123,11 +2123,11 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
      key=aj*(aj-1)/2 + ai
   End If
 
-  k=vdw%list(key)
+  k=vdws%list(key)
 
 ! validity of potential
 
-  ityp=vdw%ltp(k)
+  ityp=vdws%ltp(k)
   If (ityp >= 0) Then
 
 ! Get separation distance
@@ -2135,50 +2135,50 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
      rrr = rad
      rsq = rad2
 
-     If (vdw%l_direct) Then ! direct calculation
+     If (vdws%l_direct) Then ! direct calculation
 
         If      (ityp == 1) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
-           a=vdw%param(1,k)
-           b=vdw%param(2,k)
+           a=vdws%param(1,k)
+           b=vdws%param(2,k)
 
            r_6=rrr**(-6)
 
            eng   = r_6*(a*r_6-b)
            gamma = 6.0_wp*r_6*(2.0_wp*a*r_6-b)/rsq
 
-           If (vdw%l_force_shift) Then ! force-shifting
-              eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
-              gamma = gamma - vdw%afs(k)/rrr
+           If (vdws%l_force_shift) Then ! force-shifting
+              eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+              gamma = gamma - vdws%afs(k)/rrr
            End If
 
         Else If (ityp == 2) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
-           eps=vdw%param(1,k)
-           sig=vdw%param(2,k)
+           eps=vdws%param(1,k)
+           sig=vdws%param(2,k)
 
            sor6=(sig/rrr)**6
 
            eng   = 4.0_wp*eps*sor6*(sor6-1.0_wp)
            gamma = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)/rsq
 
-           If (vdw%l_force_shift) Then ! force-shifting
-              eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
-              gamma = gamma - vdw%afs(k)/rrr
+           If (vdws%l_force_shift) Then ! force-shifting
+              eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+              gamma = gamma - vdws%afs(k)/rrr
            End If
 
         Else If (ityp == 3) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
-           e0=vdw%param(1,k)
-           n =Nint(vdw%param(2,k)) ; nr=Real(n,wp)
-           m =Nint(vdw%param(3,k)) ; mr=Real(m,wp)
-           r0=vdw%param(4,k)
+           e0=vdws%param(1,k)
+           n =Nint(vdws%param(2,k)) ; nr=Real(n,wp)
+           m =Nint(vdws%param(3,k)) ; mr=Real(m,wp)
+           r0=vdws%param(4,k)
 
            a=r0/rrr
            b=1.0_wp/(nr-mr)
@@ -2188,18 +2188,18 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
            eng   = e0*(mr*r0rn-nr*r0rm)*b
            gamma = e0*mr*nr*(r0rn-r0rm)*b/rsq
 
-           If (vdw%l_force_shift) Then ! force-shifting
-              eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
-              gamma = gamma - vdw%afs(k)/rrr
+           If (vdws%l_force_shift) Then ! force-shifting
+              eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+              gamma = gamma - vdws%afs(k)/rrr
            End If
 
         Else If (ityp == 4) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
-           a  =vdw%param(1,k)
-           rho=vdw%param(2,k)
-           c  =vdw%param(3,k)
+           a  =vdws%param(1,k)
+           rho=vdws%param(2,k)
+           c  =vdws%param(3,k)
 
            If (Abs(rho) <= zero_plus) Then
               If (Abs(a) <= zero_plus) Then
@@ -2216,20 +2216,20 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
            eng   = t1+t2
            gamma = (t1*b+6.0_wp*t2)/rsq
 
-           If (vdw%l_force_shift) Then ! force-shifting
-              eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
-              gamma = gamma - vdw%afs(k)/rrr
+           If (vdws%l_force_shift) Then ! force-shifting
+              eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+              gamma = gamma - vdws%afs(k)/rrr
            End If
 
         Else If (ityp == 5) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
-           a  =vdw%param(1,k)
-           b  =vdw%param(2,k)
-           sig=vdw%param(3,k)
-           c  =vdw%param(4,k)
-           d  =vdw%param(5,k)
+           a  =vdws%param(1,k)
+           b  =vdws%param(2,k)
+           sig=vdws%param(3,k)
+           c  =vdws%param(4,k)
+           d  =vdws%param(5,k)
 
            t1=a*Exp(b*(sig-rrr))
            t2=-c/rrr**6
@@ -2238,17 +2238,17 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
            eng   = t1+t2+t3
            gamma = (t1*rrr*b+6.0_wp*t2+8.0_wp*t3)/rsq
 
-           If (vdw%l_force_shift) Then ! force-shifting
-              eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
-              gamma = gamma - vdw%afs(k)/rrr
+           If (vdws%l_force_shift) Then ! force-shifting
+              eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+              gamma = gamma - vdws%afs(k)/rrr
            End If
 
         Else If (ityp == 6) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
-           a=vdw%param(1,k)
-           b=vdw%param(2,k)
+           a=vdws%param(1,k)
+           b=vdws%param(2,k)
 
            t1=a/rrr**12
            t2=-b/rrr**10
@@ -2256,20 +2256,20 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
            eng   = t1+t2
            gamma = (12.0_wp*t1+10.0_wp*t2)/rsq
 
-           If (vdw%l_force_shift) Then ! force-shifting
-              eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
-              gamma = gamma - vdw%afs(k)/rrr
+           If (vdws%l_force_shift) Then ! force-shifting
+              eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+              gamma = gamma - vdws%afs(k)/rrr
            End If
 
         Else If (ityp == 7) Then
 
 ! shifted and force corrected n-m potential (w.smith) ::
 
-           e0=vdw%param(1,k)
-           n =Nint(vdw%param(2,k)) ; nr=Real(n,wp)
-           m =Nint(vdw%param(3,k)) ; mr=Real(m,wp)
-           r0=vdw%param(4,k)
-           rc=vdw%param(5,k) ; If (rc < 1.0e-6_wp) rc=vdw%cutoff
+           e0=vdws%param(1,k)
+           n =Nint(vdws%param(2,k)) ; nr=Real(n,wp)
+           m =Nint(vdws%param(3,k)) ; mr=Real(m,wp)
+           r0=vdws%param(4,k)
+           rc=vdws%param(5,k) ; If (rc < 1.0e-6_wp) rc=vdws%cutoff
 
            If (n <= m) Call error(470)
 
@@ -2295,18 +2295,18 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
 
 ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}
 
-           e0=vdw%param(1,k)
-           r0=vdw%param(2,k)
-           kk=vdw%param(3,k)
+           e0=vdws%param(1,k)
+           r0=vdws%param(2,k)
+           kk=vdws%param(3,k)
 
            t1=Exp(-kk*(rrr-r0))
 
            eng   = e0*t1*(t1-2.0_wp)
            gamma = -2.0_wp*e0*kk*t1*(1.0_wp-t1)/rrr
 
-           If (vdw%l_force_shift) Then ! force-shifting
-              eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
-              gamma = gamma - vdw%afs(k)/rrr
+           If (vdws%l_force_shift) Then ! force-shifting
+              eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+              gamma = gamma - vdws%afs(k)/rrr
            End If
 
         Else If (ityp == 9) Then
@@ -2314,19 +2314,19 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
 ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
 ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
 
-           eps=vdw%param(1,k)
-           sig=vdw%param(2,k)
-           d  =vdw%param(3,k)
+           eps=vdws%param(1,k)
+           sig=vdws%param(2,k)
+           d  =vdws%param(3,k)
 
-           If (rrr < vdw%param(4,k) .or. Abs(rrr-d) < 1.0e-10_wp) Then ! Else leave them zeros
+           If (rrr < vdws%param(4,k) .or. Abs(rrr-d) < 1.0e-10_wp) Then ! Else leave them zeros
               sor6=(sig/(rrr-d))**6
 
               eng   = 4.0_wp*eps*sor6*(sor6-1.0_wp)+eps
               gamma = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)/(rrr*(rrr-d))
 
-              If (vdw%l_force_shift) Then ! force-shifting
-                 eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
-                 gamma = gamma - vdw%afs(k)/rrr
+              If (vdws%l_force_shift) Then ! force-shifting
+                 eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+                 gamma = gamma - vdws%afs(k)/rrr
               End If
            End If
 
@@ -2334,8 +2334,8 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
 
 ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
 
-           a =vdw%param(1,k)
-           rc=vdw%param(2,k)
+           a =vdws%param(1,k)
+           rc=vdws%param(2,k)
 
            If (rrr < rc) Then ! Else leave them zeros
               t2=rrr/rc
@@ -2349,8 +2349,8 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((sig/r)+0.07)]^7 * [(1.12/((sig/r)^7+0.12))-2]
 
-           eps=vdw%param(1,k)
-           sig=vdw%param(2,k)
+           eps=vdws%param(1,k)
+           sig=vdws%param(2,k)
 
            rho=sig/rrr
            t1=1.0_wp/(0.07_wp+rho)
@@ -2360,81 +2360,81 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdw)
            eng   = t3*((1.12_wp/t2)-2.0_wp)
            gamma =-7.0_wp*t3*rho*(((1.12_wp/t2)-2.0_wp)/t1 + (1.12_wp/t2**2)*rho**6)/rsq
 
-           If (vdw%l_force_shift) Then ! force-shifting
-              eng   = eng + vdw%afs(k)*rrr + vdw%bfs(k)
-              gamma = gamma - vdw%afs(k)/rrr
+           If (vdws%l_force_shift) Then ! force-shifting
+              eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+              gamma = gamma - vdws%afs(k)/rrr
            End If
 
-        Else If (Abs(vdw%tab_potential(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
+        Else If (Abs(vdws%tab_potential(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
 
            l   = Int(rrr*rdr)
            ppp = rrr*rdr - Real(l,wp)
 
 ! calculate interaction energy using 3-point interpolation
 
-           vk  = vdw%tab_potential(l,k)
-           vk1 = vdw%tab_potential(l+1,k)
-           vk2 = vdw%tab_potential(l+2,k)
+           vk  = vdws%tab_potential(l,k)
+           vk1 = vdws%tab_potential(l+1,k)
+           vk2 = vdws%tab_potential(l+2,k)
 
            t1 = vk  + (vk1 - vk )*ppp
            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
            eng = t1 + (t2-t1)*ppp*0.5_wp
              ! force-shifting
-           If (vdw%l_force_shift) Then
-             eng = eng + vdw%tab_force(vdw%max_grid-4,k)*(rrr/vdw%cutoff-1.0_wp) - &
-               vdw%tab_potential(vdw%max_grid-4,k)
+           If (vdws%l_force_shift) Then
+             eng = eng + vdws%tab_force(vdws%max_grid-4,k)*(rrr/vdws%cutoff-1.0_wp) - &
+               vdws%tab_potential(vdws%max_grid-4,k)
            End If
 
 ! calculate forces using 3-point interpolation
 
-           gk  = vdw%tab_force(l,k) ; If (l == 0) gk = gk*rrr
-           gk1 = vdw%tab_force(l+1,k)
-           gk2 = vdw%tab_force(l+2,k)
+           gk  = vdws%tab_force(l,k) ; If (l == 0) gk = gk*rrr
+           gk1 = vdws%tab_force(l+1,k)
+           gk2 = vdws%tab_force(l+2,k)
 
            t1 = gk  + (gk1 - gk )*ppp
            t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
 
            gamma = (t1 + (t2-t1)*ppp*0.5_wp)/rsq
            ! force-shifting
-           If (vdw%l_force_shift) Then
-             gamma = gamma - vdw%tab_force(vdw%max_grid-4,k)/(rrr*vdw%cutoff)
+           If (vdws%l_force_shift) Then
+             gamma = gamma - vdws%tab_force(vdws%max_grid-4,k)/(rrr*vdws%cutoff)
            End If
 
         End If
 
-     Else If (Abs(vdw%tab_potential(0,k)) > zero_plus) Then ! no direct = fully tabulated calculation
+     Else If (Abs(vdws%tab_potential(0,k)) > zero_plus) Then ! no direct = fully tabulated calculation
 
         l   = Int(rrr*rdr)
         ppp = rrr*rdr - Real(l,wp)
 
 ! calculate interaction energy using 3-point interpolation
 
-        vk  = vdw%tab_potential(l,k)
-        vk1 = vdw%tab_potential(l+1,k)
-        vk2 = vdw%tab_potential(l+2,k)
+        vk  = vdws%tab_potential(l,k)
+        vk1 = vdws%tab_potential(l+1,k)
+        vk2 = vdws%tab_potential(l+2,k)
 
         t1 = vk  + (vk1 - vk )*ppp
         t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
         eng = t1 + (t2-t1)*ppp*0.5_wp
         ! force-shifting
-        If (vdw%l_force_shift) Then
-          eng = eng + vdw%tab_force(vdw%max_grid-4,k)*(rrr/vdw%cutoff-1.0_wp) - &
-            vdw%tab_potential(vdw%max_grid-4,k)
+        If (vdws%l_force_shift) Then
+          eng = eng + vdws%tab_force(vdws%max_grid-4,k)*(rrr/vdws%cutoff-1.0_wp) - &
+            vdws%tab_potential(vdws%max_grid-4,k)
         End If
 
 ! calculate forces using 3-point interpolation
 
-        gk  = vdw%tab_force(l,k) ; If (l == 0) gk = gk*rrr
-        gk1 = vdw%tab_force(l+1,k)
-        gk2 = vdw%tab_force(l+2,k)
+        gk  = vdws%tab_force(l,k) ; If (l == 0) gk = gk*rrr
+        gk1 = vdws%tab_force(l+1,k)
+        gk2 = vdws%tab_force(l+2,k)
 
         t1 = gk  + (gk1 - gk )*ppp
         t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
 
         gamma = (t1 + (t2-t1)*ppp*0.5_wp)/rsq
-        If (vdw%l_force_shift) gamma = gamma - vdw%tab_force(vdw%max_grid-4,k)/(rrr*vdw%cutoff) ! force-shifting
+        If (vdws%l_force_shift) gamma = gamma - vdws%tab_force(vdws%max_grid-4,k)/(rrr*vdws%cutoff) ! force-shifting
 
      End If
 

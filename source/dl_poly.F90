@@ -242,7 +242,7 @@ program dl_poly
 
   Integer(Kind=li)  :: degfre,degshl,degtra,degrot
 
-  ! vdw%elrc,vdw%vlrc - vdw energy and virial are scalars and in vdw
+  ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
 
   Real( Kind = wp ) :: tsths,                                     &
     tstep,time,tmst,      &
@@ -279,7 +279,7 @@ program dl_poly
   Type( pmf_type ) :: pmfs
   Type( site_type ) :: sites
   Type( core_shell_type ) :: core_shells
-  Type( vdw_type ) :: vdw
+  Type( vdw_type ) :: vdws
   Type( tersoff_type ) :: tersoff
   Type( four_body_type ) :: fourbody
   Type( rdf_type ) :: rdf
@@ -358,7 +358,7 @@ program dl_poly
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,width,sites%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf,mpole,ext_field, &
+    tether,threebody,zdensity,neigh,vdws,tersoff,fourbody,rdf,mpole,ext_field, &
     rigid,electro,comm)
 
   Call info('',.true.)
@@ -373,7 +373,7 @@ program dl_poly
 
   ! ALLOCATE DPD ARRAYS
 
-  Call thermo%init_dpd(vdw%max_vdw)
+  Call thermo%init_dpd(vdws%max_vdw)
 
   ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
 
@@ -395,7 +395,7 @@ program dl_poly
 
   ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
 
-  Call vdw%init()
+  Call vdws%init()
   Call met%init(mxatms,mxatyp)
   Call tersoff%init(sites%max_site)
   Call allocate_three_body_arrays(sites%max_site,threebody)
@@ -433,7 +433,7 @@ program dl_poly
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
-    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdw,tersoff,rdf, &
+    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoff,rdf, &
     minimise,mpole,electro,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
@@ -444,7 +444,7 @@ program dl_poly
     lecx,lbook,lexcl,               &
     atmfre,atmfrz,megatm,megfrz,    &
     core_shells,pmfs,cons,thermo,met,bond,angle,   &
-    dihedral,inversion,tether,threebody,sites,vdw,tersoff,fourbody,rdf,mpole, &
+    dihedral,inversion,tether,threebody,sites,vdws,tersoff,fourbody,rdf,mpole, &
     ext_field,rigid,electro,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
@@ -521,7 +521,7 @@ program dl_poly
   Call system_init                                                 &
     (levcfg,neigh%cutoff,rbin,keyres,megatm,    &
     time,tmst,nstep,tstep,core_shells,stats,devel, &
-    green,thermo,met,bond,angle,dihedral,inversion,zdensity,sites,vdw,rdf,comm)
+    green,thermo,met,bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -677,11 +677,11 @@ program dl_poly
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
-        msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdw,tersoff, &
+        msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoff, &
         fourbody,rdf,netcdf,minimise,mpole,ext_field,rigid,electro,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
-        met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdw,rdf, &
+        met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
         netcdf,minimise,mpole,ext_field,rigid,electro)
     End If
   End If
@@ -824,7 +824,7 @@ program dl_poly
 Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-      inversion,tether,threebody,neigh,sites,vdw,tersoff,fourbody,rdf,netcdf, &
+      inversion,tether,threebody,neigh,sites,vdws,tersoff,fourbody,rdf,netcdf, &
       minimise,mpole,ext_field,rigid,electro,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -840,7 +840,7 @@ Contains
     Type( threebody_type ), Intent( InOut ) :: threebody
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: sites
-    Type( vdw_type ), Intent( InOut ) :: vdw
+    Type( vdw_type ), Intent( InOut ) :: vdws
     Type( tersoff_type ), Intent( InOut )  :: tersoff
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
@@ -873,7 +873,7 @@ Contains
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw,cshell,cons,pmf,stat,thermo,sites,vdw,rigid,tmr)
+  Subroutine w_integrate_vv(isw,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,tmr)
     Integer, Intent( In    ) :: isw ! used for vv stage control
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -881,7 +881,7 @@ Contains
     Type(stats_type), Intent(InOut) :: stat
     Type(thermostat_type), Intent(InOut) :: thermo
     Type( site_type ), Intent( InOut ) :: sites
-    Type( vdw_type ), Intent( InOut ) :: vdw
+    Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_integrate_vv.F90'
@@ -951,7 +951,7 @@ Contains
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
-      bond,angle,dihedral,inversion,zdensity,neigh,sites,vdw,rdf,netcdf,minimise, &
+      bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf,netcdf,minimise, &
       mpole,ext_field,rigid,electro)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -969,7 +969,7 @@ Contains
     Type( z_density_type ), Intent( InOut ) :: zdensity
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: sites
-    Type( vdw_type ), Intent( InOut ) :: vdw
+    Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( minimise_type ), Intent( InOut ) :: minimise
@@ -987,7 +987,7 @@ Contains
   End Subroutine w_replay_history
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
-    angle,dihedral,inversion,zdensity,neigh,sites,vdw,tersoff,fourbody,rdf,netcdf, &
+    angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoff,fourbody,rdf,netcdf, &
     minimise,mpole,ext_field,rigid,electro,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -1004,7 +1004,7 @@ Contains
     Type( z_density_type ), Intent( InOut ) :: zdensity
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: sites
-    Type( vdw_type ), Intent( InOut ) :: vdw
+    Type( vdw_type ), Intent( InOut ) :: vdws
     Type( tersoff_type ), Intent( InOut )  :: tersoff
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf

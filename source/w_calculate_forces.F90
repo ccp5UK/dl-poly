@@ -24,12 +24,12 @@
      End If
      stat%stress = 0.0_wp
 
-! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
+! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
 
      If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
        l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then
        Call two_body_forces(pdplnc,thermo%ensemble,nstfce,lbook,megfrz, &
-         leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,sites,vdw,rdf, &
+         leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
          mpole,electro,tmr,comm)
      End If
 
@@ -80,7 +80,7 @@
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
            neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp, &
-           stat%virsrp,dihedral,vdw,mpole,electro,comm)
+           stat%virsrp,dihedral,vdws,mpole,electro,comm)
      End If
 
 ! Calculate inversion forces
@@ -180,9 +180,9 @@
 ! Total virial (excluding constraint, PMF and RB COM virials for npt routines)
 ! Total stress (excluding constraint, PMF, RB COM and kinetic stress for npt routines)
 !
-! NOTE(1):  virsrp already includes vdw%vlrc and vlrcm(0) and so
+! NOTE(1):  virsrp already includes vdws%vlrc and vlrcm(0) and so
 !           does the stress diagonal elements (by minus a third),
-!           engsrp includes vdw%elrc and elrcm(0)
+!           engsrp includes vdws%elrc and elrcm(0)
 !
 ! NOTE(2):  virfbp, virinv and virdih are allegedly always zero
 

@@ -41,14 +41,14 @@ Subroutine two_body_forces                        &
            nstfce,lbook,megfrz, &
            leql,nsteql,nstep,         &
            cshell,               &
-           stats,ewld,devel,met,pois,neigh,sites,vdw,rdf,mpole,electro,tmr,comm)
+           stats,ewld,devel,met,pois,neigh,sites,vdws,rdf,mpole,electro,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating interatomic forces and rdf%rdf
 ! using the verlet neighbour list
 !
-! vdw%n_vdw > 0 ------ switch for vdw potentials calculation
+! vdws%n_vdw > 0 ------ switch for vdw potentials calculation
 ! met%n_potentials > 0 ------ switch for metal local density and potentials
 !                   calculations
 !
@@ -79,7 +79,7 @@ Subroutine two_body_forces                        &
   Type( poisson_type ),                     Intent( InOut ) :: pois
   Type( neighbours_type ),                  Intent( InOut ) :: neigh
   Type( site_type ),                        Intent( In    ) :: sites
-  Type( vdw_type ),                         Intent( InOut ) :: vdw
+  Type( vdw_type ),                         Intent( InOut ) :: vdws
   Type( rdf_type ),                         Intent( InOut ) :: rdf
   Type( mpole_type ),                       Intent( InOut ) :: mpole
   Type( timer_type ),                       Intent( InOut ) :: tmr
@@ -166,7 +166,7 @@ Subroutine two_body_forces                        &
 
 ! Set up non-bonded interaction (verlet) list using link cells
   If (neigh%update) Then
-    Call link_cell_pairs(vdw%cutoff,met%rcut,pdplnc,lbook,megfrz,cshell,devel,neigh,mpole,tmr,comm)
+    Call link_cell_pairs(vdws%cutoff,met%rcut,pdplnc,lbook,megfrz,cshell,devel,neigh,mpole,tmr,comm)
   End If
 ! Calculate all contributions from KIM
 
@@ -250,8 +250,8 @@ Subroutine two_body_forces                        &
 
 ! calculate short-range force and potential terms
 
-     If (vdw%n_vdw > 0) Then
-        Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,vdw)
+     If (vdws%n_vdw > 0) Then
+        Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,vdws)
 
         engvdw=engvdw+engacc
         virvdw=virvdw+viracc
@@ -640,12 +640,12 @@ Subroutine two_body_forces                        &
 ! Globalise short-range, KIM and metal interactions with
 ! their long-range corrections contributions: srp
 
-  stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdw%elrc)
-  stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdw%vlrc)
+  stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdws%elrc)
+  stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdws%vlrc)
 
 ! Add long-range corrections to diagonal terms of stress tensor (per node)
 
-  tmp = - (vdw%vlrc+met%vlrc(0))/(3.0_wp*Real(comm%mxnode,wp))
+  tmp = - (vdws%vlrc+met%vlrc(0))/(3.0_wp*Real(comm%mxnode,wp))
   stats%stress(1) = stats%stress(1) + tmp
   stats%stress(5) = stats%stress(5) + tmp
   stats%stress(9) = stats%stress(9) + tmp
