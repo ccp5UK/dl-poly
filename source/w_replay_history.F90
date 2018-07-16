@@ -129,7 +129,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(electro%key,neigh,sites,mpole,comm)
+           Call set_halo_particles(electro%key,neigh,sites,mpoles,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -137,7 +137,7 @@
            If (lbook) Then
              Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
                atmfrz,degrot,degtra,cshell,cons,pmf,bond,angle,dihedral, &
-               inversion,tether,neigh,sites,mpole,rigid,comm)
+               inversion,tether,neigh,sites,mpoles,rigid,comm)
              If (lexcl) Then
                Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
                  inversion,neigh,rigid,comm)
@@ -150,7 +150,7 @@
            If (rdf%l_collect) Then
              Call two_body_forces(pdplnc,thermo%ensemble,nstfce,.false.,megfrz, &
                leql,nsteql,nstph,cshell,stat,ewld,devel,met,pois,neigh,sites, &
-               vdws,rdf,mpole,electro,tmr,comm)
+               vdws,rdf,mpoles,electro,tmr,comm)
            End If
 
 ! Calculate bond forces
@@ -158,7 +158,7 @@
            If (bond%total > 0 .and. bond%bin_pdf > 0) Then
               isw = 0
               Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress, &
-              neigh%cutoff,stat%engcpe,stat%vircpe,bond,mpole,electro,comm)
+              neigh%cutoff,stat%engcpe,stat%vircpe,bond,mpoles,electro,comm)
            End If
 
 ! Calculate valence angle forces
@@ -174,7 +174,7 @@
               isw = 0
               Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
                 neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp, &
-                dihedral,vdws,mpole,electro,comm)
+                dihedral,vdws,mpoles,electro,comm)
            End If
 
 ! Calculate inversion forces

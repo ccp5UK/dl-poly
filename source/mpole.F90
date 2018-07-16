@@ -312,7 +312,7 @@ Contains
     End If
   End Subroutine cleanup
 
-  Subroutine read_mpoles(l_top,sumchg,cshell,sites,mpole,comm)
+  Subroutine read_mpoles(l_top,sumchg,cshell,sites,mpoles,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -328,7 +328,7 @@ Contains
     Real( Kind = wp ),  Intent( InOut ) :: sumchg
     Type( site_type ), Intent( InOut ) :: sites
     Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical                :: safe,l_rsh,l_ord=.false.
@@ -593,10 +593,10 @@ Contains
                          charge=word_2_real(word)
 
                          sites%charge_site(jsite:lsite)=charge
-                         mpole%local_frame(sitmpl,jsite:lsite)=charge
+                         mpoles%local_frame(sitmpl,jsite:lsite)=charge
                          If (l_rsh) Then
-                            mpole%polarisation_site(jsite:lsite)=polarity
-                            mpole%dump_site(jsite:lsite)=dumping
+                            mpoles%polarisation_site(jsite:lsite)=polarity
+                            mpoles%dump_site(jsite:lsite)=dumping
   !                      Else ! initilised to zero in mpoles_module
                          End If
 
@@ -631,11 +631,11 @@ Contains
 
   ! Only assign what FIELD says is needed or it is a shell
 
-                            If (ordmpl_next <= Merge(mpole%max_order,1,l_rsh)) Then
+                            If (ordmpl_next <= Merge(mpoles%max_order,1,l_rsh)) Then
 
                               Do i=indmpl_start,indmpl_final
                                 sitmpl = sitmpl+1
-                                mpole%local_frame(sitmpl,jsite:lsite)=word_2_real(word)
+                                mpoles%local_frame(sitmpl,jsite:lsite)=word_2_real(word)
                                 Call get_word(record,word)
                               End Do
 
@@ -644,16 +644,16 @@ Contains
                               If (l_top) Then
                                 If      (ordmpl_next == 1) Then
                                   Write(message,'(2x,a12,1x,3f10.5)') 'dipole', &
-                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                    mpoles%local_frame(indmpl_start:indmpl_final,jsite)
                                 Else If (ordmpl_next == 2) Then
                                   Write(message,'(2x,a12,1x,6f10.5)') 'quadrupole', &
-                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                    mpoles%local_frame(indmpl_start:indmpl_final,jsite)
                                 Else If (ordmpl_next == 3) Then
                                   Write(message,'(2x,a12,1x,10f10.5)') 'octupole', &
-                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                    mpoles%local_frame(indmpl_start:indmpl_final,jsite)
                                 Else If (ordmpl_next == 4) Then
                                   Write(message,'(2x,a12,1x,15f10.5)') 'hexadecapole', &
-                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                    mpoles%local_frame(indmpl_start:indmpl_final,jsite)
                                 End If
                                 Call info(message,.true.)
                               End If
@@ -670,8 +670,8 @@ Contains
                                         scl=Exp(factorial(ordmpl_next)-factorial(k)-factorial(j)-factorial(i))
                                         sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
                                         If (Nint(scl) /= 1) Then
-                                          mpole%local_frame(sitmpl,jsite:lsite)= &
-                                            mpole%local_frame(sitmpl,jsite:lsite)/scl
+                                          mpoles%local_frame(sitmpl,jsite:lsite)= &
+                                            mpoles%local_frame(sitmpl,jsite:lsite)/scl
                                         End If
                                      End Do
                                   End Do
@@ -750,11 +750,11 @@ Contains
 
                   Write(message,'(3(a,i0))') &
                     'multipolar electrostatics requested up to order ', &
-                    mpole%max_order, ' with specified interactions up order ',  &
+                    mpoles%max_order, ' with specified interactions up order ',  &
                     ordmpl_max,' and least order ', ordmpl_min
                   Call warning(message,.true.)
 
-                  If (ordmpl_max*mpole%max_order == 0) Then
+                  If (ordmpl_max*mpoles%max_order == 0) Then
                     Call warning( &
                       'multipolar electrostatics machinery to be used for monompoles ' &
                       //'only electrostatic interactions (point charges only)', &

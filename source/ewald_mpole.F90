@@ -25,7 +25,7 @@ Module ewald_mpole
   Contains
 
   Subroutine ewald_real_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress, &
-      neigh,mpole,electro,comm)
+      neigh,mpoles,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -43,7 +43,7 @@ Module ewald_mpole
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
 
@@ -61,10 +61,10 @@ Module ewald_mpole
 
     Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
 
-    Real( Kind = wp ) :: d1(0:2*mpole%max_order+1,0:2*mpole%max_order+1,0:2*mpole%max_order+1)
-    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: d1(0:2*mpoles%max_order+1,0:2*mpoles%max_order+1,0:2*mpoles%max_order+1)
+    Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
     Character( Len = 256 ) :: message
 
     If (newjob) Then
@@ -110,7 +110,7 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-    imp=mpole%global_frame(:,iatm)
+    imp=mpoles%global_frame(:,iatm)
 
   ! ignore interaction if the charge is zero
 
@@ -118,9 +118,9 @@ Module ewald_mpole
 
   ! get the components for site i infinitesimal rotations
 
-       impx=mpole%rotation_x(:,iatm)
-       impy=mpole%rotation_y(:,iatm)
-       impz=mpole%rotation_z(:,iatm)
+       impx=mpoles%rotation_x(:,iatm)
+       impy=mpoles%rotation_y(:,iatm)
+       impz=mpoles%rotation_z(:,iatm)
 
   ! multipole scaler
 
@@ -150,7 +150,7 @@ Module ewald_mpole
 
   ! get the multipoles for site j
 
-          jmp=mpole%global_frame(:,jatm)
+          jmp=mpoles%global_frame(:,jatm)
 
   ! interatomic distance
 
@@ -162,9 +162,9 @@ Module ewald_mpole
 
   ! get the components for site j infinitesimal rotations
 
-             jmpx=mpole%rotation_x(:,jatm)
-             jmpy=mpole%rotation_y(:,jatm)
-             jmpz=mpole%rotation_z(:,jatm)
+             jmpx=mpoles%rotation_x(:,jatm)
+             jmpy=mpoles%rotation_y(:,jatm)
+             jmpz=mpoles%rotation_z(:,jatm)
 
   ! get the value of the kernel using 3pt interpolation
 
@@ -182,8 +182,8 @@ Module ewald_mpole
 
   ! compute derivatives of kernel
 
-             Call ewald_deriv(0,2*mpole%max_order+1,1,erfcr,electro%alpha*xxt(m), &
-               electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpole%max_order,d1)
+             Call ewald_deriv(0,2*mpoles%max_order+1,1,erfcr,electro%alpha*xxt(m), &
+               electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpoles%max_order,d1)
 
   ! calculate forces
 
@@ -191,24 +191,24 @@ Module ewald_mpole
              fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
              tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-             If (mpole%max_order < 5) Then
+             If (mpoles%max_order < 5) Then
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         jj = mpole%map(k1,k2,k3)
+                         jj = mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Call explicit_ewald_real_loops &
-             ( 0,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1,               &
+             ( 0,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,               &
              imp,       impx,    impy,    impz,    tix,tiy,tiz, &
              kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz,mpole)
+             engmpl,fx,fy,fz,mpoles)
 
                          kx = -kx
 
@@ -225,36 +225,36 @@ Module ewald_mpole
              Else
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         jj=mpole%map(k1,k2,k3)
+                         jj=mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Then
 
                             txyz=kx*jmp(jj)
 
                             sz = 1.0_wp
-                            Do s3=0,mpole%max_order
+                            Do s3=0,mpoles%max_order
                                ks3=k3+s3; ks31=ks3+1
 
                                sy = sz
-                               Do s2=0,mpole%max_order-s3
+                               Do s2=0,mpoles%max_order-s3
                                ks2=k2+s2; ks21=ks2+1
 
                                   sx = sy
-                                  Do s1=0,mpole%max_order-s3-s2
+                                  Do s1=0,mpoles%max_order-s3-s2
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n      = ks1+ks2+ks3
                                      alphan = electro%alpha**n
 
-                                     ii     = mpole%map(s1,s2,s3)
+                                     ii     = mpoles%map(s1,s2,s3)
 
                                      tmp    = alphan*d1(ks1,ks2,ks3)
 
@@ -322,9 +322,9 @@ Module ewald_mpole
                 fyy(jatm)=fyy(jatm)-fy
                 fzz(jatm)=fzz(jatm)-fz
 
-                mpole%torque_x(jatm)=mpole%torque_x(jatm)+tjx
-                mpole%torque_y(jatm)=mpole%torque_y(jatm)+tjy
-                mpole%torque_z(jatm)=mpole%torque_z(jatm)+tjz
+                mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
+                mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
+                mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
 
              End If
 
@@ -361,9 +361,9 @@ Module ewald_mpole
 
   ! and torques due to multipoles
 
-       mpole%torque_x(iatm)=mpole%torque_x(iatm)+scl*tix
-       mpole%torque_y(iatm)=mpole%torque_y(iatm)+scl*tiy
-       mpole%torque_z(iatm)=mpole%torque_z(iatm)+scl*tiz
+       mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
+       mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
+       mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
 
   ! complete stress tensor
 
@@ -382,7 +382,7 @@ Module ewald_mpole
   End Subroutine ewald_real_mforces
 
   Subroutine ewald_real_mforces_d(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl, &
-      stress,ewld,neigh,mpole,electro,comm)
+      stress,ewld,neigh,mpoles,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -402,7 +402,7 @@ Module ewald_mpole
     Real( Kind = wp ),                                Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),              Intent( InOut ) :: stress
     Type( ewald_type ),                               Intent( InOut ) :: ewld
-    Type( mpole_type ),                               Intent( InOut ) :: mpole
+    Type( mpole_type ),                               Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                               Intent( In    ) :: comm
 
@@ -450,9 +450,9 @@ Module ewald_mpole
 
     Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
 
-    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
     Character( Len = 256 ) :: message
 
     If (newjob) Then
@@ -518,7 +518,7 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-    imp=mpole%global_frame(:,iatm)
+    imp=mpoles%global_frame(:,iatm)
 
     tx0 = 0.0_wp ; ty0 = 0.0_wp ; tz0 = 0.0_wp
 
@@ -528,9 +528,9 @@ Module ewald_mpole
 
   ! get the components for site i infinitesimal rotations
 
-       impx=mpole%rotation_x(:,iatm)
-       impy=mpole%rotation_y(:,iatm)
-       impz=mpole%rotation_z(:,iatm)
+       impx=mpoles%rotation_x(:,iatm)
+       impy=mpoles%rotation_y(:,iatm)
+       impz=mpoles%rotation_z(:,iatm)
 
        imp1=imp(1); impx1=impx(1); impy1=impy(1); impz1=impz(1)
 
@@ -538,7 +538,7 @@ Module ewald_mpole
 
        siceng = siceng+exclcoef*imp1*imp1
 
-       If (mpole%max_order >= 1) Then
+       If (mpoles%max_order >= 1) Then
 
           imp2=imp(2); imp3=imp(3); imp4=imp(4)
 
@@ -553,7 +553,7 @@ Module ewald_mpole
 
        End If
 
-       If (mpole%max_order == 2) Then
+       If (mpoles%max_order == 2) Then
 
           imp5=imp(5); imp6=imp(6); imp7=imp(7); imp8=imp(8); imp9=imp(9); imp10=imp(10)
 
@@ -586,13 +586,13 @@ Module ewald_mpole
 
        imp1=imp(1)
 
-       If (mpole%max_order >= 1) Then
+       If (mpoles%max_order >= 1) Then
 
           imp2=imp(2); imp3=imp(3); imp4=imp(4)
 
        End If
 
-       If (mpole%max_order == 2) Then
+       If (mpoles%max_order == 2) Then
 
           imp5=imp(5); imp6=imp(6); imp7=imp(7); imp8=imp(8); imp9=imp(9); imp10=imp(10)
 
@@ -627,15 +627,15 @@ Module ewald_mpole
 
   ! get the multipoles for site j and the components for its infinitesimal rotations
 
-          jmp=mpole%global_frame(:,jatm)
+          jmp=mpoles%global_frame(:,jatm)
 
-          jmpx=mpole%rotation_x(:,jatm)
-          jmpy=mpole%rotation_y(:,jatm)
-          jmpz=mpole%rotation_z(:,jatm)
+          jmpx=mpoles%rotation_x(:,jatm)
+          jmpy=mpoles%rotation_y(:,jatm)
+          jmpz=mpoles%rotation_z(:,jatm)
 
           jmp1=jmp(1); jmpx1=jmpx(1); jmpy1=jmpy(1); jmpz1=jmpz(1)
 
-          If (mpole%max_order >= 1) Then
+          If (mpoles%max_order >= 1) Then
 
              jmp2=jmp(2); jmp3=jmp(3); jmp4=jmp(4)
 
@@ -645,7 +645,7 @@ Module ewald_mpole
 
           End If
 
-          If (mpole%max_order == 2) Then
+          If (mpoles%max_order == 2) Then
 
              jmp5=jmp(5); jmp6=jmp(6); jmp7=jmp(7); jmp8=jmp(8); jmp9=jmp(9); jmp10=jmp(10)
 
@@ -714,7 +714,7 @@ Module ewald_mpole
 
   ! There is no torque for charges
 
-             If (mpole%max_order == 1) Then
+             If (mpoles%max_order == 1) Then
 
   ! charge-dipole interactions
 
@@ -785,7 +785,7 @@ Module ewald_mpole
 
              End If
 
-             If (mpole%max_order == 2) Then
+             If (mpoles%max_order == 2) Then
 
   ! charge-dipole interactions
 
@@ -1018,9 +1018,9 @@ Module ewald_mpole
                 fyy(jatm)=fyy(jatm)-fy
                 fzz(jatm)=fzz(jatm)-fz
 
-                mpole%torque_x(jatm)=mpole%torque_x(jatm)+tjx
-                mpole%torque_y(jatm)=mpole%torque_y(jatm)+tjy
-                mpole%torque_z(jatm)=mpole%torque_z(jatm)+tjz
+                mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
+                mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
+                mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
 
              End If
 
@@ -1057,9 +1057,9 @@ Module ewald_mpole
 
   ! and torques due to multipoles
 
-       mpole%torque_x(iatm)=mpole%torque_x(iatm)+scl*tix
-       mpole%torque_y(iatm)=mpole%torque_y(iatm)+scl*tiy
-       mpole%torque_z(iatm)=mpole%torque_z(iatm)+scl*tiz
+       mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
+       mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
+       mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
 
   ! complete stress tensor
 
@@ -1077,7 +1077,7 @@ Module ewald_mpole
 
   End Subroutine ewald_real_mforces_d
 
-  Subroutine ewald_spme_mforces(engcpe_rc,vircpe_rc,stress,ewld,mpole,electro,comm)
+  Subroutine ewald_spme_mforces(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1098,7 +1098,7 @@ Module ewald_mpole
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( ewald_type ), Intent( InOut ) :: ewld
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -1119,8 +1119,8 @@ Module ewald_mpole
                             rrkxy,rrkxz,rrkyx,rrkyz,rrkzx,rrkzy, sq1,sq2,sq3, tx,ty,tz,    &
                             tmpi,tix,tiy,tiz,timp,dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3
 
-    Real( Kind = wp )    :: imp(1:mpole%max_mpoles)
-    Real( Kind = wp )    :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+    Real( Kind = wp )    :: imp(1:mpoles%max_mpoles)
+    Real( Kind = wp )    :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
 
     Complex( Kind = wp ) :: vterm,pterm
 
@@ -1306,7 +1306,7 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-       imp=mpole%global_frame(:,i)
+       imp=mpoles%global_frame(:,i)
 
   ! ignore interaction if the charge is zero
 
@@ -1314,39 +1314,39 @@ Module ewald_mpole
 
   ! get the components for site i infinitesimal rotations
 
-          impx=mpole%rotation_x(:,i)
-          impy=mpole%rotation_y(:,i)
-          impz=mpole%rotation_z(:,i)
+          impx=mpoles%rotation_x(:,i)
+          impy=mpoles%rotation_y(:,i)
+          impz=mpoles%rotation_z(:,i)
 
   ! initialize torques for atom i (temporary)
 
           tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
 
           tz=1.0_wp
-          Do k3=0,mpole%max_order
+          Do k3=0,mpoles%max_order
 
              ty=tz
-             Do k2=0,mpole%max_order-k3
+             Do k2=0,mpoles%max_order-k3
 
                 tx=ty
-                Do k1=0,mpole%max_order-k3-k2
-                   nn = mpole%map(k1,k2,k3)
+                Do k1=0,mpoles%max_order-k3-k2
+                   nn = mpoles%map(k1,k2,k3)
 
                    If (Abs(imp(nn)) > zero_plus) Then
                       timp=imp(nn)
 
-                      Do s3=0,mpole%max_order
+                      Do s3=0,mpoles%max_order
                          ks3=k3+s3
 
                          If (Mod(ks3,2) == 0) Then
-                            Do s2=0,mpole%max_order-s3
+                            Do s2=0,mpoles%max_order-s3
                                ks2=k2+s2
 
                                If (Mod(ks2,2) == 0) Then
-                                  Do s1=0,mpole%max_order-s3-s2
+                                  Do s1=0,mpoles%max_order-s3-s2
                                      ks1=k1+s1
 
-                                     mm = mpole%map(s1,s2,s3)
+                                     mm = mpoles%map(s1,s2,s3)
 
                                      If (Mod(ks1,2) == 0) Then
                                         tmpi   = tx*timp*d1(ks1,ks2,ks3)
@@ -1379,9 +1379,9 @@ Module ewald_mpole
 
   ! collect torques due to multipoles selfinteraction
 
-  !        mpole%torque_x(i)=mpole%torque_x(i)-exclcoef*tix
-  !        mpole%torque_y(i)=mpole%torque_y(i)-exclcoef*tiy
-  !        mpole%torque_z(i)=mpole%torque_z(i)-exclcoef*tiz
+  !        mpoles%torque_x(i)=mpoles%torque_x(i)-exclcoef*tix
+  !        mpoles%torque_y(i)=mpoles%torque_y(i)-exclcoef*tiy
+  !        mpoles%torque_z(i)=mpoles%torque_z(i)-exclcoef*tiz
 
        End If
 
@@ -1444,7 +1444,7 @@ Module ewald_mpole
        If (tzz(i) >= -zero_plus .and. &
            tyy(i) >= -zero_plus .and. &
            txx(i) >= -zero_plus .and. &
-           Maxval(Abs(mpole%global_frame(:,i))) > zero_plus)  Then
+           Maxval(Abs(mpoles%global_frame(:,i))) > zero_plus)  Then
           it(i)=1
        Else
           it(i)=0
@@ -1461,7 +1461,7 @@ Module ewald_mpole
 
   ! construct B-splines for atoms
 
-    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpole%n_choose_k,comm)
+    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -1479,7 +1479,7 @@ Module ewald_mpole
   ! construct 3D charge array
   ! DaFT version - use array that holds only the local data
 
-    If (mpole%max_order < 5) Then
+    If (mpoles%max_order < 5) Then
 
        Do i=1,nlast
 
@@ -1490,7 +1490,7 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-             imp=mpole%global_frame(:,i)
+             imp=mpoles%global_frame(:,i)
 
              llb = Max( izb, izz(i) - mxspl + 2 )
              llt = Min( izt, izz(i) + 1 )
@@ -1529,7 +1529,7 @@ Module ewald_mpole
 
                       Call explicit_spme_loops        &
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpole)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles)
 
                       qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
 
@@ -1548,7 +1548,7 @@ Module ewald_mpole
 
                          Call explicit_spme_loops     &
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpole)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles)
 
                          qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
 
@@ -1570,7 +1570,7 @@ Module ewald_mpole
 
                          Call explicit_spme_loops     &
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpole)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles)
 
                          qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
 
@@ -1598,7 +1598,7 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-             imp=mpole%global_frame(:,i)
+             imp=mpoles%global_frame(:,i)
 
              llb = Max( izb, izz(i) - mxspl + 2 )
              llt = Min( izt, izz(i) + 1 )
@@ -1611,11 +1611,11 @@ Module ewald_mpole
 
              jjtjjb = jjt - jjb + 1
 
-             Do s3 = 0, mpole%max_order
-                Do s2 = 0, mpole%max_order - s3
-                   Do s1 = 0, mpole%max_order - s3 - s2
+             Do s3 = 0, mpoles%max_order
+                Do s2 = 0, mpoles%max_order - s3
+                   Do s1 = 0, mpoles%max_order - s3 - s2
 
-                      mptmp=imp(mpole%map(s1,s2,s3))
+                      mptmp=imp(mpoles%map(s1,s2,s3))
 
                       Do ll = llb, llt
                          l = izz(i) - ll + 2
@@ -1641,7 +1641,7 @@ Module ewald_mpole
 
                                bdx=bsddx(:,j,i)
 
-                               tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+                               tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
                                qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
 
@@ -1658,7 +1658,7 @@ Module ewald_mpole
 
                                   bdx=bsddx(:,j,i)
 
-                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
                                   qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
 
@@ -1677,7 +1677,7 @@ Module ewald_mpole
                                   j_local = jj - ixb + 1
 
                                   bdx=bsddx(:,j,i)
-                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
                                   qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
 
@@ -1901,7 +1901,7 @@ Module ewald_mpole
   ! calculate atomic forces
 
     Call spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz,qqc_local, &
-      ixb,ixt,iyb,iyt,izb,izt,mpole)
+      ixb,ixt,iyb,iyt,izb,izt,mpoles)
 
     Deallocate (ixx,iyy,izz,it,    Stat = fail(1))
     Deallocate (bdx,bdy,bdz,       Stat = fail(2))
@@ -1914,7 +1914,7 @@ Module ewald_mpole
   Contains
 
     Subroutine spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz, &
-        qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpole)
+        qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1938,15 +1938,15 @@ Module ewald_mpole
                                             bsddy(0:mxspl,1:mxspl,1:mxatms), &
                                             bsddz(0:mxspl,1:mxspl,1:mxatms), &
                                             qqc_local( ixb:ixt, iyb:iyt, izb:izt )
-      Type( mpole_type ), Intent( InOut ) :: mpole
+      Type( mpole_type ), Intent( InOut ) :: mpoles
 
       Integer           :: fail(1:2), delspl, ixdb,iydb,izdb,ixdt,iydt,izdt, &
                            i,j,k,l, jj,kk,ll, s1,s2,s3, mm
       Real( Kind = wp ) :: tmp,gmp,fff(0:3),fix,fiy,fiz,qsum, &
                            tmpi,tix,tiy,tiz,dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3
 
-      Real( Kind = wp ) :: imp(1:mpole%max_mpoles)
-      Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+      Real( Kind = wp ) :: imp(1:mpoles%max_mpoles)
+      Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
 
       Real( Kind = wp ), Dimension( : ),       Allocatable :: bdx,bdy,bdz
       Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: qqc_domain
@@ -1978,13 +1978,13 @@ Module ewald_mpole
 
       fff=0.0_wp
 
-      If (mpole%max_order < 5) Then
+      If (mpoles%max_order < 5) Then
 
          Do i=1,natms
 
   ! get the multipoles for site i
 
-            imp=mpole%global_frame(:,i)
+            imp=mpoles%global_frame(:,i)
 
             If (Maxval(Abs(imp)) > zero_plus) Then
 
@@ -1994,9 +1994,9 @@ Module ewald_mpole
 
   ! get the components for site i infinitesimal rotations
 
-               impx=scale*mpole%rotation_x(:,i)
-               impy=scale*mpole%rotation_y(:,i)
-               impz=scale*mpole%rotation_z(:,i)
+               impx=scale*mpoles%rotation_x(:,i)
+               impy=scale*mpoles%rotation_y(:,i)
+               impz=scale*mpoles%rotation_z(:,i)
 
   ! initialise forces & torques
 
@@ -2022,7 +2022,7 @@ Module ewald_mpole
 
                         Call explicit_spme_loops      &
              (1,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpole)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles)
 
   ! force
 
@@ -2054,9 +2054,9 @@ Module ewald_mpole
 
   ! and torque (ITT - is sum of all torques zero? I.e. does SPME machinery generate non-0 torque)
 
-               mpole%torque_x(i)=mpole%torque_x(i)+0.5_wp*tix
-               mpole%torque_y(i)=mpole%torque_y(i)+0.5_wp*tiy
-               mpole%torque_z(i)=mpole%torque_z(i)+0.5_wp*tiz
+               mpoles%torque_x(i)=mpoles%torque_x(i)+0.5_wp*tix
+               mpoles%torque_y(i)=mpoles%torque_y(i)+0.5_wp*tiy
+               mpoles%torque_z(i)=mpoles%torque_z(i)+0.5_wp*tiz
 
   ! infrequent calculations copying
 
@@ -2076,7 +2076,7 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-            imp=mpole%global_frame(:,i)
+            imp=mpoles%global_frame(:,i)
 
             If (Maxval(Abs(imp)) > zero_plus) Then
 
@@ -2086,9 +2086,9 @@ Module ewald_mpole
 
   ! get the components for site i infinitesimal rotations
 
-               impx=scale*mpole%rotation_x(:,i)
-               impy=scale*mpole%rotation_y(:,i)
-               impz=scale*mpole%rotation_z(:,i)
+               impx=scale*mpoles%rotation_x(:,i)
+               impy=scale*mpoles%rotation_y(:,i)
+               impz=scale*mpoles%rotation_z(:,i)
 
   ! initialise forces & torques
 
@@ -2112,22 +2112,22 @@ Module ewald_mpole
 
                         qsum=qqc_domain(jj,kk,ll)
 
-                        Do s3 = 0, mpole%max_order
-                           Do s2 = 0, mpole%max_order - s3
-                              Do s1 = 0, mpole%max_order - s3 - s2
-                                 mm = mpole%map(s1,s2,s3)
+                        Do s3 = 0, mpoles%max_order
+                           Do s2 = 0, mpoles%max_order - s3
+                              Do s1 = 0, mpoles%max_order - s3 - s2
+                                 mm = mpoles%map(s1,s2,s3)
 
   ! force
 
                                  gmp = qsum*imp(mm)
 
-                                 fix = fix + gmp*dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-                                 fiy = fiy + gmp*dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-                                 fiz = fiz + gmp*dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+                                 fix = fix + gmp*dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+                                 fiy = fiy + gmp*dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+                                 fiz = fiz + gmp*dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
   ! torque
 
-                                 tmpi = qsum*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+                                 tmpi = qsum*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
                                  tix = tix + impx(mm)*tmpi
                                  tiy = tiy + impy(mm)*tmpi
@@ -2154,9 +2154,9 @@ Module ewald_mpole
 
   ! and torque
 
-               mpole%torque_x(i)=mpole%torque_x(i)+0.5_wp*tix
-               mpole%torque_y(i)=mpole%torque_y(i)+0.5_wp*tiy
-               mpole%torque_z(i)=mpole%torque_z(i)+0.5_wp*tiz
+               mpoles%torque_x(i)=mpoles%torque_x(i)+0.5_wp*tix
+               mpoles%torque_y(i)=mpoles%torque_y(i)+0.5_wp*tiy
+               mpoles%torque_z(i)=mpoles%torque_z(i)+0.5_wp*tiz
 
   ! infrequent calculations copying
 
@@ -2179,7 +2179,7 @@ Module ewald_mpole
          fff(1:3)=fff(1:3)/fff(0)
 
          Do i=1,natms
-            imp=mpole%global_frame(:,i)
+            imp=mpoles%global_frame(:,i)
             If (Maxval(Abs(imp)) > zero_plus) Then
 
                fxx(i)=fxx(i)-fff(1)
@@ -2208,7 +2208,7 @@ Module ewald_mpole
 
   End Subroutine ewald_spme_mforces
 
-  Subroutine ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stress,ewld,mpole,electro,comm)
+  Subroutine ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2229,7 +2229,7 @@ Module ewald_mpole
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( ewald_type ), Intent( InOut ) :: ewld
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -2251,7 +2251,7 @@ Module ewald_mpole
                             bdy0,bdy1,bdy2,bdz0,bdz1,bdz2,                       &
                             ka11,kb22,kc33,ka11sq,kb22sq,kc33sq,kakb,kakc,kbkc
 
-    Real( Kind = wp )    :: imp(1:mpole%max_mpoles)
+    Real( Kind = wp )    :: imp(1:mpoles%max_mpoles)
 
     Complex( Kind = wp ) :: vterm,pterm
 
@@ -2482,7 +2482,7 @@ Module ewald_mpole
        If (tzz(i) >= -zero_plus .and. &
            tyy(i) >= -zero_plus .and. &
            txx(i) >= -zero_plus .and. &
-           Maxval(Abs(mpole%global_frame(:,i))) > zero_plus)  Then
+           Maxval(Abs(mpoles%global_frame(:,i))) > zero_plus)  Then
           it(i)=1
        Else
           it(i)=0
@@ -2499,7 +2499,7 @@ Module ewald_mpole
 
   ! construct B-splines for atoms
 
-    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpole%n_choose_k,comm)
+    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -2534,15 +2534,15 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-          imp=mpole%global_frame(:,i)
+          imp=mpoles%global_frame(:,i)
 
           imp1=imp(1)
 
-          If (mpole%max_order >= 1) Then
+          If (mpoles%max_order >= 1) Then
              imp2=imp(2) ; imp3=imp(3) ; imp4=imp(4)
           End If
 
-          If (mpole%max_order == 2) Then
+          If (mpoles%max_order == 2) Then
              imp5=imp(5) ; imp6=imp(6) ; imp7=imp(7)
              imp8=imp(8) ; imp9=imp(9) ; imp10=imp(10)
           End If
@@ -2587,13 +2587,13 @@ Module ewald_mpole
 
                          dtp = imp1*bdx(0)*bdy0*bdz0
 
-                         If (mpole%max_order >= 1 ) Then
+                         If (mpoles%max_order >= 1 ) Then
                             tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                             tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                             tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                          End If
 
-                         If (mpole%max_order == 2) Then
+                         If (mpoles%max_order == 2) Then
                             tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                             tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                             tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -2645,13 +2645,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -2699,13 +2699,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -2732,13 +2732,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -2786,13 +2786,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -2819,13 +2819,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -2852,13 +2852,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -2906,13 +2906,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -2939,13 +2939,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -2972,13 +2972,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3005,13 +3005,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3059,13 +3059,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3092,13 +3092,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3125,13 +3125,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3158,13 +3158,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3191,13 +3191,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3246,13 +3246,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3279,13 +3279,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3312,13 +3312,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3345,13 +3345,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3378,13 +3378,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3411,13 +3411,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3465,13 +3465,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3498,13 +3498,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3531,13 +3531,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3564,13 +3564,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3597,13 +3597,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3630,13 +3630,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3663,13 +3663,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3717,13 +3717,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3750,13 +3750,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3783,13 +3783,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3816,13 +3816,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3849,13 +3849,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3882,13 +3882,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3915,13 +3915,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -3948,13 +3948,13 @@ Module ewald_mpole
 
                       dtp = imp1*bdx(0)*bdy0*bdz0
 
-                      If (mpole%max_order >= 1 ) Then
+                      If (mpoles%max_order >= 1 ) Then
                          tmp = imp2*ka11*bdx(1)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+tmp
                          tmp = imp3*kb22*bdx(0)*bdy1*bdz0; dtp=dtp+tmp; tq2=tq2+tmp
                          tmp = imp4*kc33*bdx(0)*bdy0*bdz1; dtp=dtp+tmp; tq3=tq3+tmp
                       End If
 
-                      If (mpole%max_order == 2) Then
+                      If (mpoles%max_order == 2) Then
                          tmp = imp5*ka11sq  *bdx(2)*bdy0*bdz0; dtp=dtp+tmp; tq1=tq1+2.0_wp*tmp
                          tmp = imp8*kb22sq  *bdx(0)*bdy2*bdz0; dtp=dtp+tmp; tq2=tq2+2.0_wp*tmp
                          tmp = imp10*kc33sq *bdx(0)*bdy0*bdz2; dtp=dtp+tmp; tq3=tq3+2.0_wp*tmp
@@ -4178,7 +4178,7 @@ Module ewald_mpole
 
   ! calculate atomic forces
 
-    Call spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz,qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpole)
+    Call spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz,qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles)
 
     Deallocate (ixx,iyy,izz,it,    Stat = fail(1))
     Deallocate (bdx,bdy,bdz,       Stat = fail(2))
@@ -4191,7 +4191,7 @@ Module ewald_mpole
   Contains
 
     Subroutine spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz, &
-        qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpole)
+        qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -4215,7 +4215,7 @@ Module ewald_mpole
                                             bsddy(0:mxspl,1:mxspl,1:mxatms), &
                                             bsddz(0:mxspl,1:mxspl,1:mxatms), &
                                             qqc_local( ixb:ixt, iyb:iyt, izb:izt )
-      Type( mpole_type ), Intent( InOut ) :: mpole
+      Type( mpole_type ), Intent( InOut ) :: mpoles
 
       Integer           :: fail(1:2), delspl, ixdb,iydb,izdb,ixdt,iydt,izdt, &
                            i,j,k,l, jj,kk,ll
@@ -4229,8 +4229,8 @@ Module ewald_mpole
                            impy1,impy2,impy3,impy4,impy5,impy6,impy7,impy8,impy9,impy10, &
                            impz1,impz2,impz3,impz4,impz5,impz6,impz7,impz8,impz9,impz10
 
-      Real( Kind = wp ) :: imp(1:mpole%max_mpoles)
-      Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+      Real( Kind = wp ) :: imp(1:mpoles%max_mpoles)
+      Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
 
       Real( Kind = wp ), Dimension( : ),       Allocatable :: bdx,bdy,bdz
       Real( Kind = wp ), Dimension( :, :, : ), Allocatable :: qqc_domain
@@ -4277,7 +4277,7 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-         imp=mpole%global_frame(:,i)
+         imp=mpoles%global_frame(:,i)
 
          If (Maxval(Abs(imp)) > zero_plus) Then
 
@@ -4287,13 +4287,13 @@ Module ewald_mpole
 
   ! get the components for site i infinitesimal rotations
 
-            impx=scale*mpole%rotation_x(:,i)
-            impy=scale*mpole%rotation_y(:,i)
-            impz=scale*mpole%rotation_z(:,i)
+            impx=scale*mpoles%rotation_x(:,i)
+            impy=scale*mpoles%rotation_y(:,i)
+            impz=scale*mpoles%rotation_z(:,i)
 
             imp1=imp(1); impx1=impx(1); impy1=impy(1); impz1=impz(1)
 
-            If (mpole%max_order >= 1) Then
+            If (mpoles%max_order >= 1) Then
 
                imp2=imp(2); imp3=imp(3); imp4=imp(4)
 
@@ -4303,7 +4303,7 @@ Module ewald_mpole
 
             End If
 
-            If (mpole%max_order == 2) Then
+            If (mpoles%max_order == 2) Then
 
                imp5=imp(5); imp6=imp(6); imp7=imp(7); imp8=imp(8); imp9=imp(9); imp10=imp(10)
 
@@ -4345,7 +4345,7 @@ Module ewald_mpole
                      fiy = fiy+imp1*tq3
                      fiz = fiz+imp1*tq4
 
-                     If (mpole%max_order >= 1) Then
+                     If (mpoles%max_order >= 1) Then
 
   ! torques
 
@@ -4365,7 +4365,7 @@ Module ewald_mpole
 
                      End If
 
-                     If (mpole%max_order==2) Then
+                     If (mpoles%max_order==2) Then
 
   ! torques
 
@@ -4410,9 +4410,9 @@ Module ewald_mpole
 
   ! and torque
 
-            mpole%torque_x(i)=mpole%torque_x(i)+0.5_wp*tix
-            mpole%torque_y(i)=mpole%torque_y(i)+0.5_wp*tiy
-            mpole%torque_z(i)=mpole%torque_z(i)+0.5_wp*tiz
+            mpoles%torque_x(i)=mpoles%torque_x(i)+0.5_wp*tix
+            mpoles%torque_y(i)=mpoles%torque_y(i)+0.5_wp*tiy
+            mpoles%torque_z(i)=mpoles%torque_z(i)+0.5_wp*tiz
 
   ! infrequent calculations copying
 
@@ -4433,7 +4433,7 @@ Module ewald_mpole
          fff(1:3)=fff(1:3)/fff(0)
 
          Do i=1,natms
-            imp=mpole%global_frame(:,i)
+            imp=mpoles%global_frame(:,i)
             If (Maxval(Abs(imp)) > zero_plus) Then
 
                fxx(i)=fxx(i)-fff(1)
@@ -4463,7 +4463,7 @@ Module ewald_mpole
   End Subroutine ewald_spme_mforces_d
 
   Subroutine ewald_excl_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
-      neigh,mpole,electro)
+      neigh,mpoles,electro)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -4485,7 +4485,7 @@ Module ewald_mpole
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( In    ) :: electro
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -4508,10 +4508,10 @@ Module ewald_mpole
                          tt,tmp,tmpi,tmpj,tix,tiy,tiz, &
                          alphan,tjx,tjy,tjz,sx,sy,sz
 
-    Real( Kind = wp ) :: d1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
-    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: d1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
+    Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
 
   ! initialise potential energy and virial
 
@@ -4533,7 +4533,7 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-    imp=mpole%global_frame(:,iatm)
+    imp=mpoles%global_frame(:,iatm)
 
   ! ignore interaction if the charge is zero
 
@@ -4541,9 +4541,9 @@ Module ewald_mpole
 
   ! get the components for site i infinitesimal rotations
 
-       impx=mpole%rotation_x(:,iatm)
-       impy=mpole%rotation_y(:,iatm)
-       impz=mpole%rotation_z(:,iatm)
+       impx=mpoles%rotation_x(:,iatm)
+       impy=mpoles%rotation_y(:,iatm)
+       impz=mpoles%rotation_z(:,iatm)
 
   ! multipole scaler
 
@@ -4577,7 +4577,7 @@ Module ewald_mpole
 
   ! get the multipoles for site j
 
-          jmp=mpole%global_frame(:,jatm)
+          jmp=mpoles%global_frame(:,jatm)
 
   ! interatomic distance
 
@@ -4589,9 +4589,9 @@ Module ewald_mpole
 
   ! get the components for site j infinitesimal rotations
 
-             jmpx=mpole%rotation_x(:,jatm)
-             jmpy=mpole%rotation_y(:,jatm)
-             jmpz=mpole%rotation_z(:,jatm)
+             jmpx=mpoles%rotation_x(:,jatm)
+             jmpy=mpoles%rotation_y(:,jatm)
+             jmpz=mpoles%rotation_z(:,jatm)
 
   ! get the value of the kernel using 3pt interpolation
 
@@ -4610,13 +4610,13 @@ Module ewald_mpole
   ! compute derivatives of kernel using a regularization
 
                 If (rrr < rreg) Then
-                  Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr, &
+                  Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr, &
                     electro%alpha*xxt(m),electro%alpha*yyt(m),electro%alpha*zzt(m), &
-                    electro%alpha*sqrt(rrr**2+rreg**2),mpole%max_order,d1)
+                    electro%alpha*sqrt(rrr**2+rreg**2),mpoles%max_order,d1)
                 Else
-                  Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr, &
+                  Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr, &
                     electro%alpha*xxt(m),electro%alpha*yyt(m),electro%alpha*zzt(m), &
-                    electro%alpha*rrr,mpole%max_order,d1)
+                    electro%alpha*rrr,mpoles%max_order,d1)
                 End If
 
              Else
@@ -4630,9 +4630,9 @@ Module ewald_mpole
 
   ! compute derivatives of kernel
 
-                Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr, &
+                Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr, &
                   electro%alpha*xxt(m),electro%alpha*yyt(m),electro%alpha*zzt(m), &
-                  electro%alpha*rrr,mpole%max_order,d1)
+                  electro%alpha*rrr,mpoles%max_order,d1)
 
              End If
 
@@ -4642,24 +4642,24 @@ Module ewald_mpole
              fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
              tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-             If (mpole%max_order < 5) Then
+             If (mpoles%max_order < 5) Then
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         jj = mpole%map(k1,k2,k3)
+                         jj = mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Call explicit_ewald_real_loops &
-             (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1,               &
+             (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,               &
              imp,       impx,    impy,    impz,    tix,tiy,tiz, &
              kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz,mpole)
+             engmpl,fx,fy,fz,mpoles)
 
                          kx = -kx
 
@@ -4676,36 +4676,36 @@ Module ewald_mpole
              Else
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         jj = mpole%map(k1,k2,k3)
+                         jj = mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(jj)) > zero_plus) Then
 
                             txyz=kx*jmp(jj)
 
                             sz = 1.0_wp
-                            Do s3=0,mpole%max_order
+                            Do s3=0,mpoles%max_order
                                ks3=k3+s3; ks31=ks3+1
 
                                sy = sz
-                               Do s2=0,mpole%max_order-s3
+                               Do s2=0,mpoles%max_order-s3
                                ks2=k2+s2; ks21=ks2+1
 
                                   sx = sy
-                                  Do s1=0,mpole%max_order-s3-s2
+                                  Do s1=0,mpoles%max_order-s3-s2
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n      = ks1+ks2+ks3
                                      alphan = electro%alpha**n
 
-                                     ii     = mpole%map(s1,s2,s3)
+                                     ii     = mpoles%map(s1,s2,s3)
 
                                      tmp    = alphan*d1(ks1,ks2,ks3)
 
@@ -4773,9 +4773,9 @@ Module ewald_mpole
                 fyy(jatm)=fyy(jatm)+fy
                 fzz(jatm)=fzz(jatm)+fz
 
-                mpole%torque_x(jatm)=mpole%torque_x(jatm)-tjx
-                mpole%torque_y(jatm)=mpole%torque_y(jatm)-tjy
-                mpole%torque_z(jatm)=mpole%torque_z(jatm)-tjz
+                mpoles%torque_x(jatm)=mpoles%torque_x(jatm)-tjx
+                mpoles%torque_y(jatm)=mpoles%torque_y(jatm)-tjy
+                mpoles%torque_z(jatm)=mpoles%torque_z(jatm)-tjz
 
              End If
 
@@ -4812,9 +4812,9 @@ Module ewald_mpole
 
   ! and torques due to multipoles
 
-       mpole%torque_x(iatm)=mpole%torque_x(iatm)-scl*tix
-       mpole%torque_y(iatm)=mpole%torque_y(iatm)-scl*tiy
-       mpole%torque_z(iatm)=mpole%torque_z(iatm)-scl*tiz
+       mpoles%torque_x(iatm)=mpoles%torque_x(iatm)-scl*tix
+       mpoles%torque_y(iatm)=mpoles%torque_y(iatm)-scl*tiy
+       mpoles%torque_z(iatm)=mpoles%torque_z(iatm)-scl*tiz
 
   ! complete stress tensor
 
@@ -4833,7 +4833,7 @@ Module ewald_mpole
   End Subroutine ewald_excl_mforces
 
   Subroutine ewald_excl_mforces_d(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex, &
-      stress,neigh,mpole,electro)
+      stress,neigh,mpoles,electro)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -4855,7 +4855,7 @@ Module ewald_mpole
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( In    ) :: electro
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -4908,9 +4908,9 @@ Module ewald_mpole
                          jmpz7,jmpz8,jmpz9,jmpz10,                &
                          tmp2,tmp3,tmp4,tmp5,tmp6,tmp7,tmp8,tmp9,tmp10
 
-    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
 
     If (newjob) Then
        newjob = .false.
@@ -4950,7 +4950,7 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-    imp=mpole%global_frame(:,iatm)
+    imp=mpoles%global_frame(:,iatm)
 
   ! ignore interaction if the charge is zero
 
@@ -4958,9 +4958,9 @@ Module ewald_mpole
 
   ! get the components for site i infinitesimal rotations
 
-       impx=mpole%rotation_x(:,iatm)
-       impy=mpole%rotation_y(:,iatm)
-       impz=mpole%rotation_z(:,iatm)
+       impx=mpoles%rotation_x(:,iatm)
+       impy=mpoles%rotation_y(:,iatm)
+       impz=mpoles%rotation_z(:,iatm)
 
   ! multipole scaler
 
@@ -4972,7 +4972,7 @@ Module ewald_mpole
 
        imp1=imp(1); impx1=impx(1); impy1=impy(1); impz1=impz(1)
 
-       If (mpole%max_order >= 1) Then
+       If (mpoles%max_order >= 1) Then
 
           imp2=imp(2); imp3=imp(3); imp4=imp(4)
 
@@ -4982,7 +4982,7 @@ Module ewald_mpole
 
        End If
 
-       If (mpole%max_order == 2) Then
+       If (mpoles%max_order == 2) Then
 
           imp5=imp(5); imp6=imp(6); imp7=imp(7); imp8=imp(8); imp9=imp(9); imp10=imp(10)
 
@@ -5016,15 +5016,15 @@ Module ewald_mpole
 
   ! get the multipoles for site j and the components for its infinitesimal rotations
 
-          jmp=mpole%global_frame(:,jatm)
+          jmp=mpoles%global_frame(:,jatm)
 
-          jmpx=mpole%rotation_x(:,jatm)
-          jmpy=mpole%rotation_y(:,jatm)
-          jmpz=mpole%rotation_z(:,jatm)
+          jmpx=mpoles%rotation_x(:,jatm)
+          jmpy=mpoles%rotation_y(:,jatm)
+          jmpz=mpoles%rotation_z(:,jatm)
 
           jmp1=jmp(1); jmpx1=jmpx(1); jmpy1=jmpy(1); jmpz1=jmpz(1)
 
-          If (mpole%max_order >= 1) Then
+          If (mpoles%max_order >= 1) Then
 
              jmp2=jmp(2); jmp3=jmp(3); jmp4=jmp(4)
 
@@ -5034,7 +5034,7 @@ Module ewald_mpole
 
           End If
 
-          If (mpole%max_order == 2) Then
+          If (mpoles%max_order == 2) Then
 
              jmp5=jmp(5); jmp6=jmp(6); jmp7=jmp(7); jmp8=jmp(8); jmp9=jmp(9); jmp10=jmp(10)
 
@@ -5128,7 +5128,7 @@ Module ewald_mpole
 
   ! There is no torque for charges
 
-             If (mpole%max_order == 1) Then
+             If (mpoles%max_order == 1) Then
 
   ! charge-dipole interactions
 
@@ -5199,7 +5199,7 @@ Module ewald_mpole
 
              End If
 
-             If (mpole%max_order == 2) Then
+             If (mpoles%max_order == 2) Then
 
   ! charge-dipole interactions
 
@@ -5432,9 +5432,9 @@ Module ewald_mpole
                 fyy(jatm)=fyy(jatm)+fy
                 fzz(jatm)=fzz(jatm)+fz
 
-                mpole%torque_x(jatm)=mpole%torque_x(jatm)-tjx
-                mpole%torque_y(jatm)=mpole%torque_y(jatm)-tjy
-                mpole%torque_z(jatm)=mpole%torque_z(jatm)-tjz
+                mpoles%torque_x(jatm)=mpoles%torque_x(jatm)-tjx
+                mpoles%torque_y(jatm)=mpoles%torque_y(jatm)-tjy
+                mpoles%torque_z(jatm)=mpoles%torque_z(jatm)-tjz
 
              End If
 
@@ -5471,9 +5471,9 @@ Module ewald_mpole
 
   ! and torques due to multipoles
 
-       mpole%torque_x(iatm)=mpole%torque_x(iatm)-scl*tix
-       mpole%torque_y(iatm)=mpole%torque_y(iatm)-scl*tiy
-       mpole%torque_z(iatm)=mpole%torque_z(iatm)-scl*tiz
+       mpoles%torque_x(iatm)=mpoles%torque_x(iatm)-scl*tix
+       mpoles%torque_y(iatm)=mpoles%torque_y(iatm)-scl*tiy
+       mpoles%torque_z(iatm)=mpoles%torque_z(iatm)-scl*tiz
 
   ! complete stress tensor
 
@@ -5491,7 +5491,7 @@ Module ewald_mpole
 
   End Subroutine ewald_excl_mforces_d
 
-  Subroutine ewald_frzn_mforces(engcpe_fr,vircpe_fr,stress,ewld,neigh,mpole, &
+  Subroutine ewald_frzn_mforces(engcpe_fr,vircpe_fr,stress,ewld,neigh,mpoles, &
       electro,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -5515,7 +5515,7 @@ Module ewald_mpole
     Real( Kind = wp ), Dimension( 1:9 ),   Intent( InOut ) :: stress
     Type( ewald_type ),                    Intent( InOut ) :: ewld
     Type( neighbours_type ),               Intent( In    ) :: neigh
-    Type( mpole_type ),                    Intent( InOut ) :: mpole
+    Type( mpole_type ),                    Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                    Intent( InOut ) :: comm
 
@@ -5545,10 +5545,10 @@ Module ewald_mpole
     Real( Kind = wp ), Dimension( : ), Allocatable :: mmpy(:,:)
     Real( Kind = wp ), Dimension( : ), Allocatable :: mmpz(:,:)
 
-    Real( Kind = wp ) :: d1(-2:2*mpole%max_order+1,-2:2*mpole%max_order+1,-2:2*mpole%max_order+1)
-    Real( Kind = wp ) :: imp(1:mpole%max_mpoles),jmp(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
-    Real( Kind = wp ) :: jmpx(1:mpole%max_mpoles),jmpy(1:mpole%max_mpoles),jmpz(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: d1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
+    Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
+    Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
     Character( Len = 256 ) :: message
 
     If (.not.ewld%lf_fce) Then ! All's been done but needs copying
@@ -5607,7 +5607,7 @@ Module ewald_mpole
 
   ! If using multipoles then get multipoles in global frame for atom i
 
-       imp=mpole%global_frame(:,i)
+       imp=mpoles%global_frame(:,i)
 
        If (lfrzn(i) > 0 .and. Maxval(Abs(imp)) > zero_plus) Then
           nz_fr(comm%idnode+1)=nz_fr(comm%idnode+1)+1
@@ -5621,8 +5621,8 @@ Module ewald_mpole
     nzfr = Sum(nz_fr(1:comm%mxnode))     ! Total
     If (nzfr <= 10*mxatms) Then
 
-       Allocate (mmp(1:mpole%max_mpoles,1:nzfr),                                              &
-                 mmpx(1:mpole%max_mpoles,1:nzfr),mmpy(1:mpole%max_mpoles,1:nzfr),mmpz(1:mpole%max_mpoles,1:nzfr), &
+       Allocate (mmp(1:mpoles%max_mpoles,1:nzfr),                                              &
+                 mmpx(1:mpoles%max_mpoles,1:nzfr),mmpy(1:mpoles%max_mpoles,1:nzfr),mmpz(1:mpoles%max_mpoles,1:nzfr), &
                  xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
        If (fail > 0) Then
           Write(message,'(a)') 'ewald_frzn_mforces allocation failure 1'
@@ -5637,13 +5637,13 @@ Module ewald_mpole
 
   ! if using multipoles then get them in global frame for atom ii
 
-          mmp(:,ii)=mpole%global_frame(:,l_ind(i))
+          mmp(:,ii)=mpoles%global_frame(:,l_ind(i))
 
   ! get the components for site ii infinitesimal rotations
 
-          mmpx(:,ii)=mpole%rotation_x(:,l_ind(i))
-          mmpy(:,ii)=mpole%rotation_y(:,l_ind(i))
-          mmpz(:,ii)=mpole%rotation_z(:,l_ind(i))
+          mmpx(:,ii)=mpoles%rotation_x(:,l_ind(i))
+          mmpy(:,ii)=mpoles%rotation_y(:,l_ind(i))
+          mmpz(:,ii)=mpoles%rotation_z(:,l_ind(i))
 
           xfr(ii)=xxx(l_ind(i))
           yfr(ii)=yyy(l_ind(i))
@@ -5711,8 +5711,8 @@ Module ewald_mpole
 
   ! compute derivatives of kernel
 
-             Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,electro%alpha*xrr,electro%alpha*yrr, &
-               electro%alpha*zrr,electro%alpha*rrr,mpole%max_order,d1)
+             Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,electro%alpha*xrr,electro%alpha*yrr, &
+               electro%alpha*zrr,electro%alpha*rrr,mpoles%max_order,d1)
 
   ! calculate forces
 
@@ -5720,25 +5720,25 @@ Module ewald_mpole
              fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
              tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-             If (mpole%max_order < 5) Then
+             If (mpoles%max_order < 5) Then
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         nn = mpole%map(k1,k2,k3)
+                         nn = mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(nn)) > zero_plus) Then
                            Call explicit_ewald_real_loops &
-                             (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1, &
+                             (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1, &
                              imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                              kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
-                             engmpl,fx,fy,fz,mpole)
+                             engmpl,fx,fy,fz,mpoles)
                          End If
 
                          kx = -kx
@@ -5756,36 +5756,36 @@ Module ewald_mpole
              Else
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         nn = mpole%map(k1,k2,k3)
+                         nn = mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(nn)) > zero_plus) Then
 
                             txyz=kx*jmp(nn)
 
                             sz = 1.0_wp
-                            Do s3=0,mpole%max_order
+                            Do s3=0,mpoles%max_order
                                ks3=k3+s3; ks31=ks3+1
 
                                sy = sz
-                               Do s2=0,mpole%max_order-s3
+                               Do s2=0,mpoles%max_order-s3
                                ks2=k2+s2; ks21=ks2+1
 
                                   sx = sy
-                                  Do s1=0,mpole%max_order-s3-s2
+                                  Do s1=0,mpoles%max_order-s3-s2
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n       = ks1+ks2+ks3
                                      alphan  = electro%alpha**n
 
-                                     mm      = mpole%map(s1,s2,s3)
+                                     mm      = mpoles%map(s1,s2,s3)
 
                                      tmp     = alphan*d1(ks1,ks2,ks3)
 
@@ -5907,8 +5907,8 @@ Module ewald_mpole
 
   ! compute derivatives of kernel
 
-             Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,electro%alpha*xrr, &
-               electro%alpha*yrr,electro%alpha*zrr,electro%alpha*rrr,mpole%max_order,d1)
+             Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,electro%alpha*xrr, &
+               electro%alpha*yrr,electro%alpha*zrr,electro%alpha*rrr,mpoles%max_order,d1)
 
   ! calculate forces
 
@@ -5916,24 +5916,24 @@ Module ewald_mpole
              fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
              tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-             If (mpole%max_order < 5) Then
+             If (mpoles%max_order < 5) Then
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         nn = mpole%map(k1,k2,k3)
+                         nn = mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(nn)) > zero_plus) Call explicit_ewald_real_loops &
-                           (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1, &
+                           (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1, &
                            imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                            kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
-                           engmpl,fx,fy,fz,mpole)
+                           engmpl,fx,fy,fz,mpoles)
 
                          kx = -kx
 
@@ -5950,36 +5950,36 @@ Module ewald_mpole
              Else
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         nn = mpole%map(k1,k2,k3)
+                         nn = mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(nn)) > zero_plus) Then
 
                             txyz=kx*jmp(nn)
 
                             sz = 1.0_wp
-                            Do s3=0,mpole%max_order
+                            Do s3=0,mpoles%max_order
                                ks3=k3+s3; ks31=ks3+1
 
                                sy = sz
-                               Do s2=0,mpole%max_order-s3
+                               Do s2=0,mpoles%max_order-s3
                                ks2=k2+s2; ks21=ks2+1
 
                                   sx = sy
-                                  Do s1=0,mpole%max_order-s3-s2
+                                  Do s1=0,mpoles%max_order-s3-s2
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n       = ks1+ks2+ks3
                                      alphan  = electro%alpha**n
 
-                                     mm      = mpole%map(s1,s2,s3)
+                                     mm      = mpoles%map(s1,s2,s3)
 
                                      tmp     = alphan*d1(ks1,ks2,ks3)
 
@@ -6046,9 +6046,9 @@ Module ewald_mpole
              fyy(l_ind(j))=fyy(l_ind(j))+fy
              fzz(l_ind(j))=fzz(l_ind(j))+fz
 
-             mpole%torque_x(l_ind(j))=mpole%torque_x(l_ind(j))+tjx
-             mpole%torque_y(l_ind(j))=mpole%torque_y(l_ind(j))+tjy
-             mpole%torque_z(l_ind(j))=mpole%torque_z(l_ind(j))+tjz
+             mpoles%torque_x(l_ind(j))=mpoles%torque_x(l_ind(j))+tjx
+             mpoles%torque_y(l_ind(j))=mpoles%torque_y(l_ind(j))+tjy
+             mpoles%torque_z(l_ind(j))=mpoles%torque_z(l_ind(j))+tjz
 
   ! redundant calculations copying
 
@@ -6129,8 +6129,8 @@ Module ewald_mpole
 
   ! compute derivatives of kernel
 
-             Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,electro%alpha*xrr, &
-               electro%alpha*yrr,electro%alpha*zrr,electro%alpha*rrr,mpole%max_order,d1)
+             Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,electro%alpha*xrr, &
+               electro%alpha*yrr,electro%alpha*zrr,electro%alpha*rrr,mpoles%max_order,d1)
 
   ! calculate forces
 
@@ -6138,24 +6138,24 @@ Module ewald_mpole
              fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
              tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-             If (mpole%max_order < 5) Then
+             If (mpoles%max_order < 5) Then
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         nn = mpole%map(k1,k2,k3)
+                         nn = mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(nn)) > zero_plus) Call explicit_ewald_real_loops &
-             (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1,               &
+             (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,               &
              imp,       impx,    impy,    impz,    tix,tiy,tiz, &
              kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
-             engmpl,fx,fy,fz,mpole)
+             engmpl,fx,fy,fz,mpoles)
 
                          kx = -kx
 
@@ -6172,36 +6172,36 @@ Module ewald_mpole
              Else
 
                 kz = 1.0_wp
-                Do k3=0,mpole%max_order
+                Do k3=0,mpoles%max_order
 
                    ky = kz
-                   Do k2=0,mpole%max_order-k3
+                   Do k2=0,mpoles%max_order-k3
 
                       kx = ky
-                      Do k1=0,mpole%max_order-k3-k2
+                      Do k1=0,mpoles%max_order-k3-k2
 
-                         nn = mpole%map(k1,k2,k3)
+                         nn = mpoles%map(k1,k2,k3)
 
                          If (Abs(jmp(nn)) > zero_plus) Then
 
                             txyz=kx*jmp(nn)
 
                             sz = 1.0_wp
-                            Do s3=0,mpole%max_order
+                            Do s3=0,mpoles%max_order
                                ks3=k3+s3; ks31=ks3+1
 
                                sy = sz
-                               Do s2=0,mpole%max_order-s3
+                               Do s2=0,mpoles%max_order-s3
                                ks2=k2+s2; ks21=ks2+1
 
                                   sx = sy
-                                  Do s1=0,mpole%max_order-s3-s2
+                                  Do s1=0,mpoles%max_order-s3-s2
                                      ks1=k1+s1; ks11=ks1+1
 
                                      n       = ks1+ks2+ks3
                                      alphan  = electro%alpha**n
 
-                                     mm      = mpole%map(s1,s2,s3)
+                                     mm      = mpoles%map(s1,s2,s3)
 
                                      tmp     = alphan*d1(ks1,ks2,ks3)
 
@@ -6319,13 +6319,13 @@ Module ewald_mpole
 
   ! get the multipoles for site i
 
-          imp=mpole%global_frame(:,i)*scl
+          imp=mpoles%global_frame(:,i)*scl
 
   ! get the components for site i infinitesimal rotations
 
-          impx=mpole%rotation_x(:,i)
-          impy=mpole%rotation_y(:,i)
-          impz=mpole%rotation_z(:,i)
+          impx=mpoles%rotation_x(:,i)
+          impy=mpoles%rotation_y(:,i)
+          impz=mpoles%rotation_z(:,i)
 
   ! Get neigh%list limit
 
@@ -6357,13 +6357,13 @@ Module ewald_mpole
 
   ! get the multipoles for site j
 
-                jmp=mpole%global_frame(:,j)
+                jmp=mpoles%global_frame(:,j)
 
   ! get the components for site j infinitesimal rotations
 
-                jmpx=mpole%rotation_x(:,j)
-                jmpy=mpole%rotation_y(:,j)
-                jmpz=mpole%rotation_z(:,j)
+                jmpx=mpoles%rotation_x(:,j)
+                jmpy=mpoles%rotation_y(:,j)
+                jmpz=mpoles%rotation_z(:,j)
 
   ! interatomic distance
 
@@ -6382,8 +6382,8 @@ Module ewald_mpole
 
   ! compute derivatives of kernel
 
-                   Call ewald_deriv(-2,2*mpole%max_order+1,2,erfr,electro%alpha*xxt(k), &
-                     electro%alpha*yyt(k),electro%alpha*zzt(k),electro%alpha*rrr,mpole%max_order,d1)
+                   Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,electro%alpha*xxt(k), &
+                     electro%alpha*yyt(k),electro%alpha*zzt(k),electro%alpha*rrr,mpoles%max_order,d1)
 
   ! calculate forces
 
@@ -6391,25 +6391,25 @@ Module ewald_mpole
                    fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
                    tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-                   If (mpole%max_order < 5) Then ! fully rewritten by ITT
+                   If (mpoles%max_order < 5) Then ! fully rewritten by ITT
 
                       kz = 1.0_wp
-                      Do k3=0,mpole%max_order
+                      Do k3=0,mpoles%max_order
 
                          ky = kz
-                         Do k2=0,mpole%max_order-k3
+                         Do k2=0,mpoles%max_order-k3
 
                             kx = ky
-                            Do k1=0,mpole%max_order-k3-k2
+                            Do k1=0,mpoles%max_order-k3-k2
 
-                               nn = mpole%map(k1,k2,k3)
+                               nn = mpoles%map(k1,k2,k3)
 
                                If (Abs(jmp(nn)) > zero_plus) Then
                                  Call explicit_ewald_real_loops &
-                                   (-2,2*mpole%max_order+1, k1,k2,k3, electro%alpha, d1, &
+                                   (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1, &
                                    imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                                    kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
-                                   engmpl,fx,fy,fz,mpole)
+                                   engmpl,fx,fy,fz,mpoles)
                                End If
 
                                kx = -kx
@@ -6427,36 +6427,36 @@ Module ewald_mpole
                    Else
 
                       kz = 1.0_wp
-                      Do k3=0,mpole%max_order
+                      Do k3=0,mpoles%max_order
 
                          ky = kz
-                         Do k2=0,mpole%max_order-k3
+                         Do k2=0,mpoles%max_order-k3
 
                             kx = ky
-                            Do k1=0,mpole%max_order-k3-k2
+                            Do k1=0,mpoles%max_order-k3-k2
 
-                               nn = mpole%map(k1,k2,k3)
+                               nn = mpoles%map(k1,k2,k3)
 
                                If (Abs(jmp(nn)) > zero_plus) Then
 
                                   txyz=kx*jmp(nn)
 
                                   sz = 1.0_wp
-                                  Do s3=0,mpole%max_order
+                                  Do s3=0,mpoles%max_order
                                      ks3=k3+s3; ks31=ks3+1
 
                                      sy = sz
-                                     Do s2=0,mpole%max_order-s3
+                                     Do s2=0,mpoles%max_order-s3
                                      ks2=k2+s2; ks21=ks2+1
 
                                         sx = sy
-                                        Do s1=0,mpole%max_order-s3-s2
+                                        Do s1=0,mpoles%max_order-s3-s2
                                            ks1=k1+s1; ks11=ks1+1
 
                                            n      = ks1+ks2+ks3
                                            alphan = electro%alpha**n
 
-                                           mm     = mpole%map(s1,s2,s3)
+                                           mm     = mpoles%map(s1,s2,s3)
 
                                            tmp    = alphan*d1(ks1,ks2,ks3)
 
@@ -6542,9 +6542,9 @@ Module ewald_mpole
                       fyy(j)=fyy(j)+fy
                       fzz(j)=fzz(j)+fz
 
-                      mpole%torque_x(j)=mpole%torque_x(j)+tjx
-                      mpole%torque_y(j)=mpole%torque_y(j)+tjy
-                      mpole%torque_z(j)=mpole%torque_z(j)+tjz
+                      mpoles%torque_x(j)=mpoles%torque_x(j)+tjx
+                      mpoles%torque_y(j)=mpoles%torque_y(j)+tjy
+                      mpoles%torque_z(j)=mpoles%torque_z(j)+tjz
 
   ! redundant calculations copying
 
@@ -6589,9 +6589,9 @@ Module ewald_mpole
 
   !  update torques due to multipoles
 
-          mpole%torque_x(i)=mpole%torque_x(i)+scl*tix
-          mpole%torque_y(i)=mpole%torque_y(i)+scl*tiy
-          mpole%torque_z(i)=mpole%torque_z(i)+scl*tiz
+          mpoles%torque_x(i)=mpoles%torque_x(i)+scl*tix
+          mpoles%torque_y(i)=mpoles%torque_y(i)+scl*tiy
+          mpoles%torque_z(i)=mpoles%torque_z(i)+scl*tiz
 
        End Do
 

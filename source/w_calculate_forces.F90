@@ -10,7 +10,7 @@
 ! Refresh mappings
 
         Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,sites,mpole,rigid)
+          dihedral,inversion,tether,neigh,sites,mpoles,rigid)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -19,8 +19,8 @@
 ! and stress tensor (these are all additive in the force subroutines)
 
      fxx = 0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
-     If (mpole%max_mpoles > 0) Then
-        mpole%torque_x=0.0_wp ; mpole%torque_y=0.0_wp ; mpole%torque_z=0.0_wp
+     If (mpoles%max_mpoles > 0) Then
+        mpoles%torque_x=0.0_wp ; mpoles%torque_y=0.0_wp ; mpoles%torque_z=0.0_wp
      End If
      stat%stress = 0.0_wp
 
@@ -30,7 +30,7 @@
        l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then
        Call two_body_forces(pdplnc,thermo%ensemble,nstfce,lbook,megfrz, &
          leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
-         mpole,electro,tmr,comm)
+         mpoles,electro,tmr,comm)
      End If
 
 ! Calculate tersoff forces
@@ -60,7 +60,7 @@
 
         isw = 1 + Merge(1,0,ltmp)
         Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff, &
-          stat%engcpe,stat%vircpe,bond,mpole,electro,comm)
+          stat%engcpe,stat%vircpe,bond,mpoles,electro,comm)
      End If
 
 ! Calculate valence angle forces
@@ -80,7 +80,7 @@
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
            neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp, &
-           stat%virsrp,dihedral,vdws,mpole,electro,comm)
+           stat%virsrp,dihedral,vdws,mpoles,electro,comm)
      End If
 
 ! Calculate inversion forces
@@ -155,7 +155,7 @@
 
         If (.not.(relaxed_shl .and. minimise%relaxed)) Then
            Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-             dihedral,inversion,tether,neigh,sites,mpole,rigid)
+             dihedral,inversion,tether,neigh,sites,mpoles,rigid)
            Go To 100
         End If
      End If

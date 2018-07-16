@@ -49,7 +49,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            degrot,degtra,        &
            cshell,cons,pmf,bond,angle,dihedral,  &
-           inversion,tether,neigh,sites,mpole,rigid,comm)
+           inversion,tether,neigh,sites,mpoles,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -78,7 +78,7 @@ Subroutine build_book_intra             &
   Type( site_type ), Intent( InOut ) :: sites
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type), Intent( InOut ) :: comm
 

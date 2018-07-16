@@ -54,7 +54,7 @@ Subroutine set_bounds                                 &
            width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
-           mpole,ext_field,rigid,electro,comm)
+           mpoles,ext_field,rigid,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -96,7 +96,7 @@ Subroutine set_bounds                                 &
   Type( tersoff_type ), Intent( InOut )  :: tersoffs
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( electrostatic_type ), Intent( InOut ) :: electro
@@ -134,7 +134,7 @@ Subroutine set_bounds                                 &
            mtinv,  &
            rcter,rctbp,rcfbp,lext,cshell,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
-           tether,threebody,vdws,tersoffs,fourbody,rdf,mpole,rigid,comm)
+           tether,threebody,vdws,tersoffs,fourbody,rdf,mpoles,rigid,comm)
 
 ! Get imc_r & set dvar
 
@@ -159,7 +159,7 @@ Subroutine set_bounds                                 &
            rbin,                         &
            nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1,cshell,stats,thermo, &
            green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-           zdensity,neigh,vdws,tersoffs,rdf,mpole,electro,comm)
+           zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -837,7 +837,7 @@ Subroutine set_bounds                                 &
   dens0 = dens0/Max(neigh%cutoff_extended/0.2_wp,1.0_wp)
   mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real( &
            mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (neigh%max_exclude+1) + &
-           Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,mpole%key == POLARISATION_CHARMM),0,mpole%max_mpoles > 0) + &
+           Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,mpoles%key == POLARISATION_CHARMM),0,mpoles%max_mpoles > 0) + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp  + &
            4*cshell%mxshl+4*cons%mxcons+(Sum(pmf%mxtpmf(1:2)+3))*pmf%mxpmf+(rigid%max_list+13)*rigid%max_rigid + &
            3*tether%mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)

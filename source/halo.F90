@@ -86,7 +86,7 @@ Module halo
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(electro_key,neigh,sites,mpole,comm)
+Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -101,7 +101,7 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpole,comm)
   Integer,           Intent( In    ) :: electro_key
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( site_type ), Intent( In    ) :: sites
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ), Save :: cut
@@ -220,10 +220,10 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpole,comm)
 
 ! Assign polarisation and dumping factor
 
-  If (mpole%max_mpoles > 0) Then
+  If (mpoles%max_mpoles > 0) Then
      Do i=natms+1,nlast
-        mpole%polarisation_atom(i)=mpole%polarisation_site(lsite(i))
-        mpole%dump_atom(i)=mpole%dump_site(lsite(i))
+        mpoles%polarisation_atom(i)=mpoles%polarisation_site(lsite(i))
+        mpoles%dump_atom(i)=mpoles%dump_site(lsite(i))
      End Do
   End If
 

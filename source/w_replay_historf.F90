@@ -108,7 +108,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(electro%key,neigh,sites,mpole,comm)
+           Call set_halo_particles(electro%key,neigh,sites,mpoles,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -116,7 +116,7 @@
            If (lbook) Then
              Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
                atmfrz,degrot,degtra,cshell,cons,pmf,bond,angle,dihedral, &
-               inversion,tether,neigh,sites,mpole,rigid,comm)
+               inversion,tether,neigh,sites,mpoles,rigid,comm)
               If (lexcl) Then
                 Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
                   inversion,neigh,rigid,comm)
@@ -127,7 +127,7 @@
 
            Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
-             netcdf,minimise,mpole,ext_field,rigid,electro,tmr)
+             netcdf,minimise,mpoles,ext_field,rigid,electro,tmr)
 
 ! Evaluate kinetics if available
 

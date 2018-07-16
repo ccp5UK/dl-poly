@@ -83,7 +83,7 @@ Subroutine read_field                      &
            atmfre,atmfrz,megatm,megfrz,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,sites,vdws, &
-           tersoffs,fourbody,rdf,mpole,ext_field,rigid,electro,comm)
+           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -129,7 +129,7 @@ Subroutine read_field                      &
   Type( tersoff_type ), Intent( InOut )  :: tersoffs
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( electrostatic_type ), Intent( InOut ) :: electro
@@ -346,13 +346,13 @@ Subroutine read_field                      &
            "Multipolar electrostatics opted with poles up to order ", Nint(word_2_real(word))
         Call info(message,.true.)
 
-        If (Nint(word_2_real(word)) > mpole%max_order) Then
+        If (Nint(word_2_real(word)) > mpoles%max_order) Then
            Call warning("supplied multipolar expansion order reduced to the maximum allowed - 4",.true.)
         End If
 
         Call info("MPOLES file scheduled for reading after reading all intramolecular topology in FIELD",.true.)
 
-        If (mpole%max_mpoles == 0) Then
+        If (mpoles%max_mpoles == 0) Then
           Call info('MPOLES file scheduling abandoned due to the "no elec" option in CONTROL',.true.)
         End If
 
@@ -2842,8 +2842,8 @@ Subroutine read_field                      &
 
 ! Process MPOLES
 
-        If (mpole%max_mpoles > 0) Then
-          Call read_mpoles(l_top,sumchg,cshell,sites,mpole,comm)
+        If (mpoles%max_mpoles > 0) Then
+          Call read_mpoles(l_top,sumchg,cshell,sites,mpoles,comm)
         End If
 
 ! check charmming shells (cshell%megshl) globalisation
@@ -2876,12 +2876,12 @@ Subroutine read_field                      &
                  k_crsh_p=k_crsh_p*cshell%prmshl(1,nshels)
                  k_crsh_s=k_crsh_s+cshell%prmshl(1,nshels)
 
-                 If (mpole%max_mpoles > 0) Then
-                    p_core_p=p_core_p*mpole%polarisation_site(isite1)
-                    p_core_s=p_core_s+mpole%polarisation_site(isite1)
+                 If (mpoles%max_mpoles > 0) Then
+                    p_core_p=p_core_p*mpoles%polarisation_site(isite1)
+                    p_core_s=p_core_s+mpoles%polarisation_site(isite1)
 
-                    d_core_p=d_core_p*mpole%dump_site(isite1)
-                    d_core_s=d_core_s+mpole%dump_site(isite1)
+                    d_core_p=d_core_p*mpoles%dump_site(isite1)
+                    d_core_s=d_core_s+mpoles%dump_site(isite1)
                  End If
               End Do
               nsite=nsite+sites%num_site(itmols)
@@ -2896,7 +2896,7 @@ Subroutine read_field                      &
               Call warning('a core of a core-shell unit bears a zero charge',.true.)
            End If
 
-           If (mpole%max_mpoles > 0) Then ! sort k_charm
+           If (mpoles%max_mpoles > 0) Then ! sort k_charm
               If (p_core_s <= zero_plus .and. &
                   k_crsh_s <= zero_plus .and. &
                   q_shel_s <= zero_plus) Then
@@ -2904,7 +2904,7 @@ Subroutine read_field                      &
                  Call warning('core-shell units polarisability is compromised',.true.)
               Else
                  If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus) Then
-                    If (mpole%key /= POLARISATION_DEFAULT) Then
+                    If (mpoles%key /= POLARISATION_DEFAULT) Then
                        k_crsh_p = 1000 * eu_kcpm ! reset to k_charmm = 1000 kcal*mol^−1*Å^−2
                        cshell%smax=k_crsh_p             ! set cshell%smax
                        Call warning('all core-shell force constants and shell ' &
@@ -2927,7 +2927,7 @@ Subroutine read_field                      &
               End If
            End If
 
-           If (mpole%max_mpoles > 0) Then ! Time for possible resets
+           If (mpoles%max_mpoles > 0) Then ! Time for possible resets
               d_core_p=0.0_wp ! the new d_core_s check for switching charming off!!!
 
               nsite =0
@@ -2943,7 +2943,7 @@ Subroutine read_field                      &
                     isite2 = nsite + iatm2
 
                     q_core=sites%charge_site(isite1)
-                    p_core=mpole%polarisation_site(isite1)
+                    p_core=mpoles%polarisation_site(isite1)
 
                     q_shel=sites%charge_site(isite2)
                     If (k_crsh_s <= zero_plus .and. q_shel_s <= zero_plus .and. &
@@ -2953,8 +2953,8 @@ Subroutine read_field                      &
                     End If
                     k_crsh=cshell%prmshl(1,nshels)
 
-                    If (d_core_s <= zero_plus .and. mpole%thole >= -zero_plus) mpole%dump_site(isite1) = mpole%thole
-                    d_core=mpole%dump_site(isite1)
+                    If (d_core_s <= zero_plus .and. mpoles%thole >= -zero_plus) mpoles%dump_site(isite1) = mpoles%thole
+                    d_core=mpoles%dump_site(isite1)
                     d_core_p=d_core_p+d_core
 
                     If      (Abs(q_shel) <= zero_plus) Then ! set shell's charge
@@ -2964,7 +2964,7 @@ Subroutine read_field                      &
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
                           sites%charge_site(isite2)=charge
-                          mpole%local_frame(1,isite2)=charge
+                          mpoles%local_frame(1,isite2)=charge
                           sumchg=sumchg+Abs(charge)
                        End If
                     Else If (p_core <= zero_plus) Then ! set drude force constants
@@ -2972,7 +2972,7 @@ Subroutine read_field                      &
                           lshl_abort=.true.
                           Call warning(296,Real(ishls,wp),Real(itmols,wp),0.0_wp)
                        Else
-                          mpole%polarisation_site(isite1)=(r4pie0/electro%eps)*q_shel**2/k_crsh
+                          mpoles%polarisation_site(isite1)=(r4pie0/electro%eps)*q_shel**2/k_crsh
                        End If
                     Else If (k_crsh <= zero_plus) Then ! set polarisability
                        If (p_core <= zero_plus) Then
@@ -2984,20 +2984,20 @@ Subroutine read_field                      &
                        End If
                     End If
 
-! Redefine mpole%polarisation_site as reciprocal of polarisability
+! Redefine mpoles%polarisation_site as reciprocal of polarisability
 
-                    mpole%polarisation_site(isite1)=1.0_wp/mpole%polarisation_site(isite1)
+                    mpoles%polarisation_site(isite1)=1.0_wp/mpoles%polarisation_site(isite1)
 
 ! copy polarisability and dumping from cores to their shells
 
-                    mpole%polarisation_site(isite2)=mpole%polarisation_site(isite1)
-                    mpole%dump_site(isite2)=mpole%dump_site(isite1)
+                    mpoles%polarisation_site(isite2)=mpoles%polarisation_site(isite1)
+                    mpoles%dump_site(isite2)=mpoles%dump_site(isite1)
                  End Do
                  nsite=nsite+sites%num_site(itmols)
               End Do
 
-              If (mpole%key == POLARISATION_CHARMM .and. d_core_p <= zero_plus) Then
-                 mpole%key = POLARISATION_DEFAULT
+              If (mpoles%key == POLARISATION_CHARMM .and. d_core_p <= zero_plus) Then
+                 mpoles%key = POLARISATION_DEFAULT
                  Call warning('CHARMM polarisation scheme deselected due to zero dumping factor',.true.)
               End If
            Else
@@ -5054,7 +5054,7 @@ Subroutine scan_field                                &
            mtdihd,       &
            mtinv,         &
            rcter,rctbp,rcfbp,lext,cshell,cons,pmf,met,&
-           bond,angle,dihedral,inversion,tether,threebody,vdws,tersoffs,fourbody,rdf,mpole,rigid,comm)
+           bond,angle,dihedral,inversion,tether,threebody,vdws,tersoffs,fourbody,rdf,mpoles,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5089,7 +5089,7 @@ Subroutine scan_field                                &
   Type( tersoff_type ), Intent( InOut )  :: tersoffs
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude,mtshl
@@ -5126,8 +5126,8 @@ Subroutine scan_field                                &
   Real( Kind = wp ) :: rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
-  mpole%max_order=0      ! default of maximum order of poles (charges)
-  mpole%max_mpoles=0      ! default maximum number of independent poles values
+  mpoles%max_order=0      ! default of maximum order of poles (charges)
+  mpoles%max_mpoles=0      ! default maximum number of independent poles values
                 ! it initialises to 0 if no MULT directive exists in FIELD
 
   nummols=0
@@ -5260,9 +5260,9 @@ Subroutine scan_field                                &
 
         l_n_e=.false. ! abandon assumptions
 
-        mpole%max_order = Min(Max(0,Nint(word_2_real(word))),4)
+        mpoles%max_order = Min(Max(0,Nint(word_2_real(word))),4)
 
-        mpole%max_mpoles = (mpole%max_order+3)*(mpole%max_order+2)*(mpole%max_order+1)/6
+        mpoles%max_mpoles = (mpoles%max_order+3)*(mpoles%max_order+2)*(mpoles%max_order+1)/6
 
      Else If (word(1:7) == 'molecul') Then
 
