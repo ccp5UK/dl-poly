@@ -1360,7 +1360,7 @@ Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
 End Subroutine statistics_connect_spread
 
 Subroutine statistics_result                                    &
-           (minimise,lmsd, &
+           (minim,lmsd, &
            nstrun,keyshl,megcon,megpmf,              &
            nstep,tstep,time,tmst, &
            mxatdm,neigh_uncond_update,stats,thermo,green,sites,comm)
@@ -1376,7 +1376,7 @@ Subroutine statistics_result                                    &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: minimise,lmsd
+  Logical,           Intent( In    ) :: minim,lmsd
   Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time,tmst
   Integer( Kind = wi ),    Intent( In    ) :: mxatdm
@@ -1412,7 +1412,7 @@ Subroutine statistics_result                                    &
 
 ! minimisation convergence statistics
 
-  If (minimise) Then
+  If (minim) Then
      Write(message,'(a,f7.2,2(a,i4))') &
        'minimisation run statistics - cycles per call: average ',stats%passmin(3), &
        ' minimum ',Nint(stats%passmin(4)),' maximum ',Nint(stats%passmin(5))

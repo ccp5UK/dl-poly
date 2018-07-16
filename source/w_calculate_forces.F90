@@ -124,7 +124,7 @@
 
 ! Minimisation option and Relaxed shell model optimisation
 
-     If (lsim .and. (minimise%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
+     If (lsim .and. (minim%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
         stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
                  stat%engshl + stat%engtet + stat%engfld +                   &
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
@@ -135,16 +135,16 @@
 
         If (.not.relaxed_shl) Go To 200 ! Shells relaxation takes priority over minimisation
 
-        If (minimise%minimise .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
-          If      (minimise%freq == 0 .and. nstep == 0) Then
+        If (minim%minimise .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
+          If      (minim%freq == 0 .and. nstep == 0) Then
             Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
               rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
-              netcdf,minimise,rigid,comm)
-          Else If (minimise%freq >  0 .and. nstep >  0) Then
-            If (Mod(nstep-nsteql,minimise%freq) == 0) Then
+              netcdf,minim,rigid,comm)
+          Else If (minim%freq >  0 .and. nstep >  0) Then
+            If (Mod(nstep-nsteql,minim%freq) == 0) Then
               Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
                 rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
-                netcdf,minimise,rigid,comm)
+                netcdf,minim,rigid,comm)
             End If
           End If
         End If
@@ -153,7 +153,7 @@
 
 ! Refresh mappings
 
-        If (.not.(relaxed_shl .and. minimise%relaxed)) Then
+        If (.not.(relaxed_shl .and. minim%relaxed)) Then
            Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
              dihedral,inversion,tether,neigh,sites,mpoles,rigid)
            Go To 100

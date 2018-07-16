@@ -102,7 +102,7 @@
 
      Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-       minimise,mpoles,ext_field,rigid,electro,tmr)
+       minim,mpoles,ext_field,rigid,electro,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 

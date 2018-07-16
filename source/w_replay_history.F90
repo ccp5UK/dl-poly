@@ -329,7 +329,7 @@
 
      Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
        degrot,degfre,degshl,stat%engrot,sites%dof_site,cshell,stat,cons,pmf, &
-       thermo,minimise,rigid,comm)
+       thermo,minim,rigid,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

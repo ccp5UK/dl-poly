@@ -96,7 +96,7 @@ Subroutine read_control                                &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
            met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-           rdf,minimise,mpoles,electro,tmr,comm)
+           rdf,minim,mpoles,electro,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -164,7 +164,7 @@ Subroutine read_control                                &
   Type( vdw_type ), Intent( InOut ) :: vdws
   Type( tersoff_type ), Intent( In    )  :: tersoffs
   Type( rdf_type ), Intent( InOut ) :: rdf
-  Type( minimise_type ), Intent( InOut ) :: minimise
+  Type( minimise_type ), Intent( InOut ) :: minim
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
@@ -268,11 +268,11 @@ Subroutine read_control                                &
 
 ! default switch for conjugate gradient minimisation during equilibration
 
-  minimise%minimise   = .false.
-  minimise%key = -1
-  minimise%freq = 0
-  minimise%tolerance = 0.0_wp
-  minimise%step_length = -1.0_wp
+  minim%minimise   = .false.
+  minim%key = -1
+  minim%freq = 0
+  minim%tolerance = 0.0_wp
+  minim%step_length = -1.0_wp
 
 ! default switch for regaussing temperature and default number of
 ! steps when to be applied
@@ -1039,18 +1039,18 @@ Subroutine read_control                                &
 
      Else If (word(1:5) == 'minim' .or. word(1:5) == 'optim') Then
 
-        minimise%minimise=.true.
+        minim%minimise=.true.
         word2=' ' ; word2=word
         Call get_word(record,word)
 
         If      (word(1:4) == 'forc') Then
-           minimise%key=0
+           minim%key=0
            word1='force   '
         Else If (word(1:4) == 'ener') Then
-           minimise%key=1
+           minim%key=1
            word1='energy  '
         Else If (word(1:4) == 'dist') Then
-           minimise%key=2
+           minim%key=2
            word1='distance'
         Else
            Call strip_blanks(record)
@@ -1061,59 +1061,59 @@ Subroutine read_control                                &
 
         If (word2(1:5) == 'minim') Then
            Call get_word(record,word)
-           minimise%freq = Abs(Nint(word_2_real(word,0.0_wp)))
+           minim%freq = Abs(Nint(word_2_real(word,0.0_wp)))
         End If
 
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
 
         itmp=0
-        If      (minimise%key == 0) Then
+        If      (minim%key == 0) Then
            If (tmp < 1.0_wp .or. tmp > 1000.0_wp) Then
-              minimise%tolerance=50.0_wp
+              minim%tolerance=50.0_wp
               itmp=1
            Else
-              minimise%tolerance=tmp
+              minim%tolerance=tmp
            End If
-        Else If (minimise%key == 1) Then
+        Else If (minim%key == 1) Then
            If (tmp < zero_plus .or. tmp > 0.01_wp) Then
-              minimise%tolerance=0.005_wp
+              minim%tolerance=0.005_wp
               itmp=1
            Else
-             minimise%tolerance = tmp
-             minimise%step_length = tmp
+             minim%tolerance = tmp
+             minim%step_length = tmp
            End If
-        Else If (minimise%key == 2) Then
+        Else If (minim%key == 2) Then
            If (tmp < 1.0e-6_wp .or. tmp > 0.1_wp) Then
-              minimise%tolerance=0.005_wp
+              minim%tolerance=0.005_wp
               itmp=1
            Else
-              minimise%tolerance=tmp
+              minim%tolerance=tmp
            End If
         End If
 
-        If (itmp == 1) Call warning(360,tmp,minimise%tolerance,0.0_wp)
+        If (itmp == 1) Call warning(360,tmp,minim%tolerance,0.0_wp)
 
         Call get_word(record,word3)
-        minimise%step_length = word_2_real(word3,-1.0_wp)
+        minim%step_length = word_2_real(word3,-1.0_wp)
 
         If (word2(1:5) == 'minim') Then
            Write(messages(1),'(a)') 'minimisation option on (during equilibration)'
            Write(messages(2),'(a,a8)') 'minimisation criterion        ',word1(1:8)
-           Write(messages(3),'(a,i10)') 'minimisation frequency (steps)',minimise%freq
-           Write(messages(4),'(a,1p,e12.4)') 'minimisation tolerance        ',minimise%tolerance
+           Write(messages(3),'(a,i10)') 'minimisation frequency (steps)',minim%freq
+           Write(messages(4),'(a,1p,e12.4)') 'minimisation tolerance        ',minim%tolerance
            Call info(messages,4,.true.)
-           If (minimise%step_length > zero_plus) Then
-             Write(message,'(a,1p,e12.4)') 'minimisation CGM step         ',minimise%step_length
+           If (minim%step_length > zero_plus) Then
+             Write(message,'(a,1p,e12.4)') 'minimisation CGM step         ',minim%step_length
              Call info(message,.true.)
            End If
         Else
            Write(messages(1),'(a)') 'optimisation at start'
            Write(messages(2),'(a,a8)') 'optimisation criterion        ',word(1:8)
-           Write(messages(4),'(a,1p,e12.4)') 'optimisation tolerance        ',minimise%tolerance
+           Write(messages(4),'(a,1p,e12.4)') 'optimisation tolerance        ',minim%tolerance
            Call info(messages,3,.true.)
-           If (minimise%step_length > zero_plus) Then
-             Write(message,'(a,1p,e12.4)')'optimisation CGM step         ',minimise%step_length
+           If (minim%step_length > zero_plus) Then
+             Write(message,'(a,1p,e12.4)')'optimisation CGM step         ',minim%step_length
            End If
         End If
 
@@ -2989,7 +2989,7 @@ Subroutine read_control                                &
 !!! FIXES !!!
 ! fix on step-dependent options
 
-  If (minimise%freq  == 0) minimise%freq  = nsteql+1
+  If (minim%freq  == 0) minim%freq  = nsteql+1
   If (thermo%freq_zero == 0) thermo%freq_zero = nsteql+1
   If (thermo%freq_tgaus == 0) thermo%freq_tgaus = nsteql+1
   If (thermo%freq_tscale == 0) thermo%freq_tscale = nsteql+1

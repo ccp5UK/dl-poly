@@ -284,7 +284,7 @@ program dl_poly
   Type( four_body_type ) :: fourbody
   Type( rdf_type ) :: rdf
   Type( netcdf_param ) :: netcdf
-  Type( minimise_type ) :: minimise
+  Type( minimise_type ) :: minim
   Type( mpole_type ) :: mpoles
   Type( external_field_type ) :: ext_field
   Type( rigid_bodies_type ) :: rigid
@@ -434,7 +434,7 @@ program dl_poly
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
-    minimise,mpoles,electro,tmr,comm)
+    minim,mpoles,electro,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -587,7 +587,7 @@ program dl_poly
     atmfre,atmfrz,            &
     degtra,degrot,     &
     degfre,degshl,stats%engrot,sites%dof_site,core_shells,stats,cons,pmfs, &
-    thermo,minimise,rigid,comm)
+    thermo,minim,rigid,comm)
 
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
@@ -678,11 +678,11 @@ program dl_poly
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
-        fourbody,rdf,netcdf,minimise,mpoles,ext_field,rigid,electro,tmr)
+        fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-        netcdf,minimise,mpoles,ext_field,rigid,electro)
+        netcdf,minim,mpoles,ext_field,rigid,electro)
     End If
   End If
 
@@ -757,7 +757,7 @@ program dl_poly
   End If
 
   Call statistics_result                                        &
-    (minimise%minimise,msd_data%l_msd, &
+    (minim%minimise,msd_data%l_msd, &
     nstrun,core_shells%keyshl,cons%megcon,pmfs%megpmf,              &
     nstep,tstep,time,tmst,mxatdm,neigh%unconditional_update,&
     stats,thermo,green,sites,comm)
@@ -825,7 +825,7 @@ Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-      minimise,mpoles,ext_field,rigid,electro,tmr)
+      minim,mpoles,ext_field,rigid,electro,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -845,7 +845,7 @@ Contains
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( minimise_type ), Intent( InOut ) :: minimise
+    Type( minimise_type ), Intent( InOut ) :: minim
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
@@ -951,7 +951,7 @@ Contains
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
-      bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf,netcdf,minimise, &
+      bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf,netcdf,minim, &
       mpoles,ext_field,rigid,electro)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -972,7 +972,7 @@ Contains
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( minimise_type ), Intent( InOut ) :: minimise
+    Type( minimise_type ), Intent( InOut ) :: minim
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
@@ -988,7 +988,7 @@ Contains
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
     angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-    minimise,mpoles,ext_field,rigid,electro,tmr)
+    minim,mpoles,ext_field,rigid,electro,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -1010,7 +1010,7 @@ Contains
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( timer_type ), Intent( InOut ) :: tmr
-    Type( minimise_type ), Intent( InOut ) :: minimise
+    Type( minimise_type ), Intent( InOut ) :: minim
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid

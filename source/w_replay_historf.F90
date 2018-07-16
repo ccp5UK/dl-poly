@@ -127,7 +127,7 @@
 
            Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
-             netcdf,minimise,mpoles,ext_field,rigid,electro,tmr)
+             netcdf,minim,mpoles,ext_field,rigid,electro,tmr)
 
 ! Evaluate kinetics if available
 
@@ -303,7 +303,7 @@
 
      Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
        degrot,degfre,degshl,stat%engrot,sites%dof_site,cshell,stat,cons,pmf, &
-       thermo,minimise,rigid,comm)
+       thermo,minim,rigid,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

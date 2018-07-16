@@ -111,7 +111,7 @@ Contains
 
   Subroutine minimise_relax &
            (l_str,rdf_collect,megatm,megpmf, &
-           tstep,stpcfg,stats,pmf,cons,netcdf,minimise,rigid,comm)
+           tstep,stpcfg,stats,pmf,cons,netcdf,minim,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -119,9 +119,9 @@ Contains
 ! gradient method (CGM).
 !
 ! Note: minimisation type and criterion:
-!       minimise%key=0 : absolute force
-!       minimise%key=1 : relative energy
-!       minimise%key=2 : absolute displacement
+!       minim%key=0 : absolute force
+!       minim%key=1 : relative energy
+!       minim%key=2 : absolute displacement
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov & w.smith february 2014
@@ -139,7 +139,7 @@ Contains
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent(InOut) :: cons
   Type( netcdf_param ), Intent( In    ) :: netcdf
-  Type( minimise_type ), Intent( InOut ) :: minimise
+  Type( minimise_type ), Intent( InOut ) :: minim
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( inOut ) :: comm
 
@@ -218,11 +218,11 @@ Contains
 
 ! Step length for relaxation
 
-  If (minimise%step_length > zero_plus) Then
+  If (minim%step_length > zero_plus) Then
 
 ! Optionally specified
 
-     step=minimise%step_length
+     step=minim%step_length
 
   Else
 
@@ -250,11 +250,11 @@ Contains
 
 ! Allocate working arrays
 
-     Call minimise%init(mxatms)
+     Call minim%init(mxatms)
 
 ! No minimisation is yet attempted
 
-     minimise%relaxed=.false.
+     minim%relaxed=.false.
 
 ! No RB move is yet attempted
 
@@ -271,11 +271,11 @@ Contains
 
 ! Determine optimisation
 
-     If      (minimise%key == 0) Then
+     If      (minim%key == 0) Then
         word='force   '
-     Else If (minimise%key == 1) Then
+     Else If (minim%key == 1) Then
         word='energy  '
-     Else If (minimise%key == 2) Then
+     Else If (minim%key == 2) Then
         word='distance'
      End If
 
@@ -283,7 +283,7 @@ Contains
 
     If (l_str) Then
       Write(message,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minimise%tolerance,'step=',step
+        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minim%tolerance,'step=',step
       Call info(message,.true.)
       Write(message,"(1x,130('-'))")
       Call info(message,.true.)
@@ -334,7 +334,7 @@ Contains
   eng_tol=0.0_wp
   If (keyopt > 0) Then
      eng_tol=Abs(1.0_wp-eng2/eng)
-     If (minimise%key == 1) minimise%relaxed=(eng_tol < minimise%tolerance)
+     If (minim%key == 1) minim%relaxed=(eng_tol < minim%tolerance)
   End If
 
 ! Current gradient (modulus of the total force)
@@ -350,7 +350,7 @@ Contains
 ! Get grad_tol & verify relaxed condition
 
   grad_tol=grad/total
-  If (minimise%key == 0) minimise%relaxed=(grad_tol < minimise%tolerance)
+  If (minim%key == 0) minim%relaxed=(grad_tol < minim%tolerance)
 
 ! Initialise dist_tol
 
@@ -358,7 +358,7 @@ Contains
 
 ! CHECK FOR CONVERGENCE
 
-  If (.not.minimise%relaxed) Then
+  If (.not.minim%relaxed) Then
 
 ! Increment main passage counter
 
@@ -366,11 +366,11 @@ Contains
 
 ! min_pass = Min(min_pass,._tol)
 
-     If      (minimise%key == 0) Then
+     If      (minim%key == 0) Then
         min_pass = Min(min_pass,grad_tol)
-     Else If (minimise%key == 1) Then
+     Else If (minim%key == 1) Then
         If (keyopt > 0) min_pass = Min(min_pass,eng_tol)
-     Else If (minimise%key == 2) Then
+     Else If (minim%key == 2) Then
         min_pass = Min(min_pass,dist_tol)
      End If
 
@@ -380,12 +380,12 @@ Contains
 
      If (Nint(stats%passmin(2)) == 0) Then
         If (Nint(stats%passmin(1)) >= 10*mxpass) Then
-           Call warning(330,minimise%tolerance,min_pass,0.0_wp)
+           Call warning(330,minim%tolerance,min_pass,0.0_wp)
            Call error(474)
         End If
      Else
         If (Nint(stats%passmin(1)) >= mxpass) Then
-           Call warning(330,minimise%tolerance,min_pass,0.0_wp)
+           Call warning(330,minim%tolerance,min_pass,0.0_wp)
            Call error(474)
         End If
      End If
@@ -413,9 +413,9 @@ Contains
 ! Set original search direction
 
      Do i=1,natms
-        minimise%oxx(i)=gxx(i)
-        minimise%oyy(i)=gyy(i)
-        minimise%ozz(i)=gzz(i)
+        minim%oxx(i)=gxx(i)
+        minim%oyy(i)=gyy(i)
+        minim%ozz(i)=gzz(i)
      End Do
 
      keyopt=1
@@ -432,7 +432,7 @@ Contains
      grad1=grad2
      grad2=0.0_wp
      Do i=1,natms
-        grad2=grad2+minimise%oxx(i)*gxx(i)+minimise%oyy(i)*gyy(i)+minimise%ozz(i)*gzz(i)
+        grad2=grad2+minim%oxx(i)*gxx(i)+minim%oyy(i)*gyy(i)+minim%ozz(i)*gzz(i)
      End Do
      Call gsum(comm,grad2)
      grad2=sgn*grad2/onorm
@@ -458,12 +458,12 @@ Contains
      grad2=0.0_wp
      onorm=0.0_wp
      Do i=1,natms
-        minimise%oxx(i)=gxx(i)+gamma*minimise%oxx(i)
-        minimise%oyy(i)=gyy(i)+gamma*minimise%oyy(i)
-        minimise%ozz(i)=gzz(i)+gamma*minimise%ozz(i)
+        minim%oxx(i)=gxx(i)+gamma*minim%oxx(i)
+        minim%oyy(i)=gyy(i)+gamma*minim%oyy(i)
+        minim%ozz(i)=gzz(i)+gamma*minim%ozz(i)
 
-        onorm=onorm+minimise%oxx(i)**2+minimise%oyy(i)**2+minimise%ozz(i)**2
-        grad2=grad2+minimise%oxx(i)*gxx(i)+minimise%oyy(i)*gyy(i)+minimise%ozz(i)*gzz(i)
+        onorm=onorm+minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2
+        grad2=grad2+minim%oxx(i)*gxx(i)+minim%oyy(i)*gyy(i)+minim%ozz(i)*gzz(i)
      End Do
      Call gsum(comm,onorm)
      onorm=Sqrt(onorm)
@@ -487,17 +487,17 @@ Contains
         i=lstfre(j)
 
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           xxx(i)=xxx(i)+stride*minimise%oxx(i)
-           yyy(i)=yyy(i)+stride*minimise%oyy(i)
-           zzz(i)=zzz(i)+stride*minimise%ozz(i)
-           dist_tol=Max(dist_tol,minimise%oxx(i)**2+minimise%oyy(i)**2+minimise%ozz(i)**2)
+           xxx(i)=xxx(i)+stride*minim%oxx(i)
+           yyy(i)=yyy(i)+stride*minim%oyy(i)
+           zzz(i)=zzz(i)+stride*minim%ozz(i)
+           dist_tol=Max(dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
         End If
      End Do
      dist_tol=Sqrt(dist_tol)*Abs(stride)
 
 ! RB particles
 
-     Call rigid_bodies_move(stride,minimise%oxx,minimise%oyy,minimise%ozz, &
+     Call rigid_bodies_move(stride,minim%oxx,minim%oyy,minim%ozz, &
        txx,tyy,tzz,uxx,uyy,uzz,dist_tol,rigid)
      l_mov=.true.
 
@@ -507,10 +507,10 @@ Contains
 
      Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           xxx(i)=xxx(i)+stride*minimise%oxx(i)
-           yyy(i)=yyy(i)+stride*minimise%oyy(i)
-           zzz(i)=zzz(i)+stride*minimise%ozz(i)
-           dist_tol=Max(dist_tol,minimise%oxx(i)**2+minimise%oyy(i)**2+minimise%ozz(i)**2)
+           xxx(i)=xxx(i)+stride*minim%oxx(i)
+           yyy(i)=yyy(i)+stride*minim%oyy(i)
+           zzz(i)=zzz(i)+stride*minim%ozz(i)
+           dist_tol=Max(dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
         End If
      End Do
      dist_tol=Sqrt(dist_tol)*Abs(stride)
@@ -518,7 +518,7 @@ Contains
   End If
   Call gmax(comm,dist_tol)
 
-  If (minimise%key == 2) minimise%relaxed=(dist_tol < minimise%tolerance)
+  If (minim%key == 2) minim%relaxed=(dist_tol < minim%tolerance)
 
 ! Fit headers in and Close and Open OUTPUT at every 25th print-out
 
@@ -530,7 +530,7 @@ Contains
       Write(message,"(1x,130('-'))")
       Call info(message,.true.)
       Write(message,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minimise%tolerance,'step=',step
+        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minim%tolerance,'step=',step
       Call info(message,.true.)
       Write(message,"(1x,130('-'))")
       Call info(message,.true.)
@@ -549,15 +549,15 @@ Contains
 
 100 Continue
 
-  minimise%transport=(.not.minimise%relaxed) ! Transportation flag
-  If (minimise%relaxed) Then
+  minim%transport=(.not.minim%relaxed) ! Transportation flag
+  If (minim%relaxed) Then
 
 ! Final/Only printout
 
      i=Nint(stats%passmin(1))
      If (.not.l_str) Then
        Write(message,'(3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-         'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minimise%tolerance,'step=',step
+         'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minim%tolerance,'step=',step
        Call info(message,.true.)
        Write(message,"(1x,130('-'))")
        Call info(message,.true.)
@@ -586,7 +586,7 @@ Contains
 
 ! Deallocate working arrays
 
-     Call deallocate_minimise_arrays(minimise)
+     Call deallocate_minimise_arrays(minim)
 
 ! Dump the lowest energy configuration
 
