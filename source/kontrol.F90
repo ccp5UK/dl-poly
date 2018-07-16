@@ -95,7 +95,7 @@ Subroutine read_control                                &
            nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
-           met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoff, &
+           met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
            rdf,minimise,mpole,electro,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -162,7 +162,7 @@ Subroutine read_control                                &
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( vdw_type ), Intent( InOut ) :: vdws
-  Type( tersoff_type ), Intent( In    )  :: tersoff
+  Type( tersoff_type ), Intent( In    )  :: tersoffs
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( minimise_type ), Intent( InOut ) :: minimise
   Type( mpole_type ), Intent( InOut ) :: mpole
@@ -3645,7 +3645,7 @@ Subroutine scan_control                                    &
            rbin,                          &
            nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1,cshell,stats,  &
            thermo,green,devel,msd_data,met,pois,bond,angle, &
-           dihedral,inversion,zdensity,neigh,vdws,tersoff,rdf,mpole,electro,comm)
+           dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpole,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3687,7 +3687,7 @@ Subroutine scan_control                                    &
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( vdw_type ), Intent( InOut ) :: vdws
-  Type( tersoff_type ), Intent( In    )  :: tersoff
+  Type( tersoff_type ), Intent( In    )  :: tersoffs
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpole
   Type( electrostatic_type ), Intent( InOut ) :: electro
@@ -3752,7 +3752,7 @@ Subroutine scan_control                                    &
   l_n_m = .not.lmet
   lrmet = (met%rcut > 1.0e-6_wp)
 
-  lter  = (tersoff%max_ter > 0)
+  lter  = (tersoffs%max_ter > 0)
 
   lrcut = .false.
   neigh%cutoff  = 0.0_wp

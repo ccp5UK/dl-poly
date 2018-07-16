@@ -280,7 +280,7 @@ program dl_poly
   Type( site_type ) :: sites
   Type( core_shell_type ) :: core_shells
   Type( vdw_type ) :: vdws
-  Type( tersoff_type ) :: tersoff
+  Type( tersoff_type ) :: tersoffs
   Type( four_body_type ) :: fourbody
   Type( rdf_type ) :: rdf
   Type( netcdf_param ) :: netcdf
@@ -358,7 +358,7 @@ program dl_poly
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,width,sites%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    tether,threebody,zdensity,neigh,vdws,tersoff,fourbody,rdf,mpole,ext_field, &
+    tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpole,ext_field, &
     rigid,electro,comm)
 
   Call info('',.true.)
@@ -397,7 +397,7 @@ program dl_poly
 
   Call vdws%init()
   Call met%init(mxatms,mxatyp)
-  Call tersoff%init(sites%max_site)
+  Call tersoffs%init(sites%max_site)
   Call allocate_three_body_arrays(sites%max_site,threebody)
   Call fourbody%init(sites%max_site)
 
@@ -433,7 +433,7 @@ program dl_poly
     nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
-    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoff,rdf, &
+    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
     minimise,mpole,electro,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
@@ -444,7 +444,7 @@ program dl_poly
     lecx,lbook,lexcl,               &
     atmfre,atmfrz,megatm,megfrz,    &
     core_shells,pmfs,cons,thermo,met,bond,angle,   &
-    dihedral,inversion,tether,threebody,sites,vdws,tersoff,fourbody,rdf,mpole, &
+    dihedral,inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpole, &
     ext_field,rigid,electro,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
@@ -677,7 +677,7 @@ program dl_poly
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
-        msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoff, &
+        msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
         fourbody,rdf,netcdf,minimise,mpole,ext_field,rigid,electro,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
@@ -824,7 +824,7 @@ program dl_poly
 Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-      inversion,tether,threebody,neigh,sites,vdws,tersoff,fourbody,rdf,netcdf, &
+      inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
       minimise,mpole,ext_field,rigid,electro,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -841,7 +841,7 @@ Contains
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( tersoff_type ), Intent( InOut )  :: tersoff
+    Type( tersoff_type ), Intent( InOut )  :: tersoffs
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
@@ -987,7 +987,7 @@ Contains
   End Subroutine w_replay_history
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
-    angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoff,fourbody,rdf,netcdf, &
+    angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
     minimise,mpole,ext_field,rigid,electro,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -1005,7 +1005,7 @@ Contains
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( tersoff_type ), Intent( InOut )  :: tersoff
+    Type( tersoff_type ), Intent( InOut )  :: tersoffs
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
