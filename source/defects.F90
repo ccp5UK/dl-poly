@@ -401,7 +401,7 @@ End Subroutine defects_reference_export
 
 !> defects_reference_read
 
-  Subroutine defects_reference_read(nstep,dfcts,site,netcdf,comm)
+  Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -416,7 +416,7 @@ End Subroutine defects_reference_export
   
   Integer,              Intent( In    ) :: nstep
   Type( defects_type ), Intent( InOut ) :: dfcts
-  Type( site_type ), Intent( In    ) :: site
+  Type( site_type ), Intent( In    ) :: sites
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type ),   Intent( InOut ) :: comm
 
@@ -889,13 +889,13 @@ End Subroutine defects_reference_export
      nsite=0
      msite=0
      fsite=0
-     Do itmols=1,site%ntype_mol
-        Do isite=1,site%num_site(itmols)
+     Do itmols=1,sites%ntype_mol
+        Do isite=1,sites%num_site(itmols)
            nsite=nsite+1
 
-           If (site%freeze_site(nsite) /= 0) Then
-              Do nrept=1,site%num_mols(itmols)
-                 ifrz=nsite+msite+(nrept-1)*site%num_site(itmols)
+           If (sites%freeze_site(nsite) /= 0) Then
+              Do nrept=1,sites%num_mols(itmols)
+                 ifrz=nsite+msite+(nrept-1)*sites%num_site(itmols)
 
                  Do i=1,dfcts%nrefs
                     If (dfcts%indr(i) == ifrz) Then
@@ -913,8 +913,8 @@ End Subroutine defects_reference_export
            End If
         End Do
 
-        msite=msite+(site%num_mols(itmols)-1)*site%num_site(itmols)
-        fsite=fsite+site%num_mols(itmols)*site%num_freeze(itmols)
+        msite=msite+(sites%num_mols(itmols)-1)*sites%num_site(itmols)
+        fsite=fsite+sites%num_mols(itmols)*sites%num_freeze(itmols)
      End Do
 
      If (fsite > 0) Then
@@ -2143,7 +2143,7 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 End Subroutine defects_reference_write
 
 !> defects_write
-  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh,site,netcdf,comm)
+  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh,sites,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2160,7 +2160,7 @@ End Subroutine defects_reference_write
   Real( Kind = wp )   , Intent( In    ) :: tstep,time
   Type( defects_type ), Intent( InOut ) :: dfcts
   Type( neighbours_type ), Intent( In    ) :: neigh
-  Type( site_type ), Intent( In    ) :: site
+  Type( site_type ), Intent( In    ) :: sites
   Type( core_shell_type ), Intent( In    ) :: cshell
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type)   , Intent( InOut ) :: comm
@@ -2229,7 +2229,7 @@ End Subroutine defects_reference_write
 
 ! Build lattice sites list from REFERENCE
      Call allocate_defects_arrays(dfcts)
-     Call defects_reference_read(nstep,dfcts,site,netcdf,comm)
+     Call defects_reference_read(nstep,dfcts,sites,netcdf,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set
@@ -2613,7 +2613,7 @@ End Subroutine defects_reference_write
 ! Circle around domain+halo particles, k is the index of the
 ! closest to a site atom (real claimee) assuming that the first
 ! claimee is the true one.  Check for an interstitial of the
-! same site, that is closer to it than the claimee.
+! same sites, that is closer to it than the claimee.
 
               k=i
               cut=dr(i)

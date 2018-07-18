@@ -312,7 +312,7 @@ Contains
     End If
   End Subroutine cleanup
 
-  Subroutine read_mpoles(l_top,sumchg,cshell,site,mpole,comm)
+  Subroutine read_mpoles(l_top,sumchg,cshell,sites,mpoles,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -326,9 +326,9 @@ Contains
 
     Logical,            Intent( In    ) :: l_top
     Real( Kind = wp ),  Intent( InOut ) :: sumchg
-    Type( site_type ), Intent( InOut ) :: site
+    Type( site_type ), Intent( InOut ) :: sites
     Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical                :: safe,l_rsh,l_ord=.false.
@@ -389,12 +389,12 @@ Contains
           Call get_word(record,word) ; Call lower_case(word)
           If (word(1:4) == 'type') Call get_word(record,word)
 
-          If (site%ntype_mol == Nint(word_2_real(word))) Then
-            Write(message,'(a,i10)') 'number of molecular types ',site%ntype_mol
+          If (sites%ntype_mol == Nint(word_2_real(word))) Then
+            Write(message,'(a,i10)') 'number of molecular types ',sites%ntype_mol
             Call info(message,.true.)
           Else
             Write(message,'(2(a,i0),a)') &
-              'number of molecular types mismatch between FIELD(',site%ntype_mol, &
+              'number of molecular types mismatch between FIELD(',sites%ntype_mol, &
               ') and MPOLES(',Nint(word_2_real(word)),')'
             Call warning(message,.true.)
             Call error(623)
@@ -402,7 +402,7 @@ Contains
 
   ! read in molecular characteristics for every molecule
 
-          Do itmols=1,site%ntype_mol
+          Do itmols=1,sites%ntype_mol
 
              If (l_top) Then
                Write(message,'(a,i10)') 'molecular species type ',itmols
@@ -419,11 +419,11 @@ Contains
              End Do
              Call strip_blanks(record)
              record1=word(1:Len_Trim(word)+1)//record ; Call lower_case(record1)
-             record2=site%mol_name(itmols) ;                   Call lower_case(record2)
+             record2=sites%mol_name(itmols) ;                   Call lower_case(record2)
 
              If (record1 == record2) Then
                If (l_top) Then
-                 Write(message,'(2a)') 'name of species: ',Trim(site%mol_name(itmols))
+                 Write(message,'(2a)') 'name of species: ',Trim(sites%mol_name(itmols))
                  Call info(message,.true.)
                End If
              Else
@@ -448,14 +448,14 @@ Contains
 
                    Call get_word(record,word)
 
-                   If (site%num_mols(itmols) == Nint(word_2_real(word))) Then
+                   If (sites%num_mols(itmols) == Nint(word_2_real(word))) Then
                      If (l_top) Then
-                       Write(message,'(a,i10)') 'number of molecules ',site%num_mols(itmols)
+                       Write(message,'(a,i10)') 'number of molecules ',sites%num_mols(itmols)
                        Call info(message,.true.)
                      End If
                    Else
                      Write(message,'(2(a,i0),a)') &
-                       'number of molecular types mismatch between FIELD(',site%ntype_mol, &
+                       'number of molecular types mismatch between FIELD(',sites%ntype_mol, &
                        ') and MPOLES(',Nint(word_2_real(word)),')'
                      Call warning(message,.true.)
                      Call error(623)
@@ -467,9 +467,9 @@ Contains
 
                    Call get_word(record,word)
 
-                   If (site%num_site(itmols) == Nint(word_2_real(word))) Then
+                   If (sites%num_site(itmols) == Nint(word_2_real(word))) Then
                      If (l_top) Then
-                       Write(messages(1),'(a,i10)') 'number of atoms/sites ',site%num_site(itmols)
+                       Write(messages(1),'(a,i10)') 'number of atoms/sites ',sites%num_site(itmols)
                        Write(messages(2),'(a)') 'atomic characteristics:'
                        Write(messages(3),'(8x,a4,4x,a4,2x,a16,2x,a6)') &
                          'site','name','multipolar order','repeat'
@@ -477,7 +477,7 @@ Contains
                      End If
                    Else
                      Write(message,'(2(a,i0),a)') &
-                       'number of molecular types mismatch between FIELD(',site%ntype_mol, &
+                       'number of molecular types mismatch between FIELD(',sites%ntype_mol, &
                        ') and MPOLES(',Nint(word_2_real(word)),')'
                      Call warning(message,.true.)
                      Call error(623)
@@ -486,8 +486,8 @@ Contains
   ! for every molecule of this type get site and atom description
 
                    ksite=0 ! reference point
-                   Do isite=1,site%num_site(itmols)
-                      If (ksite < site%num_site(itmols)) Then
+                   Do isite=1,sites%num_site(itmols)
+                      If (ksite < sites%num_site(itmols)) Then
 
   ! read atom name, highest pole order supplied, repeat
 
@@ -516,7 +516,7 @@ Contains
                          lsite=jsite+nrept-1
 
                          Do i=jsite,lsite
-                           If (site%site_name(i) /= atom) Then ! detect mish-mash
+                           If (sites%site_name(i) /= atom) Then ! detect mish-mash
                              Write(message,'(a,i0)') &
                                'site names mismatch between FIELD and MPOLES for site ',ksite+1+i-jsite
                              Call warning(message,.true.)
@@ -592,11 +592,11 @@ Contains
 
                          charge=word_2_real(word)
 
-                         site%charge_site(jsite:lsite)=charge
-                         mpole%local_frame(sitmpl,jsite:lsite)=charge
+                         sites%charge_site(jsite:lsite)=charge
+                         mpoles%local_frame(sitmpl,jsite:lsite)=charge
                          If (l_rsh) Then
-                            mpole%polarisation_site(jsite:lsite)=polarity
-                            mpole%dump_site(jsite:lsite)=dumping
+                            mpoles%polarisation_site(jsite:lsite)=polarity
+                            mpoles%dump_site(jsite:lsite)=dumping
   !                      Else ! initilised to zero in mpoles_module
                          End If
 
@@ -631,11 +631,11 @@ Contains
 
   ! Only assign what FIELD says is needed or it is a shell
 
-                            If (ordmpl_next <= Merge(mpole%max_order,1,l_rsh)) Then
+                            If (ordmpl_next <= Merge(mpoles%max_order,1,l_rsh)) Then
 
                               Do i=indmpl_start,indmpl_final
                                 sitmpl = sitmpl+1
-                                mpole%local_frame(sitmpl,jsite:lsite)=word_2_real(word)
+                                mpoles%local_frame(sitmpl,jsite:lsite)=word_2_real(word)
                                 Call get_word(record,word)
                               End Do
 
@@ -644,16 +644,16 @@ Contains
                               If (l_top) Then
                                 If      (ordmpl_next == 1) Then
                                   Write(message,'(2x,a12,1x,3f10.5)') 'dipole', &
-                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                    mpoles%local_frame(indmpl_start:indmpl_final,jsite)
                                 Else If (ordmpl_next == 2) Then
                                   Write(message,'(2x,a12,1x,6f10.5)') 'quadrupole', &
-                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                    mpoles%local_frame(indmpl_start:indmpl_final,jsite)
                                 Else If (ordmpl_next == 3) Then
                                   Write(message,'(2x,a12,1x,10f10.5)') 'octupole', &
-                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                    mpoles%local_frame(indmpl_start:indmpl_final,jsite)
                                 Else If (ordmpl_next == 4) Then
                                   Write(message,'(2x,a12,1x,15f10.5)') 'hexadecapole', &
-                                    mpole%local_frame(indmpl_start:indmpl_final,jsite)
+                                    mpoles%local_frame(indmpl_start:indmpl_final,jsite)
                                 End If
                                 Call info(message,.true.)
                               End If
@@ -670,8 +670,8 @@ Contains
                                         scl=Exp(factorial(ordmpl_next)-factorial(k)-factorial(j)-factorial(i))
                                         sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
                                         If (Nint(scl) /= 1) Then
-                                          mpole%local_frame(sitmpl,jsite:lsite)= &
-                                            mpole%local_frame(sitmpl,jsite:lsite)/scl
+                                          mpoles%local_frame(sitmpl,jsite:lsite)= &
+                                            mpoles%local_frame(sitmpl,jsite:lsite)/scl
                                         End If
                                      End Do
                                   End Do
@@ -739,7 +739,7 @@ Contains
                          nsite=nsite+nrept
                          ksite=ksite+nrept
 
-                         If (ksite == site%num_site(itmols)) nshels=kshels
+                         If (ksite == sites%num_site(itmols)) nshels=kshels
 
                       End If
                    End Do
@@ -750,11 +750,11 @@ Contains
 
                   Write(message,'(3(a,i0))') &
                     'multipolar electrostatics requested up to order ', &
-                    mpole%max_order, ' with specified interactions up order ',  &
+                    mpoles%max_order, ' with specified interactions up order ',  &
                     ordmpl_max,' and least order ', ordmpl_min
                   Call warning(message,.true.)
 
-                  If (ordmpl_max*mpole%max_order == 0) Then
+                  If (ordmpl_max*mpoles%max_order == 0) Then
                     Call warning( &
                       'multipolar electrostatics machinery to be used for monompoles ' &
                       //'only electrostatic interactions (point charges only)', &

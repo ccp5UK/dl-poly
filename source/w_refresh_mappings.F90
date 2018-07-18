@@ -15,12 +15,12 @@
 
            Call relocate_particles(dvar,neigh%cutoff_extended,lbook, &
              msd_data%l_msd,megatm,cshell,cons,pmf, stat,ewld,thermo,green, &
-             bond,angle,dihedral,inversion,tether,neigh,site,minimise,mpole, &
+             bond,angle,dihedral,inversion,tether,neigh,sites,minim,mpoles, &
              rigid,comm)
 
 ! Exchange atomic data in border regions
 
-           Call set_halo_particles(electro%key,neigh,site,mpole,comm) ! inducing in here only
+           Call set_halo_particles(electro%key,neigh,sites,mpoles,comm) ! inducing in here only
 
 ! Re-tag RBs when called again after the very first time
 ! when it's done in rigid_bodies_setup <- build_book_intra
@@ -40,6 +40,6 @@
 
 ! set and halo rotational matrices and their infinitesimal rotations
 
-        If (mpole%max_mpoles > 0) Call mpoles_rotmat_set_halo(mpole,comm)
+        If (mpoles%max_mpoles > 0) Call mpoles_rotmat_set_halo(mpoles,comm)
 
 !!!!!!!!!!!!!!!!!!  W_REFRESH_MAPPINGS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

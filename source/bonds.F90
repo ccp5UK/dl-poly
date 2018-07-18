@@ -489,7 +489,7 @@ Contains
 End Subroutine bonds_compute
 
 Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
-    mpole,electro,comm)
+    mpoles,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -513,7 +513,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
   Real( Kind = wp ),                   Intent( In    ) :: rcut
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe
   Type( bonds_type ),                  Intent( InOut ) :: bond
-  Type( mpole_type ),                  Intent( InOut ) :: mpole
+  Type( mpole_type ),                  Intent( InOut ) :: mpoles
   Type( electrostatic_type ), Intent( In    ) :: electro
   Type( comms_type),                   Intent( InOut ) :: comm
 
@@ -779,10 +779,10 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 ! scaled charge product times dielectric constants
 
            chgprd=bond%param(1,kk)*chge(ia)*chge(ib)*r4pie0/electro%eps
-           If ((Abs(chgprd) > zero_plus .or. mpole%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
-              If (mpole%max_mpoles > 0) Then
+           If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
+              If (mpoles%max_mpoles > 0) Then
                  Call intra_mcoul(rcut,ia,ib,chgprd,rab,xdab(i),ydab(i),zdab(i), &
-                   omega,viracc,fx,fy,fz,safe(1),mpole,electro)
+                   omega,viracc,fx,fy,fz,safe(1),mpoles,electro)
               Else
                  Call intra_coul(rcut,chgprd,rab,rab2,omega,gamma,safe(1),electro)
 
@@ -974,7 +974,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
 End Subroutine bonds_forces
 
-Subroutine bonds_table_read(bond_name,bond,site,comm)
+Subroutine bonds_table_read(bond_name,bond,sites,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -988,7 +988,7 @@ Subroutine bonds_table_read(bond_name,bond,site,comm)
 
   Type( bonds_type ),    Intent( InOut ) :: bond
   Character( Len = 16 ), Intent( In    ) :: bond_name(1:bond%max_types)
-  Type( site_type ), Intent( In    ) :: site
+  Type( site_type ), Intent( In    ) :: sites
   Type( comms_type),     Intent( InOut ) :: comm
 
   Logical                :: safe,remake
@@ -1091,9 +1091,9 @@ Subroutine bonds_table_read(bond_name,bond,site,comm)
      katom1=0
      katom2=0
 
-     Do jtpatm=1,site%ntype_atom
-        If (atom1 == site%unique_atom(jtpatm)) katom1=jtpatm
-        If (atom2 == site%unique_atom(jtpatm)) katom2=jtpatm
+     Do jtpatm=1,sites%ntype_atom
+        If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+        If (atom2 == sites%unique_atom(jtpatm)) katom2=jtpatm
      End Do
 
      If (katom1 == 0 .or. katom2 == 0) Then

@@ -86,7 +86,7 @@ Module halo
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(electro_key,neigh,site,mpole,comm)
+Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -100,8 +100,8 @@ Subroutine set_halo_particles(electro_key,neigh,site,mpole,comm)
 
   Integer,           Intent( In    ) :: electro_key
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( site_type ), Intent( In    ) :: site
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( site_type ), Intent( In    ) :: sites
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ), Save :: cut
@@ -211,19 +211,19 @@ Subroutine set_halo_particles(electro_key,neigh,site,mpole,comm)
 ! assign incoming atom properties (of the halo only)
 
   Do i=natms+1,nlast
-     ltype(i)=site%type_site(lsite(i))
-     chge(i)=site%charge_site(lsite(i))
-     weight(i)=site%weight_site(lsite(i))
-     lfrzn(i)=site%freeze_site(lsite(i))
-     lfree(i)=site%free_site(lsite(i))
+     ltype(i)=sites%type_site(lsite(i))
+     chge(i)=sites%charge_site(lsite(i))
+     weight(i)=sites%weight_site(lsite(i))
+     lfrzn(i)=sites%freeze_site(lsite(i))
+     lfree(i)=sites%free_site(lsite(i))
   End Do
 
 ! Assign polarisation and dumping factor
 
-  If (mpole%max_mpoles > 0) Then
+  If (mpoles%max_mpoles > 0) Then
      Do i=natms+1,nlast
-        mpole%polarisation_atom(i)=mpole%polarisation_site(lsite(i))
-        mpole%dump_atom(i)=mpole%dump_site(lsite(i))
+        mpoles%polarisation_atom(i)=mpoles%polarisation_site(lsite(i))
+        mpoles%dump_atom(i)=mpoles%dump_site(lsite(i))
      End Do
   End If
 

@@ -380,7 +380,7 @@ Module mpoles_container
              (lbl,torderlim,k1,k2,k3,alpha,d1, &
              imp,impx,impy,impz,tix,tiy,tiz,   &
              jmp,jmpx,jmpy,jmpz,tjx,tjy,tjz,   &
-             enempol,fx,fy,fz,mpole)
+             enempol,fx,fy,fz,mpoles)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -394,13 +394,13 @@ Module mpoles_container
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( mpole_type ), Intent( In    ) :: mpole
+    Type( mpole_type ), Intent( In    ) :: mpoles
     Integer,          Intent( In    ) :: lbl,torderlim,k1,k2,k3
 
     Real( Kind = wp), Intent( In    ) :: alpha,d1(lbl:torderlim,lbl:torderlim,lbl:torderlim)
 
-    Real( Kind = wp), Intent( In    ) :: imp(1:mpole%max_mpoles)
-    Real( Kind = wp), Intent( In    ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+    Real( Kind = wp), Intent( In    ) :: imp(1:mpoles%max_mpoles)
+    Real( Kind = wp), Intent( In    ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp), Intent( InOut ) :: tix,tiy,tiz
 
     Real( Kind = wp), Intent( In    ) :: jmp
@@ -418,7 +418,7 @@ Module mpoles_container
       Call error(0, 'Disallowed lower bound limit in ewald_deriv')
     End If
 
-    If (mpole%max_order >= 0) Then
+    If (mpoles%max_order >= 0) Then
 
   !=======================================
        s1=0; s2=0; s3=0
@@ -431,7 +431,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -467,7 +467,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 1) Then
+    If (mpoles%max_order >= 1) Then
 
   !=======================================
        s1=1; s2=0; s3=0
@@ -480,7 +480,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -525,7 +525,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -570,7 +570,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -606,7 +606,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 2) Then
+    If (mpoles%max_order >= 2) Then
 
   !=======================================
        s1=2; s2=0; s3=0
@@ -619,7 +619,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -664,7 +664,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -709,7 +709,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -754,7 +754,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -799,7 +799,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -844,7 +844,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -880,7 +880,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 3) Then
+    If (mpoles%max_order >= 3) Then
 
   !=======================================
        s1=3; s2=0; s3=0
@@ -893,7 +893,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -938,7 +938,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -982,7 +982,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1027,7 +1027,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1072,7 +1072,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1117,7 +1117,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1162,7 +1162,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1207,7 +1207,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1252,7 +1252,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1297,7 +1297,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1333,7 +1333,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order == 4) Then
+    If (mpoles%max_order == 4) Then
 
   !=======================================
        s1=4; s2=0; s3=0
@@ -1346,7 +1346,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1391,7 +1391,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1436,7 +1436,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1481,7 +1481,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1526,7 +1526,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1571,7 +1571,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1616,7 +1616,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1661,7 +1661,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1706,7 +1706,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1751,7 +1751,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1796,7 +1796,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1841,7 +1841,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1886,7 +1886,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1931,7 +1931,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -1976,7 +1976,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
 
        tmp=alphan*td
@@ -2018,7 +2018,7 @@ Module mpoles_container
              (torderlim,k1,k2,k3,alpha,d1,a1, &
              imp,impx,impy,impz,tix,tiy,tiz,  &
              jmp,jmpx,jmpy,jmpz,tjx,tjy,tjz,  &
-             enempol,fx,fy,fz,mpole)
+             enempol,fx,fy,fz,mpoles)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2032,14 +2032,14 @@ Module mpoles_container
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( mpole_type ), Intent( In    ) :: mpole
+    Type( mpole_type ), Intent( In    ) :: mpoles
     Integer,          Intent( In    ) :: torderlim,k1,k2,k3
 
     Real( Kind = wp), Intent( In    ) :: alpha, d1(-2:torderlim,-2:torderlim,-2:torderlim), &
                                                 a1(-2:torderlim,-2:torderlim,-2:torderlim)
 
-    Real( Kind = wp), Intent( In    ) :: imp(1:mpole%max_mpoles)
-    Real( Kind = wp), Intent( In    ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+    Real( Kind = wp), Intent( In    ) :: imp(1:mpoles%max_mpoles)
+    Real( Kind = wp), Intent( In    ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp), Intent( InOut ) :: tix,tiy,tiz
 
     Real( Kind = wp), Intent( In    ) :: jmp
@@ -2053,7 +2053,7 @@ Module mpoles_container
     Integer          :: ii,n,s1,s2,s3,ks1,ks2,ks3,ks11,ks21,ks31
     Real( Kind = wp) :: tmp,tmpi,tmpj,t1,t2,alphan,td,ta
 
-    If (mpole%max_order >= 0) Then
+    If (mpoles%max_order >= 0) Then
 
   !=======================================
        s1=0; s2=0; s3=0
@@ -2066,7 +2066,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2104,7 +2104,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 1) Then
+    If (mpoles%max_order >= 1) Then
 
   !=======================================
        s1=1; s2=0; s3=0
@@ -2117,7 +2117,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2164,7 +2164,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2211,7 +2211,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2249,7 +2249,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 2) Then
+    If (mpoles%max_order >= 2) Then
 
   !=======================================
        s1=2; s2=0; s3=0
@@ -2262,7 +2262,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2309,7 +2309,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2356,7 +2356,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2403,7 +2403,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2450,7 +2450,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2497,7 +2497,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2535,7 +2535,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 3) Then
+    If (mpoles%max_order >= 3) Then
 
   !=======================================
        s1=3; s2=0; s3=0
@@ -2548,7 +2548,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2595,7 +2595,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2642,7 +2642,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2689,7 +2689,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2736,7 +2736,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2783,7 +2783,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2830,7 +2830,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2877,7 +2877,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2924,7 +2924,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -2971,7 +2971,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3009,7 +3009,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order == 4) Then
+    If (mpoles%max_order == 4) Then
 
   !=======================================
        s1=4; s2=0; s3=0
@@ -3022,7 +3022,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3069,7 +3069,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3116,7 +3116,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3163,7 +3163,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3210,7 +3210,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3257,7 +3257,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3304,7 +3304,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3351,7 +3351,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3398,7 +3398,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3445,7 +3445,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3492,7 +3492,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3539,7 +3539,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3586,7 +3586,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3633,7 +3633,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3680,7 +3680,7 @@ Module mpoles_container
        n=ks1+ks2+ks3
        alphan=alpha**n
 
-       ii=mpole%map(s1,s2,s3)
+       ii=mpoles%map(s1,s2,s3)
        td=d1(ks1,ks2,ks3)
        ta=a1(ks1,ks2,ks3)
 
@@ -3722,7 +3722,7 @@ Module mpoles_container
 
   Subroutine explicit_spme_loops &
              (flag,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpole)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -3737,11 +3737,11 @@ Module mpoles_container
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( mpole_type ), Intent( In    ) :: mpole
+    Type( mpole_type ), Intent( In    ) :: mpoles
     Integer,          Intent( In    ) :: flag
     Real( Kind = wp), Intent( In    ) :: rcell(1:9)
-    Real( Kind = wp), Intent( In    ) :: imp(1:mpole%max_mpoles)
-    Real( Kind = wp), Intent( In    ) :: impx(1:mpole%max_mpoles),impy(1:mpole%max_mpoles),impz(1:mpole%max_mpoles)
+    Real( Kind = wp), Intent( In    ) :: imp(1:mpoles%max_mpoles)
+    Real( Kind = wp), Intent( In    ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp), Intent( In    ) :: bdx(0:mxspl),bdy(0:mxspl),bdz(0:mxspl)
     Real( Kind = wp), Intent(   Out ) :: dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3
 
@@ -3757,25 +3757,25 @@ Module mpoles_container
     dt1=0.0_wp ; dt2=0.0_wp ; dt3=0.0_wp ! force
     td1=0.0_wp ; td2=0.0_wp ; td3=0.0_wp ! torque
 
-    If (mpole%max_order >= 0) Then
+    If (mpoles%max_order >= 0) Then
 
   !===================================================
        s1=0; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -3785,16 +3785,16 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 1) Then
+    If (mpoles%max_order >= 1) Then
 
   !===================================================
        s1=1; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -3803,9 +3803,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -3817,10 +3817,10 @@ Module mpoles_container
        s1=0; s2=1; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -3829,9 +3829,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -3843,10 +3843,10 @@ Module mpoles_container
        s1=0; s2=0; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -3855,9 +3855,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -3867,16 +3867,16 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 2) Then
+    If (mpoles%max_order >= 2) Then
 
   !===================================================
        s1=2; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -3885,9 +3885,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -3899,10 +3899,10 @@ Module mpoles_container
        s1=0; s2=2; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -3911,9 +3911,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -3925,10 +3925,10 @@ Module mpoles_container
        s1=0; s2=0; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -3937,9 +3937,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -3951,10 +3951,10 @@ Module mpoles_container
        s1=1; s2=1; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -3968,9 +3968,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -3982,10 +3982,10 @@ Module mpoles_container
        s1=1; s2=0; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -3999,9 +3999,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4013,10 +4013,10 @@ Module mpoles_container
        s1=0; s2=1; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4030,9 +4030,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4042,16 +4042,16 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 3) Then
+    If (mpoles%max_order >= 3) Then
 
   !===================================================
        s1=3; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4060,9 +4060,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4074,10 +4074,10 @@ Module mpoles_container
        s1=0; s2=3; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4086,9 +4086,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4100,10 +4100,10 @@ Module mpoles_container
        s1=0; s2=0; s3=3
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4112,9 +4112,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4126,10 +4126,10 @@ Module mpoles_container
        s1=2; s2=1; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4143,9 +4143,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4157,10 +4157,10 @@ Module mpoles_container
        s1=2; s2=0; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4174,9 +4174,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4188,10 +4188,10 @@ Module mpoles_container
        s1=1; s2=2; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4205,9 +4205,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4219,10 +4219,10 @@ Module mpoles_container
        s1=1; s2=0; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4236,9 +4236,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4250,10 +4250,10 @@ Module mpoles_container
        s1=1; s2=1; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4268,9 +4268,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4282,10 +4282,10 @@ Module mpoles_container
        s1=0; s2=2; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4299,9 +4299,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4313,10 +4313,10 @@ Module mpoles_container
        s1=0; s2=1; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4330,9 +4330,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4342,16 +4342,16 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order == 4) Then
+    If (mpoles%max_order == 4) Then
 
   !===================================================
        s1=4; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4360,9 +4360,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4374,10 +4374,10 @@ Module mpoles_container
        s1=0; s2=4; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4386,9 +4386,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4400,10 +4400,10 @@ Module mpoles_container
        s1=0; s2=0; s3=4
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4412,9 +4412,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4426,10 +4426,10 @@ Module mpoles_container
        s1=3; s2=1; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4443,9 +4443,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4457,10 +4457,10 @@ Module mpoles_container
        s1=3; s2=0; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4474,9 +4474,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4488,10 +4488,10 @@ Module mpoles_container
        s1=2; s2=2; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4505,9 +4505,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4519,10 +4519,10 @@ Module mpoles_container
        s1=2; s2=0; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4536,9 +4536,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4550,10 +4550,10 @@ Module mpoles_container
        s1=2; s2=1; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4568,9 +4568,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4582,10 +4582,10 @@ Module mpoles_container
        s1=1; s2=3; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4599,9 +4599,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4613,10 +4613,10 @@ Module mpoles_container
        s1=1; s2=2; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4631,9 +4631,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4645,10 +4645,10 @@ Module mpoles_container
        s1=1; s2=1; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4663,9 +4663,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4677,10 +4677,10 @@ Module mpoles_container
        s1=1; s2=0; s3=3
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4694,9 +4694,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4708,10 +4708,10 @@ Module mpoles_container
        s1=0; s2=2; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4725,9 +4725,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4739,10 +4739,10 @@ Module mpoles_container
        s1=0; s2=3; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4756,9 +4756,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4770,10 +4770,10 @@ Module mpoles_container
        s1=0; s2=1; s3=3
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4787,9 +4787,9 @@ Module mpoles_container
 
        If (flag == 1) Then
 
-          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
-          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+          dt1 = dt1 + impt*Dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt2 = dt2 + impt*Dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+          dt3 = dt3 + impt*Dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
           td1 = td1 + impx(mm)*tmp
           td2 = td2 + impy(mm)*tmp
@@ -4801,7 +4801,7 @@ Module mpoles_container
 
   End Subroutine explicit_spme_loops
 
-  Subroutine explicit_spme_loop_s(rcell,bdx,bdy,bdz,imp,dtp,mpole)
+  Subroutine explicit_spme_loop_s(rcell,bdx,bdy,bdz,imp,dtp,mpoles)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -4815,10 +4815,10 @@ Module mpoles_container
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( mpole_type ), Intent( In    ) :: mpole
+    Type( mpole_type ), Intent( In    ) :: mpoles
     Real( Kind = wp), Intent( In    ) :: rcell(1:9)
     Real( Kind = wp), Intent( In    ) :: bdx(0:mxspl),bdy(0:mxspl),bdz(0:mxspl)
-    Real( Kind = wp), Intent( In    ) :: imp(1:mpole%max_mpoles)
+    Real( Kind = wp), Intent( In    ) :: imp(1:mpoles%max_mpoles)
     Real( Kind = wp), Intent(   Out ) :: dtp
 
   ! Local variables
@@ -4826,32 +4826,32 @@ Module mpoles_container
     Integer          :: mm,s1,s2,s3
     Real( Kind = wp) :: tmp,impt,tid
 
-    If (mpole%max_order >= 0) Then
+    If (mpoles%max_order >= 0) Then
 
   !===================================================
        s1=0; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
 
     End If
 
-    If (mpole%max_order >= 1) Then
+    If (mpoles%max_order >= 1) Then
 
   !===================================================
        s1=1; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4860,10 +4860,10 @@ Module mpoles_container
        s1=0; s2=1; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4872,26 +4872,26 @@ Module mpoles_container
        s1=0; s2=0; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
 
     End If
 
-    If (mpole%max_order >= 2) Then
+    If (mpoles%max_order >= 2) Then
 
   !===================================================
        s1=2; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4900,10 +4900,10 @@ Module mpoles_container
        s1=0; s2=2; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4912,10 +4912,10 @@ Module mpoles_container
        s1=0; s2=0; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4924,10 +4924,10 @@ Module mpoles_container
        s1=1; s2=1; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4936,10 +4936,10 @@ Module mpoles_container
        s1=1; s2=0; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4948,26 +4948,26 @@ Module mpoles_container
        s1=0; s2=1; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
 
     End If
 
-    If (mpole%max_order >= 3) Then
+    If (mpoles%max_order >= 3) Then
 
   !===================================================
        s1=3; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4976,10 +4976,10 @@ Module mpoles_container
        s1=0; s2=3; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -4988,10 +4988,10 @@ Module mpoles_container
        s1=0; s2=0; s3=3
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5000,10 +5000,10 @@ Module mpoles_container
        s1=2; s2=1; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5012,10 +5012,10 @@ Module mpoles_container
        s1=2; s2=0; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5024,10 +5024,10 @@ Module mpoles_container
        s1=1; s2=2; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5036,10 +5036,10 @@ Module mpoles_container
        s1=1; s2=0; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5048,10 +5048,10 @@ Module mpoles_container
        s1=1; s2=1; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5060,10 +5060,10 @@ Module mpoles_container
        s1=0; s2=2; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5072,26 +5072,26 @@ Module mpoles_container
        s1=0; s2=1; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
 
     End If
 
-    If (mpole%max_order == 4) Then
+    If (mpoles%max_order == 4) Then
 
   !===================================================
        s1=4; s2=0; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5100,10 +5100,10 @@ Module mpoles_container
        s1=0; s2=4; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5112,10 +5112,10 @@ Module mpoles_container
        s1=0; s2=0; s3=4
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5124,10 +5124,10 @@ Module mpoles_container
        s1=3; s2=1; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5136,10 +5136,10 @@ Module mpoles_container
        s1=3; s2=0; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5148,10 +5148,10 @@ Module mpoles_container
        s1=2; s2=2; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5160,10 +5160,10 @@ Module mpoles_container
        s1=2; s2=0; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5172,10 +5172,10 @@ Module mpoles_container
        s1=2; s2=1; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5184,10 +5184,10 @@ Module mpoles_container
        s1=1; s2=3; s3=0
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5196,10 +5196,10 @@ Module mpoles_container
        s1=1; s2=2; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5208,10 +5208,10 @@ Module mpoles_container
        s1=1; s2=1; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5220,10 +5220,10 @@ Module mpoles_container
        s1=1; s2=0; s3=3
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5232,10 +5232,10 @@ Module mpoles_container
        s1=0; s2=2; s3=2
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5244,10 +5244,10 @@ Module mpoles_container
        s1=0; s2=3; s3=1
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5256,10 +5256,10 @@ Module mpoles_container
        s1=0; s2=1; s3=3
   !===================================================
 
-       mm  = mpole%map(s1,s2,s3)
+       mm  = mpoles%map(s1,s2,s3)
        impt= imp(mm)
 
-       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpole%n_choose_k)
+       tmp = Dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
 
        tid = impt*tmp
        dtp = dtp + tid
@@ -5268,7 +5268,7 @@ Module mpoles_container
 
   End Subroutine explicit_spme_loop_s
 
-  Subroutine rotate_mpoles(iatm,mpole,comm)
+  Subroutine rotate_mpoles(iatm,mpoles,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -5284,13 +5284,13 @@ Module mpoles_container
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer, Intent( In    )  :: iatm
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( comms_type ), Intent( In    ) :: comm
 
   ! Local variables
 
     Integer           :: i,j,k,m,n,numnbh,idi,fail
-    Real( Kind = wp ) :: a(9),temp(1:mpole%max_mpoles),mpole_local(1:mpole%max_mpoles)
+    Real( Kind = wp ) :: a(9),temp(1:mpoles%max_mpoles),mpole_local(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: ai,ai3,ai6,aj3,aj6,ak3,ak6,am3,am6,                &
                          tmp,t1,t2,t3,t4,t5,t6,p1x,p1y,p1z,p2x,p2y,p2z,dpu, &
                          rrp1,rrp2,rrp3,rrp12,rrp22,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10
@@ -5301,15 +5301,15 @@ Module mpoles_container
 
   ! Now on to permanent multipoles
 
-    If (mpole%flg(iatm) == 1) Return ! multipole is already rotated
+    If (mpoles%flg(iatm) == 1) Return ! multipole is already rotated
 
-    mpole%flg(iatm) = 1
+    mpoles%flg(iatm) = 1
 
     idi = ltg(iatm)
 
-    If (mpole%max_order == 0) Then
+    If (mpoles%max_order == 0) Then
 
-       mpole%global_frame(:,iatm) = mpole%local_frame(:,lsite(iatm))
+       mpoles%global_frame(:,iatm) = mpoles%local_frame(:,lsite(iatm))
 
        Return
 
@@ -5320,23 +5320,23 @@ Module mpoles_container
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    If (mpole%rotation(iatm)%flag == 0) Then
+    If (mpoles%rotation(iatm)%flag == 0) Then
 
-       numnbh = mpole%ltp(0,iatm)
+       numnbh = mpoles%ltp(0,iatm)
 
        If (numnbh == 0) Then
 
-          mpole%global_frame(:,iatm) = mpole%local_frame(:,lsite(iatm))
+          mpoles%global_frame(:,iatm) = mpoles%local_frame(:,lsite(iatm))
 
           Return ! Atom has no bonds => global frame = local frame
 
        End If
 
-       mpole%rotation(iatm)%flag = 1
+       mpoles%rotation(iatm)%flag = 1
 
        If (numnbh == 1) Then
 
-          j    = local_index(mpole%ltp(1,iatm),nlast,lsi,lsa)
+          j    = local_index(mpoles%ltp(1,iatm),nlast,lsi,lsa)
 
           p1x  = xxx(j) - xxx(iatm)
           p1y  = yyy(j) - yyy(iatm)
@@ -5362,22 +5362,22 @@ Module mpoles_container
           a(6) = a(6)/rrp3
           a(9) = a(9)/rrp3
 
-          mpole%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
-          mpole%rotation(iatm)%p2 = (/-p1y, p1x, p1z /)
+          mpoles%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
+          mpoles%rotation(iatm)%p2 = (/-p1y, p1x, p1z /)
 
-          mpole%rotation(iatm)%mbnd(1) = j
-          mpole%rotation(iatm)%mbnd(2) = 0
+          mpoles%rotation(iatm)%mbnd(1) = j
+          mpoles%rotation(iatm)%mbnd(2) = 0
 
   ! Is there no torque when atom has only one bond?
 
-          mpole%rotation(iatm)%flag = 1
+          mpoles%rotation(iatm)%flag = 1
 
        End If
 
        If (numnbh == 2) Then
 
-          j    = local_index(mpole%ltp(1,iatm),nlast,lsi,lsa)
-          k    = local_index(mpole%ltp(2,iatm),nlast,lsi,lsa)
+          j    = local_index(mpoles%ltp(1,iatm),nlast,lsi,lsa)
+          k    = local_index(mpoles%ltp(2,iatm),nlast,lsi,lsa)
 
           p1x  = xxx(j) - xxx(iatm)
           p1y  = yyy(j) - yyy(iatm)
@@ -5404,11 +5404,11 @@ Module mpoles_container
 
              rrp1 = Sqrt(p1x**2+p1y**2+p1z**2)
 
-             mpole%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
-             mpole%rotation(iatm)%p2 = (/ p2x, p2y, p2z /)
+             mpoles%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
+             mpoles%rotation(iatm)%p2 = (/ p2x, p2y, p2z /)
 
-             mpole%rotation(iatm)%mbnd(1) = j
-             mpole%rotation(iatm)%mbnd(2) = k
+             mpoles%rotation(iatm)%mbnd(1) = j
+             mpoles%rotation(iatm)%mbnd(2) = k
 
              a(1) = p1x/rrp1
              a(4) = p1y/rrp1
@@ -5456,15 +5456,15 @@ Module mpoles_container
              a(6) = a(6)/rrp3
              a(9) = a(9)/rrp3
 
-             mpole%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
-             mpole%rotation(iatm)%p2 = (/-p1y, p1x, p1z /)
+             mpoles%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
+             mpoles%rotation(iatm)%p2 = (/-p1y, p1x, p1z /)
 
-             mpole%rotation(iatm)%mbnd(1) = j
-             mpole%rotation(iatm)%mbnd(2) = k
+             mpoles%rotation(iatm)%mbnd(1) = j
+             mpoles%rotation(iatm)%mbnd(2) = k
 
   ! Is there no torque when the bond angle is pi?
 
-             mpole%rotation(iatm)%flag = 1
+             mpoles%rotation(iatm)%flag = 1
 
           End If
 
@@ -5481,7 +5481,7 @@ Module mpoles_container
 
           Do i = 1,numnbh
 
-             j       = local_index(mpole%ltp(i,iatm),nlast,lsi,lsa)
+             j       = local_index(mpoles%ltp(i,iatm),nlast,lsi,lsa)
 
              xxt(i)  = xxx(j) - xxx(iatm)
              yyt(i)  = yyy(j) - yyy(iatm)
@@ -5508,8 +5508,8 @@ Module mpoles_container
 
           End Do
 
-          mpole%rotation(iatm)%mbnd(1) = k
-          mpole%rotation(iatm)%mbnd(2) = m
+          mpoles%rotation(iatm)%mbnd(1) = k
+          mpoles%rotation(iatm)%mbnd(2) = m
 
           p1x  = xxt(k) + xxt(m)
           p1y  = yyt(k) + yyt(m)
@@ -5517,8 +5517,8 @@ Module mpoles_container
 
           rrp1 = Sqrt(p1x**2+p1y**2+p1z**2)
 
-          mpole%rotation(iatm)%p1 = (/ p1x,    p1y,    p1z    /)
-          mpole%rotation(iatm)%p2 = (/ xxt(m), yyt(m), zzt(m) /)
+          mpoles%rotation(iatm)%p1 = (/ p1x,    p1y,    p1z    /)
+          mpoles%rotation(iatm)%p2 = (/ xxt(m), yyt(m), zzt(m) /)
 
           a(1) = p1x/rrp1
           a(4) = p1y/rrp1
@@ -5554,11 +5554,11 @@ Module mpoles_container
 
        End If
 
-       mpole%rotation(iatm)%mtrxa = a
+       mpoles%rotation(iatm)%mtrxa = a
 
     Else
 
-       a = mpole%rotation(iatm)%mtrxa
+       a = mpoles%rotation(iatm)%mtrxa
 
     End If
 
@@ -5568,7 +5568,7 @@ Module mpoles_container
 
   ! get the local multipoles based on atom type
 
-    mpole_local(:)=mpole%local_frame(:,lsite(iatm))
+    mpole_local(:)=mpoles%local_frame(:,lsite(iatm))
 
     temp=0.0_wp
 
@@ -5576,7 +5576,7 @@ Module mpoles_container
 
     temp(1)=mpole_local(1)
 
-    If (mpole%max_order >= 1) Then
+    If (mpoles%max_order >= 1) Then
 
   ! rotate dipoles
 
@@ -5586,7 +5586,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 2) Then
+    If (mpoles%max_order >= 2) Then
 
   ! rotate quadrupoles
 
@@ -5598,7 +5598,7 @@ Module mpoles_container
           Do j = 1, 3
              k = k + 1 ; aj3=a(j+3 ); aj6=a(j+6)
 
-             tmp = mpole_local(mpole%ltg(k))
+             tmp = mpole_local(mpoles%ltg(k))
 
              temp(5)  = temp(5)  + ai  * a(j) * tmp !Q_xx
              temp(6)  = temp(6)  + ai  * aj3  * tmp !Q_xy
@@ -5620,7 +5620,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 3) Then
+    If (mpoles%max_order >= 3) Then
 
   ! rotate octupoles
 
@@ -5639,7 +5639,7 @@ Module mpoles_container
              Do k = 1, 3
                 m = m + 1; ak3=a(k+3); ak6=a(k+6)
 
-                tmp = mpole_local(mpole%ltg(m))
+                tmp = mpole_local(mpoles%ltg(m))
 
                 temp(11) = temp(11) + t1 * a(k) * tmp !O_xxx
                 temp(12) = temp(12) + t1 * ak3  * tmp !O_xxy
@@ -5670,7 +5670,7 @@ Module mpoles_container
 
     End If
 
-    If (mpole%max_order >= 4) Then
+    If (mpoles%max_order >= 4) Then
 
   ! rotate hexadecapoles
 
@@ -5698,7 +5698,7 @@ Module mpoles_container
                 Do m = 1, 3
                    n = n + 1 ; am3 = a(m+3); am6 = a(m+6)
 
-                   tmp = mpole_local(mpole%ltg(n))
+                   tmp = mpole_local(mpoles%ltg(n))
 
                    temp(21) = temp(21) + s1  * a(m) * tmp !H_xxxx
                    temp(22) = temp(22) + s1  * am3  * tmp !H_xxxy
@@ -5741,18 +5741,18 @@ Module mpoles_container
 
     End If
 
-    mpole%global_frame(:,iatm) = temp
+    mpoles%global_frame(:,iatm) = temp
 
   ! Find infinitesimal rotation of global multipoles
   !==================================================
 
-    Call infinitesimal_rotation(iatm,mpole)
+    Call infinitesimal_rotation(iatm,mpoles)
 
   !===================================================
 
   End Subroutine rotate_mpoles
 
-  Subroutine infinitesimal_rotation(iatm,mpole)
+  Subroutine infinitesimal_rotation(iatm,mpoles)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -5776,13 +5776,13 @@ Module mpoles_container
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer, Intent( In    )  :: iatm
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
 
   ! Local variables
 
     Integer          :: i,j,k,m,n,ll
     Real( Kind = wp) :: uni(1:9),irotdir(1:9,1:3),irot(1:9), &
-                        mpole_local(1:mpole%max_mpoles),temp(1:mpole%max_mpoles)
+                        mpole_local(1:mpoles%max_mpoles),temp(1:mpoles%max_mpoles)
     Real( Kind = wp) :: tmp,ai,ai3,ai6,aj3,aj6,ak3,ak6,am3,am6,           &
                         bi,bi3,bi6,bj3,bj6,bk3,bk6,bm3,bm6,               &
                         t1,t2,t3,t4,t5,t6,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10, &
@@ -5798,7 +5798,7 @@ Module mpoles_container
     irotdir(1:9,2) = (/ 0.0_wp , 0.0_wp ,-1.0_wp , 0.0_wp , 0.0_wp , 0.0_wp , 1.0_wp , 0.0_wp , 0.0_wp /)
     irotdir(1:9,3) = (/ 0.0_wp , 1.0_wp , 0.0_wp ,-1.0_wp , 0.0_wp , 0.0_wp , 0.0_wp , 0.0_wp , 0.0_wp /)
 
-    mpole_local = mpole%global_frame(:,iatm)
+    mpole_local = mpoles%global_frame(:,iatm)
 
     Do ll=1,3
 
@@ -5808,7 +5808,7 @@ Module mpoles_container
 
   ! infinitesimal rotation has no effect on charge/monopole => temp(1)=0.0_wp
 
-       If (mpole%max_order >= 1) Then
+       If (mpoles%max_order >= 1) Then
 
   ! rotate dipoles
 
@@ -5818,7 +5818,7 @@ Module mpoles_container
 
        End If
 
-       If (mpole%max_order >= 2) Then
+       If (mpoles%max_order >= 2) Then
 
   ! rotate quadrupoles
 
@@ -5834,7 +5834,7 @@ Module mpoles_container
 
                 k = k + 1
 
-                tmp = mpole_local(mpole%ltg(k))
+                tmp = mpole_local(mpoles%ltg(k))
 
                 temp(5)  = temp(5)  + (ai  * irot(j) + bi  * uni(j)) * tmp !Q_xx
                 temp(6)  = temp(6)  + (ai  * aj3     + bi  * bj3   ) * tmp !Q_xy
@@ -5849,7 +5849,7 @@ Module mpoles_container
 
        End If
 
-       If (mpole%max_order >= 3) Then
+       If (mpoles%max_order >= 3) Then
 
   ! rotate octupoles
 
@@ -5877,7 +5877,7 @@ Module mpoles_container
 
                    m = m + 1
 
-                   tmp = mpole_local(mpole%ltg(m))
+                   tmp = mpole_local(mpoles%ltg(m))
 
                    temp(11) = temp(11) + (t1 * irot(k) + s1 * uni(k)) * tmp !O_xxx
                    temp(12) = temp(12) + (t1 * ak3     + s1 * bk3   ) * tmp !O_xxy
@@ -5899,7 +5899,7 @@ Module mpoles_container
 
        End If
 
-       If (mpole%max_order >= 4) Then
+       If (mpoles%max_order >= 4) Then
 
   ! rotate hexadecapoles
 
@@ -5945,7 +5945,7 @@ Module mpoles_container
 
                       n = n + 1
 
-                      tmp = mpole_local(mpole%ltg(n))
+                      tmp = mpole_local(mpoles%ltg(n))
 
                       temp(21) = temp(21) + (s1  * irot(m) + r1  * uni(m)) * tmp !H_xxxx
                       temp(22) = temp(22) + (s1  * am3     + r1  * bm3   ) * tmp !H_xxxy
@@ -5978,15 +5978,15 @@ Module mpoles_container
 
        End If
 
-       If (ll == 1) mpole%rotation_x(:,iatm) = temp
-       If (ll == 2) mpole%rotation_y(:,iatm) = temp
-       If (ll == 3) mpole%rotation_z(:,iatm) = temp
+       If (ll == 1) mpoles%rotation_x(:,iatm) = temp
+       If (ll == 2) mpoles%rotation_y(:,iatm) = temp
+       If (ll == 3) mpoles%rotation_z(:,iatm) = temp
 
     End Do
 
   End Subroutine infinitesimal_rotation
 
-  Subroutine rotate_mpoles_d(iatm,mpole,comm)
+  Subroutine rotate_mpoles_d(iatm,mpoles,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -6002,13 +6002,13 @@ Module mpoles_container
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer, Intent( In    )  :: iatm
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( comms_type ), Intent( In    ) :: comm
 
   ! Local variables
 
     Integer          :: i,j,k,m,numnbh,idi,fail
-    Real( Kind = wp) :: temp1,temp2,temp3,temp4,temp5,temp6,mpole_local(1:mpole%max_mpoles)
+    Real( Kind = wp) :: temp1,temp2,temp3,temp4,temp5,temp6,mpole_local(1:mpoles%max_mpoles)
     Real( Kind = wp) :: a1,a2,a3,a4,a5,a6,a7,a8,a9,           &
                         tt2,tt3,tt4,tt5,tt6,tt7,tt8,tt9,tt10, &
                         p1x,p1y,p1z,p2x,p2y,p2z,dpu,          &
@@ -6020,15 +6020,15 @@ Module mpoles_container
 
   ! Now on to permanent multipoles
 
-    If (mpole%flg(iatm) == 1) Return ! multipole is already rotated
+    If (mpoles%flg(iatm) == 1) Return ! multipole is already rotated
 
-    mpole%flg(iatm) = 1
+    mpoles%flg(iatm) = 1
 
     idi = ltg(iatm)
 
-    If (mpole%max_order == 0) Then
+    If (mpoles%max_order == 0) Then
 
-       mpole%global_frame(:,iatm) = mpole%local_frame(:,lsite(iatm))
+       mpoles%global_frame(:,iatm) = mpoles%local_frame(:,lsite(iatm))
 
        Return
 
@@ -6039,23 +6039,23 @@ Module mpoles_container
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    If (mpole%rotation(iatm)%flag == 0) Then
+    If (mpoles%rotation(iatm)%flag == 0) Then
 
-       numnbh = mpole%ltp(0,iatm)
+       numnbh = mpoles%ltp(0,iatm)
 
        If (numnbh == 0) Then
 
-          mpole%global_frame(:,iatm) = mpole%local_frame(:,lsite(iatm))
+          mpoles%global_frame(:,iatm) = mpoles%local_frame(:,lsite(iatm))
 
           Return ! Atom has no bonds => global frame = local frame
 
        End If
 
-       mpole%rotation(iatm)%flag = 1
+       mpoles%rotation(iatm)%flag = 1
 
        If (numnbh == 1) Then
 
-          j    = local_index(mpole%ltp(1,iatm),nlast,lsi,lsa)
+          j    = local_index(mpoles%ltp(1,iatm),nlast,lsi,lsa)
 
           p1x  = xxx(j) - xxx(iatm)
           p1y  = yyy(j) - yyy(iatm)
@@ -6081,22 +6081,22 @@ Module mpoles_container
           a6   = a6/rrp3
           a9   = a9/rrp3
 
-          mpole%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
-          mpole%rotation(iatm)%p2 = (/-p1y, p1x, p1z /)
+          mpoles%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
+          mpoles%rotation(iatm)%p2 = (/-p1y, p1x, p1z /)
 
-          mpole%rotation(iatm)%mbnd(1) = j
-          mpole%rotation(iatm)%mbnd(2) = 0
+          mpoles%rotation(iatm)%mbnd(1) = j
+          mpoles%rotation(iatm)%mbnd(2) = 0
 
   ! Is there no torque when atom has only one bond?
 
-          mpole%rotation(iatm)%flag = 1
+          mpoles%rotation(iatm)%flag = 1
 
        End If
 
        If (numnbh == 2) Then
 
-          j    = local_index(mpole%ltp(1,iatm),nlast,lsi,lsa)
-          k    = local_index(mpole%ltp(2,iatm),nlast,lsi,lsa)
+          j    = local_index(mpoles%ltp(1,iatm),nlast,lsi,lsa)
+          k    = local_index(mpoles%ltp(2,iatm),nlast,lsi,lsa)
 
           p1x  = xxx(j) - xxx(iatm)
           p1y  = yyy(j) - yyy(iatm)
@@ -6123,11 +6123,11 @@ Module mpoles_container
 
              rrp1 = Sqrt(p1x**2+p1y**2+p1z**2)
 
-             mpole%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
-             mpole%rotation(iatm)%p2 = (/ p2x, p2y, p2z /)
+             mpoles%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
+             mpoles%rotation(iatm)%p2 = (/ p2x, p2y, p2z /)
 
-             mpole%rotation(iatm)%mbnd(1) = j
-             mpole%rotation(iatm)%mbnd(2) = k
+             mpoles%rotation(iatm)%mbnd(1) = j
+             mpoles%rotation(iatm)%mbnd(2) = k
 
              a1   = p1x/rrp1
              a4   = p1y/rrp1
@@ -6175,15 +6175,15 @@ Module mpoles_container
              a6   = a6/rrp3
              a9   = a9/rrp3
 
-             mpole%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
-             mpole%rotation(iatm)%p2 = (/-p1y, p1x, p1z /)
+             mpoles%rotation(iatm)%p1 = (/ p1x, p1y, p1z /)
+             mpoles%rotation(iatm)%p2 = (/-p1y, p1x, p1z /)
 
-             mpole%rotation(iatm)%mbnd(1) = j
-             mpole%rotation(iatm)%mbnd(2) = k
+             mpoles%rotation(iatm)%mbnd(1) = j
+             mpoles%rotation(iatm)%mbnd(2) = k
 
   ! Is there no torque when the bond angle is pi?
 
-             mpole%rotation(iatm)%flag = 1
+             mpoles%rotation(iatm)%flag = 1
 
           End If
 
@@ -6200,7 +6200,7 @@ Module mpoles_container
 
           Do i = 1,numnbh
 
-             j       = local_index(mpole%ltp(i,iatm),nlast,lsi,lsa)
+             j       = local_index(mpoles%ltp(i,iatm),nlast,lsi,lsa)
 
              xxt(i)  = xxx(j) - xxx(iatm)
              yyt(i)  = yyy(j) - yyy(iatm)
@@ -6227,8 +6227,8 @@ Module mpoles_container
 
           End Do
 
-          mpole%rotation(iatm)%mbnd(1) = k
-          mpole%rotation(iatm)%mbnd(2) = m
+          mpoles%rotation(iatm)%mbnd(1) = k
+          mpoles%rotation(iatm)%mbnd(2) = m
 
           p1x  = xxt(k) + xxt(m)
           p1y  = yyt(k) + yyt(m)
@@ -6236,8 +6236,8 @@ Module mpoles_container
 
           rrp1 = Sqrt(p1x**2+p1y**2+p1z**2)
 
-          mpole%rotation(iatm)%p1 = (/ p1x   , p1y   , p1z    /)
-          mpole%rotation(iatm)%p2 = (/ xxt(m), yyt(m), zzt(m) /)
+          mpoles%rotation(iatm)%p1 = (/ p1x   , p1y   , p1z    /)
+          mpoles%rotation(iatm)%p2 = (/ xxt(m), yyt(m), zzt(m) /)
 
           a1   = p1x/rrp1
           a4   = p1y/rrp1
@@ -6273,15 +6273,15 @@ Module mpoles_container
 
        End If
 
-       mpole%rotation(iatm)%mtrxa(1) = a1 ; mpole%rotation(iatm)%mtrxa(2) = a2 ; mpole%rotation(iatm)%mtrxa(3) = a3
-       mpole%rotation(iatm)%mtrxa(4) = a4 ; mpole%rotation(iatm)%mtrxa(5) = a5 ; mpole%rotation(iatm)%mtrxa(6) = a6
-       mpole%rotation(iatm)%mtrxa(7) = a7 ; mpole%rotation(iatm)%mtrxa(8) = a2 ; mpole%rotation(iatm)%mtrxa(9) = a9
+       mpoles%rotation(iatm)%mtrxa(1) = a1 ; mpoles%rotation(iatm)%mtrxa(2) = a2 ; mpoles%rotation(iatm)%mtrxa(3) = a3
+       mpoles%rotation(iatm)%mtrxa(4) = a4 ; mpoles%rotation(iatm)%mtrxa(5) = a5 ; mpoles%rotation(iatm)%mtrxa(6) = a6
+       mpoles%rotation(iatm)%mtrxa(7) = a7 ; mpoles%rotation(iatm)%mtrxa(8) = a2 ; mpoles%rotation(iatm)%mtrxa(9) = a9
 
     Else
 
-       a1 = mpole%rotation(iatm)%mtrxa(1) ; a2 = mpole%rotation(iatm)%mtrxa(2) ; a3 = mpole%rotation(iatm)%mtrxa(3)
-       a4 = mpole%rotation(iatm)%mtrxa(4) ; a5 = mpole%rotation(iatm)%mtrxa(5) ; a6 = mpole%rotation(iatm)%mtrxa(6)
-       a7 = mpole%rotation(iatm)%mtrxa(7) ; a8 = mpole%rotation(iatm)%mtrxa(8) ; a9 = mpole%rotation(iatm)%mtrxa(9)
+       a1 = mpoles%rotation(iatm)%mtrxa(1) ; a2 = mpoles%rotation(iatm)%mtrxa(2) ; a3 = mpoles%rotation(iatm)%mtrxa(3)
+       a4 = mpoles%rotation(iatm)%mtrxa(4) ; a5 = mpoles%rotation(iatm)%mtrxa(5) ; a6 = mpoles%rotation(iatm)%mtrxa(6)
+       a7 = mpoles%rotation(iatm)%mtrxa(7) ; a8 = mpoles%rotation(iatm)%mtrxa(8) ; a9 = mpoles%rotation(iatm)%mtrxa(9)
 
     End If
 
@@ -6291,25 +6291,25 @@ Module mpoles_container
 
   ! get the local multipoles based on atom type
 
-    mpole_local(:) = mpole%local_frame(:,lsite(iatm))
+    mpole_local(:) = mpoles%local_frame(:,lsite(iatm))
 
   ! rotate monopole
 
-    mpole%global_frame(1,iatm) = mpole_local(1)
+    mpoles%global_frame(1,iatm) = mpole_local(1)
 
-    If (mpole%max_order >= 1) Then
+    If (mpoles%max_order >= 1) Then
 
   ! rotate dipoles
 
        tt2=mpole_local(2) ; tt3=mpole_local(3) ; tt4=mpole_local(4)
 
-       mpole%global_frame(2,iatm)  = a1*tt2 + a2*tt3 + a3*tt4
-       mpole%global_frame(3,iatm)  = a4*tt2 + a5*tt3 + a6*tt4
-       mpole%global_frame(4,iatm)  = a7*tt2 + a8*tt3 + a9*tt4
+       mpoles%global_frame(2,iatm)  = a1*tt2 + a2*tt3 + a3*tt4
+       mpoles%global_frame(3,iatm)  = a4*tt2 + a5*tt3 + a6*tt4
+       mpoles%global_frame(4,iatm)  = a7*tt2 + a8*tt3 + a9*tt4
 
     End If
 
-    If (mpole%max_order == 2) Then
+    If (mpoles%max_order == 2) Then
 
   ! rotate quadrupoles
 
@@ -6319,76 +6319,76 @@ Module mpoles_container
        temp1 = a4*tt5+a5*tt6+a6*tt7 ; temp2=a4*tt6+a5*tt8+a6*tt9 ; temp3 = a4*tt7+a5*tt9+a6*tt10
        temp4 = a7*tt5+a8*tt6+a9*tt7 ; temp5=a7*tt6+a8*tt8+a9*tt9 ; temp6 = a7*tt7+a8*tt9+a9*tt10
 
-       mpole%global_frame(5,iatm)  =         a1*(a1*tt5+a2*tt6+a3*tt7) + &
+       mpoles%global_frame(5,iatm)  =         a1*(a1*tt5+a2*tt6+a3*tt7) + &
                                  a2*(a1*tt6+a2*tt8+a3*tt9) + &
                                  a3*(a1*tt7+a2*tt9+a3*tt10)
-       mpole%global_frame(6,iatm)  = 2.0_wp*(a1*temp1+a2*temp2+a3*temp3)
-       mpole%global_frame(7,iatm)  = 2.0_wp*(a1*temp4+a2*temp5+a3*temp6)
-       mpole%global_frame(8,iatm)  =         a4*temp1+a5*temp2+a6*temp3
-       mpole%global_frame(9,iatm)  = 2.0_wp*(a4*temp4+a5*temp5+a6*temp6)
-       mpole%global_frame(10,iatm) =         a7*temp4+a8*temp5+a9*temp6
+       mpoles%global_frame(6,iatm)  = 2.0_wp*(a1*temp1+a2*temp2+a3*temp3)
+       mpoles%global_frame(7,iatm)  = 2.0_wp*(a1*temp4+a2*temp5+a3*temp6)
+       mpoles%global_frame(8,iatm)  =         a4*temp1+a5*temp2+a6*temp3
+       mpoles%global_frame(9,iatm)  = 2.0_wp*(a4*temp4+a5*temp5+a6*temp6)
+       mpoles%global_frame(10,iatm) =         a7*temp4+a8*temp5+a9*temp6
 
     End If
 
-    mpole_local(:) = mpole%global_frame(:,iatm)
+    mpole_local(:) = mpoles%global_frame(:,iatm)
 
   ! Find infinitesimal rotation of global multipoles
   !==================================================
 
-    mpole%rotation_x(1,iatm) = 0.0_wp
-    mpole%rotation_y(1,iatm) = 0.0_wp
-    mpole%rotation_z(1,iatm) = 0.0_wp
+    mpoles%rotation_x(1,iatm) = 0.0_wp
+    mpoles%rotation_y(1,iatm) = 0.0_wp
+    mpoles%rotation_z(1,iatm) = 0.0_wp
 
-    If (mpole%max_order >= 1) Then
+    If (mpoles%max_order >= 1) Then
 
   ! x-coordinate
 
-       mpole%rotation_x(2,iatm)  = 0.0_wp;
-       mpole%rotation_x(3,iatm)  = mpole_local(4)
-       mpole%rotation_x(4,iatm)  =-mpole_local(3)
+       mpoles%rotation_x(2,iatm)  = 0.0_wp;
+       mpoles%rotation_x(3,iatm)  = mpole_local(4)
+       mpoles%rotation_x(4,iatm)  =-mpole_local(3)
 
   ! y-coordinate
 
-       mpole%rotation_y(2,iatm)  =-mpole_local(4)
-       mpole%rotation_y(3,iatm)  = 0.0_wp
-       mpole%rotation_y(4,iatm)  = mpole_local(2)
+       mpoles%rotation_y(2,iatm)  =-mpole_local(4)
+       mpoles%rotation_y(3,iatm)  = 0.0_wp
+       mpoles%rotation_y(4,iatm)  = mpole_local(2)
 
   ! z-coordinate
 
-       mpole%rotation_z(2,iatm)  = mpole_local(3)
-       mpole%rotation_z(3,iatm)  =-mpole_local(2)
-       mpole%rotation_z(4,iatm)  = 0.0_wp
+       mpoles%rotation_z(2,iatm)  = mpole_local(3)
+       mpoles%rotation_z(3,iatm)  =-mpole_local(2)
+       mpoles%rotation_z(4,iatm)  = 0.0_wp
 
     End If
 
-    If (mpole%max_order == 2) Then
+    If (mpoles%max_order == 2) Then
 
   ! x-coordinate
 
-       mpole%rotation_x(5,iatm)  = 0.0_wp
-       mpole%rotation_x(6,iatm)  = mpole_local(7)
-       mpole%rotation_x(7,iatm)  =-mpole_local(6)
-       mpole%rotation_x(8,iatm)  = 2.0_wp*mpole_local(9)
-       mpole%rotation_x(9,iatm)  = mpole_local(10)-mpole_local(8)
-       mpole%rotation_x(10,iatm) =-2.0_wp*mpole_local(9)
+       mpoles%rotation_x(5,iatm)  = 0.0_wp
+       mpoles%rotation_x(6,iatm)  = mpole_local(7)
+       mpoles%rotation_x(7,iatm)  =-mpole_local(6)
+       mpoles%rotation_x(8,iatm)  = 2.0_wp*mpole_local(9)
+       mpoles%rotation_x(9,iatm)  = mpole_local(10)-mpole_local(8)
+       mpoles%rotation_x(10,iatm) =-2.0_wp*mpole_local(9)
 
   ! y-coordinate
 
-       mpole%rotation_y(5,iatm)  =-2.0_wp*mpole_local(7)
-       mpole%rotation_y(6,iatm)  =-mpole_local(9)
-       mpole%rotation_y(7,iatm)  = mpole_local(5)-mpole_local(10)
-       mpole%rotation_y(8,iatm)  = 0.0_wp
-       mpole%rotation_y(9,iatm)  = mpole_local(6)
-       mpole%rotation_y(10,iatm) = 2.0_wp*mpole_local(7)
+       mpoles%rotation_y(5,iatm)  =-2.0_wp*mpole_local(7)
+       mpoles%rotation_y(6,iatm)  =-mpole_local(9)
+       mpoles%rotation_y(7,iatm)  = mpole_local(5)-mpole_local(10)
+       mpoles%rotation_y(8,iatm)  = 0.0_wp
+       mpoles%rotation_y(9,iatm)  = mpole_local(6)
+       mpoles%rotation_y(10,iatm) = 2.0_wp*mpole_local(7)
 
   ! z-coordinate
 
-       mpole%rotation_z(5,iatm)  = 2.0_wp*mpole_local(6)
-       mpole%rotation_z(6,iatm)  = mpole_local(8)-mpole_local(5)
-       mpole%rotation_z(7,iatm)  = mpole_local(9)
-       mpole%rotation_z(8,iatm)  =-2.0_wp*mpole_local(6)
-       mpole%rotation_z(9,iatm)  =-mpole_local(7)
-       mpole%rotation_z(10,iatm) = 0.0_wp
+       mpoles%rotation_z(5,iatm)  = 2.0_wp*mpole_local(6)
+       mpoles%rotation_z(6,iatm)  = mpole_local(8)-mpole_local(5)
+       mpoles%rotation_z(7,iatm)  = mpole_local(9)
+       mpoles%rotation_z(8,iatm)  =-2.0_wp*mpole_local(6)
+       mpoles%rotation_z(9,iatm)  =-mpole_local(7)
+       mpoles%rotation_z(10,iatm) = 0.0_wp
 
     End If
 

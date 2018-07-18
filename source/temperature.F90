@@ -31,7 +31,7 @@ Contains
              nstep,nstrun, &
              atmfre,atmfrz,            &
              degtra,degrot,     &
-             degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minimise,rigid,comm)
+             degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minim,rigid,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -54,7 +54,7 @@ Contains
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type( minimise_type ), Intent( In    ) :: minimise
+    Type( minimise_type ), Intent( In    ) :: minim
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -512,7 +512,7 @@ Contains
   ! Detect pure molecular statics only == CGM minimisation at zero timestep
   ! and no rescaling
 
-       no_min_0 = .not.(minimise%minimise .and. minimise%freq == 0 .and. nstep == 0 .and. nstrun == 0 .and. keyres == 2)
+       no_min_0 = .not.(minim%minimise .and. minim%freq == 0 .and. nstep == 0 .and. nstrun == 0 .and. keyres == 2)
 
   ! quench constraints & PMFs
 

@@ -54,7 +54,7 @@ Module tersoff
     Real( Kind = wp ), Allocatable :: vmbp(:,:,:)
     Real( Kind = wp ), Allocatable :: gmbp(:,:,:)
 
-    !> Potential cutoff for particular interactions, replaces tersoff%vmbp(-1,*,1)
+    !> Potential cutoff for particular interactions, replaces tersoffs%vmbp(-1,*,1)
     Real( Kind = wp ), Allocatable :: cut(:)
 
     !> Maximum number of Tersoff interactions
@@ -113,7 +113,7 @@ Contains
 
   End Subroutine allocate_tersoff_arrays
 
-  Subroutine tersoff_forces(tersoff,stats,neigh,comm)
+  Subroutine tersoff_forces(tersoffs,stats,neigh,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -136,7 +136,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( tersoff_type ), Intent( InOut )  :: tersoff
+  Type( tersoff_type ), Intent( InOut )  :: tersoffs
   Type( stats_type ), Intent( InOut )  :: stats
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( comms_type ), Intent( InOut )  :: comm
@@ -183,7 +183,7 @@ Contains
   Character( Len = 256 ) :: message
 ! Get reciprocal of interpolation interval
 
-  rdr=Real(tersoff%max_grid-4,wp)/tersoff%cutoff
+  rdr=Real(tersoffs%max_grid-4,wp)/tersoffs%cutoff
 
 ! Get the dimensional properties of the MD cell
 
@@ -191,9 +191,9 @@ Contains
 
 ! Calculate the number of link-cells per domain in every direction
 
-  nbx=Int(r_nprx*celprp(7)/(tersoff%cutoff+1.0e-6_wp))
-  nby=Int(r_npry*celprp(8)/(tersoff%cutoff+1.0e-6_wp))
-  nbz=Int(r_nprz*celprp(9)/(tersoff%cutoff+1.0e-6_wp))
+  nbx=Int(r_nprx*celprp(7)/(tersoffs%cutoff+1.0e-6_wp))
+  nby=Int(r_npry*celprp(8)/(tersoffs%cutoff+1.0e-6_wp))
+  nbz=Int(r_nprz*celprp(9)/(tersoffs%cutoff+1.0e-6_wp))
 
 ! check for link cell algorithm violations
 
@@ -213,7 +213,7 @@ Contains
   Allocate (ert(1:neigh%max_list),eat(1:neigh%max_list),grt(1:neigh%max_list),gat(1:neigh%max_list),     Stat=fail(4))
   Allocate (scr(1:neigh%max_list),gcr(1:neigh%max_list),                                 Stat=fail(5))
   Allocate (cst(1:neigh%max_list),gam(1:neigh%max_list),gvr(1:neigh%max_list),                   Stat=fail(6))
-  If (tersoff%key_pot == 2) Allocate (rkj(1:neigh%max_list),wkj(1:neigh%max_list),                Stat=fail(7))
+  If (tersoffs%key_pot == 2) Allocate (rkj(1:neigh%max_list),wkj(1:neigh%max_list),                Stat=fail(7))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'tersoff_forces allocation failure'
      Call error(0,message)
@@ -245,7 +245,7 @@ Contains
 ! the left-most link-cell
 
   Do i=1,nlast
-     If (tersoff%lfr(ltype(i))) Then
+     If (tersoffs%lfr(ltype(i))) Then
         xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
         yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
         zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
@@ -282,7 +282,7 @@ Contains
 !***************************************************************
 
   Do i=1,nlast
-     If (tersoff%lfr(ltype(i))) Then
+     If (tersoffs%lfr(ltype(i))) Then
 
 ! Push cell coordinates accordingly
 
@@ -441,7 +441,7 @@ Contains
 ! index of the primary atom (and table type)
 
                  iatm=listin(ii)
-                 iter=tersoff%list(ltype(iatm))
+                 iter=tersoffs%list(ltype(iatm))
 
 ! bypass if primary atom type is not involved in interaction
 
@@ -469,7 +469,7 @@ Contains
 ! index of the secondary atom
 
                        jatm=listin(jj)
-                       jter=tersoff%list(ltype(jatm))
+                       jter=tersoffs%list(ltype(jatm))
 
 ! bypass if secondary atom type is not involved in interaction
 
@@ -495,7 +495,7 @@ Contains
 
 ! if pair is within cutoff
 
-                          If (rtf(jj) <= tersoff%cut(ijter)) Then
+                          If (rtf(jj) <= tersoffs%cut(ijter)) Then
 
 ! if pair is not frozen
 
@@ -506,9 +506,9 @@ Contains
 
 ! interpolate screening function
 
-                                vk0 = tersoff%vmbp(ll,  ijter,1)
-                                vk1 = tersoff%vmbp(ll+1,ijter,1)
-                                vk2 = tersoff%vmbp(ll+2,ijter,1)
+                                vk0 = tersoffs%vmbp(ll,  ijter,1)
+                                vk1 = tersoffs%vmbp(ll+1,ijter,1)
+                                vk2 = tersoffs%vmbp(ll+2,ijter,1)
 
                                 t1 = vk0 + (vk1 - vk0)*ppp
                                 t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -517,9 +517,9 @@ Contains
 
 ! interpolate derivative of screening function
 
-                                gk0 = tersoff%gmbp(ll,  ijter,1)
-                                gk1 = tersoff%gmbp(ll+1,ijter,1)
-                                gk2 = tersoff%gmbp(ll+2,ijter,1)
+                                gk0 = tersoffs%gmbp(ll,  ijter,1)
+                                gk1 = tersoffs%gmbp(ll+1,ijter,1)
+                                gk2 = tersoffs%gmbp(ll+2,ijter,1)
 
                                 t1 = gk0 + (gk1 - gk0)*ppp
                                 t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
@@ -528,9 +528,9 @@ Contains
 
 ! interpolate repulsive component of energy
 
-                                vk0 = tersoff%vmbp(ll,  ijter,2)
-                                vk1 = tersoff%vmbp(ll+1,ijter,2)
-                                vk2 = tersoff%vmbp(ll+2,ijter,2)
+                                vk0 = tersoffs%vmbp(ll,  ijter,2)
+                                vk1 = tersoffs%vmbp(ll+1,ijter,2)
+                                vk2 = tersoffs%vmbp(ll+2,ijter,2)
 
                                 t1 = vk0 + (vk1 - vk0)*ppp
                                 t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -539,9 +539,9 @@ Contains
 
 ! interpolate derivative of repulsive function
 
-                                gk0 = tersoff%gmbp(ll,  ijter,2)
-                                gk1 = tersoff%gmbp(ll+1,ijter,2)
-                                gk2 = tersoff%gmbp(ll+2,ijter,2)
+                                gk0 = tersoffs%gmbp(ll,  ijter,2)
+                                gk1 = tersoffs%gmbp(ll+1,ijter,2)
+                                gk2 = tersoffs%gmbp(ll+2,ijter,2)
 
                                 t1 = gk0 + (gk1 - gk0)*ppp
                                 t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
@@ -550,9 +550,9 @@ Contains
 
 ! interpolate attractive component of energy
 
-                                vk0 = tersoff%vmbp(ll,  ijter,3)
-                                vk1 = tersoff%vmbp(ll+1,ijter,3)
-                                vk2 = tersoff%vmbp(ll+2,ijter,3)
+                                vk0 = tersoffs%vmbp(ll,  ijter,3)
+                                vk1 = tersoffs%vmbp(ll+1,ijter,3)
+                                vk2 = tersoffs%vmbp(ll+2,ijter,3)
 
                                 t1 = vk0 + (vk1 - vk0)*ppp
                                 t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -561,9 +561,9 @@ Contains
 
 ! interpolate derivative of attractive function
 
-                                gk0 = tersoff%gmbp(ll,  ijter,3)
-                                gk1 = tersoff%gmbp(ll+1,ijter,3)
-                                gk2 = tersoff%gmbp(ll+2,ijter,3)
+                                gk0 = tersoffs%gmbp(ll,  ijter,3)
+                                gk1 = tersoffs%gmbp(ll+1,ijter,3)
+                                gk2 = tersoffs%gmbp(ll+2,ijter,3)
 
                                 t1 = gk0 + (gk1 - gk0)*ppp
                                 t2 = gk1 + (gk2 - gk1)*(ppp - 1.0_wp)
@@ -582,23 +582,23 @@ Contains
 
 ! Get parameters for iatm
 
-                    If      (tersoff%key_pot == 1) Then ! TERS
-                       bi=tersoff%param(7, iter)
-                       ei=tersoff%param(8, iter)
-                       ci=tersoff%param(9, iter)
-                       di=tersoff%param(10,iter)
-                       hi=tersoff%param(11,iter)
-                    Else If (tersoff%key_pot == 2) Then ! KIHS
-                       ei =tersoff%param(7, iter)
-                       di =tersoff%param(8, iter)
-                       c1i=tersoff%param(9, iter)
-                       c2i=tersoff%param(10,iter)
-                       c3i=tersoff%param(11,iter)
-                       c4i=tersoff%param(12,iter)
-                       c5i=tersoff%param(13,iter)
-                       hi =tersoff%param(14,iter)
-                       ak =tersoff%param(15,iter)
-                       bk =tersoff%param(16,iter)
+                    If      (tersoffs%key_pot == 1) Then ! TERS
+                       bi=tersoffs%param(7, iter)
+                       ei=tersoffs%param(8, iter)
+                       ci=tersoffs%param(9, iter)
+                       di=tersoffs%param(10,iter)
+                       hi=tersoffs%param(11,iter)
+                    Else If (tersoffs%key_pot == 2) Then ! KIHS
+                       ei =tersoffs%param(7, iter)
+                       di =tersoffs%param(8, iter)
+                       c1i=tersoffs%param(9, iter)
+                       c2i=tersoffs%param(10,iter)
+                       c3i=tersoffs%param(11,iter)
+                       c4i=tersoffs%param(12,iter)
+                       c5i=tersoffs%param(13,iter)
+                       hi =tersoffs%param(14,iter)
+                       ak =tersoffs%param(15,iter)
+                       bk =tersoffs%param(16,iter)
                     End If
 
 ! bond-angle detection
@@ -608,7 +608,7 @@ Contains
 ! index of the first secondary atom
 
                        jatm=listin(jj)
-                       jter=tersoff%list(ltype(jatm))
+                       jter=tersoffs%list(ltype(jatm))
 
 ! bypass if secondary atom type is not involved in interaction
 
@@ -620,7 +620,7 @@ Contains
 
 ! if pair is within cutoff
 
-                          If (rtf(jj) <= tersoff%cut(ijter)) Then
+                          If (rtf(jj) <= tersoffs%cut(ijter)) Then
 
 ! triplet occurrence flag
 
@@ -638,7 +638,7 @@ Contains
                                 gam(kk)=0.0_wp
                                 gvr(kk)=0.0_wp
                              End Do
-                             If (tersoff%key_pot == 2) Then ! KIHS
+                             If (tersoffs%key_pot == 2) Then ! KIHS
                                 Do kk=1,limit
                                    rkj(kk)=0.0_wp
                                    wkj(kk)=0.0_wp
@@ -653,7 +653,7 @@ Contains
 ! index of the second secondary atom
 
      katm=listin(kk)
-     kter=tersoff%list(ltype(katm))
+     kter=tersoffs%list(ltype(katm))
 
 ! bypass if secondary atom type is not involved in interaction
 
@@ -665,7 +665,7 @@ Contains
 
 ! if pair is within cutoff
 
-        If (rtf(kk) <= tersoff%cut(ikter)) Then
+        If (rtf(kk) <= tersoffs%cut(ikter)) Then
 
 ! only for not fully frozen triplets
 
@@ -679,15 +679,15 @@ Contains
               If (Abs(cost) > 1.0_wp) cost=Sign(1.0_wp,cost)
               cst(kk) = cost
 
-              If      (tersoff%key_pot == 1) Then ! TERS
+              If      (tersoffs%key_pot == 1) Then ! TERS
                  gtheta= 1.0_wp + (ci/di)**2 - ci**2 / (di**2 + (hi-cost)**2)
-                 eterm = eterm + gtheta*tersoff%param2(ikter,2)*scr(kk) ! L_{ij}
-                 vterm = vterm + gtheta*tersoff%param2(ikter,2)*gcr(kk)*rtf(kk)
+                 eterm = eterm + gtheta*tersoffs%param2(ikter,2)*scr(kk) ! L_{ij}
+                 vterm = vterm + gtheta*tersoffs%param2(ikter,2)*gcr(kk)*rtf(kk)
 ! d/dr_k of L_{ij} - angular part as it is used in the virial
 
                  gam(kk) = gtheta
                  gvr(kk) = 2.0_wp * ci**2 * (hi-cost) / (di**2 + (hi-cost)**2)**2 ! d(gtheta)/sint*d(theta)
-              Else If (tersoff%key_pot == 2) Then ! KIHS
+              Else If (tersoffs%key_pot == 2) Then ! KIHS
                  rkj(kk)=rtf(jj)-rtf(kk)
                  wkj(kk)=Exp(ak * rkj(kk)**bk)
 
@@ -715,15 +715,15 @@ Contains
 ! calculate contribution to energy, virial, two-body stress and forces
 ! (all associated with the head atom)
 
-  If      (tersoff%key_pot == 1) Then ! TERS
-     gam_ij=tersoff%param2(iter,1)
+  If      (tersoffs%key_pot == 1) Then ! TERS
+     gam_ij=tersoffs%param2(iter,1)
      gamma=0.0_wp
      If (flag3) Then
-        gam_ij = tersoff%param2(iter,1)*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
-        gamma  = eat(jj) * tersoff%param2(iter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
+        gam_ij = tersoffs%param2(iter,1)*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
+        gamma  = eat(jj) * tersoffs%param2(iter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
               0.5_wp*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
      End If
-  Else If (tersoff%key_pot == 2) Then ! KIHS
+  Else If (tersoffs%key_pot == 2) Then ! KIHS
      gam_ij=1.0_wp
      gamma=0.0_wp
      If (flag3) Then
@@ -770,7 +770,7 @@ Contains
 ! index of the second secondary atom
 
      katm=listin(kk)
-     kter=tersoff%list(ltype(katm))
+     kter=tersoffs%list(ltype(katm))
 
 ! bypass if secondary atom type is not involved in interaction
 
@@ -782,7 +782,7 @@ Contains
 
 ! if pair is within cutoff
 
-        If (rtf(kk) <= tersoff%cut(ikter)) Then
+        If (rtf(kk) <= tersoffs%cut(ikter)) Then
 
 ! only for not fully frozen triplets
 
@@ -794,9 +794,9 @@ Contains
 
 ! Counteract the double counting with the 0.5_wp factor
 
-              If      (tersoff%key_pot == 1) Then ! TERS
-                 gam_dg = 0.5_wp*gamma*tersoff%param2(ikter,2)*scr(kk)*gvr(kk)
-                 gam_df = 0.5_wp*gamma*tersoff%param2(ikter,2)*gcr(kk)*gam(kk)
+              If      (tersoffs%key_pot == 1) Then ! TERS
+                 gam_dg = 0.5_wp*gamma*tersoffs%param2(ikter,2)*scr(kk)*gvr(kk)
+                 gam_df = 0.5_wp*gamma*tersoffs%param2(ikter,2)*gcr(kk)*gam(kk)
 
 ! calculate contribution to atomic forces
 
@@ -807,7 +807,7 @@ Contains
                  fxk = gam_dg*(xtf(jj)-xtf(kk)*cost)/rtf(kk) - gam_df*xtf(kk) ! contributions to k
                  fyk = gam_dg*(ytf(jj)-ytf(kk)*cost)/rtf(kk) - gam_df*ytf(kk)
                  fzk = gam_dg*(ztf(jj)-ztf(kk)*cost)/rtf(kk) - gam_df*ztf(kk)
-              Else If (tersoff%key_pot == 2) Then ! KIHS
+              Else If (tersoffs%key_pot == 2) Then ! KIHS
                  gam_dg = 0.5_wp*gamma*scr(kk)*wkj(kk)*gvr(kk)
                  gam_df = 0.5_wp*gamma*gam(kk)*wkj(kk)*gcr(kk)
                  gam_dw = 0.5_wp*gamma*scr(kk)*gam(kk)*wkj(kk)*(ak*bk*rkj(kk)**(bk-1.0_wp))
@@ -910,7 +910,7 @@ Contains
   Deallocate (ert,eat,grt,gat,          Stat=fail(4))
   Deallocate (scr,gcr,                  Stat=fail(5))
   Deallocate (cst,gam,gvr,              Stat=fail(6))
-  If (tersoff%key_pot == 2) Deallocate (rkj,wkj, Stat=fail(7))
+  If (tersoffs%key_pot == 2) Deallocate (rkj,wkj, Stat=fail(7))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'tersoff_forces deallocation failure'
      Call error(0,message)
@@ -918,7 +918,7 @@ Contains
 
 End Subroutine tersoff_forces
 
-Subroutine tersoff_generate(tersoff)
+Subroutine tersoff_generate(tersoffs)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -934,63 +934,63 @@ Subroutine tersoff_generate(tersoff)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( tersoff_type ), Intent( InOut )  :: tersoff
+  Type( tersoff_type ), Intent( InOut )  :: tersoffs
 
   Integer           :: i,katom1,katom2,ipt,jpt,kpt
   Real( Kind = wp ) :: dlrpot,baij,saij,bbij,sbij,rij,sij,rrr,arg,rep,att
 
 ! define grid resolution for potential arrays
 
-  dlrpot=tersoff%cutoff/Real(tersoff%max_grid-4,wp)
+  dlrpot=tersoffs%cutoff/Real(tersoffs%max_grid-4,wp)
 
 ! construct arrays for all types of tersoff potential
 
-  Do katom1=1,tersoff%n_potential
+  Do katom1=1,tersoffs%n_potential
      Do katom2=1,katom1
 
-        If (tersoff%ltp(katom1)*tersoff%ltp(katom2) /= 0) Then
+        If (tersoffs%ltp(katom1)*tersoffs%ltp(katom2) /= 0) Then
 
-           ipt=tersoff%list(katom1)
-           jpt=tersoff%list(katom2)
+           ipt=tersoffs%list(katom1)
+           jpt=tersoffs%list(katom2)
            kpt=(Max(ipt,jpt)*(Max(ipt,jpt)-1))/2+Min(ipt,jpt)
 
 ! define tersoff parameters
 
-           baij =    Sqrt(tersoff%param(1,ipt)*tersoff%param(1,jpt))
-           saij = 0.5_wp*(tersoff%param(2,ipt)+tersoff%param(2,jpt))
-           bbij =    Sqrt(tersoff%param(3,ipt)*tersoff%param(3,jpt))
-           sbij = 0.5_wp*(tersoff%param(4,ipt)+tersoff%param(4,jpt))
-           rij  =    Sqrt(tersoff%param(5,ipt)*tersoff%param(5,jpt))
-           sij  =    Sqrt(tersoff%param(6,ipt)*tersoff%param(6,jpt))
+           baij =    Sqrt(tersoffs%param(1,ipt)*tersoffs%param(1,jpt))
+           saij = 0.5_wp*(tersoffs%param(2,ipt)+tersoffs%param(2,jpt))
+           bbij =    Sqrt(tersoffs%param(3,ipt)*tersoffs%param(3,jpt))
+           sbij = 0.5_wp*(tersoffs%param(4,ipt)+tersoffs%param(4,jpt))
+           rij  =    Sqrt(tersoffs%param(5,ipt)*tersoffs%param(5,jpt))
+           sij  =    Sqrt(tersoffs%param(6,ipt)*tersoffs%param(6,jpt))
 
 ! store potential cutoff
 
-           tersoff%cut(kpt) = sij
+           tersoffs%cut(kpt) = sij
 
 ! calculate screening generic function
 
-           Do i=0,tersoff%max_grid
+           Do i=0,tersoffs%max_grid
               rrr=Real(i,wp)*dlrpot
 
               If      (rrr <= rij) Then
-                 tersoff%vmbp(i,kpt,1)=1.0_wp
-                 tersoff%gmbp(i,kpt,1)=0.0_wp
+                 tersoffs%vmbp(i,kpt,1)=1.0_wp
+                 tersoffs%gmbp(i,kpt,1)=0.0_wp
               Else
                  If (rrr <= sij) Then
                     arg=pi*(rrr-rij)/(sij-rij)
 
-                    If      (tersoff%ltp(katom1)*tersoff%ltp(katom2) == 1) Then
+                    If      (tersoffs%ltp(katom1)*tersoffs%ltp(katom2) == 1) Then
 
-                       tersoff%vmbp(i,kpt,1)=0.5_wp*(1.0_wp+Cos(arg))
-                       tersoff%gmbp(i,kpt,1)=0.5_wp*pi*rrr*Sin(arg)/(sij-rij)
+                       tersoffs%vmbp(i,kpt,1)=0.5_wp*(1.0_wp+Cos(arg))
+                       tersoffs%gmbp(i,kpt,1)=0.5_wp*pi*rrr*Sin(arg)/(sij-rij)
 
-                    Else If (tersoff%ltp(katom1)*tersoff%ltp(katom2) == 4) Then
+                    Else If (tersoffs%ltp(katom1)*tersoffs%ltp(katom2) == 4) Then
 
-! Murty's correction to screening function (tersoff%vmbp)
+! Murty's correction to screening function (tersoffs%vmbp)
 ! M.V.R. Murty, H.A. Atwater, Phys. Rev. B 51 (1995) 4889-4993
 
-                       tersoff%vmbp(i,kpt,1)=0.5_wp+9.0_wp/16.0_wp*Cos(arg)-1.0_wp/16.0_wp*Cos(3.0_wp*arg)
-                       tersoff%gmbp(i,kpt,1)=0.75_wp*pi*rrr*(Sin(arg))**3/(sij-rij)
+                       tersoffs%vmbp(i,kpt,1)=0.5_wp+9.0_wp/16.0_wp*Cos(arg)-1.0_wp/16.0_wp*Cos(3.0_wp*arg)
+                       tersoffs%gmbp(i,kpt,1)=0.75_wp*pi*rrr*(Sin(arg))**3/(sij-rij)
 
                     End If
                  End If
@@ -999,22 +999,22 @@ Subroutine tersoff_generate(tersoff)
 
 ! calculate screening repulsion & attraction functions
 
-           Do i=0,tersoff%max_grid
+           Do i=0,tersoffs%max_grid
               rrr=Real(i,wp)*dlrpot
 
 ! repulsion
 
               rep=baij*Exp(-saij*rrr)
 
-              tersoff%vmbp(i,kpt,2)=rep*  tersoff%vmbp(i,kpt,1)
-              tersoff%gmbp(i,kpt,2)=rep*( tersoff%gmbp(i,kpt,1) + saij*rrr*tersoff%vmbp(i,kpt,1) )
+              tersoffs%vmbp(i,kpt,2)=rep*  tersoffs%vmbp(i,kpt,1)
+              tersoffs%gmbp(i,kpt,2)=rep*( tersoffs%gmbp(i,kpt,1) + saij*rrr*tersoffs%vmbp(i,kpt,1) )
 
 ! attraction
 
               att=bbij*Exp(-sbij*rrr)
 
-              tersoff%vmbp(i,kpt,3)=att*  tersoff%vmbp(i,kpt,1)
-              tersoff%gmbp(i,kpt,3)=att*( tersoff%gmbp(i,kpt,1) + sbij*rrr*tersoff%vmbp(i,kpt,1) )
+              tersoffs%vmbp(i,kpt,3)=att*  tersoffs%vmbp(i,kpt,1)
+              tersoffs%gmbp(i,kpt,3)=att*( tersoffs%gmbp(i,kpt,1) + sbij*rrr*tersoffs%vmbp(i,kpt,1) )
            End Do
 
         End If

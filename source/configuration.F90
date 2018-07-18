@@ -284,7 +284,7 @@ Contains
 
   End Subroutine allocate_config_arrays
 
-  Subroutine check_config(levcfg,l_str,electro_key,keyres,megatm,thermo,site,comm)
+  Subroutine check_config(levcfg,l_str,electro_key,keyres,megatm,thermo,sites,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -301,7 +301,7 @@ Contains
   Logical, Intent( In    ) :: l_str
   Integer, Intent( In    ) :: levcfg,electro_key,keyres,megatm
   Type( thermostat_type ), Intent( In    ) :: thermo
-  Type( site_type ), Intent( In    ) :: site
+  Type( site_type ), Intent( In    ) :: sites
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical, Save     :: newjob = .true.
@@ -406,11 +406,11 @@ Contains
 ! Check atom names and assign atomic characteristics
 ! Connecting FIELD to CONFIG on local basis
 
-  Do k=1,site%ntype_mol
+  Do k=1,sites%ntype_mol
 
-     Do l=1,site%num_mols(k)
+     Do l=1,sites%num_mols(k)
 
-        Do m=1,site%num_site(k)
+        Do m=1,sites%num_site(k)
 
 ! Increase global atom counter
 
@@ -428,20 +428,20 @@ Contains
 ! (FIELD) match the one found in the crystallographic data (CONFIG)?
 ! Check for unidentified atoms in CONFIG by their existence in FIELD
 
-              If (atmnam(loc_ind) /= site%site_name(mol_sit+m)) Then
+              If (atmnam(loc_ind) /= sites%site_name(mol_sit+m)) Then
                  Write(message,"( 'unidentified atom label :',a8,': atom number ',i5)") atmnam(loc_ind),loc_ind
                  Call info(message)
                  safe=.false.
               End If
 
-! Assign global site, type, weight, charge & frozen status to localised atoms
+! Assign global sites, type, weight, charge & frozen status to localised atoms
 
               lsite(loc_ind)=mol_sit+m
-              ltype(loc_ind)=site%type_site(mol_sit+m)
-              weight(loc_ind)=site%weight_site(mol_sit+m)
-              chge(loc_ind)=site%charge_site(mol_sit+m)
-              lfrzn(loc_ind)=site%freeze_site(mol_sit+m)
-              lfree(loc_ind)=site%free_site(mol_sit+m)
+              ltype(loc_ind)=sites%type_site(mol_sit+m)
+              weight(loc_ind)=sites%weight_site(mol_sit+m)
+              chge(loc_ind)=sites%charge_site(mol_sit+m)
+              lfrzn(loc_ind)=sites%freeze_site(mol_sit+m)
+              lfree(loc_ind)=sites%free_site(mol_sit+m)
 
 ! Print global indices for a later check on ordering (mixed indexing)
 
@@ -459,7 +459,7 @@ Contains
 
 ! Increase site counter per molecule
 
-     mol_sit=mol_sit+site%num_site(k)
+     mol_sit=mol_sit+sites%num_site(k)
 
   End Do
   indatm=indatm-1 ! Correct presence number

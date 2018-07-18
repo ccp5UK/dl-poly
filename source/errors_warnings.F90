@@ -166,7 +166,7 @@ Module errors_warnings
      Else If (kode ==  50) Then
 
         Write(ounit,'(2(/,1x,a),f12.6,a,/)') &
-        '*** warning - short-range cutoff reset ***', '*** new cutoff radius (vdw%cutoff) ', a, ' !!! ***'
+        '*** warning - short-range cutoff reset ***', '*** new cutoff radius (vdws%cutoff) ', a, ' !!! ***'
 
      Else If (kode ==  60) Then
 
@@ -1145,7 +1145,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  102) Then
 
-        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff < 2*tersoff%cutoff (maximum cutoff for tersoff potentials)'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff < 2*tersoffs%cutoff (maximum cutoff for tersoff potentials)'
 
      Else If (kode ==  103) Then
 

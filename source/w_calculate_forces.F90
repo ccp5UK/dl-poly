@@ -10,7 +10,7 @@
 ! Refresh mappings
 
         Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,site,mpole,rigid)
+          dihedral,inversion,tether,neigh,sites,mpoles,rigid)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -19,23 +19,23 @@
 ! and stress tensor (these are all additive in the force subroutines)
 
      fxx = 0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
-     If (mpole%max_mpoles > 0) Then
-        mpole%torque_x=0.0_wp ; mpole%torque_y=0.0_wp ; mpole%torque_z=0.0_wp
+     If (mpoles%max_mpoles > 0) Then
+        mpoles%torque_x=0.0_wp ; mpoles%torque_y=0.0_wp ; mpoles%torque_z=0.0_wp
      End If
      stat%stress = 0.0_wp
 
-! Calculate pair-like forces (metal,vdw,electrostatic) and add lrc
+! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
 
      If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
        l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then
        Call two_body_forces(pdplnc,thermo%ensemble,nstfce,lbook,megfrz, &
-         leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,site,vdw,rdf, &
-         mpole,electro,tmr,comm)
+         leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
+         mpoles,electro,tmr,comm)
      End If
 
 ! Calculate tersoff forces
 
-     If (tersoff%n_potential > 0) Call tersoff_forces(tersoff,stat,neigh,comm)
+     If (tersoffs%n_potential > 0) Call tersoff_forces(tersoffs,stat,neigh,comm)
 
 ! Calculate three-body forces
 
@@ -60,7 +60,7 @@
 
         isw = 1 + Merge(1,0,ltmp)
         Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff, &
-          stat%engcpe,stat%vircpe,bond,mpole,electro,comm)
+          stat%engcpe,stat%vircpe,bond,mpoles,electro,comm)
      End If
 
 ! Calculate valence angle forces
@@ -80,7 +80,7 @@
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
            neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp, &
-           stat%virsrp,dihedral,vdw,mpole,electro,comm)
+           stat%virsrp,dihedral,vdws,mpoles,electro,comm)
      End If
 
 ! Calculate inversion forces
@@ -111,7 +111,7 @@
 ! Apply pseudo thermostat - force cycle (0)
 
      If (thermo%l_pseudo) Then
-       Call pseudo_vv(0,tstep,nstep,site%dof_site,cshell,stat,thermo,rigid,comm)
+       Call pseudo_vv(0,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,comm)
      End If
 
 ! Cap forces in equilibration mode
@@ -124,7 +124,7 @@
 
 ! Minimisation option and Relaxed shell model optimisation
 
-     If (lsim .and. (minimise%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
+     If (lsim .and. (minim%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
         stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
                  stat%engshl + stat%engtet + stat%engfld +                   &
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
@@ -135,16 +135,16 @@
 
         If (.not.relaxed_shl) Go To 200 ! Shells relaxation takes priority over minimisation
 
-        If (minimise%minimise .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
-          If      (minimise%freq == 0 .and. nstep == 0) Then
+        If (minim%minimise .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
+          If      (minim%freq == 0 .and. nstep == 0) Then
             Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
               rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
-              netcdf,minimise,rigid,comm)
-          Else If (minimise%freq >  0 .and. nstep >  0) Then
-            If (Mod(nstep-nsteql,minimise%freq) == 0) Then
+              netcdf,minim,rigid,comm)
+          Else If (minim%freq >  0 .and. nstep >  0) Then
+            If (Mod(nstep-nsteql,minim%freq) == 0) Then
               Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
                 rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
-                netcdf,minimise,rigid,comm)
+                netcdf,minim,rigid,comm)
             End If
           End If
         End If
@@ -153,9 +153,9 @@
 
 ! Refresh mappings
 
-        If (.not.(relaxed_shl .and. minimise%relaxed)) Then
+        If (.not.(relaxed_shl .and. minim%relaxed)) Then
            Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-             dihedral,inversion,tether,neigh,site,mpole,rigid)
+             dihedral,inversion,tether,neigh,sites,mpoles,rigid)
            Go To 100
         End If
      End If
@@ -180,9 +180,9 @@
 ! Total virial (excluding constraint, PMF and RB COM virials for npt routines)
 ! Total stress (excluding constraint, PMF, RB COM and kinetic stress for npt routines)
 !
-! NOTE(1):  virsrp already includes vdw%vlrc and vlrcm(0) and so
+! NOTE(1):  virsrp already includes vdws%vlrc and vlrcm(0) and so
 !           does the stress diagonal elements (by minus a third),
-!           engsrp includes vdw%elrc and elrcm(0)
+!           engsrp includes vdws%elrc and elrcm(0)
 !
 ! NOTE(2):  virfbp, virinv and virdih are allegedly always zero
 

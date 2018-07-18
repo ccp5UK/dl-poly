@@ -53,8 +53,8 @@ Subroutine set_bounds                                 &
            dvar,rbin,nstfce,      &
            width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,threebody,zdensity,neigh,vdw,tersoff,fourbody,rdf, &
-           mpole,ext_field,rigid,electro,comm)
+           inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
+           mpoles,ext_field,rigid,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -92,11 +92,11 @@ Subroutine set_bounds                                 &
   Type( threebody_type ), Intent( InOut ) :: threebody
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( vdw_type ), Intent( InOut ) :: vdw
-  Type( tersoff_type ), Intent( InOut )  :: tersoff
+  Type( vdw_type ), Intent( InOut ) :: vdws
+  Type( tersoff_type ), Intent( InOut )  :: tersoffs
   Type( four_body_type ), Intent( InOut ) :: fourbody
   Type( rdf_type ), Intent( InOut ) :: rdf
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( electrostatic_type ), Intent( InOut ) :: electro
@@ -134,7 +134,7 @@ Subroutine set_bounds                                 &
            mtinv,  &
            rcter,rctbp,rcfbp,lext,cshell,cons,pmf,met,bond,    &
            angle,dihedral,inversion,                 &
-           tether,threebody,vdw,tersoff,fourbody,rdf,mpole,rigid,comm)
+           tether,threebody,vdws,tersoffs,fourbody,rdf,mpoles,rigid,comm)
 
 ! Get imc_r & set dvar
 
@@ -159,7 +159,7 @@ Subroutine set_bounds                                 &
            rbin,                         &
            nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1,cshell,stats,thermo, &
            green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-           zdensity,neigh,vdw,tersoff,rdf,mpole,electro,comm)
+           zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -400,8 +400,8 @@ Subroutine set_bounds                                 &
 ! rdf%max_grid - maximum dimension of rdf%rdf and z-density arrays
 
   If ((.not. l_n_r) .or. lzdn) Then
-     If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdw%max_vdw > 0 .or. met%max_metal > 0)) &
-        rdf%max_rdf = Max(vdw%max_vdw,met%max_metal) ! (vdw,met) == rdf scanning
+     If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdws%max_vdw > 0 .or. met%max_metal > 0)) &
+        rdf%max_rdf = Max(vdws%max_vdw,met%max_metal) ! (vdws,met) == rdf scanning
      rdf%max_grid = Nint(neigh%cutoff/rbin)
   Else
      rdf%max_grid = 0 ! RDF and Z-density function MUST NOT get called!!!
@@ -420,7 +420,7 @@ Subroutine set_bounds                                 &
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgana,vdw%max_grid,met%maxgrid,rdf%max_grid,rdf%max_grid_usr,1004,Nint(neigh%cutoff/delr_max)+4)
+  mxgrid = Max(mxgana,vdws%max_grid,met%maxgrid,rdf%max_grid,rdf%max_grid_usr,1004,Nint(neigh%cutoff/delr_max)+4)
 
 ! grids setting and overrides
 
@@ -446,7 +446,7 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for vdw interactions - overwritten
 
-  vdw%max_grid = Merge(-1,Max(1004,Nint(vdw%cutoff/delr_max)+4),l_n_v)
+  vdws%max_grid = Merge(-1,Max(1004,Nint(vdws%cutoff/delr_max)+4),l_n_v)
 
 ! maximum number of grid points for metal interactions
 
@@ -454,12 +454,12 @@ Subroutine set_bounds                                 &
 
 ! maximum number of grid points for tersoff interaction arrays
 
-  tersoff%max_grid = Merge(-1,Max(1004,Nint(rcter/delr_max)+4),tersoff%max_ter <= 0)
+  tersoffs%max_grid = Merge(-1,Max(1004,Nint(rcter/delr_max)+4),tersoffs%max_ter <= 0)
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
   mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab, &
-    inversion%bin_tab,mxgele,vdw%max_grid,met%maxgrid,tersoff%max_grid)
+    inversion%bin_tab,mxgele,vdws%max_grid,met%maxgrid,tersoffs%max_grid)
 
 
 
@@ -467,11 +467,11 @@ Subroutine set_bounds                                 &
 
 ! maximum number of vdw potentials and parameters
 
-  If (vdw%max_vdw > 0) Then
-     vdw%max_vdw = vdw%max_vdw+1
-     vdw%max_param = 7
+  If (vdws%max_vdw > 0) Then
+     vdws%max_vdw = vdws%max_vdw+1
+     vdws%max_param = 7
   Else
-     vdw%max_param = 0
+     vdws%max_param = 0
   End If
 
 
@@ -485,16 +485,16 @@ Subroutine set_bounds                                 &
   End If
 
 
-! maximum number of tersoff potentials (tersoff%max_ter = tersoff%max_ter) and parameters
+! maximum number of tersoff potentials (tersoffs%max_ter = tersoffs%max_ter) and parameters
 
-  If (tersoff%max_ter > 0) Then
-     If      (tersoff%key_pot == 1) Then
-        tersoff%max_param = 11
-     Else If (tersoff%key_pot == 2) Then
-        tersoff%max_param = 16
+  If (tersoffs%max_ter > 0) Then
+     If      (tersoffs%key_pot == 1) Then
+        tersoffs%max_param = 11
+     Else If (tersoffs%key_pot == 2) Then
+        tersoffs%max_param = 16
      End If
   Else
-     tersoff%max_param = 0
+     tersoffs%max_param = 0
   End If
 
 
@@ -837,7 +837,7 @@ Subroutine set_bounds                                 &
   dens0 = dens0/Max(neigh%cutoff_extended/0.2_wp,1.0_wp)
   mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real( &
            mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (neigh%max_exclude+1) + &
-           Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,mpole%key == POLARISATION_CHARMM),0,mpole%max_mpoles > 0) + &
+           Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,mpoles%key == POLARISATION_CHARMM),0,mpoles%max_mpoles > 0) + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp  + &
            4*cshell%mxshl+4*cons%mxcons+(Sum(pmf%mxtpmf(1:2)+3))*pmf%mxpmf+(rigid%max_list+13)*rigid%max_rigid + &
            3*tether%mxteth+4*bond%max_bonds+5*angle%max_angles+8*dihedral%max_angles+6*inversion%max_angles,wp) * dens0)
@@ -869,9 +869,9 @@ Subroutine set_bounds                                 &
 ! reset (increase) link-cell maximum (neigh%max_cell)
 ! if tersoff or three- or four-body potentials exist
 
-  If (tersoff%max_ter > 0 .or. threebody%mxtbp > 0 .or. fourbody%max_four_body > 0) Then
+  If (tersoffs%max_ter > 0 .or. threebody%mxtbp > 0 .or. fourbody%max_four_body > 0) Then
      cut=neigh%cutoff+1.0e-6_wp ! reduce cut
-     If (tersoff%max_ter > 0) cut = Min(cut,rcter+1.0e-6_wp)
+     If (tersoffs%max_ter > 0) cut = Min(cut,rcter+1.0e-6_wp)
      If (threebody%mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
      If (fourbody%max_four_body > 0) cut = Min(cut,rcfbp+1.0e-6_wp)
 

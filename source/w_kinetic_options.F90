@@ -10,7 +10,7 @@
 ! Apply pseudo thermostat - velocity cycle (1)
 
         If (thermo%l_pseudo) Then
-          Call pseudo_vv(1,tstep,nstep,site%dof_site,cshell,stat,thermo,rigid,comm)
+          Call pseudo_vv(1,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,comm)
         End If
 
 ! Apply temperature regaussing

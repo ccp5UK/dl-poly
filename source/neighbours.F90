@@ -281,14 +281,14 @@ Contains
   !>
   !> Contrib   - I.J.Bush february 2014
   Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,cshell,devel,neigh, &
-      mpole,tmr,comm)
+      mpoles,tmr,comm)
     Logical,            Intent( In    ) :: lbook
     Integer,            Intent( In    ) :: megfrz
     Real( Kind = wp ) , Intent( In    ) :: rvdw,rmet,pdplnc
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( development_type ), Intent( In    ) :: devel
     Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -997,19 +997,19 @@ Contains
 
       ! CHARMM core-shell screened electrostatic induction interactions
       ! Push up CHARMM pairs at the top of the bonded part of the neigh%list
-      If (mpole%key == POLARISATION_CHARMM) Then
+      If (mpoles%key == POLARISATION_CHARMM) Then
         Do i=1,natms
           l_end=neigh%list(-1,i) ! search marker to move up
           m_end=neigh%list( 0,i) ! CHARMM marker to move down
 
-          ii=mpole%charmm(0,i)
+          ii=mpoles%charmm(0,i)
           If (ii > 0) Then ! find what the local sublist CHARMM marker is
             outside:      Do While (l_end > m_end+1)    ! Only when space for swap exists
 
               ! Check for space at the top
               j =neigh%list(m_end+1,i)
               jj=ltg(j)
-              If (match(jj,ii,mpole%charmm(1:ii,i))) Then
+              If (match(jj,ii,mpoles%charmm(1:ii,i))) Then
                 m_end=m_end+1    ! move down CHARMM marker
                 Cycle outside
               End If
@@ -1019,7 +1019,7 @@ Contains
               inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
                 j =neigh%list(l_end,i)
                 jj=ltg(j)
-                If (match(jj,ii,mpole%charmm(1:ii,i))) Then
+                If (match(jj,ii,mpoles%charmm(1:ii,i))) Then
                   ibig            = neigh%list(m_end+1,i)
                   neigh%list(m_end+1,i) = neigh%list(l_end,i)
                   neigh%list(l_end,i)   = ibig

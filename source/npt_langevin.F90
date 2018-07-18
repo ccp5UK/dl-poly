@@ -38,7 +38,7 @@ Contains
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
-             cshell,cons,pmf,stat,thermo,site,vdw,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites,vdws,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -77,8 +77,8 @@ Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type( site_type ), Intent( InOut ) :: site
-    Type( vdw_type ), Intent( InOut ) :: vdw
+    Type( site_type ), Intent( InOut ) :: sites
+    Type( vdw_type ), Intent( InOut ) :: vdws
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -135,16 +135,16 @@ Call pmf%allocate_work()
 
        cell0   = cell
        volm0   = volm
-       elrc0   = vdw%elrc
-       virlrc0 = vdw%vlrc
+       elrc0   = vdws%elrc
+       virlrc0 = vdws%vlrc
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
           Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
-       Do i=1,site%ntype_atom
-          dens0(i) = site%dens(i)
+       Do i=1,sites%ntype_atom
+          dens0(i) = sites%dens(i)
        End Do
 
   ! inertia parameter for barostat
@@ -360,10 +360,10 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! adjust long range corrections and number density
 
        tmp=(volm0/volm)
-       vdw%elrc=elrc0*tmp
-       vdw%vlrc=virlrc0*tmp
-       Do i=1,site%ntype_atom
-          site%dens(i)=dens0(i)*tmp
+       vdws%elrc=elrc0*tmp
+       vdws%vlrc=virlrc0*tmp
+       Do i=1,sites%ntype_atom
+          sites%dens(i)=dens0(i)*tmp
        End Do
 
   ! second stage of velocity verlet algorithm
@@ -492,7 +492,7 @@ Call pmf%deallocate_work()
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             cshell,cons,pmf,stat,thermo,site,vdw,rigid,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -535,8 +535,8 @@ Call pmf%deallocate_work()
     Type( constraints_type), Intent( InOut) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type( site_type ), Intent( InOut ) :: site
-    Type( vdw_type ), Intent( InOut ) :: vdw
+    Type( site_type ), Intent( InOut ) :: sites
+    Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
@@ -629,16 +629,16 @@ Call pmf%allocate_work()
 
        cell0   = cell
        volm0   = volm
-       elrc0   = vdw%elrc
-       virlrc0 = vdw%vlrc
+       elrc0   = vdws%elrc
+       virlrc0 = vdws%vlrc
 
        Allocate (dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
           Write(message,'(a)') 'dens0 allocation failure'
           Call error(0,message)
        End If
-       Do i=1,site%ntype_atom
-          dens0(i) = site%dens(i)
+       Do i=1,sites%ntype_atom
+          dens0(i) = sites%dens(i)
        End Do
 
   ! inertia parameter for barostat
@@ -1202,10 +1202,10 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! adjust long range corrections and number density
 
        tmp=(volm0/volm)
-       vdw%elrc=elrc0*tmp
-       vdw%vlrc=virlrc0*tmp
-       Do i=1,site%ntype_atom
-          site%dens(i)=dens0(i)*tmp
+       vdws%elrc=elrc0*tmp
+       vdws%vlrc=virlrc0*tmp
+       Do i=1,sites%ntype_atom
+          sites%dens(i)=dens0(i)*tmp
        End Do
 
   ! second stage of velocity verlet algorithm

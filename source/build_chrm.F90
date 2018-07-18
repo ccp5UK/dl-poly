@@ -29,7 +29,7 @@ Module build_chrm
   Public :: build_chrm_intra
 Contains
   Subroutine build_chrm_intra(max_exclude,cshell,cons,bond,angle,dihedral, &
-      inversion,mpole,rigid,comm)
+      inversion,mpoles,rigid,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -58,7 +58,7 @@ Contains
     Type( dihedrals_type ), Intent( In    ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Type( comms_type ),  Intent( InOut) :: comm
 
@@ -133,38 +133,38 @@ Contains
         If (ka*kb > 0) Then
           If (ia == ja) Then
             If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-              If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+              Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+              If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
             End If
-            If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-            If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+            If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+            If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
           End If
 
           If (ia == jb) Then
             If (ib0 > 0) Then
-              Call add_exclusion(safe,ib0,ja,ibig,mpole%charmm)
-              If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,mpole%charmm)
+              Call add_exclusion(safe,ib0,ja,ibig,mpoles%charmm)
+              If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,mpoles%charmm)
             End If
-            If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpole%charmm)
-            If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpole%charmm)
+            If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpoles%charmm)
+            If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpoles%charmm)
           End If
 
           !           If (ib == ja) Then
           !              If (ia0 > 0) Then
-          !                 Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-          !                 If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+          !                 Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+          !                 If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
           !              End If
-          !              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-          !              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+          !              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+          !              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
           !           End If
           !
           !           If (ib == jb) Then
           !              If (ia0 > 0) Then
-          !                 Call add_exclusion(safe,ia0,ja,ibig,mpole%charmm)
-          !                 If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,mpole%charmm)
+          !                 Call add_exclusion(safe,ia0,ja,ibig,mpoles%charmm)
+          !                 If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,mpoles%charmm)
           !              End If
-          !              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpole%charmm)
-          !           If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpole%charmm)
+          !              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpoles%charmm)
+          !           If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpoles%charmm)
           !           End If
         End If
       End Do
@@ -213,38 +213,38 @@ Contains
           If (ka*kb > 0) Then
             If (ia == ja) Then
               If (ib0 > 0) Then
-                Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-                If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+                If (kb > 0) Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
               End If
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
             End If
 
             If (ia == jb) Then
               If (ib0 > 0) Then
-                Call add_exclusion(safe,ib0,ja,ibig,mpole%charmm)
-                If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,ja,ibig,mpoles%charmm)
+                If (ka > 0) Call add_exclusion(safe,ib0,ka,ibig,mpoles%charmm)
               End If
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpoles%charmm)
             End If
 
             If (ib == ja) Then
               If (ia0 > 0) Then
-                Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-                If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+                If (kb > 0) Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
               End If
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
             End If
 
             If (ib == jb) Then
               If (ia0 > 0) Then
-                Call add_exclusion(safe,ia0,ja,ibig,mpole%charmm)
-                If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,ja,ibig,mpoles%charmm)
+                If (ka > 0) Call add_exclusion(safe,ia0,ka,ibig,mpoles%charmm)
               End If
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpoles%charmm)
             End If
           End If
         End If
@@ -308,144 +308,144 @@ Contains
           If (ia == ja) Then
             If (ib0 > 0) Then
               If (kb > 0) Then
-                Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ib0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ia == jb) Then
             If (ib0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ib0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,ka,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ib0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ia == jc) Then
             If (ib0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ib0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,ka,ibig,mpoles%charmm)
               End If
 
               If (kb > 0) Then
-                Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpoles%charmm)
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == ja) Then
             If (ia0 > 0) Then
               If (kb > 0) Then
-                Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ia0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == jb) Then
             If (ia0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ia0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,ka,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ia0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == jc) Then
             If (ia0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ia0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,ka,ibig,mpoles%charmm)
               End If
 
               If (kb > 0) Then
-                Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpoles%charmm)
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
             End If
           End If
         End If
@@ -523,232 +523,232 @@ Contains
           If (ia == ja) Then
             If (ib0 > 0) Then
               If (kb > 0) Then
-                Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ib0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ia == jb) Then
             If (ib0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ib0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,ka,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ib0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kc,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ib0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ia == jc) Then
             If (ib0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ib0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,ka,ibig,mpoles%charmm)
               End If
 
               If (kb > 0) Then
-                Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ib0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpoles%charmm)
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ia == jd) Then
             If (ib0 > 0) Then
               If (kb > 0) Then
-                Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ib0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == ja) Then
             If (ia0 > 0) Then
               If (kb > 0) Then
-                Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ia0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == jb) Then
             If (ia0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ia0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,ka,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ia0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kc,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ia0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == jc) Then
             If (ia0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ia0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,ka,ibig,mpoles%charmm)
               End If
 
               If (kb > 0) Then
-                Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ia0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpoles%charmm)
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == jd) Then
             If (ia0 > 0) Then
               If (kb > 0) Then
-                Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ia0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpoles%charmm)
             End If
           End If
         End If
@@ -826,272 +826,272 @@ Contains
           If (ia == ja) Then
             If (ib0 > 0) Then
               If (kb > 0) Then
-                Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ib0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kc,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ib0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ia == jb) Then
             If (ib0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ib0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,ka,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ib0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kc,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ib0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ia == jc) Then
             If (ib0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ib0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,ka,ibig,mpoles%charmm)
               End If
 
               If (kb > 0) Then
-                Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ib0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpoles%charmm)
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ib,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ia == jd) Then
             If (ib0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ib0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,ka,ibig,mpoles%charmm)
               End If
 
               If (kb > 0) Then
-                Call add_exclusion(safe,ib0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ib0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ib0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ib0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ib0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ib,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ib,ibig,mpoles%charmm)
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ib,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ib,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ib,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ib,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == ja) Then
             If (ia0 > 0) Then
               If (kb > 0) Then
-                Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ia0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kc,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ia0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == jb) Then
             If (ia0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ia0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,ka,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ia0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kc,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ia0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == jc) Then
             If (ia0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ia0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,ka,ibig,mpoles%charmm)
               End If
 
               If (kb > 0) Then
-                Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
               End If
 
               If (kd > 0) Then
-                Call add_exclusion(safe,ia0,jd,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kd,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jd,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kd,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpoles%charmm)
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
             End If
 
             If (kd > 0) Then
-              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpole%charmm)
-              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpole%charmm)
+              If (jd0 > 0) Call add_exclusion(safe,jd0,ia,ibig,mpoles%charmm)
+              If (kd0 > 0) Call add_exclusion(safe,kd0,ia,ibig,mpoles%charmm)
             End If
           End If
 
           If (ib == jd) Then
             If (ia0 > 0) Then
               If (ka > 0) Then
-                Call add_exclusion(safe,ia0,ja,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,ka,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,ja,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,ka,ibig,mpoles%charmm)
               End If
 
               If (kb > 0) Then
-                Call add_exclusion(safe,ia0,jb,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kb,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jb,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kb,ibig,mpoles%charmm)
               End If
 
               If (kc > 0) Then
-                Call add_exclusion(safe,ia0,jc,ibig,mpole%charmm)
-                Call add_exclusion(safe,ia0,kc,ibig,mpole%charmm)
+                Call add_exclusion(safe,ia0,jc,ibig,mpoles%charmm)
+                Call add_exclusion(safe,ia0,kc,ibig,mpoles%charmm)
               End If
             End If
 
             If (ka > 0) Then
-              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpole%charmm)
-              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpole%charmm)
+              If (ja0 > 0) Call add_exclusion(safe,ja0,ia,ibig,mpoles%charmm)
+              If (ka0 > 0) Call add_exclusion(safe,ka0,ia,ibig,mpoles%charmm)
             End If
 
             If (kb > 0) Then
-              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpole%charmm)
-              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpole%charmm)
+              If (jb0 > 0) Call add_exclusion(safe,jb0,ia,ibig,mpoles%charmm)
+              If (kb0 > 0) Call add_exclusion(safe,kb0,ia,ibig,mpoles%charmm)
             End If
 
             If (kc > 0) Then
-              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpole%charmm)
-              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpole%charmm)
+              If (jc0 > 0) Call add_exclusion(safe,jc0,ia,ibig,mpoles%charmm)
+              If (kc0 > 0) Call add_exclusion(safe,kc0,ia,ibig,mpoles%charmm)
             End If
           End If
         End If
@@ -1110,7 +1110,7 @@ Contains
     ! EXCLUDE core sites mapped on the same RB unit
 
     Do i=1,natms                                                 ! on this node only (& below)
-      l=mpole%charmm(0,i)                                             ! end of list tag
+      l=mpoles%charmm(0,i)                                             ! end of list tag
       If (l > 0 .and. cshell%legshl(0,i) > 0) Then                     ! this is a qualifying CHARMMing core
         ibig=ltg(i)
         Do j=1,rigid%n_types_book                                          ! loop over the extended list of all RB
@@ -1118,14 +1118,14 @@ Contains
           If (Any(rigid%list(1:k,j) == ibig)) Then               ! This core resides on a RB
             kk=l                                             ! running index
             Do While (kk > 0)                                ! run down to the beginning of the list
-              If (Any(rigid%list(1:k,j) == mpole%charmm(kk,i))) Then ! any other cores in this RB list
-                If (kk < l) mpole%charmm(kk,i)=mpole%charmm(l,i)       ! swap with last "valid"
-                mpole%charmm(l,i)=0                              ! invalidate the last entry
+              If (Any(rigid%list(1:k,j) == mpoles%charmm(kk,i))) Then ! any other cores in this RB list
+                If (kk < l) mpoles%charmm(kk,i)=mpoles%charmm(l,i)       ! swap with last "valid"
+                mpoles%charmm(l,i)=0                              ! invalidate the last entry
                 l=l-1                                      ! reduce "the end of list" tag
               End If
               kk=kk-1                                       ! reduce the running index
             End Do
-            If (l < mpole%charmm(0,i)) mpole%charmm(0,i)=l               ! refresh the end of list tag
+            If (l < mpoles%charmm(0,i)) mpoles%charmm(0,i)=l               ! refresh the end of list tag
             If (l == 0) Exit                                 ! exit to main do loop
           End If
         End Do
@@ -1135,29 +1135,29 @@ Contains
     ! EXCLUDE core sites on basis of frozen-frozen interactions
 
     Do i=1,natms                                     ! on this node only (& below)
-      l=mpole%charmm(0,i)                                 ! end of list tag
+      l=mpoles%charmm(0,i)                                 ! end of list tag
       If (l > 0 .and. lfrzn(i) > 0) Then            ! this is a qualifying CHARMMing core
         kk=l                                       ! running index
         Do While (kk > 0)                          ! run down to the beginning of the list
-          k=mpole%charmm(kk,i)
+          k=mpoles%charmm(kk,i)
           j=local_index(k,nlast,lsi,lsa)
           If (lfrzn(j) > 0) Then                  ! any other frozen cores
-            If (kk < l) mpole%charmm(kk,i)=mpole%charmm(l,i) ! swap with last "valid"
-            mpole%charmm(l,i)=0                        ! invalidate the last entry
+            If (kk < l) mpoles%charmm(kk,i)=mpoles%charmm(l,i) ! swap with last "valid"
+            mpoles%charmm(l,i)=0                        ! invalidate the last entry
             l=l-1                                ! reduce "the end of list" tag
           End If
           kk=kk-1                                 ! reduce the running index
         End Do
-        If (l < mpole%charmm(0,i)) mpole%charmm(0,i)=l         ! refresh the end of list tag
+        If (l < mpoles%charmm(0,i)) mpoles%charmm(0,i)=l         ! refresh the end of list tag
       End If
     End Do
 
-    ! sort mpole%charmm
+    ! sort mpoles%charmm
 
     kk=0
     Do i=1,natms
-      j=mpole%charmm(0,i)
-      If (j > 0) Call shellsort(j,mpole%charmm(1:j,i))
+      j=mpoles%charmm(0,i)
+      If (j > 0) Call shellsort(j,mpoles%charmm(1:j,i))
       kk=kk+j
     End Do
     Call gsum(comm,kk)
@@ -1167,9 +1167,9 @@ Contains
     Call info(message,.true.)
 
     If (kk == 0) Then
-      mpole%key = POLARISATION_DEFAULT
+      mpoles%key = POLARISATION_DEFAULT
       Call warning('CHARMM polarisation scheme unapplicable as no pair are detected',.true.)
-      Deallocate (mpole%charmm, Stat=fail)
+      Deallocate (mpoles%charmm, Stat=fail)
     End If
   End Subroutine build_chrm_intra
 End Module build_chrm

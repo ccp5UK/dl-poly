@@ -16,7 +16,7 @@ Call statistics_collect           &
   keyres,      &
   degfre,degshl,degrot,          &
   nstep,tstep,time,tmst,         &
-  mxatdm_,rdf%max_grid,stat,thermo,zdensity,site,comm)
+  mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,comm)
 
 ! VV forces evaluation report for 0th or weird restart
 
@@ -73,8 +73,8 @@ If (nstep == nsteql) Then
       Call info(message,.true.)
     End If
 
-    If (minimise%minimise) Then
-      minimise%minimise=.false.
+    If (minim%minimise) Then
+      minim%minimise=.false.
       Write(message,'(a,i10)') 'switching off CGM minimiser at step ',nstep
       Call info(message,.true.)
     End If

@@ -37,7 +37,7 @@ Module deport_data
   Contains
 
 Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,&
-    green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
+    green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,8 +69,8 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( minimise_type ), Intent( InOut ) :: minimise
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( minimise_type ), Intent( InOut ) :: minim
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -310,11 +310,11 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! pack minimisation arrays
 
-        If (minimise%transport) Then
+        If (minim%transport) Then
            If (imove+3 <= iblock) Then
-              buffer(imove+1)=minimise%oxx(i)
-              buffer(imove+2)=minimise%oyy(i)
-              buffer(imove+3)=minimise%ozz(i)
+              buffer(imove+1)=minim%oxx(i)
+              buffer(imove+2)=minim%oyy(i)
+              buffer(imove+3)=minim%ozz(i)
            Else
               safe=.false.
            End If
@@ -395,8 +395,8 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
         If (lbook) Then
 
-           If (mpole%max_mpoles > 0) Then ! pack topological array
-              kk=mpole%ltp(0,i)
+           If (mpoles%max_mpoles > 0) Then ! pack topological array
+              kk=mpoles%ltp(0,i)
               If (imove+1 <= iblock) Then
                  imove=imove+1
                  buffer(imove)=Real(kk,wp)
@@ -407,15 +407,15 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
               If (imove+kk <= iblock) Then
                  Do k=1,kk
                     imove=imove+1
-                    buffer(imove)=Real(mpole%ltp(k,i),wp)
+                    buffer(imove)=Real(mpoles%ltp(k,i),wp)
                  End Do
               Else
                  imove=imove+kk
                  safe=.false.
               End If
 
-              If (mpole%key == POLARISATION_CHARMM) Then ! pack CHARMMing core-shell interactions array
-                 kk=mpole%charmm(0,i)
+              If (mpoles%key == POLARISATION_CHARMM) Then ! pack CHARMMing core-shell interactions array
+                 kk=mpoles%charmm(0,i)
                  If (imove+1 <= iblock) Then
                     imove=imove+1
                     buffer(imove)=Real(kk,wp)
@@ -426,7 +426,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
                  If (imove+kk <= iblock) Then
                     Do k=1,kk
                        imove=imove+1
-                       buffer(imove)=Real(mpole%charmm(k,i),wp)
+                       buffer(imove)=Real(mpoles%charmm(k,i),wp)
                     End Do
                  Else
                     imove=imove+kk
@@ -824,10 +824,10 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
         fzl(keep)=fzl(i)
      End If
 
-     If (minimise%transport) Then
-        minimise%oxx(keep)=minimise%oxx(i)
-        minimise%oyy(keep)=minimise%oyy(i)
-        minimise%ozz(keep)=minimise%ozz(i)
+     If (minim%transport) Then
+        minim%oxx(keep)=minim%oxx(i)
+        minim%oyy(keep)=minim%oyy(i)
+        minim%ozz(keep)=minim%ozz(i)
      End If
 
      If (ewld%lf_cp) Then
@@ -870,9 +870,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
      End If
 
      If (lbook) Then
-        If (mpole%max_mpoles > 0) Then
-           mpole%ltp(:,keep)=mpole%ltp(:,i)
-           If (mpole%key == POLARISATION_CHARMM) mpole%charmm(:,keep)=mpole%charmm(:,i)
+        If (mpoles%max_mpoles > 0) Then
+           mpoles%ltp(:,keep)=mpoles%ltp(:,i)
+           If (mpoles%key == POLARISATION_CHARMM) mpoles%charmm(:,keep)=mpoles%charmm(:,i)
         End If
 
         neigh%list_excl(:,keep)=neigh%list_excl(:,i)
@@ -989,10 +989,10 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! unpack minimisation arrays
 
-     If (minimise%transport) Then
-        minimise%oxx(newatm)=buffer(kmove+1)
-        minimise%oyy(newatm)=buffer(kmove+2)
-        minimise%ozz(newatm)=buffer(kmove+3)
+     If (minim%transport) Then
+        minim%oxx(newatm)=buffer(kmove+1)
+        minim%oyy(newatm)=buffer(kmove+2)
+        minim%ozz(newatm)=buffer(kmove+3)
 
         kmove=kmove+3
      End If
@@ -1056,25 +1056,25 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
      If (lbook) Then
 
-        If (mpole%max_mpoles > 0) Then ! unpack topological array
+        If (mpoles%max_mpoles > 0) Then ! unpack topological array
            kmove=kmove+1
            kk=Nint(buffer(kmove))
-           mpole%ltp(0,newatm)=kk
+           mpoles%ltp(0,newatm)=kk
            Do k=1,kk
               kmove=kmove+1
-              mpole%ltp(k,newatm)=Nint(buffer(kmove))
+              mpoles%ltp(k,newatm)=Nint(buffer(kmove))
            End Do
-           mpole%ltp(kk+1:neigh%max_exclude,newatm)=0
+           mpoles%ltp(kk+1:neigh%max_exclude,newatm)=0
 
-           If (mpole%key == POLARISATION_CHARMM) Then ! unpack CHARMMing core-shell interactions array
+           If (mpoles%key == POLARISATION_CHARMM) Then ! unpack CHARMMing core-shell interactions array
               kmove=kmove+1
               kk=Nint(buffer(kmove))
-              mpole%charmm(0,newatm)=kk
+              mpoles%charmm(0,newatm)=kk
               Do k=1,kk
                  kmove=kmove+1
-                 mpole%charmm(k,newatm)=Nint(buffer(kmove))
+                 mpoles%charmm(k,newatm)=Nint(buffer(kmove))
               End Do
-              mpole%charmm(kk+1:neigh%max_exclude,newatm)=0
+              mpoles%charmm(kk+1:neigh%max_exclude,newatm)=0
            End If
         End If
 
@@ -2176,7 +2176,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
 End Subroutine export_atomic_positions
 
-Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpole,comm)
+Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2190,7 +2190,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpole,comm)
 
   Integer, Intent( In    ) :: mdir
   Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -2206,8 +2206,8 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpole,comm)
 
 ! Number of transported quantities per particle
 
-  iadd=4*mpole%max_mpoles+1
-  idl1=mpole%max_mpoles ; idl2=2*mpole%max_mpoles ; idl3=3*mpole%max_mpoles ; idl4=4*mpole%max_mpoles
+  iadd=4*mpoles%max_mpoles+1
+  idl1=mpoles%max_mpoles ; idl2=2*mpoles%max_mpoles ; idl3=3*mpoles%max_mpoles ; idl4=4*mpoles%max_mpoles
 
   fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
@@ -2315,10 +2315,10 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpole,comm)
 
 ! pack rotation matrices and infinitely rotated matrices
 
-              buffer(imove+1        : imove + idl1) = mpole%global_frame(:,i)
-              buffer(imove+1 + idl1 : imove + idl2) = mpole%rotation_x(:,i)
-              buffer(imove+1 + idl2 : imove + idl3) = mpole%rotation_y(:,i)
-              buffer(imove+1 + idl3 : imove + idl4) = mpole%rotation_z(:,i)
+              buffer(imove+1        : imove + idl1) = mpoles%global_frame(:,i)
+              buffer(imove+1 + idl1 : imove + idl2) = mpoles%rotation_x(:,i)
+              buffer(imove+1 + idl2 : imove + idl3) = mpoles%rotation_y(:,i)
+              buffer(imove+1 + idl3 : imove + idl4) = mpoles%rotation_z(:,i)
 
 ! Use the corrected halo reduction factor when the particle is halo to both +&- sides
 
@@ -2389,10 +2389,10 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpole,comm)
 
 ! unpack rotation matrices and infinitesimal rotation matrices
 
-     mpole%global_frame(:,mlast) = buffer(j+1        : j + idl1)
-     mpole%rotation_x(:,mlast) = buffer(j+1 + idl1 : j + idl2)
-     mpole%rotation_y(:,mlast) = buffer(j+1 + idl2 : j + idl3)
-     mpole%rotation_z(:,mlast) = buffer(j+1 + idl3 : j + idl4)
+     mpoles%global_frame(:,mlast) = buffer(j+1        : j + idl1)
+     mpoles%rotation_x(:,mlast) = buffer(j+1 + idl1 : j + idl2)
+     mpoles%rotation_y(:,mlast) = buffer(j+1 + idl2 : j + idl3)
+     mpoles%rotation_z(:,mlast) = buffer(j+1 + idl3 : j + idl4)
 
      ixyz0(mlast)=Nint(buffer(j+iadd))
      j=j+iadd
@@ -2406,7 +2406,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpole,comm)
 
 End Subroutine mpoles_rotmat_export
 
-Subroutine mpoles_rotmat_set_halo(mpole,comm)
+Subroutine mpoles_rotmat_set_halo(mpoles,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2420,7 +2420,7 @@ Subroutine mpoles_rotmat_set_halo(mpole,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: safe
@@ -2431,11 +2431,11 @@ Subroutine mpoles_rotmat_set_halo(mpole,comm)
   Character ( Len = 256 )  ::  message
 
   Do i=1,natms
-     mpole%flg(i)=0
-     If (mpole%max_order < 3) Then
-        Call rotate_mpoles_d(i,mpole,comm)
+     mpoles%flg(i)=0
+     If (mpoles%max_order < 3) Then
+        Call rotate_mpoles_d(i,mpoles,comm)
      Else
-        Call rotate_mpoles(i,mpole,comm)
+        Call rotate_mpoles(i,mpoles,comm)
      End If
   End Do
 
@@ -2455,18 +2455,18 @@ Subroutine mpoles_rotmat_set_halo(mpole,comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call mpoles_rotmat_export(-1,mlast,ixyz0,mpole,comm)
-  Call mpoles_rotmat_export( 1,mlast,ixyz0,mpole,comm)
+  Call mpoles_rotmat_export(-1,mlast,ixyz0,mpoles,comm)
+  Call mpoles_rotmat_export( 1,mlast,ixyz0,mpoles,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call mpoles_rotmat_export(-2,mlast,ixyz0,mpole,comm)
-  Call mpoles_rotmat_export( 2,mlast,ixyz0,mpole,comm)
+  Call mpoles_rotmat_export(-2,mlast,ixyz0,mpoles,comm)
+  Call mpoles_rotmat_export( 2,mlast,ixyz0,mpoles,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call mpoles_rotmat_export(-3,mlast,ixyz0,mpole,comm)
-  Call mpoles_rotmat_export( 3,mlast,ixyz0,mpole,comm)
+  Call mpoles_rotmat_export(-3,mlast,ixyz0,mpoles,comm)
+  Call mpoles_rotmat_export( 3,mlast,ixyz0,mpoles,comm)
 
 ! check atom totals after data transfer
 
@@ -2484,7 +2484,7 @@ End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons, &
            pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
-           neigh,site,minimise,mpole,rigid,comm)
+           neigh,sites,minim,mpoles,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2515,9 +2515,9 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( tethers_type ), Intent( InOut ) :: tether
   Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( site_type ), Intent( In    ) :: site
-  Type( minimise_type ), Intent( InOut ) :: minimise
-  Type( mpole_type ), Intent( InOut ) :: mpole
+  Type( site_type ), Intent( In    ) :: sites
+  Type( minimise_type ), Intent( InOut ) :: minim
+  Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
@@ -2635,23 +2635,23 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
 ! exchange atom data in -/+ x directions
 
      Call deport_atomic_data(-1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
      Call deport_atomic_data( 1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
 
 ! exchange atom data in -/+ y directions
 
      Call deport_atomic_data(-2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
      Call deport_atomic_data( 2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
 
 ! exchange atom data in -/+ z directions
 
      Call deport_atomic_data(-3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
      Call deport_atomic_data( 3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minimise,mpole,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
 
 ! check system for loss of atoms
 
@@ -2662,12 +2662,12 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
 ! reassign atom properties
 
      Do i=1,natms
-        atmnam(i)=site%site_name(lsite(i))
-        ltype(i)=site%type_site(lsite(i))
-        chge(i)=site%charge_site(lsite(i))
-        weight(i)=site%weight_site(lsite(i))
-        lfrzn(i)=site%freeze_site(lsite(i))
-        lfree(i)=site%free_site(lsite(i))
+        atmnam(i)=sites%site_name(lsite(i))
+        ltype(i)=sites%type_site(lsite(i))
+        chge(i)=sites%charge_site(lsite(i))
+        weight(i)=sites%weight_site(lsite(i))
+        lfrzn(i)=sites%freeze_site(lsite(i))
+        lfree(i)=sites%free_site(lsite(i))
      End Do
 
      If (lbook) Then

@@ -60,7 +60,7 @@ Module system
   Subroutine system_init                                             &
            (levcfg,rcut,rbin,keyres,megatm,    &
            time,tmst,nstep,tstep,cshell,stats,devel,green,thermo,met, &
-           bond,angle,dihedral,inversion,zdensity,site,vdw,rdf,comm)
+           bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -91,8 +91,8 @@ Module system
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
-  Type( site_type ), Intent( InOut ) :: site
-  Type( vdw_type ), Intent( InOut ) :: vdw
+  Type( site_type ), Intent( InOut ) :: sites
+  Type( vdw_type ), Intent( InOut ) :: vdws
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -596,38 +596,38 @@ Module system
 
   Do i=1,natms
      k = ltype(i)
-     site%num_type(k) = site%num_type(k)+1.0_wp
-     If (lfrzn(i) == 0) site%num_type_nf(k) = site%num_type_nf(k)+1.0_wp
+     sites%num_type(k) = sites%num_type(k)+1.0_wp
+     If (lfrzn(i) == 0) sites%num_type_nf(k) = sites%num_type_nf(k)+1.0_wp
   End Do
 
 ! global number densities
 
   
-    Call gsum(comm,site%num_type(1:site%ntype_atom))
-    Call gsum(comm,site%num_type_nf(1:site%ntype_atom))
+    Call gsum(comm,sites%num_type(1:sites%ntype_atom))
+    Call gsum(comm,sites%num_type_nf(1:sites%ntype_atom))
   
 
 ! number densities
 
-  Do i=1,site%ntype_atom
-     If (site%num_type(i) > zero_plus) site%dens(i) = site%num_type(i)/volm
+  Do i=1,sites%ntype_atom
+     If (sites%num_type(i) > zero_plus) sites%dens(i) = sites%num_type(i)/volm
   End Do
 
 ! Get long-range corrections
 
-! vdw%elrc & vdw%vlrc arrays are zeroed in vdw,
+! vdws%elrc & vdws%vlrc arrays are zeroed in vdws,
 ! no lrc when vdw interactions are force-shifted
 
-  If (vdw%n_vdw > 0 .and. (.not.vdw%l_force_shift)) Call vdw_lrc(site,vdw,comm)
+  If (vdws%n_vdw > 0 .and. (.not.vdws%l_force_shift)) Call vdw_lrc(sites,vdws,comm)
 
 ! met%elrc & met%vlrc arrays are zeroed in metal_module
 
-  If (met%n_potentials > 0) Call metal_lrc(met,site,comm)
+  If (met%n_potentials > 0) Call metal_lrc(met,sites,comm)
 
 End Subroutine system_init
 
 Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
-                         dihedral,inversion,site,netcdf,rigid,comm)
+                         dihedral,inversion,sites,netcdf,rigid,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -655,7 +655,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
   Type( angles_type ), Intent( In    ) :: angle
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
-  Type( site_type ), Intent( In    ) :: site
+  Type( site_type ), Intent( In    ) :: sites
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( rigid_bodies_type ), Intent( In    ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
@@ -956,17 +956,17 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
   safeg=.true. ! topology presumed safe
 
   sapmpt=0
-  Do itmols=1,site%ntype_mol
-     setspc=site%num_mols(itmols)*site%num_site(itmols)
+  Do itmols=1,sites%ntype_mol
+     setspc=sites%num_mols(itmols)*sites%num_site(itmols)
 
      sapmtt=0
-     Do imols=1,site%num_mols(itmols)
-        If (site%num_site(itmols) > 10*mxatms) Call error(0,message)
+     Do imols=1,sites%num_mols(itmols)
+        If (sites%num_site(itmols) > 10*mxatms) Call error(0,message)
 
 ! Grab the coordinates of the atoms constituting this molecule
 
         indatm1=indatm
-        Do m=1,site%num_site(itmols)
+        Do m=1,sites%num_site(itmols)
            nattot=nattot+1 ! Increase global atom counter in CONFIG(old)
 
            If (lsa(indatm1) == nattot) Then  ! If a local atom has a global index nattot
@@ -981,11 +981,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
               zm(m)=0.0_wp
            End If
         End Do
-        nattot=nattot-site%num_site(itmols)
+        nattot=nattot-sites%num_site(itmols)
 
-           Call gsum(comm,xm(1:site%num_site(itmols)))
-           Call gsum(comm,ym(1:site%num_site(itmols)))
-           Call gsum(comm,zm(1:site%num_site(itmols)))
+           Call gsum(comm,xm(1:sites%num_site(itmols)))
+           Call gsum(comm,ym(1:sites%num_site(itmols)))
+           Call gsum(comm,zm(1:sites%num_site(itmols)))
 
 
 ! Start unwrapping - not safe at start for each molecule
@@ -1467,8 +1467,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
            End Do
            safe=(safe .and. safel)
 
-           If ( ((.not.safe) .and. imols <= site%num_mols(itmols) .and. mxiter < 42) .or. &
-                imols < site%num_mols(itmols) ) Then
+           If ( ((.not.safe) .and. imols <= sites%num_mols(itmols) .and. mxiter < 42) .or. &
+                imols < sites%num_mols(itmols) ) Then
               nshels=nshels-cshell%numshl(itmols)
               nconst=nconst-cons%numcon(itmols)
               nrigid=nrigid-rigid%num(itmols)
@@ -1481,7 +1481,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
         safeg=(safeg.and.safe)
 
-        Do m=1,site%num_site(itmols)
+        Do m=1,sites%num_site(itmols)
            nattot=nattot+1 ! Increase global atom counter in CONFIG(old)
 
            If (lsa(indatm) == nattot) Then ! If a local atom has a global index nattot
@@ -1596,8 +1596,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
            End If
         End Do
 
-        sapmtt = sapmtt + site%num_site(itmols)
-        offset = offset + Int(2,li)*Int(site%num_site(itmols),li)
+        sapmtt = sapmtt + sites%num_site(itmols)
+        offset = offset + Int(2,li)*Int(sites%num_site(itmols),li)
      End Do
 
      sapmpt = sapmpt + sapmtt

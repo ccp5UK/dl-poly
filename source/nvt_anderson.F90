@@ -33,7 +33,7 @@ Contains
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,      &
              strkin,engke,cshell,                      &
-             cons,pmf,stat,thermo,site,tmr,comm)
+             cons,pmf,stat,thermo,sites,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -67,7 +67,7 @@ Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
-    Type( site_type ), Intent( InOut ) :: site
+    Type( site_type ), Intent( InOut ) :: sites
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut) :: comm
 
@@ -267,7 +267,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
                 j = j + 1
                 qn(i) = 1
 
-                If (site%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site%dof_site(lsite(i))
+                If (sites%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + sites%dof_site(lsite(i))
 
   ! Get gaussian distribution (unit variance)
 
@@ -410,7 +410,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,       &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cshell,cons,pmf,stat,thermo,site,rigid,tmr,comm)
+             strcom,vircom,cshell,cons,pmf,stat,thermo,sites,rigid,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -448,7 +448,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
-    Type( site_type ), Intent( InOut ) :: site
+    Type( site_type ), Intent( InOut ) :: sites
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
@@ -1119,7 +1119,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
        mxdr = 0.0_wp
        Do i=1,natms
           If (qn(i) == 1 .and. lfree(i) == 0) Then
-             If (site%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site%dof_site(lsite(i))
+             If (sites%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + sites%dof_site(lsite(i))
 
   ! Get gaussian distribution (unit variance)
 
@@ -1145,7 +1145,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
                 Do jrgd=1,lrgd
                    i=rigid%index_local(jrgd,irgd) ! particle index
                    If (i <= natms) Then
-                      If (site%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + site%dof_site(lsite(i))
+                      If (sites%dof_site(lsite(i)) > zero_plus) mxdr = mxdr + sites%dof_site(lsite(i))
                    End If
                 End Do
 

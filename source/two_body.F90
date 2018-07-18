@@ -41,14 +41,14 @@ Subroutine two_body_forces                        &
            nstfce,lbook,megfrz, &
            leql,nsteql,nstep,         &
            cshell,               &
-           stats,ewld,devel,met,pois,neigh,site,vdw,rdf,mpole,electro,tmr,comm)
+           stats,ewld,devel,met,pois,neigh,sites,vdws,rdf,mpoles,electro,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 subroutine for calculating interatomic forces and rdf%rdf
 ! using the verlet neighbour list
 !
-! vdw%n_vdw > 0 ------ switch for vdw potentials calculation
+! vdws%n_vdw > 0 ------ switch for vdw potentials calculation
 ! met%n_potentials > 0 ------ switch for metal local density and potentials
 !                   calculations
 !
@@ -78,10 +78,10 @@ Subroutine two_body_forces                        &
   Type( metal_type ),                       Intent( InOut ) :: met
   Type( poisson_type ),                     Intent( InOut ) :: pois
   Type( neighbours_type ),                  Intent( InOut ) :: neigh
-  Type( site_type ),                        Intent( In    ) :: site
-  Type( vdw_type ),                         Intent( InOut ) :: vdw
+  Type( site_type ),                        Intent( In    ) :: sites
+  Type( vdw_type ),                         Intent( InOut ) :: vdws
   Type( rdf_type ),                         Intent( InOut ) :: rdf
-  Type( mpole_type ),                       Intent( InOut ) :: mpole
+  Type( mpole_type ),                       Intent( InOut ) :: mpoles
   Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( electrostatic_type ), Intent( In    ) :: electro
   Type( comms_type ),                       Intent( InOut ) :: comm
@@ -166,12 +166,12 @@ Subroutine two_body_forces                        &
 
 ! Set up non-bonded interaction (verlet) list using link cells
   If (neigh%update) Then
-    Call link_cell_pairs(vdw%cutoff,met%rcut,pdplnc,lbook,megfrz,cshell,devel,neigh,mpole,tmr,comm)
+    Call link_cell_pairs(vdws%cutoff,met%rcut,pdplnc,lbook,megfrz,cshell,devel,neigh,mpoles,tmr,comm)
   End If
 ! Calculate all contributions from KIM
 
   If (kimim /= ' ') Then
-     Call kim_setup(site%ntype_atom,site%unique_atom,site%site_name,kimim,neigh%max_list,comm)
+     Call kim_setup(sites%ntype_atom,sites%unique_atom,sites%site_name,kimim,neigh%max_list,comm)
      Call kim_forces(engkim,virkim,stats%stress,neigh%list,comm)
      Call kim_cleanup(comm)
   End If
@@ -180,11 +180,11 @@ Subroutine two_body_forces                        &
 
 ! Reset metal long-range corrections (constant pressure/stress only)
 
-     If (ensemble >= 20) Call metal_lrc(met,site,comm)
+     If (ensemble >= 20) Call metal_lrc(met,sites,comm)
 
 ! calculate local density in metals
 
-     Call metal_ld_compute(engden,virden,stats%stress,site%ntype_atom,met,neigh,comm)
+     Call metal_ld_compute(engden,virden,stats%stress,sites%ntype_atom,met,neigh,comm)
 
   End If
 
@@ -194,11 +194,11 @@ Subroutine two_body_forces                        &
 #endif
 
   If (electro%key == ELECTROSTATIC_EWALD .and. ewld%l_fce) Then
-     If (mpole%max_mpoles > 0) Then
-        If (mpole%max_order <= 2) Then
-           Call ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stats%stress,ewld,mpole,electro,comm)
+     If (mpoles%max_mpoles > 0) Then
+        If (mpoles%max_order <= 2) Then
+           Call ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stats%stress,ewld,mpoles,electro,comm)
         Else
-           Call ewald_spme_mforces(engcpe_rc,vircpe_rc,stats%stress,ewld,mpole,electro,comm)
+           Call ewald_spme_mforces(engcpe_rc,vircpe_rc,stats%stress,ewld,mpoles,electro,comm)
         End If
      Else
         Call ewald_spme_forces(engcpe_rc,vircpe_rc,stats%stress,ewld,electro,comm)
@@ -242,7 +242,7 @@ Subroutine two_body_forces                        &
 ! calculate metal forces and potential
 
      If (met%n_potentials > 0) Then
-        Call metal_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,safe,site%ntype_atom,met,neigh)
+        Call metal_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,safe,sites%ntype_atom,met,neigh)
 
         engmet=engmet+engacc
         virmet=virmet+viracc
@@ -250,8 +250,8 @@ Subroutine two_body_forces                        &
 
 ! calculate short-range force and potential terms
 
-     If (vdw%n_vdw > 0) Then
-        Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,vdw)
+     If (vdws%n_vdw > 0) Then
+        Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,vdws)
 
         engvdw=engvdw+engacc
         virvdw=virvdw+viracc
@@ -261,7 +261,7 @@ Subroutine two_body_forces                        &
 ! COULOMBIC CONTRIBUTIONS
 !!!!!!!!!!!!!!!!!!!!!!!!1
 
-     If (mpole%max_mpoles > 0) Then
+     If (mpoles%max_mpoles > 0) Then
 
 !!! MULTIPOLAR ATOMIC SITES
 
@@ -269,12 +269,12 @@ Subroutine two_body_forces                        &
 
 ! calculate coulombic forces, Ewald sum - real space contribution
 
-           If (mpole%max_order <= 2) Then
+           If (mpoles%max_order <= 2) Then
               Call ewald_real_mforces_d(i,xxt,yyt,zzt,rrt,engacc, &
-                viracc,stats%stress,ewld,neigh,mpole,electro,comm)
+                viracc,stats%stress,ewld,neigh,mpoles,electro,comm)
            Else
               Call ewald_real_mforces(i,xxt,yyt,zzt,rrt,engacc, &
-                viracc,stats%stress,neigh,mpole,electro,comm)
+                viracc,stats%stress,neigh,mpoles,electro,comm)
            End If
 
            engcpe_rl=engcpe_rl+engacc
@@ -284,7 +284,7 @@ Subroutine two_body_forces                        &
 
 ! distance dependant dielectric potential
 
-           Call coul_dddp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
+           Call coul_dddp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -293,7 +293,7 @@ Subroutine two_body_forces                        &
 
 ! coulombic 1/r potential with no truncation or damping
 
-           Call coul_cp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
+           Call coul_cp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -302,7 +302,7 @@ Subroutine two_body_forces                        &
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,electro,comm)
+           Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -311,7 +311,7 @@ Subroutine two_body_forces                        &
 
 ! reaction field potential
 
-           Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,electro,comm)
+           Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -400,7 +400,7 @@ Subroutine two_body_forces                        &
 
   If ( lbook .and. &
     (l_do_rdf .or. (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) &
-    .or. mpole%key == POLARISATION_CHARMM) ) Then
+    .or. mpoles%key == POLARISATION_CHARMM) ) Then
      Do i=1,natms ! outer loop over atoms
         limit=neigh%list(-1,i)-neigh%list(0,i) ! Get neigh%list limit
         If (limit > 0) Then
@@ -430,11 +430,11 @@ Subroutine two_body_forces                        &
            If (l_do_rdf) Call rdf_excl_collect(i,rrt,neigh,rdf)
 
            If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald corrections
-              If (mpole%max_mpoles > 0) Then
-                 If (mpole%max_order <= 2) Then
-                    Call ewald_excl_mforces_d(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,electro)
+              If (mpoles%max_mpoles > 0) Then
+                 If (mpoles%max_order <= 2) Then
+                    Call ewald_excl_mforces_d(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro)
                  Else
-                    Call ewald_excl_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole,electro)
+                    Call ewald_excl_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro)
                  End If
               Else
                  Call ewald_excl_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro)
@@ -446,9 +446,9 @@ Subroutine two_body_forces                        &
 
 ! get CHARMM core-shell self-induction contributions
 
-           If (mpole%key == POLARISATION_CHARMM) Then
+           If (mpoles%key == POLARISATION_CHARMM) Then
               If (neigh%list(-3,i)-neigh%list(0,i) > 0) Then
-                 Call coul_chrm_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpole)
+                 Call coul_chrm_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles)
 
                  engcpe_ch=engcpe_ch+engacc
                  vircpe_ch=vircpe_ch+viracc
@@ -526,8 +526,8 @@ Subroutine two_body_forces                        &
 
         If (megfrz /= 0) Then
            If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald
-              If (mpole%max_mpoles > 0) Then
-                 Call ewald_frzn_mforces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,mpole,electro,comm)
+              If (mpoles%max_mpoles > 0) Then
+                 Call ewald_frzn_mforces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,mpoles,electro,comm)
               Else
                  Call ewald_frzn_forces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,electro,comm)
               End If
@@ -561,8 +561,8 @@ Subroutine two_body_forces                        &
 ! Find the change of energy produced by the torques on multipoles
 ! under infinitesimal rotations & convert to Cartesian coordinates
 
-  If (mpole%max_mpoles > 0) Then
-    Call d_ene_trq_mpoles(vircpe_dt,stats%stress,mpole)
+  If (mpoles%max_mpoles > 0) Then
+    Call d_ene_trq_mpoles(vircpe_dt,stats%stress,mpoles)
   End If
 
 ! sum up contributions to potentials
@@ -619,7 +619,7 @@ Subroutine two_body_forces                        &
 ! Self-interaction is constant for the default charges only SPME
 
   If (electro%key == ELECTROSTATIC_EWALD) Then ! Sum it up for multipolar SPME
-     If (mpole%max_mpoles > 0 .and. mpole%max_order <= 2) Call gsum(comm,ewld%engsic)
+     If (mpoles%max_mpoles > 0 .and. mpoles%max_order <= 2) Call gsum(comm,ewld%engsic)
      !Write(message,'(a,1p,e18.10)') 'Self-interaction term: ',engsic
      !Call info(message,.true.)
   End If
@@ -640,12 +640,12 @@ Subroutine two_body_forces                        &
 ! Globalise short-range, KIM and metal interactions with
 ! their long-range corrections contributions: srp
 
-  stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdw%elrc)
-  stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdw%vlrc)
+  stats%engsrp = engkim + (engden + engmet + met%elrc(0)) + (engvdw + vdws%elrc)
+  stats%virsrp = virkim + (virden + virmet + met%vlrc(0)) + (virvdw + vdws%vlrc)
 
 ! Add long-range corrections to diagonal terms of stress tensor (per node)
 
-  tmp = - (vdw%vlrc+met%vlrc(0))/(3.0_wp*Real(comm%mxnode,wp))
+  tmp = - (vdws%vlrc+met%vlrc(0))/(3.0_wp*Real(comm%mxnode,wp))
   stats%stress(1) = stats%stress(1) + tmp
   stats%stress(5) = stats%stress(5) + tmp
   stats%stress(9) = stats%stress(9) + tmp

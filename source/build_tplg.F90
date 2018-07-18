@@ -31,7 +31,7 @@ Module build_tplg
 
 Contains
 
-  Subroutine build_tplg_intra(max_exclude,bond,angle,dihedral,inversion,mpole,comm)
+  Subroutine build_tplg_intra(max_exclude,bond,angle,dihedral,inversion,mpoles,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -49,7 +49,7 @@ Contains
     Type( angles_type ), Intent( In    ) :: angle
     Type( dihedrals_type ), Intent( In    ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
-    Type( mpole_type ), Intent( InOut ) :: mpole
+    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
@@ -75,8 +75,8 @@ Contains
 
         ! add atoms to topology list
 
-        If (ia0 > 0) Call add_exclusion(safe,ia0,ib,ibig,mpole%ltp)
-        If (ib0 > 0) Call add_exclusion(safe,ib0,ia,ibig,mpole%ltp)
+        If (ia0 > 0) Call add_exclusion(safe,ia0,ib,ibig,mpoles%ltp)
+        If (ib0 > 0) Call add_exclusion(safe,ib0,ia,ibig,mpoles%ltp)
       End If
     End Do
 
@@ -99,18 +99,18 @@ Contains
         ! add atoms to topology list
 
         If (ia0 > 0) Then ! ia : ib - ic neighbours
-          Call add_exclusion(safe,ia0,ib,ibig,mpole%ltp)
-          Call add_exclusion(safe,ia0,ic,ibig,mpole%ltp)
+          Call add_exclusion(safe,ia0,ib,ibig,mpoles%ltp)
+          Call add_exclusion(safe,ia0,ic,ibig,mpoles%ltp)
         End If
 
         If (ib0 > 0) Then ! ib : ia - ic neighbours
-          Call add_exclusion(safe,ib0,ia,ibig,mpole%ltp)
-          Call add_exclusion(safe,ib0,ic,ibig,mpole%ltp)
+          Call add_exclusion(safe,ib0,ia,ibig,mpoles%ltp)
+          Call add_exclusion(safe,ib0,ic,ibig,mpoles%ltp)
         End If
 
         If (ic0 > 0) Then ! ic : ia - ib neighbours
-          Call add_exclusion(safe,ic0,ia,ibig,mpole%ltp)
-          Call add_exclusion(safe,ic0,ib,ibig,mpole%ltp)
+          Call add_exclusion(safe,ic0,ia,ibig,mpoles%ltp)
+          Call add_exclusion(safe,ic0,ib,ibig,mpoles%ltp)
         End If
       End If
     End Do
@@ -136,23 +136,23 @@ Contains
       ! add atoms to topology list
 
       If (ia0 > 0) Then ! ia : ib - ic neighbours
-        Call add_exclusion(safe,ia0,ib,ibig,mpole%ltp)
-        Call add_exclusion(safe,ia0,ic,ibig,mpole%ltp)
+        Call add_exclusion(safe,ia0,ib,ibig,mpoles%ltp)
+        Call add_exclusion(safe,ia0,ic,ibig,mpoles%ltp)
       End If
 
       If (ib0 > 0) Then ! ib : ia - ic neighbours
-        Call add_exclusion(safe,ib0,ia,ibig,mpole%ltp)
-        Call add_exclusion(safe,ib0,ic,ibig,mpole%ltp)
+        Call add_exclusion(safe,ib0,ia,ibig,mpoles%ltp)
+        Call add_exclusion(safe,ib0,ic,ibig,mpoles%ltp)
       End If
 
       If (ic0 > 0) Then ! ic : ib - id neighbours
-        Call add_exclusion(safe,ic0,ib,ibig,mpole%ltp)
-        Call add_exclusion(safe,ic0,id,ibig,mpole%ltp)
+        Call add_exclusion(safe,ic0,ib,ibig,mpoles%ltp)
+        Call add_exclusion(safe,ic0,id,ibig,mpoles%ltp)
       End If
 
       If (id0 > 0) Then ! id : ib - ic neighbours
-        Call add_exclusion(safe,id0,ib,ibig,mpole%ltp)
-        Call add_exclusion(safe,id0,ic,ibig,mpole%ltp)
+        Call add_exclusion(safe,id0,ib,ibig,mpoles%ltp)
+        Call add_exclusion(safe,id0,ic,ibig,mpoles%ltp)
       End If
     End Do
 
@@ -177,27 +177,27 @@ Contains
       ! add atoms to topology list
 
       If (ia0 > 0) Then ! ia : ib - ic - id neighbours
-        Call add_exclusion(safe,ia0,ib,ibig,mpole%ltp)
-        Call add_exclusion(safe,ia0,ic,ibig,mpole%ltp)
-        Call add_exclusion(safe,ia0,id,ibig,mpole%ltp)
+        Call add_exclusion(safe,ia0,ib,ibig,mpoles%ltp)
+        Call add_exclusion(safe,ia0,ic,ibig,mpoles%ltp)
+        Call add_exclusion(safe,ia0,id,ibig,mpoles%ltp)
       End If
 
       If (ib0 > 0) Then ! ib : ia - ic - id neighbours
-        Call add_exclusion(safe,ib0,ia,ibig,mpole%ltp)
-        Call add_exclusion(safe,ib0,ic,ibig,mpole%ltp)
-        Call add_exclusion(safe,ib0,id,ibig,mpole%ltp)
+        Call add_exclusion(safe,ib0,ia,ibig,mpoles%ltp)
+        Call add_exclusion(safe,ib0,ic,ibig,mpoles%ltp)
+        Call add_exclusion(safe,ib0,id,ibig,mpoles%ltp)
       End If
 
       If (ic0 > 0) Then ! ic : ia - ib - id neighbours
-        Call add_exclusion(safe,ic0,ia,ibig,mpole%ltp)
-        Call add_exclusion(safe,ic0,ib,ibig,mpole%ltp)
-        Call add_exclusion(safe,ic0,id,ibig,mpole%ltp)
+        Call add_exclusion(safe,ic0,ia,ibig,mpoles%ltp)
+        Call add_exclusion(safe,ic0,ib,ibig,mpoles%ltp)
+        Call add_exclusion(safe,ic0,id,ibig,mpoles%ltp)
       End If
 
       If (id0 > 0) Then ! id : ia - ib - ic neighbours
-        Call add_exclusion(safe,id0,ia,ibig,mpole%ltp)
-        Call add_exclusion(safe,id0,ib,ibig,mpole%ltp)
-        Call add_exclusion(safe,id0,ic,ibig,mpole%ltp)
+        Call add_exclusion(safe,id0,ia,ibig,mpoles%ltp)
+        Call add_exclusion(safe,id0,ib,ibig,mpoles%ltp)
+        Call add_exclusion(safe,id0,ic,ibig,mpoles%ltp)
       End If
     End Do
 
@@ -210,11 +210,11 @@ Contains
       Call error(65)
     End If
 
-    ! sort mpole%ltp
+    ! sort mpoles%ltp
 
     Do i=1,natms
-      j=mpole%ltp(0,i)
-      If (j > 0) Call shellsort(j,mpole%ltp(1:j,i))
+      j=mpoles%ltp(0,i)
+      If (j > 0) Call shellsort(j,mpoles%ltp(1:j,i))
     End Do
   End Subroutine build_tplg_intra
 End Module build_tplg
