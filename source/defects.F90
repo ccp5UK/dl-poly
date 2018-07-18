@@ -49,10 +49,7 @@ Module defects
                                 IO_UNKNOWN_WRITE_LEVEL
   Use netcdf_wrap, Only : netcdf_param
   Use site, Only : site_type
-  Use domains,           Only : nprx,npry,nprz,            &
-                                nprx_r,npry_r,nprz_r,map,  &
-                                idx,idy,idz,r_nprx,r_npry, &
-                                r_nprz
+  Use domains,           Only : domains_type
   Use numerics,          Only : pbcshift,invert,dcell, shellsort2
   Use errors_warnings,   Only : error,warning
   Use neighbours,        Only : neighbours_type,defects_link_cells
@@ -61,17 +58,16 @@ Module defects
   Implicit None
 
   Private
-!> REFERENCE data
 
-!> Defect Type  
+!> Defect Type
    Type, Public :: defects_type
      Logical                             :: ldef, newjob
      Integer(Kind =  wi)                 :: isdef, nsdef
-     Real(Kind =  wp)                    :: rdef   
+     Real(Kind =  wp)                    :: rdef
      Character( Len = 12 )               :: reffile
      Character( Len = 12 )               :: deffile
 
-     Integer(Kind =  wi)                 :: nrefs = 0 , nlrefs = 0 
+     Integer(Kind =  wi)                 :: nrefs = 0 , nlrefs = 0
      Integer(Kind=li)                    :: rec=0_li,frm = 0_li
      Integer(Kind =  wi)                 :: mxlcdef
 
@@ -89,11 +85,11 @@ Module defects
 Contains
 
 
-!> allocate_defects_arrays 
+!> allocate_defects_arrays
   Subroutine allocate_defects_arrays(dfcts)
 
     Integer(Kind =  wi), Dimension( 1:3 )  :: fail
-    Type(defects_type) , Intent( InOut )   :: dfcts 
+    Type(defects_type) , Intent( InOut )   :: dfcts
 
     fail = 0
     Allocate (dfcts%namr(1:mxatms)                                 , Stat = fail(1))
@@ -103,22 +99,22 @@ Contains
     If (Any(fail > 0)) Call error(1035)
 
     dfcts%namr = ' '
-    dfcts%lri  = 0 
-    dfcts%lra  = 0 
+    dfcts%lri  = 0
+    dfcts%lra  = 0
     dfcts%indr = 0
 
-    dfcts%xr   = 0.0_wp 
-    dfcts%yr   = 0.0_wp 
+    dfcts%xr   = 0.0_wp
+    dfcts%yr   = 0.0_wp
     dfcts%zr   = 0.0_wp
- 
+
   End Subroutine allocate_defects_arrays
 
 
-!> deallocate_defects_arrays 
+!> deallocate_defects_arrays
   Subroutine deallocate_defects_arrays(dfcts)
 
     Integer(Kind =  wi), Dimension( 1:3 )  :: fail
-    Type(defects_type) , Intent( InOut )   :: dfcts 
+    Type(defects_type) , Intent( InOut )   :: dfcts
 
     fail = 0
     Deallocate (dfcts%namr                     , Stat = fail(1))
@@ -126,11 +122,10 @@ Contains
     Deallocate (dfcts%xr  ,dfcts%yr ,dfcts%zr  , Stat = fail(3))
 
     If (Any(fail > 0)) Call error(1035)
- 
   End Subroutine deallocate_defects_arrays
 
-!> defects_reference_export   
-  Subroutine defects_reference_export(mdir,ixyz,dfcts,comm)
+!> defects_reference_export
+  Subroutine defects_reference_export(mdir,ixyz,dfcts,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -148,6 +143,7 @@ Contains
   Integer,                Intent( In    ) :: mdir
   Integer,                Intent( InOut ) :: ixyz(1:mxatms)
   Type( defects_type ),   Intent( InOut ) :: dfcts
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type )  ,   Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez
@@ -193,50 +189,50 @@ Contains
      kx  = 1
      jxyz= 1
      kxyz= 3
-     lsx = (idx == 0)
+     lsx = (domain%idx == 0)
 
-     jdnode = map(1)
-     kdnode = map(2)
+     jdnode = domain%map(1)
+     kdnode = domain%map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
      kxyz= 3
-     lex = (idx == nprx-1)
+     lex = (domain%idx == domain%nx-1)
 
-     jdnode = map(2)
-     kdnode = map(1)
+     jdnode = domain%map(2)
+     kdnode = domain%map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
      kxyz= 30
-     lsy = (idy == 0)
+     lsy = (domain%idy == 0)
 
-     jdnode = map(3)
-     kdnode = map(4)
+     jdnode = domain%map(3)
+     kdnode = domain%map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
      kxyz= 30
-     ley = (idy == npry-1)
+     ley = (domain%idy == domain%ny-1)
 
-     jdnode = map(4)
-     kdnode = map(3)
+     jdnode = domain%map(4)
+     kdnode = domain%map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
      kxyz= 300
-     lsz = (idz == 0)
+     lsz = (domain%idz == 0)
 
-     jdnode = map(5)
-     kdnode = map(6)
+     jdnode = domain%map(5)
+     kdnode = domain%map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
      kxyz= 300
-     lez = (idz == nprz-1)
+     lez = (domain%idz == domain%nz-1)
 
-     jdnode = map(6)
-     kdnode = map(5)
+     jdnode = domain%map(6)
+     kdnode = domain%map(5)
   Else
      Call error(557)
   End If
@@ -401,7 +397,7 @@ End Subroutine defects_reference_export
 
 !> defects_reference_read
 
-  Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,comm)
+Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -413,11 +409,12 @@ End Subroutine defects_reference_export
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  
+
   Integer,              Intent( In    ) :: nstep
   Type( defects_type ), Intent( InOut ) :: dfcts
   Type( site_type ), Intent( In    ) :: sites
   Type( netcdf_param ), Intent( In    ) :: netcdf
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Logical                :: l_ind = .true.  , &
@@ -455,7 +452,7 @@ End Subroutine defects_reference_export
   Else
      fname=trim(dfcts%reffile) // '.nc'
   End If
- 
+
 ! Check if we have a REFERENCE and default megref
 
   lexist=.true. ; megref=0
@@ -742,7 +739,7 @@ End Subroutine defects_reference_export
 
         Call gcheck(comm,safe,"enforce")
         Call gcheck(comm,loop,"enforce")
-        
+
         If (.not.safe) Go To 100 ! catch error
         If (loop) Then
 
@@ -802,11 +799,11 @@ End Subroutine defects_reference_export
 
 ! assign domain coordinates (call for errors)
 
-              ipx=Int((sxx+0.5_wp)*nprx_r)
-              ipy=Int((syy+0.5_wp)*npry_r)
-              ipz=Int((szz+0.5_wp)*nprz_r)
+              ipx=Int((sxx+0.5_wp)*domain%nx_real)
+              ipy=Int((syy+0.5_wp)*domain%ny_real)
+              ipz=Int((szz+0.5_wp)*domain%nz_real)
 
-              idm=ipx+nprx*(ipy+npry*ipz)
+              idm=ipx+domain%nx*(ipy+domain%ny*ipz)
               If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
                  Call error(555)
               Else If (idm == comm%idnode)                 Then
@@ -867,8 +864,8 @@ End Subroutine defects_reference_export
         top_skip = Int(1,offset_kind) ! This is now the frame = 1
      End If
 
-     Call defects_reference_read_parallel       &
-           (lvcfgr,l_ind,l_str,megref,fast,fh,top_skip,dfcts,comm)
+     Call defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
+       top_skip,dfcts,domain,comm)
 
 ! Close REFERENCE
 
@@ -941,8 +938,8 @@ End Subroutine defects_reference_export
 
 End Subroutine defects_reference_read
 
-Subroutine defects_reference_read_parallel      &
-           (lvcfgr,l_ind,l_str,megref,fast,fh,top_skip,dfcts,comm)
+Subroutine defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
+    top_skip,dfcts,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -959,6 +956,7 @@ Subroutine defects_reference_read_parallel      &
   Integer,                           Intent( In    ) :: lvcfgr,megref,fh
   Integer( Kind = offset_kind ),     Intent( In    ) :: top_skip
   Type( defects_type ),              Intent( InOut ) :: dfcts
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type )  ,              Intent( InOut ) :: comm
 
   Logical                :: safe,do_read
@@ -1274,11 +1272,11 @@ Subroutine defects_reference_read_parallel      &
 
 ! assign domain coordinates (call for errors)
 
-           ipx=Int((sxx+0.5_wp)*nprx_r)
-           ipy=Int((syy+0.5_wp)*npry_r)
-           ipz=Int((szz+0.5_wp)*nprz_r)
+           ipx=Int((sxx+0.5_wp)*domain%nx_real)
+           ipy=Int((syy+0.5_wp)*domain%ny_real)
+           ipz=Int((szz+0.5_wp)*domain%nz_real)
 
-           idm=ipx+nprx*(ipy+npry*ipz)
+           idm=ipx+domain%nx*(ipy+domain%ny*ipz)
            If (idm < 0 .or. idm > (comm%mxnode-1)) Call error(555)
            owner_read(i) = idm
            n_held(idm) = n_held(idm)+1
@@ -1421,8 +1419,7 @@ Dispatch:  Do i=1,n_loc
   Call error(554)
 End Subroutine defects_reference_read_parallel
 
-
-Subroutine defects_reference_set_halo(cut,dfcts,comm)
+Subroutine defects_reference_set_halo(cut,dfcts,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1437,6 +1434,7 @@ Subroutine defects_reference_set_halo(cut,dfcts,comm)
 
   Real( Kind = wp ),    Intent( In    ) :: cut
   Type( defects_type ), Intent( InOut ) :: dfcts
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Integer           :: fail,nlx,nly,nlz,i,j,ia,ib
@@ -1458,15 +1456,15 @@ Subroutine defects_reference_set_halo(cut,dfcts,comm)
 
 ! calculate link cell dimensions per node
 
-  nlx=Int(celprp(7)/(cut*nprx_r))
-  nly=Int(celprp(8)/(cut*npry_r))
-  nlz=Int(celprp(9)/(cut*nprz_r))
+  nlx=Int(celprp(7)/(cut*domain%nx_real))
+  nly=Int(celprp(8)/(cut*domain%ny_real))
+  nlz=Int(celprp(9)/(cut*domain%nz_real))
 
 ! Get the total number of link-cells in MD cell per direction
 
-  xdc=Real(nlx*nprx,wp)
-  ydc=Real(nly*npry,wp)
-  zdc=Real(nlz*nprz,wp)
+  xdc=Real(nlx*domain%nx,wp)
+  ydc=Real(nly*domain%ny,wp)
+  zdc=Real(nlz*domain%nz,wp)
 
 ! link-cell widths in reduced space
 
@@ -1476,15 +1474,15 @@ Subroutine defects_reference_set_halo(cut,dfcts,comm)
 
 ! Distance from the - edge of this domain
 
-  dfcts%dxl=Nearest( (-0.5_wp+dfcts%cwx)+Real(idx,wp)*r_nprx , +1.0_wp)+zero_plus
-  dfcts%dyl=Nearest( (-0.5_wp+dfcts%cwy)+Real(idy,wp)*r_npry , +1.0_wp)+zero_plus
-  dfcts%dzl=Nearest( (-0.5_wp+dfcts%cwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
+  dfcts%dxl=Nearest( (-0.5_wp+dfcts%cwx)+Real(domain%idx,wp)*domain%nx_recip , +1.0_wp)+zero_plus
+  dfcts%dyl=Nearest( (-0.5_wp+dfcts%cwy)+Real(domain%idy,wp)*domain%ny_recip , +1.0_wp)+zero_plus
+  dfcts%dzl=Nearest( (-0.5_wp+dfcts%cwz)+Real(domain%idz,wp)*domain%nz_recip , +1.0_wp)+zero_plus
 
 ! Distance from the + edge of this domain
 
-  dfcts%dxr=Nearest( (-0.5_wp-dfcts%cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus
-  dfcts%dyr=Nearest( (-0.5_wp-dfcts%cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus
-  dfcts%dzr=Nearest( (-0.5_wp-dfcts%cwz)+Real(idz+1,wp)*r_nprz , -1.0_wp)-zero_plus
+  dfcts%dxr=Nearest( (-0.5_wp-dfcts%cwx)+Real(domain%idx+1,wp)*domain%nx_recip , -1.0_wp)-zero_plus
+  dfcts%dyr=Nearest( (-0.5_wp-dfcts%cwy)+Real(domain%idy+1,wp)*domain%ny_recip , -1.0_wp)-zero_plus
+  dfcts%dzr=Nearest( (-0.5_wp-dfcts%cwz)+Real(domain%idz+1,wp)*domain%nz_recip , -1.0_wp)-zero_plus
 
 ! Convert atomic positions from MD cell centred
 ! Cartesian coordinates to reduced space ones
@@ -1505,18 +1503,18 @@ Subroutine defects_reference_set_halo(cut,dfcts,comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call defects_reference_export(-1,ixyz,dfcts,comm)
-  Call defects_reference_export( 1,ixyz,dfcts,comm)
+  Call defects_reference_export(-1,ixyz,dfcts,domain,comm)
+  Call defects_reference_export( 1,ixyz,dfcts,domain,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call defects_reference_export(-2,ixyz,dfcts,comm)
-  Call defects_reference_export( 2,ixyz,dfcts,comm)
+  Call defects_reference_export(-2,ixyz,dfcts,domain,comm)
+  Call defects_reference_export( 2,ixyz,dfcts,domain,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call defects_reference_export(-3,ixyz,dfcts,comm)
-  Call defects_reference_export( 3,ixyz,dfcts,comm)
+  Call defects_reference_export(-3,ixyz,dfcts,domain,comm)
+  Call defects_reference_export( 3,ixyz,dfcts,domain,comm)
 
   Do i=1,dfcts%nlrefs
      dfcts%lri(i)=i
@@ -1543,15 +1541,15 @@ Subroutine defects_reference_set_halo(cut,dfcts,comm)
 
 ! Distance from the - edge of this domain
 
-  dfcts%dxl=Nearest( (-0.5_wp-dfcts%cwx)+Real(idx,wp)*r_nprx , -1.0_wp)-zero_plus
-  dfcts%dyl=Nearest( (-0.5_wp-dfcts%cwy)+Real(idy,wp)*r_npry , -1.0_wp)-zero_plus
-  dfcts%dzl=Nearest( (-0.5_wp-dfcts%cwz)+Real(idz,wp)*r_nprz , -1.0_wp)-zero_plus
+  dfcts%dxl=Nearest( (-0.5_wp-dfcts%cwx)+Real(domain%idx,wp)*domain%nx_recip , -1.0_wp)-zero_plus
+  dfcts%dyl=Nearest( (-0.5_wp-dfcts%cwy)+Real(domain%idy,wp)*domain%ny_recip , -1.0_wp)-zero_plus
+  dfcts%dzl=Nearest( (-0.5_wp-dfcts%cwz)+Real(domain%idz,wp)*domain%nz_recip , -1.0_wp)-zero_plus
 
 ! Distance from the + edge of this domain
 
-  dfcts%dxr=Nearest( (-0.5_wp+dfcts%cwx)+Real(idx+1,wp)*r_nprx , +1.0_wp)+zero_plus
-  dfcts%dyr=Nearest( (-0.5_wp+dfcts%cwy)+Real(idy+1,wp)*r_npry , +1.0_wp)+zero_plus
-  dfcts%dzr=Nearest( (-0.5_wp+dfcts%cwz)+Real(idz+1,wp)*r_nprz , +1.0_wp)+zero_plus
+  dfcts%dxr=Nearest( (-0.5_wp+dfcts%cwx)+Real(domain%idx+1,wp)*domain%nx_recip , +1.0_wp)+zero_plus
+  dfcts%dyr=Nearest( (-0.5_wp+dfcts%cwy)+Real(domain%idy+1,wp)*domain%ny_recip , +1.0_wp)+zero_plus
+  dfcts%dzr=Nearest( (-0.5_wp+dfcts%cwz)+Real(domain%idz+1,wp)*domain%nz_recip , +1.0_wp)+zero_plus
 
   Deallocate (ixyz, Stat=fail)
   If (fail > 0) Then
@@ -2143,7 +2141,8 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 End Subroutine defects_reference_write
 
 !> defects_write
-  Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh,sites,netcdf,comm)
+Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
+    sites,netcdf,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2163,8 +2162,9 @@ End Subroutine defects_reference_write
   Type( site_type ), Intent( In    ) :: sites
   Type( core_shell_type ), Intent( In    ) :: cshell
   Type( netcdf_param ), Intent( In    ) :: netcdf
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type)   , Intent( InOut ) :: comm
-  
+
   Integer, Parameter :: recsz = 73 ! default record size
 
   Logical                 :: safe,lexist,l_tmp,ready
@@ -2219,7 +2219,7 @@ End Subroutine defects_reference_write
 
   If (io_write == IO_WRITE_SORTED_NETCDF) io_write = IO_WRITE_SORTED_MPIIO
 
-    
+
    If (dfcts%newjob) Then
      dfcts%newjob = .false.
 
@@ -2229,13 +2229,13 @@ End Subroutine defects_reference_write
 
 ! Build lattice sites list from REFERENCE
      Call allocate_defects_arrays(dfcts)
-     Call defects_reference_read(nstep,dfcts,sites,netcdf,comm)
+     Call defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set
 
      cut=dfcts%rdef+0.15_wp
-     Call defects_reference_set_halo(cut,dfcts,comm)
+     Call defects_reference_set_halo(cut,dfcts,domain,comm)
 
 ! If the keyres=1, is DEFECTS old (does it exist) and
 ! how many frames and records are in there
@@ -2416,10 +2416,10 @@ End Subroutine defects_reference_write
      Write(message,'(a)') Trim(dfcts%deffile)//'_write allocation failure 1'
      Call error(0,message)
   EndIf
-  Call defects_link_cells &
-           (dfcts%cutdef,dfcts%mxlcdef,dfcts%nrefs,dfcts%nlrefs,dfcts%xr,dfcts%yr,dfcts%zr,nlx,nly,nlz,linkr,lctr)
-  Call defects_link_cells &
-           (dfcts%cutdef,dfcts%mxlcdef,natms,nlast,cxx,cyy,czz,nlx,nly,nlz,link,lct)
+  Call defects_link_cells(dfcts%cutdef,dfcts%mxlcdef,dfcts%nrefs,dfcts%nlrefs, &
+    dfcts%xr,dfcts%yr,dfcts%zr,nlx,nly,nlz,linkr,lctr,domain)
+  Call defects_link_cells(dfcts%cutdef,dfcts%mxlcdef,natms,nlast,cxx,cyy,czz, &
+    nlx,nly,nlz,link,lct,domain)
 
   safe = .true.          ! Initialise safety flag to all safe
   nv = 0                 ! Assume no vacancies (all sites are occupied)
@@ -3090,9 +3090,5 @@ End Subroutine defects_reference_write
      Write(message,'(a)') Trim(dfcts%deffile)//'_write deallocation failure'
      Call error(0,message)
   End If
-
-
 End Subroutine defects_write
-
-
 End Module defects

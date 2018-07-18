@@ -18,6 +18,7 @@ Module drivers
   Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
+  Use domains, Only : domains_type
   Implicit None
   Private
   Public :: w_impact_option
@@ -124,9 +125,7 @@ Contains
 !    Include 'w_replay_historf.F90'
 !  End Subroutine w_replay_historf
 
-Subroutine pseudo_vv                                      &
-           (isw,tstep, &
-           nstep,dof_site,cshell,stats,thermo,rigid,comm)
+Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -155,6 +154,7 @@ Subroutine pseudo_vv                                      &
   Type( core_shell_type), Intent( InOut ) :: cshell
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -346,7 +346,7 @@ Subroutine pseudo_vv                                      &
      If (j > 0) Then
         If (rigid%share) Then
            qn(natms+1:nlast) = 0 ! refresh the q array for shared RB units
-           Call update_shared_units_int(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,qn,comm)
+           Call update_shared_units_int(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,qn,domain,comm)
         End If
 
         j = 0
@@ -405,7 +405,7 @@ Subroutine pseudo_vv                                      &
      If (cshell%keyshl == SHELL_ADIABATIC) Then
         If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
            qn(natms+1:nlast) = 0
-           Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
+           Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,domain,comm)
         End If
 
         If (cshell%ntshl > 0) Then
@@ -556,7 +556,7 @@ Subroutine pseudo_vv                                      &
 ! Update shared RBs' velocities
 
            If (rigid%share) Then
-             Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,xxt,yyt,zzt,comm)
+             Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,xxt,yyt,zzt,domain,comm)
            End If
 
 ! calculate new RBs' COM and angular velocities
@@ -633,7 +633,7 @@ Subroutine pseudo_vv                                      &
 
         If (stp > 0) Then
            If (cshell%lshmv_shl) Then
-             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
            End If
 
            If (tps(comm%idnode) > 0) Then
@@ -1043,7 +1043,9 @@ Subroutine pseudo_vv                                      &
 ! Thermalise the shells on hit cores
 
         If (stp > 0) Then
-           If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+           If (cshell%lshmv_shl) Then
+             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
+           End If
 
            If (tps(comm%idnode) > 0) Then
               Do k=1,cshell%ntshl

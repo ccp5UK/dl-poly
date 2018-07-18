@@ -2,7 +2,7 @@ Module bounds
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type
   Use setup
-  Use domains,         Only : map_domains,nprx,npry,nprz,r_nprx,r_npry,r_nprz
+  Use domains,         Only : domains_type,map_domains
   Use configuration,   Only : imcon,imc_n,cfgname,cell,volm
   Use neighbours,      Only : neighbours_type
   Use msd,             Only : msd_type
@@ -48,13 +48,12 @@ Module bounds
 
 Contains
 
-Subroutine set_bounds                                 &
-           (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
+Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rbin,nstfce,      &
            width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
-           mpoles,ext_field,rigid,electro,comm)
+           mpoles,ext_field,rigid,electro,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -100,6 +99,7 @@ Subroutine set_bounds                                 &
   Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( electrostatic_type ), Intent( InOut ) :: electro
+  Type( domains_type ), Intent( InOut ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -142,7 +142,7 @@ Subroutine set_bounds                                 &
 
 ! scan CONFIG file data
 
-  Call scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,comm)
+  Call scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,domain,comm)
 
 ! halt execution for unsupported image conditions in DD
 ! checks for some inherited from DL_POLY_2 are though kept
@@ -282,10 +282,10 @@ Subroutine set_bounds                                 &
 
   If (comm%mxnode > 1) Then
      mxlshp = Max((2*cshell%mxshl)/2,(2*cons%mxcons)/2,(rigid%max_list*rigid%max_rigid)/2)
-     mxproc = 26
+     domain%neighbours = 26
   Else ! nothing is to be shared on one node
      mxlshp = 0
-     mxproc = 0
+     domain%neighbours = 0
   End If
 
 
@@ -543,10 +543,11 @@ Subroutine set_bounds                                 &
 ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
 ! Dependences: MD cell widths (explicit) and machine resources (implicit)
 
-  Call map_domains(imc_n,celprp(7),celprp(8),celprp(9),comm)
+  Call map_domains(imc_n,celprp(7),celprp(8),celprp(9),domain,comm)
 
   Call info(' ',.true.)
-  Write(message,'(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
+  Write(message,'(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', &
+    domain%nx,domain%ny,domain%nz
   Call info(message,.true.)
 
   If (neigh%padding > zero_plus) Then
@@ -609,9 +610,9 @@ Subroutine set_bounds                                 &
 
 ! calculate link cell dimensions per node
 
-  ilx=Int(r_nprx*celprp(7)/cut)
-  ily=Int(r_npry*celprp(8)/cut)
-  ilz=Int(r_nprz*celprp(9)/cut)
+  ilx=Int(domain%nx_recip*celprp(7)/cut)
+  ily=Int(domain%ny_recip*celprp(8)/cut)
+  ilz=Int(domain%nz_recip*celprp(9)/cut)
 
 ! print link cell algorithm and check for violations or...
 
@@ -620,7 +621,7 @@ Subroutine set_bounds                                 &
 
   tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
   test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
-  cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp ! domain size
+  cut=Min(domain%nx_recip*celprp(7),domain%ny_recip*celprp(8),domain%nz_recip*celprp(9))-1.0e-6_wp ! domain size
 
   If (ilx*ily*ilz == 0) Then
      If (devel%l_trm) Then ! we are prepared to exit gracefully(-:
@@ -661,9 +662,9 @@ Subroutine set_bounds                                 &
                  neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
                  If (neigh%padding > tol) Go To 10
               Else ! not so good non-exception
-                 neigh%padding = Min( 0.95_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                               r_npry * celprp(8) / Real(ily,wp) , &
-                                               r_nprz * celprp(9) / Real(ilz,wp) ) &
+                 neigh%padding = Min( 0.95_wp * ( Min ( domain%nx_recip * celprp(7) / Real(ilx,wp) , &
+                                               domain%ny_recip * celprp(8) / Real(ily,wp) , &
+                                               domain%nz_recip * celprp(9) / Real(ilz,wp) ) &
                                          - neigh%cutoff - 1.0e-6_wp ) , test * neigh%cutoff )
               neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up
               End If
@@ -703,7 +704,7 @@ Subroutine set_bounds                                 &
 ! SPME electrostatics particularities
 
 ! qlx,qly,qlz - SPME fictional link-cell dimensions postulating that:
-! nprx <= kmaxa/mxspl, npry <= kmaxb/mxspl, nprz <= kmaxc/mxspl.
+! domain%nx <= kmaxa/mxspl, domain%ny <= kmaxb/mxspl, domain%nz <= kmaxc/mxspl.
 ! Otherwise, this node's b-splines in SPME will need 'positive halo'
 ! that is not on the immediate neighbouring nodes in negative
 ! directions but beyond them (which may mean self-halo in some cases)
@@ -724,15 +725,15 @@ Subroutine set_bounds                                 &
 ! processor grid (map_domains is already called) and the grid
 ! method or comment out adjustments if using ewald_spme_force~
 
-     Call adjust_kmax( kmaxa, nprx )
-     Call adjust_kmax( kmaxb, npry )
-     Call adjust_kmax( kmaxc, nprz )
+     Call adjust_kmax( kmaxa, domain%nx )
+     Call adjust_kmax( kmaxb, domain%ny )
+     Call adjust_kmax( kmaxc, domain%nz )
 
 ! Calculate and check ql.
 
-     qlx = Min(qlx , kmaxa/(mxspl*nprx))
-     qly = Min(qly , kmaxb/(mxspl*npry))
-     qlz = Min(qlz , kmaxc/(mxspl*nprz))
+     qlx = Min(qlx , kmaxa/(mxspl*domain%nx))
+     qly = Min(qly , kmaxb/(mxspl*domain%ny))
+     qlz = Min(qlz , kmaxc/(mxspl*domain%nz))
 
      If (.not.neigh%unconditional_update) Then
         mxspl1=mxspl
@@ -741,9 +742,9 @@ Subroutine set_bounds                                 &
 
 ! Redifine ql.
 
-        qlx = Min(ilx , kmaxa/(mxspl1*nprx))
-        qly = Min(ily , kmaxb/(mxspl1*npry))
-        qlz = Min(ilz , kmaxc/(mxspl1*nprz))
+        qlx = Min(ilx , kmaxa/(mxspl1*domain%nx))
+        qly = Min(ily , kmaxb/(mxspl1*domain%ny))
+        qlz = Min(ilz , kmaxc/(mxspl1*domain%nz))
      End If
 
 ! Hard luck, giving up
@@ -763,7 +764,7 @@ Subroutine set_bounds                                 &
 
 ! decide on MXATMS while reading CONFIG and scan particle density
 
-  Call read_config(megatm,levcfg,l_ind,l_str,neigh%cutoff,dvar,xhi,yhi,zhi,dens0,dens,comm)
+  Call read_config(megatm,levcfg,l_ind,l_str,neigh%cutoff,dvar,xhi,yhi,zhi,dens0,dens,domain,comm)
 
 ! Create f(fdvar,dens0,dens)
 
@@ -861,7 +862,7 @@ Subroutine set_bounds                                 &
   mxbfsh = Merge( 1, 0, comm%mxnode > 1) * &
     Nint(Real(Max(2*cshell%mxshl,2*cons%mxcons,rigid%max_list*rigid%max_rigid),wp) * dens0)
 
-  mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/nprx)*(kmaxb/npry)*(kmaxc/nprz)+10 , &
+  mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/domain%nx)*(kmaxb/domain%ny)*(kmaxc/domain%nz)+10 , &
                 stats%mxnstk*stats%mxstak , mxgrid , rdf%max_grid ,  &
                 rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
                 rigid%max_type*(4+3*rigid%max_list), 10000 )
@@ -875,9 +876,9 @@ Subroutine set_bounds                                 &
      If (threebody%mxtbp > 0) cut = Min(cut,rctbp+1.0e-6_wp)
      If (fourbody%max_four_body > 0) cut = Min(cut,rcfbp+1.0e-6_wp)
 
-     ilx=Int(r_nprx*celprp(7)/cut)
-     ily=Int(r_npry*celprp(8)/cut)
-     ilz=Int(r_nprz*celprp(9)/cut)
+     ilx=Int(domain%nx_recip*celprp(7)/cut)
+     ily=Int(domain%ny_recip*celprp(8)/cut)
+     ilz=Int(domain%nz_recip*celprp(9)/cut)
 
      Write(message,'(a,3i6)') "link-cell decomposition 2 (x,y,z): ",ilx,ily,ilz
      Call info(message,.true.)

@@ -20,8 +20,7 @@ Module statistics
   Use site, Only : site_type
   Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
                              xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
-  Use domains,    Only : nprx,npry,nprz,map,r_nprx,r_npry,r_nprz,&
-                                nprx_r,npry_r,nprz_r,idx,idy,idz
+  Use domains,    Only : domains_type
   Use z_density,   Only : z_density_type,z_density_collect
   Use msd,         Only : msd_type
   Use greenkubo,   Only : greenkubo_type
@@ -586,7 +585,7 @@ Contains
 End Subroutine statistics_collect
 
 
-Subroutine statistics_connect_frames(megatm,mxatdm,lmsd,stats,comm)
+Subroutine statistics_connect_frames(megatm,mxatdm,lmsd,stats,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -604,13 +603,14 @@ Subroutine statistics_connect_frames(megatm,mxatdm,lmsd,stats,comm)
   Integer( Kind = wi ), Intent ( In    ) :: mxatdm
   Logical,            Intent( In    ) :: lmsd
   Type( stats_type ), Intent( InOut ) :: stats
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer :: icyc,nres
   Character( Len = 256 ) :: message
 
   stats%found = 0 ; icyc = 0 ; nres = 1
-  Do While (icyc <= Max(nprx,npry,nprz)/2 .and. nres > 0)
+  Do While (icyc <= Max(domain%nx,domain%ny,domain%nz)/2 .and. nres > 0)
      Call match_compress_spread_sort(-1,mxatdm) ! -x direction spread
      Call match_compress_spread_sort( 1,mxatdm) ! +x direction spread
 
@@ -871,7 +871,7 @@ Contains
 
 ! Spread atom data in the mdir direction
 
-    If (mdir /= 0) Call statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
+    If (mdir /= 0) Call statistics_connect_spread(mdir,mxatdm,lmsd,stats,domain,comm)
 
 ! Sort past frame remainder of global atom indices
 
@@ -886,7 +886,7 @@ Contains
 
 End Subroutine statistics_connect_frames
 
-  Subroutine statistics_connect_set(rcut,mxatdm,lmsd,stats,comm)
+Subroutine statistics_connect_set(rcut,mxatdm,lmsd,stats,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -904,6 +904,7 @@ End Subroutine statistics_connect_frames
   Integer( Kind = wi), Intent( In   ) :: mxatdm
   Logical,            Intent( In    ) :: lmsd
   Type( stats_type ), Intent( InOut ) :: stats
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
 
   Real( Kind = wp ), Save :: cut
@@ -923,15 +924,15 @@ End Subroutine statistics_connect_frames
 
 ! calculate link cell dimensions per node
 
-     nlx=Int(celprp(7)/(cut*nprx_r))
-     nly=Int(celprp(8)/(cut*npry_r))
-     nlz=Int(celprp(9)/(cut*nprz_r))
+     nlx=Int(celprp(7)/(cut*domain%nx_real))
+     nly=Int(celprp(8)/(cut*domain%ny_real))
+     nlz=Int(celprp(9)/(cut*domain%nz_real))
 
 ! Get the total number of link-cells in MD cell per direction
 
-     xdc=Real(nlx*nprx,wp)
-     ydc=Real(nly*npry,wp)
-     zdc=Real(nlz*nprz,wp)
+     xdc=Real(nlx*domain%nx,wp)
+     ydc=Real(nly*domain%ny,wp)
+     zdc=Real(nlz*domain%nz,wp)
 
 ! link-cell widths in reduced space
 
@@ -941,16 +942,19 @@ End Subroutine statistics_connect_frames
 
 ! Distance from the - edge of this domain
 
-     ecwx=Nearest( (-0.5_wp+cwx)+Real(idx,wp)*r_nprx , +1.0_wp)+zero_plus
-     ecwy=Nearest( (-0.5_wp+cwy)+Real(idy,wp)*r_npry , +1.0_wp)+zero_plus
-     ecwz=Nearest( (-0.5_wp+cwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
+     ecwx=Nearest( (-0.5_wp+cwx)+Real(domain%idx,wp)*domain%nx_recip , +1.0_wp)+zero_plus
+     ecwy=Nearest( (-0.5_wp+cwy)+Real(domain%idy,wp)*domain%ny_recip , +1.0_wp)+zero_plus
+     ecwz=Nearest( (-0.5_wp+cwz)+Real(domain%idz,wp)*domain%nz_recip , +1.0_wp)+zero_plus
 
 ! Distance from the + edge of this domain with a possible
 ! extension strip for the one linked cell per domain scenario
 
-     cwx=Nearest( (-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus-Merge( cwx*1.0e-10_wp , 0.0_wp , nlx == 1 )
-     cwy=Nearest( (-0.5_wp-cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus-Merge( cwy*1.0e-10_wp , 0.0_wp , nly == 1 )
-     cwz=Nearest( (-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz , -1.0_wp)-zero_plus-Merge( cwz*1.0e-10_wp , 0.0_wp , nlz == 1 )
+     cwx=Nearest( (-0.5_wp-cwx)+Real(domain%idx+1,wp)*domain%nx_recip , -1.0_wp)- &
+       zero_plus-Merge( cwx*1.0e-10_wp , 0.0_wp , nlx == 1 )
+     cwy=Nearest( (-0.5_wp-cwy)+Real(domain%idy+1,wp)*domain%ny_recip , -1.0_wp)- &
+       zero_plus-Merge( cwy*1.0e-10_wp , 0.0_wp , nly == 1 )
+     cwz=Nearest( (-0.5_wp-cwz)+Real(domain%idz+1,wp)*domain%nz_recip , -1.0_wp)- &
+       zero_plus-Merge( cwz*1.0e-10_wp , 0.0_wp , nlz == 1 )
 
      ixyz(1:mxatdm)=0 ! Initialise move (former halo) indicator
      Do i=1,natms
@@ -1004,7 +1008,7 @@ End Subroutine statistics_connect_frames
 
 End Subroutine statistics_connect_set
 
-Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
+Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1024,6 +1028,7 @@ Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
   Integer( Kind = wi ), Intent( In    ) :: mxatdm
   Logical,            Intent( In    ) :: lmsd
   Type( stats_type ), Intent( InOut ) :: stats
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
   Logical           :: safe,stay,move
   Integer           :: fail,iblock,jdnode,kdnode,   &
@@ -1060,45 +1065,45 @@ Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,comm)
   If      (mdir == -1) Then ! Direction -x
      kx  = 1
      jxyz= 1
-     kxyz= Merge(3,jxyz,nprx <= 2)
+     kxyz= Merge(3,jxyz,domain%nx <= 2)
 
-     jdnode = map(1)
-     kdnode = map(2)
+     jdnode = domain%map(1)
+     kdnode = domain%map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
-     kxyz= Merge(3,jxyz,nprx <= 2)
+     kxyz= Merge(3,jxyz,domain%nx <= 2)
 
-     jdnode = map(2)
-     kdnode = map(1)
+     jdnode = domain%map(2)
+     kdnode = domain%map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
-     kxyz= Merge(30,jxyz,npry <= 2)
+     kxyz= Merge(30,jxyz,domain%ny <= 2)
 
-     jdnode = map(3)
-     kdnode = map(4)
+     jdnode = domain%map(3)
+     kdnode = domain%map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
-     kxyz= Merge(30,jxyz,npry <= 2)
+     kxyz= Merge(30,jxyz,domain%ny <= 2)
 
-     jdnode = map(4)
-     kdnode = map(3)
+     jdnode = domain%map(4)
+     kdnode = domain%map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
-     kxyz= Merge(300,jxyz,nprz <= 2)
+     kxyz= Merge(300,jxyz,domain%nz <= 2)
 
-     jdnode = map(5)
-     kdnode = map(6)
+     jdnode = domain%map(5)
+     kdnode = domain%map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
-     kxyz= Merge(300,jxyz,nprz <= 2)
+     kxyz= Merge(300,jxyz,domain%nz <= 2)
 
-     jdnode = map(6)
-     kdnode = map(5)
+     jdnode = domain%map(6)
+     kdnode = domain%map(5)
   Else
      Call error(160)
   End If

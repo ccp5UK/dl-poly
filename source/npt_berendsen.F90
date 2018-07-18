@@ -4,7 +4,7 @@ Module npt_berendsen
   Use configuration,   Only : imcon,cell,volm,natms,nlast,nfree, &
                               lfrzn,lstfre,weight,               &
                               xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use domains,         Only : map
+  Use domains,         Only : domains_type
   Use setup
   Use site, Only : site_type
   Use kinetics,        Only : getvom
@@ -29,11 +29,10 @@ Module npt_berendsen
 
 Contains
 
-  Subroutine npt_b0_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_b0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
              virtot,                            &
              strkin,engke,                      &
-             cshell,cons,pmf,stat,thermo,sites,vdws,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites,vdws,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -50,22 +49,19 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Real( Kind = wp ),  Intent( In    ) :: virtot
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
-
     Type( stats_type), Intent( InOut ) :: stat
-Type( core_shell_type), Intent( InOut ) :: cshell
+    Type( core_shell_type), Intent( InOut ) :: cshell
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( constraints_type), Intent( InOut ) :: cons
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -238,8 +234,7 @@ Type( core_shell_type), Intent( InOut ) :: cshell
 
              cell=scale*czero
              Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-               lstitr,&
-               stat,pmf,cons,tmr,comm)
+               lstitr,stat,pmf,cons,domain,tmr,comm)
           End If
 
        End Do
@@ -311,8 +306,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! integrate and apply nvt_b0_scl thermostat - full step
@@ -353,12 +347,11 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
   End Subroutine npt_b0_vv
 
-  Subroutine npt_b1_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_b1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
              virtot,                            &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -376,16 +369,12 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Real( Kind = wp ),  Intent( In    ) :: virtot
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
-
-
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( stats_type), Intent( InOut ) :: stat
@@ -395,6 +384,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -503,7 +493,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
   ! unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(map == comm%idnode))
+       unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -752,9 +742,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+            Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+             lstitr,stat,pmf,cons,domain,tmr,comm)
           End If
 
        End Do
@@ -956,8 +945,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial

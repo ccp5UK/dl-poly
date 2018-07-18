@@ -1,22 +1,10 @@
 Module build_book
-! SETUP MODULES
   Use kinds,         Only : wp, li
   Use comms,  Only : comms_type,gcheck,gmax
   Use setup
-
-! SITE MODULE
-
   Use site, Only : site_type
-
-! CONFIG MODULE
-
   Use configuration, Only : natms,nlast,lsi,lsa,xxx,yyy,zzz
-
-! INTERACTION MODULES
-
   Use core_shell
-
-
   Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_setup,rigid_bodies_tags, &
                            rigid_bodies_coms,rigid_bodies_widths
   Use tethers, Only : tethers_type
@@ -31,25 +19,23 @@ Module build_book
   Use pmf, Only : pmf_type
   Use mpole, Only : mpole_type
   Use neighbours, Only : neighbours_type
+  Use domains, Only : domains_type
   Use errors_warnings, Only : error,warning,info
-
   Implicit None
 
   Private
 
-
-
   Public :: build_book_intra
   Public :: compress_book_intra
 
-  contains
+Contains
 
 Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
            degrot,degtra,        &
            cshell,cons,pmf,bond,angle,dihedral,  &
-           inversion,tether,neigh,sites,mpoles,rigid,comm)
+           inversion,tether,neigh,sites,mpoles,rigid,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -80,6 +66,7 @@ Subroutine build_book_intra             &
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical, Save :: newjob = .true.
@@ -1696,21 +1683,22 @@ Subroutine build_book_intra             &
 
   If (cshell%megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
     (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl,&
-    cshell%listshl,cshell%mxfshl,cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
+    cshell%listshl,cshell%mxfshl,cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl, &
+    domain,comm,&
     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
     rigid%oxx,rigid%oyy,rigid%ozz)
 
   If (cons%m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
     (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,&
     cons%legcon,cons%lshmv_con,&
-    cons%lishp_con,cons%lashp_con,comm,&
+    cons%lishp_con,cons%lashp_con,domain,comm,&
     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
     rigid%oxx,rigid%oyy,rigid%ozz)
 
   If (rigid%on .and. comm%mxnode > 1) Call pass_shared_units &
     (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
     rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
-    rigid%map_shared,comm,&
+    rigid%map_shared,domain,comm,&
     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
     rigid%oxx,rigid%oyy,rigid%ozz)
 

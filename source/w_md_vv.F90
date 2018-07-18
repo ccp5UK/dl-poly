@@ -26,13 +26,13 @@
   If (levcfg == 2) Then
     If (rigid%total > 0) Then
       If (rigid%share) Then
-        Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxx,fyy,fzz,comm)
+        Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxx,fyy,fzz,domain,comm)
       End If
 
       If (thermo%l_langevin) Then
         Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
         If (rigid%share) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxl,fyl,fzl,comm)
+          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxl,fyl,fzl,domain,comm)
         End If
         Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,rigid,comm)
       Else
@@ -63,7 +63,7 @@
         If (levcfg == 2) Then
            newjob = .false.
 
-           If (keyres /= 1) Call w_write_options(cshell,stat,sites,netcdf)
+           If (keyres /= 1) Call w_write_options(cshell,stat,sites,netcdf,domain)
 
            If (nstep == 0 .and. nstep == nstrun) Go To 1000
         End If
@@ -89,12 +89,12 @@
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,tmr)
+        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr)
 
 ! Refresh mappings
 
         Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,sites,mpoles,rigid)
+          dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain)
 
      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
@@ -102,11 +102,13 @@
 
      Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-       minim,mpoles,ext_field,rigid,electro,tmr)
+       minim,mpoles,ext_field,rigid,electro,domain,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-     If (nstep == 0) Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,sites,rdf)
+    If (nstep == 0) Then
+      Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,sites,rdf,domain)
+    End If
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 
@@ -115,17 +117,18 @@
 ! Evolve electronic temperature for two-temperature model
 
         If (l_ttm) Then
-          Call ttm_ion_temperature(thermo,comm)
-          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,lines,npage,thermo,comm)
+          Call ttm_ion_temperature(thermo,domain,comm)
+          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump, &
+            nstrun,lines,npage,thermo,domain,comm)
         End If
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,tmr)
+        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr)
 
 ! Apply kinetic options
 
-        Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field)
+        Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain)
 
 ! Update total time of simulation
 
@@ -133,11 +136,12 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,sites,rdf)
+        Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
+          sites,rdf,domain)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options(cshell,stat,sites,netcdf)
+        Call w_write_options(cshell,stat,sites,netcdf,domain)
 
 ! Save restart data in event of system crash
 

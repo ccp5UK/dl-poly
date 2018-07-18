@@ -2,7 +2,7 @@ Module poisson
   Use kinds,           Only : wp,wi
   Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend, &
                               gwait,girecv,gtime
-  Use domains
+  Use domains,         Only : domains_type
   Use setup,           Only : fourpi,r4pie0,nrite,            &
                               kmaxa,kmaxb,kmaxc,mxspl,mxspl1, &
                               mxatms,mxatdm,half_minus,zero_plus
@@ -71,12 +71,13 @@ Module poisson
 
 Contains
 
-  Subroutine poisson_forces(engcpe,vircpe,stress,pois,electro,comm)
+  Subroutine poisson_forces(engcpe,vircpe,stress,pois,electro,domain,comm)
 
     Real( Kind = wp ), Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( poisson_type ), Intent( InOut ) :: pois
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
     Type(comms_type), Intent( InOut )   :: comm
 
     Real( Kind = wp ) :: eng,virr
@@ -87,7 +88,7 @@ Contains
        pois%converged=.false.
        pois%maxbicgst =0 ! the number of steps to solve eq. without a guess (pois%phi=0)
        pois%delta=1.0_wp/electro%alpha
-       Call biCGStab_init(pois)
+       Call biCGStab_init(pois,domain)
 
        Call biCGStab_charge_density(pois,electro,comm)
 
@@ -118,26 +119,27 @@ Contains
 
   End Subroutine poisson_forces
 
-  Subroutine biCGStab_init(pois)
+  Subroutine biCGStab_init(pois,domain)
+    Type( domains_type ), Intent( In    ) :: domain
     Type( poisson_type ), Intent( InOut ) :: pois
 
 ! calculates preambles
 ! copy DD mapping
     Integer :: fail(10)
     Character( Len = 256 ) :: message
-    pois%lmap=map
+    pois%lmap=domain%map
 
     If (imcon == 0 .or. imcon == 6) Then
        If      (imcon == 0) Then
-          If (idx == 0     ) pois%lmap(1)=-1
-          If (idy == 0     ) pois%lmap(3)=-1
-          If (idz == 0     ) pois%lmap(5)=-1
-          If (idx == nprx-1) pois%lmap(2)=-1
-          If (idy == npry-1) pois%lmap(4)=-1
-          If (idz == nprz-1) pois%lmap(6)=-1
+          If (domain%idx == 0     ) pois%lmap(1)=-1
+          If (domain%idy == 0     ) pois%lmap(3)=-1
+          If (domain%idz == 0     ) pois%lmap(5)=-1
+          If (domain%idx == domain%nx-1) pois%lmap(2)=-1
+          If (domain%idy == domain%ny-1) pois%lmap(4)=-1
+          If (domain%idz == domain%nz-1) pois%lmap(6)=-1
        Else If (imcon == 6) Then
-          If (idz == 0     ) pois%lmap(5)=-1
-          If (idz == nprz-1) pois%lmap(6)=-1
+          If (domain%idz == 0     ) pois%lmap(5)=-1
+          If (domain%idz == domain%nz-1) pois%lmap(6)=-1
        End If
     End If
 
@@ -151,26 +153,26 @@ Contains
 
 ! adjust accordingly to processor grid restrictions
 
-    Call adjust_kmax(kmaxa, nprx)
-    Call adjust_kmax(kmaxb, npry)
-    Call adjust_kmax(kmaxc, nprz)
+    Call adjust_kmax(kmaxa, domain%nx)
+    Call adjust_kmax(kmaxb, domain%ny)
+    Call adjust_kmax(kmaxc, domain%nz)
 
 ! 3D charge array construction (bottom and top) indices and block size
 
-    pois%ixb=idx*(kmaxa/nprx)+1
-    pois%ixt=(idx+1)*(kmaxa/nprx)
-    pois%iyb=idy*(kmaxb/npry)+1
-    pois%iyt=(idy+1)*(kmaxb/npry)
-    pois%izb=idz*(kmaxc/nprz)+1
-    pois%izt=(idz+1)*(kmaxc/nprz)
+    pois%ixb=domain%idx*(kmaxa/domain%nx)+1
+    pois%ixt=(domain%idx+1)*(kmaxa/domain%nx)
+    pois%iyb=domain%idy*(kmaxb/domain%ny)+1
+    pois%iyt=(domain%idy+1)*(kmaxb/domain%ny)
+    pois%izb=domain%idz*(kmaxc/domain%nz)+1
+    pois%izt=(domain%idz+1)*(kmaxc/domain%nz)
 
     pois%kmaxa_r=Real(kmaxa, wp)
     pois%kmaxb_r=Real(kmaxb, wp)
     pois%kmaxc_r=Real(kmaxc, wp)
 
-    pois%block_x=kmaxa/nprx
-    pois%block_y=kmaxb/npry
-    pois%block_z=kmaxc/nprz
+    pois%block_x=kmaxa/domain%nx
+    pois%block_y=kmaxb/domain%ny
+    pois%block_z=kmaxc/domain%nz
 
 ! new 1 grid link halo inclusive object per domain distributed sizes
 
@@ -887,19 +889,22 @@ Contains
 
   End Subroutine biCGStab_calc_forces
 
-  Subroutine Write_potential(pois)
+  Subroutine Write_potential(pois,domain)
     Type( poisson_type ), Intent( InOut ) :: pois
+    Type( domains_type ), Intent( In    ) :: domain
 
     Integer :: ounit, kpkp,kk,kpk,tt
     character(len=128) :: filename, line
 
     ounit=39
     line="pot"
-    Write(filename,'(a,i1,i1,i1,a)') Trim(Adjustl(line)),idx,idy,idz,".dx"
+    Write(filename,'(a,i1,i1,i1,a)') Trim(Adjustl(line)),domain%idx,domain%idy,domain%idz,".dx"
     Open(Unit=ounit, File=Trim(Adjustl(filename)), Status='replace')
     Write(ounit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", pois%block_x,pois%block_y,pois%block_z
     Write(ounit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
-         Real(idx*(kmaxa/nprx),wp)*pois%delta,Real(idy*(kmaxb/npry),wp)*pois%delta,Real(idz*(kmaxc/nprz),wp)*pois%delta
+         Real(domain%idx*(kmaxa/domain%nx),wp)*pois%delta, &
+         Real(domain%idy*(kmaxb/domain%ny),wp)*pois%delta, &
+         Real(domain%idz*(kmaxc/domain%nz),wp)*pois%delta
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/pois%delta, 0.0_wp,0.0_wp/)
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0_wp,pois%delta, 0.0_wp/)
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0_wp,0.0_wp, pois%delta/)
@@ -934,18 +939,21 @@ Contains
 
   End Subroutine Write_potential
 
-  Subroutine Write_b(pois)
+  Subroutine Write_b(pois,domain)
     Type( poisson_type ), Intent( InOut ) :: pois
+    Type( domains_type ), Intent( In    ) :: domain
 
     Integer :: ounit, kpkp,kk,kpk,tt
     character(len=128) :: filename, line
     ounit=39
     line="pois%b"
-    Write(filename,'(a,i1,i1,i1,a)') Trim(Adjustl(line)),idx,idy,idz,".dx"
+    Write(filename,'(a,i1,i1,i1,a)') Trim(Adjustl(line)),domain%idx,domain%idy,domain%idz,".dx"
     Open(Unit=ounit, File=Trim(Adjustl(filename)), Status='replace')
     Write(ounit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", pois%block_x,pois%block_y,pois%block_z
     Write(ounit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
-         Real(idx*(kmaxa/nprx),wp)*pois%delta,Real(idy*(kmaxb/npry),wp)*pois%delta,Real(idz*(kmaxc/nprz),wp)*pois%delta
+         Real(domain%idx*(kmaxa/domain%nx),wp)*pois%delta, &
+         Real(domain%idy*(kmaxb/domain%ny),wp)*pois%delta, &
+         Real(domain%idz*(kmaxc/domain%nz),wp)*pois%delta
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/Real(pois%delta), 0.0,0.0/)
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/ 0.0,Real(pois%delta), 0.0/)
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0,0.0, Real(pois%delta)/)

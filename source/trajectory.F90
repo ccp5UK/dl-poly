@@ -3,7 +3,7 @@ Module trajectory
   Use comms,         Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck, &
                             gsum,gsend,grecv,offset_kind,mode_wronly, &
                             mode_rdonly, comm_self
-  Use domains,       Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r
+  Use domains,       Only : domains_type
   Use site, Only : site_type
   Use setup
   Use parse,         Only : tabs_2_blanks, get_line, get_word, &
@@ -51,7 +51,8 @@ Module trajectory
 Contains
 
 
-Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,sites,comm)
+Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
+    sites,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -71,6 +72,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,si
   Real( Kind = wp ),    Intent( InOut ) :: tstep,time
   Integer,              Intent(   Out ) :: exout
   Type( site_type ), Intent( In    ) :: sites
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type),    Intent( InOut ) :: comm
 
   Logical,               Save :: newjob = .true.  , &
@@ -411,11 +413,11 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,si
 
 ! assign domain coordinates (call for errors)
 
-                    ipx=Int((sxx+0.5_wp)*nprx_r)
-                    ipy=Int((syy+0.5_wp)*npry_r)
-                    ipz=Int((szz+0.5_wp)*nprz_r)
+                    ipx=Int((sxx+0.5_wp)*domain%nx_real)
+                    ipy=Int((syy+0.5_wp)*domain%ny_real)
+                    ipz=Int((szz+0.5_wp)*domain%nz_real)
 
-                    idm=ipx+nprx*(ipy+npry*ipz)
+                    idm=ipx+domain%nx*(ipy+domain%ny*ipz)
                     If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
                        Call error(513)
                     Else If (idm == comm%idnode)                 Then
@@ -530,7 +532,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,si
 
      Call read_config_parallel                  &
            (levcfg, dvar, l_ind, l_str, megatm, &
-            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi,comm)
+            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi, &
+            domain,comm)
 
      If (fast) Then
         If (levcfg /= 3) Then
@@ -577,7 +580,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout,si
 
      Call read_config_parallel                  &
            (levcfg, dvar, l_ind, l_str, megatm, &
-            l_his, l_xtr, fast, fh, Int( i, Kind( top_skip ) ), xhi, yhi, zhi,comm)
+            l_his, l_xtr, fast, fh, Int( i, Kind( top_skip ) ), xhi, yhi, zhi, &
+            domain,comm)
 
      If (frm1 == frm) Go To 200
 

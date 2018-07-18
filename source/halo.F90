@@ -3,26 +3,24 @@ Module halo
   Use comms,  Only : comms_type,gcheck
   Use deport_data, Only : export_atomic_positions, export_atomic_data
   Use setup,  Only : nrite,mxatms,kmaxa,kmaxb,kmaxc,mxspl1
-  Use configuration 
-
-  Use domains
+  Use configuration
+  Use domains, Only : domains_type
   Use site, Only : site_type
   Use mpole, Only : mpole_type
-
   Use neighbours,       Only : neighbours_type,vnl_set_check
   Use electrostatic, Only : ELECTROSTATIC_EWALD
   Use errors_warnings,  Only : error
-  
+
   Implicit None
 
-
   Private
+
   Public :: refresh_halo_positions
   Public :: set_halo_particles
- 
-  Contains
-  
-  Subroutine refresh_halo_positions(comm)
+
+Contains
+
+  Subroutine refresh_halo_positions(domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -37,8 +35,9 @@ Module halo
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
   Type( comms_type ), Intent(InOut) :: comm
+  Type( domains_type ), Intent( In    ) :: domain
+
   Logical :: safe
   Integer :: fail,mlast
 
@@ -60,18 +59,18 @@ Module halo
 
 ! exchange atom data in -/+ x directions
 
-  Call export_atomic_positions(-1,mlast,ixyz0,comm)
-  Call export_atomic_positions( 1,mlast,ixyz0,comm)
+  Call export_atomic_positions(-1,mlast,ixyz0,domain,comm)
+  Call export_atomic_positions( 1,mlast,ixyz0,domain,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call export_atomic_positions(-2,mlast,ixyz0,comm)
-  Call export_atomic_positions( 2,mlast,ixyz0,comm)
+  Call export_atomic_positions(-2,mlast,ixyz0,domain,comm)
+  Call export_atomic_positions( 2,mlast,ixyz0,domain,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call export_atomic_positions(-3,mlast,ixyz0,comm)
-  Call export_atomic_positions( 3,mlast,ixyz0,comm)
+  Call export_atomic_positions(-3,mlast,ixyz0,domain,comm)
+  Call export_atomic_positions( 3,mlast,ixyz0,domain,comm)
 
   safe=(mlast == nlast)
   Call gcheck(comm,safe)
@@ -82,11 +81,10 @@ Module halo
      Write(message,'(a)') 'referesh_halo_positions deallocation failure'
      Call error(0,message)
   End If
-
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,comm)
+Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -102,6 +100,7 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,comm)
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( site_type ), Intent( In    ) :: sites
   Type( mpole_type ), Intent( InOut ) :: mpoles
+  Type( domains_type ), Intent( In    ) :: domain
   Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ), Save :: cut
@@ -120,15 +119,15 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,comm)
 
 ! calculate link cell dimensions per node
 
-  nlx=Int(celprp(7)/(cut*nprx_r))
-  nly=Int(celprp(8)/(cut*npry_r))
-  nlz=Int(celprp(9)/(cut*nprz_r))
+  nlx=Int(celprp(7)/(cut*domain%nx_real))
+  nly=Int(celprp(8)/(cut*domain%ny_real))
+  nlz=Int(celprp(9)/(cut*domain%nz_real))
 
 ! Get the total number of link-cells in MD cell per direction
 
-  xdc=Real(nlx*nprx,wp)
-  ydc=Real(nly*npry,wp)
-  zdc=Real(nlz*nprz,wp)
+  xdc=Real(nlx*domain%nx,wp)
+  ydc=Real(nly*domain%ny,wp)
+  zdc=Real(nlz*domain%nz,wp)
 
 ! link-cell widths in reduced space
 
@@ -157,16 +156,16 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,comm)
 
 ! Distance from the - edge of this domain (larger positive halo)
 
-  ecwx=Nearest( (-0.5_wp+ecwx)+Real(idx,wp)*r_nprx , +1.0_wp)+zero_plus
-  ecwy=Nearest( (-0.5_wp+ecwy)+Real(idy,wp)*r_npry , +1.0_wp)+zero_plus
-  ecwz=Nearest( (-0.5_wp+ecwz)+Real(idz,wp)*r_nprz , +1.0_wp)+zero_plus
+  ecwx=Nearest( (-0.5_wp+ecwx)+Real(domain%idx,wp)*domain%nx_recip , +1.0_wp)+zero_plus
+  ecwy=Nearest( (-0.5_wp+ecwy)+Real(domain%idy,wp)*domain%ny_recip , +1.0_wp)+zero_plus
+  ecwz=Nearest( (-0.5_wp+ecwz)+Real(domain%idz,wp)*domain%nz_recip , +1.0_wp)+zero_plus
 
 ! Distance from the + edge of this domain with a possible
 ! extension strip for the one linked cell per domain scenario
 
-  cwx=Nearest( (-0.5_wp-cwx)+Real(idx+1,wp)*r_nprx , -1.0_wp)-zero_plus-Merge( cwx*1.0e-10_wp , 0.0_wp , nlx == 1 )
-  cwy=Nearest( (-0.5_wp-cwy)+Real(idy+1,wp)*r_npry , -1.0_wp)-zero_plus-Merge( cwy*1.0e-10_wp , 0.0_wp , nly == 1 )
-  cwz=Nearest( (-0.5_wp-cwz)+Real(idz+1,wp)*r_nprz , -1.0_wp)-zero_plus-Merge( cwz*1.0e-10_wp , 0.0_wp , nlz == 1 )
+  cwx=Nearest( (-0.5_wp-cwx)+Real(domain%idx+1,wp)*domain%nx_recip , -1.0_wp)-zero_plus-Merge( cwx*1.0e-10_wp , 0.0_wp , nlx == 1 )
+  cwy=Nearest( (-0.5_wp-cwy)+Real(domain%idy+1,wp)*domain%ny_recip , -1.0_wp)-zero_plus-Merge( cwy*1.0e-10_wp , 0.0_wp , nly == 1 )
+  cwz=Nearest( (-0.5_wp-cwz)+Real(domain%idz+1,wp)*domain%nz_recip , -1.0_wp)-zero_plus-Merge( cwz*1.0e-10_wp , 0.0_wp , nlz == 1 )
 
 ! Get the inverse cell matrix
 
@@ -195,18 +194,18 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call export_atomic_data(-1,comm)
-  Call export_atomic_data( 1,comm)
+  Call export_atomic_data(-1,domain,comm)
+  Call export_atomic_data( 1,domain,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call export_atomic_data(-2,comm)
-  Call export_atomic_data( 2,comm)
+  Call export_atomic_data(-2,domain,comm)
+  Call export_atomic_data( 2,domain,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call export_atomic_data(-3,comm)
-  Call export_atomic_data( 3,comm)
+  Call export_atomic_data(-3,domain,comm)
+  Call export_atomic_data( 3,domain,comm)
 
 ! assign incoming atom properties (of the halo only)
 
@@ -266,7 +265,4 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,comm)
   End Do
 
 End Subroutine set_halo_particles
-
-
-
-  End Module halo
+End Module halo

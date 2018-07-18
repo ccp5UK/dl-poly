@@ -5,7 +5,7 @@ Module nvt_berendsen
   Use configuration,      Only : imcon,cell,natms,nlast,nfree, &
                                  lfrzn,lstfre,weight,          &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use domains,     Only : map
+  Use domains,     Only : domains_type
   Use kinetics,     Only : getvom,getknr,kinstresf,kinstrest,kinstress
   Use constraints, Only : constraints_tags,apply_shake, &
                           apply_rattle, constraints_type
@@ -15,8 +15,8 @@ Module nvt_berendsen
   Use errors_warnings, Only : error,info
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-Use thermostat, Only : thermostat_type,adjust_timestep
-Use core_shell, Only : core_shell_type
+  Use thermostat, Only : thermostat_type,adjust_timestep
+  Use core_shell, Only : core_shell_type
   Implicit None
 
   Private
@@ -28,7 +28,7 @@ Contains
   Subroutine nvt_b0_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              strkin,engke,cshell,               &
-             cons,pmf,stat,thermo,tmr,comm)
+             cons,pmf,stat,thermo,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -55,7 +55,8 @@ Contains
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
-  Type( timer_type ), Intent( InOut ) :: tmr
+    Type( domains_type ), Intent( In    ) :: domain
+    Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -181,8 +182,7 @@ Contains
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+            lstitr,stat,pmf,cons,domain,tmr,comm)
        End If
 
   ! check timestep for variable timestep
@@ -218,8 +218,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! integrate and apply nvt_b0_scl thermostat - full step
@@ -263,7 +262,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   Subroutine nvt_b1_vv                          &
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cshell,cons,pmf,stat,thermo,rigid,tmr,comm)
+             strcom,vircom,cshell,cons,pmf,stat,thermo,rigid,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -293,6 +292,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
     Type( stats_type), Intent( Inout ) :: stat
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -371,7 +371,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
   ! unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(map == comm%idnode))
+       unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -506,8 +506,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
         Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+          lstitr,stat,pmf,cons,domain,tmr,comm)
        End If
 
   ! update velocity and position of RBs
@@ -717,8 +716,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial

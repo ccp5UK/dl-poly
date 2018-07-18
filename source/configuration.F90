@@ -21,7 +21,7 @@ Module configuration
                       mxatdm
   Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line
-  Use domains, Only : nprx,npry,nprz,nprx_r,npry_r,nprz_r,idx,idy,idz
+  Use domains, Only : domains_type
   Use development, Only : development_type
 
   Use netcdf_wrap, Only : netcdf_param
@@ -663,7 +663,7 @@ End Subroutine check_config
 
 
 
-Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,comm)
+Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -682,6 +682,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
   Real( Kind = wp ), Intent( In    ) :: rcut,dvar
   Real( Kind = wp ), Intent( InOut ) :: xhi,yhi,zhi
   Real( Kind = wp ), Intent(   Out ) :: dens0,dens
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
 
   Real( Kind = wp ) :: cut
@@ -735,9 +736,9 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 ! Calculate the number of link-cells per domain in every direction
 
-  nlx=Int(celprp(7)/(cut*nprx_r))
-  nly=Int(celprp(8)/(cut*npry_r))
-  nlz=Int(celprp(9)/(cut*nprz_r))
+  nlx=Int(celprp(7)/(cut*domain%nx_real))
+  nly=Int(celprp(8)/(cut*domain%ny_real))
+  nlz=Int(celprp(9)/(cut*domain%nz_real))
 
   ncells=nlx*nly*nlz
 
@@ -1011,11 +1012,11 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 ! assign domain coordinates (call for errors)
 
-              ipx=Int((sxx+0.5_wp)*nprx_r)
-              ipy=Int((syy+0.5_wp)*npry_r)
-              ipz=Int((szz+0.5_wp)*nprz_r)
+              ipx=Int((sxx+0.5_wp)*domain%nx_real)
+              ipy=Int((syy+0.5_wp)*domain%ny_real)
+              ipz=Int((szz+0.5_wp)*domain%nz_real)
 
-              idm=ipx+nprx*(ipy+npry*ipz)
+              idm=ipx+domain%nx*(ipy+domain%ny*ipz)
               If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
                  Call error(513)
                Else If (idm == comm%idnode)                 Then
@@ -1119,9 +1120,8 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
         top_skip = Int(1,offset_kind) ! This is now the frame = 1
      End If
 
-     Call read_config_parallel                  &
-           (levcfg, dvar, l_ind, l_str, megatm, &
-            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi,comm)
+     Call read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
+       fast,fh,top_skip,xhi,yhi,zhi,domain,comm)
 
 ! Close CONFIG
 
@@ -1206,18 +1206,18 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 ! Get the total number of link-cells in MD cell per direction
 
-  xdc=Real(nlx*nprx,wp)
-  ydc=Real(nly*npry,wp)
-  zdc=Real(nlz*nprz,wp)
+  xdc=Real(nlx*domain%nx,wp)
+  ydc=Real(nly*domain%ny,wp)
+  zdc=Real(nlz*domain%nz,wp)
 
 ! Shifts from global to local link-cell space:
 ! (0,0,0) left-most link-cell on the domain (halo)
 ! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
 ! link-cell on the domain (halo)
 
-  jx=1-nlx*idx
-  jy=1-nly*idy
-  jz=1-nlz*idz
+  jx=1-nlx*domain%idx
+  jy=1-nly*domain%idy
+  jz=1-nlz*domain%idz
 
 ! Get the inverse cell matrix
 
@@ -1306,9 +1306,8 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 End Subroutine read_config
 
-Subroutine read_config_parallel                 &
-           (levcfg, dvar, l_ind, l_str, megatm, &
-            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi,comm)
+Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast, &
+    fh,top_skip,xhi,yhi,zhi,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1325,6 +1324,7 @@ Subroutine read_config_parallel                 &
   Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
   Real( Kind = wp ),                 Intent( In    ) :: dvar
   Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ),                Intent( InOut ) :: comm
 
   Logical                :: safe,do_read
@@ -1685,11 +1685,11 @@ Subroutine read_config_parallel                 &
 
 ! assign domain coordinates (call for errors)
 
-              ipx=Int((sxx+0.5_wp)*nprx_r)
-              ipy=Int((syy+0.5_wp)*npry_r)
-              ipz=Int((szz+0.5_wp)*nprz_r)
+              ipx=Int((sxx+0.5_wp)*domain%nx_real)
+              ipy=Int((syy+0.5_wp)*domain%ny_real)
+              ipz=Int((szz+0.5_wp)*domain%nz_real)
 
-              idm=ipx+nprx*(ipy+npry*ipz)
+              idm=ipx+domain%nx*(ipy+domain%ny*ipz)
               If (idm < 0 .or. idm > (comm%mxnode-1)) Call error(513)
               owner_read(i) = idm
               n_held(idm) = n_held(idm)+1
@@ -1952,7 +1952,8 @@ Subroutine read_config_parallel                 &
   Call error(55)
 End Subroutine read_config_parallel
 
-Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,comm)
+Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, &
+    domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1970,6 +1971,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
   Character( Len = * ), Intent(   Out ) :: cfgname
   Integer,              Intent(   Out ) :: levcfg,imcon
   Real( Kind = wp ),    Intent(   Out ) :: cell(1:9),xhi,yhi,zhi
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Character( Len = 200 ) :: record
@@ -2282,9 +2284,8 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,c
            top_skip = Int(1,offset_kind) ! This is now the frame = 1
         End If
 
-        Call read_config_parallel               &
-           (levcfg, dvar, l_ind, l_str, megatm, &
-            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi,comm)
+        Call read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
+          fast,fh,top_skip,xhi,yhi,zhi,domain,comm)
 
 ! Close CONFIG
 

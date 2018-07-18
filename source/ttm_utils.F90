@@ -15,7 +15,7 @@ Module ttm_utils
   Use setup
   Use ttm
   Use comms, Only : comms_type,Grid1_tag,Grid2_tag,gsum,gmax,gmin
-  Use domains, Only : idx,idy,idz,nprx,npry,nprz
+  Use domains, Only : domains_type
   Use errors_warnings, Only : error
 #ifdef SERIAL
   Use mpi_api
@@ -525,12 +525,14 @@ Contains
 
   End Subroutine interpolate
 
-  Subroutine redistribute_Te (temp0,comm)
+  Subroutine redistribute_Te(temp0,domain,comm)
 
 ! Redistribute electronic energy when electronic temperature voxels are closed
 
     Real( Kind = wp ), Intent ( In ) :: temp0
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type), Intent ( In ) :: comm
+
     Integer :: i, j, k, ii, jj, kk, ijk, ijk1, ijk2, ijkpx, ijkmx, ijkpy, ijkmy, &
                ijkpz, ijkmz, n, numint, ierr
     Real( Kind = wp ) :: energy_per_cell, U_e, start_Te, end_Te, increase, oldCe, newCe
@@ -614,64 +616,64 @@ Contains
       ! -x/+x direction
       ijk1 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
       ijk2 = 1 + ntcell(1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-      If (idx==nprx-1) Then
+      If (domain%idx==domain%nx-1) Then
         ii = -1
       Else
         ii = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgx, map(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-      Call MPI_IRECV (buffer(ijk2,ii,0,0)   , 1, tmpmsgx, map(2), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgx, domain%map(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+      Call MPI_IRECV (buffer(ijk2,ii,0,0)   , 1, tmpmsgx, domain%map(2), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
       ijk1 = (ntcell(1)+2) * (2 + (ntcell(2)+2))
       ijk2 = 2 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-      If (idx==0) Then
+      If (domain%idx==0) Then
         ii = 1
       Else
         ii = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgx, map(2), Grid2_tag, MPI_COMM_WORLD, req(1), ierr)
-      Call MPI_IRECV (buffer(ijk2,ii,0,0)   , 1, tmpmsgx, map(1), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgx, domain%map(2), Grid2_tag, MPI_COMM_WORLD, req(1), ierr)
+      Call MPI_IRECV (buffer(ijk2,ii,0,0)   , 1, tmpmsgx, domain%map(1), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
       Call MPI_WAITALL (4, req, stat, ierr)
 
       ! -y/+y direction
       ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
       ijk2 = 1 + (ntcell(1)+2) * (ntcell(2) + (ntcell(2)+2))
-      If (idy==npry-1) Then
+      If (domain%idy==domain%ny-1) Then
         jj = -1
       Else
         jj = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgy, map(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-      Call MPI_IRECV (buffer(ijk2,0,jj,0)   , 1, tmpmsgy, map(4), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgy, domain%map(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+      Call MPI_IRECV (buffer(ijk2,0,jj,0)   , 1, tmpmsgy, domain%map(4), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
       ijk1 = 1 + (ntcell(1)+2) * (ntcell(2) + 1 + (ntcell(2)+2))
       ijk2 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-      If (idy==0) Then
+      If (domain%idy==0) Then
         jj = 1
       Else
         jj = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgy, map(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-      Call MPI_IRECV (buffer(ijk2,0,jj,0)   , 1, tmpmsgy, map(3), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgy, domain%map(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+      Call MPI_IRECV (buffer(ijk2,0,jj,0)   , 1, tmpmsgy, domain%map(3), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
       Call MPI_WAITALL (4, req, stat, ierr)
 
       ! -z/+z direction
       ijk1 = 1
       ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2) * ntcell(3)
-      If (idz==nprz-1) Then
+      If (domain%idz==domain%nz-1) Then
         kk = -1
       Else
         kk = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgz, map(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-      Call MPI_IRECV (buffer(ijk2,0,0,kk)   , 1, tmpmsgz, map(6), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgz, domain%map(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+      Call MPI_IRECV (buffer(ijk2,0,0,kk)   , 1, tmpmsgz, domain%map(6), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
       ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2) * (ntcell(3)+1)
       ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
-      If (idz==0) Then
+      If (domain%idz==0) Then
         kk = 1
       Else
         kk = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgz, map(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-      Call MPI_IRECV (buffer(ijk2,0,0,kk)   , 1, tmpmsgz, map(5), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgz, domain%map(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+      Call MPI_IRECV (buffer(ijk2,0,0,kk)   , 1, tmpmsgz, domain%map(5), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
       Call MPI_WAITALL (4, req, stat, ierr)
 
       energydist = energydist + buffer
@@ -819,5 +821,4 @@ Contains
     Deallocate (energydist)
 
   End Subroutine redistribute_Te
-
 End Module ttm_utils

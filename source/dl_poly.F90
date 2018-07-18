@@ -56,7 +56,7 @@ program dl_poly
 
   Use io
   Use netcdf_wrap, Only : netcdf_param
-  Use domains
+  Use domains, Only : domains_type
 
   ! SITE & CONFIG MODULES
 
@@ -289,6 +289,7 @@ program dl_poly
   Type( external_field_type ) :: ext_field
   Type( rigid_bodies_type ) :: rigid
   Type( electrostatic_type ) :: electro
+  Type( domains_type ) :: domain
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -359,7 +360,7 @@ program dl_poly
     dvar,rbin,nstfce,width,sites%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
-    rigid,electro,comm)
+    rigid,electro,domain,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -377,12 +378,12 @@ program dl_poly
 
   ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
 
-  Call core_shells%init(mxatdm,mxtmls,mxlshp,mxproc)
+  Call core_shells%init(mxatdm,mxtmls,mxlshp,domain%neighbours)
 
-  Call cons%init(mxtmls,mxatdm,mxlshp,mxproc)
+  Call cons%init(mxtmls,mxatdm,mxlshp,domain%neighbours)
   Call pmfs%init(mxtmls,mxatdm)
 
-  Call rigid%init(mxtmls,mxatms)
+  Call rigid%init(mxtmls,mxatms,domain%neighbours)
 
   Call tether%init(mxtmls,mxatdm)
 
@@ -412,7 +413,7 @@ program dl_poly
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
-  Call allocate_ttm_arrays(comm)
+  Call allocate_ttm_arrays(domain,comm)
   Call ttm_table_scan(comm)
 
   ! READ SIMULATION CONTROL PARAMETERS
@@ -526,7 +527,7 @@ program dl_poly
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(electro%key,neigh,sites,mpoles,comm)
+  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,comm)
 
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
@@ -538,7 +539,7 @@ program dl_poly
   If (lbook) Then
     Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre,atmfrz, &
       degrot,degtra,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
-      neigh,sites,mpoles,rigid,comm)
+      neigh,sites,mpoles,rigid,domain,comm)
     If (mpoles%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
         mpoles,comm)
@@ -577,17 +578,16 @@ program dl_poly
 
   ! set and halo rotational matrices and their infinitesimal rotations
 
-  If (mpoles%max_mpoles > 0) Call mpoles_rotmat_set_halo(mpoles,comm)
+  If (mpoles%max_mpoles > 0) Then
+    Call mpoles_rotmat_set_halo(mpoles,domain,comm)
+  End If
 
   ! SET initial system temperature
 
   Call set_temperature               &
-    (levcfg,keyres,      &
-    nstep,nstrun, &
-    atmfre,atmfrz,            &
-    degtra,degrot,     &
-    degfre,degshl,stats%engrot,sites%dof_site,core_shells,stats,cons,pmfs, &
-    thermo,minim,rigid,comm)
+    (levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra,degrot,degfre,degshl, &
+    stats%engrot,sites%dof_site,core_shells,stats,cons,pmfs,thermo,minim, &
+    rigid,domain,comm)
 
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
@@ -598,7 +598,7 @@ program dl_poly
 
   If (l_ttm) Then
     Call ttm_table_read(comm)
-    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,thermo%temp,comm)
+    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,thermo%temp,domain,comm)
   End If
 
   ! Frozen atoms option
@@ -673,16 +673,16 @@ program dl_poly
   If (lsim) Then
     Call w_md_vv(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
-      netcdf,mpoles,ext_field,rigid,tmr)
+      netcdf,mpoles,ext_field,rigid,domain,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
-        fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,tmr)
+        fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,tmr)
     Else
       Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-        netcdf,minim,mpoles,ext_field,rigid,electro)
+        netcdf,minim,mpoles,ext_field,rigid,electro,domain)
     End If
   End If
 
@@ -729,7 +729,7 @@ program dl_poly
   ! (final)
 
   If (l_ttm) Then
-    Call ttm_ion_temperature (thermo,comm)
+    Call ttm_ion_temperature (thermo,domain,comm)
     Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep, ttmstats,comm)
     Call peakProfilerElec('LATS_E', nstep, ttmtraj,comm)
     Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats,comm)
@@ -825,7 +825,7 @@ Contains
 
   Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-      minim,mpoles,ext_field,rigid,electro,tmr)
+      minim,mpoles,ext_field,rigid,electro,domain,tmr)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -850,12 +850,13 @@ Contains
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
   Subroutine w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-      dihedral,inversion,tether,neigh,sites,mpoles,rigid)
+      dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -870,10 +871,11 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,tmr)
+  Subroutine w_integrate_vv(isw,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr)
     Integer, Intent( In    ) :: isw ! used for vv stage control
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -883,21 +885,24 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_integrate_vv.F90'
   End Subroutine w_integrate_vv
 
-  Subroutine w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field)
+  Subroutine w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type(stats_type), Intent(InOut) :: stat
     Type( site_type ), Intent( InOut ) :: sites
     Type( external_field_type ), Intent( In    ) :: ext_field
+    Type( domains_type ), Intent( In    ) :: domain
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
-  Subroutine w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,sites,rdf)
+  Subroutine w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
+      sites,rdf,domain)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -907,14 +912,16 @@ Contains
     Type( z_density_type ), Intent( InOut ) :: zdensity
     Type( site_type ), Intent( InOut ) :: sites
     Type( rdf_type ), Intent( In    ) :: rdf
+    Type( domains_type ), Intent( In    ) :: domain
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
-  Subroutine w_write_options(cshell,stat,sites,netcdf)
+  Subroutine w_write_options(cshell,stat,sites,netcdf,domain)
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type(stats_type), Intent(InOut) :: stat
     Type( site_type ), Intent( InOut ) :: sites
     Type( netcdf_param ), Intent( In    ) :: netcdf
+    Type( domains_type ), Intent( In    ) :: domain
     Include 'w_write_options.F90'
   End Subroutine w_write_options
 
@@ -924,7 +931,7 @@ Contains
 
   Subroutine w_md_vv(mxatdm_,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
       dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
-      ext_field,rigid,tmr)
+      ext_field,rigid,domain,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -946,13 +953,14 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
       bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf,netcdf,minim, &
-      mpoles,ext_field,rigid,electro)
+      mpoles,ext_field,rigid,electro,domain)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -977,6 +985,7 @@ Contains
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( electrostatic_type ), Intent( InOut ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -988,7 +997,7 @@ Contains
 
   Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
     angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-    minim,mpoles,ext_field,rigid,electro,tmr)
+    minim,mpoles,ext_field,rigid,electro,domain,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -1009,12 +1018,13 @@ Contains
     Type( four_body_type ), Intent( InOut ) :: fourbody
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( timer_type ), Intent( InOut ) :: tmr
     Type( minimise_type ), Intent( InOut ) :: minim
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
+    Type( timer_type ), Intent( InOut ) :: tmr
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement

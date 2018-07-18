@@ -7,9 +7,7 @@ Module neighbours
   Use kinds, Only : wp,wi,li
   Use comms,   Only : comms_type,gcheck,gmax,gsum
   Use setup,   Only : nrite,mxspl,mxatms,half_plus
-  Use domains,       Only : idx,idy,idz, nprx,npry,nprz, &
-                            r_nprx,r_npry,r_nprz, &
-                            nprx_r,npry_r,nprz_r
+  Use domains,       Only : domains_type
   Use configuration,  Only : imcon,cell,natms,nlast,ltg,lfrzn, &
                              xxx,yyy,zzz
   Use core_shell,    Only : core_shell_type
@@ -86,11 +84,12 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !>
   !> Contrib   - I.J.Bush february 2014
-  Subroutine vnl_check(l_str,width,neigh,stat,comm)
+  Subroutine vnl_check(l_str,width,neigh,stat,domain,comm)
     Logical,           Intent ( In    ) :: l_str
     Real( Kind = wp ), Intent ( InOut ) :: width
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( stats_type ), Intent( InOut) :: stat
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent ( InOut ) :: comm
 
     Logical, Save :: newstart=.true.
@@ -162,13 +161,13 @@ Contains
     cut=neigh%cutoff_extended+1.0e-6_wp
 
     ! calculate link cell dimensions per node
-    ilx=Int(r_nprx*celprp(7)/cut)
-    ily=Int(r_npry*celprp(8)/cut)
-    ilz=Int(r_nprz*celprp(9)/cut)
+    ilx=Int(domain%nx_recip*celprp(7)/cut)
+    ily=Int(domain%ny_recip*celprp(8)/cut)
+    ilz=Int(domain%nz_recip*celprp(9)/cut)
 
     tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
     test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME) or 4% (w/o SPME)
-    cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp ! domain size
+    cut=Min(domain%nx_recip*celprp(7),domain%ny_recip*celprp(8),domain%nz_recip*celprp(9))-1.0e-6_wp ! domain size
 
     If (ilx*ily*ilz == 0) Then
       If (cut < neigh%cutoff) Then
@@ -196,9 +195,9 @@ Contains
           cut = test * neigh%cutoff
         Else
           If (comm%mxnode > 1) Then
-            cut = Min( 0.95_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-              r_npry * celprp(8) / Real(ily,wp) , &
-              r_nprz * celprp(9) / Real(ilz,wp) ) &
+            cut = Min( 0.95_wp * ( Min ( domain%nx_recip * celprp(7) / Real(ilx,wp) , &
+              domain%ny_recip * celprp(8) / Real(ily,wp) , &
+              domain%nz_recip * celprp(9) / Real(ilz,wp) ) &
               - neigh%cutoff - 1.0e-6_wp ) , test * neigh%cutoff )
           Else ! catch & handle exception
             cut = 0.95_wp * (0.5_wp*width - neigh%cutoff - 1.0e-6_wp)
@@ -281,7 +280,7 @@ Contains
   !>
   !> Contrib   - I.J.Bush february 2014
   Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,cshell,devel,neigh, &
-      mpoles,tmr,comm)
+      mpoles,domain,tmr,comm)
     Logical,            Intent( In    ) :: lbook
     Integer,            Intent( In    ) :: megfrz
     Real( Kind = wp ) , Intent( In    ) :: rvdw,rmet,pdplnc
@@ -289,6 +288,7 @@ Contains
     Type( development_type ), Intent( In    ) :: devel
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -333,9 +333,9 @@ Contains
     rcsq=neigh%cutoff_extended**2
 
     ! Calculate the number of link-cells per domain in every direction
-    dispx=r_nprx*celprp(7)/cut
-    dispy=r_npry*celprp(8)/cut
-    dispz=r_nprz*celprp(9)/cut
+    dispx=domain%nx_recip*celprp(7)/cut
+    dispy=domain%ny_recip*celprp(8)/cut
+    dispz=domain%nz_recip*celprp(9)/cut
 
     nlx=Int(dispx)
     nly=Int(dispy)
@@ -443,17 +443,17 @@ Contains
     !  Write(*,*) 'NLP',nlp,nsbcll,nlx,nly,nlz
 
     ! Get the total number of link-cells in MD cell per direction
-    xdc=Real(nlx*nprx,wp)
-    ydc=Real(nly*npry,wp)
-    zdc=Real(nlz*nprz,wp)
+    xdc=Real(nlx*domain%nx,wp)
+    ydc=Real(nly*domain%ny,wp)
+    zdc=Real(nlz*domain%nz,wp)
 
     ! Shifts from global to local link-cell space:
     ! (0,0,0) left-most link-cell on the domain (halo)
     ! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
     ! link-cell on the domain (halo)
-    jx=nlp-nlx*idx
-    jy=nlp-nly*idy
-    jz=nlp-nlz*idz
+    jx=nlp-nlx*domain%idx
+    jy=nlp-nly*domain%idy
+    jz=nlp-nlz*domain%idz
 
     !***************************************************************
     ! Note(1): Due to numerical inaccuracy it is possible that some
@@ -1149,11 +1149,12 @@ Contains
   !> Copyright - Daresbury Laboratory
   !>
   !> Author    - I.T.Todorov january 2015
-  Subroutine defects_link_cells &
-      (cut,mxcldef,na,nl,xxt,yyt,zzt,nlx,nly,nlz,link,lct)
+  Subroutine defects_link_cells(cut,mxcldef,na,nl,xxt,yyt,zzt,nlx,nly,nlz,link, &
+      lct,domain)
     Integer,            Intent( In    ) :: mxcldef,na,nl
     Real( Kind = wp ) , Intent( In    ) :: cut,xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms)
     Integer,            Intent(   Out ) :: nlx,nly,nlz,link(1:mxatms),lct(0:mxcldef)
+    Type( domains_type ), Intent( In    ) :: domain
 
     Logical           :: lx0,lx1,ly0,ly1,lz0,lz1
     Integer           :: icell,ncells,i,ix,iy,iz,jx,jy,jz
@@ -1163,9 +1164,9 @@ Contains
     Call dcell(cell,celprp)
 
     ! Calculate the number of link-cells per domain in every direction
-    dispx=celprp(7)/(cut*nprx_r)
-    dispy=celprp(8)/(cut*npry_r)
-    dispz=celprp(9)/(cut*nprz_r)
+    dispx=celprp(7)/(cut*domain%nx_real)
+    dispy=celprp(8)/(cut*domain%ny_real)
+    dispz=celprp(9)/(cut*domain%nz_real)
 
     nlx=Int(dispx)
     nly=Int(dispy)
@@ -1181,17 +1182,17 @@ Contains
     End If
 
     ! Get the total number of link-cells in MD cell per direction
-    xdc=Real(nlx*nprx,wp)
-    ydc=Real(nly*npry,wp)
-    zdc=Real(nlz*nprz,wp)
+    xdc=Real(nlx*domain%nx,wp)
+    ydc=Real(nly*domain%ny,wp)
+    zdc=Real(nlz*domain%nz,wp)
 
     ! Shifts from global to local link-cell space:
     ! (0,0,0) left-most link-cell on the domain (halo)
     ! (nlx+1,nly+1,nly+1) right-most
     ! link-cell on the domain (halo)
-    jx=1-nlx*idx
-    jy=1-nly*idy
-    jz=1-nlz*idz
+    jx=1-nlx*domain%idx
+    jy=1-nly*domain%idy
+    jz=1-nlz*domain%idz
 
     !***************************************************************
     ! Note(1): Due to numerical inaccuracy it is possible that some

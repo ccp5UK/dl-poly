@@ -17,7 +17,7 @@ Module temperature
   Use thermostat,      Only : thermostat_type
   Use statistics, Only : stats_type
   Use minimise, Only : minimise_type
-
+  Use domains, Only : domains_type
   Implicit None
 
   Private
@@ -26,12 +26,9 @@ Module temperature
 
 Contains
 
-  Subroutine set_temperature           &
-             (levcfg,keyres,      &
-             nstep,nstrun, &
-             atmfre,atmfrz,            &
-             degtra,degrot,     &
-             degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minim,rigid,comm)
+  Subroutine set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
+      degrot,degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minim, &
+      rigid,domain,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -56,6 +53,7 @@ Contains
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( minimise_type ), Intent( In    ) :: minim
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: no_min_0,safe
@@ -207,8 +205,10 @@ Contains
        If (cshell%keyshl == SHELL_ADIABATIC) Then ! just for the adiabatic shell model
           If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
-             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+               cshell%lashp_shl,qn,domain,comm)
+             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+               cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
           End If
 
           If (cshell%ntshl > 0) Then
@@ -325,7 +325,8 @@ Contains
   ! Update shared RBs' velocities
 
           If (rigid%share) Then
-            Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,vxx,vyy,vzz,comm)
+            Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+              rigid%map_shared,vxx,vyy,vzz,domain,comm)
           End If
 
   ! calculate new RBs' COM and angular velocities
@@ -419,8 +420,10 @@ Contains
        If (stp > 0) Then
           If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
-             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+               cshell%lashp_shl,qn,domain,comm)
+             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+               cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
           End If
 
           If (tps(comm%idnode) > 0) Then
@@ -496,7 +499,7 @@ Contains
   ! quench RBs
 
        If (rigid%total > 0) Then
-         Call rigid_bodies_quench(rigid,comm)
+         Call rigid_bodies_quench(rigid,domain,comm)
        End If
 
     End If
@@ -517,8 +520,8 @@ Contains
   ! quench constraints & PMFs
 
        If (no_min_0) Then
-          If (cons%megcon > 0) Then 
-            Call constraints_quench(cons,stat,comm)
+          If (cons%megcon > 0) Then
+            Call constraints_quench(cons,stat,domain,comm)
           End If
           If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
        End If
@@ -528,15 +531,15 @@ Contains
        If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC .and. no_min_0) Then
           Do
              Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,comm)
-             Call core_shell_quench(safe,thermo%temp,cshell,comm)
+             Call core_shell_quench(safe,thermo%temp,cshell,domain,comm)
              If (cons%megcon > 0) Then
-               Call constraints_quench(cons,stat,comm)
+               Call constraints_quench(cons,stat,domain,comm)
              End If
              If (pmf%megpmf > 0) Then
                Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
              End If
              If (rigid%total > 0) Then
-               Call rigid_bodies_quench(rigid,comm)
+               Call rigid_bodies_quench(rigid,domain,comm)
              End If
              If (safe) Exit
           End Do
@@ -605,7 +608,7 @@ Contains
 
   End Subroutine set_temperature
 
-  Subroutine regauss_temperature(rigid,comm)
+  Subroutine regauss_temperature(rigid,domain,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -619,6 +622,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,j,k,l,is,irgd,jrgd,lrgd,rgdtyp
@@ -705,7 +709,7 @@ Contains
 
   ! quench RBs
 
-       Call rigid_bodies_quench(rigid,comm)
+      Call rigid_bodies_quench(rigid,domain,comm)
 
   ! remove centre of mass motion
 

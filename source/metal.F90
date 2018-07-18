@@ -15,13 +15,11 @@ Module metal
   Use site, Only : site_type
   Use configuration, Only : natms,ltg,ltype,fxx,fyy,fzz,&
                             xxx,yyy,zzz,imcon,volm,nlast,ixyz
-
   Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag,wp_mpi,gsend, &
                      gwait,girecv
   Use parse, Only : get_line,get_word,lower_case,word_2_real
-  Use domains, Only : map
+  Use domains, Only : domains_type
   Use neighbours, Only : neighbours_type
-
   Use errors_warnings, Only : error,warning,info
   Implicit None
 
@@ -843,7 +841,7 @@ Contains
   stress(9) = stress(9) + strs9
 End Subroutine metal_forces
 
-Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,comm)
+Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -865,6 +863,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,comm)
   Integer( Kind = wi ), Intent( In    ) :: ntype_atom
   Type( metal_type ), Intent( InOut ) :: met
   Type( neighbours_type ), Intent( In    ) :: neigh
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ),                       Intent( InOut ) :: comm
 
   Logical           :: safe = .true.
@@ -1189,7 +1188,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,comm)
 
 ! obtain atomic densities for outer border regions
 
-  Call metal_ld_set_halo(met,comm)
+  Call metal_ld_set_halo(met,domain,comm)
 End Subroutine metal_ld_compute
 
 Subroutine metal_lrc(met,sites,comm)
@@ -2762,7 +2761,7 @@ Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv,met)
   End Do
 End Subroutine metal_table_derivatives
 
-Subroutine metal_ld_export(mdir,mlast,ixyz0,met,comm)
+Subroutine metal_ld_export(mdir,mlast,ixyz0,met,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2776,6 +2775,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,met,comm)
 
   Integer, Intent( In    ) :: mdir
   Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+  Type( domains_type ), Intent( In    ) :: domain
   Type( metal_type ), Intent( InOut ) :: met
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -2822,43 +2822,43 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,met,comm)
      jxyz= 1
      kxyz= 3
 
-     jdnode = map(1)
-     kdnode = map(2)
+     jdnode = domain%map(1)
+     kdnode = domain%map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
      kxyz= 3
 
-     jdnode = map(2)
-     kdnode = map(1)
+     jdnode = domain%map(2)
+     kdnode = domain%map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
      kxyz= 30
 
-     jdnode = map(3)
-     kdnode = map(4)
+     jdnode = domain%map(3)
+     kdnode = domain%map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
      kxyz= 30
 
-     jdnode = map(4)
-     kdnode = map(3)
+     jdnode = domain%map(4)
+     kdnode = domain%map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
      kxyz= 300
 
-     jdnode = map(5)
-     kdnode = map(6)
+     jdnode = domain%map(5)
+     kdnode = domain%map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
      kxyz= 300
 
-     jdnode = map(6)
-     kdnode = map(5)
+     jdnode = domain%map(6)
+     kdnode = domain%map(5)
   Else
      Call error(47)
   End If
@@ -3002,7 +3002,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,met,comm)
   End If
 End Subroutine metal_ld_export
 
-Subroutine metal_ld_set_halo(met,comm)
+Subroutine metal_ld_set_halo(met,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3018,6 +3018,7 @@ Subroutine metal_ld_set_halo(met,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( metal_type ), Intent( InOut ) :: met
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical :: safe
@@ -3040,18 +3041,18 @@ Subroutine metal_ld_set_halo(met,comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call metal_ld_export(-1,mlast,ixyz0,met,comm)
-  Call metal_ld_export( 1,mlast,ixyz0,met,comm)
+  Call metal_ld_export(-1,mlast,ixyz0,met,domain,comm)
+  Call metal_ld_export( 1,mlast,ixyz0,met,domain,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call metal_ld_export(-2,mlast,ixyz0,met,comm)
-  Call metal_ld_export( 2,mlast,ixyz0,met,comm)
+  Call metal_ld_export(-2,mlast,ixyz0,met,domain,comm)
+  Call metal_ld_export( 2,mlast,ixyz0,met,domain,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call metal_ld_export(-3,mlast,ixyz0,met,comm)
-  Call metal_ld_export( 3,mlast,ixyz0,met,comm)
+  Call metal_ld_export(-3,mlast,ixyz0,met,domain,comm)
+  Call metal_ld_export( 3,mlast,ixyz0,met,domain,comm)
 
 ! check atom totals after data transfer
 

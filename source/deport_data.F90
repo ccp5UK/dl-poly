@@ -4,7 +4,7 @@ Module deport_data
                                Export_tag, MetLdExp_tag, ExpMplRM_tag, &
                                PassUnit_tag,gsend,gwait,girecv
   Use setup
-  Use domains
+  Use domains, Only : domains_type
   Use configuration
   Use rigid_bodies, Only : rigid_bodies_type
   Use tethers,      Only : tethers_type
@@ -37,7 +37,8 @@ Module deport_data
   Contains
 
 Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,&
-    green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
+    green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,domain, &
+    comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -72,6 +73,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   Type( minimise_type ), Intent( InOut ) :: minim
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -123,45 +125,45 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   If      (mdir == -1) Then ! Direction -x
      kx  = 1
      jxyz= 1
-     lsx = (idx == 0)
+     lsx = (domain%idx == 0)
 
-     jdnode = map(1)
-     kdnode = map(2)
+     jdnode = domain%map(1)
+     kdnode = domain%map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
-     lex = (idx == nprx-1)
+     lex = (domain%idx == domain%nx-1)
 
-     jdnode = map(2)
-     kdnode = map(1)
+     jdnode = domain%map(2)
+     kdnode = domain%map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
-     lsy = (idy == 0)
+     lsy = (domain%idy == 0)
 
-     jdnode = map(3)
-     kdnode = map(4)
+     jdnode = domain%map(3)
+     kdnode = domain%map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
-     ley = (idy == npry-1)
+     ley = (domain%idy == domain%ny-1)
 
-     jdnode = map(4)
-     kdnode = map(3)
+     jdnode = domain%map(4)
+     kdnode = domain%map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
-     lsz = (idz == 0)
+     lsz = (domain%idz == 0)
 
-     jdnode = map(5)
-     kdnode = map(6)
+     jdnode = domain%map(5)
+     kdnode = domain%map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
-     lez = (idz == nprz-1)
+     lez = (domain%idz == domain%nz-1)
 
-     jdnode = map(6)
-     kdnode = map(5)
+     jdnode = domain%map(6)
+     kdnode = domain%map(5)
   Else
      Call error(42)
   End If
@@ -1647,7 +1649,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 End Subroutine deport_atomic_data
 
-Subroutine export_atomic_data(mdir,comm)
+Subroutine export_atomic_data(mdir,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1662,6 +1664,7 @@ Subroutine export_atomic_data(mdir,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer,            Intent( In    ) :: mdir
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap
@@ -1708,50 +1711,50 @@ Subroutine export_atomic_data(mdir,comm)
      kx  = 1
      jxyz= 1
      kxyz= 3
-     lsx = (idx == 0)
+     lsx = (domain%idx == 0)
 
-     jdnode = map(1)
-     kdnode = map(2)
+     jdnode = domain%map(1)
+     kdnode = domain%map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
      kxyz= 3
-     lex = (idx == nprx-1)
+     lex = (domain%idx == domain%nx-1)
 
-     jdnode = map(2)
-     kdnode = map(1)
+     jdnode = domain%map(2)
+     kdnode = domain%map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
      kxyz= 30
-     lsy = (idy == 0)
+     lsy = (domain%idy == 0)
 
-     jdnode = map(3)
-     kdnode = map(4)
+     jdnode = domain%map(3)
+     kdnode = domain%map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
      kxyz= 30
-     ley = (idy == npry-1)
+     ley = (domain%idy == domain%ny-1)
 
-     jdnode = map(4)
-     kdnode = map(3)
+     jdnode = domain%map(4)
+     kdnode = domain%map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
      kxyz= 300
-     lsz = (idz == 0)
+     lsz = (domain%idz == 0)
 
-     jdnode = map(5)
-     kdnode = map(6)
+     jdnode = domain%map(5)
+     kdnode = domain%map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
      kxyz= 300
-     lez = (idz == nprz-1)
+     lez = (domain%idz == domain%nz-1)
 
-     jdnode = map(6)
-     kdnode = map(5)
+     jdnode = domain%map(6)
+     kdnode = domain%map(5)
   Else
      Call error(46)
   End If
@@ -1924,7 +1927,7 @@ Subroutine export_atomic_data(mdir,comm)
 
 End Subroutine export_atomic_data
 
-Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
+Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1938,6 +1941,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
   Integer, Intent( In    ) :: mdir,ixyz0(1:mxatms)
   Integer, Intent( InOut ) :: mlast
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent (InOut) :: comm
 
 
@@ -1983,45 +1987,45 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
   If      (mdir == -1) Then ! Direction -x
      kx  = 1
      jxyz= 1
-     lsx = (idx == 0)
+     lsx = (domain%idx == 0)
 
-     jdnode = map(1)
-     kdnode = map(2)
+     jdnode = domain%map(1)
+     kdnode = domain%map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
-     lex = (idx == nprx-1)
+     lex = (domain%idx == domain%nx-1)
 
-     jdnode = map(2)
-     kdnode = map(1)
+     jdnode = domain%map(2)
+     kdnode = domain%map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
-     lsy = (idy == 0)
+     lsy = (domain%idy == 0)
 
-     jdnode = map(3)
-     kdnode = map(4)
+     jdnode = domain%map(3)
+     kdnode = domain%map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
-     ley = (idy == npry-1)
+     ley = (domain%idy == domain%ny-1)
 
-     jdnode = map(4)
-     kdnode = map(3)
+     jdnode = domain%map(4)
+     kdnode = domain%map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
-     lsz = (idz == 0)
+     lsz = (domain%idz == 0)
 
-     jdnode = map(5)
-     kdnode = map(6)
+     jdnode = domain%map(5)
+     kdnode = domain%map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
-     lez = (idz == nprz-1)
+     lez = (domain%idz == domain%nz-1)
 
-     jdnode = map(6)
-     kdnode = map(5)
+     jdnode = domain%map(6)
+     kdnode = domain%map(5)
   Else
      Call error(46)
   End If
@@ -2176,7 +2180,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,comm)
 
 End Subroutine export_atomic_positions
 
-Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,comm)
+Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2191,6 +2195,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,comm)
   Integer, Intent( In    ) :: mdir
   Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
   Type( mpole_type ), Intent( InOut ) :: mpoles
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -2236,43 +2241,43 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,comm)
      jxyz= 1
      kxyz= 3
 
-     jdnode = map(1)
-     kdnode = map(2)
+     jdnode = domain%map(1)
+     kdnode = domain%map(2)
   Else If (mdir ==  1) Then ! Direction +x
      kx  = 1
      jxyz= 2
      kxyz= 3
 
-     jdnode = map(2)
-     kdnode = map(1)
+     jdnode = domain%map(2)
+     kdnode = domain%map(1)
   Else If (mdir == -2) Then ! Direction -y
      ky  = 1
      jxyz= 10
      kxyz= 30
 
-     jdnode = map(3)
-     kdnode = map(4)
+     jdnode = domain%map(3)
+     kdnode = domain%map(4)
   Else If (mdir ==  2) Then ! Direction +y
      ky  = 1
      jxyz= 20
      kxyz= 30
 
-     jdnode = map(4)
-     kdnode = map(3)
+     jdnode = domain%map(4)
+     kdnode = domain%map(3)
   Else If (mdir == -3) Then ! Direction -z
      kz  = 1
      jxyz= 100
      kxyz= 300
 
-     jdnode = map(5)
-     kdnode = map(6)
+     jdnode = domain%map(5)
+     kdnode = domain%map(6)
   Else If (mdir ==  3) Then ! Direction +z
      kz  = 1
      jxyz= 200
      kxyz= 300
 
-     jdnode = map(6)
-     kdnode = map(5)
+     jdnode = domain%map(6)
+     kdnode = domain%map(5)
   Else
      Call error(176)
   End If
@@ -2406,7 +2411,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,comm)
 
 End Subroutine mpoles_rotmat_export
 
-Subroutine mpoles_rotmat_set_halo(mpoles,comm)
+Subroutine mpoles_rotmat_set_halo(mpoles,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2421,6 +2426,7 @@ Subroutine mpoles_rotmat_set_halo(mpoles,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( mpole_type ), Intent( InOut ) :: mpoles
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: safe
@@ -2455,18 +2461,18 @@ Subroutine mpoles_rotmat_set_halo(mpoles,comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call mpoles_rotmat_export(-1,mlast,ixyz0,mpoles,comm)
-  Call mpoles_rotmat_export( 1,mlast,ixyz0,mpoles,comm)
+  Call mpoles_rotmat_export(-1,mlast,ixyz0,mpoles,domain,comm)
+  Call mpoles_rotmat_export( 1,mlast,ixyz0,mpoles,domain,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call mpoles_rotmat_export(-2,mlast,ixyz0,mpoles,comm)
-  Call mpoles_rotmat_export( 2,mlast,ixyz0,mpoles,comm)
+  Call mpoles_rotmat_export(-2,mlast,ixyz0,mpoles,domain,comm)
+  Call mpoles_rotmat_export( 2,mlast,ixyz0,mpoles,domain,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call mpoles_rotmat_export(-3,mlast,ixyz0,mpoles,comm)
-  Call mpoles_rotmat_export( 3,mlast,ixyz0,mpoles,comm)
+  Call mpoles_rotmat_export(-3,mlast,ixyz0,mpoles,domain,comm)
+  Call mpoles_rotmat_export( 3,mlast,ixyz0,mpoles,domain,comm)
 
 ! check atom totals after data transfer
 
@@ -2484,7 +2490,7 @@ End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons, &
            pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
-           neigh,sites,minim,mpoles,rigid,comm)
+           neigh,sites,minim,mpoles,rigid,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2519,6 +2525,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
   Type( minimise_type ), Intent( InOut ) :: minim
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Save :: cut
 
@@ -2594,64 +2601,70 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
 
 ! assign domain coordinates (call for errors)
 
-        ipx=Int((x+0.5_wp)*nprx_r)
-        ipy=Int((y+0.5_wp)*npry_r)
-        ipz=Int((z+0.5_wp)*nprz_r)
+        ipx=Int((x+0.5_wp)*domain%nx_real)
+        ipy=Int((y+0.5_wp)*domain%ny_real)
+        ipz=Int((z+0.5_wp)*domain%nz_real)
 
-        If (idx == 0) Then
+        If (domain%idx == 0) Then
            If (x < -half_plus) ixyz(i)=ixyz(i)+1
         Else
-           If (ipx < idx) ixyz(i)=ixyz(i)+1
+           If (ipx < domain%idx) ixyz(i)=ixyz(i)+1
         End If
-        If (idx == nprx-1) Then
+        If (domain%idx == domain%nx-1) Then
            If (x >= half_minus) ixyz(i)=ixyz(i)+2
         Else
-           If (ipx > idx) ixyz(i)=ixyz(i)+2
+           If (ipx > domain%idx) ixyz(i)=ixyz(i)+2
         End If
 
-        If (idy == 0) Then
+        If (domain%idy == 0) Then
            If (y < -half_plus) ixyz(i)=ixyz(i)+10
         Else
-           If (ipy < idy) ixyz(i)=ixyz(i)+10
+           If (ipy < domain%idy) ixyz(i)=ixyz(i)+10
         End If
-        If (idy == npry-1) Then
+        If (domain%idy == domain%ny-1) Then
            If (y >= half_minus) ixyz(i)=ixyz(i)+20
         Else
-           If (ipy > idy) ixyz(i)=ixyz(i)+20
+           If (ipy > domain%idy) ixyz(i)=ixyz(i)+20
         End If
 
-        If (idz == 0) Then
+        If (domain%idz == 0) Then
            If (z < -half_plus) ixyz(i)=ixyz(i)+100
         Else
-           If (ipz < idz) ixyz(i)=ixyz(i)+100
+           If (ipz < domain%idz) ixyz(i)=ixyz(i)+100
         End If
-        If (idz == nprz-1) Then
+        If (domain%idz == domain%nz-1) Then
            If (z >= half_minus) ixyz(i)=ixyz(i)+200
         Else
-           If (ipz > idz) ixyz(i)=ixyz(i)+200
+           If (ipz > domain%idz) ixyz(i)=ixyz(i)+200
         End If
      End Do
 
 ! exchange atom data in -/+ x directions
 
      Call deport_atomic_data(-1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
+       domain,comm)
      Call deport_atomic_data( 1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
+       domain,comm)
 
 ! exchange atom data in -/+ y directions
 
      Call deport_atomic_data(-2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
+       domain,comm)
      Call deport_atomic_data( 2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
+       domain,comm)
 
 ! exchange atom data in -/+ z directions
 
      Call deport_atomic_data(-3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
+       domain,comm)
      Call deport_atomic_data( 3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
-       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,comm)
+       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
+       domain,comm)
 
 ! check system for loss of atoms
 
@@ -2739,13 +2752,14 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
 
         If (cshell%megshl > 0) Call pass_shared_units &
           (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl, cshell%listshl,cshell%mxfshl,&
-          cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl,comm,&
+          cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl, &
+          domain,comm,&
           rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
           rigid%oxx,rigid%oyy,rigid%ozz)
 
         If (cons%m_con  > 0) Call pass_shared_units &
           (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,cons%legcon,&
-          cons%lshmv_con,cons%lishp_con,cons%lashp_con,comm,&
+          cons%lshmv_con,cons%lishp_con,cons%lashp_con,domain,comm,&
           rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
           rigid%oxx,rigid%oyy,rigid%ozz)
 
@@ -2754,9 +2768,9 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
         If (rigid%on) Call pass_shared_units &
           (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
           rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
-          rigid%map_shared,comm,&
+          rigid%map_shared,domain,comm,&
           rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
-          rigid%oxx,rigid%oyy,rigid%ozz   )
+          rigid%oxx,rigid%oyy,rigid%ozz)
 
 ! Compress the rest of the bookkeeping arrays if needed
 

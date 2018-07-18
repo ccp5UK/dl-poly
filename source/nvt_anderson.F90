@@ -1,7 +1,7 @@
 Module nvt_anderson
   Use kinds,         Only : wp
   Use comms,         Only : comms_type,gsum,gmax
-  Use domains,       Only : map
+  Use domains,       Only : domains_type
   Use setup,         Only : boltz,zero_plus,mxatms
   Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,nfree,lsite, &
@@ -29,11 +29,8 @@ Use core_shell, Only : core_shell_type
 
 Contains
 
-  Subroutine nvt_a0_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,      &
-             strkin,engke,cshell,                      &
-             cons,pmf,stat,thermo,sites,tmr,comm)
+  Subroutine nvt_a0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep, &
+      strkin,engke,cshell,cons,pmf,stat,thermo,sites,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -53,21 +50,18 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Integer,            Intent( In    ) :: nstep
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
-
     Type( stats_type), Intent( InOut ) :: stat
-Type( core_shell_type), Intent( InOut ) :: cshell
+    Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( In    ) :: thermo
     Type( site_type ), Intent( InOut ) :: sites
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut) :: comm
 
@@ -206,8 +200,7 @@ Type( core_shell_type), Intent( InOut ) :: cshell
   ! SHAKE procedures
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
         Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+          lstitr,stat,pmf,cons,domain,tmr,comm)
       End If
 
   ! check timestep for variable timestep
@@ -242,8 +235,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Andersen Thermostat
@@ -323,7 +315,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
        If (cshell%keyshl == SHELL_ADIABATIC) Then
           If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+               cshell%lashp_shl,qn,domain,comm)
           End If
 
           If (cshell%ntshl > 0) Then
@@ -351,7 +344,10 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! Thermalise the shells on hit cores
 
        If (stp > 0) Then
-          If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+          If (cshell%lshmv_shl) Then
+            Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+              cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
+          End If
 
           If (tps(comm%idnode) > 0) Then
              Do k=1,cshell%ntshl
@@ -406,11 +402,9 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
   End Subroutine nvt_a0_vv
 
-  Subroutine nvt_a1_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
-             nstep,       &
-             strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cshell,cons,pmf,stat,thermo,sites,rigid,tmr,comm)
+  Subroutine nvt_a1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep, &
+      strkin,strknf,strknt,engke,engrot,strcom,vircom, &
+      cshell,cons,pmf,stat,thermo,sites,rigid,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -431,17 +425,12 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Integer,            Intent( In    ) :: nstep
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
-
-
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
@@ -450,6 +439,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
     Type( thermostat_type ), Intent( In    ) :: thermo
     Type( site_type ), Intent( InOut ) :: sites
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -537,7 +527,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
   ! unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(map == comm%idnode))
+       unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -669,8 +659,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! SHAKE procedures
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
         Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+          lstitr,stat,pmf,cons,domain,tmr,comm)
       End If
   ! update velocity and position of RBs
 
@@ -878,8 +867,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial
@@ -1065,7 +1053,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
        If (j > 0) Then
           If (rigid%share) Then
              qn(natms+1:nlast) = 0 ! refresh the q array for shared RB units
-             Call update_shared_units_int(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,qn,comm)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,rigid%list_shared, &
+               rigid%map_shared,qn,domain,comm)
           End If
 
           j = 0
@@ -1221,7 +1210,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! Update shared RBs' velocities
 
           If (rigid%share) Then
-            Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,xxt,yyt,zzt,comm)
+            Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+              rigid%map_shared,xxt,yyt,zzt,domain,comm)
           End If
 
   ! calculate new RBs' COM and angular velocities
@@ -1296,7 +1286,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
        If (cshell%keyshl == SHELL_ADIABATIC) Then
           If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
              qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,qn,comm)
+             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+               cshell%lashp_shl,qn,domain,comm)
           End If
 
           If (cshell%ntshl > 0) Then
@@ -1324,7 +1315,10 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! Thermalise the shells on hit cores
 
        If (stp > 0) Then
-          If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+          If (cshell%lshmv_shl) Then
+            Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+              cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
+          End If
 
           If (tps(comm%idnode) > 0) Then
              Do k=1,cshell%ntshl

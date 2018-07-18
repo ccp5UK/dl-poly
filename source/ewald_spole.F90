@@ -9,7 +9,7 @@ Module ewald_spole
   Use numerics,        Only : erfcgen, invert, dcell
   Use errors_warnings, Only : error
   Use ewald,           Only : ewald_type,spl_cexp, bspcoe, bspgen, exchange_grid
-  Use domains, Only : nprx,npry,nprz,idx,idy,idz
+  Use domains, Only : domains_type
   Use parallel_fft, Only : initialize_fft, pfft, pfft_indices
   Use neighbours, Only : neighbours_type
   Use electrostatic, Only : electrostatic_type
@@ -221,7 +221,7 @@ Module ewald_spole
 
   End Subroutine ewald_real_forces
 
-  Subroutine ewald_spme_forces(engcpe_rc,vircpe_rc,stress,ewld,electro,comm)
+  Subroutine ewald_spme_forces(engcpe_rc,vircpe_rc,stress,ewld,electro,domain,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -240,6 +240,7 @@ Module ewald_spole
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( ewald_type), Intent( InOut ) :: ewld
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -310,12 +311,12 @@ Module ewald_spole
   !!! BEGIN DD SPME VARIABLES
   ! 3D charge array construction (bottom and top) indices
 
-       ixb=idx*(kmaxa/nprx)+1
-       ixt=(idx+1)*(kmaxa/nprx)
-       iyb=idy*(kmaxb/npry)+1
-       iyt=(idy+1)*(kmaxb/npry)
-       izb=idz*(kmaxc/nprz)+1
-       izt=(idz+1)*(kmaxc/nprz)
+       ixb=domain%idx*(kmaxa/domain%nx)+1
+       ixt=(domain%idx+1)*(kmaxa/domain%nx)
+       iyb=domain%idy*(kmaxb/domain%ny)+1
+       iyt=(domain%idy+1)*(kmaxb/domain%ny)
+       izb=domain%idz*(kmaxc/domain%nz)+1
+       izt=(domain%idz+1)*(kmaxc/domain%nz)
 
        ixbm1_r=Real(ixb-1,wp)
        ixtm0_r=Nearest( Real(ixt,wp) , -1.0_wp )
@@ -372,14 +373,14 @@ Module ewald_spole
   !!! BEGIN DAFT SET-UP
   ! domain local block limits of kmax space
 
-       block_x = kmaxa / nprx
-       block_y = kmaxb / npry
-       block_z = kmaxc / nprz
+       block_x = kmaxa / domain%nx
+       block_y = kmaxb / domain%ny
+       block_z = kmaxc / domain%nz
 
   ! set up the parallel fft and useful related quantities
 
        Call initialize_fft( 3, (/ kmaxa, kmaxb, kmaxc /), &
-           (/ nprx, npry, nprz /), (/ idx, idy, idz /),   &
+           (/ domain%nx, domain%ny, domain%nz /), (/ domain%idx, domain%idy, domain%idz /),   &
            (/ block_x, block_y, block_z /),               &
            comm%comm, context )
 
@@ -393,9 +394,9 @@ Module ewald_spole
           Call error(0,message)
        End If
 
-       Call pfft_indices( kmaxa, block_x, idx, nprx, index_x )
-       Call pfft_indices( kmaxb, block_y, idy, npry, index_y )
-       Call pfft_indices( kmaxc, block_z, idz, nprz, index_z )
+       Call pfft_indices( kmaxa, block_x, domain%idx, domain%nx, index_x )
+       Call pfft_indices( kmaxb, block_y, domain%idy, domain%ny, index_y )
+       Call pfft_indices( kmaxc, block_z, domain%idz, domain%nz, index_z )
 
   ! workspace arrays for DaFT
 
@@ -1200,7 +1201,7 @@ Module ewald_spole
       End If
 
       Call exchange_grid(ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
-                         ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, comm)
+        ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, domain,comm)
 
   ! Real values of kmax vectors
 
