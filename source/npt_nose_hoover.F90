@@ -6,7 +6,7 @@ Module npt_nose_hoover
   Use configuration,      Only : imcon,cell,volm,natms,nlast,nfree, &
                                  lfrzn,lstfre,weight,               &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use domains,     Only : map
+  Use domains,     Only : domains_type
   Use kinetics,     Only : getcom,getvom,kinstress,kinstresf,kinstrest
   Use constraints, Only : constraints_type,constraints_tags, apply_shake, apply_rattle
   Use pmf,         Only :  pmf_tags,pmf_type
@@ -28,12 +28,11 @@ Module npt_nose_hoover
 
 Contains
 
-  Subroutine npt_h0_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_h0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
-             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -59,19 +58,13 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Integer(Kind=li),   Intent( In    ) :: degfre
     Real( Kind = wp ),  Intent( In    ) :: virtot
-
     Real( Kind = wp ),  Intent(   Out ) :: consv
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
-
-
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
@@ -80,6 +73,7 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -289,9 +283,8 @@ Contains
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+            Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+              lstitr,stat,pmf,cons,domain,tmr,comm)
           End If
 
   ! restore original integration parameters as well as
@@ -370,8 +363,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
@@ -445,13 +437,12 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
 
   End Subroutine npt_h0_vv
 
-  Subroutine npt_h1_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_h1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
              degfre,degrot,virtot,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -478,22 +469,15 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Integer(Kind=li),   Intent( In    ) :: degfre,degrot
     Real( Kind = wp ),  Intent( In    ) :: virtot
-
     Real( Kind = wp ),  Intent(   Out ) :: consv
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
-
-
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
-
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -502,6 +486,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -613,7 +598,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
 
   ! unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(map == comm%idnode))
+       unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -804,9 +789,8 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+            Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+              lstitr,stat,pmf,cons,domain,tmr,comm)
           End If
 
   ! restore original integration parameters as well as
@@ -1113,8 +1097,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial

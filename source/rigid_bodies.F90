@@ -10,7 +10,7 @@ Module rigid_bodies
 
   Use kinds,           Only : wp,wi,li
   Use comms,           Only : comms_type,gsum,gmin,gmax,gsync,gcheck
-  Use setup,           Only : mxtmls,mxlshp,mxproc,mxatdm, &
+  Use setup,           Only : mxtmls,mxlshp,mxatdm, &
                               mxatms,zero_plus
   Use site, Only : site_type
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
@@ -26,6 +26,7 @@ Module rigid_bodies
                               ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, &
                               ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, &
                               ENS_NPT_MTK, ENS_NPT_MTK_ANISO
+  Use domains,         Only : domains_type
   Implicit None
 
   Private
@@ -142,9 +143,9 @@ Module rigid_bodies
 
 Contains
 
-  Subroutine allocate_rigid_bodies_arrays(T,mxtmls,mxatdm)
+  Subroutine allocate_rigid_bodies_arrays(T,mxtmls,mxatdm,neighbours)
     Class( rigid_bodies_type) :: T
-    Integer( Kind = wi ), Intent( In    ) :: mxtmls,mxatdm
+    Integer( Kind = wi ), Intent( In    ) :: mxtmls,mxatdm,neighbours
 
     Integer, Dimension(1:15) :: fail
 
@@ -154,7 +155,7 @@ Contains
     Allocate (T%lst(0:T%max_list,1:T%max_type), stat=fail(2))
     Allocate (T%list(-1:T%max_list,1:T%max_rigid), stat=fail(3))
     Allocate (T%legend(0:T%max_frozen,1:mxatdm), stat=fail(4))
-    Allocate (T%list_shared(1:mxlshp),T%map_shared(1:mxproc), stat=fail(5))
+    Allocate (T%list_shared(1:mxlshp),T%map_shared(1:neighbours), stat=fail(5))
     Allocate (T%frozen(0:T%max_list,1:T%max_type),T%index_global(0:T%max_list,1:T%max_type), stat=fail(6))
     Allocate (T%weight(0:T%max_list,1:T%max_type),T%weightless(0:T%max_list,1:T%max_type), stat=fail(7))
     Allocate (T%index_local(0:T%max_list,1:T%max_rigid), stat=fail(8))
@@ -492,7 +493,7 @@ Contains
     dist_tol=Max(dist_tol,Sqrt(dtol))
   End Subroutine rigid_bodies_move
 
-  Subroutine rigid_bodies_quench(rigid,comm)
+  Subroutine rigid_bodies_quench(rigid,domain,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine to convert atomic velocities to RB COM and
@@ -504,6 +505,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -525,7 +527,8 @@ Contains
   ! Halo velocity field across onto neighbouring domains
 
     If (rigid%share) Then
-       Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,vxx,vyy,vzz,comm)
+       Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+         rigid%map_shared,vxx,vyy,vzz,domain,comm)
     End If
 
   ! translate atomic velocities to COM velocity & angular velocity
@@ -678,7 +681,7 @@ Contains
     End If
   End Subroutine rigid_bodies_quench
 
-  Subroutine rigid_bodies_q_ench(qr,rigid,comm)
+  Subroutine rigid_bodies_q_ench(qr,rigid,domain,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine to convert atomic velocities to RB COM and
@@ -691,6 +694,7 @@ Contains
 
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Integer,            Intent( In    ) :: qr(1:rigid%max_rigid)
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -712,7 +716,8 @@ Contains
   ! Halo velocity field across onto neighbouring domains
 
     If (rigid%share) Then
-     Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,vxx,vyy,vzz,comm)
+      Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+        rigid%map_shared,vxx,vyy,vzz,domain,comm)
     End If
 
   ! translate atomic velocities to COM velocity & angular velocity
@@ -2494,7 +2499,7 @@ Contains
     End If
   End Subroutine rigid_bodies_widths
 
-  Subroutine xscale(tstep,thermo,stats,neigh,rigid,comm)
+  Subroutine xscale(tstep,thermo,stats,neigh,rigid,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2511,6 +2516,7 @@ Contains
   Type( stats_type), Intent( InOut ) :: stats
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
 
   Integer           :: fail,i,j,irgd,jrgd,lrgd
@@ -2788,7 +2794,7 @@ Contains
 
      If (rigid%share) Then
        Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-         rigid%map_shared,stats%xin,stats%yin,stats%zin,comm)
+         rigid%map_shared,stats%xin,stats%yin,stats%zin,domain,comm)
      End If
      Call rigid_bodies_coms(stats%xin,stats%yin,stats%zin,rgdxin,rgdyin,rgdzin,rigid,comm)
 
@@ -3346,7 +3352,7 @@ Contains
 
         If (rigid%share) Then
           Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-            rigid%map_shared,neigh%xbg,neigh%ybg,neigh%zbg,comm)
+            rigid%map_shared,neigh%xbg,neigh%ybg,neigh%zbg,domain,comm)
         End If
      End If
 

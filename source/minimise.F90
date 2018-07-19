@@ -31,7 +31,7 @@ Module minimise
   Use statistics, Only : stats_type
   Use constraints, Only : constraints_type,constraints_tags,constraints_pseudo_bonds
   Use netcdf_wrap, Only : netcdf_param
-
+  Use domains, Only : domains_type
   Implicit None
 
   Private
@@ -109,9 +109,8 @@ Contains
     End If
   End Subroutine deallocate_minimise_arrays
 
-  Subroutine minimise_relax &
-           (l_str,rdf_collect,megatm,megpmf, &
-           tstep,stpcfg,stats,pmf,cons,netcdf,minim,rigid,comm)
+  Subroutine minimise_relax(l_str,rdf_collect,megatm,megpmf,tstep,stpcfg,stats, &
+      pmf,cons,netcdf,minim,rigid,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -141,6 +140,7 @@ Contains
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( minimise_type ), Intent( InOut ) :: minim
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( inOut ) :: comm
 
   Logical,              Save :: newjob = .true. , l_rdf, l_mov
@@ -324,7 +324,8 @@ Contains
 
   If (rigid%total > 0) Then
      If (rigid%share) Then
-       Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,gxx,gyy,gzz,comm)
+       Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+         rigid%map_shared,gxx,gyy,gzz,domain,comm)
      End If
      Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,comm)
   End If
@@ -603,7 +604,8 @@ Contains
 
      If (l_mov) Then
         If (rigid%share) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,xxx,yyy,zzz,comm)
+          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+            rigid%map_shared,xxx,yyy,zzz,domain,comm)
         End If
         Call q_setup(rigid,comm)
      End If

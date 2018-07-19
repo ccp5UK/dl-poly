@@ -2,7 +2,7 @@ Module nvt_nose_hoover
   Use kinds, Only : wp
   Use comms,       Only : comms_type,gmax
   Use setup,           Only : zero_plus,mxatms
-  Use domains,     Only : map
+  Use domains,     Only : domains_type
   Use configuration,      Only : imcon,cell,natms,nlast,nfree, &
                                  lstfre,weight,                &
                                  xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
@@ -26,11 +26,10 @@ Module nvt_nose_hoover
 
 Contains
 
-  Subroutine nvt_h0_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nvt_h0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
              consv,                             &
              strkin,engke,cshell,               &
-             cons,pmf,stat,thermo,tmr,comm)
+             cons,pmf,stat,thermo,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -57,10 +56,11 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
 
     Type( stats_type), Intent( InOut ) :: stat
-Type( core_shell_type), Intent( InOut ) :: cshell
+    Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -202,7 +202,8 @@ Type( core_shell_type), Intent( InOut ) :: cshell
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,lstitr,stat,pmf,cons,tmr,comm)
+         Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
+           domain,tmr,comm)
        End If
 
   ! check timestep for variable timestep
@@ -249,8 +250,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! integrate and apply nvt_h0_scl thermostat - 1/2 step
@@ -289,7 +289,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
              (isw,lvar,mndis,mxdis,mxstp,tstep, &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
-             strcom,vircom,cshell,cons,pmf,stat,thermo,rigid,tmr,comm)
+             strcom,vircom,cshell,cons,pmf,stat,thermo,rigid,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -307,25 +307,20 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,           Intent( In    ) :: isw
-
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
-
     Real( Kind = wp ), Intent(   Out ) :: consv
-
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
                                           strknf(1:9),strknt(1:9),engrot
-
-
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type), Intent( InOut ) :: pmf
-
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -408,7 +403,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
        If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
 
   ! unsafe positioning due to possibly locally shared RBs
-       unsafe=(Any(map == comm%idnode))
+       unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -549,8 +544,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
         Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+          lstitr,stat,pmf,cons,domain,tmr,comm)
        End If
 
   ! update velocity and position of RBs
@@ -719,9 +713,9 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! check timestep for variable timestep
 
        If (lvar) Then
-If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
- xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
-            Call info(message,.true.)
+         If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+           xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then
+           Call info(message,.true.)
 
 
   ! restore initial conditions
@@ -777,8 +771,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial

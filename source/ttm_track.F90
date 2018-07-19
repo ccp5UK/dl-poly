@@ -20,6 +20,7 @@ Module ttm_track
   Use configuration
   Use errors_warnings, Only : error,warning,info
   Use thermostat, Only : thermostat_type
+  Use domains, Only : domains_type
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -244,7 +245,7 @@ Contains
 
   End Subroutine depoevolve
 
-  Subroutine ttm_ion_temperature(thermo,comm)
+  Subroutine ttm_ion_temperature(thermo,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -259,7 +260,9 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( domains_type ), Intent( In    ) :: domain
   Type ( comms_type ), Intent( InOut) :: comm
+
   Integer :: ia,ja,ka,ijk,ijk1,ijk2,i,ii,jj,kk
   Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz,crho
   Integer :: fail, natmin
@@ -327,23 +330,23 @@ Contains
     buf4 = 0.0_wp
     ijk1 = 1
     ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2) * ntcell(3)
-    Call MPI_ISEND (ttmvom(ijk1,1), 1, tmpmsgz, map(5), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgz, map(6), Grid1_tag, comm%comm, req(2), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk1,2), 1, tmpmsgz, map(5), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgz, map(6), Grid2_tag, comm%comm, req(4), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk1,3), 1, tmpmsgz, map(5), Grid3_tag, comm%comm, req(5), comm%ierr)
-    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgz, map(6), Grid3_tag, comm%comm, req(6), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk1,4), 1, tmpmsgz, map(5), Grid4_tag, comm%comm, req(7), comm%ierr)
-    Call MPI_IRECV (buf4(ijk2)    , 1, tmpmsgz, map(6), Grid4_tag, comm%comm, req(8), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,1), 1, tmpmsgz, domain%map(5), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgz, domain%map(6), Grid1_tag, comm%comm, req(2), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,2), 1, tmpmsgz, domain%map(5), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgz, domain%map(6), Grid2_tag, comm%comm, req(4), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,3), 1, tmpmsgz, domain%map(5), Grid3_tag, comm%comm, req(5), comm%ierr)
+    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgz, domain%map(6), Grid3_tag, comm%comm, req(6), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,4), 1, tmpmsgz, domain%map(5), Grid4_tag, comm%comm, req(7), comm%ierr)
+    Call MPI_IRECV (buf4(ijk2)    , 1, tmpmsgz, domain%map(6), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,1), 1, tmpmsgz, map(6), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (buf1(ijk1)    , 1, tmpmsgz, map(5), Grid1_tag, comm%comm, req(2), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,2), 1, tmpmsgz, map(6), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (buf2(ijk1)    , 1, tmpmsgz, map(5), Grid2_tag, comm%comm, req(4), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,3), 1, tmpmsgz, map(6), Grid3_tag, comm%comm, req(5), comm%ierr)
-    Call MPI_IRECV (buf3(ijk1)    , 1, tmpmsgz, map(5), Grid3_tag, comm%comm, req(6), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,4), 1, tmpmsgz, map(6), Grid4_tag, comm%comm, req(7), comm%ierr)
-    Call MPI_IRECV (buf4(ijk1)    , 1, tmpmsgz, map(5), Grid4_tag, comm%comm, req(8), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,1), 1, tmpmsgz, domain%map(6), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (buf1(ijk1)    , 1, tmpmsgz, domain%map(5), Grid1_tag, comm%comm, req(2), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,2), 1, tmpmsgz, domain%map(6), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (buf2(ijk1)    , 1, tmpmsgz, domain%map(5), Grid2_tag, comm%comm, req(4), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,3), 1, tmpmsgz, domain%map(6), Grid3_tag, comm%comm, req(5), comm%ierr)
+    Call MPI_IRECV (buf3(ijk1)    , 1, tmpmsgz, domain%map(5), Grid3_tag, comm%comm, req(6), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,4), 1, tmpmsgz, domain%map(6), Grid4_tag, comm%comm, req(7), comm%ierr)
+    Call MPI_IRECV (buf4(ijk1)    , 1, tmpmsgz, domain%map(5), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
     Do i=1,numcell
       ttmvom (i,1) = ttmvom (i,1) + buf1(i)
@@ -358,23 +361,23 @@ Contains
     buf4 = 0.0_wp
     ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
     ijk2 = 1 + (ntcell(1)+2) * (2*ntcell(2)+2)
-    Call MPI_ISEND (ttmvom(ijk1,1), 1, tmpmsgy, map(3), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgy, map(4), Grid1_tag, comm%comm, req(2), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk1,2), 1, tmpmsgy, map(3), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgy, map(4), Grid2_tag, comm%comm, req(4), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk1,3), 1, tmpmsgy, map(3), Grid3_tag, comm%comm, req(5), comm%ierr)
-    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgy, map(4), Grid3_tag, comm%comm, req(6), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk1,4), 1, tmpmsgy, map(3), Grid4_tag, comm%comm, req(7), comm%ierr)
-    Call MPI_IRECV (buf4(ijk2)    , 1, tmpmsgy, map(4), Grid4_tag, comm%comm, req(8), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,1), 1, tmpmsgy, domain%map(3), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgy, domain%map(4), Grid1_tag, comm%comm, req(2), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,2), 1, tmpmsgy, domain%map(3), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgy, domain%map(4), Grid2_tag, comm%comm, req(4), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,3), 1, tmpmsgy, domain%map(3), Grid3_tag, comm%comm, req(5), comm%ierr)
+    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgy, domain%map(4), Grid3_tag, comm%comm, req(6), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,4), 1, tmpmsgy, domain%map(3), Grid4_tag, comm%comm, req(7), comm%ierr)
+    Call MPI_IRECV (buf4(ijk2)    , 1, tmpmsgy, domain%map(4), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,1), 1, tmpmsgy, map(4), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (buf1(ijk1)    , 1, tmpmsgy, map(3), Grid1_tag, comm%comm, req(2), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,2), 1, tmpmsgy, map(4), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (buf2(ijk1)    , 1, tmpmsgy, map(3), Grid2_tag, comm%comm, req(4), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,3), 1, tmpmsgy, map(4), Grid3_tag, comm%comm, req(5), comm%ierr)
-    Call MPI_IRECV (buf3(ijk1)    , 1, tmpmsgy, map(3), Grid3_tag, comm%comm, req(6), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,4), 1, tmpmsgy, map(4), Grid4_tag, comm%comm, req(7), comm%ierr)
-    Call MPI_IRECV (buf4(ijk1)    , 1, tmpmsgy, map(3), Grid4_tag, comm%comm, req(8), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,1), 1, tmpmsgy, domain%map(4), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (buf1(ijk1)    , 1, tmpmsgy, domain%map(3), Grid1_tag, comm%comm, req(2), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,2), 1, tmpmsgy, domain%map(4), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (buf2(ijk1)    , 1, tmpmsgy, domain%map(3), Grid2_tag, comm%comm, req(4), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,3), 1, tmpmsgy, domain%map(4), Grid3_tag, comm%comm, req(5), comm%ierr)
+    Call MPI_IRECV (buf3(ijk1)    , 1, tmpmsgy, domain%map(3), Grid3_tag, comm%comm, req(6), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,4), 1, tmpmsgy, domain%map(4), Grid4_tag, comm%comm, req(7), comm%ierr)
+    Call MPI_IRECV (buf4(ijk1)    , 1, tmpmsgy, domain%map(3), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
     Do i=1,numcell
       ttmvom(i,1) = ttmvom(i,1) + buf1(i)
@@ -389,23 +392,23 @@ Contains
     buf4 = 0.0_wp
     ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+3)
     ijk2 = 1 + ntcell(1) + (ntcell(1)+2) * (ntcell(2)+3)
-    Call MPI_ISEND (ttmvom(ijk1,1), 1, tmpmsgx, map(1), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgx, map(2), Grid1_tag, comm%comm, req(2), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk1,2), 1, tmpmsgx, map(1), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgx, map(2), Grid2_tag, comm%comm, req(4), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk1,3), 1, tmpmsgx, map(1), Grid3_tag, comm%comm, req(5), comm%ierr)
-    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgx, map(2), Grid3_tag, comm%comm, req(6), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk1,4), 1, tmpmsgx, map(1), Grid4_tag, comm%comm, req(7), comm%ierr)
-    Call MPI_IRECV (buf4(ijk2)    , 1, tmpmsgx, map(2), Grid4_tag, comm%comm, req(8), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,1), 1, tmpmsgx, domain%map(1), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgx, domain%map(2), Grid1_tag, comm%comm, req(2), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,2), 1, tmpmsgx, domain%map(1), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgx, domain%map(2), Grid2_tag, comm%comm, req(4), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,3), 1, tmpmsgx, domain%map(1), Grid3_tag, comm%comm, req(5), comm%ierr)
+    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgx, domain%map(2), Grid3_tag, comm%comm, req(6), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk1,4), 1, tmpmsgx, domain%map(1), Grid4_tag, comm%comm, req(7), comm%ierr)
+    Call MPI_IRECV (buf4(ijk2)    , 1, tmpmsgx, domain%map(2), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,1), 1, tmpmsgx, map(2), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (buf1(ijk1)    , 1, tmpmsgx, map(1), Grid1_tag, comm%comm, req(2), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,2), 1, tmpmsgx, map(2), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (buf2(ijk1)    , 1, tmpmsgx, map(1), Grid2_tag, comm%comm, req(4), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,3), 1, tmpmsgx, map(2), Grid3_tag, comm%comm, req(5), comm%ierr)
-    Call MPI_IRECV (buf3(ijk1)    , 1, tmpmsgx, map(1), Grid3_tag, comm%comm, req(6), comm%ierr)
-    Call MPI_ISEND (ttmvom(ijk2,4), 1, tmpmsgx, map(2), Grid4_tag, comm%comm, req(7), comm%ierr)
-    Call MPI_IRECV (buf4(ijk1)    , 1, tmpmsgx, map(1), Grid4_tag, comm%comm, req(8), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,1), 1, tmpmsgx, domain%map(2), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (buf1(ijk1)    , 1, tmpmsgx, domain%map(1), Grid1_tag, comm%comm, req(2), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,2), 1, tmpmsgx, domain%map(2), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (buf2(ijk1)    , 1, tmpmsgx, domain%map(1), Grid2_tag, comm%comm, req(4), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,3), 1, tmpmsgx, domain%map(2), Grid3_tag, comm%comm, req(5), comm%ierr)
+    Call MPI_IRECV (buf3(ijk1)    , 1, tmpmsgx, domain%map(1), Grid3_tag, comm%comm, req(6), comm%ierr)
+    Call MPI_ISEND (ttmvom(ijk2,4), 1, tmpmsgx, domain%map(2), Grid4_tag, comm%comm, req(7), comm%ierr)
+    Call MPI_IRECV (buf4(ijk1)    , 1, tmpmsgx, domain%map(1), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
     Do i=1,numcell
       ttmvom(i,1) = ttmvom(i,1) + buf1(i)
@@ -466,14 +469,14 @@ Contains
     buf5 = 0
     ijk1 = 1
     ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2) * (ntcell(3))
-    Call MPI_ISEND (tempion(ijk1) , 1, tmpmsgz, map(5), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgz, map(6), Grid1_tag, comm%comm, req(2), comm%ierr)
-    Call MPI_ISEND (gsource(ijk1) , 1, tmpmsgz, map(5), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgz, map(6), Grid2_tag, comm%comm, req(4), comm%ierr)
-    Call MPI_ISEND (asource(ijk1) , 1, tmpmsgz, map(5), Grid3_tag, comm%comm, req(5), comm%ierr)
-    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgz, map(6), Grid3_tag, comm%comm, req(6), comm%ierr)
-    Call MPI_ISEND (nat(2*ijk1-1) , 1, nummsgz, map(5), Grid4_tag, comm%comm, req(7), comm%ierr)
-    Call MPI_IRECV (buf5(2*ijk2-1), 1, nummsgz, map(6), Grid4_tag, comm%comm, req(8), comm%ierr)
+    Call MPI_ISEND (tempion(ijk1) , 1, tmpmsgz, domain%map(5), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgz, domain%map(6), Grid1_tag, comm%comm, req(2), comm%ierr)
+    Call MPI_ISEND (gsource(ijk1) , 1, tmpmsgz, domain%map(5), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgz, domain%map(6), Grid2_tag, comm%comm, req(4), comm%ierr)
+    Call MPI_ISEND (asource(ijk1) , 1, tmpmsgz, domain%map(5), Grid3_tag, comm%comm, req(5), comm%ierr)
+    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgz, domain%map(6), Grid3_tag, comm%comm, req(6), comm%ierr)
+    Call MPI_ISEND (nat(2*ijk1-1) , 1, nummsgz, domain%map(5), Grid4_tag, comm%comm, req(7), comm%ierr)
+    Call MPI_IRECV (buf5(2*ijk2-1), 1, nummsgz, domain%map(6), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
     tempion = tempion + buf1
     gsource = gsource + buf2
@@ -486,14 +489,14 @@ Contains
     buf5 = 0
     ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
     ijk2 = 1 + (ntcell(1)+2) * (2*ntcell(2) + 2)
-    Call MPI_ISEND (tempion(ijk1) , 1, tmpmsgy, map(3), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgy, map(4), Grid1_tag, comm%comm, req(2), comm%ierr)
-    Call MPI_ISEND (gsource(ijk1) , 1, tmpmsgy, map(3), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgy, map(4), Grid2_tag, comm%comm, req(4), comm%ierr)
-    Call MPI_ISEND (asource(ijk1) , 1, tmpmsgy, map(3), Grid3_tag, comm%comm, req(5), comm%ierr)
-    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgy, map(4), Grid3_tag, comm%comm, req(6), comm%ierr)
-    Call MPI_ISEND (nat(2*ijk1-1) , 1, nummsgy, map(3), Grid4_tag, comm%comm, req(7), comm%ierr)
-    Call MPI_IRECV (buf5(2*ijk2-1), 1, nummsgy, map(4), Grid4_tag, comm%comm, req(8), comm%ierr)
+    Call MPI_ISEND (tempion(ijk1) , 1, tmpmsgy, domain%map(3), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgy, domain%map(4), Grid1_tag, comm%comm, req(2), comm%ierr)
+    Call MPI_ISEND (gsource(ijk1) , 1, tmpmsgy, domain%map(3), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgy, domain%map(4), Grid2_tag, comm%comm, req(4), comm%ierr)
+    Call MPI_ISEND (asource(ijk1) , 1, tmpmsgy, domain%map(3), Grid3_tag, comm%comm, req(5), comm%ierr)
+    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgy, domain%map(4), Grid3_tag, comm%comm, req(6), comm%ierr)
+    Call MPI_ISEND (nat(2*ijk1-1) , 1, nummsgy, domain%map(3), Grid4_tag, comm%comm, req(7), comm%ierr)
+    Call MPI_IRECV (buf5(2*ijk2-1), 1, nummsgy, domain%map(4), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
     tempion = tempion + buf1
     gsource = gsource + buf2
@@ -506,14 +509,14 @@ Contains
     buf5 = 0
     ijk1 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
     ijk2 = 1 + ntcell(1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-    Call MPI_ISEND (tempion(ijk1) , 1, tmpmsgx, map(1), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgx, map(2), Grid1_tag, comm%comm, req(2), comm%ierr)
-    Call MPI_ISEND (gsource(ijk1) , 1, tmpmsgx, map(1), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgx, map(2), Grid2_tag, comm%comm, req(4), comm%ierr)
-    Call MPI_ISEND (asource(ijk1) , 1, tmpmsgx, map(1), Grid3_tag, comm%comm, req(5), comm%ierr)
-    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgx, map(2), Grid3_tag, comm%comm, req(6), comm%ierr)
-    Call MPI_ISEND (nat(2*ijk1-1) , 1, nummsgx, map(1), Grid4_tag, comm%comm, req(7), comm%ierr)
-    Call MPI_IRECV (buf5(2*ijk2-1), 1, nummsgx, map(2), Grid4_tag, comm%comm, req(8), comm%ierr)
+    Call MPI_ISEND (tempion(ijk1) , 1, tmpmsgx, domain%map(1), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (buf1(ijk2)    , 1, tmpmsgx, domain%map(2), Grid1_tag, comm%comm, req(2), comm%ierr)
+    Call MPI_ISEND (gsource(ijk1) , 1, tmpmsgx, domain%map(1), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (buf2(ijk2)    , 1, tmpmsgx, domain%map(2), Grid2_tag, comm%comm, req(4), comm%ierr)
+    Call MPI_ISEND (asource(ijk1) , 1, tmpmsgx, domain%map(1), Grid3_tag, comm%comm, req(5), comm%ierr)
+    Call MPI_IRECV (buf3(ijk2)    , 1, tmpmsgx, domain%map(2), Grid3_tag, comm%comm, req(6), comm%ierr)
+    Call MPI_ISEND (nat(2*ijk1-1) , 1, nummsgx, domain%map(1), Grid4_tag, comm%comm, req(7), comm%ierr)
+    Call MPI_IRECV (buf5(2*ijk2-1), 1, nummsgx, domain%map(2), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
     tempion = tempion + buf1
     gsource = gsource + buf2
@@ -575,36 +578,36 @@ Contains
     Call gsum (comm,crho)
     ijk1 = 2 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
     ijk2 = 1 + (ntcell(1)+1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-    ii = Merge (-1,0,(idx==nprx-1))
-    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgx, map(1), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (act_ele_cell(ijk2,ii,0,0), 1, tmpmsgx, map(2), Grid1_tag, comm%comm, req(2), comm%ierr)
+    ii = Merge (-1,0,(domain%idx==domain%nx-1))
+    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgx, domain%map(1), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (act_ele_cell(ijk2,ii,0,0), 1, tmpmsgx, domain%map(2), Grid1_tag, comm%comm, req(2), comm%ierr)
     ijk1 = 1 + (ntcell(1)) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
     ijk2 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-    ii = Merge (1,0,(idx==0))
-    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgx, map(2), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (act_ele_cell(ijk2,ii,0,0), 1, tmpmsgx, map(1), Grid2_tag, comm%comm, req(4), comm%ierr)
+    ii = Merge (1,0,(domain%idx==0))
+    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgx, domain%map(2), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (act_ele_cell(ijk2,ii,0,0), 1, tmpmsgx, domain%map(1), Grid2_tag, comm%comm, req(4), comm%ierr)
     Call MPI_WAITALL (4, req, stat, comm%ierr)
     ijk1 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
     ijk2 = 1 + (ntcell(1)+2) * (ntcell(2) + 1 + (ntcell(2)+2))
-    jj = Merge (-1,0,(idy==npry-1))
-    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgy, map(3), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (act_ele_cell(ijk2,0,jj,0), 1, tmpmsgy, map(4), Grid1_tag, comm%comm, req(2), comm%ierr)
+    jj = Merge (-1,0,(domain%idy==domain%ny-1))
+    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgy, domain%map(3), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (act_ele_cell(ijk2,0,jj,0), 1, tmpmsgy, domain%map(4), Grid1_tag, comm%comm, req(2), comm%ierr)
     ijk1 = 1 + (ntcell(1)+2) * (ntcell(2) + (ntcell(2)+2))
     ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
-    jj = Merge (1,0,(idy==0))
-    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgy, map(4), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (act_ele_cell(ijk2,0,jj,0), 1, tmpmsgy, map(3), Grid2_tag, comm%comm, req(4), comm%ierr)
+    jj = Merge (1,0,(domain%idy==0))
+    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgy, domain%map(4), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (act_ele_cell(ijk2,0,jj,0), 1, tmpmsgy, domain%map(3), Grid2_tag, comm%comm, req(4), comm%ierr)
     Call MPI_WAITALL (4, req, stat, comm%ierr)
     ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
     ijk2 = 1 + (ntcell(1)+2) * ((ntcell(2)+2) * (ntcell(3) + 1))
-    kk = Merge (-1,0,(idz==nprz-1))
-    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgz, map(5), Grid1_tag, comm%comm, req(1), comm%ierr)
-    Call MPI_IRECV (act_ele_cell(ijk2,0,0,kk), 1, tmpmsgz, map(6), Grid1_tag, comm%comm, req(2), comm%ierr)
+    kk = Merge (-1,0,(domain%idz==domain%nz-1))
+    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgz, domain%map(5), Grid1_tag, comm%comm, req(1), comm%ierr)
+    Call MPI_IRECV (act_ele_cell(ijk2,0,0,kk), 1, tmpmsgz, domain%map(6), Grid1_tag, comm%comm, req(2), comm%ierr)
     ijk1 = 1 + (ntcell(1)+2) * ((ntcell(2)+2) * ntcell(3))
     ijk2 = 1
-    kk = Merge (1,0,(idz==0))
-    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgz, map(6), Grid2_tag, comm%comm, req(3), comm%ierr)
-    Call MPI_IRECV (act_ele_cell(ijk2,0,0,kk), 1, tmpmsgz, map(5), Grid2_tag, comm%comm, req(4), comm%ierr)
+    kk = Merge (1,0,(domain%idz==0))
+    Call MPI_ISEND (act_ele_cell(ijk1,0,0,0),  1, tmpmsgz, domain%map(6), Grid2_tag, comm%comm, req(3), comm%ierr)
+    Call MPI_IRECV (act_ele_cell(ijk2,0,0,kk), 1, tmpmsgz, domain%map(5), Grid2_tag, comm%comm, req(4), comm%ierr)
     Call MPI_WAITALL (4, req, stat, comm%ierr)
   Else
     Do ka = 1, ntcell(3)
@@ -672,18 +675,18 @@ Contains
 !  If (mxnode>1) Then
 !    ijk1 = 1 + ntcell(1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
 !    ijk2 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-!    Call MPI_ISEND (asource(ijk1), 1, tmpmsgx, map(2), Grid1_tag, comm%comm, req(1), comm%ierr)
-!    Call MPI_IRECV (asource(ijk2), 1, tmpmsgx, map(1), Grid1_tag, comm%comm, req(2), comm%ierr)
+!    Call MPI_ISEND (asource(ijk1), 1, tmpmsgx, domain%map(2), Grid1_tag, comm%comm, req(1), comm%ierr)
+!    Call MPI_IRECV (asource(ijk2), 1, tmpmsgx, domain%map(1), Grid1_tag, comm%comm, req(2), comm%ierr)
 !    Call MPI_WAITALL (2, req, stat, comm%ierr)
 !    ijk1 = 1 + (ntcell(1)+2) * (2*ntcell(2) + 2)
 !    ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
-!    Call MPI_ISEND (asource(ijk1), 1, tmpmsgy, map(4), Grid1_tag, comm%comm, req(1), comm%ierr)
-!    Call MPI_IRECV (asource(ijk2), 1, tmpmsgy, map(3), Grid1_tag, comm%comm, req(2), comm%ierr)
+!    Call MPI_ISEND (asource(ijk1), 1, tmpmsgy, domain%map(4), Grid1_tag, comm%comm, req(1), comm%ierr)
+!    Call MPI_IRECV (asource(ijk2), 1, tmpmsgy, domain%map(3), Grid1_tag, comm%comm, req(2), comm%ierr)
 !    Call MPI_WAITALL (2, req, stat, comm%ierr)
 !    ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2) * (ntcell(3))
 !    ijk2 = 1
-!    Call MPI_ISEND (asource(ijk1), 1, tmpmsgz, map(6), Grid1_tag, comm%comm, req(1), comm%ierr)
-!    Call MPI_IRECV (asource(ijk2), 1, tmpmsgz, map(5), Grid1_tag, comm%comm, req(2), comm%ierr)
+!    Call MPI_ISEND (asource(ijk1), 1, tmpmsgz, domain%map(6), Grid1_tag, comm%comm, req(1), comm%ierr)
+!    Call MPI_IRECV (asource(ijk2), 1, tmpmsgz, domain%map(5), Grid1_tag, comm%comm, req(2), comm%ierr)
 !    Call MPI_WAITALL (2, req, stat, comm%ierr)
 !  End If
 
@@ -692,7 +695,8 @@ Contains
 
 End Subroutine ttm_ion_temperature
 
-Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,lines,npage,thermo,comm)
+Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
+    lines,npage,thermo,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -711,6 +715,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,li
   Integer, Intent( In ) :: ndump,nstbpo,nsteql,nstep,nstrun,lines,npage
   Real ( Kind = wp ), Intent( In ) :: tstep,time
   Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
 
   Real ( Kind = wp ), Allocatable :: eltemp1(:,:,:,:)
@@ -821,7 +826,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,li
 
 ! apply boundary conditions
 
-  Call boundaryHalo (comm)
+  Call boundaryHalo (domain,comm)
   Call boundaryCond (bcTypeE, temp,comm)
 
 ! print statistics to files: electronic and ionic temperatures
@@ -848,7 +853,9 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,li
 
 ! determine energy redistribution from deactivated ionic temperature voxels for slab geometry
 
-  If (redistribute) Call redistribute_Te (temp,comm)
+  If (redistribute) Then
+    Call redistribute_Te (temp,domain,comm)
+  End If
 
 ! Adaptive timestep
 
@@ -1228,7 +1235,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,li
 
 ! update boundary halo values and apply boundary conditions
 
-    Call boundaryHalo (comm)
+    Call boundaryHalo(domain,comm)
     Call boundaryCond (bcTypeE, temp,comm)
 
 ! simple stability check for simulation
@@ -1244,8 +1251,5 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,nstbpo,ndump,nstrun,li
 
   Deallocate (eltemp1, Stat = fail)
   If (fail>0) Call error(1088)
-
 End Subroutine ttm_thermal_diffusion
-
-  
 End Module ttm_track

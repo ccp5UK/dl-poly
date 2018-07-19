@@ -56,11 +56,11 @@
   Do
      Call allocate_statistics_connect(mxatdm,stat)
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,comm)
+     If (nstph > nstpe) Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,comm)
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,sites,comm)
+     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,sites,domain,comm)
 
      If (newjb) Then
         newjb = .false.
@@ -97,18 +97,18 @@
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,comm)
+              Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
 
-           Call statistics_connect_frames(megatm,mxatdm_,msd_data%l_msd,stat,comm)
+           Call statistics_connect_frames(megatm,mxatdm_,msd_data%l_msd,stat,domain,comm)
            Call deallocate_statistics_connect(stat)
 
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(electro%key,neigh,sites,mpoles,comm)
+           Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -116,7 +116,7 @@
            If (lbook) Then
              Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
                atmfrz,degrot,degtra,cshell,cons,pmf,bond,angle,dihedral, &
-               inversion,tether,neigh,sites,mpoles,rigid,comm)
+               inversion,tether,neigh,sites,mpoles,rigid,domain,comm)
               If (lexcl) Then
                 Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
                   inversion,neigh,rigid,comm)
@@ -127,7 +127,7 @@
 
            Call w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
-             netcdf,minim,mpoles,ext_field,rigid,electro,tmr)
+             netcdf,minim,mpoles,ext_field,rigid,electro,domain,tmr)
 
 ! Evaluate kinetics if available
 
@@ -143,7 +143,7 @@
 ! Calculate kinetic stress and energy if available
 
               If (rigid%total > 0) Then
-                 Call rigid_bodies_quench(rigid,comm)
+                Call rigid_bodies_quench(rigid,domain,comm)
 
                  Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
                  Call kinstrest(rigid,stat%strknt,comm)
@@ -160,11 +160,13 @@
 
 ! Apply kinetic options
 
-              Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field)
+              Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
-              If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Call core_shell_kinetic(stat%shlke,cshell,comm)
+              If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Then
+                Call core_shell_kinetic(stat%shlke,cshell,domain,comm)
+              End If
            End If
 
 ! Get complete stress tensor
@@ -223,11 +225,11 @@
            If (ltraj) Call trajectory_write &
            (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,netcdf,comm)
            If (dfcts(1)%ldef)Then
-             Call defects_write &
-             (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(1),neigh,sites,netcdf,comm)
+             Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell, &
+               dfcts(1),neigh,sites,netcdf,domain,comm)
              If (dfcts(2)%ldef)Then
-               Call defects_write &
-               (keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(2),neigh,sites,netcdf,comm)
+               Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell, &
+                 dfcts(2),neigh,sites,netcdf,domain,comm)
              End If
            End If
            If (msd_data%l_msd) Call msd_write &
@@ -303,7 +305,7 @@
 
      Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
        degrot,degfre,degshl,stat%engrot,sites%dof_site,cshell,stat,cons,pmf, &
-       thermo,minim,rigid,comm)
+       thermo,minim,rigid,domain,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

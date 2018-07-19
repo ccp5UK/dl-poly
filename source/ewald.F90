@@ -14,9 +14,8 @@ Module ewald
                               girecv
   Use setup,           Only : mxatms,nrite,mxspl,mxspl2,twopi,kmaxa,kmaxb,kmaxc
   Use configuration,   Only : natms,fxx,fyy,fzz,imcon
-  Use domains,         Only : map
+  Use domains,         Only : domains_type
   Use errors_warnings, Only : error
-
   Implicit None
 
   Private
@@ -36,7 +35,6 @@ Module ewald
 
     Logical :: newjob_kall = .true., &
                newjob_kfrz = .true.
-
     Contains
       Private
       Procedure :: ewald_allocate_kall_arrays
@@ -217,7 +215,7 @@ Contains
 
   Subroutine exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local , &
                             ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
-                            comm)
+                            domain, comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -244,6 +242,7 @@ Contains
     Integer,            Intent( In    ) :: ixdt, iydt, izdt
     Real( Kind = wp ),  Intent( In    ) :: qqc_local(   ixb:ixt ,  iyb:iyt ,  izb:izt )
     Real( Kind = wp ),  Intent(   Out ) :: qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt )
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: lx, ly, lz, delspl
@@ -275,19 +274,19 @@ Contains
 
   ! +X direction face - negative halo
 
-       Call exchange_grid_halo( map(1),                     map(2), &
+       Call exchange_grid_halo( domain%map(1),                     domain%map(2), &
             ixt-mxspl2+1, ixt  ,         iyb, iyt,                    izb, izt, &
             ixdb        , ixb-1,         iyb, iyt,                    izb, izt )
 
   ! +Y direction face (including the +X face extension) - negative halo
 
-       Call exchange_grid_halo( map(3),                     map(4), &
+       Call exchange_grid_halo( domain%map(3),                     domain%map(4), &
             ixdb, ixt,                   iyt-mxspl2+1, iyt  ,         izb, izt, &
             ixdb, ixt,                   iydb        , iyb-1,         izb, izt )
 
   ! +Z direction face (including the +Y+X faces extensions) - negative halo
 
-       Call exchange_grid_halo( map(5),                     map(6), &
+       Call exchange_grid_halo( domain%map(5),                     domain%map(6), &
             ixdb, ixt,                   iydb, iyt,                   izt-mxspl2+1, izt, &
             ixdb, ixt,                   iydb, iyt,                   izdb        , izb-1 )
 
@@ -295,7 +294,7 @@ Contains
 
   ! +X direction face - negative halo
 
-       Call exchange_grid_halo( map(1),                     map(2), &
+       Call exchange_grid_halo( domain%map(1),                     domain%map(2), &
             ixt-mxspl2+1, ixt  ,         iyb, iyt,                    izb, izt, &
             ixdb        , ixb-1,         iyb, iyt,                    izb, izt )
   !          (ixt)-(ixt-mxspl2+1)+1=mxspl2
@@ -303,7 +302,7 @@ Contains
 
   ! -X direction face - positive halo
 
-       Call exchange_grid_halo( map(2),                     map(1), &
+       Call exchange_grid_halo( domain%map(2),                     domain%map(1), &
             ixb          , ixb+delspl-1, iyb, iyt,                    izb, izt, &
             ixdt-delspl+1, ixdt        , iyb, iyt,                    izb, izt )
   !          (ixb+delspl-1)-(ixb)+1=delspl
@@ -312,25 +311,25 @@ Contains
 
   ! +Y direction face (including the +&-X faces extensions) - negative halo
 
-       Call exchange_grid_halo( map(3),                     map(4), &
+       Call exchange_grid_halo( domain%map(3),                     domain%map(4), &
             ixdb, ixdt,                  iyt-mxspl2+1, iyt  ,         izb, izt, &
             ixdb, ixdt,                  iydb        , iyb-1,         izb, izt )
 
   ! -Y direction face (including the +&-X faces extensions) - positive halo
 
-       Call exchange_grid_halo( map(4),                     map(3), &
+       Call exchange_grid_halo( domain%map(4),                     domain%map(3), &
             ixdb, ixdt,                  iyb          , iyb+delspl-1, izb, izt, &
             ixdb, ixdt,                  iydt-delspl+1, iydt        , izb, izt )
 
   ! +Z direction face (including the +&-Y+&-X faces extensions) - negative halo
 
-       Call exchange_grid_halo( map(5),                     map(6), &
+       Call exchange_grid_halo( domain%map(5),                     domain%map(6), &
             ixdb, ixdt,                  iydb, iydt,                  izt-mxspl2+1, izt, &
             ixdb, ixdt,                  iydb, iydt,                  izdb        , izb-1 )
 
   ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
 
-       Call exchange_grid_halo( map(6),                     map(5), &
+       Call exchange_grid_halo( domain%map(6),                     domain%map(5), &
             ixdb, ixdt,                  iydb, iydt,                  izb          , izb+delspl-1, &
             ixdb, ixdt,                  iydb, iydt,                  izdt-delspl+1, izdt         )
 

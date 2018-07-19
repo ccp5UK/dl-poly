@@ -12,21 +12,19 @@ Module constraints
 
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type,gsum,gcheck,gsync
-
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
-    imcon,cell,xxx,yyy,zzz,fxx,fyy,fzz,nfree,lstfre
+                              imcon,cell,xxx,yyy,zzz,fxx,fyy,fzz,nfree,lstfre
   Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
   Use setup,           Only : mxatms,mxlshp,mxtmls,zero_plus
-
   Use errors_warnings, Only : error,warning,info
   Use shared_units,    Only : update_shared_units
   Use numerics,        Only : images,local_index
   Use statistics, Only : stats_type
   Use timer, Only : timer_type, stop_timer, start_timer
-
+  Use domains, Only : domains_type
   Implicit None
 
-  Private 
+  Private
 
   Type, Public :: constraints_type
     Private
@@ -47,7 +45,7 @@ Module constraints
     Real( Kind = wp ), Allocatable :: dxx(:),dyy(:),dzz(:)
 
     Real( Kind = wp ), Allocatable, Public :: prmcon(:)
-  Contains 
+  Contains
     Private
     Procedure, Public :: init => allocate_constraints_arrays
     Procedure, Public :: deallocate_constraints_temps
@@ -99,9 +97,9 @@ Subroutine allocate_work(T,n)
     End If
   End Subroutine deallocate_work
 
-  Subroutine allocate_constraints_arrays(T,mxtmls,mxatdm,mxlshp,mxproc)
+  Subroutine allocate_constraints_arrays(T,mxtmls,mxatdm,mxlshp,neighbours)
   Class(constraints_type) :: T
-    Integer(kind=wi), Intent( In ) :: mxtmls,mxatdm,mxproc,mxlshp
+    Integer(kind=wi), Intent( In ) :: mxtmls,mxatdm,neighbours,mxlshp
 
     Integer :: fail(7)
 
@@ -112,7 +110,7 @@ Subroutine allocate_work(T,n)
     Allocate (T%listcon(0:2,1:T%mxcons),                   Stat = fail(3))
     Allocate (T%legcon(0:T%mxfcon,1:mxatdm),               Stat = fail(4))
     Allocate (T%lishp_con(1:mxlshp), Stat = fail(5))
-    Allocate (T%lashp_con(1:mxproc), Stat = fail(6))
+    Allocate (T%lashp_con(1:neighbours), Stat = fail(6))
     Allocate (T%prmcon(1:T%mxtcon),                        Stat = fail(7))
 
     If (Any(fail > 0)) Call error(1018)
@@ -222,7 +220,7 @@ Subroutine allocate_work(T,n)
 
   End Subroutine constraints_pseudo_bonds
 
-  Subroutine constraints_quench(cons,stat,comm)
+  Subroutine constraints_quench(cons,stat,domain,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -236,6 +234,7 @@ Subroutine allocate_work(T,n)
 
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( stats_type), Intent( InOut ) :: stat
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type), Intent( InOut ) :: comm
 
     Logical           :: safe
@@ -258,7 +257,8 @@ Subroutine allocate_work(T,n)
     ! gather velocities of shared atoms
 
     If (cons%lshmv_con) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con,cons%lashp_con,vxx,vyy,vzz,comm)
+      Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con, &
+        cons%lashp_con,vxx,vyy,vzz,domain,comm)
     End If
 
     ! construct current constrained bond vectors and listot array (shared
@@ -378,7 +378,8 @@ Subroutine allocate_work(T,n)
 
         ! transport velocity updates to other nodes
         If (cons%lshmv_con) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con,cons%lashp_con,vxx,vyy,vzz,comm)
+          Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con, &
+            cons%lashp_con,vxx,vyy,vzz,domain,comm)
         End If
       End If
     End Do
@@ -549,9 +550,7 @@ Subroutine allocate_work(T,n)
 
   End Subroutine constraints_tags
 
-  Subroutine constraints_rattle              &
-      (tstep,lfst,lcol, &
-       vxx,vyy,vzz,stat,cons,tmr,comm)
+  Subroutine constraints_rattle(tstep,lfst,lcol,vxx,vyy,vzz,stat,cons,domain,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -571,6 +570,7 @@ Subroutine allocate_work(T,n)
     Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
     Type( stats_type ), Intent( InOut ) :: stat
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -620,7 +620,8 @@ Subroutine allocate_work(T,n)
       ! update velocities globally: transport velocity updates of shared atoms to other nodes
 
       If (cons%lshmv_con) Then
-        Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con,cons%lashp_con,vxx,vyy,vzz,comm)
+        Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con, &
+          cons%lashp_con,vxx,vyy,vzz,domain,comm)
       End If
 
       ! initialise velocity correction arrays
@@ -741,10 +742,7 @@ Subroutine allocate_work(T,n)
 
   End Subroutine constraints_rattle
 
-
-  Subroutine constraints_shake_vv       &
-      (tstep,      &
-      xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
+  Subroutine constraints_shake_vv(tstep,xxx,yyy,zzz,str,vir,stat,cons,domain,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -762,9 +760,10 @@ Subroutine allocate_work(T,n)
 
     Real( Kind = wp ), Intent( In    ) :: tstep
     Real( Kind = wp ), Intent( InOut ) :: xxx(:),yyy(:),zzz(:)
-    Real( Kind = wp ), Intent( InOut ) :: vir, str(:) 
+    Real( Kind = wp ), Intent( InOut ) :: vir, str(:)
     Type( constraints_type), Intent( InOut ) :: cons
     Type( stats_type), Intent( InOut ) :: stat
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     TYpe( comms_type ), Intent( InOut ) :: comm
 
@@ -809,7 +808,8 @@ Subroutine allocate_work(T,n)
       ! update positions globally: transport position updates of shared atoms to other nodes
 
       If (cons%lshmv_con) Then
-        Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con,cons%lashp_con,xxx,yyy,zzz,comm)
+        Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con, &
+          cons%lashp_con,xxx,yyy,zzz,domain,comm)
       End If
 
       ! calculate temporary bond vector
@@ -1000,14 +1000,14 @@ Subroutine allocate_work(T,n)
 #endif
   End Subroutine constraints_shake_vv
 
-  Subroutine apply_rattle(tstep,kit, &
-      pmf,cons,stat,tmr,comm)
+  Subroutine apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
 
     Integer, Intent( In ) :: kit
     Real( Kind = wp ), Intent( In ) :: tstep
     Type( stats_type), Intent( InOut ) :: stat
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( constraints_type), Intent( InOut ) :: cons
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -1018,31 +1018,27 @@ Subroutine allocate_work(T,n)
       lcol = (i == kit)
 
       If (cons%megcon > 0) Then
-        Call constraints_rattle &
-          (tstep,lfst,lcol, &
-          vxx,vyy,vzz,stat,cons,tmr,comm)
+        Call constraints_rattle(tstep,lfst,lcol,vxx,vyy,vzz,stat,cons,domain,tmr,comm)
       End IF
 
       If (pmf%megpmf > 0) Then
-        Call pmf_rattle &
-          (cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
+        Call pmf_rattle(cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
           vxx,vyy,vzz,stat,pmf,comm)
       End If
     End Do
   End Subroutine apply_rattle
 
-  Subroutine apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-      lstitr,&
-      stat,pmf,cons,tmr,comm)
+  Subroutine apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
+      domain,tmr,comm)
     Integer, Intent( InOut ) :: kit
     Integer, Intent( In ) :: mxkit
     Logical, Intent( In ) :: lstitr(:)
     Real( Kind = wp ),  Intent( InOut ) :: oxt(:),oyt(:),ozt(:)
-
     Real( Kind = wp ),  Intent( In ) :: tstep
     Type( stats_type), Intent( InOut ) :: stat
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( constraints_type), Intent( InOut ) :: cons
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
     ! constraint virial and stress tensor
@@ -1077,9 +1073,7 @@ Subroutine allocate_work(T,n)
 
         ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
 
-        Call constraints_shake_vv &
-          (tstep,      &
-          xxx,yyy,zzz,str,vir,stat,cons,tmr,comm)
+        Call constraints_shake_vv(tstep,xxx,yyy,zzz,str,vir,stat,cons,domain,tmr,comm)
 
         ! constraint virial and stress tensor
 
@@ -1153,5 +1147,4 @@ Subroutine allocate_work(T,n)
       End If
     End Do
   End Subroutine apply_shake
-
 End module constraints

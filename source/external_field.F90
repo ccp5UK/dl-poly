@@ -24,6 +24,7 @@ Module external_field
   Use statistics, Only : stats_type
   Use core_shell, Only : core_shell_type,SHELL_ADIABATIC
   Use rdfs, Only : rdf_type,usr_collect,usr_compute
+  Use domains, Only : domains_type
   Implicit None
 
   Private
@@ -107,7 +108,7 @@ Contains
   End subroutine cleanup
 
   Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,rdf, &
-      ext_field,rigid,comm)
+      ext_field,rigid,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -130,6 +131,7 @@ Contains
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( Inout ) :: comm
 
   Logical, Save     :: newjob = .true.
@@ -269,7 +271,10 @@ Contains
            End If
         End Do
 
-        If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,oxt,oyt,ozt,comm)
+        If (cshell%lshmv_shl) Then
+          Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+            cshell%lashp_shl,oxt,oyt,ozt,domain,comm)
+        End If
 
 ! Transfer cores' forces to shells
 
@@ -343,7 +348,10 @@ Contains
            End If
         End Do
 
-        If (cshell%lshmv_shl) Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,oxt,oyt,ozt,comm)
+        If (cshell%lshmv_shl) Then
+          Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+            cshell%lashp_shl,oxt,oyt,ozt,domain,comm)
+        End If
 
 ! Transfer cores' velocities to shells
 

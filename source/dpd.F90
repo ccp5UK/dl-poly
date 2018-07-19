@@ -17,7 +17,7 @@ Module dpd
                                   weight,xxx,yyy,zzz,vxx,vyy,vzz, &
                                   fxx,fyy,fzz, ixyz
   Use rigid_bodies, Only : rigid_bodies_type
-  Use domains
+  Use domains, Only : domains_type
 
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error, warning
@@ -33,7 +33,7 @@ Module dpd
 
 Contains
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,comm)
+  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,domain,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -56,6 +56,7 @@ Contains
     Type( thermostat_type ), Intent( In    ) :: thermo
     Type( neighbours_type ), Intent( In    ) :: neigh
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -116,7 +117,7 @@ Contains
 
     ! Refresh halo velocities
 
-    Call dpd_v_set_halo(comm)
+    Call dpd_v_set_halo(domain,comm)
 
     ! outer loop over atoms
 
@@ -288,7 +289,7 @@ Contains
 
     ! Refresh halo velocities
 
-    Call dpd_v_set_halo(comm)
+    Call dpd_v_set_halo(domain,comm)
 
     ! Initialise forces
 
@@ -466,7 +467,8 @@ Contains
     ! Update forces on RBs
 
     If (rigid%share) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxx,fyy,fzz,comm)
+      Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+        rigid%map_shared,fxx,fyy,fzz,domain,comm)
     End If
 
     ! globalise stats%virdpd
@@ -482,7 +484,7 @@ Contains
 
   End Subroutine dpd_thermostat
 
-  Subroutine dpd_v_export(mdir,mlast,ixyz0,comm)
+  Subroutine dpd_v_export(mdir,mlast,ixyz0,domain,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -497,6 +499,7 @@ Contains
 
     Integer,           Intent( In    ) :: mdir
     Integer,           Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: safe
@@ -537,43 +540,43 @@ Contains
       jxyz= 1
       kxyz= 3
 
-      jdnode = map(1)
-      kdnode = map(2)
+      jdnode = domain%map(1)
+      kdnode = domain%map(2)
     Else If (mdir ==  1) Then ! Direction +x
       kx  = 1
       jxyz= 2
       kxyz= 3
 
-      jdnode = map(2)
-      kdnode = map(1)
+      jdnode = domain%map(2)
+      kdnode = domain%map(1)
     Else If (mdir == -2) Then ! Direction -y
       ky  = 1
       jxyz= 10
       kxyz= 30
 
-      jdnode = map(3)
-      kdnode = map(4)
+      jdnode = domain%map(3)
+      kdnode = domain%map(4)
     Else If (mdir ==  2) Then ! Direction +y
       ky  = 1
       jxyz= 20
       kxyz= 30
 
-      jdnode = map(4)
-      kdnode = map(3)
+      jdnode = domain%map(4)
+      kdnode = domain%map(3)
     Else If (mdir == -3) Then ! Direction -z
       kz  = 1
       jxyz= 100
       kxyz= 300
 
-      jdnode = map(5)
-      kdnode = map(6)
+      jdnode = domain%map(5)
+      kdnode = domain%map(6)
     Else If (mdir ==  3) Then ! Direction +z
       kz  = 1
       jxyz= 200
       kxyz= 300
 
-      jdnode = map(6)
-      kdnode = map(5)
+      jdnode = domain%map(6)
+      kdnode = domain%map(5)
     Else
       Call error(152)
     End If
@@ -705,7 +708,7 @@ Contains
 
   End Subroutine dpd_v_export
 
-  Subroutine dpd_v_set_halo(comm)
+  Subroutine dpd_v_set_halo(domain,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -717,7 +720,9 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
+
     Logical :: safe
     Integer :: fail,mlast
 
@@ -738,18 +743,18 @@ Contains
 
     ! exchange atom data in -/+ x directions
 
-    Call dpd_v_export(-1,mlast,ixyz0,comm)
-    Call dpd_v_export( 1,mlast,ixyz0,comm)
+    Call dpd_v_export(-1,mlast,ixyz0,domain,comm)
+    Call dpd_v_export( 1,mlast,ixyz0,domain,comm)
 
     ! exchange atom data in -/+ y directions
 
-    Call dpd_v_export(-2,mlast,ixyz0,comm)
-    Call dpd_v_export( 2,mlast,ixyz0,comm)
+    Call dpd_v_export(-2,mlast,ixyz0,domain,comm)
+    Call dpd_v_export( 2,mlast,ixyz0,domain,comm)
 
     ! exchange atom data in -/+ z directions
 
-    Call dpd_v_export(-3,mlast,ixyz0,comm)
-    Call dpd_v_export( 3,mlast,ixyz0,comm)
+    Call dpd_v_export(-3,mlast,ixyz0,domain,comm)
+    Call dpd_v_export( 3,mlast,ixyz0,domain,comm)
 
     ! check atom totals after data transfer
 

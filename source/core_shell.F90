@@ -13,7 +13,7 @@ Module core_shell
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gsync,gsum,gcheck,gmax
   Use setup,           Only : nrite,boltz,engunit,output,mxatms,mxatdm,zero_plus,&
-    mxtmls,mxproc,mxlshp
+    mxtmls,mxlshp
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,fxx,fyy,fzz, &
     weight,vxx,vyy,vzz,lfrzn,freeze_atoms
   Use parse,           Only : strip_blanks,lower_case
@@ -21,6 +21,7 @@ Module core_shell
   Use numerics,        Only : local_index,images
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
+  Use domains, Only : domains_type
 
   Implicit None
   Private
@@ -58,9 +59,9 @@ Module core_shell
 
 Contains
 
-  Subroutine allocate_core_shell_arrays(T,mxatdm,mxtmls,mxlshp,mxproc)
+  Subroutine allocate_core_shell_arrays(T,mxatdm,mxtmls,mxlshp,neighbours)
    Class( core_shell_type ) :: T
-     Integer, Intent(In) :: mxatdm,mxtmls,mxlshp,mxproc
+     Integer, Intent(In) :: mxatdm,mxtmls,mxlshp,neighbours
 
     Integer, Dimension( 1:6 ) :: fail
 
@@ -70,7 +71,7 @@ Contains
     Allocate (T%lstshl(1:2,1:T%mxtshl),                    Stat = fail(2))
     Allocate (T%listshl(0:2,1:T%mxshl),                    Stat = fail(3))
     Allocate (T%legshl(0:T%mxfshl,1:mxatdm),               Stat = fail(4))
-    Allocate (T%lishp_shl(1:mxlshp),T%lashp_shl(1:mxproc), Stat = fail(5))
+    Allocate (T%lishp_shl(1:mxlshp),T%lashp_shl(1:neighbours), Stat = fail(5))
     Allocate (T%prmshl(1:2,1:T%mxtshl),                    Stat = fail(6))
 
     If (Any(fail > 0)) Call error(1005)
@@ -323,7 +324,7 @@ Contains
 
   End Subroutine core_shell_forces
 
-  Subroutine core_shell_kinetic(shlke,cshell,comm)
+  Subroutine core_shell_kinetic(shlke,cshell,domain,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -337,6 +338,7 @@ Contains
 
     Real( Kind = wp ),  Intent(   Out ) :: shlke
     Type( core_shell_type ), Intent( InOut ) :: cshell
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: i,j,k
@@ -345,7 +347,8 @@ Contains
     ! gather velocities of shared particles
 
     If (cshell%lshmv_shl) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+        cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
     End If
 
     ! initialise energy
@@ -488,7 +491,7 @@ Contains
 
   End Subroutine core_shell_on_top
 
-  Subroutine core_shell_quench(safe,temp,cshell,comm)
+  Subroutine core_shell_quench(safe,temp,cshell,domain,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -504,6 +507,7 @@ Contains
     Logical,           Intent(   Out ) :: safe
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Real( Kind = wp ), Intent( In    ) :: temp
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type), Intent( InOut ) :: comm
 
     Logical           :: safek
@@ -517,7 +521,7 @@ Contains
     ! gather velocities of shared particles
 
     If (cshell%lshmv_shl) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,comm)
+      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
     End If
 
     ! permitted core-shell internal kinetic energy
@@ -574,7 +578,8 @@ Contains
 
   End Subroutine core_shell_quench
 
-  Subroutine core_shell_relax(l_str,relaxed,rdf_collect,rlx_tol,stpcfg,cshell,stat,comm)
+  Subroutine core_shell_relax(l_str,relaxed,rdf_collect,rlx_tol,stpcfg,cshell, &
+      stat,domain,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -593,6 +598,7 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: rlx_tol(1:2),stpcfg
     Type(core_shell_type), Intent( InOut ) :: cshell
     Type( stats_type ), Intent( InOut ) :: stat
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true. , l_rdf
@@ -693,7 +699,7 @@ Contains
     ! gather new forces on shared shells
 
     If (cshell%lshmv_shl) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,fxx,fyy,fzz,comm)
+      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,fxx,fyy,fzz,domain,comm)
     End If
 
     ! Load shell forces on cores (cores don't move during the shell relaxation)
@@ -873,7 +879,7 @@ Contains
     ! Exchange original shell forces on shared cores across domains
 
     If (cshell%lshmv_shl) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,fxt,fyt,fzt,comm)
+      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,fxt,fyt,fzt,domain,comm)
     End If
 
     ! Move shells accordingly to their new positions

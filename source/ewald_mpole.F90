@@ -9,7 +9,7 @@ Module ewald_mpole
   Use numerics, Only : invert,dcell,erfcgen
   Use mpoles_container, Only : ewald_deriv,explicit_ewald_real_loops,&
                                explicit_spme_loops,limit_erfr_deriv
-  Use domains, Only : nprx,npry,nprz,idx,idy,idz
+  Use domains, Only : domains_type
   Use parallel_fft, Only: initialize_fft, pfft, pfft_indices
   Use errors_warnings, Only : error
   Use mpole, Only : mpole_type
@@ -25,7 +25,7 @@ Module ewald_mpole
   Contains
 
   Subroutine ewald_real_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress, &
-      neigh,mpoles,electro,comm)
+      neigh,mpoles,electro,domain,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -45,6 +45,7 @@ Module ewald_mpole
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ),                       Intent( In    ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -1077,7 +1078,8 @@ Module ewald_mpole
 
   End Subroutine ewald_real_mforces_d
 
-  Subroutine ewald_spme_mforces(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro,comm)
+  Subroutine ewald_spme_mforces(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro, &
+      domain,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1100,6 +1102,7 @@ Module ewald_mpole
     Type( ewald_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -1180,12 +1183,12 @@ Module ewald_mpole
   !!! BEGIN DD SPME VARIABLES
   ! 3D charge array construction (bottom and top) indices
 
-       ixb=idx*(kmaxa/nprx)+1
-       ixt=(idx+1)*(kmaxa/nprx)
-       iyb=idy*(kmaxb/npry)+1
-       iyt=(idy+1)*(kmaxb/npry)
-       izb=idz*(kmaxc/nprz)+1
-       izt=(idz+1)*(kmaxc/nprz)
+       ixb=domain%idx*(kmaxa/domain%nx)+1
+       ixt=(domain%idx+1)*(kmaxa/domain%nx)
+       iyb=domain%idy*(kmaxb/domain%ny)+1
+       iyt=(domain%idy+1)*(kmaxb/domain%ny)
+       izb=domain%idz*(kmaxc/domain%nz)+1
+       izt=(domain%idz+1)*(kmaxc/domain%nz)
 
        ixbm1_r=Real(ixb-1,wp)
        ixtm0_r=Nearest( Real(ixt,wp) , -1.0_wp )
@@ -1242,14 +1245,14 @@ Module ewald_mpole
   !!! BEGIN DAFT SET-UP
   ! domain local block limits of kmax space
 
-       block_x = kmaxa / nprx
-       block_y = kmaxb / npry
-       block_z = kmaxc / nprz
+       block_x = kmaxa / domain%nx
+       block_y = kmaxb / domain%ny
+       block_z = kmaxc / domain%nz
 
   ! set up the parallel fft and useful related quantities
 
        Call initialize_fft( 3, (/ kmaxa, kmaxb, kmaxc /), &
-           (/ nprx, npry, nprz /), (/ idx, idy, idz /),   &
+           (/ domain%nx, domain%ny, domain%nz /), (/ domain%idx, domain%idy, domain%idz /),   &
            (/ block_x, block_y, block_z /),               &
            comm%comm, context )
 
@@ -1263,9 +1266,9 @@ Module ewald_mpole
           Call error(0,message)
        End If
 
-       Call pfft_indices( kmaxa, block_x, idx, nprx, index_x )
-       Call pfft_indices( kmaxb, block_y, idy, npry, index_y )
-       Call pfft_indices( kmaxc, block_z, idz, nprz, index_z )
+       Call pfft_indices( kmaxa, block_x, domain%idx, domain%nx, index_x )
+       Call pfft_indices( kmaxb, block_y, domain%idy, domain%ny, index_y )
+       Call pfft_indices( kmaxc, block_z, domain%idz, domain%nz, index_z )
 
   ! workspace arrays for DaFT
 
@@ -1901,7 +1904,7 @@ Module ewald_mpole
   ! calculate atomic forces
 
     Call spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz,qqc_local, &
-      ixb,ixt,iyb,iyt,izb,izt,mpoles)
+      ixb,ixt,iyb,iyt,izb,izt,mpoles,domain)
 
     Deallocate (ixx,iyy,izz,it,    Stat = fail(1))
     Deallocate (bdx,bdy,bdz,       Stat = fail(2))
@@ -1914,7 +1917,7 @@ Module ewald_mpole
   Contains
 
     Subroutine spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz, &
-        qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles)
+        qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles,domain)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1939,6 +1942,7 @@ Module ewald_mpole
                                             bsddz(0:mxspl,1:mxspl,1:mxatms), &
                                             qqc_local( ixb:ixt, iyb:iyt, izb:izt )
       Type( mpole_type ), Intent( InOut ) :: mpoles
+      Type( domains_type ), Intent( In    ) :: domain
 
       Integer           :: fail(1:2), delspl, ixdb,iydb,izdb,ixdt,iydt,izdt, &
                            i,j,k,l, jj,kk,ll, s1,s2,s3, mm
@@ -1972,7 +1976,8 @@ Module ewald_mpole
       End If
 
       Call exchange_grid(ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
-                         ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, comm  )
+                         ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
+                         domain,comm)
 
       tmp=-2.0_wp*scale
 
@@ -2208,7 +2213,8 @@ Module ewald_mpole
 
   End Subroutine ewald_spme_mforces
 
-  Subroutine ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro,comm)
+  Subroutine ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro, &
+      domain,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2231,6 +2237,7 @@ Module ewald_mpole
     Type( ewald_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -2311,12 +2318,12 @@ Module ewald_mpole
   !!! BEGIN DD SPME VARIABLES
   ! 3D charge array construction (bottom and top) indices
 
-       ixb=idx*(kmaxa/nprx)+1
-       ixt=(idx+1)*(kmaxa/nprx)
-       iyb=idy*(kmaxb/npry)+1
-       iyt=(idy+1)*(kmaxb/npry)
-       izb=idz*(kmaxc/nprz)+1
-       izt=(idz+1)*(kmaxc/nprz)
+       ixb=domain%idx*(kmaxa/domain%nx)+1
+       ixt=(domain%idx+1)*(kmaxa/domain%nx)
+       iyb=domain%idy*(kmaxb/domain%ny)+1
+       iyt=(domain%idy+1)*(kmaxb/domain%ny)
+       izb=domain%idz*(kmaxc/domain%nz)+1
+       izt=(domain%idz+1)*(kmaxc/domain%nz)
 
        ixbm1_r=Real(ixb-1,wp)
        ixtm0_r=Nearest( Real(ixt,wp) , -1.0_wp )
@@ -2373,14 +2380,14 @@ Module ewald_mpole
   !!! BEGIN DAFT SET-UP
   ! domain local block limits of kmax space
 
-       block_x = kmaxa / nprx
-       block_y = kmaxb / npry
-       block_z = kmaxc / nprz
+       block_x = kmaxa / domain%nx
+       block_y = kmaxb / domain%ny
+       block_z = kmaxc / domain%nz
 
   ! set up the parallel fft and useful related quantities
 
        Call initialize_fft( 3, (/ kmaxa, kmaxb, kmaxc /), &
-           (/ nprx, npry, nprz /), (/ idx, idy, idz /),   &
+           (/ domain%nx, domain%ny, domain%nz /), (/ domain%idx, domain%idy, domain%idz /),   &
            (/ block_x, block_y, block_z /),               &
            comm%comm, context )
 
@@ -2394,9 +2401,9 @@ Module ewald_mpole
           Call error(0,message)
        End If
 
-       Call pfft_indices( kmaxa, block_x, idx, nprx, index_x )
-       Call pfft_indices( kmaxb, block_y, idy, npry, index_y )
-       Call pfft_indices( kmaxc, block_z, idz, nprz, index_z )
+       Call pfft_indices( kmaxa, block_x, domain%idx, domain%nx, index_x )
+       Call pfft_indices( kmaxb, block_y, domain%idy, domain%ny, index_y )
+       Call pfft_indices( kmaxc, block_z, domain%idz, domain%nz, index_z )
 
   ! workspace arrays for DaFT
 
@@ -4256,7 +4263,8 @@ Module ewald_mpole
       End If
 
       Call exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
-                          ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, comm)
+                          ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
+                          domain,comm)
 
   ! Real values of kmax vectors
 
@@ -4463,7 +4471,7 @@ Module ewald_mpole
   End Subroutine ewald_spme_mforces_d
 
   Subroutine ewald_excl_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
-      neigh,mpoles,electro)
+      neigh,mpoles,electro,domain)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -4486,6 +4494,7 @@ Module ewald_mpole
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( domains_type ), Intent( In    ) :: domain
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -5492,7 +5501,7 @@ Module ewald_mpole
   End Subroutine ewald_excl_mforces_d
 
   Subroutine ewald_frzn_mforces(engcpe_fr,vircpe_fr,stress,ewld,neigh,mpoles, &
-      electro,comm)
+      electro,domain,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -5517,6 +5526,7 @@ Module ewald_mpole
     Type( neighbours_type ),               Intent( In    ) :: neigh
     Type( mpole_type ),                    Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ),                    Intent( InOut ) :: comm
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp

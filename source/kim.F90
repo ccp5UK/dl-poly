@@ -23,7 +23,7 @@ Module kim
   Use errors_warnings, Only : error
 #ifdef KIM
   Use KIM_API_F03
-  Use domains, Only : map
+  Use domains, Only : domains_type
   Use configuration,  Only : natms,nlast,lsi,lsa,ltg,lsite, &
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use setup,   Only : mxatdm,mxbfxp
@@ -336,7 +336,7 @@ Contains
 #endif
   End Subroutine kim_cleanup
 
-  Subroutine kim_forces(engkim,virkim,stress,list,comm)
+  Subroutine kim_forces(engkim,virkim,stress,list,map,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -353,7 +353,8 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: engkim
     Real( Kind = wp ), Intent( InOut ) :: virkim
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
-    Integer( Kind = wi), Dimension(-3:,1:) :: list
+    Integer( Kind = wi), Intent( In    ), Dimension(-3:,1:) :: list
+    Integer( Kind = wi), Intent( In    ), Dimension(1:26) :: map
     Type(comms_type),        Intent( InOut ) :: comm
 
 #ifdef KIM
@@ -426,7 +427,7 @@ Contains
 ! Distribute force contributions on this processors halo particles to their
 ! respective processors for inclusion in the fxx, fyy, and fzz arrays.
 
-    Call kim_reverse_communication(forces,comm)
+Call kim_reverse_communication(forces,map,comm)
 
     stress(1) = stress(1) - Real(virial(1), wp)
     stress(2) = stress(2) - Real(virial(6), wp)
@@ -449,7 +450,7 @@ Contains
   End Subroutine kim_forces
 
 #ifdef KIM
-  Subroutine kim_reverse_communication(forces,comm)
+  Subroutine kim_reverse_communication(forces,map,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -461,6 +462,7 @@ Contains
 !-------------------------------------------------------------------------------
 
     Real( Kind = c_double ), Intent( In    ) :: forces(:,:)
+    Integer( Kind = wi ), Dimension(1:26), Intent( In    ) :: map
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: i,jdnode,kdnode,j,jj,k,imove,jmove

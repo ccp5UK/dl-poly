@@ -15,8 +15,7 @@ Module ttm
   Use kinds,           Only : wp
   Use setup
   Use configuration,   Only : cell
-  Use domains,         Only : nprx,npry,nprz,r_nprx,r_npry,r_nprz,idcube,map, &
-                              idx,idy,idz
+  Use domains,         Only : domains_type,idcube
   Use comms,           Only : wp_mpi,comms_type,gsum,gmin,gmax,gcheck,gsync, &
                               grid1_tag,grid2_tag
   Use parse,           Only : tabs_2_blanks, get_line, get_word, &
@@ -72,15 +71,15 @@ Module ttm
   Real( Kind = wp ) :: norm
 
   Logical :: trackInit = .false.
-  
+
   Public :: allocate_ttm_arrays , deallocate_ttm_arrays
 
 Contains
 
-  Subroutine allocate_ttm_arrays(comm)
-
-
+  Subroutine allocate_ttm_arrays(domain,comm)
+    Type( domains_type ), Intent( In    ) :: domain
     Type(comms_type), Intent(In) :: comm
+
     Real ( Kind = wp ) :: start, finish
     Integer, Dimension ( 1:7 ) :: fail
     Integer :: i,numbc,numbcmap
@@ -109,20 +108,20 @@ Contains
 ! Determine number of ion temperature cells for domain and
 ! offsets for ion temperature determination
 
-      start = cell(1)*Real(idx,wp)*r_nprx
-      finish = cell(1)*Real(idx+1,wp)*r_nprx
+      start = cell(1)*Real(domain%idx,wp)*domain%nx_recip
+      finish = cell(1)*Real(domain%idx+1,wp)*domain%nx_recip
       ntcell(1) = Ceiling(finish/delx) - Ceiling(start/delx)
       ntcelloff(1) = Ceiling(start/delx)
       zerocell(1) = 0.5_wp*cell(1) - delx*Real(Ceiling(start/delx),wp)
 
-      start = cell(5)*Real(idy,wp)*r_npry
-      finish = cell(5)*Real(idy+1,wp)*r_npry
+      start = cell(5)*Real(domain%idy,wp)*domain%ny_recip
+      finish = cell(5)*Real(domain%idy+1,wp)*domain%ny_recip
       ntcell(2) = Ceiling(finish/dely) - Ceiling(start/dely)
       ntcelloff(2) = Ceiling(start/dely)
       zerocell(2) = 0.5_wp*cell(5) - dely*Real(Ceiling(start/dely),wp)
 
-      start = cell(9)*Real(idz,wp)*r_nprz
-      finish = cell(9)*Real(idz+1,wp)*r_nprz
+      start = cell(9)*Real(domain%idz,wp)*domain%nz_recip
+      finish = cell(9)*Real(domain%idz+1,wp)*domain%nz_recip
       ntcell(3) = Ceiling(finish/delz) - Ceiling(start/delz)
       ntcelloff(3) = Ceiling(start/delz)
       zerocell(3) = 0.5_wp*cell(9) - delz*Real(Ceiling(start/delz),wp)
@@ -151,10 +150,12 @@ Contains
       numbcmap = MOD(numbcmap+ntsys(1)*(eltcell(1)+1)-1,ntsys(1)) + 1
       If (numbc>ntcelloff(1) .and. numbc<=(ntcelloff(1)+ntcell(1))) Then
         ttmbc(1) = numbc - ntcelloff(1)
-        Do i = 0, nprx-1
-          start = cell(1)*Real(i,wp)*r_nprx
-          finish = cell(1)*Real(i+1,wp)*r_nprx
-          If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) ttmbcmap(1) = idcube(i,idy,idz)
+        Do i = 0, domain%nx-1
+          start = cell(1)*Real(i,wp)*domain%nx_recip
+          finish = cell(1)*Real(i+1,wp)*domain%nx_recip
+          If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) Then
+            ttmbcmap(1) = idcube(i,domain%idy,domain%idz,domain)
+          End If
         End Do
       Else
         ttmbc(1) = 0
@@ -168,10 +169,12 @@ Contains
       numbcmap = MOD(numbcmap+ntsys(1)*(eltcell(1)+1),ntsys(1)) + 1
       If (numbc>ntcelloff(1) .and. numbc<=(ntcelloff(1)+ntcell(1))) Then
         ttmbc(2) = numbc - ntcelloff(1)
-        Do i = 0, nprx-1
-          start = cell(1)*Real(i,wp)*r_nprx
-          finish = cell(1)*Real(i+1,wp)*r_nprx
-          If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) ttmbcmap(2) = idcube(i,idy,idz)
+        Do i = 0, domain%nx-1
+          start = cell(1)*Real(i,wp)*domain%nx_recip
+          finish = cell(1)*Real(i+1,wp)*domain%nx_recip
+          If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) Then
+            ttmbcmap(2) = idcube(i,domain%idy,domain%idz,domain)
+          End If
         End Do
       Else
         ttmbc(2) = 0
@@ -186,10 +189,12 @@ Contains
       numbcmap = MOD(numbcmap+ntsys(2)*(eltcell(2)+1)-1,ntsys(2)) + 1
       If (numbc>ntcelloff(2) .and. numbc<=(ntcelloff(2)+ntcell(2))) Then
         ttmbc(3) = numbc - ntcelloff(2)
-        Do i = 0, npry-1
-          start = cell(5)*Real(i,wp)*r_npry
-          finish = cell(5)*Real(i+1,wp)*r_npry
-          If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) ttmbcmap(3) = idcube(idx,i,idz)
+        Do i = 0, domain%ny-1
+          start = cell(5)*Real(i,wp)*domain%ny_recip
+          finish = cell(5)*Real(i+1,wp)*domain%ny_recip
+          If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) Then
+            ttmbcmap(3) = idcube(domain%idx,i,domain%idz,domain)
+          End If
         End Do
       Else
         ttmbc(3) = 0
@@ -203,10 +208,12 @@ Contains
       numbcmap = MOD(numbcmap+ntsys(2)*(eltcell(2)+1),ntsys(2)) + 1
       If (numbc>ntcelloff(2) .and. numbc<=(ntcelloff(2)+ntcell(2))) Then
         ttmbc(4) = numbc - ntcelloff(2)
-        Do i = 0, npry-1
-          start = cell(5)*Real(i,wp)*r_npry
-          finish = cell(5)*Real(i+1,wp)*r_npry
-          If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) ttmbcmap(4) = idcube(idx,i,idz)
+        Do i = 0, domain%ny-1
+          start = cell(5)*Real(i,wp)*domain%ny_recip
+          finish = cell(5)*Real(i+1,wp)*domain%ny_recip
+          If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) Then
+            ttmbcmap(4) = idcube(domain%idx,i,domain%idz,domain)
+          End If
         End Do
       Else
         ttmbc(4) = 0
@@ -221,10 +228,12 @@ Contains
       numbcmap = MOD(numbcmap+ntsys(3)*(eltcell(3)+1)-1,ntsys(3)) + 1
       If (numbc>ntcelloff(3) .and. numbc<=(ntcelloff(3)+ntcell(3))) Then
         ttmbc(5) = numbc - ntcelloff(3)
-        Do i = 0, nprz-1
-          start = cell(9)*Real(i,wp)*r_nprz
-          finish = cell(9)*Real(i+1,wp)*r_nprz
-          If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) ttmbcmap(5) = idcube(idx,idy,i)
+        Do i = 0, domain%nz-1
+          start = cell(9)*Real(i,wp)*domain%nz_recip
+          finish = cell(9)*Real(i+1,wp)*domain%nz_recip
+          If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) Then
+            ttmbcmap(5) = idcube(domain%idx,domain%idy,i,domain)
+          End If
         End Do
       Else
         ttmbc(5) = 0
@@ -238,10 +247,12 @@ Contains
       numbcmap = MOD(numbcmap+ntsys(3)*(eltcell(3)+1),ntsys(3)) + 1
       If (numbc>ntcelloff(3) .and. numbc<=(ntcelloff(3)+ntcell(3))) Then
         ttmbc(6) = numbc - ntcelloff(3)
-        Do i = 0, nprz-1
-          start = cell(9)*Real(i,wp)*r_nprz
-          finish = cell(9)*Real(i+1,wp)*r_nprz
-          If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) ttmbcmap(6) = idcube(idx,idy,i)
+        Do i = 0, domain%nz-1
+          start = cell(9)*Real(i,wp)*domain%nz_recip
+          finish = cell(9)*Real(i+1,wp)*domain%nz_recip
+          If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) Then
+            ttmbcmap(6) = idcube(domain%idx,domain%idy,i,domain)
+          End If
         End Do
       Else
         ttmbc(6) = 0
@@ -753,8 +764,8 @@ Contains
     Call info(message,.true.)
 
   End Subroutine depoinit
-  
-  Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp,comm)
+
+  Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -769,6 +780,7 @@ Contains
   Integer,             Intent ( In ) :: keyres,nstep,nsteql
   Real ( Kind = wp ),  Intent ( In ) :: temp,time
   Character (Len = *), Intent ( In ) :: dumpfile
+  Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 200 ) :: record
@@ -827,7 +839,7 @@ Contains
       End If
     End Do
     ! fill boundary halo values and deal with required boundary conditions
-    Call boundaryHalo (comm)
+    Call boundaryHalo(domain,comm)
     Call boundaryCond (bcTypeE, temp, comm)
     ! check whether or not energy deposition has happened yet
     If(nstep>nsteql .and. time>=depostart .and. time<depoend) Then
@@ -1458,12 +1470,12 @@ Subroutine ttm_table_scan(comm)
 
 End Subroutine ttm_table_scan
 
-Subroutine boundaryHalo (comm)
-
 ! fills halo regions of electronic temperature lattice from neighbouring sections
 ! (periodic boundary conditions)
-
+Subroutine boundaryHalo(domain,comm)
+  Type( domains_type ), Intent( In    ) :: domain
   Type(comms_type), Intent(In) :: comm
+
   Integer :: i,ii,iii1,iii2,j,jj,jjj1,jjj2,k,kk,kkk1,kkk2,ijk1,ijk2
   Integer, Dimension(4) :: req
   Integer, Allocatable :: stats(:,:)
@@ -1476,24 +1488,24 @@ Subroutine boundaryHalo (comm)
     Do kk = -eltcell(3), eltcell(3)
       Do jj = -eltcell(2), eltcell(2)
         Do ii = -eltcell(1), eltcell(1)
-          If (idx==nprx-1) Then
+          If (domain%idx==domain%nx-1) Then
             iii1 = Mod(ii+3*eltcell(1), (eltcell(1)*2+1)) - eltcell(1)
           Else
             iii1 = ii
           End If
-          If (idx==0) Then
+          If (domain%idx==0) Then
             iii2 = Mod(ii+eltcell(1)+1, (eltcell(1)*2+1)) - eltcell(1)
           Else
             iii2 = ii
           End If
           ijk1 = 2 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
           ijk2 = 1 + (ntcell(1)+1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, map(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-          Call MPI_IRECV (eltemp(ijk2,iii1,jj,kk), 1, tmpmsgx, map(2), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, domain%map(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+          Call MPI_IRECV (eltemp(ijk2,iii1,jj,kk), 1, tmpmsgx, domain%map(2), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
           ijk1 = 1 + (ntcell(1)) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
           ijk2 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, map(2), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-          Call MPI_IRECV (eltemp(ijk2,iii2,jj,kk), 1, tmpmsgx, map(1), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, domain%map(2), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+          Call MPI_IRECV (eltemp(ijk2,iii2,jj,kk), 1, tmpmsgx, domain%map(1), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
           Call MPI_WAITALL (4, req, stats, ierr)
         End Do
       End Do
@@ -1502,24 +1514,24 @@ Subroutine boundaryHalo (comm)
     Do kk = -eltcell(3), eltcell(3)
       Do ii = -eltcell(1), eltcell(1)
         Do jj = -eltcell(2), eltcell(2)
-          If (idy==npry-1) Then
+          If (domain%idy==domain%ny-1) Then
             jjj1 = Mod(jj+3*eltcell(2), (eltcell(2)*2+1)) - eltcell(2)
           Else
             jjj1 = jj
           End If
-          If (idy==0) Then
+          If (domain%idy==0) Then
             jjj2 = Mod(jj+eltcell(2)+1, (eltcell(2)*2+1)) - eltcell(2)
           Else
             jjj2 = jj
           End If
           ijk1 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
           ijk2 = 1 + (ntcell(1)+2) * (ntcell(2) + 1 + (ntcell(2)+2))
-          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, map(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-          Call MPI_IRECV (eltemp(ijk2,ii,jjj1,kk), 1, tmpmsgy, map(4), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, domain%map(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+          Call MPI_IRECV (eltemp(ijk2,ii,jjj1,kk), 1, tmpmsgy, domain%map(4), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
           ijk1 = 1 + (ntcell(1)+2) * (ntcell(2) + (ntcell(2)+2))
           ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
-          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, map(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-          Call MPI_IRECV (eltemp(ijk2,ii,jjj2,kk), 1, tmpmsgy, map(3), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, domain%map(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+          Call MPI_IRECV (eltemp(ijk2,ii,jjj2,kk), 1, tmpmsgy, domain%map(3), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
           Call MPI_WAITALL (4, req, stats, ierr)
         End Do
       End Do
@@ -1528,24 +1540,24 @@ Subroutine boundaryHalo (comm)
     Do jj = -eltcell(2), eltcell(2)
       Do ii = -eltcell(1), eltcell(1)
         Do kk = -eltcell(3), eltcell(3)
-          If (idz==nprz-1) Then
+          If (domain%idz==domain%nz-1) Then
             kkk1 = Mod(kk+3*eltcell(3), (eltcell(3)*2+1)) - eltcell(3)
           Else
             kkk1 = kk
           End If
-          If (idz==0) Then
+          If (domain%idz==0) Then
             kkk2 = Mod(kk+eltcell(3)+1, (eltcell(3)*2+1)) - eltcell(3)
           Else
             kkk2 = kk
           End If
           ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
           ijk2 = 1 + (ntcell(1)+2) * ((ntcell(2)+2) * (ntcell(3) + 1))
-          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, map(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-          Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk1), 1, tmpmsgz, map(6), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, domain%map(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+          Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk1), 1, tmpmsgz, domain%map(6), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
           ijk1 = 1 + (ntcell(1)+2) * ((ntcell(2)+2) * ntcell(3))
           ijk2 = 1
-          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, map(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-          Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk2), 1, tmpmsgz, map(5), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+          Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, domain%map(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+          Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk2), 1, tmpmsgz, domain%map(5), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
           Call MPI_WAITALL (4, req, stats, ierr)
         End Do
       End Do
@@ -2295,6 +2307,5 @@ Subroutine gaussianTrack(lat_in, comm)
   If (comm%idnode == 0 .and. Abs((realdEdx-dEdX)/dEdX) > 0.01_wp) Then
     Call warning(540,Abs(realdEdx-dEdX)/dEdX*100_wp,0.0_wp,0.0_wp)
   End If
-  
 End Subroutine gaussianTrack
 End Module ttm

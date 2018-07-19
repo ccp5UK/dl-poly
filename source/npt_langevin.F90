@@ -1,7 +1,7 @@
 Module npt_langevin
   Use kinds,         Only : wp, li
   Use comms,         Only : comms_type,gmax
-  Use domains,       Only : map
+  Use domains,       Only : domains_type
   Use site, Only : site_type
   Use setup
   Use configuration, Only : imcon,cell,volm,natms,nlast,nfree,  &
@@ -32,13 +32,12 @@ Module npt_langevin
 
 Contains
 
-  Subroutine npt_l0_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_l0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,          &
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
-             cshell,cons,pmf,stat,thermo,sites,vdws,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites,vdws,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -57,28 +56,22 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Integer,            Intent( In    ) :: nstep
-
     Integer(Kind=li),   Intent( In    ) :: degfre
     Real( Kind = wp ),  Intent( In    ) :: virtot
-
     Real( Kind = wp ),  Intent(   Out ) :: consv
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
-
-
     Type( stats_type), Intent( InOut ) :: stat
-Type( core_shell_type), Intent( InOut ) :: cshell
+    Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -297,9 +290,8 @@ Call pmf%allocate_work()
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+            Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+             lstitr,stat,pmf,cons,domain,tmr,comm)
           End If
 
   ! restore original integration parameters as well as
@@ -397,8 +389,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! update kinetic energy
@@ -485,14 +476,13 @@ Call pmf%deallocate_work()
     End If
   End Subroutine npt_l0_vv
 
-  Subroutine npt_l1_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_l1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,          &
              degfre,degrot,virtot,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -512,24 +502,16 @@ Call pmf%deallocate_work()
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Integer,            Intent( In    ) :: nstep
-
     Integer(Kind=li),   Intent( In    ) :: degfre,degrot
     Real( Kind = wp ),  Intent( In    ) :: virtot
-
     Real( Kind = wp ),  Intent(   Out ) :: consv
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
                                            strknf(1:9),strknt(1:9),engrot
-
-
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
-
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut) :: cons
@@ -538,6 +520,7 @@ Call pmf%deallocate_work()
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -657,7 +640,7 @@ Call pmf%allocate_work()
 
   ! unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(map == comm%idnode))
+       unsafe=(Any(domain%map == comm%idnode))
 
   ! Langevin forces for particles are now generated in w_calculate_forces
   ! Generate Langevin pseudo-tensor force for barostat piston
@@ -724,7 +707,8 @@ Call pmf%allocate_work()
   ! Globalise Langevin random forces for shared RBs
 
        If (rigid%share)Then
-         Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxl,fyl,fzl,comm)
+         Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+           rigid%map_shared,fxl,fyl,fzl,domain,comm)
        EndIf
 
   ! Get strcom & vircom when starting afresh now done in w_calculate_forces
@@ -886,9 +870,8 @@ Call pmf%allocate_work()
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+            Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+             lstitr,stat,pmf,cons,domain,tmr,comm)
           End If
 
   ! restore original integration parameters as well as
@@ -1217,7 +1200,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
 
        Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
        If (rigid%share)Then
-         Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxl,fyl,fzl,comm)
+         Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+           rigid%map_shared,fxl,fyl,fzl,domain,comm)
        EndIf
 
        fpl=0.0_wp
@@ -1244,8 +1228,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial

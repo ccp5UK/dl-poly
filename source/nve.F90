@@ -5,7 +5,7 @@ Module nve
   Use configuration, Only : imcon,cell,natms,nfree,nlast, &
     lstfre,weight,                &
     xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
-  Use domains,       Only : map
+  Use domains,       Only : domains_type
   Use kinetics,      Only : getknr,kinstresf,kinstrest,kinstress
   Use constraints,   Only : constraints_tags,constraints_type, &
                             apply_shake, apply_rattle
@@ -25,10 +25,9 @@ Module nve
 
 Contains
 
-  Subroutine nve_0_vv                           &
-      (isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nve_0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
       strkin,engke,                      &
-      cshell,cons,pmf,stat,tmr,comm)
+      cshell,cons,pmf,stat,domain,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -41,20 +40,17 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
-
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
-
 
     Logical,           Save :: newjob = .true.
     Logical                 :: safe,lcol,lfst
@@ -174,8 +170,7 @@ Contains
       ! SHAKE procedures
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
         Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+          lstitr,stat,pmf,cons,domain,tmr,comm)
       End If
 
       ! check timestep for variable timestep
@@ -207,8 +202,7 @@ Contains
       ! apply velocity corrections to bond and PMF constraints
 
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
+        Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
       End If
 
       ! update kinetic energy and stress
@@ -234,10 +228,9 @@ Contains
 
   End Subroutine nve_0_vv
 
-  Subroutine nve_1_vv                           &
-      (isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nve_1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
       strkin,strknf,strknt,engke,engrot, &
-      strcom,vircom,cshell,cons,pmf,stat,rigid,tmr,comm)
+      strcom,vircom,cshell,cons,pmf,stat,rigid,domain,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -251,21 +244,18 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: isw
-
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
-
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
-      strknf(1:9),strknt(1:9),engrot
-
-
+                                           strknf(1:9),strknt(1:9),engrot
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -342,7 +332,7 @@ Contains
 
       ! unsafe positioning due to possibly locally shared RBs
 
-      unsafe=(Any(map == comm%idnode))
+      unsafe=(Any(domain%map == comm%idnode))
     End If
 
     ! set matms
@@ -478,8 +468,7 @@ Contains
       ! SHAKE procedures
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
         Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-          lstitr,&
-          stat,pmf,cons,tmr,comm)
+          lstitr,stat,pmf,cons,domain,tmr,comm)
       End If
 
       ! update velocity and position of RBs
@@ -689,9 +678,7 @@ Contains
       ! apply velocity corrections to bond and PMF constraints
 
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_rattle(tstep,kit,&
-                          pmf,cons,stat,tmr,comm)
-
+        Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
       End If
 
       ! Get RB COM stress and virial

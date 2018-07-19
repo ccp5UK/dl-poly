@@ -14,8 +14,7 @@ Module three_body
 
   Use comms,   Only : comms_type,gsum,gcheck
   Use setup
-  Use domains, Only : idx,idy,idz, nprx,npry,nprz, &
-                             r_nprx,r_npry,r_nprz
+  Use domains, Only : domains_type
   Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
                              xxx,yyy,zzz,fxx,fyy,fzz
   Use errors_warnings, Only : error,warning
@@ -63,7 +62,7 @@ Contains
     threebody%rcttbp = 0.0_wp
   End Subroutine allocate_three_body_arrays
 
-  Subroutine three_body_forces(stats,threebody,neigh,comm)
+  Subroutine three_body_forces(stats,threebody,neigh,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -85,6 +84,7 @@ Contains
   Type(stats_type), Intent( InOut ) :: stats
   Type(threebody_type), Intent( InOut ) :: threebody
   Type( neighbours_type ), Intent( InOut ) :: neigh
+  Type( domains_type ), Intent( In    ) :: domain
   Type(comms_type), Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -130,9 +130,9 @@ Contains
 
 ! Calculate the number of link-cells per domain in every direction
 
-  nbx=Int(r_nprx*celprp(7)/(threebody%cutoff+1.0e-6_wp))
-  nby=Int(r_npry*celprp(8)/(threebody%cutoff+1.0e-6_wp))
-  nbz=Int(r_nprz*celprp(9)/(threebody%cutoff+1.0e-6_wp))
+  nbx=Int(domain%nx_recip*celprp(7)/(threebody%cutoff+1.0e-6_wp))
+  nby=Int(domain%ny_recip*celprp(8)/(threebody%cutoff+1.0e-6_wp))
+  nbz=Int(domain%nz_recip*celprp(9)/(threebody%cutoff+1.0e-6_wp))
 
 ! check for link cell algorithm violations
 
@@ -166,9 +166,9 @@ Contains
 ! move to the bottom left corner of the left-most link-cell
 ! (the one that constructs the outer layer of the halo)
 
-  dispx=0.5_wp-r_nprx*(Real(idx,wp)-2.0_wp/Real(nbx,wp))
-  dispy=0.5_wp-r_npry*(Real(idy,wp)-2.0_wp/Real(nby,wp))
-  dispz=0.5_wp-r_nprz*(Real(idz,wp)-2.0_wp/Real(nbz,wp))
+  dispx=0.5_wp-domain%nx_recip*(Real(domain%idx,wp)-2.0_wp/Real(nbx,wp))
+  dispy=0.5_wp-domain%ny_recip*(Real(domain%idy,wp)-2.0_wp/Real(nby,wp))
+  dispz=0.5_wp-domain%nz_recip*(Real(domain%idz,wp)-2.0_wp/Real(nbz,wp))
 
 ! Get the inverse cell matrix
 
@@ -195,9 +195,9 @@ Contains
 
 ! Get the total number of link-cells in MD cell per direction
 
-  xdc=Real(nbx*nprx,wp)
-  ydc=Real(nby*npry,wp)
-  zdc=Real(nbz*nprz,wp)
+  xdc=Real(nbx*domain%nx,wp)
+  ydc=Real(nby*domain%ny,wp)
+  zdc=Real(nbz*domain%nz,wp)
 
 ! Move ALL particles in link-cell space:
 ! (0,0,0) left-most link-cell on the domain (double link-cell layer)

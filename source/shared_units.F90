@@ -4,7 +4,7 @@ Module shared_units
   Use comms, Only : comms_type,PassUnit_tag,wp_mpi,UpdShUnit_tag,&
                     gcheck,gsync,gsend,gwait,girecv
   Use setup
-  Use domains,      Only : map,mop
+  Use domains,      Only : domains_type
   Use configuration,       Only : natms,nlast,lsi,lsa
   Use numerics, Only : local_index,shellsort
   Use errors_warnings, Only : error
@@ -20,9 +20,8 @@ Module shared_units
 
   Contains
 
-  Subroutine pass_shared_units &
-           (mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv,lishp,lashp,comm,&
-           q0,q1,q2,q3,vxx,vyy,vzz,oxx,oyy,ozz)
+    Subroutine pass_shared_units(mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv, &
+        lishp,lashp,domain,comm,q0,q1,q2,q3,vxx,vyy,vzz,oxx,oyy,ozz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -47,9 +46,9 @@ Module shared_units
 
   Integer, Intent( In    ) :: mx_u,b_l,b_u,mxf_u
   Integer, Intent( InOut ) :: nt_u,list_u(b_l:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
-
   Logical, Intent(   Out ) :: lshmv
-  Integer, Intent(   Out ) :: lishp(1:mxlshp),lashp(1:mxproc)
+  Type( domains_type ), Intent( In    ) :: domain
+  Integer, Intent(   Out ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,vxx,vyy,&
                                                       vzz,oxx,oyy,ozz
@@ -320,18 +319,18 @@ Module shared_units
 
 ! For all genuinely unique processors (no images or myself)
 
-     If (mop(k) == 0) Then
+     If (domain%map_unique(k) == 0) Then
 
 ! inter node communication
 ! jdnode - destination (send to), kdnode - source (receive from)
 
-        kdnode=map(k)
+        kdnode=domain%map(k)
         If (Mod(k,2) == 1) Then
            k0=k+1
         Else
            k0=k-1
         End If
-        jdnode=map(k0)
+        jdnode=domain%map(k0)
 
 ! transmit length of message
 
@@ -391,7 +390,7 @@ Module shared_units
 
 End Subroutine pass_shared_units
 
-Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
+Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -409,7 +408,8 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
   Integer,           Intent( In    ) :: natms,nlast
   Integer,           Intent( In    ) :: lsi(1:mxatms),lsa(1:mxatms)
-  Integer,           Intent( In    ) :: lishp(1:mxlshp),lashp(1:mxproc)
+  Type( domains_type ), Intent( In    ) :: domain
+  Integer,           Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
   Real( Kind = wp ), Intent( InOut ) :: qxx(1:mxatms),qyy(1:mxatms),qzz(1:mxatms)
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -449,7 +449,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
 ! For all genuinely unique processors (no images or myself)
 
-     If (mop(k) == 0) Then
+     If (domain%map_unique(k) == 0) Then
 
 ! Initialise the number of buffer elements I am to send
 
@@ -483,13 +483,13 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 ! inter node communication - right the opposite of that in pass_shared_units
 ! jdnode - destination (send to), kdnode - source (receive from)
 
-        jdnode=map(k)
+        jdnode=domain%map(k)
         If (Mod(k,2) == 1) Then
            k0=k+1
         Else
            k0=k-1
         End If
-        kdnode=map(k0)
+        kdnode=domain%map(k0)
 
 ! pass only non-zero length messages
 
@@ -554,7 +554,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,comm)
 
 End Subroutine update_shared_units
 
-Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
+Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -572,7 +572,8 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 
   Integer, Intent( In    ) :: natms,nlast
   Integer, Intent( In    ) :: lsi(1:mxatms),lsa(1:mxatms)
-  Integer, Intent( In    ) :: lishp(1:mxlshp),lashp(1:mxproc)
+  Type( domains_type ), Intent( In    ) :: domain
+  Integer, Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
   Integer, Intent( InOut ) :: iii(1:mxatms)
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -613,7 +614,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 
 ! For all genuinely unique processors (no images or myself)
 
-     If (mop(k) == 0) Then
+     If (domain%map_unique(k) == 0) Then
 
 ! Initialise the number of ibuffer elements I am to send
 
@@ -645,13 +646,13 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 ! inter node communication - right the opposite of that in pass_shared_units
 ! jdnode - destination (send to), kdnode - source (receive from)
 
-        jdnode=map(k)
+        jdnode=domain%map(k)
         If (Mod(k,2) == 1) Then
            k0=k+1
         Else
            k0=k-1
         End If
-        kdnode=map(k0)
+        kdnode=domain%map(k0)
 
 ! pass only non-zero length messages
 
@@ -714,7 +715,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,comm)
 
 End Subroutine update_shared_units_int
 
-Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
+Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -731,7 +732,8 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
 
   Integer,           Intent( In    ) :: natms,nlast
   Integer,           Intent( In    ) :: lsi(1:mxatms),lsa(1:mxatms)
-  Integer,           Intent( In    ) :: lishp(1:mxlshp),lashp(1:mxproc)
+  Type( domains_type ), Intent( In    ) :: domain
+  Integer,           Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
   Real( Kind = wp ), Intent( InOut ) :: rrr(1:mxatms)
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -772,7 +774,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
 
 ! For all genuinely unique processors (no images or myself)
 
-     If (mop(k) == 0) Then
+     If (domain%map_unique(k) == 0) Then
 
 ! Initialise the number of buffer elements I am to send
 
@@ -804,13 +806,13 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,comm)
 ! inter node communication - right the opposite of that in pass_shared_units
 ! jdnode - destination (send to), kdnode - source (receive from)
 
-        jdnode=map(k)
+        jdnode=domain%map(k)
         If (Mod(k,2) == 1) Then
            k0=k+1
         Else
            k0=k-1
         End If
-        kdnode=map(k0)
+        kdnode=domain%map(k0)
 
 ! pass only non-zero length messages
 
