@@ -73,12 +73,13 @@ indicate the atoms involved in the interaction.
 There is normally a very large number of these and they are
 therefore specified globally according to the atom {\em types}
 involved rather than indices.  In \D it is assumed that the "pure"
-two-body terms arise from van der Waals\index{potential!van der
-Waals} interactions (regarded as short-ranged) and electrostatic
-interactions (coulombic, also regarded as
-long-ranged)\index{potential!electrostatics}.  Long-ranged forces
-require special techniques to evaluate accurately (see Section~\ref{coulomb}).
-The metal\index{potential!metal} terms are
+two-body terms arise from short-ranged interactions such as van der
+Waals\index{potential!van der Waals} interactions (or alternatively
+DPD soft interactions, coarse-grained interactions, hard-wall
+nuclear interactions) and electrostatic interactions (coulombic,
+also regarded as long-ranged)\index{potential!electrostatics}.
+Long-ranged forces require special techniques to evaluate accurately
+(see Section~\ref{coulomb}).  The metal\index{potential!metal} terms are
 many-body interactions which are functionally presented in an expansion of
 many two-body contributions augmented by a function of the local density,
 which again is derived from the two-body spatial distribution

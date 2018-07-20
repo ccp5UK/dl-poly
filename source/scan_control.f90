@@ -20,6 +20,7 @@ Subroutine scan_control                                    &
 ! contrib   - a.m.elena february 2017
 ! contrib   - m.a.seaton march 2017 (TTM)
 ! contrib   - a.b.g.chalk march 2017
+! contrib   - i.t.todorov july 2018 (cutoffs reset checks warnings)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -715,6 +716,9 @@ Subroutine scan_control                                    &
      If (la_bnd) Then
         If (mxgbnd1 == 0) mxgbnd1 = -1
         rcbnd=Max(rcbnd,rcbnd_def)
+        If (idnode == 0) Write(nrite,"(/,1x,a)") &
+           "*** warning - bond PDF analisys cutoff check: rcbnd=Max(rcbnd,rcbnd_def) ! ***"
+        Call warning(40,rcbnd,0.0_wp,0.0_wp)
      End If
      If (la_ang .and. mxgang1 == 0) mxgang1 = -1
      If (la_dih .and. mxgdih1 == 0) mxgdih1 = -1
@@ -748,6 +752,9 @@ Subroutine scan_control                                    &
      If (.not.lrvdw) Then
         lrvdw = (rvdw > 1.0e-6_wp)
         rvdw = Min(rvdw,Max(rcut,rcut_def))
+        If (idnode == 0) Write(nrite,"(/,1x,a)") &
+           "*** warning - short-ranged interaction cutoff check: rvdw = Min(rvdw,Max(rcut,rcut_def)) ! ***"
+        Call warning(40,rvdw,0.0_wp,0.0_wp)
      End If
 
      If (l_n_v) lvdw = .not.l_n_v
@@ -757,7 +764,10 @@ Subroutine scan_control                                    &
 
 ! Sort rcut as the maximum of all valid cutoffs
 
-  rcut=Max(rcut,rvdw,rmet,rkim,2.0_wp*Max(rcter,rcbnd)+1.0e-6_wp)
+  rcut=Max(rcut,rvdw,rmet,rkim,rcbnd,2.0_wp*rcter+1.0e-6_wp)
+  If (idnode == 0) Write(nrite,"(/,1x,a)") &
+     "*** warning - DD cutoff check: rcut=Max(rcut,rvdw,rmet,rkim,rcbnd,2.0_wp*rcter+1.0e-6_wp) ! ***"
+  Call warning(40,rcut,0.0_wp,0.0_wp)
 
   If (idnode == 0) Rewind(nread)
 
@@ -965,6 +975,9 @@ Subroutine scan_control                                    &
            If (lrcut .or. lrvdw) Then
               lrmet=.true.
               rmet=Max(rcut,rvdw)
+              If (idnode == 0) Write(nrite,"(/,1x,a)") &
+                 "*** warning - metal interaction cutoff check: rmet=Max(rcut,rvdw) ! ***"
+              Call warning(40,rmet,0.0_wp,0.0_wp)
            Else
               Call error(382)
            End If
@@ -990,6 +1003,10 @@ Subroutine scan_control                                    &
                                         celprp(8)*Real(mxspl,wp)/Real(kmaxb1,wp),  &
                                         celprp(9)*Real(mxspl,wp)/Real(kmaxc1,wp)), &
                                     itmp == 0) )
+              If (idnode == 0) Write(nrite,"(2(/,1x,a))") &
+  "*** warning - DD cutoff check: rcut compliance with",  &
+  "              Ewald summation parameters (SPME/DaFT grid sizes) and MD cell widths ! ***"
+              Call warning(40,rcut,0.0_wp,0.0_wp)
            End If
 
 ! Reset rvdw, rmet and rcut when only tersoff potentials are opted for
@@ -999,9 +1016,15 @@ Subroutine scan_control                                    &
               rmet=0.0_wp
               If (.not.l_str) Then
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                    rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
+                    rcut=Max(rcbnd,2.0_wp*rcter+1.0e-6_wp)
+                    If (idnode == 0) Write(nrite,"(/,1x,a)") &
+                       "*** warning - DD cutoff check: rcut=Max(rcbnd,2.0_wp*rcter+1.0e-6_wp) ! ***"
+                    Call warning(40,rcut,0.0_wp,0.0_wp)
                  Else
-                    rcut=Max(rcut,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                    rcut=Max(rcut,rcbnd,2.0_wp*rcter+1.0e-6_wp)
+                    If (idnode == 0) Write(nrite,"(/,1x,a)") &
+                       "*** warning - DD cutoff check: rcut=Max(rcut,rcbnd,2.0_wp*rcter+1.0e-6_wp) ! ***"
+                    Call warning(40,rcut,0.0_wp,0.0_wp)
                  End If
               End If
            End If
@@ -1022,9 +1045,15 @@ Subroutine scan_control                                    &
                 (lrvdw .or. lrmet .or. lter .or. kim /= ' ') ) Then
               lrcut=.true.
               If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                 rcut=Max(rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                 rcut=Max(rvdw,rmet,rkim,rcbnd,2.0_wp*rcter+1.0e-6_wp)
+                 If (idnode == 0) Write(nrite,"(/,1x,a)") &
+                    "*** warning - DD cutoff check: rcut=Max(rvdw,rmet,rkim,rcbnd,2.0_wp*rcter+1.0e-6_wp) ! ***"
+                 Call warning(40,rcut,0.0_wp,0.0_wp)
               Else
-                 rcut=Max(rcut,rvdw,rmet,rkim,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                 rcut=Max(rcut,rvdw,rmet,rkim,rcbnd,2.0_wp*rcter+1.0e-6_wp)
+                 If (idnode == 0) Write(nrite,"(/,1x,a)") &
+                    "*** warning - DD cutoff check: rcut=Max(rcut,rvdw,rmet,rkim,rcbnd,2.0_wp*rcter+1.0e-6_wp) ! ***"
+                 Call warning(40,rcut,0.0_wp,0.0_wp)
               End If
            End If
 
@@ -1037,9 +1066,15 @@ Subroutine scan_control                                    &
               If (.not.l_str) Then
                  lrcut=.true.
                  If (mxrgd == 0) Then ! compensate for Max(Size(RBs))>rvdw
-                    rcut=2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp
+                    rcut=Max(rcbnd,2.0_wp*rcter+1.0e-6_wp)
+                    If (idnode == 0) Write(nrite,"(/,1x,a)") &
+                       "*** warning - DD cutoff check: rcut=Max(rcbnd,2.0_wp*rcter+1.0e-6_wp) ! ***"
+                    Call warning(40,rcut,0.0_wp,0.0_wp)
                  Else
-                    rcut=Max(rcut,2.0_wp*Max(rcbnd,rcter)+1.0e-6_wp)
+                    rcut=Max(rcut,rcbnd,2.0_wp*rcter+1.0e-6_wp)
+                    If (idnode == 0) Write(nrite,"(/,1x,a)") &
+                       "*** warning - DD cutoff check: rcut=Max(rcut,rcbnd,2.0_wp*rcter+1.0e-6_wp) ! ***"
+                    Call warning(40,rcut,0.0_wp,0.0_wp)
                  End If
               End If
            End If
@@ -1079,15 +1114,30 @@ Subroutine scan_control                                    &
 ! they are defined by EAM since rmet can be /= rcut in such
 ! instances, this can break the NLAST check in metal_ld_set_halo
 
-        If (lmet) rmet = rcut
+        If (lmet) Then
+           rmet = rcut
+           If (idnode == 0) Write(nrite,"(/,1x,a)") &
+              "*** warning - metal interactions cutoff check: rmet=cut ! ***"
+           Call warning(40,rmet,0.0_wp,0.0_wp)
+        End If
 
 ! Sort rvdw=rcut if VDW interactions are in play
 
-        If (lvdw .and. rvdw > rcut) rvdw = rcut
+        If (lvdw .and. rvdw > rcut) Then
+           rvdw = rcut
+           If (idnode == 0) Write(nrite,"(/,1x,a)") &
+              "*** warning - short-ranged interactions cutoff check: rvdw=cut ! ***"
+           Call warning(40,rvdw,0.0_wp,0.0_wp)
+        End If
 
 ! Sort rbin as now rcut is already pinned down
 
-        If (rbin < 1.0e-05_wp .or. rbin > rcut/4.0_wp) rbin = Min(rbin_def,rcut/4.0_wp)
+        If (rbin < 1.0e-05_wp .or. rbin > rcut/4.0_wp) Then
+           rbin = Min(rbin_def,rcut/4.0_wp)
+           If (idnode == 0) Write(nrite,"(/,1x,a)") &
+              "*** warning - bin size cutoff check: rbin = Min(rbin_def,rcut/4.0_wp) ! ***"
+           Call warning(40,rbin,0.0_wp,0.0_wp)
+        End If
 
         carry=.false.
 
@@ -1107,8 +1157,8 @@ Subroutine scan_control                                    &
   l_trm = (l_exp .and. nstrun == 0)
   If (((.not.lsim) .or. l_trm) .and. lrpad) rpad=0.0_wp
 
-  l_errors_block = l_errors_block .and. lrdf
-  l_errors_jack = l_errors_jack .and. lrdf
+  l_errors_block = (l_errors_block .and. lrdf)
+  l_errors_jack  = (l_errors_jack  .and. lrdf)
   Return
 
 ! CONTROL file does not exist
