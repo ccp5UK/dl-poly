@@ -909,6 +909,7 @@ Subroutine read_control                                &
            If (idnode == 0) Then
               Write(nrite,"(/,1x,'restart requested (continuing an old simulation)')")
               Write(nrite,"(1x,a)") "*** warning - timestep from REVOLD overides specification in CONTROL !!! ***"
+           End If
 
         End If
 
