@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-module load gnu/7 openmpi/3.0.0
+module load gnu openmpi/3.0.0
 module load kim/gcc
 
 mkdir build-mpi-kim
