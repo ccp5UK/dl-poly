@@ -110,14 +110,14 @@ TEST 88 - Sodium Chloride (27,000 ions) interacting via Lennard-Jones tapered wi
 TEST 89 - Sodium Chloride (27,000 ions) interacting via Buckingham tapered with MDF potentials
 TEST 90 - Sodium Chloride (27,000 ions) interacting via 12-6 tapered with MDF potentials
 TEST 91 - Restart of TEST 04
-TEST 92	- Formic Acid (970 molecules)-Test for bond potentials from tabulated values
-TEST 93	- Formic Acid (970 molecules)-Test for bond potentials of tab+vdW+coul (-tab) type
-TEST 94	- Formic Acid (970 molecules)-Test for bond potentials of harmonic (harm) type
-TEST 95	- Formic Acid (970 molecules)-Test for bond potentials of harmonic+vdW+coul (-hrm) type
-TEST 96	- Formic Acid (970 molecules)-Test for bond potentials of Morse (mors) type
-TEST 97	- Formic Acid (970 molecules)-Test for bond potentials of Morse+vdW+coul (-mrs) type
-TEST 98	- Formic Acid (970 molecules)-Test for bond potentials of 12-6 type
-TEST 99	- Formic Acid (970 molecules)-Test for bond potentials of (12-6)+vdW+coul (-126) type
+TEST 92 - Formic Acid (970 molecules)-Test for bond potentials from tabulated values
+TEST 93 - Formic Acid (970 molecules)-Test for bond potentials of tab+vdW+coul (-tab) type
+TEST 94 - Formic Acid (970 molecules)-Test for bond potentials of harmonic (harm) type
+TEST 95 - Formic Acid (970 molecules)-Test for bond potentials of harmonic+vdW+coul (-hrm) type
+TEST 96 - Formic Acid (970 molecules)-Test for bond potentials of Morse (mors) type
+TEST 97 - Formic Acid (970 molecules)-Test for bond potentials of Morse+vdW+coul (-mrs) type
+TEST 98 - Formic Acid (970 molecules)-Test for bond potentials of 12-6 type
+TEST 99 - Formic Acid (970 molecules)-Test for bond potentials of (12-6)+vdW+coul (-126) type
 TEST 100 -Formic Acid (970 molecules)-Test for bond potentials of Lennard-Jones (lj) type
 TEST 101 -Formic Acid (970 molecules)-Test for bond potentials of (lj)+vdW+coul (-lj) type
 TEST 102 -Formic Acid (970 molecules)-Test for bond potentials of restrained harmonic (rhrm) type
