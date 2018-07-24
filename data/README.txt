@@ -68,7 +68,7 @@ TEST 46 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Langevi
 TEST 47 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Berendsen thermostat-barostat
 TEST 48 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Nose-Hoover thermostat-barostat
 TEST 49 - Sodium Chloride (27,000 ions), NsT (NPT anisotropic ensemble), Martyna-Tuckerman-Klein thermostat-barostat
-TEST 50 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Langevin thermostat /semi-isotropic barostat : constant normal pressure (Pn)
+TEST 50 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Langevin thermostat /semi-isotropic barostat : constant normal pressure (Pn)  
 TEST 51 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Berendsen thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 52 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Nose-Hoover thermostat/semi-isotropic barostat : constant normal pressure (Pn)
 TEST 53 - Wetted POPC membrane (32,107 ions), N-Pn-AT ensemble, Martyna-Tuckerman-Klein thermostat/semi-isotropic barostat : constant normal pressure (Pn)
@@ -88,7 +88,7 @@ TEST 66 - Wetted POPC membrane (32,107 ions), NPT anisotropic ensemble, Langevin
 TEST 67 - Wetted POPC membrane (32,107 ions), NPT anisotropic ensemble, Berendsen thermostat/semi-isotropic barostat   : semi-orthorhombic MD cell constraints
 TEST 68 - Wetted POPC membrane (32,107 ions), NPT anisotropic ensemble, Nose-Hoover thermostat/semi-isotropic barostat : semi-orthorhombic MD cell constraints
 TEST 69 - Wetted POPC membrane (32,107 ions), NPT anisotropic ensemble, Martyna-Tuckerman-Klein thermostat/semi-isotropic barostat : semi-orthorhombic MD cell constraints
-TEST 70 - Impact and defects analysis for radiation damage in Sodium Chloride (27,000 ions)
+TEST 70 - Impact and defects analysis for rdiation damage in Sodium Chloride (27,000 ions)
 TEST 71 - Sodium Chloride (27,000 ions) interacting via 12-6 potentials
 TEST 72 - Sodium Chloride (27,000 ions) interacting via Lenhard-Jones potentials
 TEST 73 - Sodium Chloride (27,000 ions) interacting via Lenhard-Jones cohesive potentials
@@ -110,4 +110,83 @@ TEST 88 - Sodium Chloride (27,000 ions) interacting via Lennard-Jones tapered wi
 TEST 89 - Sodium Chloride (27,000 ions) interacting via Buckingham tapered with MDF potentials
 TEST 90 - Sodium Chloride (27,000 ions) interacting via 12-6 tapered with MDF potentials
 TEST 91 - Restart of TEST 04
-TEST 92 - H2O-K pmf test, no electrostatics
+TEST 92 - Formic Acid (970 molecules)-Test for bond potentials from tabulated values
+TEST 93 - Formic Acid (970 molecules)-Test for bond potentials of tab+vdW+coul (-tab) type
+TEST 94 - Formic Acid (970 molecules)-Test for bond potentials of harmonic (harm) type
+TEST 95 - Formic Acid (970 molecules)-Test for bond potentials of harmonic+vdW+coul (-hrm) type
+TEST 96 - Formic Acid (970 molecules)-Test for bond potentials of Morse (mors) type
+TEST 97 - Formic Acid (970 molecules)-Test for bond potentials of Morse+vdW+coul (-mrs) type
+TEST 98 - Formic Acid (970 molecules)-Test for bond potentials of 12-6 type
+TEST 99 - Formic Acid (970 molecules)-Test for bond potentials of (12-6)+vdW+coul (-126) type
+TEST 100 -Formic Acid (970 molecules)-Test for bond potentials of Lennard-Jones (lj) type
+TEST 101 -Formic Acid (970 molecules)-Test for bond potentials of (lj)+vdW+coul (-lj) type
+TEST 102 -Formic Acid (970 molecules)-Test for bond potentials of restrained harmonic (rhrm) type
+TEST 103 -Formic Acid (970 molecules)-Test for bond potentials of restricted harmonic+vdW+coul (-rhm) type
+TEST 104 -Formic Acid (970 molecules)-Test for bond potentials of quar type
+TEST 105 -Formic Acid (970 molecules)-Test for bond potentials of quar+vdW+coul (-qur) type
+TEST 106 -Formic Acid (970 molecules)-Test for bond potentials of Buckingham (buck) type
+TEST 107 -Formic Acid (970 molecules)-Test for bond potentials of Buckingham+vdW+coul (-bck) type
+TEST 108 -Formic Acid (970 molecules)-Test for bond potentials of Coulomb (coul) type
+TEST 109 -Formic Acid (970 molecules)-Test for bond potentials of Electroctatic+vdW+coul (-cul) type
+TEST 110 -Formic Acid (970 molecules)-Test for bond potentials of fene type
+TEST 111 -Formic Acid (970 molecules)-Test for bond potentials of FENE+vdW+coul (-fne) type
+TEST 112 -Formic Acid (970 molecules)-Test for bond potentials of mmts type
+TEST 113 -Formic Acid (970 molecules)-Test for bond potentials of mmst+vdW+coul (-mst) type
+TEST 114 -Formic Acid (970 molecules)-Test for bond tabulated (tab) potentials
+TEST 115 -Formic Acid (970 molecules)-Test for tabulated angle potentials of tab+coul+vdW (-tab) type
+TEST 116 -Formic Acid (970 molecules)-Test for angle potentials of harmonic (harm) type
+TEST 117 -Formic Acid (970 molecules)-Test for angle potentials of harmonic+coul+vdW (-hrm) type
+TEST 118 -Formic Acid (970 molecules)-Test for angle potentials of quartic (quartic) order
+TEST 119 -Formic Acid (970 molecules)-Test for angle potentials of quartic+coul+vdW (-qur) type
+TEST 120 -Formic Acid (970 molecules)-Test for angle potentials of Truncated harmonic (thrm) type
+TEST 121 -Formic Acid (970 molecules)-Test for angle potentials of Truncate harmonic+coul+vdW (-thm) type
+TEST 122 -Formic Acid (970 molecules)-Test for angle potentials of Screened harmonic (shrm) type
+TEST 123 -Formic Acid (970 molecules)-Test for angle potentials of Screnned harmonic+coul+vdW (-shm) type
+TEST 124 -Formic Acid (970 molecules)-Test for angle potentials of Screened Vessal (bvs1) type
+TEST 125 -Formic Acid (970 molecules)-Test for angle potentials of Screnned Vessal+coul+vdW (-bv1) type
+TEST 126 -Formic Acid (970 molecules)-Test for angle potentials of Truncated Vessal (bvs2) type
+TEST 127 -Formic Acid (970 molecules)-Test for angle potentials of Truncate Vessal+coul+vdW (-bv2) type
+TEST 128 -Formic Acid (970 molecules)-Test for angle potentials of harmonic cosine (hacos) type
+TEST 129 -Formic Acid (970 molecules)-Test for angle potentials of harmonic cosine+coul+vdW (-hcs) type
+TEST 130 -Formic Acid (970 molecules)-Test for angle potentials of cosine (cos) type
+TEST 131 -Formic Acid (970 molecules)-Test for angle potentials of cosine+coul+vdW (-hcs) type
+TEST 132 -Formic Acid (970 molecules)-Test for angle potentials of MM3 stretch-bend (mmsb) type
+TEST 133 -Formic Acid (970 molecules)-Test for angle potentials of MM3 stretch-bend+coul+vdW (-msb) type
+TEST 134 -Formic Acid (970 molecules)-Test for angle potentials of compass stretch-stretch (stst) type
+TEST 135 -Formic Acid (970 molecules)-Test for angle potentials of Compass stretch-stretch +coul+vdW (-sts) type
+TEST 136 -Formic Acid (970 molecules)-Test for angle potentials of compass stretch-bend (stbe) type
+TEST 137 -Formic Acid (970 molecules)-Test for angle potentials of Compass stretch-bend +coul+vdW (-stb) type
+TEST 138 -Formic Acid (970 molecules)-Test for angle potentials of compass all-terms (cmps) type
+TEST 139 -Formic Acid (970 molecules)-Test for angle potentials of Compass all +coul+vdW (-cmp) type
+TEST 140 -Formic Acid (970 molecules)-Test for angle potentials of mmbd type
+TEST 141 -Formic Acid (970 molecules)-Test for angle potentials of mmbd+coul+vdW (-mbd) type
+TEST 142 -Formic Acid (970 molecules)-Test for angle potentials of KKY type
+TEST 143 -Formic Acid (970 molecules)-Test for angle potentials of KKY +coul+vdW (-kky) type
+TEST 144 -Formic Acid (970 molecules)-Test for tabulated potentials for dihedrals
+TEST 145 -Formic Acid (970 molecules)-Test for cosine potentials for dihedrals
+TEST 146 -Formic Acid (970 molecules)-Test for dihedrals potentials of harmonic (harm) type
+TEST 147 -Formic Acid (970 molecules)-Test for dihedrals of harmonic cosine (hcos) type
+TEST 148 -Formic Acid (970 molecules)-Test for dihedrals of harmonic cosine (cos3) type
+TEST 149 -Formic Acid (970 molecules)-Test for dihedrals potentials of ryck type
+TEST 150 -Formic Acid (970 molecules)-Test for dihedrals potentials of rbf type
+TEST 151 -Formic Acid (970 molecules)-Test for dihedrals potentials of opls type
+TEST 152 -DPPC (200 molecules) in Water (32626 molecules) Lipid Bilayer -Test for tabulated potentials for inversions
+TEST 153 -DPPC (200 molecules) in Water (32626 molecules) Lipid Bilayer -Test for harmonic potentials for inversions
+TEST 154 -DPPC (200 molecules) in Water (32626 molecules) Lipid Bilayer -Test for inversions potentials of harmonic cosine (hcos) type
+TEST 155 -DPPC (200 molecules) in Water (32626 molecules) Lipid Bilayer -Test for inversions potentials of planar (plan) type
+TEST 156 -DPPC (200 molecules) in Water (32626 molecules) Lipid Bilayer -Test for inversions potentials of xpln type
+TEST 157 -Calcite bulk (4320 atoms) -Test for calcite potential  
+TEST 158 -Sauer model sans shell + Benzene-Test for three-body potentials of harmonic (harm) type
+TEST 159 -Sauer model sans shell + Benzene-Test for three-body potentials of truncated harmonic (thrm) type
+TEST 160 -Sauer model sans shell + Benzene-Test for three-body potentials of screened harmonic (shrm) type
+TEST 161 -Sauer model sans shell + Benzene-Test for three-body potentials of screened vessal (bvs1) type
+TEST 162 -Sauer model sans shell + Benzene-Test for three-body potentials of truncated vessal (bvs2) type
+TEST 163 -Sauer model sans shell + Benzene-Test for three-body potentials of H-bond (hbnd) type
+
+TEST 169 -Chain polymer with   6 units and Carboxy Head Group-Test for tether potentials of harmonic (harm) type
+TEST 170 -Chain polymer with   6 units and Carboxy Head Group-Test for tether potentials of restained harmonic (rhrm) type
+TEST 171 -Chain polymer with   6 units and Carboxy Head Group-Test for tether potentials of quartic (quar) type
+
+TEST 173 -Slab of Hf-O-Pt-Zr in vacuum-Test for electric field
+TEST 174 -Slab of Hf-O-Pt-Zr in vacuum-Test for magnetic field
+
