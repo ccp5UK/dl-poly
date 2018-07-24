@@ -540,7 +540,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
 
     If (Any(eltemp < 0.0_wp)) safe = .false.
     Call gcheck(safe)
-    If (.not. safe) Call error (683)
+    If (.not. safe) Call error (693)
 
   End Do
 
