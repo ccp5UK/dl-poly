@@ -301,7 +301,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 ! For netCDF this is the "frame number" which is not a long integer!
 
            If (idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
-           Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+           Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
 
            If (jj > 0) Then
               frm=Int(jj,ip)
@@ -730,7 +730,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         rec_mpi_io=Int(rec,MPI_OFFSET_KIND)+Int(4,MPI_OFFSET_KIND)
      Else ! netCDF write
-        Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+        Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
         rec_mpi_io = Int(jj,MPI_OFFSET_KIND)
      End If
 
@@ -1147,7 +1147,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time)
 
            jj=0
            If (idnode == 0) Call io_nc_get_dim( 'frame', fh, jj )
-           Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, MPI_COMM_WORLD, ierr)
+           Call MPI_BCAST(jj, 1, MPI_INTEGER, 0, dlp_comm_world, ierr)
 
            If (jj > 0) Then
               frm=Int(jj,ip)
