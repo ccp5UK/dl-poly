@@ -467,6 +467,8 @@ Subroutine set_bounds                                 &
 
   If (idnode == 0) Write(nrite,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
 
+5 Continue
+
   If (rpad > zero_plus) Then
 
 ! define cut
@@ -674,27 +676,33 @@ Subroutine set_bounds                                 &
         qlz = Min(ilz , kmaxc/(mxspl1*nprz))
      End If
 
-! Hard luck, giving up
+! Hard luck, giving up after trying once more
 
      If (qlx*qly*qlz == 0) Then
+        If (lrpad0 .eqv. lrpad .and. rpad > zero_plus) Then ! defaulted padding must be removed
+           rpad=0.0_wp
+           lrpad0=.true.
+           Go To 5
+        Else
            test = Min( Real(kmaxa1,wp)/Real(nprx,wp), &
                        Real(kmaxb1,wp)/Real(npry,wp), &
                        Real(kmaxc1,wp)/Real(nprz,wp) ) / Real(mxspl,wp)
            tol  = Min( Real(kmaxa,wp)/Real(nprx,wp), &
                        Real(kmaxb,wp)/Real(npry,wp), &
                        Real(kmaxc,wp)/Real(nprz,wp) ) / Real(mxspl1,wp)
-        If (idnode == 0) Then
-           Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                        &
-              'SPME driven limit on largest possible decomposition: ', &
-              (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1),            &
-              ' nodes/domains (',                                      &
-              kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,          &
-              ') for current cutoff and Ewald precision (sum parameters)'
-           Write(nrite,'(2(/,1x,a,f6.2,a))')                                    &
-              'SPME suggested factor to decrese current cutoff by: ',           &
-              1.0_wp/test, ' for current Ewald precision and decomposition',    &
-              'SPME suggested factor to increase current Ewald precision by: ', &
-              (1.0_wp-tol)*100.0_wp, ' for current cutoff and decomposition'
+           If (idnode == 0) Then
+              Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                               &
+                 'SPME driven limit on largest possible domain decomposition: ', &
+                 (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1),                   &
+                 ' nodes/domains (',                                             &
+                 kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,                 &
+                 ') for currently specified cutoff (with padding) & Ewald precision (sum parameters)'
+              Write(nrite,'(2(/,1x,a,f6.2,a))')                                          &
+                 'SPME suggested factor to decrease currently specified cutoff (with padding) by: ', &
+                 1.0_wp/test, ' for currently speccified Ewald precision & domain decomposition',    &
+                 'SPME suggested factor to increase current Ewald precision by: ',                   &
+                 (1.0_wp-tol)*100.0_wp, ' for currently specified cutoff (with padding) & domain decomposition'
+           End If
         End If
         Call error(308)
      End If
