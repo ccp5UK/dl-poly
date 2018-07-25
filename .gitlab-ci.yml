@@ -108,12 +108,12 @@ testing-mpi-gcc:
   script:
     - sh utils/mpi-testing.sh
 
-testing-mpi-gcc-paranoid:
-  stage: test
-  tags: 
-    - gcc
-  script:
-    - sh utils/mpi-testing-paranoid.sh
+#testing-mpi-gcc-paranoid:
+#  stage: test
+#  tags: 
+#    - gcc
+#  script:
+#    - sh utils/mpi-testing-paranoid.sh
 
 testing-mpi-intel:
   stage: test
