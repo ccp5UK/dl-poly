@@ -3,7 +3,7 @@ Subroutine scan_control                                    &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rcut,rpad,rbin,mxstak,                          &
+           rcut,lrpad,rpad,rbin,mxstak,                    &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
@@ -40,7 +40,7 @@ Subroutine scan_control                                    &
   Implicit None
 
   Logical,           Intent( InOut ) :: l_n_e
-  Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
+  Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind,lrpad
   Integer,           Intent( In    ) :: mxrdf,mxvdw,mxmet,mxter,mxrgd,imcon,mxshl
   Integer,           Intent( InOut ) :: imc_n,mxompl,mximpl,keyind
   Integer,           Intent(   Out ) :: mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1, &
@@ -50,7 +50,7 @@ Subroutine scan_control                                    &
   Real( Kind = wp ), Intent(   Out ) :: rcut,rpad,rbin,alpha
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
-                            lrcut,lrpad,lrvdw,lrmet,lelec,lrdf,lvdw,lmet,l_n_m,lter,l_exp
+                            lrcut,lrvdw,lrmet,lelec,lrdf,lvdw,lmet,l_n_m,lter,l_exp
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word,word1,word2,akey
   Integer                :: i,itmp,nstrun,mxspl2
@@ -227,7 +227,6 @@ Subroutine scan_control                                    &
         lrpad = .true.
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         rpad = Max(rpad,Abs(word_2_real(word)))
-        lrpad = (rpad > zero_plus) ! if zero or nothing is entered
 
 ! read vdw cutoff
 
@@ -327,7 +326,6 @@ Subroutine scan_control                                    &
         lrpad = .true.
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         rpad = Max(rpad,0.25_wp*Abs(word_2_real(word)))
-        lrpad = (rpad > zero_plus) ! if zero or nothing is entered
 
 ! read DL_POLY_2/Classic multiple timestep option (compatibility)
 ! as DL_POLY_4 infrequent k-space SPME evaluation option

@@ -5,8 +5,10 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
 ! dl_poly_4 routine implementing the VNL conditional update checks
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2017
+! author    - i.t.todorov january 2013
 ! contrib   - i.j.bush february 2014
+! contrib   - i.t.todorov january 2017
+! contrib   - i.t.todorov july 2018
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -28,7 +30,7 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
 
   Logical           :: safe
   Integer           :: fail,ilx,ily,ilz,i,ii,j
-  Real( Kind = wp ) :: cut,test,tol,celprp(1:10),xx(1),yy(1),zz(1)
+  Real( Kind = wp ) :: tol,cut,test,xx(1),yy(1),zz(1),celprp(1:10)
 
   Real( Kind = wp ), Allocatable :: x(:),y(:),z(:),r(:)
 
@@ -51,23 +53,37 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
 
   If (nlast > 0) r(1:nlast) = Sqrt(x(1:nlast)**2 + y(1:nlast)**2 + z(1:nlast)**2)
 
+! Start search for violations
+
+  tol=0.5_wp*rpad
   safe=.true.
 Q:Do i=1,natms
-     If (r(i) > 0.5_wp*rpad) Then
+     If (r(i) > tol) Then
+        If (r(i) > rpad) Then ! limit full particle loss
+           safe=.false.
+           Exit Q
+        End If
+
+! Limit pair visibility loss
+
         Do ii=1,list(-2,i)
            j=list(ii,i) ! may be in the halo!!!
-           If (r(j) > 0.5_wp*rpad) Then
-              xx(1)=x(i)-x(j)
-              yy(1)=y(i)-y(j)
-              zz(1)=z(i)-z(j)
+           xx(1)=x(i)-x(j)
+           yy(1)=y(i)-y(j)
+           zz(1)=z(i)-z(j)
+           cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
+           If (cut > rpad) Then
+              xx(1)=xbg(i)-xbg(j)
+              yy(1)=ybg(i)-ybg(j)
+              zz(1)=zbg(i)-zbg(j)
               cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
-              If (cut > rpad) Then
+              If (cut < rcut) Then
                  xx(1)=xxx(i)-xxx(j)
                  yy(1)=yyy(i)-yyy(j)
                  zz(1)=zzz(i)-zzz(j)
                  cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
                  If (cut > rlnk) Then
-                    safe=.false. ! strong violation
+                    safe=.false. ! pair distance violation
                     Exit Q
                  End If
               End If
@@ -85,12 +101,12 @@ Q:Do i=1,natms
   If (mxnode > 1) Call gcheck(safe,"enforce")
   l_vnl=.not.safe
 
-! Get the dimensional properties of the MD cell
+! get the dimensional properties of the MD cell
 
-  Call dcell(cell,celprp) ! cut=rlnk+1.0e-6_wp in link_cell_pairs
+  Call dcell(cell,celprp)
   width=Min(celprp(7),celprp(8),celprp(9))
 
-! define cut
+! define cut as in link_cell_pairs
 
   cut=rlnk+1.0e-6_wp
 

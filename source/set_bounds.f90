@@ -12,7 +12,7 @@ Subroutine set_bounds                                 &
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 ! contrib   - m.a.seaton march 2017 (TTM)
-! contrib   - i.t.todorov march 2018 (rpad reset if 'strict' & rpad=0)
+! contrib   - i.t.todorov march 2018 (rpad reset if 'strict' & rpad undefined)
 ! contrib   - i.t.todorov june 2018 (spme suggestions)
 ! contrib   - i.t.todorov june 2018 (fdens & mxatms fixes)
 !
@@ -41,7 +41,7 @@ Subroutine set_bounds                                 &
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
 
-  Logical           :: l_usr,l_n_r,lzdn,lext,lrpad=.false.
+  Logical           :: l_usr,l_n_r,lzdn,lext,lrpad,lrpad0=.false.
   Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
@@ -94,7 +94,7 @@ Subroutine set_bounds                                 &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rcut,rpad,rbin,mxstak,                          &
+           rcut,lrpad,rpad,rbin,mxstak,                    &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
@@ -493,7 +493,7 @@ Subroutine set_bounds                                 &
 
   Else
 
-     lrpad=.true.
+     If (lrpad) lrpad0=.true.
 
   End If
 
@@ -589,11 +589,19 @@ Subroutine set_bounds                                 &
         If (rpad >= zero_plus) rpad = 0.0_wp ! Don't bother
      End If
 
-     If (l_str .and. (.not.lrpad)) Then ! less hopeful for 'strict' & rpad=0
-        rpad = 0.95_wp * rpad
-        rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
-        If (rpad > zero_plus) Then
-           If (rpad < tol) rpad = 0.0_wp ! Don't bother
+     If (l_str) Then
+        If (lrpad0) Then ! forget about it
+           rpad = 0.0_wp
+        Else ! less hopeful for undefined rpad
+           rpad = 0.95_wp * rpad
+           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
+           If (rpad > zero_plus) Then
+              If (rpad < tol) rpad = 0.0_wp ! Don't bother
+           End If
+        End If
+     Else ! 'no strict
+        If (lrpad0) Then ! forget about it
+           rpad = 0.0_wp
         End If
      End If
 
@@ -676,7 +684,7 @@ Subroutine set_bounds                                 &
                        Real(kmaxb,wp)/Real(npry,wp), &
                        Real(kmaxc,wp)/Real(nprz,wp) ) / Real(mxspl1,wp)
         If (idnode == 0) Then
-           Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                          &
+           Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                        &
               'SPME driven limit on largest possible decomposition: ', &
               (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1),            &
               ' nodes/domains (',                                      &
