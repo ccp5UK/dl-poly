@@ -214,12 +214,12 @@ Contains
             End If
             ijk1 = 2 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
             ijk2 = 1 + (ntcell(1)+1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, map(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-            Call MPI_IRECV (eltemp(ijk2,iii1,jj,kk), 1, tmpmsgx, map(2), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, map(1), Grid1_tag, dlp_comm_world, req(1), ierr)
+            Call MPI_IRECV (eltemp(ijk2,iii1,jj,kk), 1, tmpmsgx, map(2), Grid1_tag, dlp_comm_world, req(2), ierr)
             ijk1 = 1 + (ntcell(1)) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
             ijk2 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
-            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, map(2), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-            Call MPI_IRECV (eltemp(ijk2,iii2,jj,kk), 1, tmpmsgx, map(1), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgx, map(2), Grid2_tag, dlp_comm_world, req(3), ierr)
+            Call MPI_IRECV (eltemp(ijk2,iii2,jj,kk), 1, tmpmsgx, map(1), Grid2_tag, dlp_comm_world, req(4), ierr)
             Call MPI_WAITALL (4, req, stats, ierr)
           End Do
         End Do
@@ -240,12 +240,12 @@ Contains
             End If
             ijk1 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
             ijk2 = 1 + (ntcell(1)+2) * (ntcell(2) + 1 + (ntcell(2)+2))
-            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, map(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-            Call MPI_IRECV (eltemp(ijk2,ii,jjj1,kk), 1, tmpmsgy, map(4), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, map(3), Grid1_tag, dlp_comm_world, req(1), ierr)
+            Call MPI_IRECV (eltemp(ijk2,ii,jjj1,kk), 1, tmpmsgy, map(4), Grid1_tag, dlp_comm_world, req(2), ierr)
             ijk1 = 1 + (ntcell(1)+2) * (ntcell(2) + (ntcell(2)+2))
             ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
-            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, map(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-            Call MPI_IRECV (eltemp(ijk2,ii,jjj2,kk), 1, tmpmsgy, map(3), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgy, map(4), Grid2_tag, dlp_comm_world, req(3), ierr)
+            Call MPI_IRECV (eltemp(ijk2,ii,jjj2,kk), 1, tmpmsgy, map(3), Grid2_tag, dlp_comm_world, req(4), ierr)
             Call MPI_WAITALL (4, req, stats, ierr)
           End Do
         End Do
@@ -266,12 +266,12 @@ Contains
             End If
             ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
             ijk2 = 1 + (ntcell(1)+2) * ((ntcell(2)+2) * (ntcell(3) + 1))
-            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, map(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-            Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk1), 1, tmpmsgz, map(6), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, map(5), Grid1_tag, dlp_comm_world, req(1), ierr)
+            Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk1), 1, tmpmsgz, map(6), Grid1_tag, dlp_comm_world, req(2), ierr)
             ijk1 = 1 + (ntcell(1)+2) * ((ntcell(2)+2) * ntcell(3))
             ijk2 = 1
-            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, map(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-            Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk2), 1, tmpmsgz, map(5), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+            Call MPI_ISEND (eltemp(ijk1,ii,jj,kk)  , 1, tmpmsgz, map(6), Grid2_tag, dlp_comm_world, req(3), ierr)
+            Call MPI_IRECV (eltemp(ijk2,ii,jj,kkk2), 1, tmpmsgz, map(5), Grid2_tag, dlp_comm_world, req(4), ierr)
             Call MPI_WAITALL (4, req, stats, ierr)
           End Do
         End Do
@@ -353,15 +353,15 @@ Contains
                 ijk1 = 1 + ttmbc(1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
                 ijk2 = 1 + (ttmbc(1) - 1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
                 ii = -eltcell(1)
-                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgx, ttmbcmap(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-                Call MPI_IRECV (eltemp(ijk2,-ii,jj,kk), 1, tmpmsgx, ttmbcmap(1), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgx, ttmbcmap(1), Grid1_tag, dlp_comm_world, req(1), ierr)
+                Call MPI_IRECV (eltemp(ijk2,-ii,jj,kk), 1, tmpmsgx, ttmbcmap(1), Grid2_tag, dlp_comm_world, req(2), ierr)
               End If
               If (ttmbcmap(2)>=0) Then
                 ijk1 = 1 + ttmbc(2) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
                 ijk2 = 1 + (ttmbc(2) + 1) + (ntcell(1)+2) * (1 + (ntcell(2)+2))
                 ii = eltcell(1)
-                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgx, ttmbcmap(2), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-                Call MPI_IRECV (eltemp(ijk2,-ii,jj,kk), 1, tmpmsgx, ttmbcmap(2), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
+                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgx, ttmbcmap(2), Grid2_tag, dlp_comm_world, req(3), ierr)
+                Call MPI_IRECV (eltemp(ijk2,-ii,jj,kk), 1, tmpmsgx, ttmbcmap(2), Grid1_tag, dlp_comm_world, req(4), ierr)
               End If
               Call MPI_WAITALL (4, req, stat, ierr)
             End Do
@@ -392,15 +392,15 @@ Contains
                 ijk1 = 1 + (ntcell(1)+2) * (ttmbc(3) + (ntcell(2)+2))
                 ijk2 = 1 + (ntcell(1)+2) * (ttmbc(3) - 1 + (ntcell(2)+2))
                 jj = -eltcell(2)
-                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgy, ttmbcmap(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-                Call MPI_IRECV (eltemp(ijk2,ii,-jj,kk), 1, tmpmsgy, ttmbcmap(3), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgy, ttmbcmap(3), Grid1_tag, dlp_comm_world, req(1), ierr)
+                Call MPI_IRECV (eltemp(ijk2,ii,-jj,kk), 1, tmpmsgy, ttmbcmap(3), Grid2_tag, dlp_comm_world, req(2), ierr)
               End If
               If (ttmbcmap(4)>=0) Then
                 ijk1 = 1 + (ntcell(1)+2) * (ttmbc(4) + (ntcell(2)+2))
                 ijk2 = 1 + (ntcell(1)+2) * (ttmbc(4) + 1 + (ntcell(2)+2))
                 jj = eltcell(2)
-                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgy, ttmbcmap(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-                Call MPI_IRECV (eltemp(ijk2,ii,-jj,kk), 1, tmpmsgy, ttmbcmap(4), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
+                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgy, ttmbcmap(4), Grid2_tag, dlp_comm_world, req(3), ierr)
+                Call MPI_IRECV (eltemp(ijk2,ii,-jj,kk), 1, tmpmsgy, ttmbcmap(4), Grid1_tag, dlp_comm_world, req(4), ierr)
               End If
               Call MPI_WAITALL (4, req, stat, ierr)
             End Do
@@ -431,15 +431,15 @@ Contains
                 ijk1 = 1 + (ntcell(1)+2) * (ttmbc(5) * (ntcell(2)+2))
                 ijk2 = 1 + (ntcell(1)+2) * ((ttmbc(5) - 1) * (ntcell(2)+2))
                 kk = -eltcell(3)
-                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgz, ttmbcmap(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-                Call MPI_IRECV (eltemp(ijk2,ii,jj,-kk), 1, tmpmsgz, ttmbcmap(5), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgz, ttmbcmap(5), Grid1_tag, dlp_comm_world, req(1), ierr)
+                Call MPI_IRECV (eltemp(ijk2,ii,jj,-kk), 1, tmpmsgz, ttmbcmap(5), Grid2_tag, dlp_comm_world, req(2), ierr)
               End If
               If (ttmbcmap(6)>=0) Then
                 ijk1 = 1 + (ntcell(1)+2) * (ttmbc(6) * (ntcell(2)+2))
                 ijk2 = 1 + (ntcell(1)+2) * ((ttmbc(6) + 1) * (ntcell(2)+2))
                 kk = eltcell(3)
-                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgz, ttmbcmap(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-                Call MPI_IRECV (eltemp(ijk2,ii,jj,-kk), 1, tmpmsgz, ttmbcmap(6), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
+                Call MPI_ISEND (eltemp(ijk1,ii,jj,kk) , 1, tmpmsgz, ttmbcmap(6), Grid2_tag, dlp_comm_world, req(3), ierr)
+                Call MPI_IRECV (eltemp(ijk2,ii,jj,-kk), 1, tmpmsgz, ttmbcmap(6), Grid1_tag, dlp_comm_world, req(4), ierr)
               End If
               Call MPI_WAITALL (4, req, stat, ierr)
             End Do
@@ -1694,8 +1694,8 @@ Contains
       Else
         ii = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgx, map(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-      Call MPI_IRECV (buffer(ijk2,ii,0,0)   , 1, tmpmsgx, map(2), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgx, map(1), Grid1_tag, dlp_comm_world, req(1), ierr)
+      Call MPI_IRECV (buffer(ijk2,ii,0,0)   , 1, tmpmsgx, map(2), Grid1_tag, dlp_comm_world, req(2), ierr)
       ijk1 = (ntcell(1)+2) * (2 + (ntcell(2)+2))
       ijk2 = 2 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
       If (idx==0) Then
@@ -1703,8 +1703,8 @@ Contains
       Else
         ii = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgx, map(2), Grid2_tag, MPI_COMM_WORLD, req(1), ierr)
-      Call MPI_IRECV (buffer(ijk2,ii,0,0)   , 1, tmpmsgx, map(1), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgx, map(2), Grid2_tag, dlp_comm_world, req(1), ierr)
+      Call MPI_IRECV (buffer(ijk2,ii,0,0)   , 1, tmpmsgx, map(1), Grid2_tag, dlp_comm_world, req(2), ierr)
       Call MPI_WAITALL (4, req, stat, ierr)
 
       ! -y/+y direction
@@ -1715,8 +1715,8 @@ Contains
       Else
         jj = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgy, map(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-      Call MPI_IRECV (buffer(ijk2,0,jj,0)   , 1, tmpmsgy, map(4), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgy, map(3), Grid1_tag, dlp_comm_world, req(1), ierr)
+      Call MPI_IRECV (buffer(ijk2,0,jj,0)   , 1, tmpmsgy, map(4), Grid1_tag, dlp_comm_world, req(2), ierr)
       ijk1 = 1 + (ntcell(1)+2) * (ntcell(2) + 1 + (ntcell(2)+2))
       ijk2 = 1 + (ntcell(1)+2) * (1 + (ntcell(2)+2))
       If (idy==0) Then
@@ -1724,8 +1724,8 @@ Contains
       Else
         jj = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgy, map(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-      Call MPI_IRECV (buffer(ijk2,0,jj,0)   , 1, tmpmsgy, map(3), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgy, map(4), Grid2_tag, dlp_comm_world, req(3), ierr)
+      Call MPI_IRECV (buffer(ijk2,0,jj,0)   , 1, tmpmsgy, map(3), Grid2_tag, dlp_comm_world, req(4), ierr)
       Call MPI_WAITALL (4, req, stat, ierr)
 
       ! -z/+z direction
@@ -1736,8 +1736,8 @@ Contains
       Else
         kk = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgz, map(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-      Call MPI_IRECV (buffer(ijk2,0,0,kk)   , 1, tmpmsgz, map(6), Grid1_tag, MPI_COMM_WORLD, req(2), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgz, map(5), Grid1_tag, dlp_comm_world, req(1), ierr)
+      Call MPI_IRECV (buffer(ijk2,0,0,kk)   , 1, tmpmsgz, map(6), Grid1_tag, dlp_comm_world, req(2), ierr)
       ijk1 = 1 + (ntcell(1)+2) * (ntcell(2)+2) * (ntcell(3)+1)
       ijk2 = 1 + (ntcell(1)+2) * (ntcell(2)+2)
       If (idz==0) Then
@@ -1745,8 +1745,8 @@ Contains
       Else
         kk = 0
       End If
-      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgz, map(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-      Call MPI_IRECV (buffer(ijk2,0,0,kk)   , 1, tmpmsgz, map(5), Grid2_tag, MPI_COMM_WORLD, req(4), ierr)
+      Call MPI_ISEND (energydist(ijk1,0,0,0), 1, tmpmsgz, map(6), Grid2_tag, dlp_comm_world, req(3), ierr)
+      Call MPI_IRECV (buffer(ijk2,0,0,kk)   , 1, tmpmsgz, map(5), Grid2_tag, dlp_comm_world, req(4), ierr)
       Call MPI_WAITALL (4, req, stat, ierr)
 
       energydist = energydist + buffer

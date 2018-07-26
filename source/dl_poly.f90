@@ -317,7 +317,7 @@ Program dl_poly
 
 ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
-  Call allocate_ttm_arrays()
+  Call allocate_ttm_arrays(rpad)
   Call ttm_table_scan()
 
 ! READ SIMULATION CONTROL PARAMETERS

@@ -76,7 +76,7 @@ Subroutine ttm_table_scan()
       safe = (kel>0)
       If (mxnode > 1) Call gcheck(safe)
       If (.not. safe) Then
-        Call error(675)
+        Call error(685)
       Else
         Allocate (ketable(1:kel,2), Stat=fail)
         If (fail > 0) Then
@@ -127,7 +127,7 @@ Subroutine ttm_table_scan()
       safe = (cel>0)
       If (mxnode > 1) Call gcheck(safe)
       If (.not. safe) Then
-        Call error(677)
+        Call error(687)
       Else
         Allocate (cetable(1:cel,2), Stat=fail)
         If (fail > 0) Then
@@ -178,7 +178,7 @@ Subroutine ttm_table_scan()
       safe = (del>0)
       If (mxnode > 1) Call gcheck(safe)
       If (.not. safe) Then
-        Call error(679)
+        Call error(689)
       Else
         Allocate (detable(1:del,2), Stat=fail)
         If (fail > 0) Then
@@ -229,7 +229,7 @@ Subroutine ttm_table_scan()
       safe = (gel>0)
       If (mxnode > 1) Call gcheck(safe)
       If (.not. safe) Then
-        Call error(681)
+        Call error(691)
       Else
         Allocate (gtable(1:gel,2), Stat=fail) ! [GK] array length corrected
         If (fail > 0) Then
@@ -256,26 +256,26 @@ Subroutine ttm_table_scan()
 100 Continue
 
   If (idnode == 0) Close(Unit=ntable)
-  Call error(674)
+  Call error(684)
 
 ! end of Ce.dat file error exit
 
 200 Continue
 
   If (idnode == 0) Close(Unit=ntable)
-  Call error(676)
+  Call error(686)
 
 ! end of g.dat file error exit
 
 300 Continue
 
   If (idnode == 0) Close(Unit=ntable)
-  Call error(678)
+  Call error(688)
 
 400 Continue
 
   If (idnode == 0) Close(Unit=ntable)
-  Call error(680)
+  Call error(690)
 
 End Subroutine ttm_table_scan
 
