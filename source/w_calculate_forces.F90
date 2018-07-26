@@ -10,7 +10,7 @@
 ! Refresh mappings
 
         Call w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain)
+          dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
      End If
 
 100  Continue ! Only used when relaxed is false
@@ -30,10 +30,10 @@
 ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
 
      If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
-       l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then
+       l_n_v .and. rdf%max_rdf == 0) .or. kim_data%active) Then
        Call two_body_forces(pdplnc,thermo%ensemble,nstfce,lbook,megfrz, &
          leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
-         mpoles,electro,domain,tmr,parts,comm)
+         mpoles,electro,domain,parts,kim_data,tmr,comm)
      End If
 
 ! Calculate tersoff forces
@@ -158,7 +158,7 @@
 
         If (.not.(relaxed_shl .and. minim%relaxed)) Then
           Call w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
-             dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain)
+             dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
            Go To 100
         End If
      End If

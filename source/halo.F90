@@ -10,6 +10,7 @@ Module halo
   Use neighbours,       Only : neighbours_type,vnl_set_check
   Use electrostatic, Only : ELECTROSTATIC_EWALD
   Use ewald, Only : ewald_type
+  Use kim, Only : kim_type
   Use errors_warnings,  Only : error
 
   Implicit None
@@ -21,7 +22,7 @@ Module halo
 
 Contains
 
-  Subroutine refresh_halo_positions(domain,comm)
+  Subroutine refresh_halo_positions(domain,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -36,8 +37,9 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( comms_type ), Intent(InOut) :: comm
   Type( domains_type ), Intent( In    ) :: domain
+  Type( kim_type ), Intent( InOut ) :: kim_data
+  Type( comms_type ), Intent(InOut) :: comm
 
   Logical :: safe
   Integer :: fail,mlast
@@ -60,18 +62,18 @@ Contains
 
 ! exchange atom data in -/+ x directions
 
-  Call export_atomic_positions(-1,mlast,ixyz0,domain,comm)
-  Call export_atomic_positions( 1,mlast,ixyz0,domain,comm)
+  Call export_atomic_positions(-1,mlast,ixyz0,domain,kim_data,comm)
+  Call export_atomic_positions( 1,mlast,ixyz0,domain,kim_data,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call export_atomic_positions(-2,mlast,ixyz0,domain,comm)
-  Call export_atomic_positions( 2,mlast,ixyz0,domain,comm)
+  Call export_atomic_positions(-2,mlast,ixyz0,domain,kim_data,comm)
+  Call export_atomic_positions( 2,mlast,ixyz0,domain,kim_data,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call export_atomic_positions(-3,mlast,ixyz0,domain,comm)
-  Call export_atomic_positions( 3,mlast,ixyz0,domain,comm)
+  Call export_atomic_positions(-3,mlast,ixyz0,domain,kim_data,comm)
+  Call export_atomic_positions( 3,mlast,ixyz0,domain,kim_data,comm)
 
   safe=(mlast == nlast)
   Call gcheck(comm,safe)
@@ -85,7 +87,7 @@ Contains
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,comm)
+Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -103,6 +105,7 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,comm)
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( domains_type ), Intent( In    ) :: domain
   Type( ewald_type ), Intent( In    ) :: ewld
+  Type( kim_type ), Intent( InOut ) :: kim_data
   Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ) :: cut
@@ -196,18 +199,18 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call export_atomic_data(-1,domain,comm)
-  Call export_atomic_data( 1,domain,comm)
+  Call export_atomic_data(-1,domain,kim_data,comm)
+  Call export_atomic_data( 1,domain,kim_data,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call export_atomic_data(-2,domain,comm)
-  Call export_atomic_data( 2,domain,comm)
+  Call export_atomic_data(-2,domain,kim_data,comm)
+  Call export_atomic_data( 2,domain,kim_data,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call export_atomic_data(-3,domain,comm)
-  Call export_atomic_data( 3,domain,comm)
+  Call export_atomic_data(-3,domain,kim_data,comm)
+  Call export_atomic_data( 3,domain,kim_data,comm)
 
 ! assign incoming atom properties (of the halo only)
 

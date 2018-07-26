@@ -9,7 +9,7 @@ Module bounds
   Use rdfs,            Only : rdf_type
   Use msd,             Only : msd_type
   Use z_density,       Only : z_density_type
-  Use kim,             Only : kimim
+  Use kim,             Only : kim_type
   Use bonds,           Only : bonds_type
   Use angles,          Only : angles_type
   Use dihedrals,       Only : dihedrals_type
@@ -54,7 +54,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
-           mpoles,ext_field,rigid,electro,domain,ewld,comm)
+           mpoles,ext_field,rigid,electro,domain,ewld,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -102,6 +102,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
   Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( domains_type ), Intent( InOut ) :: domain
   Type( ewald_type ), Intent( InOut ) :: ewld
+  Type( kim_type ), Intent( InOut ) :: kim_data
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -117,21 +118,10 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! scan the FIELD file data
 
-  Call scan_field                                    &
-           (l_n_e,                     &
-           max_site,mxatyp,megatm,mxtmls,neigh%max_exclude,       &
-           mtshl,                &
-           mtcons,              &
-           l_usr,                &
-           mtrgd,         &
-           mtteth, &
-           mtbond, &
-           mtangl, &
-           mtdihd, &
-           mtinv,  &
-           rcter,rctbp,rcfbp,lext,cshell,cons,pmf,met,bond,    &
-           angle,dihedral,inversion,                 &
-           tether,threebody,vdws,tersoffs,fourbody,rdf,mpoles,rigid,comm)
+  Call scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,neigh%max_exclude,mtshl, &
+    mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
+    lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
+    vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,comm)
 
 ! Get imc_r & set dvar
 
@@ -148,15 +138,10 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! scan CONTROL file data
 
-  Call scan_control                                        &
-           (rcter, &
-           rigid%max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,         &
-           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rbin,                         &
-           nstfce,cshell,stats,thermo, &
-           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-           zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,comm)
+  Call scan_control(rcter,rigid%max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
+    l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce,cshell,stats, &
+    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
+    zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -647,11 +632,14 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
      End If
   Else ! push/reset the limits in 'no strict' mode
      If (.not.l_str) Then
-        If (.not.(met%max_metal == 0 .and. l_n_e .and. l_n_v .and. rdf%max_rdf == 0 &
-            .and. kimim == ' ')) Then ! 2b link-cells are needed
-           If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
+        If (.not.(met%max_metal == 0 .and. l_n_e .and. l_n_v .and. &
+          rdf%max_rdf == 0 .and. kim_data%active)) Then
+           ! 2b link-cells are needed
+           If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then
+              ! catch & handle exception
               neigh%padding = 0.95_wp * (0.5_wp*width - neigh%cutoff - 1.0e-6_wp)
-              neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up
+              ! round up
+              neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
            End If
 
            If (neigh%padding <= zero_plus) Then ! When neigh%padding is undefined give it some value
@@ -678,6 +666,15 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
         neigh%cutoff_extended = neigh%cutoff + neigh%padding ! recalculate neigh%cutoff_extended respectively
      End If
   End If
+
+  ! Ensure padding is large enough for KIM model
+  If (kim_data%padding_neighbours_required) Then
+    If (neigh%padding < kim_data%influence_distance) Then
+      neigh%padding = kim_data%influence_distance
+        neigh%cutoff_extended = neigh%cutoff + neigh%padding
+    End If
+  End If
+
   neigh%unconditional_update = (neigh%padding > zero_plus) ! Determine/Detect conditional VNL updating at start
 
   If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call warning(100,0.0_wp,0.0_wp,0.0_wp)

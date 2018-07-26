@@ -23,7 +23,7 @@ Module kontrol
                           history,historf,revive,revcon,revold
   Use parse,       Only : get_line,get_word,lower_case,word_2_real
   
-  Use kim,         Only : kimim,rkim
+  Use kim,         Only : kim_type
   Use greenkubo,   Only : greenkubo_type
   Use rdfs,        Only : rdf_type
   Use development, Only : development_type
@@ -3651,15 +3651,10 @@ Subroutine read_control                                &
 
 End Subroutine read_control
 
-Subroutine scan_control                                    &
-           (rcter, &
-           max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,         &
-           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rbin,                          &
-           nstfce,cshell,stats,  &
-           thermo,green,devel,msd_data,met,pois,bond,angle, &
-           dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,comm)
+Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
+    l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce,cshell,stats, &
+    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
+    zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3705,6 +3700,7 @@ Subroutine scan_control                                    &
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( ewald_type ), Intent( InOut ) :: ewld
+  Type( kim_type), Intent( InOut ) :: kim_data
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -4386,7 +4382,14 @@ Subroutine scan_control                                    &
 
 ! Sort neigh%cutoff as the maximum of all valid cutoffs
 
-  neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,rkim,2.0_wp*Max(rcter,bond%rcut)+1.0e-6_wp)
+  neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff, &
+    2.0_wp*Max(rcter,bond%rcut)+1.0e-6_wp)
+  ! If KIM model requires
+  If (kim_data%padding_neighbours_required) Then
+    If (neigh%cutoff < kim_data%influence_distance) Then
+      neigh%cutoff = kim_data%influence_distance
+    End If
+  End If
 
   If (comm%idnode == 0) Rewind(nread)
 
@@ -4648,19 +4651,22 @@ Subroutine scan_control                                    &
 ! Reset neigh%cutoff to something sensible if sensible is an option
 
            If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
-                (lrvdw .or. lrmet .or. lter .or. kimim /= ' ') ) Then
+                (lrvdw .or. lrmet .or. lter .or. kim_data%active) ) Then
               lrcut=.true.
               If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-                 neigh%cutoff=Max(vdws%cutoff,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                 neigh%cutoff=Max(vdws%cutoff,met%rcut,kim_data%cutoff, &
+                   2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
               Else
-                 neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,rkim,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                 neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut, &
+                   kim_data%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
               End If
            End If
 
 ! Reset vdws%cutoff and met%rcut when only tersoff potentials are opted for and
 ! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
-           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. kimim == ' ') Then
+           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. &
+             kim_data%active) Then
               vdws%cutoff=0.0_wp
               met%rcut=0.0_wp
               If (.not.l_str) Then
