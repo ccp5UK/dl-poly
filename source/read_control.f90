@@ -50,7 +50,7 @@ Subroutine read_control                                &
   Use poisson_module,    Only : eps,mxitcg,mxitjb
   Use msd_module,        Only : l_msd
   Use defects1_module,   Only : l_dfx
-  Use rdf_module,        Only : l_block,l_jack,num_blocks
+  Use rdf_module,        Only : l_errors_block,l_errors_jack,num_blocks
   Use greenkubo_module
   Use ttm_module
 
