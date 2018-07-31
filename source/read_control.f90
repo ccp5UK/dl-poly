@@ -50,6 +50,7 @@ Subroutine read_control                                &
   Use poisson_module,    Only : eps,mxitcg,mxitjb
   Use msd_module,        Only : l_msd
   Use defects1_module,   Only : l_dfx
+  Use rdf_module,        Only : l_block,l_jack,num_blocks
   Use greenkubo_module
   Use ttm_module
 
@@ -2613,6 +2614,22 @@ Subroutine read_control                                &
         lrdf = .true.
 
         Call get_word(record,word)
+        If (word(1:6) == 'errors') Then
+! read if we're doing rdf error analysis
+          Call get_word(record,word)
+          If(word(1:4) == 'jack') Then
+            l_jack = .TRUE.
+            Call get_word(record,word)
+            itmp = Nint(word_2_real(word, 1.0_wp))
+            If(itmp > 1) num_blocks = itmp
+          Else
+            l_block = .TRUE.
+            Call get_word(record,word)
+            itmp = Nint(word_2_real(word, 1.0_wp))
+            If(itmp > 1) num_blocks = itmp
+          End If
+        End If
+
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
@@ -3222,6 +3239,8 @@ Subroutine read_control                                &
   nstinv=Max(1,nstinv)
 
 ! report rdf
+  l_errors_block = l_errors_block .and. lrdf
+  l_errors_jack = l_errors_jack .and. lrdf
 
   If (lrdf .or. lprdf) Then
      If (lrdf) Then
