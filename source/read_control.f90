@@ -2618,12 +2618,12 @@ Subroutine read_control                                &
 ! read if we're doing rdf error analysis
           Call get_word(record,word)
           If(word(1:4) == 'jack') Then
-            l_jack = .TRUE.
+            l_errors_jack = .TRUE.
             Call get_word(record,word)
             itmp = Nint(word_2_real(word, 1.0_wp))
             If(itmp > 1) num_blocks = itmp
           Else
-            l_block = .TRUE.
+            l_errors_block = .TRUE.
             Call get_word(record,word)
             itmp = Nint(word_2_real(word, 1.0_wp))
             If(itmp > 1) num_blocks = itmp
