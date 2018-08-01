@@ -159,13 +159,13 @@ simulation in all three dimensions. These are:
 	\item {\em Neumann Boundary Conditions}: Also known as 
 	zero-flux boundary conditions, the temperature of the edge 
 	cell is taken to be the value of its corresponding neighbour, 
-	thus $\frac{dT}{dt} = 0$ in this region.
+	thus $\frac{dT}{dx} = 0$ in this region.
 	
 	\item {\em Robin Boundary Conditions}: Also known as 
 	partial or variable flux boundary conditions, the temperature 
 	of the edge cell is taken to be a fixed proportion of the 
 	neighbouring cell's temperature. Thus 
-	$\frac{dT}{dt} = -k (T-T_0)$, where $k$ is the fraction of 
+	$\frac{dT}{dx} = -k (T-T_0)$, where $k$ is the fraction of
 	the neighbouring temperature that is 'targeted'.
 \end{itemize}
 
@@ -293,11 +293,11 @@ loss mechanism for the lattice.
 	\label{fig:heatbath}
 \end{figure*}
 Figure \ref{fig:heatbath} illustrates these processes for swift heavy ion 
-simulations, and highlights how the MD cell is now indirectly thermostatted 
-to a heat bath. The lattice will reach local equilibrium with the electrons, 
-which are thermostatted to the heat bath, thus eventually driving both 
+simulations, and highlights how the MD cell is now thermostatted
+to a heat bath. The lattice will reach local equilibrium with the electron gas,
+which is thermostatted to the heat bath, thus eventually driving both
 subsystems to the chosen ambient temperature. Energy can only be 
-removed from the system via the electrons; this is justified due to how 
+removed from the system via the electron gas; this is justified due to how
 slow lattice heat diffusion is in comparison to electronic heat diffusion.
 
 It is possible to use the inhomogeneous Langevin thermostat (Equation 

@@ -225,7 +225,7 @@ Contains
     Integer               :: value(1:8)
 
     Character( Len = 47 ) :: aux
-    Integer               :: i,l
+    Integer               :: i
 
     Write(nrite,'(1x,a66)') Repeat("*",66)
     If (Len_Trim( __DATE__//"  @  "//__TIME__) > 47) Then

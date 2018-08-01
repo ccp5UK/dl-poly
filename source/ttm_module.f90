@@ -69,7 +69,6 @@ Contains
     Real ( Kind = wp), Intent ( In ) :: rpad
 
     Real ( Kind = wp ) :: start, finish
-    Real ( Kind = wp ), Dimension ( 1:3 ) :: test
     Integer, Dimension ( 1:7 ) :: fail
     Integer :: i,numbc,numbcmap
     Integer :: basicslice,oneslicex,oneslicey,oneslicez
@@ -233,20 +232,6 @@ Contains
       Else
         ttmbc(6) = 0
         ttmbcmap(6) = -1
-      End If
-
-! Check rpad does not go too far to determine ionic temperatures
-
-      If (l_ttm .and. rpad>zero_plus) Then
-        test = 0.0_wp
-        test(1) = Max (Abs(zerocell(1))+rpad, test(1))
-        test(1) = Max (cell(1)+rpad-Abs(zerocell(1))-Real(ntcell(1),wp)*delx, test(1))
-        test(2) = Max (Abs(zerocell(2))+rpad, test(2))
-        test(2) = Max (cell(5)+rpad-Abs(zerocell(2))-Real(ntcell(2),wp)*dely, test(2))
-        test(3) = Max (Abs(zerocell(3))+rpad, test(3))
-        test(3) = Max (cell(9)+rpad-Abs(zerocell(3))-Real(ntcell(3),wp)*delz, test(3))
-        If (mxnode>1) Call gmax (test(1:3))
-        If (test(1)>delx .or. test(2)>dely .or. test(3)>delz) Call error (680)
       End If
 
 ! Derived MPI datatypes for communication of temperatures (MPI 2.x+)
