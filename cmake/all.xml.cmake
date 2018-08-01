@@ -1870,7 +1870,7 @@
     </testcase>
     <testcase name="TEST21">
       <path archive="Yes">TEST21</path>
-      <description>TEST 21 -  TIP4P water: RBs with a Massless Charged Site (29,052 particles)</description>
+      <description>TEST 21 -   TIP4P water: RBs with a Massless Charged Site (29,052 particles)</description>
         <eng_tot iteration="0">-6.055371E+04</eng_tot>
         <temp_tot iteration="0">2.950000E+02</temp_tot>
         <eng_cfg iteration="0">-7.332617E+04</eng_cfg>
@@ -1925,20 +1925,20 @@
         <gamma iteration="10">9.000000E+01</gamma>
         <vir_pmf iteration="10">0.000000E+00</vir_pmf>
         <press iteration="10">-1.060869E-02</press>
-        <eng_tot iteration="20">-7.110326E+04</eng_tot>
+        <eng_tot iteration="20">-7.110398E+04</eng_tot>
         <temp_tot iteration="20">2.950000E+02</temp_tot>
-        <eng_cfg iteration="20">-8.387571E+04</eng_cfg>
-        <eng_src iteration="20">1.264525E+04</eng_src>
-        <eng_cou iteration="20">-9.652096E+04</eng_cou>
+        <eng_cfg iteration="20">-8.387644E+04</eng_cfg>
+        <eng_src iteration="20">1.263437E+04</eng_src>
+        <eng_cou iteration="20">-9.651081E+04</eng_cou>
         <eng_bnd iteration="20">0.000000E+00</eng_bnd>
         <eng_ang iteration="20">0.000000E+00</eng_ang>
         <eng_dih iteration="20">0.000000E+00</eng_dih>
         <eng_tet iteration="20">0.000000E+00</eng_tet>
-        <eng_pv iteration="20">-7.110326E+04</eng_pv>
+        <eng_pv iteration="20">-7.110398E+04</eng_pv>
         <temp_rot iteration="20">2.949797E+02</temp_rot>
-        <vir_cfg iteration="20">6.279469E+04</vir_cfg>
-        <vir_src iteration="20">-3.102106E+05</vir_src>
-        <vir_cou iteration="20">9.650820E+04</vir_cou>
+        <vir_cfg iteration="20">6.288877E+04</vir_cfg>
+        <vir_src iteration="20">-3.100647E+05</vir_src>
+        <vir_cou iteration="20">9.649792E+04</vir_cou>
         <vir_bnd iteration="20">0.000000E+00</vir_bnd>
         <vir_ang iteration="20">0.000000E+00</vir_ang>
         <vir_con iteration="20">0.000000E+00</vir_con>
@@ -1951,8 +1951,8 @@
         <beta iteration="20">9.000000E+01</beta>
         <gamma iteration="20">9.000000E+01</gamma>
         <vir_pmf iteration="20">0.000000E+00</vir_pmf>
-        <press iteration="20">-5.223429E+00</press>
-    </testcase>
+        <press iteration="20">-5.233254E+00</press>
+    </testcase>    
     <testcase name="TEST22">
       <path archive="Yes">TEST22</path>
       <description>TEST 22 -  Ionic Liquid Dimethylimidazolium Chloride as RBs (44,352 ions)</description>
