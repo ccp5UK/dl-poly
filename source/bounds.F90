@@ -650,7 +650,8 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
      End If
   Else ! push/reset the limits in 'no strict' mode
      If (.not.l_str) Then
-        If (.not.(met%max_metal == 0 .and. l_n_e .and. l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then ! 2b link-cells are needed
+        If (.not.(met%max_metal == 0 .and. l_n_e .and. l_n_v .and. rdf%max_rdf == 0 &
+            .and. kimim == ' ')) Then ! 2b link-cells are needed
            If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
               neigh%padding = 0.95_wp * (0.5_wp*width - neigh%cutoff - 1.0e-6_wp)
               neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up
