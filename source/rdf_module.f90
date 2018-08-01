@@ -27,7 +27,7 @@ Module rdf_module
   Real( Kind = wp ), Allocatable, Save :: rdf(:,:),usr(:)
 
   Real( Kind = wp ), Allocatable, Save :: block_averages(:,:,:,:)
-  Integer, Parameter                   :: num_blocks = 25
+  Integer, Save                        :: num_blocks = 25
   Integer, Save                        :: block_size
   Integer,                        Save :: block_number = 1
   Real( Kind = wp ), Allocatable, Save :: tmp_rdf(:,:,:)
