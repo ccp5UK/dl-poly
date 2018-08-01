@@ -1782,10 +1782,10 @@
         <gamma iteration="20">9.000000E+01</gamma>
         <vir_pmf iteration="20">0.000000E+00</vir_pmf>
         <press iteration="20">5.935372E+01</press>
-    </testcase>    
+    </testcase>
     <testcase name="TEST20">
       <path archive="Yes">TEST20</path>
-      <description>TEST 20 -  NaCl Molecules in SPC Water Represented as CBs</description>
+      <description>TEST 20 -   NaCl Molecules in SPC Water Represented as CBs</description>
         <eng_tot iteration="0">-4.196313E+04</eng_tot>
         <temp_tot iteration="0">2.950000E+02</temp_tot>
         <eng_cfg iteration="0">-5.772007E+04</eng_cfg>
@@ -1840,33 +1840,33 @@
         <gamma iteration="10">9.000000E+01</gamma>
         <vir_pmf iteration="10">0.000000E+00</vir_pmf>
         <press iteration="10">1.621335E+00</press>
-        <eng_tot iteration="25">-5.219586E+04</eng_tot>
-        <temp_tot iteration="25">3.016219E+02</temp_tot>
-        <eng_cfg iteration="25">-6.830993E+04</eng_cfg>
-        <eng_src iteration="25">-8.334877E+01</eng_src>
-        <eng_cou iteration="25">-6.822658E+04</eng_cou>
-        <eng_bnd iteration="25">0.000000E+00</eng_bnd>
-        <eng_ang iteration="25">0.000000E+00</eng_ang>
-        <eng_dih iteration="25">0.000000E+00</eng_dih>
-        <eng_tet iteration="25">0.000000E+00</eng_tet>
-        <eng_pv iteration="25">-5.219928E+04</eng_pv>
-        <temp_rot iteration="25">3.258686E+02</temp_rot>
-        <vir_cfg iteration="25">4.722828E+04</vir_cfg>
-        <vir_src iteration="25">-1.767511E+05</vir_src>
-        <vir_cou iteration="25">6.815443E+04</vir_cou>
-        <vir_bnd iteration="25">0.000000E+00</vir_bnd>
-        <vir_ang iteration="25">0.000000E+00</vir_ang>
-        <vir_con iteration="25">1.051544E+05</vir_con>
-        <vir_tet iteration="25">0.000000E+00</vir_tet>
-        <volume iteration="25">2.754393E+05</volume>
-        <temp_shl iteration="25">0.000000E+00</temp_shl>
-        <eng_shl iteration="25">0.000000E+00</eng_shl>
-        <vir_shl iteration="25">0.000000E+00</vir_shl>
-        <alpha iteration="25">9.000000E+01</alpha>
-        <beta iteration="25">9.000000E+01</beta>
-        <gamma iteration="25">9.000000E+01</gamma>
-        <vir_pmf iteration="25">0.000000E+00</vir_pmf>
-        <press iteration="25">-1.957185E+00</press>
+        <eng_tot iteration="20">-4.835458E+04</eng_tot>
+        <temp_tot iteration="20">2.950000E+02</temp_tot>
+        <eng_cfg iteration="20">-6.411420E+04</eng_cfg>
+        <eng_src iteration="20">1.111014E+03</eng_src>
+        <eng_cou iteration="20">-6.522521E+04</eng_cou>
+        <eng_bnd iteration="20">0.000000E+00</eng_bnd>
+        <eng_ang iteration="20">0.000000E+00</eng_ang>
+        <eng_dih iteration="20">0.000000E+00</eng_dih>
+        <eng_tet iteration="20">0.000000E+00</eng_tet>
+        <eng_pv iteration="20">-4.835725E+04</eng_pv>
+        <temp_rot iteration="20">2.950000E+02</temp_rot>
+        <vir_cfg iteration="20">1.997028E+04</vir_cfg>
+        <vir_src iteration="20">-1.929063E+05</vir_src>
+        <vir_cou iteration="20">6.514872E+04</vir_cou>
+        <vir_bnd iteration="20">0.000000E+00</vir_bnd>
+        <vir_ang iteration="20">0.000000E+00</vir_ang>
+        <vir_con iteration="20">1.018343E+05</vir_con>
+        <vir_tet iteration="20">0.000000E+00</vir_tet>
+        <volume iteration="20">2.754620E+05</volume>
+        <temp_shl iteration="20">0.000000E+00</temp_shl>
+        <eng_shl iteration="20">0.000000E+00</eng_shl>
+        <vir_shl iteration="20">0.000000E+00</vir_shl>
+        <alpha iteration="20">9.000000E+01</alpha>
+        <beta iteration="20">9.000000E+01</beta>
+        <gamma iteration="20">9.000000E+01</gamma>
+        <vir_pmf iteration="20">0.000000E+00</vir_pmf>
+        <press iteration="20">3.134137E-01</press>
     </testcase>
     <testcase name="TEST21">
       <path archive="Yes">TEST21</path>
