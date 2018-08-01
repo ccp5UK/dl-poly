@@ -42,7 +42,7 @@ Subroutine set_bounds                                 &
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
 
   Logical           :: l_usr,l_n_r,lzdn,lext,lrpad,lrpad0=.false.
-  Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
+  Integer           :: megatm,i,ilx,ily,ilz,qlx,qly,qlz, &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
                        dens0,dens,fdens,fdvar,  &
@@ -844,22 +844,51 @@ Subroutine set_bounds                                 &
      End If
   End If
 
+  If (l_ttm) Then
+
 ! two-temperature model: determine number of CITs
 ! in x- and y-directions based on number in z-direction
 ! and system size
 
-  delz     = cell(9)/Real(ntsys(3),wp)
-  ntsys(1) = Nint(cell(1)/delz)
-  ntsys(2) = Nint(cell(5)/delz)
-  delx     = cell(1)/Real(ntsys(1),wp)
-  dely     = cell(5)/Real(ntsys(2),wp)
-  volume   = delx*dely*delz
-  rvolume  = 1.0_wp/volume
+    delz     = cell(9)/Real(ntsys(3),wp)
+    ntsys(1) = Nint(cell(1)/delz)
+    ntsys(2) = Nint(cell(5)/delz)
+    delx     = cell(1)/Real(ntsys(1),wp)
+    dely     = cell(5)/Real(ntsys(2),wp)
+    volume   = delx*dely*delz
+    rvolume  = 1.0_wp/volume
 
 ! Check number of electronic temperature cells is greater than/
 ! equal to number of ionic temperature cells
 
-  If (l_ttm .and. Any(eltsys<ntsys)) Call error(670)
+    If (Any(eltsys<ntsys)) Call error(670)
+
+! Check rpad does not go too far for determining ionic temperatures
+
+    tol=Min(delx,dely,delz)
+    Do i=1,nprx-1
+      test=Real(i,wp)*cell(1)*r_nprx
+      test=test-delx*Floor(test/delx)
+      If (test>zero_plus) tol=Min(tol,test)
+    End Do
+    Do i=1,npry-1
+      test=Real(i,wp)*cell(5)*r_npry
+      test=test-dely*Floor(test/dely)
+      If (test>zero_plus) tol=Min(tol,test)
+    End Do
+    Do i=1,nprz-1
+      test=Real(i,wp)*cell(9)*r_nprz
+      test=test-delz*Floor(test/delz)
+      If (test>zero_plus) tol=Min(tol,test)
+    End Do
+    If (rpad>tol) Then
+      If (idnode==0) Write(nrite,'(/,1x,a,e12.4,a,/,1x,a,e12.4,a)') &
+        &'*** warning - cutoff padding ',rpad,' (Angs) too large for ttm temperature grid calculations !!! ***',&
+        &'*** maximum useable value of rpad (Angs): ',tol,' !!! ***'
+      Call error (680)
+    End If
+
+  End If
 
 ! If redistribute option selected, check for sufficient electronic temperature
 ! cells to redistribute energy when ionic tmeperature cells are switched off:
