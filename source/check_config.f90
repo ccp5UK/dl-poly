@@ -40,7 +40,6 @@ Subroutine check_config(levcfg,l_str,lpse,keyens,iso,keyfce,keyres,megatm)
     End If
   End If
 
-
   If (idnode == 0 .and. newjob) Then
      Write(nrite,"(/,1x,'configuration file name: ',/,/,10x,a)") cfgname
      Write(nrite,"(/,/,1x,'selected image convention',6x,i10)") imcon

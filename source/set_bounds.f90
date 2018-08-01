@@ -12,6 +12,9 @@ Subroutine set_bounds                                 &
 ! contrib   - i.j.bush february 2014
 ! contrib   - m.a.seaton june 2014 (VAF)
 ! contrib   - m.a.seaton march 2017 (TTM)
+! contrib   - i.t.todorov march 2018 (rpad reset if 'strict' & rpad undefined)
+! contrib   - i.t.todorov june 2018 (spme suggestions)
+! contrib   - i.t.todorov june 2018 (fdens & mxatms fixes)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -38,7 +41,7 @@ Subroutine set_bounds                                 &
   Real( Kind = wp ), Intent(   Out ) :: dvar,rcut,rpad,rlnk
   Real( Kind = wp ), Intent(   Out ) :: rvdw,rmet,rbin,alpha,width
 
-  Logical           :: l_usr,l_n_r,lzdn,lext
+  Logical           :: l_usr,l_n_r,lzdn,lext,lrpad,lrpad0=.false.
   Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
@@ -91,7 +94,7 @@ Subroutine set_bounds                                 &
            mxrgd,imcon,imc_n,cell,xhi,yhi,zhi,             &
            mxgana,mxgbnd1,mxgang1,mxgdih1,mxginv1,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rcut,rpad,rbin,mxstak,                          &
+           rcut,lrpad,rpad,rbin,mxstak,                    &
            mxshl,mxompl,mximpl,keyind,                     &
            nstfce,mxspl,alpha,kmaxa1,kmaxb1,kmaxc1)
 
@@ -464,6 +467,8 @@ Subroutine set_bounds                                 &
 
   If (idnode == 0) Write(nrite,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
 
+5 Continue
+
   If (rpad > zero_plus) Then
 
 ! define cut
@@ -487,6 +492,10 @@ Subroutine set_bounds                                 &
      If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                           &
         'pure cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
         ' nodes/domains (', qlx,',',qly,',',qlz,')'
+
+  Else
+
+     If (lrpad) lrpad0=.true.
 
   End If
 
@@ -554,37 +563,51 @@ Subroutine set_bounds                                 &
            End If
         End If
      End If
-  Else ! push/reset the limits in 'no strict' mode
-     If (.not.l_str) Then
-        If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kim == ' ')) Then ! 2b link-cells are needed
-           If (mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
-              rpad = 0.95_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
+  Else ! push/reset the limits in 'no strict' mode be less hopeful for 'strict' if rpad=0
+     If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kim == ' ')) Then ! 2b link-cells are needed
+        If (mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
+           rpad = 0.95_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
+           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
+        End If
+
+        If (rpad <= zero_plus) Then ! When rpad is undefined give it some value
+           If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
+              rpad = test * rcut
+              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
+              If (rpad > tol) Go To 10
+           Else ! not so good non-exception
+              rpad = Min( 0.95_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
+                                            r_npry * celprp(8) / Real(ily,wp) , &
+                                            r_nprz * celprp(9) / Real(ilz,wp) ) &
+                                      - rcut - 1.0e-6_wp ) , test * rcut )
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
            End If
+        End If
 
-           If (rpad <= zero_plus) Then ! When rpad is undefined give it some value
-              If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
-                 rpad = test * rcut
-                 rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
-                 If (rpad > tol) Go To 10
-              Else ! not so good non-exception
-                 rpad = Min( 0.95_wp * ( Min ( r_nprx * celprp(7) / Real(ilx,wp) , &
-                                               r_npry * celprp(8) / Real(ily,wp) , &
-                                               r_nprz * celprp(9) / Real(ilz,wp) ) &
-                                         - rcut - 1.0e-6_wp ) , test * rcut )
-              rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
-              End If
-           End If
+        If (rpad > zero_plus) Then
+           If (rpad < tol) rpad = 0.0_wp ! Don't bother
+        End If
+     Else
+        If (rpad >= zero_plus) rpad = 0.0_wp ! Don't bother
+     End If
 
+     If (l_str) Then
+        If (lrpad0) Then ! forget about it
+           rpad = 0.0_wp
+        Else ! less hopeful for undefined rpad
+           rpad = 0.95_wp * rpad
+           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
            If (rpad > zero_plus) Then
               If (rpad < tol) rpad = 0.0_wp ! Don't bother
            End If
-        Else
-           If (rpad >= zero_plus) rpad = 0.0_wp ! Don't bother
         End If
-
-        rlnk = rcut + rpad ! recalculate rlnk respectively
+     Else ! 'no strict
+        If (lrpad0) Then ! forget about it
+           rpad = 0.0_wp
+        End If
      End If
+
+     rlnk = rcut + rpad ! recalculate rlnk respectively
   End If
   llvnl = (rpad > zero_plus) ! Determine/Detect conditional VNL updating at start
 
@@ -653,13 +676,34 @@ Subroutine set_bounds                                 &
         qlz = Min(ilz , kmaxc/(mxspl1*nprz))
      End If
 
-! Hard luck, giving up
+! Hard luck, giving up after trying once more
 
      If (qlx*qly*qlz == 0) Then
-        If (idnode == 0) Write(nrite,'(/,1x,a,i6,a,3(i0,a))') &
-           'SPME driven limit on largest possible decomposition:',  &
-           (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1) ,           &
-           ' nodes/domains (', kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,')'
+        If (lrpad0 .eqv. lrpad .and. rpad > zero_plus) Then ! defaulted padding must be removed
+           rpad=0.0_wp
+           lrpad0=.true.
+           Go To 5
+        Else
+           test = Min( Real(kmaxa1,wp)/Real(nprx,wp), &
+                       Real(kmaxb1,wp)/Real(npry,wp), &
+                       Real(kmaxc1,wp)/Real(nprz,wp) ) / Real(mxspl,wp)
+           tol  = Min( Real(kmaxa,wp)/Real(nprx,wp), &
+                       Real(kmaxb,wp)/Real(npry,wp), &
+                       Real(kmaxc,wp)/Real(nprz,wp) ) / Real(mxspl1,wp)
+           If (idnode == 0) Then
+              Write(nrite,'(/,1x,a,i6,a,3(i0,a))')                               &
+                 'SPME driven limit on largest possible domain decomposition: ', &
+                 (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1),                   &
+                 ' nodes/domains (',                                             &
+                 kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,                 &
+                 ') for currently specified cutoff (with padding) & Ewald precision (sum parameters)'
+              Write(nrite,'(2(/,1x,a,f6.2,a))')                                          &
+                 'SPME suggested factor to decrease currently specified cutoff (with padding) by: ', &
+                 1.0_wp/test, ' for currently speccified Ewald precision & domain decomposition',    &
+                 'SPME suggested factor to increase current Ewald precision by: ',                   &
+                 (1.0_wp-tol)*100.0_wp, ' for currently specified cutoff (with padding) & domain decomposition'
+           End If
+        End If
         Call error(308)
      End If
 
@@ -680,6 +724,11 @@ Subroutine set_bounds                                 &
   Else
      fdens = fdvar * (0.35_wp*dens0 + 0.65_wp*dens)
   End If
+
+! Get reasonable - all particles in one link-cell
+
+  tol   = Real(megatm,wp) / (Real(ilx*ily*ilz,wp) * Real(mxnode,wp))
+  fdens = Min(fdens,tol)
 
 ! density variation affects the link-cell arrays' dimension
 ! more than domains(+halo) arrays' dimensions, in case of
@@ -708,12 +757,12 @@ Subroutine set_bounds                                 &
 ! set dimension of working coordinate arrays
 
   mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
-  If (mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
-    mxatms = Nint(Min(Real(mxatms,wp),Real(27.00_wp,wp)*Real(megatm,wp)))
-!  Else If (Min(ilx,ily,ilz) == 1) Then
-!    mxatms = Nint(Min(Real(mxatms,wp),Real(20.25_wp,wp)*Real(megatm,wp)))
-  Else
-    mxatms = Nint(Min(Real(mxatms,wp),Real(13.50_wp,wp)*Real(megatm,wp)))
+  If       (mxnode == 1 .or. imcon == 0) Then ! ilx >= 2 && ily >= 2 && ilz >= 2
+     mxatms = Nint(Min(Real(mxatms,wp),9.0_wp*fdvar*Real(megatm,wp)))
+  Else If (imcon == 6 .or. imc_n == 6)   Then ! mxnode >= 4 .or. (ilx >= 2 && ily >= 2)
+     mxatms = Nint(Min(Real(mxatms,wp),6.0_wp*fdvar*Real(megatm,wp)))
+  Else If (ilx*ily*ilz < 2) Then ! mxnode >= 8
+     mxatms = Nint(Min(Real(mxatms,wp),6.0_wp*fdvar*Real(megatm,wp)))
   End If
 
 ! maximum number of particles per domain (no halo)

@@ -7,6 +7,7 @@ Subroutine warning(kode,a,b,c)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov january 2017
+! contrib   - i.t.todorov february 2018 (completions)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -37,7 +38,7 @@ Subroutine warning(kode,a,b,c)
      Else If (kode ==   3) Then
 
         Write(nrite,'(/,1x,3(a,f7.3),a,/)') &
-        '*** warning - system cutoff(+padding) is: ', a, ' , minimum half-cell width is: ', b, ' !!! ***'
+        '*** warning - DD cutoff(+padding) is: ', a, ' Angstroms while minimum half-cell width is: ', b, ' Angstroms !!! ***'
 
      Else If (kode ==   4) Then
 
@@ -48,7 +49,7 @@ Subroutine warning(kode,a,b,c)
      Else If (kode ==   5) Then
 
         Write(nrite,'(/,1x,a,f12.4,a,/)') &
-        '*** warning - non-zero total system charge: ', a, ' !!! ***'
+        '*** warning - non-zero total system charge: ', a, ' positrons !!! ***'
 
      Else If (kode ==   6) Then
 
@@ -65,14 +66,14 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode ==   7) Then
 
-        Write(nrite,'(/,1x,a,f12.6,a,/,1x,a,/)')                    &
-        '*** warning - system cutoff is ', a, ' Angstroms !!! ***', &
+        Write(nrite,'(/,1x,a,f7.3,a,/,1x,a,/)')                &
+        '*** warning - DD cutoff is ', a, ' Angstroms !!! ***', &
         '*** Fennell damping is not recommended for cutoffs shorther than 10-12 Angstroms !!! ***'
 
      Else If (kode ==   8) Then
 
-        Write(nrite,'(/,1x,a,2(f8.3,a),/)') &
-        '*** warning - : detected maximum rigid body width: ', a, ' but system cutoff ', b, ' !!! ***'
+        Write(nrite,'(/,1x,a,2(f7.3,a),/)') &
+        '*** warning - : detected maximum rigid body width: ', a, ' Angstroms while the DD cutoff is ', b, ' Angstroms !!! ***'
 
      Else If (kode ==  10) Then
 
@@ -122,25 +123,24 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode ==  40) Then
 
-        Write(nrite,'(2(/,1x,a),f12.6,a,/)') &
-        '*** warning - radial cutoff reset ***', '*** new potential cutoff radius ', a, ' !!! ***'
+        Write(nrite,'(/,1x,a,f7.3,a,/)') '*** warning - tentative cutoff reset to ', a, ' Angstroms !!! ***'
 
      Else If (kode ==  50) Then
 
-        Write(nrite,'(2(/,1x,a),f12.6,a,/)') &
-        '*** warning - short-range cutoff reset ***', '*** new cutoff radius (rvdw) ', a, ' !!! ***'
+        Write(nrite,'(2(/,1x,a),f7.3,a,/)') &
+        '*** warning - short-range interactions cutoff reset ***', '*** new cutoff radius (rvdw) ', a, ' Angstroms !!! ***'
 
      Else If (kode ==  60) Then
 
-        Write(nrite,'(/,1x,a,f12.6,a,/)') '*** warning - total system charge ', a,' !!! ***'
+        Write(nrite,'(/,1x,a,f7.3,a,/)') '*** warning - total system charge ', a,' positrons !!! ***'
 
      Else If (kode ==  70) Then
 
-        Write(nrite,'(/,1x,a,f12.6,a,/)') '*** warning - switching length reset to ', a,' !!! ***'
+        Write(nrite,'(/,1x,a,f7.3,a,/)') '*** warning - switching length reset to ', a,' Angstroms !!! ***'
 
      Else If (kode ==  80) Then
 
-        Write(nrite,'(/,1x,a,f12.6,a,/)') '*** warning - requested thermostat unavailable !!! ***'
+        Write(nrite,'(/,1x,a,/)') '*** warning - requested thermostat unavailable !!! ***'
 
      Else If (kode ==  90) Then
 
@@ -149,7 +149,7 @@ Subroutine warning(kode,a,b,c)
         ic=Nint(c)
 
         If      (ic == 0) Then
-           Write(nrite,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                             &
+           Write(nrite,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                          &
            '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in link_cell_pairs !!! ***', &
            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else If (ic == 1) Then
@@ -203,7 +203,7 @@ Subroutine warning(kode,a,b,c)
 
         Write(nrite,'(/,1x,2a,2(f8.5,a),/,1x,a,/)')                &
         '*** warning - control distances for variable timestep: ', &
-        'Dmin = ', a, ' (Angs) and Dmax = ', b, ' (Angs) !!! ***',     &
+        'Dmin = ', a, ' and Dmax = ', b, ' (Angstroms) !!! ***',   &
         '*** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
 
      Else If (kode == 150) Then
@@ -288,9 +288,9 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 280) Then
 
-        Write(nrite,'(/,1x,a,/,1x,2(a,f8.5),a,/)')                              &
-        '*** warning - pseudo thermostat cannot be applied for system !!! ***', &
-        '*** minimum thermostat wall thickness ', a, ' minimum MD cell width ', b, ' !!! ***'
+        Write(nrite,'(/,1x,a,/,1x,2(a,f9.3),a,/)')                                               &
+        '*** warning - pseudo thermostat cannot be applied for this model system since !!! ***', &
+        '*** specified thermostat wall thickness ', a, ' > 1/4 minimum MD cell width ', b, ' (Angstroms) !!! ***'
 
      Else If (kode == 290) Then
 
@@ -449,9 +449,9 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 310) Then
 
-        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                                               &
-     '*** warning - control distance for defect look-up MUST be in the interval [Min(0.3,rcut/3);Min(1.2,rcut/2)] Angs !!! ***', &
-     '*** defects distance condition will default from ', a, ' to ', b, ' Angs !!! ***'
+        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                                          &
+     '*** warning - control distance for defect look-up MUST be in the interval [Min(0.3,rcut/3);Min(1.2,rcut/2)] !!! ***', &
+     '*** defects distance condition will default from ', a, ' to ', b, ' (Angstroms) !!! ***'
 
      Else If (kode == 320) Then
 
@@ -565,23 +565,23 @@ Subroutine warning(kode,a,b,c)
 
      Else If (kode == 470) Then
 
-        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                  &
-        '*** warning - control distance for diplacement qualification MUST be >= 0.25 Angs !!! ***', &
-        '*** displacements distance condition will default from ', a, ' to ', b, ' Angs !!! ***'
+        Write(nrite,'(/,1x,a,/,1x,a,2(f5.2,a),/)')                                                        &
+        '*** warning - control distance for diplacement qualification MUST be >= 0.25 Angstroms !!! ***', &
+        '*** displacements distance condition will default from ', a, ' to ', b, ' Angstroms !!! ***'
 
      Else If (kode == 480) Then
 
-        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
+        Write(nrite,'(/,1x,a,/)') &
         '*** warning - "metal direct" option disabled as incompatible with EAM potentials (TABEAM) !!! ***'
 
      Else If (kode == 490) Then
 
-        Write(nrite,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
+        Write(nrite,'(/,1x,a,/)') &
         '*** warning - "metal sqrtrho" option disabled as incompatible with FS type potentials (analytic forms) !!! ***'
 
      Else If (kode == 500) Then
 
-        Write(nrite,'(/,1x,a,/,1x,a,/)') &
+        Write(nrite,'(2(/,1x,a,/))') &
         '*** warning - insufficient electronic temperature cells to allow energy redistribution from inactive cells !!! ***', &
         '*** option switched off - electronic temperature conservation no longer guaranteed !!! ***'
 

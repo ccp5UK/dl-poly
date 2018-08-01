@@ -24,7 +24,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2017
+! author    - i.t.todorov february 2012
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -33,6 +33,7 @@ Subroutine read_control                                &
 ! contrib   - a.m.elena september 2015
 ! contrib   - a.m.elena february 2017
 ! contrib   - g.khara & m.a.seaton march 2017
+! contrib   - i.t.todorov july 2018
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -619,7 +620,7 @@ Subroutine read_control                                &
            ld_vdw = .true.
            If (idnode == 0) Write(nrite,"(/,1x,a)") "vdw direct option on"
 
-        Else If (word1(1:6) == 'mixing') Then
+        Else If (word1(1:3) == 'mix') Then
 
 ! mixing type keywords
 
@@ -906,7 +907,10 @@ Subroutine read_control                                &
         Else
 
            keyres = 1
-           If (idnode == 0) Write(nrite,"(/,1x,'restart requested (continuing an old simulation)')")
+           If (idnode == 0) Then
+              Write(nrite,"(/,1x,'restart requested (continuing an old simulation)')")
+              Write(nrite,"(1x,a)") "*** warning - timestep from REVOLD overides specification in CONTROL !!! ***"
+           End If
 
         End If
 
