@@ -32,7 +32,7 @@ Module ffield
   Use vdw, Only : vdw_type,MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
                   MIX_HALGREN,MIX_HOGERVORST,MIX_WALDMAN_HAGLER,MIX_TANG_TOENNIES, &
                   MIX_FUNCTIONAL, &
-                  VDW_TAB,VDW_12_6,VDW_LENNARD_JONES,VDW_N_M,VDW_BUCKINGHAM, &
+                  VDW_NULL,VDW_TAB,VDW_12_6,VDW_LENNARD_JONES,VDW_N_M,VDW_BUCKINGHAM, &
                   VDW_BORN_HUGGINS_MEYER, VDW_HYDROGEN_BOND,VDW_N_M_SHIFT, &
                   VDW_MORSE,VDW_WCA,VDW_DPD,VDW_AMOEBA,VDW_LENNARD_JONES_COHESIVE, &
                   VDW_MORSE_12,VDW_RYDBERG,VDW_ZBL,VDW_ZBL_SWITCH_MORSE, &
@@ -3599,7 +3599,7 @@ Subroutine read_field                      &
               End Do
 
               Do i=vdws%n_vdw+1,ntab
-                 vdws%ltp(i) = -1
+                 vdws%ltp(i) = VDW_NULL
               End Do
 
               If (thermo%key_dpd > 0) Then
@@ -3956,7 +3956,10 @@ Subroutine read_field                      &
            If (.not.l_n_v) Then
               If ((.not. vdws%l_direct) .or. vdws%l_tab) Call vdw_generate(vdws)
               If (vdws%l_tab) Call vdw_table_read(vdws,sites,comm)
-              If (vdws%l_direct .and. Any(vdws%ltp(1:vdws%n_vdw) > 0)) Call vdws%init_direct()
+              If (vdws%l_direct .and. (Any(vdws%ltp(1:vdws%n_vdw) /= VDW_NULL) &
+                .or. Any(vdws%ltp(1:vdws%n_vdw) /= VDW_TAB))) Then
+                Call vdws%init_direct()
+              End If
            End If
 
         End If

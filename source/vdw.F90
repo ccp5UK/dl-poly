@@ -28,6 +28,8 @@ Module vdw
   Private
 
   ! VdW potential parameters
+  !> No VdW potential
+  Integer( Kind = wi ), Parameter, Public :: VDW_NULL = -1
   !> Tabulated potential
   Integer( Kind = wi ), Parameter, Public :: VDW_TAB = 0
   !> 12-6 potential (Lennard-Jones A B form): $u=A/r^12-B/r^6$
@@ -893,7 +895,7 @@ Subroutine vdw_table_read(vdws,sites,comm)
 
 ! read potential arrays if potential not already defined
 
-     If (vdws%ltp(ivdw) == 0) Then
+     If (vdws%ltp(ivdw) == VDW_TAB) Then
 
 ! read pair potential labels and long-range corrections
 
@@ -1068,7 +1070,7 @@ Subroutine vdw_table_read(vdws,sites,comm)
 ! convert to internal units
 
   Do ivdw=1,vdws%n_vdw
-     If (vdws%ltp(ivdw) == 0) Then
+     If (vdws%ltp(ivdw) == VDW_TAB) Then
 
 ! Sigma-epsilon initialisation
 
@@ -1100,7 +1102,7 @@ Subroutine vdw_table_read(vdws,sites,comm)
 
   If (vdws%l_force_shift) Then
      Do ivdw=1,vdws%n_vdw
-        If (vdws%ltp(ivdw) == 0) Then
+        If (vdws%ltp(ivdw) == VDW_TAB) Then
 
 ! Sigma-epsilon initialisation
 
@@ -1775,8 +1777,7 @@ Subroutine vdw_generate(vdws)
 End Subroutine vdw_generate
 
 
-Subroutine vdw_forces &
-           (iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws)
+Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1872,7 +1873,7 @@ Subroutine vdw_forces &
 ! validity and truncation of potential
 
      ityp=vdws%ltp(k)
-     If (ityp >= 0 .and. rrr < vdws%cutoff) Then
+     If (ityp /= VDW_NULL .and. rrr < vdws%cutoff) Then
 
 ! Distance derivatives
 
@@ -1890,7 +1891,7 @@ Subroutine vdw_forces &
 
         If (vdws%l_direct) Then ! direct calculation
 
-           If      (ityp == 1) Then
+           If      (ityp == VDW_12_6) Then
 
 ! 12-6 potential :: u=a/r^12-b/r^6
 
@@ -1909,7 +1910,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-           Else If (ityp == 2) Then
+           Else If (ityp == VDW_LENNARD_JONES) Then
 
 ! Lennard-Jones potential :: u=4*eps*[(sig/r)^12-(sig/r)^6]
 
@@ -1928,7 +1929,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-           Else If (ityp == 3) Then
+           Else If (ityp == VDW_N_M) Then
 
 ! n-m potential :: u={e0/(n-m)}*[m*(r0/r)^n-n*(d/r)^c]
 
@@ -1952,7 +1953,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-           Else If (ityp == 4) Then
+           Else If (ityp == VDW_BUCKINGHAM) Then
 
 ! Buckingham exp-6 potential :: u=a*Exp(-r/rho)-c/r^6
 
@@ -1982,7 +1983,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-           Else If (ityp == 5) Then
+           Else If (ityp == VDW_BORN_HUGGINS_MEYER) Then
 
 ! Born-Huggins-Meyer exp-6-8 potential :: u=a*Exp(b*(sig-r))-c/r^6-d/r^8
 
@@ -2006,7 +2007,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-           Else If (ityp == 6) Then
+           Else If (ityp == VDW_HYDROGEN_BOND) Then
 
 ! Hydrogen-bond 12-10 potential :: u=a/r^12-b/r^10
 
@@ -2026,7 +2027,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-           Else If (ityp == 7) Then
+           Else If (ityp == VDW_N_M_SHIFT) Then
 
 ! shifted and force corrected n-m potential (w.smith) ::
 
@@ -2059,7 +2060,7 @@ Subroutine vdw_forces &
                                            -rrr/rc*((beta/c)**n-(beta/c)**m) )*b*r_rsq
               End If
 
-           Else If (ityp == 8) Then
+           Else If (ityp == VDW_MORSE) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}
 
@@ -2079,7 +2080,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-           Else If (ityp == 9) Then
+           Else If (ityp == VDW_WCA) Then
 
 ! Weeks-Chandler-Andersen (shifted & truncated Lenard-Jones) (i.t.todorov)
 ! :: u=4*eps*[{sig/(r-d)}^12-{sig/(r-d)}^6]-eps
@@ -2102,7 +2103,7 @@ Subroutine vdw_forces &
                  End If
               End If
 
-           Else If (ityp == 10) Then
+           Else If (ityp == VDW_DPD) Then
 
 ! DPD potential - Groot-Warren (standard) :: u=(1/2).a.r.(1-r/rc)^2
 
@@ -2118,7 +2119,7 @@ Subroutine vdw_forces &
                  gamma = t1*(3.0_wp*t2-1.0_wp)*r_rsq
               End If
 
-           Else If (ityp == 11) Then
+           Else If (ityp == VDW_AMOEBA) Then
 
 ! AMOEBA 14-7 :: u=eps * [1.07/((r/sig)+0.07)]^7 * [(1.12/((r/sig)^7+0.12))-2]
 
@@ -2142,7 +2143,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-            Else If (ityp == 12) Then
+            Else If (ityp == VDW_LENNARD_JONES_COHESIVE) Then
 
 ! Lennard-Jones cohesive potential :: u=4*eps*[(sig/r)^12-c*(sig/r)^6]
 
@@ -2162,7 +2163,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-            Else If (ityp == 13) Then
+            Else If (ityp == VDW_MORSE_12) Then
 
 ! Morse potential :: u=e0*{[1-Exp(-kk(r-r0))]^2-1}+c/r^12
 
@@ -2183,7 +2184,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-            Else If (ityp == 14) Then
+            Else If (ityp == VDW_RYDBERG) Then
 
 ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
 
@@ -2204,7 +2205,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-            Else If (ityp == 15) Then
+            Else If (ityp == VDW_ZBL) Then
 
 ! ZBL potential:: u=Z1Z2/(4πε0r)∑_{i=1}^4b_ie^{-c_i*r/a}
 
@@ -2226,7 +2227,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-            Else If (ityp == 16) Then
+            Else If (ityp == VDW_ZBL_SWITCH_MORSE) Then
 
 ! ZBL swithched with Morse:: u=f(r)zbl(r)+(1-f(r))*morse(r)
 
@@ -2254,7 +2255,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-            Else If (ityp == 17) Then
+            Else If (ityp == VDW_ZBL_SWITCH_BUCKINGHAM) Then
 
 ! ZBL swithched with Buckingham:: u=f(r)zbl(r)+(1-f(r))*buckingham(r)
 
@@ -2282,7 +2283,7 @@ Subroutine vdw_forces &
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
 
-           Else If (Abs(vdws%tab_potential(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
+           Else If (Abs(vdws%tab_potential(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == VDW_TAB)
 
               l   = Int(rrr*rdr)
               ppp = rrr*rdr - Real(l,wp)
