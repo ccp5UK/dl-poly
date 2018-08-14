@@ -2,6 +2,7 @@ Module thermostat
   Use kinds, Only : wp,wi
   Use comms, Only : gmax,comms_type
   Use errors_warnings, Only : error
+  Use particle, Only: corePart
   Implicit None
 
   Private
@@ -195,12 +196,13 @@ Contains
     End If
   End Subroutine cleanup
 
-  Logical Function adjust_timestep_1(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+  Logical Function adjust_timestep_1(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
     xxt,yyt,zzt,legshl,message,t,comm)
         ! update maximum distance a particle has travelled
         Real( Kind = wp ), Intent( InOut ) :: tstep
         Real( Kind = wp ), Intent(   Out ) :: hstep,rstep
-        Real( Kind = wp ), Intent( In    ) :: xxx(1:),yyy(1:),zzz(1:),mndis,mxdis,mxstp,&
+        Type( corePart ),  Intent( In    ) :: parts(1:)
+        Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp,&
                     xxt(1:),yyt(1:),zzt(1:)
         Integer,           Intent( In    ) :: legshl(0:,1:),natms          
         Character( Len = *), Intent(   Out ) :: message
@@ -222,7 +224,7 @@ Contains
         
         Do i=1,natms
           If (legshl(0,i) >= 0) &
-            mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
+            mxdr=Max(mxdr,(parts(i)%xxx-xxt(i))**2 + (parts(i)%yyy-yyt(i))**2 + (parts(i)%zzz-zzt(i))**2)
         End Do
         mxdr=Sqrt(mxdr)
         Call gmax(comm,mxdr)
@@ -271,12 +273,13 @@ Contains
           adjust_timestep_1 = .True.
         End If
     End Function adjust_timestep_1
-  Logical Function adjust_timestep_2(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+  Logical Function adjust_timestep_2(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
     xxt,yyt,zzt,legshl,message,t,comm)
         ! update maximum distance a particle has travelled
         Real( Kind = wp ), Intent( InOut ) :: tstep
         Real( Kind = wp ), Intent(   Out ) :: hstep,rstep,qstep
-        Real( Kind = wp ), Intent( In    ) :: xxx(1:),yyy(1:),zzz(1:),mndis,mxdis,mxstp,&
+        Type( corePart ),  Intent( In    ) :: parts(1:)
+        Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp,&
                     xxt(1:),yyt(1:),zzt(1:)
         Integer,           Intent( In    ) :: legshl(0:,1:),natms          
         Character( Len = *), Intent(   Out ) :: message
@@ -297,7 +300,7 @@ Contains
         
         Do i=1,natms
           If (legshl(0,i) >= 0) &
-            mxdr=Max(mxdr,(xxx(i)-xxt(i))**2 + (yyy(i)-yyt(i))**2 + (zzz(i)-zzt(i))**2)
+            mxdr=Max(mxdr,(parts(i)%xxx-xxt(i))**2 + (parts(i)%yyy-yyt(i))**2 + (parts(i)%zzz-zzt(i))**2)
         End Do
         mxdr=Sqrt(mxdr)
         Call gmax(comm,mxdr)

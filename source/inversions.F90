@@ -15,7 +15,9 @@ Module inversions
   Use setup, Only : mxtmls,mxatdm,pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                     engunit,zero_plus,ntable
   Use site, Only : site_type
-  Use configuration, Only : cfgname
+  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
+                                cfgname
+  Use particle, Only : corePart
   Use parse, Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info
   Use numerics, Only : local_index, images
@@ -491,7 +493,7 @@ Contains
 
   End Subroutine inversions_compute
 
-  Subroutine inversions_forces(isw,enginv,virinv,stress,inversion,comm)
+  Subroutine inversions_forces(isw,enginv,virinv,stress,inversion,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -507,14 +509,14 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
-                                  xxx,yyy,zzz,fxx,fyy,fzz
+                                   
 
     Integer,                             Intent( In    ) :: isw
     Real( Kind = wp ),                   Intent(   Out ) :: enginv,virinv
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( comms_type ),                  Intent( InOut ) :: comm
+    Type( corePart ),                    Intent( InOut ) :: parts(:)
 
     Logical           :: safe
     Integer           :: fail(1:4),i,j,l,ia,ib,ic,id,kk,keyi
@@ -582,9 +584,9 @@ Contains
   ! define components of bond vectors
 
        If (lstopt(0,i) > 0) Then
-          xdab(i)=xxx(ib)-xxx(ia)
-          ydab(i)=yyy(ib)-yyy(ia)
-          zdab(i)=zzz(ib)-zzz(ia)
+          xdab(i)=parts(ib)%xxx-parts(ia)%xxx
+          ydab(i)=parts(ib)%yyy-parts(ia)%yyy
+          zdab(i)=parts(ib)%zzz-parts(ia)%zzz
 
   ! select potential energy function type
 
@@ -592,21 +594,21 @@ Contains
           keyi = Abs(inversion%key(kk))
 
           If (keyi == 5) Then
-             xdac(i)=xxx(ic)-xxx(ib)
-             ydac(i)=yyy(ic)-yyy(ib)
-             zdac(i)=zzz(ic)-zzz(ib)
+             xdac(i)=parts(ic)%xxx-parts(ib)%xxx
+             ydac(i)=parts(ic)%yyy-parts(ib)%yyy
+             zdac(i)=parts(ic)%zzz-parts(ib)%zzz
 
-             xdad(i)=xxx(id)-xxx(ib)
-             ydad(i)=yyy(id)-yyy(ib)
-             zdad(i)=zzz(id)-zzz(ib)
+             xdad(i)=parts(id)%xxx-parts(ib)%xxx
+             ydad(i)=parts(id)%yyy-parts(ib)%yyy
+             zdad(i)=parts(id)%zzz-parts(ib)%zzz
           Else
-             xdac(i)=xxx(ic)-xxx(ia)
-             ydac(i)=yyy(ic)-yyy(ia)
-             zdac(i)=zzz(ic)-zzz(ia)
+             xdac(i)=parts(ic)%xxx-parts(ia)%xxx
+             ydac(i)=parts(ic)%yyy-parts(ia)%yyy
+             zdac(i)=parts(ic)%zzz-parts(ia)%zzz
 
-             xdad(i)=xxx(id)-xxx(ia)
-             ydad(i)=yyy(id)-yyy(ia)
-             zdad(i)=zzz(id)-zzz(ia)
+             xdad(i)=parts(id)%xxx-parts(ia)%xxx
+             ydad(i)=parts(id)%yyy-parts(ia)%yyy
+             zdad(i)=parts(id)%zzz-parts(ia)%zzz
           End If
        Else ! (DEBUG)
           xdab(i)=0.0_wp
@@ -1147,33 +1149,33 @@ Contains
                 strs9 = strs9 + zab*fbz + zac*fcz + zad*fdz
              End If
 
-             fxx(ia)=fxx(ia)+fax
-             fyy(ia)=fyy(ia)+fay
-             fzz(ia)=fzz(ia)+faz
+             parts(ia)%fxx=parts(ia)%fxx+fax
+             parts(ia)%fyy=parts(ia)%fyy+fay
+             parts(ia)%fzz=parts(ia)%fzz+faz
 
           End If
 
           If (ib <= natms) Then
 
-             fxx(ib)=fxx(ib)+fbx
-             fyy(ib)=fyy(ib)+fby
-             fzz(ib)=fzz(ib)+fbz
+             parts(ib)%fxx=parts(ib)%fxx+fbx
+             parts(ib)%fyy=parts(ib)%fyy+fby
+             parts(ib)%fzz=parts(ib)%fzz+fbz
 
           End If
 
           If (ic <= natms) Then
 
-             fxx(ic)=fxx(ic)+fcx
-             fyy(ic)=fyy(ic)+fcy
-             fzz(ic)=fzz(ic)+fcz
+             parts(ic)%fxx=parts(ic)%fxx+fcx
+             parts(ic)%fyy=parts(ic)%fyy+fcy
+             parts(ic)%fzz=parts(ic)%fzz+fcz
 
           End If
 
           If (id <= natms) Then
 
-             fxx(id)=fxx(id)+fdx
-             fyy(id)=fyy(id)+fdy
-             fzz(id)=fzz(id)+fdz
+             parts(id)%fxx=parts(id)%fxx+fdx
+             parts(id)%fyy=parts(id)%fyy+fdy
+             parts(id)%fzz=parts(id)%fzz+fdz
 
           End If
 

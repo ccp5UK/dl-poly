@@ -3,7 +3,8 @@ Module build_book
   Use comms,  Only : comms_type,gcheck,gmax
   Use setup
   Use site, Only : site_type
-  Use configuration, Only : natms,nlast,lsi,lsa,xxx,yyy,zzz
+  Use configuration, Only : natms,nlast,lsi,lsa
+  Use particle,      Only : corePart
   Use core_shell
   Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_setup,rigid_bodies_tags, &
                            rigid_bodies_coms,rigid_bodies_widths
@@ -35,7 +36,7 @@ Subroutine build_book_intra             &
            megatm,megfrz,atmfre,atmfrz, &
            degrot,degtra,        &
            cshell,cons,pmf,bond,angle,dihedral,  &
-           inversion,tether,neigh,sites,mpoles,rigid,domain,comm)
+           inversion,tether,neigh,sites,mpoles,rigid,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -68,6 +69,8 @@ Subroutine build_book_intra             &
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
+
+  Type( corePart ), Dimension( : ), Intent( InOut ) :: parts
 
   Logical, Save :: newjob = .true.
 
@@ -1649,7 +1652,7 @@ Subroutine build_book_intra             &
 ! Set RB particulars and quaternions
 
      If (rigid%on) Then
-       Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,neigh%cutoff,sites,rigid,comm)
+       Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,neigh%cutoff,sites,rigid,parts,comm)
      End If
 
      Call report_topology(megatm,megfrz,atmfre,atmfrz, &
@@ -1673,8 +1676,8 @@ Subroutine build_book_intra             &
 ! Tag RBs, find their COMs and check their widths to neigh%cutoff (system cutoff)
 
      Call rigid_bodies_tags(rigid,comm)
-     Call rigid_bodies_coms(xxx,yyy,zzz,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
-     Call rigid_bodies_widths(neigh%cutoff,rigid,comm)
+     Call rigid_bodies_coms(parts,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+     Call rigid_bodies_widths(neigh%cutoff,rigid,parts,comm)
 
   End If
 

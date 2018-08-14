@@ -12,8 +12,8 @@ Module tethers
 
   Use kinds, Only : wp, wi
   Use comms,      Only : comms_type,gsum,gcheck
-  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
-                                xxx,yyy,zzz,fxx,fyy,fzz
+  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn
+  Use particle,   Only : corePart
   Use statistics, Only : stats_type
   Use setup, Only : nrite
   Use errors_warnings, Only : error, warning
@@ -113,7 +113,7 @@ Contains
     End If
   End Subroutine cleanup
 
-  Subroutine tethers_forces(stats,tether,comm)
+  Subroutine tethers_forces(stats,tether,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -128,6 +128,7 @@ Contains
 
     Type( stats_type )   , Intent( InOut ) :: stats
     Type( tethers_type ) , Intent( InOut ) :: tether
+    Type( corePart ),      Intent( InOut ) :: parts(:)
     Type( comms_type )   , Intent( InOut ) :: comm
 
     Logical           :: safe
@@ -170,9 +171,9 @@ Contains
 ! components of tether vector
 
      If (lstopt(0,i) > 0) Then
-        xdab(i) = xxx(ia)-stats%xin(ia)
-        ydab(i) = yyy(ia)-stats%yin(ia)
-        zdab(i) = zzz(ia)-stats%zin(ia)
+        xdab(i) = parts(ia)%xxx-stats%xin(ia)
+        ydab(i) = parts(ia)%yyy-stats%yin(ia)
+        zdab(i) = parts(ia)%zzz-stats%zin(ia)
      Else ! (DEBUG)
         xdab(i)=0.0_wp
         ydab(i)=0.0_wp
@@ -273,9 +274,9 @@ Contains
         fz = -gamma*zdab(i)
 
 
-        fxx(ia)=fxx(ia)+fx
-        fyy(ia)=fyy(ia)+fy
-        fzz(ia)=fzz(ia)+fz
+        parts(ia)%fxx=parts(ia)%fxx+fx
+        parts(ia)%fyy=parts(ia)%fyy+fy
+        parts(ia)%fzz=parts(ia)%fzz+fz
 
 ! calculate tether energy and virial
 

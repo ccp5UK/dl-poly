@@ -26,17 +26,17 @@
   If (levcfg == 2) Then
     If (rigid%total > 0) Then
       If (rigid%share) Then
-        Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxx,fyy,fzz,domain,comm)
+        Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,parts,SHARED_UNIT_UPDATE_FORCES,domain,comm)
       End If
 
       If (thermo%l_langevin) Then
-        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
+        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
         If (rigid%share) Then
           Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxl,fyl,fzl,domain,comm)
         End If
-        Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,rigid,comm)
+        Call rigid_bodies_str__s(stat%strcom,parts(:),rigid,comm,fxl,fyl,fzl)
       Else
-        Call rigid_bodies_str_ss(stat%strcom,rigid,comm)
+        Call rigid_bodies_str_ss(stat%strcom,rigid,parts,comm)
       End If
 
       stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
@@ -80,7 +80,7 @@
 ! zero Kelvin structure optimisation
 
         If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_zero) == 0) Then
-          Call zero_k_optimise(stat,rigid,comm)
+          Call zero_k_optimise(stat,rigid,parts,comm)
         End If
 
 ! Switch on electron-phonon coupling only after time offset

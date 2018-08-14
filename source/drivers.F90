@@ -2,9 +2,10 @@ Module drivers
   use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum
   use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr
-  Use configuration, Only : xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,cell,natms,&
+  Use configuration, Only : vxx,vyy,vzz,cell,natms,&
                             weight,lfrzn,lstfre,lsite,lfree,ltg,nlast,nfree,&
                             lsi,lsa,imcon
+  Use particle, Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat
   Use setup, Only : boltz,mxatms,zero_plus
   Use angles, Only : angles_type
@@ -125,7 +126,7 @@ Contains
 !    Include 'w_replay_historf.F90'
 !  End Subroutine w_replay_historf
 
-Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,comm)
+Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -156,6 +157,7 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
+  Type (corePart ), Intent( InOut ) :: parts(:)
 
   Logical,           Save :: newjob = .true.
   Integer,           Save :: ntp,stp,rtp
@@ -247,9 +249,9 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
 ! For all particles on this domain get how far they are
 ! from the origin of the MD box
 
-        ssx=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i) ; ssx=Abs(ssx-Anint(ssx))
-        ssy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i) ; ssy=Abs(ssy-Anint(ssy))
-        ssz=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i) ; ssz=Abs(ssz-Anint(ssz))
+        ssx=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz ; ssx=Abs(ssx-Anint(ssx))
+        ssy=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz ; ssy=Abs(ssy-Anint(ssy))
+        ssz=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz ; ssz=Abs(ssz-Anint(ssz))
 
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0 .and. &
             (ssx >= sx .or. ssy >= sy .or. ssz >= sz)) Then
@@ -312,9 +314,9 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
 
      Do i=1,natms
         If (qn(i) == 1) Then
-           fxx(i) = fxx(i) + xxt(i) - vom(1)
-           fyy(i) = fyy(i) + yyt(i) - vom(2)
-           fzz(i) = fzz(i) + zzt(i) - vom(3)
+           parts(i)%fxx = parts(i)%fxx + xxt(i) - vom(1)
+           parts(i)%fyy = parts(i)%fyy + yyt(i) - vom(2)
+           parts(i)%fzz = parts(i)%fzz + zzt(i) - vom(3)
         End If
      End Do
 
@@ -704,7 +706,7 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
 
               If (qn(i) == 1) Then
                  tkin  = tkin  + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
-                 vdotf = vdotf + vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
+                 vdotf = vdotf + vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
               End If
            End Do
 
@@ -740,9 +742,9 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
 
 ! COM distances
 
-                       ggx(krgd)=xxx(i)-rigid%xxx(irgd)
-                       ggy(krgd)=yyy(i)-rigid%yyy(irgd)
-                       ggz(krgd)=zzz(i)-rigid%zzz(irgd)
+                       ggx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
+                       ggy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
+                       ggz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
                     End Do
                  End If
               End Do
@@ -771,14 +773,14 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
 ! If the RB has a frozen particle then no net force
 
                        If (rigid%frozen(0,rgdtyp) == 0) Then
-                          fmx=fmx+fxx(i)
-                          fmy=fmy+fyy(i)
-                          fmz=fmz+fzz(i)
+                          fmx=fmx+parts(i)%fxx
+                          fmy=fmy+parts(i)%fyy
+                          fmz=fmz+parts(i)%fzz
                        End If
 
-                       tqx=tqx+ggy(krgd)*fzz(i)-ggz(krgd)*fyy(i)
-                       tqy=tqy+ggz(krgd)*fxx(i)-ggx(krgd)*fzz(i)
-                       tqz=tqz+ggx(krgd)*fyy(i)-ggy(krgd)*fxx(i)
+                       tqx=tqx+ggy(krgd)*parts(i)%fzz-ggz(krgd)*parts(i)%fyy
+                       tqy=tqy+ggz(krgd)*parts(i)%fxx-ggx(krgd)*parts(i)%fzz
+                       tqz=tqz+ggx(krgd)*parts(i)%fyy-ggy(krgd)*parts(i)%fxx
                     End Do
 
 ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -788,9 +790,9 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
                        i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
                        i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-                       x(1)=xxx(i1)-xxx(i2)
-                       y(1)=yyy(i1)-yyy(i2)
-                       z(1)=zzz(i1)-zzz(i2)
+                       x(1)=parts(i1)%xxx-parts(i2)%xxx
+                       y(1)=parts(i1)%yyy-parts(i2)%yyy
+                       z(1)=parts(i1)%zzz-parts(i2)%zzz
 
                        Call images(imcon,cell,1,x,y,z)
 
@@ -878,7 +880,7 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
                        i2=qs(2,k)
 
                        tkin  = tkin  + weight(i2)*(vxx(i2)**2+vyy(i2)**2+vzz(i2)**2)
-                       vdotf = vdotf + vxx(i2)*fxx(i2)+vyy(i2)*fyy(i2)+vzz(i2)*fzz(i2)
+                       vdotf = vdotf + vxx(i2)*parts(i2)%fxx+vyy(i2)*parts(i2)%fyy+vzz(i2)*parts(i2)%fzz
                     End If
                  End Do
               End If
@@ -920,7 +922,7 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
            Do i=1,natms
               If (qn(i) == 1) Then
                  tkin   = tkin  + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
-                 vdotf  = vdotf + vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
+                 vdotf  = vdotf + vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
               End If
            End Do
 
@@ -933,7 +935,7 @@ Subroutine pseudo_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,c
                        i2=qs(2,k)
 
                        tkin  = tkin  + weight(i2)*(vxx(i2)**2+vyy(i2)**2+vzz(i2)**2)
-                       vdotf = vdotf + vxx(i2)*fxx(i2)+vyy(i2)*fyy(i2)+vzz(i2)*fzz(i2)
+                       vdotf = vdotf + vxx(i2)*parts(i2)%fxx+vyy(i2)*parts(i2)%fyy+vzz(i2)*parts(i2)%fzz
                     End If
                  End Do
               End If

@@ -13,8 +13,8 @@ Module four_body
   Use kinds,          Only : wp,wi
   Use comms,          Only : comms_type,gsum,gcheck
   Use domains, Only : domains_type
-  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
-                             xxx,yyy,zzz,fxx,fyy,fzz
+  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype
+  Use particle, Only : corePart
   Use setup, Only : zero_plus,mxatms,nrite
   Use errors_warnings, Only : error, warning
   Use numerics, Only : invert, dcell
@@ -83,7 +83,7 @@ Contains
     T%rct = 0.0_wp
   End Subroutine allocate_four_body_arrays
 
-  Subroutine four_body_forces(fourbody,stats,neigh,domain,comm)
+  Subroutine four_body_forces(fourbody,stats,neigh,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -105,6 +105,7 @@ Contains
   Type( stats_type ),      Intent( InOut ) :: stats
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( domains_type ), Intent( In    ) :: domain
+  Type( corePart ),        Intent( InOut ) :: parts(:)
   Type( comms_type ),      Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -205,9 +206,9 @@ Contains
 
   Do i=1,nlast
      If (fourbody%lfr(ltype(i))) Then
-        xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
-        yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
-        zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
+        xxt(i)=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+dispx
+        yyt(i)=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+dispy
+        zzt(i)=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+dispz
      End If
   End Do
 
@@ -740,33 +741,33 @@ Contains
         strs6 = strs6 + yab*fbz + yac*fcz + yad*fdz
         strs9 = strs9 + zab*fbz + zac*fcz + zad*fdz
 
-        fxx(ia)=fxx(ia)+fax
-        fyy(ia)=fyy(ia)+fay
-        fzz(ia)=fzz(ia)+faz
+        parts(ia)%fxx=parts(ia)%fxx+fax
+        parts(ia)%fyy=parts(ia)%fyy+fay
+        parts(ia)%fzz=parts(ia)%fzz+faz
 
      End If
 
      If (ib <= natms) Then
 
-        fxx(ib)=fxx(ib)+fbx
-        fyy(ib)=fyy(ib)+fby
-        fzz(ib)=fzz(ib)+fbz
+        parts(ib)%fxx=parts(ib)%fxx+fbx
+        parts(ib)%fyy=parts(ib)%fyy+fby
+        parts(ib)%fzz=parts(ib)%fzz+fbz
 
      End If
 
      If (ic <= natms) Then
 
-        fxx(ic)=fxx(ic)+fcx
-        fyy(ic)=fyy(ic)+fcy
-        fzz(ic)=fzz(ic)+fcz
+        parts(ic)%fxx=parts(ic)%fxx+fcx
+        parts(ic)%fyy=parts(ic)%fyy+fcy
+        parts(ic)%fzz=parts(ic)%fzz+fcz
 
      End If
 
      If (id <= natms) Then
 
-        fxx(id)=fxx(id)+fdx
-        fyy(id)=fyy(id)+fdy
-        fzz(id)=fzz(id)+fdz
+        parts(id)%fxx=parts(id)%fxx+fdx
+        parts(id)%fyy=parts(id)%fyy+fdy
+        parts(id)%fzz=parts(id)%fzz+fdz
 
      End If
 

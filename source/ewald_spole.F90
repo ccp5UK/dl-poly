@@ -4,8 +4,9 @@ Module ewald_spole
   Use setup,           Only : mxatdm, mxatms, nrite, r4pie0, sqrpi, twopi, &
                               mxspl, mxspl1, mxspl2, kmaxa, kmaxb, kmaxc, &
                               zero_plus, mxgele
-  Use configuration,   Only : natms,ltg,chge,fxx,fyy,fzz,cell,volm,nlast, &
-                              xxx,yyy,zzz, lfrzn
+  Use configuration,   Only : natms,ltg,cell,volm,nlast, &
+                              lfrzn
+  Use particle,        Only : corePart
   Use numerics,        Only : erfcgen, invert, dcell
   Use errors_warnings, Only : error
   Use ewald,           Only : ewald_type,spl_cexp, bspcoe, bspgen, exchange_grid
@@ -21,7 +22,7 @@ Module ewald_spole
   Contains
 
   Subroutine ewald_real_forces(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress, &
-      neigh,electro,comm)
+      neigh,electro,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -43,6 +44,7 @@ Module ewald_spole
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type),                        Intent( In    ) :: comm
+    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
 
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: drewd,rdrewd
@@ -100,7 +102,7 @@ Module ewald_spole
 
   ! ignore interaction if the charge is zero
 
-    chgea = chge(iatm)
+    chgea = parts(iatm)%chge
 
     If (Abs(chgea) > zero_plus) Then
 
@@ -108,9 +110,9 @@ Module ewald_spole
 
   ! load forces
 
-       fix=fxx(iatm)
-       fiy=fyy(iatm)
-       fiz=fzz(iatm)
+       fix=parts(iatm)%fxx
+       fiy=parts(iatm)%fyy
+       fiz=parts(iatm)%fzz
 
   ! start of primary loop for forces evaluation
 
@@ -119,7 +121,7 @@ Module ewald_spole
   ! atomic index and charge
 
           jatm=neigh%list(m,iatm)
-          chgprd=chge(jatm)
+          chgprd=parts(jatm)%chge
 
   ! interatomic distance
 
@@ -161,9 +163,9 @@ Module ewald_spole
 
              If (jatm <= natms) Then
 
-                fxx(jatm)=fxx(jatm)-fx
-                fyy(jatm)=fyy(jatm)-fy
-                fzz(jatm)=fzz(jatm)-fz
+                parts(jatm)%fxx=parts(jatm)%fxx-fx
+                parts(jatm)%fyy=parts(jatm)%fyy-fy
+                parts(jatm)%fzz=parts(jatm)%fzz-fz
 
              End If
 
@@ -201,9 +203,9 @@ Module ewald_spole
 
   ! load back forces
 
-       fxx(iatm)=fix
-       fyy(iatm)=fiy
-       fzz(iatm)=fiz
+       parts(iatm)%fxx=fix
+       parts(iatm)%fyy=fiy
+       parts(iatm)%fzz=fiz
 
   ! complete stress tensor
 
@@ -221,7 +223,7 @@ Module ewald_spole
 
   End Subroutine ewald_real_forces
 
-  Subroutine ewald_spme_forces(engcpe_rc,vircpe_rc,stress,ewld,electro,domain,comm)
+  Subroutine ewald_spme_forces(engcpe_rc,vircpe_rc,stress,ewld,electro,domain,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -242,6 +244,7 @@ Module ewald_spole
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type), Intent( InOut ) :: comm
+    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
 
     Logical,           Save :: newjob = .true.
     Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
@@ -414,7 +417,7 @@ Module ewald_spole
 
        ewld%engsic=0.0_wp
        Do i=1,natms
-          ewld%engsic=ewld%engsic+chge(i)**2
+          ewld%engsic=ewld%engsic+parts(i)%chge**2
        End Do
        Call gsum(comm,ewld%engsic)
        ewld%engsic=-r4pie0/electro%eps * electro%alpha*ewld%engsic/sqrpi
@@ -462,9 +465,9 @@ Module ewald_spole
     If (Abs(det) < 1.0e-6_wp) Call error(120)
 
     Do i=1,nlast
-       txx(i)=kmaxa_r*(rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+0.5_wp)
-       tyy(i)=kmaxb_r*(rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+0.5_wp)
-       tzz(i)=kmaxc_r*(rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+0.5_wp)
+       txx(i)=kmaxa_r*(rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+0.5_wp)
+       tyy(i)=kmaxb_r*(rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+0.5_wp)
+       tzz(i)=kmaxc_r*(rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+0.5_wp)
 
   ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (mxspl1 == mxspl)
 
@@ -484,7 +487,7 @@ Module ewald_spole
        If (tzz(i) >= -zero_plus .and. &
            tyy(i) >= -zero_plus .and. &
            txx(i) >= -zero_plus .and. &
-           Abs(chge(i)) > zero_plus) Then
+           Abs(parts(i)%chge) > zero_plus) Then
           it(i)=1
        Else
           it(i)=0
@@ -523,7 +526,7 @@ Module ewald_spole
   ! (t(i) >= 0) as the B-splines are negative directionally by propagation
 
        If (it(i) == 1) Then
-          bb3=chge(i)
+          bb3=parts(i)%chge
 
   !        Do l=1,mxspl
   !           ll=izz(i)-l+2
@@ -1220,7 +1223,7 @@ Module ewald_spole
 
       fff=0.0_wp
       Do i=1,natms
-         tmp=chge(i)
+         tmp=parts(i)%chge
 
          If (Abs(tmp) > zero_plus) Then
 
@@ -1271,9 +1274,9 @@ Module ewald_spole
 
   ! load forces
 
-            fxx(i)=fxx(i)+fx
-            fyy(i)=fyy(i)+fy
-            fzz(i)=fzz(i)+fz
+            parts(i)%fxx=parts(i)%fxx+fx
+            parts(i)%fyy=parts(i)%fyy+fy
+            parts(i)%fzz=parts(i)%fzz+fz
 
   ! infrequent calculations copying
 
@@ -1293,11 +1296,11 @@ Module ewald_spole
          fff(1:3)=fff(1:3)/fff(0)
 
          Do i=1,natms
-            If (Abs(chge(i)) > zero_plus) Then
+            If (Abs(parts(i)%chge) > zero_plus) Then
 
-               fxx(i)=fxx(i)-fff(1)
-               fyy(i)=fyy(i)-fff(2)
-               fzz(i)=fzz(i)-fff(3)
+               parts(i)%fxx=parts(i)%fxx-fff(1)
+               parts(i)%fyy=parts(i)%fyy-fff(2)
+               parts(i)%fzz=parts(i)%fzz-fff(3)
 
   ! infrequent calculations copying
 
@@ -1321,7 +1324,7 @@ Module ewald_spole
   End Subroutine ewald_spme_forces
 
   Subroutine ewald_excl_forces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
-      neigh,electro)
+      neigh,electro,parts)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1342,6 +1345,7 @@ Module ewald_spole
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -1380,7 +1384,7 @@ Module ewald_spole
 
   ! ignore interaction if the charge is zero
 
-    chgea = chge(iatm)
+    chgea = parts(iatm)%chge
 
     If (Abs(chgea) > zero_plus) Then
 
@@ -1388,9 +1392,9 @@ Module ewald_spole
 
   ! load forces
 
-       fix=fxx(iatm)
-       fiy=fyy(iatm)
-       fiz=fzz(iatm)
+       fix=parts(iatm)%fxx
+       fiy=parts(iatm)%fyy
+       fiz=parts(iatm)%fzz
 
   ! Get neigh%list limit
 
@@ -1403,7 +1407,7 @@ Module ewald_spole
   ! atomic index and charge
 
           jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
-          chgprd=chge(jatm)
+          chgprd=parts(jatm)%chge
 
   ! interatomic distance
 
@@ -1464,9 +1468,9 @@ Module ewald_spole
 
              If (jatm <= natms) Then
 
-                fxx(jatm)=fxx(jatm)-fx
-                fyy(jatm)=fyy(jatm)-fy
-                fzz(jatm)=fzz(jatm)-fz
+                parts(jatm)%fxx=parts(jatm)%fxx-fx
+                parts(jatm)%fyy=parts(jatm)%fyy-fy
+                parts(jatm)%fzz=parts(jatm)%fzz-fz
 
              End If
 
@@ -1494,9 +1498,9 @@ Module ewald_spole
 
   ! load back forces
 
-       fxx(iatm)=fix
-       fyy(iatm)=fiy
-       fzz(iatm)=fiz
+       parts(iatm)%fxx=fix
+       parts(iatm)%fyy=fiy
+       parts(iatm)%fzz=fiz
 
   ! complete stress tensor
 
@@ -1514,7 +1518,7 @@ Module ewald_spole
 
   End Subroutine ewald_excl_forces
 
-  Subroutine ewald_frzn_forces(engcpe_fr,vircpe_fr,stress,ewld,neigh,electro,comm)
+  Subroutine ewald_frzn_forces(engcpe_fr,vircpe_fr,stress,ewld,neigh,electro,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1539,6 +1543,7 @@ Module ewald_spole
     Type( neighbours_type ),              Intent( In    ) :: neigh
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( comms_type ),                   Intent( InOut ) :: comm
+    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -1560,9 +1565,9 @@ Module ewald_spole
 
     If (.not.ewld%lf_fce) Then ! All's been done but needs copying
        Do i=1,natms
-          fxx(i)=fxx(i)+ewld%ffx(i)
-          fyy(i)=fyy(i)+ewld%ffy(i)
-          fzz(i)=fzz(i)+ewld%ffz(i)
+          parts(i)%fxx=parts(i)%fxx+ewld%ffx(i)
+          parts(i)%fyy=parts(i)%fyy+ewld%ffy(i)
+          parts(i)%fzz=parts(i)%fzz+ewld%ffz(i)
        End Do
 
        engcpe_fr=ewld%ef_fr
@@ -1607,7 +1612,7 @@ Module ewald_spole
 
     l_ind=0 ; nz_fr=0
     Do i=1,natms
-       If (lfrzn(i) > 0 .and. Abs(chge(i)) > zero_plus) Then
+       If (lfrzn(i) > 0 .and. Abs(parts(i)%chge) > zero_plus) Then
           nz_fr(comm%idnode+1)=nz_fr(comm%idnode+1)+1
           l_ind(nz_fr(comm%idnode+1))=i
        End If
@@ -1632,10 +1637,10 @@ Module ewald_spole
        Do i=1,nz_fr(comm%idnode+1)
           ii=nz_fr(0)+i
 
-          cfr(ii)=chge(l_ind(i))
-          xfr(ii)=xxx(l_ind(i))
-          yfr(ii)=yyy(l_ind(i))
-          zfr(ii)=zzz(l_ind(i))
+          cfr(ii)=parts(l_ind(i))%chge
+          xfr(ii)=parts(l_ind(i))%xxx
+          yfr(ii)=parts(l_ind(i))%yyy
+          zfr(ii)=parts(l_ind(i))%zzz
        End Do
        Call gsum(comm, cfr)
        Call gsum(comm, xfr)
@@ -1685,9 +1690,9 @@ Module ewald_spole
 
   ! calculate forces
 
-             fxx(l_ind(i))=fxx(l_ind(i))-fx
-             fyy(l_ind(i))=fyy(l_ind(i))-fy
-             fzz(l_ind(i))=fzz(l_ind(i))-fz
+             parts(l_ind(i))%fxx=parts(l_ind(i))%fxx-fx
+             parts(l_ind(i))%fyy=parts(l_ind(i))%fyy-fy
+             parts(l_ind(i))%fzz=parts(l_ind(i))%fzz-fz
 
   ! redundant calculations copying
 
@@ -1748,13 +1753,13 @@ Module ewald_spole
 
   ! calculate forces
 
-             fxx(l_ind(i))=fxx(l_ind(i))-fx
-             fyy(l_ind(i))=fyy(l_ind(i))-fy
-             fzz(l_ind(i))=fzz(l_ind(i))-fz
+             parts(l_ind(i))%fxx=parts(l_ind(i))%fxx-fx
+             parts(l_ind(i))%fyy=parts(l_ind(i))%fyy-fy
+             parts(l_ind(i))%fzz=parts(l_ind(i))%fzz-fz
 
-             fxx(l_ind(j))=fxx(l_ind(j))+fx
-             fyy(l_ind(j))=fyy(l_ind(j))+fy
-             fzz(l_ind(j))=fzz(l_ind(j))+fz
+             parts(l_ind(j))%fxx=parts(l_ind(j))%fxx+fx
+             parts(l_ind(j))%fyy=parts(l_ind(j))%fyy+fy
+             parts(l_ind(j))%fzz=parts(l_ind(j))%fzz+fz
 
   ! redundant calculations copying
 
@@ -1835,9 +1840,9 @@ Module ewald_spole
 
   ! calculate forces
 
-             fxx(l_ind(i))=fxx(l_ind(i))-fx
-             fyy(l_ind(i))=fyy(l_ind(i))-fy
-             fzz(l_ind(i))=fzz(l_ind(i))-fz
+             parts(l_ind(i))%fxx=parts(l_ind(i))%fxx-fx
+             parts(l_ind(i))%fyy=parts(l_ind(i))%fyy-fy
+             parts(l_ind(i))%fzz=parts(l_ind(i))%fzz-fz
 
   ! redundant calculations copying
 
@@ -1902,9 +1907,9 @@ Module ewald_spole
              Do k=1,limit
                 j=neigh%list(neigh%list(-1,i)+k,i)
 
-                xxt(k)=xxx(i)-xxx(j)
-                yyt(k)=yyy(i)-yyy(j)
-                zzt(k)=zzz(i)-zzz(j)
+                xxt(k)=parts(i)%xxx-parts(j)%xxx
+                yyt(k)=parts(i)%yyy-parts(j)%yyy
+                zzt(k)=parts(i)%zzz-parts(j)%zzz
              End Do
 
   ! periodic boundary conditions not needed by LC construction
@@ -1921,8 +1926,8 @@ Module ewald_spole
                 j=neigh%list(neigh%list(-1,i)+k,i)
 
                 rrr=rrt(k)
-                If (Abs(chge(j)) > zero_plus .and. rrr < neigh%cutoff) Then
-                   chgprd=chge(i)*chge(j)*scl
+                If (Abs(parts(j)%chge) > zero_plus .and. rrr < neigh%cutoff) Then
+                   chgprd=parts(i)%chge*parts(j)%chge*scl
                    rsq=rrr**2
 
   ! calculate error function and derivative
@@ -1941,9 +1946,9 @@ Module ewald_spole
 
   ! calculate forces
 
-                   fxx(i)=fxx(i)-fx
-                   fyy(i)=fyy(i)-fy
-                   fzz(i)=fzz(i)-fz
+                   parts(i)%fxx=parts(i)%fxx-fx
+                   parts(i)%fyy=parts(i)%fyy-fy
+                   parts(i)%fzz=parts(i)%fzz-fz
 
   ! redundant calculations copying
 
@@ -1963,9 +1968,9 @@ Module ewald_spole
 
                    If (j <= natms) Then
 
-                      fxx(j)=fxx(j)+fx
-                      fyy(j)=fyy(j)+fy
-                      fzz(j)=fzz(j)+fz
+                      parts(j)%fxx=parts(j)%fxx+fx
+                      parts(j)%fyy=parts(j)%fyy+fy
+                      parts(j)%fzz=parts(j)%fzz+fz
 
   ! redundant calculations copying
 

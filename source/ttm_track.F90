@@ -302,9 +302,9 @@ Contains
 
   Do i=1,natms
 
-    ia = Floor((xxx(i)+zerocell(1))/delx) + 1
-    ja = Floor((yyy(i)+zerocell(2))/dely) + 1
-    ka = Floor((zzz(i)+zerocell(3))/delz) + 1
+    ia = Floor((parts(i)%xxx+zerocell(1))/delx) + 1
+    ja = Floor((parts(i)%yyy+zerocell(2))/dely) + 1
+    ka = Floor((parts(i)%zzz+zerocell(3))/delz) + 1
 
     ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
     ijkatm (i) = ijk

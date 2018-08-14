@@ -19,7 +19,8 @@ Module dihedrals
                             ntable,mxatdm
   Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
-                                chge,xxx,yyy,zzz,fxx,fyy,fzz,cfgname
+                                cfgname
+  Use particle,      Only : corePart
   Use vdw,    Only : vdw_type
   Use parse,  Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error,warning,info
@@ -644,7 +645,7 @@ Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
 End Subroutine dihedrals_compute
 
 Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
-    engsrp,virsrp,dihedral,vdws,mpoles,electro,comm)
+    engsrp,virsrp,dihedral,vdws,mpoles,electro,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -675,6 +676,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( electrostatic_type ), Intent( In    ) :: electro
   Type( comms_type),                   Intent( InOut ) :: comm
+  Type( corePart ), Dimension( : ),    Intent( InOut ) :: parts
 
   Logical                 :: safe(1:3),csa,csd
   Integer                 :: fail(1:5),i,j,l,ia,ib,ic,id,kk,keyd, &
@@ -770,17 +772,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 ! define components of bond vectors
 
      If (lstopt(0,i) > 0) Then
-        xdab(i)=xxx(ia)-xxx(ib)
-        ydab(i)=yyy(ia)-yyy(ib)
-        zdab(i)=zzz(ia)-zzz(ib)
+        xdab(i)=parts(ia)%xxx-parts(ib)%xxx
+        ydab(i)=parts(ia)%yyy-parts(ib)%yyy
+        zdab(i)=parts(ia)%zzz-parts(ib)%zzz
 
-        xdbc(i)=xxx(ib)-xxx(ic)
-        ydbc(i)=yyy(ib)-yyy(ic)
-        zdbc(i)=zzz(ib)-zzz(ic)
+        xdbc(i)=parts(ib)%xxx-parts(ic)%xxx
+        ydbc(i)=parts(ib)%yyy-parts(ic)%yyy
+        zdbc(i)=parts(ib)%zzz-parts(ic)%zzz
 
-        xdcd(i)=xxx(ic)-xxx(id)
-        ydcd(i)=yyy(ic)-yyy(id)
-        zdcd(i)=zzz(ic)-zzz(id)
+        xdcd(i)=parts(ic)%xxx-parts(id)%xxx
+        ydcd(i)=parts(ic)%yyy-parts(id)%yyy
+        zdcd(i)=parts(ic)%zzz-parts(id)%zzz
 
         If (dihedral%l_core_shell) Then
            csa=(dihedral%list(1,i) /= dihedral%list(5,i))
@@ -790,29 +792,29 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            If (csa .or. csd) Then
               If (csa .and. csd) Then
                  lad(1,i)=.true.
-                 xdad(1,i)=xxx(ia0)-xxx(id)
-                 ydad(1,i)=yyy(ia0)-yyy(id)
-                 zdad(1,i)=zzz(ia0)-zzz(id)
+                 xdad(1,i)=parts(ia0)%xxx-parts(id)%xxx
+                 ydad(1,i)=parts(ia0)%yyy-parts(id)%yyy
+                 zdad(1,i)=parts(ia0)%zzz-parts(id)%zzz
 
                  lad(2,i)=.true.
-                 xdad(2,i)=xxx(ia)-xxx(id0)
-                 ydad(2,i)=yyy(ia)-yyy(id0)
-                 zdad(2,i)=zzz(ia)-zzz(id0)
+                 xdad(2,i)=parts(ia)%xxx-parts(id0)%xxx
+                 ydad(2,i)=parts(ia)%yyy-parts(id0)%yyy
+                 zdad(2,i)=parts(ia)%zzz-parts(id0)%zzz
 
                  lad(3,i)=.true.
-                 xdad(3,i)=xxx(ia0)-xxx(id0)
-                 ydad(3,i)=yyy(ia0)-yyy(id0)
-                 zdad(3,i)=zzz(ia0)-zzz(id0)
+                 xdad(3,i)=parts(ia0)%xxx-parts(id0)%xxx
+                 ydad(3,i)=parts(ia0)%yyy-parts(id0)%yyy
+                 zdad(3,i)=parts(ia0)%zzz-parts(id0)%zzz
               Else If (csa) Then
                  lad(1,i)=.true.
-                 xdad(1,i)=xxx(ia0)-xxx(id)
-                 ydad(1,i)=yyy(ia0)-yyy(id)
-                 zdad(1,i)=zzz(ia0)-zzz(id)
+                 xdad(1,i)=parts(ia0)%xxx-parts(id)%xxx
+                 ydad(1,i)=parts(ia0)%yyy-parts(id)%yyy
+                 zdad(1,i)=parts(ia0)%zzz-parts(id)%zzz
               Else If (csd) Then
                  lad(2,i)=.true.
-                 xdad(2,i)=xxx(ia)-xxx(id0)
-                 ydad(2,i)=yyy(ia)-yyy(id0)
-                 zdad(2,i)=zzz(ia)-zzz(id0)
+                 xdad(2,i)=parts(ia)%xxx-parts(id0)%xxx
+                 ydad(2,i)=parts(ia)%yyy-parts(id0)%yyy
+                 zdad(2,i)=parts(ia)%zzz-parts(id0)%zzz
               End If
            End If
         End If
@@ -1185,33 +1187,33 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            strs6 = strs6 + yab*faz + ybc*(fb1z-fcz) - ycd*fd1z
            strs9 = strs9 + zab*faz + zbc*(fb1z-fcz) - zcd*fd1z
 
-           fxx(ia)=fxx(ia)+fax
-           fyy(ia)=fyy(ia)+fay
-           fzz(ia)=fzz(ia)+faz
+           parts(ia)%fxx=parts(ia)%fxx+fax
+           parts(ia)%fyy=parts(ia)%fyy+fay
+           parts(ia)%fzz=parts(ia)%fzz+faz
 
         End If
 
         If (ib <= natms) Then
 
-           fxx(ib)=fxx(ib)-fax-fcx+fb1x
-           fyy(ib)=fyy(ib)-fay-fcy+fb1y
-           fzz(ib)=fzz(ib)-faz-fcz+fb1z
+           parts(ib)%fxx=parts(ib)%fxx-fax-fcx+fb1x
+           parts(ib)%fyy=parts(ib)%fyy-fay-fcy+fb1y
+           parts(ib)%fzz=parts(ib)%fzz-faz-fcz+fb1z
 
         End If
 
         If (ic <= natms) Then
 
-           fxx(ic)=fxx(ic)+fcx-fb1x-fd1x
-           fyy(ic)=fyy(ic)+fcy-fb1y-fd1y
-           fzz(ic)=fzz(ic)+fcz-fb1z-fd1z
+           parts(ic)%fxx=parts(ic)%fxx+fcx-fb1x-fd1x
+           parts(ic)%fyy=parts(ic)%fyy+fcy-fb1y-fd1y
+           parts(ic)%fzz=parts(ic)%fzz+fcz-fb1z-fd1z
 
         End If
 
         If (id <= natms) Then
 
-           fxx(id)=fxx(id)+fd1x
-           fyy(id)=fyy(id)+fd1y
-           fzz(id)=fzz(id)+fd1z
+           parts(id)%fxx=parts(id)%fxx+fd1x
+           parts(id)%fyy=parts(id)%fyy+fd1y
+           parts(id)%fzz=parts(id)%fzz+fd1z
 
         End If
 
@@ -1245,18 +1247,18 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            Write(messages(1),*) 'AB',xab,yab,zab
            Write(messages(2),*) 'BC',xbc,ybc,zbc,xac,yac,zac
            Write(messages(3),*) 'CD',xcd,ycd,zcd,xad,yad,zad
-           Write(messages(4),*) 'A',xxx(ia),yyy(ia),zzz(ia)
-           Write(messages(5),*) 'B',xxx(ib),yyy(ib),zzz(ib)
-           Write(messages(6),*) 'C',xxx(ic),yyy(ic),zzz(ic)
-           Write(messages(7),*) 'D',xxx(id),yyy(id),zzz(id)
+           Write(messages(4),*) 'A',parts(ia)%xxx,parts(ia)%yyy,parts(ia)%zzz
+           Write(messages(5),*) 'B',parts(ib)%xxx,parts(ib)%yyy,parts(ib)%zzz
+           Write(messages(6),*) 'C',parts(ic)%xxx,parts(ic)%yyy,parts(ic)%zzz
+           Write(messages(7),*) 'D',parts(id)%xxx,parts(id)%yyy,parts(id)%zzz
            Call info(messages,7)
            If (dihedral%l_core_shell) Then
               If (lad(1,i)) Then
-                Write(message,*) 'A0',xxx(ia0),yyy(ia0),zzz(ia0)
+                Write(message,*) 'A0',parts(ia0)%xxx,parts(ia0)%yyy,parts(ia0)%zzz
                 Call info(message)
               End If
               If (lad(2,i)) Then
-                Write(message,*) 'D0',xxx(id0),yyy(id0),zzz(id0)
+                Write(message,*) 'D0',parts(id0)%xxx,parts(id0)%yyy,parts(id0)%zzz
                 Call info(message)
               End If
            End If
@@ -1286,7 +1288,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 
 ! scaled charge product times dielectric constants
 
-        chgprd=scale*chge(ia)*chge(id)*r4pie0/electro%eps
+        chgprd=scale*parts(ia)%chge*parts(id)%chge*r4pie0/electro%eps
         If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
 
            If (mpoles%max_mpoles > 0) Then
@@ -1318,17 +1320,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
               strs6 = strs6 + yad*fz
               strs9 = strs9 + zad*fz
 
-              fxx(ia) = fxx(ia) + fx
-              fyy(ia) = fyy(ia) + fy
-              fzz(ia) = fzz(ia) + fz
+              parts(ia)%fxx = parts(ia)%fxx + fx
+              parts(ia)%fyy = parts(ia)%fyy + fy
+              parts(ia)%fzz = parts(ia)%fzz + fz
 
            End If
 
            If (id <= natms) Then
 
-              fxx(id) = fxx(id) - fx
-              fyy(id) = fyy(id) - fy
-              fzz(id) = fzz(id) - fz
+              parts(id)%fxx = parts(id)%fxx - fx
+              parts(id)%fyy = parts(id)%fyy - fy
+              parts(id)%fzz = parts(id)%fzz - fz
 
            End If
 
@@ -1336,7 +1338,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 
         If (dihedral%l_core_shell) Then
            If (lad(1,i)) Then
-              chgprd=scale*chge(ia0)*chge(id)*r4pie0/electro%eps
+              chgprd=scale*parts(ia0)%chge*parts(id)%chge*r4pie0/electro%eps
               If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
                  If (mpoles%max_mpoles > 0) Then
                     Call intra_mcoul(rcut,ia0,id,scale,rad(1),xdad(1,i), &
@@ -1367,17 +1369,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(1,i)*fz
                     strs9 = strs9 + zdad(1,i)*fz
 
-                    fxx(ia0) = fxx(ia0) + fx
-                    fyy(ia0) = fyy(ia0) + fy
-                    fzz(ia0) = fzz(ia0) + fz
+                    parts(ia0)%fxx = parts(ia0)%fxx + fx
+                    parts(ia0)%fyy = parts(ia0)%fyy + fy
+                    parts(ia0)%fzz = parts(ia0)%fzz + fz
 
                  End If
 
                  If (id <= natms) Then
 
-                    fxx(id) = fxx(id) - fx
-                    fyy(id) = fyy(id) - fy
-                    fzz(id) = fzz(id) - fz
+                    parts(id)%fxx = parts(id)%fxx - fx
+                    parts(id)%fyy = parts(id)%fyy - fy
+                    parts(id)%fzz = parts(id)%fzz - fz
 
                  End If
 
@@ -1385,7 +1387,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            End If
 
            If (lad(2,i)) Then
-              chgprd=scale*chge(ia)*chge(id0)*r4pie0/electro%eps
+              chgprd=scale*parts(ia)%chge*parts(id0)%chge*r4pie0/electro%eps
               If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
                  If (mpoles%max_mpoles > 0) Then
                     Call intra_mcoul(rcut,ia,id0,scale,rad(2),xdad(2,i), &
@@ -1416,24 +1418,24 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(2,i)*fz
                     strs9 = strs9 + zdad(2,i)*fz
 
-                    fxx(ia) = fxx(ia) + fx
-                    fyy(ia) = fyy(ia) + fy
-                    fzz(ia) = fzz(ia) + fz
+                    parts(ia)%fxx = parts(ia)%fxx + fx
+                    parts(ia)%fyy = parts(ia)%fyy + fy
+                    parts(ia)%fzz = parts(ia)%fzz + fz
 
                  End If
 
                  If (id0 <= natms) Then
 
-                    fxx(id0) = fxx(id0) - fx
-                    fyy(id0) = fyy(id0) - fy
-                    fzz(id0) = fzz(id0) - fz
+                    parts(id0)%fxx = parts(id0)%fxx - fx
+                    parts(id0)%fyy = parts(id0)%fyy - fy
+                    parts(id0)%fzz = parts(id0)%fzz - fz
 
                  End If
               End If
            End If
 
            If (lad(3,i)) Then
-              chgprd=scale*chge(ia0)*chge(id0)*r4pie0/electro%eps
+              chgprd=scale*parts(ia0)%chge*parts(id0)%chge*r4pie0/electro%eps
               If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
                  If (mpoles%max_mpoles > 0) Then
                     Call intra_mcoul(rcut,ia0,id0,scale,rad(3),xdad(3,i), &
@@ -1464,17 +1466,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(3,i)*fz
                     strs9 = strs9 + zdad(3,i)*fz
 
-                    fxx(ia0) = fxx(ia0) + fx
-                    fyy(ia0) = fyy(ia0) + fy
-                    fzz(ia0) = fzz(ia0) + fz
+                    parts(ia0)%fxx = parts(ia0)%fxx + fx
+                    parts(ia0)%fyy = parts(ia0)%fyy + fy
+                    parts(ia0)%fzz = parts(ia0)%fzz + fz
 
                  End If
 
                  If (id0 <= natms) Then
 
-                    fxx(id0) = fxx(id0) - fx
-                    fyy(id0) = fyy(id0) - fy
-                    fzz(id0) = fzz(id0) - fz
+                    parts(id0)%fxx = parts(id0)%fxx - fx
+                    parts(id0)%fyy = parts(id0)%fyy - fy
+                    parts(id0)%fzz = parts(id0)%fzz - fz
 
                  End If
               End If
@@ -1517,17 +1519,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
               strs6 = strs6 + yad*fz
               strs9 = strs9 + zad*fz
 
-              fxx(ia) = fxx(ia) + fx
-              fyy(ia) = fyy(ia) + fy
-              fzz(ia) = fzz(ia) + fz
+              parts(ia)%fxx = parts(ia)%fxx + fx
+              parts(ia)%fyy = parts(ia)%fyy + fy
+              parts(ia)%fzz = parts(ia)%fzz + fz
 
            End If
 
            If (id <= natms) Then
 
-              fxx(id) = fxx(id) - fx
-              fyy(id) = fyy(id) - fy
-              fzz(id) = fzz(id) - fz
+              parts(id)%fxx = parts(id)%fxx - fx
+              parts(id)%fyy = parts(id)%fyy - fy
+              parts(id)%fzz = parts(id)%fzz - fz
 
            End If
 
@@ -1561,17 +1563,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(1,i)*fz
                     strs9 = strs9 + zdad(1,i)*fz
 
-                    fxx(ia0) = fxx(ia0) + fx
-                    fyy(ia0) = fyy(ia0) + fy
-                    fzz(ia0) = fzz(ia0) + fz
+                    parts(ia0)%fxx = parts(ia0)%fxx + fx
+                    parts(ia0)%fyy = parts(ia0)%fyy + fy
+                    parts(ia0)%fzz = parts(ia0)%fzz + fz
 
                  End If
 
                  If (id <= natms) Then
 
-                    fxx(id) = fxx(id) - fx
-                    fyy(id) = fyy(id) - fy
-                    fzz(id) = fzz(id) - fz
+                    parts(id)%fxx = parts(id)%fxx - fx
+                    parts(id)%fyy = parts(id)%fyy - fy
+                    parts(id)%fzz = parts(id)%fzz - fz
 
                  End If
               End If
@@ -1605,17 +1607,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(2,i)*fz
                     strs9 = strs9 + zdad(2,i)*fz
 
-                    fxx(ia) = fxx(ia) + fx
-                    fyy(ia) = fyy(ia) + fy
-                    fzz(ia) = fzz(ia) + fz
+                    parts(ia)%fxx = parts(ia)%fxx + fx
+                    parts(ia)%fyy = parts(ia)%fyy + fy
+                    parts(ia)%fzz = parts(ia)%fzz + fz
 
                  End If
 
                  If (id0 <= natms) Then
 
-                    fxx(id0) = fxx(id0) - fx
-                    fyy(id0) = fyy(id0) - fy
-                    fzz(id0) = fzz(id0) - fz
+                    parts(id0)%fxx = parts(id0)%fxx - fx
+                    parts(id0)%fyy = parts(id0)%fyy - fy
+                    parts(id0)%fzz = parts(id0)%fzz - fz
 
                  End If
               End If
@@ -1649,17 +1651,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(3,i)*fz
                     strs9 = strs9 + zdad(3,i)*fz
 
-                    fxx(ia0) = fxx(ia0) + fx
-                    fyy(ia0) = fyy(ia0) + fy
-                    fzz(ia0) = fzz(ia0) + fz
+                    parts(ia0)%fxx = parts(ia0)%fxx + fx
+                    parts(ia0)%fyy = parts(ia0)%fyy + fy
+                    parts(ia0)%fzz = parts(ia0)%fzz + fz
 
                  End If
 
                  If (id0 <= natms) Then
 
-                    fxx(id0) = fxx(id0) - fx
-                    fyy(id0) = fyy(id0) - fy
-                    fzz(id0) = fzz(id0) - fz
+                    parts(id0)%fxx = parts(id0)%fxx - fx
+                    parts(id0)%fyy = parts(id0)%fyy - fy
+                    parts(id0)%fzz = parts(id0)%fzz - fz
 
                  End If
               End If

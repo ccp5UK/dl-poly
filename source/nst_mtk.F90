@@ -5,7 +5,8 @@ Module nst_mtk
   Use site, Only : site_type
   Use configuration,      Only : imcon,cell,volm,natms,nlast,nfree, &
                                  lfrzn,lstfre,weight,               &
-                                 xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+                                 vxx,vyy,vzz
+  Use particle,           Only : corePart
   Use domains,            Only : domains_type
   Use kinetics,           Only : getvom,kinstress,kinstresf,kinstrest
   Use constraints,        Only : apply_rattle,apply_shake,&
@@ -34,7 +35,8 @@ Contains
              degfre,stress,             &
              consv,                             &
              strkin,engke,                      &
-             cshell,cons,pmf,stat,thermo,sites,vdws,domain,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites,&
+             vdws,domain,tmr,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -76,6 +78,7 @@ Contains
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -193,14 +196,14 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! constraint atoms) for iterative bond algorithms
 
        If (cons%megcon > 0)Then
-         Call constraints_tags(lstitr,cons,comm)
+         Call constraints_tags(lstitr,cons,parts,comm)
        End If 
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
        If (pmf%megpmf > 0)Then
-         Call pmf_tags(lstitr,pmf,comm)
+         Call pmf_tags(lstitr,pmf,parts,comm)
        End If
     End If
 
@@ -217,17 +220,17 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! store initial values
 
        Do i=1,natms
-          xxt(i) = xxx(i)
-          yyt(i) = yyy(i)
-          zzt(i) = zzz(i)
+          xxt(i) = parts(i)%xxx
+          yyt(i) = parts(i)%yyy
+          zzt(i) = parts(i)%zzz
 
           vxt(i) = vxx(i)
           vyt(i) = vyy(i)
           vzt(i) = vzz(i)
 
-          fxt(i) = fxx(i)
-          fyt(i) = fyy(i)
-          fzt(i) = fzz(i)
+          fxt(i) = parts(i)%fxx
+          fyt(i) = parts(i)%fyy
+          fzt(i) = parts(i)%fzz
        End Do
 
   ! store current integration variables
@@ -291,9 +294,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           Do i=1,natms
              If (weight(i) > 1.0e-6_wp) Then
                 tmp=hstep/weight(i)
-                vxx(i)=vxx(i)+tmp*fxx(i)
-                vyy(i)=vyy(i)+tmp*fyy(i)
-                vzz(i)=vzz(i)+tmp*fzz(i)
+                vxx(i)=vxx(i)+tmp*parts(i)%fxx
+                vyy(i)=vyy(i)+tmp*parts(i)%fyy
+                vzz(i)=vzz(i)+tmp*parts(i)%fzz
              End If
           End Do
 
@@ -314,9 +317,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
           Do i=1,natms
              If (weight(i) > 1.0e-6_wp) Then
-                xxx(i)=tstep*vxx(i)+xxt(i)*aaa(1)+yyt(i)*aaa(2)+zzt(i)*aaa(3)
-                yyy(i)=tstep*vyy(i)+xxt(i)*aaa(2)+yyt(i)*aaa(5)+zzt(i)*aaa(6)
-                zzz(i)=tstep*vzz(i)+xxt(i)*aaa(3)+yyt(i)*aaa(6)+zzt(i)*aaa(9)
+                parts(i)%xxx=tstep*vxx(i)+xxt(i)*aaa(1)+yyt(i)*aaa(2)+zzt(i)*aaa(3)
+                parts(i)%yyy=tstep*vyy(i)+xxt(i)*aaa(2)+yyt(i)*aaa(5)+zzt(i)*aaa(6)
+                parts(i)%zzz=tstep*vzz(i)+xxt(i)*aaa(3)+yyt(i)*aaa(6)+zzt(i)*aaa(9)
              End If
           End Do
 
@@ -324,7 +327,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
             Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-             lstitr,stat,pmf,cons,domain,tmr,comm)
+             lstitr,stat,pmf,cons,domain,tmr,parts,comm)
           End If
 
   ! restore original integration parameters as well as
@@ -349,7 +352,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! check timestep for variable timestep
 
        If (lvar) Then
-If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
  xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
@@ -366,9 +369,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
                 vyy(i) = vyt(i)
                 vzz(i) = vzt(i)
 
-                fxx(i) = fxt(i)
-                fyy(i) = fyt(i)
-                fzz(i) = fzt(i)
+                parts(i)%fxx = fxt(i)
+                parts(i)%fyy = fyt(i)
+                parts(i)%fzz = fzt(i)
              End Do
 
   ! restart vv1
@@ -402,9 +405,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
        Do i=1,natms
           If (weight(i) > 1.0e-6_wp) Then
              tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*fxx(i)
-             vyy(i)=vyy(i)+tmp*fyy(i)
-             vzz(i)=vzz(i)+tmp*fzz(i)
+             vxx(i)=vxx(i)+tmp*parts(i)%fxx
+             vyy(i)=vyy(i)+tmp*parts(i)%fyy
+             vzz(i)=vzz(i)+tmp*parts(i)%fzz
           End If
        End Do
 
@@ -488,7 +491,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
-             cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr,comm)
+             cshell,cons,pmf,stat,thermo,sites, &
+             vdws,rigid,domain,tmr,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -534,6 +538,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical,           Save :: newjob = .true. , &
@@ -689,14 +694,14 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! constraint atoms) for iterative bond algorithms
 
        If (cons%megcon > 0)Then
-         Call constraints_tags(lstitr,cons,comm)
+         Call constraints_tags(lstitr,cons,parts,comm)
        End If
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
        If (pmf%megpmf > 0)Then
-         Call pmf_tags(lstitr,pmf,comm)
+         Call pmf_tags(lstitr,pmf,parts,comm)
        End If
     End If
 
@@ -717,9 +722,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! COM distances
 
-             ggx(krgd)=xxx(i)-rigid%xxx(irgd)
-             ggy(krgd)=yyy(i)-rigid%yyy(irgd)
-             ggz(krgd)=zzz(i)-rigid%zzz(irgd)
+             ggx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
+             ggy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
+             ggz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
           End Do
        End If
     End Do
@@ -741,17 +746,17 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! store initial values
 
        Do i=1,matms
-          xxt(i) = xxx(i)
-          yyt(i) = yyy(i)
-          zzt(i) = zzz(i)
+          xxt(i) = parts(i)%xxx
+          yyt(i) = parts(i)%yyy
+          zzt(i) = parts(i)%zzz
 
           vxt(i) = vxx(i)
           vyt(i) = vyy(i)
           vzt(i) = vzz(i)
 
-          fxt(i) = fxx(i)
-          fyt(i) = fyy(i)
-          fzt(i) = fzz(i)
+          fxt(i) = parts(i)%fxx
+          fyt(i) = parts(i)%fyy
+          fzt(i) = parts(i)%fzz
        End Do
 
        Do irgd=1,rigid%n_types
@@ -837,9 +842,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
              If (weight(i) > 1.0e-6_wp) Then
                 tmp=hstep/weight(i)
-                vxx(i)=vxx(i)+tmp*fxx(i)
-                vyy(i)=vyy(i)+tmp*fyy(i)
-                vzz(i)=vzz(i)+tmp*fzz(i)
+                vxx(i)=vxx(i)+tmp*parts(i)%fxx
+                vyy(i)=vyy(i)+tmp*parts(i)%fyy
+                vzz(i)=vzz(i)+tmp*parts(i)%fzz
              End If
           End Do
 
@@ -862,9 +867,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
              i=lstfre(j)
 
              If (weight(i) > 1.0e-6_wp) Then
-                xxx(i)=tstep*vxx(i)+xxt(i)*aaa(1)+yyt(i)*aaa(2)+zzt(i)*aaa(3)
-                yyy(i)=tstep*vyy(i)+xxt(i)*aaa(2)+yyt(i)*aaa(5)+zzt(i)*aaa(6)
-                zzz(i)=tstep*vzz(i)+xxt(i)*aaa(3)+yyt(i)*aaa(6)+zzt(i)*aaa(9)
+                parts(i)%xxx=tstep*vxx(i)+xxt(i)*aaa(1)+yyt(i)*aaa(2)+zzt(i)*aaa(3)
+                parts(i)%yyy=tstep*vyy(i)+xxt(i)*aaa(2)+yyt(i)*aaa(5)+zzt(i)*aaa(6)
+                parts(i)%zzz=tstep*vzz(i)+xxt(i)*aaa(3)+yyt(i)*aaa(6)+zzt(i)*aaa(9)
              End If
           End Do
 
@@ -872,7 +877,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
             Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
-              lstitr,stat,pmf,cons,domain,tmr,comm)
+              lstitr,stat,pmf,cons,domain,tmr,parts,comm)
           End If
 
   ! restore original integration parameters as well as
@@ -1038,9 +1043,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! new atomic positions
 
-                      xxx(i)=rot(1)*x(1)+rot(2)*y(1)+rot(3)*z(1) + rigid%xxx(irgd)
-                      yyy(i)=rot(4)*x(1)+rot(5)*y(1)+rot(6)*z(1) + rigid%yyy(irgd)
-                      zzz(i)=rot(7)*x(1)+rot(8)*y(1)+rot(9)*z(1) + rigid%zzz(irgd)
+                      parts(i)%xxx=rot(1)*x(1)+rot(2)*y(1)+rot(3)*z(1) + rigid%xxx(irgd)
+                      parts(i)%yyy=rot(4)*x(1)+rot(5)*y(1)+rot(6)*z(1) + rigid%yyy(irgd)
+                      parts(i)%zzz=rot(7)*x(1)+rot(8)*y(1)+rot(9)*z(1) + rigid%zzz(irgd)
 
   ! new atomic velocities in body frame
 
@@ -1055,13 +1060,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
                          vyy(i)=xxt(i)*aaa(2)+yyt(i)*aaa(5)+zzt(i)*aaa(6)
                          vzz(i)=xxt(i)*aaa(3)+yyt(i)*aaa(6)+zzt(i)*aaa(9)
 
-                         x(1)=xxx(i)-vxx(i)
-                         y(1)=yyy(i)-vyy(i)
-                         z(1)=zzz(i)-vzz(i)
+                         x(1)=parts(i)%xxx-vxx(i)
+                         y(1)=parts(i)%yyy-vyy(i)
+                         z(1)=parts(i)%zzz-vzz(i)
                          Call images(imcon,cell,1,x,y,z)
-                         xxx(i)=x(1)+vxx(i)
-                         yyy(i)=y(1)+vyy(i)
-                         zzz(i)=z(1)+vzz(i)
+                         parts(i)%xxx=x(1)+vxx(i)
+                         parts(i)%yyy=y(1)+vyy(i)
+                         parts(i)%zzz=z(1)+vzz(i)
                       End If
 
   ! new atomic velocities in lab frame
@@ -1074,9 +1079,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
                       y(1)=rigid%yyy(irgd)-rgdyyt(irgd)
                       z(1)=rigid%zzz(irgd)-rgdzzt(irgd)
                       If (unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
-                      xxx(i)=xxt(i)+x(1)
-                      yyy(i)=yyt(i)+y(1)
-                      zzz(i)=zzt(i)+z(1)
+                      parts(i)%xxx=xxt(i)+x(1)
+                      parts(i)%yyy=yyt(i)+y(1)
+                      parts(i)%zzz=zzt(i)+z(1)
                    End If
                 End If
              End Do
@@ -1099,9 +1104,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
                    y(1)=rigid%yyy(irgd)-rgdyyt(irgd)
                    z(1)=rigid%zzz(irgd)-rgdzzt(irgd)
                    If (unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
-                   xxx(i)=xxt(i)+x(1)
-                   yyy(i)=yyt(i)+y(1)
-                   zzz(i)=zzt(i)+z(1)
+                   parts(i)%xxx=xxt(i)+x(1)
+                   parts(i)%yyy=yyt(i)+y(1)
+                   parts(i)%zzz=zzt(i)+z(1)
                 End If
              End Do
 
@@ -1111,7 +1116,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! check timestep for variable timestep
 
        If (lvar) Then
-If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz,&
+If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
  xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
@@ -1128,9 +1133,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
                 vyy(i) = vyt(i)
                 vzz(i) = vzt(i)
 
-                fxx(i) = fxt(i)
-                fyy(i) = fyt(i)
-                fzz(i) = fzt(i)
+                parts(i)%fxx = fxt(i)
+                parts(i)%fyy = fyt(i)
+                parts(i)%fzz = fzt(i)
              End Do
 
              Do irgd=1,rigid%n_types
@@ -1181,9 +1186,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
 
           If (weight(i) > 1.0e-6_wp) Then
              tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*fxx(i)
-             vyy(i)=vyy(i)+tmp*fyy(i)
-             vzz(i)=vzz(i)+tmp*fzz(i)
+             vxx(i)=vxx(i)+tmp*parts(i)%fxx
+             vyy(i)=vyy(i)+tmp*parts(i)%fyy
+             vzz(i)=vzz(i)+tmp*parts(i)%fzz
           End If
        End Do
 
@@ -1196,7 +1201,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
 
   ! Get RB COM stress and virial
 
-       Call rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,comm)
+       Call rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,parts,comm)
        vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   ! update RB members positions
@@ -1222,14 +1227,14 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
   ! If the RB has a frozen particle then no net force
 
                 If (rigid%frozen(0,rgdtyp) == 0) Then
-                   fmx=fmx+fxx(i)
-                   fmy=fmy+fyy(i)
-                   fmz=fmz+fzz(i)
+                   fmx=fmx+parts(i)%fxx
+                   fmy=fmy+parts(i)%fyy
+                   fmz=fmz+parts(i)%fzz
                 End If
 
-                tqx=tqx+ggy(krgd)*fzz(i)-ggz(krgd)*fyy(i)
-                tqy=tqy+ggz(krgd)*fxx(i)-ggx(krgd)*fzz(i)
-                tqz=tqz+ggx(krgd)*fyy(i)-ggy(krgd)*fxx(i)
+                tqx=tqx+ggy(krgd)*parts(i)%fzz-ggz(krgd)*parts(i)%fyy
+                tqy=tqy+ggz(krgd)*parts(i)%fxx-ggx(krgd)*parts(i)%fzz
+                tqz=tqz+ggx(krgd)*parts(i)%fyy-ggy(krgd)*parts(i)%fxx
              End Do
 
   ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -1239,9 +1244,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,xxx,yyy,zzz
                 i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
                 i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-                x(1)=xxx(i1)-xxx(i2)
-                y(1)=yyy(i1)-yyy(i2)
-                z(1)=zzz(i1)-zzz(i2)
+                x(1)=parts(i1)%xxx-parts(i2)%xxx
+                y(1)=parts(i1)%yyy-parts(i2)%yyy
+                z(1)=parts(i1)%zzz-parts(i2)%zzz
 
                 Call images(imcon,cell,1,x,y,z)
 

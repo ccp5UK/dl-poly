@@ -18,10 +18,11 @@ Module angles
                      delth_max,ntable,mxatdm,mxtmls
   Use site, Only : site_type
   Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
-                            xxx,yyy,zzz,fxx,fyy,fzz,cfgname
+                            cfgname
   Use parse, Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : local_index,images
+  Use particle, Only : corePart
 
   Implicit None
 
@@ -496,7 +497,7 @@ Contains
 
 End Subroutine angles_compute
 
-Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
+Subroutine angles_forces(isw,engang,virang,stress,angle,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -517,6 +518,7 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
   Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: engang,virang
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
+  Type( corePart ),  Dimension(  :  ), Intent( InOut ) :: parts
   Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type),                   Intent( InOut ) :: comm
 
@@ -576,13 +578,13 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
 ! define components of bond vectors
 
      If (lstopt(0,i) > 0) Then
-        xdab(i)=xxx(ia)-xxx(ib)
-        ydab(i)=yyy(ia)-yyy(ib)
-        zdab(i)=zzz(ia)-zzz(ib)
+        xdab(i)=parts(ia)%xxx-parts(ib)%xxx
+        ydab(i)=parts(ia)%yyy-parts(ib)%yyy
+        zdab(i)=parts(ia)%zzz-parts(ib)%zzz
 
-        xdbc(i)=xxx(ic)-xxx(ib)
-        ydbc(i)=yyy(ic)-yyy(ib)
-        zdbc(i)=zzz(ic)-zzz(ib)
+        xdbc(i)=parts(ic)%xxx-parts(ib)%xxx
+        ydbc(i)=parts(ic)%yyy-parts(ib)%yyy
+        zdbc(i)=parts(ic)%zzz-parts(ib)%zzz
      Else ! (DEBUG)
         xdab(i)=0.0_wp
         ydab(i)=0.0_wp
@@ -1016,9 +1018,9 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
 
         If (ia <= natms) Then
 
-           fxx(ia)=fxx(ia)+fxa
-           fyy(ia)=fyy(ia)+fya
-           fzz(ia)=fzz(ia)+fza
+           parts(ia)%fxx=parts(ia)%fxx+fxa
+           parts(ia)%fyy=parts(ia)%fyy+fya
+           parts(ia)%fzz=parts(ia)%fzz+fza
 
         End If
 
@@ -1038,17 +1040,17 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,comm)
            strs6 = strs6 + rab*yab*fza + rbc*ybc*fzc
            strs9 = strs9 + rab*zab*fza + rbc*zbc*fzc
 
-           fxx(ib)=fxx(ib)-fxa-fxc
-           fyy(ib)=fyy(ib)-fya-fyc
-           fzz(ib)=fzz(ib)-fza-fzc
+           parts(ib)%fxx=parts(ib)%fxx-fxa-fxc
+           parts(ib)%fyy=parts(ib)%fyy-fya-fyc
+           parts(ib)%fzz=parts(ib)%fzz-fza-fzc
 
         End If
 
         If (ic <= natms) Then
 
-           fxx(ic)=fxx(ic)+fxc
-           fyy(ic)=fyy(ic)+fyc
-           fzz(ic)=fzz(ic)+fzc
+           parts(ic)%fxx=parts(ic)%fxx+fxc
+           parts(ic)%fyy=parts(ic)%fyy+fyc
+           parts(ic)%fzz=parts(ic)%fzz+fzc
 
         End If
 

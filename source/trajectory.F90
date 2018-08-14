@@ -9,8 +9,8 @@ Module trajectory
   Use parse,         Only : tabs_2_blanks, get_line, get_word, &
                             strip_blanks, word_2_real
   Use configuration, Only : cfgname,imcon,cell,natms, &
-                            ltg,atmnam,chge,weight,   &
-                            xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz,&
+                            ltg,atmnam,weight,   &
+                            vxx,vyy,vzz,&
                             lsa,lsi,ltg,nlast
   Use netcdf_wrap,   Only : netcdf_param
   Use io,            Only : io_set_parameters,             &
@@ -36,13 +36,15 @@ Module trajectory
                             IO_WRITE_SORTED_DIRECT,        &
                             IO_WRITE_SORTED_NETCDF,        &
                             IO_WRITE_SORTED_MASTER,        &
-                            IO_READ_MPIIO,         &
-                            IO_READ_DIRECT,        &
-                            IO_READ_NETCDF,        &
-                            IO_READ_MASTER
+                            IO_READ_MPIIO,                 &
+                            IO_READ_DIRECT,                &
+                            IO_READ_NETCDF,                &
+                            IO_READ_MASTER,                &
+                            IO_SUBSET_POSITIONS
   Use numerics,        Only : dcell, invert, shellsort2
   Use configuration,   Only : read_config_parallel
   Use errors_warnings, Only : error,warning,info
+  Use particle,        Only : corePart
   Implicit None
 
   Private
@@ -52,7 +54,7 @@ Contains
 
 
 Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
-    sites,domain,comm)
+    sites,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -73,6 +75,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
   Integer,              Intent(   Out ) :: exout
   Type( site_type ), Intent( In    ) :: sites
   Type( domains_type ), Intent( In    ) :: domain
+  Type( corePart ),     Intent( InOut ) :: parts(:)
   Type( comms_type),    Intent( InOut ) :: comm
 
   Logical,               Save :: newjob = .true.  , &
@@ -250,9 +253,15 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
      Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 200
 
-     xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
+     Do i=1,mxatms
+       parts(i)%xxx=0.0_wp
+       parts(i)%yyy=0.0_wp
+       parts(i)%zzz=0.0_wp
+       parts(i)%fxx=0.0_wp
+       parts(i)%fyy=0.0_wp
+       parts(i)%fzz=0.0_wp
+     End Do
      vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
-     fxx=0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
 
      Call get_word(record,word) ! timestep
      Call get_word(record,word) ; nstep = Nint(word_2_real(word))
@@ -428,23 +437,23 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
                           ltg(natms)=iwrk(i)
 
                           If (levcfg /= 3) Then
-                             xxx(natms)=axx(i)
-                             yyy(natms)=ayy(i)
-                             zzz(natms)=azz(i)
+                             parts(natms)%xxx=axx(i)
+                             parts(natms)%yyy=ayy(i)
+                             parts(natms)%zzz=azz(i)
                              If (levcfg > 0) Then
                                 vxx(natms)=bxx(i)
                                 vyy(natms)=byy(i)
                                 vzz(natms)=bzz(i)
                                 If (levcfg > 1) Then
-                                   fxx(natms)=cxx(i)
-                                   fyy(natms)=cyy(i)
-                                   fzz(natms)=czz(i)
+                                   parts(natms)%fxx=cxx(i)
+                                   parts(natms)%fyy=cyy(i)
+                                   parts(natms)%fzz=czz(i)
                                 End If
                              End If
                           Else
-                             xxx(natms)=axx(i)
-                             yyy(natms)=ayy(i)
-                             zzz(natms)=azz(i)
+                             parts(natms)%xxx=axx(i)
+                             parts(natms)%yyy=ayy(i)
+                             parts(natms)%zzz=azz(i)
                           End If
                        Else
                           safe=.false.
@@ -692,7 +701,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 End Subroutine read_history
 
 Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
-                            time,rsd,netcdf,comm)
+                            time,rsd,netcdf,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -713,7 +722,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
   Real( Kind = wp ), Intent( In    ) :: tstep,time
   Real( Kind = wp ), Intent( In    ) :: rsd(:)
   Type( netcdf_param ), Intent( In    ) :: netcdf
-  Type( comms_type ), Intent( InOut ) :: comm
+  Type( corePart ),     Intent( InOut ) :: parts(:)
+  Type( comms_type ),   Intent( InOut ) :: comm
 
 
   Logical,               Save :: newjob = .true. , &
@@ -741,10 +751,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
   Character( Len = 1 ), Dimension( :, : ), Allocatable :: chbat
   Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
   Integer,              Dimension( : ),    Allocatable :: iwrk,n_atm
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: cxx,cyy,czz
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: ddd,eee,fff
+  Real( Kind = wp ),    Dimension( : ),    Allocatable :: eee,fff
+  Type( corePart  ),    Dimension( : ),    Allocatable :: temp_parts
 
 ! netCDF check
 
@@ -1064,13 +1073,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
      Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
      Do i=1,natms
-        Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') atmnam(i),ltg(i),weight(i),chge(i),rsd(i),Repeat(' ',18),lf
+        Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') atmnam(i),ltg(i),weight(i),parts(i)%chge,rsd(i),Repeat(' ',18),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') xxx(i),yyy(i),zzz(i),Repeat(' ',12),lf
+        Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,Repeat(' ',12),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -1085,7 +1094,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
         End If
 
         If (keytrj > 1) Then
-           Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') fxx(i),fyy(i),fzz(i),Repeat(' ',12),lf
+           Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') parts(i)%fxx,parts(i)%fyy,parts(i)%fzz,Repeat(' ',12),lf
            jj=jj+1
            Do k=1,recsz
               chbat(k,jj) = record(k:k)
@@ -1116,11 +1125,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
   Else If (io_write == IO_WRITE_UNSORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
-     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
-     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
-     Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
-     Allocate (ddd(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
+     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),                   Stat=fail(1))
+     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),        Stat=fail(3))
+     Allocate (temp_parts(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write allocation failure'
         Call error(0,message)
@@ -1160,12 +1167,12 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
         Do i=1,natms
            iwrk(i)=ltg(i)
 
-           axx(i)=xxx(i)
-           ayy(i)=yyy(i)
-           azz(i)=zzz(i)
+           temp_parts(i)%xxx=parts(i)%xxx
+           temp_parts(i)%yyy=parts(i)%yyy
+           temp_parts(i)%zzz=parts(i)%zzz
 
            chbuf(i)=atmnam(i)
-           ddd(i)=chge(i)
+           temp_parts(i)%chge=parts(i)%chge
            eee(i)=weight(i)
            fff(i)=rsd(i)
         End Do
@@ -1180,9 +1187,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
         If (keytrj >= 2) Then
            Do i=1,natms
-              cxx(i)=fxx(i)
-              cyy(i)=fyy(i)
-              czz(i)=fzz(i)
+              temp_parts(i)%fxx=parts(i)%fxx
+              temp_parts(i)%fyy=parts(i)%fyy
+              temp_parts(i)%fzz=parts(i)%fzz
            End Do
         End If
 
@@ -1197,13 +1204,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
                  Call grecv(comm,chbuf(1:jatms),jdnode,Traject_tag)
                  Call grecv(comm,iwrk(1:jatms),jdnode,Traject_tag)
 
-                 Call grecv(comm,ddd(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,temp_parts(1:jatms),jdnode,Traject_tag)
                  Call grecv(comm,eee(1:jatms),jdnode,Traject_tag)
                  Call grecv(comm,fff(1:jatms),jdnode,Traject_tag)
-
-                 Call grecv(comm,axx(1:jatms),jdnode,Traject_tag)
-                 Call grecv(comm,ayy(1:jatms),jdnode,Traject_tag)
-                 Call grecv(comm,azz(1:jatms),jdnode,Traject_tag)
 
                  If (keytrj > 0) Then
                     Call grecv(comm,bxx(1:jatms),jdnode,Traject_tag)
@@ -1211,22 +1214,24 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
                     Call grecv(comm,bzz(1:jatms),jdnode,Traject_tag)
                  End If
 
-                 If (keytrj > 1) Then
-                    Call grecv(comm,cxx(1:jatms),jdnode,Traject_tag)
-                    Call grecv(comm,cyy(1:jatms),jdnode,Traject_tag)
-                    Call grecv(comm,czz(1:jatms),jdnode,Traject_tag)
-                 End If
+!                 If (keytrj > 1) Then
+!                    Call grecv(comm,cxx(1:jatms),jdnode,Traject_tag)
+!                    Call grecv(comm,cyy(1:jatms),jdnode,Traject_tag)
+!                    Call grecv(comm,czz(1:jatms),jdnode,Traject_tag)
+!                 End If
               End If
            End If
 
            Do i=1,jatms
-              Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') chbuf(i),iwrk(i),eee(i),ddd(i),fff(i),Repeat(' ',18),lf
+              Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') chbuf(i),iwrk(i),eee(i),temp_parts(i)%chge,&
+                                                                   fff(i),Repeat(' ',18),lf
               jj=jj+1
               Do k=1,recsz
                  chbat(k,jj) = record(k:k)
               End Do
 
-              Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+              Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
+                                                             Repeat(' ',12),lf
               jj=jj+1
               Do k=1,recsz
                  chbat(k,jj) = record(k:k)
@@ -1241,7 +1246,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
               End If
 
               If (keytrj >= 2) Then
-                 Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
+                 Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') temp_parts(i)%fxx,temp_parts(i)%fyy,temp_parts(i)%fzz,&
+                                                                Repeat(' ',12),lf
                  jj=jj+1
                  Do k=1,recsz
                     chbat(k,jj) = record(k:k)
@@ -1273,13 +1279,10 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            Call gsend(comm,atmnam(:),0,Traject_tag)
            Call gsend(comm,ltg(:),0,Traject_tag)
 
-           Call gsend(comm,chge(:),0,Traject_tag)
+           Call gsend(comm,parts(:),0,Traject_tag)
            Call gsend(comm,weight(:),0,Traject_tag)
            Call gsend(comm,rsd(:),0,Traject_tag)
 
-           Call gsend(comm,xxx(:),0,Traject_tag)
-           Call gsend(comm,yyy(:),0,Traject_tag)
-           Call gsend(comm,zzz(:),0,Traject_tag)
 
            If (keytrj > 0) Then
               Call gsend(comm,vxx(:),0,Traject_tag)
@@ -1287,11 +1290,6 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
               Call gsend(comm,vzz(:),0,Traject_tag)
            End If
 
-           If (keytrj > 1) Then
-              Call gsend(comm,fxx(:),0,Traject_tag)
-              Call gsend(comm,fyy(:),0,Traject_tag)
-              Call gsend(comm,fzz(:),0,Traject_tag)
-           End If
         End If
 
 ! Save offset pointer
@@ -1300,11 +1298,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
      End If
 
-     Deallocate (chbuf,iwrk,  Stat=fail(1))
-     Deallocate (axx,ayy,azz, Stat=fail(2))
-     Deallocate (bxx,byy,bzz, Stat=fail(3))
-     Deallocate (cxx,cyy,czz, Stat=fail(4))
-     Deallocate (ddd,eee,fff, Stat=fail(5))
+     Deallocate (chbuf,iwrk,         Stat=fail(1))
+     Deallocate (bxx,byy,bzz,        Stat=fail(3))
+     Deallocate (temp_parts,eee,fff, Stat=fail(5))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write deallocation failure'
         Call error(0,message)
@@ -1401,8 +1397,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
      Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
      Call io_write_sorted_file( fh, keytrj, IO_HISTORY, rec_mpi_io, natms, &
-          ltg, atmnam, weight, chge, rsd, xxx, yyy, zzz,                   &
-          vxx, vyy, vzz, fxx, fyy, fzz, ierr )
+          ltg, atmnam, weight, rsd, parts,                   &
+          vxx, vyy, vzz,  ierr )
 
      If ( ierr /= 0 ) Then
         Select Case( ierr )
@@ -1434,11 +1430,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
   Else If (io_write == IO_WRITE_SORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
-     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
-     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
-     Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
-     Allocate (ddd(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
+     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),                   Stat=fail(1))
+     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),        Stat=fail(3))
+     Allocate (temp_parts(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write allocation failure'
         Call error(0,message)
@@ -1462,12 +1456,12 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
         Do i=1,natms
            iwrk(i)=ltg(i)
 
-           axx(i)=xxx(i)
-           ayy(i)=yyy(i)
-           azz(i)=zzz(i)
+           temp_parts(i)%xxx=parts(i)%xxx
+           temp_parts(i)%yyy=parts(i)%yyy
+           temp_parts(i)%zzz=parts(i)%zzz
 
            chbuf(i)=atmnam(i)
-           ddd(i)=chge(i)
+           temp_parts(i)%chge=parts(i)%chge
            eee(i)=weight(i)
            fff(i)=rsd(i)
         End Do
@@ -1482,9 +1476,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
         If (keytrj >= 2) Then
            Do i=1,natms
-              cxx(i)=fxx(i)
-              cyy(i)=fyy(i)
-              czz(i)=fzz(i)
+              temp_parts(i)%fxx=parts(i)%fxx
+              temp_parts(i)%fyy=parts(i)%fyy
+              temp_parts(i)%fzz=parts(i)%fzz
            End Do
         End If
 
@@ -1499,13 +1493,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
                  Call grecv(comm,chbuf(1:jatms),jdnode,Traject_tag)
                  Call grecv(comm,iwrk(1:jatms),jdnode,Traject_tag)
 
-                 Call grecv(comm,ddd(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,temp_parts(1:jatms),jdnode,Traject_tag)
                  Call grecv(comm,eee(1:jatms),jdnode,Traject_tag)
                  Call grecv(comm,fff(1:jatms),jdnode,Traject_tag)
-
-                 Call grecv(comm,axx(1:jatms),jdnode,Traject_tag)
-                 Call grecv(comm,ayy(1:jatms),jdnode,Traject_tag)
-                 Call grecv(comm,azz(1:jatms),jdnode,Traject_tag)
 
                  If (keytrj > 0) Then
                     Call grecv(comm,bxx(1:jatms),jdnode,Traject_tag)
@@ -1513,20 +1503,22 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
                     Call grecv(comm,bzz(1:jatms),jdnode,Traject_tag)
                  End If
 
-                 If (keytrj > 1) Then
-                    Call grecv(comm,cxx(1:jatms),jdnode,Traject_tag)
-                    Call grecv(comm,cyy(1:jatms),jdnode,Traject_tag)
-                    Call grecv(comm,czz(1:jatms),jdnode,Traject_tag)
-                 End If
+                 !If (keytrj > 1) Then
+                 !   Call grecv(comm,cxx(1:jatms),jdnode,Traject_tag)
+                 !   Call grecv(comm,cyy(1:jatms),jdnode,Traject_tag)
+                 !   Call grecv(comm,czz(1:jatms),jdnode,Traject_tag)
+                 !End If
               End If
            End If
 
            Do i=1,jatms
               rec1=rec+Int(iwrk(i)-1,li)*Int(keytrj+2,li)+Int(1,li)
-              Write(Unit=nhist, Fmt='(a8,i10,3f12.6,a18,a1)', Rec=rec1) chbuf(i),iwrk(i),eee(i),ddd(i),fff(i),Repeat(' ',18),lf
+              Write(Unit=nhist, Fmt='(a8,i10,3f12.6,a18,a1)', Rec=rec1) chbuf(i),iwrk(i),eee(i),temp_parts(i)%chge,&
+                                                                        fff(i),Repeat(' ',18),lf
 
               rec1=rec1+Int(1,li)
-              Write(Unit=nhist, Fmt='(3g20.10,a12,a1)', Rec=rec1) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+              Write(Unit=nhist, Fmt='(3g20.10,a12,a1)', Rec=rec1) temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
+                                                                  Repeat(' ',12),lf
 
               If (keytrj >= 1) Then
                  rec1=rec1+Int(1,li)
@@ -1535,7 +1527,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
               If (keytrj >= 2) Then
                  rec1=rec1+Int(1,li)
-                 Write(Unit=nhist, Fmt='(3g20.10,a12,a1)', Rec=rec1) cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
+                 Write(Unit=nhist, Fmt='(3g20.10,a12,a1)', Rec=rec1) temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
+                                                                     Repeat(' ',12),lf
               End If
            End Do
         End Do
@@ -1556,13 +1549,10 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            Call gsend(comm,atmnam(:),0,Traject_tag)
            Call gsend(comm,ltg(:),0,Traject_tag)
 
-           Call gsend(comm,chge(:),0,Traject_tag)
+           Call gsend(comm,parts(:),0,Traject_tag)
            Call gsend(comm,weight(:),0,Traject_tag)
            Call gsend(comm,rsd(:),0,Traject_tag)
 
-           Call gsend(comm,xxx(:),0,Traject_tag)
-           Call gsend(comm,yyy(:),0,Traject_tag)
-           Call gsend(comm,zzz(:),0,Traject_tag)
 
            If (keytrj > 0) Then
               Call gsend(comm,vxx(:),0,Traject_tag)
@@ -1570,11 +1560,6 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
               Call gsend(comm,vzz(:),0,Traject_tag)
            End If
 
-           If (keytrj > 1) Then
-              Call gsend(comm,fxx(:),0,Traject_tag)
-              Call gsend(comm,fyy(:),0,Traject_tag)
-              Call gsend(comm,fzz(:),0,Traject_tag)
-           End If
         End If
 
 ! Save offset pointer
@@ -1583,11 +1568,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
      End If
 
-     Deallocate (chbuf,iwrk,  Stat=fail(1))
-     Deallocate (axx,ayy,azz, Stat=fail(2))
-     Deallocate (bxx,byy,bzz, Stat=fail(3))
-     Deallocate (cxx,cyy,czz, Stat=fail(4))
-     Deallocate (ddd,eee,fff, Stat=fail(5))
+     Deallocate (chbuf,iwrk,         Stat=fail(1))
+     Deallocate (bxx,byy,bzz,        Stat=fail(3))
+     Deallocate (temp_parts,eee,fff, Stat=fail(5))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write deallocation failure'
         Call error(0,message)
@@ -1943,9 +1926,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
      Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
      Call io_write_sorted_file( fh, 0*keytrj, IO_HISTORD, rec_mpi_io, natms, &
-          ltg, atmnam,  (/ 0.0_wp /),  (/ 0.0_wp /), rsd, xxx, yyy, zzz,     &
+          ltg, atmnam, (/ 0.0_wp /),  rsd, parts,     &
           (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                        &
-          (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),  ierr )
+          IO_SUBSET_POSITIONS,  ierr )
 
      If ( ierr /= 0 ) Then
         Select Case( ierr )
@@ -1978,7 +1961,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
   Else
 
      Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
-     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
+     Allocate (temp_parts(1:mxatms),                      Stat=fail(2))
      Allocate (fff(1:mxatms),                             Stat=fail(3))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write allocation failure'
@@ -2003,9 +1986,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
         Do i=1,natms
            iwrk(i)=ltg(i)
 
-           axx(i)=xxx(i)
-           ayy(i)=yyy(i)
-           azz(i)=zzz(i)
+           temp_parts(i)%xxx=parts(i)%xxx
+           temp_parts(i)%yyy=parts(i)%yyy
+           temp_parts(i)%zzz=parts(i)%zzz
 
            chbuf(i)=atmnam(i)
            fff(i)=rsd(i)
@@ -2024,15 +2007,14 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
                  Call grecv(comm,fff(1:jatms),jdnode,Traject_tag)
 
-                 Call grecv(comm,axx(1:jatms),jdnode,Traject_tag)
-                 Call grecv(comm,ayy(1:jatms),jdnode,Traject_tag)
-                 Call grecv(comm,azz(1:jatms),jdnode,Traject_tag)
+                 Call grecv(comm,temp_parts(1:jatms),jdnode,Traject_tag)
               End If
            End If
 
            Do i=1,jatms
               rec1=rec+Int(iwrk(i),li)
-              Write(Unit=nhist, Fmt='(a6,4f7.1,a1)', Rec=rec1) chbuf(i),axx(i),ayy(i),azz(i),fff(i),lf
+              Write(Unit=nhist, Fmt='(a6,4f7.1,a1)', Rec=rec1) chbuf(i),temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
+                                                               fff(i),lf
            End Do
         End Do
 
@@ -2054,9 +2036,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
            Call gsend(comm,rsd(:),0,Traject_tag)
 
-           Call gsend(comm,xxx(:),0,Traject_tag)
-           Call gsend(comm,yyy(:),0,Traject_tag)
-           Call gsend(comm,zzz(:),0,Traject_tag)
+           Call gsend(comm,parts(:),0,Traject_tag)
         End If
 
 ! Save offset pointer
@@ -2066,7 +2046,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
      End If
 
      Deallocate (chbuf,iwrk,  Stat=fail(1))
-     Deallocate (axx,ayy,azz, Stat=fail(2))
+     Deallocate (temp_parts, Stat=fail(2))
      Deallocate (fff,         Stat=fail(3))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write deallocation failure'

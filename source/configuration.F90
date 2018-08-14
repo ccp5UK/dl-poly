@@ -23,6 +23,7 @@ Module configuration
                              strip_blanks, get_word, word_2_real,get_line
   Use domains, Only : domains_type
   Use development, Only : development_type
+  Use particle, Only : corePart
 
   Use netcdf_wrap, Only : netcdf_param
   Use io,     Only : io_set_parameters,         &
@@ -52,7 +53,9 @@ Module configuration
                             IO_WRITE_SORTED_MPIIO,     &
                             IO_WRITE_SORTED_DIRECT,    &
                             IO_WRITE_SORTED_NETCDF,    &
-                            IO_WRITE_SORTED_MASTER
+                            IO_WRITE_SORTED_MASTER,    &
+                            IO_SUBSET_POSITIONS,       &
+                            IO_SUBSET_FORCES
 
   Use errors_warnings, Only : error,warning,info
   use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
@@ -82,10 +85,12 @@ Module configuration
   Integer,              Allocatable, Save :: ixyz(:)
   Integer,              Allocatable, Save :: lstfre(:)
 
-  Real( Kind = wp ),    Allocatable, Save :: weight(:),chge(:)
-  Real( Kind = wp ),    Allocatable, Save :: xxx(:),yyy(:),zzz(:)
+  Real( Kind = wp ),    Allocatable, Save :: weight(:)!,chge(:)
+!  Real( Kind = wp ),    Allocatable, Save :: xxx(:),yyy(:),zzz(:)
   Real( Kind = wp ),    Allocatable, Save :: vxx(:),vyy(:),vzz(:)
-  Real( Kind = wp ),    Allocatable, Save :: fxx(:),fyy(:),fzz(:)
+!  Real( Kind = wp ),    Allocatable, Save :: fxx(:),fyy(:),fzz(:)
+
+  Type(corePart),       Allocatable, Save :: parts(:)
 
   Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
   Public :: check_config
@@ -96,11 +101,42 @@ Module configuration
      Module Procedure reallocate_chr_v
      Module Procedure reallocate_int_v
      Module Procedure reallocate_rwp_v
+     Module Procedure reallocate_corePart_v
   End Interface
+  Interface getcom
+    Module Procedure getcom_parts
+    Module Procedure getcom_arrays
+  End Interface getcom
 
   Private :: reallocate_chr_v, reallocate_int_v, reallocate_rwp_v
 
 Contains
+
+  Subroutine  reallocate_corePart_v( delta, a, stat )
+    Integer,                           Intent( In    ) :: delta
+    Type( corePart ), Allocatable,     Intent( InOut ) :: a(:)
+    Integer,                           Intent(   Out ) :: stat
+
+    Integer :: size_old, size_new, size_crs
+
+    Type( corePart ), Allocatable :: tmp(:)
+ 
+    stat = 0
+    If( delta == 0 ) Return
+
+    size_old = Size( a )
+    size_new = size_old + delta
+    size_crs = Min( size_old, size_new )
+
+    Allocate ( tmp( 1:size_new ), Stat = stat )
+    If ( stat /= 0 ) Return
+
+    tmp( 1:size_crs ) = a( 1:size_crs )
+
+    Deallocate( a , Stat = stat ) 
+    Call move_alloc( tmp, a )
+
+  End Subroutine
 
   Subroutine reallocate_chr_v( delta, a, stat )
 
@@ -119,24 +155,14 @@ Contains
     size_new = size_old + delta
     size_crs = Min( size_old, size_new )
 
-    Allocate ( tmp( 1:size_old ), Stat = stat )
+    Allocate ( tmp( 1:size_new ), Stat = stat )
     If ( stat /= 0 ) Return
 
-    tmp = a
+    tmp( 1:size_crs )  = a( 1:size_crs ) 
 
     Deallocate ( a, Stat = stat )
-    If ( stat /= 0 ) Return
-
-    Allocate ( a( 1:size_new ), Stat = stat )
-    If ( stat /= 0 ) Return
-
-    If ( size_crs > 0 ) Then
-       a( 1:size_crs ) = tmp( 1:size_crs )
-       If ( delta > 0 ) a( size_crs+1:size_new ) = ' '
-    End If
-
-    Deallocate ( tmp, Stat = stat )
-
+    Call move_alloc( tmp, a ) 
+    
   End Subroutine reallocate_chr_v
 
   Subroutine reallocate_int_v( delta, a, stat )
@@ -156,23 +182,14 @@ Contains
     size_new = size_old + delta
     size_crs = Min( size_old, size_new )
 
-    Allocate ( tmp( 1:size_old ), Stat = stat )
+    Allocate ( tmp( 1:size_new ), Stat = stat )
     If ( stat /= 0 ) Return
 
-    tmp = a
+    tmp( 1:size_crs ) = a( 1:size_crs )
 
     Deallocate ( a, Stat = stat )
-    If ( stat /= 0 ) Return
+    Call move_alloc( tmp, a )
 
-    Allocate ( a( 1:size_new ), Stat = stat )
-    If ( stat /= 0 ) Return
-
-    If ( size_crs > 0 ) Then
-       a( 1:size_crs ) = tmp( 1:size_crs )
-       If ( delta > 0 ) a( size_crs+1:size_new ) = 0
-    End If
-
-    Deallocate ( tmp, Stat = stat )
 
   End Subroutine reallocate_int_v
 
@@ -193,23 +210,16 @@ Contains
     size_new = size_old + delta
     size_crs = Min( size_old, size_new )
 
-    Allocate ( tmp( 1:size_old ), Stat = stat )
+    Allocate ( tmp( 1:size_new ), Stat = stat )
     If ( stat /= 0 ) Return
 
-    tmp = a
+    tmp( 1:size_crs ) = a( 1:size_crs )
 
     Deallocate ( a, Stat = stat )
     If ( stat /= 0 ) Return
 
     Allocate ( a( 1:size_new ), Stat = stat )
-    If ( stat /= 0 ) Return
-
-    If ( size_crs > 0 ) Then
-       a( 1:size_crs ) = tmp( 1:size_crs )
-       If ( delta > 0 ) a( size_crs+1:size_new ) = 0.0_wp
-    End If
-
-    Deallocate ( tmp, Stat = stat )
+    Call move_alloc( tmp, a )
 
   End Subroutine reallocate_rwp_v
 
@@ -218,24 +228,33 @@ Contains
 
     Integer, Intent( In    ) :: isize
 
-    Integer :: fail(1:5)
+    Integer :: fail(1:4), i
 
     fail = 0
 
     Allocate (atmnam(1:isize),                        Stat = fail(1))
     Allocate (lsi(1:isize),lsa(1:isize),ltg(1:isize), Stat = fail(2))
-    Allocate (xxx(1:isize),yyy(1:isize),zzz(1:isize), Stat = fail(3))
+    Allocate (parts(1:isize),                         Stat = fail(3))
+    !Allocate (xxx(1:isize),yyy(1:isize),zzz(1:isize), Stat = fail(3))
     Allocate (vxx(1:isize),vyy(1:isize),vzz(1:isize), Stat = fail(4))
-    Allocate (fxx(1:isize),fyy(1:isize),fzz(1:isize), Stat = fail(5))
-
+    !Allocate (fxx(1:isize),fyy(1:isize),fzz(1:isize), Stat = fail(5))
     If (Any(fail > 0)) Call error(1025)
 
     atmnam = ' '
     lsi = 0 ; lsa = 0 ; ltg = 0
 
-    xxx = 0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
+!    xxx = 0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
     vxx = 0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
-    fxx = 0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
+!    fxx = 0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
+    Do i=1,isize
+      parts(i)%xxx=0.0_wp
+      parts(i)%yyy=0.0_wp
+      parts(i)%zzz=0.0_wp
+      parts(i)%fxx=0.0_wp
+      parts(i)%fyy=0.0_wp
+      parts(i)%fzz=0.0_wp
+      parts(i)%chge=0.0_wp
+    End Do
 
   End Subroutine allocate_config_arrays_read
 
@@ -250,7 +269,7 @@ Contains
     Allocate (lfrzn(1:mxatms),lfree(1:mxatms),           Stat = fail(2))
     Allocate (ixyz(1:mxatms),  Stat = fail(3))
     Allocate (lstfre(1:mxatdm), Stat = fail(4))
-    Allocate (weight(1:mxatms),chge(1:mxatms),           Stat = fail(5))
+    Allocate (weight(1:mxatms),                          Stat = fail(5))
 
     If (Any(fail > 0)) Call error(1025)
 
@@ -260,7 +279,7 @@ Contains
     ixyz = 0
     lstfre = 0
 
-    weight = 0.0_wp ; chge = 0.0_wp
+    weight = 0.0_wp
 
 ! Resize the arrays in allocate_config_arrays_read
 
@@ -270,15 +289,10 @@ Contains
     Call reallocate( mxatms - Size( lsi    ), lsi,    stat( 2) )
     Call reallocate( mxatms - Size( lsa    ), lsa,    stat( 3) )
     Call reallocate( mxatms - Size( ltg    ), ltg,    stat( 4) )
-    Call reallocate( mxatms - Size( xxx    ), xxx,    stat( 5) )
-    Call reallocate( mxatms - Size( yyy    ), yyy,    stat( 6) )
-    Call reallocate( mxatms - Size( zzz    ), zzz,    stat( 7) )
-    Call reallocate( mxatms - Size( vxx    ), vxx,    stat( 8) )
-    Call reallocate( mxatms - Size( vyy    ), vyy,    stat( 9) )
-    Call reallocate( mxatms - Size( vzz    ), vzz,    stat(10) )
-    Call reallocate( mxatms - Size( fxx    ), fxx,    stat(11) )
-    Call reallocate( mxatms - Size( fyy    ), fyy,    stat(12) )
-    Call reallocate( mxatms - Size( fzz    ), fzz,    stat(13) )
+    Call reallocate( mxatms - Size( parts  ), parts,  stat( 5) )
+    Call reallocate( mxatms - Size( vxx    ), vxx,    stat( 6) )
+    Call reallocate( mxatms - Size( vyy    ), vyy,    stat( 7) )
+    Call reallocate( mxatms - Size( vzz    ), vzz,    stat( 8) )
 
     If ( Any(stat /= 0 )) Call error(1025)
 
@@ -439,7 +453,7 @@ Contains
               lsite(loc_ind)=mol_sit+m
               ltype(loc_ind)=sites%type_site(mol_sit+m)
               weight(loc_ind)=sites%weight_site(mol_sit+m)
-              chge(loc_ind)=sites%charge_site(mol_sit+m)
+              parts(loc_ind)%chge=sites%charge_site(mol_sit+m)
               lfrzn(loc_ind)=sites%freeze_site(mol_sit+m)
               lfree(loc_ind)=sites%free_site(mol_sit+m)
 
@@ -1026,9 +1040,9 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
                     atmnam(natms)=chbuf(i)
                     ltg(natms)=iwrk(i)
 
-                    xxx(natms)=axx(i)
-                    yyy(natms)=ayy(i)
-                    zzz(natms)=azz(i)
+                    parts(natms)%xxx=axx(i)
+                    parts(natms)%yyy=ayy(i)
+                    parts(natms)%zzz=azz(i)
 
                     If (levcfg > 0) Then
                        vxx(natms)=bxx(i)
@@ -1041,13 +1055,13 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
                     End If
 
                     If (levcfg > 1) Then
-                       fxx(natms)=cxx(i)
-                       fyy(natms)=cyy(i)
-                       fzz(natms)=czz(i)
+                       parts(natms)%fxx=cxx(i)
+                       parts(natms)%fyy=cyy(i)
+                       parts(natms)%fzz=czz(i)
                     Else
-                       fxx(natms)=0.0_wp
-                       fyy(natms)=0.0_wp
-                       fzz(natms)=0.0_wp
+                       parts(natms)%fxx=0.0_wp
+                       parts(natms)%fyy=0.0_wp
+                       parts(natms)%fzz=0.0_wp
                     End If
                  Else
                     safe=.false.
@@ -1170,9 +1184,9 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
      atmnam( 1:natms ) = atmnam( lsi( 1:natms ) )
      ltg( 1:natms ) = ltg( lsi( 1:natms ) )
 
-     xxx( 1:natms ) = xxx( lsi( 1:natms ) )
-     yyy( 1:natms ) = yyy( lsi( 1:natms ) )
-     zzz( 1:natms ) = zzz( lsi( 1:natms ) )
+     parts(1:natms)%xxx = parts( lsi( 1:natms ) )%xxx
+     parts(1:natms)%yyy = parts( lsi( 1:natms ) )%yyy
+     parts(1:natms)%zzz = parts( lsi( 1:natms ) )%zzz
 
      If (levcfg > 0) Then
         vxx( 1:natms ) = vxx( lsi( 1:natms ) )
@@ -1180,9 +1194,9 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
         vzz( 1:natms ) = vzz( lsi( 1:natms ) )
 
         If (levcfg > 1) Then
-           fxx( 1:natms ) = fxx( lsi( 1:natms ) )
-           fyy( 1:natms ) = fyy( lsi( 1:natms ) )
-           fzz( 1:natms ) = fzz( lsi( 1:natms ) )
+           parts( 1:natms )%fxx = parts( lsi( 1:natms ) )%fxx
+           parts( 1:natms )%fyy = parts( lsi( 1:natms ) )%fyy
+           parts( 1:natms )%fzz = parts( lsi( 1:natms ) )%fzz
         End If
      End If
      Do i=1,natms
@@ -1224,9 +1238,9 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
   Call invert(cell,rcell,celprp(10))
 
   Do i=1,natms
-     sxx=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-     syy=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-     szz=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+     sxx=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
+     syy=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
+     szz=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
 
 ! Get cell coordinates accordingly
 
@@ -1790,9 +1804,9 @@ Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast,
                     atmnam(natms)=chbuf(i)
                     ltg(natms)=iwrk(i)
 
-                    xxx(natms)=scatter_buffer(1,i)
-                    yyy(natms)=scatter_buffer(2,i)
-                    zzz(natms)=scatter_buffer(3,i)
+                    parts(natms)%xxx=scatter_buffer(1,i)
+                    parts(natms)%yyy=scatter_buffer(2,i)
+                    parts(natms)%zzz=scatter_buffer(3,i)
 
                     If (levcfg /=3 ) Then
                        If (levcfg > 0) Then
@@ -1806,13 +1820,13 @@ Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast,
                        End If
 
                        If (levcfg > 1) Then
-                          fxx(natms)=scatter_buffer(7,i)
-                          fyy(natms)=scatter_buffer(8,i)
-                          fzz(natms)=scatter_buffer(9,i)
+                          parts(natms)%fxx=scatter_buffer(7,i)
+                          parts(natms)%fyy=scatter_buffer(8,i)
+                          parts(natms)%fzz=scatter_buffer(9,i)
                        Else
-                          fxx(natms)=0.0_wp
-                          fyy(natms)=0.0_wp
-                          fzz(natms)=0.0_wp
+                          parts(natms)%fxx=0.0_wp
+                          parts(natms)%fyy=0.0_wp
+                          parts(natms)%fzz=0.0_wp
                        End If
                     End If
                   Else
@@ -2338,21 +2352,21 @@ Subroutine scale_config(megatm,devel,netcdf,comm)
 ! Rescale
 
   Do i=1,natms
-     uuu=xxx(i)
-     vvv=yyy(i)
-     www=zzz(i)
+     uuu=parts(i)%xxx
+     vvv=parts(i)%yyy
+     www=parts(i)%zzz
 
-     xxx(i)=rcell(1)*uuu+rcell(4)*vvv+rcell(7)*www
-     yyy(i)=rcell(2)*uuu+rcell(5)*vvv+rcell(8)*www
-     zzz(i)=rcell(3)*uuu+rcell(6)*vvv+rcell(9)*www
+     parts(i)%xxx=rcell(1)*uuu+rcell(4)*vvv+rcell(7)*www
+     parts(i)%yyy=rcell(2)*uuu+rcell(5)*vvv+rcell(8)*www
+     parts(i)%zzz=rcell(3)*uuu+rcell(6)*vvv+rcell(9)*www
 
-     uuu=xxx(i)
-     vvv=yyy(i)
-     www=zzz(i)
+     uuu=parts(i)%xxx
+     vvv=parts(i)%yyy
+     www=parts(i)%zzz
 
-     xxx(i)=devel%cels(1)*uuu+devel%cels(4)*vvv+devel%cels(7)*www
-     yyy(i)=devel%cels(2)*uuu+devel%cels(5)*vvv+devel%cels(8)*www
-     zzz(i)=devel%cels(3)*uuu+devel%cels(6)*vvv+devel%cels(9)*www
+     parts(i)%xxx=devel%cels(1)*uuu+devel%cels(4)*vvv+devel%cels(7)*www
+     parts(i)%yyy=devel%cels(2)*uuu+devel%cels(5)*vvv+devel%cels(8)*www
+     parts(i)%zzz=devel%cels(3)*uuu+devel%cels(6)*vvv+devel%cels(9)*www
   End Do
 
 ! Write REVCON
@@ -2522,7 +2536,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(3g20.10,a12,a1)') xxx(i),yyy(i),zzz(i),Repeat(' ',12),lf
+        Write(record, Fmt='(3g20.10,a12,a1)') parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,Repeat(' ',12),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -2536,7 +2550,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
            End Do
 
            If (levcfg > 1) Then
-              Write(record, Fmt='(3g20.10,a12,a1)') fxx(i),fyy(i),fzz(i),Repeat(' ',12),lf
+              Write(record, Fmt='(3g20.10,a12,a1)') parts(i)%fxx,parts(i)%fyy,parts(i)%fzz,Repeat(' ',12),lf
               jj=jj+1
               Do k=1,recsz
                  chbat(k,jj) = record(k:k)
@@ -2617,9 +2631,9 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
            iwrk(i)=ltg(i)
            chbuf(i)=atmnam(i)
 
-           axx(i)=xxx(i)
-           ayy(i)=yyy(i)
-           azz(i)=zzz(i)
+           axx(i)=parts(i)%xxx
+           ayy(i)=parts(i)%yyy
+           azz(i)=parts(i)%zzz
 
            If (levcfg > 0) Then
               bxx(i)=vxx(i)
@@ -2627,9 +2641,9 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
               bzz(i)=vzz(i)
 
               If (levcfg > 1) Then
-                 cxx(i)=fxx(i)
-                 cyy(i)=fyy(i)
-                 czz(i)=fzz(i)
+                 cxx(i)=parts(i)%fxx
+                 cyy(i)=parts(i)%fyy
+                 czz(i)=parts(i)%fzz
               End If
            End If
         End Do
@@ -2714,20 +2728,12 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
            Call gsend(comm,atmnam(1:natms),0,WriteConf_tag)
            Call gsend(comm,ltg(1:natms),0,WriteConf_tag)
 
-           Call gsend(comm,xxx(1:natms),0,WriteConf_tag)
-           Call gsend(comm,yyy(1:natms),0,WriteConf_tag)
-           Call gsend(comm,zzz(1:natms),0,WriteConf_tag)
-
+           Call gsend(comm, parts(1:natms), 0, WriteConf_tag)
            If (levcfg > 0) Then
               Call gsend(comm,vxx(1:natms),0,WriteConf_tag)
               Call gsend(comm,vyy(1:natms),0,WriteConf_tag)
               Call gsend(comm,vzz(1:natms),0,WriteConf_tag)
 
-              If (levcfg > 1) Then
-                 Call gsend(comm,fxx(1:natms),0,WriteConf_tag)
-                 Call gsend(comm,fyy(1:natms),0,WriteConf_tag)
-                 Call gsend(comm,fzz(1:natms),0,WriteConf_tag)
-              End If
            End If
         End If
 
@@ -2852,8 +2858,8 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
      rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
      Call io_write_sorted_file( fh, levcfg, IO_RESTART, rec_mpi_io, natms,      &
-          ltg, atmnam, (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), xxx, yyy, zzz, &
-          vxx, vyy, vzz, fxx, fyy, fzz, ierr )
+          ltg, atmnam, (/ 0.0_wp /), (/ 0.0_wp /), parts, &
+          vxx, vyy, vzz,IO_SUBSET_POSITIONS+IO_SUBSET_FORCES, ierr )
 
      If ( ierr /= 0 ) Then
         Select Case( ierr )
@@ -2915,9 +2921,9 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
            iwrk(i)=ltg(i)
            chbuf(i)=atmnam(i)
 
-           axx(i)=xxx(i)
-           ayy(i)=yyy(i)
-           azz(i)=zzz(i)
+           axx(i)=parts(i)%xxx
+           ayy(i)=parts(i)%yyy
+           azz(i)=parts(i)%zzz
 
            If (levcfg > 0) Then
               bxx(i)=vxx(i)
@@ -2925,9 +2931,9 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
               bzz(i)=vzz(i)
 
               If (levcfg > 1) Then
-                 cxx(i)=fxx(i)
-                 cyy(i)=fyy(i)
-                 czz(i)=fzz(i)
+                 cxx(i)=parts(i)%fxx
+                 cyy(i)=parts(i)%fyy
+                 czz(i)=parts(i)%fzz
               End If
            End If
         End Do
@@ -2990,20 +2996,13 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
            Call gsend(comm,atmnam(1:natms),0,WriteConf_tag)
            Call gsend(comm,ltg(1:natms),0,WriteConf_tag)
 
-           Call gsend(comm,xxx(1:natms),0,WriteConf_tag)
-           Call gsend(comm,yyy(1:natms),0,WriteConf_tag)
-           Call gsend(comm,zzz(1:natms),0,WriteConf_tag)
+           Call gsend(comm,parts(1:natms),0,WriteConf_tag)
 
            If (levcfg > 0) Then
               Call gsend(comm,vxx(1:natms),0,WriteConf_tag)
               Call gsend(comm,vyy(1:natms),0,WriteConf_tag)
               Call gsend(comm,vzz(1:natms),0,WriteConf_tag)
 
-              If (levcfg > 1) Then
-                 Call gsend(comm,fxx(1:natms),0,WriteConf_tag)
-                 Call gsend(comm,fyy(1:natms),0,WriteConf_tag)
-                 Call gsend(comm,fzz(1:natms),0,WriteConf_tag)
-              End If
            End If
         End If
 
@@ -3035,8 +3034,8 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 End Subroutine write_config
 
+Subroutine getcom_arrays(txx,tyy,tzz,com,comm)
 
-Subroutine getcom(xxx,yyy,zzz,com,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3047,7 +3046,56 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: xxx,yyy,zzz
+  Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: txx,tyy,tzz
+  Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
+  Type(comms_type),                    Intent( InOut ) :: comm
+
+  Logical,           Save :: newjob = .true.
+  Real( Kind = wp ), Save :: totmas
+  Integer                 :: i
+
+  ! total system mass
+
+    If (newjob) Then
+       newjob = .false.
+
+       totmas = 0.0_wp
+       Do i=1,natms
+          If (lfrzn(i) == 0) totmas = totmas + weight(i)
+       End Do
+
+       Call gsum(comm,totmas)
+    End If
+
+    com = 0.0_wp
+
+    Do i=1,natms
+       If (lfrzn(i) == 0) Then
+          com(1) = com(1) + weight(i)*txx(i)
+          com(2) = com(2) + weight(i)*tyy(i)
+          com(3) = com(3) + weight(i)*tzz(i)
+       End If
+    End Do
+
+    Call gsum(comm,com)
+    If (totmas >= zero_plus) com = com/totmas
+
+
+End Subroutine getcom_arrays
+
+
+Subroutine getcom_parts(parts,com,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to calculate system centre of mass position
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov october 2012
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( corePart ) , Dimension( 1:* ), Intent( In    ) :: parts
     Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
     Type(comms_type), Intent ( InOut )                   :: comm
 
@@ -3073,16 +3121,16 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
 
     Do i=1,natms
        If (lfrzn(i) == 0) Then
-          com(1) = com(1) + weight(i)*xxx(i)
-          com(2) = com(2) + weight(i)*yyy(i)
-          com(3) = com(3) + weight(i)*zzz(i)
+          com(1) = com(1) + weight(i)*parts(i)%xxx
+          com(2) = com(2) + weight(i)*parts(i)%yyy
+          com(3) = com(3) + weight(i)*parts(i)%zzz
        End If
     End Do
 
     Call gsum(comm,com)
     If (totmas >= zero_plus) com = com/totmas
 
-  End Subroutine getcom
+  End Subroutine getcom_parts
 
   Subroutine getcom_mol(istart,ifinish,cmm,comm)
 
@@ -3130,9 +3178,9 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
           k=j-istart+1
 
           mol(k,0) = weight(i)
-          mol(k,1) = xxx(i)
-          mol(k,2) = yyy(i)
-          mol(k,3) = zzz(i)
+          mol(k,1) = parts(i)%xxx
+          mol(k,2) = parts(i)%yyy
+          mol(k,3) = parts(i)%zzz
        End If
     End Do
 
@@ -3190,7 +3238,7 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
     Do i=1,natms
        If (lfrzn(i) /= 0) Then
            vxx(i) = 0.0_wp ; vyy(i) = 0.0_wp ; vzz(i) = 0.0_wp
-           fxx(i) = 0.0_wp ; fyy(i) = 0.0_wp ; fzz(i) = 0.0_wp
+           parts(i)%fxx = 0.0_wp ; parts(i)%fyy = 0.0_wp ; parts(i)%fzz = 0.0_wp
        End If
     End Do
 
@@ -3221,14 +3269,14 @@ Subroutine getcom(xxx,yyy,zzz,com,comm)
   ! Translate
 
     Do i=1,natms
-       xxx(i)=xxx(i)+devel%xorg
-       yyy(i)=yyy(i)+devel%yorg
-       zzz(i)=zzz(i)+devel%zorg
+       parts(i)%xxx=parts(i)%xxx+devel%xorg
+       parts(i)%yyy=parts(i)%yyy+devel%yorg
+       parts(i)%zzz=parts(i)%zzz+devel%zorg
     End Do
 
   ! Restore periodic boundaries
 
-    Call pbcshift(imcon,cell,natms,xxx,yyy,zzz)
+    Call pbcshift(imcon,cell,natms,parts)
 
   ! Write REVCON
 

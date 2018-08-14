@@ -12,12 +12,13 @@ Module core_shell
 
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gsync,gsum,gcheck,gmax
+  Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa, &
+                              weight,vxx,vyy,vzz,lfrzn,freeze_atoms
+  Use particle,        Only : corePart
   Use setup,           Only : nrite,boltz,engunit,output,mxatms,mxatdm,zero_plus,&
     mxtmls,mxlshp
-  Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,fxx,fyy,fzz, &
-    weight,vxx,vyy,vzz,lfrzn,freeze_atoms
   Use parse,           Only : strip_blanks,lower_case
-  Use shared_units,    Only : update_shared_units
+  Use shared_units,    Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
   Use numerics,        Only : local_index,images
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
@@ -119,7 +120,7 @@ Contains
   End Subroutine deallocate_core_shell_arrays
 
 
-  Subroutine core_shell_forces(cshell,stat,comm)
+  Subroutine core_shell_forces(cshell,stat,parts,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -135,6 +136,7 @@ Contains
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( stats_type ), Intent( InOut ) :: stat
     Type( comms_type ),                  Intent( InOut ) :: comm
+    Type( corePart ), Dimension( : ),    Intent( InOut ) :: parts
 
     Logical           :: safe
     Integer           :: fail(1:2),i,j,ia,ib,kk
@@ -180,9 +182,9 @@ Contains
       ! components of bond vector
 
       If (lstopt(0,i) > 0) Then
-        xdab(i)=xxx(ia)-xxx(ib)
-        ydab(i)=yyy(ia)-yyy(ib)
-        zdab(i)=zzz(ia)-zzz(ib)
+        xdab(i)=parts(ia)%xxx-parts(ib)%xxx
+        ydab(i)=parts(ia)%yyy-parts(ib)%yyy
+        zdab(i)=parts(ia)%zzz-parts(ib)%zzz
       Else ! (DEBUG)
         xdab(i)=0.0_wp
         ydab(i)=0.0_wp
@@ -262,9 +264,9 @@ Contains
 
         If (ia <= natms) Then
 
-          fxx(ia)=fxx(ia)+fx
-          fyy(ia)=fyy(ia)+fy
-          fzz(ia)=fzz(ia)+fz
+          parts(ia)%fxx=parts(ia)%fxx+fx
+          parts(ia)%fyy=parts(ia)%fyy+fy
+          parts(ia)%fzz=parts(ia)%fzz+fz
 
           ! calculate core-shell unit energy
 
@@ -284,9 +286,9 @@ Contains
 
         If (ib <= natms) Then
 
-          fxx(ib)=fxx(ib)-fx
-          fyy(ib)=fyy(ib)-fy
-          fzz(ib)=fzz(ib)-fz
+          parts(ib)%fxx=parts(ib)%fxx-fx
+          parts(ib)%fyy=parts(ib)%fyy-fy
+          parts(ib)%fzz=parts(ib)%fzz-fz
 
         End If
 
@@ -406,7 +408,7 @@ Contains
 
   End Subroutine core_shell_kinetic
 
-  Subroutine core_shell_on_top(cshell,comm)
+  Subroutine core_shell_on_top(cshell,parts,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -420,6 +422,7 @@ Contains
 
     Type( comms_type ),  Intent( InOut ) :: comm
     Type( core_shell_type ) , Intent( InOut ) :: cshell
+    Type( corePart ), Dimension(:), Intent( InOut ) :: parts
     Logical :: safe
     Integer :: fail,i,j,ia,ib
 
@@ -449,9 +452,9 @@ Contains
       ! area by construction, if not go to a controlled termination)
 
       If (ib > 0 .and. ib <= natms .and. ia > 0) Then
-        xxx(ib)=xxx(ia)
-        yyy(ib)=yyy(ia)
-        zzz(ib)=zzz(ia)
+        parts(ib)%xxx=parts(ia)%xxx
+        parts(ib)%yyy=parts(ia)%yyy
+        parts(ib)%zzz=parts(ia)%zzz
       End If
 
       ! Detect uncompressed unit
@@ -579,7 +582,7 @@ Contains
   End Subroutine core_shell_quench
 
   Subroutine core_shell_relax(l_str,relaxed,rdf_collect,rlx_tol,stpcfg,cshell, &
-      stat,domain,comm)
+      stat,domain,parts,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -600,6 +603,7 @@ Contains
     Type( stats_type ), Intent( InOut ) :: stat
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
+    Type( corePart ), Dimension(:), Intent( InOut ) :: parts
 
     Logical,           Save :: newjob = .true. , l_rdf
     Integer,           Save :: keyopt
@@ -699,7 +703,8 @@ Contains
     ! gather new forces on shared shells
 
     If (cshell%lshmv_shl) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,fxx,fyy,fzz,domain,comm)
+      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,parts,&
+                               SHARED_UNIT_UPDATE_FORCES,domain,comm)
     End If
 
     ! Load shell forces on cores (cores don't move during the shell relaxation)
@@ -711,13 +716,13 @@ Contains
       ib=local_index(cshell%listshl(2,i),nlast,lsi,lsa)
       If (ia > 0 .and. ia <= natms) Then ! THERE IS AN ib>0 FOR SURE
         jshl=jshl+1
-        fxt(jshl)=fxx(ib)
-        fyt(jshl)=fyy(ib)
-        fzt(jshl)=fzz(ib)
-      End If
-      lstopt(1,i)=ia
-      lstopt(2,i)=ib
-    End Do
+        fxt(jshl)=parts(ib)%fxx
+        fyt(jshl)=parts(ib)%fyy
+        fzt(jshl)=parts(ib)%fzz
+     End If
+     lstopt(1,i)=ia
+     lstopt(2,i)=ib
+  End Do
 
     ! Current configuration energy
 
@@ -884,15 +889,16 @@ Contains
 
     ! Move shells accordingly to their new positions
 
-    Do i=1,cshell%ntshl
-      ia=lstopt(1,i)
-      ib=lstopt(2,i)
-      If (ia > 0 .and. (ib > 0 .and. ib <= natms)) Then
-        xxx(ib)=xxx(ib)+stride*fxt(ia)
-        yyy(ib)=yyy(ib)+stride*fyt(ia)
-        zzz(ib)=zzz(ib)+stride*fzt(ia)
+   Do i=1,cshell%ntshl
+     ia=lstopt(1,i)
+     ib=lstopt(2,i)
+     If (ia > 0 .and. (ib > 0 .and. ib <= natms)) Then
+        parts(ib)%xxx=parts(ib)%xxx+stride*fxt(ia)
+        parts(ib)%yyy=parts(ib)%yyy+stride*fyt(ia)
+        parts(ib)%zzz=parts(ib)%zzz+stride*fzt(ia)
         dist_tol(1)=Max(dist_tol(1),fxt(ia)**2+fyt(ia)**2+fzt(ia)**2) ! - shell move
-        x(1)=xxx(ib)-xxx(ia) ; y(1)=yyy(ib)-yyy(ia) ; z(1)=zzz(ib)-zzz(ia)
+        x(1)=parts(ib)%xxx-parts(ia)%xxx ; y(1)=parts(ib)%yyy-parts(ia)%yyy
+        z(1)=parts(ib)%zzz-parts(ia)%zzz
         Call images(imcon,cell,1,x,y,z)
         dist_tol(2)=Max(dist_tol(2),x(1)**2+y(1)**2+z(1)**2) ! - core-shell separation
       End If
@@ -975,20 +981,20 @@ Contains
       Do i=1,cshell%ntshl
         ib=lstopt(2,i)
         If (ib > 0) Then
-          lst_sh(ib)=1
-          fff(0)=fff(0)-1.0_wp
-          fff(1)=fff(1)+fxx(ib) ; fxx(ib)=0.0_wp ; vxx(ib)=0.0_wp
-          fff(2)=fff(2)+fyy(ib) ; fyy(ib)=0.0_wp ; vyy(ib)=0.0_wp
-          fff(3)=fff(3)+fzz(ib) ; fzz(ib)=0.0_wp ; vzz(ib)=0.0_wp
+           lst_sh(ib)=1
+           fff(0)=fff(0)-1.0_wp
+           fff(1)=fff(1)+parts(ib)%fxx ; parts(ib)%fxx=0.0_wp ; vxx(ib)=0.0_wp
+           fff(2)=fff(2)+parts(ib)%fyy ; parts(ib)%fyy=0.0_wp ; vyy(ib)=0.0_wp
+           fff(3)=fff(3)+parts(ib)%fzz ; parts(ib)%fzz=0.0_wp ; vzz(ib)=0.0_wp
         End If
       End Do
       Call gsum(comm,fff)
       fff(1:3)=fff(1:3)/fff(0)
       Do i=1,natms
         If (lst_sh(i) == 0) Then
-          fxx(i)=fxx(i)+fff(1)
-          fyy(i)=fyy(i)+fff(2)
-          fzz(i)=fzz(i)+fff(3)
+           parts(i)%fxx=parts(i)%fxx+fff(1)
+           parts(i)%fyy=parts(i)%fyy+fff(2)
+           parts(i)%fzz=parts(i)%fzz+fff(3)
         End If
       End Do
 

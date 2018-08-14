@@ -13,9 +13,10 @@ Module plumed
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type
   Use setup,  Only : boltz, mxatms, DLP_VERSION
-  Use configuration, Only : cell,natms,weight,ltg,chge,fxx,fyy,fzz
+  Use configuration, Only : cell,natms,weight,ltg
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
+  Use particle, Only : corePart
 
   Implicit None
 
@@ -139,33 +140,47 @@ Contains
 
   End Subroutine plumed_print_about
 
-  Subroutine plumed_apply(xxx,yyy,zzz,nstrun,nstep,stats,plume,comm)
+  Subroutine plumed_apply(parts,nstrun,nstep,stats,plume,comm)
 
     Integer,           Intent( In    ) :: nstep
     Integer,           Intent(   Out ) :: nstrun
 
-    Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
+    Type(corePart),    Intent( InOut ) :: parts(1:mxatms)
     Type(stats_type),  Intent( InOut ) :: stats
     Type(plumed_type), Intent( InOut ) :: plume
     Type(comms_type),  Intent( InOut ) :: comm
 
 #ifdef PLUMED
     Character( Len = 256 ) :: message
+    Real( Kind = wp ),Dimension(:), Allocatable :: tx,ty,tz,tfx,tfy,tfz,tchge
+    Integer :: fail(1:2), i
+    Allocate(tx(1:mxatms),ty(1:mxatms),tz(1:mxatms),tchge(1:mxatms),stat=fail(1))
+    Allocate(tfx(1:mxatms),tfy(1:mxatms),tfz(1:mxatms),stat=fail(2))
+!    If(Any(fail)) Call error(0)
+    Do i = 1,mxatms
+      tx(i) = parts(i)%xxx
+      ty(i) = parts(i)%yyy
+      tz(i) = parts(i)%zzz
+      tfx(i) = parts(i)%fxx
+      tfy(i) = parts(i)%fyy
+      tfz(i) = parts(i)%fzz
+      tchge(i) = parts(i)%chge
+    End Do
 
     Call plumed_f_gcmd("setAtomsNlocal"//sn,natms)
     Call plumed_f_gcmd("setAtomsFGatindex"//sn,ltg)
     Call plumed_f_gcmd("setStep"//sn,nstep)
     Call plumed_f_gcmd("setMasses"//sn,weight)
-    Call plumed_f_gcmd("setCharges"//sn,chge)
-    Call plumed_f_gcmd("setPositionsX"//sn,xxx)
-    Call plumed_f_gcmd("setPositionsY"//sn,yyy)
-    Call plumed_f_gcmd("setPositionsZ"//sn,zzz)
+    Call plumed_f_gcmd("setCharges"//sn,tchge)
+    Call plumed_f_gcmd("setPositionsX"//sn,tx)
+    Call plumed_f_gcmd("setPositionsY"//sn,ty)
+    Call plumed_f_gcmd("setPositionsZ"//sn,tz)
     Call plumed_f_gcmd("setBox"//sn,cell)
     plume%eng = stats%stpcfg / real(comm%mxnode)
     Call plumed_f_gcmd("setEnergy"//sn,plume%eng)
-    Call plumed_f_gcmd("setForcesX"//sn,fxx)
-    Call plumed_f_gcmd("setForcesY"//sn,fyy)
-    Call plumed_f_gcmd("setForcesZ"//sn,fzz)
+    Call plumed_f_gcmd("setForcesX"//sn,tfx)
+    Call plumed_f_gcmd("setForcesY"//sn,tfy)
+    Call plumed_f_gcmd("setForcesZ"//sn,tfz)
     plume%virial = -stats%stress
     Call plumed_f_gcmd("setVirial"//sn,plume%virial)
     stats%stress = -plume%virial
@@ -177,6 +192,16 @@ Contains
        Call warning(message,.true.)
        nstrun=nstep
     End If
+    Do i=1,mxatms
+      parts(i)%xxx=tx(i)
+      parts(i)%yyy=ty(i)
+      parts(i)%zzz=tz(i)
+      parts(i)%fxx=tfx(i)
+      parts(i)%fyy=tfy(i)
+      parts(i)%fzz=tfz(i)
+      parts(i)%chge=tchge(i)
+    End Do
+    Deallocate(tx,ty,tz,tfx,tfy,tfz,tchge)
 #else
     nstrun=nstep
 

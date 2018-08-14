@@ -14,12 +14,13 @@ Module dpd
                            gsend,gwait,girecv
   Use setup,        Only : nrite,mxatdm,mxatms,mxbfxp
   Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
-                                  weight,xxx,yyy,zzz,vxx,vyy,vzz, &
-                                  fxx,fyy,fzz, ixyz
+                                  weight,vxx,vyy,vzz, &
+                                  ixyz
+  Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type
   Use domains, Only : domains_type
 
-  Use shared_units,    Only : update_shared_units
+  Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_FORCES
   Use errors_warnings, Only : error, warning
   Use numerics,        Only : box_mueller_saru2
   Use thermostat, Only : thermostat_type
@@ -33,7 +34,7 @@ Module dpd
 
 Contains
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,domain,comm)
+  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,domain,parts,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -57,6 +58,7 @@ Contains
     Type( neighbours_type ), Intent( In    ) :: neigh
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -132,9 +134,9 @@ Contains
       Do k=1,limit
         j=neigh%list(k,i)
 
-        xxt(k)=xxx(i)-xxx(j)
-        yyt(k)=yyy(i)-yyy(j)
-        zzt(k)=zzz(i)-zzz(j)
+        xxt(k)=parts(i)%xxx-parts(j)%xxx
+        yyt(k)=parts(i)%yyy-parts(j)%yyy
+        zzt(k)=parts(i)%zzz-parts(j)%zzz
       End Do
 
       ! square of distances
@@ -279,9 +281,9 @@ Contains
           vzz(i)=vzz(i)+tmp*fdpdz(i)
         End If
       Else ! a RB member
-        fxx(i)=fxx(i)+fdpdx(i)
-        fyy(i)=fyy(i)+fdpdy(i)
-        fzz(i)=fzz(i)+fdpdz(i)
+        parts(i)%fxx=parts(i)%fxx+fdpdx(i)
+        parts(i)%fyy=parts(i)%fyy+fdpdy(i)
+        parts(i)%fzz=parts(i)%fzz+fdpdz(i)
       End If
     End Do
 
@@ -310,9 +312,9 @@ Contains
       Do k=1,limit
         j=neigh%list(k,i)
 
-        xxt(k)=xxx(i)-xxx(j)
-        yyt(k)=yyy(i)-yyy(j)
-        zzt(k)=zzz(i)-zzz(j)
+        xxt(k)=parts(i)%xxx-parts(j)%xxx
+        yyt(k)=parts(i)%yyy-parts(j)%yyy
+        zzt(k)=parts(i)%zzz-parts(j)%zzz
       End Do
 
       ! square of distances
@@ -458,9 +460,9 @@ Contains
           vzz(i)=vzz(i)+tmp*fdpdz(i)
         End If
       Else ! a RB member
-        fxx(i)=fxx(i)+fdpdx(i)
-        fyy(i)=fyy(i)+fdpdy(i)
-        fzz(i)=fzz(i)+fdpdz(i)
+        parts(i)%fxx=parts(i)%fxx+fdpdx(i)
+        parts(i)%fyy=parts(i)%fyy+fdpdy(i)
+        parts(i)%fzz=parts(i)%fzz+fdpdz(i)
       End If
     End Do
 
@@ -468,7 +470,7 @@ Contains
 
     If (rigid%share) Then
       Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-        rigid%map_shared,fxx,fyy,fzz,domain,comm)
+        rigid%map_shared,parts,SHARED_UNIT_UPDATE_FORCES,domain,comm)
     End If
 
     ! globalise stats%virdpd

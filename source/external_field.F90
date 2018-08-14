@@ -13,8 +13,9 @@ Module external_field
   Use comms,   Only : comms_type,gcheck,gsum
   Use setup,   Only : twopi,nrite,mxatms
   Use configuration,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
-                             lfrzn,lstfre,weight,chge,           &
-                             xxx,yyy,zzz,vxx,vyy,vzz,fxx,fyy,fzz
+                             lfrzn,lstfre,weight,                 &
+                             vxx,vyy,vzz
+  Use particle, Only : corePart
   Use kinetics, Only : getcom_mol
   Use rigid_bodies, Only : rigid_bodies_type
   Use errors_warnings, Only : error
@@ -108,7 +109,7 @@ Contains
   End subroutine cleanup
 
   Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,rdf, &
-      ext_field,rigid,domain,comm)
+      ext_field,rigid,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -133,6 +134,7 @@ Contains
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( Inout ) :: comm
+  Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
 
   Logical, Save     :: newjob = .true.
 
@@ -157,9 +159,9 @@ Contains
 
      Do i=1,natms
         If (lfrzn(i) == 0) Then
-           fxx(i)=fxx(i) + chge(i)*ext_field%param(1)
-           fyy(i)=fyy(i) + chge(i)*ext_field%param(2)
-           fzz(i)=fzz(i) + chge(i)*ext_field%param(3)
+           parts(i)%fxx=parts(i)%fxx + parts(i)%chge*ext_field%param(1)
+           parts(i)%fyy=parts(i)%fyy + parts(i)%chge*ext_field%param(2)
+           parts(i)%fzz=parts(i)%fzz + parts(i)%chge*ext_field%param(3)
         End If
      End Do
 
@@ -172,7 +174,7 @@ Contains
      rz=twopi/cell(9)
 
      Do i=1,natms
-        If (lfrzn(i) == 0) fxx(i)=fxx(i) + ext_field%param(1)*Cos(ext_field%param(2)*zzz(i)*rz)
+        If (lfrzn(i) == 0) parts(i)%fxx=parts(i)%fxx + ext_field%param(1)*Cos(ext_field%param(2)*parts(i)%zzz*rz)
      End Do
 
   Else If (ext_field%key == FIELD_SHEAR_CONTINUOUS) Then
@@ -190,8 +192,8 @@ Contains
         Do j=1,nfree
            i=lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > ext_field%param(2)) &
-           vxx(i)=0.5_wp*Sign(ext_field%param(1),zzz(i))
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(parts(i)%zzz) > ext_field%param(2)) &
+           vxx(i)=0.5_wp*Sign(ext_field%param(1),parts(i)%zzz)
         End Do
 
 ! RBs
@@ -224,8 +226,8 @@ Contains
      Else
 
         Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > ext_field%param(2)) &
-           vxx(i)=0.5_wp*Sign(ext_field%param(1),zzz(i))
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(parts(i)%zzz) > ext_field%param(2)) &
+           vxx(i)=0.5_wp*Sign(ext_field%param(1),parts(i)%zzz)
         End Do
 
      End If
@@ -238,9 +240,9 @@ Contains
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
-              fxx(i)=fxx(i) + ext_field%param(1)*weight(i)
-              fyy(i)=fyy(i) + ext_field%param(2)*weight(i)
-              fzz(i)=fzz(i) + ext_field%param(3)*weight(i)
+              parts(i)%fxx=parts(i)%fxx + ext_field%param(1)*weight(i)
+              parts(i)%fyy=parts(i)%fyy + ext_field%param(2)*weight(i)
+              parts(i)%fzz=parts(i)%fzz + ext_field%param(3)*weight(i)
            End If
         End Do
 
@@ -290,9 +292,9 @@ Contains
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
-              fxx(i)=fxx(i) + oxt(i)
-              fyy(i)=fyy(i) + oyt(i)
-              fzz(i)=fzz(i) + ozt(i)
+              parts(i)%fxx=parts(i)%fxx + oxt(i)
+              parts(i)%fyy=parts(i)%fyy + oyt(i)
+              parts(i)%fzz=parts(i)%fzz + ozt(i)
            End If
         End Do
 
@@ -313,9 +315,9 @@ Contains
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
-              fxx(i)=fxx(i) + (vyy(i)*ext_field%param(3)-vzz(i)*ext_field%param(2))*chge(i)
-              fyy(i)=fyy(i) + (vzz(i)*ext_field%param(1)-vxx(i)*ext_field%param(3))*chge(i)
-              fzz(i)=fzz(i) + (vxx(i)*ext_field%param(2)-vyy(i)*ext_field%param(1))*chge(i)
+              parts(i)%fxx=parts(i)%fxx + (vyy(i)*ext_field%param(3)-vzz(i)*ext_field%param(2))*parts(i)%chge
+              parts(i)%fyy=parts(i)%fyy + (vzz(i)*ext_field%param(1)-vxx(i)*ext_field%param(3))*parts(i)%chge
+              parts(i)%fzz=parts(i)%fzz + (vxx(i)*ext_field%param(2)-vyy(i)*ext_field%param(1))*parts(i)%chge
            End If
         End Do
 
@@ -367,9 +369,9 @@ Contains
 
         Do i=1,natms
            If (lfrzn(i) == 0) Then
-              fxx(i)=fxx(i) + (oyt(i)*ext_field%param(3)-ozt(i)*ext_field%param(2))*chge(i)
-              fyy(i)=fyy(i) + (ozt(i)*ext_field%param(1)-oxt(i)*ext_field%param(3))*chge(i)
-              fzz(i)=fzz(i) + (oxt(i)*ext_field%param(2)-oyt(i)*ext_field%param(1))*chge(i)
+              parts(i)%fxx=parts(i)%fxx + (oyt(i)*ext_field%param(3)-ozt(i)*ext_field%param(2))*parts(i)%chge
+              parts(i)%fyy=parts(i)%fyy + (ozt(i)*ext_field%param(1)-oxt(i)*ext_field%param(3))*parts(i)%chge
+              parts(i)%fzz=parts(i)%fzz + (oxt(i)*ext_field%param(2)-oyt(i)*ext_field%param(1))*parts(i)%chge
            End If
         End Do
 
@@ -388,7 +390,7 @@ Contains
 
      Do i=1,natms
         If (lfrzn(i) == 0) Then
-           rrr=Sqrt(xxx(i)**2+yyy(i)**2+zzz(i)**2)
+           rrr=Sqrt(parts(i)%xxx**2+parts(i)%yyy**2+parts(i)%zzz**2)
            If (rrr > ext_field%param(4)) Then
               rrr=ext_field%param(2)-rrr
               If (rrr < 0.0_wp) rrr=0.1_wp
@@ -397,9 +399,9 @@ Contains
               stats%engfld=stats%engfld + gamma
               gamma=-ext_field%param(3)*gamma/(rrr*rrr)
 
-              fxx(i)=fxx(i) + gamma*xxx(i)
-              fyy(i)=fyy(i) + gamma*yyy(i)
-              fzz(i)=fzz(i) + gamma*zzz(i)
+              parts(i)%fxx=parts(i)%fxx + gamma*parts(i)%xxx
+              parts(i)%fyy=parts(i)%fyy + gamma*parts(i)%yyy
+              parts(i)%fzz=parts(i)%fzz + gamma*parts(i)%zzz
            End If
         End If
      End Do
@@ -411,11 +413,11 @@ Contains
 ! repulsive wall (harmonic) starting at z0
 
      Do i=1,natms
-        If (lfrzn(i) == 0 .and. ext_field%param(3)*zzz(i) > ext_field%param(3)*ext_field%param(2)) Then
-           zdif=zzz(i)-ext_field%param(2)
+        If (lfrzn(i) == 0 .and. ext_field%param(3)*parts(i)%zzz > ext_field%param(3)*ext_field%param(2)) Then
+           zdif=parts(i)%zzz-ext_field%param(2)
            gamma=-ext_field%param(1)*zdif
 
-           fzz(i)=fzz(i) + gamma
+           parts(i)%fzz=parts(i)%fzz + gamma
            stats%engfld=stats%engfld - gamma*zdif
         End If
      End Do
@@ -456,9 +458,9 @@ Contains
      rtmp=0.0_wp  ! average velocity and force per atom in x direction of the piston
      Do i=1,natms ! preserve momentum and velocity in the direction of the push
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
-           rtmp(1)=rtmp(1)+weight(i)*vxx(i) ; rtmp(2)=rtmp(2)+fxx(i)
-           vyy(i) = 0.0_wp                  ; fyy(i) = 0.0_wp
-           vzz(i) = 0.0_wp                  ; fzz(i) = 0.0_wp
+           rtmp(1)=rtmp(1)+weight(i)*vxx(i) ; rtmp(2)=rtmp(2)+parts(i)%fxx
+           vyy(i) = 0.0_wp                  ; parts(i)%fyy = 0.0_wp
+           vzz(i) = 0.0_wp                  ; parts(i)%fzz = 0.0_wp
         End If
      End Do
      Call gsum(comm,rtmp) ! net velocity and force to ensure solid wall behaviour
@@ -470,7 +472,7 @@ Contains
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
            stats%engfld=weight(i)*(rtmp(1)-vxx(i))**2 ! must change E_kin to reflect solidity
            vxx(i)=rtmp(1)
-           fxx(i)=rtmp(2)*weight(i) ! force per particle
+           parts(i)%fxx=rtmp(2)*weight(i) ! force per particle
         End If
      End Do
 
@@ -502,7 +504,7 @@ Contains
               If (cmm(3) > ext_field%param(5)) zdif = cmm(3) - ext_field%param(5)
 
               gamma=-ext_field%param(3)*zdif*weight(i)/cmm(0)
-              fzz(i)=fzz(i) + gamma
+              parts(i)%fzz=parts(i)%fzz + gamma
               stats%engfld=stats%engfld - gamma*zdif
            End If
         End If
@@ -526,17 +528,17 @@ Contains
       ib = Nint(ext_field%param(2))
       Do i=1,natms
          If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-            If (zzz(i) > ext_field%param(4) .and. zzz(i) < ext_field%param(5)) Then
+            If (parts(i)%zzz > ext_field%param(4) .and. parts(i)%zzz < ext_field%param(5)) Then
                tmp = ext_field%param(5) + ext_field%param(4)
 
-               If (zzz(i) <  tmp) Then
-                  zdif = zzz(i) - ext_field%param(4)
+               If (parts(i)%zzz <  tmp) Then
+                  zdif = parts(i)%zzz - ext_field%param(4)
                Else
-                  zdif = zzz(i) - ext_field%param(5)
+                  zdif = parts(i)%zzz - ext_field%param(5)
                End If
 
                gamma=-ext_field%param(3)*zdif
-               fzz(i)=fzz(i) + gamma
+               parts(i)%fzz=parts(i)%fzz + gamma
                stats%engfld=stats%engfld - gamma*zdif
             End If
          End If
@@ -559,12 +561,12 @@ Contains
      ib = Nint(ext_field%param(2))
      Do i=1,natms
         If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-           If (zzz(i) < ext_field%param(4) .or. zzz(i) > ext_field%param(5)) Then
-              If (zzz(i) < ext_field%param(4)) zdif = zzz(i) - ext_field%param(4)
-              If (zzz(i) > ext_field%param(5)) zdif = zzz(i) - ext_field%param(5)
+           If (parts(i)%zzz < ext_field%param(4) .or. parts(i)%zzz > ext_field%param(5)) Then
+              If (parts(i)%zzz < ext_field%param(4)) zdif = parts(i)%zzz - ext_field%param(4)
+              If (parts(i)%zzz > ext_field%param(5)) zdif = parts(i)%zzz - ext_field%param(5)
 
               gamma=-ext_field%param(3)*zdif
-              fzz(i)=fzz(i) + gamma
+              parts(i)%fzz=parts(i)%fzz + gamma
               stats%engfld=stats%engfld - gamma*zdif
            End If
         End If
@@ -580,9 +582,9 @@ Contains
      tmp=Sin(time*ext_field%param(4)*twopi)
      Do i=1,natms
         If (lfrzn(i) == 0) Then
-           fxx(i)=fxx(i) + chge(i)*ext_field%param(1)*tmp
-           fyy(i)=fyy(i) + chge(i)*ext_field%param(2)*tmp
-           fzz(i)=fzz(i) + chge(i)*ext_field%param(3)*tmp
+           parts(i)%fxx=parts(i)%fxx + parts(i)%chge*ext_field%param(1)*tmp
+           parts(i)%fyy=parts(i)%fyy + parts(i)%chge*ext_field%param(2)*tmp
+           parts(i)%fzz=parts(i)%fzz + parts(i)%chge*ext_field%param(3)*tmp
         End If
      End Do
 
@@ -648,9 +650,9 @@ Contains
               tmp=-tmp/cmm(0)
            End If
 
-           fxx(i)=fxx(i) + tmp*x(1)
-           fyy(i)=fyy(i) + tmp*y(1)
-           fzz(i)=fzz(i) + tmp*z(1)
+           parts(i)%fxx=parts(i)%fxx + tmp*x(1)
+           parts(i)%fyy=parts(i)%fyy + tmp*y(1)
+           parts(i)%fzz=parts(i)%fzz + tmp*z(1)
         End If
      End Do
 
@@ -676,7 +678,7 @@ Contains
      stats%virfld = rtmp(2)
 End Subroutine external_field_apply
 
-Subroutine external_field_correct(engfld,ext_field,rigid,comm)
+Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -694,6 +696,7 @@ Subroutine external_field_correct(engfld,ext_field,rigid,comm)
   Type( external_field_type ), Intent( In    ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
+  Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
 
   Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp
   Real( Kind = wp ) :: rz,vxt,tmp,rtmp(1:2), &
@@ -714,8 +717,8 @@ Subroutine external_field_correct(engfld,ext_field,rigid,comm)
         Do j=1,nfree
            i=lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > ext_field%param(2)) &
-           vxx(i)=0.5_wp*Sign(ext_field%param(1),zzz(i))
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(parts(i)%zzz) > ext_field%param(2)) &
+           vxx(i)=0.5_wp*Sign(ext_field%param(1),parts(i)%zzz)
         End Do
 
 ! RBs
@@ -748,8 +751,8 @@ Subroutine external_field_correct(engfld,ext_field,rigid,comm)
      Else
 
         Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(zzz(i)) > ext_field%param(2)) &
-           vxx(i)=0.5_wp*Sign(ext_field%param(1),zzz(i))
+           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(parts(i)%zzz) > ext_field%param(2)) &
+           vxx(i)=0.5_wp*Sign(ext_field%param(1),parts(i)%zzz)
         End Do
 
      End If
@@ -772,9 +775,9 @@ Subroutine external_field_correct(engfld,ext_field,rigid,comm)
      rtmp=0.0_wp  ! average velocity and force per atom in x direction of the piston
      Do i=1,natms ! preserve momentum and velocity in the direction of the push
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
-           rtmp(1)=rtmp(1)+weight(i)*vxx(i) ; rtmp(2)=rtmp(2)+fxx(i)
-           vyy(i) = 0.0_wp                  ; fyy(i) = 0.0_wp
-           vzz(i) = 0.0_wp                  ; fzz(i) = 0.0_wp
+           rtmp(1)=rtmp(1)+weight(i)*vxx(i) ; rtmp(2)=rtmp(2)+parts(i)%fxx
+           vyy(i) = 0.0_wp                  ; parts(i)%fyy = 0.0_wp
+           vzz(i) = 0.0_wp                  ; parts(i)%fzz = 0.0_wp
         End If
      End Do
      Call gsum(comm,rtmp) ! net velocity and force to ensure solid wall behaviour
@@ -786,7 +789,7 @@ Subroutine external_field_correct(engfld,ext_field,rigid,comm)
         If (ltg(i) >= ia .and. ltg(i) <= ib) Then
            engfld=weight(i)*(rtmp(1)-vxx(i))**2 ! must change E_kin to reflect solidity
            vxx(i)=rtmp(1)
-           fxx(i)=rtmp(2)*weight(i) ! force per particle
+           parts(i)%fxx=rtmp(2)*weight(i) ! force per particle
         End If
      End Do
 

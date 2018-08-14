@@ -14,8 +14,8 @@ Module tersoff
   Use comms,   Only : comms_type,gsum
   Use setup
   Use domains, Only : domains_type
-  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
-                             xxx,yyy,zzz,fxx,fyy,fzz
+  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype
+  Use particle,       Only : corePart
   Use errors_warnings, Only : error,warning
   use numerics, Only : dcell, invert
   Use statistics, Only : stats_type
@@ -112,7 +112,7 @@ Contains
 
   End Subroutine allocate_tersoff_arrays
 
-  Subroutine tersoff_forces(tersoffs,stats,neigh,domain,comm)
+  Subroutine tersoff_forces(tersoffs,stats,neigh,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -139,6 +139,7 @@ Contains
   Type( stats_type ), Intent( InOut )  :: stats
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( domains_type ), Intent( In    ) :: domain
+  Type( corePart ),   Intent( InOut )  :: parts(:)
   Type( comms_type ), Intent( InOut )  :: comm
 
 ! flag for undefined potentials NOT NEEDED HERE YET
@@ -246,9 +247,9 @@ Contains
 
   Do i=1,nlast
      If (tersoffs%lfr(ltype(i))) Then
-        xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
-        yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
-        zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
+        xxt(i)=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+dispx
+        yyt(i)=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+dispy
+        zzt(i)=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+dispz
      End If
   End Do
 
@@ -742,9 +743,9 @@ Contains
      stats%engter = stats%engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj))    ! energy_ij
      stats%virter = stats%virter + 0.5_wp*(gamma*vterm + gterm*rtf(jj)) ! virial_ij
 
-     fxx(iatm)=fxx(iatm)+0.5_wp*gterm*xtf(jj)
-     fyy(iatm)=fyy(iatm)+0.5_wp*gterm*ytf(jj)
-     fzz(iatm)=fzz(iatm)+0.5_wp*gterm*ztf(jj)
+     parts(iatm)%fxx=parts(iatm)%fxx+0.5_wp*gterm*xtf(jj)
+     parts(iatm)%fyy=parts(iatm)%fyy+0.5_wp*gterm*ytf(jj)
+     parts(iatm)%fzz=parts(iatm)%fzz+0.5_wp*gterm*ztf(jj)
 
      strs1 = strs1 - 0.5_wp*gterm*rtf(jj)*xtf(jj)*xtf(jj)
      strs2 = strs2 - 0.5_wp*gterm*rtf(jj)*xtf(jj)*ytf(jj)
@@ -757,9 +758,9 @@ Contains
 
   If (jatm <= natms) Then
 
-     fxx(jatm)=fxx(jatm)-0.5_wp*gterm*xtf(jj)
-     fyy(jatm)=fyy(jatm)-0.5_wp*gterm*ytf(jj)
-     fzz(jatm)=fzz(jatm)-0.5_wp*gterm*ztf(jj)
+     parts(jatm)%fxx=parts(jatm)%fxx-0.5_wp*gterm*xtf(jj)
+     parts(jatm)%fyy=parts(jatm)%fyy-0.5_wp*gterm*ytf(jj)
+     parts(jatm)%fzz=parts(jatm)%fzz-0.5_wp*gterm*ztf(jj)
 
   End If
 
@@ -825,9 +826,9 @@ Contains
 
               If (iatm <= natms) Then
 
-                 fxx(iatm)=fxx(iatm)-(fxj+fxk)
-                 fyy(iatm)=fyy(iatm)-(fyj+fyk)
-                 fzz(iatm)=fzz(iatm)-(fzj+fzk)
+                 parts(iatm)%fxx=parts(iatm)%fxx-(fxj+fxk)
+                 parts(iatm)%fyy=parts(iatm)%fyy-(fyj+fyk)
+                 parts(iatm)%fzz=parts(iatm)%fzz-(fzj+fzk)
 
 ! calculate contribution to stress tensor (associated to the head atom)
 
@@ -842,17 +843,17 @@ Contains
 
               If (jatm <= natms) Then
 
-                 fxx(jatm)=fxx(jatm)+fxj
-                 fyy(jatm)=fyy(jatm)+fyj
-                 fzz(jatm)=fzz(jatm)+fzj
+                 parts(jatm)%fxx=parts(jatm)%fxx+fxj
+                 parts(jatm)%fyy=parts(jatm)%fyy+fyj
+                 parts(jatm)%fzz=parts(jatm)%fzz+fzj
 
               End If
 
               If (katm <= natms) Then
 
-                 fxx(katm)=fxx(katm)+fxk
-                 fyy(katm)=fyy(katm)+fyk
-                 fzz(katm)=fzz(katm)+fzk
+                 parts(katm)%fxx=parts(katm)%fxx+fxk
+                 parts(katm)%fyy=parts(katm)%fyy+fyk
+                 parts(katm)%fzz=parts(katm)%fzz+fzk
 
               End If
 

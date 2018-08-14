@@ -15,8 +15,8 @@ Module three_body
   Use comms,   Only : comms_type,gsum,gcheck
   Use setup
   Use domains, Only : domains_type
-  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype, &
-                             xxx,yyy,zzz,fxx,fyy,fzz
+  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype
+  Use particle,        Only : corePart
   Use errors_warnings, Only : error,warning
   Use numerics, Only : dcell, invert
   Use statistics, Only : stats_type
@@ -62,7 +62,7 @@ Contains
     threebody%rcttbp = 0.0_wp
   End Subroutine allocate_three_body_arrays
 
-  Subroutine three_body_forces(stats,threebody,neigh,domain,comm)
+  Subroutine three_body_forces(stats,threebody,neigh,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -85,6 +85,7 @@ Contains
   Type(threebody_type), Intent( InOut ) :: threebody
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( domains_type ), Intent( In    ) :: domain
+  Type( corePart ),     Intent( InOut ) :: parts(:)
   Type(comms_type), Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -180,9 +181,9 @@ Contains
 
   Do i=1,nlast
      If (threebody%lfrtbp(ltype(i))) Then
-        xxt(i)=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)+dispx
-        yyt(i)=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)+dispy
-        zzt(i)=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)+dispz
+        xxt(i)=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+dispx
+        yyt(i)=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+dispy
+        zzt(i)=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+dispz
      End If
   End Do
 
@@ -673,9 +674,9 @@ Contains
 
   If (ia <= natms) Then
 
-     fxx(ia)=fxx(ia)+fxa
-     fyy(ia)=fyy(ia)+fya
-     fzz(ia)=fzz(ia)+fza
+     parts(ia)%fxx=parts(ia)%fxx+fxa
+     parts(ia)%fyy=parts(ia)%fyy+fya
+     parts(ia)%fzz=parts(ia)%fzz+fza
 
   End If
 
@@ -695,17 +696,17 @@ Contains
      strs6 = strs6 + rab*yab*fza + rbc*ybc*fzc
      strs9 = strs9 + rab*zab*fza + rbc*zbc*fzc
 
-     fxx(ib)=fxx(ib)-(fxa+fxc)
-     fyy(ib)=fyy(ib)-(fya+fyc)
-     fzz(ib)=fzz(ib)-(fza+fzc)
+     parts(ib)%fxx=parts(ib)%fxx-(fxa+fxc)
+     parts(ib)%fyy=parts(ib)%fyy-(fya+fyc)
+     parts(ib)%fzz=parts(ib)%fzz-(fza+fzc)
 
   End If
 
   If (ic <= natms) Then
 
-     fxx(ic)=fxx(ic)+fxc
-     fyy(ic)=fyy(ic)+fyc
-     fzz(ic)=fzz(ic)+fzc
+     parts(ic)%fxx=parts(ic)%fxx+fxc
+     parts(ic)%fyy=parts(ic)%fyy+fyc
+     parts(ic)%fzz=parts(ic)%fzz+fzc
 
   End If
 

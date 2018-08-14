@@ -6,9 +6,10 @@ Module system
                     gtime,gsum,gcheck
   Use setup
   Use site, Only : site_type
-  Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,xxx,yyy,zzz, &
+  Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,&
                                  cfgname,imcon,cell,lsi,lsa,atmnam, &
                                  write_config
+  Use particle,   Only : corePart
   Use statistics, Only : stats_type
   Use rdfs,        Only : rdf_type
   Use z_density,   Only : z_density_type
@@ -60,7 +61,7 @@ Module system
   Subroutine system_init                                             &
            (levcfg,rcut,rbin,keyres,megatm,    &
            time,tmst,nstep,tstep,cshell,stats,devel,green,thermo,met, &
-           bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,comm)
+           bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -94,6 +95,7 @@ Module system
   Type( site_type ), Intent( InOut ) :: sites
   Type( vdw_type ), Intent( InOut ) :: vdws
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( corePart ), Intent( InOut ) :: parts(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -469,9 +471,9 @@ Module system
 ! and final displacements to zero
 
   Do i=1,natms
-     stats%xin(i)=xxx(i)
-     stats%yin(i)=yyy(i)
-     stats%zin(i)=zzz(i)
+     stats%xin(i)=parts(i)%xxx
+     stats%yin(i)=parts(i)%yyy
+     stats%zin(i)=parts(i)%zzz
 
      stats%xto(i)=0.0_wp
      stats%yto(i)=0.0_wp
@@ -627,7 +629,7 @@ Module system
 End Subroutine system_init
 
 Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
-                         dihedral,inversion,sites,netcdf,rigid,comm)
+                         dihedral,inversion,sites,netcdf,rigid,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -658,6 +660,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
   Type( site_type ), Intent( In    ) :: sites
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( rigid_bodies_type ), Intent( In    ) :: rigid
+  Type( corePart ),   Intent( InOut ) :: parts(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size
@@ -971,9 +974,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
            If (lsa(indatm1) == nattot) Then  ! If a local atom has a global index nattot
               loc_ind=lsi(indatm1)
-              xm(m)=xxx(loc_ind)
-              ym(m)=yyy(loc_ind)
-              zm(m)=zzz(loc_ind)
+              xm(m)=parts(loc_ind)%xxx
+              ym(m)=parts(loc_ind)%yyy
+              zm(m)=parts(loc_ind)%zzz
               indatm1=indatm1+1 ! Increase local atom counter
            Else
               xm(m)=0.0_wp

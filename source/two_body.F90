@@ -3,7 +3,8 @@ Module two_body
   Use comms,   Only : comms_type,gsum
   Use setup
   Use site, Only : site_type
-  Use configuration,  Only : volm,sumchg,natms,xxx,yyy,zzz
+  Use configuration,  Only : volm,sumchg,natms
+  Use particle,       Only : corePart
   Use neighbours,     Only : neighbours_type,link_cell_pairs
   Use ewald,           Only : ewald_type
   Use mpole,          Only : mpole_type,POLARISATION_CHARMM
@@ -41,7 +42,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
            nstfce,lbook,megfrz, &
            leql,nsteql,nstep,         &
            cshell,stats,ewld,devel,met,pois,neigh,sites,vdws,rdf,mpoles,electro, &
-           domain,tmr,comm)
+           domain,tmr,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -85,6 +86,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
   Type( timer_type ),                       Intent( InOut ) :: tmr
   Type( electrostatic_type ), Intent( In    ) :: electro
   Type( domains_type ), Intent( In    ) :: domain
+  Type( corePart ),                         Intent( InOut ) :: parts(:)
   Type( comms_type ),                       Intent( InOut ) :: comm
 
 
@@ -168,13 +170,13 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 ! Set up non-bonded interaction (verlet) list using link cells
   If (neigh%update) Then
     Call link_cell_pairs(vdws%cutoff,met%rcut,pdplnc,lbook,megfrz,cshell,devel, &
-      neigh,mpoles,domain,tmr,comm)
+      neigh,mpoles,domain,tmr,parts,comm)
   End If
 ! Calculate all contributions from KIM
 
   If (kimim /= ' ') Then
      Call kim_setup(sites%ntype_atom,sites%unique_atom,sites%site_name,kimim,neigh%max_list,comm)
-     Call kim_forces(engkim,virkim,stats%stress,neigh%list,domain%map,comm)
+     Call kim_forces(engkim,virkim,stats%stress,neigh%list,domain%map,parts,comm)
      Call kim_cleanup(comm)
   End If
 
@@ -187,7 +189,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 ! calculate local density in metals
 
     Call metal_ld_compute(engden,virden,stats%stress,sites%ntype_atom,met,neigh, &
-      domain,comm)
+      domain,parts,comm)
   End If
 
 ! calculate coulombic forces, Ewald sum - fourier contribution
@@ -199,14 +201,14 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
      If (mpoles%max_mpoles > 0) Then
         If (mpoles%max_order <= 2) Then
           Call ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stats%stress,ewld,mpoles, &
-            electro,domain,comm)
+            electro,domain,parts,comm)
         Else
           Call ewald_spme_mforces(engcpe_rc,vircpe_rc,stats%stress,ewld,mpoles, &
-            electro,domain,comm)
+            electro,domain,parts,comm)
         End If
      Else
         Call ewald_spme_forces(engcpe_rc,vircpe_rc,stats%stress,ewld,electro, &
-          domain,comm)
+          domain,parts,comm)
      End If
   End If
 #ifdef CHRONO
@@ -229,9 +231,9 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
      Do k=1,limit
         j=neigh%list(k,i)
 
-        xxt(k)=xxx(i)-xxx(j)
-        yyt(k)=yyy(i)-yyy(j)
-        zzt(k)=zzz(i)-zzz(j)
+        xxt(k)=parts(i)%xxx-parts(j)%xxx
+        yyt(k)=parts(i)%yyy-parts(j)%yyy
+        zzt(k)=parts(i)%zzz-parts(j)%zzz
      End Do
 
 ! periodic boundary conditions not needed by LC construction
@@ -247,7 +249,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 ! calculate metal forces and potential
 
      If (met%n_potentials > 0) Then
-        Call metal_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,safe,sites%ntype_atom,met,neigh)
+        Call metal_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,safe,sites%ntype_atom,met,neigh,parts)
 
         engmet=engmet+engacc
         virmet=virmet+viracc
@@ -256,7 +258,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 ! calculate short-range force and potential terms
 
      If (vdws%n_vdw > 0) Then
-        Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,vdws)
+        Call vdw_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,vdws,parts)
 
         engvdw=engvdw+engacc
         virvdw=virvdw+viracc
@@ -276,10 +278,10 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
            If (mpoles%max_order <= 2) Then
               Call ewald_real_mforces_d(i,xxt,yyt,zzt,rrt,engacc, &
-                viracc,stats%stress,ewld,neigh,mpoles,electro,comm)
+                viracc,stats%stress,ewld,neigh,mpoles,electro,parts,comm)
            Else
               Call ewald_real_mforces(i,xxt,yyt,zzt,rrt,engacc, &
-                viracc,stats%stress,neigh,mpoles,electro,domain,comm)
+                viracc,stats%stress,neigh,mpoles,electro,domain,parts,comm)
            End If
 
            engcpe_rl=engcpe_rl+engacc
@@ -289,7 +291,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! distance dependant dielectric potential
 
-           Call coul_dddp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles)
+           Call coul_dddp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,parts)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -298,7 +300,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! coulombic 1/r potential with no truncation or damping
 
-           Call coul_cp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles)
+           Call coul_cp_mforces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,parts)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -307,7 +309,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,comm)
+           Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,parts,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -316,7 +318,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! reaction field potential
 
-           Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,comm)
+           Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,parts,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -329,7 +331,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! calculate coulombic forces, Ewald sum - real space contribution
 
-           Call ewald_real_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,comm)
+           Call ewald_real_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,parts,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -338,7 +340,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! distance dependant dielectric potential
 
-           Call coul_dddp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh)
+           Call coul_dddp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,parts)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -347,7 +349,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! coulombic 1/r potential with no truncation or damping
 
-           Call coul_cp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh)
+           Call coul_cp_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,parts)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -356,7 +358,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! force-shifted coulomb potentials
 
-           Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,comm)
+           Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,parts,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -365,7 +367,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! reaction field potential
 
-           Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,comm)
+           Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,parts,comm)
 
            engcpe_rl=engcpe_rl+engacc
            vircpe_rl=vircpe_rl+viracc
@@ -383,7 +385,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 ! Poisson solver alternative to Ewald
 
   If (electro%key == ELECTROSTATIC_POISSON) Then
-    Call poisson_forces(engacc,viracc,stats%stress,pois,electro,domain,comm)
+    Call poisson_forces(engacc,viracc,stats%stress,pois,electro,domain,parts,comm)
     engcpe_rl=engcpe_rl+engacc
     vircpe_rl=vircpe_rl+viracc
   End If
@@ -414,9 +416,9 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
            Do k=1,limit
               j=neigh%list(neigh%list(0,i)+k,i)
 
-              xxt(k)=xxx(i)-xxx(j)
-              yyt(k)=yyy(i)-yyy(j)
-              zzt(k)=zzz(i)-zzz(j)
+              xxt(k)=parts(i)%xxx-parts(j)%xxx
+              yyt(k)=parts(i)%yyy-parts(j)%yyy
+              zzt(k)=parts(i)%zzz-parts(j)%zzz
            End Do
 
 ! periodic boundary conditions not needed by LC construction
@@ -437,13 +439,13 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
               If (mpoles%max_mpoles > 0) Then
                  If (mpoles%max_order <= 2) Then
                    Call ewald_excl_mforces_d(i,xxt,yyt,zzt,rrt,engacc,viracc, &
-                     stats%stress,neigh,mpoles,electro)
+                     stats%stress,neigh,mpoles,electro,parts)
                  Else
                    Call ewald_excl_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc, &
-                     stats%stress,neigh,mpoles,electro,domain)
+                     stats%stress,neigh,mpoles,electro,domain,parts)
                  End If
               Else
-                 Call ewald_excl_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro)
+                 Call ewald_excl_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,parts)
               End If
 
               engcpe_ex=engcpe_ex+engacc
@@ -454,7 +456,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
            If (mpoles%key == POLARISATION_CHARMM) Then
               If (neigh%list(-3,i)-neigh%list(0,i) > 0) Then
-                 Call coul_chrm_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles)
+                 Call coul_chrm_forces(i,electro%eps,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,parts)
 
                  engcpe_ch=engcpe_ch+engacc
                  vircpe_ch=vircpe_ch+viracc
@@ -485,9 +487,9 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
               Do k=1,limit
                  j=neigh%list(neigh%list(-1,i)+k,i)
 
-                 xxt(k)=xxx(i)-xxx(j)
-                 yyt(k)=yyy(i)-yyy(j)
-                 zzt(k)=zzz(i)-zzz(j)
+                 xxt(k)=parts(i)%xxx-parts(j)%xxx
+                 yyt(k)=parts(i)%yyy-parts(j)%yyy
+                 zzt(k)=parts(i)%zzz-parts(j)%zzz
               End Do
 
 ! periodic boundary conditions not needed by LC construction
@@ -534,12 +536,12 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
            If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald
               If (mpoles%max_mpoles > 0) Then
                 Call ewald_frzn_mforces(engcpe_fr,vircpe_fr,stats%stress,ewld, &
-                  neigh,mpoles,electro,domain,comm)
+                  neigh,mpoles,electro,domain,parts,comm)
               Else
-                 Call ewald_frzn_forces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,electro,comm)
+                 Call ewald_frzn_forces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,electro,parts,comm)
               End If
            Else !If (electro%key == ELECTROSTATIC_POISSON) Then ! Poisson Solver
-              Call poisson_frzn_forces(electro%eps,engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,comm)
+              Call poisson_frzn_forces(electro%eps,engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,parts,comm)
            End If
         End If
 
@@ -547,7 +549,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! Refresh all Ewald k-space contributions
 
-        Call ewld%refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stats%stress)
+        Call ewld%refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stats%stress,parts)
 
      End If
 
@@ -569,7 +571,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 ! under infinitesimal rotations & convert to Cartesian coordinates
 
   If (mpoles%max_mpoles > 0) Then
-    Call d_ene_trq_mpoles(vircpe_dt,stats%stress,mpoles)
+    Call d_ene_trq_mpoles(vircpe_dt,stats%stress,mpoles,parts)
   End If
 
 ! sum up contributions to potentials

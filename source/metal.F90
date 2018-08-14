@@ -13,8 +13,9 @@ Module metal
   Use kinds, Only : wp,wi
   Use setup
   Use site, Only : site_type
-  Use configuration, Only : natms,ltg,ltype,fxx,fyy,fzz,&
-                            xxx,yyy,zzz,imcon,volm,nlast,ixyz
+  Use configuration, Only : natms,ltg,ltype,&
+                            imcon,volm,nlast,ixyz
+  Use particle, Only : corePart
   Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag,wp_mpi,gsend, &
                      gwait,girecv
   Use parse, Only : get_line,get_word,lower_case,word_2_real
@@ -165,7 +166,7 @@ Contains
   End Subroutine allocate_metal_erf_arrays
 
   Subroutine metal_forces &
-          (iatm,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,ntype_atom,met,neigh)
+          (iatm,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,ntype_atom,met,neigh,parts)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -185,6 +186,7 @@ Contains
   Real( Kind = wp ),                        Intent(   Out ) :: engmet,virmet
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Logical,                                  Intent( InOut ) :: safe
+  Type( corePart),   Dimension( : ),        Intent( InOut ) :: parts
   Integer( Kind = wi ), Intent( In    ) :: ntype_atom
   Type( metal_type ), Intent( InOut ) :: met
 
@@ -224,9 +226,9 @@ Contains
 
 ! load forces
 
-  fix=fxx(iatm)
-  fiy=fyy(iatm)
-  fiz=fzz(iatm)
+  fix=parts(iatm)%fxx
+  fiy=parts(iatm)%fyy
+  fiz=parts(iatm)%fzz
 
 ! start of primary loop for forces evaluation
 
@@ -499,9 +501,9 @@ Contains
 
            If (jatm <= natms) Then
 
-              fxx(jatm)=fxx(jatm)-fx
-              fyy(jatm)=fyy(jatm)-fy
-              fzz(jatm)=fzz(jatm)-fz
+              parts(jatm)%fxx=parts(jatm)%fxx-fx
+              parts(jatm)%fyy=parts(jatm)%fyy-fy
+              parts(jatm)%fzz=parts(jatm)%fzz-fz
 
            End If
 
@@ -789,9 +791,9 @@ Contains
 
            If (jatm <= natms) Then
 
-              fxx(jatm)=fxx(jatm)-fx
-              fyy(jatm)=fyy(jatm)-fy
-              fzz(jatm)=fzz(jatm)-fz
+              parts(jatm)%fxx=parts(jatm)%fxx-fx
+              parts(jatm)%fyy=parts(jatm)%fyy-fy
+              parts(jatm)%fzz=parts(jatm)%fzz-fz
 
            End If
 
@@ -824,9 +826,9 @@ Contains
 
 ! load back forces
 
-  fxx(iatm)=fix
-  fyy(iatm)=fiy
-  fzz(iatm)=fiz
+  parts(iatm)%fxx=fix
+  parts(iatm)%fyy=fiy
+  parts(iatm)%fzz=fiz
 
 ! complete stress tensor
 
@@ -841,7 +843,7 @@ Contains
   stress(9) = stress(9) + strs9
 End Subroutine metal_forces
 
-Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,comm)
+Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -865,6 +867,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,com
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ),                       Intent( InOut ) :: comm
+  Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
 
   Logical           :: safe = .true.
   Integer           :: fail,limit,i,j,k,l,k0
@@ -906,9 +909,9 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,com
      Do k=1,limit
         j=neigh%list(k,i)
 
-        xxt(k)=xxx(i)-xxx(j)
-        yyt(k)=yyy(i)-yyy(j)
-        zzt(k)=zzz(i)-zzz(j)
+        xxt(k)=parts(i)%xxx-parts(j)%xxx
+        yyt(k)=parts(i)%yyy-parts(j)%yyy
+        zzt(k)=parts(i)%zzz-parts(j)%zzz
      End Do
 
 ! periodic boundary conditions not needed by LC construction

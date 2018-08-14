@@ -13,11 +13,12 @@ Module pmf
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gcheck,gsum,gsync
   Use setup
-  Use configuration,   Only : imcon,cell,natms,xxx,yyy,zzz,lfrzn, &
+  Use configuration,   Only : imcon,cell,natms,lfrzn, &
                               vxx,vyy,vzz,nlast,lsi,lsa
   Use errors_warnings, Only : error,warning,info
   Use numerics,        Only : images,local_index,dcell
   Use statistics, Only : stats_type
+  Use particle,        Only : corePart
   Implicit None
   Private
   
@@ -151,7 +152,7 @@ Subroutine allocate_work(T)
 End Subroutine deallocate_pmf_arrays
   
   
-  Subroutine pmf_coms(pmf,pxx,pyy,pzz,comm)
+Subroutine pmf_coms(pmf,pxx,pyy,pzz,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -168,6 +169,7 @@ End Subroutine deallocate_pmf_arrays
 
   Type( pmf_type), Intent( InOut ) :: pmf
   Real( Kind = wp ), Intent(   Out ) :: pxx(1:),pyy(1:),pzz(1:)
+  Type( corePart ),   Intent( InOut ) :: parts(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                 :: safe(1:2)
@@ -233,9 +235,9 @@ End Subroutine deallocate_pmf_arrays
 
                     If (j > 0 .and. j <= natms) Then ! j is a domain particle
                        l=((gpmf-gpmf1)*(pmf%mxtpmf(1)+pmf%mxtpmf(2))+(jpmf-1)*pmf%mxtpmf(1)+(k-1))*iadd
-                       buffer(l+1)=xxx(j)
-                       buffer(l+2)=yyy(j)
-                       buffer(l+3)=zzz(j)
+                       buffer(l+1)=parts(j)%xxx
+                       buffer(l+2)=parts(j)%yyy
+                       buffer(l+3)=parts(j)%zzz
                     End If
                  End Do
               End If
@@ -411,7 +413,7 @@ Subroutine pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,comm)
 
 End Subroutine pmf_pseudo_bonds
 
-Subroutine pmf_quench(mxshak,tolnce,stat,pmf,comm)
+Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -426,6 +428,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,comm)
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Type( stats_type ), Intent( InOut ) :: stat
   Type( pmf_type), Intent( InOut ) :: pmf
+  Type( corePart ),  Intent( InOut ) :: parts(:)
   Type( comms_type), intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -465,7 +468,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,comm)
   End If
 
   lstitr(1:natms)=.false. ! initialise lstitr
-  Call pmf_tags(lstitr,pmf,comm)
+  Call pmf_tags(lstitr,pmf,parts,comm)
 
 ! normalise PMF constraint vectors
 
@@ -587,7 +590,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,comm)
 
 End Subroutine pmf_quench
 
-Subroutine pmf_tags(lstitr,pmf,comm)
+Subroutine pmf_tags(lstitr,pmf,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -603,6 +606,7 @@ Subroutine pmf_tags(lstitr,pmf,comm)
 
   Logical,           Intent( InOut ) :: lstitr(1:mxatms)
   Type(pmf_type), Intent( Inout ) :: pmf
+  Type( corePart ),   Intent( InOut ) :: parts(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer :: ipmf,jpmf,j,k
@@ -631,7 +635,7 @@ Subroutine pmf_tags(lstitr,pmf,comm)
 
 ! Get PMF units' COM vectors
 
-  Call pmf_coms(pmf,pmf%pxx,pmf%pyy,pmf%pzz,comm)
+  Call pmf_coms(pmf,pmf%pxx,pmf%pyy,pmf%pzz,parts,comm)
 
 End Subroutine pmf_tags
 
@@ -886,7 +890,7 @@ End Subroutine pmf_vcoms
 
 Subroutine pmf_shake_vv          &
            (mxshak,tolnce,tstep, &
-           xxx,yyy,zzz,strpmf,   &
+           parts,strpmf,   &
            virpmf,stat,pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -905,7 +909,7 @@ Subroutine pmf_shake_vv          &
 
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Real( Kind = wp ), Intent( InOut ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
+  Type( corePart  ), Intent( InOut ) :: parts(1:mxatms)
   Real( Kind = wp ), Intent(   Out ) :: strpmf(1:9),virpmf
   Type( stats_type ), Intent( InOut ) :: stat
   Type(pmf_type), Intent( Inout ) :: pmf
@@ -968,7 +972,7 @@ Subroutine pmf_shake_vv          &
 
 ! calculate temporary PMF units' COM vectors
 
-     Call pmf_coms(pmf,pxt,pyt,pzt,comm)
+     Call pmf_coms(pmf,pxt,pyt,pzt,parts,comm)
 
 ! calculate maximum error in bondlength
 
@@ -1018,9 +1022,9 @@ Subroutine pmf_shake_vv          &
                           strpmf(6) = strpmf(6) - tmp*pmf%pyy(ipmf)*pmf%pzz(ipmf)
                           strpmf(9) = strpmf(9) - tmp*pmf%pzz(ipmf)*pmf%pzz(ipmf)
 
-                          xxx(l)=xxx(l)+pmf%pxx(ipmf)*gamm(jpmf)
-                          yyy(l)=yyy(l)+pmf%pyy(ipmf)*gamm(jpmf)
-                          zzz(l)=zzz(l)+pmf%pzz(ipmf)*gamm(jpmf)
+                          parts(l)%xxx=parts(l)%xxx+pmf%pxx(ipmf)*gamm(jpmf)
+                          parts(l)%yyy=parts(l)%yyy+pmf%pyy(ipmf)*gamm(jpmf)
+                          parts(l)%zzz=parts(l)%zzz+pmf%pzz(ipmf)*gamm(jpmf)
                        End If
                     End If
                  End Do

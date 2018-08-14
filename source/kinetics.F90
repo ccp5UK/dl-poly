@@ -25,9 +25,10 @@ Module kinetics
   Use kinds, only : wp
   Use comms, Only : comms_type, gsum
   Use setup,  Only : nrite,zero_plus,mxatms,boltz
-  Use configuration, Only : imcon,cell,natms,ltg,lfrzn,xxx,yyy,zzz,weight,&
-                            nfree, lstfre, vxx,vyy,vzz,fxx,fyy,fzz,getcom, &
+  Use configuration, Only : imcon,cell,natms,ltg,lfrzn,weight,&
+                            nfree, lstfre, vxx,vyy,vzz,getcom, & 
                             getcom_mol
+  Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type
   Implicit None
 
@@ -496,7 +497,7 @@ Contains
   End Subroutine getvom_rgd
 
 
-  Subroutine cap_forces(fmax,temp,comm)
+  Subroutine cap_forces(fmax,temp,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -510,7 +511,8 @@ Contains
 
 
     Real( Kind = wp ), Intent( In    ) :: fmax,temp
-    Type(comms_type), Intent ( InOut ) :: comm
+    Type(comms_type),  Intent( InOut ) :: comm
+    Type( corePart ),  Intent( InOut ) :: parts(:)
 
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: meg
@@ -541,20 +543,20 @@ Contains
     fcom = 0.0_wp
     Do i=1,natms
        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-          fmod = fxx(i)**2 + fyy(i)**2 + fzz(i)**2
+          fmod = parts(i)%fxx**2 + parts(i)%fyy**2 + parts(i)%fzz**2
 
           If (fmod > fmax2) Then
              scale  = Sqrt(fmax2/fmod)
-             fxx(i) = fxx(i)*scale
-             fyy(i) = fyy(i)*scale
-             fzz(i) = fzz(i)*scale
+             parts(i)%fxx = parts(i)%fxx*scale
+             parts(i)%fyy = parts(i)%fyy*scale
+             parts(i)%fzz = parts(i)%fzz*scale
           End If
 
 ! accumulate forces - to check on momentum conservation
 
-          fcom(1) = fcom(1) + fxx(i)
-          fcom(2) = fcom(2) + fyy(i)
-          fcom(3) = fcom(3) + fzz(i)
+          fcom(1) = fcom(1) + parts(i)%fxx
+          fcom(2) = fcom(2) + parts(i)%fyy
+          fcom(3) = fcom(3) + parts(i)%fzz
        End If
     End Do
 
@@ -567,9 +569,9 @@ Contains
 
     Do i=1,natms
        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-          fxx(i) = fxx(i) - fcom(1)
-          fyy(i) = fyy(i) - fcom(2)
-          fzz(i) = fzz(i) - fcom(3)
+          parts(i)%fxx = parts(i)%fxx - fcom(1)
+          parts(i)%fyy = parts(i)%fyy - fcom(2)
+          parts(i)%fzz = parts(i)%fzz - fcom(3)
        End If
     End Do
 

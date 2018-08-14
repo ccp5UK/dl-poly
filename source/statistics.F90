@@ -19,7 +19,8 @@ Module statistics
                       gwait,girecv,gcheck
   Use site, Only : site_type
   Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
-                             xxx,yyy,zzz,vxx,vyy,vzz,ixyz,lsa,lsi,ltg
+                             vxx,vyy,vzz,ixyz,lsa,lsi,ltg
+  Use particle,   Only : corePart
   Use domains,    Only : domains_type
   Use z_density,   Only : z_density_type,z_density_collect
   Use msd,         Only : msd_type
@@ -199,7 +200,8 @@ Contains
            keyres,                 &
            degfre,degshl,degrot,          &
            nstep,tstep,time,tmst,         &
-           mxatdm,max_grid_rdf,stats,thermo,zdensity,sites,comm)
+           mxatdm,max_grid_rdf,stats,thermo,&
+           zdensity,sites,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -228,6 +230,7 @@ Contains
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( site_type ), Intent( In    ) :: sites
+  Type( corePart ),   Intent( InOut ) :: parts(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical,           Save :: newjob = .true.
@@ -402,11 +405,11 @@ Contains
            Call error(0,message)
         End If
         Do i=1,natms
-           xxt(i)=xxx(i)
-           yyt(i)=yyy(i)
-           zzt(i)=zzz(i)
+           xxt(i)=parts(i)%xxx
+           yyt(i)=parts(i)%yyy
+           zzt(i)=parts(i)%zzz
         End Do
-        Call pbcshfrc(imcon,cell,natms,xxt,yyt,zzt)
+        Call pbcshfrc(imcon,cell,natms,parts)
         Call pbcshfrc(imcon,stats%clin,natms,stats%xin,stats%yin,stats%zin)
         Do i=1,natms
            stats%xin(i)=xxt(i)-stats%xin(i)
@@ -570,7 +573,7 @@ Contains
 ! z-density collection
 
   If ( zdensity%l_collect .and. ((.not.leql) .or. nstep >= nsteql) .and. &
-       Mod(nstep,zdensity%frequency) == 0 ) Call z_density_collect(max_grid_rdf,zdensity)
+       Mod(nstep,zdensity%frequency) == 0 ) Call z_density_collect(max_grid_rdf,zdensity,parts)
 
 ! Catch time of starting statistical averages
 
@@ -886,7 +889,7 @@ Contains
 
 End Subroutine statistics_connect_frames
 
-Subroutine statistics_connect_set(rcut,mxatdm,lmsd,stats,domain,comm)
+Subroutine statistics_connect_set(rcut,mxatdm,lmsd,stats,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -905,6 +908,7 @@ Subroutine statistics_connect_set(rcut,mxatdm,lmsd,stats,domain,comm)
   Logical,            Intent( In    ) :: lmsd
   Type( stats_type ), Intent( InOut ) :: stats
   Type( domains_type ), Intent( In    ) :: domain
+  Type( corePart ),   Intent( InOut ) :: parts(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Real( Kind = wp ), Save :: cut
@@ -958,9 +962,9 @@ Subroutine statistics_connect_set(rcut,mxatdm,lmsd,stats,domain,comm)
 
      ixyz(1:mxatdm)=0 ! Initialise move (former halo) indicator
      Do i=1,natms
-        x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-        y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-        z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+        x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
+        y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
+        z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
 
         If (x <= ecwx) ixyz(i)=ixyz(i)+1
         If (x >=  cwx) ixyz(i)=ixyz(i)+2

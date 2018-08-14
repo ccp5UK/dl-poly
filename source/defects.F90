@@ -18,7 +18,8 @@ Module defects
                                 gscatter_columns,offset_kind,mode_wronly, &
                                 comm_self,mode_create,mode_rdonly
   Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
-                                atmnam,ltg,lfrzn,xxx,yyy,zzz
+                                atmnam,ltg,lfrzn
+  Use particle,          Only : corePart
   Use parse,             Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
   Use io,                Only : io_set_parameters,        &
                                 io_get_parameters,        &
@@ -2142,7 +2143,7 @@ End Subroutine defects_reference_write
 
 !> defects_write
 Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
-    sites,netcdf,domain,comm)
+    sites,netcdf,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2164,6 +2165,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type)   , Intent( InOut ) :: comm
+  Type( corePart ), Dimension( : ), Intent( InOut ) :: parts
 
   Integer, Parameter :: recsz = 73 ! default record size
 
@@ -2381,9 +2383,9 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Get all domain+halo particles' coordinates in MD cell centred reduced space
 
-     cxx(i)=dfcts%rcell(1)*xxx(i)+dfcts%rcell(4)*yyy(i)+dfcts%rcell(7)*zzz(i)
-     cyy(i)=dfcts%rcell(2)*xxx(i)+dfcts%rcell(5)*yyy(i)+dfcts%rcell(8)*zzz(i)
-     czz(i)=dfcts%rcell(3)*xxx(i)+dfcts%rcell(6)*yyy(i)+dfcts%rcell(9)*zzz(i)
+     cxx(i)=dfcts%rcell(1)*parts(i)%xxx+dfcts%rcell(4)*parts(i)%yyy+dfcts%rcell(7)*parts(i)%zzz
+     cyy(i)=dfcts%rcell(2)*parts(i)%xxx+dfcts%rcell(5)*parts(i)%yyy+dfcts%rcell(8)*parts(i)%zzz
+     czz(i)=dfcts%rcell(3)*parts(i)%xxx+dfcts%rcell(6)*parts(i)%yyy+dfcts%rcell(9)*parts(i)%zzz
 
 ! Exclude particles in the domain's halo farther than cutoff(rdef)
 ! smaller halo with a width defined by cutoff(rdef)
@@ -2711,9 +2713,9 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
         ni=ni+1
         nami(ni)=atmnam(i)
         indi(ni)=ltg(i)
-        bxx(ni)=xxx(i)
-        byy(ni)=yyy(i)
-        bzz(ni)=zzz(i)
+        bxx(ni)=parts(i)%xxx
+        byy(ni)=parts(i)%yyy
+        bzz(ni)=parts(i)%zzz
      End If
   End Do
 
