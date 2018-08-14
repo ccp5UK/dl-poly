@@ -12,12 +12,14 @@ Module constraints
 
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type,gsum,gcheck,gsync
+  Use particle,        Only : corePart
   Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
-                              imcon,cell,xxx,yyy,zzz,fxx,fyy,fzz,nfree,lstfre
+                              imcon,cell,nfree,lstfre
+  Use particle,        Only : corePart
   Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
   Use setup,           Only : mxatms,mxlshp,mxtmls,zero_plus
   Use errors_warnings, Only : error,warning,info
-  Use shared_units,    Only : update_shared_units
+  Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_POSITIONS
   Use numerics,        Only : images,local_index
   Use statistics, Only : stats_type
   Use timer, Only : timer_type, stop_timer, start_timer
@@ -220,7 +222,7 @@ Subroutine allocate_work(T,n)
 
   End Subroutine constraints_pseudo_bonds
 
-  Subroutine constraints_quench(cons,stat,domain,comm)
+  Subroutine constraints_quench(cons,stat,domain,parts,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -236,6 +238,8 @@ Subroutine allocate_work(T,n)
     Type( stats_type), Intent( InOut ) :: stat
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type), Intent( InOut ) :: comm
+
+    Type( corePart ), Dimension(:), Intent( InOut ) :: parts
 
     Logical           :: safe
     Integer           :: fail(1:2),i,j,k,icyc
@@ -265,7 +269,7 @@ Subroutine allocate_work(T,n)
     ! constraint atoms) for iterative (constraints) algorithms
 
     lstitr(1:natms)=.false. ! initialise lstitr
-    Call constraints_tags(lstitr,cons,comm)
+    Call constraints_tags(lstitr,cons,parts,comm)
 
     ! normalise constraint vectors
 
@@ -405,7 +409,7 @@ Subroutine allocate_work(T,n)
     Call cons%deallocate_work()
   End Subroutine constraints_quench
 
-  Subroutine constraints_tags(lstitr,cons,comm)
+  Subroutine constraints_tags(lstitr,cons,parts,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -421,6 +425,7 @@ Subroutine allocate_work(T,n)
 
     Logical,            Intent( InOut ) :: lstitr(:)
     Type( constraints_type ), Intent( InOut ) :: cons
+    Type( corePart), Dimension(:), Intent( InOut ) :: parts
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
@@ -475,9 +480,9 @@ Subroutine allocate_work(T,n)
 
           ! calculate bond vectors
 
-          cons%dxx(k)=xxx(i)-xxx(j)
-          cons%dyy(k)=yyy(i)-yyy(j)
-          cons%dzz(k)=zzz(i)-zzz(j)
+          cons%dxx(k)=parts(i)%xxx-parts(j)%xxx
+          cons%dyy(k)=parts(i)%yyy-parts(j)%yyy
+          cons%dzz(k)=parts(i)%zzz-parts(j)%zzz
 
           ! indicate sharing on local ends of bonds
           ! summed contributions (quench/shake/rattle) for each local
@@ -742,7 +747,8 @@ Subroutine allocate_work(T,n)
 
   End Subroutine constraints_rattle
 
-  Subroutine constraints_shake_vv(tstep,xxx,yyy,zzz,str,vir,stat,cons,domain,tmr,comm)
+
+  Subroutine constraints_shake_vv(tstep,parts,str,vir,stat,cons,domain,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -759,8 +765,8 @@ Subroutine allocate_work(T,n)
 
 
     Real( Kind = wp ), Intent( In    ) :: tstep
-    Real( Kind = wp ), Intent( InOut ) :: xxx(:),yyy(:),zzz(:)
-    Real( Kind = wp ), Intent( InOut ) :: vir, str(:)
+    Type( corePart ), Intent( InOut ) :: parts(:)
+    Real( Kind = wp ), Intent( InOut ) :: vir, str(:) 
     Type( constraints_type), Intent( InOut ) :: cons
     Type( stats_type), Intent( InOut ) :: stat
     Type( domains_type ), Intent( In    ) :: domain
@@ -809,7 +815,7 @@ Subroutine allocate_work(T,n)
 
       If (cons%lshmv_con) Then
         Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con, &
-          cons%lashp_con,xxx,yyy,zzz,domain,comm)
+          cons%lashp_con,parts,SHARED_UNIT_UPDATE_POSITIONS,domain,comm)
       End If
 
       ! calculate temporary bond vector
@@ -819,9 +825,9 @@ Subroutine allocate_work(T,n)
           i=cons%lstopt(1,k)
           j=cons%lstopt(2,k)
 
-          dxt(k)=xxx(i)-xxx(j)
-          dyt(k)=yyy(i)-yyy(j)
-          dzt(k)=zzz(i)-zzz(j)
+          dxt(k)=parts(i)%xxx-parts(j)%xxx
+          dyt(k)=parts(i)%yyy-parts(j)%yyy
+          dzt(k)=parts(i)%zzz-parts(j)%zzz
         Else ! DEBUG
           dxt(k)=0.0_wp
           dyt(k)=0.0_wp
@@ -920,20 +926,20 @@ Subroutine allocate_work(T,n)
 
             ! apply position corrections if non-frozen
 
-            If (i <= natms .and. lfrzn(i) == 0) Then
-              dli = 1.0_wp/Real(cons%listot(i),wp)
-              xxx(i)=xxx(i)+xxt(i)*dli
-              yyy(i)=yyy(i)+yyt(i)*dli
-              zzz(i)=zzz(i)+zzt(i)*dli
-            End If
+              If (i <= natms .and. lfrzn(i) == 0) Then
+                 dli = 1.0_wp/Real(cons%listot(i),wp)
+                 parts(i)%xxx=parts(i)%xxx+xxt(i)*dli
+                 parts(i)%yyy=parts(i)%yyy+yyt(i)*dli
+                 parts(i)%zzz=parts(i)%zzz+zzt(i)*dli
+              End If
 
-            If (j <= natms .and. lfrzn(j) == 0) Then
-              dlj = 1.0_wp/Real(cons%listot(j),wp)
-              xxx(j)=xxx(j)+xxt(j)*dlj
-              yyy(j)=yyy(j)+yyt(j)*dlj
-              zzz(j)=zzz(j)+zzt(j)*dlj
-            End If
-          End If
+              If (j <= natms .and. lfrzn(j) == 0) Then
+                 dlj = 1.0_wp/Real(cons%listot(j),wp)
+                 parts(j)%xxx=parts(j)%xxx+xxt(j)*dlj
+                 parts(j)%yyy=parts(j)%yyy+yyt(j)*dlj
+                 parts(j)%zzz=parts(j)%zzz+zzt(j)*dlj
+              End If
+           End If
         End Do
 
       End If
@@ -1029,7 +1035,7 @@ Subroutine allocate_work(T,n)
   End Subroutine apply_rattle
 
   Subroutine apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
-      domain,tmr,comm)
+      domain,tmr,parts,comm)
     Integer, Intent( InOut ) :: kit
     Integer, Intent( In ) :: mxkit
     Logical, Intent( In ) :: lstitr(:)
@@ -1041,6 +1047,8 @@ Subroutine allocate_work(T,n)
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
+
+    Type( corePart), Dimension(:), Intent( InOut ) :: parts
     ! constraint virial and stress tensor
 
     Logical :: safe
@@ -1060,9 +1068,9 @@ Subroutine allocate_work(T,n)
       i=lstfre(j)
 
       If (lstitr(i)) Then
-        oxt(i)=xxx(i)
-        oyt(i)=yyy(i)
-        ozt(i)=zzz(i)
+        oxt(i)=parts(i)%xxx
+        oyt(i)=parts(i)%yyy
+        ozt(i)=parts(i)%zzz
       End If
     End Do
 
@@ -1073,7 +1081,7 @@ Subroutine allocate_work(T,n)
 
         ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
 
-        Call constraints_shake_vv(tstep,xxx,yyy,zzz,str,vir,stat,cons,domain,tmr,comm)
+        Call constraints_shake_vv(tstep,parts,str,vir,stat,cons,domain,tmr,comm)
 
         ! constraint virial and stress tensor
 
@@ -1089,7 +1097,7 @@ Subroutine allocate_work(T,n)
 
         Call pmf_shake_vv  &
           (cons%max_iter_shake,cons%tolerance,tstep, &
-          xxx,yyy,zzz,str,vir,stat,pmf,comm)
+          parts,str,vir,stat,pmf,comm)
 
         ! PMF virial and stress tensor
 
@@ -1128,9 +1136,9 @@ Subroutine allocate_work(T,n)
       i=lstfre(j)
 
       If (lstitr(i)) Then
-        xt=(xxx(i)-oxt(i))*rstep
-        yt=(yyy(i)-oyt(i))*rstep
-        zt=(zzz(i)-ozt(i))*rstep
+        xt=(parts(i)%xxx-oxt(i))*rstep
+        yt=(parts(i)%yyy-oyt(i))*rstep
+        zt=(parts(i)%zzz-ozt(i))*rstep
 
         vxx(i)=vxx(i)+xt
         vyy(i)=vyy(i)+yt
@@ -1141,9 +1149,9 @@ Subroutine allocate_work(T,n)
         yt=yt*tmp
         zt=zt*tmp
 
-        fxx(i)=fxx(i)+xt
-        fyy(i)=fyy(i)+yt
-        fzz(i)=fzz(i)+zt
+        parts(i)%fxx=parts(i)%fxx+xt
+        parts(i)%fyy=parts(i)%fyy+yt
+        parts(i)%fzz=parts(i)%fzz+zt
       End If
     End Do
   End Subroutine apply_shake

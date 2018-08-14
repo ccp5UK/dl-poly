@@ -193,7 +193,7 @@ program dl_poly
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type, constraints_quench
-  Use shared_units, Only : update_shared_units
+  Use shared_units, Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD,ELECTROSTATIC_NULL
 
     ! MAIN PROGRAM VARIABLES
@@ -496,7 +496,7 @@ program dl_poly
     nstraj = 0 ; istraj = 1 ; keytrj = 0  ! default trajectory
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stats%rsd,netcdf,comm)
+    Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stats%rsd,netcdf,parts,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -506,7 +506,7 @@ program dl_poly
 
   If (l_exp) Then
     Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,core_shells, &
-      cons,bond,angle,dihedral,inversion,sites,netcdf,rigid,comm)
+      cons,bond,angle,dihedral,inversion,sites,netcdf,rigid,parts,comm)
   End If
 
   ! EXIT gracefully
@@ -522,7 +522,7 @@ program dl_poly
   Call system_init                                                 &
     (levcfg,neigh%cutoff,rbin,keyres,megatm,    &
     time,tmst,nstep,tstep,core_shells,stats,devel, &
-    green,thermo,met,bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,comm)
+    green,thermo,met,bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,parts,comm)
 
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -539,7 +539,7 @@ program dl_poly
   If (lbook) Then
     Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre,atmfrz, &
       degrot,degtra,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
-      neigh,sites,mpoles,rigid,domain,comm)
+      neigh,sites,mpoles,rigid,domain,parts,comm)
     If (mpoles%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
         mpoles,comm)
@@ -587,7 +587,7 @@ program dl_poly
   Call set_temperature               &
     (levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra,degrot,degfre,degshl, &
     stats%engrot,sites%dof_site,core_shells,stats,cons,pmfs,thermo,minim, &
-    rigid,domain,comm)
+    rigid,domain,parts,comm)
 
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
@@ -607,7 +607,7 @@ program dl_poly
 
   ! Cap forces in equilibration mode
 
-  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,comm)
+  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,parts,comm)
 
   ! PLUMED initialisation or information message
 
@@ -635,12 +635,12 @@ program dl_poly
     Do i=1,natms,j
       If (levcfg <= 1) Then
         Write(message,'(i8,1p,6e12.4)') &
-          ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i)
+          ltg(i),parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,vxx(i),vyy(i),vzz(i)
       End If
 
       If (levcfg == 2) Then
         Write(message,"(i8,1p,9e12.4)") &
-        ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i),fxx(i),fyy(i),fzz(i)
+        ltg(i),parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,vxx(i),vyy(i),vzz(i),parts(i)%fxx,parts(i)%fyy,parts(i)%fzz
       End If
       Call info(message,.true.)
     End Do
@@ -712,12 +712,12 @@ program dl_poly
     Do i=1,natms,j
       If (levcfg <= 1) Then
         Write(message,'(i8,1p,6e12.4)') &
-          ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i)
+          ltg(i),parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,vxx(i),vyy(i),vzz(i)
       End If
 
       If (levcfg == 2) Then
         Write(message,"(i8,1p,9e12.4)") &
-        ltg(i),xxx(i),yyy(i),zzz(i),vxx(i),vyy(i),vzz(i),fxx(i),fyy(i),fzz(i)
+        ltg(i),parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,vxx(i),vyy(i),vzz(i),parts(i)%fxx,parts(i)%fyy,parts(i)%fzz
       End If
       Call info(message,.true.)
     End Do

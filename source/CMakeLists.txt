@@ -39,6 +39,7 @@ vdw.F90
 minimise.F90
 dihedrals.F90
 pmf.F90
+particle.F90
 configuration.F90
 neighbours.F90
 comms.F90

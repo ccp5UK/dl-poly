@@ -7,7 +7,7 @@ If (nstep > 0) Call xscale(tstep,thermo,stat,neigh,rigid,domain,comm)
 
 ! Check VNL conditioning
 
-Call vnl_check(l_str,width,neigh,stat,domain,comm)
+Call vnl_check(l_str,width,neigh,stat,domain,parts,comm)
 
 If (neigh%update) Then
 
@@ -27,7 +27,7 @@ If (neigh%update) Then
 
   If (rigid%on) Then
     Call rigid_bodies_tags(rigid,comm)
-    Call rigid_bodies_coms(xxx,yyy,zzz,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+    Call rigid_bodies_coms(parts,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
   End If
 
 Else

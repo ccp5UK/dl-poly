@@ -11,6 +11,7 @@ Module comms
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,sp,dp,qp
+  Use particle, Only : corePart
   Use iso_fortran_env, Only : CHARACTER_STORAGE_SIZE
 #ifdef SERIAL
   Use mpi_api
@@ -96,6 +97,12 @@ Module comms
     Integer               :: mxnode = 1
     Logical               :: l_fast
     Integer               :: ou
+    Integer               :: part_type
+    Integer               :: part_array_type
+    Integer               :: part_type_positions
+    Integer               :: part_array_type_positions
+    Integer               :: part_type_forces
+    Integer               :: part_array_type_forces
   End Type
 
   Public :: init_comms, exit_comms, abort_comms, &
@@ -151,6 +158,8 @@ Module comms
     Module Procedure gsend_logical_vector
     Module Procedure gsend_character_scalar
     Module Procedure gsend_character_vector
+    Module Procedure gsend_particle_scalar
+    Module Procedure gsend_particle_vector
   End Interface
 
   Interface grecv
@@ -163,6 +172,8 @@ Module comms
     Module Procedure grecv_logical_vector
     Module Procedure grecv_character_scalar
     Module Procedure grecv_character_vector
+    Module Procedure grecv_particle_scalar
+    Module Procedure grecv_particle_vector
   End Interface grecv
 
   Interface girecv
@@ -230,6 +241,11 @@ Contains
 
     Integer :: lversion, lname
 
+    Integer, Dimension( 1:9 ) :: block_lengths
+    Integer, Dimension( 1:9 ) :: types
+    Integer(KIND=MPI_ADDRESS_KIND) :: displacements(1:9), base, lb, extent
+    Type( corePart ) :: part_temp, part_array(1:5)
+
     Call MPI_INIT(comm%ierr)
 
     Call MPI_COMM_DUP(MPI_COMM_WORLD,comm%comm,comm%ierr)
@@ -247,10 +263,64 @@ Contains
       Write(0,'(/,1x,a)') 'error - working precision mismatch between FORTRAN90 and MPI implementation'
       Call abort_comms(comm,1000)
     End If
-
     Call MPI_COMM_RANK(comm%comm, comm%idnode, comm%ierr)
     Call MPI_COMM_SIZE(comm%comm, comm%mxnode, comm%ierr)
 
+
+    !Create the transfer type for the corePart type.
+    block_lengths(1:9) = 1
+    call MPI_GET_ADDRESS(part_temp%xxx,displacements(1),comm%ierr)
+    call MPI_GET_ADDRESS(part_temp%yyy,displacements(2),comm%ierr)
+    call MPI_GET_ADDRESS(part_temp%zzz,displacements(3),comm%ierr)
+    call MPI_GET_ADDRESS(part_temp%fxx,displacements(4),comm%ierr)
+    call MPI_GET_ADDRESS(part_temp%fyy,displacements(5),comm%ierr)
+    call MPI_GET_ADDRESS(part_temp%fzz,displacements(6),comm%ierr)
+    call MPI_GET_ADDRESS(part_temp%chge,displacements(7),comm%ierr)
+    call MPI_GET_ADDRESS(part_temp%pad1,displacements(8),comm%ierr)
+    call MPI_GET_ADDRESS(part_temp%pad2,displacements(9),comm%ierr)
+    base = displacements(1)
+    displacements(1:9) = displacements(1:9) - base
+    types(1:7) = wp_mpi
+    types(8:9) = MPI_INTEGER
+
+    Call MPI_TYPE_CREATE_STRUCT(9,block_lengths, displacements, types, comm%part_type, comm%ierr)
+    Call MPI_TYPE_COMMIT(comm%part_type, comm%ierr)
+
+    Call MPI_GET_ADDRESS(part_array(1),displacements(1),comm%ierr)
+    Call MPI_GET_ADDRESS(part_array(2),displacements(2),comm%ierr)
+    extent = displacements(2) - displacements(1)
+    lb = 0
+    Call MPI_TYPE_CREATE_RESIZED(comm%part_type, lb, extent, comm%part_array_type, comm%ierr)
+    Call MPI_TYPE_COMMIT(comm%part_array_type, comm%ierr)
+  
+    Call MPI_GET_ADDRESS(part_temp%xxx,displacements(1),comm%ierr)
+    Call MPI_GET_ADDRESS(part_temp%yyy,displacements(2),comm%ierr)
+    Call MPI_GET_ADDRESS(part_temp%zzz,displacements(3),comm%ierr)
+    base = displacements(1)
+    block_lengths(1:3) = 1
+    types(1:3) = wp_mpi
+    Call MPI_TYPE_CREATE_STRUCT(3,block_lengths,displacements,types,comm%part_type_positions,comm%ierr)
+    Call MPI_TYPE_COMMIT(comm%part_type_positions,comm%ierr)
+    Call MPI_GET_ADDRESS(part_array(1),displacements(1),comm%ierr)
+    Call MPI_GET_ADDRESS(part_array(2),displacements(2),comm%ierr)
+    extent = displacements(2) - displacements(1)
+    lb = 0
+    Call MPI_TYPE_CREATE_RESIZED(comm%part_type_positions, lb, extent, comm%part_array_type_positions, comm%ierr)
+    Call MPI_TYPE_COMMIT(comm%part_array_type_positions, comm%ierr)
+
+    Call MPI_GET_ADDRESS(part_temp%fxx, displacements(1), comm%ierr)
+    Call MPI_GET_ADDRESS(part_temp%fyy, displacements(2), comm%ierr)
+    Call MPI_GET_ADDRESS(part_temp%fzz, displacements(3), comm%ierr)
+    Call MPI_GET_ADDRESS(part_temp%xxx, base, comm%ierr)
+    displacements(1:3) = displacements(1:3) - base
+    Call MPI_TYPE_CREATE_STRUCT(3, block_lengths,displacements,types,comm%part_type_forces,comm%ierr)
+    Call MPI_TYPE_COMMIT( comm%part_type_forces, comm%ierr)
+    Call MPI_GET_ADDRESS(part_array(1), displacements(1), comm%ierr)
+    Call MPI_GET_ADDRESS(part_array(2), displacements(2), comm%ierr)
+    extent = displacements(2) - displacements(1)
+    lb = 0
+    Call MPI_TYPE_CREATE_RESIZED(comm%part_type_forces, lb, extent, comm%part_array_type_forces, comm%ierr)
+    Call MPI_TYPE_COMMIT(comm%part_array_type_forces, comm%ierr)
 #ifndef OLDMPI
     Call MPI_GET_PROCESSOR_NAME(proc_name,lname, comm%ierr)
     Call MPI_GET_VERSION(mpi_ver,mpi_subver, comm%ierr)
@@ -271,6 +341,12 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Type(comms_type), Intent (InOut) :: comm
 
+    Call MPI_TYPE_FREE(comm%part_array_type,comm%ierr)
+    Call MPI_TYPE_FREE(comm%part_type,comm%ierr)
+    Call MPI_TYPE_FREE(comm%part_array_type_positions,comm%ierr)
+    Call MPI_TYPE_FREE(comm%part_type_positions,comm%ierr)
+    Call MPI_TYPE_FREE(comm%part_array_type_forces,comm%ierr)
+    Call MPI_TYPE_FREE(comm%part_type_forces,comm%ierr)
     Call MPI_FINALIZE(comm%ierr)
 
   End Subroutine exit_comms
@@ -1150,6 +1226,43 @@ Contains
     Call MPI_SEND(vec(:),n_s,MPI_LOGICAL,dest,tag,comm%comm,comm%ierr)
   End Subroutine gsend_logical_vector
 
+  Subroutine gsend_particle_scalar(comm,s,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a particle scalar
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.chalk june 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type( comms_type ), Intent( InOut ) :: comm
+    Type( corePart ),   Intent( In ) :: s
+    Integer,            Intent( In ) :: dest,tag
+
+    Call MPI_Send(s, 1, comm%part_type, dest, tag, comm%comm, comm%ierr)
+
+  End Subroutine
+
+  Subroutine gsend_particle_vector(comm,vec,dest,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 send a particle vector
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.chalk june 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type( comms_type ), Intent( InOut ) :: comm
+    Type( corePart ),   Intent( In ) :: vec(:)
+    Integer,            Intent( In ) :: dest,tag
+
+    Integer :: n_s
+
+    n_s = Size(vec, Dim = 1)
+  
+    Call MPI_SEND(vec(:), n_s, comm%part_array_type, dest, tag, comm%comm, comm%ierr)
+  End Subroutine gsend_particle_vector
+
   Subroutine gsend_character_scalar(comm,s,dest,tag)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1372,7 +1485,38 @@ Contains
 
     Call MPI_RECV(vec(:),n_s,MPI_CHARACTER,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_character_vector
-
+  Subroutine grecv_particle_scalar(comm,s,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a corePart
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.chalk july 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type( comms_type ),  Intent( InOut ) :: comm
+    Type( corePart ),    Intent( InOut ) :: s
+    Integer,             Intent( In    ) :: source,tag
+   
+    Call MPI_RECV(s,1,comm%part_type,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_particle_scalar
+  Subroutine grecv_particle_vector(comm,vec,source,tag)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 receive a corePart array
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.chalk july 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type( comms_type ),  Intent( InOut ) :: comm
+    Type( corePart ),    Intent( InOut ) :: vec(:)
+    Integer,             Intent( In    ) :: source,tag
+    
+    Integer :: n_s
+    n_s = Size(vec, Dim=1)
+    Call MPI_RECV(vec(:),n_s,comm%part_array_type,source,tag,comm%comm,comm%status,comm%ierr)
+  End Subroutine grecv_particle_vector
   Subroutine girecv_integer_scalar(comm,s,source,tag)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !

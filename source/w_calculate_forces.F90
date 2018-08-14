@@ -5,7 +5,7 @@
 
      If ( (cshell%megshl > 0 .and. cshell%keyshl == SHELL_RELAXED) .and. &
           (keyres == 0 .and. nstep == 0 .and. nsteql > 0) ) Then
-        Call core_shell_on_top(cshell,comm)
+        Call core_shell_on_top(cshell,parts,comm)
 
 ! Refresh mappings
 
@@ -17,8 +17,11 @@
 
 ! Initialise force arrays and possible torques for multipolar electrostatics
 ! and stress tensor (these are all additive in the force subroutines)
-
-     fxx = 0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
+     Do i=1,mxatms
+       parts(i)%fxx=0.0_wp
+       parts(i)%fyy=0.0_wp
+       parts(i)%fzz=0.0_wp
+     End Do
      If (mpoles%max_mpoles > 0) Then
         mpoles%torque_x=0.0_wp ; mpoles%torque_y=0.0_wp ; mpoles%torque_z=0.0_wp
      End If
@@ -30,28 +33,28 @@
        l_n_v .and. rdf%max_rdf == 0 .and. kimim == ' ')) Then
        Call two_body_forces(pdplnc,thermo%ensemble,nstfce,lbook,megfrz, &
          leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
-         mpoles,electro,domain,tmr,comm)
+         mpoles,electro,domain,tmr,parts,comm)
      End If
 
 ! Calculate tersoff forces
 
-     If (tersoffs%n_potential > 0) Call tersoff_forces(tersoffs,stat,neigh,domain,comm)
+     If (tersoffs%n_potential > 0) Call tersoff_forces(tersoffs,stat,neigh,domain,parts,comm)
 
 ! Calculate three-body forces
 
-     If (threebody%ntptbp > 0) Call three_body_forces(stat,threebody,neigh,domain,comm)
+     If (threebody%ntptbp > 0) Call three_body_forces(stat,threebody,neigh,domain,parts,comm)
 
 ! Calculate four-body forces
 
-     If (fourbody%n_potential > 0) Call four_body_forces(fourbody,stat,neigh,domain,comm)
+     If (fourbody%n_potential > 0) Call four_body_forces(fourbody,stat,neigh,domain,parts,comm)
      call start_timer(tmr%t_bonded)
 ! Calculate shell model forces
 
-     If (cshell%megshl > 0) Call core_shell_forces(cshell,stat,comm)
+     If (cshell%megshl > 0) Call core_shell_forces(cshell,stat,parts,comm)
 
 ! Calculate tethered atom forces
 
-     If (tether%total > 0) Call tethers_forces(stat,tether,comm)
+     If (tether%total > 0) Call tethers_forces(stat,tether,parts,comm)
 
 ! Calculate bond forces
 
@@ -60,7 +63,7 @@
 
         isw = 1 + Merge(1,0,ltmp)
         Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff, &
-          stat%engcpe,stat%vircpe,bond,mpoles,electro,comm)
+          stat%engcpe,stat%vircpe,bond,mpoles,electro,parts,comm)
      End If
 
 ! Calculate valence angle forces
@@ -69,7 +72,7 @@
         ltmp = (angle%bin_adf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstang) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call angles_forces(isw,stat%engang,stat%virang,stat%stress,angle,comm)
+        Call angles_forces(isw,stat%engang,stat%virang,stat%stress,angle,parts,comm)
      End If
 
 ! Calculate dihedral forces
@@ -80,7 +83,7 @@
         isw = 1 + Merge(1,0,ltmp)
         Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
            neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp, &
-           stat%virsrp,dihedral,vdws,mpoles,electro,comm)
+           stat%virsrp,dihedral,vdws,mpoles,electro,parts,comm)
      End If
 
 ! Calculate inversion forces
@@ -89,7 +92,7 @@
         ltmp = (inversion%bin_adf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstinv) == 0)
 
         isw = 1 + Merge(1,0,ltmp)
-        Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,inversion,comm)
+        Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,inversion,parts,comm)
      End If
      call stop_timer(tmr%t_bonded)
 
@@ -97,7 +100,7 @@
 
      If (ext_field%key /= FIELD_NULL) Then
        Call external_field_apply(time,leql,nsteql,nstep,cshell,stat,rdf, &
-         ext_field,rigid,domain,comm)
+         ext_field,rigid,domain,parts,comm)
      End If
 
 ! Apply PLUMED driven dynamics
@@ -106,17 +109,17 @@
         stat%stpcfg =stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
                  stat%engshl + stat%engtet + stat%engfld +                   &
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
-        Call plumed_apply(xxx,yyy,zzz,nstrun,nstep,stat,plume,comm)
+        Call plumed_apply(parts,nstrun,nstep,stat,plume,comm)
      End If
 ! Apply pseudo thermostat - force cycle (0)
 
      If (thermo%l_pseudo) Then
-       Call pseudo_vv(0,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,comm)
+       Call pseudo_vv(0,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,parts,comm)
      End If
 
 ! Cap forces in equilibration mode
 
-     If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,comm)
+     If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,parts,comm)
 
 ! Frozen atoms option
 
@@ -130,7 +133,7 @@
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
 
         If (cshell%keyshl == SHELL_RELAXED) Then
-          Call core_shell_relax(l_str,relaxed_shl,rdf%l_collect,rlx_tol,stat%stpcfg,cshell,stat,domain,comm)
+          Call core_shell_relax(l_str,relaxed_shl,rdf%l_collect,rlx_tol,stat%stpcfg,cshell,stat,domain,parts,comm)
         End If
 
         If (.not.relaxed_shl) Go To 200 ! Shells relaxation takes priority over minimisation
@@ -139,12 +142,12 @@
           If      (minim%freq == 0 .and. nstep == 0) Then
             Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
               rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
-              netcdf,minim,rigid,domain,comm)
+              netcdf,minim,rigid,domain,parts,comm)
           Else If (minim%freq >  0 .and. nstep >  0) Then
             If (Mod(nstep-nsteql,minim%freq) == 0) Then
               Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
                 rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
-                netcdf,minim,rigid,domain,comm)
+                netcdf,minim,rigid,domain,parts,comm)
             End If
           End If
         End If
@@ -165,14 +168,14 @@
      If (newjob) Then
         If (rigid%total > 0) Then
            If (thermo%l_langevin) Then
-              Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell)
+              Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
               If (rigid%share) Then
                 Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
                   rigid%map_shared,fxl,fyl,fzl,domain,comm)
               End If
-              Call rigid_bodies_str__s(stat%strcom,fxx+fxl,fyy+fyl,fzz+fzl,rigid,comm)
+              Call rigid_bodies_str__s(stat%strcom,parts(:),rigid,comm,fxl,fyl,fzl)
            Else
-              Call rigid_bodies_str_ss(stat%strcom,rigid,comm)
+              Call rigid_bodies_str_ss(stat%strcom,rigid,parts,comm)
            End If
            stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
         End If
@@ -197,7 +200,7 @@
 
      If (rigid%share) Then
        Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-         rigid%map_shared,fxx,fyy,fzz,domain,comm)
+         rigid%map_shared,parts,SHARED_UNIT_UPDATE_FORCES,domain,comm)
      End If
 
 

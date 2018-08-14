@@ -18,7 +18,7 @@ Call statistics_collect           &
   keyres,      &
   degfre,degshl,degrot,          &
   nstep,tstep,time,tmst,         &
-  mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,comm)
+  mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,parts,comm)
 
 ! VV forces evaluation report for 0th or weird restart
 

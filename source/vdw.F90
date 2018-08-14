@@ -14,7 +14,8 @@ Module vdw
   Use setup
   Use site, Only : site_type
   Use configuration, Only : imcon,volm,natms,ltype,lfrzn, &
-                            ltg,fxx,fyy,fzz
+                            ltg
+  Use particle, Only : corePart
   Use mm3lrc
   Use zbl_pots,         Only : ab, intRadZBL, intdRadZBL, &
                            zbl,zbls,zblb
@@ -1777,7 +1778,7 @@ Subroutine vdw_generate(vdws)
 End Subroutine vdw_generate
 
 
-Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws)
+Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,parts)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1800,6 +1801,7 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws)
   Real( Kind = wp ),                        Intent(   Out ) :: engvdw,virvdw
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Type( vdw_type ), Intent( InOut ) :: vdws
+  Type( corePart ), Dimension( : ), Intent( InOut ) :: parts
 
   Logical,           Save :: newjob = .true.
   Real( Kind = wp ), Save :: dlrpot,rdr
@@ -1824,30 +1826,30 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws)
      rdr    = 1.0_wp/dlrpot
   End If
 
-! initialise potential energy and virial
+  ! initialise potential energy and virial
 
-  engvdw=0.0_wp
-  virvdw=0.0_wp
+    engvdw=0.0_wp
+    virvdw=0.0_wp
 
-! initialise stress tensor accumulators
+  ! initialise stress tensor accumulators
 
-  strs1=0.0_wp
-  strs2=0.0_wp
-  strs3=0.0_wp
-  strs5=0.0_wp
-  strs6=0.0_wp
-  strs9=0.0_wp
+    strs1=0.0_wp
+    strs2=0.0_wp
+    strs3=0.0_wp
+    strs5=0.0_wp
+    strs6=0.0_wp
+    strs9=0.0_wp
 
-! global identity and type of iatm
+  ! global identity and type of iatm
 
-  idi=ltg(iatm)
-  ai=ltype(iatm)
+    idi=ltg(iatm)
+    ai=ltype(iatm)
 
-! load forces
+  ! load forces
 
-  fix=fxx(iatm)
-  fiy=fyy(iatm)
-  fiz=fzz(iatm)
+    fix=parts(iatm)%fxx
+  fiy=parts(iatm)%fyy
+  fiz=parts(iatm)%fzz
 
 ! start of primary loop for forces evaluation
 
@@ -2369,9 +2371,9 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws)
 
         If (jatm <= natms) Then
 
-           fxx(jatm)=fxx(jatm)-fx
-           fyy(jatm)=fyy(jatm)-fy
-           fzz(jatm)=fzz(jatm)-fz
+           parts(jatm)%fxx=parts(jatm)%fxx-fx
+           parts(jatm)%fyy=parts(jatm)%fyy-fy
+           parts(jatm)%fzz=parts(jatm)%fzz-fz
 
         End If
 
@@ -2402,9 +2404,9 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws)
 
 ! load back forces
 
-  fxx(iatm)=fix
-  fyy(iatm)=fiy
-  fzz(iatm)=fiz
+  parts(iatm)%fxx=fix
+  parts(iatm)%fyy=fiy
+  parts(iatm)%fzz=fiz
 
 ! complete stress tensor
 

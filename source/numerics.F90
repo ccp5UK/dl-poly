@@ -4,6 +4,8 @@ Module numerics
   Use setup, Only : lseed,seed,zero_plus
   Use comms, Only : comms_type
   Use setup, Only : rt3,zero_plus, sqrpi,rt2,half_minus! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
+  Use particle, Only: corePart
+
   Implicit None
   Private
 
@@ -107,6 +109,22 @@ Public :: jacobi
 Public :: mat_mul
 Public :: factor
 Public :: get_nth_prime
+
+  Interface pbcshfrc
+    Module Procedure pbcshfrc_parts
+    Module Procedure pbcshfrc_arrays
+  End Interface pbcshfrc
+
+  Interface pbcshfrl
+    Module Procedure pbcshfrl_parts
+    Module Procedure pbcshfrl_arrays
+  End Interface pbcshfrl
+    
+  Interface pbcshift
+    Module Procedure pbcshift_parts
+    Module Procedure pbcshift_arrays
+  End Interface
+
 
 Contains
 
@@ -1613,7 +1631,244 @@ Subroutine images_s(imcon,cell,xxx,yyy,zzz)
 
 End Subroutine images_s
 
-Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
+Subroutine pbcshift_parts(imcon,cell,natms,parts)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for calculating the minimum image of atoms within
+! a specified MD cell in accordance with the domain decomposition
+! boundary convention for fractional coordinates: every coordinate must
+! be intervalled as [-0.5,+0.5)
+!
+! Note: in all cases the centre of the MD cell is at (0,0,0)
+!
+! imcon=0 no boundary conditions apply
+! imcon=1 standard cubic boundaries apply
+! imcon=2 orthorhombic boundaries apply
+! imcon=3 parallelepiped boundaries apply
+! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov march 2015
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+  Integer,                              Intent( In    ) :: imcon,natms
+  Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
+  Type( corePart ),  Dimension( 1:* ),  Intent( InOut ) :: parts
+
+  Integer           :: i
+  Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
+                       xss,yss,zss
+
+  If (imcon == 1) Then
+
+! standard cubic boundary conditions
+
+     aaa=1.0_wp/cell(1)
+
+     Do i=1,natms
+        xss=aaa*parts(i)%xxx
+        yss=aaa*parts(i)%yyy
+        zss=aaa*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(1)*yss
+        parts(i)%zzz=cell(1)*zss
+     End Do
+
+  Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+
+! rectangular boundary conditions
+
+     aaa=1.0_wp/cell(1)
+     bbb=1.0_wp/cell(5)
+     ccc=1.0_wp/cell(9)
+
+     Do i=1,natms
+        xss=aaa*parts(i)%xxx
+        yss=bbb*parts(i)%yyy
+        zss=ccc*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(5)*yss
+        parts(i)%zzz=cell(9)*zss
+     End Do
+
+  Else If (imcon == 3) Then
+
+! parallelepiped boundary conditions
+
+     Call invert(cell,rcell,det)
+
+     Do i=1,natms
+        xss=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
+        yss=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
+        zss=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss+cell(4)*yss+cell(7)*zss
+        parts(i)%yyy=cell(2)*xss+cell(5)*yss+cell(8)*zss
+        parts(i)%zzz=cell(3)*xss+cell(6)*yss+cell(9)*zss
+     End Do
+
+  Else If (imcon == 4) Then
+
+! truncated octahedral boundary conditions
+
+     If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+
+     aaa=1.0_wp/cell(1)
+
+     Do i=1,natms
+        xss=aaa*parts(i)%xxx
+        yss=aaa*parts(i)%yyy
+        zss=aaa*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(1)*yss
+        parts(i)%zzz=cell(1)*zss
+
+        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(parts(i)%zzz)) >= 0.75_wp*cell(1)) Then
+           parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
+           parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
+           parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(1),parts(i)%zzz)
+
+           xss=aaa*parts(i)%xxx
+           yss=aaa*parts(i)%yyy
+           zss=aaa*parts(i)%zzz
+
+           xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+           yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+           zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+           parts(i)%xxx=cell(1)*xss
+           parts(i)%yyy=cell(1)*yss
+           parts(i)%zzz=cell(1)*zss
+        End If
+     End Do
+
+  Else If (imcon == 5) Then
+
+! rhombic Dodecahedral boundary conditions
+
+     If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+
+     aaa=1.0_wp/cell(1)
+     bbb=1.0_wp/cell(9)
+
+     Do i=1,natms
+        xss=aaa*parts(i)%xxx
+        yss=aaa*parts(i)%yyy
+        zss=bbb*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(1)*yss
+        parts(i)%zzz=cell(9)*zss
+
+        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(rt2*parts(i)%zzz)) >= cell(1)) Then
+           parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
+           parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
+           parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(9),parts(i)%zzz)
+
+           xss=aaa*parts(i)%xxx
+           yss=aaa*parts(i)%yyy
+           zss=bbb*parts(i)%zzz
+
+           xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+           yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+           zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+           parts(i)%xxx=cell(1)*xss
+           parts(i)%yyy=cell(1)*yss
+           parts(i)%zzz=cell(9)*zss
+        End If
+     End Do
+
+  Else If (imcon == 6) Then
+
+! x-y boundary conditions (SLAB)
+
+     det=cell(1)*cell(5)-cell(2)*cell(4)
+
+     If (Abs(det) < 1.0e-6_wp) Call error(120)
+
+     det=1.0_wp/det
+
+     rcell(1) =  det*cell(5)
+     rcell(2) = -det*cell(2)
+     rcell(4) = -det*cell(4)
+     rcell(5) =  det*cell(1)
+
+     Do i=1,natms
+        xss=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy
+        yss=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+
+        parts(i)%xxx=cell(1)*xss+cell(4)*yss
+        parts(i)%yyy=cell(2)*xss+cell(5)*yss
+     End Do
+
+  Else If (imcon == 7) Then
+
+! hexagonal prism boundary conditions
+
+     If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+
+     aaa=cell(1)/(rt3*2.0_wp)
+     bbb=cell(1)/rt3
+     ccc=rt3/cell(1)
+     ddd=1.0_wp/cell(9)
+
+     Do i=1,natms
+        zss=ddd*parts(i)%zzz
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        parts(i)%zzz=cell(9)*zss
+
+        yss=ccc*parts(i)%yyy
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        parts(i)%yyy=bbb*yss
+
+        If ((Abs(parts(i)%yyy)+Abs(rt3*parts(i)%xxx)) >= bbb) Then
+           parts(i)%xxx=parts(i)%xxx-rt3*Sign(aaa,parts(i)%xxx)
+           parts(i)%yyy=parts(i)%yyy-Sign(aaa,parts(i)%yyy)
+
+           yss=ccc*parts(i)%yyy
+           yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+           parts(i)%yyy=bbb*yss
+        End If
+     End Do
+
+  End If
+
+End Subroutine pbcshift_parts
+
+Subroutine pbcshift_arrays(imcon,cell,natms,xxx,yyy,zzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1848,9 +2103,10 @@ Subroutine pbcshift(imcon,cell,natms,xxx,yyy,zzz)
 
   End If
 
-End Subroutine pbcshift
+End Subroutine pbcshift_arrays
 
-Subroutine pbcshfrc(imcon,cell,natms,xxx,yyy,zzz)
+
+Subroutine pbcshfrc_parts(imcon,cell,natms,parts)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1877,7 +2133,256 @@ Subroutine pbcshfrc(imcon,cell,natms,xxx,yyy,zzz)
 
   Integer,                              Intent( In    ) :: imcon,natms
   Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
-  Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz
+  Type( corePart ) , Dimension( 1:* ),  Intent( InOut ) :: parts 
+
+  Integer           :: i
+  Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
+                       xss,yss,zss
+
+  If (imcon == 1) Then
+
+! standard cubic boundary conditions
+
+     aaa=1.0_wp/cell(1)
+
+     Do i=1,natms
+        xss=aaa*parts(i)%xxx
+        yss=aaa*parts(i)%yyy
+        zss=aaa*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=xss
+        parts(i)%yyy=yss
+        parts(i)%zzz=zss
+     End Do
+
+  Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+
+! rectangular boundary conditions
+
+     aaa=1.0_wp/cell(1)
+     bbb=1.0_wp/cell(5)
+     ccc=1.0_wp/cell(9)
+
+     Do i=1,natms
+        xss=aaa*parts(i)%xxx
+        yss=bbb*parts(i)%yyy
+        zss=ccc*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=xss
+        parts(i)%yyy=yss
+        parts(i)%zzz=zss
+     End Do
+
+  Else If (imcon == 3) Then
+
+! parallelepiped boundary conditions
+
+     Call invert(cell,rcell,det)
+
+     Do i=1,natms
+        xss=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
+        yss=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
+        zss=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=xss
+        parts(i)%yyy=yss
+        parts(i)%zzz=zss
+     End Do
+
+  Else If (imcon == 4) Then
+
+! truncated octahedral boundary conditions
+
+     If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+
+     aaa=1.0_wp/cell(1)
+
+     Do i=1,natms
+        xss=aaa*parts(i)%xxx
+        yss=aaa*parts(i)%yyy
+        zss=aaa*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(1)*yss
+        parts(i)%zzz=cell(1)*zss
+
+        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(parts(i)%zzz)) >= 0.75_wp*cell(1)) Then
+           parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
+           parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
+           parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(1),parts(i)%zzz)
+
+           xss=aaa*parts(i)%xxx
+           yss=aaa*parts(i)%yyy
+           zss=aaa*parts(i)%zzz
+
+           xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+           yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+           zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+           parts(i)%xxx=xss
+           parts(i)%yyy=yss
+           parts(i)%zzz=zss
+        Else
+           parts(i)%xxx=xss/cell(1)
+           parts(i)%yyy=yss/cell(1)
+           parts(i)%zzz=zss/cell(1)
+        End If
+     End Do
+
+  Else If (imcon == 5) Then
+
+! rhombic Dodecahedral boundary conditions
+
+     If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+
+     aaa=1.0_wp/cell(1)
+     bbb=1.0_wp/cell(9)
+
+     Do i=1,natms
+        xss=aaa*parts(i)%xxx
+        yss=aaa*parts(i)%yyy
+        zss=bbb*parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(1)*yss
+        parts(i)%zzz=cell(9)*zss
+
+        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(rt2*parts(i)%zzz)) >= cell(1)) Then
+           parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
+           parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
+           parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(9),parts(i)%zzz)
+
+           xss=aaa*parts(i)%xxx
+           yss=aaa*parts(i)%yyy
+           zss=bbb*parts(i)%zzz
+
+           xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+           yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+           zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+           parts(i)%xxx=xss
+           parts(i)%yyy=yss
+           parts(i)%zzz=zss
+        Else
+           parts(i)%xxx=xss/cell(1)
+           parts(i)%yyy=yss/cell(1)
+           parts(i)%zzz=zss/cell(9)
+        End If
+     End Do
+
+  Else If (imcon == 6) Then
+
+! x-y boundary conditions (SLAB)
+
+     det=cell(1)*cell(5)-cell(2)*cell(4)
+
+     If (Abs(det) < 1.0e-6_wp) Call error(120)
+
+     det=1.0_wp/det
+
+     rcell(1) =  det*cell(5)
+     rcell(2) = -det*cell(2)
+     rcell(4) = -det*cell(4)
+     rcell(5) =  det*cell(1)
+
+     Do i=1,natms
+        xss=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy
+        yss=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+
+        parts(i)%xxx=xss
+        parts(i)%yyy=yss
+     End Do ! note zzz remains in real space
+
+  Else If (imcon == 7) Then
+
+! hexagonal prism boundary conditions
+
+     If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+
+     aaa=cell(1)/(rt3*2.0_wp)
+     bbb=cell(1)/rt3
+     ccc=rt3/cell(1)
+     ddd=1.0_wp/cell(9)
+
+     Do i=1,natms
+        zss=ddd*parts(i)%zzz
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        parts(i)%zzz=zss
+
+        yss=ccc*parts(i)%yyy
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        parts(i)%yyy=bbb*yss
+
+        If ((Abs(parts(i)%yyy)+Abs(rt3*parts(i)%xxx)) >= bbb) Then
+           parts(i)%xxx=parts(i)%xxx-rt3*Sign(aaa,parts(i)%xxx)
+           parts(i)%xxx=parts(i)%xxx/aaa
+           parts(i)%yyy=parts(i)%yyy-Sign(aaa,parts(i)%yyy)
+
+           yss=ccc*parts(i)%yyy
+           yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+           parts(i)%yyy=yss
+        Else
+           parts(i)%xxx=parts(i)%xxx/aaa
+           parts(i)%yyy=parts(i)%yyy/bbb
+        End If
+     End Do
+
+  End If
+
+End Subroutine pbcshfrc_parts
+
+
+Subroutine pbcshfrc_arrays(imcon,cell,natms,xxx,yyy,zzz)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for calculating the minimum image of atoms within
+! a specified MD cell in accordance with the domain decomposition
+! boundary convention for fractional coordinates: every coordinate must
+! be intervalled as [-0.5,+0.5)
+!
+! Note: in all cases the centre of the MD cell is at (0,0,0)
+!
+! imcon=0 no boundary conditions apply
+! imcon=1 standard cubic boundaries apply
+! imcon=2 orthorhombic boundaries apply
+! imcon=3 parallelepiped boundaries apply
+! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov february 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer,                              Intent( In    ) :: imcon,natms
+  Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
+  Real( Kind = wp ), Dimension( 1:* ),  Intent( InOut ) :: xxx,yyy,zzz 
 
   Integer           :: i
   Real( Kind = wp ) :: aaa,bbb,ccc,ddd,det,rcell(1:9), &
@@ -2096,9 +2601,227 @@ Subroutine pbcshfrc(imcon,cell,natms,xxx,yyy,zzz)
 
   End If
 
-End Subroutine pbcshfrc
+End Subroutine pbcshfrc_arrays
 
-Subroutine pbcshfrl(imcon,cell,natms,xxx,yyy,zzz)
+Subroutine pbcshfrl_parts(imcon,cell,natms,parts)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for calculating the minimum image of atoms within
+! a specified MD cell in accordance with the domain decomposition
+! boundary convention for fractional coordinates: every coordinate must
+! be intervalled as [-0.5,+0.5)
+!
+! Note: in all cases the centre of the MD cell is at (0,0,0)
+!
+! imcon=0 no boundary conditions apply
+! imcon=1 standard cubic boundaries apply
+! imcon=2 orthorhombic boundaries apply
+! imcon=3 parallelepiped boundaries apply
+! imcon=4 truncated octahedron boundaries apply NOT AVAILABLE in DD !!!
+! imcon=5 rhombic dodecahedron boundaries apply NOT AVAILABLE in DD !!!
+! imcon=6 x-y parallelogram boundary conditions : no periodicity in z
+! imcon=7 hexagonal prism boundaries apply      NOT AVAILABLE in DD !!!
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov february 2016
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer,                              Intent( In    ) :: imcon,natms
+  Real( Kind = wp ), Dimension( 1:9 ),  Intent( In    ) :: cell
+  Type( corePart ) , Dimension( 1:* ),  Intent( InOut ) :: parts
+
+  Integer           :: i
+  Real( Kind = wp ) :: aaa,bbb,ccc,ddd, &
+                       xss,yss,zss
+
+  If (imcon == 1) Then
+
+! standard cubic boundary conditions
+
+     Do i=1,natms
+        xss=parts(i)%xxx
+        yss=parts(i)%yyy
+        zss=parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(1)*yss
+        parts(i)%zzz=cell(1)*zss
+     End Do
+
+  Else If (imcon == 2 .or. imcon == 0) Then ! no PBC box wrapping exception
+
+! rectangular boundary conditions
+
+     Do i=1,natms
+        xss=parts(i)%xxx
+        yss=parts(i)%yyy
+        zss=parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(5)*yss
+        parts(i)%zzz=cell(9)*zss
+     End Do
+
+  Else If (imcon == 3) Then
+
+! parallelepiped boundary conditions
+
+     Do i=1,natms
+        xss=parts(i)%xxx
+        yss=parts(i)%yyy
+        zss=parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss+cell(4)*yss+cell(7)*zss
+        parts(i)%yyy=cell(2)*xss+cell(5)*yss+cell(8)*zss
+        parts(i)%zzz=cell(3)*xss+cell(6)*yss+cell(9)*zss
+     End Do
+
+  Else If (imcon == 4) Then
+
+! truncated octahedral boundary conditions
+
+     If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(5)-cell(9)) < 1.0e-6_wp)) Call error(130)
+
+     aaa=1.0_wp/cell(1)
+
+     Do i=1,natms
+        xss=parts(i)%xxx
+        yss=parts(i)%yyy
+        zss=parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(1)*yss
+        parts(i)%zzz=cell(1)*zss
+
+        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(parts(i)%zzz)) >= 0.75_wp*cell(1)) Then
+           parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
+           parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
+           parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(1),parts(i)%zzz)
+
+           xss=aaa*parts(i)%xxx
+           yss=aaa*parts(i)%yyy
+           zss=aaa*parts(i)%zzz
+
+           xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+           yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+           zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+           parts(i)%xxx=cell(1)*xss
+           parts(i)%yyy=cell(1)*yss
+           parts(i)%zzz=cell(1)*zss
+        End If
+     End Do
+
+  Else If (imcon == 5) Then
+
+! rhombic Dodecahedral boundary conditions
+
+     If (.not.(Abs(cell(1)-cell(5)) < 1.0e-6_wp .and. Abs(cell(9)-cell(1)*rt2) < 1.0e-6_wp)) Call error(140)
+
+     aaa=1.0_wp/cell(1)
+     bbb=1.0_wp/cell(9)
+
+     Do i=1,natms
+        xss=parts(i)%xxx
+        yss=parts(i)%yyy
+        zss=parts(i)%zzz
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+        parts(i)%xxx=cell(1)*xss
+        parts(i)%yyy=cell(1)*yss
+        parts(i)%zzz=cell(9)*zss
+
+        If ((Abs(parts(i)%xxx)+Abs(parts(i)%yyy)+Abs(rt2*parts(i)%zzz)) >= cell(1)) Then
+           parts(i)%xxx=parts(i)%xxx-0.5_wp*Sign(cell(1),parts(i)%xxx)
+           parts(i)%yyy=parts(i)%yyy-0.5_wp*Sign(cell(1),parts(i)%yyy)
+           parts(i)%zzz=parts(i)%zzz-0.5_wp*Sign(cell(9),parts(i)%zzz)
+
+           xss=aaa*parts(i)%xxx
+           yss=aaa*parts(i)%yyy
+           zss=bbb*parts(i)%zzz
+
+           xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+           yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+           zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+
+           parts(i)%xxx=cell(1)*xss
+           parts(i)%yyy=cell(1)*yss
+           parts(i)%zzz=cell(9)*zss
+        End If
+     End Do
+
+  Else If (imcon == 6) Then
+
+! x-y boundary conditions (SLAB)
+
+     Do i=1,natms
+        xss=parts(i)%xxx
+        yss=parts(i)%yyy
+
+        xss=xss-Anint(xss) ; If (xss >= half_minus) xss=-xss
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+
+        parts(i)%xxx=cell(1)*xss+cell(4)*yss
+        parts(i)%yyy=cell(2)*xss+cell(5)*yss
+     End Do ! note zzz remains unchanged
+
+  Else If (imcon == 7) Then
+
+! hexagonal prism boundary conditions
+
+     If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Call error(135)
+
+     aaa=cell(1)/(rt3*2.0_wp)
+     bbb=cell(1)/rt3
+     ccc=rt3/cell(1)
+     ddd=1.0_wp/cell(9)
+
+     Do i=1,natms
+        zss=parts(i)%zzz
+        zss=zss-Anint(zss) ; If (zss >= half_minus) zss=-zss
+        parts(i)%zzz=cell(9)*zss
+
+        yss=parts(i)%yyy
+        yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+        parts(i)%yyy=bbb*yss
+        parts(i)%xxx=aaa*parts(i)%xxx
+
+        If ((Abs(parts(i)%yyy)+Abs(rt3*parts(i)%xxx)) >= bbb) Then
+           parts(i)%xxx=parts(i)%xxx-rt3*Sign(aaa,parts(i)%xxx)
+           parts(i)%yyy=parts(i)%yyy-Sign(aaa,parts(i)%yyy)
+
+           yss=ccc*parts(i)%yyy
+           yss=yss-Anint(yss) ; If (yss >= half_minus) yss=-yss
+           parts(i)%yyy=bbb*yss
+        End If
+     End Do
+
+  End If
+
+End Subroutine pbcshfrl_parts
+
+Subroutine pbcshfrl_arrays(imcon,cell,natms,xxx,yyy,zzz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2314,7 +3037,8 @@ Subroutine pbcshfrl(imcon,cell,natms,xxx,yyy,zzz)
 
   End If
 
-End Subroutine pbcshfrl
+End Subroutine pbcshfrl_arrays
+
 
 Subroutine jacobi(n,aaa,vvv)
 

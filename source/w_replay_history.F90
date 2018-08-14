@@ -18,10 +18,11 @@
   leql   = .false.
 
 ! nullify forces
-
-  fxx = 0.0_wp
-  fyy = 0.0_wp
-  fzz = 0.0_wp
+  Do i=1,mxatms
+    parts(i)%fxx=0.0_wp
+    parts(i)%fyy=0.0_wp
+    parts(i)%fzz=0.0_wp
+  End Do
 
 ! nullify all two-body force switches = just do rdf%rdf calculation
 
@@ -77,12 +78,12 @@
      Call allocate_statistics_connect(mxatdm,stat)
 10   Continue
      If (nstph > nstpe) Then
-       Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,comm)
+       Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,parts,comm)
      End If
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(history),megatm,levcfg,dvar,nstep,tstep,time,exout,sites,domain,comm)
+     Call read_history(l_str,Trim(history),megatm,levcfg,dvar,nstep,tstep,time,exout,sites,domain,parts,comm)
 
      If (newjb) Then
         newjb = .false.
@@ -112,15 +113,15 @@
 
            If (nstph == 1) Then
               Do i=1,natms
-                 stat%xin(i)=xxx(i)
-                 stat%yin(i)=yyy(i)
-                 stat%zin(i)=zzz(i)
+                 stat%xin(i)=parts(i)%xxx
+                 stat%yin(i)=parts(i)%yyy
+                 stat%zin(i)=parts(i)%zzz
               End Do
               stat%clin=cell
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(neigh%cutoff_extended,mxatdm,msd_data%l_msd,stat,domain,comm)
+              Call statistics_connect_set(neigh%cutoff_extended,mxatdm,msd_data%l_msd,stat,domain,parts,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
@@ -139,7 +140,7 @@
            If (lbook) Then
              Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
                atmfrz,degrot,degtra,cshell,cons,pmf,bond,angle,dihedral, &
-               inversion,tether,neigh,sites,mpoles,rigid,domain,comm)
+               inversion,tether,neigh,sites,mpoles,rigid,domain,parts,comm)
              If (lexcl) Then
                Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
                  inversion,neigh,rigid,comm)
@@ -152,7 +153,7 @@
            If (rdf%l_collect) Then
              Call two_body_forces(pdplnc,thermo%ensemble,nstfce,.false.,megfrz, &
                leql,nsteql,nstph,cshell,stat,ewld,devel,met,pois,neigh,sites, &
-               vdws,rdf,mpoles,electro,domain,tmr,comm)
+               vdws,rdf,mpoles,electro,domain,tmr,parts,comm)
            End If
 
 ! Calculate bond forces
@@ -160,14 +161,14 @@
            If (bond%total > 0 .and. bond%bin_pdf > 0) Then
               isw = 0
               Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress, &
-              neigh%cutoff,stat%engcpe,stat%vircpe,bond,mpoles,electro,comm)
+              neigh%cutoff,stat%engcpe,stat%vircpe,bond,mpoles,electro,parts,comm)
            End If
 
 ! Calculate valence angle forces
 
            If (angle%total > 0 .and. angle%bin_adf > 0) Then
               isw = 0
-              Call angles_forces(isw,stat%engang,stat%virang,stat%stress,angle,comm)
+              Call angles_forces(isw,stat%engang,stat%virang,stat%stress,angle,parts,comm)
            End If
 
 ! Calculate dihedral forces
@@ -176,21 +177,21 @@
               isw = 0
               Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
                 neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp, &
-                dihedral,vdws,mpoles,electro,comm)
+                dihedral,vdws,mpoles,electro,parts,comm)
            End If
 
 ! Calculate inversion forces
 
            If (inversion%total > 0 .and. inversion%bin_adf > 0) Then
               isw = 0
-              Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,inversion,comm)
+              Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,inversion,parts,comm)
            End If
 
 ! Calculate kinetic stress and energy if available
 
            If (levcfg > 0 .and. levcfg < 3) Then
               If (rigid%total > 0) Then
-                Call rigid_bodies_quench(rigid,domain,comm)
+                Call rigid_bodies_quench(rigid,domain,parts,comm)
 
                  Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
                  Call kinstrest(rigid,stat%strknt,comm)
@@ -199,7 +200,7 @@
 
                  stat%engrot=getknr(rigid,comm)
                  If (levcfg == 2) Then
-                    Call rigid_bodies_str_ss(stat%strcom,rigid,comm)
+                    Call rigid_bodies_str_ss(stat%strcom,rigid,parts,comm)
                     stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
                  End If
               Else
@@ -237,24 +238,25 @@
            keyres,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
-           mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,comm)
+           mxatdm_,rdf%max_grid,stat,thermo,&
+           zdensity,sites,parts,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
            If (ltraj) Call trajectory_write &
-           (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,netcdf,comm)
+           (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,netcdf,parts,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell, &
-               dfcts(1),neigh,sites,netcdf,domain,comm)
+               dfcts(1),neigh,sites,netcdf,domain,parts,comm)
              If (dfcts(2)%ldef)Then
                Call defects_write(keyres,thermo%ensemble,nstep,tstep,time, &
-                 cshell,dfcts(2),neigh,sites,netcdf,domain,comm)
+                 cshell,dfcts(2),neigh,sites,netcdf,domain,parts,comm)
              End If
            End If
            If (msd_data%l_msd) Call msd_write &
              (keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site,msd_data,comm)
            If (lrsd) Call rsd_write &
-           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,stat%rsd,comm)
+           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,stat%rsd,parts,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (keyres,nstph,tsths,green,sites,comm)
 
@@ -298,9 +300,9 @@
 ! Save last frame positions (for estimates of MSD when levcfg==0)
 
         Do i=1,natms
-           stat%xin(i)=xxx(i)
-           stat%yin(i)=yyy(i)
-           stat%zin(i)=zzz(i)
+           stat%xin(i)=parts(i)%xxx
+           stat%yin(i)=parts(i)%yyy
+           stat%zin(i)=parts(i)%zzz
         End Do
         stat%clin=cell
      Else
@@ -325,15 +327,15 @@
 ! recover positions and generate kinetics
 
      Do i=1,natms
-        xxx(i)=stat%xin(i)
-        yyy(i)=stat%yin(i)
-        zzz(i)=stat%zin(i)
+        parts(i)%xxx=stat%xin(i)
+        parts(i)%yyy=stat%yin(i)
+        parts(i)%zzz=stat%zin(i)
      End Do
      cell=stat%clin
 
      Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
        degrot,degfre,degshl,stat%engrot,sites%dof_site,cshell,stat,cons,pmf, &
-       thermo,minim,rigid,domain,comm)
+       thermo,minim,rigid,domain,parts,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

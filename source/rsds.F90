@@ -4,7 +4,8 @@ Module rsds
                     gsend,grecv,offset_kind,comm_self,mode_wronly
   Use setup
   Use configuration,     Only : cfgname,imcon,cell,natms, &
-                                atmnam,ltg,xxx,yyy,zzz
+                                atmnam,ltg
+  Use particle,   Only : corePart
   Use core_shell, Only : core_shell_type
   ! this is assymetric with respect to the rest. will need probably rsd defined in this type
 
@@ -29,7 +30,7 @@ Module rsds
 Contains
 
 
-Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,comm)
+Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -41,10 +42,11 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( In    ) :: keyres,nsrsd,isrsd,nstep
-  Real( Kind = wp ), Intent( In    ) :: rrsd,tstep,time
+  Integer,            Intent( In    ) :: keyres,nsrsd,isrsd,nstep
+  Real( Kind = wp ),  Intent( In    ) :: rrsd,tstep,time
   Type( core_shell_type ), Intent( InOut ) :: cshell
-  Real( Kind = wp ), Intent( InOut ) :: rsd(:)
+  Real( Kind = wp ),  Intent( InOut ) :: rsd(:)
+  Type( corePart ),   Intent( InOut ) :: parts(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter :: recsz = 73 ! default record size
@@ -218,9 +220,9 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,comm)
         ind(n)=ltg(i)
         dr(n) =rsd(i)
 
-        axx(n)=xxx(i)
-        ayy(n)=yyy(i)
-        azz(n)=zzz(i)
+        axx(n)=parts(i)%xxx
+        ayy(n)=parts(i)%yyy
+        azz(n)=parts(i)%zzz
      End If
   End Do
 

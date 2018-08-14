@@ -18,7 +18,8 @@ Module bonds
                               zero_plus,engunit
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
   Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
-                              chge,xxx,yyy,zzz,fxx,fyy,fzz, cfgname
+                              cfgname
+  Use particle,        Only : corePart
   Use site, Only : site_type
   Use parse,           Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info
@@ -489,7 +490,7 @@ Contains
 End Subroutine bonds_compute
 
 Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
-    mpoles,electro,comm)
+    mpoles,electro,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -515,6 +516,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
   Type( bonds_type ),                  Intent( InOut ) :: bond
   Type( mpole_type ),                  Intent( InOut ) :: mpoles
   Type( electrostatic_type ), Intent( In    ) :: electro
+  Type( corePart ), Dimension(  :  ),  Intent( InOut ) :: parts
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical           :: safe(1:3)
@@ -567,9 +569,9 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 ! components of bond vector
 
      If (lstopt(0,i) > 0) Then
-        xdab(i)=xxx(ia)-xxx(ib)
-        ydab(i)=yyy(ia)-yyy(ib)
-        zdab(i)=zzz(ia)-zzz(ib)
+        xdab(i)=parts(ia)%xxx-parts(ib)%xxx
+        ydab(i)=parts(ia)%yyy-parts(ib)%yyy
+        zdab(i)=parts(ia)%zzz-parts(ib)%zzz
      Else ! (DEBUG)
         xdab(i)=0.0_wp
         ydab(i)=0.0_wp
@@ -778,7 +780,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
 ! scaled charge product times dielectric constants
 
-           chgprd=bond%param(1,kk)*chge(ia)*chge(ib)*r4pie0/electro%eps
+           chgprd=bond%param(1,kk)*parts(ia)%chge*parts(ib)%chge*r4pie0/electro%eps
            If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
               If (mpoles%max_mpoles > 0) Then
                  Call intra_mcoul(rcut,ia,ib,chgprd,rab,xdab(i),ydab(i),zdab(i), &
@@ -891,9 +893,9 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
         If (ia <= natms) Then
 
-           fxx(ia)=fxx(ia)+fx
-           fyy(ia)=fyy(ia)+fy
-           fzz(ia)=fzz(ia)+fz
+           parts(ia)%fxx=parts(ia)%fxx+fx
+           parts(ia)%fyy=parts(ia)%fyy+fy
+           parts(ia)%fzz=parts(ia)%fzz+fz
 
 ! calculate bond energy and virial
 
@@ -913,9 +915,9 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
         If (ib <= natms) Then
 
-           fxx(ib)=fxx(ib)-fx
-           fyy(ib)=fyy(ib)-fy
-           fzz(ib)=fzz(ib)-fz
+           parts(ib)%fxx=parts(ib)%fxx-fx
+           parts(ib)%fyy=parts(ib)%fyy-fy
+           parts(ib)%fzz=parts(ib)%fzz-fz
 
         End If
 

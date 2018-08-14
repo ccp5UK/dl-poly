@@ -3,13 +3,13 @@
 !> Copyright - Daresbury Laboratory
 !>
 !> Author - J.Madge June 2018
+!> Modified A.B.G Chalk July 2018
 Module neighbours
   Use kinds, Only : wp,wi,li
   Use comms,   Only : comms_type,gcheck,gmax,gsum
   Use setup,   Only : nrite,mxspl,mxatms,half_plus
   Use domains,       Only : domains_type
-  Use configuration,  Only : imcon,cell,natms,nlast,ltg,lfrzn, &
-                             xxx,yyy,zzz
+  Use configuration,  Only : imcon,cell,natms,nlast,ltg,lfrzn
   Use core_shell,    Only : core_shell_type
   Use mpole,         Only : mpole_type,POLARISATION_CHARMM
   Use development, Only : development_type
@@ -17,6 +17,7 @@ Module neighbours
   Use numerics, Only : dcell,images,invert,match
   Use timer,  Only : timer_type,start_timer,stop_timer
   Use statistics, Only : stats_type
+  Use particle, Only : corePart
   Implicit None
 
   Private
@@ -84,12 +85,13 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !>
   !> Contrib   - I.J.Bush february 2014
-  Subroutine vnl_check(l_str,width,neigh,stat,domain,comm)
+  Subroutine vnl_check(l_str,width,neigh,stat,domain,parts,comm)
     Logical,           Intent ( In    ) :: l_str
     Real( Kind = wp ), Intent ( InOut ) :: width
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( stats_type ), Intent( InOut) :: stat
     Type( domains_type ), Intent( In    ) :: domain
+    Type( corePart ),   Intent ( InOut ) :: parts(:)
     Type( comms_type ), Intent ( InOut ) :: comm
 
     Logical, Save :: newstart=.true.
@@ -111,9 +113,11 @@ Contains
       Call error(0,message)
     End If
 
-    x(1:nlast) = xxx(1:nlast) - neigh%xbg(1:nlast)
-    y(1:nlast) = yyy(1:nlast) - neigh%ybg(1:nlast)
-    z(1:nlast) = zzz(1:nlast) - neigh%zbg(1:nlast)
+    Do i=1,nlast
+      x(i) = parts(i)%xxx - neigh%xbg(i)
+      y(i) = parts(i)%yyy - neigh%ybg(i)
+      z(i) = parts(i)%zzz - neigh%zbg(i)
+    End Do
 
     Call images(imcon,cell,nlast,x,y,z)
 
@@ -130,9 +134,9 @@ Contains
             zz(1)=z(i)-z(j)
             cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
             If (cut > neigh%padding) Then
-              xx(1)=xxx(i)-xxx(j)
-              yy(1)=yyy(i)-yyy(j)
-              zz(1)=zzz(i)-zzz(j)
+              xx(1)=parts(i)%xxx-parts(j)%xxx
+              yy(1)=parts(i)%yyy-parts(j)%yyy
+              zz(1)=parts(i)%zzz-parts(j)%zzz
               cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
               If (cut > neigh%cutoff_extended) Then
                 safe=.false. ! strong violation
@@ -237,12 +241,13 @@ Contains
   !> Copyright - Daresbury Laboratory
   !>
   !> Author    - I.T.Todorov january 2017
-  Subroutine vnl_set_check(neigh,comm)
+  Subroutine vnl_set_check(neigh,parts,comm)
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type ( comms_type ), Intent( InOut ) :: comm
+    Type( corePart ),    Intent( InOut ) :: parts(:)
     Logical, Save :: newjob=.true.
 
-    Integer :: fail
+    Integer :: fail,i
     Character( Len = 256 ):: message
     If (.not.neigh%unconditional_update) Return
 
@@ -267,9 +272,11 @@ Contains
     End If
 
     ! set tracking point
-    neigh%xbg(1:nlast)=xxx(1:nlast)
-    neigh%ybg(1:nlast)=yyy(1:nlast)
-    neigh%zbg(1:nlast)=zzz(1:nlast)
+    Do i = 1,nlast
+      neigh%xbg(i) = parts(i)%xxx
+      neigh%ybg(i) = parts(i)%yyy
+      neigh%zbg(i) = parts(i)%zzz
+    End Do
   End Subroutine vnl_set_check
 
   !> Verlet neighbour list based on link-cell method
@@ -280,7 +287,7 @@ Contains
   !>
   !> Contrib   - I.J.Bush february 2014
   Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,cshell,devel,neigh, &
-      mpoles,domain,tmr,comm)
+      mpoles,domain,tmr,parts,comm)
     Logical,            Intent( In    ) :: lbook
     Integer,            Intent( In    ) :: megfrz
     Real( Kind = wp ) , Intent( In    ) :: rvdw,rmet,pdplnc
@@ -290,6 +297,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -506,9 +514,9 @@ Contains
     Do i=1,natms
       ! Convert atomic positions from MD cell centred
       ! Cartesian coordinates to reduced space coordinates
-      x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-      y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-      z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+      x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
+      y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
+      z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
 
       ! Get cell coordinates accordingly
       ix = Int(xdc*(x+0.5_wp)) + jx
@@ -539,9 +547,9 @@ Contains
 
       ! Convert atomic positions from MD cell centred
       ! Cartesian coordinates to reduced space coordinates
-      x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-      y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-      z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+      x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
+      y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
+      z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
 
       ! Get cell coordinates accordingly
       If (x > -half_plus) Then
@@ -658,9 +666,9 @@ Contains
       j = lct_where( which_cell( i ) )
       at_list( j ) = i
 
-      xxt(j) = xxx(i)
-      yyt(j) = yyy(i)
-      zzt(j) = zzz(i)
+      xxt(j) = parts(i)%xxx
+      yyt(j) = parts(i)%yyy
+      zzt(j) = parts(i)%zzz
 
       lct_where( which_cell( i ) ) = lct_where( which_cell( i ) ) + 1
     End Do
@@ -794,7 +802,7 @@ Contains
               ! check cutoff criterion (all atom pairs MUST BE within the cutoff)
               !                 rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
               ! use reordered coordinate list in order to get "ordered" rather than "random" access
-              rsq=(xxt(jj)-xxx(i))**2+(yyt(jj)-yyy(i))**2+(zzt(jj)-zzz(i))**2
+              rsq=(xxt(jj)-parts(i)%xxx)**2+(yyt(jj)-parts(i)%yyy)**2+(zzt(jj)-parts(i)%zzz)**2
               If (rsq <= rcsq) Then
 
                 ! check for overflow and add an entry
@@ -906,7 +914,7 @@ Contains
                 ! check cutoff criterion (all atom pairs MUST BE within the cutoff)
                 !                    rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
                 ! use reordered coordinate list in order to get "ordered" rather than "random" access
-                rsq=(xxt(jj)-xxx(i))**2+(yyt(jj)-yyy(i))**2+(zzt(jj)-zzz(i))**2
+                rsq=(xxt(jj)-parts(i)%xxx)**2+(yyt(jj)-parts(i)%yyy)**2+(zzt(jj)-parts(i)%zzz)**2
 
                 If (rsq <= rcsq) Then
                   ! check for overflow and add an entry
@@ -1084,7 +1092,8 @@ Contains
           If (j <= natms .or. ii < jj) Then
             cnt(1)=cnt(1)+1.0_wp ! sum up all pairs (neigh%cutoff_extended=neigh%cutoff+neigh%padding)
 
-            det=Sqrt((xxx(i)-xxx(j))**2+(yyy(i)-yyy(j))**2+(zzz(i)-zzz(j))**2)
+            det=Sqrt((parts(i)%xxx-parts(j)%xxx)**2+(parts(i)%yyy-parts(j)%yyy)**2&
+               +     (parts(i)%zzz-parts(j)%zzz)**2)
 
             If (det < devel%r_dis) Then
               safe=.false.

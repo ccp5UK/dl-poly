@@ -15,9 +15,10 @@ Module minimise
                               zero_plus,mxatms
   Use configuration,   Only : natms,nlast,nfree,          &
                               lsi,lsa,lfrzn,lfree,lstfre, &
-                              weight,xxx,yyy,zzz,fxx,fyy,fzz, &
+                              weight, &
                               imcon,cell,vxx,vyy,vzz, &
                               write_config,getcom
+  Use particle,        Only : corePart
   Use rigid_bodies,    Only : rigid_bodies_type,q_setup,getrotmat, &
                               rigid_bodies_split_torque,rigid_bodies_move
   Use parse,           Only : strip_blanks,lower_case
@@ -26,7 +27,7 @@ Module minimise
                               kinstress,kinstresf,kinstrest
   Use numerics,        Only : images,invert
   Use pmf,             Only : pmf_tags,pmf_pseudo_bonds,pmf_type
-  Use shared_units,    Only : update_shared_units
+  Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_POSITIONS
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
   Use constraints, Only : constraints_type,constraints_tags,constraints_pseudo_bonds
@@ -110,7 +111,7 @@ Contains
   End Subroutine deallocate_minimise_arrays
 
   Subroutine minimise_relax(l_str,rdf_collect,megatm,megpmf,tstep,stpcfg,stats, &
-      pmf,cons,netcdf,minim,rigid,domain,comm)
+      pmf,cons,netcdf,minim,rigid,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -141,7 +142,8 @@ Contains
   Type( minimise_type ), Intent( InOut ) :: minim
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( domains_type ), Intent( In    ) :: domain
-  Type( comms_type ), Intent( inOut ) :: comm
+  Type( comms_type ), Intent( InOut ) :: comm
+  type( corePart ),   Intent( InOut ) :: parts(:)
 
   Logical,              Save :: newjob = .true. , l_rdf, l_mov
   Character( Len = 8 ), Save :: word
@@ -293,9 +295,9 @@ Contains
 ! Load original forces
 
   Do i=1,natms
-     gxx(i)=fxx(i)
-     gyy(i)=fyy(i)
-     gzz(i)=fzz(i)
+     gxx(i)=parts(i)%fxx
+     gyy(i)=parts(i)%fyy
+     gzz(i)=parts(i)%fzz
   End Do
 
 ! Minimised energy is current configuration energy
@@ -308,13 +310,13 @@ Contains
      lstitr(1:natms)=.false. ! initialise lstitr
 
      If (cons%megcon > 0) Then
-        Call constraints_tags(lstitr,cons,comm)
+        Call constraints_tags(lstitr,cons,parts,comm)
         Call constraints_pseudo_bonds(gxx,gyy,gzz,stats,cons,comm)
         eng=eng+stats%engcon
      End If
 
      If (pmf%megpmf > 0) Then
-        Call pmf_tags(lstitr,pmf,comm)
+        Call pmf_tags(lstitr,pmf,parts,comm)
         Call pmf_pseudo_bonds(gxx,gyy,gzz,stats,pmf,comm)
         eng=eng+stats%engpmf
      End If
@@ -327,7 +329,7 @@ Contains
        Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
          rigid%map_shared,gxx,gyy,gzz,domain,comm)
      End If
-     Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,comm)
+     Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,parts,comm)
   End If
 
 ! Initialise/get eng_tol & verify relaxed condition
@@ -488,9 +490,9 @@ Contains
         i=lstfre(j)
 
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           xxx(i)=xxx(i)+stride*minim%oxx(i)
-           yyy(i)=yyy(i)+stride*minim%oyy(i)
-           zzz(i)=zzz(i)+stride*minim%ozz(i)
+           parts(i)%xxx=parts(i)%xxx+stride*minim%oxx(i)
+           parts(i)%yyy=parts(i)%yyy+stride*minim%oyy(i)
+           parts(i)%zzz=parts(i)%zzz+stride*minim%ozz(i)
            dist_tol=Max(dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
         End If
      End Do
@@ -499,7 +501,7 @@ Contains
 ! RB particles
 
      Call rigid_bodies_move(stride,minim%oxx,minim%oyy,minim%ozz, &
-       txx,tyy,tzz,uxx,uyy,uzz,dist_tol,rigid)
+       txx,tyy,tzz,uxx,uyy,uzz,dist_tol,rigid,parts)
      l_mov=.true.
 
   Else
@@ -508,9 +510,9 @@ Contains
 
      Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           xxx(i)=xxx(i)+stride*minim%oxx(i)
-           yyy(i)=yyy(i)+stride*minim%oyy(i)
-           zzz(i)=zzz(i)+stride*minim%ozz(i)
+           parts(i)%xxx=parts(i)%xxx+stride*minim%oxx(i)
+           parts(i)%yyy=parts(i)%yyy+stride*minim%oyy(i)
+           parts(i)%zzz=parts(i)%zzz+stride*minim%ozz(i)
            dist_tol=Max(dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
         End If
      End Do
@@ -605,9 +607,9 @@ Contains
      If (l_mov) Then
         If (rigid%share) Then
           Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-            rigid%map_shared,xxx,yyy,zzz,domain,comm)
+            rigid%map_shared,parts,SHARED_UNIT_UPDATE_POSITIONS,domain,comm)
         End If
-        Call q_setup(rigid,comm)
+        Call q_setup(rigid,parts,comm)
      End If
 
   End If
@@ -629,7 +631,7 @@ Contains
 
 End Subroutine minimise_relax
 
-Subroutine zero_k_optimise(stats,rigid,comm)
+Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -660,6 +662,7 @@ Subroutine zero_k_optimise(stats,rigid,comm)
   Type( stats_type ), Intent( InOut ) :: stats
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
+  Type( corePart ),   Intent( InOut ) :: parts(:)
 
   Integer           :: fail,i,j,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ) :: e_f,e_t,e_r,engkf,engkt,scale,vdotf,fsq, &
@@ -711,9 +714,9 @@ Subroutine zero_k_optimise(stats,rigid,comm)
 
 ! COM distances
 
-              ggx(krgd)=xxx(i)-rigid%xxx(irgd)
-              ggy(krgd)=yyy(i)-rigid%yyy(irgd)
-              ggz(krgd)=zzz(i)-rigid%zzz(irgd)
+              ggx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
+              ggy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
+              ggz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
            End Do
         End If
      End Do
@@ -731,19 +734,19 @@ Subroutine zero_k_optimise(stats,rigid,comm)
 
 ! take component of velocity in direction of force
 
-           vdotf = vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
+           vdotf = vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
 
            If (vdotf < 0.0_wp) Then
               vxx(i) = 0.0_wp
               vyy(i) = 0.0_wp
               vzz(i) = 0.0_wp
            Else
-              fsq = fxx(i)**2+fyy(i)**2+fzz(i)**2
+              fsq = parts(i)%fxx**2+parts(i)%fyy**2+parts(i)%fzz**2
               scale = vdotf/Max(1.0e-10_wp,fsq)
 
-              vxx(i) = fxx(i)*scale
-              vyy(i) = fyy(i)*scale
-              vzz(i) = fzz(i)*scale
+              vxx(i) = parts(i)%fxx*scale
+              vyy(i) = parts(i)%fyy*scale
+              vzz(i) = parts(i)%fzz*scale
            End If
 
         End If
@@ -774,14 +777,14 @@ Subroutine zero_k_optimise(stats,rigid,comm)
 ! If the RB has a frozen particle then no net force
 
               If (rigid%frozen(0,rgdtyp) == 0) Then
-                 fmx=fmx+fxx(i)
-                 fmy=fmy+fyy(i)
-                 fmz=fmz+fzz(i)
+                 fmx=fmx+parts(i)%fxx
+                 fmy=fmy+parts(i)%fyy
+                 fmz=fmz+parts(i)%fzz
               End If
 
-              tqx=tqx+ggy(krgd)*fzz(i)-ggz(krgd)*fyy(i)
-              tqy=tqy+ggz(krgd)*fxx(i)-ggx(krgd)*fzz(i)
-              tqz=tqz+ggx(krgd)*fyy(i)-ggy(krgd)*fxx(i)
+              tqx=tqx+ggy(krgd)*parts(i)%fzz-ggz(krgd)*parts(i)%fyy
+              tqy=tqy+ggz(krgd)*parts(i)%fxx-ggx(krgd)*parts(i)%fzz
+              tqz=tqz+ggx(krgd)*parts(i)%fyy-ggy(krgd)*parts(i)%fxx
            End Do
 
 ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -791,9 +794,9 @@ Subroutine zero_k_optimise(stats,rigid,comm)
               i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
               i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-              x(1)=xxx(i1)-xxx(i2)
-              y(1)=yyy(i1)-yyy(i2)
-              z(1)=zzz(i1)-zzz(i2)
+              x(1)=parts(i1)%xxx-parts(i2)%xxx
+              y(1)=parts(i1)%yyy-parts(i2)%yyy
+              z(1)=parts(i1)%zzz-parts(i2)%zzz
 
               Call images(imcon,cell,1,x,y,z)
 
@@ -940,19 +943,19 @@ Subroutine zero_k_optimise(stats,rigid,comm)
 
 ! take component of velocity in direction of force
 
-           vdotf = vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
+           vdotf = vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
 
            If (vdotf < 0.0_wp) Then
               vxx(i) = 0.0_wp
               vyy(i) = 0.0_wp
               vzz(i) = 0.0_wp
            Else
-              fsq = fxx(i)**2+fyy(i)**2+fzz(i)**2
+              fsq = parts(i)%fxx**2+parts(i)%fyy**2+parts(i)%fzz**2
               scale = vdotf/Max(1.0e-10_wp,fsq)
 
-              vxx(i) = fxx(i)*scale
-              vyy(i) = fyy(i)*scale
-              vzz(i) = fzz(i)*scale
+              vxx(i) = parts(i)%fxx*scale
+              vyy(i) = parts(i)%fyy*scale
+              vzz(i) = parts(i)%fzz*scale
            End If
 
         End If
@@ -993,7 +996,7 @@ Subroutine zero_k_optimise(stats,rigid,comm)
 
 ! calculate centre of mass position
 
-     Call getcom(xxx,yyy,zzz,com,comm)
+     Call getcom(parts,com,comm)
 
      If (rigid%total > 0) Then
 
@@ -1003,9 +1006,9 @@ Subroutine zero_k_optimise(stats,rigid,comm)
            i=lstfre(j)
 
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              xxx(i) = xxx(i) - com(1)
-              yyy(i) = yyy(i) - com(2)
-              zzz(i) = zzz(i) - com(3)
+              parts(i)%xxx = parts(i)%xxx - com(1)
+              parts(i)%yyy = parts(i)%yyy - com(2)
+              parts(i)%zzz = parts(i)%zzz - com(3)
            End If
         End Do
 
@@ -1033,17 +1036,17 @@ Subroutine zero_k_optimise(stats,rigid,comm)
            i=lstfre(j)
 
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              amx = amx + weight(i)*(yyy(i)*vzz(i) - zzz(i)*vyy(i))
-              amy = amy + weight(i)*(zzz(i)*vxx(i) - xxx(i)*vzz(i))
-              amz = amz + weight(i)*(xxx(i)*vyy(i) - yyy(i)*vxx(i))
+              amx = amx + weight(i)*(parts(i)%yyy*vzz(i) - parts(i)%zzz*vyy(i))
+              amy = amy + weight(i)*(parts(i)%zzz*vxx(i) - parts(i)%xxx*vzz(i))
+              amz = amz + weight(i)*(parts(i)%xxx*vyy(i) - parts(i)%yyy*vxx(i))
 
-              tmp = xxx(i)**2 + yyy(i)**2 + zzz(i)**2
-              rot(1) = rot(1) + weight(i)*(xxx(i)*xxx(i) - tmp)
-              rot(2) = rot(2) + weight(i)* xxx(i)*yyy(i)
-              rot(3) = rot(3) + weight(i)* xxx(i)*zzz(i)
-              rot(5) = rot(5) + weight(i)*(yyy(i)*yyy(i) - tmp)
-              rot(6) = rot(6) + weight(i)* yyy(i)*zzz(i)
-              rot(9) = rot(9) + weight(i)*(zzz(i)*zzz(i) - tmp)
+              tmp = parts(i)%xxx**2 + parts(i)%yyy**2 + parts(i)%zzz**2
+              rot(1) = rot(1) + weight(i)*(parts(i)%xxx*parts(i)%xxx - tmp)
+              rot(2) = rot(2) + weight(i)* parts(i)%xxx*parts(i)%yyy
+              rot(3) = rot(3) + weight(i)* parts(i)%xxx*parts(i)%zzz
+              rot(5) = rot(5) + weight(i)*(parts(i)%yyy*parts(i)%yyy - tmp)
+              rot(6) = rot(6) + weight(i)* parts(i)%yyy*parts(i)%zzz
+              rot(9) = rot(9) + weight(i)*(parts(i)%zzz*parts(i)%zzz - tmp)
            End If
         End Do
 
@@ -1112,9 +1115,9 @@ Subroutine zero_k_optimise(stats,rigid,comm)
            i=lstfre(j)
 
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              vxx(i) = vxx(i) + (wyy*zzz(i) - wzz*yyy(i))
-              vyy(i) = vyy(i) + (wzz*xxx(i) - wxx*zzz(i))
-              vzz(i) = vzz(i) + (wxx*yyy(i) - wyy*xxx(i))
+              vxx(i) = vxx(i) + (wyy*parts(i)%zzz - wzz*parts(i)%yyy)
+              vyy(i) = vyy(i) + (wzz*parts(i)%xxx - wxx*parts(i)%zzz)
+              vzz(i) = vzz(i) + (wxx*parts(i)%yyy - wyy*parts(i)%xxx)
            End If
         End Do
 
@@ -1155,9 +1158,9 @@ Subroutine zero_k_optimise(stats,rigid,comm)
            i=lstfre(j)
 
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              xxx(i) = xxx(i) + com(1)
-              yyy(i) = yyy(i) + com(2)
-              zzz(i) = zzz(i) + com(3)
+              parts(i)%xxx = parts(i)%xxx + com(1)
+              parts(i)%yyy = parts(i)%yyy + com(2)
+              parts(i)%zzz = parts(i)%zzz + com(3)
            End If
         End Do
 
@@ -1177,9 +1180,9 @@ Subroutine zero_k_optimise(stats,rigid,comm)
 
         Do i=1,natms
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              xxx(i) = xxx(i) - com(1)
-              yyy(i) = yyy(i) - com(2)
-              zzz(i) = zzz(i) - com(3)
+              parts(i)%xxx = parts(i)%xxx - com(1)
+              parts(i)%yyy = parts(i)%yyy - com(2)
+              parts(i)%zzz = parts(i)%zzz - com(3)
            End If
         End Do
 
@@ -1195,17 +1198,17 @@ Subroutine zero_k_optimise(stats,rigid,comm)
 
         Do i=1,natms
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              amx = amx + weight(i)*(yyy(i)*vzz(i) - zzz(i)*vyy(i))
-              amy = amy + weight(i)*(zzz(i)*vxx(i) - xxx(i)*vzz(i))
-              amz = amz + weight(i)*(xxx(i)*vyy(i) - yyy(i)*vxx(i))
+              amx = amx + weight(i)*(parts(i)%yyy*vzz(i) - parts(i)%zzz*vyy(i))
+              amy = amy + weight(i)*(parts(i)%zzz*vxx(i) - parts(i)%xxx*vzz(i))
+              amz = amz + weight(i)*(parts(i)%xxx*vyy(i) - parts(i)%yyy*vxx(i))
 
-              tmp = xxx(i)**2 + yyy(i)**2 + zzz(i)**2
-              rot(1) = rot(1) + weight(i)*(xxx(i)*xxx(i) - tmp)
-              rot(2) = rot(2) + weight(i)* xxx(i)*yyy(i)
-              rot(3) = rot(3) + weight(i)* xxx(i)*zzz(i)
-              rot(5) = rot(5) + weight(i)*(yyy(i)*yyy(i) - tmp)
-              rot(6) = rot(6) + weight(i)* yyy(i)*zzz(i)
-              rot(9) = rot(9) + weight(i)*(zzz(i)*zzz(i) - tmp)
+              tmp = parts(i)%xxx**2 + parts(i)%yyy**2 + parts(i)%zzz**2
+              rot(1) = rot(1) + weight(i)*(parts(i)%xxx*parts(i)%xxx - tmp)
+              rot(2) = rot(2) + weight(i)* parts(i)%xxx*parts(i)%yyy
+              rot(3) = rot(3) + weight(i)* parts(i)%xxx*parts(i)%zzz
+              rot(5) = rot(5) + weight(i)*(parts(i)%yyy*parts(i)%yyy - tmp)
+              rot(6) = rot(6) + weight(i)* parts(i)%yyy*parts(i)%zzz
+              rot(9) = rot(9) + weight(i)*(parts(i)%zzz*parts(i)%zzz - tmp)
            End If
         End Do
 
@@ -1249,9 +1252,9 @@ Subroutine zero_k_optimise(stats,rigid,comm)
 
         Do i=1,natms
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              vxx(i) = vxx(i) + (wyy*zzz(i) - wzz*yyy(i))
-              vyy(i) = vyy(i) + (wzz*xxx(i) - wxx*zzz(i))
-              vzz(i) = vzz(i) + (wxx*yyy(i) - wyy*xxx(i))
+              vxx(i) = vxx(i) + (wyy*parts(i)%zzz - wzz*parts(i)%yyy)
+              vyy(i) = vyy(i) + (wzz*parts(i)%xxx - wxx*parts(i)%zzz)
+              vzz(i) = vzz(i) + (wxx*parts(i)%yyy - wyy*parts(i)%xxx)
            End If
         End Do
 
@@ -1263,9 +1266,9 @@ Subroutine zero_k_optimise(stats,rigid,comm)
 
         Do i=1,natms
            If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              xxx(i) = xxx(i) + com(1)
-              yyy(i) = yyy(i) + com(2)
-              zzz(i) = zzz(i) + com(3)
+              parts(i)%xxx = parts(i)%xxx + com(1)
+              parts(i)%yyy = parts(i)%yyy + com(2)
+              parts(i)%zzz = parts(i)%zzz + com(3)
            End If
         End Do
 

@@ -13,7 +13,8 @@ Module z_density
   Use comms,  Only : comms_type,gsum
   Use setup,  Only : nrite,nzdndt
   Use site, Only : site_type
-  Use configuration, Only : cfgname,cell,volm,natms,ltype,zzz
+  Use configuration, Only : cfgname,cell,volm,natms,ltype
+  Use particle,        Only : corePart
   Use errors_warnings, Only : error,info
   Implicit None
 
@@ -62,7 +63,7 @@ Contains
 
   End Subroutine allocate_z_density_arrays
 
-  Subroutine z_density_collect(max_grid_rdf,zdensity)
+  Subroutine z_density_collect(max_grid_rdf,zdensity,parts)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -75,6 +76,7 @@ Contains
 
   Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
   Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( corePart ),       Intent( InOut ) :: parts(:)
 
   Integer           :: i,k,l
   Real( Kind = wp ) :: zlen,zleno2,rdelr
@@ -100,7 +102,7 @@ Contains
   Do i=1,natms
      k=ltype(i)
 
-     l=Min(1+Int((zzz(i)+zleno2)*rdelr),max_grid_rdf)
+     l=Min(1+Int((parts(i)%zzz+zleno2)*rdelr),max_grid_rdf)
 
      zdensity%density(l,k)=zdensity%density(l,k) + 1.0_wp
   End Do

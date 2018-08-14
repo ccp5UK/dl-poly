@@ -178,9 +178,9 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,comm)
   nlast=natms     ! No halo exists yet
   ixyz(1:nlast)=0 ! Initialise halo indicator
   Do i=1,nlast
-     x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-     y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-     z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+     x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
+     y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
+     z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
 
      If (x <= ecwx) ixyz(i)=ixyz(i)+1
      If (x >=  cwx) ixyz(i)=ixyz(i)+2
@@ -211,7 +211,7 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,comm)
 
   Do i=natms+1,nlast
      ltype(i)=sites%type_site(lsite(i))
-     chge(i)=sites%charge_site(lsite(i))
+     parts(i)%chge=sites%charge_site(lsite(i))
      weight(i)=sites%weight_site(lsite(i))
      lfrzn(i)=sites%freeze_site(lsite(i))
      lfree(i)=sites%free_site(lsite(i))
@@ -228,7 +228,7 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,comm)
 
 ! Set VNL checkpoint
 
-  Call vnl_set_check(neigh,comm)
+  Call vnl_set_check(neigh,parts,comm)
 
 ! Record global atom indices for local+halo sorting
 ! and sort multiple entries

@@ -1,6 +1,7 @@
 Module shared_units
 
   Use kinds, Only : wp
+  Use particle, Only: corePart
   Use comms, Only : comms_type,PassUnit_tag,wp_mpi,UpdShUnit_tag,&
                     gcheck,gsync,gsend,gwait,girecv
   Use setup
@@ -11,13 +12,21 @@ Module shared_units
 
   Implicit None
 
-
+  Integer, Parameter :: SHARED_UNIT_UPDATE_POSITIONS = 1
+  Integer, Parameter :: SHARED_UNIT_UPDATE_FORCES    = 2
   Private
   Public :: update_shared_units
   Public :: update_shared_units_int
   Public :: pass_shared_units
   Public :: tag_legend
+  Public :: SHARED_UNIT_UPDATE_POSITIONS
+  Public :: SHARED_UNIT_UPDATE_FORCES
 
+
+  Interface update_shared_units
+    Module Procedure update_shared_units_arrays
+    Module Procedure update_shared_units_parts
+  End Interface update_shared_units
   Contains
 
     Subroutine pass_shared_units(mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv, &
@@ -390,7 +399,191 @@ Module shared_units
 
 End Subroutine pass_shared_units
 
-Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,domain,comm)
+Subroutine update_shared_units_parts(natms,nlast,lsi,lsa,lishp,lashp,parts,subtype,domain,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 subroutine for passing atomic coordinates, velocities or
+! just updates of shared core-shell, constraint and RB units
+! between nodes when the values are stored inside the particle struct
+!
+! Note: This subroutine is only called when there is sharing.
+!       In case of mxnode=1 there is no sharing by construction.
+!
+! copyright - daresbury laboratory
+! author    - a.b.g.chalk july 2018
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+  Integer,              Intent( In    ) :: natms,nlast
+  Integer,              Intent( In    ) :: lsi(1:mxatms),lsa(1:mxatms)
+  Type( domains_type ), Intent( In    ) :: domain
+  Integer,              Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
+  Integer,              Intent( In    ) :: subtype
+  Type( corePart ),     Intent( InOut ) :: parts(1:mxatms)
+  Type( comms_type),    Intent( InOut ) :: comm
+  Integer                               :: mpi_type
+
+  Logical :: safe(1:2)
+  Integer :: fail,iadd,limit,iblock, &
+             i,j,k,j0,k0,jdnode,kdnode,m,n
+
+  Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+  Character( Len = 256 ) :: message
+
+  ! Number of transported quantities per particle
+
+  iadd=4
+
+  fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
+  Allocate (buffer(1:limit), Stat=fail)
+  If (fail > 0) Then
+     Write(message,'(a)') 'update_shared_units allocation failure'
+     Call error(0,message)
+  End If
+
+  If(subtype == SHARED_UNIT_UPDATE_POSITIONS) Then
+    mpi_type = comm%part_array_type_positions
+  Else If( subtype == SHARED_UNIT_UPDATE_FORCES) Then
+    mpi_type = comm%part_array_type_forces
+  Else
+    !! TODO Give error code, has to be either positions or forces
+    Call error(0)
+  End If
+! Set buffer limit (half for outgoing data - half for incoming)
+
+  iblock=limit/2
+
+! Set logical flag for array overflow
+
+  safe=.true.
+
+! transfer coordinate update data to all neighbouring nodes (26 surrounding me)
+
+  j0=0
+  Do k=1,26
+
+! For all genuinely unique processors (no images or myself)
+
+     If (domain%map_unique(k) == 0) Then
+
+! Initialise the number of buffer elements I am to send
+
+        i=0
+        Do j=j0+1,lashp(k)
+
+! If no out of bound so far then carry on
+
+           If (i+iadd <= iblock) Then
+              m=local_index(lishp(j),nlast,lsi,lsa)
+              If (m > natms) m=0
+
+! m should always be > 0 (halo particles have local index > natms)
+! (consistency - a particle strictly belongs to only one domain)
+
+              If (m > 0) Then
+                 buffer(i+1)=Real(lishp(j),wp)
+
+                 If(subtype == SHARED_UNIT_UPDATE_POSITIONS) Then
+                   buffer(i+2)=parts(m)%xxx
+                   buffer(i+3)=parts(m)%yyy
+                   buffer(i+4)=parts(m)%zzz
+                 Else
+                   buffer(i+2) = parts(m)%fxx
+                   buffer(i+3) = parts(m)%fyy
+                   buffer(i+4) = parts(m)%fzz
+                 End If
+              Else
+                 safe(2)=.false.
+              End If
+              i=i+iadd
+           Else
+              safe(1)=.false.
+           End If
+        End Do
+
+! inter node communication - right the opposite of that in pass_shared_units
+! jdnode - destination (send to), kdnode - source (receive from)
+
+        jdnode=domain%map(k)
+        If (Mod(k,2) == 1) Then
+           k0=k+1
+        Else
+           k0=k-1
+        End If
+        kdnode=domain%map(k0)
+
+! pass only non-zero length messages
+  
+! transmit length of message
+
+        n=0
+        Call girecv(comm,n,kdnode,UpdShUnit_tag+k)
+        Call gsend(comm,i,jdnode,UpdShUnit_tag+k)
+        Call gwait(comm)
+
+        If (n > 0) Then
+          Call girecv(comm,buffer(i+1:i+n),kdnode,UpdShUnit_tag+k)
+        End If
+        If (i > 0) Then
+          Call gsend(comm,buffer(1:i),jdnode,UpdShUnit_tag+k)
+        End If
+        If (n > 0) Call gwait(comm)
+
+! consolidate transferred data
+! I'm to receive data for n/iadd particles (n array elements from buffer(i+1))
+
+        Do j=1,n/iadd
+           If (i+iadd <= limit) Then
+              m=local_index(Nint(buffer(i+1)),nlast,lsi,lsa)
+
+! m should always be > natms (halo particles have local index > natms)
+! (consistency - a particle strictly belongs to only one domain)
+
+              If (m > natms) Then
+                 If(subtype == SHARED_UNIT_UPDATE_POSITIONS) Then
+                   parts(m)%xxx=buffer(i+2)
+                   parts(m)%yyy=buffer(i+3)
+                   parts(m)%zzz=buffer(i+4)
+                 Else
+                   parts(m)%fxx=buffer(i+2)
+                   parts(m)%fyy=buffer(i+3)
+                   parts(m)%fzz=buffer(i+4)
+                 End If
+              Else
+                 safe(2)=.false.
+              End If
+              i=i+iadd
+           Else
+              safe(1)=.false.
+           End If
+        End Do
+
+     End If
+     j0=lashp(k)
+
+  End Do
+
+  Call gcheck(comm,safe)
+
+! check for array overflow
+
+  If (.not.safe(1)) Call error(115)
+
+! check global error condition
+
+  If (.not.safe(2)) Call error(116)
+
+  Deallocate (buffer, Stat=fail)
+  If (fail > 0) Then
+     Write(message,'(a)') 'update_shared_units deallocation failure'
+     Call error(0,message)
+  End If
+
+End Subroutine update_shared_units_parts
+
+
+Subroutine update_shared_units_arrays(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -552,7 +745,7 @@ Subroutine update_shared_units(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,domai
      Call error(0,message)
   End If
 
-End Subroutine update_shared_units
+End Subroutine update_shared_units_arrays
 
 Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,domain,comm)
 

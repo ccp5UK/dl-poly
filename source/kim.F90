@@ -21,11 +21,11 @@ Module kim
   Use kinds, Only : wp,wi
   Use neighbours, Only : neighbours_type
   Use errors_warnings, Only : error
+  Use particle, Only : corePart
 #ifdef KIM
   Use KIM_API_F03
   Use domains, Only : domains_type
-  Use configuration,  Only : natms,nlast,lsi,lsa,ltg,lsite, &
-                             xxx,yyy,zzz,fxx,fyy,fzz
+  Use configuration,  Only : natms,nlast,lsi,lsa,ltg,lsite
   Use setup,   Only : mxatdm,mxbfxp
   Use site, Only : site_type
   Use comms, Only : comms_type,export_tag,wp_mpi,gsend,gwait,girecv
@@ -336,7 +336,7 @@ Contains
 #endif
   End Subroutine kim_cleanup
 
-  Subroutine kim_forces(engkim,virkim,stress,list,map,comm)
+  Subroutine kim_forces(engkim,virkim,stress,list,map,parts,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -356,6 +356,7 @@ Contains
     Integer( Kind = wi), Intent( In    ), Dimension(-3:,1:) :: list
     Integer( Kind = wi), Intent( In    ), Dimension(1:26) :: map
     Type(comms_type),        Intent( InOut ) :: comm
+    Type( corePart ),        Intent( InOut ) :: parts(:)
 
 #ifdef KIM
     Integer( Kind = c_int ) :: i,j,k
@@ -383,9 +384,9 @@ Contains
     Call c_f_Pointer(pV,     virial,      [6])
 
     Do i=1,nlast
-      coordinates(1,i) = xxx(i)
-      coordinates(2,i) = yyy(i)
-      coordinates(3,i) = zzz(i)
+      coordinates(1,i) = parts(i)%xxx
+      coordinates(2,i) = parts(i)%yyy
+      coordinates(3,i) = parts(i)%zzz
     End Do
 
     kim_list = 0
@@ -419,15 +420,15 @@ Contains
     engkim = Real(energy, wp)
 
     Do i=1,natms
-       fxx(i) = fxx(i) + Real(forces(1,i), wp)
-       fyy(i) = fyy(i) + Real(forces(2,i), wp)
-       fzz(i) = fzz(i) + Real(forces(3,i), wp)
+       parts(i)%fxx = parts(i)%fxx + Real(forces(1,i), wp)
+       parts(i)%fyy = parts(i)%fyy + Real(forces(2,i), wp)
+       parts(i)%fzz = parts(i)%fzz + Real(forces(3,i), wp)
     End Do
 
 ! Distribute force contributions on this processors halo particles to their
 ! respective processors for inclusion in the fxx, fyy, and fzz arrays.
 
-Call kim_reverse_communication(forces,map,comm)
+Call kim_reverse_communication(forces,map,parts,comm)
 
     stress(1) = stress(1) - Real(virial(1), wp)
     stress(2) = stress(2) - Real(virial(6), wp)
@@ -450,7 +451,7 @@ Call kim_reverse_communication(forces,map,comm)
   End Subroutine kim_forces
 
 #ifdef KIM
-  Subroutine kim_reverse_communication(forces,map,comm)
+  Subroutine kim_reverse_communication(forces,map,parts,comm)
 
 !-------------------------------------------------------------------------------
 !
@@ -464,6 +465,7 @@ Call kim_reverse_communication(forces,map,comm)
     Real( Kind = c_double ), Intent( In    ) :: forces(:,:)
     Integer( Kind = wi ), Dimension(1:26), Intent( In    ) :: map
     Type( comms_type ), Intent( InOut ) :: comm
+    Type( corePart ),   Intent( InOut ) :: parts(:)
 
     Integer :: i,jdnode,kdnode,j,jj,k,imove,jmove
 
@@ -521,9 +523,9 @@ Call kim_reverse_communication(forces,map,comm)
        Do k=1,jmove/iadd
           jj=local_index(Nint(rev_comm_buffer(j+4)),nlast,lsi,lsa)
 
-          fxx(jj)=fxx(jj)+rev_comm_buffer(j+1)
-          fyy(jj)=fyy(jj)+rev_comm_buffer(j+2)
-          fzz(jj)=fzz(jj)+rev_comm_buffer(j+3)
+          parts(jj)%fxx=parts(jj)%fxx+rev_comm_buffer(j+1)
+          parts(jj)%fyy=parts(jj)%fyy+rev_comm_buffer(j+2)
+          parts(jj)%fzz=parts(jj)%fzz+rev_comm_buffer(j+3)
 
           j=j+iadd
        End Do

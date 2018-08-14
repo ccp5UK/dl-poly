@@ -4,13 +4,13 @@
 ! Apply external field
 
         If (ext_field%key /= FIELD_NULL) Then
-          Call external_field_correct(stat%engfld,ext_field,rigid,comm)
+          Call external_field_correct(stat%engfld,ext_field,rigid,parts,comm)
         End If
 
 ! Apply pseudo thermostat - velocity cycle (1)
 
         If (thermo%l_pseudo) Then
-          Call pseudo_vv(1,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,comm)
+          Call pseudo_vv(1,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,parts,comm)
         End If
 
 ! Apply temperature regaussing
@@ -20,27 +20,27 @@
            thermo%chi_p = 0.0_wp
            thermo%eta  = 0.0_wp
 
-           Call regauss_temperature(rigid,domain,comm)
+           Call regauss_temperature(rigid,domain,parts,comm)
 
 ! quench constraints & PMFs
 
-           If (cons%megcon > 0) Call constraints_quench(cons,stat,domain,comm)
-           If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
+           If (cons%megcon > 0) Call constraints_quench(cons,stat,domain,parts,comm)
+           If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,parts,comm)
 
 ! quench core-shell units in adiabatic model
 
            If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Then
               stat%stptmp = 2.0_wp*(stat%engke+stat%engrot) / (boltz*Real(degfre,wp))
               Do
-                 Call scale_temperature(stat%engke+stat%engrot,degtra,degrot,degfre,rigid,comm)
+                 Call scale_temperature(stat%engke+stat%engrot,degtra,degrot,degfre,rigid,parts,comm)
                  Call core_shell_quench(safe,stat%stptmp,cshell,domain,comm)
-                 If (cons%megcon > 0) Call constraints_quench(cons,stat,domain,comm)
-                 If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
-                 If (rigid%total > 0) Call rigid_bodies_quench(rigid,domain,comm)
+                 If (cons%megcon > 0) Call constraints_quench(cons,stat,domain,parts,comm)
+                 If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,parts,comm)
+                 If (rigid%total > 0) Call rigid_bodies_quench(rigid,domain,parts,comm)
                  If (safe) Exit
               End Do
            Else
-              Call scale_temperature(stat%engke+stat%engrot,degtra,degrot,degfre,rigid,comm)
+              Call scale_temperature(stat%engke+stat%engrot,degtra,degrot,degfre,rigid,parts,comm)
            End If
 
 ! Correct kinetic stress and energy
@@ -67,22 +67,22 @@
 
 ! quench constraints & PMFs
 
-           If (cons%megcon > 0) Call constraints_quench(cons,stat,domain,comm)
-           If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
+           If (cons%megcon > 0) Call constraints_quench(cons,stat,domain,parts,comm)
+           If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,parts,comm)
 
 ! quench core-shell units in adiabatic model
 
            If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Then
               Do
-                 Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,comm)
+                 Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,parts,comm)
                  Call core_shell_quench(safe,stat%stptmp,cshell,domain,comm)
-                 If (cons%megcon > 0) Call constraints_quench(cons,stat,domain,comm)
-                 If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
-                 If (rigid%total > 0) Call rigid_bodies_quench(rigid,domain,comm)
+                 If (cons%megcon > 0) Call constraints_quench(cons,stat,domain,parts,comm)
+                 If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,parts,comm)
+                 If (rigid%total > 0) Call rigid_bodies_quench(rigid,domain,parts,comm)
                  If (safe) Exit
               End Do
            Else
-              Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,comm)
+              Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,parts,comm)
            End If
 
 ! Correct kinetic stress and energy

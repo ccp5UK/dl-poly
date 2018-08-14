@@ -251,13 +251,13 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 ! pack positions and apply possible PBC shift for the receiver
 
            If (.not.lwrap) Then
-              buffer(imove+1)=xxx(i)
-              buffer(imove+2)=yyy(i)
-              buffer(imove+3)=zzz(i)
+              buffer(imove+1)=parts(i)%xxx
+              buffer(imove+2)=parts(i)%yyy
+              buffer(imove+3)=parts(i)%zzz
            Else
-              buffer(imove+1)=xxx(i)+xadd
-              buffer(imove+2)=yyy(i)+yadd
-              buffer(imove+3)=zzz(i)+zadd
+              buffer(imove+1)=parts(i)%xxx+xadd
+              buffer(imove+2)=parts(i)%yyy+yadd
+              buffer(imove+3)=parts(i)%zzz+zadd
            End If
 
 ! pack velocities
@@ -268,9 +268,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! pack forces
 
-           buffer(imove+7)=fxx(i)
-           buffer(imove+8)=fyy(i)
-           buffer(imove+9)=fzz(i)
+           buffer(imove+7)=parts(i)%fxx
+           buffer(imove+8)=parts(i)%fyy
+           buffer(imove+9)=parts(i)%fzz
 
 ! pack config indexing, site and move indexing arrays
 
@@ -796,17 +796,17 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
      keep=ind_off(ii) ; If (keep > ind_on(k)) Exit ! Thanks to Alin Elena
      i   =ind_on(k-ii+1)
 
-     xxx(keep)=xxx(i)
-     yyy(keep)=yyy(i)
-     zzz(keep)=zzz(i)
+     parts(keep)%xxx=parts(i)%xxx
+     parts(keep)%yyy=parts(i)%yyy
+     parts(keep)%zzz=parts(i)%zzz
 
      vxx(keep)=vxx(i)
      vyy(keep)=vyy(i)
      vzz(keep)=vzz(i)
 
-     fxx(keep)=fxx(i)
-     fyy(keep)=fyy(i)
-     fzz(keep)=fzz(i)
+     parts(keep)%fxx=parts(i)%fxx
+     parts(keep)%fyy=parts(i)%fyy
+     parts(keep)%fzz=parts(i)%fzz
 
      ltg(keep)=ltg(i)
      lsite(keep)=lsite(i)
@@ -943,9 +943,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! unpack positions
 
-     xxx(newatm)=buffer(kmove+1)
-     yyy(newatm)=buffer(kmove+2)
-     zzz(newatm)=buffer(kmove+3)
+     parts(newatm)%xxx=buffer(kmove+1)
+     parts(newatm)%yyy=buffer(kmove+2)
+     parts(newatm)%zzz=buffer(kmove+3)
 
 ! unpack velocities
 
@@ -955,9 +955,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! unpack forces
 
-     fxx(newatm)=buffer(kmove+7)
-     fyy(newatm)=buffer(kmove+8)
-     fzz(newatm)=buffer(kmove+9)
+     parts(newatm)%fxx=buffer(kmove+7)
+     parts(newatm)%fyy=buffer(kmove+8)
+     parts(newatm)%fzz=buffer(kmove+9)
 
 ! unpack config indexing, site and move indexing arrays
 
@@ -1812,13 +1812,13 @@ Subroutine export_atomic_data(mdir,domain,comm)
 ! pack positions and apply possible PBC shift for the receiver
 
               If (.not.lwrap) Then
-                 buffer(imove+1)=xxx(i)
-                 buffer(imove+2)=yyy(i)
-                 buffer(imove+3)=zzz(i)
+                 buffer(imove+1)=parts(i)%xxx
+                 buffer(imove+2)=parts(i)%yyy
+                 buffer(imove+3)=parts(i)%zzz
               Else
-                 buffer(imove+1)=xxx(i)+xadd
-                 buffer(imove+2)=yyy(i)+yadd
-                 buffer(imove+3)=zzz(i)+zadd
+                 buffer(imove+1)=parts(i)%xxx+xadd
+                 buffer(imove+2)=parts(i)%yyy+yadd
+                 buffer(imove+3)=parts(i)%zzz+zadd
               End If
 
 ! pack config indexing, site and remaining halo indexing arrays
@@ -1903,9 +1903,9 @@ Subroutine export_atomic_data(mdir,domain,comm)
 
 ! unpack positions
 
-     xxx(nlast)=buffer(j+1)
-     yyy(nlast)=buffer(j+2)
-     zzz(nlast)=buffer(j+3)
+     parts(nlast)%xxx=buffer(j+1)
+     parts(nlast)%yyy=buffer(j+2)
+     parts(nlast)%zzz=buffer(j+3)
 
 ! unpack config indexing, site and halo indexing arrays
 
@@ -2083,13 +2083,13 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,comm)
 ! pack positions and apply possible PBC shift for the receiver
 
               If (.not.lwrap) Then
-                 buffer(imove+1)=xxx(i)
-                 buffer(imove+2)=yyy(i)
-                 buffer(imove+3)=zzz(i)
+                 buffer(imove+1)=parts(i)%xxx
+                 buffer(imove+2)=parts(i)%yyy
+                 buffer(imove+3)=parts(i)%zzz
               Else
-                 buffer(imove+1)=xxx(i)+xadd
-                 buffer(imove+2)=yyy(i)+yadd
-                 buffer(imove+3)=zzz(i)+zadd
+                 buffer(imove+1)=parts(i)%xxx+xadd
+                 buffer(imove+2)=parts(i)%yyy+yadd
+                 buffer(imove+3)=parts(i)%zzz+zadd
               End If
 
            Else
@@ -2165,9 +2165,9 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,comm)
 
 ! unpack positions
 
-     xxx(mlast)=buffer(j+1)
-     yyy(mlast)=buffer(j+2)
-     zzz(mlast)=buffer(j+3)
+     parts(mlast)%xxx=buffer(j+1)
+     parts(mlast)%yyy=buffer(j+2)
+     parts(mlast)%zzz=buffer(j+3)
 
      j=j+iadd
   End Do
@@ -2439,9 +2439,9 @@ Subroutine mpoles_rotmat_set_halo(mpoles,domain,comm)
   Do i=1,natms
      mpoles%flg(i)=0
      If (mpoles%max_order < 3) Then
-        Call rotate_mpoles_d(i,mpoles,comm)
+        Call rotate_mpoles_d(i,mpoles,parts,comm)
      Else
-        Call rotate_mpoles(i,mpoles,comm)
+        Call rotate_mpoles(i,mpoles,parts,comm)
      End If
   End Do
 
@@ -2548,9 +2548,9 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
      big=0.0_wp
 
      Do i =1,natms
-        big(1)=Max(big(1),Abs(xxx(i)))
-        big(2)=Max(big(2),Abs(yyy(i)))
-        big(3)=Max(big(3),Abs(zzz(i)))
+        big(1)=Max(big(1),Abs(parts(i)%xxx))
+        big(2)=Max(big(2),Abs(parts(i)%yyy))
+        big(3)=Max(big(3),Abs(parts(i)%zzz))
      End Do
 
      Call gmax(comm,big)
@@ -2595,9 +2595,9 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
 
      ixyz(1:natms)=0 ! Initialise move (former halo) indicator
      Do i=1,natms
-        x=rcell(1)*xxx(i)+rcell(4)*yyy(i)+rcell(7)*zzz(i)
-        y=rcell(2)*xxx(i)+rcell(5)*yyy(i)+rcell(8)*zzz(i)
-        z=rcell(3)*xxx(i)+rcell(6)*yyy(i)+rcell(9)*zzz(i)
+        x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
+        y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
+        z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
 
 ! assign domain coordinates (call for errors)
 
@@ -2677,7 +2677,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
      Do i=1,natms
         atmnam(i)=sites%site_name(lsite(i))
         ltype(i)=sites%type_site(lsite(i))
-        chge(i)=sites%charge_site(lsite(i))
+        parts(i)%chge=sites%charge_site(lsite(i))
         weight(i)=sites%weight_site(lsite(i))
         lfrzn(i)=sites%freeze_site(lsite(i))
         lfree(i)=sites%free_site(lsite(i))
@@ -2800,7 +2800,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
 
 ! Restore periodic boundaries (re-bound > re-wrap)
 
-     Call pbcshift(imcon,cell,natms,xxx,yyy,zzz)
+     Call pbcshift(imcon,cell,natms,parts)
 
   End If
 

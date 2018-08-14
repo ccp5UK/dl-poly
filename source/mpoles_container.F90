@@ -2,11 +2,12 @@ Module mpoles_container
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type
   Use setup,           Only : sqrpi,mxspl
-  Use configuration,   Only : imcon,cell,lsite,nlast,lsi,lsa,ltg,xxx,yyy,zzz
+  Use configuration,   Only : imcon,cell,lsite,nlast,lsi,lsa,ltg
   Use mpole,           Only : mpole_type
   Use ewald,           Only : dtpbsp
   Use errors_warnings, Only : error
   Use numerics,        Only : images_s, local_index
+  Use particle,        Only : corePart
 
   Implicit None
 
@@ -5268,7 +5269,7 @@ Module mpoles_container
 
   End Subroutine explicit_spme_loop_s
 
-  Subroutine rotate_mpoles(iatm,mpoles,comm)
+  Subroutine rotate_mpoles(iatm,mpoles,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -5285,6 +5286,7 @@ Module mpoles_container
 
     Integer, Intent( In    )  :: iatm
     Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( In    ) :: comm
 
   ! Local variables
@@ -5338,9 +5340,9 @@ Module mpoles_container
 
           j    = local_index(mpoles%ltp(1,iatm),nlast,lsi,lsa)
 
-          p1x  = xxx(j) - xxx(iatm)
-          p1y  = yyy(j) - yyy(iatm)
-          p1z  = zzz(j) - zzz(iatm)
+          p1x  = parts(j)%xxx - parts(iatm)%xxx
+          p1y  = parts(j)%yyy - parts(iatm)%yyy
+          p1z  = parts(j)%zzz - parts(iatm)%zzz
 
           Call images_s(imcon,cell,p1x,p1y,p1z)
 
@@ -5379,15 +5381,15 @@ Module mpoles_container
           j    = local_index(mpoles%ltp(1,iatm),nlast,lsi,lsa)
           k    = local_index(mpoles%ltp(2,iatm),nlast,lsi,lsa)
 
-          p1x  = xxx(j) - xxx(iatm)
-          p1y  = yyy(j) - yyy(iatm)
-          p1z  = zzz(j) - zzz(iatm)
+          p1x  = parts(j)%xxx - parts(iatm)%xxx
+          p1y  = parts(j)%yyy - parts(iatm)%yyy
+          p1z  = parts(j)%zzz - parts(iatm)%zzz
 
           Call images_s(imcon,cell,p1x,p1y,p1z)
 
-          p2x  = xxx(k) - xxx(iatm)
-          p2y  = yyy(k) - yyy(iatm)
-          p2z  = zzz(k) - zzz(iatm)
+          p2x  = parts(k)%xxx - parts(iatm)%xxx
+          p2y  = parts(k)%yyy - parts(iatm)%yyy
+          p2z  = parts(k)%zzz - parts(iatm)%zzz
 
           Call images_s(imcon,cell,p2x,p2y,p2z)
 
@@ -5483,9 +5485,9 @@ Module mpoles_container
 
              j       = local_index(mpoles%ltp(i,iatm),nlast,lsi,lsa)
 
-             xxt(i)  = xxx(j) - xxx(iatm)
-             yyt(i)  = yyy(j) - yyy(iatm)
-             zzt(i)  = zzz(j) - zzz(iatm)
+             xxt(i)  = parts(j)%xxx - parts(iatm)%xxx
+             yyt(i)  = parts(j)%yyy - parts(iatm)%yyy
+             zzt(i)  = parts(j)%zzz - parts(iatm)%zzz
 
              Call images_s(imcon,cell,xxt(i),yyt(i),zzt(i))
 
@@ -5986,7 +5988,7 @@ Module mpoles_container
 
   End Subroutine infinitesimal_rotation
 
-  Subroutine rotate_mpoles_d(iatm,mpoles,comm)
+  Subroutine rotate_mpoles_d(iatm,mpoles,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -6003,6 +6005,7 @@ Module mpoles_container
 
     Integer, Intent( In    )  :: iatm
     Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( corePart   ), Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( In    ) :: comm
 
   ! Local variables
@@ -6057,9 +6060,9 @@ Module mpoles_container
 
           j    = local_index(mpoles%ltp(1,iatm),nlast,lsi,lsa)
 
-          p1x  = xxx(j) - xxx(iatm)
-          p1y  = yyy(j) - yyy(iatm)
-          p1z  = zzz(j) - zzz(iatm)
+          p1x  = parts(j)%xxx - parts(iatm)%xxx
+          p1y  = parts(j)%yyy - parts(iatm)%yyy
+          p1z  = parts(j)%zzz - parts(iatm)%zzz
 
           Call images_s(imcon,cell,p1x,p1y,p1z)
 
@@ -6098,15 +6101,15 @@ Module mpoles_container
           j    = local_index(mpoles%ltp(1,iatm),nlast,lsi,lsa)
           k    = local_index(mpoles%ltp(2,iatm),nlast,lsi,lsa)
 
-          p1x  = xxx(j) - xxx(iatm)
-          p1y  = yyy(j) - yyy(iatm)
-          p1z  = zzz(j) - zzz(iatm)
+          p1x  = parts(j)%xxx - parts(iatm)%xxx
+          p1y  = parts(j)%yyy - parts(iatm)%yyy
+          p1z  = parts(j)%zzz - parts(iatm)%zzz
 
           Call images_s(imcon,cell,p1x,p1y,p1z)
 
-          p2x  = xxx(k) - xxx(iatm)
-          p2y  = yyy(k) - yyy(iatm)
-          p2z  = zzz(k) - zzz(iatm)
+          p2x  = parts(k)%xxx - parts(iatm)%xxx
+          p2y  = parts(k)%yyy - parts(iatm)%yyy
+          p2z  = parts(k)%zzz - parts(iatm)%zzz
 
           Call images_s(imcon,cell,p2x,p2y,p2z)
 
@@ -6202,9 +6205,9 @@ Module mpoles_container
 
              j       = local_index(mpoles%ltp(i,iatm),nlast,lsi,lsa)
 
-             xxt(i)  = xxx(j) - xxx(iatm)
-             yyt(i)  = yyy(j) - yyy(iatm)
-             zzt(i)  = zzz(j) - zzz(iatm)
+             xxt(i)  = parts(j)%xxx - parts(iatm)%xxx
+             yyt(i)  = parts(j)%yyy - parts(iatm)%yyy
+             zzt(i)  = parts(j)%zzz - parts(iatm)%zzz
 
              Call images_s(imcon,cell,xxt(i),yyt(i),zzt(i))
 

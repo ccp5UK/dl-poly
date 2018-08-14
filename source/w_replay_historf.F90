@@ -56,11 +56,11 @@
   Do
      Call allocate_statistics_connect(mxatdm,stat)
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,comm)
+     If (nstph > nstpe) Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,parts,comm)
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,sites,domain,comm)
+     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,sites,domain,parts,comm)
 
      If (newjb) Then
         newjb = .false.
@@ -89,15 +89,15 @@
 
            If (nstph == 1) Then
               Do i=1,natms
-                 stat%xin(i)=xxx(i)
-                 stat%yin(i)=yyy(i)
-                 stat%zin(i)=zzz(i)
+                 stat%xin(i)=parts(i)%xxx
+                 stat%yin(i)=parts(i)%yyy
+                 stat%zin(i)=parts(i)%zzz
               End Do
               stat%clin=cell
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,comm)
+              Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,parts,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
@@ -116,7 +116,7 @@
            If (lbook) Then
              Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
                atmfrz,degrot,degtra,cshell,cons,pmf,bond,angle,dihedral, &
-               inversion,tether,neigh,sites,mpoles,rigid,domain,comm)
+               inversion,tether,neigh,sites,mpoles,rigid,domain,parts,comm)
               If (lexcl) Then
                 Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
                   inversion,neigh,rigid,comm)
@@ -133,17 +133,17 @@
 
            If (levcfg > 0 .and. levcfg < 3) Then
               If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,thermo%freq_zero) == 0) Then
-                Call zero_k_optimise(stat,rigid,comm)
+                Call zero_k_optimise(stat,rigid,parts,comm)
               End If
 
               If (thermo%l_zero .and. nstep <= nsteql) Then
-                Call zero_k_optimise(stat,rigid,comm)
+                Call zero_k_optimise(stat,rigid,parts,comm)
               End If
 
 ! Calculate kinetic stress and energy if available
 
               If (rigid%total > 0) Then
-                Call rigid_bodies_quench(rigid,domain,comm)
+                Call rigid_bodies_quench(rigid,domain,parts,comm)
 
                  Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
                  Call kinstrest(rigid,stat%strknt,comm)
@@ -151,7 +151,7 @@
                  stat%strkin=stat%strknf+stat%strknt
 
                  stat%engrot=getknr(rigid,comm)
-                 Call rigid_bodies_str_ss(stat%strcom,rigid,comm)
+                 Call rigid_bodies_str_ss(stat%strcom,rigid,parts,comm)
                  stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
               Else
                  Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
@@ -188,7 +188,8 @@
            keyres,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
-           mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,comm)
+           mxatdm_,rdf%max_grid,stat,thermo,&
+           zdensity,sites,parts,comm)
 
 ! line-printer output
 ! Update cpu time
@@ -223,19 +224,19 @@
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
            If (ltraj) Call trajectory_write &
-           (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,netcdf,comm)
+           (keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stat%rsd,netcdf,parts,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell, &
-               dfcts(1),neigh,sites,netcdf,domain,comm)
+               dfcts(1),neigh,sites,netcdf,domain,parts,comm)
              If (dfcts(2)%ldef)Then
                Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell, &
-                 dfcts(2),neigh,sites,netcdf,domain,comm)
+                 dfcts(2),neigh,sites,netcdf,domain,parts,comm)
              End If
            End If
            If (msd_data%l_msd) Call msd_write &
              (keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site,msd_data,comm)
            If (lrsd) Call rsd_write &
-           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,stat%rsd,comm)
+           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,stat%rsd,parts,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (keyres,nstph,tsths,green,sites,comm)
 
@@ -270,9 +271,9 @@
 ! Save last frame positions (for estimates of MSD when levcfg==0)
 
         Do i=1,natms
-           stat%xin(i)=xxx(i)
-           stat%yin(i)=yyy(i)
-           stat%zin(i)=zzz(i)
+           stat%xin(i)=parts(i)%xxx
+           stat%yin(i)=parts(i)%yyy
+           stat%zin(i)=parts(i)%zzz
         End Do
         stat%clin=cell
      Else
@@ -297,15 +298,15 @@
 ! recover positions and generate kinetics
 
      Do i=1,natms
-        xxx(i)=stat%xin(i)
-        yyy(i)=stat%yin(i)
-        zzz(i)=stat%zin(i)
+        parts(i)%xxx=stat%xin(i)
+        parts(i)%yyy=stat%yin(i)
+        parts(i)%zzz=stat%zin(i)
      End Do
      cell=stat%clin
 
      Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
        degrot,degfre,degshl,stat%engrot,sites%dof_site,cshell,stat,cons,pmf, &
-       thermo,minim,rigid,domain,comm)
+       thermo,minim,rigid,domain,parts,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

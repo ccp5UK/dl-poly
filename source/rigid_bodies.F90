@@ -1,5 +1,5 @@
 Module rigid_bodies
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 module for defining rigid bodies' (RBs) variables and arrays
 !
@@ -13,9 +13,9 @@ Module rigid_bodies
   Use setup,           Only : mxtmls,mxlshp,mxatdm, &
                               mxatms,zero_plus
   Use site, Only : site_type
-  Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,xxx,yyy,zzz,vxx,vyy,vzz, &
-                              ltg,lsite,lfrzn,fxx,fyy,fzz,nfree,lstfre,getcom
   Use neighbours,      Only : neighbours_type
+  Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,vxx,vyy,vzz, &
+                              ltg,lsite,lfrzn,nfree,lstfre,getcom
   Use statistics,      Only : stats_type
   Use numerics,        Only : images, jacobi, invert
   Use shared_units,    Only : update_shared_units
@@ -26,6 +26,7 @@ Module rigid_bodies
                               ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, &
                               ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, &
                               ENS_NPT_MTK, ENS_NPT_MTK_ANISO
+  Use particle,        Only : corePart
   Use domains,         Only : domains_type
   Implicit None
 
@@ -141,6 +142,10 @@ Module rigid_bodies
             rigid_bodies_tags, rigid_bodies_coms, rigid_bodies_setup, &
             rigid_bodies_widths
 
+  Interface rigid_bodies_coms
+    Module Procedure rigid_bodies_coms_arrays
+    Module Procedure rigid_bodies_coms_parts
+  End Interface rigid_bodies_coms
 Contains
 
   Subroutine allocate_rigid_bodies_arrays(T,mxtmls,mxatdm,neighbours)
@@ -312,7 +317,7 @@ Contains
     End If
   End Subroutine cleanup
 
-  Subroutine rigid_bodies_coms(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,rigid,comm)
+  Subroutine rigid_bodies_coms_arrays(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,rigid,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -402,9 +407,103 @@ Contains
        Call error(0,message)
     End If
 
-  End Subroutine rigid_bodies_coms
+  End Subroutine rigid_bodies_coms_arrays
 
-  Subroutine rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol,rigid)
+
+
+  Subroutine rigid_bodies_coms_parts(parts,rgdxxx,rgdyyy,rgdzzz,rigid,comm)
+
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for constructing RBs coms
+  !
+  ! Note: it assumes that all RBs' members are present and fresh
+  ! (even those in the halo of the domain)
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov february 2015
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( corePart ) ,  Intent( In    ) :: parts(1:mxatms)
+    Type( rigid_bodies_type ), Intent( In    ) :: rigid
+    Real( Kind = wp ),  Intent(   Out ), Dimension(1:rigid%max_rigid) :: rgdxxx,rgdyyy,rgdzzz
+    Type( comms_type ), Intent( In    ) :: comm
+
+    Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp
+    Real( Kind = wp ) :: tmp
+
+    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
+    Character ( Len = 256 ) :: message
+
+    fail = 0
+    Allocate (gxx(1:rigid%max_list*rigid%max_rigid), &
+      gyy(1:rigid%max_list*rigid%max_rigid), &
+      gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
+    If (fail > 0) Then
+       Write(message,'(a)') 'rigid_bodies_coms allocation failure'
+       Call error(0,message)
+    End If
+
+  ! Loop over all local RB units and get in the local scope of the unit
+
+    krgd=0
+    Do irgd=1,rigid%n_types
+       lrgd=rigid%list(-1,irgd)
+       Do jrgd=1,lrgd
+          krgd=krgd+1
+
+          gxx(krgd) = parts(rigid%index_local(jrgd,irgd))%xxx - parts(rigid%index_local(1,irgd))%xxx
+          gyy(krgd) = parts(rigid%index_local(jrgd,irgd))%yyy - parts(rigid%index_local(1,irgd))%yyy
+          gzz(krgd) = parts(rigid%index_local(jrgd,irgd))%zzz - parts(rigid%index_local(1,irgd))%zzz
+       End Do
+    End Do
+
+  ! minimum image convention for bond vectors
+
+    Call images(imcon,cell,krgd,gxx,gyy,gzz)
+
+  ! Get the COM vector
+
+    krgd=0
+    Do irgd=1,rigid%n_types
+       rgdtyp=rigid%list(0,irgd)
+
+       rgdxxx(irgd)=0.0_wp
+       rgdyyy(irgd)=0.0_wp
+       rgdzzz(irgd)=0.0_wp
+
+       lrgd=rigid%list(-1,irgd)
+       Do jrgd=1,lrgd
+          krgd=krgd+1
+
+          rgdxxx(irgd) = rgdxxx(irgd) + rigid%weightless(jrgd,rgdtyp)*gxx(krgd)
+          rgdyyy(irgd) = rgdyyy(irgd) + rigid%weightless(jrgd,rgdtyp)*gyy(krgd)
+          rgdzzz(irgd) = rgdzzz(irgd) + rigid%weightless(jrgd,rgdtyp)*gzz(krgd)
+       End Do
+    End Do
+
+    Do irgd=1,rigid%n_types
+       rgdtyp=rigid%list(0,irgd)
+
+       tmp=1.0_wp/rigid%weightless(0,rgdtyp)
+
+       rgdxxx(irgd) = rgdxxx(irgd)*tmp + parts(rigid%index_local(1,irgd))%xxx
+       rgdyyy(irgd) = rgdyyy(irgd)*tmp + parts(rigid%index_local(1,irgd))%yyy
+       rgdzzz(irgd) = rgdzzz(irgd)*tmp + parts(rigid%index_local(1,irgd))%zzz
+    End Do
+
+    Deallocate (gxx,gyy,gzz, Stat = fail)
+    If (fail > 0) Then
+       Write(message,'(a)') 'rigid_bodies_coms deallocation failure'
+       Call error(0,message)
+    End If
+
+
+  End Subroutine rigid_bodies_coms_parts
+
+
+  Subroutine rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol,rigid,parts)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 routine for updating positions of atoms in RBs
@@ -422,6 +521,7 @@ Contains
                                           uxx(1:mxatms),uyy(1:mxatms),uzz(1:mxatms)
     Real( Kind = wp ), Intent( InOut ) :: dist_tol
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( corePart),           Intent( InOut ) :: parts(:)
 
     Integer           :: i,irgd,jrgd,lrgd,rgdtyp
     Real( Kind = wp ) :: ttt,uuu,the,dtol,coz,zin,x,y,z
@@ -478,9 +578,9 @@ Contains
 
   ! Add motion
 
-                   xxx(i)=xxx(i)+x
-                   yyy(i)=yyy(i)+y
-                   zzz(i)=zzz(i)+z
+                   parts(i)%xxx=parts(i)%xxx+x
+                   parts(i)%yyy=parts(i)%yyy+y
+                   parts(i)%zzz=parts(i)%zzz+z
 
                    dtol=Max(dtol,x**2+y**2+z**2)
 
@@ -493,7 +593,7 @@ Contains
     dist_tol=Max(dist_tol,Sqrt(dtol))
   End Subroutine rigid_bodies_move
 
-  Subroutine rigid_bodies_quench(rigid,domain,comm)
+  Subroutine rigid_bodies_quench(rigid,domain,parts,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine to convert atomic velocities to RB COM and
@@ -506,6 +606,7 @@ Contains
 
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -554,9 +655,9 @@ Contains
 
   ! COM distances
 
-             gxx(krgd)=xxx(i)-rigid%xxx(irgd)
-             gyy(krgd)=yyy(i)-rigid%yyy(irgd)
-             gzz(krgd)=zzz(i)-rigid%zzz(irgd)
+             gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
+             gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
+             gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
 
   ! If the RB has a frozen particle then no net COM momentum
 
@@ -626,9 +727,9 @@ Contains
              i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
              i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-             x(1)=xxx(i1)-xxx(i2)
-             y(1)=yyy(i1)-yyy(i2)
-             z(1)=zzz(i1)-zzz(i2)
+             x(1)=parts(i1)%xxx-parts(i2)%xxx
+             y(1)=parts(i1)%yyy-parts(i2)%yyy
+             z(1)=parts(i1)%zzz-parts(i2)%zzz
 
              Call images(imcon,cell,1,x,y,z)
 
@@ -681,7 +782,7 @@ Contains
     End If
   End Subroutine rigid_bodies_quench
 
-  Subroutine rigid_bodies_q_ench(qr,rigid,domain,comm)
+  Subroutine rigid_bodies_q_ench(qr,rigid,domain,parts,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine to convert atomic velocities to RB COM and
@@ -695,6 +796,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Integer,            Intent( In    ) :: qr(1:rigid%max_rigid)
     Type( domains_type ), Intent( In    ) :: domain
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -744,9 +846,9 @@ Contains
 
   ! COM distances
 
-                gxx(krgd)=xxx(i)-rigid%xxx(irgd)
-                gyy(krgd)=yyy(i)-rigid%yyy(irgd)
-                gzz(krgd)=zzz(i)-rigid%zzz(irgd)
+                gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
+                gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
+                gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
 
   ! If the RB has a frozen particle then no net COM momentum
 
@@ -818,9 +920,9 @@ Contains
                 i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
                 i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-                x(1)=xxx(i1)-xxx(i2)
-                y(1)=yyy(i1)-yyy(i2)
-                z(1)=zzz(i1)-zzz(i2)
+                x(1)=parts(i1)%xxx-parts(i2)%xxx
+                y(1)=parts(i1)%yyy-parts(i2)%yyy
+                z(1)=parts(i1)%zzz-parts(i2)%zzz
 
                 Call images(imcon,cell,1,x,y,z)
 
@@ -874,7 +976,7 @@ Contains
     End If
   End Subroutine rigid_bodies_q_ench
 
-  Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,rcut,sites,rigid,comm)
+  Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,rcut,sites,rigid,parts,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for constructing RBs' rotational inertia tesnors
@@ -891,6 +993,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: rcut
     Type( site_type ), Intent( InOut ) :: sites
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: l_print,safe,pass1,pass2
@@ -926,8 +1029,8 @@ Contains
   ! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
 
     Call rigid_bodies_tags(rigid,comm)
-    Call rigid_bodies_coms(xxx,yyy,zzz,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
-    Call rigid_bodies_widths(rcut,rigid,comm)
+    Call rigid_bodies_coms(parts,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+    Call rigid_bodies_widths(rcut,rigid,parts,comm)
 
   ! Find as many as possible different groups of RB units on this domain
   ! and qualify a representative by the oldest copy of the very first one
@@ -966,9 +1069,9 @@ Contains
 
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                gxx(krgd)=xxx(i)-rigid%xxx(irgd)
-                gyy(krgd)=yyy(i)-rigid%yyy(irgd)
-                gzz(krgd)=zzz(i)-rigid%zzz(irgd)
+                gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
+                gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
+                gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
              End Do
           Else                              ! Fully frozen (as if frozen point particle)
              rigid%index_global(0,rgdtyp)=5
@@ -1704,11 +1807,11 @@ Contains
 
   ! set-up quaternions
 
-    Call q_setup(rigid,comm)
+    Call q_setup(rigid,parts,comm)
 
   End Subroutine rigid_bodies_setup
 
-  Subroutine rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,comm)
+  Subroutine rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,parts,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for resolving RBs' torques into equivalent atomic
@@ -1724,6 +1827,7 @@ Contains
     Real( Kind = wp ),  Intent(   Out ) :: txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms), &
                                            uxx(1:mxatms),uyy(1:mxatms),uzz(1:mxatms)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( In    ) :: comm
 
     Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -1758,9 +1862,9 @@ Contains
 
   ! COM distances
 
-             ggx(krgd)=xxx(i)-rigid%xxx(irgd)
-             ggy(krgd)=yyy(i)-rigid%yyy(irgd)
-             ggz(krgd)=zzz(i)-rigid%zzz(irgd)
+             ggx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
+             ggy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
+             ggz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
           End Do
        End If
     End Do
@@ -1830,9 +1934,9 @@ Contains
              i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
              i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-             x(1)=xxx(i1)-xxx(i2)
-             y(1)=yyy(i1)-yyy(i2)
-             z(1)=zzz(i1)-zzz(i2)
+             x(1)=parts(i1)%xxx-parts(i2)%xxx
+             y(1)=parts(i1)%yyy-parts(i2)%yyy
+             z(1)=parts(i1)%zzz-parts(i2)%zzz
 
              Call images(imcon,cell,1,x,y,z)
 
@@ -1960,7 +2064,7 @@ Contains
     End If
   End Subroutine rigid_bodies_split_torque
 
-  Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,comm)
+  Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,parts,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 routine to calculate RB contributions to the atomic stress
@@ -1976,6 +2080,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: ggx(1:rigid%max_list*rigid%max_rigid), &
                                           ggy(1:rigid%max_list*rigid%max_rigid), &
                                           ggz(1:rigid%max_list*rigid%max_rigid)
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -2001,15 +2106,15 @@ Contains
              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
              If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
-                strcom(1)=strcom(1)-ggx(krgd)*fxx(i)
-                strcom(2)=strcom(2)-ggx(krgd)*fyy(i)
-                strcom(3)=strcom(3)-ggx(krgd)*fzz(i)
-                strcom(4)=strcom(4)-ggy(krgd)*fxx(i)
-                strcom(5)=strcom(5)-ggy(krgd)*fyy(i)
-                strcom(6)=strcom(6)-ggy(krgd)*fzz(i)
-                strcom(7)=strcom(7)-ggz(krgd)*fxx(i)
-                strcom(8)=strcom(8)-ggz(krgd)*fyy(i)
-                strcom(9)=strcom(9)-ggz(krgd)*fzz(i)
+                strcom(1)=strcom(1)-ggx(krgd)*parts(i)%fxx
+                strcom(2)=strcom(2)-ggx(krgd)*parts(i)%fyy
+                strcom(3)=strcom(3)-ggx(krgd)*parts(i)%fzz
+                strcom(4)=strcom(4)-ggy(krgd)*parts(i)%fxx
+                strcom(5)=strcom(5)-ggy(krgd)*parts(i)%fyy
+                strcom(6)=strcom(6)-ggy(krgd)*parts(i)%fzz
+                strcom(7)=strcom(7)-ggz(krgd)*parts(i)%fxx
+                strcom(8)=strcom(8)-ggz(krgd)*parts(i)%fyy
+                strcom(9)=strcom(9)-ggz(krgd)*parts(i)%fzz
              End If
           End Do
        End If
@@ -2028,7 +2133,7 @@ Contains
 
   End subroutine rigid_bodies_stress
 
-  Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,fxx,fyy,fzz,rigid,comm)
+  Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,parts,rigid,comm,fxl,fyl,fzl)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2045,10 +2150,12 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: ggx(1:rigid%max_list*rigid%max_rigid), &
                                            ggy(1:rigid%max_list*rigid%max_rigid), &
                                            ggz(1:rigid%max_list*rigid%max_rigid)
-    Real( Kind = wp ),  Intent( In    ) :: fxx(1:mxatms),fyy(1:mxatms),fzz(1:mxatms)
+    Type( corePart ),   Intent( In    ) :: parts(1:mxatms)
+    Real( Kind = wp ),  Intent( In    ) :: fxl(1:mxatms),fyl(1:mxatms),fzl(1:mxatms)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
+    Real( Kind = wp ) :: tmp_fx, tmp_fy, tmp_fz
 
   ! Initialise stress
 
@@ -2071,15 +2178,18 @@ Contains
              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
              If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
-                strcom(1)=strcom(1)-ggx(krgd)*fxx(i)
-                strcom(2)=strcom(2)-ggx(krgd)*fyy(i)
-                strcom(3)=strcom(3)-ggx(krgd)*fzz(i)
-                strcom(4)=strcom(4)-ggy(krgd)*fxx(i)
-                strcom(5)=strcom(5)-ggy(krgd)*fyy(i)
-                strcom(6)=strcom(6)-ggy(krgd)*fzz(i)
-                strcom(7)=strcom(7)-ggz(krgd)*fxx(i)
-                strcom(8)=strcom(8)-ggz(krgd)*fyy(i)
-                strcom(9)=strcom(9)-ggz(krgd)*fzz(i)
+                tmp_fx = parts(i)%fxx+fxl(i)
+                tmp_fy = parts(i)%fyy+fyl(i)
+                tmp_fz = parts(i)%fzz+fzl(i)
+                strcom(1)=strcom(1)-ggx(krgd)*tmp_fx
+                strcom(2)=strcom(2)-ggx(krgd)*tmp_fy
+                strcom(3)=strcom(3)-ggx(krgd)*tmp_fz
+                strcom(4)=strcom(4)-ggy(krgd)*tmp_fx
+                strcom(5)=strcom(5)-ggy(krgd)*tmp_fy
+                strcom(6)=strcom(6)-ggy(krgd)*tmp_fz
+                strcom(7)=strcom(7)-ggz(krgd)*tmp_fx
+                strcom(8)=strcom(8)-ggz(krgd)*tmp_fy
+                strcom(9)=strcom(9)-ggz(krgd)*tmp_fz
              End If
           End Do
        End If
@@ -2098,7 +2208,7 @@ Contains
 
   End Subroutine rigid_bodies_stre_s
 
-  Subroutine rigid_bodies_str_ss(strcom,rigid,comm)
+  Subroutine rigid_bodies_str_ss(strcom,rigid,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2112,6 +2222,7 @@ Contains
 
     Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -2143,9 +2254,9 @@ Contains
 
   ! COM distances
 
-             gxx(krgd)=xxx(i)-rigid%xxx(irgd)
-             gyy(krgd)=yyy(i)-rigid%yyy(irgd)
-             gzz(krgd)=zzz(i)-rigid%zzz(irgd)
+             gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
+             gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
+             gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
           End Do
        End If
     End Do
@@ -2175,15 +2286,15 @@ Contains
              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
              If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
-                strcom(1)=strcom(1)-gxx(krgd)*fxx(i)
-                strcom(2)=strcom(2)-gxx(krgd)*fyy(i)
-                strcom(3)=strcom(3)-gxx(krgd)*fzz(i)
-                strcom(4)=strcom(4)-gyy(krgd)*fxx(i)
-                strcom(5)=strcom(5)-gyy(krgd)*fyy(i)
-                strcom(6)=strcom(6)-gyy(krgd)*fzz(i)
-                strcom(7)=strcom(7)-gzz(krgd)*fxx(i)
-                strcom(8)=strcom(8)-gzz(krgd)*fyy(i)
-                strcom(9)=strcom(9)-gzz(krgd)*fzz(i)
+                strcom(1)=strcom(1)-gxx(krgd)*parts(i)%fxx
+                strcom(2)=strcom(2)-gxx(krgd)*parts(i)%fyy
+                strcom(3)=strcom(3)-gxx(krgd)*parts(i)%fzz
+                strcom(4)=strcom(4)-gyy(krgd)*parts(i)%fxx
+                strcom(5)=strcom(5)-gyy(krgd)*parts(i)%fyy
+                strcom(6)=strcom(6)-gyy(krgd)*parts(i)%fzz
+                strcom(7)=strcom(7)-gzz(krgd)*parts(i)%fxx
+                strcom(8)=strcom(8)-gzz(krgd)*parts(i)%fyy
+                strcom(9)=strcom(9)-gzz(krgd)*parts(i)%fzz
              End If
           End Do
        End If
@@ -2209,7 +2320,7 @@ Contains
 
   End subroutine rigid_bodies_str_ss
 
-  Subroutine rigid_bodies_str__s(strcom,fxx,fyy,fzz,rigid,comm)
+  Subroutine rigid_bodies_str__s(strcom,parts,rigid,comm,fxl,fyl,fzl)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2222,11 +2333,14 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
-    Real( Kind = wp ),  Intent( In    ) :: fxx(1:mxatms),fyy(1:mxatms),fzz(1:mxatms)
+    Type( corePart ),   Intent( In    ) :: parts(1:mxatms)
+    Real( Kind = wp ),  Intent( In    ) :: fxl(1:mxatms),fyl(1:mxatms)
+    Real( Kind = wp ),  Intent( In    ) :: fzl(1:mxatms)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp
+    Real :: tmp_fx, tmp_fy, tmp_fz
 
     Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
     Character ( Len = 256 )  :: message
@@ -2256,9 +2370,9 @@ Contains
 
   ! COM distances
 
-             gxx(krgd)=xxx(i)-rigid%xxx(irgd)
-             gyy(krgd)=yyy(i)-rigid%yyy(irgd)
-             gzz(krgd)=zzz(i)-rigid%zzz(irgd)
+             gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
+             gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
+             gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
           End Do
        End If
     End Do
@@ -2288,15 +2402,18 @@ Contains
              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
              If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
-                strcom(1)=strcom(1)-gxx(krgd)*fxx(i)
-                strcom(2)=strcom(2)-gxx(krgd)*fyy(i)
-                strcom(3)=strcom(3)-gxx(krgd)*fzz(i)
-                strcom(4)=strcom(4)-gyy(krgd)*fxx(i)
-                strcom(5)=strcom(5)-gyy(krgd)*fyy(i)
-                strcom(6)=strcom(6)-gyy(krgd)*fzz(i)
-                strcom(7)=strcom(7)-gzz(krgd)*fxx(i)
-                strcom(8)=strcom(8)-gzz(krgd)*fyy(i)
-                strcom(9)=strcom(9)-gzz(krgd)*fzz(i)
+                tmp_fx = parts(i)%fxx+fxl(i)
+                tmp_fy = parts(i)%fyy+fyl(i)
+                tmp_fz = parts(i)%fzz+fzl(i)
+                strcom(1)=strcom(1)-gxx(krgd)*tmp_fx
+                strcom(2)=strcom(2)-gxx(krgd)*tmp_fy
+                strcom(3)=strcom(3)-gxx(krgd)*tmp_fz
+                strcom(4)=strcom(4)-gyy(krgd)*tmp_fx
+                strcom(5)=strcom(5)-gyy(krgd)*tmp_fy
+                strcom(6)=strcom(6)-gyy(krgd)*tmp_fz
+                strcom(7)=strcom(7)-gzz(krgd)*tmp_fx
+                strcom(8)=strcom(8)-gzz(krgd)*tmp_fy
+                strcom(9)=strcom(9)-gzz(krgd)*tmp_fz
              End If
           End Do
        End If
@@ -2407,7 +2524,7 @@ Contains
     End If
   End Subroutine rigid_bodies_tags
 
-  Subroutine rigid_bodies_widths(rcut,rigid,comm)
+  Subroutine rigid_bodies_widths(rcut,rigid,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2421,6 +2538,7 @@ Contains
 
     Real( Kind = wp ),  Intent( In    ) :: rcut
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,irgd,jrgd,krgd,lrgd,mrgd,nrgd,rgdtyp
@@ -2447,9 +2565,9 @@ Contains
        Do jrgd=1,lrgd
           krgd=krgd+1
 
-          gxx(krgd) = xxx(rigid%index_local(jrgd,irgd)) - xxx(rigid%index_local(1,irgd))
-          gyy(krgd) = yyy(rigid%index_local(jrgd,irgd)) - yyy(rigid%index_local(1,irgd))
-          gzz(krgd) = zzz(rigid%index_local(jrgd,irgd)) - zzz(rigid%index_local(1,irgd))
+          gxx(krgd) = parts(rigid%index_local(jrgd,irgd))%xxx - parts(rigid%index_local(1,irgd))%xxx
+          gyy(krgd) = parts(rigid%index_local(jrgd,irgd))%yyy - parts(rigid%index_local(1,irgd))%yyy
+          gzz(krgd) = parts(rigid%index_local(jrgd,irgd))%zzz - parts(rigid%index_local(1,irgd))%zzz
        End Do
     End Do
 
@@ -3383,7 +3501,7 @@ End Subroutine xscale
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-Subroutine q_setup(rigid,comm)
+Subroutine q_setup(rigid,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3395,6 +3513,7 @@ Subroutine q_setup(rigid,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( corePart ),   Intent( InOut ) :: parts(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp, &
@@ -3430,9 +3549,9 @@ Subroutine q_setup(rigid,comm)
 
 ! group basis vectors
 
-        aa(1)=xxx(i1)-xxx(i2)
-        aa(4)=yyy(i1)-yyy(i2)
-        aa(7)=zzz(i1)-zzz(i2)
+        aa(1)=parts(i1)%xxx-parts(i2)%xxx
+        aa(4)=parts(i1)%yyy-parts(i2)%yyy
+        aa(7)=parts(i1)%zzz-parts(i2)%zzz
 
 ! minimum image convention for bond vectors
 
@@ -3440,9 +3559,9 @@ Subroutine q_setup(rigid,comm)
 
         ill=rigid%index_global(0,rgdtyp)
         If (ill == 0) Then
-           aa(2)=xxx(i1)-xxx(i3)
-           aa(5)=yyy(i1)-yyy(i3)
-           aa(8)=zzz(i1)-zzz(i3)
+           aa(2)=parts(i1)%xxx-parts(i3)%xxx
+           aa(5)=parts(i1)%yyy-parts(i3)%yyy
+           aa(8)=parts(i1)%zzz-parts(i3)%zzz
         Else
            rsq=Sqrt(aa(1)**2+aa(4)**2+aa(7)**2)
            If      (Abs(aa(7)/rsq) > 0.5_wp) Then
@@ -3560,9 +3679,9 @@ Subroutine q_setup(rigid,comm)
              rot(8)*rigid%y(jrgd,rgdtyp)+ &
              rot(9)*rigid%z(jrgd,rgdtyp)+rigid%zzz(irgd)
 
-           gxx(krgd)=xxx(rigid%index_local(jrgd,irgd))-x
-           gyy(krgd)=yyy(rigid%index_local(jrgd,irgd))-y
-           gzz(krgd)=zzz(rigid%index_local(jrgd,irgd))-z
+           gxx(krgd)=parts(rigid%index_local(jrgd,irgd))%xxx-x
+           gyy(krgd)=parts(rigid%index_local(jrgd,irgd))%yyy-y
+           gzz(krgd)=parts(rigid%index_local(jrgd,irgd))%zzz-z
         End Do
 
      End If

@@ -5,7 +5,8 @@ Module temperature
   Use site, Only : site_type
   Use configuration,   Only : imcon,natms,nlast,nfree,lsite,  &
                               lsi,lsa,ltg,lfrzn,lfree,lstfre, &
-                              weight,vxx,vyy,vzz,xxx,yyy,zzz
+                              weight,vxx,vyy,vzz
+  Use particle,        Only : corePart
   Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,rigid_bodies_quench
   Use constraints,     Only : constraints_type, constraints_quench
   Use pmf,             Only : pmf_quench, pmf_type
@@ -28,7 +29,7 @@ Contains
 
   Subroutine set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
       degrot,degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minim, &
-      rigid,domain,comm)
+      rigid,domain,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -54,6 +55,7 @@ Contains
     Type( minimise_type ), Intent( In    ) :: minim
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: no_min_0,safe
@@ -499,7 +501,7 @@ Contains
   ! quench RBs
 
        If (rigid%total > 0) Then
-         Call rigid_bodies_quench(rigid,domain,comm)
+         Call rigid_bodies_quench(rigid,domain,parts,comm)
        End If
 
     End If
@@ -521,30 +523,30 @@ Contains
 
        If (no_min_0) Then
           If (cons%megcon > 0) Then
-            Call constraints_quench(cons,stat,domain,comm)
+            Call constraints_quench(cons,stat,domain,parts,comm)
           End If
-          If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
+          If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,parts,comm)
        End If
 
   ! quench core-shell units in adiabatic model
 
        If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC .and. no_min_0) Then
           Do
-             Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,comm)
+             Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,parts,comm)
              Call core_shell_quench(safe,thermo%temp,cshell,domain,comm)
              If (cons%megcon > 0) Then
-               Call constraints_quench(cons,stat,domain,comm)
+               Call constraints_quench(cons,stat,domain,parts,comm)
              End If
              If (pmf%megpmf > 0) Then
-               Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,comm)
+               Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,parts,comm)
              End If
              If (rigid%total > 0) Then
-               Call rigid_bodies_quench(rigid,domain,comm)
+               Call rigid_bodies_quench(rigid,domain,parts,comm)
              End If
              If (safe) Exit
           End Do
        Else
-          Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,comm)
+          Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,parts,comm)
        End If
 
     End If
@@ -608,7 +610,7 @@ Contains
 
   End Subroutine set_temperature
 
-  Subroutine regauss_temperature(rigid,domain,comm)
+  Subroutine regauss_temperature(rigid,domain,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -623,6 +625,7 @@ Contains
 
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
+    Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,j,k,l,is,irgd,jrgd,lrgd,rgdtyp
@@ -709,7 +712,7 @@ Contains
 
   ! quench RBs
 
-      Call rigid_bodies_quench(rigid,domain,comm)
+      Call rigid_bodies_quench(rigid,domain,parts,comm)
 
   ! remove centre of mass motion
 
@@ -770,7 +773,7 @@ Contains
 
   End Subroutine regauss_temperature
 
-  Subroutine scale_temperature(sigma,degtra,degrot,degfre,rigid,comm)
+  Subroutine scale_temperature(sigma,degtra,degrot,degfre,rigid,parts,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -789,6 +792,7 @@ Contains
     Real( Kind = wp ),   Intent( In    ) :: sigma
     Integer( Kind=li ),  Intent( In    ) :: degtra,degrot,degfre
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( corePart ),    Intent( InOut ) :: parts(:)
     Type ( comms_type ), Intent( InOut ) :: comm
 
 
@@ -860,7 +864,7 @@ Contains
 
   ! calculate centre of mass position
 
-       Call getcom(xxx,yyy,zzz,com,comm)
+       Call getcom(parts,com,comm)
 
        If (rigid%total > 0) Then
 
@@ -870,9 +874,9 @@ Contains
              i=lstfre(j)
 
              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                xxx(i) = xxx(i) - com(1)
-                yyy(i) = yyy(i) - com(2)
-                zzz(i) = zzz(i) - com(3)
+                parts(i)%xxx = parts(i)%xxx - com(1)
+                parts(i)%yyy = parts(i)%yyy - com(2)
+                parts(i)%zzz = parts(i)%zzz - com(3)
              End If
           End Do
 
@@ -900,17 +904,17 @@ Contains
              i=lstfre(j)
 
              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                amx = amx + weight(i)*(yyy(i)*vzz(i) - zzz(i)*vyy(i))
-                amy = amy + weight(i)*(zzz(i)*vxx(i) - xxx(i)*vzz(i))
-                amz = amz + weight(i)*(xxx(i)*vyy(i) - yyy(i)*vxx(i))
+                amx = amx + weight(i)*(parts(i)%yyy*vzz(i) - parts(i)%zzz*vyy(i))
+                amy = amy + weight(i)*(parts(i)%zzz*vxx(i) - parts(i)%xxx*vzz(i))
+                amz = amz + weight(i)*(parts(i)%xxx*vyy(i) - parts(i)%yyy*vxx(i))
 
-                tmp = xxx(i)**2 + yyy(i)**2 + zzz(i)**2
-                rot(1) = rot(1) + weight(i)*(xxx(i)*xxx(i) - tmp)
-                rot(2) = rot(2) + weight(i)* xxx(i)*yyy(i)
-                rot(3) = rot(3) + weight(i)* xxx(i)*zzz(i)
-                rot(5) = rot(5) + weight(i)*(yyy(i)*yyy(i) - tmp)
-                rot(6) = rot(6) + weight(i)* yyy(i)*zzz(i)
-                rot(9) = rot(9) + weight(i)*(zzz(i)*zzz(i) - tmp)
+                tmp = parts(i)%xxx**2 + parts(i)%yyy**2 + parts(i)%zzz**2
+                rot(1) = rot(1) + weight(i)*(parts(i)%xxx*parts(i)%xxx - tmp)
+                rot(2) = rot(2) + weight(i)* parts(i)%xxx*parts(i)%yyy
+                rot(3) = rot(3) + weight(i)* parts(i)%xxx*parts(i)%zzz
+                rot(5) = rot(5) + weight(i)*(parts(i)%yyy*parts(i)%yyy - tmp)
+                rot(6) = rot(6) + weight(i)* parts(i)%yyy*parts(i)%zzz
+                rot(9) = rot(9) + weight(i)*(parts(i)%zzz*parts(i)%zzz - tmp)
              End If
           End Do
 
@@ -977,9 +981,9 @@ Contains
              i=lstfre(j)
 
              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i) = vxx(i) + (wyy*zzz(i) - wzz*yyy(i))
-                vyy(i) = vyy(i) + (wzz*xxx(i) - wxx*zzz(i))
-                vzz(i) = vzz(i) + (wxx*yyy(i) - wyy*xxx(i))
+                vxx(i) = vxx(i) + (wyy*parts(i)%zzz - wzz*parts(i)%yyy)
+                vyy(i) = vyy(i) + (wzz*parts(i)%xxx - wxx*parts(i)%zzz)
+                vzz(i) = vzz(i) + (wxx*parts(i)%yyy - wyy*parts(i)%xxx)
              End If
           End Do
 
@@ -1014,9 +1018,9 @@ Contains
              i=lstfre(j)
 
              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                xxx(i) = xxx(i) + com(1)
-                yyy(i) = yyy(i) + com(2)
-                zzz(i) = zzz(i) + com(3)
+                parts(i)%xxx = parts(i)%xxx + com(1)
+                parts(i)%yyy = parts(i)%yyy + com(2)
+                parts(i)%zzz = parts(i)%zzz + com(3)
              End If
           End Do
 
@@ -1036,9 +1040,9 @@ Contains
 
           Do i=1,natms
              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                xxx(i) = xxx(i) - com(1)
-                yyy(i) = yyy(i) - com(2)
-                zzz(i) = zzz(i) - com(3)
+                parts(i)%xxx = parts(i)%xxx - com(1)
+                parts(i)%yyy = parts(i)%yyy - com(2)
+                parts(i)%zzz = parts(i)%zzz - com(3)
              End If
           End Do
 
@@ -1054,17 +1058,17 @@ Contains
 
           Do i=1,natms
              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                amx = amx + weight(i)*(yyy(i)*vzz(i) - zzz(i)*vyy(i))
-                amy = amy + weight(i)*(zzz(i)*vxx(i) - xxx(i)*vzz(i))
-                amz = amz + weight(i)*(xxx(i)*vyy(i) - yyy(i)*vxx(i))
+                amx = amx + weight(i)*(parts(i)%yyy*vzz(i) - parts(i)%zzz*vyy(i))
+                amy = amy + weight(i)*(parts(i)%zzz*vxx(i) - parts(i)%xxx*vzz(i))
+                amz = amz + weight(i)*(parts(i)%xxx*vyy(i) - parts(i)%yyy*vxx(i))
 
-                tmp = xxx(i)**2 + yyy(i)**2 + zzz(i)**2
-                rot(1) = rot(1) + weight(i)*(xxx(i)*xxx(i) - tmp)
-                rot(2) = rot(2) + weight(i)* xxx(i)*yyy(i)
-                rot(3) = rot(3) + weight(i)* xxx(i)*zzz(i)
-                rot(5) = rot(5) + weight(i)*(yyy(i)*yyy(i) - tmp)
-                rot(6) = rot(6) + weight(i)* yyy(i)*zzz(i)
-                rot(9) = rot(9) + weight(i)*(zzz(i)*zzz(i) - tmp)
+                tmp = parts(i)%xxx**2 + parts(i)%yyy**2 + parts(i)%zzz**2
+                rot(1) = rot(1) + weight(i)*(parts(i)%xxx*parts(i)%xxx - tmp)
+                rot(2) = rot(2) + weight(i)* parts(i)%xxx*parts(i)%yyy
+                rot(3) = rot(3) + weight(i)* parts(i)%xxx*parts(i)%zzz
+                rot(5) = rot(5) + weight(i)*(parts(i)%yyy*parts(i)%yyy - tmp)
+                rot(6) = rot(6) + weight(i)* parts(i)%yyy*parts(i)%zzz
+                rot(9) = rot(9) + weight(i)*(parts(i)%zzz*parts(i)%zzz - tmp)
              End If
           End Do
 
@@ -1106,9 +1110,9 @@ Contains
 
           Do i=1,natms
              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i) = vxx(i) + (wyy*zzz(i) - wzz*yyy(i))
-                vyy(i) = vyy(i) + (wzz*xxx(i) - wxx*zzz(i))
-                vzz(i) = vzz(i) + (wxx*yyy(i) - wyy*xxx(i))
+                vxx(i) = vxx(i) + (wyy*parts(i)%zzz - wzz*parts(i)%yyy)
+                vyy(i) = vyy(i) + (wzz*parts(i)%xxx - wxx*parts(i)%zzz)
+                vzz(i) = vzz(i) + (wxx*parts(i)%yyy - wyy*parts(i)%xxx)
              End If
           End Do
 
@@ -1116,9 +1120,9 @@ Contains
 
           Do i=1,natms
              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                xxx(i) = xxx(i) + com(1)
-                yyy(i) = yyy(i) + com(2)
-                zzz(i) = zzz(i) + com(3)
+                parts(i)%xxx = parts(i)%xxx + com(1)
+                parts(i)%yyy = parts(i)%yyy + com(2)
+                parts(i)%zzz = parts(i)%zzz + com(3)
              End If
           End Do
 
