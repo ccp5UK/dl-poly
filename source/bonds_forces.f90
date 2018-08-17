@@ -344,7 +344,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
            e0=2.55_wp*dr
 
            omega=k*dr**2*(1.0_wp-e0*(1.0_wp-(7.0_wp/12.0_wp)*e0))
-           gamma=2.0_wp*k*dr*(1.0_wp-e0*dr*(1.5_wp+2.0_wp*(7.0_wp/12.0_wp)*e0))/rab
+           gamma=-2.0_wp*k*dr*(1.0_wp-e0*(1.5_wp-7.0_wp/6.0_wp*e0))/rab
 
         Else If (keyb == 20) Then
 
