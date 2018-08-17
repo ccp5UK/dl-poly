@@ -242,6 +242,10 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 
      Write(nrite,'(1x,2a)') '*** Expanding CONFIG in file ',fcfg(1:Len_Trim(fcfg))
      Write(nrite,'(1x,a)') '***'
+     ! check if we expand a cube since not all time we end up with a cube back
+     If ((imcon == 1) .and. ((nx /= ny) .or. (nx /= nz) .or. (ny /= nz ))) Then
+        imcon = 3
+     End If
 
      If      (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
               io_write == IO_WRITE_UNSORTED_DIRECT .or. &
