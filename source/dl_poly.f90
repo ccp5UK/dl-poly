@@ -226,7 +226,7 @@ Program dl_poly
   If (idnode == 0) Then
      If (.not.l_scr) Open(Unit=nrite, File=Trim(output), Status='replace')
 
-     Write(nrite,'(5(1x,a,/),(1x,a25,a8,a4,a14,a15/),1x,a,i10,a,/,5(1x,a,/))')  &
+     Write(nrite,'(5(1x,a,/),(1x,a25,a8,a4,a14,a15/),1x,a,i10,a,/,6(1x,a,/))')  &
           "******************************************************************", &
           "*************  stfc/ccp5  program  library  package  ** D ********", &
           "*************  daresbury laboratory general purpose  *** L *******", &
@@ -317,7 +317,7 @@ Program dl_poly
 
 ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
-  Call allocate_ttm_arrays()
+  Call allocate_ttm_arrays(rpad)
   Call ttm_table_scan()
 
 ! READ SIMULATION CONTROL PARAMETERS
@@ -758,6 +758,10 @@ Program dl_poly
 
      If (mximpl > 0)  Write(nrite,'(1x,a)') &
   "**************  H.A. Boateng & I.T. Todorov, `J. Chem. Phys.', 142, 034117 (2015)                          **************"
+
+     If (l_ttm) Write(nrite,'(1x,a,/,1x,a)') &
+  "**************  E. Zarkadoula, S.L. Daraszewicz, D.M. Duffy, M.A. Seaton, I.T. Todorov, K. Nordlund,       **************", &
+  "**************  M.T. Dove & K. Trachenko, `J. Phys.: Condens. Matter', 24, 085401 (2014)                   **************"
 
      Write(nrite,'(2(1x,a,/))') &
   "**************                                                                                             **************", &

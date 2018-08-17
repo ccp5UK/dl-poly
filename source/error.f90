@@ -1049,68 +1049,72 @@ Subroutine error(kode)
 
         Write(nrite,'(/,1x,a)') 'error - insufficient electronic temperature cells for TTM heat diffusion'
 
-     Else If (kode ==  671) Then
-
-        Write(nrite,'(/,1x,a)') 'error - electronic specific heat not fully specified'
-
-     Else If (kode ==  672) Then
-
-        Write(nrite,'(/,1x,a)') 'error - thermal conductivity of metal not specified'
-
-     Else If (kode ==  673) Then
-
-        Write(nrite,'(/,1x,a)') 'error - thermal diffusivity of non-metal not specified'
-
-     Else If (kode ==  674) Then
-
-        Write(nrite,'(/,1x,a)') 'error - cannot find or open thermal conductivity table file (Ke.dat)'
-
-     Else If (kode ==  675) Then
-
-        Write(nrite,'(/,1x,a)') 'error - no data found in thermal conductivity table file (Ke.dat)'
-
-     Else If (kode ==  676) Then
-
-        Write(nrite,'(/,1x,a)') 'error - cannot find or open volumetric heat capacity table file (Ce.dat)'
-
-     Else If (kode ==  677) Then
-
-        Write(nrite,'(/,1x,a)') 'error - no data found in volumetric heat capacity table file (Ce.dat)'
-
-     Else If (kode ==  678) Then
-
-        Write(nrite,'(/,1x,a)') 'error - cannot find or open thermal diffusivity table file (De.dat)'
-
-     Else If (kode ==  679) Then
-
-        Write(nrite,'(/,1x,a)') 'error - no data found in thermal diffusivity table file (De.dat)'
-
      Else If (kode ==  680) Then
 
-        Write(nrite,'(/,1x,a)') 'error - cannot find or open coupling constant table file (g.dat)'
+        Write(nrite,'(/,1x,a)') 'error - rpad too large for calculation of ionic temperatures'
 
      Else If (kode ==  681) Then
 
-        Write(nrite,'(/,1x,a)') 'error - no data found in coupling constant table file (g.dat)'
+        Write(nrite,'(/,1x,a)') 'error - electronic specific heat not fully specified'
 
      Else If (kode ==  682) Then
 
-        Write(nrite,'(/,1x,a)') 'error - end of file encountered in table file (Ke.dat, Ce.dat, De.dat or g.dat)'
+        Write(nrite,'(/,1x,a)') 'error - thermal conductivity of metal not specified'
 
      Else If (kode ==  683) Then
 
-        Write(nrite,'(/,1x,a)') 'error - negative electronic temperature: instability in electronic heat diffusion equation'
+        Write(nrite,'(/,1x,a)') 'error - thermal diffusivity of non-metal not specified'
 
      Else If (kode ==  684) Then
 
-        Write(nrite,'(/,1x,a)') 'error - electronic temperature restart file (DUMP_E) does not exist'
+        Write(nrite,'(/,1x,a)') 'error - cannot find or open thermal conductivity table file (Ke.dat)'
 
      Else If (kode ==  685) Then
+
+        Write(nrite,'(/,1x,a)') 'error - no data found in thermal conductivity table file (Ke.dat)'
+
+     Else If (kode ==  686) Then
+
+        Write(nrite,'(/,1x,a)') 'error - cannot find or open volumetric heat capacity table file (Ce.dat)'
+
+     Else If (kode ==  687) Then
+
+        Write(nrite,'(/,1x,a)') 'error - no data found in volumetric heat capacity table file (Ce.dat)'
+
+     Else If (kode ==  688) Then
+
+        Write(nrite,'(/,1x,a)') 'error - cannot find or open thermal diffusivity table file (De.dat)'
+
+     Else If (kode ==  689) Then
+
+        Write(nrite,'(/,1x,a)') 'error - no data found in thermal diffusivity table file (De.dat)'
+
+     Else If (kode ==  690) Then
+
+        Write(nrite,'(/,1x,a)') 'error - cannot find or open coupling constant table file (g.dat)'
+
+     Else If (kode ==  691) Then
+
+        Write(nrite,'(/,1x,a)') 'error - no data found in coupling constant table file (g.dat)'
+
+     Else If (kode ==  692) Then
+
+        Write(nrite,'(/,1x,a)') 'error - end of file encountered in table file (Ke.dat, Ce.dat, De.dat or g.dat)'
+
+     Else If (kode ==  693) Then
+
+        Write(nrite,'(/,1x,a)') 'error - negative electronic temperature: instability in electronic heat diffusion equation'
+
+     Else If (kode ==  694) Then
+
+        Write(nrite,'(/,1x,a)') 'error - electronic temperature restart file (DUMP_E) does not exist'
+
+     Else If (kode ==  695) Then
 
         Write(nrite,'(/,1x,a)') &
         'error - mismatch in electronic temperature lattice sizes between restart (DUMP_E) and CONTROL files'
 
-     Else If (kode ==  686) Then
+     Else If (kode ==  696) Then
 
         Write(nrite,'(/,1x,a)') 'error - cannot read electronic temperature restart (DUMP_E) file'
 

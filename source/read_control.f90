@@ -24,7 +24,7 @@ Subroutine read_control                                &
 ! dl_poly_4 subroutine for reading in the simulation control parameters
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov february 2017
+! author    - i.t.todorov february 2012
 ! contrib   - i.j.bush february 2014
 ! contrib   - a.v.brukhno march 2014
 ! contrib   - m.a.seaton june 2014
@@ -33,6 +33,7 @@ Subroutine read_control                                &
 ! contrib   - a.m.elena september 2015
 ! contrib   - a.m.elena february 2017
 ! contrib   - g.khara & m.a.seaton march 2017
+! contrib   - i.t.todorov july 2018
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -50,6 +51,7 @@ Subroutine read_control                                &
   Use poisson_module,    Only : eps,mxitcg,mxitjb
   Use msd_module,        Only : l_msd
   Use defects1_module,   Only : l_dfx
+  Use rdf_module,        Only : l_errors_block,l_errors_jack,num_blocks
   Use greenkubo_module
   Use ttm_module
 
@@ -618,7 +620,7 @@ Subroutine read_control                                &
            ld_vdw = .true.
            If (idnode == 0) Write(nrite,"(/,1x,a)") "vdw direct option on"
 
-        Else If (word1(1:6) == 'mixing') Then
+        Else If (word1(1:3) == 'mix') Then
 
 ! mixing type keywords
 
@@ -905,7 +907,10 @@ Subroutine read_control                                &
         Else
 
            keyres = 1
-           If (idnode == 0) Write(nrite,"(/,1x,'restart requested (continuing an old simulation)')")
+           If (idnode == 0) Then
+              Write(nrite,"(/,1x,'restart requested (continuing an old simulation)')")
+              Write(nrite,"(1x,a)") "*** warning - timestep from REVOLD overides specification in CONTROL !!! ***"
+           End If
 
         End If
 
@@ -2613,6 +2618,22 @@ Subroutine read_control                                &
         lrdf = .true.
 
         Call get_word(record,word)
+        If (word(1:6) == 'errors') Then
+! read if we're doing rdf error analysis
+          Call get_word(record,word)
+          If(word(1:4) == 'jack') Then
+            l_errors_jack = .TRUE.
+            Call get_word(record,word)
+            itmp = Nint(word_2_real(word, 1.0_wp))
+            If(itmp > 1) num_blocks = itmp
+          Else
+            l_errors_block = .TRUE.
+            Call get_word(record,word)
+            itmp = Nint(word_2_real(word, 1.0_wp))
+            If(itmp > 1) num_blocks = itmp
+          End If
+        End If
+
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
@@ -3222,6 +3243,8 @@ Subroutine read_control                                &
   nstinv=Max(1,nstinv)
 
 ! report rdf
+  l_errors_block = l_errors_block .and. lrdf
+  l_errors_jack = l_errors_jack .and. lrdf
 
   If (lrdf .or. lprdf) Then
      If (lrdf) Then
@@ -3525,13 +3548,13 @@ Subroutine read_control                                &
   Case (1)
   ! hyperbolic tangent electronic specific heat: multiplier will be converted
   ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
+    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(681)
     sh_A = sh_A*cellrho
     sh_B = sh_B*1.0e-4_wp
   Case (2)
   ! linear electronic specific heat to Fermi temperature: maximum
   ! value will be converted from kB/atom to kB/A^3
-    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
+    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(681)
     Cemax = Cemax*cellrho
   Case (4)
   ! constant electronic specific heat: will convert from kB/atom to kB/A^3
@@ -3539,31 +3562,31 @@ Subroutine read_control                                &
   Case (5)
   ! hyperbolic tangent electronic specific heat: multiplier will be converted
   ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
+    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(681)
     sh_B = sh_B*1.0e-4_wp
   Case (6)
   ! linear electronic specific heat to Fermi temperature: maximum
   ! value will be converted from kB/atom to kB/A^3
-    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
+    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(681)
   End Select
 
   Select Case (KeType)
   ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
   ! to kB ps^-1 A^-1
   Case (1,2)
-    If (isMetal .and. Abs(Ka0) <= zero_plus) Call error(672)
+    If (isMetal .and. Abs(Ka0) <= zero_plus) Call error(682)
     Ka0 = Ka0*JKms_to_kBAps
   End Select
 
   Select Case (DeType)
   Case (1)
   ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-    If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(673)
+    If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(683)
     Diff0 = Diff0*1.0e8_wp
   Case (2)
   ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
   ! and Diff0 scaled with system temperature
-    If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(673)
+    If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(683)
     Diff0 = Diff0*temp*1.0e8_wp
   End Select
 

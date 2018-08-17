@@ -8,6 +8,7 @@ Subroutine read_config_parallel                 &
 !
 ! copyright - daresbury laboratory
 ! author    - i.j.bush & i.t.todorov march 2016
+! amended   - i.t.todorov february 2018 - non-fast read fix
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -140,7 +141,7 @@ Subroutine read_config_parallel                 &
               Write(forma,'( "(", i0, "/)" )') n_jj
               Read(Unit=nconf, Fmt=forma, End=100)
            End Do
-           n_ii=Mod(n_sk,n_jj)-1_ip
+           n_ii=Mod(n_sk,n_jj)-(n_ii-1_ip)
            If (n_ii > 0_ip) Then
               forma=' '
               Write(forma,'( "(", i0, "/)" )') n_ii

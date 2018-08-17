@@ -62,9 +62,11 @@ Module ttm_module
 
 Contains
 
-  Subroutine allocate_ttm_arrays()
+  Subroutine allocate_ttm_arrays(rpad)
 
     Implicit None
+
+    Real ( Kind = wp), Intent ( In ) :: rpad
 
     Real ( Kind = wp ) :: start, finish
     Integer, Dimension ( 1:7 ) :: fail

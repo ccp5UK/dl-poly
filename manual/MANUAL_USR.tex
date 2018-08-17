@@ -51,7 +51,9 @@ columns=fixed,
 fontadjust=true,
 basewidth=0.5em,
 keepspaces=true,
-breaklines=true}
+breaklines=true,
+inputencoding=utf8,
+extendedchars=false}
 
 %% extending section and paragraph definitions
 %\usepackage{titlesec}
@@ -147,6 +149,7 @@ Conditional Verlet Neighbour List Building;
 Symplectic Integration, Velocity Verlet (VV), Leapfrog Verlet (LFV);
 Ensembles: NVE; NVEk - Evans; NVT - VV-Langevin Impulse \& LFV-Langevin,
 Andersen, Berendsen, Nose-Hoover, Gentle Stochastic Thermostat,
+Two-Temperature Model (Inhomogeneous Langevin) Thermostat,
 Dissipative Particle Dynamics (DPD) VV-Shardlow first \& second order splitting;
 NPT - Langevin, Berendesen, Nose-Hoover, Martyna-Tuckerman-Klein;
 NsT (extended to constant normal pressure \& surface area or surface tension)
@@ -167,7 +170,7 @@ Damped Force-shifted Coulomb, Ion Polarisation by Dynamical
 harmonic + quartic + breathing shell potential;
 Zero (FIRE) Temperature \& Conjugate Gradient Method (CGM) Minimisers;
 Temperature rescaling, Boundary Pseudo Thermostats, Defect Detection Tool;
-Coarse-Grained Analysis \& Dynamics, Lennar-Jones mixing rules;
+Coarse-Grained Analysis \& Dynamics, Lennard-Jones mixing rules;
 PLUMED MetaDynamics Plugin integrability, HDF5/netCDF integrability,
 OpenKIM Knodledge-base Interaction Models integrability;
 Optimised Parallel (ASCII \& Amber-netCDF) I/O (includes MPI-I/O),
@@ -228,7 +231,7 @@ Modularised FORTRAN90, MPI Parallelisation \& Memory Distribution via DD},
 STFC Daresbury Laboratory \\
 Daresbury, Warrington WA4 4AD \\
 Cheshire, England, United Kingdom}
-\date{\bf Version 4.09~~--~~February 2017}
+\date{\bf Version 4.09~~--~~July 2018}
 \clearpage
 \end{titlepage}
 
@@ -451,8 +454,9 @@ the file structure found in the {\em source} subdirectory.
 \label{data}
 \vskip 12ex
 \section*{Scope of Chapter}
-This chapter describes the standard test cases for \D, the input
-and output files for which are in the {\em data} sub-directory.
+This chapter describes the example simulations and benchmark
+tests for \D, the input and output files for
+which are in the {\em data} sub-directory.
 \setcounter{equation}{0}
 \newpage
 

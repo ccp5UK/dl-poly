@@ -1,7 +1,7 @@
-\section{Test Cases}
+\section{Example Simulations}
 
 Because of the size of the data files for the \D
-standard test cases, they are not shipped in the standard
+example simulations, they are not shipped in the standard
 download of the \D source.  Instead users are requested
 to download them from the CCP5 FTP server as follows:
 
@@ -10,56 +10,57 @@ FTP site : ftp.dl.ac.uk
 Username : anonymous
 Password : your email address
 Directory: ccp5/DL_POLY/DL_POLY_4.0/DATA
-Files    : test_X.tar.gz
+Files    : test_X.tar.xz
 \end{lstlisting}
 
-where `\_X' stands for the test case number.
+where `\_X' stands for the example simulation number.
 
 Remember to use the BINARY data option when transferring these
 files.
 
-Unpack the files in the `data' subdirectory using `tar -xzfv'
-to create the `TEST\_X' directory.
+Unpack the files in the `data' subdirectory using `gunzip' and
+`tar -xf' to create the `TEST\_X' directory.
 
-These are provided so that you may check that your version of
-\D is working correctly.  All the jobs are of a size suitable
-to test the code in parallel execution.  They not not be
-suitable for a single processor computer.  The files are stored
-in compressed format.  The test cases can be run by typing
+These are provided to give examples of \D simulations
+and demonstrate a limited set of relevant functionality over
+a limited extent of molecular systems' complexity only.
+{\bf Without modification, they are not necessarily appropriate
+for serious simulation of the given systems.} In other words,
+the examples are not warranted to have well-defined force
+fields in terms of applicability, transferability and fullness, nor
+are they likely to have a well-defined state point (i.e. initial
+configurations may be away from equilibrium, if physical at all).
+
+The README.txt file supplied both in the {\em data} directory and
+in the directory on the CCP5 FTP server provides a list of all
+example simulations used as test cases to check that \D is working
+correctly, including those described in more detail below.  All the
+jobs are of a size suitable to test the code in parallel execution.  They
+may not be suitable for a single processor computer.  The files
+are stored in compressed format.  The examples can be run by typing
 
 {\sl select } n
 
 \noindent from the {\em execute} directory, where n is the number of
 the test case.  The {\sl select} macro will copy the appropriate
-CONTROL, CONFIG, and FIELD files to the {\em execute} directory
-ready for execution.  The output file OUTPUT may be compared with
-the file supplied in the {\em data} directory.
+input files (at least CONTROL, CONFIG, and FIELD in all cases)
+to the {\em execute} directory ready for execution.  The output file
+OUTPUT may be compared with the file supplied in the {\em data}
+directory.
 
-It should be noted that the potentials and the simulation
-conditions used in the following test cases are chosen to
-demonstrate a limited set of relevant functionality over
-a limited extent of molecular systems' complexity only.
-{\bf They are not necessarily appropriate for serious
-simulation of the test systems.}  In other words, the
-tests are not warranted to have well defined force field
-in terms of applicability, transferability and fullness
-as well as to have a well defined state point - thus
-initial configurations may be away from equilibrium, if
-physical at all.
-
-\subsection{Test Case 1: Sodium Chloride}
+\subsection{Example 1: Sodium Chloride}
 
 This is a 27,000 ion system with unit electric charges on sodium and
 chlorine.  Simulation at 500~K with a NVT Berendsen ensemble.  The SPME
 method is used to calculate the Coulombic interactions.
 
-\subsection{Test Case 2: DPMC in Water}
+\subsection{Example 2: DPMC in Water}
 
 The system consists of 200 DMPC molecules in 9379 and water molecules.
 Simulation at 300~K using NVE ensemble with SPME and RATTLE algorithm
-for the constrained motion.  The total system size is 51737 atoms.
+for the constrained motion.  The total system size is 51,737 atoms.
 
-\subsection{Test Case 3: KNaSi$_{2}$O$_{5}$ - Potassium/Sodium Disilicate Glass}
+\subsection{Example 3: KNaSi$_{2}$O$_{5}$ - Potassium/Sodium Disilicate Glass}
 
 Potassium Sodium disilicate glass (NaKSi$_{2}$O$_{5}$) using two and
 three-body potentials.  Some of the two-body potentials are read
@@ -67,93 +68,93 @@ from the TABLE file.  Simulation at 1000~K using NVT Nos\'e-Hoover
 ensemble with SPME.  Cubic periodic boundaries are in use.  The
 total system size is 69,120 ions.
 
-\subsection{Test Case 4: Gramicidin A Molecules in Water}
+\subsection{Example 4: Gramicidin A Molecules in Water}
 
 The system consists of 8 gramicidin A molecules in aqueous solution
 (32,096 water molecules) with total of 99,120 of atoms.  Simulation
 at 300~K using NPT Berendsen ensemble with SPME and SHAKE/RATTLE
 algorithm for the constrained motion.
 
-\subsection{Test Case 5: SiC with Tersoff Potentials}
+\subsection{Example 5: SiC with Tersoff Potentials}
 
 The system consists of 74,088 atoms.  Simulation at 300~K using NPT
 Nos\'e-Hoover ensemble with Tersoff forces and no electrostatics.
 
-\subsection{Test Case 6: Cu$_{3}$Au alloy with Sutton-Chen (metal) Potentials}
+\subsection{Example 6: Cu$_{3}$Au alloy with Sutton-Chen (metal) Potentials}
 
 The systems consists of 32,000 atoms.  Simulation at 300~K using NVT
 Nos\'e-Hoover ensemble with Sutton-Chen forces and no electrostatics.
 
-\subsection{Test Case 7: Lipid Bilayer in Water}
+\subsection{Example 7: Lipid Bilayer in Water}
 
 The systems consists of 12,428 atoms.  Simulation at 300~K using NVT
 Berendsen ensemble with SPME and SHAKE/RATTLE algorithm for the constrained motion.
 
-\subsection{Test Case 8 and 9: MgO with Adiabatic and with Relaxed Shell Model}
+\subsection{Examples 8 and 9: MgO with Adiabatic and with Relaxed Shell Models}
 
-The system consists of 8,000 (4,000 shells) charged points.  Simulation
+These system consist of 8,000 (4,000 shells) charged points.  Simulation
 at 3000~K using NPT Berendsen ensemble with SPME.
 
-\subsection{Test Case 10: Potential of Mean Force on K+ in Water}
+\subsection{Example 10: Potential of Mean Force on K+ in Water}
 
 The system consists of 13,500 (500 PMFs) atoms.  Simulation at 300~K
 using NPT Berendsen ensemble with SPME and SHAKE/RATTLE algorithm for
 the constrained motion.
 
-\subsection{Test Case 11: Cu$_{3}$Au Alloy with Gupta (metal) Potentials}
+\subsection{Example 11: Cu$_{3}$Au Alloy with Gupta (metal) Potentials}
 
 The system consists of 32,000 atoms.  Simulation at 300~K using NVT
 Nos\'e-Hoover ensemble with Gupta forces and no electrostatics.
 
-\subsection{Test Case 12: Cu with EAM (metal) Potential}
+\subsection{Example 12: Cu with EAM (metal) Potential}
 
 The system consists of 32,000 atoms.  Simulation at 300~K using NPT
 Berendsen ensemble with EAM tabulated forces and no electrostatics.
 
-\subsection{Test Case 13 and 14: Al with Analytic and with EAM Tabulated Sutton-Chen (metal) Potentials}
+\subsection{Examples 13 and 14: Al with Analytic and with EAM Tabulated Sutton-Chen (metal) Potentials}
 
 The system consists of 32,000 atoms.  Simulation at 300~K using NVT
 Evans ensemble with Sutton-Chen forces and no electrostatics.
 
-\subsection{Test Case 15: NiAl Alloy with EAM (metal) Potentials}
+\subsection{Examples 15: NiAl Alloy with EAM (metal) Potentials}
 
 The system consists of 27,648 atoms.  Simulation at 300~K using NVT
 Evans ensemble with EAM tabulated forces and no electrostatics.
 
-\subsection{Test Case 16: Fe with Finnis-Sincair (metal) Potential}
+\subsection{Examples 16: Fe with Finnis-Sincair (metal) Potential}
 
 The system consists of 31,250 atoms.  Simulation at 300~K using NPT
 Berendsen ensemble with Finnis-Sinclair forces and no electrostatics.
 
-\subsection{Test Case 17: Ni with EAM (metal) Potential}
+\subsection{Examples 17: Ni with EAM (metal) Potential}
 
 The system consists of 32,000 atoms.  Simulation at 300~K using NPT
 Berendsen ensemble with EAM tabulated forces and no electrostatics.
 
-\subsection{Test Case 18 and 19: SPC IceVII Water with CBs and with RBs}
+\subsection{Examples 18 and 19: SPC IceVII Water with CBs and with RBs}
 
 The system consists of 11,664 (34,992 atoms) water molecules. Simulation
 at 25~K using NVE ensemble with CGM force minimisation and SPME electrostatics.
 
-\subsection{Test Case 20: NaCl Molecules in SPC Water Represented as CBs+RBs}
+\subsection{Example 20: NaCl Molecules in SPC Water Represented as CBs+RBs}
 
 The system consists of 64 NaCl ion pairs with 4,480 water molecules
 represented by constraint bonds and 4,416 water molecules represented
 by ridig bodies.  Totalling 26,816 atoms.  Simulation at 295~K using NPT
 Berendsen ensemble with CGM energy minimisation and SPME electrostatics.
 
-\subsection{Test Case 21: TIP4P Water: RBs with a Massless Charged Site}
+\subsection{Example 21: TIP4P Water: RBs with a Massless Charged Site}
 
 The system consists of 7,263 TIP4P rigid body water molecules totaling
 29,052 particles.  Simulation at 295~K using NPT Berendsen ensemble with
 CGM energy minimisation and SPME electrostatics.
 
-\subsection{Test Case 22: Ionic Liquid Dimethylimidazolium Chloride as RBs}
+\subsection{Example 22: Ionic Liquid Dimethylimidazolium Chloride as RBs}
 
 The system consists of 44,352 ions.  Simulation at 400~K using NPT
 Berendsen ensemble, using both particle and rigid body dynamics with SPME electrostatics.
 
-\subsection{Test Case 23: Calcite Nano-Particles in TIP3P Water}
+\subsection{Example 23: Calcite Nano-Particles in TIP3P Water}
 
 In this case 600 molecules of calcium carbonate in the calcite
 structure form 8 nano-particles which are suspended in 6,904 water
@@ -161,24 +162,24 @@ molecules, represented by a flexible 3-centre TIP3P model.  Simulation
 with SPME electrostatics at 310~K and 1~atmosphere maintained in
 a Hoover NPT ensemble.  The system consists of 23,712 ions.
 
-\subsection{Test Case 24: Iron/Carbon Alloy with 2BEAM (metal) Potentials}
+\subsection{Example 24: Iron/Carbon Alloy with 2BEAM (metal) Potentials}
 
 In this case a steel alloy of iron and carbon in ratio
 35132 to 1651 is modelled using an EEAM potential forcefield.
 Simulation at 1000~K and 0~atmosphere is maintained in a
 Berendsen NPT ensemble.  The system consists of 36,803 particles.
 
-\subsection{Test Case 25: Iron/Chromium Alloy with 2BEAM (metal) Potentials}
+\subsection{Example 25: Iron/Chromium Alloy with 2BEAM (metal) Potentials}
 
 In this case a steel alloy of iron and chromium in ratio
 27635 to 4365 is modelled using an 2BEAM potential forcefield.
 Simulation at 300~K and 0~atmosphere is maintained in an Evans NVT
 isokinetic ensemble.  The system consists of 32,000 particles.
 
-\subsection{Test Case 26 and 27: Hexane and Methanol Melts, with
+\subsection{Examples 26 and 27: Hexane and Methanol Melts, with
 Full Atomistic and Coarse-Grained Force-Fields}
 
-TEST26 and TEST27 contain a Hexane and a Methanol melt respectively,
+These two examples contain a Hexane and a Methanol melt respectively,
 (1000 molecules each) modelled by the OPLSAA force-field (FF).
 Each system is also supplied in a CG-mapped representation as converted
 by VOTCA, \href{http://www.votca.org/}{http://www.votca.org/}\index{WWW},
@@ -197,7 +198,7 @@ VOTCA package \cite{ruhle-09a}.  Therefore, the CONFIG, CONTROL and FIELD
 input files are fully consistent with the corresponding setup files found
 in the VOTCA tutorial directories ``csg-tutorials/hexane'' and ``csg-tutorials/methanol'.
 
-\subsection{Test Case 28: Butane in CCl$_{4}$ Solution with Umbrella Sampling via PLUMED}
+\subsection{Example 28: Butane in CCl$_{4}$ Solution with Umbrella Sampling via PLUMED}
 
 Free Energy calculation for Buthane with respect to the dihedral angle as
 collective variable.  We use umbrella sampling as implemented in PLUMED.
@@ -217,6 +218,46 @@ PRINT STRIDE=10 ARG=phi,restraint-phi.bias FILE=COLVAR
 Two extra output files are generated in this case: OUTPUT.PLUMED and COLVAR.
 
 {\bf Note}, a \D version with PLUMED enabled is used for this.
+
+\subsection{Example 29: Iron with tabulated EAM (metal) Potential, TTM and Cascade}
+
+In this example 54,000 atoms of iron are modelled with a tabulated
+embedded-atom potential optimised to produce correct energetics of point
+defects and clusters (M07 in \cite{malerba-10a}). An energy impact of 10~keV
+is applied to an atom and the resulting radiation damage is evolved using the
+Two-Temperature Model (TTM) to represent energy transfers due to
+electron-phonon coupling and electronic stopping between atoms
+and a continuum electronic gas \cite{zarkadoula-14a}.
+
+This test case produces additional output files: DUMP\_E, LATS\_E,
+LATS\_I, PEAK\_E and PEAK\_I. It also requires an additional input file
+(Ce.dat) to supply tabulated heat capacity data required for evolving the
+electronic system.
+
+\subsection{Example 30: Silicon with original Tersoff Potential, TTM and Swift heavy ion irradiation}
+
+This system consists of 200,000 atoms of silicon modelled using an
+original Tersoff (T3) potential. The Two-Temperature Model (TTM) is
+in use and an energy deposition is applied to the electronic system
+using a Gaussian spatial function, an exponentially decaying temporal
+function and an electronic stopping power of 50,000~eV/nm.
+This simulation represents Swift heavy ion irradiation in silicon, including
+the resulting creation of ion tracks \cite{khara-16a}.
+
+\subsection{Example 31: Tungsten with extended Finnis-Sinclair Potential, TTM and laser irradiation}
+
+This system consists of 722,672 atoms of tungsten modelled using an
+extended Finnis-Sinclair potential. The Two-Temperature Model (TTM)
+is in use and an energy deposition is applied to the electronic system
+using a spatial function that is homogeneous in x and y directions and
+exponentially decaying in the z direction, as well as a Gaussian
+temporal function. This energy deposition represents a laser applied to
+the surface of a thin film of tungsten \cite{murphy-15a} with a surface
+fluence of 36~mJ/cm$^2$ and penetration depth of 12.5~nm, causing
+the film to expand outwards in the z direction.
+
+Additional input files (Ce.dat and g.dat) are required to supply tabulated
+heat capacity and electron-phonon coupling values.
 
 \section{Benchmark Cases}
 

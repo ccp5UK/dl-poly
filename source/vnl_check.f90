@@ -5,17 +5,18 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
 ! dl_poly_4 routine implementing the VNL conditional update checks
 !
 ! copyright - daresbury laboratory
-! author    - i.t.todorov january 2017
+! author    - i.t.todorov january 2013
 ! contrib   - i.j.bush february 2014
+! contrib   - i.t.todorov january 2017
+! contrib   - i.t.todorov july 2018
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
-  Use comms_module,   Only : idnode,mxnode,gcheck
-  Use setup_module,   Only : nrite,mxspl,mxatms
+  Use comms_module,   Only : idnode,mxnode,gmax
+  Use setup_module,   Only : nrite,mxspl,mxatdm,half_minus
   Use domains_module, Only : r_nprx,r_npry,r_nprz
-  Use config_module,  Only : imcon,cell,natms,nlast,list, &
-                             xxx,yyy,zzz
+  Use config_module,  Only : imcon,cell,natms,xxx,yyy,zzz
   Use vnl_module
 
   Implicit None
@@ -28,7 +29,7 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
 
   Logical           :: safe
   Integer           :: fail,ilx,ily,ilz,i,ii,j
-  Real( Kind = wp ) :: cut,test,tol,celprp(1:10),xx(1),yy(1),zz(1)
+  Real( Kind = wp ) :: tol,cut,test,celprp(1:10)
 
   Real( Kind = wp ), Allocatable :: x(:),y(:),z(:),r(:)
 
@@ -37,44 +38,23 @@ Subroutine vnl_check(l_str,rcut,rpad,rlnk,width)
 ! Checks
 
   fail = 0
-  Allocate (x(1:mxatms),y(1:mxatms),z(1:mxatms),r(1:mxatms), Stat = fail)
+  Allocate (x(1:mxatdm),y(1:mxatdm),z(1:mxatdm),r(1:mxatdm), Stat = fail)
   If (fail > 0) Then
      Write(nrite,'(/,1x,a,i0)') 'vnl_check allocation failure, node: ', idnode
      Call error(0)
   End If
 
-  x(1:nlast) = xxx(1:nlast) - xbg(1:nlast)
-  y(1:nlast) = yyy(1:nlast) - ybg(1:nlast)
-  z(1:nlast) = zzz(1:nlast) - zbg(1:nlast)
+  x(1:natms) = xxx(1:natms) - xbg(1:natms)
+  y(1:natms) = yyy(1:natms) - ybg(1:natms)
+  z(1:natms) = zzz(1:natms) - zbg(1:natms)
 
-  Call images(imcon,cell,nlast,x,y,z)
+  Call images(imcon,cell,natms,x,y,z)
 
-  If (nlast > 0) r(1:nlast) = Sqrt(x(1:nlast)**2 + y(1:nlast)**2 + z(1:nlast)**2)
+  If (natms > 0) r(1:natms) = Sqrt(x(1:natms)**2 + y(1:natms)**2 + z(1:natms)**2)
 
-  safe=.true.
-Q:Do i=1,natms
-     If (r(i) > 0.5_wp*rpad) Then
-        Do ii=1,list(-2,i)
-           j=list(ii,i) ! may be in the halo!!!
-           If (r(j) > 0.5_wp*rpad) Then
-              xx(1)=x(i)-x(j)
-              yy(1)=y(i)-y(j)
-              zz(1)=z(i)-z(j)
-              cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
-              If (cut > rpad) Then
-                 xx(1)=xxx(i)-xxx(j)
-                 yy(1)=yyy(i)-yyy(j)
-                 zz(1)=zzz(i)-zzz(j)
-                 cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
-                 If (cut > rlnk) Then
-                    safe=.false. ! strong violation
-                    Exit Q
-                 End If
-              End If
-           End If
-        End Do
-     End If
-  End Do Q
+! search for violations: local domain then global
+
+  tol=Merge( Maxval( r(1:natms) ) , 0.0_wp , natms > 0)
 
   Deallocate (x,y,z,r, Stat = fail)
   If (fail > 0) Then
@@ -82,15 +62,18 @@ Q:Do i=1,natms
      Call error(0)
   End If
 
-  If (mxnode > 1) Call gcheck(safe,"enforce")
-  l_vnl=.not.safe
+  If (mxnode > 1) Call gmax(tol)
 
-! Get the dimensional properties of the MD cell
+! decide on update if unsafe
 
-  Call dcell(cell,celprp) ! cut=rlnk+1.0e-6_wp in link_cell_pairs
+  l_vnl = (tol >= half_minus*rpad)
+
+! get the dimensional properties of the MD cell
+
+  Call dcell(cell,celprp)
   width=Min(celprp(7),celprp(8),celprp(9))
 
-! define cut
+! define cut as in link_cell_pairs
 
   cut=rlnk+1.0e-6_wp
 

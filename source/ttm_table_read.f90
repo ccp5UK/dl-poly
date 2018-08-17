@@ -201,7 +201,7 @@ Subroutine ttm_table_read()
 100 Continue
 
   If (idnode == 0) Close(Unit=ntable)
-  Call error(682)
+  Call error(692)
 
 End Subroutine ttm_table_read
 

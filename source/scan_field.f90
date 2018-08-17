@@ -31,7 +31,7 @@ Subroutine scan_field                                &
 
   Use kinds_f90
   Use comms_module,      Only : idnode,mxnode,gcheck
-  Use setup_module,      Only : nrite,nfield,ntable,field
+  Use setup_module,      Only : nfield,ntable,field
   Use parse_module,      Only : get_line,strip_blanks, &
                                 get_word,lower_case,word_2_real
   Use bonds_module,      Only : lt_bnd

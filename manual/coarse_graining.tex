@@ -49,7 +49,7 @@ intramolecular distributions.
 atomistic systems, which can be useful for benchmarking purposes,
 below we shall assume that the CG mapping has been done and the following
 data files have been generated for the CG mapped model system:
-CONTROL, FIELD, CONFIG, andi, alternatively, HISTORY.
+CONTROL, FIELD, CONFIG, and, alternatively, HISTORY.
 
 \section{Intramolecular Probability Distribution Function (PDF) Analysis}
 \label{IPDF-analysis}
@@ -60,10 +60,12 @@ to be done on an existing CG mapped trajectory, by invoking
 the {\bf replay history} and {\bf analysis} directives,
 see Section~\ref{control-file}.
 To trigger the PDF collection and subsequent output of PMF:s
-for any of the following intarmolecular interactions: bonds,
+for any of the following intramolecular interactions: bonds,
 angles, dihedrals and/or inversions, the CONTROL file must
 contain any combination of the options demonstrated
-in the example below.
+in the example below.  {\bf Note} that such analyses will
+only be carried out if the desired intramolecular types of
+interactions are defined within FIELD!
 
 \begin{lstlisting}
 TITLE: EXAMPLE OF DL_POLY_4 PDF ANALYSIS DIRECTIVES SNIPPET

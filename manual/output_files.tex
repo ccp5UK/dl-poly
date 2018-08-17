@@ -488,8 +488,10 @@ thermal diffusivity is written immediately prior to each report of
 statistical variables at each molecular dynamics timestep for which
 printout is requested. The optimum diffusive timestep size is given 
 in pico-seconds, along with the chosen value and the corresponding 
-number of divisions of the MD timestep. Reports are also given when 
-energy deposition starts and finishes.
+number of divisions of the MD timestep. If dynamic calculation of
+the average atomic density in active cells is requested, this value is
+included along with the number of active ionic temperature cells.
+Reports are also given when energy deposition starts and finishes.
 
 \subsubsection{Sample of Final Configuration}
 
@@ -516,11 +518,11 @@ determinations of the diffusion coefficients can be obtained using
 the {\sc msd} utility program, which processes the HISTORY file
 (see \C User Manual).
 
-If an NPT (N$\mat{\sigma}$T) simulation is performed the OUTPUT
-file also provides the mean pressure (stress tensor) and mean
-simulation cell vectors.  In case when extended N$\mat{\sigma}$T
-ensembles are used then further mean $(x,y)$ plain area and mean
-surface tension are also displayed in the OUTPUT file.
+If an NPT (N$\mat{\sigma}$T) simulation is performed the OUTPUT file
+also provides the mean pressure (and stress tensor in pressure units
+as density) and mean simulation cell vectors.  In case when extended
+N$\mat{\sigma}$T ensembles are used then further mean $(x,y)$
+plain area and mean surface tension are also displayed in the OUTPUT file.
 
 \subsubsection{Radial Distribution Functions}
 
@@ -893,7 +895,7 @@ X\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=XXXXXXXXXXXX\=\kill
 \> {\tt amsd(2)} \> real   \> mean squared displacement of second atom types \\
 \> {\tt ...} \> ... \> ... \\
 \> {\tt amsd(ntpatm)} \> real \> mean squared displacement of last atom types \\
-{\bf the next 9 entries for the stress tensor} \\
+{\bf the next 9 entries for the stress tensor in pressure units} \\
 \> {\tt stress(1)} \> real \> xx component of stress tensor \\
 \> {\tt stress(2)} \> real \> xy component of stress tensor \\
 \> {\tt stress(3)} \> real \> xz component of stress tensor \\

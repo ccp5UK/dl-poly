@@ -106,7 +106,7 @@ Subroutine statistics_connect_spread(mdir)
 
 ! Initialise counters for length of sending and receiving buffers
 ! buffer(1) and buffer(iblock+1) contain the actual number of
-! particles to get transfered, imove and jmove are the lengths of
+! particles to get transferred, imove and jmove are the lengths of
 ! the buffers
 
   imove=1
