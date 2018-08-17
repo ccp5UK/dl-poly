@@ -73,6 +73,15 @@ build-old-hpc:
   only:
     - master
 
+
+build-manual:
+  stage: build
+  script:
+    - cd manual
+    - ./makedoc MANUAL_USR
+  only: 
+    - master
+      
 build-win32-serial:
   stage: build
   tags: 
