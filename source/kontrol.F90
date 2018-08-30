@@ -2614,9 +2614,9 @@ Subroutine read_control                                &
         End If
         grdana=Max(grdana,grdbnd,grdang,grddih,grdinv)
 
-! read rdf%rdf calculation option
+! read rdf calculation option
 
-     Else If (word(1:3) == 'rdf%rdf') Then
+     Else If (word(1:3) == 'rdf') Then
 
         rdf%l_collect = .true.
 
@@ -2665,7 +2665,7 @@ Subroutine read_control                                &
 
         If      (word(1:3) == 'ana' ) Then
            lpana = .true.
-        Else If (word(1:3) == 'rdf%rdf' ) Then
+        Else If (word(1:3) == 'rdf' ) Then
            rdf%l_print = .true.
         Else If (word(1:4) == 'zden') Then
            zdensity%l_print = .true.
@@ -3281,28 +3281,28 @@ Subroutine read_control                                &
         Write(messages(3),'(2x,a,1p,e12.4)') 'rdf binsize (Angstroms) ',rbin
         Call info(messages,3,.true.)
      Else
-        Call info('no rdf%rdf collection requested',.true.)
+        Call info('no rdf collection requested',.true.)
      End If
 
      If (rdf%l_print) Then
-        Call info('rdf%rdf printing requested',.true.)
+        Call info('rdf printing requested',.true.)
      Else
         If (lpana) Then
-           Call info('rdf%rdf printing triggered due to a PDA printing request',.true.)
+           Call info('rdf printing triggered due to a PDA printing request',.true.)
            rdf%l_print=lpana
         Else
-           Call info('no rdf%rdf printing requested',.true.)
+           Call info('no rdf printing requested',.true.)
         End If
      End If
 
      If (rdf%max_rdf == 0) Then
-        Call info('no rdf%rdf pairs specified in FIELD',.true.)
+        Call info('no rdf pairs specified in FIELD',.true.)
      Else
-        Call info('rdf%rdf pairs specified in FIELD',.true.)
+        Call info('rdf pairs specified in FIELD',.true.)
      End If
 
      If ((.not.rdf%l_collect) .or. rdf%max_rdf == 0) Then
-        Call info('rdf%rdf routines not to be activated',.true.)
+        Call info('rdf routines not to be activated',.true.)
         rdf%l_collect=.false.
         rdf%l_print=.false.
      End If
