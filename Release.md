@@ -20,3 +20,5 @@ Version 4.09 August 2018
 + fix bugs in trajectory writing
 + doubled number of tests
 + windows crosscompilation from linux both serial and parallel
++ fix bug in units for TABLE file
++ enhance STATIS writing thanks to Mike Pacey, University of Lancaster
