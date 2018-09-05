@@ -24,6 +24,7 @@ Version 4.09: September 2018
   + new zero\_k smoothing performance handling with a new frequency option
   + new extra reporting recommendations (and fixes) on densvar for passing in read\_config\*, build\_book\_intra and relocate\_particles
   + new, better exclusion array length scanning & reporting
+  + new, improved reporting on CGM core\_shell\_relax and minimise\_relax
   + new, better sanity check for Ewald conditions
   + new, better sanity check for array sizes non-PBC cells
   + new implementation of dry run 0K velocity field and stress reporting
@@ -38,12 +39,12 @@ Version 4.09: September 2018
 
 + New and changed defaults
   + default changed for l\_dis - applied at every step instead at step 0 only
-  + default changed for VNL application - enabled for all runs if no explicit zero rpad/delr
+  + default changed for conditional VNL application - enabled for all runs if no explicit zero rpad/delr in set\_bounds
   + default change for core\_shell\_on\_top - apply to new non-restarted models only
   + default changed for core-shell distances - excluded when l\_dis is applied
 
 + Improvements, updates, etc.
-  + improved in conditional, adaptive VNL setup and checking
+  + improved conditional, adaptive VNL setup and checking vnl\_\* set\_bounds
   + improved core\_shell\_relax and minimise\_relax information extension and interplay
   + improved metal\_forces handling
   + improved replay\_histor\* (EoF for handling last frame preservation), dl\_poly and read\_history
@@ -55,16 +56,19 @@ Version 4.09: September 2018
   + improved, cleaner NL/EL characters parsing
   + updated energy unit constants in setup\_module
   + improved end of frequency options reporting in w\_statistsics\_report
+  + improved performance of vdw direct energy and force calculations in vdw\_forces
   + updated MANUAL - two-temperature model chapter, outline surface thickness/energy; core-shell rules and references; tabulated interactions; input files information fresh up for new and old options; minimise information; MPOLES information and notation wrt CHARMM functionality; full CHARMM druder consequences description.
 
 + Bug-fixes:
   + HISTORY writing info line when using 'io write master' in trajectory\_write
+  + per-run counters for constraints and CVNL skips
   + PDF sampling setting in CONTROL (scan\_control and read\_control routines)
   + restart for velocity autocorrelation functions
-  + mixing potential reading
+  + mixing rules potentials reading
   + elec bonds in bonds\_forces
   + xpiston, zres and zrs+/- external fields
   + molecule COM calculation in kinetics\_module
+  + non-fast pre-DL_POLY_4 CONFIG formats parallel reading in read\_config\_parallel
   + two\_body\_forces for placement of frozen list of interactions
   + reading from tables intra\_table\_read routines, thanks to Tom Potter @ University of Durham (UK)
   + TABDIH zero element reading in dihedrals\_forces
@@ -72,6 +76,7 @@ Version 4.09: September 2018
   + initialisation of nst\_b\* semi-isotropic integrators
   + scaling factors in nst\_h\*\_scl routines
   + mmst potential in bonds\_forces
+  + KKY potential in angles\_forces
   + non-isotropic system expansion of cubic boxes in system\_expan\*
   + units for TABLE file
   + RDF calculation of single atom in MD cell exception
