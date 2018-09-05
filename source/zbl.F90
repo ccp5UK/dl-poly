@@ -12,11 +12,11 @@ Module m_zbl
 
   Use Kinds_f90, only : wp
   Implicit None
-  Private 
+  Private
 
   Real(wp), Parameter, Dimension(4) :: b=[0.18175_wp,0.50986_wp,0.28022_wp,0.02817_wp], &
     c=[3.1998_wp,0.94229_wp,0.40290_wp,0.20162_wp]
-  Real(wp), Parameter, Public :: ab=0.52917721067_wp 
+  Real(wp), Parameter, Public :: ab=0.52917721067_wp
   Public :: zbl
   Public :: zbls
   Public :: zblb
@@ -50,7 +50,7 @@ Contains
     ! -r∂U/δr
     dphi = phi - ia*k*dphi
 
-  End Subroutine 
+  End Subroutine
 
   Pure Subroutine fm(r,rm,ic,f,df)
     Real(wp), Intent( In    )  :: r,rm,ic
@@ -155,7 +155,7 @@ Contains
 
       j=j+1
     End Do
-    intRadZBL=s*h/3.0_wp   
+    intRadZBL=s*h/3.0_wp
   End Function intRadZBL
 
   Pure Real(wp) Function intdRadZBL(kk,a,rw,prec)
@@ -199,7 +199,7 @@ Contains
     Real(wp) :: sor6
 
     sor6=(sig/r)**6
-    e = 4.0_wp*eps*sor6*(sor6-1.0_wp)                                                                                 
+    e = 4.0_wp*eps*sor6*(sor6-1.0_wp)
     v = 24.0_wp*eps*sor6*(2.0_wp*sor6-1.0_wp)
 
   End Subroutine LJ
@@ -317,7 +317,7 @@ Contains
 
       j=j+1
     End Do
-    intRadMDF=s*h/3.0_wp   
+    intRadMDF=s*h/3.0_wp
   End Function intRadMDF
 
   Pure Real(wp) Function intdRadMDF(pot,a,b,c,ri,rw,prec)

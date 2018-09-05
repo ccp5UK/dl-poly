@@ -13,7 +13,8 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 ! author    - w.smith july 1992
 ! amended   - i.t.todorov september 2016
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
-! amended   - m.a.seaton i.t.todorov august 2018 (mm3-bond-stretch)
+! amended   - m.a.seaton & i.t.todorov august 2018 (mm3-bond-stretch)
+! amended   - m.a.seaton, i.t.todorov & i.scivetti september 2018 (virial bug)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -374,7 +375,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
               t1 = vk  + (vk1 - vk)*ppp
               t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-              gamma = (t1 + (t2-t1)*ppp*0.5_wp)/rab
+              gamma = (t1 + (t2-t1)*ppp*0.5_wp)/rab2
            Else ! bond breaking
               safe(3)=.false.
               omega=0.0_wp

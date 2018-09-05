@@ -187,7 +187,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
       End Do
 
     Case (1)
-! constant thermal conductivity or non-metal case 
+! constant thermal conductivity or non-metal case
       If (redistribute) Then
       ! system with cell deactivation/energy redistribution
         Do kk=-eltcell(3),eltcell(3)
@@ -473,7 +473,7 @@ Subroutine ttm_thermal_diffusion (tstep,time,nstep,nsteql,temp,nstbpo,ndump,nstr
               If (act_ele_cell(ijk,0,0,0)>zero_plus) Then
                 ! e-s coupling term
                 eltemp1(ijk,0,0,0) = eltemp1(ijk,0,0,0)+tstep*rvolume/(Ce(eltemp(ijk,0,0,0))*Real(redtstepmx,Kind=wp))*asource(ijk)
-                ! e-p coupling term: only use if electronic temperature 
+                ! e-p coupling term: only use if electronic temperature
                 ! exceeds ionic temperature
                 If (l_epcp .and. eltemp(ijk,0,0,0)>tempion(ijk)) Then
                   Select Case (gvar)

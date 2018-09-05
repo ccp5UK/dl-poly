@@ -2453,7 +2453,7 @@ $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}\exp[-(r_{ij}/\rho_{1} + r_{ik
 {\bf -shm} &                     &     &              &            &            & \\
            &                     &     &              &            &            & \\
 {\bf bvs1} & Screened Vessal \cite{vessal-94a} & $k$ & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
-$U(\theta) = {k \over 8(\theta-\pi)^{2}} \left\{ \left[ (\theta_{0} - \pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
+$U(\theta) = {k \over 8(\theta_{0}-\pi)^{2}} \left\{ \left[ (\theta_{0} - \pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
 {\bf -bv1} &                     &     &              &            &            &
 $\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
            &                     &     &              &            &            & \\
@@ -2493,9 +2493,9 @@ $U(\theta) = k~\Delta^{2}[1 - 1.4 \cdot 10^{-2}\Delta + 5.6 \cdot 10^{-5}\Delta^
 $- 7.0 \cdot 10^{-7}\Delta^{3}+2.2 \cdot 10^{-8}\Delta^{4})]~;~\Delta = \theta-\theta_{0}$ \\
            &                     &     &              &            &            & \\
 {\bf kky}  & KKY \cite{ponder-10a} & $f_{k}$ & $\theta_{0}$ & $g_{r}$ & $r_{o}$ &
-$U(\theta) = f_{k}~\sin\left[2(\theta-\theta_{0})\right] \cdot \sqrt{K_{ij} \cdot K_{ik}}~;$ \\
+$U(\theta) = 2~f_{k}~\sqrt{K_{ij} \cdot K_{ik}}~\sin^{2}\left[(\theta-\theta_{0})\right];$ \\
 {\bf -kky} &                     &     &              &            &            &
-$K_{ij} = 1/\exp\left[g_{r}(r_{ij}-r_{o})\right]$ \\
+$K_{ij} = 1/\left[\exp\left[g_{r}(r_{ij}-r_{o})\right]+1\right]$ \\
            &                     &     &              &            &            & \\
 \hline
 \end{tabular}
@@ -3138,7 +3138,7 @@ $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}~\exp[-(r_{ij}^{8} + r_{ik}^{8
 $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
            &                                        &           &              &            &            & \\
 {\bf bvs1} & Screened Vessal \cite{vessal-94a}      & $k$       & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
-$U(\theta) = {k \over 8(\theta-\theta_{0})^{2}} \left\{ \left[ (\theta_{0} -\pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
+$U(\theta) = {k \over 8(\theta_{0}-\pi)^{2}} \left\{ \left[ (\theta_{0} -\pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
            &                                        &           &              &            &            &
 $\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
            &                                        &           &              &            &            & \\

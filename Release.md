@@ -34,6 +34,7 @@ Version 4.09: September 2018
   + new faster shell filtering in all routines
   + new zero fire option, optional CGM stepping
   + new INSTALL and CITATION.cff
+  + new Release.md release info tracker
 
 + New and changed defaults
   + default changed for l\_dis - applied at every step instead at step 0 only
@@ -61,7 +62,7 @@ Version 4.09: September 2018
   + PDF sampling setting in CONTROL (scan\_control and read\_control routines)
   + restart for velocity autocorrelation functions
   + mixing potential reading
-  + elec bonds
+  + elec bonds in bonds\_forces
   + xpiston, zres and zrs+/- external fields
   + molecule COM calculation in kinetics\_module
   + two\_body\_forces for placement of frozen list of interactions
@@ -73,6 +74,8 @@ Version 4.09: September 2018
   + mmst potential in bonds\_forces
   + non-isotropic system expansion of cubic boxes in system\_expan\*
   + units for TABLE file
+  + RDF calculation of single atom in MD cell exception
+  + broadcasting forces in read\_history
 
 Version 4.08: March 2016
 ------------------------

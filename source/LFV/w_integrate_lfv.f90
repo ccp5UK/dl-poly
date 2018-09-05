@@ -90,7 +90,7 @@
            megcon,strcon,vircon,          &
            megpmf,strpmf,virpmf)
 
-! Inhomogeneous (two-temperature) 
+! Inhomogeneous (two-temperature)
 ! Langevin thermostat (Stochastic Dynamics)
 
            Else If (keyens == 15) Then

@@ -236,7 +236,7 @@ Subroutine read_control                                &
 
   taut   = 0.0_wp ! thermostat relaxation time
   chi    = 0.0_wp ! Stochastic Dynamics (SD Langevin) thermostat friction
-  chi_ep = 0.5_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin) 
+  chi_ep = 0.5_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
                   ! thermostat/electron-phonon friction
   chi_es = 0.0_wp ! Inhomogeneous Stochastic Dynamics (SD Langevin)
                   ! thermostat/electronic stopping friction
@@ -316,7 +316,7 @@ Subroutine read_control                                &
   cellrho = 0.0_wp
 
 ! default initial stopping power to be deposited in
-! electronic system (standard cascade) and laser 
+! electronic system (standard cascade) and laser
 ! fluence and penetration depth
 
   dEdX    = 0.0_wp
@@ -2294,7 +2294,7 @@ Subroutine read_control                                &
 
         Else If (word1(1:6) == 'redist') Then
 
-        ! redistribution of electronic energy from deactivated cells 
+        ! redistribution of electronic energy from deactivated cells
         ! to active neighbours
 
           If (redistribute .and. idnode == 0) Then
@@ -2433,8 +2433,8 @@ Subroutine read_control                                &
 
         ! variable electron-phonon coupling constant (chi_ep) based on
         ! tabular electronic stopping terms (in g.dat file): option to
-        ! apply value homogeneously across system (based on average 
-        ! electronic temperature) or heterogeneously (using local 
+        ! apply value homogeneously across system (based on average
+        ! electronic temperature) or heterogeneously (using local
         ! electronic temperature for each voxel)
 
           Select Case (gvar)
@@ -2530,7 +2530,7 @@ Subroutine read_control                                &
 
         Else If (word1(1:4) == 'traj') Then
 
-        ! ttm trajectory (one-dimensional ionic and electronic 
+        ! ttm trajectory (one-dimensional ionic and electronic
         ! temperature profile) file option and output frequency
 
           Call get_word(record,word)

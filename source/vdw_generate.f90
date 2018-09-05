@@ -474,7 +474,7 @@ Subroutine vdw_generate(rvdw)
      Else If (keypot == 14) Then
 
 ! Rydberg potential:: u=(a+b*r)Exp(-r/c)
-        
+
         a = prmvdw(1,ivdw)
         b = prmvdw(2,ivdw)
         c = prmvdw(3,ivdw)
@@ -483,7 +483,7 @@ Subroutine vdw_generate(rvdw)
            r=Real(i,wp)*dlrpot
 
            kk = r/c
-           t1=Exp(-kk)           
+           t1=Exp(-kk)
 
            vvdw(i,ivdw) = (a+b*r)*t1
            gvdw(i,ivdw) = t1*kk*(a-b*c+b*r)
@@ -502,7 +502,7 @@ Subroutine vdw_generate(rvdw)
 
         z1 = prmvdw(1,ivdw)
         z2 = prmvdw(2,ivdw)
-        
+
         ! this is in fact inverse a
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0

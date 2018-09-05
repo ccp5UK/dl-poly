@@ -290,9 +290,9 @@ U(\theta_{jik}) = {k\over 2} (\theta_{jik} - \theta_0)^{2}
 \end{equation}
 \item Screened Vessal \cite{vessal-94a}:  ({\bf bvs1})
 \begin{eqnarray}
-U(\theta_{jik})&=&{k \over 8(\theta_{jik}-\pi)^{2}} \left[ (\theta_0
+U(\theta_{jik})&=&{k \over 8(\theta_{0}-\pi)^{2}} \left[ (\theta_{0}
 -\pi)^{2} -(\theta_{jik}-\pi)^{2}\right]^{2} \times \nonumber \\
-              & &  \exp[-(r_{ij} / \rho_1 + r_{ik} / \rho_2)]
+              & &  \exp[-(r_{ij} / \rho_{1} + r_{ik} / \rho_{2})]
 \end{eqnarray}
 \item Truncated Vessal \cite{smith-95a}:  ({\bf bvs2 })
 \begin{eqnarray}
@@ -333,8 +333,8 @@ U(\theta_{jik}) = k~(\theta_{jik}-\theta_{0})^{2}[1 &-& 1.4 \cdot 10^{-2}(\theta
 \end{eqnarray}
 \item KKY \cite{kumagai-94a}:  ({\bf kky})
 \begin{eqnarray}
-U(\theta_{jik}) &=& f_{k}~\sin\left[2(\theta_{jik}-\theta_{0})\right] \cdot \sqrt{K_{ij} \cdot K_{ik}} \nonumber \\
-K_{ij} &=& \frac{1}{\exp\left[g_{r}(r_{ij}-r_{o})\right]}
+U(\theta_{jik}) &=& 2~f_{k}~\sqrt{K_{ij} \cdot K_{ik}}~\sin^{2}\left[(\theta_{jik}-\theta_{0})\right] \nonumber \\
+K_{ij} &=& \frac{1}{\exp\left[g_{r}(r_{ij}-r_{o})\right]+1}
 \end{eqnarray}
 \item Tabulated potential:  ({\bf tab}).  The potential is defined numerically in TABANG (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
@@ -2278,9 +2278,9 @@ U(\theta_{jik}) = {k \over 2} (\theta_{jik} - \theta_{0})^{2}
 \end{equation}
 \item Screened Vessal \cite{vessal-94a}:  ({\bf bvs1})
 \begin{eqnarray}
-U(\theta_{jik}) &=& {k \over 8(\theta_{jik}-\pi)^{2}} \left\{ \left[
+U(\theta_{jik}) &=& {k \over 8(\theta_{0}-\pi)^{2}} \left\{ \left[
 (\theta_{0} -\pi)^{2} -(\theta_{jik}-\pi)^{2} \right]^{2} \right\} \times \nonumber \\
-& & \exp[-(r_{ij} / \rho_1 + r_{ik} / \rho_2)]
+& & \exp[-(r_{ij} / \rho_{1} + r_{ik} / \rho_{2})]
 \end{eqnarray}
 \item Truncated Vessal \cite{smith-95a}:  ({\bf bvs2})
 \begin{eqnarray}

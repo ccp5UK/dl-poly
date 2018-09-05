@@ -104,9 +104,9 @@ Contains
 ! Temperature-dependent lattice thermal conductivity: given as kB/(ps A)
 
     Implicit None
-    
+
     Real ( Kind = wp ) :: Ke
-    Real ( Kind = wp ), Intent ( In ) :: T    
+    Real ( Kind = wp ), Intent ( In ) :: T
 
     Select Case(KeType)
     Case (3)
@@ -118,8 +118,8 @@ Contains
     End Select
 
   End Function Ke
-  
-  
+
+
   Function KeD(Te, temp)
 
 ! Temperature-dependent Drude-like lattice thermal conductivity: given as kB/(ps A)
@@ -131,9 +131,9 @@ Contains
     Real ( Kind = wp )                :: KeD
 
     KeD = Ka0 * Ce(Te) / Ce(temp)
-    
+
   End Function KeD
-  
+
   Function alp(Te)
 
 ! Thermal diffusivity: given as A^2/ps
@@ -157,7 +157,7 @@ Contains
     !         system temperature (given as A^2/ps)
       alp = Diff0/Min(Te,Tfermi)
     Case (3)
-    ! Case 3: non-metal system - thermal diffusivity interpolated 
+    ! Case 3: non-metal system - thermal diffusivity interpolated
     !         from table (given as A^2/ps)
       Call interpolate(del, detable, Te, alp)
     Case Default
@@ -297,7 +297,7 @@ Contains
                 ijk2 = 1 + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
                 eltemp(ijk2,iii2,jj,kk) = eltemp(ijk1,ii,jj,kk)
               End Do
-            End Do            
+            End Do
             Do k = 1, ntcell(3)
               Do i = 0, ntcell(1)+1
                 ijk1 = 1 + i + (ntcell(1)+2) * (1 + (ntcell(2)+2) * k)
@@ -931,7 +931,7 @@ Contains
     End If
 
   End Subroutine peakProfiler
- 
+
   Subroutine peakProfilerElec(peakfile, nstep, freq)
 
 ! prints a slice across y (centred in xz-plane) of the electronic temperature lattice to a file
@@ -1042,12 +1042,12 @@ Contains
 
       End If
     End If
-      
+
   End Subroutine printLatticeStatsToFile
-  
+
   Subroutine printElecLatticeStatsToFile(latfile, time, temp0, nstep, freq)
 
-! prints electronic temperature lattice statistics (minimum, maximum, sum) 
+! prints electronic temperature lattice statistics (minimum, maximum, sum)
 ! and energy (E = integral of Ce(Te)*Te between temp0 and Te) to file
 
     Implicit None
@@ -1136,7 +1136,7 @@ Contains
                       ! linear specific heat capacity to Fermi temperature
                         tmp = tmp*Cemaxa*(0.5_wp*((Min(Tfermi,eltmp))**2-temp0*temp0)/Tfermi+Max(eltmp-Tfermi,0.0_wp))
                       Case Default
-                      ! tabulated volumetric heat capacity or more complex 
+                      ! tabulated volumetric heat capacity or more complex
                       ! functions: integrate using trapezium rule
                       ! with final interval of <=1 kelvin
                         numint = Floor(tmp*(eltmp-temp0))
@@ -1176,9 +1176,9 @@ Contains
 
       End If
     End If
-      
+
   End Subroutine printElecLatticeStatsToFile
-  
+
   Subroutine eltemp_sum (eltempsum)
 
 ! Find sum of electronic temperatures over all active CET voxels
@@ -1333,8 +1333,8 @@ Contains
   Subroutine eltemp_maxKe (temp, eltempmax)
 
 ! Find maximum temperature for calculating tabulated
-! thermal conductivities (ionic or system) over all 
-! active CET voxels (note that system temperature 
+! thermal conductivities (ionic or system) over all
+! active CET voxels (note that system temperature
 ! applies over all CET voxels that do not overlap
 ! CIT voxels)
 
@@ -1436,7 +1436,7 @@ Contains
   Subroutine eltemp_minKe (temp, eltempmin)
 
 ! Find minimum temperature for calculating tabulated
-! thermal conductivities (ionic or system) over all 
+! thermal conductivities (ionic or system) over all
 ! active CET voxels (note that system temperature
 ! applies over all CET voxels that do not overlap
 ! CIT voxels)
@@ -1635,7 +1635,7 @@ Contains
           ijkpz = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (k + 1))
           ijkmz = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (k - 1))
           If (act_ele_cell(ijk,0,0,0)<=zero_plus .and. old_ele_cell(ijk,0,0,0)>zero_plus) Then
-        ! Calculate amount of energy left in the cell 
+        ! Calculate amount of energy left in the cell
         ! (Ue = integral of Ce(Te)d(Te) between temp0 and Te)
             U_e = 0.0_wp
             end_Te = eltemp(ijk,0,0,0)
@@ -1651,7 +1651,7 @@ Contains
               increase = Min(Tfermi,end_Te)
               U_e = Cemaxa*(0.5_wp*(increase*increase-temp0*temp0)/Tfermi+Max(end_Te-Tfermi,0.0_wp))
             Case Default
-            ! tabulated volumetric heat capacity or more complex 
+            ! tabulated volumetric heat capacity or more complex
             ! functions: integrate using trapezium rule
             ! with final interval of <=1 kelvin
               numint = Floor(end_Te - temp0)
@@ -1683,7 +1683,7 @@ Contains
       buffer = 0.0_wp
 
       ! sum up redistributed energies (placing energies for electronic grid
-      ! outside ionic grid in boundary halos: removing previous values in halos 
+      ! outside ionic grid in boundary halos: removing previous values in halos
       ! before summation)
 
       ! -x/+x direction

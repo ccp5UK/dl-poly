@@ -67,7 +67,7 @@ Subroutine allocate_block_average_array(nstrun)
   Implicit None
   Integer, Intent( In ) :: nstrun
   Integer :: temp1, temp2
-  
+
   Integer, Dimension( 1:2 ) :: fail
   block_size = nstrun/(num_blocks-1)
   if(block_size < 2) then

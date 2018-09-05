@@ -707,7 +707,7 @@ Program dl_poly
      End If
   End If
 
-! Two-temperature model simulations: calculate final 
+! Two-temperature model simulations: calculate final
 ! ionic temperatures and print statistics to files
 ! (final)
 

@@ -6,6 +6,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov january 2017
+! amended   - i.t.todorov september 2018 (bcasting forces bug)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -343,9 +344,9 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout)
                           Call MPI_BCAST(byy,indatm,wp_mpi,0,dlp_comm_world,ierr)
                           Call MPI_BCAST(bzz,indatm,wp_mpi,0,dlp_comm_world,ierr)
                           If (levcfg > 1) Then
-                             Call MPI_BCAST(bxx,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                             Call MPI_BCAST(byy,indatm,wp_mpi,0,dlp_comm_world,ierr)
-                             Call MPI_BCAST(bzz,indatm,wp_mpi,0,dlp_comm_world,ierr)
+                             Call MPI_BCAST(cxx,indatm,wp_mpi,0,dlp_comm_world,ierr)
+                             Call MPI_BCAST(cyy,indatm,wp_mpi,0,dlp_comm_world,ierr)
+                             Call MPI_BCAST(czz,indatm,wp_mpi,0,dlp_comm_world,ierr)
                           End If
                        End If
                     Else

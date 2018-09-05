@@ -528,7 +528,7 @@ Subroutine set_bounds                                 &
 
 ! Calculate average atomic density: if not overridden by
 ! 'ttm atomdens' directive in CONTROL file, will be used
-! to convert specific heat capacities to volumetric 
+! to convert specific heat capacities to volumetric
 ! heat capacity etc.
 
   sysrho = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
