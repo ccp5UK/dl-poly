@@ -14,6 +14,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 ! author    - i.t.todorov february 2015
 ! contrib   - w.smith, i.j.bush
 ! contrib   - a.m.elena february 2017
+! amnded    - i.t.todorov august 2018
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -58,7 +59,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
 
   Character( Len = 200 ) :: record,record1
   Character( Len = 40  ) :: word,fcfg,ffld
-  Integer                :: fail(1:4),nall,setspc,i,itmols,l,m,ix,iy,iz, &
+  Integer                :: fail(1:4),nall,imcon1,setspc,i,itmols,l,m,ix,iy,iz, &
                             indatm,nattot,idm,loc_ind,index,at_scaled
   Integer(Kind=ip)       :: offset,rec
   Real( Kind = wp )      :: fx,fy,fz, x,y,z, t ,celprp(1:10),   &
@@ -123,6 +124,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
      Call warning(350,0.0_wp,0.0_wp,0.0_wp)
      Write(nrite,'(1x,a,3i5,/)') '*** Replication dimensions (nx,ny,nz):', nx,ny,nz
   End If
+
+! catch cubic to orthorhombic change of cell in the expanded CONFIG
+
+  imcon1 = imcon
+  If (imcon == 1 .and. Max(nx,ny,nz) /= Min(nx,ny,nz)) imcon1 = 2
 
 ! Create names for the expanded CONFIG and FIELD
 
@@ -218,7 +224,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
         Write(record2, Fmt='(a72,a1)') cfgname(1:72),lf
         Call io_write_record( fh, Int(0,MPI_OFFSET_KIND), record2 )
 
-        Write(record2, Fmt='(3i10,a42,a1)') 0,imcon,nall*megatm,Repeat(' ',42),lf
+        Write(record2, Fmt='(3i10,a42,a1)') 0,imcon1,nall*megatm,Repeat(' ',42),lf
         Call io_write_record( fh, Int(1,MPI_OFFSET_KIND), record2 )
 
         Write(record2, Fmt='(3f20.10,a12,a1)') fx*cell(1),fx*cell(2),fx*cell(3),Repeat(' ',12),lf
@@ -237,7 +243,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
         Call io_nc_put_var( 'time'           , fh, 0.0_wp, i, 1 )
         Call io_nc_put_var( 'step'           , fh,      0, i, 1 )
         Call io_nc_put_var( 'datalevel'      , fh,      0, i, 1 )
-        Call io_nc_put_var( 'imageconvention', fh,  imcon, i, 1 )
+        Call io_nc_put_var( 'imageconvention', fh, imcon1, i, 1 )
 
         cell_vecs( :, 1 ) = fx * cell( 1:3 )
         cell_vecs( :, 2 ) = fy * cell( 4:6 )
@@ -260,7 +266,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm)
               io_write == IO_WRITE_SORTED_MASTER ) Then
 
         Write(Unit=nconf, Fmt='(a72,a1)',         Rec=Int(1,ip)) cfgname(1:72),lf
-        Write(Unit=nconf, Fmt='(3i10,a42,a1)',    Rec=Int(2,ip)) 0,imcon,nall*megatm,Repeat(' ',42),lf
+        Write(Unit=nconf, Fmt='(3i10,a42,a1)',    Rec=Int(2,ip)) 0,imcon1,nall*megatm,Repeat(' ',42),lf
         Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(3,ip)) fx*cell(1),fx*cell(2),fx*cell(3),Repeat(' ',12),lf
         Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(4,ip)) fy*cell(4),fy*cell(5),fy*cell(6),Repeat(' ',12),lf
         Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(5,ip)) fz*cell(7),fz*cell(8),fz*cell(9),Repeat(' ',12),lf

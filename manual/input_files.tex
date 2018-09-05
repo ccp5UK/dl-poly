@@ -292,7 +292,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf cap} (forces) $f$                       \> cap forces during equilibration period, $f$ is maximum \\
 \>                                              \> cap in units of k$_{B}$T/\AA~~(default $f~=~1000$ k$_{B}$T/\AA) \\
 \>                                              \> \\
-\> {\bf close time} $f$                         \> set job closure time to $f$ seconds \\
+\> {\bf close time} $f$                         \> set the amount of time a job has to finalise I/O to $f$ seconds \\
+\>                                              \> (this must be smaller than the time specified by {\bf job time}, \\
+\>                                              \> see Further Comments on the CONTROL File notes) \\
 \>                                              \> \\
 \> {\bf collect}                                \> include equilibration data in overall statistics \\
 \>                                              \> \\
@@ -442,7 +444,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf integrat}or {\em string}                \> set the type of Verlet integrator, where {\em string} can only be \\
 \>                                              \> {\em leapfrog} or {\em velocity}, as the later is the default \\
 \>                                              \> \\
-\> {\bf job time} $f$                           \> set job time to $f$ seconds \\
+\> {\bf job time} $f$                           \> set the walltime for a job to $f$ seconds \\
 \>                                              \> \\
 \> {\bf maxdis} $f$                             \> set maximum distance allowed in variable timestep (control) \\
 \>                                              \> to $f$ \AA~(default $f~=~0.10$ \AA) \\

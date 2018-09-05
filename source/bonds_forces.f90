@@ -13,6 +13,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
 ! author    - w.smith july 1992
 ! amended   - i.t.todorov september 2016
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
+! amended   - m.a.seaton i.t.todorov august 2018 (mm3-bond-stretch)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -344,7 +345,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,keyfce,alpha,epsq,engcpe,v
            e0=2.55_wp*dr
 
            omega=k*dr**2*(1.0_wp-e0*(1.0_wp-(7.0_wp/12.0_wp)*e0))
-           gamma=-2.0_wp*k*dr*(1.0_wp-e0*(1.5_wp-7.0_wp/6.0_wp*e0))/rab
+           gamma=-2.0_wp*k*dr*(1.0_wp-e0*(1.5_wp-(7.0_wp/6.0_wp)*e0))/rab
 
         Else If (keyb == 20) Then
 

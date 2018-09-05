@@ -1,0 +1,137 @@
+# YAML 1.2
+---
+authors: 
+  -
+    affiliation: UKRI Science & Technology Facilities Council
+    family-names: Todorov
+    given-names: Ilian Todorov
+    orcid: "https://orcid.org/0000-0001-7275-1784"
+  -
+    affiliation: UKRI Science & Technology Facilities Council
+    family-names: Smith
+    given-names: William
+contributors: 
+  -
+    affiliation: University of Oxford, UK
+    family-names: Bush
+    given-names: Ian John
+    orcid: "https://orcid.org/0000-0001-7275-1784"
+  -
+    affiliation: Bates College, USA
+    family-names: Boateng
+    given-names: Henry Asamoah
+    orcid: "https://orcid.org/0000-0001-7275-1784"
+  -
+    affiliation: UKRI Science & Technology Facilities Council
+    family-names: Seaton
+    given-names: Michael Andrew
+    orcid: "https://orcid.org/0000-0002-4708-573X"
+  -
+    affiliation: UKRI Science & Technology Facilities Council
+    family-names: Elena
+    given-names: Alin-Marin
+  -
+    affiliation: UKRI Science & Technology Facilities Council
+    family-names: Chalk
+    given-names: Aidan B. G.
+cff-version: 1.0.3
+date-released: 2018-09-10
+doi: N/A
+keywords: 
+  - DL_POLY_4.09
+license: STFC specific, available in ./LICENCE, similar in spirit to https://opensource.org/licenses/Artistic-2.0
+license-url: https://www.scd.stfc.ac.uk/Pages/DL_POLY-Registration.aspx
+
+message: Please, do cite your DL_POLY usage by using the following metadata:
+title: DL_POLY_4
+version: 09
+date-released: 2018-09-10
+references:
+  - type: article
+    scope: Always cite this paper when using DL_POLY:
+    authors:
+      - family-names: Todorov
+        given-names: Ilian Todorov
+      - family-names: Smith
+        given-names: William
+      - family-names: Trachenko
+        given-names: Kostya
+      - family-names: Dove
+        given-names: Martin Travis
+    title: "DL_POLY_3: New Dimensions in Molecular Dynamics Simulations via Massive Parallelism"
+    year: 2006
+    journal: J. Mater. Chem.
+    volume: 16
+    pages: 1611--1618
+    doi: 10.1039/B517931A
+
+  - type: article
+    scope: Always cite this paper when using DL_POLY DaFT SPME:
+    authors:
+      - family-names: Bush
+        given-names: Ian John
+      - family-names: Todorov
+        given-names: Ilian Todorov
+      - family-names: Smith
+        given-names: William
+    title: "A DAFT DL_POLY distributed memory adaptation of the Smoothed Particle Mesh Ewald method"
+    year: 2006
+    journal: Computer Physics Communications
+    volume: 175
+    pages: 323--329
+    doi: 10.1016/j.cpc.2006.05.001
+
+  - type: article
+    scope: Always cite this paper when using DL_POLY Multipolar electrostatics:
+    authors:
+      - family-names: Boateng
+        given-names: Henry Asamoah
+      - family-names: Todorov
+        given-names: Ilian Todorov
+    title: "Arbitrary order permanent Cartesian multipolar electrostatic interactions"
+    year: 2015
+    journal: J. Chem. Phys.
+    volume: 142
+    pages: 034117
+    doi: 10.1063/1.4905952
+
+  - type: article
+    scope: Optionally cite this paper when using DL_POLY I/O:
+    authors:
+      - family-names: Bush
+        given-names: Ian John
+      - family-names: Todorov
+        given-names: Ilian Todorov
+    title: "Optimisation of the I/O for Distributed Data Molecular Dynamics Applications"
+    year: 2010
+    journal: Cray User Group Conference
+
+  - type: article
+    scope: Always cite this paper when using DL_POLY with TTM:
+    authors:
+      - family-names: Zarkadoula
+        given-names: Eva
+      - family-names: Daraszewicz
+        given-names: Szymon L.
+      - family-names: Duffy
+        given-names: Dorothy M.
+      - family-names: Seaton
+        given-names: Michael Andrew
+      - family-names: Todorov
+        given-names: Ilian Todorovo
+      - family-names: Norlund
+        given-names: Kai
+      - family-names: Dove
+        given-names: Martin Travis
+      - family-names: Trachenko
+        given-names: Kostya
+    title: "Electronic effects in high-energy radiation damage in iron"
+    year: 2014
+    journal: J. Phys.: Condens. Matter
+    volume: 26
+    pages: 085401
+    doi: 10.1088/0953-8984/26/8/085401
+
+contact:
+  - name: Ilian Todorov
+    email: ilian.todorov@stfc.ac.uk

@@ -32,7 +32,7 @@ Program dl_poly
 !
 ! copyright - daresbury laboratory
 ! authors   - i.t.todorov & w.smith march 2016
-! contrib   - i.j.bush, h.a.boateng, a.m.elena, a.b.g.chalk
+! contrib   - i.j.bush, h.a.boateng, m.a.seaton, a.m.elena, a.b.g.chalk
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

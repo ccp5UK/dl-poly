@@ -475,7 +475,8 @@ Subroutine two_body_forces                        &
   End If
 
 !Increase block_number when required
-if((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. mod(nstep, block_size) == 0) block_number = block_number + 1
+
+  If ((l_errors_block .or. l_errors_jack) .and. l_do_rdf .and. Mod(nstep, block_size) == 0) block_number = block_number + 1
 
 ! Further Ewald/Poisson Solver corrections or an infrequent refresh
 
