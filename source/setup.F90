@@ -205,8 +205,10 @@ Module setup
     mxatms,mxatdm,                  &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
 
-! zero+ and half+/- :: defined in set_bounds
-
-  Real( Kind = wp ), Save :: zero_plus,half_plus,half_minus
-
+  !> +0.0 in working precision
+  Real( Kind = wp ), Parameter :: zero_plus = Tiny(1.0_wp)
+  !> Nearest number to 0.5, greater than 0.5, in working precision
+  Real( Kind = wp ), Parameter :: half_plus = Nearest(0.5_wp,+1.0_wp)
+  !> Nearest number to 0.5, less than 0.5, in working precision
+  Real( Kind = wp ), Parameter :: half_minus = Nearest(0.5_wp,-1.0_wp)
 End Module setup

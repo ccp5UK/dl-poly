@@ -112,12 +112,6 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
                        xhi,yhi,zhi
   Character( Len = 256 ) :: message
 
-! define zero+ and half+/- (setup)
-
-  zero_plus  = Nearest( 0.0_wp , +1.0_wp)
-  half_plus  = Nearest( 0.5_wp , +1.0_wp)
-  half_minus = Nearest( 0.5_wp , -1.0_wp)
-
 ! scan the FIELD file data
 
   Call scan_field                                    &
