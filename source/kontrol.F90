@@ -70,6 +70,13 @@ Module kontrol
 
   Private
 
+  !> Type containing program flow data, do not use to park variables
+  Type, Public :: control_type
+    Private 
+    !> check if is first time we call build_book_intra
+    Logical, Public :: newjob_build_book = .true. 
+  End Type control_type
+
   Public :: read_control
   Public :: scan_control_output
   Public :: scan_control_io

@@ -22,6 +22,7 @@ Module build_book
   Use neighbours, Only : neighbours_type
   Use domains, Only : domains_type
   Use errors_warnings, Only : error,warning,info
+  Use kontrol, Only : control_type
   Implicit None
 
   Private
@@ -34,9 +35,9 @@ Contains
 Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           degrot,degtra,        &
-           cshell,cons,pmf,bond,angle,dihedral,  &
-           inversion,tether,neigh,sites,mpoles,rigid,domain,parts,comm)
+  degrot,degtra,flw,        &
+  cshell,cons,pmf,bond,angle,dihedral,  &
+  inversion,tether,neigh,sites,mpoles,rigid,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -55,6 +56,7 @@ Subroutine build_book_intra             &
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz
   Integer,           Intent( InOut ) :: megfrz
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
+  Type( control_type ), Intent(InOut) :: flw
   Type( constraints_type), Intent(Inout) :: cons
   Type( pmf_type), Intent(Inout) :: pmf
   Type( bonds_type ), Intent( InOut ) :: bond
@@ -72,7 +74,6 @@ Subroutine build_book_intra             &
 
   Type( corePart ), Dimension( : ), Intent( InOut ) :: parts
 
-  Logical, Save :: newjob = .true.
 
   Logical :: safe(1:11),go
   Integer :: fail(1:2),i,j,isite,itmols,imols,      &
@@ -106,7 +107,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(newjob .or. lsim)) Then
+  If (.not.(flw%newjob_build_book .or. lsim)) Then
     Call init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,rigid)
   End If
 
@@ -1645,9 +1646,9 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (newjob) Then
+  If (flw%newjob_build_book) Then
 
-     newjob=.false.
+    flw%newjob_build_book=.false.
 
 ! Set RB particulars and quaternions
 
