@@ -75,6 +75,7 @@ Module kontrol
     Private 
     !> check if is first time we call build_book_intra
     Logical, Public :: newjob_build_book = .true. 
+    Logical, Public :: oldjob_shared_units = .false. 
   End Type control_type
 
   Public :: read_control

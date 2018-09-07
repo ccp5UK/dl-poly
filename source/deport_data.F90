@@ -6,6 +6,7 @@ Module deport_data
   Use setup
   Use domains, Only : domains_type
   Use configuration
+  Use kontrol, Only : control_type
   Use rigid_bodies, Only : rigid_bodies_type
   Use tethers,      Only : tethers_type
   Use bonds,        Only : bonds_type
@@ -2488,9 +2489,9 @@ Subroutine mpoles_rotmat_set_halo(mpoles,domain,comm)
 
 End Subroutine mpoles_rotmat_set_halo
 
-Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons, &
-           pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
-           neigh,sites,minim,mpoles,rigid,domain,comm)
+Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,cons, &
+  pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
+  neigh,sites,minim,mpoles,rigid,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2508,6 +2509,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
   Logical,           Intent( In    ) :: lbook
   Logical,           Intent( In    ) :: lmsd
   Integer,           Intent( In    ) :: megatm
+  Type( control_type), Intent( InOut ) :: flw
   Type( pmf_type), Intent( InOut ) :: pmf
   Type( core_shell_type), Intent( InOut ) :: cshell
   Type( constraints_type), Intent( InOut ) :: cons
@@ -2753,13 +2755,13 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
         If (cshell%megshl > 0) Call pass_shared_units &
           (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl, cshell%listshl,cshell%mxfshl,&
           cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl, &
-          domain,comm,&
+          flw%oldjob_shared_units,domain,comm,&
           rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
           rigid%oxx,rigid%oyy,rigid%ozz)
 
         If (cons%m_con  > 0) Call pass_shared_units &
           (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,cons%legcon,&
-          cons%lshmv_con,cons%lishp_con,cons%lashp_con,domain,comm,&
+          cons%lshmv_con,cons%lishp_con,cons%lashp_con,flw%oldjob_shared_units,domain,comm,&
           rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
           rigid%oxx,rigid%oyy,rigid%ozz)
 
@@ -2768,7 +2770,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,cshell,cons
         If (rigid%on) Call pass_shared_units &
           (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
           rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
-          rigid%map_shared,domain,comm,&
+          rigid%map_shared,flw%oldjob_shared_units,domain,comm,&
           rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
           rigid%oxx,rigid%oyy,rigid%ozz)
 

@@ -30,7 +30,7 @@ Module shared_units
   Contains
 
     Subroutine pass_shared_units(mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv, &
-        lishp,lashp,domain,comm,q0,q1,q2,q3,vxx,vyy,vzz,oxx,oyy,ozz)
+      lishp,lashp,oldjob,domain,comm,q0,q1,q2,q3,vxx,vyy,vzz,oxx,oyy,ozz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -53,19 +53,18 @@ Module shared_units
 
 
 
-  Integer, Intent( In    ) :: mx_u,b_l,b_u,mxf_u
-  Integer, Intent( InOut ) :: nt_u,list_u(b_l:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
-  Logical, Intent(   Out ) :: lshmv
-  Type( domains_type ), Intent( In    ) :: domain
-  Integer, Intent(   Out ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
-  Type( comms_type ), Intent( InOut ) :: comm
-  Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,vxx,vyy,&
-                                                      vzz,oxx,oyy,ozz
+      Integer, Intent( In    ) :: mx_u,b_l,b_u,mxf_u
+      Integer, Intent( InOut ) :: nt_u,list_u(b_l:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
+      Logical, Intent(   Out ) :: lshmv
+      Type( domains_type ), Intent( In    ) :: domain
+      Integer, Intent(   Out ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
+      Type( comms_type ), Intent( InOut ) :: comm
+      Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,vxx,vyy,&
+        vzz,oxx,oyy,ozz
+      Logical, Intent( InOut ) :: oldjob
 
-  Logical, Save :: oldjob = .false.
-
-  Logical :: safe,ok
-  Integer :: fail,i,j,k,l,m,n_k,n_nt,k0,l_me,l_out,l_in,jdnode,kdnode
+      Logical :: safe,ok
+      Integer :: fail,i,j,k,l,m,n_k,n_nt,k0,l_me,l_out,l_in,jdnode,kdnode
 
   Integer, Dimension( : ), Allocatable :: i0,j0,listme,lstout,listin
   Character( Len = 256 ) :: message

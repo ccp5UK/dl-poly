@@ -672,7 +672,7 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
+    Call w_md_vv(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
       netcdf,mpoles,ext_field,rigid,domain,tmr)
   Else
@@ -824,9 +824,10 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+  Subroutine w_calculate_forces(flw,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
       minim,mpoles,ext_field,rigid,electro,domain,tmr)
+    Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -856,8 +857,9 @@ Contains
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
-      dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain)
+  Subroutine w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
+    dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain)
+    Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -930,10 +932,11 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
-      dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
-      ext_field,rigid,domain,tmr)
+  Subroutine w_md_vv(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
+    dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
+    ext_field,rigid,domain,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
+    Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
