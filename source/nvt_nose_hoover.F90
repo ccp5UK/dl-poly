@@ -67,11 +67,8 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:9),i
-    Real( Kind = wp ), Save :: qmass,ceng
     Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: chitdr,cintdr
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp
@@ -102,18 +99,18 @@ Contains
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
-       ceng  = 2.0_wp*thermo%sigma
+       thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       thermo%ceng  = 2.0_wp*thermo%sigma
 
   ! set number of constraint+pmf shake iterations
 
-       If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
     End If
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
@@ -183,7 +180,7 @@ Contains
   ! integrate and apply nvt_h0_scl thermostat - 1/2 step
 
        Call nvt_h0_scl &
-             (hstep,ceng,qmass,0.0_wp,0.0_wp, &
+             (hstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,engke,thermo,comm)
 
   ! update velocity and position
@@ -204,7 +201,7 @@ Contains
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
+         Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
            domain,tmr,parts,comm)
        End If
 
@@ -251,18 +248,18 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! integrate and apply nvt_h0_scl thermostat - 1/2 step
 
        Call nvt_h0_scl &
-             (hstep,ceng,qmass,0.0_wp,0.0_wp, &
+             (hstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,engke,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*thermo%chi_t**2 + ceng*thermo%cint
+       consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + thermo%ceng*thermo%cint
 
   ! kinetic contribution to stress tensor
 
@@ -328,13 +325,9 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true. , &
-                               unsafe = .false.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:14),matms,i,j,i1,i2, &
                                irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ), Save :: qmass,ceng
     Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: chitdr,cintdr
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp
@@ -393,20 +386,20 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
-       ceng  = 2.0_wp*thermo%sigma
+       thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       thermo%ceng  = 2.0_wp*thermo%sigma
 
   ! set number of constraint+pmf shake iterations
-       If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
 
-  ! unsafe positioning due to possibly locally shared RBs
-       unsafe=(Any(domain%map == comm%idnode))
+  ! thermo%unsafe positioning due to possibly locally shared RBs
+       thermo%unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -522,7 +515,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply nvt_h1_scl thermostat - 1/2 step
 
        Call nvt_h1_scl &
-             (hstep,ceng,qmass,0.0_wp,0.0_wp, &
+             (hstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                  &
              engke,engrot,thermo,rigid,comm)
 
@@ -546,7 +539,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
           lstitr,stat,pmf,cons,domain,tmr,parts,comm)
        End If
 
@@ -691,7 +684,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! DD bound positions
 
-                      If (unsafe) Then
+                      If (thermo%unsafe) Then
                          x(1)=parts(i)%xxx-xxt(i)
                          y(1)=parts(i)%yyy-yyt(i)
                          z(1)=parts(i)%zzz-zzt(i)
@@ -773,7 +766,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial
@@ -914,13 +907,13 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply nvt_h1_scl thermostat - 1/2 step
 
        Call nvt_h1_scl &
-             (hstep,ceng,qmass,0.0_wp,0.0_wp, &
+             (hstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                  &
              engke,engrot,thermo,rigid,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*thermo%chi_t**2 + ceng*thermo%cint
+       consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + thermo%ceng*thermo%cint
 
   ! update kinetic energy and stress
 
@@ -964,12 +957,12 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   !
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov january 2004
-  ! amended   - w.smith january 2010
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    ! amended   - w.smith january 2010
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-                                                                 pmass,chip
+      pmass,chip
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: engke
     Type( thermostat_type), Intent( InOut ) :: thermo
@@ -979,71 +972,71 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
     Real( Kind = wp ) :: hstep,qstep,factor,scale
 
 
-  ! timestep derivative and factor
+    ! timestep derivative and factor
 
     hstep  = 0.5_wp*tstep
     qstep  = 0.5_wp*hstep
     factor = pmass*chip**2
 
-  ! update chi(=thermo%cint) to 1/4*tstep
+    ! update chi(=thermo%cint) to 1/4*tstep
 
     thermo%cint=thermo%cint + qstep*thermo%chi_t
 
-  ! calculate kinetic energy
+    ! calculate kinetic energy
 
     engke=getkin(vxx,vyy,vzz,comm)
 
-  ! update thermo%chi_t to 1/2*tstep
+    ! update thermo%chi_t to 1/2*tstep
 
     thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*engke + factor - ceng)/qmass
 
-  ! update chi(=thermo%cint) to 3/4*tstep
+    ! update chi(=thermo%cint) to 3/4*tstep
 
     thermo%cint=thermo%cint + hstep*thermo%chi_t
 
-  ! thermostat the velocities to 1*tstep
+    ! thermostat the velocities to 1*tstep
 
     scale=Exp(-tstep*thermo%chi_t)
     Do i=1,natms
-       vxx(i)=scale*vxx(i)
-       vyy(i)=scale*vyy(i)
-       vzz(i)=scale*vzz(i)
+      vxx(i)=scale*vxx(i)
+      vyy(i)=scale*vyy(i)
+      vzz(i)=scale*vzz(i)
     End Do
 
-  ! thermostat the energy consequently
+    ! thermostat the energy consequently
 
     engke=engke*scale**2
 
-  ! update thermo%chi_t to full (2/2)*tstep
+    ! update thermo%chi_t to full (2/2)*tstep
 
     thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*engke + factor - ceng)/qmass
 
-  ! update chi(=thermo%cint) to 4/4*tstep
+    ! update chi(=thermo%cint) to 4/4*tstep
 
     thermo%cint=thermo%cint + qstep*thermo%chi_t
 
   End Subroutine nvt_h0_scl
 
   Subroutine nvt_h1_scl &
-             (tstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,                  &
-             engke,engrot,thermo,rigid,comm)
+    (tstep,ceng,qmass,pmass,chip, &
+    vxx,vyy,vzz,                  &
+    engke,engrot,thermo,rigid,comm)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 routine to integrate and apply NVT Nose-Hoover thermostat
-  ! when singled RBs are present
-  !
-  ! Note: coupling to NPT barostat included as factor=pmass*chip^2
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov november 2008
-  ! amended   - w.smith january 2010
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to integrate and apply NVT Nose-Hoover thermostat
+    ! when singled RBs are present
+    !
+    ! Note: coupling to NPT barostat included as factor=pmass*chip^2
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov november 2008
+    ! amended   - w.smith january 2010
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-                                                                 pmass,chip
+      pmass,chip
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1054,17 +1047,17 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
     Real( Kind = wp ) :: engkf,engkt,hstep,qstep,factor,scale
 
 
-  ! timestep derivative and factor
+    ! timestep derivative and factor
 
     hstep  = 0.5_wp*tstep
     qstep  = 0.5_wp*hstep
     factor = pmass*chip**2
 
-  ! update chi(=thermo%cint) to 1/4*tstep
+    ! update chi(=thermo%cint) to 1/4*tstep
 
     thermo%cint=thermo%cint + qstep*thermo%chi_t
 
-  ! calculate kinetic energy contributions and rotational energy
+    ! calculate kinetic energy contributions and rotational energy
 
     engkf=getknf(vxx,vyy,vzz,comm)
     engkt=getknt(rigid,comm)
@@ -1073,45 +1066,45 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
     engrot=getknr(rigid,comm)
 
-  ! update thermo%chi_t to 1/2*tstep
+    ! update thermo%chi_t to 1/2*tstep
 
     thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
-  ! update chi(=thermo%cint) to 3/4*tstep
+    ! update chi(=thermo%cint) to 3/4*tstep
 
     thermo%cint=thermo%cint + hstep*thermo%chi_t
 
-  ! thermostat the velocities to 1*tstep
+    ! thermostat the velocities to 1*tstep
 
     scale=Exp(-tstep*thermo%chi_t)
     Do j=1,nfree
-       i=lstfre(j)
+      i=lstfre(j)
 
-       vxx(i)=scale*vxx(i)
-       vyy(i)=scale*vyy(i)
-       vzz(i)=scale*vzz(i)
+      vxx(i)=scale*vxx(i)
+      vyy(i)=scale*vyy(i)
+      vzz(i)=scale*vzz(i)
     End Do
 
     Do irgd=1,rigid%n_types
-       rigid%vxx(irgd)=scale*rigid%vxx(irgd)
-       rigid%vyy(irgd)=scale*rigid%vyy(irgd)
-       rigid%vzz(irgd)=scale*rigid%vzz(irgd)
+      rigid%vxx(irgd)=scale*rigid%vxx(irgd)
+      rigid%vyy(irgd)=scale*rigid%vyy(irgd)
+      rigid%vzz(irgd)=scale*rigid%vzz(irgd)
 
-       rigid%oxx(irgd)=scale*rigid%oxx(irgd)
-       rigid%oyy(irgd)=scale*rigid%oyy(irgd)
-       rigid%ozz(irgd)=scale*rigid%ozz(irgd)
+      rigid%oxx(irgd)=scale*rigid%oxx(irgd)
+      rigid%oyy(irgd)=scale*rigid%oyy(irgd)
+      rigid%ozz(irgd)=scale*rigid%ozz(irgd)
     End Do
 
-  ! thermostat the energy consequently
+    ! thermostat the energy consequently
 
     engke=engke*scale**2
     engrot=engrot*scale**2
 
-  ! update thermo%chi_t to full (2/2)*tstep
+    ! update thermo%chi_t to full (2/2)*tstep
 
     thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
 
-  ! update chi(=thermo%cint) to 4/4*tstep
+    ! update chi(=thermo%cint) to 4/4*tstep
 
     thermo%cint=thermo%cint + qstep*thermo%chi_t
 

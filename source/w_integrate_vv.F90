@@ -20,7 +20,7 @@
 
             Call nve_0_vv                   &
          (isw,lvar,mndis,mxdis,mxstp,tstep, &
-         stat%strkin,stat%engke,                      &
+              stat%strkin,stat%engke,thermo,                 &
          cshell,cons,pmf,stat,domain,tmr,parts,comm)
 
          Else If (thermo%ensemble == ENS_NVT_EVANS) Then
@@ -30,7 +30,7 @@
             Call nvt_e0_vv                  &
          (isw,lvar,mndis,mxdis,mxstp,tstep, &
          thermo%chi_t,                              &
-         stat%strkin,stat%engke,                      &
+              stat%strkin,stat%engke,thermo,                      &
          cshell,cons,pmf,stat,domain,tmr,parts,comm)
 
          Else If (thermo%ensemble == ENS_NVT_LANGEVIN) Then
@@ -205,7 +205,7 @@
               Call nve_1_vv                   &
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
-           stat%strcom,stat%vircom,cshell,cons,pmf,&
+                stat%strcom,stat%vircom,thermo,cshell,cons,pmf,&
            stat,rigid,domain,tmr,parts,comm)
 
            Else If (thermo%ensemble == ENS_NVT_EVANS) Then
@@ -216,7 +216,7 @@
            (isw,lvar,mndis,mxdis,mxstp,tstep, &
            thermo%chi_t,                              &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
-           stat%strcom,stat%vircom,cshell,cons,pmf,&
+                stat%strcom,stat%vircom,thermo,cshell,cons,pmf,&
            stat,rigid,domain,tmr,parts,comm)
 
            Else If (thermo%ensemble == ENS_NVT_LANGEVIN) Then

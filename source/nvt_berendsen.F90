@@ -62,9 +62,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:9),i
     Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
@@ -97,13 +95,13 @@ Contains
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! set number of constraint+pmf shake iterations
 
-       If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
     End If
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
@@ -183,7 +181,7 @@ Contains
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
             lstitr,stat,pmf,cons,domain,tmr,parts,comm)
        End If
 
@@ -219,7 +217,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! integrate and apply nvt_b0_scl thermostat - full step
@@ -300,10 +298,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true. , &
-                               unsafe = .false.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:14),matms,i,j,i1,i2, &
                                irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,rstep
@@ -364,17 +359,17 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! set number of constraint+pmf shake iterations
 
-       If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
 
-  ! unsafe positioning due to possibly locally shared RBs
+  ! thermo%unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(domain%map == comm%idnode))
+       thermo%unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -508,7 +503,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
           lstitr,stat,pmf,cons,domain,tmr,parts,comm)
        End If
 
@@ -653,7 +648,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! DD bound positions
 
-                      If (unsafe) Then
+                      If (thermo%unsafe) Then
                          x(1)=parts(i)%xxx-xxt(i)
                          y(1)=parts(i)%yyy-yyt(i)
                          z(1)=parts(i)%zzz-zzt(i)
@@ -718,7 +713,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial

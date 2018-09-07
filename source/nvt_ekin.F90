@@ -15,7 +15,7 @@ Module nvt_ekin
   Use errors_warnings, Only : error,info
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep
+  Use thermostat, Only : adjust_timestep,thermostat_type
   Use core_shell, Only : core_shell_type
   Use particle,   Only : corePart
   Implicit None
@@ -37,18 +37,18 @@ Module nvt_ekin
 Contains
 
   Subroutine nvt_e0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,chit,strkin,engke, &
-             cshell,cons,pmf,stat,domain,tmr,parts,comm)
+    thermo,cshell,cons,pmf,stat,domain,tmr,parts,comm)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for integrating newtonian equations of motion in
-  ! molecular dynamics - velocity verlet with Gaussian temperature
-  ! constraints (Ekin conservation, symplectic)
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov august 2016
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for integrating newtonian equations of motion in
+    ! molecular dynamics - velocity verlet with Gaussian temperature
+    ! constraints (Ekin conservation, symplectic)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov august 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,           Intent( In    ) :: isw
     Logical,           Intent( In    ) :: lvar
@@ -56,6 +56,7 @@ Contains
     Real( Kind = wp ), Intent( InOut ) :: tstep
     Real( Kind = wp ), Intent(   Out ) :: chit
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
@@ -66,9 +67,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:9),i
     Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp
@@ -99,13 +98,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! set number of constraint+pmf shake iterations
 
-       If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
     End If
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
@@ -189,7 +188,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
           lstitr,stat,pmf,cons,domain,tmr,parts,comm)
        End If
 
@@ -233,7 +232,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! integrate and apply nvt_e0_scl thermostat - half a step
@@ -263,19 +262,20 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   End Subroutine nvt_e0_vv
 
   Subroutine nvt_e1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,chit,strkin,strknf, &
-      strknt,engke,engrot,strcom,vircom,cshell,cons,pmf,stat,rigid,domain,tmr,parts,comm)
+    strknt,engke,engrot,strcom,vircom,&
+    thermo,cshell,cons,pmf,stat,rigid,domain,tmr,parts,comm)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for integrating newtonian and rotational, singled
-  ! RBs, equations of motion in molecular dynamics
-  ! - velocity verlet with Gaussian temperature constraints
-  ! (Ekin conservation, symplectic)
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov august 2016
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for integrating newtonian and rotational, singled
+    ! RBs, equations of motion in molecular dynamics
+    ! - velocity verlet with Gaussian temperature constraints
+    ! (Ekin conservation, symplectic)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov august 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,           Intent( In    ) :: isw
     Logical,           Intent( In    ) :: lvar
@@ -283,8 +283,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ), Intent( InOut ) :: tstep
     Real( Kind = wp ), Intent(   Out ) :: chit
     Real( Kind = wp ), Intent( InOut ) :: strkin(1:9),engke, &
-                                          strknf(1:9),strknt(1:9),engrot
+      strknf(1:9),strknt(1:9),engrot
     Real( Kind = wp ), Intent( InOut ) :: strcom(1:9),vircom
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
@@ -296,10 +297,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true. , &
-                               unsafe = .false.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:16),matms,i,j,i1,i2, &
                                irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,rstep
@@ -366,17 +364,17 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! set number of constraint+pmf shake iterations
 
-       If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
 
-  ! unsafe positioning due to possibly locally shared RBs
+  ! thermo%unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(domain%map == comm%idnode))
+       thermo%unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -602,7 +600,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
           lstitr,stat,pmf,cons,domain,tmr,parts,comm)
        End If
 
@@ -706,7 +704,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! DD bound positions
 
-                      If (unsafe) Then
+                      If (thermo%unsafe) Then
                          x(1)=parts(i)%xxx-xxt(i)
                          y(1)=parts(i)%yyy-yyt(i)
                          z(1)=parts(i)%zzz-zzt(i)
@@ -785,7 +783,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial

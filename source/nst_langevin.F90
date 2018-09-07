@@ -82,12 +82,8 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxiter,mxkit,kit
     Integer                 :: fail(1:9),iter,i
-    Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
-    Real( Kind = wp ), Save :: temp,pmass
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: eta0(1:9),engke0
     Real( Kind = wp )       :: cell0(1:9),vzero,celprp(1:10)
@@ -108,7 +104,6 @@ Contains
     Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
     Real( Kind = wp ), Allocatable :: fxt(:),fyt(:),fzt(:)
 
-    Real( Kind = wp ), Allocatable, Save :: dens0(:)
     Character ( Len = 256 )        :: message
 
     fail=0
@@ -133,28 +128,28 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     qstep = 0.5_wp*hstep
     rstep = 1.0_wp/tstep
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! store initial values of volume, long range corrections and density
 
-       volm0   = volm
-       elrc0   = vdws%elrc
-       virlrc0 = vdws%vlrc
+       thermo%volm0   = volm
+       thermo%elrc0   = vdws%elrc
+       thermo%virlrc0 = vdws%vlrc
 
-       Allocate (dens0(1:mxatyp), Stat=fail(1))
+       Allocate (thermo%dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(message,'(a)') 'dens0 allocation failure'
+          Write(message,'(a)') 'thermo%dens0 allocation failure'
           Call error(0,message)
        End If
        Do i=1,sites%ntype_atom
-          dens0(i) = sites%dens(i)
+          thermo%dens0(i) = sites%dens(i)
        End Do
 
   ! Sort thermo%eta for thermo%iso>=1
-  ! Initialise and get h_z for thermo%iso>1
+  ! Initialise and get thermo%h_z for thermo%iso>1
 
-       h_z=0
+       thermo%h_z=0
        If      (thermo%iso == 1) Then
           thermo%eta(1:8) = 0.0_wp
        Else If (thermo%iso >  1) Then
@@ -162,29 +157,29 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           thermo%eta(6:8) = 0.0_wp
 
           Call dcell(cell,celprp)
-          h_z=celprp(9)
+          thermo%h_z=celprp(9)
        End If
 
   ! inertia parameter for barostat
 
-       temp  = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
-       pmass = ((2.0_wp*thermo%sigma + 3.0_wp*boltz*temp)/3.0_wp) / (2.0_wp*pi*thermo%tai)**2
+       thermo%temp_lang  = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
+       thermo%pmass = ((2.0_wp*thermo%sigma + 3.0_wp*boltz*thermo%temp_lang)/3.0_wp) / (2.0_wp*pi*thermo%tai)**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
-       mxiter=1
+       thermo%mxiter=1
        If (cons%megcon > 0 .or.  pmf%megpmf > 0) Then
-          mxkit=1
-          mxiter=mxiter+3
+          thermo%mxkit=1
+          thermo%mxiter=thermo%mxiter+3
        End If
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
 
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
        fpl=0.0_wp
        Call box_mueller_saru6(Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
-       tmp=Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)
+       tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
@@ -252,7 +247,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           stat%strpmf=0.0_wp
        End If
 
-       Do iter=1,mxiter
+       Do iter=1,thermo%mxiter
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -274,8 +269,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
           str1=str+fpl
           Call nst_h0_scl &
-             (1,hstep,degfre,pmass,thermo%tai,volm, &
-             h_z,str1,stress,       &
+             (1,hstep,degfre,thermo%pmass,thermo%tai,volm, &
+             thermo%h_z,str1,stress,       &
              vxx,vyy,vzz,strkin,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
@@ -325,15 +320,15 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-            Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+            Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
              lstitr,stat,pmf,cons,domain,tmr,parts,comm)
           End If
 
   ! restore original integration parameters as well as
-  ! velocities if iter < mxiter
+  ! velocities if iter < thermo%mxiter
   ! in the next iteration stat%strcon and stat%strpmf are freshly new
 
-          If (iter < mxiter) Then
+          If (iter < thermo%mxiter) Then
              volm=vzero
              thermo%eta =eta0
              engke=engke0
@@ -386,18 +381,18 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! adjust long range corrections and number density
 
-       tmp=(volm0/volm)
-       vdws%elrc=elrc0*tmp
-       vdws%vlrc=virlrc0*tmp
+       tmp=(thermo%volm0/volm)
+       vdws%elrc=thermo%elrc0*tmp
+       vdws%vlrc=thermo%virlrc0*tmp
        Do i=1,sites%ntype_atom
-          sites%dens(i)=dens0(i)*tmp
+          sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
-  ! get h_z for thermo%iso>1
+  ! get thermo%h_z for thermo%iso>1
 
        If (thermo%iso > 1) Then
           Call dcell(cell,celprp)
-          h_z=celprp(9)
+          thermo%h_z=celprp(9)
        End If
 
   ! second stage of velocity verlet algorithm
@@ -407,11 +402,11 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
 
        fpl=0.0_wp
        Call box_mueller_saru6(Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
-       tmp=Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)
+       tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
@@ -431,7 +426,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! update kinetic energy
@@ -458,8 +453,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
        str1=str+fpl
        Call nst_h0_scl &
-             (1,hstep,degfre,pmass,thermo%tai,volm, &
-             h_z,str1,stress,       &
+             (1,hstep,degfre,thermo%pmass,thermo%tai,volm, &
+             thermo%h_z,str1,stress,       &
              vxx,vyy,vzz,strkin,engke,thermo,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
@@ -478,7 +473,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*pmass*tmp + thermo%press*volm
+       consv = 0.5_wp*thermo%pmass*tmp + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -573,14 +568,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true. , &
-                               unsafe = .false.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxiter,mxkit,kit
     Integer                 :: fail(1:14),matms,iter,i,j,i1,i2, &
                                irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ), Save :: volm0,elrc0,virlrc0,h_z
-    Real( Kind = wp ), Save :: pmass,temp
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: eta0(1:9),engke0,engrot0,engknf,engknt
     Real( Kind = wp )       :: cell0(1:9),vzero,celprp(1:10)
@@ -615,7 +605,6 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ), Allocatable :: rgdvxt(:),rgdvyt(:),rgdvzt(:)
     Real( Kind = wp ), Allocatable :: rgdoxt(:),rgdoyt(:),rgdozt(:)
 
-    Real( Kind = wp ), Allocatable, Save :: dens0(:)
     Character ( Len = 256 )        :: message
 
 
@@ -658,28 +647,28 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     qstep = 0.5_wp*hstep
     rstep = 1.0_wp/tstep
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! store initial values of volume, long range corrections and density
 
-       volm0   = volm
-       elrc0   = vdws%elrc
-       virlrc0 = vdws%vlrc
+       thermo%volm0   = volm
+       thermo%elrc0   = vdws%elrc
+       thermo%virlrc0 = vdws%vlrc
 
-       Allocate (dens0(1:mxatyp), Stat=fail(1))
+       Allocate (thermo%dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(message,'(a)') 'dens0 allocation failure'
+          Write(message,'(a)') 'thermo%dens0 allocation failure'
           Call error(0,message)
        End If
        Do i=1,sites%ntype_atom
-          dens0(i) = sites%dens(i)
+          thermo%dens0(i) = sites%dens(i)
        End Do
 
   ! Sort thermo%eta for thermo%iso>=1
-  ! Initialise and get h_z for thermo%iso>1
+  ! Initialise and get thermo%h_z for thermo%iso>1
 
-       h_z=0
+       thermo%h_z=0
        If      (thermo%iso == 1) Then
           thermo%eta(1:8) = 0.0_wp
        Else If (thermo%iso >  1) Then
@@ -687,33 +676,33 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
           thermo%eta(6:8) = 0.0_wp
 
           Call dcell(cell,celprp)
-          h_z=celprp(9)
+          thermo%h_z=celprp(9)
        End If
 
   ! inertia parameter for barostat
 
-       temp  = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
-       pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*temp / (2.0_wp*pi*thermo%tai)**2
+       thermo%temp_lang  = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
+       thermo%pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*thermo%temp_lang / (2.0_wp*pi*thermo%tai)**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
-       mxiter=1
+       thermo%mxiter=1
        If (cons%megcon > 0 .or.  pmf%megpmf > 0) Then
-          mxkit=1
-          mxiter=mxiter+3
+          thermo%mxkit=1
+          thermo%mxiter=thermo%mxiter+3
        End If
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
 
-  ! unsafe positioning due to possibly locally shared RBs
+  ! thermo%unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(domain%map == comm%idnode))
+       thermo%unsafe=(Any(domain%map == comm%idnode))
 
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
        fpl=0.0_wp
        Call box_mueller_saru6(Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
-       tmp=Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)
+       tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
@@ -842,7 +831,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
           stat%strpmf=0.0_wp
        End If
 
-       Do iter=1,mxiter
+       Do iter=1,thermo%mxiter
 
   ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -876,8 +865,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! augment str to include the random tensorial force on the barostat
 
           str1=str+fpl
-          Call nst_h1_scl(1,hstep,degfre,degrot,pmass,thermo%tai,volm,  &
-             h_z,str1,stress,strcom,        &
+          Call nst_h1_scl(1,hstep,degfre,degrot,thermo%pmass,thermo%tai,volm,  &
+             thermo%h_z,str1,stress,strcom,        &
              vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
@@ -944,15 +933,15 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-           Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+            Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
              lstitr,stat,pmf,cons,domain,tmr,parts,comm)
           End If
 
   ! restore original integration parameters as well as
-  ! velocities if iter < mxiter
+  ! velocities if iter < thermo%mxiter
   ! in the next iteration stat%strcon and stat%strpmf are freshly new
 
-          If (iter < mxiter) Then
+          If (iter < thermo%mxiter) Then
              volm=vzero
              thermo%eta =eta0
              engke=engke0
@@ -1149,7 +1138,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! DD bound positions
 
-                      If (unsafe) Then
+                      If (thermo%unsafe) Then
                          vxx(i)=xxt(i)*aaa(1)+yyt(i)*aaa(2)+zzt(i)*aaa(3)
                          vyy(i)=xxt(i)*aaa(2)+yyt(i)*aaa(5)+zzt(i)*aaa(6)
                          vzz(i)=xxt(i)*aaa(3)+yyt(i)*aaa(6)+zzt(i)*aaa(9)
@@ -1172,7 +1161,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
                       x(1)=rigid%xxx(irgd)-rgdxxt(irgd)
                       y(1)=rigid%yyy(irgd)-rgdyyt(irgd)
                       z(1)=rigid%zzz(irgd)-rgdzzt(irgd)
-                      If (unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
+                      If (thermo%unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
                       parts(i)%xxx=xxt(i)+x(1)
                       parts(i)%yyy=yyt(i)+y(1)
                       parts(i)%zzz=zzt(i)+z(1)
@@ -1195,7 +1184,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
                    x(1)=rigid%xxx(irgd)-rgdxxt(irgd)
                    y(1)=rigid%yyy(irgd)-rgdyyt(irgd)
                    z(1)=rigid%zzz(irgd)-rgdzzt(irgd)
-                   If (unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
+                   If (thermo%unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
                    parts(i)%xxx=xxt(i)+x(1)
                    parts(i)%yyy=yyt(i)+y(1)
                    parts(i)%zzz=zzt(i)+z(1)
@@ -1261,18 +1250,18 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! adjust long range corrections and number density
 
-       tmp=(volm0/volm)
-       vdws%elrc=elrc0*tmp
-       vdws%vlrc=virlrc0*tmp
+       tmp=(thermo%volm0/volm)
+       vdws%elrc=thermo%elrc0*tmp
+       vdws%vlrc=thermo%virlrc0*tmp
        Do i=1,sites%ntype_atom
-          sites%dens(i)=dens0(i)*tmp
+          sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
-  ! get h_z for thermo%iso>1
+  ! get thermo%h_z for thermo%iso>1
 
        If (thermo%iso > 1) Then
           Call dcell(cell,celprp)
-          h_z=celprp(9)
+          thermo%h_z=celprp(9)
        End If
 
   ! second stage of velocity verlet algorithm
@@ -1282,7 +1271,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       Call langevin_forces(nstep,temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
        If (rigid%share)Then
          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
            rigid%map_shared,fxl,fyl,fzl,domain,comm)
@@ -1290,7 +1279,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
        fpl=0.0_wp
        Call box_mueller_saru6(Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
-       tmp=Sqrt(2.0_wp*thermo%tai*boltz*temp*pmass*rstep)
+       tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
        fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
@@ -1312,7 +1301,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial
@@ -1522,8 +1511,8 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
        str1=str+fpl
        Call nst_h1_scl &
-             (1,hstep,degfre,degrot,pmass,thermo%tai,volm,  &
-             h_z,str1,stress,strcom,        &
+             (1,hstep,degfre,degrot,thermo%pmass,thermo%tai,volm,  &
+             thermo%h_z,str1,stress,strcom,        &
              vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,comm)
 
   ! integrate and apply Langevin thermostat - 1/4 step
@@ -1556,7 +1545,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*pmass*tmp + thermo%press*volm
+       consv = 0.5_wp*thermo%pmass*tmp + thermo%press*volm
 
   ! remove system centre of mass velocity
 
