@@ -114,6 +114,18 @@ Module thermostat
     Logical, Public :: l_zero
     !> Zero temperature regaussing frequency
     Integer, Public :: freq_zero
+
+    Logical, Public :: newjob = .true.
+    Logical, Public :: newjob_nst_scl = .true.
+    Logical, Public :: newjob_npt_scl = .true.
+    Integer, Public :: mxiter,mxkit,kit
+    Logical, Public :: unsafe = .false.
+    Real( Kind = wp ), Public :: volm0,elrc0,virlrc0,h_z,cell0(1:9)
+    Real( Kind = wp ), Public :: qmass,ceng,pmass,chip0,rf,factor,temp_lang
+    Real( Kind = wp ), Allocatable, Public :: dens0(:)
+
+
+
   Contains
     Private
 
@@ -193,6 +205,9 @@ Contains
     End If
     If (Allocated(thermo%sigdpd)) Then
       Deallocate(thermo%sigdpd)
+    End If
+    If (Allocated(thermo%dens0)) Then
+      Deallocate(thermo%dens0)
     End If
   End Subroutine cleanup
 

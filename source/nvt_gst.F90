@@ -14,11 +14,10 @@ Module nvt_gst
   Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use numerics, Only : images,box_mueller_saru2
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only :  timer_type
-  Use thermostat, Only : adjust_timestep
+  Use thermostat, Only : adjust_timestep,thermostat_type
   Use core_shell, Only : core_shell_type
   Implicit None
 
@@ -68,11 +67,8 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:9),i
-    Real( Kind = wp ), Save :: qmass,ceng
     Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: chitdr,cintdr
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp
@@ -103,18 +99,18 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
-       ceng  = 2.0_wp*thermo%sigma
+       thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       thermo%ceng  = 2.0_wp*thermo%sigma
 
   ! set number of constraint+pmf shake iterations
 
-       If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
     End If
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
@@ -184,7 +180,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
        Call nvt_g0_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,engke,thermo,comm)
 
   ! update velocity and position
@@ -205,7 +201,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
           lstitr,stat,pmf,cons,domain,tmr,parts,comm)
        End If
 
@@ -252,18 +248,18 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
        Call nvt_g0_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,engke,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*thermo%chi_t**2 + ceng*thermo%cint
+       consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + thermo%ceng*thermo%cint
 
   ! kinetic contribution to stress tensor
 
@@ -332,13 +328,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true. , &
-                               unsafe = .false.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:14),matms,i,j,i1,i2, &
                                irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ), Save :: qmass,ceng
     Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: chitdr,cintdr
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp
@@ -396,22 +388,22 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! inertia parameter for Nose-Hoover thermostat
 
-       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
-       ceng  = 2.0_wp*thermo%sigma
+       thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       thermo%ceng  = 2.0_wp*thermo%sigma
 
   ! set number of constraint+pmf shake iterations
 
-       If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
 
-  ! unsafe positioning due to possibly locally shared RBs
+  ! thermo%unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(domain%map == comm%idnode))
+       thermo%unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -533,7 +525,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
        Call nvt_g1_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                                                &
              engke,engrot,thermo,rigid,comm)
 
@@ -557,7 +549,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! SHAKE procedures
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
           lstitr,stat,pmf,cons,domain,tmr,parts,comm)
        End If
 
@@ -702,7 +694,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! DD bound positions
 
-                      If (unsafe) Then
+                      If (thermo%unsafe) Then
                          x(1)=parts(i)%xxx-xxt(i)
                          y(1)=parts(i)%yyy-yyt(i)
                          z(1)=parts(i)%zzz-zzt(i)
@@ -785,7 +777,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial
@@ -927,13 +919,13 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
        Call nvt_g1_scl &
-             (hstep,degfre,isw,nstep,ceng,qmass,0.0_wp,0.0_wp, &
+             (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                                                &
              engke,engrot,thermo,rigid,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*thermo%chi_t**2 + ceng*thermo%cint
+       consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + thermo%ceng*thermo%cint
 
   ! update kinetic energy and stress
 

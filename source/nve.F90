@@ -16,7 +16,7 @@ Module nve
   Use errors_warnings, Only : error,info
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep
+  Use thermostat, Only : adjust_timestep,thermostat_type
   Use core_shell, Only : core_shell_type
   Implicit none
 
@@ -27,8 +27,8 @@ Module nve
 Contains
 
   Subroutine nve_0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
-      strkin,engke,                      &
-      cshell,cons,pmf,stat,domain,tmr,parts,comm)
+    strkin,engke,thermo,                      &
+    cshell,cons,pmf,stat,domain,tmr,parts,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -45,6 +45,7 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
@@ -54,9 +55,7 @@ Contains
     Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Logical,           Save :: newjob = .true.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:9),i
     Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp
@@ -86,13 +85,13 @@ Contains
     End If
 
 
-    If (newjob) Then
-      newjob = .false.
+    If (thermo%newjob) Then
+      thermo%newjob = .false.
 
       ! set number of constraint+pmf shake iterations
 
-      If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-      If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+      If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+      If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
     End If
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
@@ -171,7 +170,7 @@ Contains
 
       ! SHAKE procedures
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
           lstitr,stat,pmf,cons,domain,tmr,parts,comm)
       End If
 
@@ -204,7 +203,7 @@ Contains
       ! apply velocity corrections to bond and PMF constraints
 
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+        Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
       End If
 
       ! update kinetic energy and stress
@@ -232,8 +231,8 @@ Contains
 
   Subroutine nve_1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
       strkin,strknf,strknt,engke,engrot, &
-      strcom,vircom,cshell,cons,pmf,stat,& 
-      rigid,domain,tmr,parts,comm)
+    strcom,vircom,thermo,cshell,cons,pmf,stat,& 
+    rigid,domain,tmr,parts,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -251,8 +250,9 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
     Real( Kind = wp ),  Intent( InOut ) :: strkin(1:9),engke, &
-                                           strknf(1:9),strknt(1:9),engrot
+      strknf(1:9),strknt(1:9),engrot
     Real( Kind = wp ),  Intent( InOut ) :: strcom(1:9),vircom
+    Type( thermostat_type), Intent( InOut ) :: thermo
     Type( stats_type), Intent( InOut ) :: stat
     Type( core_shell_type), Intent( InOut ) :: cshell
     Type( constraints_type), Intent( InOut ) :: cons
@@ -264,10 +264,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical,           Save :: newjob = .true. , &
-      unsafe = .false.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxkit,kit
     Integer                 :: fail(1:14),matms,i,j,i1,i2, &
       irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,rstep
@@ -326,17 +323,17 @@ Contains
     End If
 
 
-    If (newjob) Then
-      newjob = .false.
+    If (thermo%newjob) Then
+      thermo%newjob = .false.
 
       ! set number of constraint+pmf shake iterations
 
-      If (cons%megcon > 0 .or.  pmf%megpmf > 0) mxkit=1
-      If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+      If (cons%megcon > 0 .or.  pmf%megpmf > 0) thermo%mxkit=1
+      If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
 
-      ! unsafe positioning due to possibly locally shared RBs
+      ! thermo%unsafe positioning due to possibly locally shared RBs
 
-      unsafe=(Any(domain%map == comm%idnode))
+      thermo%unsafe=(Any(domain%map == comm%idnode))
     End If
 
     ! set matms
@@ -471,7 +468,7 @@ Contains
 
       ! SHAKE procedures
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
           lstitr,stat,pmf,cons,domain,tmr,parts,comm)
       End If
 
@@ -616,7 +613,7 @@ Contains
 
                 ! DD bound positions
 
-                If (unsafe) Then
+                If (thermo%unsafe) Then
                   x(1)=parts(i)%xxx-xxt(i)
                   y(1)=parts(i)%yyy-yyt(i)
                   z(1)=parts(i)%zzz-zzt(i)
@@ -682,7 +679,7 @@ Contains
       ! apply velocity corrections to bond and PMF constraints
 
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+        Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
       End If
 
       ! Get RB COM stress and virial

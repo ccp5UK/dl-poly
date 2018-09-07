@@ -74,12 +74,8 @@ Contains
     Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Logical,           Save :: newjob = .true.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxiter,mxkit,kit
     Integer                 :: fail(1:9),iter,i
-    Real( Kind = wp ), Save :: cell0(1:9),volm0,elrc0,virlrc0
-    Real( Kind = wp ), Save :: qmass,ceng,pmass
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: chit0,cint0,chip0
     Real( Kind = wp )       :: vzero
@@ -95,7 +91,6 @@ Contains
     Real( Kind = wp ), Allocatable :: vxt(:),vyt(:),vzt(:)
     Real( Kind = wp ), Allocatable :: fxt(:),fyt(:),fzt(:)
 
-    Real( Kind = wp ), Allocatable, Save :: dens0(:)
     Character ( Len = 256 )  :: message
 
 
@@ -115,40 +110,40 @@ Contains
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! store initial values of volume, long range corrections and density
 
-       cell0   = cell
-       volm0   = volm
-       elrc0   = vdws%elrc
-       virlrc0 = vdws%vlrc
+       thermo%cell0   = cell
+       thermo%volm0   = volm
+       thermo%elrc0   = vdws%elrc
+       thermo%virlrc0 = vdws%vlrc
 
-       Allocate (dens0(1:mxatyp), Stat=fail(1))
+       Allocate (thermo%dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(message,'(a)') 'dens0 allocation failure'
+          Write(message,'(a)') 'thermo%dens0 allocation failure'
           Call error(0,message)
        End If
        Do i=1,sites%ntype_atom
-          dens0(i) = sites%dens(i)
+          thermo%dens0(i) = sites%dens(i)
        End Do
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
        tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
-       ceng  = 2.0_wp*thermo%sigma + boltz*tmp
-       pmass = (2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp)*thermo%tau_p**2
+       thermo%ceng  = 2.0_wp*thermo%sigma + boltz*tmp
+       thermo%pmass = (2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp)*thermo%tau_p**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
-       mxiter=1
+       thermo%mxiter=1
        If (cons%megcon > 0 .or.  pmf%megpmf > 0) Then
-          mxkit=1
-          mxiter=mxiter+3
+          thermo%mxkit=1
+          thermo%mxiter=thermo%mxiter+3
        End If
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
     End If
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
@@ -214,12 +209,12 @@ Contains
           stat%strpmf=0.0_wp
        End If
 
-       Do iter=1,mxiter
+       Do iter=1,thermo%mxiter
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
           Call nvt_h0_scl &
-             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
              vxx,vyy,vzz,engke,thermo,comm)
 
   ! constraint+pmf virial and stress
@@ -230,13 +225,13 @@ Contains
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
           Call npt_h0_scl &
-             (1,hstep,degfre,pmass,thermo%chi_t,volm,vir,virtot, &
+             (1,hstep,degfre,thermo%pmass,thermo%chi_t,volm,vir,virtot, &
              vxx,vyy,vzz,engke,stat,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
           Call nvt_h0_scl &
-             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
              vxx,vyy,vzz,engke,thermo,comm)
 
   ! update velocities
@@ -256,8 +251,8 @@ Contains
 
   ! scale cell vectors - isotropic
 
-          scale=(volm/volm0)**(1.0_wp/3.0_wp)
-          cell=cell0*scale
+          scale=(volm/thermo%volm0)**(1.0_wp/3.0_wp)
+          cell=thermo%cell0*scale
 
   ! update positions
 
@@ -273,15 +268,15 @@ Contains
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-            Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+            Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
              lstitr,stat,pmf,cons,domain,tmr,parts,comm)
           End If
 
   ! restore original integration parameters as well as
-  ! velocities if iter < mxiter
+  ! velocities if iter < thermo%mxiter
   ! in the next iteration stat%vircon and stat%virpmf are freshly new
 
-          If (iter < mxiter) Then
+          If (iter < thermo%mxiter) Then
              volm=vzero
              thermo%chi_t=chit0
              thermo%cint=cint0
@@ -327,11 +322,11 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! adjust long range corrections and number density
 
-       tmp=(volm0/volm)
-       vdws%elrc=elrc0*tmp
-       vdws%vlrc=virlrc0*tmp
+       tmp=(thermo%volm0/volm)
+       vdws%elrc=thermo%elrc0*tmp
+       vdws%vlrc=thermo%virlrc0*tmp
        Do i=1,sites%ntype_atom
-          sites%dens(i)=dens0(i)*tmp
+          sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
   ! second stage of velocity verlet algorithm
@@ -353,13 +348,13 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
        Call nvt_h0_scl &
-             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
              vxx,vyy,vzz,engke,thermo,comm)
 
   ! constraint+pmf virial and stress
@@ -370,18 +365,19 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply npt_h0_scl barostat - 1/2 step
 
        Call npt_h0_scl &
-             (1,hstep,degfre,pmass,thermo%chi_t,volm,vir,virtot, &
+             (1,hstep,degfre,thermo%pmass,thermo%chi_t,volm,vir,virtot, &
              vxx,vyy,vzz,engke,stat,thermo)
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
        Call nvt_h0_scl &
-             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
              vxx,vyy,vzz,engke,thermo,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*thermo%chi_t**2 + 0.5_wp*pmass*thermo%chi_p**2 + ceng*thermo%cint + thermo%press*volm
+       consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + 0.5_wp*thermo%pmass*thermo%chi_p**2 &
+         + thermo%ceng*thermo%cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
@@ -474,14 +470,9 @@ Call pmf%deallocate_work()
     Type( corePart ),   Intent( InOut ) :: parts(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Logical,           Save :: newjob = .true. , &
-                               unsafe = .false.
     Logical                 :: safe,lcol,lfst
-    Integer,           Save :: mxiter,mxkit,kit
     Integer                 :: fail(1:14),matms,iter,i,j,i1,i2, &
                                irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ), Save :: cell0(1:9),volm0,elrc0,virlrc0
-    Real( Kind = wp ), Save :: qmass,ceng,pmass
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: chit0,cint0,chip0
     Real( Kind = wp )       :: czero(1:9),vzero
@@ -508,7 +499,6 @@ Call pmf%deallocate_work()
     Real( Kind = wp ), Allocatable :: rgdvxt(:),rgdvyt(:),rgdvzt(:)
     Real( Kind = wp ), Allocatable :: rgdoxt(:),rgdoyt(:),rgdozt(:)
 
-    Real( Kind = wp ), Allocatable, Save :: dens0(:)
     Character ( Len = 256 )  ::  message
 
     fail=0
@@ -544,44 +534,44 @@ Call pmf%allocate_work()
     End If
 
 
-    If (newjob) Then
-       newjob = .false.
+    If (thermo%newjob) Then
+       thermo%newjob = .false.
 
   ! store initial values of volume, long range corrections and density
 
-       cell0   = cell
-       volm0   = volm
-       elrc0   = vdws%elrc
-       virlrc0 = vdws%vlrc
+       thermo%cell0   = cell
+       thermo%volm0   = volm
+       thermo%elrc0   = vdws%elrc
+       thermo%virlrc0 = vdws%vlrc
 
-       Allocate (dens0(1:mxatyp), Stat=fail(1))
+       Allocate (thermo%dens0(1:mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
-          Write(message,'(a)') 'dens0 allocation failure'
+          Write(message,'(a)') 'thermo%dens0 allocation failure'
           Call error(0,message)
        End If
        Do i=1,sites%ntype_atom
-          dens0(i) = sites%dens(i)
+          thermo%dens0(i) = sites%dens(i)
        End Do
 
   ! inertia parameters for Nose-Hoover thermostat and barostat
 
-       qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
+       thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
        tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
-       ceng  = 2.0_wp*thermo%sigma + boltz*tmp
-       pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*tmp*thermo%tau_p**2
+       thermo%ceng  = 2.0_wp*thermo%sigma + boltz*tmp
+       thermo%pmass = (Real(degfre-degrot,wp) + 3.0_wp)*boltz*tmp*thermo%tau_p**2
 
   ! set number of constraint+pmf shake iterations and general iteration cycles
 
-       mxiter=1
+       thermo%mxiter=1
        If (cons%megcon > 0 .or.  pmf%megpmf > 0) Then
-          mxkit=1
-          mxiter=mxiter+3
+          thermo%mxkit=1
+          thermo%mxiter=thermo%mxiter+3
        End If
-       If (cons%megcon > 0 .and. pmf%megpmf > 0) mxkit=cons%max_iter_shake
+       If (cons%megcon > 0 .and. pmf%megpmf > 0) thermo%mxkit=cons%max_iter_shake
 
-  ! unsafe positioning due to possibly locally shared RBs
+  ! thermo%unsafe positioning due to possibly locally shared RBs
 
-       unsafe=(Any(domain%map == comm%idnode))
+       thermo%unsafe=(Any(domain%map == comm%idnode))
     End If
 
   ! set matms
@@ -700,12 +690,12 @@ Call pmf%allocate_work()
           stat%strpmf=0.0_wp
        End If
 
-       Do iter=1,mxiter
+       Do iter=1,thermo%mxiter
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
           Call nvt_h1_scl &
-             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
              vxx,vyy,vzz,                  &
              engke,engrot,thermo,rigid,comm)
 
@@ -717,13 +707,13 @@ Call pmf%allocate_work()
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
           Call npt_h1_scl &
-             (1,hstep,degfre,degrot,pmass,thermo%chi_t,volm,vir,virtot,vircom, &
+             (1,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,volm,vir,virtot,vircom, &
              vxx,vyy,vzz,engke,stat,rigid,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
           Call nvt_h1_scl &
-             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
              vxx,vyy,vzz,                  &
              engke,engrot,thermo,rigid,comm)
 
@@ -746,8 +736,8 @@ Call pmf%allocate_work()
 
   ! scale cell vectors - isotropic
 
-          scale=(volm/volm0)**(1.0_wp/3.0_wp)
-          cell=cell0*scale
+          scale=(volm/thermo%volm0)**(1.0_wp/3.0_wp)
+          cell=thermo%cell0*scale
 
   ! update position of FPs
 
@@ -765,15 +755,15 @@ Call pmf%allocate_work()
   ! SHAKE procedures
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-            Call apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,&
+            Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
              lstitr,stat,pmf,cons,domain,tmr,parts,comm)
           End If
 
   ! restore original integration parameters as well as
-  ! velocities if iter < mxiter
+  ! velocities if iter < thermo%mxiter
   ! in the next iteration stat%vircon and stat%virpmf are freshly new
 
-          If (iter < mxiter) Then
+          If (iter < thermo%mxiter) Then
              volm=vzero
              thermo%chi_t=chit0
              thermo%cint=cint0
@@ -940,7 +930,7 @@ Call pmf%allocate_work()
 
   ! DD bound positions
 
-                      If (unsafe) Then
+                      If (thermo%unsafe) Then
                          vxx(i)=scale*xxt(i)
                          vyy(i)=scale*yyt(i)
                          vzz(i)=scale*zzt(i)
@@ -963,7 +953,7 @@ Call pmf%allocate_work()
                       x(1)=rigid%xxx(irgd)-rgdxxt(irgd)
                       y(1)=rigid%yyy(irgd)-rgdyyt(irgd)
                       z(1)=rigid%zzz(irgd)-rgdzzt(irgd)
-                      If (unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
+                      If (thermo%unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
                       parts(i)%xxx=xxt(i)+x(1)
                       parts(i)%yyy=yyt(i)+y(1)
                       parts(i)%zzz=zzt(i)+z(1)
@@ -988,7 +978,7 @@ Call pmf%allocate_work()
                    x(1)=rigid%xxx(irgd)-rgdxxt(irgd)
                    y(1)=rigid%yyy(irgd)-rgdyyt(irgd)
                    z(1)=rigid%zzz(irgd)-rgdzzt(irgd)
-                   If (unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
+                   If (thermo%unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
                    parts(i)%xxx=xxt(i)+x(1)
                    parts(i)%yyy=yyt(i)+y(1)
                    parts(i)%zzz=zzt(i)+z(1)
@@ -1045,11 +1035,11 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! adjust long range corrections and number density
 
-       tmp=(volm0/volm)
-       vdws%elrc=elrc0*tmp
-       vdws%vlrc=virlrc0*tmp
+       tmp=(thermo%volm0/volm)
+       vdws%elrc=thermo%elrc0*tmp
+       vdws%vlrc=thermo%virlrc0*tmp
        Do i=1,sites%ntype_atom
-          sites%dens(i)=dens0(i)*tmp
+          sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
   ! second stage of velocity verlet algorithm
@@ -1073,7 +1063,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
        End If
 
   ! Get RB COM stress and virial
@@ -1215,7 +1205,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
        Call nvt_h1_scl &
-             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
              vxx,vyy,vzz,                  &
              engke,engrot,thermo,rigid,comm)
 
@@ -1227,19 +1217,20 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply npt_h1_scl barostat - 1/2 step
 
        Call npt_h1_scl &
-             (1,hstep,degfre,degrot,pmass,thermo%chi_t,volm,vir,virtot,vircom, &
+             (1,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,volm,vir,virtot,vircom, &
              vxx,vyy,vzz,engke,stat,rigid,thermo)
 
   ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
        Call nvt_h1_scl &
-             (qstep,ceng,qmass,pmass,thermo%chi_p, &
+             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
              vxx,vyy,vzz,                  &
              engke,engrot,thermo,rigid,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
-       consv = 0.5_wp*qmass*thermo%chi_t**2 + 0.5_wp*pmass*thermo%chi_p**2 + ceng*thermo%cint + thermo%press*volm
+       consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + 0.5_wp*thermo%pmass*thermo%chi_p**2 + &
+         thermo%ceng*thermo%cint + thermo%press*volm
 
   ! remove system centre of mass velocity
 
