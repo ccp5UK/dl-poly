@@ -815,7 +815,7 @@ Subroutine gauss_2(natms,vxx,vyy,vzz,comm)
 
 End Subroutine gauss_2
 
-Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
+Subroutine erfcgen(rcut,alpha,ewald_exclusion_grid,erc,fer)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -835,18 +835,18 @@ Subroutine erfcgen(rcut,alpha,mxgele,erc,fer)
   Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
   Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
 
-  Integer,                                  Intent( In    ) :: mxgele
+  Integer,                                  Intent( In    ) :: ewald_exclusion_grid
   Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha
-  Real( Kind = wp ), Dimension( 0:mxgele ), Intent(   Out ) :: erc,fer
+  Real( Kind = wp ), Dimension( 0:ewald_exclusion_grid ), Intent(   Out ) :: erc,fer
 
   Integer           :: i
   Real( Kind = wp ) :: drewd,exp1,rrr,rsq,tt
 
 ! look-up tables for real space part of ewald sum
 
-  drewd = rcut/Real(mxgele-4,wp)
+  drewd = rcut/Real(ewald_exclusion_grid-4,wp)
 
-  Do i=1,mxgele
+  Do i=1,ewald_exclusion_grid
      rrr = Real(i,wp)*drewd
      rsq = rrr*rrr
 

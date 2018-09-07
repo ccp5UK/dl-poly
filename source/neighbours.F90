@@ -7,7 +7,7 @@
 Module neighbours
   Use kinds, Only : wp,wi,li
   Use comms,   Only : comms_type,gcheck,gmax,gsum
-  Use setup,   Only : nrite,mxspl,mxatms,half_plus
+  Use setup,   Only : nrite,mxatms,half_plus
   Use domains,       Only : domains_type
   Use configuration,  Only : imcon,cell,natms,nlast,ltg,lfrzn
   Use core_shell,    Only : core_shell_type
@@ -85,13 +85,14 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !>
   !> Contrib   - I.J.Bush february 2014
-  Subroutine vnl_check(l_str,width,neigh,stat,domain,parts,comm)
+  Subroutine vnl_check(l_str,width,neigh,stat,domain,parts,bspline,comm)
     Logical,           Intent ( In    ) :: l_str
     Real( Kind = wp ), Intent ( InOut ) :: width
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( stats_type ), Intent( InOut) :: stat
     Type( domains_type ), Intent( In    ) :: domain
     Type( corePart ),   Intent ( InOut ) :: parts(:)
+    Integer( Kind = wi ), Intent( In    ) :: bspline
     Type( comms_type ), Intent ( InOut ) :: comm
 
     Logical, Save :: newstart=.true.
@@ -170,7 +171,7 @@ Contains
     ilz=Int(domain%nz_recip*celprp(9)/cut)
 
     tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
-    test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME) or 4% (w/o SPME)
+    test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, bspline > 0)                    ! 2% (w/ SPME) or 4% (w/o SPME)
     cut=Min(domain%nx_recip*celprp(7),domain%ny_recip*celprp(8),domain%nz_recip*celprp(9))-1.0e-6_wp ! domain size
 
     If (ilx*ily*ilz == 0) Then

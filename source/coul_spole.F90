@@ -3,7 +3,7 @@ Module coul_spole
   Use comms,           Only : comms_type
   Use configuration,   Only : natms,ltg
   Use particle,         Only : corePart
-  Use setup,           Only :  r4pie0, zero_plus, mxgele, nrite,sqrpi
+  Use setup,           Only :  r4pie0, zero_plus,  nrite,sqrpi
   Use errors_warnings, Only : error
   Use numerics,        Only : erfcgen
   Use neighbours,      Only : neighbours_type
@@ -206,14 +206,14 @@ Module coul_spole
 
   ! interpolation interval
 
-          drewd = neigh%cutoff/Real(mxgele-4,wp)
+          drewd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
   ! reciprocal of interpolation interval
 
           rdrewd = 1.0_wp/drewd
 
           fail=0
-          Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
+          Allocate (erc(0:electro%ewald_exclusion_grid),fer(0:electro%ewald_exclusion_grid), Stat=fail)
           If (fail > 0) Then
              Write(message,'(a)') 'coul_fscp_forces allocation failure'
              Call error(0,message)
@@ -221,12 +221,12 @@ Module coul_spole
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =   fer(mxgele-4)*neigh%cutoff
-          bb = -(erc(mxgele-4)+aa*neigh%cutoff)
+          aa =   fer(electro%ewald_exclusion_grid-4)*neigh%cutoff
+          bb = -(erc(electro%ewald_exclusion_grid-4)+aa*neigh%cutoff)
 
        Else
 
@@ -466,14 +466,14 @@ Module coul_spole
 
   ! interpolation interval
 
-          drewd = neigh%cutoff/Real(mxgele-4,wp)
+          drewd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
   ! reciprocal of interpolation interval
 
           rdrewd = 1.0_wp/drewd
 
           fail=0
-          Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
+          Allocate (erc(0:electro%ewald_exclusion_grid),fer(0:electro%ewald_exclusion_grid), Stat=fail)
           If (fail > 0) Then
              Write(message,'(a)') 'coul_fscp_forces allocation failure'
              Call error(0,message)
@@ -481,12 +481,12 @@ Module coul_spole
 
   ! generate error function complement tables for ewald sum
 
-          Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
+          Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,erc,fer)
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =   fer(mxgele-4)*neigh%cutoff
-          bb = -(erc(mxgele-4)+aa*neigh%cutoff)
+          aa =   fer(electro%ewald_exclusion_grid-4)*neigh%cutoff
+          bb = -(erc(electro%ewald_exclusion_grid-4)+aa*neigh%cutoff)
 
   ! Cutoff squared
 

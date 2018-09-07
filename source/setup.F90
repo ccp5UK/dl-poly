@@ -197,9 +197,7 @@ Module setup
 ! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
   Integer, Save ::                                              &
     mxatyp,mxtmls,                  &
-    mxspl,mxspl1,mxspl2,kmaxa,kmaxb,kmaxc,kmaxa1,kmaxb1,kmaxc1, &
     mxlshp,     &
-    mxgele,                                        &
     mxgrid,                                 &
     mxtana,mxgana,              &
     mxatms,mxatdm,                  &

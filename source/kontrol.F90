@@ -66,6 +66,7 @@ Module kontrol
                             ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
                             ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
                             ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
+  Use ewald, Only : ewald_type
   Implicit None
 
   Private
@@ -103,7 +104,7 @@ Subroutine read_control                                &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
            met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-           rdf,minim,mpoles,electro,tmr,comm)
+           rdf,minim,mpoles,electro,ewld,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -176,6 +177,7 @@ Subroutine read_control                                &
   Type( timer_type ),      Intent( InOut ) :: tmr
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( electrostatic_type ), Intent( InOut ) :: electro
+  Type( ewald_type ), Intent( InOut ) :: ewld
   Type( comms_type ),     Intent( InOut )  :: comm
 
 
@@ -1829,13 +1831,13 @@ Subroutine read_control                                &
 ! This is sorted in set_bounds -> scan_control
 
            Write(messages(1),'(a,1p,e12.4)') 'Ewald convergence parameter (A^-1) ',electro%alpha
-           Write(messages(2),'(a,3i5)') 'Ewald kmax1 kmax2 kmax3   (x2) ',kmaxa1,kmaxb1,kmaxc1
-           If (kmaxa /= kmaxa1 .or. kmaxb /= kmaxb1 .or. kmaxc /= kmaxc1) Then
-             Write(messages(3),'(a,3i5)') 'DaFT adjusted kmax values (x2) ',kmaxa,kmaxb,kmaxc
-             Write(messages(4),'(a,1p,i5)') 'B-spline interpolation order ',mxspl
+           Write(messages(2),'(a,3i5)') 'Ewald kmax1 kmax2 kmax3   (x2) ',ewld%fft_dim_a1,ewld%fft_dim_b1,ewld%fft_dim_c1
+           If (ewld%fft_dim_a /= ewld%fft_dim_a1 .or. ewld%fft_dim_b /= ewld%fft_dim_b1 .or. ewld%fft_dim_c /= ewld%fft_dim_c1) Then
+             Write(messages(3),'(a,3i5)') 'DaFT adjusted kmax values (x2) ',ewld%fft_dim_a,ewld%fft_dim_b,ewld%fft_dim_c
+             Write(messages(4),'(a,1p,i5)') 'B-spline interpolation order ',ewld%bspline
              Call info(messages,4,.true.)
            Else
-             Write(messages(3),'(a,1p,i5)') 'B-spline interpolation order ',mxspl
+             Write(messages(3),'(a,1p,i5)') 'B-spline interpolation order ',ewld%bspline
              Call info(messages,3,.true.)
            End If
 
@@ -3650,9 +3652,9 @@ Subroutine scan_control                                    &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                          &
-           nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1,cshell,stats,  &
+           nstfce,cshell,stats,  &
            thermo,green,devel,msd_data,met,pois,bond,angle, &
-           dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,comm)
+           dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3674,8 +3676,7 @@ Subroutine scan_control                                    &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: max_rigid,imcon
   Integer,           Intent( InOut ) :: imc_n
-  Integer,           Intent(   Out ) :: mxgana, &
-                                        nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1
+  Integer,           Intent(   Out ) :: mxgana, nstfce
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rbin
@@ -3698,13 +3699,14 @@ Subroutine scan_control                                    &
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( electrostatic_type ), Intent( InOut ) :: electro
+  Type( ewald_type ), Intent( InOut ) :: ewld
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
                             lrcut,lrpad,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word,word1,word2,akey
-  Integer                :: i,itmp,nstrun,mxspl2
+  Integer                :: i,itmp,nstrun,bspline_local
   Real( Kind = wp )      :: celprp(1:10),cut,eps0,fac,tol,tol1
 
   Integer,           Parameter :: mxspl_def = 8,        & ! default spline for SPME (4 & 6 possible)
@@ -3775,11 +3777,11 @@ Subroutine scan_control                                    &
 
 ! Ewald/Poisson Solver sum parameters defaults
 
-  mxspl = 0
+  ewld%bspline = 0
   electro%alpha = 0.0_wp
-  kmaxa1 = 0
-  kmaxb1 = 0
-  kmaxc1 = 0
+  ewld%fft_dim_a1 = 0
+  ewld%fft_dim_b1 = 0
+  ewld%fft_dim_c1 = 0
 
 ! default number of steps and expansion option
 
@@ -4459,7 +4461,7 @@ Subroutine scan_control                                    &
                  eps0 = Max(Min(eps0,0.5_wp),1.0e-20_wp)
 
                  Call get_word(record,word)
-                 mxspl = Abs(Nint(word_2_real(word)))
+                 ewld%bspline = Abs(Nint(word_2_real(word)))
 
                  tol = Sqrt(Abs(Log(eps0*neigh%cutoff)))
                  electro%alpha = Sqrt(Abs(Log(eps0*neigh%cutoff*tol)))/neigh%cutoff
@@ -4468,9 +4470,9 @@ Subroutine scan_control                                    &
                  fac = 1.0_wp
                  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) fac = 2.0_wp**(1.0_wp/3.0_wp)
 
-                 kmaxa1 = 2*Nint(0.25_wp + fac*celprp(7)*electro%alpha*tol1/pi)
-                 kmaxb1 = 2*Nint(0.25_wp + fac*celprp(8)*electro%alpha*tol1/pi)
-                 kmaxc1 = 2*Nint(0.25_wp + fac*celprp(9)*electro%alpha*tol1/pi)
+                 ewld%fft_dim_a1 = 2*Nint(0.25_wp + fac*celprp(7)*electro%alpha*tol1/pi)
+                 ewld%fft_dim_b1 = 2*Nint(0.25_wp + fac*celprp(8)*electro%alpha*tol1/pi)
+                 ewld%fft_dim_c1 = 2*Nint(0.25_wp + fac*celprp(9)*electro%alpha*tol1/pi)
 
 ! neigh%cutoff is needed directly for the SPME and it MUST exist
 
@@ -4482,20 +4484,20 @@ Subroutine scan_control                                    &
                  electro%alpha = Abs(word_2_real(word))
 
                  Call get_word(record,word)
-                 kmaxa1 = itmp*Nint(Abs(word_2_real(word)))
+                 ewld%fft_dim_a1 = itmp*Nint(Abs(word_2_real(word)))
 
                  Call get_word(record,word)
-                 kmaxb1 = itmp*Nint(Abs(word_2_real(word)))
+                 ewld%fft_dim_b1 = itmp*Nint(Abs(word_2_real(word)))
 
                  Call get_word(record,word)
-                 kmaxc1 = itmp*Nint(Abs(word_2_real(word)))
+                 ewld%fft_dim_c1 = itmp*Nint(Abs(word_2_real(word)))
 
                  Call get_word(record,word)
-                 mxspl = Nint(Abs(word_2_real(word)))
+                 ewld%bspline = Nint(Abs(word_2_real(word)))
 
 ! Sanity check for ill defined ewald sum parameters 1/8*2*2*2 == 1
 
-                 tol=electro%alpha*Real(kmaxa1,wp)*Real(kmaxa1,wp)*Real(kmaxa1,wp)
+                 tol=electro%alpha*Real(ewld%fft_dim_a1,wp)*Real(ewld%fft_dim_a1,wp)*Real(ewld%fft_dim_a1,wp)
                  If (Nint(tol) < 1) Call error(9)
 
 ! neigh%cutoff is not needed directly for the SPME but it's needed
@@ -4507,16 +4509,16 @@ Subroutine scan_control                                    &
 ! Get default spline order or one driven by multipolar sums if none is specified
 ! Only even order splines are allowed so pick the even=odd+1 if resulting in odd!!!
 
-              If (mxspl == 0) Then
-                 mxspl  = mxspl_def+mpoles%max_order
-                 mxspl2 = mxspl
+              If (ewld%bspline == 0) Then
+                 ewld%bspline  = mxspl_def+mpoles%max_order
+                 bspline_local = ewld%bspline
               Else
-                 mxspl  = Max(mxspl,mxspl_min)
-                 mxspl2 = mxspl+mpoles%max_order
-                 mxspl2 = 2*Ceiling(0.5_wp*Real(mxspl2,wp))
+                 ewld%bspline  = Max(ewld%bspline,mxspl_min)
+                 bspline_local = ewld%bspline+mpoles%max_order
+                 bspline_local = 2*Ceiling(0.5_wp*Real(bspline_local,wp))
               End If
-              mxspl=2*Ceiling(0.5_wp*Real(mxspl,wp))
-              mxspl=Max(mxspl,mxspl2)
+              ewld%bspline=2*Ceiling(0.5_wp*Real(ewld%bspline,wp))
+              ewld%bspline=Max(ewld%bspline,bspline_local)
 
            Else !If (itmp == 0) Then ! Poisson Solver
 
@@ -4556,13 +4558,13 @@ Subroutine scan_control                                    &
 ! Derive grid spacing represented as a k-vector
 
               Call dcell(cell,celprp)
-              kmaxa1 = Nint(celprp(7)*electro%alpha)
-              kmaxb1 = Nint(celprp(8)*electro%alpha)
-              kmaxc1 = Nint(celprp(9)*electro%alpha)
+              ewld%fft_dim_a1 = Nint(celprp(7)*electro%alpha)
+              ewld%fft_dim_b1 = Nint(celprp(8)*electro%alpha)
+              ewld%fft_dim_c1 = Nint(celprp(9)*electro%alpha)
 
 ! Define stencil halo size (7) as a spline order (7/2==3)
 
-              mxspl = 3
+              ewld%bspline = 3
 
            End If
 
@@ -4594,23 +4596,23 @@ Subroutine scan_control                                    &
 
 ! Sort neigh%cutoff by a reset sequence
 ! neigh%cutoff may be >= rcut_def but lrcut may still be .false.
-! mxspl = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
+! ewld%bspline = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
 
-        If (mxspl /= 0) Then ! SPME or Poisson Solver
+        If (ewld%bspline /= 0) Then ! SPME or Poisson Solver
 
-! (1) to Max(neigh%cutoff,Max(cell_width*mxspl/kmax),mxspl*delta) satisfying SPME b-splines
+! (1) to Max(neigh%cutoff,Max(cell_width*ewld%bspline/kmax),ewld%bspline*delta) satisfying SPME b-splines
 ! propagation width or the Poisson Solver extra halo relation to cutoff
-! delta=1/electro%alpha is the grid spacing and mxspl is the grid length needed for the
+! delta=1/electro%alpha is the grid spacing and ewld%bspline is the grid length needed for the
 ! 3 haloed stencil of differentiation
 
            If (.not.lrcut) Then
               lrcut=.true.
 
               Call dcell(cell,celprp)
-              neigh%cutoff=Max( neigh%cutoff, Merge(Real(mxspl,wp)/electro%alpha,                          &
-                                    Max(celprp(7)*Real(mxspl,wp)/Real(kmaxa1,wp),  &
-                                        celprp(8)*Real(mxspl,wp)/Real(kmaxb1,wp),  &
-                                        celprp(9)*Real(mxspl,wp)/Real(kmaxc1,wp)), &
+              neigh%cutoff=Max( neigh%cutoff, Merge(Real(ewld%bspline,wp)/electro%alpha,                          &
+                                    Max(celprp(7)*Real(ewld%bspline,wp)/Real(ewld%fft_dim_a1,wp),  &
+                                        celprp(8)*Real(ewld%bspline,wp)/Real(ewld%fft_dim_b1,wp),  &
+                                        celprp(9)*Real(ewld%bspline,wp)/Real(ewld%fft_dim_c1,wp)), &
                                     itmp == 0) )
            End If
 

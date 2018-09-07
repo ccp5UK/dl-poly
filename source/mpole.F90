@@ -1,6 +1,6 @@
 Module mpole
   Use kinds, Only : wp,wi
-  Use setup, Only : mxatdm, mxatms,mxspl, &
+  Use setup, Only : mxatdm, mxatms, &
                            sqrpi,r4pie0,zero_plus,nrite,nmpldt
   Use configuration,Only : natms
   Use site, Only : site_type
@@ -102,12 +102,12 @@ Module mpole
 
 Contains
 
-  Subroutine allocate_mpoles_arrays(T,max_site,max_exclude,mxatdm,mxspl,mxatms)
+  Subroutine allocate_mpoles_arrays(T,max_site,max_exclude,mxatdm,bspline,mxatms)
   Class( mpole_type ) :: T
     Integer( Kind = wi ), Intent( In    ) :: max_site
     Integer( Kind = wi ), Intent( In    ) :: max_exclude
     Integer( Kind = wi ), Intent( In    ) :: mxatdm
-    Integer( Kind = wi ), Intent( In    ) :: mxspl
+    Integer( Kind = wi ), Intent( In    ) :: bspline
     Integer( Kind = wi ), Intent( In    ) :: mxatms
 
     Integer           :: n,k,om1,numpl,fail(1:9)
@@ -128,7 +128,7 @@ Contains
     Allocate (T%local_frame(1:T%max_mpoles,1:max_site),T%global_frame(1:T%max_mpoles,1:mxatms), stat=fail(4))
     Allocate (T%polarisation_site(1:max_site),T%polarisation_atom(1:mxatms), stat=fail(5))
     Allocate (T%dump_site(1:max_site),T%dump_atom(1:mxatms), stat=fail(6))
-    Allocate (T%rotation(1:mxatdm),T%n_choose_k(0:mxspl,0:mxspl), stat=fail(7))
+    Allocate (T%rotation(1:mxatdm),T%n_choose_k(0:bspline,0:bspline), stat=fail(7))
     Allocate (T%torque_x(1:mxatdm),T%torque_y(1:mxatdm),T%torque_z(1:mxatdm), stat=fail(8))
     Allocate (T%rotation_x(1:T%max_mpoles,1:mxatms), &
       T%rotation_y(1:T%max_mpoles,1:mxatms), &
@@ -236,8 +236,8 @@ Contains
     If (T%max_order < 0 .or. T%max_order >=5) Call error(2071)
 
     ! compute n choose k
-    Do k = 0, mxspl
-      Do n = 0, mxspl
+    Do k = 0, bspline
+      Do n = 0, bspline
         T%n_choose_k(n,k) = Exp(Factorial(n)-Factorial(n-k)-Factorial(k))
       End Do
     End Do
