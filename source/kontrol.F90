@@ -268,7 +268,7 @@ Subroutine read_control                                &
 ! and minimum width of the thermostatted boundaries in Angs
 ! minimum temperature of the thermostat
 
-  thermo%l_pseudo   = .false.
+  thermo%l_stochastic_boundaries   = .false.
   thermo%key_pseudo = 0
   thermo%width_pseudo = 2.0_wp
   thermo%temp_pseudo = 1.0_wp
@@ -1007,7 +1007,7 @@ Subroutine read_control                                &
 
         tmp = Abs(word_2_real(word))
         If (width/4.0_wp > thermo%width_pseudo) Then
-           thermo%l_pseudo = .true.
+           thermo%l_stochastic_boundaries = .true.
            If (comm%idnode == 0) Then
               Call info('pseudo thermostat attached to MD cell boundary',.true.)
               If      (thermo%key_pseudo == 0) Then

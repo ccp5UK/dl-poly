@@ -87,7 +87,7 @@ Module thermostat
     Real( Kind = wp ), Allocatable, Public :: sigdpd(:)
 
     !> Pseudo thermostat switch
-    Logical, Public :: l_pseudo
+    Logical, Public :: l_stochastic_boundaries
     !> Pseudo thermostat type
     !>
     !> - 0 Langevin + direct temperature scaling
@@ -123,6 +123,13 @@ Module thermostat
     Real( Kind = wp ), Public :: volm0,elrc0,virlrc0,h_z,cell0(1:9)
     Real( Kind = wp ), Public :: qmass,ceng,pmass,chip0,rf,factor,temp_lang
     Real( Kind = wp ), Allocatable, Public :: dens0(:)
+    Integer,   Public :: ntp,stp,rtp
+    Real( Kind = wp ), Public :: rcell(1:9),sx,sy,sz,chit_sb = 0.0_wp
+! q. index arrays and tp. sum arrays
+
+    Integer, Allocatable, Public   :: qn(:),tpn(:)
+    Integer, Allocatable, Public   :: qs(:,:),tps(:)
+    Integer, Allocatable, Public   :: qr(:),tpr(:)
 
 
 
@@ -208,6 +215,24 @@ Contains
     End If
     If (Allocated(thermo%dens0)) Then
       Deallocate(thermo%dens0)
+    End If
+    If (Allocated(thermo%qn)) Then
+      Deallocate(thermo%qn)
+    End If
+    If (Allocated(thermo%tpn)) Then
+      Deallocate(thermo%tpn)
+    End If
+    If (Allocated(thermo%qs)) Then
+      Deallocate(thermo%qs)
+    End If
+    If (Allocated(thermo%tps)) Then
+      Deallocate(thermo%tps)
+    End If
+    If (Allocated(thermo%qr)) Then
+      Deallocate(thermo%qr)
+    End If
+    If (Allocated(thermo%tpr)) Then
+      Deallocate(thermo%tpr)
     End If
   End Subroutine cleanup
 

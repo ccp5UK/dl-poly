@@ -113,8 +113,8 @@
      End If
 ! Apply pseudo thermostat - force cycle (0)
 
-     If (thermo%l_pseudo) Then
-       Call pseudo_vv(0,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,parts,comm)
+     If (thermo%l_stochastic_boundaries) Then
+       Call stochastic_boundary_vv(0,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,parts,comm)
      End If
 
 ! Cap forces in equilibration mode

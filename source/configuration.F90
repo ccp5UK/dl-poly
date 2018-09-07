@@ -376,7 +376,7 @@ Contains
 
 ! Check image condition for pseudo
 
-  If (thermo%l_pseudo .and. (imcon == 0 .or. imcon == 6)) Call error(540)
+  If (thermo%l_stochastic_boundaries .and. (imcon == 0 .or. imcon == 6)) Call error(540)
 
   Call invert(cell,rcell,det)
 
