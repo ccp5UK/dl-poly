@@ -136,6 +136,9 @@ Module vdw
     Integer( Kind = wi ), Public :: max_vdw
     !> Maximum number of VdW parameters
     Integer( Kind = wi ), Public :: max_param
+    !> furst time job
+    Logical,  Public :: newjob = .true.
+    Real( Kind = wp ), Public :: dlrpot,rdr
   Contains
     Private
 
@@ -1803,8 +1806,6 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,parts
   Type( vdw_type ), Intent( InOut ) :: vdws
   Type( corePart ), Dimension( : ), Intent( InOut ) :: parts
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: dlrpot,rdr
 
   Integer           :: mm,idi,ai,aj,jatm,key,k,l,ityp,n,m
   Real( Kind = wp ) :: rrr,ppp,gamma,eng,                 &
@@ -1819,11 +1820,11 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,parts
 
 ! define grid resolution for potential arrays and interpolation spacing
 
-  If (newjob) Then
-     newjob = .false.
+  If (vdws%newjob) Then
+    vdws%newjob = .false.
 
-     dlrpot = vdws%cutoff/Real(vdws%max_grid-4,wp)
-     rdr    = 1.0_wp/dlrpot
+    vdws%dlrpot = vdws%cutoff/Real(vdws%max_grid-4,wp)
+    vdws%rdr    = 1.0_wp/vdws%dlrpot
   End If
 
   ! initialise potential energy and virial
@@ -2287,8 +2288,8 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,parts
 
            Else If (Abs(vdws%tab_potential(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == VDW_TAB)
 
-              l   = Int(rrr*rdr)
-              ppp = rrr*rdr - Real(l,wp)
+              l   = Int(rrr*vdws%rdr)
+              ppp = rrr*vdws%rdr - Real(l,wp)
 
 ! calculate interaction energy using 3-point interpolation
 
@@ -2324,8 +2325,8 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,parts
 
         Else If (Abs(vdws%tab_potential(0,k)) > zero_plus) Then ! no direct = fully tabulated calculation
 
-           l   = Int(rrr*rdr)
-           ppp = rrr*rdr - Real(l,wp)
+           l   = Int(rrr*vdws%rdr)
+           ppp = rrr*vdws%rdr - Real(l,wp)
 
 ! calculate interaction energy using 3-point interpolation
 
