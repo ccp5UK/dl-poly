@@ -9,7 +9,7 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
+        Call w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
           dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain)
      End If
 
@@ -157,7 +157,7 @@
 ! Refresh mappings
 
         If (.not.(relaxed_shl .and. minim%relaxed)) Then
-           Call w_refresh_mappings(cshell,cons,pmf,stat,msd_data,bond,angle, &
+          Call w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
              dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain)
            Go To 100
         End If
