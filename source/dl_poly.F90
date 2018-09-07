@@ -163,7 +163,7 @@ program dl_poly
   Use build_excl, Only : build_excl_intra 
   Use build_book, Only : build_book_intra
   Use ffield, Only : read_field,report_topology
-  Use kontrol, Only : scan_control_output,scan_control_io
+  Use kontrol, Only : scan_control_output,scan_control_io, control_type
   Use bounds, Only : set_bounds
   Use build_tplg, Only : build_tplg_intra
   use build_chrm, Only : build_chrm_intra
@@ -290,6 +290,7 @@ program dl_poly
   Type( rigid_bodies_type ) :: rigid
   Type( electrostatic_type ) :: electro
   Type( domains_type ) :: domain
+  Type( control_type ) :: flow
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -538,7 +539,7 @@ program dl_poly
 
   If (lbook) Then
     Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre,atmfrz, &
-      degrot,degtra,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
+      degrot,degtra,flow,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
       neigh,sites,mpoles,rigid,domain,parts,comm)
     If (mpoles%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
@@ -676,11 +677,11 @@ program dl_poly
       netcdf,mpoles,ext_field,rigid,domain,tmr)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,core_shells,cons,pmfs,stats,thermo,plume,&
+      Call w_replay_historf(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
         fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,tmr)
     Else
-      Call w_replay_history(mxatdm,core_shells,cons,pmfs,stats,thermo,msd_data,&
+      Call w_replay_history(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
         netcdf,minim,mpoles,ext_field,rigid,electro,domain)
     End If
@@ -958,10 +959,11 @@ Contains
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
+  Subroutine w_replay_history(mxatdm_,flw,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
       bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf,netcdf,minim, &
       mpoles,ext_field,rigid,electro,domain)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
+    Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -995,10 +997,11 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
+  Subroutine w_replay_historf(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
     angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
     minim,mpoles,ext_field,rigid,electro,domain,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
+    Type( control_type ), Intent( InOut ) :: flw
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
