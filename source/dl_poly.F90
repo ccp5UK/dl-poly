@@ -195,7 +195,7 @@ program dl_poly
   Use constraints, Only : constraints_type, constraints_quench
   Use shared_units, Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD,ELECTROSTATIC_NULL
-
+  Use stochastic_boundary, Only : stochastic_boundary_vv
     ! MAIN PROGRAM VARIABLES
   Implicit None
 
