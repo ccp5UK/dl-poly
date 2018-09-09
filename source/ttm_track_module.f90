@@ -153,7 +153,7 @@ Contains
     End Select
 
     ! if (still) depositing energy, add to electronic temperature
-    ! grid (active cells only) and adjust electronic temperatures 
+    ! grid (active cells only) and adjust electronic temperatures
     ! accordingly
 
     If (deposit) Then
@@ -216,7 +216,7 @@ Contains
         End Do
       Case Default
       ! tabulated volumetric heat capacity or more complex
-      ! function: find new temperature iteratively by 
+      ! function: find new temperature iteratively by
       ! gradual integration (0.01 kelvin at a time)
       ! and interpolate over last 0.01 kelvin
         Do k=1,ntcell(3)
@@ -396,7 +396,7 @@ Contains
     sig2y = 2.0_wp*sigcelly*sigcelly
     sigmamx = sigmax*sigcellx
     sigmamy = sigmax*sigcelly
-    
+
     ! if cutoff larger than ionic temperature grid,
     ! warn of deposition errors
 
@@ -448,7 +448,7 @@ Contains
     If (idnode == 0 .and. Abs((realdEdx-dEdX)/dEdX) > 0.01_wp) Then
       Call warning(540,Abs(realdEdx-dEdX)/dEdX*100_wp,0.0_wp,0.0_wp)
     End If
-    
+
   End Subroutine gaussianTrack
 
 End Module ttm_track_module

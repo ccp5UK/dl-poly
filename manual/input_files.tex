@@ -264,7 +264,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf ana}lyse {\bf all} (sampling) (every) $f$ {\bf nbins} $n$ {\bf rmax} $r$
                                                 \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect all intramolecular PDFs \\
 \>                                              \> \phantom{xxxxxxxxxxxxxxxxx} every $f$ timesteps (default $f~=~1$), using a grid \\
-\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins and bonds cutoff of $r$ \AA~(default r~=~2~\AA). \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} with $n$ bins and bonds cutoff of $r$ \AA \\
+\>                                              \> \phantom{xxxxxxxxxxxxxxxxx} (default r~=~2~\AA). \\
 \>                                              \> \\
 \> {\bf ana}lyse {\bf bon}ds (sampling) (every) $f$ {\bf nbins} $n$ {\bf rmax} $r$
                                                 \> \phantom{xxxxxxxxxxxxxxxxx} calculate and collect bonds PDFs \\
@@ -292,7 +293,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf cap} (forces) $f$                       \> cap forces during equilibration period, $f$ is maximum \\
 \>                                              \> cap in units of k$_{B}$T/\AA~~(default $f~=~1000$ k$_{B}$T/\AA) \\
 \>                                              \> \\
-\> {\bf close time} $f$                         \> set job closure time to $f$ seconds \\
+\> {\bf close time} $f$                         \> set the amount of time a job has to finalise I/O to $f$ seconds \\
+\>                                              \> (this must be smaller than the time specified by {\bf job time}, \\
+\>                                              \> see Further Comments on the CONTROL File notes) \\
 \>                                              \> \\
 \> {\bf collect}                                \> include equilibration data in overall statistics \\
 \>                                              \> \\
@@ -346,7 +349,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> relaxation constant $f_{1}$ in ps and Langevin friction $f_{1}$ in ps$^{-1}$ \\
 \>                                              \> \\
 \> {\bf ensemble nvt ttm} $f_{1}~f_{2}~f_{3}$         \> select NVT ensemble\index{ensemble!Inhomogeneous Langevin NVT}, type inhomogeneous Langevin designed \\
-\>                                              \> for use as part of the \index{Two-Temperature Model} two-temperature model (TTM), \\ 
+\>                                              \> for use as part of the \index{Two-Temperature Model} two-temperature model (TTM), \\
 \>                                              \> with thermostat\index{thermostat} relaxation constant $f_{1}$ in ps$^{-1}$, \\
 \>                                              \> enhancement of relaxation constant $f_{2}$ in ps$^{-1}$ and \\
 \>                                              \> cut-off particle velocity for friction enhancement $f_{3}$ in \AA~ps$^{-1}$ \\
@@ -442,7 +445,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf integrat}or {\em string}                \> set the type of Verlet integrator, where {\em string} can only be \\
 \>                                              \> {\em leapfrog} or {\em velocity}, as the later is the default \\
 \>                                              \> \\
-\> {\bf job time} $f$                           \> set job time to $f$ seconds \\
+\> {\bf job time} $f$                           \> set the walltime for a job to $f$ seconds \\
 \>                                              \> \\
 \> {\bf maxdis} $f$                             \> set maximum distance allowed in variable timestep (control) \\
 \>                                              \> to $f$ \AA~(default $f~=~0.10$ \AA) \\
@@ -548,8 +551,8 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $<$$filename$$>$~=~OUTPUT.PLUMED) \\
 \>                                              \> \\
 \> {\bf plumed precision} $int$-$val$           \> starts a PLUMED calculation, if not switched off, and sets \\
-\>                                              \> PLUMED calculation precision to $int$-$val$ (default $int$-$val$~=~$wp$ - \\
-\>                                              \> the \D working precision) \\
+\>                                              \> PLUMED calculation precision to $int$-$val$ (default \\
+\>                                              \> $int$-$val$~=~$wp$ - the \D working precision) \\
 \>                                              \> \\
 \> {\bf plumed restart} {\em string} (yes$|$no) \> starts a PLUMED calculation, if not switched off, and hints \\
 \>                                              \> PLUMED about restarting (default {\em on}), if {\em off} is specified \\
@@ -676,7 +679,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> corresponding to a "dry" run) \\
 \>                                              \> \\
 \> {\bf subcell}ing (threshold) (density) $f$   \> set the subcelling threshold density of particles per link cell below \\
-\>                                              \> which decreasing link-cell size stops $f$ ($f~\ge~1.0$, default $f~=~50.0)$) \\
+\>                                              \> which decreasing link-cell size stops $f$ ($f~\ge~1.0$, default $f~=~50.0$) \\
 \>                                              \> \\
 \> {\bf temp}erature $f$                        \> set required simulation temperature to $f$ Kelvin \\
 \>                                              \> (target temperature for constant temperature\index{units!temperature} ensembles) \\
@@ -686,14 +689,14 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> $j~=$ timestep interval between configurations (default $j~=~1$) \\
 \>                                              \> $k~=$ data level (default $k~=~0$, see Table~\ref{keytrj}) \\
 \>                                              \> \\
-\> {\bf ttm amin} $n$                 \> sets minimum number of atoms required in each ionic temperature \\
+\> {\bf ttm amin} $n$                           \> sets minimum number of atoms required in each ionic temperature \\
 \>                                              \> cell (CIT) to ensure cell is active (default $n~=~1$) \\
 \>                                              \> \\
-\> {\bf ttm atomdens} $f$          \> sets atomic density, used to convert specific heat capacities to \\
-\>                                              \> volumetric heat capacities, to $f$ (default $f$ set by system \\ 
+\> {\bf ttm atomdens} $f$                       \> sets atomic density, used to convert specific heat capacities to \\
+\>                                              \> volumetric heat capacities, to $f$ (default $f$ set by system \\
 \>                                              \> configuration) \\
 \>                                              \> \\
-\> {\bf ttm bcs} $Q$                  \> sets electronic temperature boundary conditions for \index{Two-Temperature Model}two-temperature\\
+\> {\bf ttm bcs} $Q$                            \> sets electronic temperature boundary conditions for \index{Two-Temperature Model}two-temperature\\
 \>                                              \> model (TTM) to type $Q$, where $Q$ can be: \\
 \>                                              \> {\em periodic}: periodic boundaries in all directions \\
 \>                                              \> {\em dirich}: Dirichlet boundaries in all directions with simulation \\
@@ -703,43 +706,43 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> fraction $f$ (default $f~=~0.96$) \\
 \>                                              \> {\em xydirich}: Dirichlet boundaries in x- and y- directions, \\
 \>                                              \> Neumann (zero-flux) boundary in z-direction \\
-\>                                              \> {\em xyrobin} $f$: Robin boundaries in x- and y-directions (default $f~=~0.96$),  \\
-\>                                              \> Neumann (zero) boundary in z-direction \\
+\>                                              \> {\em xyrobin} $f$: Robin boundaries in x- and y-directions \\
+\>                                              \> (default $f~=~0.96$), Neumann (zero) boundary in z-direction \\
 \>                                              \> \\
-\> {\bf ttm ceconst} $f$             \> sets constant electronic specific heat capacity to $f$ $k_B$/atom \\
+\> {\bf ttm ceconst} $f$                        \> sets constant electronic specific heat capacity to $f$ $k_B$/atom \\
 \>                                              \> (default $f~=~1$) \\
 \>                                              \> \\
-\> {\bf ttm celin} $f_{1}~f_{2}$  \> sets electronic specific heat capacity to linear function of temperature \\
+\> {\bf ttm celin} $f_{1}~f_{2}$                \> sets electronic specific heat capacity to linear function of temperature \\
 \>                                              \> with maximum value of $f_{1}$ $k_B$/atom at and beyond Fermi temperature \\
 \>                                              \> $f_{2}$ K \\
 \>                                              \> \\
-\> {\bf ttm cetab}                       \> sets electronic volumetric heat capacity (equal to specific heat capacity \\ 
+\> {\bf ttm cetab}                              \> sets electronic volumetric heat capacity (equal to specific heat capacity \\
 \>                                              \> divided by density) based on tabulated values given in additional file \\
 \>                                              \> (Ce.dat) \\
 \>                                              \> \\
-\> {\bf ttm cetanh} $f_{1}~f_{2}$  \> sets electronic specific heat capacity to hyperbolic tangent form, \\
+\> {\bf ttm cetanh} $f_{1}~f_{2}$               \> sets electronic specific heat capacity to hyperbolic tangent form, \\
 \>                                              \> $C_{e} (T_{e}) = f_{1} \tanh \left(10^{-4} f_{2} T_{e} \right)$, with constants $f_{1}$ $k_B$/atom and $f_{2}$ K$^{-1}$ \\
 \>                                              \> \\
-\> {\bf ttm deconst} $f$             \> sets constant thermal diffusivity of non-metal system to $f$ m$^2$/s \\
+\> {\bf ttm deconst} $f$                        \> sets constant thermal diffusivity of non-metal system to $f$ m$^2$/s \\
 \>                                              \> \\
-\> {\bf ttm dedx} $f$                  \> sets electron stopping power of projectile entering electronic system \\
+\> {\bf ttm dedx} $f$                           \> sets electron stopping power of projectile entering electronic system \\
 \>                                              \> to $f$ eV/nm (default $f~=~0$): this energy is deposited into electronic \\
 \>                                              \> temperature cells (CETs) after equilibration \\
 \>                                              \> \\
-\> {\bf ttm delta}                        \> specifies temporal energy deposition to electronic system occurs in  \\
+\> {\bf ttm delta}                              \> specifies temporal energy deposition to electronic system occurs in  \\
 \>                                              \> a single thermal diffusion timestep, i.e. as a Dirac delta-like time \\
 \>                                              \> pulse \\
 \>                                              \> \\
-\> {\bf ttm derecip} $f_{1}~f_{2}$ \> sets thermal diffusivity of non-metal system to reciprocal function of \\
+\> {\bf ttm derecip} $f_{1}~f_{2}$              \> sets thermal diffusivity of non-metal system to reciprocal function of \\
 \>                                              \> temperature with value at system temperature of $f$ m$^2$/s, holding \\
 \>                                              \> constant beyond Fermi temperature $f_{2}$ K \\
 \>                                              \> \\
-\> {\bf ttm detab}                       \> sets thermal diffusivity of non-metal system based on tabulated \\ 
+\> {\bf ttm detab}                              \> sets thermal diffusivity of non-metal system based on tabulated \\
 \>                                              \> values given in additional file (De.dat) \\
 \>                                              \> \\
-\> {\bf ttm diff} $f$                     \> identical to {\bf ttm deconst} \\
+\> {\bf ttm diff} $f$                           \> identical to {\bf ttm deconst} \\
 \>                                              \> \\
-\> {\bf ttm dyndens}                  \> dynamically recalculate atom density by only including active \\
+\> {\bf ttm dyndens}                            \> dynamically recalculate atom density by only including active \\
 \>                                              \> ionic temperature cells (CITs), used to convert specific heat \\
 \>                                              \> capacities to volumetric heat capacities after energy deposition \\
 \>                                              \> \\
@@ -747,93 +750,92 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> Gaussian function of time with standard deviation $f_{1}$ ps, lasting \\
 \>                                              \> for $2 f_{2}$ standard deviations (defaults: $f_{1}~=~0.001$, $f_{2} = 5$) \\
 \>                                              \> \\
-\> {\bf ttm keconst} $f$             \> sets constant electronic thermal conductivity of metal system to \\
+\> {\bf ttm keconst} $f$                        \> sets constant electronic thermal conductivity of metal system to \\
 \>                                              \> $f$ W~m$^{-1}$~K$^{-1}$ \\
 \>                                              \> \\
-\> {\bf ttm kedrude} $f$             \> sets electronic thermal conductivity of metal system as Drude model \\
-\>                                              \> ($K_{e} (T_{e}) = f \frac{T_{e}}{T_{0}}$), with value at system temperature ($T_{0}$) of \\
-\>                                              \> $f$ W~ m$^{-1}$~K$^{-1}$ \\
+\> {\bf ttm kedrude} $f$                        \> sets electronic thermal conductivity of metal system as \\
+\>                                              \> Drude model ($K_{e} (T_{e}) = f \frac{T_{e}}{T_{0}}$), with value of \\
+\>                                              \> $f$ W~m$^{-1}$~K$^{-1}$ at system temperature ($T_{0}$) \\
 \>                                              \> \\
-\> {\bf ttm keinf}                        \> sets infinitely high electronic thermal conductivity \\
+\> {\bf ttm keinf}                              \> sets infinitely high electronic thermal conductivity \\
 \>                                              \> \\
-\> {\bf ttm ketab}                       \> sets thermal conductivity based on tabulated values given in \\
-\>                                              \> additional file (Ke.dat), using either local ionic temperature from CIT \\
-\>                                              \> or system temperature in CETs outside of atomic system \\
+\> {\bf ttm ketab}                              \> sets thermal conductivity based on tabulated values given in \\
+\>                                              \> additional file (Ke.dat), using either local ionic temperature from \\
+\>                                              \> CIT or system temperature in CETs outside of atomic system \\
 \>                                              \> \\
 \> {\bf ttm laser} $f_{1}~f_{2}$   \> specifies initial energy deposition into electronic system occurs \\
 \>                                              \> due to laser (homogeneously in space) with absorbed fluence \\
 \>                                              \> $f_{1}$ mJ cm$^{-2}$ and penetration depth $f_{2}$ nm \\
 \>                                              \> \\
-\> {\bf ttm laser} $f_{1}~f_{2}~{\bf zdep} $   \> specifies initial energy deposition into electronic system occurs \\
-\>                                              \> due to laser, homogeneously in x- and y-directions, exponential decay in \\ 
+\> {\bf ttm laser} $f_{1}~f_{2}~{\bf zdep} $    \> specifies initial energy deposition into electronic system occurs \\
+\>                                              \> due to laser, homogeneously in x- and y-directions, exponential decay in \\
 \>                                              \> z-direction, with maximum absorbed fluence $f_{1}$ mJ cm$^{-2}$ and \\
 \>                                              \> penetration depth $f_{2}$ nm \\
 \>                                              \> \\
-\> {\bf ttm metal}                       \> specifies parameters for metallic system are required for \\
+\> {\bf ttm metal}                              \> specifies parameters for metallic system are required for \\
 \>                                              \> \index{Two-Temperature Model}two-temperature model, i.e. thermal conductivity \\
 \>                                              \> \\
-\> {\bf ttm ncit} $n$                   \> set number of coarse-grained ionic temperature (CIT) cells for \\
+\> {\bf ttm ncit} $n$                           \> set number of coarse-grained ionic temperature (CIT) cells for \\
 \>                                              \> \index{Two-Temperature Model}two-temperature model (TTM) in z-direction (default $n~=~10$): \\
 \>                                              \>  numbers in x- and y-directions set according to system size \\
 \>                                              \> \\
-\> {\bf ttm ncet} $n_{1}~n_{2}~n_{3}$   \> set numbers of coarse-grained electronic temperature (CET) cells for \\
+\> {\bf ttm ncet} $n_{1}~n_{2}~n_{3}$           \> set numbers of coarse-grained electronic temperature (CET) cells for \\
 \>                                              \> two-temperature model (TTM): $n_{1}$ for x-direction, $n_{2}$ for y-direction,\\
 \>                                              \> $n_{3}$ for z-direction (defaults $n_{1,2,3}~=~20)$ \\
 \>                                              \> \\
-\> {\bf ttm nexp} $f_{1}~f_{2}$  \> specifies temporal energy deposition to electronic system as \\
+\> {\bf ttm nexp} $f_{1}~f_{2}$                 \> specifies temporal energy deposition to electronic system as \\
 \>                                              \> decaying exponential function of time with exponential decay \\
 \>                                              \> constant $f_{1}$ ps, lasting for $f_{2}$ time constants (until $f_{1} f_{2}$ ps) \\
 \>                                              \> (defaults: $f_{1}~=~0.001$, $f_{2} = 5$) \\
 \>                                              \> \\
-\> {\bf ttm nonmetal}                 \> specifies parameters for non-metallic system are required for \\
+\> {\bf ttm nonmetal}                           \> specifies parameters for non-metallic system are required for \\
 \>                                              \> \index{Two-Temperature Model}two-temperature model), i.e. thermal diffusivity \\
 \>                                              \> \\
-\> {\bf ttm nothvel}                    \> apply inhomogeneous Langevin thermostat to total particle velocities, \\
+\> {\bf ttm nothvel}                            \> apply inhomogeneous Langevin thermostat to total particle velocities, \\
 \>                                              \> overriding default of using thermal velocities (excluding localised flow) \\
 \>                                              \> \\
-\> {\bf ttm offset} $f$                 \> offsets initial coupling of electronic and ionic systems via inhomogeneous \\
-\>                                              \> Langevin thermostat until after $f$ ps (default $f~=~0$) \\
+\> {\bf ttm offset} $f$                         \> offsets initial coupling of electronic and ionic systems via \\
+\>                                              \> inhomogeneous Langevin thermostat until after $f$ ps (default $f~=~0$) \\
 \>                                              \> \\
-\> {\bf ttm oneway}                   \> switches on one-way electron-phonon coupling: only switched on \\
+\> {\bf ttm oneway}                             \> switches on one-way electron-phonon coupling: only switched on \\
 \>                                              \> when electronic tempereature is greater than ionic temperature \\
 \>                                              \> \\
-\> {\bf ttm pulse} $f$                 \> specifies temporal energy deposition to electronic system as  \\
+\> {\bf ttm pulse} $f$                          \> specifies temporal energy deposition to electronic system as  \\
 \>                                              \> square pulse of duration $f$ ps (if $f = 0$, treated as Dirac \\
 \>                                              \> delta pulse) \\
 \>                                              \> \\
-\> {\bf ttm redist}ribute              \> redistribute electronic energy in newly-deactivated temperature \\
+\> {\bf ttm redist}ribute                       \> redistribute electronic energy in newly-deactivated temperature \\
 \>                                              \> cells to nearest active neighbours \\
 \>                                              \> \\
-\> {\bf ttm sflat}                         \> specifies initial spatial deposition of energy into electronic system \\
+\> {\bf ttm sflat}                              \> specifies initial spatial deposition of energy into electronic system \\
 \>                                              \> as flat (homogeneous) profile \\
 \>                                              \> \\
-\> {\bf ttm sgauss} $f_{1}~f_{2}$ \> specifies initial spatial deposition of energy into electronic system \\
+\> {\bf ttm sgauss} $f_{1}~f_{2}$               \> specifies initial spatial deposition of energy into electronic system \\
 \>                                              \> as Gaussian profile at centre of ionic temperature cells with \\
 \>                                              \> standard deviation $f_{1}$ nm, cutting off at $f_{2}$ standard \\
 \>                                              \> deviations (defaults: $f_{1} = 1$, $f_{2} = 5$) \\
 \>                                              \> \\
 \> {\bf ttm sigma} $f_{1}~f_{2}$ \> identical to {\bf ttm sgauss} \\
 \>                                              \> \\
-\> {\bf ttm stats} $n$                 \> accumulate statistics for two-temperature model every $n$ timesteps \\
+\> {\bf ttm stats} $n$                          \> accumulate statistics for two-temperature model every $n$ timesteps \\
 \>                                              \> in PEAK\_E and PEAK\_I files \\
 \>                                              \> \\
-\> {\bf ttm thvelz}                      \> apply inhomogeneous Langevin thermostat to particle thermal velocities \\
+\> {\bf ttm thvelz}                             \> apply inhomogeneous Langevin thermostat to particle thermal velocities \\
 \>                                              \> in z-direction only (using total velocities in x- and y-directions) \\
 \>                                              \> \\
-\> {\bf ttm traj} $n$                   \> accumulate profiles of electronic and ionic temperatures every \\
+\> {\bf ttm traj} $n$                           \> accumulate profiles of electronic and ionic temperatures every \\
 \>                                              \> $n$ timesteps in LATS\_E and LATS\_I files \\
 \>                                              \> \\
-\> {\bf ttm varg homo}geneous   \> specifies electron-phonon coupling in thermal diffusion source \\
+\> {\bf ttm varg homo}geneous                   \> specifies electron-phonon coupling in thermal diffusion source \\
 \>                                              \> term and inhomogeneous Langevin thermostat is set dynamically \\
 \>                                              \> using mean electronic temperature (homogeneously) from a tabulated \\
 \>                                              \> function of electronic temperature in additional file (g.dat) \\
 \>                                              \> \\
-\> {\bf ttm varg hetero}geneous    \> specifies electron-phonon coupling in thermal diffusion source \\
+\> {\bf ttm varg hetero}geneous                 \> specifies electron-phonon coupling in thermal diffusion source \\
 \>                                              \> term and inhomogeneous Langevin thermostat is set dynamically \\
 \>                                              \> using local electronic temperature (heterogeneously) from a tabulated \\
 \>                                              \> function of electronic temperature in additional file (g.dat) \\
 \>                                              \> \\
-
 \> {\bf vaf} (sampling) (every) $i$ (bin) (size) $n$ \> \phantom{xxxx} calculate and collect velocity autocorrelation function profiles \\
 \>                                                   \> \phantom{xxxx} every $i$ timesteps (default $i~=~50$) with a bin size set to $n$ \\
 \>                                                   \> \phantom{xxxx} timesteps (default $n~=~2i$, if $i~/ge~100$, or $n~=~100$ otherwise) \\
@@ -1732,21 +1734,21 @@ interactions fall within the list of excluded interactions.  This is not
 a default behaviour.  The option is also triggered by the {\bf polar}isation
 option.
 
-\item The various {\bf ttm} options all have the effect of switching on the 
-\index{Two-Temperature Model}two-temperature model (TTM), which assumes 
-the use of the \index{ensemble!Inhomogeneous Langevin NVT}inhomogeneous 
+\item The various {\bf ttm} options all have the effect of switching on the
+\index{Two-Temperature Model}two-temperature model (TTM), which assumes
+the use of the \index{ensemble!Inhomogeneous Langevin NVT}inhomogeneous
 Langevin NVT ensemble. It is not possible to specify any other ensemble
 for TTM-based systems, so the inhomogeneous Langevin NVT ensemble will
 always be used in this case, with default values for the friction terms and cut-off
-velocity if these are not specified. No implementation of the inhomogeneous 
-Langevin ensemble currently exists for rigid bodies. To model metallic systems, 
-the thermal conductivity must be specified either as infinitely large, a constant 
-value, a linear function of electronic temperature (based on the Drude model) 
-or as a tabulated function of temperature, while non-metallic systems require 
+velocity if these are not specified. No implementation of the inhomogeneous
+Langevin ensemble currently exists for rigid bodies. To model metallic systems,
+the thermal conductivity must be specified either as infinitely large, a constant
+value, a linear function of electronic temperature (based on the Drude model)
+or as a tabulated function of temperature, while non-metallic systems require
 a constant thermal diffusivity. Any energy deposition is applied after equilibration.
-An additional restart file, DUMP\_E, consisting of electronic temperatures for 
-each electronic temperature cell (CET), is produced along with REVCON and 
-REVIVE when TTM is switched on. 
+An additional restart file, DUMP\_E, consisting of electronic temperatures for
+each electronic temperature cell (CET), is produced along with REVCON and
+REVIVE when TTM is switched on.
 
 \end{enumerate}
 
@@ -2451,7 +2453,7 @@ $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}\exp[-(r_{ij}/\rho_{1} + r_{ik
 {\bf -shm} &                     &     &              &            &            & \\
            &                     &     &              &            &            & \\
 {\bf bvs1} & Screened Vessal \cite{vessal-94a} & $k$ & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
-$U(\theta) = {k \over 8(\theta-\pi)^{2}} \left\{ \left[ (\theta_{0} - \pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
+$U(\theta) = {k \over 8(\theta_{0}-\pi)^{2}} \left\{ \left[ (\theta_{0} - \pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
 {\bf -bv1} &                     &     &              &            &            &
 $\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
            &                     &     &              &            &            & \\
@@ -2491,9 +2493,9 @@ $U(\theta) = k~\Delta^{2}[1 - 1.4 \cdot 10^{-2}\Delta + 5.6 \cdot 10^{-5}\Delta^
 $- 7.0 \cdot 10^{-7}\Delta^{3}+2.2 \cdot 10^{-8}\Delta^{4})]~;~\Delta = \theta-\theta_{0}$ \\
            &                     &     &              &            &            & \\
 {\bf kky}  & KKY \cite{ponder-10a} & $f_{k}$ & $\theta_{0}$ & $g_{r}$ & $r_{o}$ &
-$U(\theta) = f_{k}~\sin\left[2(\theta-\theta_{0})\right] \cdot \sqrt{K_{ij} \cdot K_{ik}}~;$ \\
+$U(\theta) = 2~f_{k}~\sqrt{K_{ij} \cdot K_{ik}}~\sin^{2}\left[(\theta-\theta_{0})\right];$ \\
 {\bf -kky} &                     &     &              &            &            &
-$K_{ij} = 1/\exp\left[g_{r}(r_{ij}-r_{o})\right]$ \\
+$K_{ij} = 1/\left[\exp\left[g_{r}(r_{ij}-r_{o})\right]+1\right]$ \\
            &                     &     &              &            &            & \\
 \hline
 \end{tabular}
@@ -2789,16 +2791,16 @@ $U(r) = 0~~~~~~~~~~~~~~~~~~~:~r \ge r_{c}$ \\
 $U(r) = \epsilon\left(\frac{1.07}{{(r_{ij}/r_{o})+0.07}^{\vphantom{7}}}\right)^{7}\left(\frac{1.12}{{(r_{ij}/r_{o})^{7}+0.12}^{\vphantom{7}}}-2\right)$ \\
            & AMOEBA FF \cite{ponder-10a} &          &          &          &                               & \\
            &                           &            &          &          &                               & \\
-{\bf mstw} & Morse modified             & $E_{0}$    & $r_{0}$  & $k$      &   $c$                        &
+{\bf mstw} & Morse modified            & $E_{0}$    & $r_{0}$  & $k$      &   $c$                        &
 $U(r) = E_{0}\{\left[1-\exp\left(-k\left(r-r_{0}\right)\right)\right]^{2}-1\}+ \frac{c}{r^{12}}$ \\
            &                           &            &          &          &                               & \\
-{\bf ryd} & Rydberg                    & $a$        & $b$      & $\rho$   &                               &
+{\bf ryd}  & Rydberg                   & $a$        & $b$      & $\rho$   &                               &
 $U(r) = (a+br)\exp\left(-r/\rho\right)$  \\
            &                           &            &          &          &                               & \\
-{\bf zbl} & ZBL                    & $Z_1$        & $Z_2$      &          &                               & 
-  $U(r) = \frac{Z_1Z_2e^2}{4\pi\varepsilon_0\varepsilon_r}\sum_{i=1}^{4}b_i \exp\left(-c_ir/a\right)$  \\
+{\bf zbl}  & ZBL                       & $Z_{1}$    & $Z_{2}$  &          &                               &
+  $U(r) = \frac{Z_{1}~Z_{2}~e^{2}}{4\pi\varepsilon_0\varepsilon_r}\sum_{i=1}^{4}b_{i} \exp\left(-c_{i}r/a\right)$  \\
            &                           &            &          &          &                               & \\
-           &                &            &          &          & &\emph{continues on next page}   \\
+           &                           &            &          &          & &\emph{continues on next page}  \\
 \hline
 \end{tabular}
 \vskip 1ex
@@ -2815,23 +2817,25 @@ $U(r) = (a+br)\exp\left(-r/\rho\right)$  \\
 key & potential type & \multicolumn{4}{c|}{Variables (1-4)}& functional form \\
     &                & \multicolumn{4}{c|}{Variables (5-7)}&  \\
 \hline
-{\bf zbls} & ZBL mixed                 & $Z_1$           & $Z_2$         & $r_m$    & $\xi$       &
-  $U(r) = f\left(r\right)U_{ZBL}\left(r\right)+\left(1-f\left(r\right)\right)U_{morse}\left(r\right)$ \\
-           &  with Morse               &   $E_0$         &    $r_0$      &    $k$   &             &  \\
+{\bf zbls} & ZBL mixed                 & $Z_{1}$         & $Z_{2}$       & $r_{m}$  & $\xi$       &
+  $U(r) = f\left(r\right)U_{ZBL}\left(r\right)~~+~~ $ \\
+           &  with Morse               & $E_{0}$         & $r_{0}$       & $k$      &             &
+$~~~~~~~~+~~\left(1-f\left(r\right)\right)U_{morse}\left(r\right)$ \\
            &                           &                 &               &          &             &  \\
-{\bf zblb} & ZBL mixed                 & $Z_1$           & $Z_2$         & $r_m$    & $\xi$       &
-  $U(r) = f\left(r\right)U_{ZBL}\left(r\right)+\left(1-f\left(r\right)\right)U_{buckingham}\left(r\right)$ \\
-           & with Buckingham           &        $A$    &  $\rho$        &     $C$   &             & \\
-           &                           &               &                &           &             & \\
-{\bf mlj}   & Lennard-Jones tapered with MDF      & $\epsilon$ & $\sigma$ &    $r_i$      &                               &
+{\bf zblb} & ZBL mixed                 & $Z_{1}$         & $Z_{2}$       & $r_{m}$  & $\xi$       &
+  $U(r) = f\left(r\right)U_{ZBL}\left(r\right)~~+~~$ \\
+           & with Buckingham           & $A$             & $\rho$        & $C$      &             &
+$~~~~~+~~\left(1-f\left(r\right)\right)U_{buckingham}\left(r\right)$ \\
+           &                           &                 &               &          &             & \\
+{\bf mlj}  & Lennard-Jones tapered with MDF & $\epsilon$ & $\sigma$      & $r_i$    &             &
   $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]f(r)$ \\
-           &                           &            &          &          &                               & \\
-{\bf mbuc} & Buckingham tapered with MDF               & $A$        & $\rho$   & $C$      &   $r_i$                          &
+           &                           &                 &               &          &             & \\
+{\bf mbuc} & Buckingham tapered with MDF & $A$           & $\rho$        & $C$      & $r_i$       &
   $U(r) = \left[A~\exp \left( -\frac{r}{\rho} \right) - \frac{C}{r^{6}}\right]f(r)$ \\
-           &                           &            &          &          &                               & \\
-{\bf m126}   & 12-6 Lennard-Jones tapered with MDF      & $A$ & $B$ &    $r_i$      &                               &
+           &                           &                 &               &          &             & \\
+{\bf m126} & 12-6 Lennard-Jones tapered with MDF & $A$   & $B$           & $r_i$    &             &
   $U(r) = \left( \frac{A}{r^{12}} - \frac{B}{r^{6}} \right)f(r)$ \\
-           &                           &            &          &          &                               & \\
+           &                           &                 &               &          &             & \\
 \hline
 \end{tabular}
 \vskip 1ex
@@ -3136,7 +3140,7 @@ $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}~\exp[-(r_{ij}^{8} + r_{ik}^{8
 $U(\theta) = {k \over 2}~(\theta - \theta_{0})^{2}\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
            &                                        &           &              &            &            & \\
 {\bf bvs1} & Screened Vessal \cite{vessal-94a}      & $k$       & $\theta_{0}$ & $\rho_{1}$ & $\rho_{2}$ &
-$U(\theta) = {k \over 8(\theta-\theta_{0})^{2}} \left\{ \left[ (\theta_{0} -\pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
+$U(\theta) = {k \over 8(\theta_{0}-\pi)^{2}} \left\{ \left[ (\theta_{0} -\pi)^{2} -(\theta-\pi)^{2}\right]^{2}\right\} \times$ \\
            &                                        &           &              &            &            &
 $\exp[-(r_{ij}/\rho_{1} + r_{ik}/\rho_{2})]$ \\
            &                                        &           &              &            &            & \\
@@ -3896,12 +3900,12 @@ termination.
 \subsection{The DUMP\_E File}
 \label{dumpe-file}
 
-The DUMP\_E file contains the values of coarse-grained electronic 
-temperature (CET) cells from a previous job with the 
-\index{Two-Temperature Model} two-temperature model (TTM). It is 
-not required if the current job is not a continuation of a 
+The DUMP\_E file contains the values of coarse-grained electronic
+temperature (CET) cells from a previous job with the
+\index{Two-Temperature Model} two-temperature model (TTM). It is
+not required if the current job is not a continuation of a
 previous run (i.e. if the {\bf restart} directive is not present
-in the CONTROL file - see above). The two-line header consists of 
+in the CONTROL file - see above). The two-line header consists of
 the following records:
 \begin{tabbing}
 X\=XXXXXXXX\=XXXXXXXX\=\kill
@@ -3925,18 +3929,18 @@ X\=XXXXXXXX\=XXXXXXXX\=\kill
 \end{tabbing}
 with the origin of CET cell coordinates at the centre of the grid.
 
-The file is read by the subroutine {\sc ttm\_system\_init}. It 
-will not be accepted by \D if the number of CET cells in each 
-direction does not match the values given in the CONTROL file or 
-insufficient electronic temperatures are supplied. No matching up 
-of restart timestep or elapsed simulation time between REVOLD 
-and DUMP\_E is absolutely necessary, but the user will be warned 
+The file is read by the subroutine {\sc ttm\_system\_init}. It
+will not be accepted by \D if the number of CET cells in each
+direction does not match the values given in the CONTROL file or
+insufficient electronic temperatures are supplied. No matching up
+of restart timestep or elapsed simulation time between REVOLD
+and DUMP\_E is absolutely necessary, but the user will be warned
 if they are not the same.
 
 \subsection{The Ce.dat, Ke.dat, De.dat and g.dat Files}
 \label{ttm-tabulated-files}
 
-The \index{Two-Temperature Model}two-temperature model (TTM) 
+The \index{Two-Temperature Model}two-temperature model (TTM)
 implementation in \D allows specification of the following tabulated data:
 \begin{itemize}
 \item Ce.dat - for electronic volumetric heat capacity - temperature dependent
@@ -3945,13 +3949,13 @@ implementation in \D allows specification of the following tabulated data:
 \item g.dat - for electron-phonon coupling constants - temperature dependent
 \end{itemize}
 
-Each file is free-formatted and only consist of two columns: the first column 
-gives temperature in K, while the second gives electronic volumetric heat 
-capacity in J~m$^{-3}$~K$^{-1}$ (Ce.dat), thermal conductivity in 
+Each file is free-formatted and only consist of two columns: the first column
+gives temperature in K, while the second gives electronic volumetric heat
+capacity in J~m$^{-3}$~K$^{-1}$ (Ce.dat), thermal conductivity in
 W~m$^{-1}$~K$^{-1}$ (Ke.dat), thermal diffusivity in m$^{2}$~s$^{-1}$
-(De.dat) or the electron-phonon coupling constant in W~m$^{-3}$~K$^{-1}$ 
-(g.dat). These files are read by the subroutine {\sc ttm\_table\_read} if the 
-{\bf ttm cetab}, {\bf ttm ketab}, {\bf ttm detab} and/or {\bf ttm gvar} 
+(De.dat) or the electron-phonon coupling constant in W~m$^{-3}$~K$^{-1}$
+(g.dat). These files are read by the subroutine {\sc ttm\_table\_read} if the
+{\bf ttm cetab}, {\bf ttm ketab}, {\bf ttm detab} and/or {\bf ttm gvar}
 directives are included in the CONTROL file.
 
 \subsection{The HISTORY/HISTROF File}

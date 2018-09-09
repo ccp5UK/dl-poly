@@ -2,7 +2,7 @@ Module ttm_module
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 module for defining arrays and initial parameters for 
+! dl_poly_4 module for defining arrays and initial parameters for
 ! two-temperature model (ttm)
 !
 ! copyright - daresbury laboratory
@@ -163,7 +163,7 @@ Contains
         ttmbc(2) = 0
         ttmbcmap(2) = -1
       End If
-    
+
 !   -y boundary
       numbc = -(eltsys(2)-ntsys(2))/2
       numbc = MOD(numbc+ntsys(2)*(eltcell(2)+1),ntsys(2)) + 1

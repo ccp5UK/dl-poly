@@ -523,7 +523,7 @@
         If (word(1:4) == 'ncit') Then
 
         ! number of coarse-grained ion temperature cells (CIT)
-        ! in z-direction: geometry of system determines 
+        ! in z-direction: geometry of system determines
         ! CITs in x- and y-directions
 
           Call get_word(record,word)
@@ -641,8 +641,8 @@
 
         ! variable electron-phonon coupling constant (chi_ep) based on
         ! tabular electronic stopping terms (in g.dat file): option to
-        ! apply value homogeneously across system (based on average 
-        ! electronic temperature) or heterogeneously (using local 
+        ! apply value homogeneously across system (based on average
+        ! electronic temperature) or heterogeneously (using local
         ! electronic temperature for each voxel)
 
           Call get_word(record,word)

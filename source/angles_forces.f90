@@ -12,8 +12,9 @@ Subroutine angles_forces(isw,engang,virang,stress)
 ! author    - w.smith may 1992
 ! amended   - i.t.todorov march 2016
 ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! amended   - i.t.todorov & m.a.seaton september 2018 (KKY fixes)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds_f90
   Use comms_module,  Only : idnode,mxnode,gsync,gsum,gcheck
@@ -452,16 +453,16 @@ Subroutine angles_forces(isw,engang,virang,stress)
            gr    =prmang(3,kk)
            rm    =prmang(4,kk)
            dr1   =rab-rm
-           rho1  =Exp(-0.5_wp*gr*dr1)
+           rho1  =Exp(gr*dr1)+1.0_wp
            dr2   =rbc-rm
-           rho2  =Exp(-0.5_wp*gr*dr2)
-           rho   =rho1*rho2
+           rho2  =Exp(gr*dr2)+1.0_wp
+           rho   =1.0_wp*Sqrt(rho1*rho2)
 
-           pterm=k*(Cos(2.0_wp*dtheta)-1.0_wp)*rho
-           gamma=-k*2.0_wp*Sin(2.0_wp*dtheta)/sint
-           gamsa=-0.5_wp*gr*pterm
-           gamsc=gamsa
-           vterm=-gamsa*(rab+rbc)
+           pterm=-k*rho*(Cos(2.0_wp*dtheta)-1.0_wp)
+           gamma= 2.0_wp*k*rho*Sin(2.0_wp*dtheta)*rsint
+           gamsa=-0.5_wp*gr*pterm*(1.0_wp-1.0_wp/rho1)
+           gamsc=-0.5_wp*gr*pterm*(1.0_wp-1.0_wp/rho2)
+           vterm=-(gamsa*rab+gamsc*rbc)
 
         Else If (keya == 20) Then
 

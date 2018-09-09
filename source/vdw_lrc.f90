@@ -164,7 +164,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
                     e0*t*t/(4.0_wp*kk*kk*kk)*((kk*rvdw+1)**2 + kk*kk*rvdw*rvdw)
                  padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*rvdw**3 + &
                       3*kk**2*rvdw**2 +6*kk*rvdw + 6) + &
-                      e0*t*t/(4.0_wp*kk*kk*kk)* & 
+                      e0*t*t/(4.0_wp*kk*kk*kk)* &
                       (4.0_wp*kk**3*rvdw**3 + 6*kk**2*rvdw**2 + 6*kk*rvdw + 3)
               End If
 
@@ -209,11 +209,11 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
                  s9 = c/(9.0_wp*rvdw**9)
 
                  eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*rvdw+1)**2 + 1) + &
-                     e0*t*t/(4.0_wp*kk*kk*kk)*((kk*rvdw+1)**2 + & 
+                     e0*t*t/(4.0_wp*kk*kk*kk)*((kk*rvdw+1)**2 + &
                      kk*kk*rvdw*rvdw) + s9
-                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*rvdw**3 + & 
-                       3*kk**2*rvdw**2 + 6*kk*rvdw + 6) + & 
-                       e0*t*t/(4.0_wp*kk*kk*kk)* (4.0_wp*kk**3*rvdw**3 + & 
+                 padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*rvdw**3 + &
+                       3*kk**2*rvdw**2 + 6*kk*rvdw + 6) + &
+                       e0*t*t/(4.0_wp*kk*kk*kk)* (4.0_wp*kk**3*rvdw**3 + &
                        6*kk**2*rvdw**2 + 6*kk*rvdw + 3) + 12.0_wp*s9
               End If
 
@@ -228,7 +228,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
 
               eadd = (b*c*rvdw**3+(3*b*c**2+a*c)*rvdw**2+(6*b*c**3+2*a*c**2)*rvdw&
                 +6*b*c**4+2*a*c**3)*t
-              padd = (b*rvdw**4+(3*b*c+a)*rvdw**3+(9*b*c**2+3*a*c)*rvdw**2+& 
+              padd = (b*rvdw**4+(3*b*c+a)*rvdw**3+(9*b*c**2+3*a*c)*rvdw**2+&
                 (18*b*c**3+6*a*c**2)*rvdw+18*b*c**4+6*a*c**3)*t
 
            Else If (keypot == 15) Then
@@ -259,7 +259,7 @@ Subroutine vdw_lrc(rvdw,elrc,virlrc)
                     e0*t*t/(4.0_wp*kk*kk*kk)*((kk*rvdw+1)**2 + kk*kk*rvdw*rvdw)
                  padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*rvdw**3 + &
                       3*kk**2*rvdw**2 +6*kk*rvdw + 6) + &
-                      e0*t*t/(4.0_wp*kk*kk*kk)* & 
+                      e0*t*t/(4.0_wp*kk*kk*kk)* &
                       (4.0_wp*kk**3*rvdw**3 + 6*kk**2*rvdw**2 + 6*kk*rvdw + 3)
               End If
 

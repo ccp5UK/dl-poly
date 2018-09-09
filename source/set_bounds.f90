@@ -15,6 +15,7 @@ Subroutine set_bounds                                 &
 ! contrib   - i.t.todorov march 2018 (rpad reset if 'strict' & rpad undefined)
 ! contrib   - i.t.todorov june 2018 (spme suggestions)
 ! contrib   - i.t.todorov june 2018 (fdens & mxatms fixes)
+! contrib   - i.t.todorov august 2018 (rpad refinements)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -44,10 +45,11 @@ Subroutine set_bounds                                 &
   Logical           :: l_usr,l_n_r,lzdn,lext,lrpad,lrpad0=.false.
   Integer           :: megatm,i,ilx,ily,ilz,qlx,qly,qlz, &
                        mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
-  Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
-                       dens0,dens,fdens,fdvar,  &
-                       test,vcell,tol,          &
-                       rcter,rctbp,rcfbp,       &
+  Real( Kind = wp ) :: ats,celprp(1:10),cut,   &
+                       dens0,dens,fdens,fdvar, &
+                       test,vcell,tol,         &
+                       rpad1,rpad2,            &
+                       rcter,rctbp,rcfbp,      &
                        xhi,yhi,zhi
 
 ! define zero+ and half+/- (setup_module)
@@ -467,6 +469,74 @@ Subroutine set_bounds                                 &
 
   If (idnode == 0) Write(nrite,'(/,/,1x,a,3i6)') 'node/domain decomposition (x,y,z): ', nprx,npry,nprz
 
+
+
+! TTM matters
+
+  rpad2=0.0_wp
+  If (l_ttm) Then
+
+! two-temperature model: determine number of CITs
+! in x- and y-directions based on number in z-direction
+! and system size
+
+     delz     = cell(9)/Real(ntsys(3),wp)
+     ntsys(1) = Nint(cell(1)/delz)
+     ntsys(2) = Nint(cell(5)/delz)
+     delx     = cell(1)/Real(ntsys(1),wp)
+     dely     = cell(5)/Real(ntsys(2),wp)
+     volume   = delx*dely*delz
+     rvolume  = 1.0_wp/volume
+
+! Check number of electronic temperature cells is
+! >= to number of ionic temperature cells
+
+     If (Any(eltsys < ntsys)) Call error(670)
+
+! Check max rpad does not go too far for determining ionic temperatures
+
+     tol=Min(delx,dely,delz)
+     Do i=1,nprx-1
+        test=Real(i,wp)*cell(1)*r_nprx
+        test=test-delx*Floor(test/delx)
+        If (test > zero_plus) tol=Min(tol,test)
+     End Do
+     Do i=1,npry-1
+        test=Real(i,wp)*cell(5)*r_npry
+        test=test-dely*Floor(test/dely)
+        If (test > zero_plus) tol=Min(tol,test)
+     End Do
+     Do i=1,nprz-1
+        test=Real(i,wp)*cell(9)*r_nprz
+        test=test-delz*Floor(test/delz)
+        If (test > zero_plus) tol=Min(tol,test)
+     End Do
+     rpad2=tol
+
+  End If
+
+! If redistribute option selected, check for sufficient electronic temperature
+! cells to redistribute energy when ionic temperature cells are switched off:
+! if not available, switch off this option
+
+  If (redistribute .and. (eltsys(1) < ntsys(1)+2 .or. &
+                          eltsys(2) < ntsys(2)+2 .or. &
+                          eltsys(3)<ntsys(3)+2)) Then
+    Call warning(500,0.0_wp,0.0_wp,0.0_wp)
+    redistribute = .false.
+  End If
+
+! Calculate average atomic density: if not overridden by
+! 'ttm atomdens' directive in CONTROL file, will be used
+! to convert specific heat capacities to volumetric
+! heat capacity etc.
+
+  sysrho = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
+
+
+
+! LC and VNL matters
+
 5 Continue
 
   If (rpad > zero_plus) Then
@@ -554,6 +624,7 @@ Subroutine set_bounds                                 &
         Else ! rpad is defined & in 'no strict' mode
            If (rpad > zero_plus .and. (.not.l_str)) Then ! Re-set rpad with some slack
               rpad = Min( 0.95_wp * (cut - rcut) , test * rcut)
+              If (rpad2 > zero_plus) rpad=Min(rpad,rpad2)
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
               If (rpad < tol) rpad = 0.0_wp ! Don't bother
               Go To 10
@@ -563,16 +634,18 @@ Subroutine set_bounds                                 &
            End If
         End If
      End If
-  Else ! push/reset the limits in 'no strict' mode be less hopeful for 'strict' if rpad=0
+  Else ! push/reset the limits in 'no strict' mode and be somewhat hopeful for undefined rpad in 'strict' when rpad=0
      If (.not.(mxmet == 0 .and. l_n_e .and. l_n_v .and. mxrdf == 0 .and. kim == ' ')) Then ! 2b link-cells are needed
+        rpad1=0.0_wp
         If (mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then ! catch & handle exception
-           rpad = 0.95_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
-           rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
+           rpad1 = 0.95_wp * (0.5_wp*width - rcut - 1.0e-6_wp)
         End If
 
         If (rpad <= zero_plus) Then ! When rpad is undefined give it some value
            If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
               rpad = test * rcut
+              If (rpad1 > zero_plus) rpad=Min(rpad,rpad1)
+              If (rpad2 > zero_plus) rpad=Min(rpad,rpad2)
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp
               If (rpad > tol) Go To 10
            Else ! not so good non-exception
@@ -580,6 +653,8 @@ Subroutine set_bounds                                 &
                                             r_npry * celprp(8) / Real(ily,wp) , &
                                             r_nprz * celprp(9) / Real(ilz,wp) ) &
                                       - rcut - 1.0e-6_wp ) , test * rcut )
+              If (rpad1 > zero_plus) rpad=Min(rpad,rpad1)
+              If (rpad2 > zero_plus) rpad=Min(rpad,rpad2)
               rpad = Real( Int( 100.0_wp * rpad ) , wp ) / 100.0_wp ! round up
            End If
         End If
@@ -601,7 +676,7 @@ Subroutine set_bounds                                 &
               If (rpad < tol) rpad = 0.0_wp ! Don't bother
            End If
         End If
-     Else ! 'no strict
+     Else ! 'no strict'
         If (lrpad0) Then ! forget about it
            rpad = 0.0_wp
         End If
@@ -679,7 +754,7 @@ Subroutine set_bounds                                 &
 ! Hard luck, giving up after trying once more
 
      If (qlx*qly*qlz == 0) Then
-        If (lrpad0 .eqv. lrpad .and. rpad > zero_plus) Then ! defaulted padding must be removed
+        If ((lrpad0 .eqv. lrpad) .and. rpad > zero_plus) Then ! defaulted padding must be removed
            rpad=0.0_wp
            lrpad0=.true.
            Go To 5
@@ -843,67 +918,5 @@ Subroutine set_bounds                                 &
         mxcell = Max(mxcell,Nint((fdvar**2) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
      End If
   End If
-
-  If (l_ttm) Then
-
-! two-temperature model: determine number of CITs
-! in x- and y-directions based on number in z-direction
-! and system size
-
-    delz     = cell(9)/Real(ntsys(3),wp)
-    ntsys(1) = Nint(cell(1)/delz)
-    ntsys(2) = Nint(cell(5)/delz)
-    delx     = cell(1)/Real(ntsys(1),wp)
-    dely     = cell(5)/Real(ntsys(2),wp)
-    volume   = delx*dely*delz
-    rvolume  = 1.0_wp/volume
-
-! Check number of electronic temperature cells is greater than/
-! equal to number of ionic temperature cells
-
-    If (Any(eltsys<ntsys)) Call error(670)
-
-! Check rpad does not go too far for determining ionic temperatures
-
-    tol=Min(delx,dely,delz)
-    Do i=1,nprx-1
-      test=Real(i,wp)*cell(1)*r_nprx
-      test=test-delx*Floor(test/delx)
-      If (test>zero_plus) tol=Min(tol,test)
-    End Do
-    Do i=1,npry-1
-      test=Real(i,wp)*cell(5)*r_npry
-      test=test-dely*Floor(test/dely)
-      If (test>zero_plus) tol=Min(tol,test)
-    End Do
-    Do i=1,nprz-1
-      test=Real(i,wp)*cell(9)*r_nprz
-      test=test-delz*Floor(test/delz)
-      If (test>zero_plus) tol=Min(tol,test)
-    End Do
-    If (rpad>tol) Then
-      If (idnode==0) Write(nrite,'(/,1x,a,e12.4,a,/,1x,a,e12.4,a)') &
-        &'*** warning - cutoff padding ',rpad,' (Angs) too large for ttm temperature grid calculations !!! ***',&
-        &'*** maximum useable value of rpad (Angs): ',tol,' !!! ***'
-      Call error (680)
-    End If
-
-  End If
-
-! If redistribute option selected, check for sufficient electronic temperature
-! cells to redistribute energy when ionic tmeperature cells are switched off:
-! if not available, switch off this option
-
-  If (redistribute .and. (eltsys(1)<ntsys(1)+2 .or. eltsys(2)<ntsys(2)+2 .or. eltsys(3)<ntsys(3)+2)) Then
-    Call warning(500,0.0_wp,0.0_wp,0.0_wp)
-    redistribute = .false.
-  End If
-
-! Calculate average atomic density: if not overridden by
-! 'ttm atomdens' directive in CONTROL file, will be used
-! to convert specific heat capacities to volumetric 
-! heat capacity etc.
-
-  sysrho = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
 
 End Subroutine set_bounds

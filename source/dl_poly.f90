@@ -32,7 +32,7 @@ Program dl_poly
 !
 ! copyright - daresbury laboratory
 ! authors   - i.t.todorov & w.smith march 2016
-! contrib   - i.j.bush, h.a.boateng, a.m.elena, a.b.g.chalk
+! contrib   - i.j.bush, h.a.boateng, m.a.seaton, a.m.elena, a.b.g.chalk
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -707,7 +707,7 @@ Program dl_poly
      End If
   End If
 
-! Two-temperature model simulations: calculate final 
+! Two-temperature model simulations: calculate final
 ! ionic temperatures and print statistics to files
 ! (final)
 

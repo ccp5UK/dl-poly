@@ -130,7 +130,7 @@ Subroutine nvt_l2_lfv                     &
   If (l_ttm .and. gvar==1) Call calcchies(chi_ep)
 
 ! check whether or not Langevin forces are needed: if electron-phonon
-! friction coefficient is/will be greater than zero and coupling is 
+! friction coefficient is/will be greater than zero and coupling is
 ! switched on after time offset
 
   lrand = ((chi_ep>zero_plus .or. gvar==2) .and. l_epcp)

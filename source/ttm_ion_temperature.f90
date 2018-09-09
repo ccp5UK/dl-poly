@@ -46,7 +46,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
   crho = 0.0_wp
 
 ! if heterogeneous, gsource is an array containing no. of atoms in each cell
-! otherwise it is an array containing the effective electron-phonon relaxation 
+! otherwise it is an array containing the effective electron-phonon relaxation
 ! strength (known value for constant and homogeneous dynamic calculations)
 
   Select Case (gvar)
@@ -278,7 +278,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
   End Do
 
 ! calculate ionic temperatures (accounting for cell velocities)
-! and source terms: electron-phonon (gsource) and electronic 
+! and source terms: electron-phonon (gsource) and electronic
 ! stopping (asource)
 
   Do i=1,natms
@@ -418,7 +418,7 @@ Subroutine ttm_ion_temperature(chi_ep,chi_es,vel_es2)
       Do ia = 1, ntcell(1)
         ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
         ! calculate ionic temperature for all cells with at least
-        ! minimum number of particles (1 during deposition, amin 
+        ! minimum number of particles (1 during deposition, amin
         ! at all other times), calculating dynamic cell density
         ! (if required) from active cells, removing centre of mass
         ! motion and determining any inactive ionic temperature cells

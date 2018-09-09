@@ -9,6 +9,7 @@ Subroutine read_config_parallel                 &
 ! copyright - daresbury laboratory
 ! author    - i.j.bush & i.t.todorov march 2016
 ! amended   - i.t.todorov february 2018 - non-fast read fix
+! amended   - i.t.todorov september 2018 - record initialisation
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -237,6 +238,7 @@ Subroutine read_config_parallel                 &
 ! Atom details
 
               this_rec_buff = this_rec_buff + 1
+              record=' '
               Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
                  record( j:j ) = rec_buff( j, this_rec_buff )
               End Do
@@ -273,6 +275,7 @@ Subroutine read_config_parallel                 &
 ! Positions
 
                  this_rec_buff = this_rec_buff + 1
+                 record=' '
                  Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
                     record( j:j ) = rec_buff( j, this_rec_buff )
                  End Do
@@ -294,6 +297,7 @@ Subroutine read_config_parallel                 &
 
                  If (levcfg > 0) Then
                     this_rec_buff = this_rec_buff + 1
+                    record=' '
                     Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
                        record( j:j ) = rec_buff( j, this_rec_buff )
                     End Do
@@ -315,6 +319,7 @@ Subroutine read_config_parallel                 &
 
                     If (levcfg > 1) Then
                        this_rec_buff = this_rec_buff + 1
+                       record=' '
                        Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
                           record( j:j ) = rec_buff( j, this_rec_buff )
                        End Do

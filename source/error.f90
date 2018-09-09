@@ -7,6 +7,8 @@ Subroutine error(kode)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov september 2016
+! contrib   - m.a.seaton july 2018
+! amended   - i.t.todorov august 2018
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1048,10 +1050,6 @@ Subroutine error(kode)
      Else If (kode ==  670) Then
 
         Write(nrite,'(/,1x,a)') 'error - insufficient electronic temperature cells for TTM heat diffusion'
-
-     Else If (kode ==  680) Then
-
-        Write(nrite,'(/,1x,a)') 'error - rpad too large for calculation of ionic temperatures'
 
      Else If (kode ==  681) Then
 

@@ -91,7 +91,7 @@ Subroutine ttm_system_revive    &
         IF (mxnode>1) Call gsync()
       End Do
 
-    End If 
+    End If
   End If
 
 End Subroutine ttm_system_revive
