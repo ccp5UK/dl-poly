@@ -1142,8 +1142,7 @@ position of the minimum and shifted to eliminate discontinuity
 (includes the effect of excluded volume).  It is usually used in
 combination with the FENE, equation~(\ref{FENE}), bond potential.  This
 implementation allows for a radius shift of up to half a $\sigma$
-($|\Delta| \le 0.5~\sigma$) with a default of zero
-($\Delta_{default} = 0$).
+($|\Delta| \le 0.5~\sigma$) with a default of zero ($\Delta_{default} = 0$).
 \item Standard DPD potential:  ({\bf dpd})
 \begin{equation}
 U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
@@ -1165,44 +1164,48 @@ U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac
   \end{equation}
 \item Ziegler-Biersack-Littmark (ZBL): \cite{ziegler1985} ({\bf zbl})
   \begin{equation}
+      U(r_{ij}) = \frac{Z_{1} Z_{2}e^{2}}{4 \pi \varepsilon_{0} \varepsilon_{r}}
+                  \sum_{i=1}^{4} b_{i} \exp\left(-c_{i}r/a\right)~~,
+  \end{equation}
+  where
+  \begin{equation}
     \begin{split}
-      U(r_{ij}) =& \frac{Z_1Z_2e^2}{4\pi\varepsilon_0\varepsilon_r}\sum_{i=1}^{4}b_i \exp\left(-c_ir/a\right) \\
-               a=&\frac{0.88534a_B}{Z_1^{0.23}+Z_2^{0.23}}\\
-               b=&[0.18175,0.50986,0.28022,0.02817]\\
-               c=&[3.1998,0.94229,0.40290,0.20162] \\
-               a_B =& 0.52917721067~\textrm{\AA}
+      a=&~\frac{0.88534 \cdot a_{B}}{Z_{1}^{0.23}+Z_{2}^{0.23}} \\
+      b=&~[0.18175,0.50986,0.28022,0.02817] \\
+      c=&~[3.1998,0.94229,0.40290,0.20162] \\
+  a_{B}=&~ 0.52917721067~\textrm{\AA}~~. \nonumber
     \end{split}
   \end{equation}
 \item ZBL mixed with Morse, \cite{trachenko2003}: ({\bf zbls})
   \begin{equation}
-    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{morse}\left(r_{ij}\right)
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{morse}\left(r_{ij}\right)~~,
   \end{equation}
   with $f\left(r\right)$ defined by
   \begin{equation*}
      f\left(r\right) = \left\{
        \begin{array}{ll}
-         1-e^{-\left(r_m-r\right)/\xi}/2 & r<r_m \\
-         e^{-\left(r-r_m\right)/\xi}/2 & r\geq r_m\\
+         1-e^{-\left(r_m-r\right)/\xi}/2 & ~~:~~ r<r_m \\
+         e^{-\left(r-r_m\right)/\xi}/2 & ~~:~~ r\geq r_m~~. \\
        \end{array}
        \right.
   \end{equation*}
 
 \item ZBL mixed with Buckingham, \cite{trachenko2003}: ({\bf zblb})
   \begin{equation}
-    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{buckingham}\left(r_{ij}\right)
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{buckingham}\left(r_{ij}\right)~~,
   \end{equation}
   with $f\left(r\right)$ defined by
   \begin{equation*}
      f\left(r\right) = \left\{
        \begin{array}{ll}
-         1-e^{-\left(r_m-r\right)/\xi}/2 & r<r_m \\
-         e^{-\left(r-r_m\right)/\xi}/2 & r\geq r_m\\
+         1-e^{-\left(r_m-r\right)/\xi}/2 & ~~:~~ r<r_m \\
+         e^{-\left(r-r_m\right)/\xi}/2 & ~~:~~ r\geq r_m~~. \\
        \end{array}
        \right.
   \end{equation*}
 \item Lennard-Jones tapered with Mei-Davenport-Fernando taper (MDF), \cite{Raiteri2010}: ({\bf mlj})
   \begin{equation}
-    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{LJ}\left(r_{ij}\right)
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{LJ}\left(r_{ij}\right)~~,
   \end{equation}
 
   where
@@ -1210,22 +1213,22 @@ U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac
     \begin{equation}
     f(r)=
      \begin{cases}
-       1 & r<r_i\\
-   \frac{\left(r_c-r\right)^3\left(10r_i^2-5r_cr_i-15rr_i+r_c^2+3rr_c+6r^2\right)}{\left(r_c-r_i\right)^5} & r_i \leq r \leq r_c \\
-       0 & r>r_c\\
+       1 & ~~:~~ r<r_i \\
+   \frac{\left(r_c-r\right)^3\left(10r_i^2-5r_cr_i-15rr_i+r_c^2+3rr_c+6r^2\right)}{\left(r_c-r_i\right)^5} & ~~:~~ r_i \leq r \leq r_c \\
+       0 & ~~:~~ r>r_c~~.\\
      \end{cases}
    \end{equation}
-  $r_c$ is set to $r_{vdw}$ and controled by {\bf rvdw}
+  $r_c$ is set to $r_{vdw}$ and controled by {\bf rvdw}.
 \item Buckingham tapered with MDF: ({\bf mbuc})
   \begin{equation}
     U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{Buckingham}\left(r_{ij}\right)
   \end{equation}
-  see {\bf mlj} for more details
+  See {\bf mlj} for more details.
 \item 12-6 Lennard-Jones tapered with Mei-Davenport-Fernando taper (MDF): ({\bf m126})
   \begin{equation}
     U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{12-6}\left(r_{ij}\right)
   \end{equation}
-  see {\bf mlj} for more details
+  See {\bf mlj} for more details.
 \item Tabulation:  ({\bf tab}).  The potential is defined
 numerically only.
 \end{enumerate}
