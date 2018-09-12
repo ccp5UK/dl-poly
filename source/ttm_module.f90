@@ -8,7 +8,8 @@ Module ttm_module
 ! copyright - daresbury laboratory
 ! authors   - s.l.daraszewicz & m.a.seaton may 2012
 ! contrib   - g.khara may 2016
-! contrib   - m.a.seaton september 2017
+! contrib   - m.a.seaton september 2018
+! amended   - i.t.todorov september 2018
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -62,11 +63,9 @@ Module ttm_module
 
 Contains
 
-  Subroutine allocate_ttm_arrays(rpad)
+  Subroutine allocate_ttm_arrays()
 
     Implicit None
-
-    Real ( Kind = wp), Intent ( In ) :: rpad
 
     Real ( Kind = wp ) :: start, finish
     Integer, Dimension ( 1:7 ) :: fail
