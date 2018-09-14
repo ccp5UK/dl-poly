@@ -37,5 +37,9 @@ Module electrostatic
     Real( Kind = wp ), Public :: alpha
     !> Relative dielectric constant
     Real( Kind = wp ), Public :: eps
+
+    !> Grid points for ewald exclusion potential arrays
+    Integer( Kind = wi ), Public :: ewald_exclusion_grid
+
   End Type electrostatic_type
 End Module electrostatic

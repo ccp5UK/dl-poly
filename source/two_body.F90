@@ -385,7 +385,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 ! Poisson solver alternative to Ewald
 
   If (electro%key == ELECTROSTATIC_POISSON) Then
-    Call poisson_forces(engacc,viracc,stats%stress,pois,electro,domain,parts,comm)
+    Call poisson_forces(engacc,viracc,stats%stress,pois,electro,domain,parts,ewld,comm)
     engcpe_rl=engcpe_rl+engacc
     vircpe_rl=vircpe_rl+viracc
   End If

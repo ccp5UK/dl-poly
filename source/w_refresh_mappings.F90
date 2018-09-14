@@ -7,7 +7,7 @@ If (nstep > 0) Call xscale(tstep,thermo,stat,neigh,rigid,domain,comm)
 
 ! Check VNL conditioning
 
-Call vnl_check(l_str,width,neigh,stat,domain,parts,comm)
+Call vnl_check(l_str,width,neigh,stat,domain,parts,ewld%bspline,comm)
 
 If (neigh%update) Then
 
@@ -20,7 +20,7 @@ If (neigh%update) Then
 
   ! Exchange atomic data in border regions
 
-  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,comm) ! inducing in here only
+  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,ewld,comm) ! inducing in here only
 
   ! Re-tag RBs when called again after the very first time
   ! when it's done in rigid_bodies_setup <- build_book_intra

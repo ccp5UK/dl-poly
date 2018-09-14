@@ -4,8 +4,8 @@ Module ewald_mpole
   Use configuration, Only : natms,ltg,cell,volm,nlast, &
                             lfrzn
   Use particle, Only : corePart
-  Use setup, Only :  r4pie0, sqrpi, zero_plus,mxatdm,mxatms,mxspl, &
-                           kmaxa, kmaxb, kmaxc, mxspl1, mxspl2, twopi, mxgele
+  Use setup, Only :  r4pie0, sqrpi, zero_plus,mxatdm,mxatms, &
+                            twopi
   Use ewald,        Only : ewald_type,spl_cexp,bspcoe,bspgen_mpoles,dtpbsp,exchange_grid
   Use numerics, Only : invert,dcell,erfcgen
   Use mpoles_container, Only : ewald_deriv,explicit_ewald_real_loops,&
@@ -74,7 +74,7 @@ Module ewald_mpole
        newjob = .false.
 
        fail=0
-       Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
+       Allocate (erc(0:electro%ewald_exclusion_grid),fer(0:electro%ewald_exclusion_grid), Stat=fail)
        If (fail > 0) Then
           Write(message,'(a)') 'ewald_real_mforces allocation failure'
           Call error(0,message)
@@ -82,7 +82,7 @@ Module ewald_mpole
 
   ! interpolation interval
 
-       drewd = neigh%cutoff/Real(mxgele-4,wp)
+       drewd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
   ! reciprocal of interpolation interval
 
@@ -90,7 +90,7 @@ Module ewald_mpole
 
   ! generate error function complement tables for ewald sum
 
-       Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
+       Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,erc,fer)
     End If
 
   ! initialise potential energy and virial
@@ -463,7 +463,7 @@ Module ewald_mpole
        newjob = .false.
 
        fail=0
-       Allocate (erc(0:mxgele),fer(0:mxgele), Stat=fail)
+       Allocate (erc(0:electro%ewald_exclusion_grid),fer(0:electro%ewald_exclusion_grid), Stat=fail)
        If (fail > 0) Then
           Write(message,'(a)') 'ewald_real_mforces allocation failure'
           Call error(0,message)
@@ -471,7 +471,7 @@ Module ewald_mpole
 
   ! interpolation interval
 
-       drewd = neigh%cutoff/Real(mxgele-4,wp)
+       drewd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
   ! reciprocal of interpolation interval
 
@@ -479,7 +479,7 @@ Module ewald_mpole
 
   ! generate error function complement tables for ewald sum
 
-       Call erfcgen(neigh%cutoff,electro%alpha,mxgele,erc,fer)
+       Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,erc,fer)
 
   ! coefficients for exponential in recurrence relation
 
@@ -1187,12 +1187,12 @@ Module ewald_mpole
   !!! BEGIN DD SPME VARIABLES
   ! 3D charge array construction (bottom and top) indices
 
-       ixb=domain%idx*(kmaxa/domain%nx)+1
-       ixt=(domain%idx+1)*(kmaxa/domain%nx)
-       iyb=domain%idy*(kmaxb/domain%ny)+1
-       iyt=(domain%idy+1)*(kmaxb/domain%ny)
-       izb=domain%idz*(kmaxc/domain%nz)+1
-       izt=(domain%idz+1)*(kmaxc/domain%nz)
+       ixb=domain%idx*(ewld%fft_dim_a/domain%nx)+1
+       ixt=(domain%idx+1)*(ewld%fft_dim_a/domain%nx)
+       iyb=domain%idy*(ewld%fft_dim_b/domain%ny)+1
+       iyt=(domain%idy+1)*(ewld%fft_dim_b/domain%ny)
+       izb=domain%idz*(ewld%fft_dim_c/domain%nz)+1
+       izt=(domain%idz+1)*(ewld%fft_dim_c/domain%nz)
 
        ixbm1_r=Real(ixb-1,wp)
        ixtm0_r=Nearest( Real(ixt,wp) , -1.0_wp )
@@ -1203,16 +1203,16 @@ Module ewald_mpole
 
   ! Real values of kmax vectors
 
-       kmaxa_r=Real(kmaxa,wp)
-       kmaxb_r=Real(kmaxb,wp)
-       kmaxc_r=Real(kmaxc,wp)
+       kmaxa_r=Real(ewld%fft_dim_a,wp)
+       kmaxb_r=Real(ewld%fft_dim_b,wp)
+       kmaxc_r=Real(ewld%fft_dim_c,wp)
 
   !!! END DD SPME VARIABLES
 
   !!! BEGIN CARDINAL B-SPLINES SET-UP
   ! allocate the complex exponential arrays
 
-       Allocate (ww1(1:kmaxa),ww2(1:kmaxb),ww3(1:kmaxc), Stat = fail(1))
+       Allocate (ww1(1:ewld%fft_dim_a),ww2(1:ewld%fft_dim_b),ww3(1:ewld%fft_dim_c), Stat = fail(1))
        If (fail(1) > 0) Then
           Write(message,'(a)') 'ww arrays allocation failure'
           Call error(0,message)
@@ -1220,12 +1220,12 @@ Module ewald_mpole
 
   ! initialise the complex exponential arrays
 
-       Call spl_cexp(kmaxa,kmaxb,kmaxc,ww1,ww2,ww3)
+       Call spl_cexp(ewld%fft_dim_a,ewld%fft_dim_b,ewld%fft_dim_c,ww1,ww2,ww3)
 
   ! allocate the global B-spline coefficients and the helper array
 
-       Allocate (bscx(1:kmaxa),bscy(1:kmaxb),bscz(1:kmaxc), Stat = fail(1))
-       Allocate (csp(1:mxspl),                              Stat = fail(2))
+       Allocate (bscx(1:ewld%fft_dim_a),bscy(1:ewld%fft_dim_b),bscz(1:ewld%fft_dim_c), Stat = fail(1))
+       Allocate (csp(1:ewld%bspline),                              Stat = fail(2))
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'bsc and cse arrays allocation failure'
           Call error(0,message)
@@ -1233,7 +1233,7 @@ Module ewald_mpole
 
   ! calculate the global B-spline coefficients
 
-       Call bspcoe(mxspl,kmaxa,kmaxb,kmaxc,csp,bscx,bscy,bscz,ww1,ww2,ww3)
+       Call bspcoe(ewld,csp,bscx,bscy,bscz,ww1,ww2,ww3)
 
   ! deallocate the helper array and complex exponential arrays
 
@@ -1249,13 +1249,13 @@ Module ewald_mpole
   !!! BEGIN DAFT SET-UP
   ! domain local block limits of kmax space
 
-       block_x = kmaxa / domain%nx
-       block_y = kmaxb / domain%ny
-       block_z = kmaxc / domain%nz
+       block_x = ewld%fft_dim_a / domain%nx
+       block_y = ewld%fft_dim_b / domain%ny
+       block_z = ewld%fft_dim_c / domain%nz
 
   ! set up the parallel fft and useful related quantities
 
-       Call initialize_fft( 3, (/ kmaxa, kmaxb, kmaxc /), &
+       Call initialize_fft( 3, (/ ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c /), &
            (/ domain%nx, domain%ny, domain%nz /), (/ domain%idx, domain%idy, domain%idz /),   &
            (/ block_x, block_y, block_z /),               &
            comm%comm, context )
@@ -1270,9 +1270,9 @@ Module ewald_mpole
           Call error(0,message)
        End If
 
-       Call pfft_indices( kmaxa, block_x, domain%idx, domain%nx, index_x )
-       Call pfft_indices( kmaxb, block_y, domain%idy, domain%ny, index_y )
-       Call pfft_indices( kmaxc, block_z, domain%idz, domain%nz, index_z )
+       Call pfft_indices( ewld%fft_dim_a, block_x, domain%idx, domain%nx, index_x )
+       Call pfft_indices( ewld%fft_dim_b, block_y, domain%idy, domain%ny, index_y )
+       Call pfft_indices( ewld%fft_dim_c, block_z, domain%idz, domain%nz, index_z )
 
   ! workspace arrays for DaFT
 
@@ -1297,10 +1297,10 @@ Module ewald_mpole
 
     Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
     Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
-    Allocate (bdx(0:mxspl),bsddx(0:mxspl,1:mxspl,1:mxatms), &
-              bdy(0:mxspl),bsddy(0:mxspl,1:mxspl,1:mxatms), &
-              bdz(0:mxspl),bsddz(0:mxspl,1:mxspl,1:mxatms),                         Stat = fail(3))
-    Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
+    Allocate (bdx(0:ewld%bspline),bsddx(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+              bdy(0:ewld%bspline),bsddy(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+              bdz(0:ewld%bspline),bsddz(0:ewld%bspline,1:ewld%bspline,1:mxatms),                         Stat = fail(3))
+    Allocate (bspx(1:ewld%bspline,1:mxatms),bspy(1:ewld%bspline,1:mxatms),bspz(1:ewld%bspline,1:mxatms), Stat = fail(4))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'ewald_spme_mforces allocation failure'
        Call error(0,message)
@@ -1433,9 +1433,9 @@ Module ewald_mpole
        tyy(i)=kmaxb_r*(rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+0.5_wp)
        tzz(i)=kmaxc_r*(rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+0.5_wp)
 
-  ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (mxspl1 == mxspl)
+  ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
 
-       If (mxspl1 == mxspl .and. i <= natms) Then
+       If (ewld%bspline1 == ewld%bspline .and. i <= natms) Then
           If (txx(i) < ixbm1_r .or. txx(i) > ixtm0_r .or. &
               tyy(i) < iybm1_r .or. tyy(i) > iytm0_r .or. &
               tzz(i) < izbm1_r .or. tzz(i) > iztm0_r) llspl=.false.
@@ -1458,17 +1458,17 @@ Module ewald_mpole
        End If
     End Do
 
-  ! Check for breakage of llspl when .not.neigh%unconditional_update = (mxspl1 == mxspl)
+  ! Check for breakage of llspl when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
 
-    mxspl2=mxspl1
-    If (mxspl1 == mxspl) Then
+    ewld%bspline2=ewld%bspline1
+    If (ewld%bspline1 == ewld%bspline) Then
        Call gcheck(comm,llspl)
-       If (.not.llspl) mxspl2=mxspl+1
+       If (.not.llspl) ewld%bspline2=ewld%bspline+1
     End If
 
   ! construct B-splines for atoms
 
-    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,parts,comm)
+    Call bspgen_mpoles(nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,parts,ewld,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -1499,13 +1499,13 @@ Module ewald_mpole
 
              imp=mpoles%global_frame(:,i)
 
-             llb = Max( izb, izz(i) - mxspl + 2 )
+             llb = Max( izb, izz(i) - ewld%bspline + 2 )
              llt = Min( izt, izz(i) + 1 )
 
-             kkb = Max( iyb, iyy(i) - mxspl + 2 )
+             kkb = Max( iyb, iyy(i) - ewld%bspline + 2 )
              kkt = Min( iyt, iyy(i) + 1 )
 
-             jjb = Max( ixb, ixx(i) - mxspl + 2 )
+             jjb = Max( ixb, ixx(i) - ewld%bspline + 2 )
              jjt = Min( ixt, ixx(i) + 1 )
 
              jjtjjb = jjt - jjb + 1
@@ -1536,7 +1536,7 @@ Module ewald_mpole
 
                       Call explicit_spme_loops        &
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
 
                       qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
 
@@ -1555,7 +1555,7 @@ Module ewald_mpole
 
                          Call explicit_spme_loops     &
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
 
                          qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
 
@@ -1577,7 +1577,7 @@ Module ewald_mpole
 
                          Call explicit_spme_loops     &
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
 
                          qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
 
@@ -1607,13 +1607,13 @@ Module ewald_mpole
 
              imp=mpoles%global_frame(:,i)
 
-             llb = Max( izb, izz(i) - mxspl + 2 )
+             llb = Max( izb, izz(i) - ewld%bspline + 2 )
              llt = Min( izt, izz(i) + 1 )
 
-             kkb = Max( iyb, iyy(i) - mxspl + 2 )
+             kkb = Max( iyb, iyy(i) - ewld%bspline + 2 )
              kkt = Min( iyt, iyy(i) + 1 )
 
-             jjb = Max( ixb, ixx(i) - mxspl + 2 )
+             jjb = Max( ixb, ixx(i) - ewld%bspline + 2 )
              jjt = Min( ixt, ixx(i) + 1 )
 
              jjtjjb = jjt - jjb + 1
@@ -1648,7 +1648,7 @@ Module ewald_mpole
 
                                bdx=bsddx(:,j,i)
 
-                               tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+                               tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
 
                                qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
 
@@ -1665,7 +1665,7 @@ Module ewald_mpole
 
                                   bdx=bsddx(:,j,i)
 
-                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
 
                                   qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
 
@@ -1684,7 +1684,7 @@ Module ewald_mpole
                                   j_local = jj - ixb + 1
 
                                   bdx=bsddx(:,j,i)
-                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
 
                                   qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
 
@@ -1742,7 +1742,7 @@ Module ewald_mpole
        l=index_z(l_local)
 
        ll=l-1
-       If (l > kmaxc/2) ll=ll-kmaxc
+       If (l > ewld%fft_dim_c/2) ll=ll-ewld%fft_dim_c
        tmp=twopi*Real(ll,wp)
 
        rkx1=tmp*rcell(3)
@@ -1755,7 +1755,7 @@ Module ewald_mpole
           k=index_y(k_local)
 
           kk=k-1
-          If (k > kmaxb/2) kk=kk-kmaxb
+          If (k > ewld%fft_dim_b/2) kk=kk-ewld%fft_dim_b
           tmp=twopi*Real(kk,wp)
 
           rkx2=rkx1+tmp*rcell(2)
@@ -1768,7 +1768,7 @@ Module ewald_mpole
              j=index_x(j_local)
 
              jj=j-1
-             If (j > kmaxa/2) jj=jj-kmaxa
+             If (j > ewld%fft_dim_a/2) jj=jj-ewld%fft_dim_a
              tmp=twopi*Real(jj,wp)
 
              rkx3=rkx2+tmp*rcell(1)
@@ -1941,9 +1941,9 @@ Module ewald_mpole
       Integer,           Intent( In    ) :: ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms), &
                                             ixb,ixt, iyb,iyt, izb,izt
       Real( Kind = wp ), Intent( In    ) :: scale,rcell(1:9),                &
-                                            bsddx(0:mxspl,1:mxspl,1:mxatms), &
-                                            bsddy(0:mxspl,1:mxspl,1:mxatms), &
-                                            bsddz(0:mxspl,1:mxspl,1:mxatms), &
+                                            bsddx(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+                                            bsddy(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+                                            bsddz(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
                                             qqc_local( ixb:ixt, iyb:iyt, izb:izt )
       Type( mpole_type ), Intent( InOut ) :: mpoles
       Type( domains_type ), Intent( In    ) :: domain
@@ -1961,18 +1961,18 @@ Module ewald_mpole
 
   ! Define extended ranges for the domain = local + halo slice and allocate
 
-      ixdb = ixb - mxspl2
-      iydb = iyb - mxspl2
-      izdb = izb - mxspl2
+      ixdb = ixb - ewld%bspline2
+      iydb = iyb - ewld%bspline2
+      izdb = izb - ewld%bspline2
 
-      delspl = mxspl2 - mxspl
+      delspl = ewld%bspline2 - ewld%bspline
 
       ixdt = ixt + delspl
       iydt = iyt + delspl
       izdt = izt + delspl
 
       fail=0
-      Allocate (bdx(0:mxspl),bdy(0:mxspl),bdz(0:mxspl),        Stat = fail(1))
+      Allocate (bdx(0:ewld%bspline),bdy(0:ewld%bspline),bdz(0:ewld%bspline),        Stat = fail(1))
       Allocate (qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt ), Stat = fail(2))
       If (Any(fail > 0)) Then
          Write(message,'(a)') 'spme_mforces allocation failure'
@@ -1981,7 +1981,7 @@ Module ewald_mpole
 
       Call exchange_grid(ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
                          ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
-                         domain,comm)
+                         domain, ewld, comm)
 
       tmp=-2.0_wp*scale
 
@@ -2012,17 +2012,17 @@ Module ewald_mpole
                fix=0.0_wp ; fiy=0.0_wp ; fiz=0.0_wp
                tix=0.0_wp ; tiy=0.0_wp ; tiz=0.0_wp
 
-               Do l=1,mxspl
+               Do l=1,ewld%bspline
                   ll=izz(i)-l+2
 
                   bdz=bsddz(:,l,i)
 
-                  Do k=1,mxspl
+                  Do k=1,ewld%bspline
                      kk=iyy(i)-k+2
 
                      bdy=bsddy(:,k,i)
 
-                     Do j=1,mxspl
+                     Do j=1,ewld%bspline
                         jj=ixx(i)-j+2
 
                         bdx=bsddx(:,j,i)
@@ -2031,7 +2031,7 @@ Module ewald_mpole
 
                         Call explicit_spme_loops      &
              (1,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
 
   ! force
 
@@ -2104,17 +2104,17 @@ Module ewald_mpole
                fix=0.0_wp ; fiy=0.0_wp ; fiz=0.0_wp
                tix=0.0_wp ; tiy=0.0_wp ; tiz=0.0_wp
 
-               Do l=1,mxspl
+               Do l=1,ewld%bspline
                   ll=izz(i)-l+2
 
                   bdz=bsddz(:,l,i)
 
-                  Do k=1,mxspl
+                  Do k=1,ewld%bspline
                      kk=iyy(i)-k+2
 
                      bdy=bsddy(:,k,i)
 
-                     Do j=1,mxspl
+                     Do j=1,ewld%bspline
                         jj=ixx(i)-j+2
 
                         bdx=bsddx(:,j,i)
@@ -2130,13 +2130,13 @@ Module ewald_mpole
 
                                  gmp = qsum*imp(mm)
 
-                                 fix = fix + gmp*dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
-                                 fiy = fiy + gmp*dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
-                                 fiz = fiz + gmp*dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+                                 fix = fix + gmp*dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
+                                 fiy = fiy + gmp*dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
+                                 fiz = fiz + gmp*dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
 
   ! torque
 
-                                 tmpi = qsum*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k)
+                                 tmpi = qsum*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
 
                                  tix = tix + impx(mm)*tmpi
                                  tiy = tiy + impy(mm)*tmpi
@@ -2323,12 +2323,12 @@ Module ewald_mpole
   !!! BEGIN DD SPME VARIABLES
   ! 3D charge array construction (bottom and top) indices
 
-       ixb=domain%idx*(kmaxa/domain%nx)+1
-       ixt=(domain%idx+1)*(kmaxa/domain%nx)
-       iyb=domain%idy*(kmaxb/domain%ny)+1
-       iyt=(domain%idy+1)*(kmaxb/domain%ny)
-       izb=domain%idz*(kmaxc/domain%nz)+1
-       izt=(domain%idz+1)*(kmaxc/domain%nz)
+       ixb=domain%idx*(ewld%fft_dim_a/domain%nx)+1
+       ixt=(domain%idx+1)*(ewld%fft_dim_a/domain%nx)
+       iyb=domain%idy*(ewld%fft_dim_b/domain%ny)+1
+       iyt=(domain%idy+1)*(ewld%fft_dim_b/domain%ny)
+       izb=domain%idz*(ewld%fft_dim_c/domain%nz)+1
+       izt=(domain%idz+1)*(ewld%fft_dim_c/domain%nz)
 
        ixbm1_r=Real(ixb-1,wp)
        ixtm0_r=Nearest( Real(ixt,wp) , -1.0_wp )
@@ -2339,16 +2339,16 @@ Module ewald_mpole
 
   ! Real values of kmax vectors
 
-       kmaxa_r=Real(kmaxa,wp)
-       kmaxb_r=Real(kmaxb,wp)
-       kmaxc_r=Real(kmaxc,wp)
+       kmaxa_r=Real(ewld%fft_dim_a,wp)
+       kmaxb_r=Real(ewld%fft_dim_b,wp)
+       kmaxc_r=Real(ewld%fft_dim_c,wp)
 
   !!! END DD SPME VARIABLES
 
   !!! BEGIN CARDINAL B-SPLINES SET-UP
   ! allocate the complex exponential arrays
 
-       Allocate (ww1(1:kmaxa),ww2(1:kmaxb),ww3(1:kmaxc), Stat = fail(1))
+       Allocate (ww1(1:ewld%fft_dim_a),ww2(1:ewld%fft_dim_b),ww3(1:ewld%fft_dim_c), Stat = fail(1))
        If (fail(1) > 0) Then
           Write(message,'(a)') 'ww arrays allocation failure'
           Call error(0,message)
@@ -2356,12 +2356,12 @@ Module ewald_mpole
 
   ! initialise the complex exponential arrays
 
-       Call spl_cexp(kmaxa,kmaxb,kmaxc,ww1,ww2,ww3)
+       Call spl_cexp(ewld%fft_dim_a,ewld%fft_dim_b,ewld%fft_dim_c,ww1,ww2,ww3)
 
   ! allocate the global B-spline coefficients and the helper array
 
-       Allocate (bscx(1:kmaxa),bscy(1:kmaxb),bscz(1:kmaxc), Stat = fail(1))
-       Allocate (csp(1:mxspl),                              Stat = fail(2))
+       Allocate (bscx(1:ewld%fft_dim_a),bscy(1:ewld%fft_dim_b),bscz(1:ewld%fft_dim_c), Stat = fail(1))
+       Allocate (csp(1:ewld%bspline),                              Stat = fail(2))
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'bsc and cse arrays allocation failure'
           Call error(0,message)
@@ -2369,7 +2369,7 @@ Module ewald_mpole
 
   ! calculate the global B-spline coefficients
 
-       Call bspcoe(mxspl,kmaxa,kmaxb,kmaxc,csp,bscx,bscy,bscz,ww1,ww2,ww3)
+       Call bspcoe(ewld,csp,bscx,bscy,bscz,ww1,ww2,ww3)
 
   ! deallocate the helper array and complex exponential arrays
 
@@ -2385,13 +2385,13 @@ Module ewald_mpole
   !!! BEGIN DAFT SET-UP
   ! domain local block limits of kmax space
 
-       block_x = kmaxa / domain%nx
-       block_y = kmaxb / domain%ny
-       block_z = kmaxc / domain%nz
+       block_x = ewld%fft_dim_a / domain%nx
+       block_y = ewld%fft_dim_b / domain%ny
+       block_z = ewld%fft_dim_c / domain%nz
 
   ! set up the parallel fft and useful related quantities
 
-       Call initialize_fft( 3, (/ kmaxa, kmaxb, kmaxc /), &
+       Call initialize_fft( 3, (/ ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c /), &
            (/ domain%nx, domain%ny, domain%nz /), (/ domain%idx, domain%idy, domain%idz /),   &
            (/ block_x, block_y, block_z /),               &
            comm%comm, context )
@@ -2406,9 +2406,9 @@ Module ewald_mpole
           Call error(0,message)
        End If
 
-       Call pfft_indices( kmaxa, block_x, domain%idx, domain%nx, index_x )
-       Call pfft_indices( kmaxb, block_y, domain%idy, domain%ny, index_y )
-       Call pfft_indices( kmaxc, block_z, domain%idz, domain%nz, index_z )
+       Call pfft_indices( ewld%fft_dim_a, block_x, domain%idx, domain%nx, index_x )
+       Call pfft_indices( ewld%fft_dim_b, block_y, domain%idy, domain%ny, index_y )
+       Call pfft_indices( ewld%fft_dim_c, block_z, domain%idz, domain%nz, index_z )
 
   ! workspace arrays for DaFT
 
@@ -2429,10 +2429,10 @@ Module ewald_mpole
 
     Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
     Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
-    Allocate (bdx(0:mxspl),bsddx(0:mxspl,1:mxspl,1:mxatms), &
-              bdy(0:mxspl),bsddy(0:mxspl,1:mxspl,1:mxatms), &
-              bdz(0:mxspl),bsddz(0:mxspl,1:mxspl,1:mxatms),                         Stat = fail(3))
-    Allocate (bspx(1:mxspl,1:mxatms),bspy(1:mxspl,1:mxatms),bspz(1:mxspl,1:mxatms), Stat = fail(4))
+    Allocate (bdx(0:ewld%bspline),bsddx(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+              bdy(0:ewld%bspline),bsddy(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+              bdz(0:ewld%bspline),bsddz(0:ewld%bspline,1:ewld%bspline,1:mxatms),                         Stat = fail(3))
+    Allocate (bspx(1:ewld%bspline,1:mxatms),bspy(1:ewld%bspline,1:mxatms),bspz(1:ewld%bspline,1:mxatms), Stat = fail(4))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'ewald_spme_mforces allocation failure'
        Call error(0,message)
@@ -2476,9 +2476,9 @@ Module ewald_mpole
        tyy(i)=kmaxb_r*(rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+0.5_wp)
        tzz(i)=kmaxc_r*(rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+0.5_wp)
 
-  ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (mxspl1 == mxspl)
+  ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
 
-       If (mxspl1 == mxspl .and. i <= natms) Then
+       If (ewld%bspline1 == ewld%bspline .and. i <= natms) Then
           If (txx(i) < ixbm1_r .or. txx(i) > ixtm0_r .or. &
               tyy(i) < iybm1_r .or. tyy(i) > iytm0_r .or. &
               tzz(i) < izbm1_r .or. tzz(i) > iztm0_r) llspl=.false.
@@ -2501,17 +2501,17 @@ Module ewald_mpole
        End If
     End Do
 
-  ! Check for breakage of llspl when .not.neigh%unconditional_update = (mxspl1 == mxspl)
+  ! Check for breakage of llspl when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
 
-    mxspl2=mxspl1
-    If (mxspl1 == mxspl) Then
+    ewld%bspline2=ewld%bspline1
+    If (ewld%bspline1 == ewld%bspline) Then
        Call gcheck(comm,llspl)
-       If (.not.llspl) mxspl2=mxspl+1
+       If (.not.llspl) ewld%bspline2=ewld%bspline+1
     End If
 
   ! construct B-splines for atoms
 
-    Call bspgen_mpoles(nlast,mxspl,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,parts,comm)
+    Call bspgen_mpoles(nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,parts,ewld,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -2559,13 +2559,13 @@ Module ewald_mpole
              imp8=imp(8) ; imp9=imp(9) ; imp10=imp(10)
           End If
 
-          llb = Max( izb, izz(i) - mxspl + 2 )
+          llb = Max( izb, izz(i) - ewld%bspline + 2 )
           llt = Min( izt, izz(i) + 1 )
 
-          kkb = Max( iyb, iyy(i) - mxspl + 2 )
+          kkb = Max( iyb, iyy(i) - ewld%bspline + 2 )
           kkt = Min( iyt, iyy(i) + 1 )
 
-          jjb = Max( ixb, ixx(i) - mxspl + 2 )
+          jjb = Max( ixb, ixx(i) - ewld%bspline + 2 )
           jjt = Min( ixt, ixx(i) + 1 )
 
           Select Case( jjt - jjb + 1 )
@@ -4025,7 +4025,7 @@ Module ewald_mpole
        l=index_z(l_local)
 
        ll=l-1
-       If (l > kmaxc/2) ll=ll-kmaxc
+       If (l > ewld%fft_dim_c/2) ll=ll-ewld%fft_dim_c
        tmp=twopi*Real(ll,wp)
 
        rkx1=tmp*rcell(3)
@@ -4038,7 +4038,7 @@ Module ewald_mpole
           k=index_y(k_local)
 
           kk=k-1
-          If (k > kmaxb/2) kk=kk-kmaxb
+          If (k > ewld%fft_dim_b/2) kk=kk-ewld%fft_dim_b
           tmp=twopi*Real(kk,wp)
 
           rkx2=rkx1+tmp*rcell(2)
@@ -4051,7 +4051,7 @@ Module ewald_mpole
              j=index_x(j_local)
 
              jj=j-1
-             If (j > kmaxa/2) jj=jj-kmaxa
+             If (j > ewld%fft_dim_a/2) jj=jj-ewld%fft_dim_a
              tmp=twopi*Real(jj,wp)
 
              rkx3=rkx2+tmp*rcell(1)
@@ -4223,9 +4223,9 @@ Module ewald_mpole
       Integer,           Intent( In    ) :: ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms), &
                                             ixb,ixt, iyb,iyt, izb,izt
       Real( Kind = wp ), Intent( In    ) :: scale,rcell(1:9),                &
-                                            bsddx(0:mxspl,1:mxspl,1:mxatms), &
-                                            bsddy(0:mxspl,1:mxspl,1:mxatms), &
-                                            bsddz(0:mxspl,1:mxspl,1:mxatms), &
+                                            bsddx(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+                                            bsddy(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+                                            bsddz(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
                                             qqc_local( ixb:ixt, iyb:iyt, izb:izt )
       Type( mpole_type ), Intent( InOut ) :: mpoles
 
@@ -4249,18 +4249,18 @@ Module ewald_mpole
 
   ! Define extended ranges for the domain = local + halo slice and allocate
 
-      ixdb = ixb - mxspl2
-      iydb = iyb - mxspl2
-      izdb = izb - mxspl2
+      ixdb = ixb - ewld%bspline2
+      iydb = iyb - ewld%bspline2
+      izdb = izb - ewld%bspline2
 
-      delspl = mxspl2 - mxspl
+      delspl = ewld%bspline2 - ewld%bspline
 
       ixdt = ixt + delspl
       iydt = iyt + delspl
       izdt = izt + delspl
 
       fail=0
-      Allocate (bdx(0:mxspl),bdy(0:mxspl),bdz(0:mxspl),        Stat = fail(1))
+      Allocate (bdx(0:ewld%bspline),bdy(0:ewld%bspline),bdz(0:ewld%bspline),        Stat = fail(1))
       Allocate (qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt ), Stat = fail(2))
       If (Any(fail > 0)) Then
          Write(message,'(a)') 'spme_mforces allocation failure'
@@ -4269,13 +4269,13 @@ Module ewald_mpole
 
       Call exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
                           ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
-                          domain,comm)
+                          domain, ewld, comm)
 
   ! Real values of kmax vectors
 
-      ka11 = Real(kmaxa,wp)*rcell(1)
-      kb22 = Real(kmaxb,wp)*rcell(5)
-      kc33 = Real(kmaxc,wp)*rcell(9)
+      ka11 = Real(ewld%fft_dim_a,wp)*rcell(1)
+      kb22 = Real(ewld%fft_dim_b,wp)*rcell(5)
+      kc33 = Real(ewld%fft_dim_c,wp)*rcell(9)
 
       ka11sq=ka11*ka11; ka11cu=ka11sq*ka11; kb22sq=kb22*kb22; kb22cu=kb22sq*kb22
       kc33sq=kc33*kc33; kc33cu=kc33sq*kc33; kakb=ka11*kb22; kakc=ka11*kc33
@@ -4331,17 +4331,17 @@ Module ewald_mpole
             fix=0.0_wp ; fiy=0.0_wp ; fiz=0.0_wp
             tix=0.0_wp ; tiy=0.0_wp ; tiz=0.0_wp
 
-            Do l=1,mxspl
+            Do l=1,ewld%bspline
                ll=izz(i)-l+2
 
                bdz=bsddz(:,l,i)
 
-               Do k=1,mxspl
+               Do k=1,ewld%bspline
                   kk=iyy(i)-k+2
 
                   bdy=bsddy(:,k,i)
 
-                  Do j=1,mxspl
+                  Do j=1,ewld%bspline
                      jj=ixx(i)-j+2
 
                      bdx=bsddx(:,j,i)

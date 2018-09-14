@@ -12,7 +12,7 @@ Module vnl
 
   Use kinds, Only : wp
   Use comms,   Only : comms_type,gcheck
-  Use setup,   Only : nrite,mxspl,mxatms
+  Use setup,   Only : nrite,ewld%bspline,mxatms
   Use domains, Only : r_nprx,r_npry,r_nprz
   Use configuration,  Only : imcon,cell,natms,nlast,list
   Use particle,       Only : corePart
@@ -135,7 +135,7 @@ Q:Do i=1,natms
   ilz=Int(r_nprz*celprp(9)/cut)
 
   tol=Min(0.05_wp,0.005_wp*rcut)                                        ! tolerance
-  test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME) or 4% (w/o SPME)
+  test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, ewld%bspline > 0)                    ! 2% (w/ SPME) or 4% (w/o SPME)
   cut=Min(r_nprx*celprp(7),r_npry*celprp(8),r_nprz*celprp(9))-1.0e-6_wp ! domain size
 
   If (ilx*ily*ilz == 0) Then

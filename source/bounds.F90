@@ -40,6 +40,7 @@ Module bounds
   Use external_field, Only : external_field_type
   Use rigid_bodies, Only : rigid_bodies_type
   Use electrostatic, Only : electrostatic_type
+  Use ewald, Only : ewald_type
   Implicit None
 
   Private
@@ -53,7 +54,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
-           mpoles,ext_field,rigid,electro,domain,comm)
+           mpoles,ext_field,rigid,electro,domain,ewld,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -100,6 +101,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( domains_type ), Intent( InOut ) :: domain
+  Type( ewald_type ), Intent( InOut ) :: ewld
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -151,9 +153,9 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                         &
-           nstfce,mxspl,kmaxa1,kmaxb1,kmaxc1,cshell,stats,thermo, &
+           nstfce,cshell,stats,thermo, &
            green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-           zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,comm)
+           zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -436,7 +438,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! maximum number of grid points for electrostatics
 
-  mxgele = Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4),l_n_e)
+  electro%ewald_exclusion_grid = Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4),l_n_e)
 
 ! maximum number of grid points for vdw interactions - overwritten
 
@@ -453,7 +455,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
   mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab, &
-    inversion%bin_tab,mxgele,vdws%max_grid,met%maxgrid,tersoffs%max_grid)
+    inversion%bin_tab,electro%ewald_exclusion_grid,vdws%max_grid,met%maxgrid,tersoffs%max_grid)
 
 
 
@@ -614,7 +616,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
   Call info(message,.true.)
 
   tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
-  test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, mxspl > 0)                    ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
+  test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, ewld%bspline > 0)                    ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
   cut=Min(domain%nx_recip*celprp(7),domain%ny_recip*celprp(8),domain%nz_recip*celprp(9))-1.0e-6_wp ! domain size
 
   If (ilx*ily*ilz == 0) Then
@@ -699,47 +701,47 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 ! SPME electrostatics particularities
 
 ! qlx,qly,qlz - SPME fictional link-cell dimensions postulating that:
-! domain%nx <= kmaxa/mxspl, domain%ny <= kmaxb/mxspl, domain%nz <= kmaxc/mxspl.
+! domain%nx <= ewld%fft_dim_a/ewld%bspline, domain%ny <= ewld%fft_dim_b/ewld%bspline, domain%nz <= ewld%fft_dim_c/ewld%bspline.
 ! Otherwise, this node's b-splines in SPME will need 'positive halo'
 ! that is not on the immediate neighbouring nodes in negative
 ! directions but beyond them (which may mean self-halo in some cases)
 
-  kmaxa = kmaxa1
-  kmaxb = kmaxb1
-  kmaxc = kmaxc1
+  ewld%fft_dim_a = ewld%fft_dim_a1
+  ewld%fft_dim_b = ewld%fft_dim_b1
+  ewld%fft_dim_c = ewld%fft_dim_c1
 
   qlx = ilx
   qly = ily
   qlz = ilz
 
-! mxspl = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
+! ewld%bspline = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
 
-  If (mxspl /= 0) Then
+  If (ewld%bspline /= 0) Then
 
-! ensure (kmaxa,kmaxb,kmaxc) consistency between the DD
+! ensure (ewld%fft_dim_a,ewld%fft_dim_b,ewld%fft_dim_c) consistency between the DD
 ! processor grid (map_domains is already called) and the grid
 ! method or comment out adjustments if using ewald_spme_force~
 
-     Call adjust_kmax( kmaxa, domain%nx )
-     Call adjust_kmax( kmaxb, domain%ny )
-     Call adjust_kmax( kmaxc, domain%nz )
+     Call adjust_kmax( ewld%fft_dim_a, domain%nx )
+     Call adjust_kmax( ewld%fft_dim_b, domain%ny )
+     Call adjust_kmax( ewld%fft_dim_c, domain%nz )
 
 ! Calculate and check ql.
 
-     qlx = Min(qlx , kmaxa/(mxspl*domain%nx))
-     qly = Min(qly , kmaxb/(mxspl*domain%ny))
-     qlz = Min(qlz , kmaxc/(mxspl*domain%nz))
+     qlx = Min(qlx , ewld%fft_dim_a/(ewld%bspline*domain%nx))
+     qly = Min(qly , ewld%fft_dim_b/(ewld%bspline*domain%ny))
+     qlz = Min(qlz , ewld%fft_dim_c/(ewld%bspline*domain%nz))
 
      If (.not.neigh%unconditional_update) Then
-        mxspl1=mxspl
+        ewld%bspline1=ewld%bspline
      Else
-        mxspl1=mxspl+Ceiling((neigh%padding*Real(mxspl,wp))/neigh%cutoff)
+        ewld%bspline1=ewld%bspline+Ceiling((neigh%padding*Real(ewld%bspline,wp))/neigh%cutoff)
 
 ! Redifine ql.
 
-        qlx = Min(ilx , kmaxa/(mxspl1*domain%nx))
-        qly = Min(ily , kmaxb/(mxspl1*domain%ny))
-        qlz = Min(ilz , kmaxc/(mxspl1*domain%nz))
+        qlx = Min(ilx , ewld%fft_dim_a/(ewld%bspline1*domain%nx))
+        qly = Min(ily , ewld%fft_dim_b/(ewld%bspline1*domain%ny))
+        qlz = Min(ilz , ewld%fft_dim_c/(ewld%bspline1*domain%nz))
      End If
 
 ! Hard luck, giving up
@@ -747,8 +749,8 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     If (qlx*qly*qlz == 0) Then
       Write(message,'(a,i6,a,3(i0,a))') &
         'SPME driven limit on largest possible decomposition:',  &
-        (kmaxa/mxspl1)*(kmaxb/mxspl1)*(kmaxc/mxspl1) ,           &
-        ' nodes/domains (', kmaxa/mxspl1,',',kmaxb/mxspl1,',',kmaxc/mxspl1,')'
+        (ewld%fft_dim_a/ewld%bspline1)*(ewld%fft_dim_b/ewld%bspline1)*(ewld%fft_dim_c/ewld%bspline1) ,           &
+        ' nodes/domains (', ewld%fft_dim_a/ewld%bspline1,',',ewld%fft_dim_b/ewld%bspline1,',',ewld%fft_dim_c/ewld%bspline1,')'
       Call info(message)
       Call error(308)
     End If
@@ -857,10 +859,11 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
   mxbfsh = Merge( 1, 0, comm%mxnode > 1) * &
     Nint(Real(Max(2*cshell%mxshl,2*cons%mxcons,rigid%max_list*rigid%max_rigid),wp) * dens0)
 
-  mxbuff = Max( mxbfdp , 35*mxbfxp , 4*mxbfsh , 2*(kmaxa/domain%nx)*(kmaxb/domain%ny)*(kmaxc/domain%nz)+10 , &
-                stats%mxnstk*stats%mxstak , mxgrid , rdf%max_grid ,  &
-                rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
-                rigid%max_type*(4+3*rigid%max_list), 10000 )
+  mxbuff = Max(mxbfdp, 35*mxbfxp, 4*mxbfsh, &
+    2*(ewld%fft_dim_a/domain%nx)*(ewld%fft_dim_b/domain%ny)*(ewld%fft_dim_c/domain%nz)+10, &
+    stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,  &
+    rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
+    rigid%max_type*(4+3*rigid%max_list), 10000 )
 
 ! reset (increase) link-cell maximum (neigh%max_cell)
 ! if tersoff or three- or four-body potentials exist

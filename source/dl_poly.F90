@@ -361,7 +361,7 @@ program dl_poly
     dvar,rbin,nstfce,width,sites%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
-    rigid,electro,domain,comm)
+    rigid,electro,domain,ewld,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -393,7 +393,7 @@ program dl_poly
   Call allocate_dihedrals_arrays(dihedral)
   Call allocate_inversions_arrays(inversion)
 
-  Call mpoles%init(sites%max_site,neigh%max_exclude,mxatdm,mxspl,mxatms)
+  Call mpoles%init(sites%max_site,neigh%max_exclude,mxatdm,ewld%bspline,mxatms)
 
   ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
 
@@ -436,7 +436,7 @@ program dl_poly
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
-    minim,mpoles,electro,tmr,comm)
+    minim,mpoles,electro,ewld,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -528,7 +528,7 @@ program dl_poly
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,comm)
+  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,ewld,comm)
 
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)

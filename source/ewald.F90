@@ -12,7 +12,7 @@ Module ewald
   Use kinds,           Only : wp,wi
   Use comms,           Only : ExchgGrid_tag,comms_type,wp_mpi,gsend,gwait, &
                               girecv
-  Use setup,           Only : mxatms,nrite,mxspl,mxspl2,twopi,kmaxa,kmaxb,kmaxc
+  Use setup,           Only : mxatms,nrite,twopi
   Use configuration,   Only : natms,imcon
   Use particle,           Only : corePart
   Use domains,         Only : domains_type
@@ -36,13 +36,25 @@ Module ewald
 
     Logical :: newjob_kall = .true., &
                newjob_kfrz = .true.
-    Contains
-      Private
-      Procedure :: ewald_allocate_kall_arrays
-      Procedure :: ewald_allocate_kfrz_arrays
-      Procedure, Public :: check => ewald_check
-      Procedure, Public :: refresh => ewald_refresh
-      Final :: ewald_deallocate
+
+    !> SPME FFT B-spline order
+    Integer( Kind = wi ), Public :: bspline
+    !> SPME FFT B-spline order when padding radius > 0
+    Integer( Kind = wi ), Public :: bspline1
+    !> And another one
+    Integer( Kind = wi ), Public :: bspline2
+    !> SPME FFT array dimensions
+    Integer( Kind = wi ), Public :: fft_dim_a, fft_dim_b, fft_dim_c
+    !> Original(?) SPME FFT array dimensions
+    Integer( Kind = wi ), Public :: fft_dim_a1, fft_dim_b1, fft_dim_c1
+
+  Contains
+    Private
+    Procedure :: ewald_allocate_kall_arrays
+    Procedure :: ewald_allocate_kfrz_arrays
+    Procedure, Public :: check => ewald_check
+    Procedure, Public :: refresh => ewald_refresh
+    Final :: ewald_deallocate
   End Type ewald_type
 
   Public :: bspcoe, bspgen, bspgen_mpoles, dtpbsp, spl_cexp, dlpfft3, exchange_grid
@@ -217,7 +229,7 @@ Contains
 
   Subroutine exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local , &
                             ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
-                            domain, comm)
+                            domain, ewld, comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -245,12 +257,13 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: qqc_local(   ixb:ixt ,  iyb:iyt ,  izb:izt )
     Real( Kind = wp ),  Intent(   Out ) :: qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt )
     Type( domains_type ), Intent( In    ) :: domain
+    Type( ewald_type ), Intent( In    ) :: ewld
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: lx, ly, lz, delspl
     Integer :: me
 
-    delspl=mxspl2-mxspl
+    delspl=ewld%bspline2-ewld%bspline
 
   ! What's my name?
 
@@ -269,27 +282,27 @@ Contains
     If (delspl == 0) Then
 
   ! Note that because of the way the splines work when particles don't
-  ! blur off domains (mxspl1==mxspl), i.e. no conditional VNL updates,
-  ! and are bound (mxspl2==mxspl) I only require to receive data from
+  ! blur off domains (ewld%bspline1==ewld%bspline), i.e. no conditional VNL updates,
+  ! and are bound (ewld%bspline2==ewld%bspline) I only require to receive data from
   ! processors in the negative octant relative to me, and hence only
   ! need to send data to processors in the positive octant.
 
   ! +X direction face - negative halo
 
        Call exchange_grid_halo( domain%map(1),                     domain%map(2), &
-            ixt-mxspl2+1, ixt  ,         iyb, iyt,                    izb, izt, &
+            ixt-ewld%bspline2+1, ixt  ,         iyb, iyt,                    izb, izt, &
             ixdb        , ixb-1,         iyb, iyt,                    izb, izt )
 
   ! +Y direction face (including the +X face extension) - negative halo
 
        Call exchange_grid_halo( domain%map(3),                     domain%map(4), &
-            ixdb, ixt,                   iyt-mxspl2+1, iyt  ,         izb, izt, &
+            ixdb, ixt,                   iyt-ewld%bspline2+1, iyt  ,         izb, izt, &
             ixdb, ixt,                   iydb        , iyb-1,         izb, izt )
 
   ! +Z direction face (including the +Y+X faces extensions) - negative halo
 
        Call exchange_grid_halo( domain%map(5),                     domain%map(6), &
-            ixdb, ixt,                   iydb, iyt,                   izt-mxspl2+1, izt, &
+            ixdb, ixt,                   iydb, iyt,                   izt-ewld%bspline2+1, izt, &
             ixdb, ixt,                   iydb, iyt,                   izdb        , izb-1 )
 
     Else
@@ -297,10 +310,10 @@ Contains
   ! +X direction face - negative halo
 
        Call exchange_grid_halo( domain%map(1),                     domain%map(2), &
-            ixt-mxspl2+1, ixt  ,         iyb, iyt,                    izb, izt, &
+            ixt-ewld%bspline2+1, ixt  ,         iyb, iyt,                    izb, izt, &
             ixdb        , ixb-1,         iyb, iyt,                    izb, izt )
-  !          (ixt)-(ixt-mxspl2+1)+1=mxspl2
-  !          (ixb-1)-(ixdb)+1=mxspl2
+  !          (ixt)-(ixt-ewld%bspline2+1)+1=ewld%bspline2
+  !          (ixb-1)-(ixdb)+1=ewld%bspline2
 
   ! -X direction face - positive halo
 
@@ -314,7 +327,7 @@ Contains
   ! +Y direction face (including the +&-X faces extensions) - negative halo
 
        Call exchange_grid_halo( domain%map(3),                     domain%map(4), &
-            ixdb, ixdt,                  iyt-mxspl2+1, iyt  ,         izb, izt, &
+            ixdb, ixdt,                  iyt-ewld%bspline2+1, iyt  ,         izb, izt, &
             ixdb, ixdt,                  iydb        , iyb-1,         izb, izt )
 
   ! -Y direction face (including the +&-X faces extensions) - positive halo
@@ -326,7 +339,7 @@ Contains
   ! +Z direction face (including the +&-Y+&-X faces extensions) - negative halo
 
        Call exchange_grid_halo( domain%map(5),                     domain%map(6), &
-            ixdb, ixdt,                  iydb, iydt,                  izt-mxspl2+1, izt, &
+            ixdb, ixdt,                  iydb, iydt,                  izt-ewld%bspline2+1, izt, &
             ixdb, ixdt,                  iydb, iydt,                  izdb        , izb-1 )
 
   ! -Z direction face (including the +&-Y+&-X faces extensions) - positive halo
@@ -428,7 +441,7 @@ Contains
 
   End Subroutine exchange_grid
 
-  Subroutine bspcoe(nospl,kmax1,kmax2,kmax3,csp,bscx,bscy,bscz,ww1,ww2,ww3)
+  Subroutine bspcoe(ewld,csp,bscx,bscy,bscz,ww1,ww2,ww3)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -440,10 +453,10 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                 Intent( In    ) :: nospl,kmax1,kmax2,kmax3
-    Real( Kind = wp ),       Intent(   Out ) :: csp(1:mxspl)
-    Complex( Kind = wp ),    Intent( In    ) :: ww1(1:kmaxa),ww2(1:kmaxb),ww3(1:kmaxc)
-    Complex( Kind = wp ),    Intent(   Out ) :: bscx(1:kmaxa),bscy(1:kmaxb),bscz(1:kmaxc)
+    Type( ewald_type ), Intent( In    ) :: ewld
+    Real( Kind = wp ),       Intent(   Out ) :: csp(1:ewld%bspline)
+    Complex( Kind = wp ),    Intent( In    ) :: ww1(1:ewld%fft_dim_a),ww2(1:ewld%fft_dim_b),ww3(1:ewld%fft_dim_c)
+    Complex( Kind = wp ),    Intent(   Out ) :: bscx(1:ewld%fft_dim_a),bscy(1:ewld%fft_dim_b),bscz(1:ewld%fft_dim_c)
 
     Integer              :: i,j,k
     Complex( Kind = wp ) :: ccc
@@ -453,7 +466,7 @@ Contains
     csp(1)=0.0_wp
     csp(2)=1.0_wp
 
-    Do k=3,nospl
+    Do k=3,ewld%bspline
        csp(k)=0.0_wp
 
        Do j=k,2,-1
@@ -463,39 +476,39 @@ Contains
 
   ! calculate B-spline coefficients
 
-    Do i=0,kmax1-1
+    Do i=0,ewld%fft_dim_a-1
        ccc=(0.0_wp,0.0_wp)
 
-       Do k=0,nospl-2
-          ccc=ccc+csp(k+2)*ww1(Mod(i*k,kmax1)+1)
+       Do k=0,ewld%bspline-2
+          ccc=ccc+csp(k+2)*ww1(Mod(i*k,ewld%fft_dim_a)+1)
        End Do
 
-       bscx(i+1)=ww1(Mod(i*(nospl-1),kmax1)+1)/ccc
+       bscx(i+1)=ww1(Mod(i*(ewld%bspline-1),ewld%fft_dim_a)+1)/ccc
     End Do
 
-    Do i=0,kmax2-1
+    Do i=0,ewld%fft_dim_b-1
        ccc=(0.0_wp,0.0_wp)
 
-       Do k=0,nospl-2
-          ccc=ccc+csp(k+2)*ww2(Mod(i*k,kmax2)+1)
+       Do k=0,ewld%bspline-2
+          ccc=ccc+csp(k+2)*ww2(Mod(i*k,ewld%fft_dim_b)+1)
        End Do
 
-       bscy(i+1)=ww2(Mod(i*(nospl-1),kmax2)+1)/ccc
+       bscy(i+1)=ww2(Mod(i*(ewld%bspline-1),ewld%fft_dim_b)+1)/ccc
     End Do
 
-    Do i=0,kmax3-1
+    Do i=0,ewld%fft_dim_c-1
        ccc=(0.0_wp,0.0_wp)
 
-       Do k=0,nospl-2
-          ccc=ccc+csp(k+2)*ww3(Mod(i*k,kmax3)+1)
+       Do k=0,ewld%bspline-2
+          ccc=ccc+csp(k+2)*ww3(Mod(i*k,ewld%fft_dim_c)+1)
        End Do
 
-       bscz(i+1)=ww3(Mod(i*(nospl-1),kmax3)+1)/ccc
+       bscz(i+1)=ww3(Mod(i*(ewld%bspline-1),ewld%fft_dim_c)+1)/ccc
     End Do
 
   End Subroutine bspcoe
 
-  Subroutine bspgen(natms,nospl,txx,tyy,tzz,bspx,bspy,bspz,bsdx,bsdy,bsdz,comm)
+  Subroutine bspgen(natms,txx,tyy,tzz,bspx,bspy,bspz,bsdx,bsdy,bsdz,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -507,10 +520,11 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: natms,nospl
+    Type( ewald_type ), Intent( In    ) :: ewld
+    Integer,                                  Intent( In    ) :: natms
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: txx,tyy,tzz
 
-    Real( Kind = wp ), Dimension( 1:mxspl , 1:mxatms ), Intent(   Out ) :: &
+    Real( Kind = wp ), Dimension( 1:ewld%bspline , 1:mxatms ), Intent(   Out ) :: &
                                                bsdx,bsdy,bsdz,bspx,bspy,bspz
     Type( comms_type ),                       Intent( In    ) :: comm
 
@@ -522,7 +536,7 @@ Contains
     Character ( Len = 256 )   ::  message
 
     fail=0
-    Allocate (real_no(1:nospl),inv_no(1:nospl), Stat=fail)
+    Allocate (real_no(1:ewld%bspline),inv_no(1:ewld%bspline), Stat=fail)
     If (fail > 0) Then
        Write(message,'(a)') 'bspgen allocation failure'
        Call error(0,message)
@@ -530,7 +544,7 @@ Contains
 
   ! construct B-splines
 
-    Do i=1,nospl
+    Do i=1,ewld%bspline
        real_no(i) = Real(i,wp)
        inv_no(i)  = 1.0_wp / real_no(i)
     End Do
@@ -563,7 +577,7 @@ Contains
        bsdy(2,i)=-1.0_wp
        bsdz(2,i)=-1.0_wp
 
-       Do k=3,nospl-1 ! Order of B-spline
+       Do k=3,ewld%bspline-1 ! Order of B-spline
 
           bspx(k,i)=0.0_wp
           bspy(k,i)=0.0_wp
@@ -592,10 +606,10 @@ Contains
 
        End Do
 
-  ! Now compute B-splines for order nospl at k points where
-  ! (0<u<nospl)
+  ! Now compute B-splines for order ewld%bspline at k points where
+  ! (0<u<ewld%bspline)
 
-       k=nospl
+       k=ewld%bspline
 
        bspx(k,i)=0.0_wp
        bspy(k,i)=0.0_wp
@@ -606,7 +620,7 @@ Contains
 
        Do j=k,2,-1
 
-  ! Derivatives of B-splines with order nospl at k-1 points
+  ! Derivatives of B-splines with order ewld%bspline at k-1 points
 
           bsdx(j,i)=bspx(j,i)-bspx(j-1,i)
           bsdy(j,i)=bspy(j,i)-bspy(j-1,i)
@@ -642,8 +656,8 @@ Contains
 
   End Subroutine bspgen
 
-  Subroutine bspgen_mpoles(natms,nospl,xxx,yyy,zzz,bspx,bspy,bspz, &
-      bsddx,bsddy,bsddz,n_choose_k,parts,comm)
+  Subroutine bspgen_mpoles(natms,xxx,yyy,zzz,bspx,bspy,bspz, &
+      bsddx,bsddy,bsddz,n_choose_k,parts,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -656,11 +670,12 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                                      Intent( In    ) :: natms,nospl
+    Type( ewald_type ), Intent( In    ) :: ewld
+    Integer,                                                      Intent( In    ) :: natms
     Real( Kind = wp ), Dimension( 1:mxatms ),                     Intent( In    ) :: xxx,yyy,zzz
 
-    Real( Kind = wp ), Dimension( 1:mxspl , 1:mxatms ),           Intent(   Out ) :: bspx,bspy,bspz
-    Real( Kind = wp ), Dimension( 0:mxspl , 1:mxspl , 1:mxatms ), Intent(   Out ) :: bsddx,bsddy,bsddz
+    Real( Kind = wp ), Dimension( 1:ewld%bspline , 1:mxatms ),           Intent(   Out ) :: bspx,bspy,bspz
+    Real( Kind = wp ), Dimension( 0:ewld%bspline , 1:ewld%bspline , 1:mxatms ), Intent(   Out ) :: bsddx,bsddy,bsddz
     Real( Kind = wp ), Dimension(1:,1:) :: n_choose_k
     Type( corePart ),  Dimension( : ),                            Intent( InOut ) :: parts
     Type( comms_type),                                            Intent( In    ) :: comm
@@ -674,7 +689,7 @@ Contains
     Character  ( Len = 256 )  ::  message
 
     fail=0
-    Allocate (real_no(1:nospl),inv_no(1:nospl),pmo_no(0:nospl), Stat=fail)
+    Allocate (real_no(1:ewld%bspline),inv_no(1:ewld%bspline),pmo_no(0:ewld%bspline), Stat=fail)
     If (fail > 0) Then
        Write(message,'(a)') 'bspgen_mpoles allocation failure'
        Call error(0,message)
@@ -689,7 +704,7 @@ Contains
   ! construct B-splines
 
     pmo_no(0) = 1.0_wp
-    Do i=1,nospl
+    Do i=1,ewld%bspline
        real_no(i) = Real(i,wp)
        inv_no(i)  = 1.0_wp / real_no(i)
        pmo_no(i)  = Real(-1**i,wp)
@@ -708,11 +723,11 @@ Contains
        bspy(2,i)=1.0_wp-bspy(1,i)
        bspz(2,i)=1.0_wp-bspz(1,i)
 
-  ! compute the (nospl-2)nd derivatives
+  ! compute the (ewld%bspline-2)nd derivatives
 
-       k=2; p=nospl-2
+       k=2; p=ewld%bspline-2
 
-       Do j=1,nospl
+       Do j=1,ewld%bspline
 
           m=Max(0,j-k)
           n=Min(p,j-1)
@@ -741,7 +756,7 @@ Contains
        riy0=bspy(1,i)
        riz0=bspz(1,i)
 
-       Do k=3,nospl-1 ! Order of B-spline
+       Do k=3,ewld%bspline-1 ! Order of B-spline
 
           bspx(k,i)=0.0_wp
           bspy(k,i)=0.0_wp
@@ -768,11 +783,11 @@ Contains
           bspy(1,i)=bspy(1,i)*riy0*km1_rr
           bspz(1,i)=bspz(1,i)*riz0*km1_rr
 
-  ! compute the (nospl-3)rd to 1st derivatives
+  ! compute the (ewld%bspline-3)rd to 1st derivatives
 
-          p = nospl-k
+          p = ewld%bspline-k
 
-          Do j=1,nospl
+          Do j=1,ewld%bspline
 
              m=Max(0,j-k)
              n=Min(p,j-1)
@@ -796,10 +811,10 @@ Contains
 
        End Do
 
-  ! Now compute B-splines for order nospl at k points where
-  ! (0<u<nospl)
+  ! Now compute B-splines for order ewld%bspline at k points where
+  ! (0<u<ewld%bspline)
 
-       k=nospl
+       k=ewld%bspline
 
        bspx(k,i)=0.0_wp
        bspy(k,i)=0.0_wp
@@ -810,7 +825,7 @@ Contains
 
        Do j=k,2,-1
 
-  ! B-splines with order nospl at k-1 points
+  ! B-splines with order ewld%bspline at k-1 points
 
           jm1_r=real_no(j-1)
 
@@ -844,7 +859,7 @@ Contains
 
   End Subroutine bspgen_mpoles
 
-  Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz,n_choose_k)
+  Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz,n_choose_k,ewld)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -859,9 +874,10 @@ Contains
 
     Real( Kind = wp ) :: Dtpbsp
 
+    Type( ewald_type ), Intent( In    ) :: ewld
     Integer,                                 Intent( In   ) :: s1,s2,s3
     Real( Kind = wp ),                       Intent( In   ) :: rcell(9)
-    Real( Kind = wp ), Dimension( 0:mxspl ), Intent( In   ) :: bsddx,bsddy,bsddz
+    Real( Kind = wp ), Dimension( 0:ewld%bspline ), Intent( In   ) :: bsddx,bsddy,bsddz
     Real( Kind = wp ), Intent( In    ) :: n_choose_k(1:,1:)
 
     Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz
@@ -870,15 +886,15 @@ Contains
 
     Dtpbsp = 0.0_wp
 
-    ka11 = Real(kmaxa,wp)*rcell(1)
-    ka12 = Real(kmaxa,wp)*rcell(4)
-    ka13 = Real(kmaxa,wp)*rcell(7)
-    kb21 = Real(kmaxb,wp)*rcell(2)
-    kb22 = Real(kmaxb,wp)*rcell(5)
-    kb23 = Real(kmaxb,wp)*rcell(8)
-    kc31 = Real(kmaxc,wp)*rcell(3)
-    kc32 = Real(kmaxc,wp)*rcell(6)
-    kc33 = Real(kmaxc,wp)*rcell(9)
+    ka11 = Real(ewld%fft_dim_a,wp)*rcell(1)
+    ka12 = Real(ewld%fft_dim_a,wp)*rcell(4)
+    ka13 = Real(ewld%fft_dim_a,wp)*rcell(7)
+    kb21 = Real(ewld%fft_dim_b,wp)*rcell(2)
+    kb22 = Real(ewld%fft_dim_b,wp)*rcell(5)
+    kb23 = Real(ewld%fft_dim_b,wp)*rcell(8)
+    kc31 = Real(ewld%fft_dim_c,wp)*rcell(3)
+    kc32 = Real(ewld%fft_dim_c,wp)*rcell(6)
+    kc33 = Real(ewld%fft_dim_c,wp)*rcell(9)
 
   ! Typically, the box is orthogonal => only diagonals-ka11,kb22,kc33-are non-zero
 

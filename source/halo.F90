@@ -2,13 +2,14 @@ Module halo
 
   Use comms,  Only : comms_type,gcheck
   Use deport_data, Only : export_atomic_positions, export_atomic_data
-  Use setup,  Only : nrite,mxatms,kmaxa,kmaxb,kmaxc,mxspl1
+  Use setup,  Only : nrite,mxatms
   Use configuration
   Use domains, Only : domains_type
   Use site, Only : site_type
   Use mpole, Only : mpole_type
   Use neighbours,       Only : neighbours_type,vnl_set_check
   Use electrostatic, Only : ELECTROSTATIC_EWALD
+  Use ewald, Only : ewald_type
   Use errors_warnings,  Only : error
 
   Implicit None
@@ -84,7 +85,7 @@ Contains
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,comm)
+Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -101,6 +102,7 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,comm)
   Type( site_type ), Intent( In    ) :: sites
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( domains_type ), Intent( In    ) :: domain
+  Type( ewald_type ), Intent( In    ) :: ewld
   Type ( comms_type ), Intent( InOut  ) :: comm
 
   Real( Kind = wp ), Save :: cut
@@ -139,9 +141,9 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,comm)
 ! used in the halo transport in NEGATIVE DIRECTIONS ONLY!!!
 
   If (electro_key == ELECTROSTATIC_EWALD) Then
-     ecwx=Real(mxspl1,wp)/Real(kmaxa,wp)
-     ecwy=Real(mxspl1,wp)/Real(kmaxb,wp)
-     ecwz=Real(mxspl1,wp)/Real(kmaxc,wp)
+     ecwx=Real(ewld%bspline1,wp)/Real(ewld%fft_dim_a,wp)
+     ecwy=Real(ewld%bspline1,wp)/Real(ewld%fft_dim_b,wp)
+     ecwz=Real(ewld%bspline1,wp)/Real(ewld%fft_dim_c,wp)
 
 ! I.e. take the smaller width in reduced space!!!
 
