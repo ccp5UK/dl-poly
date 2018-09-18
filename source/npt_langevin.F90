@@ -14,7 +14,7 @@ Module npt_langevin
                             kinstress,kinstresf,kinstrest
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error,info
-  Use numerics,        Only : box_mueller_saru1,images
+  Use numerics,        Only : seed_type,box_mueller_saru1,images
   Use constraints,     Only : constraints_type,constraints_tags, apply_shake, apply_rattle
   Use pmf,             Only : pmf_tags,pmf_type
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h0_scl,npt_h1_scl
@@ -39,7 +39,7 @@ Contains
              consv,                             &
              strkin,engke,                      &
              cshell,cons,pmf,stat,thermo,sites, &
-             vdws,domain,tmr,parts,comm)
+             vdws,domain,tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -76,6 +76,7 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical                 :: safe,lcol,lfst
@@ -156,7 +157,7 @@ Call pmf%allocate_work()
   ! Generate Langevin pseudo-tensor force for barostat piston
 
        fpl=0.0_wp
-       Call box_mueller_saru1(Int(degfre/3_li),nstep-1,tmp)
+       Call box_mueller_saru1(seed,Int(degfre/3_li),nstep-1,tmp)
        tmp=tmp*Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)/3.0_wp
        fpl(1)=tmp
        fpl(5)=tmp
@@ -363,10 +364,10 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! Generate Langevin forces for particles and
   ! Langevin pseudo-tensor force for barostat piston
 
-       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
 
        fpl=0.0_wp
-       Call box_mueller_saru1(Int(degfre/3_li),nstep,tmp)
+       Call box_mueller_saru1(seed,Int(degfre/3_li),nstep,tmp)
        tmp=tmp*Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)/3.0_wp
        fpl(1)=tmp
        fpl(5)=tmp
@@ -481,7 +482,7 @@ Call pmf%deallocate_work()
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
              cshell,cons,pmf,stat,thermo,sites, &
-             vdws,rigid,domain,tmr,parts,comm)
+             vdws,rigid,domain,tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -522,6 +523,7 @@ Call pmf%deallocate_work()
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -640,7 +642,7 @@ Call pmf%allocate_work()
   ! Generate Langevin pseudo-tensor force for barostat piston
 
        fpl=0.0_wp
-       Call box_mueller_saru1(Int(degfre/3_li),nstep-1,tmp)
+       Call box_mueller_saru1(seed,Int(degfre/3_li),nstep-1,tmp)
        tmp=tmp*Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)/3.0_wp
        fpl(1)=tmp
        fpl(5)=tmp
@@ -1192,14 +1194,14 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! Generate Langevin forces for particles and
   ! Langevin pseudo-tensor force for barostat piston
 
-       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
        If (rigid%share)Then
          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
            rigid%map_shared,fxl,fyl,fzl,domain,comm)
        EndIf
 
        fpl=0.0_wp
-       Call box_mueller_saru1(Int(degfre/3_li),nstep,tmp)
+       Call box_mueller_saru1(seed,Int(degfre/3_li),nstep,tmp)
        tmp=tmp*Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)/3.0_wp
        fpl(1)=tmp
        fpl(5)=tmp

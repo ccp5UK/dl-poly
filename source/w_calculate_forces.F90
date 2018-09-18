@@ -114,7 +114,7 @@
 ! Apply pseudo thermostat - force cycle (0)
 
      If (thermo%l_stochastic_boundaries) Then
-       Call stochastic_boundary_vv(0,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,parts,comm)
+       Call stochastic_boundary_vv(0,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,parts,seed,comm)
      End If
 
 ! Cap forces in equilibration mode
@@ -168,7 +168,7 @@
      If (newjob) Then
         If (rigid%total > 0) Then
            If (thermo%l_langevin) Then
-              Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+              Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
               If (rigid%share) Then
                 Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
                   rigid%map_shared,fxl,fyl,fzl,domain,comm)

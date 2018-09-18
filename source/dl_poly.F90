@@ -196,6 +196,7 @@ program dl_poly
   Use shared_units, Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD,ELECTROSTATIC_NULL
   Use stochastic_boundary, Only : stochastic_boundary_vv
+  Use numerics, Only : seed_type
     ! MAIN PROGRAM VARIABLES
   Implicit None
 
@@ -291,6 +292,7 @@ program dl_poly
   Type( electrostatic_type ) :: electro
   Type( domains_type ) :: domain
   Type( control_type ) :: flow
+  Type( seed_type ) :: seed
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -436,7 +438,7 @@ program dl_poly
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
-    minim,mpoles,electro,ewld,tmr,comm)
+    minim,mpoles,electro,ewld,seed,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -588,7 +590,7 @@ program dl_poly
   Call set_temperature               &
     (levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra,degrot,degfre,degshl, &
     stats%engrot,sites%dof_site,core_shells,stats,cons,pmfs,thermo,minim, &
-    rigid,domain,parts,comm)
+    rigid,domain,parts,seed,comm)
 
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
@@ -674,16 +676,16 @@ program dl_poly
   If (lsim) Then
     Call w_md_vv(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
-      netcdf,mpoles,ext_field,rigid,domain,tmr)
+      netcdf,mpoles,ext_field,rigid,domain,seed,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
-        fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,tmr)
+        fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,tmr)
     Else
       Call w_replay_history(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-        netcdf,minim,mpoles,ext_field,rigid,electro,domain)
+        netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed)
     End If
   End If
 
@@ -878,7 +880,7 @@ Contains
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr)
+  Subroutine w_integrate_vv(isw,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
     Integer, Intent( In    ) :: isw ! used for vv stage control
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -889,11 +891,12 @@ Contains
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
+    Type( seed_type ), Intent( InOut ) :: seed
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_integrate_vv.F90'
   End Subroutine w_integrate_vv
 
-  Subroutine w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain)
+  Subroutine w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain,seed)
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -901,6 +904,7 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     Type( external_field_type ), Intent( In    ) :: ext_field
     Type( domains_type ), Intent( In    ) :: domain
+    Type( seed_type ), Intent( InOut ) :: seed
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
@@ -934,7 +938,7 @@ Contains
 
   Subroutine w_md_vv(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
     dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
-    ext_field,rigid,domain,tmr)
+    ext_field,rigid,domain,seed,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -958,13 +962,14 @@ Contains
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
+    Type( seed_type ), Intent( InOut ) :: seed
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,flw,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
       bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf,netcdf,minim, &
-      mpoles,ext_field,rigid,electro,domain)
+      mpoles,ext_field,rigid,electro,domain,seed)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -991,6 +996,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
+    Type( seed_type ), Intent( InOut ) :: seed
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -1002,7 +1008,7 @@ Contains
 
   Subroutine w_replay_historf(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
     angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-    minim,mpoles,ext_field,rigid,electro,domain,tmr)
+    minim,mpoles,ext_field,rigid,electro,domain,seed,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( control_type ), Intent( InOut ) :: flw
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -1030,6 +1036,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
+    Type( seed_type ), Intent( InOut ) :: seed
     Type( timer_type ), Intent( InOut ) :: tmr
 
     Logical,     Save :: newjb = .true.

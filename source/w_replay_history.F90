@@ -210,7 +210,7 @@
 
 ! Apply kinetic options
 
-              Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain)
+              Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain,seed)
 
 ! Get core-shell kinetic energy for adiabatic shell model
 
@@ -335,7 +335,7 @@
 
      Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
        degrot,degfre,degshl,stat%engrot,sites%dof_site,cshell,stat,cons,pmf, &
-       thermo,minim,rigid,domain,parts,comm)
+       thermo,minim,rigid,domain,parts,seed,comm)
 
   End If
   Call deallocate_statistics_connect(stat)

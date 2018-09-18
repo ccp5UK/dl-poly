@@ -12,7 +12,7 @@ Module nvt_gst
                           apply_rattle, constraints_type
   Use pmf,         Only : pmf_tags,pmf_type
   Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
-  Use numerics, Only : images,box_mueller_saru2
+  Use numerics, Only : seed_type,images,box_mueller_saru2
   Use errors_warnings, Only : error,info
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
@@ -28,7 +28,7 @@ Module nvt_gst
 Contains
 
   Subroutine nvt_g0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,degfre,consv, &
-      strkin,engke,cshell,cons,pmf,stat,thermo,domain,tmr,parts,comm)
+      strkin,engke,cshell,cons,pmf,stat,thermo,domain,tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -64,6 +64,7 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -181,7 +182,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        Call nvt_g0_scl &
              (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
-             vxx,vyy,vzz,engke,thermo,comm)
+             vxx,vyy,vzz,engke,thermo,seed,comm)
 
   ! update velocity and position
 
@@ -255,7 +256,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
        Call nvt_g0_scl &
              (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
-             vxx,vyy,vzz,engke,thermo,comm)
+             vxx,vyy,vzz,engke,thermo,seed,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
@@ -285,7 +286,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   Subroutine nvt_g1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,degfre,consv, &
       strkin,strknf,strknt,engke,engrot,strcom,vircom,cshell,cons,pmf,stat, &
-      thermo,rigid,domain,tmr,parts,comm)
+      thermo,rigid,domain,tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -325,6 +326,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -527,7 +529,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
        Call nvt_g1_scl &
              (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                                                &
-             engke,engrot,thermo,rigid,comm)
+             engke,engrot,thermo,rigid,seed,comm)
 
   ! update velocity and position of FPs
 
@@ -921,7 +923,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
        Call nvt_g1_scl &
              (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              vxx,vyy,vzz,                                                &
-             engke,engrot,thermo,rigid,comm)
+             engke,engrot,thermo,rigid,seed,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
@@ -959,7 +961,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   Subroutine nvt_g0_scl &
              (tstep,degfre,isw,nstep,ceng,qmass,pmass,chip, &
-             vxx,vyy,vzz,engke,thermo,comm)
+             vxx,vyy,vzz,engke,thermo,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -981,6 +983,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: engke
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: i
@@ -1006,7 +1009,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
 
-    Call box_mueller_saru2(Int(degfre/3_li),nstep-1,2*isw+1,r_0,.true.)
+    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*isw+1,r_0,.true.)
 
   ! update thermo%chi_t to 1/2*tstep
 
@@ -1033,7 +1036,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
 
-    Call box_mueller_saru2(Int(degfre/3_li),nstep-1,2*isw+2,r_0,.true.)
+    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*isw+2,r_0,.true.)
 
   ! update thermo%chi_t to full (2/2)*tstep
 
@@ -1049,7 +1052,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   Subroutine nvt_g1_scl &
              (tstep,degfre,isw,nstep,ceng,qmass,pmass,chip, &
              vxx,vyy,vzz,                                             &
-             engke,engrot,thermo,rigid,comm)
+             engke,engrot,thermo,rigid,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1072,6 +1075,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ),                       Intent( InOut ) :: comm
 
     Integer           :: i,j,irgd
@@ -1102,7 +1106,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
 
-    Call box_mueller_saru2(Int(degfre/3_li),nstep-1,2*isw+1,r_0,.true.)
+    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*isw+1,r_0,.true.)
 
   ! update thermo%chi_t to 1/2*tstep
 
@@ -1142,7 +1146,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
 
-    Call box_mueller_saru2(Int(degfre/3_li),nstep-1,2*isw+2,r_0,.true.)
+    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*isw+2,r_0,.true.)
 
   ! update thermo%chi_t to full (2/2)*tstep
 

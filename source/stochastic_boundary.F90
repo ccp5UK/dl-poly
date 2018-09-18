@@ -7,7 +7,7 @@ Module stochastic_boundary
     lsi,lsa,imcon
   Use errors_warnings, Only : error,warning,info
   Use shared_units, Only : update_shared_units,update_shared_units_int
-  Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
+  Use numerics, Only : seed_type,local_index,images,dcell,invert,box_mueller_saru3
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
   Use domains, Only : domains_type
@@ -18,12 +18,13 @@ Module stochastic_boundary
 
   Implicit None
   Private
-  
+
   Public :: stochastic_boundary_vv
-  
+
   Contains
-  
-  Subroutine stochastic_boundary_vv(isw,tstep,nstep,dof_site,cshell,stats,thermo,rigid,domain,parts,comm)
+
+  Subroutine stochastic_boundary_vv(isw,tstep,nstep,dof_site,cshell,stats, &
+      thermo,rigid,domain,parts,seed,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -53,8 +54,9 @@ Module stochastic_boundary
   Type( thermostat_type ), Intent( InOut    ) :: thermo
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( domains_type ), Intent( In    ) :: domain
-  Type( comms_type), Intent( InOut ) :: comm
   Type (corePart ), Intent( InOut ) :: parts(:)
+  Type(seed_type), Intent(InOut) :: seed
+  Type( comms_type), Intent( InOut ) :: comm
 
   Integer                 :: fail(1:3),matms, &
                              i,j,k,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -183,7 +185,7 @@ Module stochastic_boundary
 
 ! Get gaussian distribution (unit variance)
 
-           Call box_mueller_saru3(ltg(i),nstep,xxt(i),yyt(i),zzt(i))
+           Call box_mueller_saru3(seed,ltg(i),nstep,xxt(i),yyt(i),zzt(i))
 
 ! Get scaler to target variance*Sqrt(weight)
 
@@ -353,7 +355,7 @@ Module stochastic_boundary
 
 ! Get gaussian distribution (unit variance)
 
-              Call box_mueller_saru3(ltg(i),nstep,xxt(i),yyt(i),zzt(i))
+              Call box_mueller_saru3(seed,ltg(i),nstep,xxt(i),yyt(i),zzt(i))
 
 ! Get scaler to target variance/Sqrt(weight)
 
@@ -387,7 +389,7 @@ Module stochastic_boundary
 
 ! Get gaussian distribution (unit variance)
 
-                    Call box_mueller_saru3(ltg(i1),nstep,xxt(i1),yyt(i1),zzt(i1))
+                    Call box_mueller_saru3(seed,ltg(i1),nstep,xxt(i1),yyt(i1),zzt(i1))
 
 ! Get scaler to target variance/Sqrt(weight)
 
@@ -405,7 +407,7 @@ Module stochastic_boundary
 
 ! Get gaussian distribution (unit variance)
 
-                    Call box_mueller_saru3(ltg(i2),nstep,xxt(i2),yyt(i2),zzt(i2))
+                    Call box_mueller_saru3(seed,ltg(i2),nstep,xxt(i2),yyt(i2),zzt(i2))
 
 ! Get scaler to target variance/Sqrt(weight) -
 ! 3 different reciprocal moments of inertia
