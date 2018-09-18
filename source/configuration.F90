@@ -59,7 +59,7 @@ Module configuration
 
   Use errors_warnings, Only : error,warning,info
   use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type,CONSTRAINT_NONE
   Use electrostatic, Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
   Implicit None
 
@@ -361,12 +361,12 @@ Contains
 ! Check image conditions for nst ensembles
 
   If (thermo%anisotropic_pressure) Then
-     If (thermo%iso == 0) Then
+     If (thermo%iso == CONSTRAINT_NONE) Then
         If (imcon == 1 .or. imcon == 2) Then
            Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)
            imcon = 3
         End If
-     Else ! thermo%iso > 0
+     Else ! thermo%iso /= CONSTRAINT_NONE
         If (imcon == 1) Then
            Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)
            imcon = 2

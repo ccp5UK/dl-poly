@@ -21,7 +21,9 @@ Module nst_nose_hoover
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep
+  Use thermostat, Only : adjust_timestep, &
+                         CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
+                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
   Use vdw, Only : vdw_type
   Implicit None
 
@@ -45,12 +47,6 @@ Contains
   ! barostat (anisotropic pressure control) (symplectic)
   !
   ! Parrinello-Rahman type: changing cell shape
-  !
-  ! thermo%iso=0 fully anisotropic barostat
-  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! Note: (1) this ensemble is modified from its original form as in
   !           reference1 to that shown in reference2, and now there is
@@ -153,13 +149,13 @@ Contains
           thermo%dens0(i) = sites%dens(i)
        End Do
 
-  ! Sort thermo%eta for thermo%iso>=1
-  ! Initialise and get thermo%h_z for thermo%iso>1
+  ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
+  ! Initialise and get thermo%h_z for orthorhombic constraints
 
        thermo%h_z=0
-       If      (thermo%iso == 1) Then
+       If      (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%eta(1:8) = 0.0_wp
-       Else If (thermo%iso >  1) Then
+       Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           thermo%eta(2:4) = 0.0_wp
           thermo%eta(6:8) = 0.0_wp
 
@@ -171,13 +167,13 @@ Contains
 
        thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
        tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
-       If      (thermo%iso == 0) Then
+       If      (thermo%iso == CONSTRAINT_NONE) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 3.0_wp**2*boltz*tmp
-       Else If (thermo%iso == 1) Then
+       Else If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 1.0_wp*boltz*tmp
-       Else If (thermo%iso == 2) Then
+       Else If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp
-       Else If (thermo%iso == 3) Then
+       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 2.0_wp*boltz*tmp
        End If
        thermo%pmass = ((2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp)/3.0_wp)*thermo%tau_p**2
@@ -406,9 +402,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
           sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
-  ! get thermo%h_z for thermo%iso>1
+  ! get thermo%h_z for orthorhombic constraints
 
-       If (thermo%iso > 1) Then
+       If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           Call dcell(cell,celprp)
           thermo%h_z=celprp(9)
        End If
@@ -521,12 +517,6 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! barostat (anisotropic pressure control) (symplectic)
   !
   ! Parrinello-Rahman type: changing cell shape
-  !
-  ! thermo%iso=0 fully anisotropic barostat
-  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! Note: (1) this ensemble is modified from its original form as in
   !           reference1 to that shown in reference2, and now there is
@@ -654,13 +644,13 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
           thermo%dens0(i) = sites%dens(i)
        End Do
 
-  ! Sort thermo%eta for thermo%iso>=1
-  ! Initialise and get thermo%h_z for thermo%iso>1
+  ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
+  ! Initialise and get thermo%h_z for orthorhombic constraints
 
        thermo%h_z=0
-       If      (thermo%iso == 1) Then
+       If      (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%eta(1:8) = 0.0_wp
-       Else If (thermo%iso >  1) Then
+       Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           thermo%eta(2:4) = 0.0_wp
           thermo%eta(6:8) = 0.0_wp
 
@@ -672,13 +662,13 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
        thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
        tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
-       If      (thermo%iso == 0) Then
+       If      (thermo%iso == CONSTRAINT_NONE) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 3.0_wp**2*boltz*tmp
-       Else If (thermo%iso == 1) Then
+       Else If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 1.0_wp*boltz*tmp
-       Else If (thermo%iso == 2) Then
+       Else If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp
-       Else If (thermo%iso == 3) Then
+       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 2.0_wp*boltz*tmp
        End If
        thermo%pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*thermo%tau_p**2
@@ -1204,9 +1194,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
           sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
-  ! get thermo%h_z for thermo%iso>1
+  ! get thermo%h_z for orthorhombic constraints
 
-       If (thermo%iso > 1) Then
+       If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           Call dcell(cell,celprp)
           thermo%h_z=celprp(9)
        End If
@@ -1488,12 +1478,6 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
     ! sw=0 coupling to NVT thermostat for nst_h ensemble and
     !                                     no additional scaling factor
     !
-    ! thermo%iso=0 fully anisotropic barostat
-    ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-    ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-    !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-    ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
-    !
     ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
     !
     ! copyright - daresbury laboratory
@@ -1559,18 +1543,18 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
     If (sw == 1) thermo%factor = 2.0_wp*engke*thermo%rf
 
-    ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
+    ! split anisotropic from semi-isotropic barostats
 
-    If (thermo%iso == 0) Then
+    If (thermo%iso == CONSTRAINT_NONE) Then
       thermo%eta=thermo%eta + hstep*(strcon+stress+strkin + thermo%factor*uni - &
         (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
-      If      (thermo%iso == 2) Then
+      If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
         thermo%eta(1)=thermo%eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
           thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
         thermo%eta(5)=thermo%eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
           thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
-      Else If (thermo%iso == 3) Then
+      Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
         thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp*                        &
           (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
           thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
@@ -1634,18 +1618,18 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
      If (sw == 1) thermo%factor = 2.0_wp*engke*thermo%rf
 
-     ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
+     ! split anisotropic from semi-isotropic barostats
 
-     If (thermo%iso == 0) Then
+     If (thermo%iso == CONSTRAINT_NONE) Then
        thermo%eta=thermo%eta + hstep*(strcon+stress+strkin + thermo%factor*uni - &
          (thermo%press*uni+thermo%stress)*volm)/pmass
      Else
-       If      (thermo%iso == 2) Then
+       If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
          thermo%eta(1)=thermo%eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
            thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
          thermo%eta(5)=thermo%eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
            thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
-       Else If (thermo%iso == 3) Then
+       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
          thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp*                        &
            (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
            thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
@@ -1665,25 +1649,20 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
      h_z,strcon,stress,strcom,        &
      vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,comm)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 routine to integrate and apply NsT barostat
-  ! when singled RBs are present
-  !
-  ! sw=1 coupling to NVT thermostat for nst_m ensemble and
-  !                                     additional scaling factor
-  !
-  ! sw=0 coupling to NVT thermostat for nst_h ensemble and
-  !                                     no additional scaling factor
-  !
-  ! thermo%iso=0 fully anisotropic barostat
-  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
-  !
-  ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
-  !
+     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+     !
+     ! dl_poly_4 routine to integrate and apply NsT barostat
+     ! when singled RBs are present
+     !
+     ! sw=1 coupling to NVT thermostat for nst_m ensemble and
+     !                                     additional scaling factor
+     !
+     ! sw=0 coupling to NVT thermostat for nst_h ensemble and
+     !                                     no additional scaling factor
+     !
+     !
+     ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
+     !
      ! copyright - daresbury laboratory
      ! author    - i.t.todorov december 2012
      ! contrib   - a.m.elena december 2017
@@ -1751,18 +1730,18 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
      If (sw == 1) thermo%factor = 2.0_wp*engke*thermo%rf
 
-     ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
+     ! split anisotropic from semi-isotropic barostats
 
-     If (thermo%iso == 0) Then
+     If (thermo%iso == CONSTRAINT_NONE) Then
        thermo%eta=thermo%eta + hstep*(strcom+strcon+stress+strkin + thermo%factor*uni - &
          (thermo%press*uni+thermo%stress)*volm)/pmass
      Else
-       If      (thermo%iso == 2) Then
+       If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
          thermo%eta(1)=thermo%eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
            thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
          thermo%eta(5)=thermo%eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
            thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
-       Else If (thermo%iso == 3) Then
+       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
          thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp* &
            (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
            thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm )/pmass
@@ -1841,17 +1820,17 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
      If (sw == 1) thermo%factor = 2.0_wp*engke*thermo%rf
 
-     ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
+     ! split anisotropic from semi-isotropic barostats
 
-     If (thermo%iso == 0) Then
+     If (thermo%iso == CONSTRAINT_NONE) Then
        thermo%eta=thermo%eta + hstep*(strcom+strcon+stress+strkin + thermo%factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
      Else
-       If      (thermo%iso == 2) Then
+       If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
          thermo%eta(1)=thermo%eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
            thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
          thermo%eta(5)=thermo%eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
            thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
-       Else If (thermo%iso == 3) Then
+       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
          thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp* &
            (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
            thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass

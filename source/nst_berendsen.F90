@@ -16,8 +16,10 @@ Module nst_berendsen
   Use numerics,        Only : dcell,images,mat_mul
   Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type
-Use core_shell, Only : core_shell_type
+  Use thermostat, Only : thermostat_type, &
+                         CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
+                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
+  Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
   Use thermostat, Only : adjust_timestep
@@ -44,12 +46,6 @@ Contains
     !
     ! isothermal compressibility (beta) set to that of liquid water
     ! = 0.007372 dl_poly units
-    !
-    ! thermo%iso=0 fully anisotropic barostat
-    ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-    ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-    !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-    ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
     !
     ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
     !
@@ -136,14 +132,14 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
         thermo%dens0(i) = sites%dens(i)
       End Do
 
-      ! Sort thermo%eta for thermo%iso>=1
-      ! Initialise and get thermo%h_z for thermo%iso>1
+      ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
+      ! Initialise and get thermo%h_z for orthorhombic constraints
 
       thermo%h_z=0
-      If      (thermo%iso == 1) Then
+      If      (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
         thermo%eta(1) = 1.0_wp ; thermo%eta(2:4) = 0.0_wp
         thermo%eta(5) = 1.0_wp ; thermo%eta(6:8) = 0.0_wp
-      Else If (thermo%iso >  1) Then
+      Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
         thermo%eta(2:4) = 0.0_wp
         thermo%eta(6:8) = 0.0_wp
 
@@ -231,18 +227,18 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
         ! Berendsen barostat and thermostat are not coupled
         ! calculate Berendsen barostat: thermo%eta, iterate stat%strcon and stat%strpmf
 
-        ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
+        ! split anisotropic from semi-isotropic barostats
 
-        If (thermo%iso == 0) Then
+        If (thermo%iso == CONSTRAINT_NONE) Then
           thermo%eta=uni + tstep*beta*(stat%strcon+stat%strpmf+stress+strkin- &
             (thermo%press*uni+thermo%stress)*volm)/(thermo%tau_p*volm)
         Else
-          If      (thermo%iso == 2) Then
+          If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
             thermo%eta(1)=1.0_wp + tstep*beta*(stat%strcon(1)+stat%strpmf(1)+stress(1)+strkin(1)- &
               (thermo%press+thermo%stress(1)-thermo%tension/thermo%h_z)*volm)/(thermo%tau_p*volm)
             thermo%eta(5)=1.0_wp + tstep*beta*(stat%strcon(5)+stat%strpmf(5)+stress(5)+strkin(5)- &
               (thermo%press+thermo%stress(5)-thermo%tension/thermo%h_z)*volm)/(thermo%tau_p*volm)
-          Else If (thermo%iso == 3) Then
+          Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
             thermo%eta(1)=1.0_wp + tstep*beta*( 0.5_wp*                                                       &
               (stat%strcon(1)+stat%strpmf(1)+stress(1)+strkin(1)+stat%strcon(5)+stat%strpmf(5)+stress(5)+strkin(5)) - &
               (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/thermo%h_z)*volm ) &
@@ -321,9 +317,9 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
         sites%dens(i)=thermo%dens0(i)*tmp
       End Do
 
-      ! get thermo%h_z for thermo%iso>1
+      ! get thermo%h_z for orthorhombic constraints
 
-      If (thermo%iso > 1) Then
+      If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
         thermo%h_z=celprp(9)
       End If
 
@@ -403,12 +399,6 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     !
     ! isothermal compressibility (beta) set to that of liquid water
     ! = 0.007372 dl_poly units
-    !
-    ! thermo%iso=0 fully anisotropic barostat
-    ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-    ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-    !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-    ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
     !
     ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
     !
@@ -532,14 +522,14 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
         thermo%dens0(i) = sites%dens(i)
       End Do
 
-      ! Sort thermo%eta for thermo%iso>=1
-      ! Initialise and get thermo%h_z for thermo%iso>1
+      ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
+      ! Initialise and get thermo%h_z for orthorhombic constraints
 
       thermo%h_z=0
-      If      (thermo%iso == 1) Then
+      If      (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
         thermo%eta(1) = 1.0_wp ; thermo%eta(2:4) = 0.0_wp
         thermo%eta(5) = 1.0_wp ; thermo%eta(6:8) = 0.0_wp
-      Else If (thermo%iso >  1) Then
+      Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
         thermo%eta(2:4) = 0.0_wp
         thermo%eta(6:8) = 0.0_wp
 
@@ -777,18 +767,18 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
         ! Berendsen barostat and thermostat are not coupled
         ! calculate Berendsen barostat: thermo%eta, iterate stat%strcon and stat%strpmf
 
-        ! split anisotropic from semi-isotropic barostats (thermo%iso=0,1,2,3)
+        ! split anisotropic from semi-isotropic barostats
 
-        If (thermo%iso == 0) Then
+        If (thermo%iso == CONSTRAINT_NONE) Then
           thermo%eta=uni + tstep*beta*(strcom+stat%strcon+stat%strpmf+stress+strkin- &
             (thermo%press*uni+thermo%stress)*volm)/(thermo%tau_p*volm)
         Else
-          If      (thermo%iso == 2) Then
+          If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
             thermo%eta(1)=1.0_wp + tstep*beta*(strcom(1)+stat%strcon(1)+stat%strpmf(1)+stress(1)+strkin(1) - &
               (thermo%press+thermo%stress(1)-thermo%tension/thermo%h_z)*volm)/(thermo%tau_p*volm)
             thermo%eta(5)=1.0_wp + tstep*beta*(strcom(5)+stat%strcon(5)+stat%strpmf(5)+stress(5)+strkin(5) - &
               (thermo%press+thermo%stress(5)-thermo%tension/thermo%h_z)*volm)/(thermo%tau_p*volm)
-          Else If (thermo%iso == 3) Then
+          Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
             thermo%eta(1)=1.0_wp + tstep*beta*( 0.5_wp* &
               (strcom(1)+stat%strcon(1)+stat%strpmf(1)+stress(1)+strkin(1)  + &
               strcom(5)+stat%strcon(5)+stat%strpmf(5)+stress(5)+strkin(5)) - &
@@ -1002,9 +992,9 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
           sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
-      ! get thermo%h_z for thermo%iso>1
+      ! get thermo%h_z for orthorhombic constraints
 
-      If (thermo%iso > 1) Then
+      If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
         thermo%h_z=celprp(9)
       End If
 

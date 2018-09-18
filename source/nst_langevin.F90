@@ -20,7 +20,9 @@ Module nst_langevin
   Use numerics,        Only : dcell, mat_mul,box_mueller_saru6,images
   Use langevin,        Only : langevin_forces
   Use nst_nose_hoover, Only : nst_h0_scl,nst_h1_scl
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type, &
+                         CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
+                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
@@ -44,12 +46,6 @@ Contains
   ! barostat (anisotropic pressure control) (symplectic)
   !
   ! Parrinello-Rahman type: changing cell shape
-  !
-  ! thermo%iso=0 fully anisotropic barostat
-  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! reference1: D. Quigley and M.I.J. Probert
   !             J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
@@ -146,13 +142,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           thermo%dens0(i) = sites%dens(i)
        End Do
 
-  ! Sort thermo%eta for thermo%iso>=1
-  ! Initialise and get thermo%h_z for thermo%iso>1
+  ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
+  ! Initialise and get thermo%h_z for orthorhombic constraints
 
        thermo%h_z=0
-       If      (thermo%iso == 1) Then
+       If      (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%eta(1:8) = 0.0_wp
-       Else If (thermo%iso >  1) Then
+       Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           thermo%eta(2:4) = 0.0_wp
           thermo%eta(6:8) = 0.0_wp
 
@@ -388,9 +384,9 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
           sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
-  ! get thermo%h_z for thermo%iso>1
+  ! get thermo%h_z for orthorhombic constraints
 
-       If (thermo%iso > 1) Then
+       If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           Call dcell(cell,celprp)
           thermo%h_z=celprp(9)
        End If
@@ -528,12 +524,6 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   ! Parrinello-Rahman type: changing cell shape
   !
-  ! thermo%iso=0 fully anisotropic barostat
-  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
-  !
   ! reference1: D. Quigley and M.I.J. Probert
   !             J. Chem. Phys., 2004, Vol. 120 (24), p. 11432
   ! reference2: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
@@ -665,13 +655,13 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
           thermo%dens0(i) = sites%dens(i)
        End Do
 
-  ! Sort thermo%eta for thermo%iso>=1
-  ! Initialise and get thermo%h_z for thermo%iso>1
+  ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
+  ! Initialise and get thermo%h_z for orthorhombic constraints
 
        thermo%h_z=0
-       If      (thermo%iso == 1) Then
+       If      (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%eta(1:8) = 0.0_wp
-       Else If (thermo%iso >  1) Then
+       Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           thermo%eta(2:4) = 0.0_wp
           thermo%eta(6:8) = 0.0_wp
 
@@ -1257,9 +1247,9 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
           sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
-  ! get thermo%h_z for thermo%iso>1
+  ! get thermo%h_z for orthorhombic constraints
 
-       If (thermo%iso > 1) Then
+       If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           Call dcell(cell,celprp)
           thermo%h_z=celprp(9)
        End If
