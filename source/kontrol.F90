@@ -54,7 +54,9 @@ Module kontrol
                          ENS_NVT_GENTLE, ENS_NVT_LANGEVIN_INHOMO, &
                          ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
                          ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
-                         ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
+                         ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO, &
+                         CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
+                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
   Use statistics, Only : stats_type
   USe z_density, Only : z_density_type
   Use constraints, Only : constraints_type
@@ -321,7 +323,7 @@ Subroutine read_control                                &
   thermo%gama   = 0.0_wp ! Stochastic (Langevin) friction on a thermostat
   thermo%tau_p   = 0.0_wp ! barostat relaxation time
   thermo%tai    = 0.0_wp ! Stochastic Dynamics (SD Langevin) barostat friction
-  thermo%iso    = 0      ! no semi-isotropic feature
+  thermo%iso= CONSTRAINT_NONE      ! no semi-isotropic feature
   thermo%tension    = 0.0_wp ! surface tension
 
 ! default value for inhomogeneous Langevin thermostat/
@@ -1491,11 +1493,11 @@ Subroutine read_control                                &
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
-                 thermo%iso=1
+                 thermo%iso = CONSTRAINT_SURFACE_AREA
                  Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
                  Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
-                 thermo%iso=2
+                 thermo%iso = CONSTRAINT_SURFACE_TENSION
                  Call get_word(record,word)
                  thermo%tension = Abs(word_2_real(word))
                  Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
@@ -1506,7 +1508,7 @@ Subroutine read_control                                &
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
-                    thermo%iso=3
+                    thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
@@ -1517,10 +1519,10 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
-                    thermo%iso=2
+                    thermo%iso = CONSTRAINT_SURFACE_TENSION
                     Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
-                    thermo%iso=3
+                    thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
@@ -1534,7 +1536,7 @@ Subroutine read_control                                &
                  Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (thermo%iso >= 1 .and. thermo%iso <= 2) Then
+              If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA,CONSTRAINT_SURFACE_TENSION])) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
                    //'interfaces placed perpendicularly to the z axis',.true.)
               End If
@@ -1558,11 +1560,11 @@ Subroutine read_control                                &
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
-                 thermo%iso=1
+                 thermo%iso = CONSTRAINT_SURFACE_AREA
                  Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
                  Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
-                 thermo%iso=2
+                 thermo%iso = CONSTRAINT_SURFACE_TENSION
                  Call get_word(record,word)
                  thermo%tension = Abs(word_2_real(word))
                  Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
@@ -1573,7 +1575,7 @@ Subroutine read_control                                &
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
-                    thermo%iso=3
+                    thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
@@ -1584,10 +1586,10 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
-                    thermo%iso=2
+                    thermo%iso = CONSTRAINT_SURFACE_TENSION
                     Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
-                    thermo%iso=3
+                    thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
@@ -1601,7 +1603,7 @@ Subroutine read_control                                &
                  Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (thermo%iso >= 1 .and. thermo%iso <= 2) Then
+              If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA,CONSTRAINT_SURFACE_TENSION])) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
                    //'interfaces placed perpendicularly to the z axis')
               End If
@@ -1625,11 +1627,11 @@ Subroutine read_control                                &
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
-                 thermo%iso=1
+                 thermo%iso = CONSTRAINT_SURFACE_AREA
                  Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
                  Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
-                 thermo%iso=2
+                 thermo%iso = CONSTRAINT_SURFACE_TENSION
                  Call get_word(record,word)
                  thermo%tension = Abs(word_2_real(word))
                  Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
@@ -1640,7 +1642,7 @@ Subroutine read_control                                &
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
-                    thermo%iso=3
+                    thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
@@ -1651,10 +1653,10 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
-                    thermo%iso=2
+                    thermo%iso = CONSTRAINT_SURFACE_TENSION
                     Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
-                    thermo%iso=3
+                    thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
@@ -1668,7 +1670,7 @@ Subroutine read_control                                &
                  Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (thermo%iso >= 1 .and. thermo%iso <= 2) Then
+              If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA,CONSTRAINT_SURFACE_TENSION])) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
                    //'interfaces placed perpendicularly to the z axis',.true.)
               End If
@@ -1692,11 +1694,11 @@ Subroutine read_control                                &
 
               Call get_word(record,word)
               If      (word(1:4) == 'area') Then
-                 thermo%iso=1
+                 thermo%iso = CONSTRAINT_SURFACE_AREA
                  Call info('semi-isotropic barostat : constant normal pressure (Pn) &',.true.)
                  Call info('       (N-Pn-A-T)       : constant surface area (A)',.true.)
               Else If (word(1:4) == 'tens') Then
-                 thermo%iso=2
+                 thermo%iso = CONSTRAINT_SURFACE_TENSION
                  Call get_word(record,word)
                  thermo%tension = Abs(word_2_real(word))
                  Write(messages(1),'(a)') 'semi-isotropic barostat : constant normal pressure (Pn) &'
@@ -1707,7 +1709,7 @@ Subroutine read_control                                &
 
                  Call get_word(record,word)
                  If (word(1:4) == 'semi') Then
-                    thermo%iso=3
+                    thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else If (Len_Trim(word) > 0) Then
                     Call strip_blanks(record)
@@ -1718,10 +1720,10 @@ Subroutine read_control                                &
               Else If (word(1:4) == 'orth') Then
                  Call get_word(record,word)
                  If (Len_Trim(word) == 0) Then
-                    thermo%iso=2
+                    thermo%iso = CONSTRAINT_SURFACE_TENSION
                     Call info('semi-isotropic barostat : orthorhombic MD cell constraints',.true.)
                  Else If (word(1:4) == 'semi') Then
-                    thermo%iso=3
+                    thermo%iso = CONSTRAINT_SEMI_ORTHORHOMBIC
                     Call info('semi-isotropic barostat : semi-orthorhombic MD cell constraints',.true.)
                  Else
                     Call strip_blanks(record)
@@ -1735,7 +1737,7 @@ Subroutine read_control                                &
                  Call info(message,.true.)
                  Call warning(460,0.0_wp,0.0_wp,0.0_wp)
               End If
-              If (thermo%iso >= 1 .and. thermo%iso <= 2) Then
+              If (Any(thermo%iso == [CONSTRAINT_SURFACE_AREA,CONSTRAINT_SURFACE_TENSION])) Then
                  Call warning('semi-isotropic ensembles are only correct for infinite' &
                    //'interfaces placed perpendicularly to the z axis',.true.)
               End If

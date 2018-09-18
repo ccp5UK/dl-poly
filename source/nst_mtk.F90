@@ -19,7 +19,9 @@ Module nst_mtk
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep,thermostat_type
+  Use thermostat, Only : adjust_timestep,thermostat_type, &
+                         CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
+                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
   Use vdw, Only : vdw_type
   Use errors_warnings, Only : error,info
   Implicit None
@@ -44,12 +46,6 @@ Contains
   ! barostat (anisotropic pressure control) and MTK coupling (symplectic)
   !
   ! Parrinello-Rahman type: changing cell shape
-  !
-  ! thermo%iso=0 fully anisotropic barostat
-  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! reference1: Martyna, Tuckerman, Tobias, Klein
   !             Mol. Phys., 1996, Vol. 87 (5), p. 1117
@@ -139,13 +135,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           thermo%dens0(i) = sites%dens(i)
        End Do
 
-  ! Sort thermo%eta for thermo%iso>=1
-  ! Initialise and get h_z for thermo%iso>1
+  ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
+  ! Initialise and get h_z for orthorhombic constraints
 
        thermo%h_z=0
-       If      (thermo%iso == 1) Then
+       If      (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%eta(1:8) = 0.0_wp
-       Else If (thermo%iso >  1) Then
+       Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           thermo%eta(2:4) = 0.0_wp
           thermo%eta(6:8) = 0.0_wp
 
@@ -157,13 +153,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
        tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
-       If      (thermo%iso == 0) Then
+       If      (thermo%iso == CONSTRAINT_NONE) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 3.0_wp**2*boltz*tmp
-       Else If (thermo%iso == 1) Then
+       Else If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 1.0_wp*boltz*tmp
-       Else If (thermo%iso == 2) Then
+       Else If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp
-       Else If (thermo%iso == 3) Then
+       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 2.0_wp*boltz*tmp
        End If
        thermo%pmass = ((2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp)/3.0_wp)*thermo%tau_p**2
@@ -383,9 +379,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
           sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
-  ! get h_z for thermo%iso>1
+  ! get h_z for orthorhombic constraints
 
-       If (thermo%iso > 1) Then
+       If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           Call dcell(cell,celprp)
           thermo%h_z=celprp(9)
        End If
@@ -497,12 +493,6 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! barostat (anisotropic pressure control) and MTK coupling (symplectic)
   !
   ! Parrinello-Rahman type: changing cell shape
-  !
-  ! thermo%iso=0 fully anisotropic barostat
-  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
-  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
-  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
-  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
   !
   ! reference1: Martyna, Tuckerman, Tobias, Klein
   !             Mol. Phys., 1996, Vol. 87 (5), p. 1117
@@ -625,13 +615,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           thermo%dens0(i) = sites%dens(i)
        End Do
 
-  ! Sort thermo%eta for thermo%iso>=1
-  ! Initialise and get h_z for thermo%iso>1
+  ! Sort thermo%eta for thermo%iso /= CONSTRAINT_NONE
+  ! Initialise and get h_z for orthorhombic constraints
 
        thermo%h_z=0
-       If      (thermo%iso == 1) Then
+       If      (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%eta(1:8) = 0.0_wp
-       Else If (thermo%iso >  1) Then
+       Else If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           thermo%eta(2:4) = 0.0_wp
           thermo%eta(6:8) = 0.0_wp
 
@@ -643,13 +633,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        thermo%qmass = 2.0_wp*thermo%sigma*thermo%tau_t**2
        tmp   = 2.0_wp*thermo%sigma / (boltz*Real(degfre,wp))
-       If      (thermo%iso == 0) Then
+       If      (thermo%iso == CONSTRAINT_NONE) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 3.0_wp**2*boltz*tmp
-       Else If (thermo%iso == 1) Then
+       Else If (thermo%iso == CONSTRAINT_SURFACE_AREA) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 1.0_wp*boltz*tmp
-       Else If (thermo%iso == 2) Then
+       Else If (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 3.0_wp*boltz*tmp
-       Else If (thermo%iso == 3) Then
+       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
           thermo%ceng  = 2.0_wp*thermo%sigma + 2.0_wp*boltz*tmp
        End If
        thermo%pmass = ((Real(degfre-degrot,wp) + 3.0_wp)/3.0_wp)*boltz*tmp*thermo%tau_p**2
@@ -1159,9 +1149,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
           sites%dens(i)=thermo%dens0(i)*tmp
        End Do
 
-  ! get h_z for thermo%iso>1
+  ! get h_z for orthorhombic constraints
 
-       If (thermo%iso > 1) Then
+       If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           Call dcell(cell,celprp)
           thermo%h_z=celprp(9)
        End If

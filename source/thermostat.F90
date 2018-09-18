@@ -37,12 +37,6 @@ Module thermostat
     Real( Kind = wp ), Public :: tension
 
     !> Constraint type for anisotropic barostats
-    !>
-    !> - 0 fully anisotropic
-    !> - 1 semi-isotropic barostat to constant normal pressure & surface area
-    !> - 2 semi-isotropic barostat to constant normal pressure & surface tension
-    !>     or with orthorhombic constraints (thermo%tension=0.0_wp)
-    !> - 3 semi-isotropic barostat with semi-orthorhombic constraints
     Integer( Kind = wi ), Public :: iso
 
     !> Andersen thermostat softness
@@ -176,6 +170,17 @@ Module thermostat
   Integer( Kind = wi ), Parameter, Public :: ENS_NPT_NOSE_HOOVER_ANISO = 32
   !> Isobaric isothermal ensemble anistropic Martyna-Tuckerman-Klein
   Integer( Kind = wi ), Parameter, Public :: ENS_NPT_MTK_ANISO = 33
+
+  ! Anisotropic barostat constraint keys
+  !> Fully anisotropic, no constraints
+  Integer( Kind = wi ), Parameter, Public :: CONSTRAINT_NONE = 0
+  !> Semi-isotropic, constant normal pressure and surface area
+  Integer( Kind = wi ), Parameter, Public :: CONSTRAINT_SURFACE_AREA = 1
+  !> Semi-isotropic, constant normal pressure and surface tension
+  !> (Orthorhombic constraints when thermo%tension = 0)
+  Integer( Kind = wi ), Parameter, Public :: CONSTRAINT_SURFACE_TENSION = 2
+  !> Semi-orthorhombic constrains
+  Integer( Kind = wi ), Parameter, Public :: CONSTRAINT_SEMI_ORTHORHOMBIC = 3
 
   Interface adjust_timestep
     Module Procedure adjust_timestep_1

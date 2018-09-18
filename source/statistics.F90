@@ -27,7 +27,8 @@ Module statistics
   Use greenkubo,   Only : greenkubo_type
   Use errors_warnings, Only : error,warning,info
   Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type,CONSTRAINT_NONE,CONSTRAINT_SURFACE_TENSION, &
+                         CONSTRAINT_SEMI_ORTHORHOMBIC
 
   Implicit None
   Type, Public :: stats_type
@@ -477,14 +478,14 @@ Contains
      stats%stpval(iadd+1)=stpipv/engunit
      iadd = iadd + 1
 
-     If (thermo%iso > 0) Then
+     If (thermo%iso /= CONSTRAINT_NONE) Then
         h_z=celprp(9)
 
         stats%stpval(iadd+1)=h_z
         stats%stpval(iadd+2)=stats%stpvol/h_z
         iadd = iadd + 2
 
-        If (thermo%iso > 1) Then
+        If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
            stats%stpval(iadd+1)= -h_z*(stats%strtot(1)-(thermo%press+thermo%stress(1)))*tenunt
            stats%stpval(iadd+2)= -h_z*(stats%strtot(5)-(thermo%press+thermo%stress(5)))*tenunt
            iadd = iadd + 2
@@ -1665,7 +1666,7 @@ Subroutine statistics_result                                    &
 
       iadd = iadd+1
 
-      If (thermo%iso > 0) Then
+      If (thermo%iso /= CONSTRAINT_NONE) Then
         h_z=stats%sumval(iadd+1)
 
         Write(message,"('Average surface area, fluctuations & mean estimate (Angs^2)')")
@@ -1675,7 +1676,7 @@ Subroutine statistics_result                                    &
 
         iadd = iadd+2
 
-        If (thermo%iso > 1) Then
+        If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
           tx= -h_z * (stats%sumval(iadd-9-8-2)/prsunt - (thermo%press+thermo%stress(1)) ) * tenunt
           ty= -h_z * (stats%sumval(iadd-9-7-2)/prsunt - (thermo%press+thermo%stress(5)) ) * tenunt
           Write(message,"('Average surface tension, fluctuations & mean estimate in x (dyn/cm)')")
