@@ -112,6 +112,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
                        test,vcell,tol,          &
                        rcter,rctbp,rcfbp,       &
                        xhi,yhi,zhi
+  Integer( Kind = wi ) :: mxgrid
   Character( Len = 256 ) :: message
 
 ! scan the FIELD file data
