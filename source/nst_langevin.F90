@@ -17,7 +17,7 @@ Module nst_langevin
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stre_s
   Use errors_warnings, Only : error,info
   Use shared_units,    Only : update_shared_units
-  Use numerics,        Only : dcell, mat_mul,box_mueller_saru6,images
+  Use numerics,        Only : seed_type,dcell, mat_mul,box_mueller_saru6,images
   Use langevin,        Only : langevin_forces
   Use nst_nose_hoover, Only : nst_h0_scl,nst_h1_scl
   Use thermostat, Only : thermostat_type, &
@@ -37,7 +37,7 @@ Module nst_langevin
 Contains
 
   Subroutine nst_l0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,degfre,stress, &
-      consv,strkin,engke,cshell,cons,pmf,stat,thermo,sites,vdws,domain,tmr,parts,comm)
+      consv,strkin,engke,cshell,cons,pmf,stat,thermo,sites,vdws,domain,tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -75,6 +75,7 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOUt ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -174,7 +175,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! Langevin tensor force for barostat piston
 
        fpl=0.0_wp
-       Call box_mueller_saru6(Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
        tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
@@ -398,10 +399,10 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
 
        fpl=0.0_wp
-       Call box_mueller_saru6(Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
        tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
@@ -513,7 +514,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              consv,                             &
              strcom,vircom,                     &
              cshell,cons,pmf,stat,thermo,sites, &
-             vdws,rigid,domain,tmr,parts,comm)
+             vdws,rigid,domain,tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -555,6 +556,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -691,7 +693,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! Langevin tensor force for barostat piston
 
        fpl=0.0_wp
-       Call box_mueller_saru6(Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
        tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent
@@ -1261,14 +1263,14 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
        If (rigid%share)Then
          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
            rigid%map_shared,fxl,fyl,fzl,domain,comm)
        EndIf
 
        fpl=0.0_wp
-       Call box_mueller_saru6(Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
        tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
        fpl(1:6)=fpl(1:6)*tmp
        fpl(9)=fpl(4)                                 ! Distribute independent

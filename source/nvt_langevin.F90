@@ -15,7 +15,7 @@ Module nvt_langevin
   Use ttm,             Only : delx,dely,delz,gvar,l_epcp,l_ttm,oneway,zerocell, &
                               ttmvom,ntcell,act_ele_cell,eltemp,tempion
   Use ttm_utils,       Only : Gep,calcchies,eltemp_max
-  Use numerics,        Only : images
+  Use numerics,        Only : seed_type,images
   Use langevin,        Only : langevin_forces
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error,info
@@ -32,7 +32,7 @@ Module nvt_langevin
 Contains
 
   Subroutine nvt_l0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,engke, &
-      cshell,cons,pmf,stat,thermo,domain,tmr,parts,comm)
+      cshell,cons,pmf,stat,thermo,domain,tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -67,6 +67,7 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -159,8 +160,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           Call error(0,message)
        End If
 
-       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr,cshell,parts)
-       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr,cshell,parts,seed)
+       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
 
   100  Continue
 
@@ -342,7 +343,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   Subroutine nvt_l1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,strknf, &
       strknt,engke,engrot,strcom,vircom,cshell,cons,pmf,stat,thermo,rigid, &
-      domain,tmr,parts,comm)
+      domain,tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -381,6 +382,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -569,8 +571,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           Call error(0,message)
        End If
 
-       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr,cshell,parts)
-       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+       Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxr,fyr,fzr,cshell,parts,seed)
+       Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
        If (rigid%share) Then
          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
            rigid%map_shared,fxr,fyr,fzr,domain,comm)
@@ -1174,7 +1176,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   End Subroutine nvt_l1_vv
 
   Subroutine nvt_l2_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,engke, &
-      cshell,cons,pmf,stat,thermo,domain,tmr,parts,comm)
+      cshell,cons,pmf,stat,thermo,domain,tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1210,6 +1212,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -1315,8 +1318,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
        End If
 
        If (lrand) Then
-         Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi_ep,fxr,fyr,fzr,cshell,parts)
-         Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi_ep,fxl,fyl,fzl,cshell,parts)
+         Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi_ep,fxr,fyr,fzr,cshell,parts,seed)
+         Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi_ep,fxl,fyl,fzl,cshell,parts,seed)
        Else
          fxr = 0.0_wp; fyr = 0.0_wp; fzr = 0.0_wp
          fxl = 0.0_wp; fyl = 0.0_wp; fzl = 0.0_wp

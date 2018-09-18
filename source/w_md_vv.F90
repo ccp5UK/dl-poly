@@ -30,7 +30,7 @@
       End If
 
       If (thermo%l_langevin) Then
-        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts)
+        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
         If (rigid%share) Then
           Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxl,fyl,fzl,domain,comm)
         End If
@@ -89,7 +89,7 @@
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr)
+        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
 
 ! Refresh mappings
 
@@ -124,11 +124,11 @@
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,tmr)
+        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
 
 ! Apply kinetic options
 
-        Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain)
+        Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain,seed)
 
 ! Update total time of simulation
 

@@ -1,7 +1,7 @@
-Module numerics 
-  Use kinds, Only : wp,li
+Module numerics
+  Use kinds, Only : wp,wi,li
   Use errors_warnings, Only : error
-  Use setup, Only : lseed,seed,zero_plus
+  Use setup, Only : zero_plus
   Use comms, Only : comms_type
   Use setup, Only : rt3,zero_plus, sqrpi,rt2,half_minus! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
   Use particle, Only: corePart
@@ -9,6 +9,18 @@ Module numerics
   Implicit None
   Private
 
+  !> Random seed type
+  Type, Public :: seed_type
+    Private
+
+    !> Flag indicating whether the seed has been initialised
+    Logical, Public :: defined = .false.
+    !> The seed
+    Integer( Kind = wi ), Public :: seed(1:3)
+  Contains
+    Private
+    Procedure, Public :: init => init_seed
+  End Type seed_type
 
 !!!!!!!!!!!!!!!!!!!!!!!! THIS IS NUMERIC_CONTAINER !!!!!!!!!!!!!!!!!!!!!
 !
@@ -119,16 +131,24 @@ Public :: get_nth_prime
     Module Procedure pbcshfrl_parts
     Module Procedure pbcshfrl_arrays
   End Interface pbcshfrl
-    
+
   Interface pbcshift
     Module Procedure pbcshift_parts
     Module Procedure pbcshift_arrays
   End Interface
 
-
 Contains
 
-Function uni(comm)
+  !> Initialise a seed
+  Subroutine init_seed(T, seed)
+    Class(seed_type) :: T
+    Integer( Kind = wi ), Intent(In) :: seed(1:3)
+
+    T%defined = .true.
+    T%seed(1:3) = seed(1:3)
+  End Subroutine init_seed
+
+Function uni(seed,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -166,7 +186,7 @@ Function uni(comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+  Type(seed_type), Intent(InOut) :: seed
   Type(comms_type), Intent( In ) :: comm
   Real( Kind = wp )       :: uni
 
@@ -178,23 +198,23 @@ Function uni(comm)
 
 ! initialise parameters u,c,cd,cm
 
-  If (newjob .or. lseed) Then
+  If (newjob .or. seed%defined) Then
      newjob = .false.
 
 ! If no seeding is specified then default to DL_POLY scheme
 
-     If (lseed) Then
+     If (seed%defined) Then
 
-        lseed=.false.
+        seed%defined=.false.
 
 ! First random number seed must be between 0 and 31328
 ! Second seed must have a value between 0 and 30081
 
-        ij=Mod(Abs(seed(1)+comm%idnode),31328)
+        ij=Mod(Abs(seed%seed(1)+comm%idnode),31328)
         i = Mod(ij/177,177) + 2;
         j = Mod(ij,177)     + 2;
 
-        kl=Mod(Abs(seed(2)+comm%idnode),30081)
+        kl=Mod(Abs(seed%seed(2)+comm%idnode),30081)
         k = Mod(kl/169,178) + 1
         l = Mod(kl,169)
 
@@ -261,7 +281,7 @@ Function uni(comm)
 
 End Function uni
 
-Function sarurnd(seeda, seedb, seedc)
+Function sarurnd(seed, seeda, seedb, seedc)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -279,6 +299,7 @@ Function sarurnd(seeda, seedb, seedc)
 
   Real( Kind = wp )        :: sarurnd
 
+  Type(seed_type), Intent(InOut) :: seed
   Integer, Intent( In    ) :: seeda,  seedb,  seedc
 
   Integer( Kind = li ) :: seed1,  seed2,  seed3, &
@@ -291,14 +312,14 @@ Function sarurnd(seeda, seedb, seedc)
 
 ! Apply possible shifting - usually (0,0,0)
 
-  If (.not.lseed) Then
+  If (.not.seed%defined) Then
      seed1 = Int(seeda,Kind=li)
      seed2 = Int(seedb,Kind=li)
      seed3 = Int(seedc,Kind=li)
   Else
-     seed1 = Int(seeda,Kind=li) + Int(seed(1),Kind=li)
-     seed2 = Int(seedb,Kind=li) + Int(seed(2),Kind=li)
-     seed3 = Int(seedc,Kind=li) + Int(seed(3),Kind=li)
+     seed1 = Int(seeda,Kind=li) + Int(seed%seed(1),Kind=li)
+     seed2 = Int(seedb,Kind=li) + Int(seed%seed(2),Kind=li)
+     seed3 = Int(seedc,Kind=li) + Int(seed%seed(3),Kind=li)
   End If
 
 ! Wrap up
@@ -437,7 +458,7 @@ Function sarurnd(seeda, seedb, seedc)
 
 End Function sarurnd
 
-Subroutine box_mueller_saru1(i,j,gauss1)
+Subroutine box_mueller_saru1(seed,i,j,gauss1)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -452,7 +473,7 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+  Type(seed_type), Intent(InOut) :: seed
   Integer,           Intent( In    ) :: i,j
   Real( Kind = wp ), Intent(   Out ) :: gauss1
 
@@ -467,8 +488,8 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
-     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
+     ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -480,7 +501,7 @@ Subroutine box_mueller_saru1(i,j,gauss1)
 
 End Subroutine box_mueller_saru1
 
-Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
+Subroutine box_mueller_saru2(seed,i,j,n,gauss1,l_str)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -495,7 +516,7 @@ Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+  Type(seed_type), Intent(InOut) :: seed
   Logical,           Intent( In    ) :: l_str
   Integer,           Intent( In    ) :: i,j,n
   Real( Kind = wp ), Intent(   Out ) :: gauss1
@@ -514,7 +535,7 @@ Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
 ! CLT approximation
 
   If (.not.l_str) Then
-     ran0 = rt3*(2.0_wp*sarurnd(i,j,k)-1.0_wp)
+     ran0 = rt3*(2.0_wp*sarurnd(seed,i,j,k)-1.0_wp)
      Return
   End If
 
@@ -522,8 +543,8 @@ Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
-     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
+     ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -535,7 +556,7 @@ Subroutine box_mueller_saru2(i,j,n,gauss1,l_str)
 
 End Subroutine box_mueller_saru2
 
-Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
+Subroutine box_mueller_saru3(seed,i,j,gauss1,gauss2,gauss3)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -550,6 +571,7 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type(seed_type), Intent(InOut) :: seed
   Integer,           Intent( In    ) :: i,j
   Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2,gauss3
 
@@ -564,8 +586,8 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
-     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
+     ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -580,8 +602,8 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
-     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
+     ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -593,7 +615,7 @@ Subroutine box_mueller_saru3(i,j,gauss1,gauss2,gauss3)
 
 End Subroutine box_mueller_saru3
 
-Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
+Subroutine box_mueller_saru6(seed,i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -608,6 +630,7 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type(seed_type), Intent(InOut) :: seed
   Integer,           Intent( In    ) :: i,j
   Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2,gauss3, &
                                         gauss4,gauss5,gauss6
@@ -623,8 +646,8 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
-     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
+     ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -639,8 +662,8 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
-     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
+     ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -655,8 +678,8 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*sarurnd(i,j,k  )-1.0_wp
-     ran2=2.0_wp*sarurnd(i,j,k+1)-1.0_wp
+     ran1=2.0_wp*sarurnd(seed,i,j,k  )-1.0_wp
+     ran2=2.0_wp*sarurnd(seed,i,j,k+1)-1.0_wp
      ran0=ran1**2+ran2**2
      k=k+2
   End Do
@@ -668,7 +691,7 @@ Subroutine box_mueller_saru6(i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
 
 End Subroutine box_mueller_saru6
 
-Subroutine box_mueller_uni(gauss1,gauss2,comm)
+Subroutine box_mueller_uni(seed,gauss1,gauss2,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -687,6 +710,7 @@ Subroutine box_mueller_uni(gauss1,gauss2,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type(seed_type), Intent(InOut) :: seed
   Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2
   Type(comms_type), Intent( In )  :: comm
 
@@ -697,15 +721,15 @@ Subroutine box_mueller_uni(gauss1,gauss2,comm)
 
   If (newjob) Then
      newjob = .false.
-     ran0=uni(comm)
+     ran0=uni(seed,comm)
   End If
 
 ! generate uniform random numbers on [-1, 1)
 
   ran0=1.0_wp
   Do While (ran0 <= zero_plus .or. ran0 >= 1.0_wp)
-     ran1=2.0_wp*uni(comm)-1.0_wp
-     ran2=2.0_wp*uni(comm)-1.0_wp
+     ran1=2.0_wp*uni(seed,comm)-1.0_wp
+     ran2=2.0_wp*uni(seed,comm)-1.0_wp
      ran0=ran1**2+ran2**2
   End Do
 
@@ -717,7 +741,7 @@ Subroutine box_mueller_uni(gauss1,gauss2,comm)
 
 End Subroutine box_mueller_uni
 
-Subroutine gauss_1(natms,vxx,vyy,vzz,comm)
+Subroutine gauss_1(seed,natms,vxx,vyy,vzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -742,6 +766,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz,comm)
   Real( Kind = wp ), Parameter :: a7 = 0.008355968_wp
   Real( Kind = wp ), Parameter :: a9 = 0.029899776_wp
 
+  Type(seed_type), Intent(InOut) :: seed
   Integer,                             Intent( In    ) :: natms
   Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
   Type( comms_type ),                  Intent( In    ) :: comm
@@ -752,7 +777,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz,comm)
   Do i=1,natms
      rrr=0.0_wp
      Do j=1,12
-        rrr=rrr+uni(comm)
+        rrr=rrr+uni(seed,comm)
      End Do
      rrr=(rrr-6.0_wp)/4.0_wp
      rr2=rrr*rrr
@@ -760,7 +785,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz,comm)
 
      rrr=0.0_wp
      Do j=1,12
-        rrr=rrr+uni(comm)
+        rrr=rrr+uni(seed,comm)
      End Do
      rrr=(rrr-6.0_wp)/4.0_wp
      rr2=rrr*rrr
@@ -768,7 +793,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz,comm)
 
      rrr=0.0_wp
      Do j=1,12
-        rrr=rrr+uni(comm)
+        rrr=rrr+uni(seed,comm)
      End Do
      rrr=(rrr-6.0_wp)/4.0_wp
      rr2=rrr*rrr
@@ -777,7 +802,7 @@ Subroutine gauss_1(natms,vxx,vyy,vzz,comm)
 
 End Subroutine gauss_1
 
-Subroutine gauss_2(natms,vxx,vyy,vzz,comm)
+Subroutine gauss_2(seed,natms,vxx,vyy,vzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -790,6 +815,7 @@ Subroutine gauss_2(natms,vxx,vyy,vzz,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type(seed_type), Intent(InOut) :: seed
   Integer,                             Intent( In    ) :: natms
   Real( Kind = wp ), Dimension( 1:* ), Intent(   Out ) :: vxx,vyy,vzz
   Type(comms_type), Intent ( InOut )                   :: comm
@@ -800,15 +826,15 @@ Subroutine gauss_2(natms,vxx,vyy,vzz,comm)
   Do i=1,(natms+1)/2
      j=natms+1-i
 
-     Call box_mueller_uni(gauss1,gauss2,comm)
+     Call box_mueller_uni(seed,gauss1,gauss2,comm)
      vxx(i)=gauss1
      vxx(j)=gauss2
 
-     Call box_mueller_uni(gauss1,gauss2,comm)
+     Call box_mueller_uni(seed,gauss1,gauss2,comm)
      vyy(i)=gauss1
      vyy(j)=gauss2
 
-     Call box_mueller_uni(gauss1,gauss2,comm)
+     Call box_mueller_uni(seed,gauss1,gauss2,comm)
      vzz(i)=gauss1
      vzz(j)=gauss2
   End Do

@@ -188,12 +188,6 @@ Module setup
 
   Character( Len = 1024 ), Save :: revcon = "REVCON"
 
-
-! Random seeding
-
-  Logical, Save :: lseed     = .false.
-  Integer, Save :: seed(1:3) = 0
-
 ! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
   Integer, Save ::                                              &
     mxatyp,mxtmls,                  &

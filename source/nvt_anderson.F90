@@ -13,7 +13,7 @@ Module nvt_anderson
                             apply_rattle,constraints_type
   Use pmf,           Only : pmf_tags,pmf_type
   Use rigid_bodies,  Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
-  Use numerics, Only : images,local_index,box_mueller_saru3,sarurnd
+  Use numerics, Only : seed_type,images,local_index,box_mueller_saru3,sarurnd
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,info
   Use core_shell, Only : core_shell_type,SHELL_ADIABATIC
@@ -31,7 +31,7 @@ Contains
 
   Subroutine nvt_a0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep, &
       strkin,engke,cshell,cons,pmf,stat,thermo,sites,domain,   &
-      tmr,parts,comm)
+      tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -65,6 +65,7 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+  Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -255,7 +256,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
        scale = tstep/thermo%tau_t
        Do i=1,natms
           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-             If (sarurnd(ltg(i),0,nstep) <= scale) Then
+             If (sarurnd(seed,ltg(i),0,nstep) <= scale) Then
                 j = j + 1
                 qn(i) = 1
 
@@ -263,7 +264,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! Get gaussian distribution (unit variance)
 
-                Call box_mueller_saru3(ltg(i),nstep,xxt(i),yyt(i),zzt(i))
+                Call box_mueller_saru3(seed,ltg(i),nstep,xxt(i),yyt(i),zzt(i))
 
   ! Get scaler to target variance/Sqrt(weight)
 
@@ -405,7 +406,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   Subroutine nvt_a1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep, &
       strkin,strknf,strknt,engke,engrot,strcom,vircom, &
       cshell,cons,pmf,stat,thermo,sites,rigid,domain,  &
-      tmr,parts,comm)
+      tmr,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -443,6 +444,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -1021,7 +1023,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
        scale = tstep/thermo%tau_t
        Do i=1,natms
           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-             If (sarurnd(ltg(i),0,nstep) <= scale) Then
+             If (sarurnd(seed,ltg(i),0,nstep) <= scale) Then
                 j = j + 1
                 qn(i) = 1
              End If
@@ -1111,7 +1113,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! Get gaussian distribution (unit variance)
 
-             Call box_mueller_saru3(ltg(i),nstep,xxt(i),yyt(i),zzt(i))
+             Call box_mueller_saru3(seed,ltg(i),nstep,xxt(i),yyt(i),zzt(i))
 
   ! Get scaler to target variance/Sqrt(weight)
 
@@ -1144,7 +1146,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! Get gaussian distribution (unit variance)
 
-                   Call box_mueller_saru3(ltg(i1),nstep,xxt(i1),yyt(i1),zzt(i1))
+                   Call box_mueller_saru3(seed,ltg(i1),nstep,xxt(i1),yyt(i1),zzt(i1))
 
   ! Get scaler to target variance/Sqrt(weight)
 
@@ -1162,7 +1164,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! Get gaussian distribution (unit variance)
 
-                   Call box_mueller_saru3(ltg(i2),nstep,xxt(i2),yyt(i2),zzt(i2))
+                   Call box_mueller_saru3(seed,ltg(i2),nstep,xxt(i2),yyt(i2),zzt(i2))
 
   ! Get scaler to target variance/Sqrt(weight) -
   ! 3 different reciprocal moments of inertia

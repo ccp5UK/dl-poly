@@ -12,7 +12,7 @@ Module temperature
   Use pmf,             Only : pmf_quench, pmf_type
   Use core_shell,      Only : core_shell_type,core_shell_quench,SHELL_ADIABATIC
   Use kinetics,        Only : l_vom,chvom,getcom,getvom,getkin,getknf,getknt,getknr
-  Use numerics,        Only : invert,uni,local_index,box_mueller_saru3
+  Use numerics,        Only : seed_type,invert,uni,local_index,box_mueller_saru3
   use shared_units,    Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,warning,info
   Use thermostat,      Only : thermostat_type
@@ -29,7 +29,7 @@ Contains
 
   Subroutine set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
       degrot,degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minim, &
-      rigid,domain,parts,comm)
+      rigid,domain,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -56,6 +56,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: no_min_0,safe
@@ -279,7 +280,7 @@ Contains
   ! to be sorted out later by quenching)
 
              If (qn(i) == 1 .and. lfree(i) == 0) Then
-                Call box_mueller_saru3(ltg(i),0,vxx(i),vyy(i),vzz(i))
+                Call box_mueller_saru3(seed,ltg(i),0,vxx(i),vyy(i),vzz(i))
 
   ! Get scaler to target variance/Sqrt(weight)
 
@@ -301,7 +302,7 @@ Contains
                 i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
 
                 If (rigid%frozen(0,rgdtyp) == 0 .and. i1 <= natms) Then
-                   Call box_mueller_saru3(ltg(i1),0,vxx(i1),vyy(i1),vzz(i1))
+                   Call box_mueller_saru3(seed,ltg(i1),0,vxx(i1),vyy(i1),vzz(i1))
 
   ! Get scaler to target variance/Sqrt(weight)
 
@@ -312,7 +313,7 @@ Contains
                 End If
 
                 If (i2 <= natms) Then
-                   Call box_mueller_saru3(ltg(i2),0,vxx(i2),vyy(i2),vzz(i2))
+                   Call box_mueller_saru3(seed,ltg(i2),0,vxx(i2),vyy(i2),vzz(i2))
 
   ! Get scaler to target variance/Sqrt(weight) -
   ! 3 different reciprocal moments of inertia
@@ -406,7 +407,7 @@ Contains
   ! to be sorted out later by quenching)
 
              If (qn(i) == 1) Then
-                Call box_mueller_saru3(ltg(i),0,vxx(i),vyy(i),vzz(i))
+                Call box_mueller_saru3(seed,ltg(i),0,vxx(i),vyy(i),vzz(i))
 
   ! Get scaler to target variance/Sqrt(weight)
 
@@ -610,7 +611,7 @@ Contains
 
   End Subroutine set_temperature
 
-  Subroutine regauss_temperature(rigid,domain,parts,comm)
+  Subroutine regauss_temperature(rigid,domain,parts,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -626,6 +627,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,j,k,l,is,irgd,jrgd,lrgd,rgdtyp
@@ -679,7 +681,7 @@ Contains
 
     Do i=1,k/2
        Do l=1,2
-          is=1+Int(Real(j,wp)*uni(comm))
+          is=1+Int(Real(j,wp)*uni(seed,comm))
           pair(l,i)=ind(is)
           ind(is)=ind(j)
           ind(j)=0

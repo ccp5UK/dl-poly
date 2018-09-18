@@ -10,7 +10,7 @@
 ! Apply pseudo thermostat - velocity cycle (1)
 
         If (thermo%l_stochastic_boundaries) Then
-          Call stochastic_boundary_vv(1,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,parts,comm)
+          Call stochastic_boundary_vv(1,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,parts,seed,comm)
         End If
 
 ! Apply temperature regaussing
@@ -20,7 +20,7 @@
            thermo%chi_p = 0.0_wp
            thermo%eta  = 0.0_wp
 
-           Call regauss_temperature(rigid,domain,parts,comm)
+           Call regauss_temperature(rigid,domain,parts,seed,comm)
 
 ! quench constraints & PMFs
 

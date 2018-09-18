@@ -1,5 +1,5 @@
 Module kontrol
-  Use kinds, only : wp,real32,real64
+  Use kinds, only : wi,wp,real32,real64
   Use comms,      Only : comms_type,gcheck
   Use timer,      Only : timer_type
   Use configuration,     Only : sysname
@@ -18,7 +18,7 @@ Module kontrol
   Use msd,        Only : msd_type
   Use kinetics,  Only : l_vom
   Use plumed,   Only : plumed_type
-  Use setup,       Only : nread,control,pi,zero_plus,seed, &
+  Use setup,       Only : nread,control,pi,zero_plus, &
                           output,field,config,statis, &
                           history,historf,revive,revcon,revold
   Use parse,       Only : get_line,get_word,lower_case,word_2_real
@@ -47,7 +47,7 @@ Module kontrol
                             IO_WRITE_SORTED_NETCDF,   &
                             IO_WRITE_SORTED_MASTER
   Use netcdf_wrap, Only : netcdf_param
-  Use numerics, Only : dcell, invert
+  Use numerics, Only : dcell, invert, seed_type
   Use thermostat, Only : thermostat_type, &
                          ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
                          ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
@@ -107,7 +107,7 @@ Subroutine read_control                                &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
            met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-           rdf,minim,mpoles,electro,ewld,tmr,comm)
+           rdf,minim,mpoles,electro,ewld,seed,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -181,7 +181,10 @@ Subroutine read_control                                &
   Type( defects_type ),    Intent( InOut ) :: dfcts(:)
   Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( ewald_type ), Intent( InOut ) :: ewld
+  Type( seed_type ), Intent( InOut ) :: seed
   Type( comms_type ),     Intent( InOut )  :: comm
+
+  Integer( Kind = wi ) :: tmp_seed(1:3)
 
 
   Logical                                 :: limp,lvv,lens,lforc,     &
@@ -821,16 +824,16 @@ Subroutine read_control                                &
 
      Else If (word(1:4) == 'seed') Then
 
-        lseed=.true.
+        Call get_word(record,word)
+        tmp_seed(1)=Nint(Abs(word_2_real(word)))
+        Call get_word(record,word)
+        tmp_seed(2)=Nint(Abs(word_2_real(word)))
+        Call get_word(record,word)
+        tmp_seed(3)=Nint(Abs(word_2_real(word)))
 
-        Call get_word(record,word)
-        seed(1)=Nint(Abs(word_2_real(word)))
-        Call get_word(record,word)
-        seed(2)=Nint(Abs(word_2_real(word)))
-        Call get_word(record,word)
-        seed(3)=Nint(Abs(word_2_real(word)))
+        Call seed%init(tmp_seed(1:3))
 
-        Write(message,'(a,3i5)') 'radomisation seeds supplied: ',seed
+        Write(message,'(a,3i5)') 'radomisation seeds supplied: ', seed%seed(1:3)
         Call info(message,.true.)
 
 ! read temperature

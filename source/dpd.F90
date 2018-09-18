@@ -22,7 +22,7 @@ Module dpd
 
   Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_FORCES
   Use errors_warnings, Only : error, warning
-  Use numerics,        Only : box_mueller_saru2
+  Use numerics,        Only : seed_type,box_mueller_saru2
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
   Use neighbours, Only : neighbours_type
@@ -34,7 +34,7 @@ Module dpd
 
 Contains
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,domain,parts,comm)
+  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,domain,parts,seed,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -59,6 +59,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -188,7 +189,7 @@ Contains
 
           ! Get gaussian random number with zero mean
 
-          Call box_mueller_saru2(idi,idj,nst_p,gauss,l_str)
+          Call box_mueller_saru2(seed,idi,idj,nst_p,gauss,l_str)
 
           ! screening function
 
@@ -366,7 +367,7 @@ Contains
 
           ! Get gaussian random number with zero mean
 
-          Call box_mueller_saru2(idi,idj,nst_p,gauss,l_str)
+          Call box_mueller_saru2(seed,idi,idj,nst_p,gauss,l_str)
 
           ! screening function
 

@@ -19,7 +19,7 @@ Module langevin
   Use core_shell, Only : core_shell_type
   Use ttm,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
   Use ttm_utils,         Only : Gep
-  Use numerics, Only : box_mueller_saru3
+  Use numerics, Only : seed_type,box_mueller_saru3
   Use errors_warnings, Only : error
   Use thermostat, Only : thermostat_type
   Implicit None
@@ -46,7 +46,7 @@ Contains
 
   End Subroutine langevin_allocate_arrays
   
-  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr,cshell,parts)
+  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr,cshell,parts,seed)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -72,6 +72,7 @@ Contains
   Real( Kind = wp ), Intent(   Out ) :: fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms)
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( corePart ), Intent( InOut ) :: parts(:)
+  Type(seed_type), Intent(InOut) :: seed
   Integer           :: i,ia,ja,ka,ijk
   Real( Kind = wp ) :: scale,tmp
 
@@ -87,7 +88,7 @@ Contains
       scale = Sqrt(2.0_wp * chi * boltz / tstep)
       Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-          Call box_mueller_saru3(ltg(i),nstep,fxr(i),fyr(i),fzr(i))
+          Call box_mueller_saru3(seed,ltg(i),nstep,fxr(i),fyr(i),fzr(i))
           ia = Floor((parts(i)%xxx+zerocell(1))/delx) + 1
           ja = Floor((parts(i)%yyy+zerocell(2))/dely) + 1
           ka = Floor((parts(i)%zzz+zerocell(3))/delz) + 1
@@ -110,7 +111,7 @@ Contains
       scale = Sqrt(2.0_wp * boltz / tstep)
       Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-          Call box_mueller_saru3(ltg(i),nstep,fxr(i),fyr(i),fzr(i))
+          Call box_mueller_saru3(seed,ltg(i),nstep,fxr(i),fyr(i),fzr(i))
           ia = Floor((parts(i)%xxx+zerocell(1))/delx) + 1
           ja = Floor((parts(i)%yyy+zerocell(2))/dely) + 1
           ka = Floor((parts(i)%zzz+zerocell(3))/delz) + 1
@@ -140,7 +141,7 @@ Contains
 
     Do i=1,natms
        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-          Call box_mueller_saru3(ltg(i),nstep,fxr(i),fyr(i),fzr(i))
+          Call box_mueller_saru3(seed,ltg(i),nstep,fxr(i),fyr(i),fzr(i))
 
           tmp = scale*Sqrt(weight(i))
 
