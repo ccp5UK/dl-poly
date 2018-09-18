@@ -198,7 +198,6 @@ Module setup
   Integer, Save ::                                              &
     mxatyp,mxtmls,                  &
     mxlshp,     &
-    mxgrid,                                 &
     mxtana,mxgana,              &
     mxatms,mxatdm,                  &
     mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
