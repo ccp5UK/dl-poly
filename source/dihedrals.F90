@@ -88,6 +88,8 @@ Module dihedrals
     Integer( Kind = wi ), Public :: bin_adf
     !> Tabulated potential bins
     Integer( Kind = wi ), Public :: bin_tab
+    Logical           :: newjob = .true.
+    Real( Kind = wp ) :: rdr
   Contains
     Private
 
@@ -1494,7 +1496,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            ai=ltype(ia)
            aj=ltype(id)
 
-           Call dihedrals_14_vdw(ai,aj,rad(0),rad2(0),eng,gamma,vdws)
+           Call dihedrals_14_vdw(ai,aj,rad(0),rad2(0),eng,gamma,dihedral,vdws)
 
            gamma = scale*gamma
            eng   = scale*eng
@@ -1538,7 +1540,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                  ai=ltype(ia0)
                  aj=ltype(id)
 
-                 Call dihedrals_14_vdw(ai,aj,rad(1),rad2(1),eng,gamma,vdws)
+                 Call dihedrals_14_vdw(ai,aj,rad(1),rad2(1),eng,gamma,dihedral,vdws)
 
                  gamma = scale*gamma
                  eng   = scale*eng
@@ -1582,7 +1584,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                  ai=ltype(ia)
                  aj=ltype(id0)
 
-                 Call dihedrals_14_vdw(ai,aj,rad(2),rad2(2),eng,gamma,vdws)
+                 Call dihedrals_14_vdw(ai,aj,rad(2),rad2(2),eng,gamma,dihedral,vdws)
 
                  gamma = scale*gamma
                  eng   = scale*eng
@@ -1626,7 +1628,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                  ai=ltype(ia0)
                  aj=ltype(id0)
 
-                 Call dihedrals_14_vdw(ai,aj,rad(3),rad2(3),eng,gamma,vdws)
+                 Call dihedrals_14_vdw(ai,aj,rad(3),rad2(3),eng,gamma,dihedral,vdws)
 
                  gamma = scale*gamma
                  eng   = scale*eng
@@ -2076,7 +2078,7 @@ Subroutine dihedrals_table_read(dihd_name,dihedral,sites,comm)
 
 End Subroutine dihedrals_table_read
 
-Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdws)
+Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,dihedrals,vdws)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2091,25 +2093,25 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdws)
   Integer,           Intent( In    ) :: ai,aj
   Real( Kind = wp ), Intent( In    ) :: rad,rad2
   Real( Kind = wp ), Intent(   Out ) :: eng,gamma
+  Type( dihedrals_type ), Intent( InOut ) :: dihedrals
   Type( vdw_type ), Intent( In    ) :: vdws
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: dlrpot,rdr
 
   Integer           :: key,k,l,ityp,n,m
   Real( Kind = wp ) :: rsq,rrr,ppp,                 &
-                       r0,r0rn,r0rm,r_6,sor6,       &
-                       rho,a,b,c,d,e0,kk,           &
-                       nr,mr,rc,sig,eps,alpha,beta, &
-                       gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3
+    r0,r0rn,r0rm,r_6,sor6,       &
+    rho,a,b,c,d,e0,kk,           &
+    nr,mr,rc,sig,eps,alpha,beta, &
+    gk,gk1,gk2,vk,vk1,vk2,t1,t2, &
+    t3, dlrpot
 
-  If (newjob) Then
-     newjob = .false.
+  If (dihedrals%newjob) Then
+    dihedrals%newjob = .false.
 
 ! define grid resolution for potential arrays and interpolation spacing
 
-     dlrpot = vdws%cutoff/Real(vdws%max_grid-4,wp)
-     rdr    = 1.0_wp/dlrpot
+    dlrpot = vdws%cutoff/Real(vdws%max_grid-4,wp)
+    dihedrals%rdr    = 1.0_wp/dlrpot
   End If
 
 ! Zero energy and force components
@@ -2369,8 +2371,8 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdws)
 
         Else If (Abs(vdws%tab_potential(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == 0)
 
-           l   = Int(rrr*rdr)
-           ppp = rrr*rdr - Real(l,wp)
+           l   = Int(rrr*dihedrals%rdr)
+           ppp = rrr*dihedrals%rdr - Real(l,wp)
 
 ! calculate interaction energy using 3-point interpolation
 
@@ -2407,8 +2409,8 @@ Subroutine dihedrals_14_vdw(ai,aj,rad,rad2,eng,gamma,vdws)
 
      Else If (Abs(vdws%tab_potential(0,k)) > zero_plus) Then ! no direct = fully tabulated calculation
 
-        l   = Int(rrr*rdr)
-        ppp = rrr*rdr - Real(l,wp)
+        l   = Int(rrr*dihedrals%rdr)
+        ppp = rrr*dihedrals%rdr - Real(l,wp)
 
 ! calculate interaction energy using 3-point interpolation
 
