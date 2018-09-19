@@ -90,8 +90,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
   Type( comms_type ),                       Intent( InOut ) :: comm
 
 
-  Logical,           Save :: new_nz    = .true.
-  Real( Kind = wp ), Save :: factor_nz = 0.0_wp
+  Real( Kind = wp ) :: factor_nz
 
   Logical           :: safe = .true., l_do_rdf
   Integer           :: fail,i,j,k,limit
@@ -557,10 +556,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 ! ( Fuchs, Proc. R. Soc., A, 151, (585),1935 )
 
      If (Abs(sumchg) > 1.0e-6_wp) Then
-        If (new_nz) Then
-           new_nz = .false.
-           factor_nz = -0.5_wp * (pi*r4pie0/electro%eps) * (sumchg/electro%alpha)**2
-        End If
+       factor_nz = -0.5_wp * (pi*r4pie0/electro%eps) * (sumchg/electro%alpha)**2
 
         engcpe_nz=factor_nz/volm
         vircpe_nz=-3.0_wp*engcpe_nz
