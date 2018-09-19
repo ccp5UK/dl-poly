@@ -207,11 +207,6 @@ program dl_poly
 
   Logical, Save :: newjob = .true.
 
-  ! OUTPUT existence
-
-  Logical               :: l_out
-  Character( Len = 10 ) :: c_out
-
   ! lines and page used for printing controls
 
   Integer       :: lines = 0 , &
@@ -933,6 +928,8 @@ Contains
   End Subroutine w_write_options
 
   Subroutine w_refresh_output()
+    Logical :: l_out
+    Character(Len=10) :: c_out
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
@@ -1002,6 +999,8 @@ Contains
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer( Kind = wi )           :: nstpe,nstph ! nstep replacements
     Integer           :: exout       ! exit indicator for reading
+    Logical :: l_out
+    Character(Len=10) :: c_out
 
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
@@ -1043,6 +1042,8 @@ Contains
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements
     Integer           :: exout       ! exit indicator for reading
+    Logical :: l_out
+    Character(Len=10) :: c_out
 
     Include 'w_replay_historf.F90'
   End Subroutine w_replay_historf
