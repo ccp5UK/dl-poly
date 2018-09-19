@@ -105,7 +105,7 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,comm)
   Type( ewald_type ), Intent( In    ) :: ewld
   Type ( comms_type ), Intent( InOut  ) :: comm
 
-  Real( Kind = wp ), Save :: cut
+  Real( Kind = wp ) :: cut
 
   Integer           :: nlx,nly,nlz,i,j,ia,ib
   Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
