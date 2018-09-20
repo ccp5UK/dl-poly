@@ -489,9 +489,7 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
 
-    ! Nail down necessary parameters
-
-    traj%start = 0 ; traj%freq = 1 ; traj%key = 0  ! default trajectory
+    Call traj%init(key=0,freq=1,start=0)
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
     Call trajectory_write(keyres,megatm,nstep,tstep,time,stats%rsd,netcdf,parts,traj,comm)

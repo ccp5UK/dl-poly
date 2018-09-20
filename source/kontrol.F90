@@ -200,6 +200,8 @@ Subroutine read_control                                &
 
   Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
 
+  Integer( Kind = wi ) :: traj_key,traj_freq,traj_start
+
   Character( Len = 256 ) :: message,messages(7)
   Character( Len = 80 )  :: banner(9)
 
@@ -498,9 +500,7 @@ Subroutine read_control                                &
 ! (iii) level of information to output
 
   ltraj  = .false.
-  traj%start = 0
-  traj%freq = 1
-  traj%key = 0
+  Call traj%init(key=0,freq=1,start=0)
 
 ! default switch for defects outputting and defaults for
 ! (i) step to start at, (ii) every step after to be collected,
@@ -2736,22 +2736,24 @@ Subroutine read_control                                &
         ltraj = .true.
 
         Call get_word(record,word)
-        traj%start = Abs(Nint(word_2_real(word)))
+        traj_start = Abs(Nint(word_2_real(word)))
 
         Call get_word(record,word)
-        traj%freq = Abs(Nint(word_2_real(word)))
+        traj_freq = Abs(Nint(word_2_real(word)))
 
         Call get_word(record,word)
-        traj%key = Abs(Nint(word_2_real(word)))
+        traj_key = Abs(Nint(word_2_real(word)))
+
+        Call traj%init(traj_key,traj_freq,traj_start)
 
         Write(messages(1),'(a)') 'trajectory file option on'
-        Write(messages(2),'(2x,a,i10)') 'trajectory file start ',traj%start
-        Write(messages(3),'(2x,a,i10)') 'trajectory file interval ',traj%freq
-        Write(messages(4),'(2x,a,i10)') 'trajectory file info key ',traj%key
+        Write(messages(2),'(2x,a,i10)') 'trajectory file start ',traj_start
+        Write(messages(3),'(2x,a,i10)') 'trajectory file interval ',traj_freq
+        Write(messages(4),'(2x,a,i10)') 'trajectory file info key ',traj_key
         Call info(messages,4,.true.)
 
-        If (traj%key > 3) Call error(517)
-        If (traj%key == 3) Then
+        If (traj_key > 3) Call error(517)
+        If (traj_key == 3) Then
           Call warning('trajectory file info key == 3 generates HISTORY in an unindexed and consize manner',.true.)
         End If
 
