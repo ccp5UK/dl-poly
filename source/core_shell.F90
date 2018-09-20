@@ -28,6 +28,10 @@ Module core_shell
   Private
   Integer, Parameter, Public :: SHELL_ADIABATIC = 1
   InTeger, Parameter, Public :: SHELL_RELAXED = 2
+  Integer, Parameter :: NO_SEARCH = 0
+  Integer, Parameter :: LINE_SEARCH = 1
+  Integer, Parameter :: CONJUGATE_SEARCH = 2
+
   Type, Public :: core_shell_type
     Private
     Integer, Public :: mxshl,mxtshl,mxfshl,megshl,mxlshp
@@ -45,6 +49,14 @@ Module core_shell
     Integer,           Allocatable, Public :: lishp_shl(:),lashp_shl(:)
 
     Real( Kind = wp ), Allocatable, Public :: prmshl(:,:)
+    Logical            :: newjob = .true. , l_rdf
+    Integer            :: keyopt
+    Real( Kind = wp )  :: grad_tol,eng_tol,dist_tol(1:2),   &
+      step,eng,eng0,eng1,eng2,          &
+      grad,grad0,grad1,grad2,onorm,sgn, &
+      stride,gamma,x(1),y(1),z(1),fff(0:3)
+    Real( Kind = wp )  :: grad_pass
+    Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
   Contains
     Private
     Procedure, Public :: init => allocate_core_shell_arrays
@@ -605,13 +617,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
     Type( corePart ), Dimension(:), Intent( InOut ) :: parts
 
-    Logical,           Save :: newjob = .true. , l_rdf
-    Integer,           Save :: keyopt
     Integer                 :: fail(1:2),i,ia,ib,jshl
-    Real( Kind = wp ), Save :: grad_tol,eng_tol,dist_tol(1:2),   &
-      step,eng,eng0,eng1,eng2,          &
-      grad,grad0,grad1,grad2,onorm,sgn, &
-      stride,gamma,x(1),y(1),z(1),fff(0:3)
 
     ! OUTPUT existence
 
@@ -622,11 +628,9 @@ Contains
 
     Integer,      Parameter :: mxpass = 100
 
-    Real( Kind = wp ), Save :: grad_pass
 
     Integer,           Allocatable       :: lstopt(:,:),lst_sh(:)
     Real( Kind = wp ), Allocatable       :: fxt(:),fyt(:),fzt(:)
-    Real( Kind = wp ), Allocatable, Save :: oxt(:),oyt(:),ozt(:)
     Character( Len = 256 ) :: message
 
     fail=0
@@ -637,12 +641,12 @@ Contains
       Call error(0,message)
     End If
 
-    If (newjob) Then
-      newjob = .false.
+    If (cshell%newjob) Then
+      cshell%newjob = .false.
 
       ! At start no optimisation has been attempted yet
 
-      keyopt = 0
+      cshell%keyopt = NO_SEARCH
 
       ! Passage accumulators are initialised in core_shell
       ! stat%passshl(1) - cycles counter
@@ -651,7 +655,7 @@ Contains
       ! stat%passshl(4) - minimum cycles
       ! stat%passshl(5) - maximum cycles
 
-      Allocate (oxt(1:cshell%mxshl),oyt(1:cshell%mxshl),ozt(1:cshell%mxshl), Stat=fail(1))
+      Allocate (cshell%oxt(1:cshell%mxshl),cshell%oyt(1:cshell%mxshl),cshell%ozt(1:cshell%mxshl), Stat=fail(1))
       If (fail(1) > 0) Then
         Write(message,'(a)') 'core_shell_relax allocation failure SAVE'
         Call error(0,message)
@@ -664,17 +668,17 @@ Contains
 
       ! Optionally specified
 
-      step=rlx_tol(2)
+      cshell%step=rlx_tol(2)
 
     Else
 
       ! default if unspecified
 
-      step=0.5_wp/cshell%smax
+      cshell%step=0.5_wp/cshell%smax
 
     End If
 
-    If (keyopt == 0) Then
+    If (cshell%keyopt == NO_SEARCH) Then
 
       ! No relaxation is yet attempted
 
@@ -682,18 +686,18 @@ Contains
 
       ! Minimum needed for a pass for this minimisation cycle
 
-      grad_pass = Huge(1.0_wp)
+      cshell%grad_pass = Huge(1.0_wp)
 
       ! Avoid rdf calculation redundancy
 
-      l_rdf=rdf_collect
+      cshell%l_rdf=rdf_collect
       If (rdf_collect) rdf_collect=.false.
 
       ! Print header
 
       If (l_str) Then
         Write(message,'(a,3x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-          'Relaxing shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',step
+          'Relaxing shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',cshell%step
         Call info(message,.true.)
         Write(message,"(1x,130('-'))")
         Call info(message,.true.)
@@ -704,7 +708,7 @@ Contains
 
     If (cshell%lshmv_shl) Then
       Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,parts,&
-                               SHARED_UNIT_UPDATE_FORCES,domain,comm)
+        SHARED_UNIT_UPDATE_FORCES,domain,comm)
     End If
 
     ! Load shell forces on cores (cores don't move during the shell relaxation)
@@ -719,38 +723,38 @@ Contains
         fxt(jshl)=parts(ib)%fxx
         fyt(jshl)=parts(ib)%fyy
         fzt(jshl)=parts(ib)%fzz
-     End If
-     lstopt(1,i)=ia
-     lstopt(2,i)=ib
-  End Do
+      End If
+      lstopt(1,i)=ia
+      lstopt(2,i)=ib
+    End Do
 
     ! Current configuration energy
 
-    eng=stpcfg
+    cshell%eng=stpcfg
 
     ! Initialise/get eng_tol & verify relaxed condition
 
-    eng_tol=0.0_wp
-    If (keyopt > 0) Then
-      eng_tol=Abs(1.0_wp-eng2/eng)
+    cshell%eng_tol=0.0_wp
+    If (cshell%keyopt > NO_SEARCH) Then
+      cshell%eng_tol=Abs(1.0_wp-cshell%eng2/cshell%eng)
     End If
     ! Current gradient (modulus of the total force on shells)
 
-    grad=0.0_wp
+    cshell%grad=0.0_wp
     Do i=1,jshl
-      grad=grad+fxt(i)**2+fyt(i)**2+fzt(i)**2
+      cshell%grad=cshell%grad+fxt(i)**2+fyt(i)**2+fzt(i)**2
     End Do
-    Call gsum(comm,grad)
-    grad=Sqrt(grad)
+    Call gsum(comm,cshell%grad)
+    cshell%grad=Sqrt(cshell%grad)
 
     ! Get grad_tol & verify relaxed condition
 
-    grad_tol=grad/Real(cshell%megshl,wp)
-    relaxed=(grad_tol < rlx_tol(1))
+    cshell%grad_tol=cshell%grad/Real(cshell%megshl,wp)
+    relaxed=(cshell%grad_tol < rlx_tol(1))
 
-    ! Initialise dist_tol
+    ! Initialise cshell%dist_tol
 
-    dist_tol=0.0_wp
+    cshell%dist_tol=0.0_wp
 
     ! CHECK FOR CONVERGENCE
 
@@ -762,7 +766,7 @@ Contains
 
       ! Minimum for passing
 
-      grad_pass = Min(grad_pass,grad_tol)
+      cshell%grad_pass = Min(cshell%grad_pass,cshell%grad_tol)
 
       ! If in mxpass iterations we are not there, give up but
       ! allow for ten-fold boost in iteration cycle length
@@ -770,12 +774,12 @@ Contains
 
       If (Nint(stat%passshl(2)) == 0) Then
         If (Nint(stat%passshl(1)) >= 10*mxpass) Then
-          Call warning(330,rlx_tol(1),grad_pass,0.0_wp)
+          Call warning(330,rlx_tol(1),cshell%grad_pass,0.0_wp)
           Call error(474)
         End If
       Else
         If (Nint(stat%passshl(1)) >= mxpass) Then
-          Call warning(330,rlx_tol(1),grad_pass,0.0_wp)
+          Call warning(330,rlx_tol(1),cshell%grad_pass,0.0_wp)
           Call error(474)
         End If
       End If
@@ -786,84 +790,84 @@ Contains
 
     End If
 
-    If      (keyopt == 0) Then
+    If      (cshell%keyopt == NO_SEARCH) Then
 
       ! Original configuration energy
 
-      eng0=eng
-      eng2=eng
+      cshell%eng0=cshell%eng
+      cshell%eng2=cshell%eng
 
       ! Original gradient (modulus of the total force on shells)
 
-      onorm=grad
-      grad0=grad
-      grad2=grad
+      cshell%onorm=cshell%grad
+      cshell%grad0=cshell%grad
+      cshell%grad2=cshell%grad
 
       ! Set original search direction
 
-      oxt=0.0_wp ; oyt=0.0_wp ; ozt=0.0_wp
+      cshell%oxt=0.0_wp ; cshell%oyt=0.0_wp ; cshell%ozt=0.0_wp
       Do i=1,jshl
-        oxt(i)=fxt(i)
-        oyt(i)=fyt(i)
-        ozt(i)=fzt(i)
+        cshell%oxt(i)=fxt(i)
+        cshell%oyt(i)=fyt(i)
+        cshell%ozt(i)=fzt(i)
       End Do
 
-      keyopt=1
-      sgn=1.0_wp
-      stride=sgn*step
+      cshell%keyopt=LINE_SEARCH
+      cshell%sgn=1.0_wp
+      cshell%stride=cshell%sgn*cshell%step
 
-    Else If (keyopt == 1) Then
+    Else If (cshell%keyopt == LINE_SEARCH) Then
 
       ! Line search along chosen direction
 
-      eng1=eng0
-      eng2=eng
+      cshell%eng1=cshell%eng0
+      cshell%eng2=cshell%eng
 
-      grad1=grad2
-      grad2=0.0_wp
+      cshell%grad1=cshell%grad2
+      cshell%grad2=0.0_wp
       Do i=1,jshl
-        grad2=grad2+oxt(i)*fxt(i)+oyt(i)*fyt(i)+ozt(i)*fzt(i)
+        cshell%grad2=cshell%grad2+cshell%oxt(i)*fxt(i)+cshell%oyt(i)*fyt(i)+cshell%ozt(i)*fzt(i)
       End Do
-      Call gsum(comm,grad2)
-      grad2=sgn*grad2/onorm
+      Call gsum(comm,cshell%grad2)
+      cshell%grad2=cshell%sgn*cshell%grad2/cshell%onorm
 
       ! Linear extrapolation to minimum
 
-      If (grad2 < 0.0_wp) Then ! BACK UP FROM THIS DIRECTION
-        keyopt=2
-        stride=sgn*step*grad2/(grad1-grad2)
+      If (cshell%grad2 < 0.0_wp) Then ! BACK UP FROM THIS DIRECTION
+        cshell%keyopt=CONJUGATE_SEARCH
+        cshell%stride=cshell%sgn*cshell%step*cshell%grad2/(cshell%grad1-cshell%grad2)
       Else                     ! CARRY ON IN THIS DIRECTION
-        stride=sgn*step
+        cshell%stride=cshell%sgn*cshell%step
       End If
 
-    Else If (keyopt == 2) Then
+    Else If (cshell%keyopt == CONJUGATE_SEARCH) Then
 
       ! Construct conjugate search vector
 
-      eng1=eng2
-      eng2=eng
+      cshell%eng1=cshell%eng2
+      cshell%eng2=cshell%eng
 
-      gamma=(grad/grad0)**2
-      grad0=grad
-      grad2=0.0_wp
-      onorm=0.0_wp
+      cshell%gamma=(cshell%grad/cshell%grad0)**2
+      cshell%grad0=cshell%grad
+      cshell%grad2=0.0_wp
+      cshell%onorm=0.0_wp
       Do i=1,jshl
-        oxt(i)=fxt(i)+gamma*oxt(i)
-        oyt(i)=fyt(i)+gamma*oyt(i)
-        ozt(i)=fzt(i)+gamma*ozt(i)
+        cshell%oxt(i)=fxt(i)+cshell%gamma*cshell%oxt(i)
+        cshell%oyt(i)=fyt(i)+cshell%gamma*cshell%oyt(i)
+        cshell%ozt(i)=fzt(i)+cshell%gamma*cshell%ozt(i)
 
-        onorm=onorm+oxt(i)**2+oyt(i)**2+ozt(i)**2
-        grad2=grad2+oxt(i)*fxt(i)+oyt(i)*fyt(i)+ozt(i)*fzt(i)
+        cshell%onorm=cshell%onorm+cshell%oxt(i)**2+cshell%oyt(i)**2+cshell%ozt(i)**2
+        cshell%grad2=cshell%grad2+cshell%oxt(i)*fxt(i)+cshell%oyt(i)*fyt(i)+cshell%ozt(i)*fzt(i)
       End Do
-      Call gsum(comm,onorm)
-      onorm=Sqrt(onorm)
-      Call gsum(comm,grad2)
-      grad2=grad2/onorm
-      sgn=Sign(1.0_wp,grad2)
-      grad2=sgn*grad2
+      Call gsum(comm,cshell%onorm)
+      cshell%onorm=Sqrt(cshell%onorm)
+      Call gsum(comm,cshell%grad2)
+      cshell%grad2=cshell%grad2/cshell%onorm
+      cshell%sgn=Sign(1.0_wp,cshell%grad2)
+      cshell%grad2=cshell%sgn*cshell%grad2
 
-      keyopt=1
-      stride=sgn*step
+      cshell%keyopt=LINE_SEARCH
+      cshell%stride=cshell%sgn*cshell%step
 
     End If
 
@@ -875,9 +879,9 @@ Contains
       ia=lstopt(1,i)
       If (ia > 0 .and. ia <= natms) Then
         jshl=jshl+1
-        fxt(ia)=oxt(jshl)
-        fyt(ia)=oyt(jshl)
-        fzt(ia)=ozt(jshl)
+        fxt(ia)=cshell%oxt(jshl)
+        fyt(ia)=cshell%oyt(jshl)
+        fzt(ia)=cshell%ozt(jshl)
       End If
     End Do
 
@@ -893,31 +897,32 @@ Contains
      ia=lstopt(1,i)
      ib=lstopt(2,i)
      If (ia > 0 .and. (ib > 0 .and. ib <= natms)) Then
-        parts(ib)%xxx=parts(ib)%xxx+stride*fxt(ia)
-        parts(ib)%yyy=parts(ib)%yyy+stride*fyt(ia)
-        parts(ib)%zzz=parts(ib)%zzz+stride*fzt(ia)
-        dist_tol(1)=Max(dist_tol(1),fxt(ia)**2+fyt(ia)**2+fzt(ia)**2) ! - shell move
-        x(1)=parts(ib)%xxx-parts(ia)%xxx ; y(1)=parts(ib)%yyy-parts(ia)%yyy
-        z(1)=parts(ib)%zzz-parts(ia)%zzz
-        Call images(imcon,cell,1,x,y,z)
-        dist_tol(2)=Max(dist_tol(2),x(1)**2+y(1)**2+z(1)**2) ! - core-shell separation
+       parts(ib)%xxx=parts(ib)%xxx+cshell%stride*fxt(ia)
+       parts(ib)%yyy=parts(ib)%yyy+cshell%stride*fyt(ia)
+       parts(ib)%zzz=parts(ib)%zzz+cshell%stride*fzt(ia)
+       cshell%dist_tol(1)=Max(cshell%dist_tol(1),fxt(ia)**2+fyt(ia)**2+fzt(ia)**2) ! - shell move
+       cshell%x(1)=parts(ib)%xxx-parts(ia)%xxx ; cshell%y(1)=parts(ib)%yyy-parts(ia)%yyy
+       cshell%z(1)=parts(ib)%zzz-parts(ia)%zzz
+       Call images(imcon,cell,1,cshell%x,cshell%y,cshell%z)
+        cshell%dist_tol(2)=Max(cshell%dist_tol(2),cshell%x(1)**2+cshell%y(1)**2+cshell%z(1)**2) ! - core-shell separation
       End If
     End Do
-    dist_tol=Sqrt(dist_tol)
-    dist_tol(1)=dist_tol(1)*Abs(stride)
-    Call gmax(comm,dist_tol)
+    cshell%dist_tol=Sqrt(cshell%dist_tol)
+    cshell%dist_tol(1)=cshell%dist_tol(1)*Abs(cshell%stride)
+    Call gmax(comm,cshell%dist_tol)
 
     ! Fit headers in and Close and Open OUTPUT at every 25th print-out
 
     i=Nint(stat%passshl(1))
     If (l_str) Then
-      Write(message,'(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') i-1,stpcfg/engunit,grad_tol,dist_tol(1),dist_tol(2),eng_tol
+      Write(message,'(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') i-1,stpcfg/engunit,cshell%grad_tol,&
+        cshell%dist_tol(1),cshell%dist_tol(2),cshell%eng_tol
       Call info(message,.true.)
       If (Mod(i,25) == 0) Then
         Write(message,"(1x,130('-'))")
         Call info(message,.true.)
         Write(message,'(1x,a,3x,a,6x,a,11x,a,9x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-          'Relaxing shells to cores:','pass','eng_tot','grad_tol','ds_tol','dcs_max','tol=',rlx_tol(1),'step=',step
+          'Relaxing shells to cores:','pass','eng_tot','grad_tol','ds_tol','dcs_max','tol=',rlx_tol(1),'step=',cshell%step
         Call info(message,.true.)
         Write(message,"(1x,130('-'))")
         Call info(message,.true.)
@@ -943,13 +948,13 @@ Contains
       i=Nint(stat%passshl(1))
       If (.not.l_str) Then
         Write(message,'(a,4x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-          'Relaxed shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',step
+          'Relaxed shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',cshell%step
         Call info(message,.true.)
         Write(message,"(1x,130('-'))")
         Call info(message,.true.)
       End If
       Write(message,'(1x,i31,1x,1p,2e18.8,4x,f7.4,4x,f7.4,12x,e18.8)') &
-        i-1,stpcfg/engunit,grad_tol,dist_tol(1),dist_tol(2),eng_tol
+        i-1,stpcfg/engunit,cshell%grad_tol,cshell%dist_tol(1),cshell%dist_tol(2),cshell%eng_tol
       Call info(message,.true.)
       Write(message,"(1x,130('-'))")
       Call info(message,.true.)
@@ -964,37 +969,37 @@ Contains
 
       ! Rewind keyopt and main passage counter
 
-      keyopt =0
+      cshell%keyopt = NO_SEARCH
       stat%passshl(1)=0.0_wp
 
       ! Resume rdf calculations
 
-      If (l_rdf) rdf_collect=l_rdf
+      If (cshell%l_rdf) rdf_collect=cshell%l_rdf
 
       ! Zero shells' velocities and forces and redistribute
       ! the residual force to the rest of the system to prevent
       ! COM force generation
 
       lst_sh(1:natms)=0
-      fff(0)=Real(natms,wp)
-      fff(1:3)=0.0_wp
+      cshell%fff(0)=Real(natms,wp)
+      cshell%fff(1:3)=0.0_wp
       Do i=1,cshell%ntshl
         ib=lstopt(2,i)
         If (ib > 0) Then
            lst_sh(ib)=1
-           fff(0)=fff(0)-1.0_wp
-           fff(1)=fff(1)+parts(ib)%fxx ; parts(ib)%fxx=0.0_wp ; vxx(ib)=0.0_wp
-           fff(2)=fff(2)+parts(ib)%fyy ; parts(ib)%fyy=0.0_wp ; vyy(ib)=0.0_wp
-           fff(3)=fff(3)+parts(ib)%fzz ; parts(ib)%fzz=0.0_wp ; vzz(ib)=0.0_wp
+           cshell%fff(0)=cshell%fff(0)-1.0_wp
+           cshell%fff(1)=cshell%fff(1)+parts(ib)%fxx ; parts(ib)%fxx=0.0_wp ; vxx(ib)=0.0_wp
+           cshell%fff(2)=cshell%fff(2)+parts(ib)%fyy ; parts(ib)%fyy=0.0_wp ; vyy(ib)=0.0_wp
+           cshell%fff(3)=cshell%fff(3)+parts(ib)%fzz ; parts(ib)%fzz=0.0_wp ; vzz(ib)=0.0_wp
         End If
       End Do
-      Call gsum(comm,fff)
-      fff(1:3)=fff(1:3)/fff(0)
+      Call gsum(comm,cshell%fff)
+      cshell%fff(1:3)=cshell%fff(1:3)/cshell%fff(0)
       Do i=1,natms
         If (lst_sh(i) == 0) Then
-           parts(i)%fxx=parts(i)%fxx+fff(1)
-           parts(i)%fyy=parts(i)%fyy+fff(2)
-           parts(i)%fzz=parts(i)%fzz+fff(3)
+           parts(i)%fxx=parts(i)%fxx+cshell%fff(1)
+           parts(i)%fyy=parts(i)%fyy+cshell%fff(2)
+           parts(i)%fzz=parts(i)%fzz+cshell%fff(3)
         End If
       End Do
 
