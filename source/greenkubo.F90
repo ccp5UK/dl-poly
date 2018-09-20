@@ -44,7 +44,7 @@ Module greenkubo
     Integer( Kind = wi ), Allocatable, Public :: step(:)
     Real( Kind = wp ), Allocatable, Public :: vxi(:,:),vyi(:,:),vzi(:,:)
     Real( Kind = wp ), Allocatable, Public :: vafdata(:,:),time(:),vaf(:,:)
-
+    Logical :: newjob
     !    Real( Kind = wp ), Allocatable :: stxx(:),stxy(:),stxz(:),styy(:),styz(:),stzz(:)
     !    Real( Kind = wp ), Allocatable :: gkpot(:),tcond(:),tctime(:)
   Contains
@@ -305,11 +305,9 @@ Contains
 
     Integer,           Intent( In    ) :: keyres,nstep
     Real( Kind = wp ), Intent( In    ) :: tstep
-    Type( greenkubo_type), Intent( In    ) :: green
+    Type( greenkubo_type), Intent( InOut    ) :: green
     Type( site_type ), Intent( In    ) :: sites
     Type( comms_type), Intent( InOut ) :: comm
-
-    Logical,     Save :: newjob = .true.
 
     Logical           :: lexist
     Integer           :: i,j
@@ -318,8 +316,8 @@ Contains
     If (green%t_start < 0) Return
     If (.not.(nstep >= green%t_start+green%binsize .and. Mod(nstep-green%t_start-green%binsize,green%freq) == 0)) Return
 
-    If (newjob) Then
-      newjob = .false.
+    If (green%newjob) Then
+      green%newjob = .false.
 
       ! If the keyres=1, is VAFDAT old (does it exist) and
       ! how many frames and records are in there

@@ -74,7 +74,7 @@ Module external_field
     Real( Kind = wp ), Allocatable, Public :: param(:)
     !> Number of parameters
     Integer( Kind = wi ), Public :: max_param
-
+    Logical :: newjob
   Contains
     Private
 
@@ -135,8 +135,6 @@ Contains
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( Inout ) :: comm
   Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
-
-  Logical, Save     :: newjob = .true.
 
   Logical           :: safe,l1,l2
   Integer           :: i,j,ia,ib,ic,id,fail(1:2), &
@@ -437,8 +435,8 @@ Contains
      ia = Nint(ext_field%param(1))
      ib = Nint(ext_field%param(2))
 
-     If (newjob) Then
-        newjob=.false.
+     If (ext_field%newjob) Then
+       ext_field%newjob=.false.
 
 !        ext_field%mass=0.0_wp ! defined and initialise in external_field_module
         safe=.true.
