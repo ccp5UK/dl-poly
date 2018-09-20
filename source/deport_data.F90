@@ -2529,7 +2529,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
-  Real( Kind = wp ), Save :: cut
+  Real( Kind = wp ) :: cut
 
   Logical           :: safe(1:9)
   Integer           :: i,nlimit,ipx,ipy,ipz,itmp(1:9),jtmp(1:9)
@@ -2547,11 +2547,11 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
 
 ! find maximum x,y,z positions
 
-     big=0.0_wp
+    big=0.0_wp
 
-     Do i =1,natms
-        big(1)=Max(big(1),Abs(parts(i)%xxx))
-        big(2)=Max(big(2),Abs(parts(i)%yyy))
+    Do i =1,natms
+      big(1)=Max(big(1),Abs(parts(i)%xxx))
+      big(2)=Max(big(2),Abs(parts(i)%yyy))
         big(3)=Max(big(3),Abs(parts(i)%zzz))
      End Do
 
