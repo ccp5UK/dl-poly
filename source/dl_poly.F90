@@ -197,6 +197,7 @@ program dl_poly
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD,ELECTROSTATIC_NULL
   Use stochastic_boundary, Only : stochastic_boundary_vv
   Use numerics, Only : seed_type
+  Use trajectory, Only : trajectory_type
     ! MAIN PROGRAM VARIABLES
   Implicit None
 
@@ -229,7 +230,6 @@ program dl_poly
     nstbpo,    &
     mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
-    nstraj,istraj,keytrj, &
     nsdef,isdef,nsrsd,isrsd,            &
     ndump,nstep,                 &
     atmfre,atmfrz,megatm,megfrz
@@ -288,6 +288,7 @@ program dl_poly
   Type( domains_type ) :: domain
   Type( control_type ) :: flow
   Type( seed_type ) :: seed
+  Type( trajectory_type ) :: traj
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -429,11 +430,10 @@ program dl_poly
     fmax,nstbpo,             &
     rlx_tol,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
-    nstraj,istraj,keytrj,         &
     dfcts,nsrsd,isrsd,rrsd,          &
     ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
-    minim,mpoles,electro,ewld,seed,tmr,comm)
+    minim,mpoles,electro,ewld,seed,traj,tmr,comm)
 
   ! READ SIMULATION FORCE FIELD
 
@@ -489,12 +489,10 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
 
-    ! Nail down necessary parameters
-
-    nstraj = 0 ; istraj = 1 ; keytrj = 0  ! default trajectory
+    Call traj%init(key=0,freq=1,start=0)
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep,time,stats%rsd,netcdf,parts,comm)
+    Call trajectory_write(keyres,megatm,nstep,tstep,time,stats%rsd,netcdf,parts,traj,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -671,16 +669,17 @@ program dl_poly
   If (lsim) Then
     Call w_md_vv(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
-      netcdf,mpoles,ext_field,rigid,domain,seed,tmr)
+      netcdf,mpoles,ext_field,rigid,domain,seed,traj,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
-        fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,tmr)
+        fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
+        tmr)
     Else
       Call w_replay_history(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-        netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed)
+        netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj)
     End If
   End If
 
@@ -918,12 +917,13 @@ Contains
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
-  Subroutine w_write_options(cshell,stat,sites,netcdf,domain)
+  Subroutine w_write_options(cshell,stat,sites,netcdf,domain,traj)
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type(stats_type), Intent(InOut) :: stat
     Type( site_type ), Intent( InOut ) :: sites
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( domains_type ), Intent( In    ) :: domain
+    Type( trajectory_type ), Intent( InOut ) :: traj
     Include 'w_write_options.F90'
   End Subroutine w_write_options
 
@@ -935,7 +935,7 @@ Contains
 
   Subroutine w_md_vv(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
     dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
-    ext_field,rigid,domain,seed,tmr)
+    ext_field,rigid,domain,seed,traj,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -960,13 +960,14 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
+    Type( trajectory_type ), Intent( InOut ) :: traj
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,flw,cshell,cons,pmf,stat,thermo,msd_data,met,pois,&
-      bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf,netcdf,minim, &
-      mpoles,ext_field,rigid,electro,domain,seed)
+  Subroutine w_replay_history(mxatdm_,flw,cshell,cons,pmf,stat,thermo,msd_data, &
+      met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
+      netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -994,6 +995,7 @@ Contains
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
+    Type( trajectory_type ), Intent( InOut ) :: traj
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -1005,9 +1007,10 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume,msd_data,bond, &
-    angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-    minim,mpoles,ext_field,rigid,electro,domain,seed,tmr)
+  Subroutine w_replay_historf(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume, &
+      msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
+      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
+      tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( control_type ), Intent( InOut ) :: flw
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -1036,6 +1039,7 @@ Contains
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
+    Type( trajectory_type ), Intent( InOut ) :: traj
     Type( timer_type ), Intent( InOut ) :: tmr
 
     Logical,     Save :: newjb = .true.
