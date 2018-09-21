@@ -76,6 +76,7 @@ Module metal
 
     ! Many-body perturbation potential error function and derivative arrays
     Real( Kind = wp ), Allocatable, Dimension(:), Public :: merf,mfer
+    Logical :: newjob
   Contains
     Private
 
@@ -1211,7 +1212,6 @@ Subroutine metal_lrc(met,sites,comm)
   Type( site_type ), Intent( In    ) :: sites
   Type( comms_type ), Intent( InOut ) :: comm
 
-  Logical, Save     :: newjob = .true.
   Integer           :: i,j,k0,k1,k2,kmet,keypot,nnn,mmm
 
   Real( Kind = wp ) :: elrc0,elrc1,elrc2,elrcsum,vlrc0,vlrc1,vlrc2, tmp, &
@@ -1397,8 +1397,8 @@ Subroutine metal_lrc(met,sites,comm)
      End Do
   End If
 
-  If (newjob) Then
-     newjob =.false.
+  If (met%newjob) Then
+    met%newjob =.false.
 
      Write(messages(1),'(a,1p,e15.6)') &
        'long-range correction to metal energy ', met%elrc(0)/engunit

@@ -54,6 +54,8 @@ Module neighbours
     Integer( Kind = wi ), Allocatable, Public :: list_excl(:,:)
     !> Maximum size of excluded atom list
     Integer( Kind = wi ), Public :: max_exclude
+    Logical :: newstart=.true.
+    Logical :: newjob=.true.
 
   Contains
     Private
@@ -95,7 +97,6 @@ Contains
     Integer( Kind = wi ), Intent( In    ) :: bspline
     Type( comms_type ), Intent ( InOut ) :: comm
 
-    Logical, Save :: newstart=.true.
 
     Logical           :: safe
     Integer           :: fail,ilx,ily,ilz,i,ii,j
@@ -223,10 +224,10 @@ Contains
       stat%neighskip(3)=stat%neighskip(2)*stat%neighskip(3)
       stat%neighskip(2)=stat%neighskip(2)+1.0_wp
       stat%neighskip(3)=stat%neighskip(3)/stat%neighskip(2)+stat%neighskip(1)/stat%neighskip(2)
-      If (.not.newstart) Then ! avoid first compulsory force evaluation
+      If (.not. neigh%newstart) Then ! avoid first compulsory force evaluation
         stat%neighskip(4)=Min(stat%neighskip(1),stat%neighskip(4))
       Else
-        newstart=.false.
+        neigh%newstart=.false.
       End If
       stat%neighskip(5)=Max(stat%neighskip(1),stat%neighskip(5))
 
@@ -246,14 +247,13 @@ Contains
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type ( comms_type ), Intent( InOut ) :: comm
     Type( corePart ),    Intent( InOut ) :: parts(:)
-    Logical, Save :: newjob=.true.
 
     Integer :: fail,i
     Character( Len = 256 ):: message
     If (.not.neigh%unconditional_update) Return
 
-    If (newjob) Then ! Init set
-      newjob = .false.
+    If (neigh%newjob) Then ! Init set
+      neigh%newjob = .false.
 
       fail = 0
       Allocate (neigh%xbg(1:mxatms),neigh%ybg(1:mxatms),neigh%zbg(1:mxatms), Stat = fail)
