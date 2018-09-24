@@ -63,7 +63,9 @@
         If (levcfg == 2) Then
            newjob = .false.
 
-           If (keyres /= 1) Call w_write_options(cshell,stat,sites,netcdf,domain)
+           If (keyres /= 1) Then
+             Call w_write_options(cshell,stat,sites,netcdf,domain,traj)
+           End If
 
            If (nstep == 0 .and. nstep == nstrun) Go To 1000
         End If
@@ -141,7 +143,7 @@
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options(cshell,stat,sites,netcdf,domain)
+        Call w_write_options(cshell,stat,sites,netcdf,domain,traj)
 
 ! Save restart data in event of system crash
 

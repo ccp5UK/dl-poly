@@ -69,6 +69,7 @@ Module kontrol
                             ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
                             ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
   Use ewald, Only : ewald_type
+  Use trajectory, Only : trajectory_type
   Implicit None
 
   Private
@@ -103,11 +104,10 @@ Subroutine read_control                                &
            fmax,nstbpo,             &
            rlx_tol,mxquat,quattol,       &
            nstbnd,nstang,nstdih,nstinv,  &
-           nstraj,istraj,keytrj,         &
            dfcts,nsrsd,isrsd,rrsd,          &
            ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
            met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-           rdf,minim,mpoles,electro,ewld,seed,tmr,comm)
+           rdf,minim,mpoles,electro,ewld,seed,traj,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -146,7 +146,6 @@ Subroutine read_control                                &
                                              mxquat,        &
                                              nstbnd,nstang,        &
                                              nstdih,nstinv,        &
-                                             nstraj,istraj,keytrj, &
                                              nsrsd,isrsd,          &
                                              ndump
 
@@ -182,6 +181,7 @@ Subroutine read_control                                &
   Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( seed_type ), Intent( InOut ) :: seed
+  Type( trajectory_type ), Intent( InOut ) :: traj
   Type( comms_type ),     Intent( InOut )  :: comm
 
   Integer( Kind = wi ) :: tmp_seed(1:3)
@@ -199,6 +199,8 @@ Subroutine read_control                                &
                                              grddih,grdinv,nstall
 
   Real( Kind = wp )                       :: rcell(1:9),rcut1,rpad1,rvdw1,tmp,eps0,tol,rcb_d,prmps(1:4)
+
+  Integer( Kind = wi ) :: traj_key,traj_freq,traj_start
 
   Character( Len = 256 ) :: message,messages(7)
   Character( Len = 80 )  :: banner(9)
@@ -498,9 +500,7 @@ Subroutine read_control                                &
 ! (iii) level of information to output
 
   ltraj  = .false.
-  nstraj = 0
-  istraj = 1
-  keytrj = 0
+  Call traj%init(key=0,freq=1,start=0)
 
 ! default switch for defects outputting and defaults for
 ! (i) step to start at, (ii) every step after to be collected,
@@ -2736,25 +2736,24 @@ Subroutine read_control                                &
         ltraj = .true.
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word)))
-        nstraj = Max(nstraj,itmp)
+        traj_start = Abs(Nint(word_2_real(word)))
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word)))
-        istraj = Max(istraj,itmp)
+        traj_freq = Abs(Nint(word_2_real(word)))
 
         Call get_word(record,word)
-        itmp = Abs(Nint(word_2_real(word)))
-        keytrj = Max(keytrj,itmp)
+        traj_key = Abs(Nint(word_2_real(word)))
+
+        Call traj%init(traj_key,traj_freq,traj_start)
 
         Write(messages(1),'(a)') 'trajectory file option on'
-        Write(messages(2),'(2x,a,i10)') 'trajectory file start ',nstraj
-        Write(messages(3),'(2x,a,i10)') 'trajectory file interval ',istraj
-        Write(messages(4),'(2x,a,i10)') 'trajectory file info key ',keytrj
+        Write(messages(2),'(2x,a,i10)') 'trajectory file start ',traj_start
+        Write(messages(3),'(2x,a,i10)') 'trajectory file interval ',traj_freq
+        Write(messages(4),'(2x,a,i10)') 'trajectory file info key ',traj_key
         Call info(messages,4,.true.)
 
-        If (keytrj > 3) Call error(517)
-        If (keytrj == 3) Then
+        If (traj_key > 3) Call error(517)
+        If (traj_key == 3) Then
           Call warning('trajectory file info key == 3 generates HISTORY in an unindexed and consize manner',.true.)
         End If
 
