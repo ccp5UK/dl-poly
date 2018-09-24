@@ -20,7 +20,6 @@ Module deport_data
   Use mpole ,              Only : mpole_type,POLARISATION_CHARMM
   Use msd, Only : msd_type
   Use greenkubo,    Only : greenkubo_type
-  Use kim,    Only : kimim,idhalo
   Use core_shell,   Only : core_shell_type 
   Use constraints,  Only : constraints_type 
   Use errors_warnings, Only : error, warning
@@ -31,6 +30,7 @@ Module deport_data
   Use shared_units, Only : pass_shared_units, tag_legend
   Use thermostat, Only : thermostat_type
   Use neighbours, Only : neighbours_type
+  Use kim, Only : kim_type
   Implicit None
 
   Public :: deport_atomic_data, export_atomic_data
@@ -1650,7 +1650,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 End Subroutine deport_atomic_data
 
-Subroutine export_atomic_data(mdir,domain,comm)
+Subroutine export_atomic_data(mdir,domain,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1666,6 +1666,7 @@ Subroutine export_atomic_data(mdir,domain,comm)
 
   Integer,            Intent( In    ) :: mdir
   Type( domains_type ), Intent( In    ) :: domain
+  Type( kim_type ), Intent( InOut ) :: kim_data
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap
@@ -1888,13 +1889,11 @@ Subroutine export_atomic_data(mdir,domain,comm)
   End If
 
 ! openKIM halo indicators
+  If (kim_data%active) Then
+     i = Merge(2*mdir, -2*mdir-1, mdir>0)
+     Call kim_data%kcomms%set(i, imove/iadd, nlast+1, nlast+jmove/iadd)
+   End If
 
-  If (kimim /= ' ') Then
-     i = Abs(2*mdir)+Sign(mdir,1) ! Merge( 2*mdir , -2*mdir-1 , mdir > 0 )
-     idhalo(0,i)=imove/iadd       ! atoms to send
-     idhalo(1,i)=nlast+1          ! first atom to receive
-     idhalo(2,i)=nlast+jmove/iadd ! last atom to receive
-  End If
 
 ! load transferred data
 
@@ -1928,7 +1927,7 @@ Subroutine export_atomic_data(mdir,domain,comm)
 
 End Subroutine export_atomic_data
 
-Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,comm)
+Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1943,6 +1942,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,comm)
   Integer, Intent( In    ) :: mdir,ixyz0(1:mxatms)
   Integer, Intent( InOut ) :: mlast
   Type( domains_type ), Intent( In    ) :: domain
+  Type( kim_type ), Intent( InOut ) :: kim_data
   Type( comms_type ), Intent (InOut) :: comm
 
 
@@ -2150,13 +2150,10 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,comm)
   End If
 
 ! openKIM halo indicators
-
-  If (kimim /= ' ') Then
-     i = Abs(2*mdir)+Sign(mdir,1) ! Merge( 2*mdir , -2*mdir-1 , mdir > 0 )
-     idhalo(0,i)=imove/iadd       ! atoms to send
-     idhalo(1,i)=mlast+1          ! first atom to receive
-     idhalo(2,i)=mlast+jmove/iadd ! last atom to receive
-  End If
+  If (kim_data%active) Then
+     i = Merge(2*mdir, -2*mdir-1, mdir>0)
+     Call kim_data%kcomms%set(i, imove/iadd, mlast+1, mlast+jmove/iadd)
+   End If
 
 ! load transferred data
 

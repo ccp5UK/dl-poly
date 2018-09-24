@@ -79,6 +79,7 @@ drivers.F90
 thermostat.F90
 analysis.F90
 electrostatic.F90
+kim.F90
 )
 if(BUILDER)
   set_property(SOURCE development.F90 APPEND PROPERTY
@@ -106,7 +107,6 @@ set(dlpoly_THERMO_SRCS
         )
 
 set(netcdf_SRCS netcdf.F90)
-set(kim_SRCS kim.F90)
 set(plumed_SRCS plumed.F90)
 
 if( NOT WITH_MPI)
@@ -134,9 +134,8 @@ if(WITH_NETCDF)
     )
 endif()
 add_library(dlpolythermo  ${dlpoly_THERMO_SRCS})
-add_library(dlpolykim  ${kim_SRCS})
 if(WITH_KIM)
-  set_target_properties(dlpolykim PROPERTIES
+  set_target_properties(dlpolycore PROPERTIES
     COMPILE_DEFINITIONS "KIM"
     )
 endif()
@@ -148,16 +147,14 @@ if(WITH_PLUMED)
 endif()
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
-target_link_libraries(dlpolykim dlpolycore)
 target_link_libraries(dlpolythermo dlpolycore)
 target_link_libraries(dlpolyplumed dlpolycore)
-target_link_libraries(dlpoly dlpolycore dlpolykim dlpolyplumed)
+target_link_libraries(dlpoly dlpolycore dlpolyplumed)
 add_executable(${target_name} dl_poly.F90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")
-target_link_libraries(${target_name} dlpoly dlpolycore dlpolythermo dlpolykim dlpolyplumed ${LIBS})
+target_link_libraries(${target_name} dlpoly dlpolycore dlpolythermo dlpolyplumed ${LIBS})
 install(TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 INSTALL_SUBLIB(dlpoly)
 INSTALL_SUBLIB(dlpolycore)
-INSTALL_SUBLIB(dlpolykim)
 INSTALL_SUBLIB(dlpolythermo)
 INSTALL_SUBLIB(dlpolyplumed)

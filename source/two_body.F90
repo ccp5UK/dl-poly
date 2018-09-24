@@ -3,7 +3,7 @@ Module two_body
   Use comms,   Only : comms_type,gsum
   Use setup
   Use site, Only : site_type
-  Use configuration,  Only : volm,sumchg,natms
+  Use configuration,  Only : lsa,lsi,lsite,ltg,nlast,volm,sumchg,natms
   Use particle,       Only : corePart
   Use neighbours,     Only : neighbours_type,link_cell_pairs
   Use ewald,           Only : ewald_type
@@ -14,7 +14,7 @@ Module two_body
   Use poisson, Only : poisson_type,poisson_forces,poisson_excl_forces,poisson_frzn_forces
   Use vdw,     Only : vdw_type,vdw_forces
   Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
-  Use kim
+  Use kim,     Only : kim_type,kim_compute
   Use rdfs,    Only : rdf_type,rdf_collect,rdf_excl_collect,rdf_frzn_collect, &
                       rdf_increase_block_number
   Use errors_warnings, Only : error
@@ -38,11 +38,9 @@ Module two_body
   Public :: two_body_forces
 Contains
 
-Subroutine two_body_forces(pdplnc,ensemble,    &
-           nstfce,lbook,megfrz, &
-           leql,nsteql,nstep,         &
-           cshell,stats,ewld,devel,met,pois,neigh,sites,vdws,rdf,mpoles,electro, &
-           domain,tmr,parts,comm)
+Subroutine two_body_forces(pdplnc,ensemble,nstfce,lbook,megfrz,leql,nsteql, &
+    nstep,cshell,stats,ewld,devel,met,pois,neigh,sites,vdws,rdf,mpoles, &
+    electro,domain,parts,kim_data,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -87,6 +85,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
   Type( electrostatic_type ), Intent( In    ) :: electro
   Type( domains_type ), Intent( In    ) :: domain
   Type( corePart ),                         Intent( InOut ) :: parts(:)
+  Type( kim_type ), Intent( InOut ) :: kim_data
   Type( comms_type ),                       Intent( InOut ) :: comm
 
 
@@ -173,10 +172,9 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
   End If
 ! Calculate all contributions from KIM
 
-  If (kimim /= ' ') Then
-     Call kim_setup(sites%ntype_atom,sites%unique_atom,sites%site_name,kimim,neigh%max_list,comm)
-     Call kim_forces(engkim,virkim,stats%stress,neigh%list,domain%map,parts,comm)
-     Call kim_cleanup(comm)
+  If (kim_data%active) Then
+    Call kim_compute(kim_data,natms,nlast,parts,neigh%list,domain%map, &
+      lsite,lsi,lsa,ltg,sites%site_name,engkim,virkim,stats%stress,comm)
   End If
 
   If (met%n_potentials > 0) Then
@@ -570,7 +568,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
     Call d_ene_trq_mpoles(vircpe_dt,stats%stress,mpoles,parts)
   End If
 
-! sum up contributions to potentials
+        ! sum up contributions to domain,potentials
 
 
      buffer( 0) = tmp

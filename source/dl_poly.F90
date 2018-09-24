@@ -99,7 +99,7 @@ program dl_poly
   Use tersoff, Only : tersoff_type,tersoff_forces
   Use four_body, Only : four_body_type,four_body_forces
 
-  Use kim
+  Use kim, Only : kim_type,kim_setup
   Use plumed, Only : plumed_type,plumed_init,plumed_finalize,plumed_apply
 
   Use external_field, Only : external_field_type, external_field_apply, &
@@ -230,7 +230,7 @@ program dl_poly
     nstbpo,    &
     mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
-    nsdef,isdef,nsrsd,isrsd,            &
+    nsrsd,isrsd,            &
     ndump,nstep,                 &
     atmfre,atmfrz,megatm,megfrz
 
@@ -247,7 +247,7 @@ program dl_poly
     fmax,                           &
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),                 &
-    quattol,rdef,rrsd,                  &
+    quattol,rrsd,                  &
     pdplnc
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
@@ -289,6 +289,7 @@ program dl_poly
   Type( control_type ) :: flow
   Type( seed_type ) :: seed
   Type( trajectory_type ) :: traj
+  Type( kim_type ), Target :: kim_data
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -359,7 +360,7 @@ program dl_poly
     dvar,rbin,nstfce,width,sites%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
-    rigid,electro,domain,ewld,comm)
+    rigid,electro,domain,ewld,kim_data,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -415,6 +416,9 @@ program dl_poly
   Call allocate_ttm_arrays(domain,comm)
   Call ttm_table_scan(comm)
 
+  ! Setup KIM
+  Call kim_setup(kim_data,mxatms,mxatdm,megatm,neigh%max_list,mxbfxp,comm%mxnode)
+
   ! READ SIMULATION CONTROL PARAMETERS
 
   Call read_control                                    &
@@ -437,14 +441,10 @@ program dl_poly
 
   ! READ SIMULATION FORCE FIELD
 
-  Call read_field                          &
-    (l_str,l_top,l_n_v,             &
-    neigh%cutoff,width, &
-    lecx,lbook,lexcl,               &
-    atmfre,atmfrz,megatm,megfrz,    &
-    core_shells,pmfs,cons,thermo,met,bond,angle,   &
-    dihedral,inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
-    ext_field,rigid,electro,comm)
+  Call read_field(l_str,l_top,l_n_v,neigh%cutoff,width,lecx,lbook,lexcl,atmfre, &
+    atmfrz,megatm,megfrz,core_shells,pmfs,cons,thermo,met,bond,angle,dihedral, &
+    inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
+    ext_field,rigid,electro,kim_data,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -523,7 +523,7 @@ program dl_poly
   ! SET domain borders and link-cells as default for new jobs
   ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,ewld,comm)
+  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,ewld,kim_data,comm)
 
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
@@ -669,17 +669,17 @@ program dl_poly
   If (lsim) Then
     Call w_md_vv(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
-      netcdf,mpoles,ext_field,rigid,domain,seed,traj,tmr)
+      netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
         fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
-        tmr)
+        kim_data,tmr)
     Else
       Call w_replay_history(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-        netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj)
+        netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data)
     End If
   End If
 
@@ -822,7 +822,7 @@ Contains
 
   Subroutine w_calculate_forces(flw,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-      minim,mpoles,ext_field,rigid,electro,domain,tmr)
+      minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -849,12 +849,13 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
+    Type( kim_type ), Intent( InOut) :: kim_data
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
   Subroutine w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
-    dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain)
+    dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -871,6 +872,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
+    Type( kim_type ), Intent( InOut ) :: kim_data
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
@@ -935,7 +937,7 @@ Contains
 
   Subroutine w_md_vv(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
     dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
-    ext_field,rigid,domain,seed,traj,tmr)
+    ext_field,rigid,domain,seed,traj,kim_data,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -961,13 +963,14 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
     Type( trajectory_type ), Intent( InOut ) :: traj
+    Type( kim_type ), Intent( InOut ) :: kim_data
     Type( timer_type ), Intent( InOut ) :: tmr
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,flw,cshell,cons,pmf,stat,thermo,msd_data, &
       met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-      netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj)
+      netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -996,6 +999,7 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
     Type( trajectory_type ), Intent( InOut ) :: traj
+    Type( kim_type ), Intent( InOut ) :: kim_data
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -1010,7 +1014,7 @@ Contains
   Subroutine w_replay_historf(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume, &
       msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
-      tmr)
+      kim_data,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( control_type ), Intent( InOut ) :: flw
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -1040,6 +1044,7 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
     Type( trajectory_type ), Intent( InOut ) :: traj
+    Type( kim_type ), Intent( InOut ) :: kim_data
     Type( timer_type ), Intent( InOut ) :: tmr
 
     Logical,     Save :: newjb = .true.

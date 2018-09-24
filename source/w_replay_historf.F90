@@ -108,7 +108,7 @@
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,ewld,comm)
+           Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,ewld,kim_data,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -127,7 +127,7 @@
 
            Call w_calculate_forces(flw,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
-             netcdf,minim,mpoles,ext_field,rigid,electro,domain,tmr)
+             netcdf,minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
 
 ! Evaluate kinetics if available
 

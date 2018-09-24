@@ -18,6 +18,7 @@ Module neighbours
   Use timer,  Only : timer_type,start_timer,stop_timer
   Use statistics, Only : stats_type
   Use particle, Only : corePart
+  Use kim, Only : kim_type
   Implicit None
 
   Private
@@ -87,7 +88,7 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !>
   !> Contrib   - I.J.Bush february 2014
-  Subroutine vnl_check(l_str,width,neigh,stat,domain,parts,bspline,comm)
+  Subroutine vnl_check(l_str,width,neigh,stat,domain,parts,bspline,kim_data,comm)
     Logical,           Intent ( In    ) :: l_str
     Real( Kind = wp ), Intent ( InOut ) :: width
     Type( neighbours_type ), Intent( InOut ) :: neigh
@@ -95,6 +96,7 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( corePart ),   Intent ( InOut ) :: parts(:)
     Integer( Kind = wi ), Intent( In    ) :: bspline
+    Type( kim_type ), Intent( In    ) :: kim_data
     Type( comms_type ), Intent ( InOut ) :: comm
 
 
@@ -217,6 +219,14 @@ Contains
           neigh%padding = cut
           neigh%cutoff_extended = neigh%cutoff + neigh%padding
         End If
+      End If
+    End If
+
+    ! Ensure padding is large enough for KIM model
+    If (kim_data%padding_neighbours_required) Then
+      If (neigh%padding < kim_data%influence_distance) Then
+        neigh%padding = kim_data%influence_distance
+          neigh%cutoff_extended = neigh%cutoff + neigh%padding
       End If
     End If
 

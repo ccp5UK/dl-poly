@@ -2,7 +2,7 @@ Module ffield
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type
   Use setup
-  Use kim,   Only : kimim,rkim,kim_cutoff
+  Use kim,   Only : kim_type,kim_cutoff
 
 ! SITE MODULE
 
@@ -83,7 +83,7 @@ Subroutine read_field                      &
            atmfre,atmfrz,megatm,megfrz,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,sites,vdws, &
-           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,comm)
+           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -133,6 +133,7 @@ Subroutine read_field                      &
   Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( electrostatic_type ), Intent( InOut ) :: electro
+  Type( kim_type ), Intent( InOut ) :: kim_data
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -4658,7 +4659,7 @@ Subroutine read_field                      &
 
      Else If (word(1:3) == 'kim') Then
 
-       Write(message,'(2a)') 'using open KIM interaction model: ',kimim
+       Write(message,'(2a)') 'using open KIM interaction model: ',kim_data%model_name
        Call info(message,.true.)
 
 ! read external field data
@@ -4801,12 +4802,16 @@ Subroutine read_field                      &
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 
         If ( electro%key == ELECTROSTATIC_NULL .and. vdws%n_vdw == 0 .and. &
-             met%n_potentials == 0 .and. tersoffs%n_potential == 0 .and. kimim == ' ') Call error(145)
+             met%n_potentials == 0 .and. tersoffs%n_potential == 0 .and.  &
+             (.not. kim_data%active)) Then
+          Call error(145)
+        End If
 
 ! test for mixing KIM model with external interactions
 
         If ( (electro%key /= ELECTROSTATIC_NULL .or. vdws%n_vdw /= 0 .or. &
-              met%n_potentials /= 0 .or. tersoffs%n_potential /= 0) .and. kimim /= ' ') Then
+              met%n_potentials /= 0 .or. tersoffs%n_potential /= 0) .and. &
+              kim_data%active) Then
           Call warning('open KIM model in use together with extra intermolecular interactions',.true.)
         End If
 
@@ -5044,20 +5049,10 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
   Call info(banner,18,.true.)
 End Subroutine report_topology
 
-Subroutine scan_field                                &
-           (l_n_e,                     &
-           max_site,mxatyp,megatm,mxtmls,max_exclude,       &
-           mtshl,                &
-           mtcons,              &
-           l_usr,                &
-           mtrgd,         &
-           mtteth,             &
-           mtbond, &
-           mtangl,       &
-           mtdihd,       &
-           mtinv,         &
-           rcter,rctbp,rcfbp,lext,cshell,cons,pmf,met,&
-           bond,angle,dihedral,inversion,tether,threebody,vdws,tersoffs,fourbody,rdf,mpoles,rigid,comm)
+Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
+    mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
+    lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
+    vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5094,6 +5089,7 @@ Subroutine scan_field                                &
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( kim_type ), Intent( InOut ) :: kim_data
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude,mtshl
 ! Max number of different atom types
@@ -5932,10 +5928,11 @@ Subroutine scan_field                                &
 
 ! Get KIM's IM name and cutoff
 
+        kim_data%active = .true.
         Call get_word(record_raw,word)
         Call strip_blanks(record_raw)
-        kimim=record(1:Len_Trim(record_raw))
-        Call kim_cutoff(mxatyp,chr,kimim,rkim,comm)
+        kim_data%model_name=record_raw(1:Len_Trim(record_raw))
+        Call kim_cutoff(kim_data)
 
      Else If (word(1:6) == 'extern') Then
 
