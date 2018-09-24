@@ -27,6 +27,12 @@ Module pmf
 
   Integer,                        Public :: ntpmf  = 0
   Integer, Public :: mxtpmf(1:2),mxpmf,mxfpmf,megpmf
+  Logical            :: newjob_quench = .true.
+  Real( Kind = wp )  :: amt(1:2)
+  Logical           :: newjob_shake = .true.
+  Real( Kind = wp ) :: rmass_pmf_unit(1:2),dis,dis2
+  Logical            :: newjob_rattle = .true.
+  Real( Kind = wp )  :: amtr(1:2)
 
   Real( Kind = wp ),              Public :: prmpmf = 0.0_wp
   
@@ -431,8 +437,6 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
   Type( corePart ),  Intent( InOut ) :: parts(:)
   Type( comms_type), intent( InOut ) :: comm
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: amt(1:2)
 
   Logical                 :: safe
   Integer                 :: fail(1:5),ipmf,jpmf,k,l,icyc
@@ -455,14 +459,14 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
 
 ! Get PMF units' reciprocal masses
 
-  If (newjob) Then
-     newjob = .false.
+  If (pmf%newjob_quench) Then
+    pmf%newjob_quench = .false.
 
      Do jpmf=1,2
         If (pmf%pmffrz(jpmf) == pmf%mxtpmf(jpmf)) Then
-           amt(jpmf)=0.0_wp
+          pmf%amt(jpmf)=0.0_wp
         Else
-           amt(jpmf)=pmf%pmfwg1(0,jpmf)
+          pmf%amt(jpmf)=pmf%pmfwg1(0,jpmf)
         End If
      End Do
   End If
@@ -513,14 +517,14 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
 
         esig=Max(esig,0.5_wp*Abs(gamma))
 
-        gamma = gamma / (amt(1)+amt(2))
+        gamma = gamma / (pmf%amt(1)+pmf%amt(2))
 
         Do jpmf=1,2
 
 ! If this unit is present on my domain
 
            If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
-              gamm(jpmf) = Real(1-2*Mod(jpmf,2),wp)*gamma*amt(jpmf)
+             gamm(jpmf) = Real(1-2*Mod(jpmf,2),wp)*gamma*pmf%amt(jpmf)
               Do k=1,pmf%mxtpmf(jpmf)
                  l=pmf%indpmf(k,jpmf,ipmf)
 
@@ -915,8 +919,6 @@ Subroutine pmf_shake_vv          &
   Type(pmf_type), Intent( Inout ) :: pmf
   Type( comms_type ), Intent( InOut ) :: comm
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: rmass_pmf_unit(1:2),dis,dis2
 
   Logical                 :: safe
   Integer                 :: fail,ipmf,jpmf,k,l,icyc
@@ -933,29 +935,29 @@ Subroutine pmf_shake_vv          &
   End If
 
 
-  If (newjob) Then
-     newjob = .false.
+  If (pmf%newjob_shake) Then
+    pmf%newjob_shake = .false.
 
 ! Get reciprocal PMF units' masses
 
      Do jpmf=1,2
-        If (pmf%pmffrz(jpmf) == pmf%mxtpmf(jpmf)) Then
-           rmass_pmf_unit(jpmf)=0.0_wp
-        Else
-           rmass_pmf_unit(jpmf)=pmf%pmfwg1(0,jpmf)
-        End If
-     End Do
+       If (pmf%pmffrz(jpmf) == pmf%mxtpmf(jpmf)) Then
+         pmf%rmass_pmf_unit(jpmf)=0.0_wp
+         Else
+           pmf%rmass_pmf_unit(jpmf)=pmf%pmfwg1(0,jpmf)
+         End If
+      End Do
 
 ! set PMF constraint parameters
 
-     dis=pmf%prmpmf
-     dis2=dis**2
+     pmf%dis=pmf%prmpmf
+     pmf%dis2=pmf%dis**2
   End If
 
 ! squared timestep and reciprocal masses
 
   tstep2 = tstep*tstep
-  amt = tstep2*rmass_pmf_unit
+  amt = tstep2*pmf%rmass_pmf_unit
 
 ! Initialise constraint virial and stress
 
@@ -977,8 +979,8 @@ Subroutine pmf_shake_vv          &
 ! calculate maximum error in bondlength
 
      Do ipmf=1,pmf%ntpmf
-        pt2(ipmf) =pxt(ipmf)**2+pyt(ipmf)**2+pzt(ipmf)**2 - dis2
-        esig(ipmf)=0.5_wp*Abs(pt2(ipmf))/dis
+       pt2(ipmf) =pxt(ipmf)**2+pyt(ipmf)**2+pzt(ipmf)**2 - pmf%dis2
+        esig(ipmf)=0.5_wp*Abs(pt2(ipmf))/pmf%dis
      End Do
 
 ! global verification of convergence
@@ -1048,7 +1050,7 @@ Subroutine pmf_shake_vv          &
                  ' & U2:', pmf%listpmf(1,2,ipmf)
                Call info(message)
                Write(message,'(a,f8.2,a,1p,e12.4)') &
-                 'converges to a length of', Sqrt(pt2(ipmf)+dis2), &
+                 'converges to a length of', Sqrt(pt2(ipmf)+pmf%dis2), &
                  ' Angstroms with factor', esig(ipmf)
                Call info(message)
                Call warning('Contributes towards next error',.true.)
@@ -1117,8 +1119,6 @@ Subroutine pmf_rattle                      &
   Type(pmf_type), Intent( Inout ) :: pmf
   Type( comms_type ), Intent( InOut ) :: comm
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: amt(1:2)
 
   Logical                 :: safe
   Integer                 :: fail(1:2),ipmf,jpmf,k,l,icyc
@@ -1138,48 +1138,48 @@ Subroutine pmf_rattle                      &
 
 ! Get PMF units' reciprocal masses
 
-  If (newjob) Then
-     newjob = .false.
+  If (pmf%newjob_rattle) Then
+    pmf%newjob_rattle = .false.
 
      Do jpmf=1,2
         If (pmf%pmffrz(jpmf) == pmf%mxtpmf(jpmf)) Then
-           amt(jpmf)=0.0_wp
+          pmf%amtr(jpmf)=0.0_wp
         Else
-           amt(jpmf)=pmf%pmfwg1(0,jpmf)
+          pmf%amtr(jpmf)=pmf%pmfwg1(0,jpmf)
         End If
-     End Do
-  End If
+      End Do
+    End If
 
 ! normalise PMF constraint vectors on first pass outside
 
-  If (lfst) Then
-     Do ipmf=1,pmf%ntpmf
+    If (lfst) Then
+      Do ipmf=1,pmf%ntpmf
         dis=1.0_wp/Sqrt(pmf%pxx(ipmf)**2+pmf%pyy(ipmf)**2+pmf%pzz(ipmf)**2)
         pmf%pxx(ipmf)=pmf%pxx(ipmf)*dis
         pmf%pyy(ipmf)=pmf%pyy(ipmf)*dis
         pmf%pzz(ipmf)=pmf%pzz(ipmf)*dis
-     End Do
-  End If
+      End Do
+    End If
 
 ! application of PMF constraint (rattle) algorithm
 ! Initialise number of cycles to zero and unsafe passage of the algorithm
 
-  safe=.false.
-  icyc=0
-  Do While ((.not.safe) .and. icyc < mxshak)
-     icyc=icyc+1
+    safe=.false.
+    icyc=0
+    Do While ((.not.safe) .and. icyc < mxshak)
+      icyc=icyc+1
 
 ! initialise velocity correction arrays
 
-     Do l=1,natms
+      Do l=1,natms
         vxt(l)=0.0_wp
         vyt(l)=0.0_wp
         vzt(l)=0.0_wp
-     End Do
+      End Do
 
 ! calculate temporary COM velocity of each unit
 
-     Call pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
+      Call pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
 
 ! calculate PMF velocity corrections
 
@@ -1194,16 +1194,16 @@ Subroutine pmf_rattle                      &
 
         esig=Max(esig,0.5_wp*tstep*Abs(gamma))
 
-        gamma = gamma / (amt(1)+amt(2))
+        gamma = gamma / (pmf%amtr(1)+pmf%amtr(2))
 
         Do jpmf=1,2
 
 ! If this unit is present on my domain
 
-           If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
-              gamm(jpmf) = Real(1-2*Mod(jpmf,2),wp)*gamma*amt(jpmf)
-              Do k=1,pmf%mxtpmf(jpmf)
-                 l=pmf%indpmf(k,jpmf,ipmf)
+          If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
+            gamm(jpmf) = Real(1-2*Mod(jpmf,2),wp)*gamma*pmf%amtr(jpmf)
+            Do k=1,pmf%mxtpmf(jpmf)
+              l=pmf%indpmf(k,jpmf,ipmf)
 
 ! improve approximate PMF particles velocity and force (if non-frozen)
 
