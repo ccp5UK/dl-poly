@@ -1,5 +1,5 @@
 Module trajectory
-  Use kinds,         Only : wp, li
+  Use kinds,         Only : wi,wp,li
   Use comms,         Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck, &
                             gsum,gsend,grecv,offset_kind,mode_wronly, &
                             mode_rdonly, comm_self
@@ -48,10 +48,82 @@ Module trajectory
   Implicit None
 
   Private
+
+  !> Trajectory data
+  Type, Public :: trajectory_type
+    Private
+    !> Level of detail in trajectory
+    Integer( Kind = wi ), Public :: key
+    !> Frequency to write trajectory
+    Integer( Kind = wi ), Public :: freq
+    !> Step to start writing trajectory
+    Integer( Kind = wi ), Public :: start
+
+    !> Contribution to record size, replaces egregious old method of calculating
+    !> traj%key+2 repeatedly
+    Integer( Kind = wi ) :: record_size
+  Contains
+    !> Initialise the trajectory type
+    Procedure, Public :: init => init_trajectory_type
+    !> Return the number used in trajectory files corresponding to the level of
+    !> detail, as these do not necessarily need to be identical
+    Procedure, Public :: file_key => trajectory_file_key
+  End Type trajectory_type
+
+  ! Trajectory detail level keys
+  !> Coordinates only
+  Integer( Kind = wi ), Parameter :: TRAJ_KEY_COORD = 1
+  !> Coordinates and velocities
+  Integer( Kind = wi ), Parameter :: TRAJ_KEY_COORD_VEL = 2
+  !> Coordinates, velocities and forces
+  Integer( Kind = wi ), Parameter :: TRAJ_KEY_COORD_VEL_FORCE = 3
+  !> Compressed history file
+  Integer( Kind = wi ), Parameter :: TRAJ_KEY_COMPRESSED = 4
+
   Public :: read_history
   Public :: trajectory_write
 Contains
 
+  !> Initialise a trajectory type
+  Subroutine init_trajectory_type(T,key,freq,start)
+    Class(trajectory_type) :: T
+    Integer( Kind = wi ), Intent( In ) :: key
+    Integer( Kind = wi ), Intent( In ) :: freq
+    Integer( Kind = wi ), Intent( In ) :: start
+
+    ! Convert external trajectory key integers to internal parameters and
+    ! determine the record size
+    If (key == 0) Then
+      T%key = TRAJ_KEY_COORD
+      T%record_size = 2
+    Else If (key == 1) Then
+      T%key = TRAJ_KEY_COORD_VEL
+      T%record_size = 3
+    Else If (key == 2) Then
+      T%key = TRAJ_KEY_COORD_VEL_FORCE
+      T%record_size = 4
+    Else If (key == 3) Then
+      T%key = TRAJ_KEY_COMPRESSED
+    End If
+
+    T%freq = freq
+    T%start = start
+  End Subroutine init_trajectory_type
+
+  Function trajectory_file_key(T) Result(key)
+    Class(trajectory_type) :: T
+    Integer( Kind = wi ) :: key
+
+    If (T%key == TRAJ_KEY_COORD) Then
+      key = 0
+    Else If (T%key == TRAJ_KEY_COORD_VEL) Then
+      key = 1
+    Else If (T%key == TRAJ_KEY_COORD_VEL_FORCE) Then
+      key = 2
+    Else If (T%key == TRAJ_KEY_COMPRESSED) Then
+      key = 3
+    End If
+  End Function trajectory_file_key
 
 Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
     sites,domain,parts,comm)
@@ -700,8 +772,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
 End Subroutine read_history
 
-Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
-                            time,rsd,netcdf,parts,comm)
+Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
+                            time,rsd,netcdf,parts,traj,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -717,12 +789,12 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 
   Integer,           Intent( In    ) :: keyres,               &
-                                        nstraj,istraj,keytrj, &
                                         megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time
   Real( Kind = wp ), Intent( In    ) :: rsd(:)
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( corePart ),     Intent( InOut ) :: parts(:)
+  Type( trajectory_type ), Intent( InOut ) :: traj
   Type( comms_type ),   Intent( InOut ) :: comm
 
 
@@ -762,7 +834,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
  
   Character ( Len = 256 )  ::  message
 
-  If (.not.(nstep >= nstraj .and. Mod(nstep-nstraj,istraj) == 0)) Return
+  If (.not.(nstep >= traj%start .and. Mod(nstep-traj%start,traj%freq) == 0)) Return
 
 ! Get write method, buffer size and line feed character
 
@@ -770,7 +842,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
   Call io_get_parameters( user_buffer_size_write = batsz    )
   Call io_get_parameters( user_line_feed         = lf       )
 
-  If (keytrj == 3) Then
+  If (traj%key == TRAJ_KEY_COMPRESSED) Then
      recsz = 35 ! record size for compressed HISTORY file
      Go To 100
   End If
@@ -806,7 +878,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            If (comm%idnode == 0) Then
               Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Status='replace', Recl=recsz)
               Write(Unit=nhist, Fmt='(a72,a1)',       Rec=Int(1,li)) cfgname(1:72),lf
-              Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) keytrj,imcon,megatm,frm,rec,lf
+              Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
               Close(Unit=nhist)
            End If
            rec=Int(2,li)
@@ -1034,7 +1106,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
         Call io_init( recsz )
         Call io_open( io_write, comm_self, fname, mode_wronly, fh )
 
-        Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+        Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -1065,7 +1137,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)+Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(keytrj+2,offset_kind)
+     rec_mpi_io=Int(rec,offset_kind)+Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(traj%record_size,offset_kind)
      jj=0
 
      Call io_set_parameters( user_comm = comm%comm )
@@ -1085,7 +1157,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            chbat(k,jj) = record(k:k)
         End Do
 
-        If (keytrj > 0) Then
+        If (traj%key /= TRAJ_KEY_COORD) Then
            Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') vxx(i),vyy(i),vzz(i),Repeat(' ',12),lf
            jj=jj+1
            Do k=1,recsz
@@ -1093,7 +1165,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            End Do
         End If
 
-        If (keytrj > 1) Then
+        If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
            Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') parts(i)%fxx,parts(i)%fyy,parts(i)%fzz,Repeat(' ',12),lf
            jj=jj+1
            Do k=1,recsz
@@ -1103,7 +1175,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Dump batch and update start of file
 
-        If (jj + keytrj + 2 >= batsz .or. i == natms) Then
+        If (jj + traj%record_size >= batsz .or. i == natms) Then
            Call io_write_batch( fh, rec_mpi_io, jj, chbat )
            rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
            jj=0
@@ -1112,9 +1184,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Update and save offset pointer
 
-     rec=rec+Int(4,li)+Int(megatm,li)*Int(keytrj+2,li)
+     rec=rec+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
      If (comm%idnode == 0) Then
-        Write(record(1:recsz), Fmt='(3i10,2i21,a1)') keytrj,imcon,megatm,frm,rec,lf
+        Write(record(1:recsz), Fmt='(3i10,2i21,a1)') traj%file_key(),imcon,megatm,frm,rec,lf
         Call io_write_record( fh, Int(1,offset_kind), record(1:recsz) )
      End If
 
@@ -1143,7 +1215,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Accumulate header
 
-        Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+        Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -1177,7 +1249,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            fff(i)=rsd(i)
         End Do
 
-        If (keytrj >= 1) Then
+        If (Any(traj%key == [TRAJ_KEY_COORD_VEL,TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
            Do i=1,natms
               bxx(i)=vxx(i)
               byy(i)=vyy(i)
@@ -1185,7 +1257,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            End Do
         End If
 
-        If (keytrj >= 2) Then
+        If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
            Do i=1,natms
               temp_parts(i)%fxx=parts(i)%fxx
               temp_parts(i)%fyy=parts(i)%fyy
@@ -1208,13 +1280,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
                  Call grecv(comm,eee(1:jatms),jdnode,Traject_tag)
                  Call grecv(comm,fff(1:jatms),jdnode,Traject_tag)
 
-                 If (keytrj > 0) Then
+                 If (traj%key /= TRAJ_KEY_COORD) Then
                     Call grecv(comm,bxx(1:jatms),jdnode,Traject_tag)
                     Call grecv(comm,byy(1:jatms),jdnode,Traject_tag)
                     Call grecv(comm,bzz(1:jatms),jdnode,Traject_tag)
                  End If
 
-!                 If (keytrj > 1) Then
+!                 If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
 !                    Call grecv(comm,cxx(1:jatms),jdnode,Traject_tag)
 !                    Call grecv(comm,cyy(1:jatms),jdnode,Traject_tag)
 !                    Call grecv(comm,czz(1:jatms),jdnode,Traject_tag)
@@ -1237,7 +1309,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
                  chbat(k,jj) = record(k:k)
               End Do
 
-              If (keytrj >= 1) Then
+              If (Any(traj%key == [TRAJ_KEY_COORD_VEL,TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
                  Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
                  jj=jj+1
                  Do k=1,recsz
@@ -1245,7 +1317,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
                  End Do
               End If
 
-              If (keytrj >= 2) Then
+              If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
                  Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') temp_parts(i)%fxx,temp_parts(i)%fyy,temp_parts(i)%fzz,&
                                                                 Repeat(' ',12),lf
                  jj=jj+1
@@ -1256,7 +1328,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Dump batch and update start of file
 
-              If (jj + keytrj + 2 >= batsz .or. i == jatms) Then
+              If (jj + traj%record_size >= batsz .or. i == jatms) Then
                  Write(Unit=nhist, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
                  rec=rec+Int(jj,li)
                  jj=0
@@ -1266,7 +1338,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Update main header
 
-        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) keytrj,imcon,megatm,frm,rec,lf
+        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
 
         Close(Unit=nhist)
 
@@ -1284,7 +1356,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            Call gsend(comm,rsd(:),0,Traject_tag)
 
 
-           If (keytrj > 0) Then
+           If (traj%key /= TRAJ_KEY_COORD) Then
               Call gsend(comm,vxx(:),0,Traject_tag)
               Call gsend(comm,vyy(:),0,Traject_tag)
               Call gsend(comm,vzz(:),0,Traject_tag)
@@ -1294,7 +1366,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Save offset pointer
 
-        rec=rec+Int(4,li)+Int(megatm,li)*Int(keytrj+2,li)
+        rec=rec+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
 
      End If
 
@@ -1330,7 +1402,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Write header and cell information
 
-           Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+           Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
            Call io_write_record( fh, jj_io, record(1:recsz) )
            jj_io=jj_io + Int(1,offset_kind)
 
@@ -1350,7 +1422,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
            Call io_nc_put_var( 'time'           , fh,   time, jj, 1 )
            Call io_nc_put_var( 'step'           , fh,  nstep, jj, 1 )
-           Call io_nc_put_var( 'datalevel'      , fh, keytrj, jj, 1 )
+           Call io_nc_put_var( 'datalevel'      , fh, traj%file_key(), jj, 1 )
            Call io_nc_put_var( 'imageconvention', fh,  imcon, jj, 1 )
            Call io_nc_put_var( 'timestep '      , fh,  tstep, jj, 1 )
 
@@ -1396,7 +1468,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
      Call io_init( recsz )
      Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
-     Call io_write_sorted_file( fh, keytrj, IO_HISTORY, rec_mpi_io, natms, &
+     Call io_write_sorted_file( fh, traj%file_key(), IO_HISTORY, rec_mpi_io, natms, &
           ltg, atmnam, weight, rsd, parts,                   &
           vxx, vyy, vzz,  ierr )
 
@@ -1416,9 +1488,9 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 ! Update and save offset pointer
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        rec=rec+Int(4,li)+Int(megatm,li)*Int(keytrj+2,li)
+        rec=rec+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
         If (comm%idnode == 0) Then
-           Write(record(1:recsz), Fmt='(3i10,2i21,a1)') keytrj,imcon,megatm,frm,rec,lf
+           Write(record(1:recsz), Fmt='(3i10,2i21,a1)') traj%file_key(),imcon,megatm,frm,rec,lf
            Call io_write_record( fh, Int(1,offset_kind), record(1:recsz) )
         End If
      End If
@@ -1445,7 +1517,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
         Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
 
         rec=rec+Int(1,li)
-        Write(Unit=nhist, Fmt='(a8,2i10,2i2,2f20.6,a1)', Rec=rec) 'timestep',nstep,megatm,keytrj,imcon,tstep,time,lf
+        Write(Unit=nhist, Fmt='(a8,2i10,2i2,2f20.6,a1)', Rec=rec) 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
 
         Do i = 0, 2
            rec=rec+Int(1,li)
@@ -1466,7 +1538,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            fff(i)=rsd(i)
         End Do
 
-        If (keytrj >= 1) Then
+        If (Any(traj%key == [TRAJ_KEY_COORD_VEL,TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
            Do i=1,natms
               bxx(i)=vxx(i)
               byy(i)=vyy(i)
@@ -1474,7 +1546,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            End Do
         End If
 
-        If (keytrj >= 2) Then
+        If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
            Do i=1,natms
               temp_parts(i)%fxx=parts(i)%fxx
               temp_parts(i)%fyy=parts(i)%fyy
@@ -1497,13 +1569,13 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
                  Call grecv(comm,eee(1:jatms),jdnode,Traject_tag)
                  Call grecv(comm,fff(1:jatms),jdnode,Traject_tag)
 
-                 If (keytrj > 0) Then
+                 If (traj%key /= TRAJ_KEY_COORD) Then
                     Call grecv(comm,bxx(1:jatms),jdnode,Traject_tag)
                     Call grecv(comm,byy(1:jatms),jdnode,Traject_tag)
                     Call grecv(comm,bzz(1:jatms),jdnode,Traject_tag)
                  End If
 
-                 !If (keytrj > 1) Then
+                 !If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
                  !   Call grecv(comm,cxx(1:jatms),jdnode,Traject_tag)
                  !   Call grecv(comm,cyy(1:jatms),jdnode,Traject_tag)
                  !   Call grecv(comm,czz(1:jatms),jdnode,Traject_tag)
@@ -1512,7 +1584,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            End If
 
            Do i=1,jatms
-              rec1=rec+Int(iwrk(i)-1,li)*Int(keytrj+2,li)+Int(1,li)
+              rec1=rec+Int(iwrk(i)-1,li)*Int(traj%record_size,li)+Int(1,li)
               Write(Unit=nhist, Fmt='(a8,i10,3f12.6,a18,a1)', Rec=rec1) chbuf(i),iwrk(i),eee(i),temp_parts(i)%chge,&
                                                                         fff(i),Repeat(' ',18),lf
 
@@ -1520,12 +1592,12 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
               Write(Unit=nhist, Fmt='(3g20.10,a12,a1)', Rec=rec1) temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
                                                                   Repeat(' ',12),lf
 
-              If (keytrj >= 1) Then
+              If (Any(traj%key == [TRAJ_KEY_COORD_VEL,TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
                  rec1=rec1+Int(1,li)
                  Write(Unit=nhist, Fmt='(3g20.10,a12,a1)', Rec=rec1) bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
               End If
 
-              If (keytrj >= 2) Then
+              If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
                  rec1=rec1+Int(1,li)
                  Write(Unit=nhist, Fmt='(3g20.10,a12,a1)', Rec=rec1) temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
                                                                      Repeat(' ',12),lf
@@ -1535,8 +1607,8 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Update main header
 
-        rec=rec+Int(megatm,li)*Int(keytrj+2,li)
-        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) keytrj,imcon,megatm,frm,rec,lf
+        rec=rec+Int(megatm,li)*Int(traj%record_size,li)
+        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
 
         Close(Unit=nhist)
 
@@ -1554,7 +1626,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            Call gsend(comm,rsd(:),0,Traject_tag)
 
 
-           If (keytrj > 0) Then
+           If (traj%key /= TRAJ_KEY_COORD) Then
               Call gsend(comm,vxx(:),0,Traject_tag)
               Call gsend(comm,vyy(:),0,Traject_tag)
               Call gsend(comm,vzz(:),0,Traject_tag)
@@ -1564,7 +1636,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 
 ! Save offset pointer
 
-        rec=rec+Int(4,li)+Int(megatm,li)*Int(keytrj+2,li)
+        rec=rec+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
 
      End If
 
@@ -1626,7 +1698,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
            If (comm%idnode == 0) Then
               Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Status='replace', Recl=recsz)
               Write(Unit=nhist, Fmt='(a34,a1)',      Rec=Int(1,li)) cfgname(1:34),lf
-              Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) keytrj,imcon,megatm,frm,rec,lf
+              Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
               Close(Unit=nhist)
            End If
            rec=Int(2,li)
@@ -1925,7 +1997,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
      Call io_init( recsz )
      Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
-     Call io_write_sorted_file( fh, 0*keytrj, IO_HISTORD, rec_mpi_io, natms, &
+     Call io_write_sorted_file( fh, 0*traj%file_key(), IO_HISTORD, rec_mpi_io, natms, &
           ltg, atmnam, (/ 0.0_wp /),  rsd, parts,     &
           (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                        &
           IO_SUBSET_POSITIONS,  ierr )
@@ -1948,7 +2020,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         rec=rec+Int(4,li)+Int(megatm,li)
         If (comm%idnode == 0) Then
-           Write(record(1:recsz), Fmt='(2i2,3i10,a1)') keytrj,imcon,megatm,frm,rec,lf
+           Write(record(1:recsz), Fmt='(2i2,3i10,a1)') traj%file_key(),imcon,megatm,frm,rec,lf
            Call io_write_record( fh, Int(1,offset_kind), record(1:recsz) )
         End If
      End If
@@ -2021,7 +2093,7 @@ Subroutine trajectory_write(keyres,nstraj,istraj,keytrj,megatm,nstep,tstep, &
 ! Update main header
 
         rec=rec+Int(megatm,li)
-        Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) keytrj,imcon,megatm,frm,rec,lf
+        Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
 
         Close(Unit=nhist)
 
