@@ -83,7 +83,7 @@
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(history),megatm,levcfg,dvar,nstep,tstep,time,exout,sites,domain,parts,comm)
+     Call read_history(l_str,Trim(history),megatm,levcfg,dvar,nstep,tstep,time,exout,traj,sites,domain,parts,comm)
 
      If (newjb) Then
         newjb = .false.

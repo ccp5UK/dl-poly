@@ -62,12 +62,31 @@ Module trajectory
     !> Contribution to record size, replaces egregious old method of calculating
     !> traj%key+2 repeatedly
     Integer( Kind = wi ) :: record_size
+    Logical               :: newjob_read = .true.  , &
+      l_ind_read  = .true.  , &
+      l_his_read  = .true.  , &
+      l_xtr_read  = .false. , &
+      fast_read   = .true.
+    Integer(Kind=li)     :: rec_read  = 0_li , &
+      frm_read  = 0_li , &
+      frm1_read = 0_li
+    Integer                           :: recsz_read ! record size
+    Integer                           :: fh_read, io_read
+    Integer( Kind = offset_kind )     :: top_skip_read
+    Character( Len = 1),  Allocatable :: buffer(:,:)
+    Logical :: newjob_write = .true. , &
+      fast_write   = .true.
+    Character( Len = 40 ) :: fname
+    Integer          :: recsz_write  = 73 ! default record size
+    Integer(Kind=li) :: rec_write    = 0_li , &
+      frm_write    = 0_li
   Contains
     !> Initialise the trajectory type
     Procedure, Public :: init => init_trajectory_type
     !> Return the number used in trajectory files corresponding to the level of
     !> detail, as these do not necessarily need to be identical
     Procedure, Public :: file_key => trajectory_file_key
+    Final :: cleanup 
   End Type trajectory_type
 
   ! Trajectory detail level keys
@@ -83,6 +102,15 @@ Module trajectory
   Public :: read_history
   Public :: trajectory_write
 Contains
+  !> cleanup the allocated arrays for trajectory variables
+  Subroutine cleanup(T)
+    Type(trajectory_type) :: T
+
+    If (Allocated(T%buffer)) Then
+      Deallocate(T%buffer)
+    End If
+
+  End Subroutine cleanup
 
   !> Initialise a trajectory type
   Subroutine init_trajectory_type(T,key,freq,start)
@@ -126,7 +154,7 @@ Contains
   End Function trajectory_file_key
 
 Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
-    sites,domain,parts,comm)
+  traj,sites,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -145,19 +173,12 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
   Real( Kind = wp ),    Intent( In    ) :: dvar
   Real( Kind = wp ),    Intent( InOut ) :: tstep,time
   Integer,              Intent(   Out ) :: exout
+  Type( trajectory_type), Intent( InOut ) :: traj
   Type( site_type ), Intent( In    ) :: sites
   Type( domains_type ), Intent( In    ) :: domain
   Type( corePart ),     Intent( InOut ) :: parts(:)
   Type( comms_type),    Intent( InOut ) :: comm
 
-  Logical,               Save :: newjob = .true.  , &
-                                 l_ind  = .true.  , &
-                                 l_his  = .true.  , &
-                                 l_xtr  = .false. , &
-                                 fast   = .true.
-  Integer(Kind=li),      Save :: rec  = 0_li , &
-                                 frm  = 0_li , &
-                                 frm1 = 0_li
 
   Logical                :: safe, lexist
   Character( Len = 200 ) :: record
@@ -169,10 +190,6 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
 ! Some parameters and variables needed by io interfaces
 
-  Integer,                           Save :: recsz ! record size
-  Integer,                           Save :: fh, io_read
-  Integer( Kind = offset_kind ), Save :: top_skip
-  Character( Len = 1),  Allocatable, Save :: buffer(:,:)
 
   Character( Len = 8 ), Allocatable :: chbuf(:)
   Integer,              Allocatable :: iwrk(:)
@@ -182,20 +199,20 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
   Integer  :: ierr
   Character ( Len = 256 )  :: message
 
-  If (newjob) Then
-     newjob = .false.
+  If (traj%newjob_read) Then
+     traj%newjob_read = .false.
 
 ! Get type of I/O
 
-     Call io_get_parameters( user_method_read = io_read )
+     Call io_get_parameters( user_method_read = traj%io_read )
 
 ! ASCII read
 
-     If (io_read /= IO_READ_NETCDF) Then
+     If (traj%io_read /= IO_READ_NETCDF) Then
 
 ! Define the default record size
 
-        recsz = 73
+        traj%recsz_read = 73
 
 ! Does HISTORY exist
 
@@ -216,52 +233,52 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
         Call get_word(record,word) ; levcfg=Nint(word_2_real(word,0.0_wp))
         Call get_word(record,word)
         Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
-        Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-        Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
+        Call get_word(record,word) ; traj%frm_read=Nint(word_2_real(word,0.0_wp),li)
+        Call get_word(record,word) ; traj%rec_read=Nint(word_2_real(word,0.0_wp),li)
 
-! Change fast if no database records exists or the file is new
+! Change traj%fast_read if no database records exists or the file is new
 
-        If (frm == Int(0,li) .and. rec == Int(0,li)) fast = .false.
+        If (traj%frm_read == Int(0,li) .and. traj%rec_read == Int(0,li)) traj%fast_read = .false.
 
         If (levcfg /= 3) Then
 
-! Detect DL_POLY_2 HISTORY and amend io_read and recsz
+! Detect DL_POLY_2 HISTORY and amend traj%io_read and traj%recsz_read
 
-           If ((.not.fast) .and. io_read == IO_READ_MPIIO) Then
-              io_read = IO_READ_DIRECT
-              recsz   = 200
+           If ((.not.traj%fast_read) .and. traj%io_read == IO_READ_MPIIO) Then
+              traj%io_read = IO_READ_DIRECT
+              traj%recsz_read   = 200
            End If
 
         Else
 
 ! Detect compressed HISTORY and make amendments
 
-           l_ind = .false.
-           If (fast .and. io_read /= IO_READ_MASTER) Then
-              io_read = IO_READ_MPIIO
-              recsz   = 35
+           traj%l_ind_read = .false.
+           If (traj%fast_read .and. traj%io_read /= IO_READ_MASTER) Then
+              traj%io_read = IO_READ_MPIIO
+              traj%recsz_read   = 35
            Else
-              io_read = IO_READ_DIRECT
+              traj%io_read = IO_READ_DIRECT
            End If
 
         End If
 
-        If (io_read /= IO_READ_MASTER) Then
-           top_skip = Int(2,offset_kind)
+        If (traj%io_read /= IO_READ_MASTER) Then
+           traj%top_skip_read = Int(2,offset_kind)
 
            fail(1) = 0
-           Allocate (buffer(1:recsz,1:4), Stat=fail(1))
+           Allocate (traj%buffer(1:traj%recsz_read,1:4), Stat=fail(1))
            If (fail(1) > 0) Then
               Write(message,'(a)') 'read_history allocation failure 1'
               Call error(0,message)
            End If
 
-           If (io_read == IO_READ_MPIIO) Then
+           If (traj%io_read == IO_READ_MPIIO) Then
               Close(Unit=nconf)
 
               Call io_set_parameters( user_comm = comm%comm )
-              Call io_init( recsz )
-              Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
+              Call io_init( traj%recsz_read )
+              Call io_open( traj%io_read, comm%comm, fname, mode_rdonly, traj%fh_read )
            End If
         End If
 
@@ -274,26 +291,26 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
         Call gcheck(comm,lexist,"enforce")
         If (.not.lexist) Go To 400
 
-! fast and rec are irrelevant for netCDF (initialised at declaration)
+! traj%fast_read and traj%rec_read are irrelevant for netCDF (initialised at declaration)
 
-        fast = .true.
-        rec  = Int(0,li)
+        traj%fast_read = .true.
+        traj%rec_read  = Int(0,li)
 
         Call io_set_parameters( user_comm = comm%comm )
-        Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
-        Call io_nc_get_dim( 'frame', fh, i )
+        Call io_open( traj%io_read, comm%comm, fname, mode_rdonly, traj%fh_read )
+        Call io_nc_get_dim( 'frame', traj%fh_read, i )
 
         If (i > 0) Then
-           frm=Int(i,li)
+          traj%frm_read=Int(i,li)
         Else
            Go To 300
         End If
 
      End If
   Else
-     If (io_read == IO_READ_MPIIO .or. io_read == IO_READ_NETCDF) &
+     If (traj%io_read == IO_READ_MPIIO .or. traj%io_read == IO_READ_NETCDF) &
         Call io_set_parameters( user_comm = comm%comm )
-     If (io_read == IO_READ_MPIIO) Call io_init( recsz )
+     If (traj%io_read == IO_READ_MPIIO) Call io_init( traj%recsz_read )
   End If
 
 ! Reinitialise local-to-global counters and all levels of information at every bloody read
@@ -308,7 +325,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
 ! MASTER READ
 
-  If      (io_read == IO_READ_MASTER) Then
+  If      (traj%io_read == IO_READ_MASTER) Then
 
      fail=0
      Allocate (chbuf(1:mxatms),                           Stat=fail(1))
@@ -403,10 +420,10 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 ! Read in transmission arrays
 
               If (comm%idnode == 0 .and. safe) Then
-                 record=' '; Read(Unit=nconf, Fmt='(a)', End=30) record
+                record=' '; Read(Unit=nconf, Fmt='(a)', End=30) record
                  Call tabs_2_blanks(record) ; Call strip_blanks(record)
                  Call get_word(record,word) ; chbuf(indatm)=word(1:8)
-                 If (l_ind) Then
+                 If (traj%l_ind_read) Then
                     Call get_word(record,word)
                     iwrk(indatm)=Nint(word_2_real(word,0.0_wp,l_str))
                     If (iwrk(indatm) /= 0) Then
@@ -473,7 +490,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
                        Call gbcast(comm,azz,0)
                     End If
 
-! Assign atoms to correct domains (DD bound)
+! Assign atoms to cortraj%rec_readt domains (DD bound)
 
                  Do i=1,indatm
                     sxx=rcell(1)*axx(i)+rcell(4)*ayy(i)+rcell(7)*azz(i)
@@ -559,15 +576,15 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
 ! PROPER ASCII read
 
-  Else If (io_read /= IO_READ_NETCDF) Then
+  Else If (traj%io_read /= IO_READ_NETCDF) Then
 
-     Call io_read_batch( fh, top_skip, 4, buffer, ierr )
+     Call io_read_batch( traj%fh_read, traj%top_skip_read, 4, traj%buffer, ierr )
      If (ierr < 0) Go To 300
-     top_skip = top_skip + Int(4,offset_kind)
+     traj%top_skip_read = traj%top_skip_read + Int(4,offset_kind)
 
      record = ' '
-     Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
-        record( i:i ) = buffer( i, 1 )
+     Do i = 1, Min( Size( traj%buffer, Dim = 1 ) - 1, Len( record ) )
+        record( i:i ) = traj%buffer( i, 1 )
      End Do
      Call get_word(record,word) ! timestep
      Call get_word(record,word) ; nstep = Nint(word_2_real(word))
@@ -588,83 +605,83 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 ! read cell vectors
 
      record = ' '
-     Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
-        record( i:i ) = buffer( i, 2 )
+     Do i = 1, Min( Size( traj%buffer, Dim = 1 ) - 1, Len( record ) )
+        record( i:i ) = traj%buffer( i, 2 )
      End Do
      Call get_word(record,word); cell(1)=word_2_real(word)
      Call get_word(record,word); cell(2)=word_2_real(word)
      Call get_word(record,word); cell(3)=word_2_real(word)
 
      record = ' '
-     Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
-        record( i:i ) = buffer( i, 3 )
+     Do i = 1, Min( Size( traj%buffer, Dim = 1 ) - 1, Len( record ) )
+        record( i:i ) = traj%buffer( i, 3 )
      End Do
      Call get_word(record,word); cell(4)=word_2_real(word)
      Call get_word(record,word); cell(5)=word_2_real(word)
      Call get_word(record,word); cell(6)=word_2_real(word)
 
      record = ' '
-     Do i = 1, Min( Size( buffer, Dim = 1 ) - 1, Len( record ) )
-        record( i:i ) = buffer( i, 4 )
+     Do i = 1, Min( Size( traj%buffer, Dim = 1 ) - 1, Len( record ) )
+        record( i:i ) = traj%buffer( i, 4 )
      End Do
      Call get_word(record,word); cell(7)=word_2_real(word)
      Call get_word(record,word); cell(8)=word_2_real(word)
      Call get_word(record,word); cell(9)=word_2_real(word)
 
      Call read_config_parallel                  &
-           (levcfg, dvar, l_ind, l_str, megatm, &
-            l_his, l_xtr, fast, fh, top_skip, xhi, yhi, zhi, &
+           (levcfg, dvar, traj%l_ind_read, l_str, megatm, &
+            traj%l_his_read, traj%l_xtr_read, traj%fast_read, traj%fh_read, traj%top_skip_read, xhi, yhi, zhi, &
             domain,comm)
 
-     If (fast) Then
+     If (traj%fast_read) Then
         If (levcfg /= 3) Then
            i=levcfg+2
         Else
            i=levcfg-2
         End If
 
-        top_skip = top_skip + Int(i,offset_kind)*Int(megatm,offset_kind)
+        traj%top_skip_read = traj%top_skip_read + Int(i,offset_kind)*Int(megatm,offset_kind)
      Else
-        top_skip = Int(0,offset_kind)
+        traj%top_skip_read = Int(0,offset_kind)
      End If
 
 ! Update current frame and exit gracefully
 
-     frm1 = frm1+Int(1,li)
-     If (frm1 == frm) Go To 200
+     traj%frm1_read = traj%frm1_read+Int(1,li)
+     If (traj%frm1_read == traj%frm_read) Go To 200
 
   Else ! netCDF read
 
 ! Update current frame
 
-     frm1 = frm1+Int(1,li)
-     i = Int( frm1 )
+     traj%frm1_read = traj%frm1_read+Int(1,li)
+     i = Int( traj%frm1_read )
 
-     Call io_nc_get_var( 'time'           , fh,   time, i, 1 )
-     Call io_nc_get_var( 'datalevel'      , fh, levcfg, i, 1 )
-     Call io_nc_get_var( 'imageconvention', fh,  imcon, i, 1 )
+     Call io_nc_get_var( 'time'           , traj%fh_read,   time, i, 1 )
+     Call io_nc_get_var( 'datalevel'      , traj%fh_read, levcfg, i, 1 )
+     Call io_nc_get_var( 'imageconvention', traj%fh_read,  imcon, i, 1 )
 
 ! image conditions not compliant with DD and link-cell
 
      If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
 
-     Call io_nc_get_var( 'timestep'       , fh,  tstep, i, 1 )
-     Call io_nc_get_var( 'step'           , fh,  nstep, i, 1 )
+     Call io_nc_get_var( 'timestep'       , traj%fh_read,  tstep, i, 1 )
+     Call io_nc_get_var( 'step'           , traj%fh_read,  nstep, i, 1 )
 
      Write(message,'(a,i10,a,f10.3,a)') 'HISTORY step ',nstep,' (',time,' ps) is being read'
      Call info(message,.true.)
 
-! Note that in netCDF the frames are not long integers - Int( frm1 )
+! Note that in netCDF the frames are not long integers - Int( traj%frm1_read )
 
-     Call io_nc_get_var( 'cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
+     Call io_nc_get_var( 'cell'           , traj%fh_read, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
      cell = Reshape( cell_vecs, (/ Size( cell ) /) )
 
      Call read_config_parallel                  &
-           (levcfg, dvar, l_ind, l_str, megatm, &
-            l_his, l_xtr, fast, fh, Int( i, Kind( top_skip ) ), xhi, yhi, zhi, &
+           (levcfg, dvar, traj%l_ind_read, l_str, megatm, &
+            traj%l_his_read, traj%l_xtr_read, traj%fast_read, traj%fh_read, Int( i, Kind( traj%top_skip_read ) ), xhi, yhi, zhi, &
             domain,comm)
 
-     If (frm1 == frm) Go To 200
+     If (traj%frm1_read == traj%frm_read) Go To 200
 
   End If
 
@@ -722,7 +739,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
   Call info('HISTORY end of file reached',.true.)
 
-  If (io_read == IO_READ_MASTER) Then
+  If (traj%io_read == IO_READ_MASTER) Then
      If (imcon == 0) Close(Unit=nconf)
      Deallocate (chbuf,       Stat=fail(1))
      Deallocate (iwrk,        Stat=fail(2))
@@ -734,7 +751,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
         Call error(0,message)
      End If
   Else
-     Call io_close( fh )
+     Call io_close( traj%fh_read )
      Call io_finalize
   End If
 
@@ -746,7 +763,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
   Call info('HISTORY data mishmash detected',.true.)
   exout = -1 ! It's an indicator of the end of reading.
-  If (io_read == IO_READ_MASTER) Then
+  If (traj%io_read == IO_READ_MASTER) Then
      If (imcon == 0) Close(Unit=nconf)
      Deallocate (chbuf,       Stat=fail(1))
      Deallocate (iwrk,        Stat=fail(2))
@@ -758,7 +775,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
         Call error(0,message)
      End If
   Else
-     Call io_close( fh )
+     Call io_close( traj%fh_read )
      Call io_finalize
   End If
 
@@ -798,12 +815,6 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
   Type( comms_type ),   Intent( InOut ) :: comm
 
 
-  Logical,               Save :: newjob = .true. , &
-                                 fast   = .true.
-  Character( Len = 40 ), Save :: fname
-  Integer,               Save :: recsz  = 73 ! default record size
-  Integer(Kind=li),      Save :: rec    = 0_li , &
-                                 frm    = 0_li
 
   Logical                :: lexist,safe,ready
   Character( Len = 40 )  :: word
@@ -843,19 +854,19 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
   Call io_get_parameters( user_line_feed         = lf       )
 
   If (traj%key == TRAJ_KEY_COMPRESSED) Then
-     recsz = 35 ! record size for compressed HISTORY file
+     traj%recsz_write = 35 ! record size for compressed HISTORY file
      Go To 100
   End If
 
-  If (newjob) Then
-     newjob = .false.
+  If (traj%newjob_write) Then
+     traj%newjob_write = .false.
 
 ! name convention
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        fname = Trim(history)
+        traj%fname = Trim(history)
      Else
-        fname = Trim(history) // '.nc'
+        traj%fname = Trim(history) // '.nc'
      End If
 
 ! If keyres=1, is HISTORY old (does it exist) and
@@ -863,7 +874,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
      lexist=.true.
      If (keyres == 1) Then
-        If (comm%idnode == 0) Inquire(File=fname, Exist=lexist)
+        If (comm%idnode == 0) Inquire(File=traj%fname, Exist=lexist)
         Call gcheck(comm,lexist,"enforce")
      Else
         lexist=.false.
@@ -876,17 +887,17 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
            If (comm%idnode == 0) Then
-              Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Status='replace', Recl=recsz)
+              Open(Unit=nhist, File=traj%fname, Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
               Write(Unit=nhist, Fmt='(a72,a1)',       Rec=Int(1,li)) cfgname(1:72),lf
-              Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
+              Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
               Close(Unit=nhist)
            End If
-           rec=Int(2,li)
-           frm=Int(0,li)
+           traj%rec_write=Int(2,li)
+           traj%frm_write=Int(0,li)
         Else
            If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = comm_self )
-              Call io_nc_create( netcdf, comm_self, fname, cfgname, megatm )
+              Call io_nc_create( netcdf, comm_self, traj%fname, cfgname, megatm )
            End If
         End If
 
@@ -899,33 +910,33 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
            If (comm%idnode == 0) Then
 
-              Open(Unit=nhist, File=fname, Form='formatted')
+              Open(Unit=nhist, File=traj%fname, Form='formatted')
 
               Do
 
-                 record(1:recsz)=' '
+                 record(1:traj%recsz_write)=' '
 
 ! Assume new style of HISTORY with bookkeeping.
 
-                 If (fast) Then
+                 If (traj%fast_write) Then
 
                     Read(Unit=nhist, Fmt=*, End=20)                     ! title record
-                    rec=rec+Int(1,li)
-                    Read(Unit=nhist, Fmt='(a)', End=20) record(1:recsz) ! bookkeeping record
+                    traj%rec_write=traj%rec_write+Int(1,li)
+                    Read(Unit=nhist, Fmt='(a)', End=20) record(1:traj%recsz_write) ! bookkeeping record
                     Call tabs_2_blanks(record) ; Call strip_blanks(record)
-                    rec=rec+Int(1,li)
+                    traj%rec_write=traj%rec_write+Int(1,li)
 
-                    Call get_word(record(1:recsz),word)
+                    Call get_word(record(1:traj%recsz_write),word)
                     If (word(1:Len_Trim(word)) /= 'timestep') Then
-                       Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,0.0_wp),li)
-                       If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
+                       Call get_word(record(1:traj%recsz_write),word) ; Call get_word(record(1:traj%recsz_write),word)
+                       Call get_word(record(1:traj%recsz_write),word) ; traj%frm_write=Nint(word_2_real(word,0.0_wp),li)
+                       Call get_word(record(1:traj%recsz_write),word) ; traj%rec_write=Nint(word_2_real(word,0.0_wp),li)
+                       If (traj%frm_write /= Int(0,li) .and. traj%rec_write > Int(2,li)) Then
                           Go To 20 ! New style
                        Else
-                          fast=.false. ! TOUGH, old style
-                          rec=Int(2,li)
-                          frm=Int(0,li)
+                          traj%fast_write=.false. ! TOUGH, old style
+                          traj%rec_write=Int(2,li)
+                          traj%frm_write=Int(0,li)
                        End If
                     Else
                        safe=.false. ! Overwrite the file, it's junk to me
@@ -936,20 +947,20 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
                  Else
 
-                    Read(Unit=nhist, Fmt='(a)', End=20) record(1:recsz) ! timestep record
+                    Read(Unit=nhist, Fmt='(a)', End=20) record(1:traj%recsz_write) ! timestep record
                     Call tabs_2_blanks(record) ; Call strip_blanks(record)
-                    rec=rec+Int(1,li)
+                    traj%rec_write=traj%rec_write+Int(1,li)
 
-                    Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                    Call get_word(record(1:recsz),word) ; jj=Nint(word_2_real(word))
-                    Call get_word(record(1:recsz),word) ; k=Nint(word_2_real(word))
+                    Call get_word(record(1:traj%recsz_write),word) ; Call get_word(record(1:traj%recsz_write),word)
+                    Call get_word(record(1:traj%recsz_write),word) ; jj=Nint(word_2_real(word))
+                    Call get_word(record(1:traj%recsz_write),word) ; k=Nint(word_2_real(word))
 
                     word=' '
                     i = 3 + (2+k)*jj ! total number of lines to read
                     Write(word,'( "(", i0, "( / ) )" )') i-1
                     Read(Unit=nhist, Fmt=word, End=20)
-                    rec=rec+Int(i,li)
-                    frm=frm+Int(1,li)
+                    traj%rec_write=traj%rec_write+Int(i,li)
+                    traj%frm_write=traj%frm_write+Int(1,li)
 
                  End If
 
@@ -964,25 +975,25 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
            If (.not.safe) Then
               lexist=.false.
 
-              rec=Int(0,li)
-              frm=Int(0,li)
+              traj%rec_write=Int(0,li)
+              traj%frm_write=Int(0,li)
 
               Go To 10
            Else If (comm%mxnode > 1) Then
-              buffer(1)=Real(frm,wp)
-              buffer(2)=Real(rec,wp)
+              buffer(1)=Real(traj%frm_write,wp)
+              buffer(2)=Real(traj%rec_write,wp)
 
               Call gbcast(comm,buffer,0)
 
-              frm=Nint(buffer(1),li)
-              rec=Nint(buffer(2),li)
+              traj%frm_write=Nint(buffer(1),li)
+              traj%rec_write=Nint(buffer(2),li)
            End If
 
         Else ! netCDF read
 
            If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = comm_self )
-              Call io_open( io_write, comm_self, fname, mode_rdonly, fh )
+              Call io_open( io_write, comm_self, traj%fname, mode_rdonly, fh )
 
 ! Get the precision that the history file was written in
 ! and check it matches the requested precision
@@ -1045,14 +1056,14 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
            Call gbcast(comm,jj,0)
 
            If (jj > 0) Then
-              frm=Int(jj,li)
+              traj%frm_write=Int(jj,li)
 
               If (comm%idnode == 0) Call io_close( fh )
            Else ! Overwrite the file, it's junk to me
               lexist=.false.
 
-              rec=Int(0,li)
-              frm=Int(0,li)
+              traj%rec_write=Int(0,li)
+              traj%frm_write=Int(0,li)
 
               Go To 10
            End If
@@ -1068,7 +1079,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
       io_write == IO_WRITE_UNSORTED_MASTER) Then
      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
-     Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
+     Allocate (chbat(1:traj%recsz_write,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write allocation failure 0'
         Call error(0,message)
@@ -1088,9 +1099,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Update frame
 
-  frm=frm+Int(1,li)
+  traj%frm_write=traj%frm_write+Int(1,li)
 
-! UNSORTED MPI-I/O or Parallel Direct Access FORTRAN
+! UNSORTED MPI-I/O or Parallel Ditraj%rec_writet Access FORTRAN
 
   If      (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
            io_write == IO_WRITE_UNSORTED_DIRECT) Then
@@ -1098,25 +1109,25 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Write header and cell information, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)
+     rec_mpi_io=Int(traj%rec_write,offset_kind)
      jj=0
      If (comm%idnode == 0) Then
 
         Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_open( io_write, comm_self, fname, mode_wronly, fh )
+        Call io_init( traj%recsz_write )
+        Call io_open( io_write, comm_self, traj%fname, mode_wronly, fh )
 
-        Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
+        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
         jj=jj+1
-        Do k=1,recsz
+        Do k=1,traj%recsz_write
            chbat(k,jj) = record(k:k)
         End Do
 
         Do i = 0, 2
-           Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
+           Write(record(1:traj%recsz_write), Fmt='(3f20.10,a12,a1)') &
                 cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            jj=jj+1
-           Do k=1,recsz
+           Do k=1,traj%recsz_write
               chbat(k,jj) = record(k:k)
            End Do
         End Do
@@ -1137,38 +1148,39 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)+Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(traj%record_size,offset_kind)
+     rec_mpi_io=Int(traj%rec_write,offset_kind)+Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(traj%record_size,offset_kind)
      jj=0
 
      Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
+     Call io_init( traj%recsz_write )
+     Call io_open( io_write, comm%comm, traj%fname, mode_wronly, fh )
 
      Do i=1,natms
-        Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') atmnam(i),ltg(i),weight(i),parts(i)%chge,rsd(i),Repeat(' ',18),lf
-        jj=jj+1
-        Do k=1,recsz
-           chbat(k,jj) = record(k:k)
+       Write(record(1:traj%recsz_write), Fmt='(a8,i10,3f12.6,a18,a1)') atmnam(i),ltg(i),weight(i),parts(i)%chge,rsd(i),&
+         Repeat(' ',18),lf
+       jj=jj+1
+       Do k=1,traj%recsz_write
+         chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,Repeat(' ',12),lf
+        Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,Repeat(' ',12),lf
         jj=jj+1
-        Do k=1,recsz
+        Do k=1,traj%recsz_write
            chbat(k,jj) = record(k:k)
         End Do
 
         If (traj%key /= TRAJ_KEY_COORD) Then
-           Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') vxx(i),vyy(i),vzz(i),Repeat(' ',12),lf
+           Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') vxx(i),vyy(i),vzz(i),Repeat(' ',12),lf
            jj=jj+1
-           Do k=1,recsz
+           Do k=1,traj%recsz_write
               chbat(k,jj) = record(k:k)
            End Do
         End If
 
         If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
-           Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') parts(i)%fxx,parts(i)%fyy,parts(i)%fzz,Repeat(' ',12),lf
+           Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') parts(i)%fxx,parts(i)%fyy,parts(i)%fzz,Repeat(' ',12),lf
            jj=jj+1
-           Do k=1,recsz
+           Do k=1,traj%recsz_write
               chbat(k,jj) = record(k:k)
            End Do
         End If
@@ -1184,16 +1196,16 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Update and save offset pointer
 
-     rec=rec+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
+     traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
      If (comm%idnode == 0) Then
-        Write(record(1:recsz), Fmt='(3i10,2i21,a1)') traj%file_key(),imcon,megatm,frm,rec,lf
-        Call io_write_record( fh, Int(1,offset_kind), record(1:recsz) )
+        Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+        Call io_write_record( fh, Int(1,offset_kind), record(1:traj%recsz_write) )
      End If
 
      Call io_close( fh )
      Call io_finalize
 
-! UNSORTED Serial Direct Access FORTRAN
+! UNSORTED Serial Ditraj%rec_writet Access FORTRAN
 
   Else If (io_write == IO_WRITE_UNSORTED_MASTER) Then
 
@@ -1211,29 +1223,29 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
      jj=0
      If (comm%idnode == 0) Then
 
-        Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
+        Open(Unit=nhist, File=traj%fname, Form='formatted', Access='direct', Recl=traj%recsz_write)
 
 ! Accumulate header
 
-        Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
+        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
         jj=jj+1
-        Do k=1,recsz
+        Do k=1,traj%recsz_write
            chbat(k,jj) = record(k:k)
         End Do
 
         Do i = 0, 2
-           Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
+           Write(record(1:traj%recsz_write), Fmt='(3f20.10,a12,a1)') &
                 cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            jj=jj+1
-           Do k=1,recsz
+           Do k=1,traj%recsz_write
               chbat(k,jj) = record(k:k)
            End Do
         End Do
 
 ! Dump header and update start of file
 
-        Write(Unit=nhist, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
-        rec=rec+Int(jj,li)
+        Write(Unit=nhist, Fmt='(73a)', Rec=traj%rec_write+Int(1,li)) (chbat(:,k), k=1,jj)
+        traj%rec_write=traj%rec_write+Int(jj,li)
         jj=0
 
         Do i=1,natms
@@ -1295,33 +1307,33 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
            End If
 
            Do i=1,jatms
-              Write(record(1:recsz), Fmt='(a8,i10,3f12.6,a18,a1)') chbuf(i),iwrk(i),eee(i),temp_parts(i)%chge,&
+              Write(record(1:traj%recsz_write), Fmt='(a8,i10,3f12.6,a18,a1)') chbuf(i),iwrk(i),eee(i),temp_parts(i)%chge,&
                                                                    fff(i),Repeat(' ',18),lf
               jj=jj+1
-              Do k=1,recsz
+              Do k=1,traj%recsz_write
                  chbat(k,jj) = record(k:k)
               End Do
 
-              Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
+              Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
                                                              Repeat(' ',12),lf
               jj=jj+1
-              Do k=1,recsz
+              Do k=1,traj%recsz_write
                  chbat(k,jj) = record(k:k)
               End Do
 
               If (Any(traj%key == [TRAJ_KEY_COORD_VEL,TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
-                 Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
+                 Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
                  jj=jj+1
-                 Do k=1,recsz
+                 Do k=1,traj%recsz_write
                     chbat(k,jj) = record(k:k)
                  End Do
               End If
 
               If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
-                 Write(record(1:recsz), Fmt='(3g20.10,a12,a1)') temp_parts(i)%fxx,temp_parts(i)%fyy,temp_parts(i)%fzz,&
+                 Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') temp_parts(i)%fxx,temp_parts(i)%fyy,temp_parts(i)%fzz,&
                                                                 Repeat(' ',12),lf
                  jj=jj+1
-                 Do k=1,recsz
+                 Do k=1,traj%recsz_write
                     chbat(k,jj) = record(k:k)
                  End Do
               End If
@@ -1329,8 +1341,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Dump batch and update start of file
 
               If (jj + traj%record_size >= batsz .or. i == jatms) Then
-                 Write(Unit=nhist, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
-                 rec=rec+Int(jj,li)
+                 Write(Unit=nhist, Fmt='(73a)', Rec=traj%rec_write+Int(1,li)) (chbat(:,k), k=1,jj)
+                 traj%rec_write=traj%rec_write+Int(jj,li)
                  jj=0
               End If
            End Do
@@ -1338,7 +1350,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Update main header
 
-        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
+        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
 
         Close(Unit=nhist)
 
@@ -1366,7 +1378,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Save offset pointer
 
-        rec=rec+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
 
      End If
 
@@ -1378,7 +1390,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
         Call error(0,message)
      End If
 
-! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
+! SORTED MPI-I/O or Parallel Ditraj%rec_writet Access FORTRAN or netCDF
 
   Else If (io_write == IO_WRITE_SORTED_MPIIO  .or. &
            io_write == IO_WRITE_SORTED_DIRECT .or. &
@@ -1387,14 +1399,14 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Write header only at start, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)
+     rec_mpi_io=Int(traj%rec_write,offset_kind)
      jj_io=rec_mpi_io
      jj=0 ! netCDF current frame
      If (comm%idnode == 0) Then
 
         Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_open( io_write, comm_self, fname, mode_wronly, fh )
+        Call io_init( traj%recsz_write )
+        Call io_open( io_write, comm_self, traj%fname, mode_wronly, fh )
 
 ! Non netCDF
 
@@ -1402,14 +1414,15 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Write header and cell information
 
-           Write(record(1:recsz), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
-           Call io_write_record( fh, jj_io, record(1:recsz) )
+          Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,&
+            time,lf
+           Call io_write_record( fh, jj_io, record(1:traj%recsz_write) )
            jj_io=jj_io + Int(1,offset_kind)
 
            Do i = 0, 2
-              Write(record(1:recsz), Fmt='(3f20.10,a12,a1)') &
+              Write(record(1:traj%recsz_write), Fmt='(3f20.10,a12,a1)') &
                    cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
-              Call io_write_record( fh, jj_io, record(1:recsz) )
+              Call io_write_record( fh, jj_io, record(1:traj%recsz_write) )
               jj_io=jj_io+Int(1,offset_kind)
            End Do
 
@@ -1456,7 +1469,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Start of file
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        rec_mpi_io=Int(rec,offset_kind)+Int(4,offset_kind)
+        rec_mpi_io=Int(traj%rec_write,offset_kind)+Int(4,offset_kind)
      Else ! netCDF write
         Call gbcast(comm,jj,0)
         rec_mpi_io = Int(jj,offset_kind)
@@ -1465,8 +1478,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Write the rest
 
      Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
+     Call io_init( traj%recsz_write )
+     Call io_open( io_write, comm%comm, traj%fname, mode_wronly, fh )
 
      Call io_write_sorted_file( fh, traj%file_key(), IO_HISTORY, rec_mpi_io, natms, &
           ltg, atmnam, weight, rsd, parts,                   &
@@ -1488,17 +1501,17 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Update and save offset pointer
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        rec=rec+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
         If (comm%idnode == 0) Then
-           Write(record(1:recsz), Fmt='(3i10,2i21,a1)') traj%file_key(),imcon,megatm,frm,rec,lf
-           Call io_write_record( fh, Int(1,offset_kind), record(1:recsz) )
+           Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+           Call io_write_record( fh, Int(1,offset_kind), record(1:traj%recsz_write) )
         End If
      End If
 
      Call io_close( fh )
      Call io_finalize
 
-! SORTED Serial Direct Access FORTRAN
+! SORTED Serial Ditraj%rec_writet Access FORTRAN
 
   Else If (io_write == IO_WRITE_SORTED_MASTER) Then
 
@@ -1514,14 +1527,15 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
      If (comm%idnode == 0) Then
 
-        Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
+       Open(Unit=nhist, File=traj%fname, Form='formatted', Access='direct', Recl=traj%recsz_write)
 
-        rec=rec+Int(1,li)
-        Write(Unit=nhist, Fmt='(a8,2i10,2i2,2f20.6,a1)', Rec=rec) 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
+        traj%rec_write=traj%rec_write+Int(1,li)
+        Write(Unit=nhist, Fmt='(a8,2i10,2i2,2f20.6,a1)', Rec=traj%rec_write) 'timestep',nstep,megatm,traj%file_key(),&
+          imcon,tstep,time,lf
 
         Do i = 0, 2
-           rec=rec+Int(1,li)
-           Write(Unit=nhist, Fmt='(3f20.10,a12,a1)', Rec=rec) &
+           traj%rec_write=traj%rec_write+Int(1,li)
+           Write(Unit=nhist, Fmt='(3f20.10,a12,a1)', Rec=traj%rec_write) &
                 cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
         End Do
 
@@ -1584,7 +1598,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
            End If
 
            Do i=1,jatms
-              rec1=rec+Int(iwrk(i)-1,li)*Int(traj%record_size,li)+Int(1,li)
+              rec1=traj%rec_write+Int(iwrk(i)-1,li)*Int(traj%record_size,li)+Int(1,li)
               Write(Unit=nhist, Fmt='(a8,i10,3f12.6,a18,a1)', Rec=rec1) chbuf(i),iwrk(i),eee(i),temp_parts(i)%chge,&
                                                                         fff(i),Repeat(' ',18),lf
 
@@ -1607,8 +1621,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Update main header
 
-        rec=rec+Int(megatm,li)*Int(traj%record_size,li)
-        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
+        traj%rec_write=traj%rec_write+Int(megatm,li)*Int(traj%record_size,li)
+        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
 
         Close(Unit=nhist)
 
@@ -1636,7 +1650,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Save offset pointer
 
-        rec=rec+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
 
      End If
 
@@ -1667,15 +1681,15 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 100 Continue
 
-  If (newjob) Then
-     newjob = .false.
+  If (traj%newjob_write) Then
+     traj%newjob_write = .false.
 
 ! name convention
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        fname = Trim(history)
+        traj%fname = Trim(history)
      Else
-        fname = Trim(history) // '.nc'
+        traj%fname = Trim(history) // '.nc'
      End If
 
 ! If keyres=1, is HISTORY old (does it exist) and
@@ -1683,7 +1697,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
      lexist=.true.
      If (keyres == 1) Then
-        If (comm%idnode == 0) Inquire(File=fname, Exist=lexist)
+        If (comm%idnode == 0) Inquire(File=traj%fname, Exist=lexist)
         Call gcheck(comm,lexist,"enforce")
      Else
         lexist=.false.
@@ -1696,17 +1710,17 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
            If (comm%idnode == 0) Then
-              Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Status='replace', Recl=recsz)
+              Open(Unit=nhist, File=traj%fname, Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
               Write(Unit=nhist, Fmt='(a34,a1)',      Rec=Int(1,li)) cfgname(1:34),lf
-              Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
+              Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
               Close(Unit=nhist)
            End If
-           rec=Int(2,li)
-           frm=Int(0,li)
+           traj%rec_write=Int(2,li)
+           traj%frm_write=Int(0,li)
         Else
            If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = comm_self )
-              Call io_nc_create( netcdf, comm_self, fname, cfgname, megatm )
+              Call io_nc_create( netcdf, comm_self, traj%fname, cfgname, megatm )
            End If
         End If
 
@@ -1719,33 +1733,33 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
            If (comm%idnode == 0) Then
 
-              Open(Unit=nhist, File=fname, Form='formatted')
+              Open(Unit=nhist, File=traj%fname, Form='formatted')
 
               Do
 
-                 record(1:recsz)=' '
+                 record(1:traj%recsz_write)=' '
 
 ! Assume new style of HISTORY with bookkeeping.
 
-                 If (fast) Then
+                 If (traj%fast_write) Then
 
                     Read(Unit=nhist, Fmt=*, End=120)                     ! title record
-                    rec=rec+Int(1,li)
-                    Read(Unit=nhist, Fmt='(a)', End=120) record(1:recsz) ! bookkeeping record
+                    traj%rec_write=traj%rec_write+Int(1,li)
+                    Read(Unit=nhist, Fmt='(a)', End=120) record(1:traj%recsz_write) ! bookkeeping record
                     Call tabs_2_blanks(record) ; Call strip_blanks(record)
-                    rec=rec+Int(1,li)
+                    traj%rec_write=traj%rec_write+Int(1,li)
 
-                    Call get_word(record(1:recsz),word)
+                    Call get_word(record(1:traj%recsz_write),word)
                     If (word(1:Len_Trim(word)) /= 'timestep') Then
-                       Call get_word(record(1:recsz),word) ; Call get_word(record(1:recsz),word)
-                       Call get_word(record(1:recsz),word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-                       Call get_word(record(1:recsz),word) ; rec=Nint(word_2_real(word,0.0_wp),li)
-                       If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
+                       Call get_word(record(1:traj%recsz_write),word) ; Call get_word(record(1:traj%recsz_write),word)
+                       Call get_word(record(1:traj%recsz_write),word) ; traj%frm_write=Nint(word_2_real(word,0.0_wp),li)
+                       Call get_word(record(1:traj%recsz_write),word) ; traj%rec_write=Nint(word_2_real(word,0.0_wp),li)
+                       If (traj%frm_write /= Int(0,li) .and. traj%rec_write > Int(2,li)) Then
                           Go To 120 ! New style
                        Else
-                          fast=.false. ! TOUGH, old style
-                          rec=Int(2,li)
-                          frm=Int(0,li)
+                          traj%fast_write=.false. ! TOUGH, old style
+                          traj%rec_write=Int(2,li)
+                          traj%frm_write=Int(0,li)
                        End If
                     Else
                        safe=.false. ! Overwrite the file, it's junk to me
@@ -1757,14 +1771,14 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
                  Else
 
                     Read(Unit=nhist, Fmt=*, End=120)                 ! timestep record
-                    rec=rec+Int(1,li)
+                    traj%rec_write=traj%rec_write+Int(1,li)
 
                     word=' '
                     i = 3 + megatm ! total number of lines to read
                     Write(word,'( "(", i0, "( / ) )" )') i-1
                     Read(Unit=nhist, Fmt=word, End=120)
-                    rec=rec+Int(i,li)
-                    frm=frm+Int(1,li)
+                    traj%rec_write=traj%rec_write+Int(i,li)
+                    traj%frm_write=traj%frm_write+Int(1,li)
 
                  End If
 
@@ -1779,25 +1793,25 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
            If (.not.safe) Then
               lexist=.false.
 
-              rec=Int(0,li)
-              frm=Int(0,li)
+              traj%rec_write=Int(0,li)
+              traj%frm_write=Int(0,li)
 
               Go To 110
            Else If (comm%mxnode > 1) Then
-              buffer(1)=Real(frm,wp)
-              buffer(2)=Real(rec,wp)
+              buffer(1)=Real(traj%frm_write,wp)
+              buffer(2)=Real(traj%rec_write,wp)
 
               Call gbcast(comm,buffer,0)
 
-              frm=Nint(buffer(1),li)
-              rec=Nint(buffer(2),li)
+              traj%frm_write=Nint(buffer(1),li)
+              traj%rec_write=Nint(buffer(2),li)
            End If
 
         Else ! netCDF read
 
            If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = comm_self )
-              Call io_open( io_write, comm_self, fname, mode_rdonly, fh )
+              Call io_open( io_write, comm_self, traj%fname, mode_rdonly, fh )
 
 ! Get the precision that the history file was written in
 ! and check it matches the requested precision
@@ -1861,14 +1875,14 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
            Call gbcast(comm,jj,0)
 
            If (jj > 0) Then
-              frm=Int(jj,li)
+              traj%frm_write=Int(jj,li)
 
            If (comm%idnode == 0) Call io_close( fh )
            Else ! Overwrite the file, it's junk to me
               lexist=.false.
 
-              rec=Int(0,li)
-              frm=Int(0,li)
+              traj%rec_write=Int(0,li)
+              traj%frm_write=Int(0,li)
 
               Go To 110
            End If
@@ -1884,7 +1898,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
       io_write == IO_WRITE_UNSORTED_MASTER) Then
      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
-     Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
+     Allocate (chbat(1:traj%recsz_write,1:batsz), Stat=fail(2))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write allocation failure 0'
         Call error(0,message)
@@ -1898,12 +1912,12 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Update frame
 
-  frm=frm+Int(1,li)
+  traj%frm_write=traj%frm_write+Int(1,li)
 
 ! NO UNSORTED WRITING AS NO INDICES ARE WRITTEN
 ! In other words even if the user asked for unsorted I/O they get it sorted.
 
-! SORTED MPI-I/O or Parallel Direct Access FORTRAN
+! SORTED MPI-I/O or Parallel Ditraj%rec_writet Access FORTRAN
 
   If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
@@ -1912,20 +1926,20 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
       io_write == IO_WRITE_SORTED_NETCDF) Then
 
      Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
+     Call io_init( traj%recsz_write )
+     Call io_open( io_write, comm%comm, traj%fname, mode_wronly, fh )
 
 ! Write header only at start, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)
+     rec_mpi_io=Int(traj%rec_write,offset_kind)
      jj_io=rec_mpi_io
      jj=0 ! netCDF current frame
      If (comm%idnode == 0) Then
 
         Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_open( io_write, comm_self, fname, mode_wronly, fh )
+        Call io_init( traj%recsz_write )
+        Call io_open( io_write, comm_self, traj%fname, mode_wronly, fh )
 
 ! Non netCDF
 
@@ -1933,14 +1947,14 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Write header and cell information
 
-           Write(record(1:recsz), Fmt='(a8,i6,f8.5,f12.5,a1)') 'timestep',nstep,tstep,time,lf
-           Call io_write_record( fh, jj_io, record(1:recsz) )
+           Write(record(1:traj%recsz_write), Fmt='(a8,i6,f8.5,f12.5,a1)') 'timestep',nstep,tstep,time,lf
+           Call io_write_record( fh, jj_io, record(1:traj%recsz_write) )
            jj_io=jj_io + Int(1,offset_kind)
 
            Do i = 0, 2
-              Write(record(1:recsz), Fmt='(3f10.3,a4,a1)') &
+              Write(record(1:traj%recsz_write), Fmt='(3f10.3,a4,a1)') &
                    cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 4 ), lf
-              Call io_write_record( fh, jj_io, record(1:recsz) )
+              Call io_write_record( fh, jj_io, record(1:traj%recsz_write) )
               jj_io=jj_io+Int(1,offset_kind)
            End Do
 
@@ -1985,7 +1999,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Start of file
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        rec_mpi_io=Int(rec,offset_kind)+Int(4,offset_kind)
+        rec_mpi_io=Int(traj%rec_write,offset_kind)+Int(4,offset_kind)
      Else ! netCDF write
         Call gbcast(comm,jj,0)
         rec_mpi_io = Int(jj,offset_kind)
@@ -1994,8 +2008,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Write the rest
 
      Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
+     Call io_init( traj%recsz_write )
+     Call io_open( io_write, comm%comm, traj%fname, mode_wronly, fh )
 
      Call io_write_sorted_file( fh, 0*traj%file_key(), IO_HISTORD, rec_mpi_io, natms, &
           ltg, atmnam, (/ 0.0_wp /),  rsd, parts,     &
@@ -2018,17 +2032,17 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Update and save offset pointer
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        rec=rec+Int(4,li)+Int(megatm,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)
         If (comm%idnode == 0) Then
-           Write(record(1:recsz), Fmt='(2i2,3i10,a1)') traj%file_key(),imcon,megatm,frm,rec,lf
-           Call io_write_record( fh, Int(1,offset_kind), record(1:recsz) )
+           Write(record(1:traj%recsz_write), Fmt='(2i2,3i10,a1)') traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+           Call io_write_record( fh, Int(1,offset_kind), record(1:traj%recsz_write) )
         End If
      End If
 
      Call io_close( fh )
      Call io_finalize
 
-! SORTED Serial Direct Access FORTRAN
+! SORTED Serial Ditraj%rec_writet Access FORTRAN
 
   Else
 
@@ -2044,14 +2058,14 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
      If (comm%idnode == 0) Then
 
-        Open(Unit=nhist, File=fname, Form='formatted', Access='direct', Recl=recsz)
+        Open(Unit=nhist, File=traj%fname, Form='formatted', Access='direct', Recl=traj%recsz_write)
 
-        rec=rec+Int(1,li)
-        Write(Unit=nhist, Fmt='(a8,i6,f8.5,f12.5,a1)', Rec=rec) 'timestep',nstep,tstep,time,lf
+        traj%rec_write=traj%rec_write+Int(1,li)
+        Write(Unit=nhist, Fmt='(a8,i6,f8.5,f12.5,a1)', Rec=traj%rec_write) 'timestep',nstep,tstep,time,lf
 
         Do i = 0, 2
-           rec=rec+Int(1,li)
-           Write(Unit=nhist, Fmt='(3f10.3,a4,a1)', Rec=rec) &
+           traj%rec_write=traj%rec_write+Int(1,li)
+           Write(Unit=nhist, Fmt='(3f10.3,a4,a1)', Rec=traj%rec_write) &
                 cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 4 ), lf
         End Do
 
@@ -2084,16 +2098,16 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
            End If
 
            Do i=1,jatms
-              rec1=rec+Int(iwrk(i),li)
-              Write(Unit=nhist, Fmt='(a6,4f7.1,a1)', Rec=rec1) chbuf(i),temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
+             rec1=traj%rec_write+Int(iwrk(i),li)
+             Write(Unit=nhist, Fmt='(a6,4f7.1,a1)', Rec=rec1) chbuf(i),temp_parts(i)%xxx,temp_parts(i)%yyy,temp_parts(i)%zzz,&
                                                                fff(i),lf
            End Do
         End Do
 
 ! Update main header
 
-        rec=rec+Int(megatm,li)
-        Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,frm,rec,lf
+        traj%rec_write=traj%rec_write+Int(megatm,li)
+        Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
 
         Close(Unit=nhist)
 
@@ -2113,7 +2127,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Save offset pointer
 
-        rec=rec+Int(4,li)+Int(megatm,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)
 
      End If
 
