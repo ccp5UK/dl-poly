@@ -30,11 +30,12 @@
       End If
 
       If (thermo%l_langevin) Then
-        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
+        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,parts,seed)
         If (rigid%share) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,fxl,fyl,fzl,domain,comm)
+          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,&
+            thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
         End If
-        Call rigid_bodies_str__s(stat%strcom,parts(:),rigid,comm,fxl,fyl,fzl)
+        Call rigid_bodies_str__s(stat%strcom,parts(:),rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
       Else
         Call rigid_bodies_str_ss(stat%strcom,rigid,parts,comm)
       End If

@@ -1768,7 +1768,7 @@ Subroutine read_control                                &
 
 ! For Langevin ensembles that require arrays
 
-        If (thermo%l_langevin) Call langevin_allocate_arrays()
+        If (thermo%l_langevin) Call langevin_allocate_arrays(thermo)
 
 ! read density variation option
 
