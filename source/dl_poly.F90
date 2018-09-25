@@ -847,7 +847,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( kim_type ), Intent( InOut) :: kim_data
     Type( timer_type ), Intent( InOut ) :: tmr
@@ -1040,7 +1040,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( external_field_type ), Intent( InOut ) :: ext_field
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
     Type( trajectory_type ), Intent( InOut ) :: traj

@@ -676,7 +676,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( vdw_type ), Intent( In    ) :: vdws
   Type( mpole_type ), Intent( InOut ) :: mpoles
-  Type( electrostatic_type ), Intent( In    ) :: electro
+  Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( comms_type),                   Intent( InOut ) :: comm
   Type( corePart ), Dimension( : ),    Intent( InOut ) :: parts
 

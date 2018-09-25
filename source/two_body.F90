@@ -82,7 +82,7 @@ Subroutine two_body_forces(pdplnc,ensemble,nstfce,lbook,megfrz,leql,nsteql, &
   Type( rdf_type ),                         Intent( InOut ) :: rdf
   Type( mpole_type ),                       Intent( InOut ) :: mpoles
   Type( timer_type ),                       Intent( InOut ) :: tmr
-  Type( electrostatic_type ), Intent( In    ) :: electro
+  Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( domains_type ), Intent( In    ) :: domain
   Type( corePart ),                         Intent( InOut ) :: parts(:)
   Type( kim_type ), Intent( InOut ) :: kim_data
