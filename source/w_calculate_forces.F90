@@ -141,12 +141,12 @@
         If (minim%minimise .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
           If      (minim%freq == 0 .and. nstep == 0) Then
             Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
-              rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
+              rdf%l_collect,megatm,tstep,stat%stpcfg,stat,pmf,cons, &
               netcdf,minim,rigid,domain,parts,comm)
           Else If (minim%freq >  0 .and. nstep >  0) Then
             If (Mod(nstep-nsteql,minim%freq) == 0) Then
               Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
-                rdf%l_collect,megatm,pmf%megpmf,tstep,stat%stpcfg,stat,pmf,cons, &
+                rdf%l_collect,megatm,tstep,stat%stpcfg,stat,pmf,cons, &
                 netcdf,minim,rigid,domain,parts,comm)
             End If
           End If

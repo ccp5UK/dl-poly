@@ -63,7 +63,7 @@ Module kontrol
   Use pmf, Only : pmf_type
   Use neighbours, Only : neighbours_type
   Use core_shell, Only : core_shell_type
-  Use minimise, Only : minimise_type
+  Use minimise, Only : minimise_type,MIN_NULL,MIN_FORCE, MIN_DISTANCE, MIN_ENERGY
   Use electrostatic, Only : electrostatic_type, ELECTROSTATIC_NULL, &
                             ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
                             ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
@@ -307,7 +307,7 @@ Subroutine read_control                                &
 ! default switch for conjugate gradient minimisation during equilibration
 
   minim%minimise   = .false.
-  minim%key = -1
+  minim%key = MIN_NULL
   minim%freq = 0
   minim%tolerance = 0.0_wp
   minim%step_length = -1.0_wp
@@ -1080,13 +1080,13 @@ Subroutine read_control                                &
         Call get_word(record,word)
 
         If      (word(1:4) == 'forc') Then
-           minim%key=0
-           word1='force   '
+          minim%key=MIN_FORCE
+          word1='force   '
         Else If (word(1:4) == 'ener') Then
-           minim%key=1
-           word1='energy  '
+          minim%key=MIN_ENERGY
+          word1='energy  '
         Else If (word(1:4) == 'dist') Then
-           minim%key=2
+          minim%key=MIN_DISTANCE
            word1='distance'
         Else
            Call strip_blanks(record)
@@ -1104,28 +1104,28 @@ Subroutine read_control                                &
         tmp = Abs(word_2_real(word))
 
         itmp=0
-        If      (minim%key == 0) Then
-           If (tmp < 1.0_wp .or. tmp > 1000.0_wp) Then
-              minim%tolerance=50.0_wp
-              itmp=1
-           Else
-              minim%tolerance=tmp
-           End If
-        Else If (minim%key == 1) Then
-           If (tmp < zero_plus .or. tmp > 0.01_wp) Then
-              minim%tolerance=0.005_wp
-              itmp=1
-           Else
-             minim%tolerance = tmp
-             minim%step_length = tmp
-           End If
-        Else If (minim%key == 2) Then
-           If (tmp < 1.0e-6_wp .or. tmp > 0.1_wp) Then
-              minim%tolerance=0.005_wp
-              itmp=1
-           Else
-              minim%tolerance=tmp
-           End If
+        If      (minim%key == MIN_FORCE) Then
+          If (tmp < 1.0_wp .or. tmp > 1000.0_wp) Then
+            minim%tolerance=50.0_wp
+            itmp=1
+          Else
+            minim%tolerance=tmp
+          End If
+        Else If (minim%key == MIN_ENERGY) Then
+          If (tmp < zero_plus .or. tmp > 0.01_wp) Then
+            minim%tolerance=0.005_wp
+            itmp=1
+          Else
+            minim%tolerance = tmp
+            minim%step_length = tmp
+          End If
+        Else If (minim%key == MIN_DISTANCE) Then
+          If (tmp < 1.0e-6_wp .or. tmp > 0.1_wp) Then
+            minim%tolerance=0.005_wp
+            itmp=1
+          Else
+            minim%tolerance=tmp
+          End If
         End If
 
         If (itmp == 1) Call warning(360,tmp,minim%tolerance,0.0_wp)
