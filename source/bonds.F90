@@ -515,7 +515,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe
   Type( bonds_type ),                  Intent( InOut ) :: bond
   Type( mpole_type ),                  Intent( InOut ) :: mpoles
-  Type( electrostatic_type ), Intent( In    ) :: electro
+  Type( electrostatic_type ), Intent( InOut    ) :: electro
   Type( corePart ), Dimension(  :  ),  Intent( InOut ) :: parts
   Type( comms_type),                   Intent( InOut ) :: comm
 

@@ -56,17 +56,11 @@ Contains
     Real( Kind = wp ), Intent(   Out ) :: coul,virele,fx,fy,fz
     Logical,           Intent( InOut ) :: safe
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut ) :: electro
 
     Integer                 :: k1,k2,k3,s1,s2,s3,n
     Integer                 :: ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
 
-    Logical,           Save :: newjob = .true. , damp
-    Real( Kind = wp ), Save :: aa     = 0.0_wp , &
-      bb     = 0.0_wp , &
-      rfld0  = 0.0_wp , &
-      rfld1  = 0.0_wp , &
-      rfld2  = 0.0_wp
 
     Real( Kind = wp ) :: exp1,tt,erc,fer,b0,      &
       tix,tiy,tiz,tjx,tjy,tjz, &
@@ -86,36 +80,36 @@ Contains
     Real( Kind = wp ), Parameter :: aa5 =  1.061405429_wp
     Real( Kind = wp ), Parameter :: pp  =  0.3275911_wp
 
-    If (newjob) Then
-      newjob = .false.
+    If (electro%newjob_m) Then
+      electro%newjob_m= .false.
 
-      ! Check for damped force-shifted coulombic and reaction field interactions
-      ! and set force and potential shifting parameters dependingly
+    ! Check for damped force-shifted coulombic and reaction field interactions
+    ! and set force and potential shifting parameters dependingly
 
-      damp=.false.
-      If (electro%alpha > zero_plus) Then
-        damp=.true.
+    electro% damp_m=.false.
+    If (electro%alpha > zero_plus) Then
+      electro%damp_m=.true.
 
-        exp1= Exp(-(electro%alpha*rcut)**2)
-        tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rcut)
+      exp1= Exp(-(electro%alpha*rcut)**2)
+      tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rcut)
 
-        erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
-        fer = (erc + 2.0_wp*(electro%alpha/sqrpi)*exp1)/rcut**2
+      erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
+      fer = (erc + 2.0_wp*(electro%alpha/sqrpi)*exp1)/rcut**2
 
-        aa  = fer*rcut
-        bb  = -(erc + aa*rcut)
-      Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
-        aa =  1.0_wp/rcut**2
-        bb = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
-      End If
+      electro%aa_m  = fer*rcut
+      electro%bb_m  = -(erc + electro%aa*rcut)
+    Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
+      electro%aa_m =  1.0_wp/rcut**2
+      electro%bb_m = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
+    End If
 
       ! set reaction field terms for RFC
 
       If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then
         b0    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
-        rfld0 = b0/rcut**3
-        rfld1 = (1.0_wp + 0.5_wp*b0)/rcut
-        rfld2 = 0.5_wp*rfld0
+        electro%rfld0_m = b0/rcut**3
+        electro%rfld1_m = (1.0_wp + 0.5_wp*b0)/rcut
+        electro%rfld2_m = 0.5_wp*electro%rfld0_m
       End If
     End If
 
@@ -174,7 +168,7 @@ Contains
 
     Else If (Any([ELECTROSTATIC_COULOMB_FORCE_SHIFT,ELECTROSTATIC_COULOMB_REACTION_FIELD] == electro%key)) Then
 
-      If (damp) Then ! calculate damping contributions
+      If (electro%damp_m) Then ! calculate damping contributions
 
         ! compute derivatives of 'r'
 
@@ -182,7 +176,7 @@ Contains
 
         ! scale the derivatives of 'r'
 
-        a1 = aa*a1
+        a1 = electro%aa_m*a1
 
         exp1= Exp(-(electro%alpha*rrr)**2)
         tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
@@ -201,7 +195,7 @@ Contains
       End If
 
       If (electro%key ==  ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then ! force shifted coulombic
-        If (.not.damp) Then ! pure
+        If (.not.electro%damp_m) Then ! pure
 
           ! compute derivatives of '1/r'
 
@@ -213,7 +207,7 @@ Contains
 
           ! scale the derivatives of 'r' and add to d1
 
-          d1 = d1 + aa*a1
+          d1 = d1 + electro%aa_m*a1
           a1 = 0.0_wp
 
         Else                ! damped
@@ -222,7 +216,7 @@ Contains
 
         End If
       Else If (electro%key == ELECTROSTATIC_COULOMB_REACTION_FIELD) Then ! reaction field
-        If (.not.damp) Then ! pure
+        If (.not.electro%damp_m) Then ! pure
 
           ! compute derivatives of '1/r'
 
@@ -234,7 +228,7 @@ Contains
 
           ! scale the derivatives of 'r' and add to d1
 
-          d1 = d1 + rfld2*a1
+          d1 = d1 + electro%rfld2_m*a1
           a1 = 0.0_wp
 
         Else
@@ -245,7 +239,7 @@ Contains
 
           ! scale the derivatives of 'r^2' and add to scaled derivatives of 'r'
 
-          a1 = a1 + rfld2*b1
+          a1 = a1 + electro%rfld2_m*b1
 
           talpha = electro%alpha
 
@@ -356,7 +350,7 @@ Contains
 
         ! shift potential
 
-        tmp    = aa*rrr + bb
+        tmp    = electro%aa_m*rrr + electro%bb_m
         coul   = coul   + tmp*imp(1)*jmp(1)
 
         ! shift torque
@@ -377,16 +371,16 @@ Contains
 
         ! shift potential
 
-        coul   = coul   - rfld1*imp(1)*jmp(1)
+        coul   = coul   - electro%rfld1_m*imp(1)*jmp(1)
 
         ! shift torque
 
-        tmpi   = -rfld1*jmp(1)
+        tmpi   = -electro%rfld1_m*jmp(1)
         tix    = tix    + impx(1)*tmpi
         tiy    = tiy    + impy(1)*tmpi
         tiz    = tiz    + impz(1)*tmpi
 
-        tmpj   = -rfld1*imp(1)
+        tmpj   = -electro%rfld1_m*imp(1)
         tjx    = tjx    + jmpx(1)*tmpj
         tjy    = tjy    + jmpy(1)*tmpj
         tjz    = tjz    + jmpz(1)*tmpj
@@ -446,15 +440,10 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
     Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
 
-    Logical,           Save :: newjob = .true. , damp
-    Real( Kind = wp ), Save :: drewd  = 0.0_wp , &
-                               rdrewd = 0.0_wp , &
-                               aa     = 0.0_wp , &
-                               bb     = 0.0_wp
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
                          k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -465,7 +454,6 @@ Contains
                          txyz,erfcr,tix,tiy,tiz,tjx,tjy,             &
                          tjz,tmp,tmpi,tmpj,sx,sy,sz
 
-    Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
 
     Real( Kind = wp ) :: d1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
     Real( Kind = wp ) :: a1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
@@ -475,47 +463,47 @@ Contains
 
     Character ( Len = 256 )  ::  message
 
-    If (newjob) Then
-       newjob = .false.
+    If (electro%newjob_mfscp) Then
+      electro%newjob_mfscp = .false.
 
        If (electro%alpha > zero_plus) Then
-          damp = .true.
+         electro%damp_mfscp = .true.
        Else
-          damp = .false.
+         electro%damp_mfscp = .false.
        End If
 
-       If (damp) Then
+       If (electro%damp_mfscp) Then
 
-  ! interpolation interval
+         ! interpolation interval
 
-          drewd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
+         electro%drewd_mfscp = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
-  ! reciprocal of interpolation interval
+         ! reciprocal of interpolation interval
 
-          rdrewd = 1.0_wp/drewd
+         electro%rdrewd_mfscp = 1.0_wp/electro%drewd_mfscp
 
           fail=0
-          Allocate (erc(0:electro%ewald_exclusion_grid),fer(0:electro%ewald_exclusion_grid), Stat=fail)
+          Allocate (electro%erc_mfscp(0:electro%ewald_exclusion_grid),electro%fer_mfscp(0:electro%ewald_exclusion_grid), Stat=fail)
           If (fail > 0) Then
-             Write(message,'(a)') 'coul_fscp_mforces allocation failure'
-             Call error(0,message)
-          End If
+            Write(message,'(a)') 'coul_fscp_mforces allocation failure'
+            Call error(0,message)
+           End If
 
-  ! generate error function complement tables for ewald sum
+           ! generate error function complement tables for ewald sum
 
-          Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,erc,fer)
+           Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mfscp,electro%fer_mfscp)
 
-  ! set force and potential shifting parameters (screened terms)
+          ! set force and potential shifting parameters (screened terms)
 
-          aa =   fer(electro%ewald_exclusion_grid-4)*neigh%cutoff
-          bb = -(erc(electro%ewald_exclusion_grid-4)+aa*neigh%cutoff)
+          electro%aa_mfscp =   electro%fer_mfscp(electro%ewald_exclusion_grid-4)*neigh%cutoff
+          electro%bb_mfscp = -(electro%erc_mfscp(electro%ewald_exclusion_grid-4)+electro%aa_mfscp*neigh%cutoff)
 
-       Else
+        Else
 
-  ! set force and potential shifting parameters (screened terms)
+          ! set force and potential shifting parameters (screened terms)
 
-          aa =  1.0_wp/neigh%cutoff**2
-          bb = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
+          electro%aa_mfscp =  1.0_wp/neigh%cutoff**2
+          electro%bb_mfscp = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
 
        End If
     End If
@@ -598,7 +586,7 @@ Contains
 
   ! compute derivatives of kernel
 
-             If (damp) Then
+             If (electro%damp_mfscp) Then
 
   ! compute derivatives of 'r'
 
@@ -606,16 +594,16 @@ Contains
 
   ! scale the derivatives of 'r'
 
-                a1 = aa*a1
+                a1 = electro%aa_mfscp*a1
 
-  ! get the value of the ewald real space kernel using 3pt interpolation
+                ! get the value of the ewald real space kernel using 3pt interpolation
 
-                k   = Int(rrr*rdrewd)
-                ppp = rrr*rdrewd - Real(k,wp)
+                k   = Int(rrr*electro%rdrewd_mfscp)
+                ppp = rrr*electro%rdrewd_mfscp - Real(k,wp)
 
-                vk0 = erc(k)
-                vk1 = erc(k+1)
-                vk2 = erc(k+2)
+                vk0 = electro%erc_mfscp(k)
+                vk1 = electro%erc_mfscp(k+1)
+                vk2 = electro%erc_mfscp(k+2)
 
                 t1 = vk0 + (vk1 - vk0)*ppp
                 t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -904,7 +892,7 @@ Contains
 
   ! shift potential
 
-             tmp     = aa*rrr + bb
+             tmp     = electro%aa_mfscp*rrr + electro%bb_mfscp
              engmpl  = engmpl + tmp*imp(1)*jmp(1)
 
   ! shift torque
@@ -1016,19 +1004,9 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
     Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
-
-    Logical,           Save :: newjob = .true. , damp
-    Real( Kind = wp ), Save :: drewd  = 0.0_wp , &
-                               rdrewd = 0.0_wp , &
-                               aa     = 0.0_wp , &
-                               bb     = 0.0_wp , &
-                               b0     = 0.0_wp , &
-                               rfld0  = 0.0_wp , &
-                               rfld1  = 0.0_wp , &
-                               rfld2  = 0.0_wp
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
                          k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -1039,7 +1017,6 @@ Contains
                          txyz,erfcr,tmp,tmpi,tmpj,tix,tiy,tiz,       &
                          tjx,tjy,tjz,sx,sy,sz
 
-    Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
 
     Real( Kind = wp ) :: d1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
     Real( Kind = wp ) :: a1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
@@ -1049,54 +1026,54 @@ Contains
 
     Character ( Len = 256 )   ::  message
 
-    If (newjob) Then
-       newjob = .false.
+    If (electro%newjob_mrfp) Then
+      electro%newjob_mrfp = .false.
 
-       If (electro%alpha > zero_plus) Then
-          damp = .true.
-       Else
-          damp = .false.
-       End If
+      If (electro%alpha > zero_plus) Then
+        electro%damp_mrfp = .true.
+      Else
+        electro%damp_mrfp = .false.
+      End If
 
-  ! reaction field terms
+      ! reaction field terms
 
-       b0    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
-       rfld0 = b0/neigh%cutoff**3
-       rfld1 = (1.0_wp + 0.5_wp*b0)/neigh%cutoff
-       rfld2 = 0.5_wp*rfld0
+      electro%b0_mrfp    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
+      electro%rfld0_mrfp = electro%b0_mrfp/neigh%cutoff**3
+      electro%rfld1_mrfp = (1.0_wp + 0.5_wp*electro%b0_mrfp)/neigh%cutoff
+       electro%rfld2_mrfp = 0.5_wp*electro%rfld0_mrfp
 
-       If (damp) Then
+       If (electro%damp_mrfp) Then
 
-  ! interpolation interval
+         ! interpolation interval
 
-          drewd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
+         electro%drewd_mrfp = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
-  ! reciprocal of interpolation interval
+         ! reciprocal of interpolation interval
 
-          rdrewd = 1.0_wp/drewd
+         electro%rdrewd_mrfp = 1.0_wp/electro%drewd_mrfp
 
-          fail=0
-          Allocate (erc(0:electro%ewald_exclusion_grid),fer(0:electro%ewald_exclusion_grid), Stat=fail)
-          If (fail > 0) Then
-             Write(message,'(a)') 'coul_rfp_mforces allocation failure'
-             Call error(0,message)
-          End If
+         fail=0
+         Allocate (electro%erc_mrfp(0:electro%ewald_exclusion_grid),electro%fer_mrfp(0:electro%ewald_exclusion_grid), Stat=fail)
+         If (fail > 0) Then
+           Write(message,'(a)') 'coul_rfp_mforces allocation failure'
+           Call error(0,message)
+         End If
 
-  ! generate error function complement tables for ewald sum
+         ! generate error function complement tables for ewald sum
 
-          Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,erc,fer)
-
-  ! set force and potential shifting parameters (screened terms)
-
-          aa =   fer(electro%ewald_exclusion_grid-4)*neigh%cutoff
-          bb = -(erc(electro%ewald_exclusion_grid-4)+aa*neigh%cutoff)
-
-       Else
+         Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mrfp,electro%fer_mrfp)
 
   ! set force and potential shifting parameters (screened terms)
 
-          aa =  1.0_wp/neigh%cutoff**2
-          bb = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
+          electro%aa_mrfp =   electro%fer_mrfp(electro%ewald_exclusion_grid-4)*neigh%cutoff
+          electro%bb_mrfp = -(electro%erc_mrfp(electro%ewald_exclusion_grid-4)+electro%aa_mrfp*neigh%cutoff)
+
+       Else
+
+  ! set force and potential shifting parameters (screened terms)
+
+          electro%aa_mrfp =  1.0_wp/neigh%cutoff**2
+          electro%bb_mrfp = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
 
        End If
     End If
@@ -1177,7 +1154,7 @@ Contains
 
   ! compute derivatives of kernel
 
-             If (damp) Then
+             If (electro%damp_mrfp) Then
 
   ! compute derivatives of 'r^2'
 
@@ -1185,7 +1162,7 @@ Contains
 
   ! scale the derivatives of 'r^2'
 
-                a1 = rfld2*a1
+                a1 = electro%rfld2_mrfp*a1
 
   ! compute derivatives of 'r'
 
@@ -1193,16 +1170,16 @@ Contains
 
   ! scale the derivatives of 'r' and add to a1
 
-                a1 = a1 + aa*d1
+                a1 = a1 + electro%aa_mrfp*d1
 
   ! get the value of the ewald real space kernel using 3pt interpolation
 
-                k   = Int(rrr*rdrewd)
-                ppp = rrr*rdrewd - Real(k,wp)
+                k   = Int(rrr*electro%rdrewd_mrfp)
+                ppp = rrr*electro%rdrewd_mrfp - Real(k,wp)
 
-                vk0 = erc(k)
-                vk1 = erc(k+1)
-                vk2 = erc(k+2)
+                vk0 = electro%erc_mrfp(k)
+                vk1 = electro%erc_mrfp(k+1)
+                vk2 = electro%erc_mrfp(k+2)
 
                 t1 = vk0 + (vk1 - vk0)*ppp
                 t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -1349,7 +1326,7 @@ Contains
 
   ! shift potential
 
-                tmp    = bb-0.5_wp*b0/neigh%cutoff
+                tmp    = electro%bb_mrfp-0.5_wp*electro%b0_mrfp/neigh%cutoff
                 engmpl = engmpl + tmp*imp(1)*jmp(1)
 
   ! shift torque
@@ -1376,7 +1353,7 @@ Contains
 
   ! scale the derivatives of 'r' and add to d1
 
-                d1 = d1 + rfld2*a1
+                d1 = d1 + electro%rfld2_mrfp*a1
 
   ! calculate potential forces
 
@@ -1506,16 +1483,16 @@ Contains
 
   ! shift potential
 
-                engmpl = engmpl - rfld1*imp(1)*jmp(1)
+                engmpl = engmpl - electro%rfld1_mrfp*imp(1)*jmp(1)
 
   ! shift torque
 
-                tmpi   = -rfld1*jmp(1)
+                tmpi   = -electro%rfld1_mrfp*jmp(1)
                 tix    = tix    + impx(1)*tmpi
                 tiy    = tiy    + impy(1)*tmpi
                 tiz    = tiz    + impz(1)*tmpi
 
-                tmpj   = -rfld1*imp(1)
+                tmpj   = -electro%rfld1_mrfp*imp(1)
                 tjx    = tjx    + jmpx(1)*tmpj
                 tjy    = tjy    + jmpy(1)*tmpj
                 tjz    = tjz    + jmpz(1)*tmpj
