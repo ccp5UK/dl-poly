@@ -696,7 +696,7 @@ Contains
 End Subroutine ttm_ion_temperature
 
 Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
-    lines,npage,thermo,domain,comm)
+    thermo,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -712,7 +712,7 @@ Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer, Intent( In ) :: ndump,nstbpo,nsteql,nstep,nstrun,lines,npage
+  Integer, Intent( In ) :: ndump,nstbpo,nsteql,nstep,nstrun
   Real ( Kind = wp ), Intent( In ) :: tstep,time
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( domains_type ), Intent( In    ) :: domain

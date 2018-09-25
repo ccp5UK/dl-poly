@@ -208,11 +208,6 @@ program dl_poly
 
   Logical, Save :: newjob = .true.
 
-  ! lines and page used for printing controls
-
-  Integer       :: lines = 0 , &
-    npage = 8
-
   ! general flags
 
   Logical           :: ltmp,l_vv,l_n_e,l_n_v,       &
@@ -905,7 +900,7 @@ Contains
   End Subroutine w_kinetic_options
 
   Subroutine w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
-      sites,rdf,domain)
+      sites,rdf,domain,flw)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -916,6 +911,7 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     Type( rdf_type ), Intent( In    ) :: rdf
     Type( domains_type ), Intent( In    ) :: domain
+    Type( control_type ), Intent( InOut ) :: flw
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
