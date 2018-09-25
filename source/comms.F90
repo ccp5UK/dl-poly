@@ -28,8 +28,6 @@ Module comms
 
   Integer, Save :: wp_mpi = 0
 
-  ! MPI-I/O representation
-  Character( Len = 6 ), Parameter :: datarep = 'native'
 
   Integer, Public :: mpi_ver     = -1, &
                      mpi_subver  = -1

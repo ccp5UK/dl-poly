@@ -22,7 +22,7 @@ Module io
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp, li
-  Use comms, Only : comms_type, wp_mpi,datarep
+  Use comms, Only : comms_type, wp_mpi
   Use errors_warnings, Only : error
   Use particle, Only: corePart
 #ifdef SERIAL
@@ -38,6 +38,8 @@ Module io
 
   Implicit None
 
+  ! MPI-I/O representation
+  Character( Len = 6 ), Parameter :: datarep = 'native'
   ! Public interface
 
   ! Values to tell the module quite which file we are writing
@@ -4799,8 +4801,6 @@ Contains
 
     Integer               :: status(1:MPI_STATUS_SIZE) 
 
-    Character( len = 20 ) :: datarep
-
     ! Get the actual file handle or unit in use, rather than the one given to the outside world
     file_handle = known_files( io_file_handle )%file_handle
 
@@ -4808,8 +4808,6 @@ Contains
 
        ! using MPI-I/O
        Call MPI_FILE_READ_AT( file_handle, next_rec, buffer, in_buffer, rec_type, status, ierr )
-       !Call MPI_FILE_GET_VIEW( file_handle, disp, etype, filetype, datarep, ierr )
-       !Call MPI_GET_COUNT( status, etype, count, ierr )
        Call MPI_GET_COUNT( status, rec_type, count, ierr )
        error = Merge( 0, -1, count == in_buffer )
 
