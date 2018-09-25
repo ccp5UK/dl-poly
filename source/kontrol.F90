@@ -76,10 +76,19 @@ Module kontrol
 
   !> Type containing program flow data, do not use to park variables
   Type, Public :: control_type
-    Private 
-    !> check if is first time we call build_book_intra
-    Logical, Public :: newjob_build_book = .true. 
-    Logical, Public :: oldjob_shared_units = .false. 
+    Private
+    !> Check if is first time we call build_book_intra
+    Logical, Public :: newjob_build_book = .true.
+    Logical, Public :: oldjob_shared_units = .false.
+
+    ! STDOUT printing control
+    !> Number of print events before starting a new 'page'
+    Integer(Kind=wi) :: npage = 8
+    !> Current number of print events
+    Integer(Kind=wi), Public :: lines = 0
+  Contains
+    Procedure, Public :: new_page => control_type_new_page
+    Procedure, Public :: line_printed => controL_type_line_printed
   End Type control_type
 
   Public :: read_control
@@ -88,8 +97,20 @@ Module kontrol
   Public :: scan_control
   Public :: scan_control_pre
 
-  Contains
+Contains
 
+  Pure Function control_type_new_page(T) result(new_page)
+    Class(control_type), Intent(In) :: T
+    Logical :: new_page
+
+    new_page = Mod(T%lines,T%npage) == 0
+  End Function control_type_new_page
+
+  Subroutine control_type_line_printed(T)
+    Class(control_type), Intent(InOut) :: T
+
+    T%lines = T%lines + 1
+  End Subroutine control_type_line_printed
 
 Subroutine read_control                                &
            (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &

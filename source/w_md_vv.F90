@@ -110,7 +110,8 @@
 ! Calculate physical quantities, collect statistics and report at t=0
 
     If (nstep == 0) Then
-      Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity,sites,rdf,domain)
+      Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
+        sites,rdf,domain,flw)
     End If
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
@@ -122,7 +123,7 @@
         If (l_ttm) Then
           Call ttm_ion_temperature(thermo,domain,comm)
           Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump, &
-            nstrun,lines,npage,thermo,domain,comm)
+            nstrun,thermo,domain,comm)
         End If
 
 ! Integrate equations of motion - velocity verlet second stage
@@ -140,7 +141,7 @@
 ! Calculate physical quantities, collect statistics and report regularly
 
         Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
-          sites,rdf,domain)
+          sites,rdf,domain,flw)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 

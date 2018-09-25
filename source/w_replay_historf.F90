@@ -195,7 +195,7 @@
 ! Update cpu time
 
            Call gtime(tmr%elapsed)
-           If (Mod(lines,npage) == 0) Then
+           If (flw%new_page()) Then
              Write(messages(1),'(a)') Repeat('-',130)
              Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
               'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
@@ -219,7 +219,9 @@
            Write(messages(4),'(a)') Repeat('-',130)
            Call info(messages,4,.true.)
 
-           If (nstph /= 0) lines=lines+1
+           If (nstph /= 0) Then
+             Call flw%line_printed()
+           End If
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
