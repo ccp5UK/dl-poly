@@ -38,12 +38,19 @@ Module minimise
   Private
 
   ! Minimisation keys
+  !> no minimisation
+  Integer( Kind = wi ), Parameter, Public :: MIN_NULL = -1
   !> Force minimisation
   Integer( Kind = wi ), Parameter, Public :: MIN_FORCE = 1
   !> Energy minimisation
   Integer( Kind = wi ), Parameter, Public :: MIN_ENERGY = 2
   !> Distance minimisation
   Integer( Kind = wi ), Parameter, Public :: MIN_DISTANCE = 3
+
+
+  Integer( Kind = wi ), Parameter, Public :: NO_OPTIMISATION = 0
+  Integer( Kind = wi ), Parameter, Public :: LINE_SEARCH = 1
+  Integer( Kind = wi ), Parameter, Public :: LINEAR_EXTRAPOLATION = 2
 
   Type, Public :: minimise_type
     Private
@@ -68,6 +75,14 @@ Module minimise
 
     !> Coordinate arrays?
     Real( Kind = wp ), Allocatable, Public :: oxx(:),oyy(:),ozz(:)
+
+    Logical               :: newjob = .true. , l_rdf, l_mov
+    Character( Len = 8 )  :: word
+    Integer               :: keyopt
+    Real( Kind = wp )     :: min_pass
+    Real( Kind = wp )     :: total,grad_tol,eng_tol,dist_tol,step,           &
+      eng_0,eng_min,eng,eng0,eng1,eng2, &
+      grad,grad0,grad1,grad2,onorm,sgn,stride,gamma
   Contains
     Private
 
@@ -110,8 +125,8 @@ Contains
     End If
   End Subroutine deallocate_minimise_arrays
 
-  Subroutine minimise_relax(l_str,rdf_collect,megatm,megpmf,tstep,stpcfg,stats, &
-      pmf,cons,netcdf,minim,rigid,domain,parts,comm)
+  Subroutine minimise_relax(l_str,rdf_collect,megatm,tstep,stpcfg,stats, &
+    pmf,cons,netcdf,minim,rigid,domain,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -119,9 +134,9 @@ Contains
 ! gradient method (CGM).
 !
 ! Note: minimisation type and criterion:
-!       minim%key=0 : absolute force
-!       minim%key=1 : relative energy
-!       minim%key=2 : absolute displacement
+!       minim%key = MIN_FORCE : absolute force
+!       minim%key = MIN_ENERGY : relative energy
+!       minim%key = MIN_DISTANCE : absolute displacement
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov & w.smith february 2014
@@ -131,38 +146,31 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: l_str
-  Logical,           Intent( InOut ) :: rdf_collect
-  Integer,           Intent( In    ) :: megatm,megpmf
-  Real( Kind = wp ), Intent( In    ) :: tstep,stpcfg
-  Type( stats_type ), Intent(InOut) :: stats
-  Type( pmf_type ), Intent( InOut ) :: pmf
-  Type( constraints_type ), Intent(InOut) :: cons
-  Type( netcdf_param ), Intent( In    ) :: netcdf
-  Type( minimise_type ), Intent( InOut ) :: minim
-  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-  Type( domains_type ), Intent( In    ) :: domain
-  Type( comms_type ), Intent( InOut ) :: comm
-  type( corePart ),   Intent( InOut ) :: parts(:)
+    Logical,           Intent( In    ) :: l_str
+    Logical,           Intent( InOut ) :: rdf_collect
+    Integer,           Intent( In    ) :: megatm
+    Real( Kind = wp ), Intent( In    ) :: tstep,stpcfg
+    Type( stats_type ), Intent(InOut) :: stats
+    Type( pmf_type ), Intent( InOut ) :: pmf
+    Type( constraints_type ), Intent(InOut) :: cons
+    Type( netcdf_param ), Intent( In    ) :: netcdf
+    Type( minimise_type ), Intent( InOut ) :: minim
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
+    Type( comms_type ), Intent( InOut ) :: comm
+    type( corePart ),   Intent( InOut ) :: parts(:)
 
-  Logical,              Save :: newjob = .true. , l_rdf, l_mov
-  Character( Len = 8 ), Save :: word
-  Character( Len = 6 )       :: name
-  Integer,              Save :: keyopt
-  Integer                    :: fail(1:8),i,j,levcfg
-  Real( Kind = wp ),    Save :: total,grad_tol,eng_tol,dist_tol,step,           &
-                                eng_0,eng_min,eng,eng0,eng1,eng2, &
-                                grad,grad0,grad1,grad2,onorm,sgn,stride,gamma
 
+    Integer                    :: fail(1:8),i,j,levcfg
+    Character( Len = 6 )       :: name
 ! OUTPUT existence
 
-  Logical               :: l_out
-  Character( Len = 10 ) :: c_out
+    Logical               :: l_out
+    Character( Len = 10 ) :: c_out
 
 ! Optimisation iteration and convergence limits
 
-  Integer, Parameter      :: mxpass = 1000
-  Real( Kind = wp ), Save :: min_pass
+    Integer, Parameter      :: mxpass = 1000
 
   Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
 
@@ -190,16 +198,16 @@ Contains
      Call error(0,message)
   End If
 
-  If (newjob) Then
-     newjob = .false.
+  If (minim%newjob) Then
+     minim%newjob = .false.
 
 ! At start no optimisation has been attempted yet
 
-     keyopt = 0
+     minim%keyopt = NO_OPTIMISATION
 
 ! At start the minimum energy is defined as zero
 
-     eng_min = Huge(0.0_wp)
+     minim%eng_min = Huge(0.0_wp)
 
 ! Passage accumulators are initialised in minimise_module
 ! stats%passmin(1) - cycles counter
@@ -208,14 +216,14 @@ Contains
 ! stats%passmin(4) - minimum cycles
 ! stats%passmin(5) - maximum cycles
 
-! total number of active particles (excluding frozen sites and massless shells)
+! minim%total number of active particles (excluding frozen sites and massless shells)
 
-     total=0.0_wp
+     minim%total=0.0_wp
      Do i=1,natms
         If (lfrzn(i) == 0 .and. (weight(i) > 1.0e-6_wp .or. lfree(i) == 1)) &
-           total=total+1.0_wp
+           minim%total=minim%total+1.0_wp
      End Do
-     Call gsum(comm,total)
+     Call gsum(comm,minim%total)
   End If
 
 ! Step length for relaxation
@@ -224,31 +232,31 @@ Contains
 
 ! Optionally specified
 
-     step=minim%step_length
+     minim%step=minim%step_length
 
   Else
 
 ! default if unspecified
 
-     step=tstep**2
+     minim%step=tstep**2
 
 ! enlarged depending on functionality if defaulted
 
-     If (cons%megcon == 0 .and. megpmf == 0) Then
+     If (cons%megcon == 0 .and. pmf%megpmf == 0) Then
         If (rigid%total == 0) Then
-           step=10.0_wp*step
+           minim%step=10.0_wp*minim%step
         Else
-           step=5.0_wp*step
+           minim%step=5.0_wp*minim%step
         End If
      End If
 
   End If
 
-  If (keyopt == 0) Then
+  If (minim%keyopt == NO_OPTIMISATION) Then
 
 ! Initial configuration energy
 
-     eng_0=stpcfg
+     minim%eng_0=stpcfg
 
 ! Allocate working arrays
 
@@ -260,65 +268,66 @@ Contains
 
 ! No RB move is yet attempted
 
-     l_mov=.false.
+     minim%l_mov=.false.
 
 ! Minimum needed for a pass for this minimisation cycle
 
-     min_pass = Huge(1.0_wp)
+     minim%min_pass = Huge(1.0_wp)
 
 ! Avoid rdf calculation redundancy
 
-     l_rdf=rdf_collect
+     minim%l_rdf=rdf_collect
      If (rdf_collect) rdf_collect=.false.
 
 ! Determine optimisation
 
-     If      (minim%key == 0) Then
-        word='force   '
-     Else If (minim%key == 1) Then
-        word='energy  '
-     Else If (minim%key == 2) Then
-        word='distance'
+     If      (minim%key == MIN_FORCE) Then
+       minim%word='force   '
+     Else If (minim%key == MIN_ENERGY) Then
+       minim%word='energy  '
+     Else If (minim%key == MIN_DISTANCE) Then
+       minim%word='distance'
      End If
 
 ! Print header
 
-    If (l_str) Then
-      Write(message,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minim%tolerance,'step=',step
-      Call info(message,.true.)
-      Write(message,"(1x,130('-'))")
-      Call info(message,.true.)
-    End If
-  End If
+     If (l_str) Then
+       Write(message,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
+         'Minimising',minim%word,'pass','eng_tot','minim%grad_tol','minim%eng_tol','minim%dist_tol','tol=', &
+         minim%tolerance,'minim%step=',minim%step
+       Call info(message,.true.)
+       Write(message,"(1x,130('-'))")
+       Call info(message,.true.)
+     End If
+   End If
 
 ! Load original forces
 
-  Do i=1,natms
+   Do i=1,natms
      gxx(i)=parts(i)%fxx
      gyy(i)=parts(i)%fyy
      gzz(i)=parts(i)%fzz
-  End Do
+   End Do
 
 ! Minimised energy is current configuration energy
 
-  eng=stpcfg
+   minim%eng=stpcfg
 
 ! Calculate pseudo forces and energy for constraint bonds and PMFs
 
-  If (cons%megcon > 0 .or. megpmf > 0) Then
+   If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
      lstitr(1:natms)=.false. ! initialise lstitr
 
      If (cons%megcon > 0) Then
-        Call constraints_tags(lstitr,cons,parts,comm)
-        Call constraints_pseudo_bonds(gxx,gyy,gzz,stats,cons,comm)
-        eng=eng+stats%engcon
+       Call constraints_tags(lstitr,cons,parts,comm)
+       Call constraints_pseudo_bonds(gxx,gyy,gzz,stats,cons,comm)
+       minim%eng=minim%eng+stats%engcon
      End If
 
      If (pmf%megpmf > 0) Then
         Call pmf_tags(lstitr,pmf,parts,comm)
         Call pmf_pseudo_bonds(gxx,gyy,gzz,stats,pmf,comm)
-        eng=eng+stats%engpmf
+        minim%eng=minim%eng+stats%engpmf
      End If
   End If
 
@@ -332,32 +341,32 @@ Contains
      Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,parts,comm)
   End If
 
-! Initialise/get eng_tol & verify relaxed condition
+! Initialise/get minim%eng_tol & verify relaxed condition
 
-  eng_tol=0.0_wp
-  If (keyopt > 0) Then
-     eng_tol=Abs(1.0_wp-eng2/eng)
-     If (minim%key == 1) minim%relaxed=(eng_tol < minim%tolerance)
+  minim%eng_tol=0.0_wp
+  If (minim%keyopt /= NO_OPTIMISATION) Then
+    minim%eng_tol=Abs(1.0_wp-minim%eng2/minim%eng)
+     If (minim%key == MIN_ENERGY) minim%relaxed=(minim%eng_tol < minim%tolerance)
   End If
 
-! Current gradient (modulus of the total force)
+! Current gradient (modulus of the minim%total force)
 ! massless shells and frozen particles have zero forces!
 
-  grad=0.0_wp
+  minim%grad=0.0_wp
   Do i=1,natms
-     grad=grad+gxx(i)**2+gyy(i)**2+gzz(i)**2
+    minim%grad=minim%grad+gxx(i)**2+gyy(i)**2+gzz(i)**2
   End Do
-  Call gsum(comm,grad)
-  grad=Sqrt(grad)
+  Call gsum(comm,minim%grad)
+  minim%grad=Sqrt(minim%grad)
 
-! Get grad_tol & verify relaxed condition
+! Get minim%grad_tol & verify relaxed condition
 
-  grad_tol=grad/total
-  If (minim%key == 0) minim%relaxed=(grad_tol < minim%tolerance)
+  minim%grad_tol=minim%grad/minim%total
+  If (minim%key == MIN_FORCE) minim%relaxed=(minim%grad_tol < minim%tolerance)
 
-! Initialise dist_tol
+! Initialise minim%dist_tol
 
-  dist_tol=0.0_wp
+  minim%dist_tol=0.0_wp
 
 ! CHECK FOR CONVERGENCE
 
@@ -367,28 +376,28 @@ Contains
 
      stats%passmin(1)=stats%passmin(1)+1.0_wp
 
-! min_pass = Min(min_pass,._tol)
+! minim%min_pass = Min(minim%min_pass,._tol)
 
-     If      (minim%key == 0) Then
-        min_pass = Min(min_pass,grad_tol)
-     Else If (minim%key == 1) Then
-        If (keyopt > 0) min_pass = Min(min_pass,eng_tol)
-     Else If (minim%key == 2) Then
-        min_pass = Min(min_pass,dist_tol)
-     End If
+     If      (minim%key == MIN_FORCE) Then
+        minim%min_pass = Min(minim%min_pass,minim%grad_tol)
+     Else If (minim%key == MIN_ENERGY) Then
+        If (minim%keyopt /= NO_OPTIMISATION) minim%min_pass = Min(minim%min_pass,minim%eng_tol)
+      Else If (minim%key == MIN_DISTANCE) Then
+        minim%min_pass = Min(minim%min_pass,minim%dist_tol)
+      End If
 
 ! If in mxpass iterations we are not there, give up but
 ! allow for thermo%tension-fold boost in iteration cycle length
-! for the very first MD step
+! for the very first MD minim%step
 
      If (Nint(stats%passmin(2)) == 0) Then
         If (Nint(stats%passmin(1)) >= 10*mxpass) Then
-           Call warning(330,minim%tolerance,min_pass,0.0_wp)
+           Call warning(330,minim%tolerance,minim%min_pass,0.0_wp)
            Call error(474)
         End If
      Else
         If (Nint(stats%passmin(1)) >= mxpass) Then
-           Call warning(330,minim%tolerance,min_pass,0.0_wp)
+           Call warning(330,minim%tolerance,minim%min_pass,0.0_wp)
            Call error(474)
         End If
      End If
@@ -399,19 +408,19 @@ Contains
 
   End If
 
-  If      (keyopt == 0) Then
+  If      (minim%keyopt == NO_OPTIMISATION) Then
 
 ! Original configuration energy
 
-     eng0=eng
-     eng1=eng
-     eng2=eng
+    minim%eng0=minim%eng
+    minim%eng1=minim%eng
+    minim%eng2=minim%eng
 
-! Original gradient (modulus of the total force)
+! Original gradient (modulus of the minim%total force)
 
-     onorm=grad
-     grad0=grad
-     grad2=grad
+     minim%onorm=minim%grad
+     minim%grad0=minim%grad
+     minim%grad2=minim%grad
 
 ! Set original search direction
 
@@ -421,64 +430,64 @@ Contains
         minim%ozz(i)=gzz(i)
      End Do
 
-     keyopt=1
-     sgn=1.0_wp
-     stride=sgn*step
+     minim%keyopt=LINE_SEARCH
+     minim%sgn=1.0_wp
+     minim%stride=minim%sgn*minim%step
 
-  Else If (keyopt == 1) Then
+   Else If (minim%keyopt == LINE_SEARCH) Then
 
 ! Line search along chosen direction
 
-     eng1=eng0
-     eng2=eng
+     minim%eng1=minim%eng0
+     minim%eng2=minim%eng
 
-     grad1=grad2
-     grad2=0.0_wp
+     minim%grad1=minim%grad2
+     minim%grad2=0.0_wp
      Do i=1,natms
-        grad2=grad2+minim%oxx(i)*gxx(i)+minim%oyy(i)*gyy(i)+minim%ozz(i)*gzz(i)
+        minim%grad2=minim%grad2+minim%oxx(i)*gxx(i)+minim%oyy(i)*gyy(i)+minim%ozz(i)*gzz(i)
      End Do
-     Call gsum(comm,grad2)
-     grad2=sgn*grad2/onorm
+     Call gsum(comm,minim%grad2)
+     minim%grad2=minim%sgn*minim%grad2/minim%onorm
 
 ! Linear extrapolation to minimum
 
-     If (grad2 < 0.0_wp) Then ! BACK UP FROM THIS DIRECTION
-        keyopt=2
-        stride=sgn*step*grad2/(grad1-grad2)
+     If (minim%grad2 < 0.0_wp) Then ! BACK UP FROM THIS DIRECTION
+       minim%keyopt=LINEAR_EXTRAPOLATION
+        minim%stride=minim%sgn*minim%step*minim%grad2/(minim%grad1-minim%grad2)
      Else                     ! CARRY ON IN THIS DIRECTION
-        stride=sgn*step
+        minim%stride=minim%sgn*minim%step
      End If
 
-  Else If (keyopt == 2) Then
+   Else If (minim%keyopt == LINEAR_EXTRAPOLATION) Then
 
 ! Construct conjugate search vector
 
-     eng1=eng2
-     eng2=eng
+     minim%eng1=minim%eng2
+     minim%eng2=minim%eng
 
-     gamma=(grad/grad0)**2
-     grad0=grad
-     grad2=0.0_wp
-     onorm=0.0_wp
+     minim%gamma=(minim%grad/minim%grad0)**2
+     minim%grad0=minim%grad
+     minim%grad2=0.0_wp
+     minim%onorm=0.0_wp
      Do i=1,natms
-        minim%oxx(i)=gxx(i)+gamma*minim%oxx(i)
-        minim%oyy(i)=gyy(i)+gamma*minim%oyy(i)
-        minim%ozz(i)=gzz(i)+gamma*minim%ozz(i)
+        minim%oxx(i)=gxx(i)+minim%gamma*minim%oxx(i)
+        minim%oyy(i)=gyy(i)+minim%gamma*minim%oyy(i)
+        minim%ozz(i)=gzz(i)+minim%gamma*minim%ozz(i)
 
-        onorm=onorm+minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2
-        grad2=grad2+minim%oxx(i)*gxx(i)+minim%oyy(i)*gyy(i)+minim%ozz(i)*gzz(i)
+        minim%onorm=minim%onorm+minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2
+        minim%grad2=minim%grad2+minim%oxx(i)*gxx(i)+minim%oyy(i)*gyy(i)+minim%ozz(i)*gzz(i)
      End Do
-     Call gsum(comm,onorm)
-     onorm=Sqrt(onorm)
-     Call gsum(comm,grad2)
-     grad2=grad2/onorm
-     sgn=Sign(1.0_wp,grad2)
-     grad2=sgn*grad2
+     Call gsum(comm,minim%onorm)
+     minim%onorm=Sqrt(minim%onorm)
+     Call gsum(comm,minim%grad2)
+     minim%grad2=minim%grad2/minim%onorm
+     minim%sgn=Sign(1.0_wp,minim%grad2)
+     minim%grad2=minim%sgn*minim%grad2
 
-     keyopt=1
-     stride=sgn*step
+     minim%keyopt=LINE_SEARCH
+     minim%stride=minim%sgn*minim%step
 
-  End If
+   End If
 
 ! Move particles to their new positions accordingly
 
@@ -490,19 +499,19 @@ Contains
         i=lstfre(j)
 
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           parts(i)%xxx=parts(i)%xxx+stride*minim%oxx(i)
-           parts(i)%yyy=parts(i)%yyy+stride*minim%oyy(i)
-           parts(i)%zzz=parts(i)%zzz+stride*minim%ozz(i)
-           dist_tol=Max(dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
+           parts(i)%xxx=parts(i)%xxx+minim%stride*minim%oxx(i)
+           parts(i)%yyy=parts(i)%yyy+minim%stride*minim%oyy(i)
+           parts(i)%zzz=parts(i)%zzz+minim%stride*minim%ozz(i)
+           minim%dist_tol=Max(minim%dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
         End If
      End Do
-     dist_tol=Sqrt(dist_tol)*Abs(stride)
+     minim%dist_tol=Sqrt(minim%dist_tol)*Abs(minim%stride)
 
 ! RB particles
 
-     Call rigid_bodies_move(stride,minim%oxx,minim%oyy,minim%ozz, &
-       txx,tyy,tzz,uxx,uyy,uzz,dist_tol,rigid,parts)
-     l_mov=.true.
+     Call rigid_bodies_move(minim%stride,minim%oxx,minim%oyy,minim%ozz, &
+       txx,tyy,tzz,uxx,uyy,uzz,minim%dist_tol,rigid,parts)
+     minim%l_mov=.true.
 
   Else
 
@@ -510,30 +519,31 @@ Contains
 
      Do i=1,natms
         If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           parts(i)%xxx=parts(i)%xxx+stride*minim%oxx(i)
-           parts(i)%yyy=parts(i)%yyy+stride*minim%oyy(i)
-           parts(i)%zzz=parts(i)%zzz+stride*minim%ozz(i)
-           dist_tol=Max(dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
+           parts(i)%xxx=parts(i)%xxx+minim%stride*minim%oxx(i)
+           parts(i)%yyy=parts(i)%yyy+minim%stride*minim%oyy(i)
+           parts(i)%zzz=parts(i)%zzz+minim%stride*minim%ozz(i)
+           minim%dist_tol=Max(minim%dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
         End If
      End Do
-     dist_tol=Sqrt(dist_tol)*Abs(stride)
+     minim%dist_tol=Sqrt(minim%dist_tol)*Abs(minim%stride)
 
   End If
-  Call gmax(comm,dist_tol)
+  Call gmax(comm,minim%dist_tol)
 
-  If (minim%key == 2) minim%relaxed=(dist_tol < minim%tolerance)
+  If (minim%key == MIN_DISTANCE) minim%relaxed=(minim%dist_tol < minim%tolerance)
 
 ! Fit headers in and Close and Open OUTPUT at every 25th print-out
 
   i=Nint(stats%passmin(1))
   If (l_str) Then
-    Write(message,'(1x,i23,1p,4e18.8)') i-1,eng/engunit,grad_tol,eng_tol,dist_tol
+    Write(message,'(1x,i23,1p,4e18.8)') i-1,minim%eng/engunit,minim%grad_tol,minim%eng_tol,minim%dist_tol
     Call info(message,.true.)
     If (Mod(i,25) == 0) Then
       Write(message,"(1x,130('-'))")
       Call info(message,.true.)
       Write(message,'(3(1x,a),6x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-        'Minimising',word,'pass','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minim%tolerance,'step=',step
+        'Minimising',minim%word,'pass','eng_tot','minim%grad_tol','minim%eng_tol','minim%dist_tol','tol=', &
+        minim%tolerance,'minim%step=',minim%step
       Call info(message,.true.)
       Write(message,"(1x,130('-'))")
       Call info(message,.true.)
@@ -560,12 +570,13 @@ Contains
      i=Nint(stats%passmin(1))
      If (.not.l_str) Then
        Write(message,'(3(1x,a),5x,a,10x,a,10x,a,11x,a,5x,a,1p,e11.4,3x,a,e11.4)') &
-         'Minimised',word,'passes','eng_tot','grad_tol','eng_tol','dist_tol','tol=', minim%tolerance,'step=',step
+         'Minimised',minim%word,'passes','eng_tot','minim%grad_tol','minim%eng_tol','minim%dist_tol','tol=', minim%tolerance,&
+         'minim%step=',minim%step
        Call info(message,.true.)
        Write(message,"(1x,130('-'))")
        Call info(message,.true.)
      End If
-     Write(message,'(1x,i23,1p,4e18.8)') i,eng/engunit,grad_tol,eng_tol,dist_tol
+     Write(message,'(1x,i23,1p,4e18.8)') i,minim%eng/engunit,minim%grad_tol,minim%eng_tol,minim%dist_tol
      Call info(message,.true.)
      Write(message,"(1x,130('-'))")
      Call info(message,.true.)
@@ -578,14 +589,14 @@ Contains
      stats%passmin(4)=Min(stats%passmin(1),stats%passmin(4))
      stats%passmin(5)=Max(stats%passmin(1),stats%passmin(5))
 
-! Rewind keyopt and main passage counter
+! Rewind minim%keyopt and main passage counter
 
-     keyopt =0
+     minim%keyopt =NO_OPTIMISATION
      stats%passmin(1)=0.0_wp
 
 ! Resume rdf%rdf calculations
 
-     If (l_rdf) rdf_collect=l_rdf
+     If (minim%l_rdf) rdf_collect=minim%l_rdf
 
 ! Deallocate working arrays
 
@@ -593,18 +604,18 @@ Contains
 
 ! Dump the lowest energy configuration
 
-     If (eng < eng_min) Then
-        eng_min=eng
+     If (minim%eng < minim%eng_min) Then
+       minim%eng_min=minim%eng
 
-        name = 'CFGMIN' ! file name
-        levcfg = 0      ! define level of information in file
+       name = 'CFGMIN' ! file name
+       levcfg = 0      ! define level of information in file
 
-        Call write_config(name,levcfg,megatm,i-1,eng_min/engunit,eng_0/engunit,netcdf,comm)
+       Call write_config(name,levcfg,megatm,i-1,minim%eng_min/engunit,minim%eng_0/engunit,netcdf,comm)
      End If
 
 ! setup new quaternions
 
-     If (l_mov) Then
+     If (minim%l_mov) Then
         If (rigid%share) Then
           Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
             rigid%map_shared,parts,SHARED_UNIT_UPDATE_POSITIONS,domain,comm)
