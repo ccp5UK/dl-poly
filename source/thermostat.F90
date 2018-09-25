@@ -124,8 +124,9 @@ Module thermostat
     Integer, Allocatable, Public   :: qn(:),tpn(:)
     Integer, Allocatable, Public   :: qs(:,:),tps(:)
     Integer, Allocatable, Public   :: qr(:),tpr(:)
-
-
+    
+    Real( Kind = wp ), Public              :: fpl(1:9) = 0.0_wp
+    Real( Kind = wp ), Public, Allocatable :: fxl(:),fyl(:),fzl(:)
 
   Contains
     Private

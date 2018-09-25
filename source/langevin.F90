@@ -24,28 +24,26 @@ Module langevin
   Use thermostat, Only : thermostat_type
   Implicit None
 
-  Real( Kind = wp ),              Save :: fpl(1:9) = 0.0_wp
-
-  Real( Kind = wp ), Allocatable, Save :: fxl(:),fyl(:),fzl(:)
 
   Public :: langevin_allocate_arrays, langevin_forces
 
 Contains
 
-  Subroutine langevin_allocate_arrays()
+  Subroutine langevin_allocate_arrays(thermo)
+    Type(thermostat_type), Intent(InOut) :: thermo
 
     Integer :: fail
 
     fail = 0
 
-    Allocate (fxl(1:mxatms),fyl(1:mxatms),fzl(1:mxatms), Stat = fail)
+    Allocate (thermo%fxl(1:mxatms),thermo%fyl(1:mxatms),thermo%fzl(1:mxatms), Stat = fail)
 
     If (fail > 0) Call error(1041)
 
-    fxl = 0.0_wp ; fyl = 0.0_wp ; fzl = 0.0_wp
+    thermo%fxl = 0.0_wp ; thermo%fyl = 0.0_wp ; thermo%fzl = 0.0_wp
 
   End Subroutine langevin_allocate_arrays
-  
+
   Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr,cshell,parts,seed)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

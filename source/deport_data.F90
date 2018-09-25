@@ -15,7 +15,6 @@ Module deport_data
   Use inversions, Only : inversions_type
   Use statistics, Only : stats_type
   Use minimise,     Only : minimise_type
-  Use langevin,     Only : fxl,fyl,fzl
   Use ewald,               Only : ewald_type
   Use mpole ,              Only : mpole_type,POLARISATION_CHARMM
   Use msd, Only : msd_type
@@ -62,7 +61,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   Type( constraints_type) , Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
-  Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle
@@ -302,9 +301,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
         If (thermo%l_langevin) Then
            If (imove+3 <= iblock) Then
-              buffer(imove+1)=fxl(i)
-              buffer(imove+2)=fyl(i)
-              buffer(imove+3)=fzl(i)
+             buffer(imove+1)=thermo%fxl(i)
+             buffer(imove+2)=thermo%fyl(i)
+             buffer(imove+3)=thermo%fzl(i)
            Else
               safe=.false.
            End If
@@ -822,124 +821,124 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
      stats%zto(keep)=stats%zto(i)
 
      If (thermo%l_langevin) Then
-        fxl(keep)=fxl(i)
-        fyl(keep)=fyl(i)
-        fzl(keep)=fzl(i)
+       thermo%fxl(keep)=thermo%fxl(i)
+       thermo%fyl(keep)=thermo%fyl(i)
+       thermo%fzl(keep)=thermo%fzl(i)
      End If
 
      If (minim%transport) Then
-        minim%oxx(keep)=minim%oxx(i)
-        minim%oyy(keep)=minim%oyy(i)
-        minim%ozz(keep)=minim%ozz(i)
+       minim%oxx(keep)=minim%oxx(i)
+       minim%oyy(keep)=minim%oyy(i)
+       minim%ozz(keep)=minim%ozz(i)
      End If
 
      If (ewld%lf_cp) Then
-        ewld%ffx(keep)=ewld%ffx(i)
-        ewld%ffy(keep)=ewld%ffy(i)
-        ewld%ffz(keep)=ewld%ffz(i)
+       ewld%ffx(keep)=ewld%ffx(i)
+       ewld%ffy(keep)=ewld%ffy(i)
+       ewld%ffz(keep)=ewld%ffz(i)
      End If
 
      If (ewld%l_cp) Then
-        ewld%fcx(keep)=ewld%fcx(i)
-        ewld%fcy(keep)=ewld%fcy(i)
-        ewld%fcz(keep)=ewld%fcz(i)
+       ewld%fcx(keep)=ewld%fcx(i)
+       ewld%fcy(keep)=ewld%fcy(i)
+       ewld%fcz(keep)=ewld%fcz(i)
      End If
 
      If (green%samp > 0) Then
-        green%vxi(keep,1:green%samp)=green%vxi(i,1:green%samp)
-        green%vyi(keep,1:green%samp)=green%vyi(i,1:green%samp)
-        green%vzi(keep,1:green%samp)=green%vzi(i,1:green%samp)
+       green%vxi(keep,1:green%samp)=green%vxi(i,1:green%samp)
+       green%vyi(keep,1:green%samp)=green%vyi(i,1:green%samp)
+       green%vzi(keep,1:green%samp)=green%vzi(i,1:green%samp)
      End If
 
      If (lmsd) Then
-        jj=27+2*i
-        j =27+2*keep
-        stats%stpvl0(j-1)=stats%stpvl0(jj-1)
-        stats%stpvl0(j  )=stats%stpvl0(jj  )
-        stats%stpval(j-1)=stats%stpval(jj-1)
-        stats%stpval(j  )=stats%stpval(jj  )
-        stats%zumval(j-1)=stats%zumval(jj-1)
-        stats%zumval(j  )=stats%zumval(jj  )
-        stats%ravval(j-1)=stats%ravval(jj-1)
-        stats%ravval(j  )=stats%ravval(jj  )
-        stats%ssqval(j-1)=stats%ssqval(jj-1)
-        stats%ssqval(j  )=stats%ssqval(jj  )
-        stats%sumval(j-1)=stats%sumval(jj-1)
-        stats%sumval(j  )=stats%sumval(jj  )
-        Do kk=1,stats%mxstak
-           stats%stkval(kk,j-1)=stats%stkval(kk,jj-1)
-           stats%stkval(kk,j  )=stats%stkval(kk,jj  )
-        End Do
+       jj=27+2*i
+       j =27+2*keep
+       stats%stpvl0(j-1)=stats%stpvl0(jj-1)
+       stats%stpvl0(j  )=stats%stpvl0(jj  )
+       stats%stpval(j-1)=stats%stpval(jj-1)
+       stats%stpval(j  )=stats%stpval(jj  )
+       stats%zumval(j-1)=stats%zumval(jj-1)
+       stats%zumval(j  )=stats%zumval(jj  )
+       stats%ravval(j-1)=stats%ravval(jj-1)
+       stats%ravval(j  )=stats%ravval(jj  )
+       stats%ssqval(j-1)=stats%ssqval(jj-1)
+       stats%ssqval(j  )=stats%ssqval(jj  )
+       stats%sumval(j-1)=stats%sumval(jj-1)
+       stats%sumval(j  )=stats%sumval(jj  )
+       Do kk=1,stats%mxstak
+         stats%stkval(kk,j-1)=stats%stkval(kk,jj-1)
+         stats%stkval(kk,j  )=stats%stkval(kk,jj  )
+       End Do
      End If
 
      If (lbook) Then
-        If (mpoles%max_mpoles > 0) Then
-           mpoles%ltp(:,keep)=mpoles%ltp(:,i)
-           If (mpoles%key == POLARISATION_CHARMM) mpoles%charmm(:,keep)=mpoles%charmm(:,i)
-        End If
+       If (mpoles%max_mpoles > 0) Then
+         mpoles%ltp(:,keep)=mpoles%ltp(:,i)
+         If (mpoles%key == POLARISATION_CHARMM) mpoles%charmm(:,keep)=mpoles%charmm(:,i)
+       End If
 
-        neigh%list_excl(:,keep)=neigh%list_excl(:,i)
+       neigh%list_excl(:,keep)=neigh%list_excl(:,i)
 
-        cshell%legshl(:,keep)=cshell%legshl(:,i)
+       cshell%legshl(:,keep)=cshell%legshl(:,i)
 
-        cons%legcon(:,keep)=cons%legcon(:,i)
-        pmf%legpmf(:,keep)=pmf%legpmf(:,i)
+       cons%legcon(:,keep)=cons%legcon(:,i)
+       pmf%legpmf(:,keep)=pmf%legpmf(:,i)
 
-        rigid%legend(:,keep)=rigid%legend(:,i)
+       rigid%legend(:,keep)=rigid%legend(:,i)
 
-        tether%legtet(:,keep)=tether%legtet(:,i)
+       tether%legtet(:,keep)=tether%legtet(:,i)
 
-        bond%legend(:,keep)=bond%legend(:,i)
-        angle%legend(:,keep)=angle%legend(:,i)
-        dihedral%legend(:,keep)=dihedral%legend(:,i)
-        inversion%legend(:,keep)=inversion%legend(:,i)
+       bond%legend(:,keep)=bond%legend(:,i)
+       angle%legend(:,keep)=angle%legend(:,i)
+       dihedral%legend(:,keep)=dihedral%legend(:,i)
+       inversion%legend(:,keep)=inversion%legend(:,i)
      End If
-  End Do
-  keep=k ! How many particles are to be kept
+   End Do
+   keep=k ! How many particles are to be kept
 
 ! record of number of atoms for transfer
 
-  buffer(1)=Real(natms-keep,wp)
+   buffer(1)=Real(natms-keep,wp)
 
 ! exchange information on buffer sizes
 
-  Call girecv(comm,jmove,kdnode,Deport_tag)
-  Call gsend(comm,imove,jdnode,Deport_tag)
-  Call gwait(comm)
+   Call girecv(comm,jmove,kdnode,Deport_tag)
+   Call gsend(comm,imove,jdnode,Deport_tag)
+   Call gwait(comm)
 
 ! exchange buffers between nodes (this is a MUST)
 
-  If (jmove > 0) Then
-    Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,Deport_tag)
-  End If
-  If (imove > 0) Then
-    Call gsend(comm,buffer(1:imove),jdnode,Deport_tag)
-  End If
-  If (jmove > 0) Call gwait(comm)
+   If (jmove > 0) Then
+     Call girecv(comm,buffer(iblock+1:iblock+jmove),kdnode,Deport_tag)
+   End If
+   If (imove > 0) Then
+     Call gsend(comm,buffer(1:imove),jdnode,Deport_tag)
+   End If
+   If (jmove > 0) Call gwait(comm)
 
 ! check arrays can cope with incoming atom numbers
 
-  kmove=iblock+1
-  jmove=Nint(buffer(kmove))
+   kmove=iblock+1
+   jmove=Nint(buffer(kmove))
 
-  natms=keep+jmove
+   natms=keep+jmove
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=(natms <= mxatms)
-  Call gcheck(comm,safe)
-  If (.not.safe) Call error(44)
+   safe=(natms <= mxatms)
+   Call gcheck(comm,safe)
+   If (.not.safe) Call error(44)
 
-  Deallocate (ind_on,ind_off,                        Stat=fail(1))
-  Allocate   (i1pmf(1:pmf%mxtpmf(1)),i2pmf(1:pmf%mxtpmf(2)), Stat=fail(2))
-  If (Any(fail(1:2) > 0)) Then
+   Deallocate (ind_on,ind_off,                        Stat=fail(1))
+   Allocate   (i1pmf(1:pmf%mxtpmf(1)),i2pmf(1:pmf%mxtpmf(2)), Stat=fail(2))
+   If (Any(fail(1:2) > 0)) Then
      Write(message,'(a)') 'deport_atomic_data de/allocation failure'
      Call error(0,message)
-  End If
+   End If
 
 ! load transferred data
 
-  Do i=1,jmove
+   Do i=1,jmove
      newatm=i+keep
 
 ! unpack positions
@@ -983,9 +982,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 ! unpack Langevin forces arrays
 
      If (thermo%l_langevin) Then
-        fxl(newatm)=buffer(kmove+1)
-        fyl(newatm)=buffer(kmove+2)
-        fzl(newatm)=buffer(kmove+3)
+       thermo%fxl(newatm)=buffer(kmove+1)
+        thermo%fyl(newatm)=buffer(kmove+2)
+        thermo%fzl(newatm)=buffer(kmove+3)
 
         kmove=kmove+3
      End If
@@ -2512,7 +2511,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
   Type( constraints_type), Intent( InOut ) :: cons
   Type( stats_type ), Intent( InOut ) :: stats
   Type( ewald_type ), Intent( InOut ) :: ewld
-  Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( greenkubo_type ), Intent( InOut ) :: green
   Type( bonds_type ), Intent( InOut ) :: bond
   Type( angles_type ), Intent( InOut ) :: angle

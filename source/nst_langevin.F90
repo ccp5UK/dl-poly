@@ -8,7 +8,6 @@ Module nst_langevin
                               vxx,vyy,vzz
   Use particle,        Only : corePart
   Use domains,         Only : domains_type
-  Use langevin,        Only : fxl,fyl,fzl,fpl
   Use kinetics,        Only : getvom,getkin,getknt,getknr,getknf, &
                               kinstress,kinstresf,kinstrest
   Use constraints,     Only : apply_rattle,apply_shake,&
@@ -174,12 +173,13 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       fpl=0.0_wp
-       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+       thermo%fpl=0.0_wp
+       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,thermo%fpl(1),thermo%fpl(2),&
+         thermo%fpl(3),thermo%fpl(4),thermo%fpl(5),thermo%fpl(6))
        tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
-       fpl(1:6)=fpl(1:6)*tmp
-       fpl(9)=fpl(4)                                 ! Distribute independent
-       fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
+       thermo%fpl(1:6)=thermo%fpl(1:6)*tmp
+       thermo%fpl(9)=thermo%fpl(4)                                 ! Distribute independent
+       thermo%fpl(4)=thermo%fpl(2) ; thermo%fpl(7)=thermo%fpl(3) ; thermo%fpl(8)=thermo%fpl(6) ! Symmetrise
     End If
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
@@ -264,7 +264,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! integrate and apply nst_h0_scl barostat - 1/2 step
   ! augment str to include the random tensorial force on the barostat
 
-          str1=str+fpl
+          str1=str+thermo%fpl
           Call nst_h0_scl &
              (1,hstep,degfre,thermo%pmass,thermo%tai,volm, &
              thermo%h_z,str1,stress,       &
@@ -285,9 +285,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
           Do i=1,natms
              If (weight(i) > 1.0e-6_wp) Then
                 tmp=hstep/weight(i)
-                vxx(i)=vxx(i)+tmp*(parts(i)%fxx+fxl(i))
-                vyy(i)=vyy(i)+tmp*(parts(i)%fyy+fyl(i))
-                vzz(i)=vzz(i)+tmp*(parts(i)%fzz+fzl(i))
+                vxx(i)=vxx(i)+tmp*(parts(i)%fxx+thermo%fxl(i))
+                vyy(i)=vyy(i)+tmp*(parts(i)%fyy+thermo%fyl(i))
+                vzz(i)=vzz(i)+tmp*(parts(i)%fzz+thermo%fzl(i))
              End If
           End Do
 
@@ -348,11 +348,11 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! scale Langevin random forces
 
              Do i=1,natms
-                fxl(i) = fxl(i)*tmp
-                fyl(i) = fyl(i)*tmp
-                fzl(i) = fzl(i)*tmp
+                thermo%fxl(i) = thermo%fxl(i)*tmp
+                thermo%fyl(i) = thermo%fyl(i)*tmp
+                thermo%fzl(i) = thermo%fzl(i)*tmp
              End Do
-             fpl = fpl*tmp
+             thermo%fpl = thermo%fpl*tmp
 
   ! restore initial conditions
 
@@ -399,23 +399,24 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
+       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,parts,seed)
 
-       fpl=0.0_wp
-       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+       thermo%fpl=0.0_wp
+       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,thermo%fpl(1),thermo%fpl(2),&
+         thermo%fpl(3),thermo%fpl(4),thermo%fpl(5),thermo%fpl(6))
        tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
-       fpl(1:6)=fpl(1:6)*tmp
-       fpl(9)=fpl(4)                                 ! Distribute independent
-       fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
+       thermo%fpl(1:6)=thermo%fpl(1:6)*tmp
+       thermo%fpl(9)=thermo%fpl(4)                                 ! Distribute independent
+       thermo%fpl(4)=thermo%fpl(2) ; thermo%fpl(7)=thermo%fpl(3) ; thermo%fpl(8)=thermo%fpl(6) ! Symmetrise
 
   ! update velocity
 
        Do i=1,natms
           If (weight(i) > 1.0e-6_wp) Then
              tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*(parts(i)%fxx+fxl(i))
-             vyy(i)=vyy(i)+tmp*(parts(i)%fyy+fyl(i))
-             vzz(i)=vzz(i)+tmp*(parts(i)%fzz+fzl(i))
+             vxx(i)=vxx(i)+tmp*(parts(i)%fxx+thermo%fxl(i))
+             vyy(i)=vyy(i)+tmp*(parts(i)%fyy+thermo%fyl(i))
+             vzz(i)=vzz(i)+tmp*(parts(i)%fzz+thermo%fzl(i))
           End If
        End Do
 
@@ -448,7 +449,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply nst_h0_scl barostat - 1/2 step
   ! augment str to include the random tensorial force on the barostat
 
-       str1=str+fpl
+       str1=str+thermo%fpl
        Call nst_h0_scl &
              (1,hstep,degfre,thermo%pmass,thermo%tai,volm, &
              thermo%h_z,str1,stress,       &
@@ -692,12 +693,13 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       fpl=0.0_wp
-       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+       thermo%fpl=0.0_wp
+       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,thermo%fpl(1),thermo%fpl(2),&
+         thermo%fpl(3),thermo%fpl(4),thermo%fpl(5),thermo%fpl(6))
        tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
-       fpl(1:6)=fpl(1:6)*tmp
-       fpl(9)=fpl(4)                                 ! Distribute independent
-       fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
+       thermo%fpl(1:6)=thermo%fpl(1:6)*tmp
+       thermo%fpl(9)=thermo%fpl(4)                                 ! Distribute independent
+       thermo%fpl(4)=thermo%fpl(2) ; thermo%fpl(7)=thermo%fpl(3) ; thermo%fpl(8)=thermo%fpl(6) ! Symmetrise
     End If
 
   ! set matms
@@ -760,7 +762,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
        If (rigid%share)Then
          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-           rigid%map_shared,fxl,fyl,fzl,domain,comm)
+           rigid%map_shared,thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
        EndIf
 
   ! Get strcom & vircom when starting afresh now done in w_calculate_forces
@@ -856,7 +858,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! integrate and apply nst_h1_scl barostat - 1/2 step
   ! augment str to include the random tensorial force on the barostat
 
-          str1=str+fpl
+          str1=str+thermo%fpl
           Call nst_h1_scl(1,hstep,degfre,degrot,thermo%pmass,thermo%tai,volm,  &
              thermo%h_z,str1,stress,strcom,        &
              vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,comm)
@@ -891,9 +893,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
              If (weight(i) > 1.0e-6_wp) Then
                 tmp=hstep/weight(i)
-                vxx(i)=vxx(i)+tmp*(parts(i)%fxx+fxl(i))
-                vyy(i)=vyy(i)+tmp*(parts(i)%fyy+fyl(i))
-                vzz(i)=vzz(i)+tmp*(parts(i)%fzz+fzl(i))
+                vxx(i)=vxx(i)+tmp*(parts(i)%fxx+thermo%fxl(i))
+                vyy(i)=vyy(i)+tmp*(parts(i)%fyy+thermo%fyl(i))
+                vzz(i)=vzz(i)+tmp*(parts(i)%fzz+thermo%fzl(i))
              End If
           End Do
 
@@ -989,18 +991,18 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
                    fmy=fmy+fyt(i)
                    fmz=fmz+fzt(i)
 
-                   fmxl=fmxl+fxl(i)
-                   fmyl=fmyl+fyl(i)
-                   fmzl=fmzl+fzl(i)
+                   fmxl=fmxl+thermo%fxl(i)
+                   fmyl=fmyl+thermo%fyl(i)
+                   fmzl=fmzl+thermo%fzl(i)
                 End If
 
                 tqx=tqx+ggy(krgd)*fzt(i)-ggz(krgd)*fyt(i)
                 tqy=tqy+ggz(krgd)*fxt(i)-ggx(krgd)*fzt(i)
                 tqz=tqz+ggx(krgd)*fyt(i)-ggy(krgd)*fxt(i)
 
-                tqxl=tqxl+ggy(krgd)*fzl(i)-ggz(krgd)*fyl(i)
-                tqyl=tqyl+ggz(krgd)*fxl(i)-ggx(krgd)*fzl(i)
-                tqzl=tqzl+ggx(krgd)*fyl(i)-ggy(krgd)*fxl(i)
+                tqxl=tqxl+ggy(krgd)*thermo%fzl(i)-ggz(krgd)*thermo%fyl(i)
+                tqyl=tqyl+ggz(krgd)*thermo%fxl(i)-ggx(krgd)*thermo%fzl(i)
+                tqzl=tqzl+ggx(krgd)*thermo%fyl(i)-ggy(krgd)*thermo%fxl(i)
              End Do
 
   ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -1196,11 +1198,11 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! scale Langevin random forces
 
              Do i=1,matms
-                fxl(i) = fxl(i)*tmp
-                fyl(i) = fyl(i)*tmp
-                fzl(i) = fzl(i)*tmp
+                thermo%fxl(i) = thermo%fxl(i)*tmp
+                thermo%fyl(i) = thermo%fyl(i)*tmp
+                thermo%fzl(i) = thermo%fzl(i)*tmp
              End Do
-             fpl = fpl*tmp
+             thermo%fpl = thermo%fpl*tmp
 
   ! restore initial conditions
 
@@ -1263,29 +1265,30 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! Generate Langevin forces for particles and
   ! Langevin tensor force for barostat piston
 
-       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,fxl,fyl,fzl,cshell,parts,seed)
+       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,parts,seed)
        If (rigid%share)Then
          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-           rigid%map_shared,fxl,fyl,fzl,domain,comm)
+           rigid%map_shared,thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
        EndIf
 
-       fpl=0.0_wp
-       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,fpl(1),fpl(2),fpl(3),fpl(4),fpl(5),fpl(6))
+       thermo%fpl=0.0_wp
+       Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,thermo%fpl(1),thermo%fpl(2),&
+         thermo%fpl(3),thermo%fpl(4),thermo%fpl(5),thermo%fpl(6))
        tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
-       fpl(1:6)=fpl(1:6)*tmp
-       fpl(9)=fpl(4)                                 ! Distribute independent
-       fpl(4)=fpl(2) ; fpl(7)=fpl(3) ; fpl(8)=fpl(6) ! Symmetrise
+       thermo%fpl(1:6)=thermo%fpl(1:6)*tmp
+       thermo%fpl(9)=thermo%fpl(4)                                 ! Distribute independent
+       thermo%fpl(4)=thermo%fpl(2) ; thermo%fpl(7)=thermo%fpl(3) ; thermo%fpl(8)=thermo%fpl(6) ! Symmetrise
 
-  ! update velocity of FP
+       ! update velocity of FP
 
        Do j=1,nfree
           i=lstfre(j)
 
           If (weight(i) > 1.0e-6_wp) Then
              tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*(parts(i)%fxx+fxl(i))
-             vyy(i)=vyy(i)+tmp*(parts(i)%fyy+fyl(i))
-             vzz(i)=vzz(i)+tmp*(parts(i)%fzz+fzl(i))
+             vxx(i)=vxx(i)+tmp*(parts(i)%fxx+thermo%fxl(i))
+             vyy(i)=vyy(i)+tmp*(parts(i)%fyy+thermo%fyl(i))
+             vzz(i)=vzz(i)+tmp*(parts(i)%fzz+thermo%fzl(i))
           End If
        End Do
 
@@ -1298,7 +1301,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! Get RB COM stress and virial
 
-       Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,parts,rigid,comm,fxl,fyl,fzl)
+       Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,parts,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
        vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   ! update velocity of RBs
@@ -1331,18 +1334,18 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
                    fmy=fmy+parts(i)%fyy
                    fmz=fmz+parts(i)%fzz
 
-                   fmxl=fmxl+fxl(i)
-                   fmyl=fmyl+fyl(i)
-                   fmzl=fmzl+fzl(i)
+                   fmxl=fmxl+thermo%fxl(i)
+                   fmyl=fmyl+thermo%fyl(i)
+                   fmzl=fmzl+thermo%fzl(i)
                 End If
 
                 tqx=tqx+ggy(krgd)*parts(i)%fzz-ggz(krgd)*parts(i)%fyy
                 tqy=tqy+ggz(krgd)*parts(i)%fxx-ggx(krgd)*parts(i)%fzz
                 tqz=tqz+ggx(krgd)*parts(i)%fyy-ggy(krgd)*parts(i)%fxx
 
-                tqxl=tqxl+ggy(krgd)*fzl(i)-ggz(krgd)*fyl(i)
-                tqyl=tqyl+ggz(krgd)*fxl(i)-ggx(krgd)*fzl(i)
-                tqzl=tqzl+ggx(krgd)*fyl(i)-ggy(krgd)*fxl(i)
+                tqxl=tqxl+ggy(krgd)*thermo%fzl(i)-ggz(krgd)*thermo%fyl(i)
+                tqyl=tqyl+ggz(krgd)*thermo%fxl(i)-ggx(krgd)*thermo%fzl(i)
+                tqzl=tqzl+ggx(krgd)*thermo%fyl(i)-ggy(krgd)*thermo%fxl(i)
              End Do
 
   ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -1501,7 +1504,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply nst_h1_scl barostat - 1/2 step
   ! augment str to include the random tensorial force on the barostat
 
-       str1=str+fpl
+       str1=str+thermo%fpl
        Call nst_h1_scl &
              (1,hstep,degfre,degrot,thermo%pmass,thermo%tai,volm,  &
              thermo%h_z,str1,stress,strcom,        &
