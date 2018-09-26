@@ -564,21 +564,14 @@ Subroutine get_line(safe,ifile,record,comm)
 
     Real( Kind = wp ), Intent( In    ) :: r
 
-    Logical               , Save :: newjob = .true.
-    Character( Len = 40  ), Save :: forma  = ' '
-    Integer               , Save :: k      = 0
+    Character( Len = 40  ):: forma  
+    Integer               :: k     
 
     Character( Len = 100 ) :: word
     Integer                :: e_position,word_end,i
 
-    If (newjob) Then
-      newjob = .false.
-
-      k = 64/4 - 1! Bit_Size(0.0_wp)/4 - 1
-
-      Write(forma ,10) k+10,k
-      10     Format('(0p,e',i0,'.',i0,')')
-    End If
+    k = 64/4 - 1! Bit_Size(0.0_wp)/4 - 1
+    Write(forma ,'("(0p,e",i0,".",i0,")")') k+10,k
 
     word = ' '
     Write(word,forma) r
