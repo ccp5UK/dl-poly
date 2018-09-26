@@ -17,6 +17,11 @@ Module numerics
     Logical, Public :: defined = .false.
     !> The seed
     Integer( Kind = wi ), Public :: seed(1:3)
+
+    !> state variables for uni random number generator. In long run one wants to move to a better random number generaot
+    Logical :: newjob = .true.
+    Integer :: ir,jr
+    Real( Kind = wp ) :: c,cd,cm,u(1:97)
   Contains
     Private
     Procedure, Public :: init => init_seed
@@ -190,35 +195,32 @@ Function uni(seed,comm)
   Type(comms_type), Intent( In ) :: comm
   Real( Kind = wp )       :: uni
 
-  Logical,           Save :: newjob = .true.
-  Integer,           Save :: ir,jr
   Integer                 :: i,ii,ij,j,jj,k,kl,l,m
-  Real( Kind = wp ), Save :: c,cd,cm,u(1:97)
   Real( Kind = wp )       :: s,t
 
 ! initialise parameters u,c,cd,cm
 
-  If (newjob .or. seed%defined) Then
-     newjob = .false.
+  If (seed%newjob .or. seed%defined) Then
+    seed%newjob = .false.
 
 ! If no seeding is specified then default to DL_POLY scheme
 
-     If (seed%defined) Then
+    If (seed%defined) Then
 
-        seed%defined=.false.
+      seed%defined=.false.
 
 ! First random number seed must be between 0 and 31328
 ! Second seed must have a value between 0 and 30081
 
-        ij=Mod(Abs(seed%seed(1)+comm%idnode),31328)
-        i = Mod(ij/177,177) + 2;
-        j = Mod(ij,177)     + 2;
+      ij=Mod(Abs(seed%seed(1)+comm%idnode),31328)
+      i = Mod(ij/177,177) + 2;
+      j = Mod(ij,177)     + 2;
 
-        kl=Mod(Abs(seed%seed(2)+comm%idnode),30081)
-        k = Mod(kl/169,178) + 1
-        l = Mod(kl,169)
+      kl=Mod(Abs(seed%seed(2)+comm%idnode),30081)
+      k = Mod(kl/169,178) + 1
+      l = Mod(kl,169)
 
-     Else
+    Else
 
 ! initial values of i,j,k must be in range 1 to 178 (not all 1)
 ! initial value of l must be in range 0 to 168
@@ -230,8 +232,8 @@ Function uni(seed,comm)
 
      End If
 
-     ir = 97
-     jr = 33
+     seed%ir = 97
+     seed%jr = 33
 
      Do ii=1,97
 
@@ -250,38 +252,38 @@ Function uni(seed,comm)
 
         End Do
 
-        u(ii)=s
+        seed%u(ii)=s
 
-     End Do
+      End Do
 
-     c  =   362436.0_wp/16777216.0_wp
-     cd =  7654321.0_wp/16777216.0_wp
-     cm = 16777213.0_wp/16777216.0_wp
+      seed%c  =   362436.0_wp/16777216.0_wp
+      seed%cd =  7654321.0_wp/16777216.0_wp
+      seed%cm = 16777213.0_wp/16777216.0_wp
 
-  End If
+    End If
 
 ! calculate random number
 
-  uni=u(ir)-u(jr)
-  If (uni < 0.0_wp) uni = uni + 1.0_wp
+    uni=seed%u(seed%ir)-seed%u(seed%jr)
+    If (uni < 0.0_wp) uni = uni + 1.0_wp
 
-  u(ir)=uni
+    seed%u(seed%ir)=uni
 
-  ir=ir-1
-  If (ir == 0) ir = 97
+    seed%ir=seed%ir-1
+    If (seed%ir == 0) seed%ir = 97
 
-  jr=jr-1
-  If (jr == 0) jr = 97
+    seed%jr=seed%jr-1
+    If (seed%jr == 0) seed%jr = 97
 
-  c = c-cd
-  If (c < 0.0_wp) c = c+cm
+    seed%c = seed%c-seed%cd
+    If (seed%c < 0.0_wp) seed%c = seed%c+seed%cm
 
-  uni = uni-c
-  If (uni < 0.0_wp) uni = uni + 1.0_wp
+    uni = uni-seed%c
+    If (uni < 0.0_wp) uni = uni + 1.0_wp
 
-End Function uni
+  End Function uni
 
-Function sarurnd(seed, seeda, seedb, seedc)
+  Function sarurnd(seed, seeda, seedb, seedc)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
