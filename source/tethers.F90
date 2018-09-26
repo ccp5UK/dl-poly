@@ -15,7 +15,6 @@ Module tethers
   Use configuration,     Only : configuration_type
   Use particle,   Only : corePart
   Use statistics, Only : stats_type
-  Use setup, Only : nrite
   Use errors_warnings, Only : error, warning
   Use numerics, Only : images,local_index
   Implicit None

@@ -13,7 +13,6 @@ Module development
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, only : wp
-  Use setup, Only : nread, control
 #ifdef OLDMPI
   Use comms, Only : mpi_ver,mpi_subver, comms_type,gcheck, gtime, gsync
 #else
@@ -21,6 +20,7 @@ Module development
     gtime, gsync
 #endif
   Use parse, Only : get_line,get_word,lower_case,clean_string
+  Use filename, Only : file_type,FILE_CONTROL
   Use errors_warnings, Only : info
 
   Implicit None
@@ -79,7 +79,7 @@ Module development
 
 Contains
 
-  Subroutine scan_development(devel,comm)
+  Subroutine scan_development(devel,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -92,6 +92,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( development_type ), Intent( InOut ) :: devel
+    Type( file_type ), Intent( InOut ) :: files(:)
     Type( comms_type ), Intent( InOut ) :: comm
     Logical                :: carry,safe
     Character( Len = 200 ) :: record
@@ -103,21 +104,23 @@ Contains
 
     ! Open the simulation input file
 
-    If (comm%idnode == 0) Inquire(File=Trim(control), Exist=safe)
+    If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
     Call gcheck(comm,safe,"enforce")
     If (.not.safe) Then
       Return
     Else
-      If (comm%idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
+      If (comm%idnode == 0) Then
+        Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
+      End If
     End If
 
-    Call get_line(safe,nread,record,comm)
+    Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
     If (safe) Then
 
       carry = .true.
       Do While (carry)
 
-        Call get_line(safe,nread,record,comm)
+        Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
         If (.not.safe) Exit
 
         Call lower_case(record)
@@ -145,7 +148,7 @@ Contains
 
       End Do
     End If
-    If (comm%idnode == 0) Close(Unit=nread)
+    If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
 
   End Subroutine scan_development
 

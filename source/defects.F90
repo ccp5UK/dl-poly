@@ -10,8 +10,7 @@ Module defects
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,             Only : wp,li, wi
-  Use setup,             Only : mxatms,mxbfxp,ndefdt, &
-                                nrefdt,config_name,half_minus, zero_plus
+  Use setup,             Only : mxatms,mxbfxp,ndefdt,nrefdt,half_minus,zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
                                 gsend,grecv,gwait,girecv,gscatter,gscatterv, &
@@ -54,6 +53,7 @@ Module defects
   Use errors_warnings,   Only : error,warning
   Use neighbours,        Only : neighbours_type,defects_link_cells
   Use core_shell,        Only : core_shell_type
+  Use filename, Only : file_type,FILE_CONFIG
 
   Implicit None
 
@@ -397,7 +397,7 @@ End Subroutine defects_reference_export
 
 !> defects_reference_read
 
-Subroutine defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,comm)
+Subroutine defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -417,6 +417,7 @@ Subroutine defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,comm
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( domains_type ), Intent( In    ) :: domain
   Type( configuration_type ), Intent( InOut ) :: config
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Logical                :: l_ind = .true.  , &
@@ -466,9 +467,9 @@ Subroutine defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,comm
      Else                ! Use data from CONFIG
         Call warning(320,0.0_wp,0.0_wp,0.0_wp)
         If (io_read /= IO_READ_NETCDF) Then
-           fname=Trim(config_name)
+           fname=files(FILE_CONFIG)%filename
         Else
-           fname=Trim(config_name)//'.nc'
+           fname=Trim(files(FILE_CONFIG)%filename)//'.nc'
         End If
         megref=config%natms
         Call gsum(comm,megref)
@@ -883,7 +884,7 @@ Subroutine defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,comm
 ! Remove frozen sites so they don't come up as vacancies
 ! only when dealing with CONFIG
 
-  If (Trim(fname) /= Trim(config_name)) Then
+  If (Trim(fname) /= Trim(files(FILE_CONFIG)%filename)) Then
 
      nsite=0
      msite=0
@@ -2148,7 +2149,7 @@ End Subroutine defects_reference_write
 
 !> defects_write
 Subroutine defects_write(keyres,ensemble,nstep,tstep,time,io,cshell,dfcts,neigh, &
-    sites,netcdf,domain,config,comm)
+    sites,netcdf,domain,config,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2170,6 +2171,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,io,cshell,dfcts,neigh,
   Type( core_shell_type ), Intent( In    ) :: cshell
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( domains_type ), Intent( In    ) :: domain
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type)   , Intent( InOut ) :: comm
   Type( configuration_type ), Intent( InOut ) :: config
 
@@ -2237,7 +2239,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,io,cshell,dfcts,neigh,
 
 ! Build lattice sites list from REFERENCE
      Call allocate_defects_arrays(dfcts)
-     Call defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,comm)
+     Call defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,files,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set

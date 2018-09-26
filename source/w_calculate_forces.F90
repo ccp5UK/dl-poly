@@ -133,7 +133,8 @@
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
 
         If (cshell%keyshl == SHELL_RELAXED) Then
-          Call core_shell_relax(l_str,relaxed_shl,rdf%l_collect,rlx_tol,stat%stpcfg,cshell,stat,domain,config,comm)
+          Call core_shell_relax(l_str,relaxed_shl,rdf%l_collect,rlx_tol, &
+            stat%stpcfg,cshell,stat,domain,config,files,comm)
         End If
 
         If (.not.relaxed_shl) Go To 200 ! Shells relaxation takes priority over minimisation
@@ -142,12 +143,12 @@
           If      (minim%freq == 0 .and. nstep == 0) Then
             Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
               rdf%l_collect,megatm,tstep,stat%stpcfg,io,stat,pmf,cons, &
-              netcdf,minim,rigid,domain,config,comm)
+              netcdf,minim,rigid,domain,config,files,comm)
           Else If (minim%freq >  0 .and. nstep >  0) Then
             If (Mod(nstep-nsteql,minim%freq) == 0) Then
               Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
                 rdf%l_collect,megatm,tstep,stat%stpcfg,io,stat,pmf,cons, &
-                netcdf,minim,rigid,domain,config,comm)
+                netcdf,minim,rigid,domain,config,files,comm)
             End If
           End If
         End If

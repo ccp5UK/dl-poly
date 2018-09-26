@@ -4,22 +4,22 @@
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
 If (ltraj) Then
-  Call trajectory_write(keyres,megatm,nstep,tstep,time, &
-    io,stat%rsd,netcdf,config,traj,comm)
+  Call trajectory_write(keyres,megatm,nstep,tstep,time,io,stat%rsd,netcdf,config, &
+    traj,files,comm)
 End If
 
 If(dfcts(1)%ldef) Then
   Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,io,cshell,dfcts(1), &
-    neigh,sites,netcdf,domain,config,comm)
+    neigh,sites,netcdf,domain,config,files,comm)
   If (dfcts(2)%ldef) Then
     Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,io,cshell,dfcts(2), &
-      neigh,sites,netcdf,domain,config,comm)
+      neigh,sites,netcdf,domain,config,files,comm)
   End If
 End If
 
 If (msd_data%l_msd) Then
   Call msd_write(config,keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site, &
-    io,msd_data,comm)
+    io,msd_data,files,comm)
 End If
 
 If (rsdc%lrsd) Then

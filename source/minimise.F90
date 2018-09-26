@@ -11,8 +11,7 @@ Module minimise
 
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type,gsum,gmax
-  Use setup,           Only : engunit,nrite,output, &
-                              zero_plus,mxatms
+  Use setup,           Only : engunit,zero_plus,mxatms
   Use configuration,   Only : configuration_type, &
                               write_config,getcom
   Use particle,        Only : corePart
@@ -31,6 +30,7 @@ Module minimise
   Use netcdf_wrap, Only : netcdf_param
   Use domains, Only : domains_type
   Use io, Only : io_type
+  Use filename, Only : file_type,FILE_OUTPUT
   Implicit None
 
   Private
@@ -124,7 +124,7 @@ Contains
   End Subroutine deallocate_minimise_arrays
 
   Subroutine minimise_relax(l_str,rdf_collect,megatm,tstep,stpcfg,io,stats, &
-    pmf,cons,netcdf,minim,rigid,domain,config,comm)
+      pmf,cons,netcdf,minim,rigid,domain,config,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -144,24 +144,26 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( io_type ), Intent( InOut ) :: io
-    Logical,           Intent( In    ) :: l_str
-    Logical,           Intent( InOut ) :: rdf_collect
-    Integer,           Intent( In    ) :: megatm
-    Real( Kind = wp ), Intent( In    ) :: tstep,stpcfg
-    Type( stats_type ), Intent(InOut) :: stats
-    Type( pmf_type ), Intent( InOut ) :: pmf
-    Type( constraints_type ), Intent(InOut) :: cons
-    Type( netcdf_param ), Intent( In    ) :: netcdf
-    Type( minimise_type ), Intent( InOut ) :: minim
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( comms_type ), Intent( InOut ) :: comm
-    Type( configuration_type ),   Intent( InOut ) :: config
+  Type( io_type ), Intent( InOut ) :: io
+  Logical,           Intent( In    ) :: l_str
+  Logical,           Intent( InOut ) :: rdf_collect
+  Integer,           Intent( In    ) :: megatm
+  Real( Kind = wp ), Intent( In    ) :: tstep,stpcfg
+  Type( stats_type ), Intent(InOut) :: stats
+  Type( pmf_type ), Intent( InOut ) :: pmf
+  Type( constraints_type ), Intent(InOut) :: cons
+  Type( netcdf_param ), Intent( In    ) :: netcdf
+  Type( minimise_type ), Intent( InOut ) :: minim
+  Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( domains_type ), Intent( In    ) :: domain
+  Type( comms_type ), Intent( InOut ) :: comm
+  Type( configuration_type ),   Intent( InOut ) :: config
+  Type( file_type ), Intent( InOut ) :: files(:)
 
+  Integer                    :: fail(1:8),i,j,levcfg
+  Character( Len = 6 )       :: name
+  Type( file_type ) :: minfile
 
-    Integer                    :: fail(1:8),i,j,levcfg
-    Character( Len = 6 )       :: name
 ! OUTPUT existence
 
     Logical               :: l_out
@@ -548,12 +550,12 @@ Contains
       Call info(message,.true.)
 
       If (comm%idnode == 0) Then
-        Inquire(File=Trim(output), Exist=l_out, Position=c_out)
+        Inquire(File=files(FILE_OUTPUT)%filename, Exist=l_out, Position=c_out)
         Call strip_blanks(c_out)
         Call lower_case(c_out)
         If (l_out .and. c_out(1:6) == 'append') Then
-          Close(Unit=nrite)
-          Open(Unit=nrite, File=Trim(output), Position='append')
+          Close(unit=files(FILE_OUTPUT)%unit_no)
+          Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Position='append')
         End If
       End If
     End If
@@ -606,10 +608,11 @@ Contains
      If (minim%eng < minim%eng_min) Then
        minim%eng_min=minim%eng
 
-       name = 'CFGMIN' ! file name
-       levcfg = 0      ! define level of information in file
+        Call minfile%init('CFGMIN')
+        levcfg = 0      ! define level of information in file
 
-       Call write_config(config,name,levcfg,megatm,i-1,minim%eng_min/engunit,io,minim%eng_0/engunit,netcdf,comm)
+        Call write_config(config,minfile,levcfg,megatm,i-1,minim%eng_min/engunit, &
+          io,minim%eng_0/engunit,netcdf,comm)
      End If
 
 ! setup new quaternions

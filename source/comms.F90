@@ -10,7 +10,7 @@ Module comms
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp,sp,dp,qp
+  Use kinds, Only : wp,sp,dp,qp,si
   Use particle, Only : corePart
   Use iso_fortran_env, Only : CHARACTER_STORAGE_SIZE
 #ifdef SERIAL
@@ -141,6 +141,7 @@ Module comms
   Interface gbcast
     Module procedure gbcast_integer
     Module procedure gbcast_integer_scalar
+    Module procedure gbcast_integer_scalar_16
     Module procedure gbcast_real
     Module procedure gbcast_real_scalar
     Module procedure gbcast_char
@@ -985,6 +986,26 @@ Contains
     Call MPI_BCAST(s, 1, MPI_INTEGER, root, comm%comm, comm%ierr)
 
   End Subroutine gbcast_integer_scalar
+
+  Subroutine gbcast_integer_scalar_16(comm,s,root)
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 broadcast an integer array subroutine
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena may 2018
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Integer(Kind=si), Intent( InOut )                           :: s
+    Integer, Intent( In    )                           :: root
+    Type(comms_type), Intent (InOut)                   :: comm
+
+
+    If (comm%mxnode == 1) Return
+
+    Call MPI_BCAST(s, 1, MPI_INTEGER, root, comm%comm, comm%ierr)
+
+  End Subroutine gbcast_integer_scalar_16
 
   Subroutine gbcast_real(comm,vec,root)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

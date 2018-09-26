@@ -22,6 +22,7 @@ ffield.F90
 )
 
 set(dlpoly_CORE_SRCS
+  filename.F90
   timer.F90
   external_field.F90
   stochastic_boundary.F90

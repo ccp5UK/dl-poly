@@ -12,7 +12,7 @@ Module dpd
   Use kinds, Only : wp,wi
   Use comms,        Only : comms_type,gsum,gcheck,gmax,DpdVExp_tag,wp_mpi, &
                            gsend,gwait,girecv
-  Use setup,        Only : nrite,mxatdm,mxatms,mxbfxp
+  Use setup,        Only : mxatdm,mxatms,mxbfxp
   Use configuration,       Only : configuration_type
   Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type

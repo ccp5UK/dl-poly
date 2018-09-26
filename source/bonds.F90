@@ -13,8 +13,8 @@ Module bonds
 
   Use kinds,           Only : wp,wi
   Use setup,           Only : mxtmls,mxatdm, &
-                              fourpi,boltz,delr_max,nrite,npdfdt,npdgdt, &
-                              engunit,zero_plus,r4pie0,ntable,delr_max,nrite, &
+                              fourpi,boltz,delr_max,npdfdt,npdgdt, &
+                              engunit,zero_plus,r4pie0,ntable,delr_max, &
                               zero_plus,engunit
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
   Use configuration,   Only : configuration_type

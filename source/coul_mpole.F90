@@ -12,8 +12,7 @@ Module coul_mpole
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type
-  Use setup, Only : mxatdm,mxatms, &
-                            r4pie0, zero_plus, nrite, sqrpi
+  Use setup, Only : mxatdm,mxatms,r4pie0,zero_plus,sqrpi
   Use configuration, Only : configuration_type
   Use particle,  Only : corePart
   Use mpole, Only : mpole_type

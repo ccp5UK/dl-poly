@@ -11,7 +11,7 @@ Module statistics
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,wi,li
-  Use setup, Only : mxbfss,nstats,statis,zero_plus,&
+  Use setup, Only : mxbfss,zero_plus,&
     prsunt,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
     eu_kjpm,mxatyp,pi,mxatms
 
@@ -28,6 +28,7 @@ Module statistics
   Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
   Use thermostat, Only : thermostat_type,CONSTRAINT_NONE,CONSTRAINT_SURFACE_TENSION, &
     CONSTRAINT_SEMI_ORTHORHOMBIC
+  Use filename, Only : file_type, FILE_STATS
 
   Implicit None
   Type, Public :: stats_type
@@ -196,13 +197,9 @@ Contains
 
   End Subroutine deallocate_statistics_connect
 
-  Subroutine statistics_collect           &
-           (config,lsim,leql,nsteql,lmsd, &
-           keyres,                 &
-           degfre,degshl,degrot,          &
-           nstep,tstep,time,tmst,         &
-           mxatdm,max_grid_rdf,stats,thermo,&
-           zdensity,sites,comm)
+  Subroutine statistics_collect(config,lsim,leql,nsteql,lmsd,keyres,degfre,degshl, &
+      degrot,nstep,tstep,time,tmst,mxatdm,max_grid_rdf,stats,thermo,zdensity, &
+      sites,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -216,23 +213,20 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( In    ) :: lsim,leql,lmsd
-  Integer,           Intent( In    ) :: nsteql,keyres, &
-                                        nstep
-
+    Logical,           Intent( In    ) :: lsim,leql,lmsd
+    Integer,           Intent( In    ) :: nsteql,keyres,nstep
     Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
-
     Real( Kind = wp ), Intent( In    ) :: tstep,time
-
-  Real( Kind = wp ), Intent( InOut ) :: tmst
-  Integer( Kind = wi), Intent( In    ) :: mxatdm
-  Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
-  Type( stats_type ), Intent( InOut ) :: stats
-  Type( thermostat_type ), Intent( In    ) :: thermo
-  Type( z_density_type ), Intent( InOut ) :: zdensity
-  Type( site_type ), Intent( In    ) :: sites
-  Type( configuration_type ), Intent( InOut ) :: config
-  Type( comms_type ), Intent( InOut ) :: comm
+    Real( Kind = wp ), Intent( InOut ) :: tmst
+    Integer( Kind = wi), Intent( In    ) :: mxatdm
+    Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
+    Type( stats_type ), Intent( InOut ) :: stats
+    Type( thermostat_type ), Intent( In    ) :: thermo
+    Type( z_density_type ), Intent( InOut ) :: zdensity
+    Type( site_type ), Intent( In    ) :: sites
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( comms_type ), Intent( InOut ) :: comm
 
 
     Logical                 :: l_tmp
@@ -260,26 +254,26 @@ Contains
 ! If the keyres=1 is the file old (does it exist)?
 
       l_tmp=.false.
-      If (keyres == 1) Inquire(File=Trim(statis), Exist=l_tmp)
+      If (keyres == 1) Inquire(File=files(FILE_STATS)%filename, Exist=l_tmp)
 
       If (.not.l_tmp) Then
-        Open(Unit=nstats, File=Trim(statis), Status='replace')
+        Open(Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Status='replace')
         stats%statis_file_open = .true.
 
-        Write(nstats,'(a)') config%cfgname
+        Write(files(FILE_STATS)%unit_no,'(a)') config%cfgname
 
         If      (Abs(engunit - eu_ev)   <= zero_plus) Then
-          Write(nstats,'(1x,a)') 'ENERGY UNITS = electron Volts'
+          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = electron Volts'
         Else If (Abs(engunit - eu_kcpm) <= zero_plus) Then
-          Write(nstats,'(1x,a)') 'ENERGY UNITS = kcal/mol'
+          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = kcal/mol'
         Else If (Abs(engunit - eu_kjpm) <= zero_plus) Then
-          Write(nstats,'(1x,a)') 'ENERGY UNITS = kjoule/mol'
+          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = kjoule/mol'
         Else If (Abs(engunit - 1.0_wp)  <= zero_plus) Then
-          Write(nstats,'(1x,a)') 'ENERGY UNITS = DL_POLY Internal UNITS (10 J/mol)'
+          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = DL_POLY Internal UNITS (10 J/mol)'
         Else If (Abs(engunit - boltz)   <= zero_plus) Then
-          Write(nstats,'(1x,a)') 'ENERGY UNITS = Kelvin/Boltzmann'
+          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = Kelvin/Boltzmann'
         Else ! once in a blue moon
-          Write(nstats,'(1x,a)') 'ENERGY UNITS = DPD (Unknown)'
+          Write(files(FILE_STATS)%unit_no,'(1x,a)') 'ENERGY UNITS = DPD (Unknown)'
         End If
 
       End If
@@ -496,15 +490,15 @@ Contains
 
     If (comm%idnode == 0 .and. Mod(nstep,stats%intsta) == 0) Then
       If (.not. stats%statis_file_open) Then
-        Open(Unit=nstats, File=Trim(STATIS), Position='append')
+        Open(Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Position='append')
         stats%statis_file_open = .true.
       End If
 
       If (lmsd) Then
-        Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
+        Write(files(FILE_STATS)%unit_no,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
           nstep,time,iadd+1-2*mxatdm,stats%stpval(1:  27),stats%stpval(0),stats%stpval(28+2*mxatdm:iadd)
       Else
-        Write(nstats,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
+        Write(files(FILE_STATS)%unit_no,'(i10,1p,e14.6,0p,i10,/,(1p,5e14.6))') &
           nstep,time,iadd+1,         stats%stpval(1:  27),stats%stpval(0),stats%stpval(28         :iadd)
       End If
 
@@ -663,7 +657,7 @@ Subroutine statistics_connect_frames(config,megatm,mxatdm,lmsd,stats,domain,comm
 
 
 ! Search for matches
-    
+
     stats%found0 = 0
     If (stats%natms0 > 0) Then
        i0 = 1
@@ -1398,7 +1392,7 @@ Subroutine statistics_result                                    &
   Type( greenkubo_type ), Intent( In    ) :: green
   Type( site_type ), Intent( In    ) :: sites
   Type( comms_type ), Intent( InOut ) :: comm
-    
+
   Logical           :: check
   Integer           :: i,iadd
   Real( Kind = wp ) :: avvol,dc,srmsd,timelp,tmp,h_z,tx,ty,temp

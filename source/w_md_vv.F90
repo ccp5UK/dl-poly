@@ -65,7 +65,7 @@
           newjob = .false.
 
            If (keyres /= 1) Then
-             Call w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj)
+             Call w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj,files)
            End If
 
            If (nstep == 0 .and. nstep == nstrun) Go To 1000
@@ -111,7 +111,7 @@
 
     If (nstep == 0) Then
       Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
-        sites,rdf,domain,flw)
+        sites,rdf,domain,flw,files)
     End If
 
 ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
@@ -141,18 +141,19 @@
 ! Calculate physical quantities, collect statistics and report regularly
 
         Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
-          sites,rdf,domain,flw)
+          sites,rdf,domain,flw,files)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj)
+        Call w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj,files)
 
 ! Save restart data in event of system crash
 
-        If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
-           Call system_revive                                 &
-          (neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
+        If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) Then
+          Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
+            stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf, &
+            netcdf,config,files,comm)
+        End If
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 

@@ -11,12 +11,12 @@
               tmr%elapsed/Real( nstep , wp) ) ) Then
 
            If (comm%idnode == 0) Then
-              Inquire(File=Trim(output), Exist=l_out, Position=c_out)
+              Inquire(File=files(FILE_OUTPUT)%filename, Exist=l_out, Position=c_out)
               Call strip_blanks(c_out)
               Call lower_case(c_out)
               If (l_out .and. c_out(1:6) == 'append') Then
-                 Close(Unit=nrite)
-                 Open(Unit=nrite, File=Trim(output), Position='append')
+                 Close(unit=files(FILE_OUTPUT)%unit_no)
+                 Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Position='append')
               End If
            End If
 

@@ -12,7 +12,7 @@ Module inversions
 
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum,gsync,gcheck,gbcast
-  Use setup, Only : mxtmls,mxatdm,pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
+  Use setup, Only : mxtmls,mxatdm,pi,boltz,delth_max,npdfdt,npdgdt, &
                     engunit,zero_plus,ntable
   Use site, Only : site_type
   Use configuration,     Only : configuration_type

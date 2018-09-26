@@ -7,7 +7,7 @@
 Module neighbours
   Use kinds, Only : wp,wi,li
   Use comms,   Only : comms_type,gcheck,gmax,gsum
-  Use setup,   Only : nrite,mxatms,half_plus
+  Use setup,   Only : mxatms,half_plus
   Use domains,       Only : domains_type
   Use configuration,  Only : configuration_type
   Use core_shell,    Only : core_shell_type
