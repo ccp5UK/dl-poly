@@ -22,8 +22,8 @@ If (msd_data%l_msd) Then
     msd_data,comm)
 End If
 
-If (lrsd) Then
-  Call rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,stat%rsd,parts,comm)
+If (rsdc%lrsd) Then
+  Call rsd_write(keyres,nstep,tstep,rsdc,time,cshell,stat%rsd,parts,comm)
 End If
 
 If (green%samp > 0) Then

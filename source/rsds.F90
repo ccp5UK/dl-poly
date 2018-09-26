@@ -1,5 +1,5 @@
 Module rsds
-  Use kinds, Only : wp, li
+  Use kinds, Only : wp, li, wi
   Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync,gcheck, &
                     gsend,grecv,offset_kind,comm_self,mode_wronly
   Use setup
@@ -27,10 +27,23 @@ Module rsds
   Use errors_warnings, Only : error
   Implicit None
 
+  Private
+
+  Type, Public :: rsd_type
+    Private 
+    Logical           :: newjob = .true.
+    Integer(Kind=li)  :: rec    = 0_li , &
+      frm    = 0_li
+    Integer( Kind=wi ),Public ::  nsrsd,isrsd
+    Real( Kind=wp ),Public :: rrsd
+    Logical, Public :: lrsd
+  End Type
+  Public :: rsd_write
+
 Contains
 
 
-Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,comm)
+  Subroutine rsd_write(keyres,nstep,tstep,rsdc,time,cshell,rsd,parts,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -42,58 +55,56 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,            Intent( In    ) :: keyres,nsrsd,isrsd,nstep
-  Real( Kind = wp ),  Intent( In    ) :: rrsd,tstep,time
-  Type( core_shell_type ), Intent( InOut ) :: cshell
-  Real( Kind = wp ),  Intent( InOut ) :: rsd(:)
-  Type( corePart ),   Intent( InOut ) :: parts(:)
-  Type( comms_type ), Intent( InOut ) :: comm
+    Integer,            Intent( In    ) :: keyres,nstep
+    Real( Kind = wp ),  Intent( In    ) :: tstep,time
+    Type( core_shell_type ), Intent( InOut ) :: cshell
+    Type( rsd_type ), Intent( InOut ) :: rsdc
+    Real( Kind = wp ),  Intent( InOut ) :: rsd(:)
+    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( comms_type ), Intent( InOut ) :: comm
 
-  Integer, Parameter :: recsz = 73 ! default record size
+    Integer, Parameter :: recsz = 73 ! default record size
 
-  Logical,           Save :: newjob = .true.
-  Integer(Kind=li),  Save :: rec    = 0_li , &
-                             frm    = 0_li
 
-  Logical                 :: safe,lexist,l_tmp,ready
-  Character( Len = 40 )   :: word
-  Integer                 :: fail(1:2),i,j,k,n,megn,jdnode,jatms
-  Real( Kind = wp )       :: buffer(1:2)
+    Logical                 :: safe,lexist,l_tmp,ready
+    Character( Len = 40 )   :: word
+    Integer                 :: fail(1:2),i,j,k,n,megn,jdnode,jatms
+    Real( Kind = wp )       :: buffer(1:2)
 
 ! Some parameters and variables needed by io interfaces
 
-  Integer                           :: fh, io_write, batsz
-  Integer( Kind = offset_kind ) :: rec_mpi_io
-  Character( Len = recsz )          :: record
-  Character                         :: lf
+    Integer                           :: fh, io_write, batsz
+    Integer( Kind = offset_kind ) :: rec_mpi_io
+    Character( Len = recsz )          :: record
+    Character                         :: lf
 
-  Character( Len = 8 ), Dimension( : ),    Allocatable :: nam
-  Integer,              Dimension( : ),    Allocatable :: ind
-  Real( Kind = wp )   , Dimension( : ),    Allocatable :: dr
+    Character( Len = 8 ), Dimension( : ),    Allocatable :: nam
+    Integer,              Dimension( : ),    Allocatable :: ind
+    Real( Kind = wp )   , Dimension( : ),    Allocatable :: dr
 
-  Integer,              Dimension( : ),    Allocatable :: n_n
+    Integer,              Dimension( : ),    Allocatable :: n_n
 
-  Character( Len = 1 ), Dimension( :, : ), Allocatable :: chbat
-  Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
-  Integer,              Dimension( : ),    Allocatable :: iwrk
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
+    Character( Len = 1 ), Dimension( :, : ), Allocatable :: chbat
+    Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
+    Integer,              Dimension( : ),    Allocatable :: iwrk
+    Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
+    Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
 
-  Character( Len = 256 ) :: message
-  If (.not.(nstep >= nsrsd .and. Mod(nstep-nsrsd,isrsd) == 0)) Return
+    Character( Len = 256 ) :: message
+    If (.not.(nstep >= rsdc%nsrsd .and. Mod(nstep-rsdc%nsrsd,rsdc%isrsd) == 0)) Return
 
 ! Get write buffer size and line feed character
 
-  Call io_get_parameters( user_method_write      = io_write )
-  Call io_get_parameters( user_buffer_size_write = batsz    )
+    Call io_get_parameters( user_method_write      = io_write )
+    Call io_get_parameters( user_buffer_size_write = batsz    )
   Call io_get_parameters( user_line_feed         = lf       )
 
 ! netCDF not implemented for RSDDAT.  Switch to DEFAULT temporarily.
 
   If (io_write == IO_WRITE_SORTED_NETCDF) io_write = IO_WRITE_SORTED_MPIIO
 
-  If (newjob) Then
-     newjob = .false.
+  If (rsdc%newjob) Then
+     rsdc%newjob = .false.
 
 ! If the keyres=1, is RSDDAT old (does it exist) and
 ! how many frames and records are in there
@@ -114,11 +125,11 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
         If (comm%idnode == 0) Then
            Open(Unit=nrsddt, File='RSDDAT', Form='formatted', Access='direct', Status='replace', Recl=recsz)
            Write(Unit=nrsddt, Fmt='(a72,a1)',           Rec=1) cfgname(1:72),lf
-           Write(Unit=nrsddt, Fmt='(f11.3,a19,2i21,a1)', Rec=2) rrsd,Repeat(' ',19),frm,rec,lf
+           Write(Unit=nrsddt, Fmt='(f11.3,a19,2i21,a1)', Rec=2) rsdc%rrsd,Repeat(' ',19),rsdc%frm,rsdc%rec,lf
            Close(Unit=nrsddt)
         End If
-        rec=Int(2,li)
-        frm=Int(0,li)
+        rsdc%rec=Int(2,li)
+        rsdc%frm=Int(0,li)
 
 ! Get some sense of it
 
@@ -136,21 +147,21 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
               If (l_tmp) Then
 
                  Read(Unit=nrsddt, Fmt=*, End=20)            ! title record
-                 rec=rec+Int(1,li)
+                 rsdc%rec=rsdc%rec+Int(1,li)
                  Read(Unit=nrsddt, Fmt='(a)', End=20) record ! bookkeeping record
-                 rec=rec+Int(1,li)
+                 rsdc%rec=rsdc%rec+Int(1,li)
 
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  If (word(1:Len_Trim(word)) /= 'timestep') Then
                     Call get_word(record,word) ; Call get_word(record,word)
-                    Call get_word(record,word) ; frm=Nint(word_2_real(word,0.0_wp),li)
-                    Call get_word(record,word) ; rec=Nint(word_2_real(word,0.0_wp),li)
-                    If (frm /= Int(0,li) .and. rec > Int(2,li)) Then
+                    Call get_word(record,word) ; rsdc%frm=Nint(word_2_real(word,0.0_wp),li)
+                    Call get_word(record,word) ; rsdc%rec=Nint(word_2_real(word,0.0_wp),li)
+                    If (rsdc%frm /= Int(0,li) .and. rsdc%rec > Int(2,li)) Then
                        Go To 20 ! New style
                     Else
                        l_tmp=.false. ! TOUGH, old style
-                       rec=Int(2,li)
-                       frm=Int(0,li)
+                       rsdc%rec=Int(2,li)
+                       rsdc%frm=Int(0,li)
                     End If
                  Else
                     safe=.false. ! Overwrite the file, it's junk to me
@@ -160,19 +171,19 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
               Else
 
                  Read(Unit=nrsddt, Fmt=*, End=20)            ! timestep record
-                 rec=rec+Int(1,li)
+                 rsdc%rec=rsdc%rec+Int(1,li)
 
                  Read(Unit=nrsddt, Fmt='(a)', End=20) record ! displacments record
-                 rec=rec+Int(1,li)
+                 rsdc%rec=rsdc%rec+Int(1,li)
 
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  Call get_word(record,word) ; j=Nint(word_2_real(word))
 
                  Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for displacements
                     Read(Unit=nrsddt, Fmt=*, End=20)
-                    rec=rec+Int(1,li)
+                    rsdc%rec=rsdc%rec+Int(1,li)
                  End Do
-                 frm=frm+Int(1,li)
+                 rsdc%frm=rsdc%frm+Int(1,li)
 
               End If
 
@@ -187,18 +198,18 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
         If (.not.safe) Then
            lexist=.false.
 
-           rec=Int(0,li)
-           frm=Int(0,li)
+           rsdc%rec=Int(0,li)
+           rsdc%frm=Int(0,li)
 
            Go To 10
         Else If (comm%mxnode > 1) Then
-           buffer(1)=Real(frm,wp)
-           buffer(2)=Real(rec,wp)
+           buffer(1)=Real(rsdc%frm,wp)
+           buffer(2)=Real(rsdc%rec,wp)
 
            Call gbcast(comm,buffer,0)
 
-           frm=Nint(buffer(1),li)
-           rec=Nint(buffer(2),li)
+           rsdc%frm=Nint(buffer(1),li)
+           rsdc%rec=Nint(buffer(2),li)
         End If
 
      End If
@@ -214,7 +225,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 
   n=0
   Do i=1,natms
-     If (rsd(i) > rrsd .and. cshell%legshl(0,i) >= 0) Then
+     If (rsd(i) > rsdc%rrsd .and. cshell%legshl(0,i) >= 0) Then
         n=n+1
         nam(n)=atmnam(i)
         ind(n)=ltg(i)
@@ -247,14 +258,14 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
   chbat=' '
 
 ! Notes:
-! the MPI-I/O records are numbered from 0 (not 1)
+! the MPI-I/O records are numbersdc%rsdc%rec from 0 (not 1)
 ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
 !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = offset_kind)
+!   both declarsdc%rsdc%rec as: Integer(Kind = offset_kind)
 
 ! Update frame
 
-  frm=frm+Int(1,li)
+  rsdc%frm=rsdc%frm+Int(1,li)
 
   If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
@@ -264,7 +275,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 ! Write header and cell information, where just one node is needed
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)
+     rec_mpi_io=Int(rsdc%rec,offset_kind)
      j=0
      If (comm%idnode == 0) Then
 
@@ -273,7 +284,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
         Call io_open( io_write, comm_self, 'RSDDAT', mode_wronly, fh )
 
         Write(record, Fmt='(a8,i10,2f20.6,i3,f11.3,a1)') &
-           'timestep',nstep,tstep,time,imcon,rrsd,lf
+           'timestep',nstep,tstep,time,imcon,rsdc%rrsd,lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -310,7 +321,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 
 ! Start of file
 
-     rec_mpi_io=Int(rec,offset_kind)+Int(j,offset_kind)+Int(2,offset_kind)*Int(n_n(0),offset_kind)
+     rec_mpi_io=Int(rsdc%rec,offset_kind)+Int(j,offset_kind)+Int(2,offset_kind)*Int(n_n(0),offset_kind)
      j=0
 
      Call io_set_parameters( user_comm = comm%comm )
@@ -341,9 +352,9 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 
 ! Update and save offset pointer
 
-     rec=rec+Int(5,li)+Int(2,li)*Int(megn,li)
+     rsdc%rec=rsdc%rec+Int(5,li)+Int(2,li)*Int(megn,li)
      If (comm%idnode == 0) Then
-        Write(record, Fmt='(f11.3,a19,2i21,a1)') rrsd,Repeat(' ',19),frm,rec,lf
+        Write(record, Fmt='(f11.3,a19,2i21,a1)') rsdc%rrsd,Repeat(' ',19),rsdc%frm,rsdc%rec,lf
         Call io_write_record( fh, Int(1,offset_kind), record )
      End If
 
@@ -370,7 +381,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 ! Accumulate header
 
         Write(record, Fmt='(a8,i10,2f20.6,i3,f11.3,a1)') &
-           'timestep',nstep,tstep,time,imcon,rrsd,lf
+           'timestep',nstep,tstep,time,imcon,rsdc%rrsd,lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -393,8 +404,8 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 
 ! Dump header and update start of file
 
-        Write(Unit=nrsddt, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,j)
-        rec=rec+Int(j,li)
+        Write(Unit=nrsddt, Fmt='(73a)', Rec=rsdc%rec+Int(1,li)) (chbat(:,k), k=1,j)
+        rsdc%rec=rsdc%rec+Int(j,li)
         j=0
 
         Do i=1,n
@@ -441,8 +452,8 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 ! Dump batch and update start of file
 
               If (j + 2 >= batsz .or. i == jatms) Then
-                 Write(Unit=nrsddt, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,j)
-                 rec=rec+Int(j,li)
+                 Write(Unit=nrsddt, Fmt='(73a)', Rec=rsdc%rec+Int(1,li)) (chbat(:,k), k=1,j)
+                 rsdc%rec=rsdc%rec+Int(j,li)
                  j=0
               End If
            End Do
@@ -450,7 +461,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 
 ! Update main header
 
-        Write(Unit=nrsddt, Fmt='(f11.3,a19,2i21,a1)', Rec=2) rrsd,Repeat(' ',19),frm,rec,lf
+        Write(Unit=nrsddt, Fmt='(f11.3,a19,2i21,a1)', Rec=2) rsdc%rrsd,Repeat(' ',19),rsdc%frm,rsdc%rec,lf
 
         Close(Unit=nrsddt)
 
@@ -471,7 +482,7 @@ Subroutine rsd_write(keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,rsd,parts,c
 
 ! Save offset pointer
 
-        rec=rec+Int(5,li)+Int(2,li)*Int(megn,li)
+        rsdc%rec=rsdc%rec+Int(5,li)+Int(2,li)*Int(megn,li)
 
      End If
 

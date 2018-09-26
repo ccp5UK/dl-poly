@@ -30,6 +30,7 @@ Module kontrol
   Use ttm
   Use impacts,     Only : impact_type
   Use defects,     Only : defects_type
+  Use rsds, Only : rsd_type
   
   Use io,     Only : io_set_parameters,        &
                             io_get_parameters,        &
@@ -118,17 +119,17 @@ Subroutine read_control                                &
            l_exp,lecx,lfcap,l_top,          &
            lvar,leql,               &
            lfce,lpana,           &
-           ltraj,lrsd,               &
-           nx,ny,nz,impa,                            &
-           keyres,                   &
-           tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-           fmax,nstbpo,             &
-           rlx_tol,mxquat,quattol,       &
-           nstbnd,nstang,nstdih,nstinv,  &
-           dfcts,nsrsd,isrsd,rrsd,          &
-           ndump,pdplnc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
-           met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-           rdf,minim,mpoles,electro,ewld,seed,traj,tmr,comm)
+           ltraj,               &
+  nx,ny,nz,impa,                            &
+  keyres,                   &
+  tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
+  fmax,nstbpo,             &
+  rlx_tol,mxquat,quattol,       &
+  nstbnd,nstang,nstdih,nstinv,  &
+  dfcts,       &
+  ndump,pdplnc,rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
+  met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
+  rdf,minim,mpoles,electro,ewld,seed,traj,tmr,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -154,26 +155,26 @@ Subroutine read_control                                &
   Real( Kind = wp ),      Intent( In    ) :: rbin,width
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
-                                             lfcap,l_top,           &
-                                             lvar,leql,lfce,   &
-                                             lpana,                 &
-                                             ltraj,lrsd
+    lfcap,l_top,           &
+    lvar,leql,lfce,   &
+    lpana,                 &
+    ltraj
 
 
   Integer,                Intent(   Out ) :: nx,ny,nz,             &
-                                             keyres,nstrun,        &
-                                             nsteql,       &
-                                             nstbpo,        &
-                                             mxquat,        &
-                                             nstbnd,nstang,        &
-                                             nstdih,nstinv,        &
-                                             nsrsd,isrsd,          &
-                                             ndump
+    keyres,nstrun,        &
+    nsteql,       &
+    nstbpo,        &
+    mxquat,        &
+    nstbnd,nstang,        &
+    nstdih,nstinv,        &
+    ndump
 
   Real( Kind = wp ),      Intent(   Out ) :: tstep,mndis,mxdis,mxstp,    &
-                                              quattol,&
-                                             fmax,rlx_tol(1:2),     &
-                                             rrsd,pdplnc
+    quattol,&
+    fmax,rlx_tol(1:2),     &
+    pdplnc
+  Type( rsd_type ), Intent ( InOut ) :: rsdc
   Type( pmf_type ), Intent (   InOut )   :: pmf
   Type( core_shell_type ), Intent (   In  )   :: cshell
   Type( constraints_type ), Intent (   InOut )   :: cons
@@ -537,10 +538,10 @@ Subroutine read_control                                &
 ! (i) step to start at, (ii) every step after to be collected,
 ! (iii) cutoff value for accepting an atom has moved
 
-  lrsd   =.false.
-  nsrsd  = 0
-  isrsd  = 1
-  rrsd   = 0.15_wp
+  rsdc%lrsd   =.false.
+  rsdc%nsrsd  = 0
+  rsdc%isrsd  = 1
+  rsdc%rrsd   = 0.15_wp
 
 ! default value for data dumping interval
 
@@ -2828,28 +2829,28 @@ Subroutine read_control                                &
 
      Else If (word(1:4) == 'disp') Then
 
-        lrsd = .true.
+        rsdc%lrsd = .true.
 
         Call get_word(record,word)
         itmp = Abs(Nint(word_2_real(word)))
-        nsrsd = Max(nsrsd,itmp)
+        rsdc%nsrsd = Max(rsdc%nsrsd,itmp)
 
         Call get_word(record,word)
         itmp = Abs(Nint(word_2_real(word)))
-        isrsd = Max(isrsd,itmp)
+        rsdc%isrsd = Max(rsdc%isrsd,itmp)
 
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
-        If (tmp > rrsd) Then
-           rrsd = tmp
+        If (tmp > rsdc%rrsd) Then
+           rsdc%rrsd = tmp
         Else
-           Call warning(470,tmp,rrsd,0.0_wp)
+           Call warning(470,tmp,rsdc%rrsd,0.0_wp)
         End If
 
         Write(messages(1),'(a)') 'displacements file option on'
-        Write(messages(2),'(2x,a,i10)') 'DISPDAT file start ',nsrsd
-        Write(messages(3),'(2x,a,i10)') 'DISPDAT file interval ',isrsd
-        Write(messages(4),'(2x,a,1p,e12.4)') 'DISPDAT distance condition (Angs) ',rrsd
+        Write(messages(2),'(2x,a,i10)') 'DISPDAT file start ',rsdc%nsrsd
+        Write(messages(3),'(2x,a,i10)') 'DISPDAT file interval ',rsdc%isrsd
+        Write(messages(4),'(2x,a,1p,e12.4)') 'DISPDAT distance condition (Angs) ',rsdc%rrsd
         Call info(messages,4,.true.)
 
 ! read DL_POLY_2/Classic delr Verlet shell strip cutoff option (compatibility)
@@ -3422,7 +3423,8 @@ Subroutine read_control                                &
         Write(messages(2),'(a)') '*** with structural properties will be recalculated ***'
         Call info(messages,2,.true.)
 ! abort if there's no structural property to recalculate
-        If (.not.(rdf%l_collect .or. zdensity%l_collect .or. dfcts(1)%ldef .or. msd_data%l_msd .or. lrsd .or. (mxgana > 0))) Then
+        If (.not.(rdf%l_collect .or. zdensity%l_collect .or. dfcts(1)%ldef .or. &
+          msd_data%l_msd .or. rsdc%lrsd .or. (mxgana > 0))) Then
           Call error(580)
         End If
      End If
