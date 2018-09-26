@@ -45,13 +45,11 @@ Module ewald_mpole
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ),                       Intent( In    ) :: comm
     Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
 
-    Logical,           Save :: newjob = .true.
-    Real( Kind = wp ), Save :: drewd,rdrewd
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
                          k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -62,7 +60,6 @@ Module ewald_mpole
                          txyz,erfcr,tmp,tmpi,tmpj,tix,        &
                          alphan,tiy,tiz,tjx,tjy,tjz,sx,sy,sz
 
-    Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
 
     Real( Kind = wp ) :: d1(0:2*mpoles%max_order+1,0:2*mpoles%max_order+1,0:2*mpoles%max_order+1)
     Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
@@ -70,11 +67,11 @@ Module ewald_mpole
     Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
     Character( Len = 256 ) :: message
 
-    If (newjob) Then
-       newjob = .false.
+    If (electro%newjob_mpoles) Then
+       electro%newjob_mpoles = .false.
 
        fail=0
-       Allocate (erc(0:electro%ewald_exclusion_grid),fer(0:electro%ewald_exclusion_grid), Stat=fail)
+       Allocate (electro%erc_mpoles(0:electro%ewald_exclusion_grid),electro%fer_mpoles(0:electro%ewald_exclusion_grid), Stat=fail)
        If (fail > 0) Then
           Write(message,'(a)') 'ewald_real_mforces allocation failure'
           Call error(0,message)
@@ -82,15 +79,15 @@ Module ewald_mpole
 
   ! interpolation interval
 
-       drewd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
+       electro%drewd_mpoles = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
   ! reciprocal of interpolation interval
 
-       rdrewd = 1.0_wp/drewd
+       electro%rdrewd_mpoles = 1.0_wp/electro%drewd_mpoles
 
   ! generate error function complement tables for ewald sum
 
-       Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,erc,fer)
+       Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mpoles,electro%fer_mpoles)
     End If
 
   ! initialise potential energy and virial
@@ -171,12 +168,12 @@ Module ewald_mpole
 
   ! get the value of the kernel using 3pt interpolation
 
-             k   = Int(rrr*rdrewd)
-             ppp = rrr*rdrewd - Real(k,wp)
+             k   = Int(rrr*electro%rdrewd_mpoles)
+             ppp = rrr*electro%rdrewd_mpoles - Real(k,wp)
 
-             vk0 = erc(k)
-             vk1 = erc(k+1)
-             vk2 = erc(k+2)
+             vk0 = electro%erc_mpoles(k)
+             vk1 = electro%erc_mpoles(k+1)
+             vk2 = electro%erc_mpoles(k+2)
 
              t1 = vk0 + (vk1 - vk0)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -406,13 +403,10 @@ Module ewald_mpole
     Real( Kind = wp ), Dimension( 1:9 ),              Intent( InOut ) :: stress
     Type( ewald_type ),                               Intent( InOut ) :: ewld
     Type( mpole_type ),                               Intent( InOut ) :: mpoles
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( comms_type ),                               Intent( In    ) :: comm
     Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
 
-    Logical,           Save :: newjob = .true.
-    Real( Kind = wp ), Save :: drewd,rdrewd,alp2,co1,co2,co3,co4,co5,exclcoef, &
-                               twzz,twtwz,fozz
 
     Integer           :: fail,idi,jatm,k,m
 
@@ -452,18 +446,17 @@ Module ewald_mpole
                          jmpz7,jmpz8,jmpz9,jmpz10,                 &
                          tmp2,tmp3,tmp4,tmp5,tmp6,tmp7,tmp8,tmp9,tmp10
 
-    Real( Kind = wp ), Dimension( : ), Allocatable, Save :: erc,fer
 
     Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
     Character( Len = 256 ) :: message
 
-    If (newjob) Then
-       newjob = .false.
+    If (electro%newjob_mpolesd) Then
+       electro%newjob_mpolesd = .false.
 
        fail=0
-       Allocate (erc(0:electro%ewald_exclusion_grid),fer(0:electro%ewald_exclusion_grid), Stat=fail)
+       Allocate (electro%erc_mpolesd(0:electro%ewald_exclusion_grid),electro%fer_mpolesd(0:electro%ewald_exclusion_grid), Stat=fail)
        If (fail > 0) Then
           Write(message,'(a)') 'ewald_real_mforces allocation failure'
           Call error(0,message)
@@ -471,34 +464,34 @@ Module ewald_mpole
 
   ! interpolation interval
 
-       drewd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
+       electro%drewd_mpolesd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
   ! reciprocal of interpolation interval
 
-       rdrewd = 1.0_wp/drewd
+       electro%rdrewd_mpolesd = 1.0_wp/electro%drewd_mpolesd
 
   ! generate error function complement tables for ewald sum
 
-       Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,erc,fer)
+       Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mpolesd,electro%fer_mpolesd)
 
   ! coefficients for exponential in recurrence relation
 
        talp2 = 2.0_wp*electro%alpha*electro%alpha
        alpsqrpi = 1.0_wp/(electro%alpha*sqrpi)
 
-       co1 = talp2*alpsqrpi
-       co2 = talp2*co1
-       co3 = talp2*co2
-       co4 = talp2*co3
-       co5 = talp2*co4
+       electro%co1 = talp2*alpsqrpi
+       electro%co2 = talp2*electro%co1
+       electro%co3 = talp2*electro%co2
+       electro%co4 = talp2*electro%co3
+       electro%co5 = talp2*electro%co4
 
-       alp2 = electro%alpha*electro%alpha
+       electro%alp2 = electro%alpha*electro%alpha
 
-       exclcoef = r4pie0*electro%alpha /sqrpi/electro%eps
+       electro%exclcoef = r4pie0*electro%alpha /sqrpi/electro%eps
 
-       twzz=-2.0_wp*electro%alpha**3 *r4pie0/(3.0_wp*sqrpi*electro%eps)
-       twtwz=4.0_wp*electro%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
-       fozz=12.0_wp*electro%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
+       electro%twzz=-2.0_wp*electro%alpha**3 *r4pie0/(3.0_wp*sqrpi*electro%eps)
+       electro%twtwz=4.0_wp*electro%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
+       electro%fozz=12.0_wp*electro%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
     End If
 
   ! initialise potential energy and virial
@@ -540,7 +533,7 @@ Module ewald_mpole
 
   ! self-interaction
 
-       siceng = siceng+exclcoef*imp1*imp1
+       siceng = siceng+electro%exclcoef*imp1*imp1
 
        If (mpoles%max_order >= 1) Then
 
@@ -550,10 +543,10 @@ Module ewald_mpole
           impy2=impy(2); impy3=impy(3); impy4=impy(4)
           impz2=impz(2); impz3=impz(3); impz4=impz(4)
 
-          siceng = siceng - twzz*(imp2*imp2+imp3*imp3+imp4*imp4)
-  !        tx0    = tx0    - twzz*(impx2*imp2+impx3*imp3+impx4*imp4)
-  !        ty0    = ty0    - twzz*(impy2*imp2+impy3*imp3+impy4*imp4)
-  !        tz0    = tz0    - twzz*(impz2*imp2+impz3*imp3+impz4*imp4)
+          siceng = siceng - electro%twzz*(imp2*imp2+imp3*imp3+imp4*imp4)
+  !        tx0    = tx0    - electro%twzz*(impx2*imp2+impx3*imp3+impx4*imp4)
+  !        ty0    = ty0    - electro%twzz*(impy2*imp2+impy3*imp3+impy4*imp4)
+  !        tz0    = tz0    - electro%twzz*(impz2*imp2+impz3*imp3+impz4*imp4)
 
        End If
 
@@ -565,17 +558,17 @@ Module ewald_mpole
           impy5=impy(5); impy6=impy(6); impy7=impy(7); impy8=impy(8); impy9=impy(9); impy10=impy(10)
           impz5=impz(5); impz6=impz(6); impz7=impz(7); impz8=impz(8); impz9=impz(9); impz10=impz(10)
 
-          siceng = siceng + 2.0_wp*twzz*(imp1*(imp5+imp8+imp10)) + twtwz*(2.0_wp*imp5*(imp8+imp10)+ &
-                   2.0_wp*imp8*imp10+imp6*imp6+imp7*imp7+imp9*imp9) + fozz*(imp5*imp5+imp8*imp8+    &
+          siceng = siceng + 2.0_wp*electro%twzz*(imp1*(imp5+imp8+imp10)) + electro%twtwz*(2.0_wp*imp5*(imp8+imp10)+ &
+                   2.0_wp*imp8*imp10+imp6*imp6+imp7*imp7+imp9*imp9) + electro%fozz*(imp5*imp5+imp8*imp8+    &
                    imp10*imp10)
-  !        tx0    = tx0 + twzz*imp1*(impx5+impx8+impx10)+twtwz*(impx5*(imp8+imp10)+impx6*imp6 +     &
-  !                 impx7*imp7+impx8*(imp5+imp10)+impx9*imp9+impx10*(imp5+imp8))+fozz*(impx5*imp5 + &
+  !        tx0    = tx0 + electro%twzz*imp1*(impx5+impx8+impx10)+electro%twtwz*(impx5*(imp8+imp10)+impx6*imp6 +     &
+  !                 impx7*imp7+impx8*(imp5+imp10)+impx9*imp9+impx10*(imp5+imp8))+electro%fozz*(impx5*imp5 + &
   !                 impx8*imp8+impx10*imp10)
-  !        ty0    = ty0 + twzz*imp1*(impy5+impy8+impy10)+twtwz*(impy5*(imp8+imp10)+impy6*imp6 +     &
-  !                 impy7*imp7+impy8*(imp5+imp10)+impy9*imp9+impy10*(imp5+imp8))+fozz*(impy5*imp5 + &
+  !        ty0    = ty0 + electro%twzz*imp1*(impy5+impy8+impy10)+electro%twtwz*(impy5*(imp8+imp10)+impy6*imp6 +     &
+  !                 impy7*imp7+impy8*(imp5+imp10)+impy9*imp9+impy10*(imp5+imp8))+electro%fozz*(impy5*imp5 + &
   !                 impy8*imp8+impy10*imp10)
-  !        tz0    = tz0 + twzz*imp1*(impz5+impz8+impz10)+twtwz*(impz5*(imp8+imp10)+impz6*imp6 +     &
-  !                 impz7*imp7+impz8*(imp5+imp10)+impz9*imp9+impz10*(imp5+imp8))+fozz*(impz5*imp5 + &
+  !        tz0    = tz0 + electro%twzz*imp1*(impz5+impz8+impz10)+electro%twtwz*(impz5*(imp8+imp10)+impz6*imp6 +     &
+  !                 impz7*imp7+impz8*(imp5+imp10)+impz9*imp9+impz10*(imp5+imp8))+electro%fozz*(impz5*imp5 + &
   !                 impz8*imp8+impz10*imp10)
 
        End If
@@ -682,16 +675,16 @@ Module ewald_mpole
 
   ! evaluate the exponential
 
-             exparr = Exp(-alp2*rsq)
+             exparr = Exp(-electro%alp2*rsq)
 
   ! get the value of the kernel using 3pt interpolation
 
-             k   = Int(rrr*rdrewd)
-             ppp = rrr*rdrewd - Real(k,wp)
+             k   = Int(rrr*electro%rdrewd_mpolesd)
+             ppp = rrr*electro%rdrewd_mpolesd - Real(k,wp)
 
-             vk0 = erc(k)
-             vk1 = erc(k+1)
-             vk2 = erc(k+2)
+             vk0 = electro%erc_mpolesd(k)
+             vk1 = electro%erc_mpolesd(k+1)
+             vk2 = electro%erc_mpolesd(k+2)
 
              t1 = vk0 + (vk1 - vk0)*ppp
              t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
@@ -699,11 +692,11 @@ Module ewald_mpole
   ! compute recurrence terms
 
              b0 = (t1 + (t2-t1)*ppp*0.5_wp)
-             b1 = (b0        + co1*exparr)/rsq
-             b2 = (3.0_wp*b1 + co2*exparr)/rsq
-             b3 = (5.0_wp*b2 + co3*exparr)/rsq
-             b4 = (7.0_wp*b3 + co4*exparr)/rsq
-             b5 = (9.0_wp*b4 + co5*exparr)/rsq
+             b1 = (b0        + electro%co1*exparr)/rsq
+             b2 = (3.0_wp*b1 + electro%co2*exparr)/rsq
+             b3 = (5.0_wp*b2 + electro%co3*exparr)/rsq
+             b4 = (7.0_wp*b3 + electro%co4*exparr)/rsq
+             b5 = (9.0_wp*b4 + electro%co5*exparr)/rsq
 
   ! charge-charge interaction
 
@@ -1104,17 +1097,11 @@ Module ewald_mpole
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( ewald_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
     Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
 
-    Logical,           Save :: newjob = .true.
-    Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
-    Real( Kind = wp ), Save :: ixbm1_r,iybm1_r,izbm1_r, &
-                               ixtm0_r,iytm0_r,iztm0_r, &
-                               kmaxa_r,kmaxb_r,kmaxc_r, &
-                               d1(0:8,0:8,0:8)
 
     Logical              :: llspl=.true.
     Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt, &
@@ -1133,16 +1120,12 @@ Module ewald_mpole
 
   ! uni is the diagonal unit matrix
 
-    Real( Kind = wp )    :: &
+    Real( Kind = wp ), Parameter    :: &
        uni(1:9) = (/ 1.0_wp,0.0_wp,0.0_wp, 0.0_wp,1.0_wp,0.0_wp, 0.0_wp,0.0_wp,1.0_wp /)
 
-  ! blocking factors for fft
-
-    Integer,           Save :: block_x,block_y,block_z
 
   ! B-spline coefficients
 
-    Complex( Kind = wp ), Dimension( : ),       Allocatable, Save :: bscx,bscy,bscz
     Complex( Kind = wp ), Dimension( : ),       Allocatable       :: ww1,ww2,ww3
 
     Real( Kind = wp ),    Dimension( : ),       Allocatable       :: csp
@@ -1152,27 +1135,10 @@ Module ewald_mpole
     Real( Kind = wp ),    Dimension( :,: ),     Allocatable       :: bspx,bspy,bspz
     Real( Kind = wp ),    Dimension( : ),       Allocatable       :: bdx,bdy,bdz
 
-  ! context for parallel fft
-
-    Integer,           Save :: context
-
-  ! indexing arrays for x, y & z as used in parallel fft
-
-    Integer,              Dimension( : ),       Allocatable, Save :: index_x,index_y,index_z
 
   ! temporary qqc
 
     Real( Kind = wp )    :: qqc_tmp
-
-  ! temporary workspace for parallel fft
-
-    Real( Kind = wp ),    Dimension( :,:,: ),   Allocatable, Save :: qqc_local
-    Real( Kind = wp ),    Dimension( :,:,:,: ), Allocatable, Save :: qtc_local
-    Complex( Kind = wp ), Dimension( :,:,: ),   Allocatable, Save :: qqq_local
-    Complex( Kind = wp ), Dimension( :,:,: ),   Allocatable, Save :: qt1_local, &
-                                                                     qt2_local, &
-                                                                     qt3_local
-    Complex( Kind = wp ), Dimension( :,:,: ),   Allocatable, Save :: pfft_work
 
   ! DaFT arrays local indices
 
@@ -1181,31 +1147,31 @@ Module ewald_mpole
 
 
     fail=0
-    If (newjob) Then
-       newjob = .false.
+    If (electro%newjob_fmpoles) Then
+      electro%newjob_fmpoles = .false.
 
   !!! BEGIN DD SPME VARIABLES
   ! 3D charge array construction (bottom and top) indices
 
-       ixb=domain%idx*(ewld%fft_dim_a/domain%nx)+1
-       ixt=(domain%idx+1)*(ewld%fft_dim_a/domain%nx)
-       iyb=domain%idy*(ewld%fft_dim_b/domain%ny)+1
-       iyt=(domain%idy+1)*(ewld%fft_dim_b/domain%ny)
-       izb=domain%idz*(ewld%fft_dim_c/domain%nz)+1
-       izt=(domain%idz+1)*(ewld%fft_dim_c/domain%nz)
+       electro%ixb_mf=domain%idx*(ewld%fft_dim_a/domain%nx)+1
+       electro%ixt_mf=(domain%idx+1)*(ewld%fft_dim_a/domain%nx)
+       electro%iyb_mf=domain%idy*(ewld%fft_dim_b/domain%ny)+1
+       electro%iyt_mf=(domain%idy+1)*(ewld%fft_dim_b/domain%ny)
+       electro%izb_mf=domain%idz*(ewld%fft_dim_c/domain%nz)+1
+       electro%izt_mf=(domain%idz+1)*(ewld%fft_dim_c/domain%nz)
 
-       ixbm1_r=Real(ixb-1,wp)
-       ixtm0_r=Nearest( Real(ixt,wp) , -1.0_wp )
-       iybm1_r=Real(iyb-1,wp)
-       iytm0_r=Nearest( Real(iyt,wp) , -1.0_wp )
-       izbm1_r=Real(izb-1,wp)
-       iztm0_r=Nearest( Real(izt,wp) , -1.0_wp )
+       electro%ixbm1_r=Real(electro%ixb_mf-1,wp)
+       electro%ixtm0_r_mf=Nearest( Real(electro%ixt_mf,wp) , -1.0_wp )
+       electro%iybm1_r_mf=Real(electro%iyb_mf-1,wp)
+       electro%iytm0_r_mf=Nearest( Real(electro%iyt_mf,wp) , -1.0_wp )
+       electro%izbm1_r_mf=Real(electro%izb_mf-1,wp)
+       electro%iztm0_r_mf=Nearest( Real(electro%izt_mf,wp) , -1.0_wp )
 
   ! Real values of kmax vectors
 
-       kmaxa_r=Real(ewld%fft_dim_a,wp)
-       kmaxb_r=Real(ewld%fft_dim_b,wp)
-       kmaxc_r=Real(ewld%fft_dim_c,wp)
+       electro%kmaxa_r_mf=Real(ewld%fft_dim_a,wp)
+       electro%kmaxb_r_mf=Real(ewld%fft_dim_b,wp)
+       electro%kmaxc_r_mf=Real(ewld%fft_dim_c,wp)
 
   !!! END DD SPME VARIABLES
 
@@ -1224,7 +1190,8 @@ Module ewald_mpole
 
   ! allocate the global B-spline coefficients and the helper array
 
-       Allocate (bscx(1:ewld%fft_dim_a),bscy(1:ewld%fft_dim_b),bscz(1:ewld%fft_dim_c), Stat = fail(1))
+       Allocate (electro%bscx_mf(1:ewld%fft_dim_a),electro%bscy_mf(1:ewld%fft_dim_b),electro%bscz_mf(1:ewld%fft_dim_c), &
+         Stat = fail(1))
        Allocate (csp(1:ewld%bspline),                              Stat = fail(2))
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'bsc and cse arrays allocation failure'
@@ -1233,7 +1200,7 @@ Module ewald_mpole
 
   ! calculate the global B-spline coefficients
 
-       Call bspcoe(ewld,csp,bscx,bscy,bscz,ww1,ww2,ww3)
+       Call bspcoe(ewld,csp,electro%bscx_mf,electro%bscy_mf,electro%bscz_mf,ww1,ww2,ww3)
 
   ! deallocate the helper array and complex exponential arrays
 
@@ -1249,40 +1216,40 @@ Module ewald_mpole
   !!! BEGIN DAFT SET-UP
   ! domain local block limits of kmax space
 
-       block_x = ewld%fft_dim_a / domain%nx
-       block_y = ewld%fft_dim_b / domain%ny
-       block_z = ewld%fft_dim_c / domain%nz
+       electro%block_x_mf = ewld%fft_dim_a / domain%nx
+       electro%block_y_mf = ewld%fft_dim_b / domain%ny
+       electro%block_z_mf = ewld%fft_dim_c / domain%nz
 
   ! set up the parallel fft and useful related quantities
 
        Call initialize_fft( 3, (/ ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c /), &
            (/ domain%nx, domain%ny, domain%nz /), (/ domain%idx, domain%idy, domain%idz /),   &
-           (/ block_x, block_y, block_z /),               &
-           comm%comm, context )
+           (/ electro%block_x_mf, electro%block_y_mf, electro%block_z_mf /),               &
+           comm%comm, electro%context_mf )
 
   ! set up the indexing arrays for each dimension (NOT deallocated manually)
 
-       Allocate ( index_x( 1:block_x ), Stat = fail(1) )
-       Allocate ( index_y( 1:block_y ), Stat = fail(2) )
-       Allocate ( index_z( 1:block_z ), Stat = fail(3) )
+       Allocate ( electro%index_x_mf( 1:electro%block_x_mf ), Stat = fail(1) )
+       Allocate ( electro%index_y_mf( 1:electro%block_y_mf ), Stat = fail(2) )
+       Allocate ( electro%index_z_mf( 1:electro%block_z_mf ), Stat = fail(3) )
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'SPME index arrays allocation failure'
           Call error(0,message)
        End If
 
-       Call pfft_indices( ewld%fft_dim_a, block_x, domain%idx, domain%nx, index_x )
-       Call pfft_indices( ewld%fft_dim_b, block_y, domain%idy, domain%ny, index_y )
-       Call pfft_indices( ewld%fft_dim_c, block_z, domain%idz, domain%nz, index_z )
+       Call pfft_indices( ewld%fft_dim_a, electro%block_x_mf, domain%idx, domain%nx, electro%index_x_mf )
+       Call pfft_indices( ewld%fft_dim_b, electro%block_y_mf, domain%idy, domain%ny, electro%index_y_mf )
+       Call pfft_indices( ewld%fft_dim_c, electro%block_z_mf, domain%idz, domain%nz, electro%index_z_mf )
 
   ! workspace arrays for DaFT
 
-       Allocate ( qqc_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(1) )
-       Allocate ( qqq_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(2) )
-       Allocate ( qtc_local( 1:3, 1:block_x, 1:block_y, 1:block_z ), &
-                  qt1_local( 1:block_x, 1:block_y, 1:block_z ),      &
-                  qt2_local( 1:block_x, 1:block_y, 1:block_z ),      &
-                  qt3_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(3) )
-       Allocate ( pfft_work( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(4) )
+       Allocate ( electro%qqc_local_mf( 1:electro%block_x_mf, 1:electro%block_y_mf, 1:electro%block_z_mf ), Stat = fail(1) )
+       Allocate ( electro%qqq_local_mf( 1:electro%block_x_mf, 1:electro%block_y_mf, 1:electro%block_z_mf ), Stat = fail(2) )
+       Allocate ( electro%qtc_local_mf( 1:3, 1:electro%block_x_mf, 1:electro%block_y_mf, 1:electro%block_z_mf ), &
+                  electro%qt1_local_mf( 1:electro%block_x_mf, 1:electro%block_y_mf, 1:electro%block_z_mf ),      &
+                  electro%qt2_local_mf( 1:electro%block_x_mf, 1:electro%block_y_mf, 1:electro%block_z_mf ),      &
+                  electro%qt3_local_mf( 1:electro%block_x_mf, 1:electro%block_y_mf, 1:electro%block_z_mf ), Stat = fail(3) )
+       Allocate ( electro%pfft_work_mf( 1:electro%block_x_mf, 1:electro%block_y_mf, 1:electro%block_z_mf ), Stat = fail(4) )
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'SPME DaFT workspace arrays allocation failure'
           Call error(0,message)
@@ -1292,7 +1259,7 @@ Module ewald_mpole
 
   ! compute derivatives of kernel
 
-       Call limit_erfr_deriv(8,electro%alpha,d1)
+       Call limit_erfr_deriv(8,electro%alpha,electro%d1_mf)
     End If
 
     Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
@@ -1356,7 +1323,7 @@ Module ewald_mpole
                                      mm = mpoles%map(s1,s2,s3)
 
                                      If (Mod(ks1,2) == 0) Then
-                                        tmpi   = tx*timp*d1(ks1,ks2,ks3)
+                                        tmpi   = tx*timp*electro%d1_mf(ks1,ks2,ks3)
 
   ! energy
 
@@ -1429,16 +1396,16 @@ Module ewald_mpole
     If (Abs(det) < 1.0e-6_wp) Call error(120)
 
     Do i=1,nlast
-       txx(i)=kmaxa_r*(rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+0.5_wp)
-       tyy(i)=kmaxb_r*(rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+0.5_wp)
-       tzz(i)=kmaxc_r*(rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+0.5_wp)
+       txx(i)=electro%kmaxa_r_mf*(rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+0.5_wp)
+       tyy(i)=electro%kmaxb_r_mf*(rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+0.5_wp)
+       tzz(i)=electro%kmaxc_r_mf*(rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+0.5_wp)
 
   ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
 
        If (ewld%bspline1 == ewld%bspline .and. i <= natms) Then
-          If (txx(i) < ixbm1_r .or. txx(i) > ixtm0_r .or. &
-              tyy(i) < iybm1_r .or. tyy(i) > iytm0_r .or. &
-              tzz(i) < izbm1_r .or. tzz(i) > iztm0_r) llspl=.false.
+          If (txx(i) < electro%ixbm1_r .or. txx(i) > electro%ixtm0_r_mf .or. &
+              tyy(i) < electro%iybm1_r_mf .or. tyy(i) > electro%iytm0_r_mf .or. &
+              tzz(i) < electro%izbm1_r_mf .or. tzz(i) > electro%iztm0_r_mf) llspl=.false.
        End If
 
        ixx(i)=Int(txx(i))
@@ -1480,8 +1447,8 @@ Module ewald_mpole
   ! zero 3D charge array
   ! DaFT version - only need set local bit to zero
 
-    qqc_local = 0.0_wp
-    qtc_local = 0.0_wp
+    electro%qqc_local_mf = 0.0_wp
+    electro%qtc_local_mf = 0.0_wp
 
   ! construct 3D charge array
   ! DaFT version - use array that holds only the local data
@@ -1499,28 +1466,28 @@ Module ewald_mpole
 
              imp=mpoles%global_frame(:,i)
 
-             llb = Max( izb, izz(i) - ewld%bspline + 2 )
-             llt = Min( izt, izz(i) + 1 )
+             llb = Max( electro%izb_mf, izz(i) - ewld%bspline + 2 )
+             llt = Min( electro%izt_mf, izz(i) + 1 )
 
-             kkb = Max( iyb, iyy(i) - ewld%bspline + 2 )
-             kkt = Min( iyt, iyy(i) + 1 )
+             kkb = Max( electro%iyb_mf, iyy(i) - ewld%bspline + 2 )
+             kkt = Min( electro%iyt_mf, iyy(i) + 1 )
 
-             jjb = Max( ixb, ixx(i) - ewld%bspline + 2 )
-             jjt = Min( ixt, ixx(i) + 1 )
+             jjb = Max( electro%ixb_mf, ixx(i) - ewld%bspline + 2 )
+             jjt = Min( electro%ixt_mf, ixx(i) + 1 )
 
              jjtjjb = jjt - jjb + 1
 
              Do ll = llb, llt
                 l = izz(i) - ll + 2
 
-                l_local = ll - izb + 1
+                l_local = ll - electro%izb_mf + 1
 
                 bdz=bsddz(:,l,i)
 
                 Do kk = kkb, kkt
                    k = iyy(i) - kk + 2
 
-                   k_local = kk - iyb + 1
+                   k_local = kk - electro%iyb_mf + 1
 
                    bdy=bsddy(:,k,i)
 
@@ -1530,7 +1497,7 @@ Module ewald_mpole
 
                       j = ixx(i) - jj + 2
 
-                      j_local = jj - ixb + 1
+                      j_local = jj - electro%ixb_mf + 1
 
                       bdx=bsddx(:,j,i)
 
@@ -1538,11 +1505,11 @@ Module ewald_mpole
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
              dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mf(1,j_local,k_local,l_local) = electro%qtc_local_mf(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mf(2,j_local,k_local,l_local) = electro%qtc_local_mf(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mf(3,j_local,k_local,l_local) = electro%qtc_local_mf(3,j_local,k_local,l_local) + tq3
 
                       counter = 1
 
@@ -1557,11 +1524,11 @@ Module ewald_mpole
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
              dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
 
-                         qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                         electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)   + dtp
 
-                         qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                         qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                         qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                         electro%qtc_local_mf(1,j_local,k_local,l_local) = electro%qtc_local_mf(1,j_local,k_local,l_local) + tq1
+                         electro%qtc_local_mf(2,j_local,k_local,l_local) = electro%qtc_local_mf(2,j_local,k_local,l_local) + tq2
+                         electro%qtc_local_mf(3,j_local,k_local,l_local) = electro%qtc_local_mf(3,j_local,k_local,l_local) + tq3
 
                          counter = counter + 1
                       End Do
@@ -1571,7 +1538,7 @@ Module ewald_mpole
                       Do jj = jjb, jjt
                          j = ixx(i) - jj + 2
 
-                         j_local = jj - ixb + 1
+                         j_local = jj - electro%ixb_mf + 1
 
                          bdx=bsddx(:,j,i)
 
@@ -1579,11 +1546,11 @@ Module ewald_mpole
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
              dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
 
-                         qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                         electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)   + dtp
 
-                         qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                         qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                         qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                         electro%qtc_local_mf(1,j_local,k_local,l_local) = electro%qtc_local_mf(1,j_local,k_local,l_local) + tq1
+                         electro%qtc_local_mf(2,j_local,k_local,l_local) = electro%qtc_local_mf(2,j_local,k_local,l_local) + tq2
+                         electro%qtc_local_mf(3,j_local,k_local,l_local) = electro%qtc_local_mf(3,j_local,k_local,l_local) + tq3
                       End Do
 
                    End If
@@ -1607,14 +1574,14 @@ Module ewald_mpole
 
              imp=mpoles%global_frame(:,i)
 
-             llb = Max( izb, izz(i) - ewld%bspline + 2 )
-             llt = Min( izt, izz(i) + 1 )
+             llb = Max( electro%izb_mf, izz(i) - ewld%bspline + 2 )
+             llt = Min( electro%izt_mf, izz(i) + 1 )
 
-             kkb = Max( iyb, iyy(i) - ewld%bspline + 2 )
-             kkt = Min( iyt, iyy(i) + 1 )
+             kkb = Max( electro%iyb_mf, iyy(i) - ewld%bspline + 2 )
+             kkt = Min( electro%iyt_mf, iyy(i) + 1 )
 
-             jjb = Max( ixb, ixx(i) - ewld%bspline + 2 )
-             jjt = Min( ixt, ixx(i) + 1 )
+             jjb = Max( electro%ixb_mf, ixx(i) - ewld%bspline + 2 )
+             jjt = Min( electro%ixt_mf, ixx(i) + 1 )
 
              jjtjjb = jjt - jjb + 1
 
@@ -1627,14 +1594,14 @@ Module ewald_mpole
                       Do ll = llb, llt
                          l = izz(i) - ll + 2
 
-                         l_local = ll - izb + 1
+                         l_local = ll - electro%izb_mf + 1
 
                          bdz=bsddz(:,l,i)
 
                          Do kk = kkb, kkt
                             k = iyy(i) - kk + 2
 
-                            k_local = kk - iyb + 1
+                            k_local = kk - electro%iyb_mf + 1
 
                             bdy=bsddy(:,k,i)
 
@@ -1644,17 +1611,21 @@ Module ewald_mpole
 
                                j = ixx(i) - jj + 2
 
-                               j_local = jj - ixb + 1
+                               j_local = jj - electro%ixb_mf + 1
 
                                bdx=bsddx(:,j,i)
 
                                tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
 
-                               qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
+                               electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)   &
+                                 + tmp
 
-                               qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + Real(s1,wp)*tmp
-                               qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + Real(s2,wp)*tmp
-                               qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + Real(s3,wp)*tmp
+                               electro%qtc_local_mf(1,j_local,k_local,l_local) = electro%qtc_local_mf(1,j_local,k_local,l_local) &
+                                 + Real(s1,wp)*tmp
+                               electro%qtc_local_mf(2,j_local,k_local,l_local) = electro%qtc_local_mf(2,j_local,k_local,l_local) &
+                                 + Real(s2,wp)*tmp
+                               electro%qtc_local_mf(3,j_local,k_local,l_local) = electro%qtc_local_mf(3,j_local,k_local,l_local) &
+                                 + Real(s3,wp)*tmp
 
                                counter = 1
 
@@ -1667,11 +1638,15 @@ Module ewald_mpole
 
                                   tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
 
-                                  qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
+                                  electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)&
+                                    + tmp
 
-                                  qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + Real(s1,wp)*tmp
-                                  qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + Real(s2,wp)*tmp
-                                  qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + Real(s3,wp)*tmp
+                                  electro%qtc_local_mf(1,j_local,k_local,l_local) = electro%qtc_local_mf(1,j_local,k_local,l_local)&
+                                    + Real(s1,wp)*tmp
+                                  electro%qtc_local_mf(2,j_local,k_local,l_local) = electro%qtc_local_mf(2,j_local,k_local,l_local)&
+                                    + Real(s2,wp)*tmp
+                                  electro%qtc_local_mf(3,j_local,k_local,l_local) = electro%qtc_local_mf(3,j_local,k_local,l_local)&
+                                    + Real(s3,wp)*tmp
 
                                   counter = counter + 1
                                End Do
@@ -1681,16 +1656,20 @@ Module ewald_mpole
                                Do jj = jjb, jjt
                                   j = ixx(i) - jj + 2
 
-                                  j_local = jj - ixb + 1
+                                  j_local = jj - electro%ixb_mf + 1
 
                                   bdx=bsddx(:,j,i)
                                   tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
 
-                                  qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + tmp
+                                  electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)&
+                                    + tmp
 
-                                  qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + Real(s1,sp)*tmp
-                                  qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + Real(s2,sp)*tmp
-                                  qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + Real(s3,sp)*tmp
+                                  electro%qtc_local_mf(1,j_local,k_local,l_local) = electro%qtc_local_mf(1,j_local,k_local,l_local)&
+                                    + Real(s1,sp)*tmp
+                                  electro%qtc_local_mf(2,j_local,k_local,l_local) = electro%qtc_local_mf(2,j_local,k_local,l_local)&
+                                    + Real(s2,sp)*tmp
+                                  electro%qtc_local_mf(3,j_local,k_local,l_local) = electro%qtc_local_mf(3,j_local,k_local,l_local)&
+                                    + Real(s3,sp)*tmp
                                End Do
 
                             End If
@@ -1709,25 +1688,25 @@ Module ewald_mpole
 
   ! load charge array into complex array for FFT
 
-    qqq_local=Cmplx(qqc_local , Kind = wp)
+    electro%qqq_local_mf=Cmplx(electro%qqc_local_mf , Kind = wp)
 
-    qt1_local=Cmplx(qtc_local(1,:,:,:), Kind = wp)
-    qt2_local=Cmplx(qtc_local(2,:,:,:), Kind = wp)
-    qt3_local=Cmplx(qtc_local(3,:,:,:), Kind = wp)
+    electro%qt1_local_mf=Cmplx(electro%qtc_local_mf(1,:,:,:), Kind = wp)
+    electro%qt2_local_mf=Cmplx(electro%qtc_local_mf(2,:,:,:), Kind = wp)
+    electro%qt3_local_mf=Cmplx(electro%qtc_local_mf(3,:,:,:), Kind = wp)
 
   ! calculating inverse 3D FFT of generalized multipolar array (in place)
 
-    Call pfft(qqq_local,pfft_work,context,1)
+    Call pfft(electro%qqq_local_mf,electro%pfft_work_mf,electro%context_mf,1)
 
-    Call pfft(qt1_local,pfft_work,context,1)
-    Call pfft(qt2_local,pfft_work,context,1)
-    Call pfft(qt3_local,pfft_work,context,1)
+    Call pfft(electro%qt1_local_mf,electro%pfft_work_mf,electro%context_mf,1)
+    Call pfft(electro%qt2_local_mf,electro%pfft_work_mf,electro%context_mf,1)
+    Call pfft(electro%qt3_local_mf,electro%pfft_work_mf,electro%context_mf,1)
 
   ! set reciprocal space cutoff
 
     Call dcell(rcell,celprp)
 
-    rcpcut=0.5_wp*Min(kmaxa_r*celprp(7),kmaxb_r*celprp(8),kmaxc_r*celprp(9))
+    rcpcut=0.5_wp*Min(electro%kmaxa_r_mf*celprp(7),electro%kmaxb_r_mf*celprp(8),electro%kmaxc_r_mf*celprp(9))
     rcpcut=rcpcut*1.05_wp*twopi
     rcpct2=rcpcut**2
 
@@ -1738,8 +1717,8 @@ Module ewald_mpole
   ! calculate convolution of charge array with gaussian function
   ! DaFT Version - only loop over the local stuff
 
-    Do l_local=1,block_z
-       l=index_z(l_local)
+    Do l_local=1,electro%block_z_mf
+       l=electro%index_z_mf(l_local)
 
        ll=l-1
        If (l > ewld%fft_dim_c/2) ll=ll-ewld%fft_dim_c
@@ -1749,10 +1728,10 @@ Module ewald_mpole
        rky1=tmp*rcell(6)
        rkz1=tmp*rcell(9)
 
-       bb3=Real( bscz(l)*Conjg(bscz(l)),wp )
+       bb3=Real( electro%bscz_mf(l)*Conjg(electro%bscz_mf(l)),wp )
 
-       Do k_local=1,block_y
-          k=index_y(k_local)
+       Do k_local=1,electro%block_y_mf
+          k=electro%index_y_mf(k_local)
 
           kk=k-1
           If (k > ewld%fft_dim_b/2) kk=kk-ewld%fft_dim_b
@@ -1762,10 +1741,10 @@ Module ewald_mpole
           rky2=rky1+tmp*rcell(5)
           rkz2=rkz1+tmp*rcell(8)
 
-          bb2=bb3*Real( bscy(k)*Conjg(bscy(k)),wp )
+          bb2=bb3*Real( electro%bscy_mf(k)*Conjg(electro%bscy_mf(k)),wp )
 
-          Do j_local=1,block_x
-             j=index_x(j_local)
+          Do j_local=1,electro%block_x_mf
+             j=electro%index_x_mf(j_local)
 
              jj=j-1
              If (j > ewld%fft_dim_a/2) jj=jj-ewld%fft_dim_a
@@ -1775,7 +1754,7 @@ Module ewald_mpole
              rky3=rky2+tmp*rcell(4)
              rkz3=rkz2+tmp*rcell(7)
 
-             bb1=bb2*Real( bscx(j)*Conjg(bscx(j)),wp )
+             bb1=bb2*Real( electro%bscx_mf(j)*Conjg(electro%bscx_mf(j)),wp )
 
              rksq=rkx3*rkx3+rky3*rky3+rkz3*rkz3
 
@@ -1810,16 +1789,16 @@ Module ewald_mpole
 
   ! For  monopole contribution to the stress tensor
 
-                vterm=bb1*Exp(ralph*rksq)/rksq*qqq_local(j_local,k_local,l_local)
-                akv=2.0_wp*(1.0_wp/rksq-ralph)*Real( vterm*Conjg(qqq_local(j_local,k_local,l_local)),wp )
+                vterm=bb1*Exp(ralph*rksq)/rksq*electro%qqq_local_mf(j_local,k_local,l_local)
+                akv=2.0_wp*(1.0_wp/rksq-ralph)*Real( vterm*Conjg(electro%qqq_local_mf(j_local,k_local,l_local)),wp )
 
   !=======================================================================
   ! For higher order contributions to the stress tensor
 
-                pterm=2.0_wp*bb1*Exp(ralph*rksq)/rksq*Conjg(qqq_local(j_local,k_local,l_local))
-                sq1=Real( pterm*qt1_local(j_local,k_local,l_local),wp )
-                sq2=Real( pterm*qt2_local(j_local,k_local,l_local),wp )
-                sq3=Real( pterm*qt3_local(j_local,k_local,l_local),wp )
+                pterm=2.0_wp*bb1*Exp(ralph*rksq)/rksq*Conjg(electro%qqq_local_mf(j_local,k_local,l_local))
+                sq1=Real( pterm*electro%qt1_local_mf(j_local,k_local,l_local),wp )
+                sq2=Real( pterm*electro%qt2_local_mf(j_local,k_local,l_local),wp )
+                sq3=Real( pterm*electro%qt3_local_mf(j_local,k_local,l_local),wp )
 
   !=======================================================================
 
@@ -1833,11 +1812,11 @@ Module ewald_mpole
                 strs(7)=strs(7)-rkx3*rkz3*akv+rrkzx*sq1
                 strs(8)=strs(8)-rky3*rkz3*akv+rrkzy*sq2
 
-                qqq_local(j_local,k_local,l_local)=vterm
+                electro%qqq_local_mf(j_local,k_local,l_local)=vterm
 
              Else
 
-                qqq_local(j_local,k_local,l_local)=(0.0_wp,0.0_wp)
+                electro%qqq_local_mf(j_local,k_local,l_local)=(0.0_wp,0.0_wp)
 
              End If
 
@@ -1857,15 +1836,15 @@ Module ewald_mpole
 
   ! calculate atomic energy
 
-    Call pfft(qqq_local,pfft_work,context,-1)
+    Call pfft(electro%qqq_local_mf,electro%pfft_work_mf,electro%context_mf,-1)
 
     eng = 0.0_wp
-    Do l=1,block_z
-       Do k=1,block_y
-          Do j=1,block_x
-             qqc_tmp=Real(qqq_local(j,k,l),wp)
-             eng=eng+qqc_local(j,k,l)*qqc_tmp
-             qqc_local(j,k,l)=qqc_tmp
+    Do l=1,electro%block_z_mf
+       Do k=1,electro%block_y_mf
+          Do j=1,electro%block_x_mf
+             qqc_tmp=Real(electro%qqq_local_mf(j,k,l),wp)
+             eng=eng+electro%qqc_local_mf(j,k,l)*qqc_tmp
+             electro%qqc_local_mf(j,k,l)=qqc_tmp
           End Do
        End Do
     End Do
@@ -1907,8 +1886,8 @@ Module ewald_mpole
 
   ! calculate atomic forces
 
-    Call spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz,qqc_local, &
-      ixb,ixt,iyb,iyt,izb,izt,mpoles,domain)
+    Call spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz,electro%qqc_local_mf, &
+      electro%ixb_mf,electro%ixt_mf,electro%iyb_mf,electro%iyt_mf,electro%izb_mf,electro%izt_mf,mpoles,domain)
 
     Deallocate (ixx,iyy,izz,it,    Stat = fail(1))
     Deallocate (bdx,bdy,bdz,       Stat = fail(2))
@@ -2240,45 +2219,35 @@ Module ewald_mpole
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( ewald_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
     Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
 
-    Logical,           Save :: newjob = .true.
-    Integer,           Save :: ixb,iyb,izb, ixt,iyt,izt
-    Real( Kind = wp ), Save :: ixbm1_r,iybm1_r,izbm1_r, &
-                               ixtm0_r,iytm0_r,iztm0_r, &
-                               kmaxa_r,kmaxb_r,kmaxc_r
 
     Logical              :: llspl=.true.
     Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt
 
     Real( Kind = wp )    :: det,rcell(1:9),celprp(1:10),ralph,rvolm,scale,       &
-                            rcpcut,rcpct2,strs(1:9),eng,akv,tmp,bb1,bb2,bb3,     &
-                            rksq,rkx1,rkx2,rkx3, rky1,rky2,rky3, rkz1,rkz2,rkz3, &
-                            rrkxy,rrkxz,rrkyx,rrkyz,rrkzx,rrkzy, sq1,sq2,sq3,    &
-                            dtp,tq1,tq2,tq3,                                     &
-                            imp1,imp2,imp3,imp4,imp5,imp6,imp7,imp8,imp9,imp10,  &
-                            bdy0,bdy1,bdy2,bdz0,bdz1,bdz2,                       &
-                            ka11,kb22,kc33,ka11sq,kb22sq,kc33sq,kakb,kakc,kbkc
+      rcpcut,rcpct2,strs(1:9),eng,akv,tmp,bb1,bb2,bb3,     &
+      rksq,rkx1,rkx2,rkx3, rky1,rky2,rky3, rkz1,rkz2,rkz3, &
+      rrkxy,rrkxz,rrkyx,rrkyz,rrkzx,rrkzy, sq1,sq2,sq3,    &
+      dtp,tq1,tq2,tq3,                                     &
+      imp1,imp2,imp3,imp4,imp5,imp6,imp7,imp8,imp9,imp10,  &
+      bdy0,bdy1,bdy2,bdz0,bdz1,bdz2,                       &
+      ka11,kb22,kc33,ka11sq,kb22sq,kc33sq,kakb,kakc,kbkc
 
     Real( Kind = wp )    :: imp(1:mpoles%max_mpoles)
 
     Complex( Kind = wp ) :: vterm,pterm
 
-  ! uni is the diagonal unit matrix
+    ! uni is the diagonal unit matrix
 
-    Real( Kind = wp )    :: &
-       uni(1:9) = (/ 1.0_wp,0.0_wp,0.0_wp, 0.0_wp,1.0_wp,0.0_wp, 0.0_wp,0.0_wp,1.0_wp /)
+    Real( Kind = wp ), Parameter   :: &
+      uni(1:9) = (/ 1.0_wp,0.0_wp,0.0_wp, 0.0_wp,1.0_wp,0.0_wp, 0.0_wp,0.0_wp,1.0_wp /)
 
-  ! blocking factors for fft
+    ! B-spline coefficients
 
-    Integer,           Save :: block_x,block_y,block_z
-
-  ! B-spline coefficients
-
-    Complex( Kind = wp ), Dimension( : ),       Allocatable, Save :: bscx,bscy,bscz
     Complex( Kind = wp ), Dimension( : ),       Allocatable       :: ww1,ww2,ww3
 
     Real( Kind = wp ),    Dimension( : ),       Allocatable       :: csp
@@ -2288,27 +2257,11 @@ Module ewald_mpole
     Real( Kind = wp ),    Dimension( :,: ),     Allocatable       :: bspx,bspy,bspz
     Real( Kind = wp ),    Dimension( : ),       Allocatable       :: bdx,bdy,bdz
 
-  ! context for parallel fft
-
-    Integer,           Save :: context
-
-  ! indexing arrays for x, y & z as used in parallel fft
-
-    Integer,              Dimension( : ),       Allocatable, Save :: index_x,index_y,index_z
 
   ! temporary qqc
 
     Real( Kind = wp )    :: qqc_tmp
 
-  ! temporary workspace for parallel fft
-
-    Real( Kind = wp ),    Dimension( :,:,: ),   Allocatable, Save :: qqc_local
-    Real( Kind = wp ),    Dimension( :,:,:,: ), Allocatable, Save :: qtc_local
-    Complex( Kind = wp ), Dimension( :,:,: ),   Allocatable, Save :: qqq_local
-    Complex( Kind = wp ), Dimension( :,:,: ),   Allocatable, Save :: qt1_local, &
-                                                                     qt2_local, &
-                                                                     qt3_local
-    Complex( Kind = wp ), Dimension( :,:,: ),   Allocatable, Save :: pfft_work
 
   ! DaFT arrays local indices
 
@@ -2317,31 +2270,31 @@ Module ewald_mpole
 
 
     fail=0
-    If (newjob) Then
-       newjob = .false.
+    If (electro%newjob_mfd) Then
+       electro%newjob_mfd = .false.
 
   !!! BEGIN DD SPME VARIABLES
   ! 3D charge array construction (bottom and top) indices
 
-       ixb=domain%idx*(ewld%fft_dim_a/domain%nx)+1
-       ixt=(domain%idx+1)*(ewld%fft_dim_a/domain%nx)
-       iyb=domain%idy*(ewld%fft_dim_b/domain%ny)+1
-       iyt=(domain%idy+1)*(ewld%fft_dim_b/domain%ny)
-       izb=domain%idz*(ewld%fft_dim_c/domain%nz)+1
-       izt=(domain%idz+1)*(ewld%fft_dim_c/domain%nz)
+       electro%ixb_mfd=domain%idx*(ewld%fft_dim_a/domain%nx)+1
+       electro%ixt_mfd=(domain%idx+1)*(ewld%fft_dim_a/domain%nx)
+       electro%iyb_mfd=domain%idy*(ewld%fft_dim_b/domain%ny)+1
+       electro%iyt_mfd=(domain%idy+1)*(ewld%fft_dim_b/domain%ny)
+       electro%izb_mfd=domain%idz*(ewld%fft_dim_c/domain%nz)+1
+       electro%izt_mfd=(domain%idz+1)*(ewld%fft_dim_c/domain%nz)
 
-       ixbm1_r=Real(ixb-1,wp)
-       ixtm0_r=Nearest( Real(ixt,wp) , -1.0_wp )
-       iybm1_r=Real(iyb-1,wp)
-       iytm0_r=Nearest( Real(iyt,wp) , -1.0_wp )
-       izbm1_r=Real(izb-1,wp)
-       iztm0_r=Nearest( Real(izt,wp) , -1.0_wp )
+       electro%ixbm1_r_mfd=Real(electro%ixb_mfd-1,wp)
+       electro%ixtm0_r_mfd=Nearest( Real(electro%ixt_mfd,wp) , -1.0_wp )
+       electro%iybm1_r_mfd=Real(electro%iyb_mfd-1,wp)
+       electro%iytm0_r_mfd=Nearest( Real(electro%iyt_mfd,wp) , -1.0_wp )
+       electro%izbm1_r_mfd=Real(electro%izb_mfd-1,wp)
+       electro%iztm0_r_mfd=Nearest( Real(electro%izt_mfd,wp) , -1.0_wp )
 
   ! Real values of kmax vectors
 
-       kmaxa_r=Real(ewld%fft_dim_a,wp)
-       kmaxb_r=Real(ewld%fft_dim_b,wp)
-       kmaxc_r=Real(ewld%fft_dim_c,wp)
+       electro%kmaxa_r_mfd=Real(ewld%fft_dim_a,wp)
+       electro%kmaxb_r_mfd=Real(ewld%fft_dim_b,wp)
+       electro%kmaxc_r_mfd=Real(ewld%fft_dim_c,wp)
 
   !!! END DD SPME VARIABLES
 
@@ -2360,7 +2313,8 @@ Module ewald_mpole
 
   ! allocate the global B-spline coefficients and the helper array
 
-       Allocate (bscx(1:ewld%fft_dim_a),bscy(1:ewld%fft_dim_b),bscz(1:ewld%fft_dim_c), Stat = fail(1))
+       Allocate (electro%bscx_mfd(1:ewld%fft_dim_a),electro%bscy_mfd(1:ewld%fft_dim_b),&
+         electro%bscz_mfd(1:ewld%fft_dim_c), Stat = fail(1))
        Allocate (csp(1:ewld%bspline),                              Stat = fail(2))
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'bsc and cse arrays allocation failure'
@@ -2369,7 +2323,7 @@ Module ewald_mpole
 
   ! calculate the global B-spline coefficients
 
-       Call bspcoe(ewld,csp,bscx,bscy,bscz,ww1,ww2,ww3)
+       Call bspcoe(ewld,csp,electro%bscx_mfd,electro%bscy_mfd,electro%bscz_mfd,ww1,ww2,ww3)
 
   ! deallocate the helper array and complex exponential arrays
 
@@ -2385,40 +2339,40 @@ Module ewald_mpole
   !!! BEGIN DAFT SET-UP
   ! domain local block limits of kmax space
 
-       block_x = ewld%fft_dim_a / domain%nx
-       block_y = ewld%fft_dim_b / domain%ny
-       block_z = ewld%fft_dim_c / domain%nz
+       electro%block_x_mfd = ewld%fft_dim_a / domain%nx
+       electro%block_y_mfd = ewld%fft_dim_b / domain%ny
+       electro%block_z_mfd = ewld%fft_dim_c / domain%nz
 
   ! set up the parallel fft and useful related quantities
 
        Call initialize_fft( 3, (/ ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c /), &
            (/ domain%nx, domain%ny, domain%nz /), (/ domain%idx, domain%idy, domain%idz /),   &
-           (/ block_x, block_y, block_z /),               &
-           comm%comm, context )
+           (/ electro%block_x_mfd, electro%block_y_mfd, electro%block_z_mfd /),               &
+           comm%comm, electro%context_mfd )
 
   ! set up the indexing arrays for each dimension (NOT deallocated manually)
 
-       Allocate ( index_x( 1:block_x ), Stat = fail(1) )
-       Allocate ( index_y( 1:block_y ), Stat = fail(2) )
-       Allocate ( index_z( 1:block_z ), Stat = fail(3) )
+       Allocate ( electro%index_x_mfd( 1:electro%block_x_mfd ), Stat = fail(1) )
+       Allocate ( electro%index_y_mfd( 1:electro%block_y_mfd ), Stat = fail(2) )
+       Allocate ( electro%index_z_mfd( 1:electro%block_z_mfd ), Stat = fail(3) )
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'SPME index arrays allocation failure'
           Call error(0,message)
        End If
 
-       Call pfft_indices( ewld%fft_dim_a, block_x, domain%idx, domain%nx, index_x )
-       Call pfft_indices( ewld%fft_dim_b, block_y, domain%idy, domain%ny, index_y )
-       Call pfft_indices( ewld%fft_dim_c, block_z, domain%idz, domain%nz, index_z )
+       Call pfft_indices( ewld%fft_dim_a, electro%block_x_mfd, domain%idx, domain%nx, electro%index_x_mfd )
+       Call pfft_indices( ewld%fft_dim_b, electro%block_y_mfd, domain%idy, domain%ny, electro%index_y_mfd )
+       Call pfft_indices( ewld%fft_dim_c, electro%block_z_mfd, domain%idz, domain%nz, electro%index_z_mfd )
 
   ! workspace arrays for DaFT
 
-       Allocate ( qqc_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(1) )
-       Allocate ( qqq_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(2) )
-       Allocate ( qtc_local( 1:3, 1:block_x, 1:block_y, 1:block_z ), &
-                  qt1_local( 1:block_x, 1:block_y, 1:block_z ),      &
-                  qt2_local( 1:block_x, 1:block_y, 1:block_z ),      &
-                  qt3_local( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(3) )
-       Allocate ( pfft_work( 1:block_x, 1:block_y, 1:block_z ), Stat = fail(4) )
+       Allocate ( electro%qqc_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), Stat = fail(1) )
+       Allocate ( electro%qqq_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), Stat = fail(2) )
+       Allocate ( electro%qtc_local_mfd( 1:3, 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), &
+                  electro%qt1_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ),      &
+                  electro%qt2_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ),      &
+                  electro%qt3_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), Stat = fail(3) )
+       Allocate ( electro%pfft_work_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), Stat = fail(4) )
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'SPME DaFT workspace arrays allocation failure'
           Call error(0,message)
@@ -2472,16 +2426,16 @@ Module ewald_mpole
     If (Abs(det) < 1.0e-6_wp) Call error(120)
 
     Do i=1,nlast
-       txx(i)=kmaxa_r*(rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+0.5_wp)
-       tyy(i)=kmaxb_r*(rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+0.5_wp)
-       tzz(i)=kmaxc_r*(rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+0.5_wp)
+       txx(i)=electro%kmaxa_r_mfd*(rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+0.5_wp)
+       tyy(i)=electro%kmaxb_r_mfd*(rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+0.5_wp)
+       tzz(i)=electro%kmaxc_r_mfd*(rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+0.5_wp)
 
   ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
 
        If (ewld%bspline1 == ewld%bspline .and. i <= natms) Then
-          If (txx(i) < ixbm1_r .or. txx(i) > ixtm0_r .or. &
-              tyy(i) < iybm1_r .or. tyy(i) > iytm0_r .or. &
-              tzz(i) < izbm1_r .or. tzz(i) > iztm0_r) llspl=.false.
+          If (txx(i) < electro%ixbm1_r_mfd .or. txx(i) > electro%ixtm0_r_mfd .or. &
+              tyy(i) < electro%iybm1_r_mfd .or. tyy(i) > electro%iytm0_r_mfd .or. &
+              tzz(i) < electro%izbm1_r_mfd .or. tzz(i) > electro%iztm0_r_mfd) llspl=.false.
        End If
 
        ixx(i)=Int(txx(i))
@@ -2523,14 +2477,14 @@ Module ewald_mpole
   ! zero 3D charge array
   ! DaFT version - only need set local bit to zero
 
-    qqc_local = 0.0_wp
-    qtc_local = 0.0_wp
+    electro%qqc_local_mfd = 0.0_wp
+    electro%qtc_local_mfd = 0.0_wp
 
   ! construct 3D charge array
 
-    ka11 = kmaxa_r*rcell(1)
-    kb22 = kmaxb_r*rcell(5)
-    kc33 = kmaxc_r*rcell(9)
+    ka11 = electro%kmaxa_r_mfd*rcell(1)
+    kb22 = electro%kmaxb_r_mfd*rcell(5)
+    kc33 = electro%kmaxc_r_mfd*rcell(9)
 
     ka11sq = ka11*ka11; kb22sq = kb22*kb22; kc33sq = kc33*kc33
     kakb = ka11*kb22; kakc = ka11*kc33; kbkc = kb22*kc33
@@ -2559,14 +2513,14 @@ Module ewald_mpole
              imp8=imp(8) ; imp9=imp(9) ; imp10=imp(10)
           End If
 
-          llb = Max( izb, izz(i) - ewld%bspline + 2 )
-          llt = Min( izt, izz(i) + 1 )
+          llb = Max( electro%izb_mfd, izz(i) - ewld%bspline + 2 )
+          llt = Min( electro%izt_mfd, izz(i) + 1 )
 
-          kkb = Max( iyb, iyy(i) - ewld%bspline + 2 )
-          kkt = Min( iyt, iyy(i) + 1 )
+          kkb = Max( electro%iyb_mfd, iyy(i) - ewld%bspline + 2 )
+          kkt = Min( electro%iyt_mfd, iyy(i) + 1 )
 
-          jjb = Max( ixb, ixx(i) - ewld%bspline + 2 )
-          jjt = Min( ixt, ixx(i) + 1 )
+          jjb = Max( electro%ixb_mfd, ixx(i) - ewld%bspline + 2 )
+          jjt = Min( electro%ixt_mfd, ixx(i) + 1 )
 
           Select Case( jjt - jjb + 1 )
 
@@ -2575,7 +2529,7 @@ Module ewald_mpole
                 Do ll = llb, llt
                    l = izz(i) - ll + 2
 
-                   l_local = ll - izb + 1
+                   l_local = ll - electro%izb_mfd + 1
 
                    bdz=bsddz(:,l,i)
                    bdz0=bdz(0); bdz1=bdz(1); bdz2=bdz(2)
@@ -2583,7 +2537,7 @@ Module ewald_mpole
                    Do kk = kkb, kkt
                       k = iyy(i) - kk + 2
 
-                      k_local = kk - iyb + 1
+                      k_local = kk - electro%iyb_mfd + 1
 
                       bdy=bsddy(:,k,i)
                       bdy0=bdy(0); bdy1=bdy(1); bdy2=bdy(2)
@@ -2591,7 +2545,7 @@ Module ewald_mpole
                       Do jj = jjb, jjt
                          j = ixx(i) - jj + 2
 
-                         j_local = jj - ixb + 1
+                         j_local = jj - electro%ixb_mfd + 1
 
                          bdx=bsddx(:,j,i)
 
@@ -2615,11 +2569,11 @@ Module ewald_mpole
                             tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                          End If
 
-                         qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                         electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                         qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                         qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                         qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                         electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                         electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                         electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
                       End Do
                    End Do
                 End Do
@@ -2631,7 +2585,7 @@ Module ewald_mpole
                 Do ll = llb, llt
                    l = izz(i) - ll + 2
 
-                   l_local = ll - izb + 1
+                   l_local = ll - electro%izb_mfd + 1
 
                    bdz=bsddz(:,l,i)
                    bdz0=bdz(0); bdz1=bdz(1); bdz2=bdz(2)
@@ -2639,7 +2593,7 @@ Module ewald_mpole
                    Do kk = kkb, kkt
                       k = iyy(i) - kk + 2
 
-                      k_local = kk - iyb + 1
+                      k_local = kk - electro%iyb_mfd + 1
 
                       bdy=bsddy(:,k,i)
                       bdy0=bdy(0); bdy1=bdy(1); bdy2=bdy(2)
@@ -2649,7 +2603,7 @@ Module ewald_mpole
                       !1
                       j = ixx(i) - jj + 2
 
-                      j_local = jj - ixb + 1
+                      j_local = jj - electro%ixb_mfd + 1
 
                       bdx=bsddx(:,j,i)
 
@@ -2673,11 +2627,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
                    End Do
                 End Do
 
@@ -2686,7 +2640,7 @@ Module ewald_mpole
                 Do ll = llb, llt
                    l = izz(i) - ll + 2
 
-                   l_local = ll - izb + 1
+                   l_local = ll - electro%izb_mfd + 1
 
                    bdz=bsddz(:,l,i)
                    bdz0=bdz(0); bdz1=bdz(1); bdz2=bdz(2)
@@ -2694,7 +2648,7 @@ Module ewald_mpole
                    Do kk = kkb, kkt
                       k = iyy(i) - kk + 2
 
-                      k_local = kk - iyb + 1
+                      k_local = kk - electro%iyb_mfd + 1
 
                       bdy=bsddy(:,k,i)
                       bdy0=bdy(0); bdy1=bdy(1); bdy2=bdy(2)
@@ -2703,7 +2657,7 @@ Module ewald_mpole
                       !1
                       j = ixx(i) - jj + 2
 
-                      j_local = jj - ixb + 1
+                      j_local = jj - electro%ixb_mfd + 1
 
                       bdx=bsddx(:,j,i)
 
@@ -2727,11 +2681,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !2
                       j = j - 1
@@ -2760,11 +2714,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
                    End Do
                 End Do
 
@@ -2773,7 +2727,7 @@ Module ewald_mpole
                 Do ll = llb, llt
                    l = izz(i) - ll + 2
 
-                   l_local = ll - izb + 1
+                   l_local = ll - electro%izb_mfd + 1
 
                    bdz=bsddz(:,l,i)
                    bdz0=bdz(0); bdz1=bdz(1); bdz2=bdz(2)
@@ -2781,7 +2735,7 @@ Module ewald_mpole
                    Do kk = kkb, kkt
                       k = iyy(i) - kk + 2
 
-                      k_local = kk - iyb + 1
+                      k_local = kk - electro%iyb_mfd + 1
 
                       bdy=bsddy(:,k,i)
                       bdy0=bdy(0); bdy1=bdy(1); bdy2=bdy(2)
@@ -2790,7 +2744,7 @@ Module ewald_mpole
                       !1
                       j = ixx(i) - jj + 2
 
-                      j_local = jj - ixb + 1
+                      j_local = jj - electro%ixb_mfd + 1
 
                       bdx=bsddx(:,j,i)
 
@@ -2814,11 +2768,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !2
                       j = j - 1
@@ -2847,11 +2801,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !3
                       j = j - 1
@@ -2880,11 +2834,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
                    End Do
                 End Do
 
@@ -2893,7 +2847,7 @@ Module ewald_mpole
                 Do ll = llb, llt
                    l = izz(i) - ll + 2
 
-                   l_local = ll - izb + 1
+                   l_local = ll - electro%izb_mfd + 1
 
                    bdz=bsddz(:,l,i)
                    bdz0=bdz(0); bdz1=bdz(1); bdz2=bdz(2)
@@ -2901,7 +2855,7 @@ Module ewald_mpole
                    Do kk = kkb, kkt
                       k = iyy(i) - kk + 2
 
-                      k_local = kk - iyb + 1
+                      k_local = kk - electro%iyb_mfd + 1
 
                       bdy=bsddy(:,k,i)
                       bdy0=bdy(0); bdy1=bdy(1); bdy2=bdy(2)
@@ -2910,7 +2864,7 @@ Module ewald_mpole
                       !1
                       j = ixx(i) - jj + 2
 
-                      j_local = jj - ixb + 1
+                      j_local = jj - electro%ixb_mfd + 1
 
                       bdx=bsddx(:,j,i)
 
@@ -2934,11 +2888,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !2
                       j = j - 1
@@ -2967,11 +2921,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !3
                       j = j - 1
@@ -3000,11 +2954,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !4
                       j = j - 1
@@ -3033,11 +2987,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
                    End Do
                 End Do
 
@@ -3046,7 +3000,7 @@ Module ewald_mpole
                 Do ll = llb, llt
                    l = izz(i) - ll + 2
 
-                   l_local = ll - izb + 1
+                   l_local = ll - electro%izb_mfd + 1
 
                    bdz=bsddz(:,l,i)
                    bdz0=bdz(0); bdz1=bdz(1); bdz2=bdz(2)
@@ -3054,7 +3008,7 @@ Module ewald_mpole
                    Do kk = kkb, kkt
                       k = iyy(i) - kk + 2
 
-                      k_local = kk - iyb + 1
+                      k_local = kk - electro%iyb_mfd + 1
 
                       bdy=bsddy(:,k,i)
                       bdy0=bdy(0); bdy1=bdy(1); bdy2=bdy(2)
@@ -3063,7 +3017,7 @@ Module ewald_mpole
                       !1
                       j = ixx(i) - jj + 2
 
-                      j_local = jj - ixb + 1
+                      j_local = jj - electro%ixb_mfd + 1
 
                       bdx=bsddx(:,j,i)
 
@@ -3087,11 +3041,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !2
                       j = j - 1
@@ -3120,11 +3074,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !3
                       j = j - 1
@@ -3153,11 +3107,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !4
                       j = j - 1
@@ -3186,11 +3140,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !5
                       j = j - 1
@@ -3219,11 +3173,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
                    End Do
                 End Do
 
@@ -3233,7 +3187,7 @@ Module ewald_mpole
                 Do ll = llb, llt
                    l = izz(i) - ll + 2
 
-                   l_local = ll - izb + 1
+                   l_local = ll - electro%izb_mfd + 1
 
                    bdz=bsddz(:,l,i)
                    bdz0=bdz(0); bdz1=bdz(1); bdz2=bdz(2)
@@ -3241,7 +3195,7 @@ Module ewald_mpole
                    Do kk = kkb, kkt
                       k = iyy(i) - kk + 2
 
-                      k_local = kk - iyb + 1
+                      k_local = kk - electro%iyb_mfd + 1
 
                       bdy=bsddy(:,k,i)
                       bdy0=bdy(0); bdy1=bdy(1); bdy2=bdy(2)
@@ -3250,7 +3204,7 @@ Module ewald_mpole
                       !1
                       j = ixx(i) - jj + 2
 
-                      j_local = jj - ixb + 1
+                      j_local = jj - electro%ixb_mfd + 1
 
                       bdx=bsddx(:,j,i)
 
@@ -3274,11 +3228,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !2
                       j = j - 1
@@ -3307,11 +3261,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !3
                       j = j - 1
@@ -3340,11 +3294,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !4
                       j = j - 1
@@ -3373,11 +3327,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !5
                       j = j - 1
@@ -3406,11 +3360,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !6
                       j = j - 1
@@ -3439,11 +3393,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
                    End Do
                 End Do
 
@@ -3452,7 +3406,7 @@ Module ewald_mpole
                 Do ll = llb, llt
                    l = izz(i) - ll + 2
 
-                   l_local = ll - izb + 1
+                   l_local = ll - electro%izb_mfd + 1
 
                    bdz=bsddz(:,l,i)
                    bdz0=bdz(0); bdz1=bdz(1); bdz2=bdz(2)
@@ -3460,7 +3414,7 @@ Module ewald_mpole
                    Do kk = kkb, kkt
                       k = iyy(i) - kk + 2
 
-                      k_local = kk - iyb + 1
+                      k_local = kk - electro%iyb_mfd + 1
 
                       bdy=bsddy(:,k,i)
                       bdy0=bdy(0); bdy1=bdy(1); bdy2=bdy(2)
@@ -3469,7 +3423,7 @@ Module ewald_mpole
                       !1
                       j = ixx(i) - jj + 2
 
-                      j_local = jj - ixb + 1
+                      j_local = jj - electro%ixb_mfd + 1
 
                       bdx=bsddx(:,j,i)
 
@@ -3493,11 +3447,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !2
                       j = j - 1
@@ -3526,11 +3480,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !3
                       j = j - 1
@@ -3559,11 +3513,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !4
                       j = j - 1
@@ -3592,11 +3546,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !5
                       j = j - 1
@@ -3625,11 +3579,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !6
                       j = j - 1
@@ -3658,11 +3612,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !7
                       j = j - 1
@@ -3691,11 +3645,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
                    End Do
                 End Do
 
@@ -3704,7 +3658,7 @@ Module ewald_mpole
                 Do ll = llb, llt
                    l = izz(i) - ll + 2
 
-                   l_local = ll - izb + 1
+                   l_local = ll - electro%izb_mfd + 1
 
                    bdz=bsddz(:,l,i)
                    bdz0=bdz(0); bdz1=bdz(1); bdz2=bdz(2)
@@ -3712,7 +3666,7 @@ Module ewald_mpole
                    Do kk = kkb, kkt
                       k = iyy(i) - kk + 2
 
-                      k_local = kk - iyb + 1
+                      k_local = kk - electro%iyb_mfd + 1
 
                       bdy=bsddy(:,k,i)
                       bdy0=bdy(0); bdy1=bdy(1); bdy2=bdy(2)
@@ -3721,7 +3675,7 @@ Module ewald_mpole
                       !1
                       j = ixx(i) - jj + 2
 
-                      j_local = jj - ixb + 1
+                      j_local = jj - electro%ixb_mfd + 1
 
                       bdx=bsddx(:,j,i)
 
@@ -3745,11 +3699,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !2
                       j = j - 1
@@ -3778,11 +3732,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !3
                       j = j - 1
@@ -3811,11 +3765,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !4
                       j = j - 1
@@ -3844,11 +3798,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !5
                       j = j - 1
@@ -3877,11 +3831,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !6
                       j = j - 1
@@ -3910,11 +3864,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !7
                       j = j - 1
@@ -3943,11 +3897,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
 
                       !8
                       j = j - 1
@@ -3976,11 +3930,11 @@ Module ewald_mpole
                          tmp = imp9*kbkc*bdx(0)*bdy1*bdz1; dtp=dtp+tmp; tq2=tq2+tmp; tq3=tq3+tmp
                       End If
 
-                      qqc_local(j_local,k_local,l_local)   = qqc_local(j_local,k_local,l_local)   + dtp
+                      electro%qqc_local_mfd(j_local,k_local,l_local)   = electro%qqc_local_mfd(j_local,k_local,l_local)   + dtp
 
-                      qtc_local(1,j_local,k_local,l_local) = qtc_local(1,j_local,k_local,l_local) + tq1
-                      qtc_local(2,j_local,k_local,l_local) = qtc_local(2,j_local,k_local,l_local) + tq2
-                      qtc_local(3,j_local,k_local,l_local) = qtc_local(3,j_local,k_local,l_local) + tq3
+                      electro%qtc_local_mfd(1,j_local,k_local,l_local) = electro%qtc_local_mfd(1,j_local,k_local,l_local) + tq1
+                      electro%qtc_local_mfd(2,j_local,k_local,l_local) = electro%qtc_local_mfd(2,j_local,k_local,l_local) + tq2
+                      electro%qtc_local_mfd(3,j_local,k_local,l_local) = electro%qtc_local_mfd(3,j_local,k_local,l_local) + tq3
                    End Do
                 End Do
 
@@ -3992,25 +3946,25 @@ Module ewald_mpole
 
   ! load charge array into complex array for FFT
 
-    qqq_local=Cmplx(qqc_local , Kind = wp)
+    electro%qqq_local_mfd=Cmplx(electro%qqc_local_mfd , Kind = wp)
 
-    qt1_local=Cmplx(qtc_local(1,:,:,:), Kind = wp)
-    qt2_local=Cmplx(qtc_local(2,:,:,:), Kind = wp)
-    qt3_local=Cmplx(qtc_local(3,:,:,:), Kind = wp)
+    electro%qt1_local_mfd=Cmplx(electro%qtc_local_mfd(1,:,:,:), Kind = wp)
+    electro%qt2_local_mfd=Cmplx(electro%qtc_local_mfd(2,:,:,:), Kind = wp)
+    electro%qt3_local_mfd=Cmplx(electro%qtc_local_mfd(3,:,:,:), Kind = wp)
 
   ! calculate inverse 3D FFT of charge array (in place)
 
-    Call pfft(qqq_local,pfft_work,context,1)
+    Call pfft(electro%qqq_local_mfd,electro%pfft_work_mfd,electro%context_mfd,1)
 
-    Call pfft(qt1_local,pfft_work,context,1)
-    Call pfft(qt2_local,pfft_work,context,1)
-    Call pfft(qt3_local,pfft_work,context,1)
+    Call pfft(electro%qt1_local_mfd,electro%pfft_work_mfd,electro%context_mfd,1)
+    Call pfft(electro%qt2_local_mfd,electro%pfft_work_mfd,electro%context_mfd,1)
+    Call pfft(electro%qt3_local_mfd,electro%pfft_work_mfd,electro%context_mfd,1)
 
   ! set reciprocal space cutoff
 
     Call dcell(rcell,celprp)
 
-    rcpcut=0.5_wp*Min(kmaxa_r*celprp(7),kmaxb_r*celprp(8),kmaxc_r*celprp(9))
+    rcpcut=0.5_wp*Min(electro%kmaxa_r_mfd*celprp(7),electro%kmaxb_r_mfd*celprp(8),electro%kmaxc_r_mfd*celprp(9))
     rcpcut=rcpcut*1.05_wp*twopi
     rcpct2=rcpcut**2
 
@@ -4021,8 +3975,8 @@ Module ewald_mpole
   ! calculate convolution of charge array with gaussian function
   ! DaFT Version - only loop over the local stuff
 
-    Do l_local=1,block_z
-       l=index_z(l_local)
+    Do l_local=1,electro%block_z_mfd
+       l=electro%index_z_mfd(l_local)
 
        ll=l-1
        If (l > ewld%fft_dim_c/2) ll=ll-ewld%fft_dim_c
@@ -4032,10 +3986,10 @@ Module ewald_mpole
        rky1=tmp*rcell(6)
        rkz1=tmp*rcell(9)
 
-       bb3=Real( bscz(l)*Conjg(bscz(l)),wp )
+       bb3=Real( electro%bscz_mfd(l)*Conjg(electro%bscz_mfd(l)),wp )
 
-       Do k_local=1,block_y
-          k=index_y(k_local)
+       Do k_local=1,electro%block_y_mfd
+          k=electro%index_y_mfd(k_local)
 
           kk=k-1
           If (k > ewld%fft_dim_b/2) kk=kk-ewld%fft_dim_b
@@ -4045,10 +3999,10 @@ Module ewald_mpole
           rky2=rky1+tmp*rcell(5)
           rkz2=rkz1+tmp*rcell(8)
 
-          bb2=bb3*Real( bscy(k)*Conjg(bscy(k)),wp )
+          bb2=bb3*Real( electro%bscy_mfd(k)*Conjg(electro%bscy_mfd(k)),wp )
 
-          Do j_local=1,block_x
-             j=index_x(j_local)
+          Do j_local=1,electro%block_x_mfd
+             j=electro%index_x_mfd(j_local)
 
              jj=j-1
              If (j > ewld%fft_dim_a/2) jj=jj-ewld%fft_dim_a
@@ -4058,7 +4012,7 @@ Module ewald_mpole
              rky3=rky2+tmp*rcell(4)
              rkz3=rkz2+tmp*rcell(7)
 
-             bb1=bb2*Real( bscx(j)*Conjg(bscx(j)),wp )
+             bb1=bb2*Real( electro%bscx_mfd(j)*Conjg(electro%bscx_mfd(j)),wp )
 
              rksq=rkx3*rkx3+rky3*rky3+rkz3*rkz3
 
@@ -4093,16 +4047,16 @@ Module ewald_mpole
 
   ! For  monopole contribution to the stress tensor
 
-                vterm=bb1*Exp(ralph*rksq)/rksq*qqq_local(j_local,k_local,l_local)
-                akv=2.0_wp*(1.0_wp/rksq-ralph)*Real( vterm*Conjg(qqq_local(j_local,k_local,l_local)),wp )
+                vterm=bb1*Exp(ralph*rksq)/rksq*electro%qqq_local_mfd(j_local,k_local,l_local)
+                akv=2.0_wp*(1.0_wp/rksq-ralph)*Real( vterm*Conjg(electro%qqq_local_mfd(j_local,k_local,l_local)),wp )
 
   !=======================================================================
   ! For higher order contributions to the stress tensor
 
-                pterm=2.0_wp*bb1*Exp(ralph*rksq)/rksq*Conjg(qqq_local(j_local,k_local,l_local))
-                sq1=Real(pterm*qt1_local(j_local,k_local,l_local),wp)
-                sq2=Real(pterm*qt2_local(j_local,k_local,l_local),wp)
-                sq3=Real(pterm*qt3_local(j_local,k_local,l_local),wp)
+                pterm=2.0_wp*bb1*Exp(ralph*rksq)/rksq*Conjg(electro%qqq_local_mfd(j_local,k_local,l_local))
+                sq1=Real(pterm*electro%qt1_local_mfd(j_local,k_local,l_local),wp)
+                sq2=Real(pterm*electro%qt2_local_mfd(j_local,k_local,l_local),wp)
+                sq3=Real(pterm*electro%qt3_local_mfd(j_local,k_local,l_local),wp)
 
   !=======================================================================
 
@@ -4116,11 +4070,11 @@ Module ewald_mpole
                 strs(7)=strs(7)-rkx3*rkz3*akv+rrkzx*sq1
                 strs(8)=strs(8)-rky3*rkz3*akv+rrkzy*sq2
 
-                qqq_local(j_local,k_local,l_local)=vterm
+                electro%qqq_local_mfd(j_local,k_local,l_local)=vterm
 
              Else
 
-                qqq_local(j_local,k_local,l_local)=(0.0_wp,0.0_wp)
+                electro%qqq_local_mfd(j_local,k_local,l_local)=(0.0_wp,0.0_wp)
 
              End If
 
@@ -4140,15 +4094,15 @@ Module ewald_mpole
 
   ! calculate atomic energy
 
-    Call pfft(qqq_local,pfft_work,context,-1)
+    Call pfft(electro%qqq_local_mfd,electro%pfft_work_mfd,electro%context_mfd,-1)
 
     eng = 0.0_wp
-    Do l=1,block_z
-       Do k=1,block_y
-          Do j=1,block_x
-             qqc_tmp=Real(qqq_local(j,k,l),wp)
-             eng=eng+qqc_local(j,k,l)*qqc_tmp
-             qqc_local(j,k,l)=qqc_tmp
+    Do l=1,electro%block_z_mfd
+       Do k=1,electro%block_y_mfd
+          Do j=1,electro%block_x_mfd
+             qqc_tmp=Real(electro%qqq_local_mfd(j,k,l),wp)
+             eng=eng+electro%qqc_local_mfd(j,k,l)*qqc_tmp
+             electro%qqc_local_mfd(j,k,l)=qqc_tmp
           End Do
        End Do
     End Do
@@ -4190,7 +4144,8 @@ Module ewald_mpole
 
   ! calculate atomic forces
 
-    Call spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz,qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles)
+    Call spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz,electro%qqc_local_mfd,&
+      electro%ixb_mfd,electro%ixt_mfd,electro%iyb_mfd,electro%iyt_mfd,electro%izb_mfd,electro%izt_mfd,mpoles)
 
     Deallocate (ixx,iyy,izz,it,    Stat = fail(1))
     Deallocate (bdx,bdy,bdz,       Stat = fail(2))
@@ -4869,7 +4824,7 @@ Module ewald_mpole
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
 
@@ -4884,66 +4839,64 @@ Module ewald_mpole
     Real( Kind = wp ), Parameter :: r42  = 1.0_wp/42.0_wp
     Real( Kind = wp ), Parameter :: r216 = 1.0_wp/216.0_wp
 
-    Logical,           Save :: newjob = .true.
-    Real( Kind = wp ), Save :: alp2,co1,co2,co3,co4,co5,co6
 
     Integer           :: idi,jatm,limit,m
 
     Real( Kind = wp ) :: scl,rsq,rrr,engmpl,fix,fiy,fiz,fx,fy,fz, &
-                         strs1,strs2,strs3,strs5,strs6,strs9,     &
-                         alpr,alpr2,tt,tmpi,tmpj,tix,talp2,       &
-                         tiy,tiz,tjx,tjy,tjz,b0,b1,b2,b3,b4,b5,   &
-                         alpsqrpi,exparr,ecc,ecd,ecq,edd,         &
-                         edq,eqq,ijmp,bijmp,xx,yy,zz,xx2,yy2,     &
-                         zz2,tm1,tm2,tm3,tm4,tm5,tm6,tm7,tm8,     &
-                         tm9,tm10,tm11,tm12,tm13,tm14,tm15,       &
-                         dpx,dpy,dpz,dpxx,dpyy,dpzz,dpxy,dpxz,    &
-                         dpyz,dpxxx,dpyyy,dpzzz,dpxxy,dpxxz,      &
-                         dpxyy,dpxzz,dpxyz,dpyyz,dpyzz,           &
-                         dpxzzz,dpxxxx,dpyyyy,dpzzzz,             &
-                         dpxxxy,dpxxxz,dpxxyy,dpxxzz,dpxxyz,      &
-                         dpxyyy,dpyzzz,dpyyzz,dpxyyz,dpxyzz,      &
-                         dpyyyz,dpxxxxx,dpyyyyy,dpzzzzz,dpxxxxy,  &
-                         dpxxxxz,dpyyyyz,dpxzzzz,dpyzzzz,dpxyyyy, &
-                         dpxxxyy,dpxxxzz,dpyyyzz,dpyyzzz,dpxxyyy, &
-                         dpxxzzz,dpxyyzz,dpxxyyz,dpxxyzz,dpxyyyz, &
-                         dpxyzzz,dpxxxyz,xyz,                     &
-                         thrb2,thrb3,thrb4,sixb4,tenb4,fifb3,     &
-                         imp1,imp2,imp3,imp4,imp5,imp6,imp7,imp8, &
-                         imp9,imp10,jmp1,jmp2,jmp3,jmp4,jmp5,     &
-                         jmp6,jmp7,jmp8,jmp9,jmp10,impx1,impx2,   &
-                         impx3,impx4,impx5,impx6,impx7,impx8,     &
-                         impx9,impx10,jmpx1,jmpx2,jmpx3,jmpx4,    &
-                         jmpx5,jmpx6,jmpx7,jmpx8,jmpx9,jmpx10,    &
-                         impy1,impy2,impy3,impy4,impy5,impy6,     &
-                         impy7,impy8,impy9,impy10,jmpy1,jmpy2,    &
-                         jmpy3,jmpy4,jmpy5,jmpy6,jmpy7,jmpy8,     &
-                         jmpy9,jmpy10,impz1,impz2,impz3,impz4,    &
-                         impz5,impz6,impz7,impz8,impz9,impz10,    &
-                         jmpz1,jmpz2,jmpz3,jmpz4,jmpz5,jmpz6,     &
-                         jmpz7,jmpz8,jmpz9,jmpz10,                &
-                         tmp2,tmp3,tmp4,tmp5,tmp6,tmp7,tmp8,tmp9,tmp10
+      strs1,strs2,strs3,strs5,strs6,strs9,     &
+      alpr,alpr2,tt,tmpi,tmpj,tix,talp2,       &
+      tiy,tiz,tjx,tjy,tjz,b0,b1,b2,b3,b4,b5,   &
+      alpsqrpi,exparr,ecc,ecd,ecq,edd,         &
+      edq,eqq,ijmp,bijmp,xx,yy,zz,xx2,yy2,     &
+      zz2,tm1,tm2,tm3,tm4,tm5,tm6,tm7,tm8,     &
+      tm9,tm10,tm11,tm12,tm13,tm14,tm15,       &
+      dpx,dpy,dpz,dpxx,dpyy,dpzz,dpxy,dpxz,    &
+      dpyz,dpxxx,dpyyy,dpzzz,dpxxy,dpxxz,      &
+      dpxyy,dpxzz,dpxyz,dpyyz,dpyzz,           &
+      dpxzzz,dpxxxx,dpyyyy,dpzzzz,             &
+      dpxxxy,dpxxxz,dpxxyy,dpxxzz,dpxxyz,      &
+      dpxyyy,dpyzzz,dpyyzz,dpxyyz,dpxyzz,      &
+      dpyyyz,dpxxxxx,dpyyyyy,dpzzzzz,dpxxxxy,  &
+      dpxxxxz,dpyyyyz,dpxzzzz,dpyzzzz,dpxyyyy, &
+      dpxxxyy,dpxxxzz,dpyyyzz,dpyyzzz,dpxxyyy, &
+      dpxxzzz,dpxyyzz,dpxxyyz,dpxxyzz,dpxyyyz, &
+      dpxyzzz,dpxxxyz,xyz,                     &
+      thrb2,thrb3,thrb4,sixb4,tenb4,fifb3,     &
+      imp1,imp2,imp3,imp4,imp5,imp6,imp7,imp8, &
+      imp9,imp10,jmp1,jmp2,jmp3,jmp4,jmp5,     &
+      jmp6,jmp7,jmp8,jmp9,jmp10,impx1,impx2,   &
+      impx3,impx4,impx5,impx6,impx7,impx8,     &
+      impx9,impx10,jmpx1,jmpx2,jmpx3,jmpx4,    &
+      jmpx5,jmpx6,jmpx7,jmpx8,jmpx9,jmpx10,    &
+      impy1,impy2,impy3,impy4,impy5,impy6,     &
+      impy7,impy8,impy9,impy10,jmpy1,jmpy2,    &
+      jmpy3,jmpy4,jmpy5,jmpy6,jmpy7,jmpy8,     &
+      jmpy9,jmpy10,impz1,impz2,impz3,impz4,    &
+      impz5,impz6,impz7,impz8,impz9,impz10,    &
+      jmpz1,jmpz2,jmpz3,jmpz4,jmpz5,jmpz6,     &
+      jmpz7,jmpz8,jmpz9,jmpz10,                &
+      tmp2,tmp3,tmp4,tmp5,tmp6,tmp7,tmp8,tmp9,tmp10
 
     Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
 
-    If (newjob) Then
-       newjob = .false.
+    If (electro%newjob_emf) Then
+      electro%newjob_emf = .false.
 
   ! coefficients for exponential in recurrence relation
 
        talp2    = 2.0_wp*electro%alpha*electro%alpha
        alpsqrpi = 1.0_wp/(electro%alpha*sqrpi)
 
-       co1 = talp2*alpsqrpi
-       co2 = talp2*co1
-       co3 = talp2*co2
-       co4 = talp2*co3
-       co5 = talp2*co4
-       co6 = talp2*co5
+       electro%co1_emf = talp2*alpsqrpi
+       electro%co2_emf = talp2*electro%co1_emf
+       electro%co3_emf = talp2*electro%co2_emf
+       electro%co4_emf = talp2*electro%co3_emf
+       electro%co5_emf = talp2*electro%co4_emf
+       electro%co6_emf = talp2*electro%co5_emf
 
-       alp2= electro%alpha*electro%alpha
+       electro%alp2_emf= electro%alpha*electro%alpha
     End If
 
   ! initialise potential energy and virial
@@ -5083,7 +5036,7 @@ Module ewald_mpole
 
   ! evaluate the exponential
 
-             exparr = Exp(-alp2*rsq)
+             exparr = Exp(-electro%alp2_emf*rsq)
 
   ! get the value of the kernel-erf(electro%alpha*r)/r
 
@@ -5099,19 +5052,19 @@ Module ewald_mpole
                 b0 = 2.0_wp*(electro%alpha/sqrpi) * &
                 (1.0_wp+alpr2*(-rr3+alpr2*(r10+alpr2*(-r42+alpr2*r216))))
 
-                b1 = co2*(1.0_wp/3.0_wp-alpr2*(1.0_wp/5.0_wp-alpr2 * &
+                b1 = electro%co2_emf*(1.0_wp/3.0_wp-alpr2*(1.0_wp/5.0_wp-alpr2 * &
                      (1.0_wp/14.0_wp-alpr2*(1.0_wp/54.0_wp-alpr2   * &
                      (1.0_wp/264.0_wp-alpr2/2340.0_wp)))))
 
-                b2 = co3*(1.0_wp/5.0_wp-alpr2*(1.0_wp/7.0_wp-alpr2 * &
+                b2 = electro%co3_emf*(1.0_wp/5.0_wp-alpr2*(1.0_wp/7.0_wp-alpr2 * &
                      (1.0_wp/18.0_wp-alpr2*(1.0_wp/66.0_wp-alpr2/468.0_wp))))
 
-                b3 = co4*(1.0_wp/7.0_wp-alpr2*(1.0_wp/9.0_wp-alpr2 * &
+                b3 = electro%co4_emf*(1.0_wp/7.0_wp-alpr2*(1.0_wp/9.0_wp-alpr2 * &
                      (1.0_wp/22.0_wp-alpr2/117.0_wp)))
 
-                b4 = co5*(1.0_wp/9.0_wp-alpr2*(1.0_wp/11.0_wp-alpr2/39.0_wp))
+                b4 = electro%co5_emf*(1.0_wp/9.0_wp-alpr2*(1.0_wp/11.0_wp-alpr2/39.0_wp))
 
-                b5 = co6*(1.0_wp/11.0_wp-2.0_wp*alpr2/39.0_wp)
+                b5 = electro%co6_emf*(1.0_wp/11.0_wp-2.0_wp*alpr2/39.0_wp)
 
              Else
 
@@ -5123,11 +5076,11 @@ Module ewald_mpole
 
   ! compute other recurrence terms
 
-                b1 = (b0        - co1*exparr)/rsq
-                b2 = (3.0_wp*b1 - co2*exparr)/rsq
-                b3 = (5.0_wp*b2 - co3*exparr)/rsq
-                b4 = (7.0_wp*b3 - co4*exparr)/rsq
-                b5 = (9.0_wp*b4 - co5*exparr)/rsq
+                b1 = (b0        - electro%co1_emf*exparr)/rsq
+                b2 = (3.0_wp*b1 - electro%co2_emf*exparr)/rsq
+                b3 = (5.0_wp*b2 - electro%co3_emf*exparr)/rsq
+                b4 = (7.0_wp*b3 - electro%co4_emf*exparr)/rsq
+                b5 = (9.0_wp*b4 - electro%co5_emf*exparr)/rsq
 
              End If
 
