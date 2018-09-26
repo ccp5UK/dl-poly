@@ -42,8 +42,8 @@
 
 ! displacement detection for every entry in HISTORY
 
-  nsrsd = 0
-  isrsd = 1
+  rsdc%nsrsd = 0
+  rsdc%isrsd = 1
 
 ! intramolecular PDF analysis for every entry in HISTORF
 ! enforce printing and collection if the calculation exists
@@ -255,8 +255,8 @@
            End If
            If (msd_data%l_msd) Call msd_write &
              (keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site,msd_data,comm)
-           If (lrsd) Call rsd_write &
-           (keyres,nsrsd,isrsd,rrsd,nstep,tstep,time,cshell,stat%rsd,parts,comm)
+           If (rsdc%lrsd) Call rsd_write &
+             (keyres,nstep,tstep,rsdc,time,cshell,stat%rsd,parts,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (keyres,nstph,tsths,green,sites,comm)
 

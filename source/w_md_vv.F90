@@ -65,7 +65,7 @@
            newjob = .false.
 
            If (keyres /= 1) Then
-             Call w_write_options(cshell,stat,sites,netcdf,domain,traj)
+             Call w_write_options(rsdc,cshell,stat,sites,netcdf,domain,traj)
            End If
 
            If (nstep == 0 .and. nstep == nstrun) Go To 1000
@@ -145,7 +145,7 @@
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options(cshell,stat,sites,netcdf,domain,traj)
+        Call w_write_options(rsdc,cshell,stat,sites,netcdf,domain,traj)
 
 ! Save restart data in event of system crash
 

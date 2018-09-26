@@ -155,7 +155,7 @@ program dl_poly
   Use halo, Only : refresh_halo_positions,set_halo_particles
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
   Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
-  Use rsds, Only : rsd_write
+  Use rsds, Only : rsd_write,rsd_type
   Use defects, Only : defects_write
   Use trajectory, Only : trajectory_write,read_history
   use system, Only : system_revive,system_expand,system_init
@@ -215,7 +215,7 @@ program dl_poly
     l_exp,lecx,lfcap,      &
     lvar,leql,lsim,lfce,    &
     lpana, &
-    ltraj,lrsd,             &
+    ltraj,             &
     safe,lbook,lexcl,            &
     relaxed_shl = .true.
 
@@ -225,7 +225,6 @@ program dl_poly
     nstbpo,    &
     mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
-    nsrsd,isrsd,            &
     ndump,nstep,                 &
     atmfre,atmfrz,megatm,megfrz
 
@@ -242,7 +241,7 @@ program dl_poly
     fmax,                           &
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),                 &
-    quattol,rrsd,                  &
+    quattol,                 &
     pdplnc
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
@@ -285,6 +284,7 @@ program dl_poly
   Type( seed_type ) :: seed
   Type( trajectory_type ) :: traj
   Type( kim_type ), Target :: kim_data
+  Type( rsd_type ), Target :: rsdsc
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -422,15 +422,15 @@ program dl_poly
     l_exp,lecx,lfcap,l_top,          &
     lvar,leql,               &
     lfce,lpana,           &
-    ltraj,lrsd,               &
+    ltraj,               &
     nx,ny,nz,impa,                            &
     keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     fmax,nstbpo,             &
     rlx_tol,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
-    dfcts,nsrsd,isrsd,rrsd,          &
-    ndump,pdplnc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
+    dfcts,          &
+    ndump,pdplnc,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
     minim,mpoles,electro,ewld,seed,traj,tmr,comm)
 
@@ -662,17 +662,17 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
+    Call w_md_vv(mxatdm,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
       netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,tmr)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,plume,&
+      Call w_replay_historf(mxatdm,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
         fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
         kim_data,tmr)
     Else
-      Call w_replay_history(mxatdm,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
+      Call w_replay_history(mxatdm,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
         netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data)
     End If
@@ -915,7 +915,8 @@ Contains
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
-  Subroutine w_write_options(cshell,stat,sites,netcdf,domain,traj)
+  Subroutine w_write_options(rsdc,cshell,stat,sites,netcdf,domain,traj)
+    Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type(stats_type), Intent(InOut) :: stat
     Type( site_type ), Intent( InOut ) :: sites
@@ -931,10 +932,11 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
+  Subroutine w_md_vv(mxatdm_,rsdc,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
     dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
     ext_field,rigid,domain,seed,traj,kim_data,tmr)
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
+    Type( rsd_type ), Intent( InOut ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -964,10 +966,11 @@ Contains
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,flw,cshell,cons,pmf,stat,thermo,msd_data, &
+  Subroutine w_replay_history(mxatdm_,rsdc,flw,cshell,cons,pmf,stat,thermo,msd_data, &
       met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
       netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
+    Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -1007,11 +1010,12 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,flw,cshell,cons,pmf,stat,thermo,plume, &
-      msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
-      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
-      kim_data,tmr)
+  Subroutine w_replay_historf(mxatdm_,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
+    msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
+    fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
+    kim_data,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
+    Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
