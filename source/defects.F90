@@ -11,14 +11,13 @@ Module defects
 
   Use kinds,             Only : wp,li, wi
   Use setup,             Only : mxatms,mxbfxp,ndefdt, &
-                                nrefdt,config,half_minus, zero_plus
+                                nrefdt,config_name,half_minus, zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
                                 gsend,grecv,gwait,girecv,gscatter,gscatterv, &
                                 gscatter_columns,offset_kind,mode_wronly, &
                                 comm_self,mode_create,mode_rdonly
-  Use configuration,     Only : cfgname,imcon,cell,natms,nlast, &
-                                atmnam,ltg,lfrzn
+  Use configuration,     Only : configuration_type
   Use particle,          Only : corePart
   Use parse,             Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
   Use io,                Only : io_set_parameters,        &
@@ -398,7 +397,7 @@ End Subroutine defects_reference_export
 
 !> defects_reference_read
 
-Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
+Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -416,6 +415,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
   Type( site_type ), Intent( In    ) :: sites
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( domains_type ), Intent( In    ) :: domain
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Logical                :: l_ind = .true.  , &
@@ -465,13 +465,13 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
      Else                ! Use data from CONFIG
         Call warning(320,0.0_wp,0.0_wp,0.0_wp)
         If (io_read /= IO_READ_NETCDF) Then
-           fname=Trim(config)
+           fname=Trim(config_name)
         Else
-           fname=Trim(config)//'.nc'
+           fname=Trim(config_name)//'.nc'
         End If
-        megref=natms
+        megref=config%natms
         Call gsum(comm,megref)
-        If (imcon == 0) Call error(552) ! Lattice parameters are a must
+        If (config%imcon == 0) Call error(552) ! Lattice parameters are a must
      End If
   End If
 
@@ -640,7 +640,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
 
      If (imconr == 4 .or. imconr == 5 .or. imconr == 7) Call error(300)
 
-     Call io_nc_get_var( 'cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
+     Call io_nc_get_var( 'config%cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
      dfcts%celr = Reshape( cell_vecs, (/ Size( dfcts%celr ) /) )
 
 ! Close REFERENCE
@@ -654,7 +654,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
   match=.true.
   If (.not.lexist) Then
      Do i=1,9
-        match = match .and. Abs(cell(i)-dfcts%celr(i)) < 1.0e-6_wp
+        match = match .and. Abs(config%cell(i)-dfcts%celr(i)) < 1.0e-6_wp
      End Do
   End If
 
@@ -681,7 +681,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
         Read(Unit=nrefdt, Fmt=*) ! REFERENCE file header (TITLE record)
         Read(Unit=nrefdt, Fmt=*) ! configuration level and image condition
 
-        Read(Unit=nrefdt, Fmt=*) ! cell vectors
+        Read(Unit=nrefdt, Fmt=*) ! config%cell vectors
         Read(Unit=nrefdt, Fmt=*)
         Read(Unit=nrefdt, Fmt=*)
      End If
@@ -794,9 +794,9 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
 
 ! fold back coordinates
 
-              axx(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
-              ayy(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
-              azz(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+              axx(i)=config%cell(1)*sxx+config%cell(4)*syy+config%cell(7)*szz
+              ayy(i)=config%cell(2)*sxx+config%cell(5)*syy+config%cell(8)*szz
+              azz(i)=config%cell(3)*sxx+config%cell(6)*syy+config%cell(9)*szz
 
 ! assign domain coordinates (call for errors)
 
@@ -860,7 +860,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
 ! top_skip is header size
 
      If (io_read /= IO_READ_NETCDF) Then
-        top_skip = Int(5,offset_kind) ! imcon is a must
+        top_skip = Int(5,offset_kind) ! config%imcon is a must
      Else
         top_skip = Int(1,offset_kind) ! This is now the frame = 1
      End If
@@ -882,7 +882,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
 ! Remove frozen sites so they don't come up as vacancies
 ! only when dealing with CONFIG
 
-  If (Trim(fname) /= Trim(config)) Then
+  If (Trim(fname) /= Trim(config_name)) Then
 
      nsite=0
      msite=0
@@ -925,7 +925,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
 ! MATCH glitch fix
 
   If (.not.match) Then
-     Call defects_reference_write(fname,megref,dfcts,netcdf,comm)
+     Call defects_reference_write(fname,megref,dfcts,netcdf,config,comm)
      Go To 5
   End If
 
@@ -1420,7 +1420,7 @@ Dispatch:  Do i=1,n_loc
   Call error(554)
 End Subroutine defects_reference_read_parallel
 
-Subroutine defects_reference_set_halo(cut,dfcts,domain,comm)
+Subroutine defects_reference_set_halo(cut,dfcts,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1436,6 +1436,7 @@ Subroutine defects_reference_set_halo(cut,dfcts,domain,comm)
   Real( Kind = wp ),    Intent( In    ) :: cut
   Type( defects_type ), Intent( InOut ) :: dfcts
   Type( domains_type ), Intent( In    ) :: domain
+  Type( configuration_type ), Intent(InOut ) :: config
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Integer           :: fail,nlx,nly,nlz,i,j,ia,ib
@@ -1453,7 +1454,7 @@ Subroutine defects_reference_set_halo(cut,dfcts,domain,comm)
 
 ! Get the dimensional properties of the MD cell
 
-  Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
 
 ! calculate link cell dimensions per node
 
@@ -1561,7 +1562,7 @@ Subroutine defects_reference_set_halo(cut,dfcts,domain,comm)
 End Subroutine defects_reference_set_halo
 
 
-Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
+Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1578,6 +1579,7 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
   Integer,              Intent( In    ) :: megref
   Type( defects_type),  Intent( InOut ) :: dfcts
   Type( netcdf_param ), Intent( In    ) :: netcdf
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type),    Intent( InOut ) :: comm
   Integer, Parameter :: recsz = 73 ! default record size
 
@@ -1665,13 +1667,13 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
 ! Accumulate header
 
-        Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+        Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(3i10,a42,a1)') 0,imcon,megref,Repeat(' ',42),lf
+        Write(record, Fmt='(3i10,a42,a1)') 0,config%imcon,megref,Repeat(' ',42),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -1679,7 +1681,7 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
         Do i = 0, 2
            Write(record, Fmt='(3f20.10,a12,a1)') &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            jj=jj+1
            Do k=1,recsz
               chbat(k,jj) = record(k:k)
@@ -1707,14 +1709,14 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 ! Get to real space
 
      Do i=1,dfcts%nrefs
-        axx(i)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
-        ayy(i)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
-        azz(i)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
+        axx(i)=config%cell(1)*dfcts%xr(i)+config%cell(4)*dfcts%yr(i)+config%cell(7)*dfcts%zr(i)
+        ayy(i)=config%cell(2)*dfcts%xr(i)+config%cell(5)*dfcts%yr(i)+config%cell(8)*dfcts%zr(i)
+        azz(i)=config%cell(3)*dfcts%xr(i)+config%cell(6)*dfcts%yr(i)+config%cell(9)*dfcts%zr(i)
      End Do
 
 ! DD bound
 
-     Call pbcshift(imcon,cell,dfcts%nrefs,axx,ayy,azz)
+     Call pbcshift(config%imcon,config%cell,dfcts%nrefs,axx,ayy,azz)
 
 ! Start of file (updated)
 
@@ -1768,13 +1770,13 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
 ! Accumulate header
 
-        Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+        Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(3i10,a42,a1)') 0,imcon,megref,Repeat(' ',42),lf
+        Write(record, Fmt='(3i10,a42,a1)') 0,config%imcon,megref,Repeat(' ',42),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -1782,7 +1784,7 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
         Do i = 0, 2
            Write(record, Fmt='(3f20.10,a12,a1)') &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            jj=jj+1
            Do k=1,recsz
               chbat(k,jj) = record(k:k)
@@ -1801,9 +1803,9 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
            chbuf(i)=dfcts%namr(i)
            iwrk(i)=dfcts%indr(i)
 
-           axx(i)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
-           ayy(i)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
-           azz(i)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
+           axx(i)=config%cell(1)*dfcts%xr(i)+config%cell(4)*dfcts%yr(i)+config%cell(7)*dfcts%zr(i)
+           ayy(i)=config%cell(2)*dfcts%xr(i)+config%cell(5)*dfcts%yr(i)+config%cell(8)*dfcts%zr(i)
+           azz(i)=config%cell(3)*dfcts%xr(i)+config%cell(6)*dfcts%yr(i)+config%cell(9)*dfcts%zr(i)
         End Do
 
         jatms=dfcts%nrefs
@@ -1826,15 +1828,15 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
               Do i=1,jatms
                  x=axx(i) ; y=ayy(i) ; z=azz(i)
-                 axx(i)=cell(1)*x+cell(4)*y+cell(7)*z
-                 ayy(i)=cell(2)*x+cell(5)*y+cell(8)*z
-                 azz(i)=cell(3)*x+cell(6)*y+cell(9)*z
+                 axx(i)=config%cell(1)*x+config%cell(4)*y+config%cell(7)*z
+                 ayy(i)=config%cell(2)*x+config%cell(5)*y+config%cell(8)*z
+                 azz(i)=config%cell(3)*x+config%cell(6)*y+config%cell(9)*z
               End Do
            End If
 
 ! DD bound
 
-           Call pbcshift(imcon,cell,jatms,axx,ayy,azz)
+           Call pbcshift(config%imcon,config%cell,jatms,axx,ayy,azz)
 
            Do i=1,jatms
               Write(record, Fmt='(a8,i10,a54,a1)') chbuf(i),iwrk(i),Repeat(' ',54),lf
@@ -1902,7 +1904,7 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
         Call io_init( recsz )
         Call io_delete( name, comm ) ! Sort existence issues
         If (io_write == IO_WRITE_SORTED_NETCDF) Then
-          Call io_nc_create( netcdf, comm_self, name, cfgname, megref )
+          Call io_nc_create( netcdf, comm_self, name, config%cfgname, megref )
         End If
         Call io_open( io_write, comm_self, name, mode_wronly + mode_create, fh )
 
@@ -1912,16 +1914,16 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
 ! Write header
 
-           Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+           Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
            Call io_write_record( fh, Int(jj,offset_kind), record )
            jj=jj+1
 
-           Write(record, Fmt='(3i10,a42,a1)') 0,imcon,megref,Repeat(' ',42),lf
+           Write(record, Fmt='(3i10,a42,a1)') 0,config%imcon,megref,Repeat(' ',42),lf
            Call io_write_record( fh, Int(jj,offset_kind), record )
            jj=jj+1
 
            Do i = 0, 2
-              Write( record, '( 3f20.10, a12, a1 )' ) cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
+              Write( record, '( 3f20.10, a12, a1 )' ) config%cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
               Call io_write_record( fh, Int(jj,offset_kind), record )
               jj=jj+1
            End Do
@@ -1933,12 +1935,12 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
            Call io_nc_put_var( 'time'           , fh, 0.0_wp, jj, 1 )
            Call io_nc_put_var( 'step'           , fh,      0, jj, 1 )
            Call io_nc_put_var( 'datalevel'      , fh,      0, jj, 1 )
-           Call io_nc_put_var( 'imageconvention', fh,  imcon, jj, 1 )
+           Call io_nc_put_var( 'imageconvention', fh,  config%imcon, jj, 1 )
            Call io_nc_put_var( 'timestep'       , fh, 0.0_wp, jj, 1 )
 
-           Call dcell(cell,celprp) ! get cell properties
+           Call dcell(config%cell,celprp) ! get config%cell properties
 
-           cell_vecs = Reshape( cell, (/ 3, 3 /) )
+           cell_vecs = Reshape( config%cell, (/ 3, 3 /) )
 
            lengths( 1 ) = celprp( 1 )
            lengths( 2 ) = celprp( 2 )
@@ -1951,9 +1953,9 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
 ! Print
 
-           Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
-           Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
-           Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var( 'config%cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
+           Call io_nc_put_var( 'config%cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var( 'config%cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
 
         End If
 
@@ -1980,14 +1982,14 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 ! Get to real space
 
      Do i=1,dfcts%nrefs
-        axx(i)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
-        ayy(i)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
-        azz(i)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
+        axx(i)=config%cell(1)*dfcts%xr(i)+config%cell(4)*dfcts%yr(i)+config%cell(7)*dfcts%zr(i)
+        ayy(i)=config%cell(2)*dfcts%xr(i)+config%cell(5)*dfcts%yr(i)+config%cell(8)*dfcts%zr(i)
+        azz(i)=config%cell(3)*dfcts%xr(i)+config%cell(6)*dfcts%yr(i)+config%cell(9)*dfcts%zr(i)
      End Do
 
 ! DD bound
 
-     Call pbcshift(imcon,cell,dfcts%nrefs,axx,ayy,azz)
+     Call pbcshift(config%imcon,config%cell,dfcts%nrefs,axx,ayy,azz)
 
 ! Write the rest
 
@@ -2033,13 +2035,13 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
         Open(Unit=nrefdt, File=name, Form='formatted', Access='direct', Recl=73, Status='replace')
         recr=recr+Int(1,li)
-        Write(Unit=nrefdt, Fmt='(a72,a1)',         Rec=recr) cfgname(1:72),lf
+        Write(Unit=nrefdt, Fmt='(a72,a1)',         Rec=recr) config%cfgname(1:72),lf
         recr=recr+Int(1,li)
-        Write(Unit=nrefdt, Fmt='(3i10,a42,a1)',    Rec=recr) 0,imcon,megref,Repeat(' ',42),lf
+        Write(Unit=nrefdt, Fmt='(3i10,a42,a1)',    Rec=recr) 0,config%imcon,megref,Repeat(' ',42),lf
         Do i = 0, 2
            recr=recr+Int(1,li)
            Write(Unit=nrefdt, Fmt='(3f20.10,a12,a1)', Rec=recr) &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
         End Do
 
 ! Get to real space
@@ -2048,9 +2050,9 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
            chbuf(i)=dfcts%namr(i)
            iwrk(i)=dfcts%indr(i)
 
-           axx(i)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
-           ayy(i)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
-           azz(i)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
+           axx(i)=config%cell(1)*dfcts%xr(i)+config%cell(4)*dfcts%yr(i)+config%cell(7)*dfcts%zr(i)
+           ayy(i)=config%cell(2)*dfcts%xr(i)+config%cell(5)*dfcts%yr(i)+config%cell(8)*dfcts%zr(i)
+           azz(i)=config%cell(3)*dfcts%xr(i)+config%cell(6)*dfcts%yr(i)+config%cell(9)*dfcts%zr(i)
         End Do
 
         jatms=dfcts%nrefs
@@ -2073,15 +2075,15 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,comm)
 
               Do i=1,jatms
                  x=axx(i) ; y=ayy(i) ; z=azz(i)
-                 axx(i)=cell(1)*x+cell(4)*y+cell(7)*z
-                 ayy(i)=cell(2)*x+cell(5)*y+cell(8)*z
-                 azz(i)=cell(3)*x+cell(6)*y+cell(9)*z
+                 axx(i)=config%cell(1)*x+config%cell(4)*y+config%cell(7)*z
+                 ayy(i)=config%cell(2)*x+config%cell(5)*y+config%cell(8)*z
+                 azz(i)=config%cell(3)*x+config%cell(6)*y+config%cell(9)*z
               End Do
            End If
 
 ! DD bound
 
-           Call pbcshift(imcon,cell,jatms,axx,ayy,azz)
+           Call pbcshift(config%imcon,config%cell,jatms,axx,ayy,azz)
 
            Do i=1,jatms
               recr1=recr+Int(iwrk(i)-1,li)*Int(2)+Int(1,li)
@@ -2143,7 +2145,7 @@ End Subroutine defects_reference_write
 
 !> defects_write
 Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
-    sites,netcdf,domain,parts,comm)
+    sites,netcdf,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2165,7 +2167,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type)   , Intent( InOut ) :: comm
-  Type( corePart ), Dimension( : ), Intent( InOut ) :: parts
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Integer, Parameter :: recsz = 73 ! default record size
 
@@ -2231,13 +2233,13 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Build lattice sites list from REFERENCE
      Call allocate_defects_arrays(dfcts)
-     Call defects_reference_read(nstep,dfcts,sites,netcdf,domain,comm)
+     Call defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set
 
      cut=dfcts%rdef+0.15_wp
-     Call defects_reference_set_halo(cut,dfcts,domain,comm)
+     Call defects_reference_set_halo(cut,dfcts,domain,config,comm)
 
 ! If the keyres=1, is DEFECTS old (does it exist) and
 ! how many frames and records are in there
@@ -2257,7 +2259,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
         If (comm%idnode == 0) Then
            Open (Unit=ndefdt, File=trim(dfcts%deffile), Form='formatted', Access='direct', Status='replace', Recl=recsz)
-           Write(Unit=ndefdt, Fmt='(a72,a1)',           Rec=1) cfgname(1:72),lf
+           Write(Unit=ndefdt, Fmt='(a72,a1)',           Rec=1) config%cfgname(1:72),lf
            Write(Unit=ndefdt, Fmt='(f7.3,a23,2i21,a1)', Rec=2) dfcts%rdef,Repeat(' ',23),dfcts%frm,dfcts%rec,lf
            Close(Unit=ndefdt)
         End If
@@ -2312,7 +2314,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  Call get_word(record,word) ; j=Nint(word_2_real(word))
 
-                 Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for defects
+                 Do i=1,3+2*j ! 3 lines for config%cell parameters and 2*j entries for defects
                     Read(Unit=ndefdt, Fmt=*, End=20)
                     dfcts%rec=dfcts%rec+Int(1,li)
                  End Do
@@ -2349,7 +2351,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Get rcell
 
-     Call invert(cell,dfcts%rcell,cut)
+     Call invert(config%cell,dfcts%rcell,cut)
 
 ! New real space cutoff and expansion for defects link-cells
      dfcts%cutdef=Min(neigh%cutoff/3.0_wp,2.0_wp*dfcts%rdef)
@@ -2358,7 +2360,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Update rcell
 
-  If (ensemble >= 20) Call invert(cell,dfcts%rcell,cut)
+  If (ensemble >= 20) Call invert(config%cell,dfcts%rcell,cut)
 
   fail=0
   Allocate (dr(1:mxatms),                                                Stat=fail(1))
@@ -2375,7 +2377,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Build bookkeeping lists: interstitial, occupies
 
-  Do i=1,nlast
+  Do i=1,config%nlast
 
 ! Consider all particles at this point:j=1 - consider in,j=0 - consider out
 
@@ -2383,21 +2385,24 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Get all domain+halo particles' coordinates in MD cell centred reduced space
 
-     cxx(i)=dfcts%rcell(1)*parts(i)%xxx+dfcts%rcell(4)*parts(i)%yyy+dfcts%rcell(7)*parts(i)%zzz
-     cyy(i)=dfcts%rcell(2)*parts(i)%xxx+dfcts%rcell(5)*parts(i)%yyy+dfcts%rcell(8)*parts(i)%zzz
-     czz(i)=dfcts%rcell(3)*parts(i)%xxx+dfcts%rcell(6)*parts(i)%yyy+dfcts%rcell(9)*parts(i)%zzz
+     cxx(i)=dfcts%rcell(1)*config%parts(i)%xxx+dfcts%rcell(4)*config%parts(i)%yyy+&
+            dfcts%rcell(7)*config%parts(i)%zzz
+     cyy(i)=dfcts%rcell(2)*config%parts(i)%xxx+dfcts%rcell(5)*config%parts(i)%yyy+&
+            dfcts%rcell(8)*config%parts(i)%zzz
+     czz(i)=dfcts%rcell(3)*config%parts(i)%xxx+dfcts%rcell(6)*config%parts(i)%yyy+&
+            dfcts%rcell(9)*config%parts(i)%zzz
 
 ! Exclude particles in the domain's halo farther than cutoff(rdef)
 ! smaller halo with a width defined by cutoff(rdef)
 
-     If ( i > natms .and.                        &
+     If ( i > config%natms .and.                        &
           ((cxx(i) < dfcts%dxl .or. cxx(i) > dfcts%dxr) .or. &
            (cyy(i) < dfcts%dyl .or. cyy(i) > dfcts%dyr) .or. &
            (czz(i) < dfcts%dzl .or. czz(i) > dfcts%dzr)) ) j=0
 
 ! Exclude frozen and shell particles from consideration
 
-     If ( j == 1 .and. (lfrzn(i) /= 0 .or. Any(cshell%listshl(2,1:cshell%ntshl) == ltg(i))) ) j=0
+     If ( j == 1 .and. (config%lfrzn(i) /= 0 .or. Any(cshell%listshl(2,1:cshell%ntshl) == config%ltg(i))) ) j=0
 
 ! Assume that every considered particles (1) is an interstitial
 ! and (2) does not occupy a site yet
@@ -2418,9 +2423,9 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
      Write(message,'(a)') Trim(dfcts%deffile)//'_write allocation failure 1'
      Call error(0,message)
   EndIf
-  Call defects_link_cells(dfcts%cutdef,dfcts%mxlcdef,dfcts%nrefs,dfcts%nlrefs, &
+  Call defects_link_cells(config,dfcts%cutdef,dfcts%mxlcdef,dfcts%nrefs,dfcts%nlrefs, &
     dfcts%xr,dfcts%yr,dfcts%zr,nlx,nly,nlz,linkr,lctr,domain)
-  Call defects_link_cells(dfcts%cutdef,dfcts%mxlcdef,natms,nlast,cxx,cyy,czz, &
+  Call defects_link_cells(config,dfcts%cutdef,dfcts%mxlcdef,config%natms,config%nlast,cxx,cyy,czz, &
     nlx,nly,nlz,link,lct,domain)
 
   safe = .true.          ! Initialise safety flag to all safe
@@ -2454,7 +2459,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Bypass if the site is a shell
 
-              If (Any(cshell%listshl(2,1:cshell%ntshl) == ltg(i))) Go To 400
+              If (Any(cshell%listshl(2,1:cshell%ntshl) == config%ltg(i))) Go To 400
 
 ! Assume the site is vacant
 
@@ -2503,9 +2508,9 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Get in real space
 
-        x=cell(1)*xs+cell(4)*ys+cell(7)*zs
-        y=cell(2)*xs+cell(5)*ys+cell(8)*zs
-        z=cell(3)*xs+cell(6)*ys+cell(9)*zs
+        x=config%cell(1)*xs+config%cell(4)*ys+config%cell(7)*zs
+        y=config%cell(2)*xs+config%cell(5)*ys+config%cell(8)*zs
+        z=config%cell(3)*xs+config%cell(6)*ys+config%cell(9)*zs
 
 ! Get particle-site squared distance
 
@@ -2559,9 +2564,9 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
                  nv=nv+1
                  namv(nv)=dfcts%namr(i)
                  indv(nv)=dfcts%indr(i)
-                 axx(nv)=cell(1)*dfcts%xr(i)+cell(4)*dfcts%yr(i)+cell(7)*dfcts%zr(i)
-                 ayy(nv)=cell(2)*dfcts%xr(i)+cell(5)*dfcts%yr(i)+cell(8)*dfcts%zr(i)
-                 azz(nv)=cell(3)*dfcts%xr(i)+cell(6)*dfcts%yr(i)+cell(9)*dfcts%zr(i)
+                 axx(nv)=config%cell(1)*dfcts%xr(i)+config%cell(4)*dfcts%yr(i)+config%cell(7)*dfcts%zr(i)
+                 ayy(nv)=config%cell(2)*dfcts%xr(i)+config%cell(5)*dfcts%yr(i)+config%cell(8)*dfcts%zr(i)
+                 azz(nv)=config%cell(3)*dfcts%xr(i)+config%cell(6)*dfcts%yr(i)+config%cell(9)*dfcts%zr(i)
               End If
 
 400           Continue
@@ -2708,14 +2713,14 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Interstitials: i <= natms & interstitial(i) /= 0 means we've found an interstitial
 
-  Do i=1,natms
+  Do i=1,config%natms
      If (interstitial(i) /= 0) Then
         ni=ni+1
-        nami(ni)=atmnam(i)
-        indi(ni)=ltg(i)
-        bxx(ni)=parts(i)%xxx
-        byy(ni)=parts(i)%yyy
-        bzz(ni)=parts(i)%zzz
+        nami(ni)=config%atmnam(i)
+        indi(ni)=config%ltg(i)
+        bxx(ni)=config%parts(i)%xxx
+        byy(ni)=config%parts(i)%yyy
+        bzz(ni)=config%parts(i)%zzz
      End If
   End Do
 
@@ -2773,7 +2778,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
         Call io_open( io_write, comm_self, trim(dfcts%deffile), mode_wronly, fh )
 
         Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
-           'timestep',nstep,tstep,time,imcon,dfcts%rdef,Repeat(' ',2),lf
+           'timestep',nstep,tstep,time,config%imcon,dfcts%rdef,Repeat(' ',2),lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -2788,7 +2793,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
         Do i = 0, 2
            Write( record, '( 3f20.10, a12, a1 )' ) &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            j=j+1
            Do k=1,recsz
               chbat(k,j) = record(k:k)
@@ -2902,7 +2907,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 ! Accumulate header
 
         Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
-           'timestep',nstep,tstep,time,imcon,dfcts%rdef,Repeat(' ',2),lf
+           'timestep',nstep,tstep,time,config%imcon,dfcts%rdef,Repeat(' ',2),lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -2917,7 +2922,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
         Do i = 0, 2
            Write(record, Fmt='(3f20.10,a12,a1)') &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            j=j+1
            Do k=1,recsz
               chbat(k,j) = record(k:k)

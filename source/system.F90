@@ -6,9 +6,7 @@ Module system
                     gtime,gsum,gcheck
   Use setup
   Use site, Only : site_type
-  Use configuration,      Only : volm,natms,ltg,ltype,lfrzn,&
-                                 cfgname,imcon,cell,lsi,lsa,atmnam, &
-                                 write_config
+  Use configuration,      Only : configuration_type,write_config
   Use particle,   Only : corePart
   Use statistics, Only : stats_type
   Use rdfs,        Only : rdf_type
@@ -61,7 +59,7 @@ Module system
   Subroutine system_init                                             &
            (levcfg,rcut,rbin,keyres,megatm,    &
            time,tmst,nstep,tstep,cshell,stats,devel,green,thermo,met, &
-           bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,parts,comm)
+           bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -95,7 +93,7 @@ Module system
   Type( site_type ), Intent( InOut ) :: sites
   Type( vdw_type ), Intent( InOut ) :: vdws
   Type( rdf_type ), Intent( InOut ) :: rdf
-  Type( corePart ), Intent( InOut ) :: parts(:)
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -470,10 +468,10 @@ Module system
 ! initialise initial positions to current positions
 ! and final displacements to zero
 
-  Do i=1,natms
-     stats%xin(i)=parts(i)%xxx
-     stats%yin(i)=parts(i)%yyy
-     stats%zin(i)=parts(i)%zzz
+  Do i=1,config%natms
+     stats%xin(i)=config%parts(i)%xxx
+     stats%yin(i)=config%parts(i)%yyy
+     stats%zin(i)=config%parts(i)%zzz
 
      stats%xto(i)=0.0_wp
      stats%yto(i)=0.0_wp
@@ -506,8 +504,8 @@ Module system
 ! assign particle initial positions and final displacements
 ! to the corresponding domains
 
-        Do i=1,natms
-           If (ltg(i) == gidx) Then
+        Do i=1,config%natms
+           If (config%ltg(i) == gidx) Then
               stats%xin(i)=xyz(1)
               stats%yin(i)=xyz(2)
               stats%zin(i)=xyz(3)
@@ -557,8 +555,8 @@ Module system
 
 ! assign particle velocities to the corresponding domains
 
-            Do i=1,natms
-               If (ltg(i) == gidx) Then
+            Do i=1,config%natms
+               If (config%ltg(i) == gidx) Then
                   green%vxi(i,j)=xyz(1)
                   green%vyi(i,j)=xyz(2)
                   green%vzi(i,j)=xyz(3)
@@ -596,10 +594,10 @@ Module system
 
 ! evaluate species populations in system (separate totals for non-frozen atoms)
 
-  Do i=1,natms
-     k = ltype(i)
+  Do i=1,config%natms
+     k = config%ltype(i)
      sites%num_type(k) = sites%num_type(k)+1.0_wp
-     If (lfrzn(i) == 0) sites%num_type_nf(k) = sites%num_type_nf(k)+1.0_wp
+     If (config%lfrzn(i) == 0) sites%num_type_nf(k) = sites%num_type_nf(k)+1.0_wp
   End Do
 
 ! global number densities
@@ -612,7 +610,7 @@ Module system
 ! number densities
 
   Do i=1,sites%ntype_atom
-     If (sites%num_type(i) > zero_plus) sites%dens(i) = sites%num_type(i)/volm
+     If (sites%num_type(i) > zero_plus) sites%dens(i) = sites%num_type(i)/config%volm
   End Do
 
 ! Get long-range corrections
@@ -620,16 +618,16 @@ Module system
 ! vdws%elrc & vdws%vlrc arrays are zeroed in vdws,
 ! no lrc when vdw interactions are force-shifted
 
-  If (vdws%n_vdw > 0 .and. (.not.vdws%l_force_shift)) Call vdw_lrc(sites,vdws,comm)
+  If (vdws%n_vdw > 0 .and. (.not.vdws%l_force_shift)) Call vdw_lrc(sites,vdws,config,comm)
 
 ! met%elrc & met%vlrc arrays are zeroed in metal_module
 
-  If (met%n_potentials > 0) Call metal_lrc(met,sites,comm)
+  If (met%n_potentials > 0) Call metal_lrc(met,sites,config,comm)
 
 End Subroutine system_init
 
 Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
-                         dihedral,inversion,sites,netcdf,rigid,parts,comm)
+                         dihedral,inversion,sites,netcdf,rigid,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -660,7 +658,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
   Type( site_type ), Intent( In    ) :: sites
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( rigid_bodies_type ), Intent( In    ) :: rigid
-  Type( corePart ),   Intent( InOut ) :: parts(:)
+  Type( configuration_type ),   Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size
@@ -705,7 +703,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
   Integer,           Dimension( : ),     Allocatable :: ltg_scaled
 
-  Character( Len = Len( atmnam ) ), Dimension( : ), Allocatable :: atmnam_scaled
+  Character( Len = Len( config%atmnam ) ), Dimension( : ), Allocatable :: atmnam_scaled
   Integer :: ierr
 
   Character ( len = 256 )  :: message,messages(5)
@@ -733,7 +731,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
   Write(message,'(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
   Call info(message,.true.)
   Write(messages(1),'(a)') '*** Expanding the MD system by a nx*ny*nz volumetric replication        ***'
-  Write(messages(2),'(a)') '*** of its contents along the MD cell lattice vectors, creating         ***'
+  Write(messages(2),'(a)') '*** of its contents along the MD config%cell lattice vectors, creating         ***'
   Write(messages(3),'(a)') '*** a new matching pair of topology-interaction (FIELD) and             ***'
   Write(messages(4),'(a)') "*** crystallographic (CONFIG) files, preserving FIELD's template intact ***"
   Write(messages(5),'(a,3i5)') '*** Replication dimensions (nx,ny,nz):', nx,ny,nz
@@ -741,8 +739,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
 ! Holt or change execution if imcon is unsupported
 
-  If (imcon == 0) Call error(570)
-  If (imcon == 6 .and. nz > 1) Then
+  If (config%imcon == 0) Call error(570)
+  If (config%imcon == 6 .and. nz > 1) Then
      nz=1
      Call warning(350,0.0_wp,0.0_wp,0.0_wp)
      Write(message,'(a,3i5)') '*** Replication dimensions (nx,ny,nz):', nx,ny,nz
@@ -753,7 +751,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
   record= ' ' ; Write(record,'(3(a1,i0))') '_',nx,'_',ny,'_',nz
   fcfg=' '
-  fcfg=Trim(config) // record(1:Len_Trim(record))
+  fcfg=Trim(config_name) // record(1:Len_Trim(record))
   ffld=' '
   ffld=Trim(field) // record(1:Len_Trim(record))
   fmpl=' '
@@ -773,27 +771,27 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
   Do iz=1,nz
      z=Real(2*iz-nz-1,wp)
-     f7(iz)=cell(7)*z/2.0_wp
-     f8(iz)=cell(8)*z/2.0_wp
-     f9(iz)=cell(9)*z/2.0_wp
+     f7(iz)=config%cell(7)*z/2.0_wp
+     f8(iz)=config%cell(8)*z/2.0_wp
+     f9(iz)=config%cell(9)*z/2.0_wp
   End Do
 
 ! Define cell vector displacement in y direction
 
   Do iy=1,ny
      y=Real(2*iy-ny-1,wp)
-     f4(iy)=cell(4)*y/2.0_wp
-     f5(iy)=cell(5)*y/2.0_wp
-     f6(iy)=cell(6)*y/2.0_wp
+     f4(iy)=config%cell(4)*y/2.0_wp
+     f5(iy)=config%cell(5)*y/2.0_wp
+     f6(iy)=config%cell(6)*y/2.0_wp
   End Do
 
 ! Define cell vector displacement in x direction
 
   Do ix=1,nx
      x=Real(2*ix-nx-1,wp)
-     f1(ix)=cell(1)*x/2.0_wp
-     f2(ix)=cell(2)*x/2.0_wp
-     f3(ix)=cell(3)*x/2.0_wp
+     f1(ix)=config%cell(1)*x/2.0_wp
+     f2(ix)=config%cell(2)*x/2.0_wp
+     f3(ix)=config%cell(3)*x/2.0_wp
   End Do
 
 ! Define hypercube counter
@@ -806,7 +804,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
      End Do
   End Do
 
-  Call dcell(cell,celprp) ! get cell properties
+  Call dcell(config%cell,celprp) ! get config%cell properties
 
 ! define half cell widths and bond-length limit
 
@@ -832,7 +830,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
         Call io_init( recsz )
         Call io_delete( fcfg(1:Len_Trim(fcfg) ),comm )
         If (io_write == IO_WRITE_SORTED_NETCDF) Then
-          Call io_nc_create( netcdf, comm_self, fcfg(1:Len_Trim(fcfg)), cfgname, megatm*nall )
+          Call io_nc_create( netcdf, comm_self, fcfg(1:Len_Trim(fcfg)), config%cfgname, megatm*nall )
         End If
         Call io_open( io_write, comm_self, fcfg(1:Len_Trim(fcfg)), mode_wronly + mode_create, fh )
 
@@ -854,19 +852,19 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
               io_write == IO_WRITE_SORTED_MPIIO    .or. &
               io_write == IO_WRITE_SORTED_DIRECT) Then
 
-        Write(record2, Fmt='(a72,a1)') cfgname(1:72),lf
+        Write(record2, Fmt='(a72,a1)') config%cfgname(1:72),lf
         Call io_write_record( fh, Int(0,offset_kind), record2 )
 
-        Write(record2, Fmt='(3i10,a42,a1)') 0,imcon,nall*megatm,Repeat(' ',42),lf
+        Write(record2, Fmt='(3i10,a42,a1)') 0,config%imcon,nall*megatm,Repeat(' ',42),lf
         Call io_write_record( fh, Int(1,offset_kind), record2 )
 
-        Write(record2, Fmt='(3f20.10,a12,a1)') fx*cell(1),fx*cell(2),fx*cell(3),Repeat(' ',12),lf
+        Write(record2, Fmt='(3f20.10,a12,a1)') fx*config%cell(1),fx*config%cell(2),fx*config%cell(3),Repeat(' ',12),lf
         Call io_write_record( fh, Int(2,offset_kind), record2 )
 
-        Write(record2, Fmt='(3f20.10,a12,a1)') fy*cell(4),fy*cell(5),fy*cell(6),Repeat(' ',12),lf
+        Write(record2, Fmt='(3f20.10,a12,a1)') fy*config%cell(4),fy*config%cell(5),fy*config%cell(6),Repeat(' ',12),lf
         Call io_write_record( fh, Int(3,offset_kind), record2 )
 
-        Write(record2, Fmt='(3f20.10,a12,a1)') fz*cell(7),fz*cell(8),fz*cell(9),Repeat(' ',12),lf
+        Write(record2, Fmt='(3f20.10,a12,a1)') fz*config%cell(7),fz*config%cell(8),fz*config%cell(9),Repeat(' ',12),lf
         Call io_write_record( fh, Int(4,offset_kind), record2 )
 
      Else If (io_write == IO_WRITE_SORTED_NETCDF) Then
@@ -876,11 +874,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
         Call io_nc_put_var( 'time'           , fh, 0.0_wp, i, 1 )
         Call io_nc_put_var( 'step'           , fh,      0, i, 1 )
         Call io_nc_put_var( 'datalevel'      , fh,      0, i, 1 )
-        Call io_nc_put_var( 'imageconvention', fh,  imcon, i, 1 )
+        Call io_nc_put_var( 'imageconvention', fh,  config%imcon, i, 1 )
 
-        cell_vecs( :, 1 ) = fx * cell( 1:3 )
-        cell_vecs( :, 2 ) = fy * cell( 4:6 )
-        cell_vecs( :, 3 ) = fz * cell( 7:9 )
+        cell_vecs( :, 1 ) = fx * config%cell( 1:3 )
+        cell_vecs( :, 2 ) = fy * config%cell( 4:6 )
+        cell_vecs( :, 3 ) = fz * config%cell( 7:9 )
 
         lengths( 1 ) = fx * celprp( 1 )
         lengths( 2 ) = fy * celprp( 2 )
@@ -891,18 +889,21 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
         angles ( 3 ) = Acos( celprp( 4 ) )
         angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
 
-        Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-        Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
-        Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
+        Call io_nc_put_var( 'config%cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
+        Call io_nc_put_var( 'config%cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
+        Call io_nc_put_var( 'config%cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
 
      Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
               io_write == IO_WRITE_SORTED_MASTER ) Then
 
-        Write(Unit=nconf, Fmt='(a72,a1)',         Rec=Int(1,li)) cfgname(1:72),lf
-        Write(Unit=nconf, Fmt='(3i10,a42,a1)',    Rec=Int(2,li)) 0,imcon,nall*megatm,Repeat(' ',42),lf
-        Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(3,li)) fx*cell(1),fx*cell(2),fx*cell(3),Repeat(' ',12),lf
-        Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(4,li)) fy*cell(4),fy*cell(5),fy*cell(6),Repeat(' ',12),lf
-        Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(5,li)) fz*cell(7),fz*cell(8),fz*cell(9),Repeat(' ',12),lf
+        Write(Unit=nconf, Fmt='(a72,a1)',         Rec=Int(1,li)) config%cfgname(1:72),lf
+        Write(Unit=nconf, Fmt='(3i10,a42,a1)',    Rec=Int(2,li)) 0,config%imcon,nall*megatm,Repeat(' ',42),lf
+        Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(3,li)) fx*config%cell(1),fx*config%cell(2),&
+                                                                 fx*config%cell(3),Repeat(' ',12),lf
+        Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(4,li)) fy*config%cell(4),fy*config%cell(5),&
+                                                                 fy*config%cell(6),Repeat(' ',12),lf
+        Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(5,li)) fz*config%cell(7),fz*config%cell(8),&
+                                                                 fz*config%cell(9),Repeat(' ',12),lf
 
      End If
 
@@ -917,8 +918,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
         Call io_finalize
      End If
 
-     Allocate ( atmnam_scaled( 1:natms * nall ), ltg_scaled( 1:natms * nall ), Stat = fail(1) )
-     Allocate ( x_scaled( 1:natms * nall ), y_scaled( 1:natms * nall ), z_scaled( 1:natms * nall ), &
+     Allocate ( atmnam_scaled( 1:config%natms * nall ), ltg_scaled( 1:config%natms * nall ), Stat = fail(1) )
+     Allocate ( x_scaled( 1:config%natms * nall ), y_scaled( 1:config%natms * nall ), z_scaled( 1:config%natms * nall ), &
                Stat = fail(2) )
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'system_expand allocation failure 0 '
@@ -972,11 +973,11 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
         Do m=1,sites%num_site(itmols)
            nattot=nattot+1 ! Increase global atom counter in CONFIG(old)
 
-           If (lsa(indatm1) == nattot) Then  ! If a local atom has a global index nattot
-              loc_ind=lsi(indatm1)
-              xm(m)=parts(loc_ind)%xxx
-              ym(m)=parts(loc_ind)%yyy
-              zm(m)=parts(loc_ind)%zzz
+           If (config%lsa(indatm1) == nattot) Then  ! If a local atom has a global index nattot
+              loc_ind=config%lsi(indatm1)
+              xm(m)=config%parts(loc_ind)%xxx
+              ym(m)=config%parts(loc_ind)%yyy
+              zm(m)=config%parts(loc_ind)%zzz
               indatm1=indatm1+1 ! Increase local atom counter
            Else
               xm(m)=0.0_wp
@@ -1020,7 +1021,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                  x1(1)=xm(jatm)-xm(iatm)
                  y1(1)=ym(jatm)-ym(iatm)
                  z1(1)=zm(jatm)-zm(iatm)
-                 Call images(imcon,cell,1,x1,y1,z1)
+                 Call images(config%imcon,config%cell,1,x1,y1,z1)
                  xm(jatm)=x1(1)+xm(iatm)
                  ym(jatm)=y1(1)+ym(iatm)
                  zm(jatm)=z1(1)+zm(iatm)
@@ -1079,7 +1080,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                  x1(1)=xm(jatm)-xm(iatm)
                  y1(1)=ym(jatm)-ym(iatm)
                  z1(1)=zm(jatm)-zm(iatm)
-                 Call images(imcon,cell,1,x1,y1,z1)
+                 Call images(config%imcon,config%cell,1,x1,y1,z1)
                  xm(jatm)=x1(1)+xm(iatm)
                  ym(jatm)=y1(1)+ym(iatm)
                  zm(jatm)=z1(1)+zm(iatm)
@@ -1142,7 +1143,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                        x1(1)=xm(jatm)-xm(iatm)
                        y1(1)=ym(jatm)-ym(iatm)
                        z1(1)=zm(jatm)-zm(iatm)
-                       Call images(imcon,cell,1,x1,y1,z1)
+                       Call images(config%imcon,config%cell,1,x1,y1,z1)
                           xm(jatm)=x1(1)+xm(iatm)
                           ym(jatm)=y1(1)+ym(iatm)
                           zm(jatm)=z1(1)+zm(iatm)
@@ -1202,7 +1203,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                  x1(1)=xm(jatm)-xm(iatm)
                  y1(1)=ym(jatm)-ym(iatm)
                  z1(1)=zm(jatm)-zm(iatm)
-                 Call images(imcon,cell,1,x1,y1,z1)
+                 Call images(config%imcon,config%cell,1,x1,y1,z1)
                  xm(jatm)=x1(1)+xm(iatm)
                  ym(jatm)=y1(1)+ym(iatm)
                  zm(jatm)=z1(1)+zm(iatm)
@@ -1272,7 +1273,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                        x1(1)=xm(jatm)-xm(iatm)
                        y1(1)=ym(jatm)-ym(iatm)
                        z1(1)=zm(jatm)-zm(iatm)
-                       Call images(imcon,cell,1,x1,y1,z1)
+                       Call images(config%imcon,config%cell,1,x1,y1,z1)
                        xm(jatm)=x1(1)+xm(iatm)
                        ym(jatm)=y1(1)+ym(iatm)
                        zm(jatm)=z1(1)+zm(iatm)
@@ -1349,7 +1350,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                        x1(1)=xm(jatm)-xm(iatm)
                        y1(1)=ym(jatm)-ym(iatm)
                        z1(1)=zm(jatm)-zm(iatm)
-                       Call images(imcon,cell,1,x1,y1,z1)
+                       Call images(config%imcon,config%cell,1,x1,y1,z1)
                        xm(jatm)=x1(1)+xm(iatm)
                        ym(jatm)=y1(1)+ym(iatm)
                        zm(jatm)=z1(1)+zm(iatm)
@@ -1418,7 +1419,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                        x1(1)=xm(jatm)-xm(iatm)
                        y1(1)=ym(jatm)-ym(iatm)
                        z1(1)=zm(jatm)-zm(iatm)
-                       Call images(imcon,cell,1,x1,y1,z1)
+                       Call images(config%imcon,config%cell,1,x1,y1,z1)
                        xm(jatm)=x1(1)+xm(iatm)
                        ym(jatm)=y1(1)+ym(iatm)
                        zm(jatm)=z1(1)+zm(iatm)
@@ -1487,7 +1488,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
         Do m=1,sites%num_site(itmols)
            nattot=nattot+1 ! Increase global atom counter in CONFIG(old)
 
-           If (lsa(indatm) == nattot) Then ! If a local atom has a global index nattot
+           If (config%lsa(indatm) == nattot) Then ! If a local atom has a global index nattot
 
 ! Determine sending node for UN/SORTED MASTER
 
@@ -1499,7 +1500,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
 ! Get the local index of the particle
 
-              loc_ind=lsi(indatm)
+              loc_ind=config%lsi(indatm)
 
 ! Do particle replication by vector displacements in cyclic (z,y,x) directions
 
@@ -1523,7 +1524,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
                           at_scaled = at_scaled + 1
 
-                          atmnam_scaled( at_scaled ) = atmnam( loc_ind )
+                          atmnam_scaled( at_scaled ) = config%atmnam( loc_ind )
 
                           ltg_scaled( at_scaled ) = index
 
@@ -1533,7 +1534,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
                        Else
 
-                          Write(record2, Fmt='(a8,i10,a54,a1)') atmnam(loc_ind),index,Repeat(' ',54),lf
+                          Write(record2, Fmt='(a8,i10,a54,a1)') config%atmnam(loc_ind),index,Repeat(' ',54),lf
                           Write(record3, Fmt='(3g20.12,a12,a1)') x,y,z,Repeat(' ',12),lf
 
                           If (io_write == IO_WRITE_UNSORTED_DIRECT .or. &
@@ -1821,7 +1822,7 @@ End Subroutine system_expand
 Subroutine system_revive                                      &
            (rcut,rbin,megatm,nstep,tstep,time,tmst, &
            stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity, &
-           rdf,netcdf,comm)
+           rdf,netcdf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1848,6 +1849,7 @@ Subroutine system_revive                                      &
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( netcdf_param ), Intent( In    ) :: netcdf
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready
@@ -2003,7 +2005,7 @@ Subroutine system_revive                                      &
   name = Trim(revcon) ! file name
   levcfg = 2      ! define level of information in REVCON
 
-  Call write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
+  Call write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! node 0 handles I/O
 
@@ -2084,10 +2086,10 @@ Subroutine system_revive                                      &
 
 ! Write initial position and final displacement data to REVIVE
 
-     jatms=natms
+     jatms=config%natms
 
-     Do i=1,natms
-        iwrk(i)=ltg(i)
+     Do i=1,config%natms
+        iwrk(i)=config%ltg(i)
 
         axx(i)=stats%xin(i)
         ayy(i)=stats%yin(i)
@@ -2132,17 +2134,17 @@ Subroutine system_revive                                      &
 
      Call grecv(comm,ready,0,Revive_tag)
 
-     Call gsend(comm,natms,0,Revive_tag)
+     Call gsend(comm,config%natms,0,Revive_tag)
 
-     Call gsend(comm,ltg(1:natms),0,Revive_tag)
+     Call gsend(comm,config%ltg(1:config%natms),0,Revive_tag)
 
-     Call gsend(comm,stats%xin(1:natms),0,Revive_tag)
-     Call gsend(comm,stats%yin(1:natms),0,Revive_tag)
-     Call gsend(comm,stats%zin(1:natms),0,Revive_tag)
+     Call gsend(comm,stats%xin(1:config%natms),0,Revive_tag)
+     Call gsend(comm,stats%yin(1:config%natms),0,Revive_tag)
+     Call gsend(comm,stats%zin(1:config%natms),0,Revive_tag)
 
-     Call gsend(comm,stats%xto(1:natms),0,Revive_tag)
-     Call gsend(comm,stats%yto(1:natms),0,Revive_tag)
-     Call gsend(comm,stats%zto(1:natms),0,Revive_tag)
+     Call gsend(comm,stats%xto(1:config%natms),0,Revive_tag)
+     Call gsend(comm,stats%yto(1:config%natms),0,Revive_tag)
+     Call gsend(comm,stats%zto(1:config%natms),0,Revive_tag)
 
   End If
 
@@ -2152,10 +2154,10 @@ Subroutine system_revive                                      &
 
     If (comm%idnode == 0) Then
 
-       jatms=natms
+       jatms=config%natms
        Do j=1,green%samp
-         Do i=1,natms
-            iwrk(i)=ltg(i)
+         Do i=1,config%natms
+            iwrk(i)=config%ltg(i)
             axx(i)=green%vxi(i,j)
             ayy(i)=green%vyi(i,j)
             azz(i)=green%vzi(i,j)
@@ -2194,9 +2196,9 @@ Subroutine system_revive                                      &
        Do j=1,green%samp
          Call grecv(comm,ready,0,Revive_tag)
 
-         Call gsend(comm,natms,0,Revive_tag)
+         Call gsend(comm,config%natms,0,Revive_tag)
 
-         Call gsend(comm,ltg(1:natms),0,Revive_tag)
+         Call gsend(comm,config%ltg(1:config%natms),0,Revive_tag)
 
          Call gsend(comm,green%vxi(1,j),0,Revive_tag)
          Call gsend(comm,green%vyi(1,j),0,Revive_tag)

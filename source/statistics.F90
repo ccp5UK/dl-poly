@@ -18,8 +18,7 @@ Module statistics
   Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend, &
     gwait,girecv,gcheck
   Use site, Only : site_type
-  Use configuration,  Only : cfgname,imcon,cell,volm,natms,ltype, &
-    vxx,vyy,vzz,ixyz,lsa,lsi,ltg
+  Use configuration,  Only : configuration_type
   Use particle,   Only : corePart
   Use domains,    Only : domains_type
   Use z_density,   Only : z_density_type,z_density_collect
@@ -33,65 +32,65 @@ Module statistics
   Implicit None
   Type, Public :: stats_type
 
-    Integer( Kind = wi )           :: numacc = 0 , &
-      natms0 = 0
-    Integer( Kind = wi )           :: mxnstk,mxstak,intsta
-    Logical                        :: statis_file_open = .false.
-    Logical                        :: newjob = .true.
+  Integer( Kind = wi )           :: numacc = 0 , &
+                                    natms0 = 0
+  Integer( Kind = wi )           :: mxnstk,mxstak,intsta
+  Logical                        :: statis_file_open = .false.
+  Logical                        :: newjob = .true.
 
-    Real( Kind = wp )              :: consv = 0.0_wp,shlke = 0.0_wp,engke = 0.0_wp,&
-      engrot = 0.0_wp,engcpe = 0.0_wp,engsrp = 0.0_wp,&
-      engter  = 0.0_wp,engtbp = 0.0_wp,engfbp = 0.0_wp,&
-      engshl = 0.0_wp,engtet = 0.0_wp,engbnd = 0.0_wp,&
-      engang = 0.0_wp,engdih = 0.0_wp,enginv = 0.0_wp,&
-      engfld = 0.0_wp,engcon = 0.0_wp,engpmf = 0.0_wp
+  Real( Kind = wp )              :: consv = 0.0_wp,shlke = 0.0_wp,engke = 0.0_wp,&
+                                    engrot = 0.0_wp,engcpe = 0.0_wp,engsrp = 0.0_wp,&
+                                    engter  = 0.0_wp,engtbp = 0.0_wp,engfbp = 0.0_wp,&
+                                    engshl = 0.0_wp,engtet = 0.0_wp,engbnd = 0.0_wp,&
+                                    engang = 0.0_wp,engdih = 0.0_wp,enginv = 0.0_wp,&
+                                    engfld = 0.0_wp,engcon = 0.0_wp,engpmf = 0.0_wp
 
-    Real( Kind = wp )              :: stptmp = 0.0_wp,stpprs = 0.0_wp,stpvol = 0.0_wp,&
-      stpcfg = 0.0_wp,stpeng = 0.0_wp,stpeth = 0.0_wp,&
-      stpvir = 0.0_wp
+  Real( Kind = wp )              :: stptmp = 0.0_wp,stpprs = 0.0_wp,stpvol = 0.0_wp,&
+                                    stpcfg = 0.0_wp,stpeng = 0.0_wp,stpeth = 0.0_wp,&
+                                    stpvir = 0.0_wp
 
-    Real( Kind = wp )              :: virtot = 0.0_wp,vircom = 0.0_wp,vircpe = 0.0_wp,&
-      virsrp = 0.0_wp,virshl = 0.0_wp,virter = 0.0_wp,&
-      virtbp = 0.0_wp,virfbp = 0.0_wp,vircon = 0.0_wp,&
-      virpmf = 0.0_wp,virtet = 0.0_wp,virbnd = 0.0_wp,&
-      virang = 0.0_wp,virdih = 0.0_wp,virinv = 0.0_wp,&
-      virfld = 0.0_wp,virdpd = 0.0_wp
+  Real( Kind = wp )              :: virtot = 0.0_wp,vircom = 0.0_wp,vircpe = 0.0_wp,&
+                                    virsrp = 0.0_wp,virshl = 0.0_wp,virter = 0.0_wp,&
+                                    virtbp = 0.0_wp,virfbp = 0.0_wp,vircon = 0.0_wp,&
+                                    virpmf = 0.0_wp,virtet = 0.0_wp,virbnd = 0.0_wp,&
+                                    virang = 0.0_wp,virdih = 0.0_wp,virinv = 0.0_wp,&
+                                    virfld = 0.0_wp,virdpd = 0.0_wp
 
-    Real( Kind = wp )              :: strtot(1:9) = 0.0_wp,strkin(1:9) = 0.0_wp,strknf(1:9) = 0.0_wp,&
-      strknt(1:9) = 0.0_wp,strcom(1:9) = 0.0_wp,strcon(1:9) = 0.0_wp,&
-      strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp,strdpd(1:9) = 0.0_wp
+  Real( Kind = wp )              :: strtot(1:9) = 0.0_wp,strkin(1:9) = 0.0_wp,strknf(1:9) = 0.0_wp,&
+                                    strknt(1:9) = 0.0_wp,strcom(1:9) = 0.0_wp,strcon(1:9) = 0.0_wp,&
+                                    strpmf(1:9) = 0.0_wp, stress(1:9) = 0.0_wp,strdpd(1:9) = 0.0_wp
 
-    Real( Kind = wp )              :: clin(1:9) = 0.0_wp
-    ! constraints accumulators
-    Real( Kind = wp ),              Public :: passcnq(1:5) = (/ & ! QUENCHING per call
-      0.0_wp         ,  & ! cycles counter
-      0.0_wp         ,  & ! access counter
-      0.0_wp         ,  & ! average cycles
-      999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
-      0.0_wp /)           ! maximum cycles
-    Real( Kind = wp ),              Public :: passcon(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
+  Real( Kind = wp )              :: clin(1:9) = 0.0_wp
+  ! constraints accumulators
+  Real( Kind = wp ),              Public :: passcnq(1:5) = (/ & ! QUENCHING per call
+    0.0_wp         ,  & ! cycles counter
+    0.0_wp         ,  & ! access counter
+    0.0_wp         ,  & ! average cycles
+    999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
+    0.0_wp /)           ! maximum cycles
+  Real( Kind = wp ),              Public :: passcon(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
+    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
+    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
+    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
+    0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
 
-    Real( Kind = wp ),              Public :: passpmq(1:5) = (/ & ! QUENCHING per call
-      0.0_wp         ,  & ! cycles counter
-      0.0_wp         ,  & ! access counter
-      0.0_wp         ,  & ! average cycles
-      999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
-      0.0_wp /)           ! maximum cycles
-    Real( Kind = wp ),              Public :: passpmf(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
-      0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
-    Real( Kind = wp ),              Public :: passshl(1:5) = (/ &
-      0.0_wp         ,  & ! cycles counter
-      0.0_wp         ,  & ! access counter
-      0.0_wp         ,  & ! average cycles
-      999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
-      0.0_wp /)           ! maximum cycles
+  Real( Kind = wp ),              Public :: passpmq(1:5) = (/ & ! QUENCHING per call
+                                          0.0_wp         ,  & ! cycles counter
+                                          0.0_wp         ,  & ! access counter
+                                          0.0_wp         ,  & ! average cycles
+                                          999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
+                                          0.0_wp /)           ! maximum cycles
+  Real( Kind = wp ),              Public :: passpmf(1:5,1:2,1:2) = Reshape( (/ & ! dim::1-shake, dim:1:-per-call
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::1-shake, dim:2:-per-tst
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:1:-per-call
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp , & ! dim::2-rattle, dim:2:-per-tst
+                            0.0_wp, 0.0_wp, 0.0_wp, 999999999.0_wp, 0.0_wp /) , (/5,2,2/) )
+  Real( Kind = wp ),              Public :: passshl(1:5) = (/ &
+    0.0_wp         ,  & ! cycles counter
+    0.0_wp         ,  & ! access counter
+    0.0_wp         ,  & ! average cycles
+    999999999.0_wp ,  & ! minimum cycles : ~Huge(1)
+    0.0_wp /)           ! maximum cycles
     !> Skips, elements are as follows
     !>
     !> - 1 skips counter
@@ -115,8 +114,8 @@ Module statistics
     Real( Kind = wp ), Allocatable :: stpval(:),stpvl0(:),sumval(:),ssqval(:)
     Real( Kind = wp ), Allocatable :: zumval(:),ravval(:),stkval(:,:)
 
-    Integer,           Allocatable :: found(:), found0(:)
-    Integer,           Allocatable :: lsi0(:),lsa0(:),lsa00(:),ltg0(:)
+  Integer,           Allocatable :: found(:), found0(:)
+  Integer,           Allocatable :: lsi0(:),lsa0(:),lsa00(:),ltg0(:)
 
     Real( Kind = wp ), Allocatable :: xin0(:),yin0(:),zin0(:)
     Real( Kind = wp ), Allocatable :: xto0(:),yto0(:),zto0(:)
@@ -198,12 +197,12 @@ Contains
   End Subroutine deallocate_statistics_connect
 
   Subroutine statistics_collect           &
-    (lsim,leql,nsteql,lmsd, &
-    keyres,                 &
-    degfre,degshl,degrot,          &
-    nstep,tstep,time,tmst,         &
-    mxatdm,max_grid_rdf,stats,thermo,&
-    zdensity,sites,parts,comm)
+           (config,lsim,leql,nsteql,lmsd, &
+           keyres,                 &
+           degfre,degshl,degrot,          &
+           nstep,tstep,time,tmst,         &
+           mxatdm,max_grid_rdf,stats,thermo,&
+           zdensity,sites,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -217,23 +216,23 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,           Intent( In    ) :: lsim,leql,lmsd
-    Integer,           Intent( In    ) :: nsteql,keyres, &
-      nstep
+  Logical,           Intent( In    ) :: lsim,leql,lmsd
+  Integer,           Intent( In    ) :: nsteql,keyres, &
+                                        nstep
 
     Integer(Kind=li),  Intent( In    ) :: degfre,degshl,degrot
 
     Real( Kind = wp ), Intent( In    ) :: tstep,time
 
-    Real( Kind = wp ), Intent( InOut ) :: tmst
-    Integer( Kind = wi), Intent( In    ) :: mxatdm
-    Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( thermostat_type ), Intent( In    ) :: thermo
-    Type( z_density_type ), Intent( InOut ) :: zdensity
-    Type( site_type ), Intent( In    ) :: sites
-    Type( corePart ),   Intent( InOut ) :: parts(:)
-    Type( comms_type ), Intent( InOut ) :: comm
+  Real( Kind = wp ), Intent( InOut ) :: tmst
+  Integer( Kind = wi), Intent( In    ) :: mxatdm
+  Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
+  Type( stats_type ), Intent( InOut ) :: stats
+  Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( z_density_type ), Intent( InOut ) :: zdensity
+  Type( site_type ), Intent( In    ) :: sites
+  Type( configuration_type ), Intent( InOut ) :: config
+  Type( comms_type ), Intent( InOut ) :: comm
 
 
     Logical                 :: l_tmp
@@ -267,7 +266,7 @@ Contains
         Open(Unit=nstats, File=Trim(statis), Status='replace')
         stats%statis_file_open = .true.
 
-        Write(nstats,'(a)') cfgname
+        Write(nstats,'(a)') config%cfgname
 
         If      (Abs(engunit - eu_ev)   <= zero_plus) Then
           Write(nstats,'(1x,a)') 'ENERGY UNITS = electron Volts'
@@ -324,7 +323,7 @@ Contains
 
 ! system volume
 
-    stats%stpvol = volm
+  stats%stpvol = config%volm
 
 ! system pressure
 
@@ -336,13 +335,13 @@ Contains
 
 ! system enthalpy
 
-    If (thermo%variable_cell) Then             ! P_target*V_instantaneous
-      stats%stpeth = stats%stpeng + thermo%press*stats%stpvol
-    Else                               ! for thermo%variable_cell=.false. V_instantaneous=V_target
-      stats%stpeth = stats%stpeng + stpipv        ! and there is only P_instantaneous
-    End If
+  If (thermo%variable_cell) Then             ! P_target*V_instantaneous
+     stats%stpeth = stats%stpeng + thermo%press*stats%stpvol
+  Else                               ! for thermo%variable_cell=.false. V_instantaneous=V_target
+     stats%stpeth = stats%stpeng + stpipv        ! and there is only P_instantaneous
+  End If
 
-    Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
 
 ! store current values in statistics array
 
@@ -384,20 +383,20 @@ Contains
 
     amsd = 0.0_wp ! initialise
 
-    If (nstep == nsteql+1) Then ! re-initialise
-      Do i=1,natms
+  If (nstep == nsteql+1) Then ! re-initialise
+     Do i=1,config%natms
         stats%xto(i) = 0.0_wp
         stats%yto(i) = 0.0_wp
         stats%zto(i) = 0.0_wp
       End Do
     End If
 
-    If (nstep > 0) Then
-      If (lsim)  Then ! real dynamics is happening
-        Do i=1,natms
-          stats%xto(i)=stats%xto(i)+vxx(i)*tstep
-          stats%yto(i)=stats%yto(i)+vyy(i)*tstep
-          stats%zto(i)=stats%zto(i)+vzz(i)*tstep
+  If (nstep > 0) Then
+     If (lsim)  Then ! real dynamics is happening
+        Do i=1,config%natms
+           stats%xto(i)=stats%xto(i)+config%vxx(i)*tstep
+           stats%yto(i)=stats%yto(i)+config%vyy(i)*tstep
+           stats%zto(i)=stats%zto(i)+config%vzz(i)*tstep
         End Do
       Else            ! HISTORY is replayed
         Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
@@ -405,48 +404,48 @@ Contains
           Write(message,'(a)') 'statistics_collect allocation failure 1'
           Call error(0,message)
         End If
-        Do i=1,natms
-          xxt(i)=parts(i)%xxx
-          yyt(i)=parts(i)%yyy
-          zzt(i)=parts(i)%zzz
+        Do i=1,config%natms
+           xxt(i)=config%parts(i)%xxx
+           yyt(i)=config%parts(i)%yyy
+           zzt(i)=config%parts(i)%zzz
         End Do
-        Call pbcshfrc(imcon,cell,natms,parts)
-        Call pbcshfrc(imcon,stats%clin,natms,stats%xin,stats%yin,stats%zin)
-        Do i=1,natms
-          stats%xin(i)=xxt(i)-stats%xin(i)
-          stats%yin(i)=yyt(i)-stats%yin(i)
-          stats%zin(i)=zzt(i)-stats%zin(i)
+        Call pbcshfrc(config%imcon,config%cell,config%natms,config%parts)
+        Call pbcshfrc(config%imcon,stats%clin,config%natms,stats%xin,stats%yin,stats%zin)
+        Do i=1,config%natms
+           stats%xin(i)=xxt(i)-stats%xin(i)
+           stats%yin(i)=yyt(i)-stats%yin(i)
+           stats%zin(i)=zzt(i)-stats%zin(i)
         End Do
         Deallocate (xxt,yyt,zzt, Stat=fail)
         If (fail > 0) Then
           Write(message,'(a)') 'statistics_collect deallocation failure 1'
           Call error(0,message)
         End If
-        Call pbcshfrl(imcon,cell,natms,stats%xin,stats%yin,stats%zin)
-        Do i=1,natms
-          stats%xto(i)=stats%xto(i)+stats%xin(i)
-          stats%yto(i)=stats%yto(i)+stats%yin(i)
-          stats%zto(i)=stats%zto(i)+stats%zin(i)
+        Call pbcshfrl(config%imcon,config%cell,config%natms,stats%xin,stats%yin,stats%zin)
+        Do i=1,config%natms
+           stats%xto(i)=stats%xto(i)+stats%xin(i)
+           stats%yto(i)=stats%yto(i)+stats%yin(i)
+           stats%zto(i)=stats%zto(i)+stats%zin(i)
         End Do
       End If
 
-      Do i=1,natms
+     Do i=1,config%natms
         stats%rsd(i)=Sqrt(stats%xto(i)**2+stats%yto(i)**2+stats%zto(i)**2)
 
-        k=ltype(i)
+        k=config%ltype(i)
         amsd(k)=amsd(k)+stats%rsd(i)**2
       End Do
       Call gsum(comm,amsd(1:sites%ntype_atom))
     End If
 
-    If (lmsd) Then
-      Do i=1,natms
+  If (lmsd) Then
+     Do i=1,config%natms
         j=2*i
         stats%stpval(iadd+j-1)=stats%rsd(i)**2
-        stats%stpval(iadd+j  )=vxx(i)**2+vyy(i)**2+vzz(i)**2
-      End Do
-      iadd = iadd + 2*mxatdm
-    End If
+        stats%stpval(iadd+j  )=config%vxx(i)**2+config%vyy(i)**2+config%vzz(i)**2
+     End Do
+     iadd = iadd + 2*mxatdm
+  End If
 
     Do k=1,sites%ntype_atom
       If (sites%num_type_nf(k) > zero_plus) Then
@@ -464,14 +463,14 @@ Contains
     End Do
     iadd = iadd + 9
 
-    If (thermo%variable_cell) Then
+  If (thermo%variable_cell) Then
 
 ! cell parameters
 
-      Do i=1,9
-        stats%stpval(iadd+i)=cell(i)
-      End Do
-      iadd = iadd + 9
+     Do i=1,9
+       stats%stpval(iadd+i)=config%cell(i)
+     End Do
+     iadd = iadd + 9
 
 ! instantaneous PV
 
@@ -573,8 +572,8 @@ Contains
 
 ! z-density collection
 
-    If ( zdensity%l_collect .and. ((.not.leql) .or. nstep >= nsteql) .and. &
-      Mod(nstep,zdensity%frequency) == 0 ) Call z_density_collect(max_grid_rdf,zdensity,parts)
+  If ( zdensity%l_collect .and. ((.not.leql) .or. nstep >= nsteql) .and. &
+       Mod(nstep,zdensity%frequency) == 0 ) Call z_density_collect(max_grid_rdf,zdensity,config)
 
 ! Catch time of starting statistical averages
 
@@ -589,7 +588,7 @@ Contains
   End Subroutine statistics_collect
 
 
-  Subroutine statistics_connect_frames(megatm,mxatdm,lmsd,stats,domain,comm)
+Subroutine statistics_connect_frames(config,megatm,mxatdm,lmsd,stats,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -603,12 +602,13 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    Integer( Kind = wi ), Intent ( In    ) :: megatm
-    Integer( Kind = wi ), Intent ( In    ) :: mxatdm
-    Logical,            Intent( In    ) :: lmsd
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( comms_type ), Intent( InOut ) :: comm
+  Integer( Kind = wi ), Intent ( In    ) :: megatm
+  Integer( Kind = wi ), Intent ( In    ) :: mxatdm
+  Logical,            Intent( In    ) :: lmsd
+  Type( stats_type ), Intent( InOut ) :: stats
+  Type( domains_type ), Intent( In    ) :: domain
+  Type( configuration_type ), Intent( InOut ) :: config
+  Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: icyc,nres
     Character( Len = 256 ) :: message
@@ -626,10 +626,10 @@ Contains
 
       Call match_compress_spread_sort( 0,mxatdm,stats%lsa00) ! no spreading
 
-      nres=stats%natms0
-      Call gsum(comm,nres)
-      If (nres > 0) Then
-        nres=Merge(0,Sum(stats%found(1:natms)),natms > 0)
+     nres=stats%natms0
+     Call gsum(comm,nres)
+     If (nres > 0) Then
+        nres=Merge(0,Sum(stats%found(1:config%natms)),config%natms > 0)
         Call gsum(comm,nres)
         If (nres /= megatm) icyc = icyc + 1
       End If
@@ -661,51 +661,52 @@ Contains
 
       Integer( Kind = wi ), Allocatable,Intent(InOut) :: lsa00(:)
 
+
 ! Search for matches
-
-      stats%found0 = 0
-      If (stats%natms0 > 0) Then
-        i0 = 1
-        Do i=1,natms
+    
+    stats%found0 = 0
+    If (stats%natms0 > 0) Then
+       i0 = 1
+       Do i=1,config%natms
           Do While (i0 <= stats%natms0)
-            If      (lsa(i) <  stats%lsa0(i0)) Then
-              Exit
-            Else If (lsa(i) == stats%lsa0(i0)) Then
-              If (stats%found(lsi(i)) > 0) Then ! ghost arrival
-                stats%found0(stats%lsi0(i0)) = 1     ! erase at compression
-              Else                        ! new arrival to claim
-                stats%found(lsi(i)) = 1 ; stats%found0(stats%lsi0(i0)) = 1
+             If      (config%lsa(i) <  stats%lsa0(i0)) Then
+                Exit
+             Else If (config%lsa(i) == stats%lsa0(i0)) Then
+                If (stats%found(config%lsi(i)) > 0) Then ! ghost arrival
+                   stats%found0(stats%lsi0(i0)) = 1     ! erase at compression
+                Else                        ! new arrival to claim
+                   stats%found(config%lsi(i)) = 1 ; stats%found0(stats%lsi0(i0)) = 1
 
-                stats%xin(lsi(i)) = stats%xin0(stats%lsi0(i0))
-                stats%yin(lsi(i)) = stats%yin0(stats%lsi0(i0))
-                stats%zin(lsi(i)) = stats%zin0(stats%lsi0(i0))
+                   stats%xin(config%lsi(i)) = stats%xin0(stats%lsi0(i0))
+                   stats%yin(config%lsi(i)) = stats%yin0(stats%lsi0(i0))
+                   stats%zin(config%lsi(i)) = stats%zin0(stats%lsi0(i0))
 
-                stats%xto(lsi(i)) = stats%xto0(stats%lsi0(i0))
-                stats%yto(lsi(i)) = stats%yto0(stats%lsi0(i0))
-                stats%zto(lsi(i)) = stats%zto0(stats%lsi0(i0))
+                   stats%xto(config%lsi(i)) = stats%xto0(stats%lsi0(i0))
+                   stats%yto(config%lsi(i)) = stats%yto0(stats%lsi0(i0))
+                   stats%zto(config%lsi(i)) = stats%zto0(stats%lsi0(i0))
 
-                If (lmsd) Then
-                  j =27+2*lsi(i)
-                  j0=2*stats%lsi0(i0)
-                  stats%stpvl0(j-1)=stats%stpvl00(j0-1)
-                  stats%stpvl0(j  )=stats%stpvl00(j0  )
-                  stats%stpval(j-1)=stats%stpval0(j0-1)
-                  stats%stpval(j  )=stats%stpval0(j0  )
-                  stats%zumval(j-1)=stats%zumval0(j0-1)
-                  stats%zumval(j  )=stats%zumval0(j0  )
-                  stats%ravval(j-1)=stats%ravval0(j0-1)
-                  stats%ravval(j  )=stats%ravval0(j0  )
-                  stats%ssqval(j-1)=stats%ssqval0(j0-1)
-                  stats%ssqval(j  )=stats%ssqval0(j0  )
-                  stats%sumval(j-1)=stats%sumval0(j0-1)
-                  stats%sumval(j  )=stats%sumval0(j0  )
-                  Do kk=1,stats%mxstak
-                    stats%stkval(kk,j-1)=stats%stkval0(kk,j0-1)
-                    stats%stkval(kk,j  )=stats%stkval0(kk,j0  )
-                  End Do
+                   If (lmsd) Then
+                      j =27+2*config%lsi(i)
+                      j0=2*stats%lsi0(i0)
+                      stats%stpvl0(j-1)=stats%stpvl00(j0-1)
+                      stats%stpvl0(j  )=stats%stpvl00(j0  )
+                      stats%stpval(j-1)=stats%stpval0(j0-1)
+                      stats%stpval(j  )=stats%stpval0(j0  )
+                      stats%zumval(j-1)=stats%zumval0(j0-1)
+                      stats%zumval(j  )=stats%zumval0(j0  )
+                      stats%ravval(j-1)=stats%ravval0(j0-1)
+                      stats%ravval(j  )=stats%ravval0(j0  )
+                      stats%ssqval(j-1)=stats%ssqval0(j0-1)
+                      stats%ssqval(j  )=stats%ssqval0(j0  )
+                      stats%sumval(j-1)=stats%sumval0(j0-1)
+                      stats%sumval(j  )=stats%sumval0(j0  )
+                      Do kk=1,stats%mxstak
+                         stats%stkval(kk,j-1)=stats%stkval0(kk,j0-1)
+                         stats%stkval(kk,j  )=stats%stkval0(kk,j0  )
+                      End Do
+                   End If
                 End If
               End If
-            End If
             i0 = i0 + 1                    ! move along
           End Do
         End Do
@@ -713,21 +714,21 @@ Contains
 
 ! Invalidate lazies and deallocate at last use
 
-      If (mdir ==  0) Then
-        i = 1
-        Do i0=1,stats%natms0
+    If (mdir ==  0) Then
+       i = 1
+       Do i0=1,stats%natms0
           Do While (lsa00(i) /= 0 .and. i < mxatdm)
-            If      (stats%lsa0(i0) <  lsa00(i)) Then
-              Exit
-            Else If (stats%lsa0(i0) == lsa00(i)) Then
-              stats%found0(stats%lsi0(i0)) = 1        ! erase at compression
-            End If
-            i = i + 1                      ! move along
+             If      (stats%lsa0(i0) <  lsa00(i)) Then
+                Exit
+             Else If (stats%lsa0(i0) == lsa00(i)) Then
+                stats%found0(stats%lsi0(i0)) = 1        ! erase at compression
+             End If
+             i = i + 1                      ! move along
           End Do
         End Do
 
-        Deallocate (lsa00, Stat = fail)
-        If (fail > 0) Then
+       Deallocate (lsa00, Stat = fail)
+       If (fail > 0) Then
           Write(message,'(a)') 'match_compress_spread_sort deallocation failure'
           Call error(0,message)
         End If
@@ -735,84 +736,84 @@ Contains
 
 ! Compress remainder
 
-      i0 = 1
-      Do While (i0 <= stats%natms0 .and. stats%natms0 > 0)
-        If (stats%found0(i0) == 0) Then          ! Not claimed
-          If (ixyz(i0) == 0) Then         ! pass along
-            If      (mdir == -1) Then    ! -x to do
-              ixyz(i0) = 333            ! all since b4 0
-            Else If (mdir ==  1) Then    !  x to do
-              ixyz(i0) = 331            ! not back to -1
-            Else If (mdir == -2) Then    ! -y to do
-              ixyz(i0) = 332            ! not back to  1
-            Else If (mdir ==  2) Then    !  y to do
-              ixyz(i0) = 313            ! not back to -2
-            Else If (mdir == -3) Then    ! -z to do
-              ixyz(i0) = 323            ! not back to  2
-            Else If (mdir ==  3) Then    !  z to do
-              ixyz(i0) = 133            ! not back to -3
-            Else If (mdir ==  0) Then    ! end of cycle to do
-              ixyz(i0) = 233            ! not back to  3
-            Else                         ! abort
-              Call error(160)
-            End If
+    i0 = 1
+    Do While (i0 <= stats%natms0 .and. stats%natms0 > 0)
+       If (stats%found0(i0) == 0) Then          ! Not claimed
+          If (config%ixyz(i0) == 0) Then         ! pass along
+             If      (mdir == -1) Then    ! -x to do
+                config%ixyz(i0) = 333            ! all since b4 0
+             Else If (mdir ==  1) Then    !  x to do
+                config%ixyz(i0) = 331            ! not back to -1
+             Else If (mdir == -2) Then    ! -y to do
+                config%ixyz(i0) = 332            ! not back to  1
+             Else If (mdir ==  2) Then    !  y to do
+                config%ixyz(i0) = 313            ! not back to -2
+             Else If (mdir == -3) Then    ! -z to do
+                config%ixyz(i0) = 323            ! not back to  2
+             Else If (mdir ==  3) Then    !  z to do
+                config%ixyz(i0) = 133            ! not back to -3
+             Else If (mdir ==  0) Then    ! end of cycle to do
+                config%ixyz(i0) = 233            ! not back to  3
+             Else                         ! abort
+                Call error(160)
+             End If
           End If
 
           i0 = i0 + 1                     ! Increase lower bound marker
         Else                               ! claimed, to erase entry
           If (stats%found0(stats%natms0) == 0) Then   ! try to refill with the last unclaimed entry
-            ixyz(i0) = ixyz(stats%natms0)
-            If (ixyz(i0) == 0) Then      ! pass along
-              If      (mdir == -1) Then ! -x to do
-                ixyz(i0) = 333         ! all since b4 0
-              Else If (mdir ==  1) Then !  x to do
-                ixyz(i0) = 331         ! not back to -1
-              Else If (mdir == -2) Then ! -y to do
-                ixyz(i0) = 332         ! not back to  1
-              Else If (mdir ==  2) Then !  y to do
-                ixyz(i0) = 313         ! not back to -2
-              Else If (mdir == -3) Then ! -z to do
-                ixyz(i0) = 323         ! not back to  2
-              Else If (mdir ==  3) Then !  z to do
-                ixyz(i0) = 133         ! not back to -3
-              Else If (mdir ==  0) Then ! end of cycle to do
-                ixyz(i0) = 233         ! not back to  3
-              Else                      ! abort
-                Call error(160)
-              End If
-            End If
-            stats%ltg0(i0) = stats%ltg0(stats%natms0)
+             config%ixyz(i0) = config%ixyz(stats%natms0)
+             If (config%ixyz(i0) == 0) Then      ! pass along
+                If      (mdir == -1) Then ! -x to do
+                   config%ixyz(i0) = 333         ! all since b4 0
+                Else If (mdir ==  1) Then !  x to do
+                   config%ixyz(i0) = 331         ! not back to -1
+                Else If (mdir == -2) Then ! -y to do
+                   config%ixyz(i0) = 332         ! not back to  1
+                Else If (mdir ==  2) Then !  y to do
+                   config%ixyz(i0) = 313         ! not back to -2
+                Else If (mdir == -3) Then ! -z to do
+                   config%ixyz(i0) = 323         ! not back to  2
+                Else If (mdir ==  3) Then !  z to do
+                   config%ixyz(i0) = 133         ! not back to -3
+                Else If (mdir ==  0) Then ! end of cycle to do
+                   config%ixyz(i0) = 233         ! not back to  3
+                Else                      ! abort
+                   Call error(160)
+                End If
+             End If
+             stats%ltg0(i0) = stats%ltg0(stats%natms0)
 
-            stats%xin0(i0) = stats%xin0(stats%natms0)
-            stats%yin0(i0) = stats%yin0(stats%natms0)
-            stats%zin0(i0) = stats%zin0(stats%natms0)
+             stats%xin0(i0) = stats%xin0(stats%natms0)
+             stats%yin0(i0) = stats%yin0(stats%natms0)
+             stats%zin0(i0) = stats%zin0(stats%natms0)
 
-            stats%xto0(i0) = stats%xto0(stats%natms0)
-            stats%yto0(i0) = stats%yto0(stats%natms0)
-            stats%zto0(i0) = stats%zto0(stats%natms0)
+             stats%xto0(i0) = stats%xto0(stats%natms0)
+             stats%yto0(i0) = stats%yto0(stats%natms0)
+             stats%zto0(i0) = stats%zto0(stats%natms0)
 
-            If (lmsd) Then
-              j =2*i0
-              j0=2*stats%natms0
-              stats%stpvl00(j-1)=stats%stpvl00(j0-1)
-              stats%stpvl00(j  )=stats%stpvl00(j0  )
-              stats%stpval0(j-1)=stats%stpval0(j0-1)
-              stats%stpval0(j  )=stats%stpval0(j0  )
-              stats%zumval0(j-1)=stats%zumval0(j0-1)
-              stats%zumval0(j  )=stats%zumval0(j0  )
-              stats%ravval0(j-1)=stats%ravval0(j0-1)
-              stats%ravval0(j  )=stats%ravval0(j0  )
-              stats%ssqval0(j-1)=stats%ssqval0(j0-1)
-              stats%ssqval0(j  )=stats%ssqval0(j0  )
-              stats%sumval0(j-1)=stats%sumval0(j0-1)
-              stats%sumval0(j  )=stats%sumval0(j0  )
-              Do kk=1,stats%mxstak
-                stats%stkval0(kk,j-1)=stats%stkval0(kk,j0-1)
-                stats%stkval0(kk,j  )=stats%stkval0(kk,j0  )
-              End Do
-            End If
+             If (lmsd) Then
+                j =2*i0
+                j0=2*stats%natms0
+                stats%stpvl00(j-1)=stats%stpvl00(j0-1)
+                stats%stpvl00(j  )=stats%stpvl00(j0  )
+                stats%stpval0(j-1)=stats%stpval0(j0-1)
+                stats%stpval0(j  )=stats%stpval0(j0  )
+                stats%zumval0(j-1)=stats%zumval0(j0-1)
+                stats%zumval0(j  )=stats%zumval0(j0  )
+                stats%ravval0(j-1)=stats%ravval0(j0-1)
+                stats%ravval0(j  )=stats%ravval0(j0  )
+                stats%ssqval0(j-1)=stats%ssqval0(j0-1)
+                stats%ssqval0(j  )=stats%ssqval0(j0  )
+                stats%sumval0(j-1)=stats%sumval0(j0-1)
+                stats%sumval0(j  )=stats%sumval0(j0  )
+                Do kk=1,stats%mxstak
+                   stats%stkval0(kk,j-1)=stats%stkval0(kk,j0-1)
+                   stats%stkval0(kk,j  )=stats%stkval0(kk,j0  )
+                End Do
+             End If
 
-            i0 = i0 + 1                  ! increase lower bound marker if entry is refilled
+             i0 = i0 + 1                  ! increase lower bound marker if entry is refilled
           End If
 
 !! Erase upper holdings in either case
@@ -854,28 +855,28 @@ Contains
 ! Allocate and initialise at first use
 ! Detect unknown lazies sort them lsa like
 
-      If (mdir == -1) Then
-        fail = 0
-        Allocate (lsa00(1:mxatdm), Stat = fail)
-        If (fail > 0) Then
+    If (mdir == -1) Then
+       fail = 0
+       Allocate (lsa00(1:mxatdm), Stat = fail)
+       If (fail > 0) Then
           Write(message,'(a)') 'match_compress_spread_sort allocation failure'
           Call error(0,message)
-        End If
-        lsa00=0
+       End If
+       lsa00=0
 
-        i=0
-        Do i0=1,stats%natms0
-          If (ixyz(i0) == 333) Then
-            i=i+1
-            lsa00(i)=stats%ltg0(i0)
+       i=0
+       Do i0=1,stats%natms0
+          If (config%ixyz(i0) == 333) Then
+             i=i+1
+             lsa00(i)=stats%ltg0(i0)
           End If
-        End Do
-        Call shellsort(i,lsa00)
-      End If
+       End Do
+       Call shellsort(i,lsa00)
+    End If
 
 ! Spread atom data in the mdir direction
 
-      If (mdir /= 0) Call statistics_connect_spread(mdir,mxatdm,lmsd,stats,domain,comm)
+    If (mdir /= 0) Call statistics_connect_spread(config,mdir,mxatdm,lmsd,stats,domain,comm)
 
 ! Sort past frame remainder of global atom indices
 
@@ -890,7 +891,7 @@ Contains
 
   End Subroutine statistics_connect_frames
 
-  Subroutine statistics_connect_set(rcut,mxatdm,lmsd,stats,domain,parts,comm)
+Subroutine statistics_connect_set(config,rcut,mxatdm,lmsd,stats,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -904,19 +905,19 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    Real( Kind = wp ), Intent( In    ) :: rcut
-    Integer( Kind = wi), Intent( In   ) :: mxatdm
-    Logical,            Intent( In    ) :: lmsd
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ),   Intent( InOut ) :: parts(:)
-    Type( comms_type ), Intent( InOut ) :: comm
+  Real( Kind = wp ), Intent( In    ) :: rcut
+  Integer( Kind = wi), Intent( In   ) :: mxatdm
+  Logical,            Intent( In    ) :: lmsd
+  Type( stats_type ), Intent( InOut ) :: stats
+  Type( domains_type ), Intent( In    ) :: domain
+  Type( configuration_type ), Intent( InOut ) :: config
+  Type( comms_type ), Intent( InOut ) :: comm
 
     Real( Kind = wp ) :: cut
 
-    Integer           :: nlx,nly,nlz,i,i0,kk
-    Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
-      xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
+  Integer           :: nlx,nly,nlz,i,i0,kk
+  Real( Kind = wp ) :: det,celprp(1:10),rcell(1:9),x,y,z, &
+                       xdc,ydc,zdc,cwx,cwy,cwz,ecwx,ecwy,ecwz
 
     If (comm%mxnode > 1) Then
 
@@ -924,8 +925,8 @@ Contains
 
       cut=rcut+1.0e-6_wp
 
-      Call dcell(cell,celprp)
-      Call invert(cell,rcell,det)
+     Call dcell(config%cell,celprp)
+     Call invert(config%cell,rcell,det)
 
 ! calculate link cell dimensions per node
 
@@ -961,33 +962,33 @@ Contains
       cwz=Nearest( (-0.5_wp-cwz)+Real(domain%idz+1,wp)*domain%nz_recip , -1.0_wp)- &
         zero_plus-Merge( cwz*1.0e-10_wp , 0.0_wp , nlz == 1 )
 
-      ixyz(1:mxatdm)=0 ! Initialise move (former halo) indicator
-      Do i=1,natms
-        x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
-        y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
-        z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+     config%ixyz(1:mxatdm)=0 ! Initialise move (former halo) indicator
+     Do i=1,config%natms
+        x=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*config%parts(i)%zzz
+        y=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*config%parts(i)%zzz
+        z=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*config%parts(i)%zzz
 
-        If (x <= ecwx) ixyz(i)=ixyz(i)+1
-        If (x >=  cwx) ixyz(i)=ixyz(i)+2
+        If (x <= ecwx) config%ixyz(i)=config%ixyz(i)+1
+        If (x >=  cwx) config%ixyz(i)=config%ixyz(i)+2
 
-        If (y <= ecwy) ixyz(i)=ixyz(i)+10
-        If (y >=  cwy) ixyz(i)=ixyz(i)+20
+        If (y <= ecwy) config%ixyz(i)=config%ixyz(i)+10
+        If (y >=  cwy) config%ixyz(i)=config%ixyz(i)+20
 
-        If (z <= ecwz) ixyz(i)=ixyz(i)+100
-        If (z >=  cwz) ixyz(i)=ixyz(i)+200
-      End Do
+        If (z <= ecwz) config%ixyz(i)=config%ixyz(i)+100
+        If (z >=  cwz) config%ixyz(i)=config%ixyz(i)+200
+     End Do
 
-      lsi=0;lsa=0 ! This is a must, unfortunately
-      Do i=1,natms
-        lsi(i)=i
-        lsa(i)=ltg(i)
-      End Do
-      Call shellsort2(natms,lsi,lsa)
+     config%lsi=0;config%lsa=0 ! This is a must, unfortunately
+     Do i=1,config%natms
+        config%lsi(i)=i
+        config%lsa(i)=config%ltg(i)
+     End Do
+     Call shellsort2(config%natms,config%lsi,config%lsa)
 
-      stats%natms0 = natms
-      stats%ltg0(1:stats%natms0) = ltg(1:stats%natms0) !;stats%ltg0(stats%natms0+1: ) = 0
-      stats%lsa0(1:stats%natms0) = lsa(1:stats%natms0) !; lsa0(stats%natms0+1: ) = 0
-      stats%lsi0(1:stats%natms0) = lsi(1:stats%natms0) !; lsi0(stats%natms0+1: ) = 0
+     stats%natms0 = config%natms
+     stats%ltg0(1:stats%natms0) = config%ltg(1:stats%natms0) !;stats%ltg0(stats%natms0+1: ) = 0
+     stats%lsa0(1:stats%natms0) = config%lsa(1:stats%natms0) !; lsa0(stats%natms0+1: ) = 0
+     stats%lsi0(1:stats%natms0) = config%lsi(1:stats%natms0) !; lsi0(stats%natms0+1: ) = 0
 
       stats%xin0(1:stats%natms0) = stats%xin(1:stats%natms0) !; stats%xin0(stats%natms0+1: ) = 0 ; stats%xin = 0.0_wp
       stats%yin0(1:stats%natms0) = stats%yin(1:stats%natms0) !; stats%yin0(stats%natms0+1: ) = 0 ; stats%yin = 0.0_wp
@@ -1013,7 +1014,7 @@ Contains
 
   End Subroutine statistics_connect_set
 
-  Subroutine statistics_connect_spread(mdir,mxatdm,lmsd,stats,domain,comm)
+Subroutine statistics_connect_spread(config,mdir,mxatdm,lmsd,stats,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1029,29 +1030,29 @@ Contains
 
 
 
-    Integer( Kind = wi ), Intent( In    ) :: mdir
-    Integer( Kind = wi ), Intent( In    ) :: mxatdm
-    Logical,            Intent( In    ) :: lmsd
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( comms_type ), Intent( InOut ) :: comm
-    Logical           :: safe,stay,move
-    Integer           :: fail,iblock,jdnode,kdnode,   &
-      imove,jmove,kmove,keep,send, &
-      i,j,l,jj,kk,jxyz,kxyz,       &
-      ix,iy,iz,kx,ky,kz,newatm
+  Integer( Kind = wi ), Intent( In    ) :: mdir
+  Integer( Kind = wi ), Intent( In    ) :: mxatdm
+  Logical,            Intent( In    ) :: lmsd
+  Type( stats_type ), Intent( InOut ) :: stats
+  Type( domains_type ), Intent( In    ) :: domain
+  Type( comms_type ), Intent( InOut ) :: comm
+  Type( configuration_type ), Intent( InOut ) :: config
+  Logical           :: safe,stay,move
+  Integer           :: fail,iblock,jdnode,kdnode,   &
+                       imove,jmove,kmove,keep,send, &
+                       i,j,l,jj,kk,jxyz,kxyz,       &
+                       ix,iy,iz,kx,ky,kz,newatm
+  Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
+  Character( Len = 256 ) :: message
 
-    Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
-    Character( Len = 256 ) :: message
+  If (comm%mxnode == 1) Return
 
-    If (comm%mxnode == 1) Return
-
-    fail=0
-    Allocate (buffer(1:mxbfss), Stat=fail)
-    If (fail > 0) Then
-      Write(message,'(a)') 'statistics_connect_spread allocation failure'
-      Call error(0,message)
-    End If
+  fail=0
+  Allocate (buffer(1:mxbfss), Stat=fail)
+  If (fail > 0) Then
+     Write(message,'(a)') 'statistics_connect_spread allocation failure'
+     Call error(0,message)
+  End If
 
 ! Set buffer limit (half for outgoing data - half for incoming)
 
@@ -1136,9 +1137,9 @@ Contains
 
 ! particle designated directions
 
-      ix=Mod(ixyz(i),10)           ! [0,1,2,3]
-      iy=Mod(ixyz(i)-ix,100)       ! [0,10,20,30]
-      iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200,300]
+     ix=Mod(config%ixyz(i),10)           ! [0,1,2,3]
+     iy=Mod(config%ixyz(i)-ix,100)       ! [0,10,20,30]
+     iz=Mod(config%ixyz(i)-(ix+iy),1000) ! [0,100,200,300]
 
 ! Filter the move index for the selected direction
 
@@ -1154,17 +1155,17 @@ Contains
 ! reduce particle move index (ixyz) using the corrected halo reduction
 ! factor when the particle is sent to both +&- sides
 
-        ixyz(i)=ixyz(i)-Merge(kxyz,jxyz,j /= jxyz)
-      End If
-      stay = (ixyz(i) /= 0) ! decide on keeping it when to be sent elsewhere
+        config%ixyz(i)=config%ixyz(i)-Merge(kxyz,jxyz,j /= jxyz)
+     End If
+     stay = (config%ixyz(i) /= 0) ! decide on keeping it when to be sent elsewhere
 
       If (stay) Then ! keep it
         keep=keep+1
 
 ! retain config indexing and move indexing arrays
 
-        stats%ltg0(keep)=stats%ltg0(i)
-        ixyz(keep)=ixyz(i)
+       stats%ltg0(keep)=stats%ltg0(i)
+        config%ixyz(keep)=config%ixyz(i)
 
 ! retain initial positions
 
@@ -1206,8 +1207,8 @@ Contains
 
 ! pack config indexing and move indexing arrays
 
-          buffer(imove+1)=Real(stats%ltg0(i),wp)
-          buffer(imove+2)=Real(ixyz(i),wp)
+           buffer(imove+1)=Real(stats%ltg0(i),wp)
+           buffer(imove+2)=Real(config%ixyz(i),wp)
 
 ! pack initial positions
 
@@ -1318,8 +1319,8 @@ Contains
 
 ! unpack config indexing, site and move indexing arrays
 
-      stats%ltg0(newatm)=Nint(buffer(kmove+1))
-      ixyz(newatm)=Nint(buffer(kmove+2))
+    stats%ltg0(newatm)=Nint(buffer(kmove+1))
+     config%ixyz(newatm)=Nint(buffer(kmove+2))
 
 ! unpack initial positions arrays
 
@@ -1369,11 +1370,11 @@ Contains
 
   End Subroutine statistics_connect_spread
 
-  Subroutine statistics_result                                    &
-    (minim,lmsd, &
-    nstrun,keyshl,megcon,megpmf,              &
-    nstep,tstep,time,tmst, &
-    mxatdm,neigh_uncond_update,stats,thermo,green,sites,comm)
+Subroutine statistics_result                                    &
+           (config,minim,lmsd, &
+           nstrun,keyshl,megcon,megpmf,              &
+           nstep,tstep,time,tmst, &
+           mxatdm,neigh_uncond_update,stats,thermo,green,sites,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1386,24 +1387,24 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,           Intent( In    ) :: minim,lmsd
-    Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
-    Real( Kind = wp ), Intent( In    ) :: tstep,time,tmst
-    Integer( Kind = wi ),    Intent( In    ) :: mxatdm
-    Logical, Intent( InOut ) :: neigh_uncond_update
-    Type( stats_type ), Intent( InOut ) :: stats
-    Type( thermostat_type ), Intent( In    ) :: thermo
-    Type( greenkubo_type ), Intent( In    ) :: green
-    Type( site_type ), Intent( In    ) :: sites
-    Type( comms_type ), Intent( InOut ) :: comm
-
-    Logical           :: check
-    Integer           :: i,iadd
-    Real( Kind = wp ) :: avvol,dc,srmsd,timelp,tmp,h_z,tx,ty,temp
-    Character( Len = 256 ) :: message
-    Character( Len = 256 ), Dimension(5) :: messages
-
-    Integer :: mxnstk
+  Logical,           Intent( In    ) :: minim,lmsd
+  Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
+  Real( Kind = wp ), Intent( In    ) :: tstep,time,tmst
+  Integer( Kind = wi ),    Intent( In    ) :: mxatdm
+  Logical, Intent( InOut ) :: neigh_uncond_update
+  Type( configuration_type ), Intent( InOut ) :: config
+  Type( stats_type ), Intent( InOut ) :: stats
+  Type( thermostat_type ), Intent( In    ) :: thermo
+  Type( greenkubo_type ), Intent( In    ) :: green
+  Type( site_type ), Intent( In    ) :: sites
+  Type( comms_type ), Intent( InOut ) :: comm
+    
+  Logical           :: check
+  Integer           :: i,iadd
+  Real( Kind = wp ) :: avvol,dc,srmsd,timelp,tmp,h_z,tx,ty,temp
+  Character( Len = 256 ) :: message
+  Character( Len = 256 ), Dimension(5) :: messages
+  Integer :: mxnstk
 
     mxnstk = stats%mxnstk
 
@@ -1512,7 +1513,7 @@ Contains
 
 ! safe average volume and cell
 
-    avvol = volm
+  avvol = config%volm
 
 ! If dry/static/minimisation run - NO AVERAGES
 ! Print pressure tensor and jump to possible RDF and Z-Density

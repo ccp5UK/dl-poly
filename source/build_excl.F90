@@ -7,7 +7,7 @@ Module build_excl
 
 ! CONFIG MODULE
 
-  Use configuration, Only : natms,nlast,lsi,lsa
+  Use configuration, Only : configuration_type
 
 ! INTERACTION MODULES
 
@@ -32,7 +32,7 @@ Module build_excl
 
 Contains
 
-Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,rigid,comm)
+Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh,rigid,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -57,6 +57,7 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( rigid_bodies_type ), Intent( In    ) :: rigid
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ),  Intent( InOut ) :: comm
 
   Logical :: safe
@@ -91,11 +92,11 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
      ia=cons%listcon(1,i)
      ib=cons%listcon(2,i)
 
-     ia0=local_index(ia,nlast,lsi,lsa)
-     ib0=local_index(ib,nlast,lsi,lsa)
+     ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+     ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
 
-     If (ia0 > natms) ia0=0
-     If (ib0 > natms) ib0=0
+     If (ia0 > config%natms) ia0=0
+     If (ib0 > config%natms) ib0=0
 
 ! add atoms to exclusion list
 
@@ -108,8 +109,8 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
   Do i=1,rigid%n_types
      Do j=1,rigid%list(-1,i)
         irgd(j,i)=rigid%list(j,i)
-        irgd0(j,i)=local_index(rigid%list(j,i),nlast,lsi,lsa)
-        If (irgd0(j,i) > natms) irgd0(j,i)=0
+        irgd0(j,i)=local_index(rigid%list(j,i),config%nlast,config%lsi,config%lsa)
+        If (irgd0(j,i) > config%natms) irgd0(j,i)=0
      End Do
 
 ! add atoms to exclusion list
@@ -130,11 +131,11 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
         ia=bond%list(1,i)
         ib=bond%list(2,i)
 
-        ia0=local_index(ia,nlast,lsi,lsa)
-        ib0=local_index(ib,nlast,lsi,lsa)
+        ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+        ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
 
-        If (ia0 > natms) ia0=0
-        If (ib0 > natms) ib0=0
+        If (ia0 > config%natms) ia0=0
+        If (ib0 > config%natms) ib0=0
 
 ! add atoms to exclusion list
 
@@ -152,13 +153,13 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
         ic=angle%list(3,i)
 
 
-        ia0=local_index(ia,nlast,lsi,lsa)
-        ib0=local_index(ib,nlast,lsi,lsa)
-        ic0=local_index(ic,nlast,lsi,lsa)
+        ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+        ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
+        ic0=local_index(ic,config%nlast,config%lsi,config%lsa)
 
-        If (ia0 > natms) ia0=0
-        If (ib0 > natms) ib0=0
-        If (ic0 > natms) ic0=0
+        If (ia0 > config%natms) ia0=0
+        If (ib0 > config%natms) ib0=0
+        If (ic0 > config%natms) ic0=0
 
 ! add atoms to exclusion list
 
@@ -188,15 +189,15 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
         ic=dihedral%list(3,i)
         id=dihedral%list(4,i)
 
-        ia0=local_index(ia,nlast,lsi,lsa)
-        ib0=local_index(ib,nlast,lsi,lsa)
-        ic0=local_index(ic,nlast,lsi,lsa)
-        id0=local_index(id,nlast,lsi,lsa)
+        ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+        ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
+        ic0=local_index(ic,config%nlast,config%lsi,config%lsa)
+        id0=local_index(id,config%nlast,config%lsi,config%lsa)
 
-        If (ia0 > natms) ia0=0
-        If (ib0 > natms) ib0=0
-        If (ic0 > natms) ic0=0
-        If (id0 > natms) id0=0
+        If (ia0 > config%natms) ia0=0
+        If (ib0 > config%natms) ib0=0
+        If (ic0 > config%natms) ic0=0
+        If (id0 > config%natms) id0=0
 
 ! add atoms to exclusion list
 
@@ -235,15 +236,15 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
         ic=inversion%list(3,i)
         id=inversion%list(4,i)
 
-        ia0=local_index(ia,nlast,lsi,lsa)
-        ib0=local_index(ib,nlast,lsi,lsa)
-        ic0=local_index(ic,nlast,lsi,lsa)
-        id0=local_index(id,nlast,lsi,lsa)
+        ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+        ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
+        ic0=local_index(ic,config%nlast,config%lsi,config%lsa)
+        id0=local_index(id,config%nlast,config%lsi,config%lsa)
 
-        If (ia0 > natms) ia0=0
-        If (ib0 > natms) ib0=0
-        If (ic0 > natms) ic0=0
-        If (id0 > natms) id0=0
+        If (ia0 > config%natms) ia0=0
+        If (ib0 > config%natms) ib0=0
+        If (ic0 > config%natms) ic0=0
+        If (id0 > config%natms) id0=0
 
 ! add atoms to exclusion list
 
@@ -279,11 +280,11 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
      ia=cshell%listshl(1,i) ! This is the core
      ib=cshell%listshl(2,i) ! This is the shell
 
-     ia0=local_index(ia,nlast,lsi,lsa)
-     ib0=local_index(ib,nlast,lsi,lsa)
+     ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+     ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
 
-     If (ia0 > natms) ia0=0
-     If (ib0 > natms) ib0=0
+     If (ia0 > config%natms) ia0=0
+     If (ib0 > config%natms) ib0=0
 
 ! add atoms to exclusion list
 
@@ -296,11 +297,11 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
         ja=cons%listcon(1,kk)
         jb=cons%listcon(2,kk)
 
-        ja0=local_index(ja,nlast,lsi,lsa)
-        jb0=local_index(jb,nlast,lsi,lsa)
+        ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+        jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
 
-        If (ja0 > natms) ja0=0
-        If (jb0 > natms) jb0=0
+        If (ja0 > config%natms) ja0=0
+        If (jb0 > config%natms) jb0=0
 
 ! Check for adjacent core or shell so that all possible, even between
 ! adjacent particles in any intra-unit, interactions are excluded.
@@ -315,8 +316,8 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
            Do j=1,cshell%ntshl2
               If (cshell%listshl(1,j) == ja) Then
                  ka=cshell%listshl(2,j)
-                 ka0=local_index(ka,nlast,lsi,lsa)
-                 If (ka0 > natms) ka0=0
+                 ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+                 If (ka0 > config%natms) ka0=0
 !              Else If (cshell%listshl(2,j) == ja) Then
 !                 ka=cshell%listshl(1,j)
 !                 ka0=local_index(ka,nlast,lsi,lsa)
@@ -325,8 +326,8 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
 
               If (cshell%listshl(1,j) == jb) Then
                  kb=cshell%listshl(2,j)
-                 kb0=local_index(kb,nlast,lsi,lsa)
-                 If (kb0 > natms) kb0=0
+                 kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+                 If (kb0 > config%natms) kb0=0
 !              Else If (cshell%listshl(2,j) == jb) Then
 !                 kb=cshell%listshl(1,j)
 !                 kb0=local_index(kb,nlast,lsi,lsa)
@@ -377,8 +378,8 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
      Do j=1,rigid%n_types_book
         Do k=1,rigid%list(-1,j)
            irgd(k,j)=rigid%list(k,j)
-           irgd0(k,j)=local_index(rigid%list(k,j),nlast,lsi,lsa)
-           If (irgd0(k,j) > natms) irgd0(k,j)=0
+           irgd0(k,j)=local_index(rigid%list(k,j),config%nlast,config%lsi,config%lsa)
+           If (irgd0(k,j) > config%natms) irgd0(k,j)=0
         End Do
 
 ! Check for adjacent core or shell so that all possible, even between
@@ -394,8 +395,8 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
               Do k=1,rigid%list(-1,j)
                  If (irgd(k,j) == cshell%listshl(1,kk)) Then
                     jrgd(k,j)=cshell%listshl(2,kk)
-                    jrgd0(k,j)=local_index(jrgd(k,j),nlast,lsi,lsa)
-                    If (jrgd0(k,j) > natms) jrgd0(k,j)=0
+                    jrgd0(k,j)=local_index(jrgd(k,j),config%nlast,config%lsi,config%lsa)
+                    If (jrgd0(k,j) > config%natms) jrgd0(k,j)=0
 !                 Else If (irgd(k,j) == cshell%listshl(2,kk)) Then
 !                    jrgd(k,j)=cshell%listshl(2,kk)
 !                    jrgd0(k,j)=local_index(jrgd(k,j),nlast,lsi,lsa)
@@ -441,11 +442,11 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
            ja=bond%list(1,kk)
            jb=bond%list(2,kk)
 
-           ja0=local_index(ja,nlast,lsi,lsa)
-           jb0=local_index(jb,nlast,lsi,lsa)
+           ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+           jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
 
-           If (ja0 > natms) ja0=0
-           If (jb0 > natms) jb0=0
+           If (ja0 > config%natms) ja0=0
+           If (jb0 > config%natms) jb0=0
 
 ! Check for adjacent core or shell so that all possible, even between
 ! adjacent particles in any intra-unit, interactions are excluded
@@ -457,22 +458,22 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
               Do j=1,cshell%ntshl2
                  If (cshell%listshl(1,j) == ja) Then
                     ka=cshell%listshl(2,j)
-                    ka0=local_index(ka,nlast,lsi,lsa)
-                    If (ka0 > natms) ka0=0
+                    ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+                    If (ka0 > config%natms) ka0=0
                  Else If (cshell%listshl(2,j) == ja) Then
                     ka=cshell%listshl(1,j)
-                    ka0=local_index(ka,nlast,lsi,lsa)
-                    If (ka0 > natms) ka0=0
+                    ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+                    If (ka0 > config%natms) ka0=0
                  End If
 
                  If (cshell%listshl(1,j) == jb) Then
                     kb=cshell%listshl(2,j)
-                    kb0=local_index(kb,nlast,lsi,lsa)
-                    If (kb0 > natms) kb0=0
+                    kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+                    If (kb0 > config%natms) kb0=0
                  Else If (cshell%listshl(2,j) == jb) Then
                     kb=cshell%listshl(1,j)
-                    kb0=local_index(kb,nlast,lsi,lsa)
-                    If (kb0 > natms) kb0=0
+                    kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+                    If (kb0 > config%natms) kb0=0
                  End If
               End Do
            End If
@@ -523,13 +524,13 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
            jb=angle%list(2,kk)
            jc=angle%list(3,kk)
 
-           ja0=local_index(ja,nlast,lsi,lsa)
-           jb0=local_index(jb,nlast,lsi,lsa)
-           jc0=local_index(jc,nlast,lsi,lsa)
+           ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+           jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
+           jc0=local_index(jc,config%nlast,config%lsi,config%lsa)
 
-           If (ja0 > natms) ja0=0
-           If (jb0 > natms) jb0=0
-           If (jc0 > natms) jc0=0
+           If (ja0 > config%natms) ja0=0
+           If (jb0 > config%natms) jb0=0
+           If (jc0 > config%natms) jc0=0
 
 ! Check for adjacent core or shell so that all possible, even between
 ! adjacent particles in any intra-unit, interactions are excluded
@@ -542,32 +543,32 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
               Do j=1,cshell%ntshl2
                  If (cshell%listshl(1,j) == ja) Then
                     ka=cshell%listshl(2,j)
-                    ka0=local_index(ka,nlast,lsi,lsa)
-                    If (ka0 > natms) ka0=0
+                    ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+                    If (ka0 > config%natms) ka0=0
                  Else If (cshell%listshl(2,j) == ja) Then
                     ka=cshell%listshl(1,j)
-                    ka0=local_index(ka,nlast,lsi,lsa)
-                    If (ka0 > natms) ka0=0
+                    ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+                    If (ka0 > config%natms) ka0=0
                  End If
 
                  If (cshell%listshl(1,j) == jb) Then
                     kb=cshell%listshl(2,j)
-                    kb0=local_index(kb,nlast,lsi,lsa)
-                    If (kb0 > natms) kb0=0
+                    kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+                    If (kb0 > config%natms) kb0=0
                  Else If (cshell%listshl(2,j) == jb) Then
                     kb=cshell%listshl(1,j)
-                    kb0=local_index(kb,nlast,lsi,lsa)
-                    If (kb0 > natms) kb0=0
+                    kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+                    If (kb0 > config%natms) kb0=0
                  End If
 
                  If (cshell%listshl(1,j) == jc) Then
                     kc=cshell%listshl(2,j)
-                    kc0=local_index(kc,nlast,lsi,lsa)
-                    If (kc0 > natms) kc0=0
+                    kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+                    If (kc0 > config%natms) kc0=0
                  Else If (cshell%listshl(2,j) == jc) Then
                     kc=cshell%listshl(1,j)
-                    kc0=local_index(kc,nlast,lsi,lsa)
-                    If (kc0 > natms) kc0=0
+                    kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+                    If (kc0 > config%natms) kc0=0
                  End If
               End Do
            End If
@@ -679,15 +680,15 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
            jc=dihedral%list(3,kk)
            jd=dihedral%list(4,kk)
 
-           ja0=local_index(ja,nlast,lsi,lsa)
-           jb0=local_index(jb,nlast,lsi,lsa)
-           jc0=local_index(jc,nlast,lsi,lsa)
-           jd0=local_index(jd,nlast,lsi,lsa)
+           ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+           jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
+           jc0=local_index(jc,config%nlast,config%lsi,config%lsa)
+           jd0=local_index(jd,config%nlast,config%lsi,config%lsa)
 
-           If (ja0 > natms) ja0=0
-           If (jb0 > natms) jb0=0
-           If (jc0 > natms) jc0=0
-           If (jd0 > natms) jd0=0
+           If (ja0 > config%natms) ja0=0
+           If (jb0 > config%natms) jb0=0
+           If (jc0 > config%natms) jc0=0
+           If (jd0 > config%natms) jd0=0
 
 ! Check for adjacent core or shell so that all possible, even between
 ! adjacent particles in any intra-unit, interactions are excluded
@@ -701,42 +702,42 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
               Do j=1,cshell%ntshl2
                  If (cshell%listshl(1,j) == ja) Then
                     ka=cshell%listshl(2,j)
-                    ka0=local_index(ka,nlast,lsi,lsa)
-                    If (ka0 > natms) ka0=0
+                    ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+                    If (ka0 > config%natms) ka0=0
                  Else If (cshell%listshl(2,j) == ja) Then
                     ka=cshell%listshl(1,j)
-                    ka0=local_index(ka,nlast,lsi,lsa)
-                    If (ka0 > natms) ka0=0
+                    ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+                    If (ka0 > config%natms) ka0=0
                  End If
 
                  If (cshell%listshl(1,j) == jb) Then
                     kb=cshell%listshl(2,j)
-                    kb0=local_index(kb,nlast,lsi,lsa)
-                    If (kb0 > natms) kb0=0
+                    kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+                    If (kb0 > config%natms) kb0=0
                  Else If (cshell%listshl(2,j) == jb) Then
                     kb=cshell%listshl(1,j)
-                    kb0=local_index(kb,nlast,lsi,lsa)
-                    If (kb0 > natms) kb0=0
+                    kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+                    If (kb0 > config%natms) kb0=0
                  End If
 
                  If (cshell%listshl(1,j) == jc) Then
                     kc=cshell%listshl(2,j)
-                    kc0=local_index(kc,nlast,lsi,lsa)
-                    If (kc0 > natms) kc0=0
+                    kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+                    If (kc0 > config%natms) kc0=0
                  Else If (cshell%listshl(2,j) == jc) Then
                     kc=cshell%listshl(1,j)
-                    kc0=local_index(kc,nlast,lsi,lsa)
-                    If (kc0 > natms) kc0=0
+                    kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+                    If (kc0 > config%natms) kc0=0
                  End If
 
                  If (cshell%listshl(1,j) == jd) Then
                     kd=cshell%listshl(2,j)
-                    kd0=local_index(kd,nlast,lsi,lsa)
-                    If (kd0 > natms) kd0=0
+                    kd0=local_index(kd,config%nlast,config%lsi,config%lsa)
+                    If (kd0 > config%natms) kd0=0
                  Else If (cshell%listshl(2,j) == jd) Then
                     kd=cshell%listshl(1,j)
-                    kd0=local_index(kd,nlast,lsi,lsa)
-                    If (kd0 > natms) kd0=0
+                    kd0=local_index(kd,config%nlast,config%lsi,config%lsa)
+                    If (kd0 > config%natms) kd0=0
                  End If
               End Do
            End If
@@ -928,15 +929,15 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
            jc=inversion%list(3,kk)
            jd=inversion%list(4,kk)
 
-           ja0=local_index(ja,nlast,lsi,lsa)
-           jb0=local_index(jb,nlast,lsi,lsa)
-           jc0=local_index(jc,nlast,lsi,lsa)
-           jd0=local_index(jd,nlast,lsi,lsa)
+           ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+           jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
+           jc0=local_index(jc,config%nlast,config%lsi,config%lsa)
+           jd0=local_index(jd,config%nlast,config%lsi,config%lsa)
 
-           If (ja0 > natms) ja0=0
-           If (jb0 > natms) jb0=0
-           If (jc0 > natms) jc0=0
-           If (jd0 > natms) jd0=0
+           If (ja0 > config%natms) ja0=0
+           If (jb0 > config%natms) jb0=0
+           If (jc0 > config%natms) jc0=0
+           If (jd0 > config%natms) jd0=0
 
 ! Check for adjacent core or shell so that all possible, even between
 ! adjacent particles in any intra-unit, interactions are excluded
@@ -950,42 +951,42 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
               Do j=1,cshell%ntshl2
                  If (cshell%listshl(1,j) == ja) Then
                     ka=cshell%listshl(2,j)
-                    ka0=local_index(ka,nlast,lsi,lsa)
-                    If (ka0 > natms) ka0=0
+                    ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+                    If (ka0 > config%natms) ka0=0
                  Else If (cshell%listshl(2,j) == ja) Then
                     ka=cshell%listshl(1,j)
-                    ka0=local_index(ka,nlast,lsi,lsa)
-                    If (ka0 > natms) ka0=0
+                    ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+                    If (ka0 > config%natms) ka0=0
                  End If
 
                  If (cshell%listshl(1,j) == jb) Then
                     kb=cshell%listshl(2,j)
-                    kb0=local_index(kb,nlast,lsi,lsa)
-                    If (kb0 > natms) kb0=0
+                    kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+                    If (kb0 > config%natms) kb0=0
                  Else If (cshell%listshl(2,j) == jb) Then
                     kb=cshell%listshl(1,j)
-                    kb0=local_index(kb,nlast,lsi,lsa)
-                    If (kb0 > natms) kb0=0
+                    kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+                    If (kb0 > config%natms) kb0=0
                  End If
 
                  If (cshell%listshl(1,j) == jc) Then
                     kc=cshell%listshl(2,j)
-                    kc0=local_index(kc,nlast,lsi,lsa)
-                    If (kc0 > natms) kc0=0
+                    kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+                    If (kc0 > config%natms) kc0=0
                  Else If (cshell%listshl(2,j) == jc) Then
                     kc=cshell%listshl(1,j)
-                    kc0=local_index(kc,nlast,lsi,lsa)
-                    If (kc0 > natms) kc0=0
+                    kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+                    If (kc0 > config%natms) kc0=0
                  End If
 
                  If (cshell%listshl(1,j) == jd) Then
                     kd=cshell%listshl(2,j)
-                    kd0=local_index(kd,nlast,lsi,lsa)
-                    If (kd0 > natms) kd0=0
+                    kd0=local_index(kd,config%nlast,config%lsi,config%lsa)
+                    If (kd0 > config%natms) kd0=0
                  Else If (cshell%listshl(2,j) == jd) Then
                     kd=cshell%listshl(1,j)
-                    kd0=local_index(kd,nlast,lsi,lsa)
-                    If (kd0 > natms) kd0=0
+                    kd0=local_index(kd,config%nlast,config%lsi,config%lsa)
+                    If (kd0 > config%natms) kd0=0
                  End If
               End Do
            End If
@@ -1180,7 +1181,7 @@ Subroutine build_excl_intra(lecx,cshell,cons,bond,angle,dihedral,inversion,neigh
 
 ! sort neigh%list_excl
 
-  Do i=1,natms
+  Do i=1,config%natms
      j=neigh%list_excl(0,i)
      If (j > 0) Call shellsort(j,neigh%list_excl(1:j,i))
   End Do

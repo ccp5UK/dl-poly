@@ -13,9 +13,7 @@ Module dpd
   Use comms,        Only : comms_type,gsum,gcheck,gmax,DpdVExp_tag,wp_mpi, &
                            gsend,gwait,girecv
   Use setup,        Only : nrite,mxatdm,mxatms,mxbfxp
-  Use configuration,       Only : natms,nlast,lsi,lsa,ltg,ltype,lfree, &
-                                  weight,vxx,vyy,vzz, &
-                                  ixyz
+  Use configuration,       Only : configuration_type
   Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type
   Use domains, Only : domains_type
@@ -34,7 +32,7 @@ Module dpd
 
 Contains
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,domain,parts,seed,comm)
+  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,domain,config,seed,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -58,7 +56,7 @@ Contains
     Type( neighbours_type ), Intent( In    ) :: neigh
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -120,24 +118,24 @@ Contains
 
     ! Refresh halo velocities
 
-    Call dpd_v_set_halo(domain,comm)
+    Call dpd_v_set_halo(domain,config,comm)
 
     ! outer loop over atoms
 
-    Do i=1,natms
+    Do i=1,config%natms
 
       ! Get neigh%list limit
 
-      limit=Merge(neigh%list(0,i),0,weight(i) > 1.0e-6_wp)
+      limit=Merge(neigh%list(0,i),0,config%weight(i) > 1.0e-6_wp)
 
       ! calculate interatomic distances
 
       Do k=1,limit
         j=neigh%list(k,i)
 
-        xxt(k)=parts(i)%xxx-parts(j)%xxx
-        yyt(k)=parts(i)%yyy-parts(j)%yyy
-        zzt(k)=parts(i)%zzz-parts(j)%zzz
+        xxt(k)=config%parts(i)%xxx-config%parts(j)%xxx
+        yyt(k)=config%parts(i)%yyy-config%parts(j)%yyy
+        zzt(k)=config%parts(i)%zzz-config%parts(j)%zzz
       End Do
 
       ! square of distances
@@ -157,8 +155,8 @@ Contains
 
       ! global identity and atomic type of i
 
-      idi=ltg(i)
-      ai=ltype(i)
+      idi=config%ltg(i)
+      ai=config%ltype(i)
 
       ! load forces
 
@@ -180,12 +178,12 @@ Contains
 
         ! validity of thermalisation
 
-        If (rrr < rcut .and. weight(j) > 1.0e-6_wp) Then
+        If (rrr < rcut .and. config%weight(j) > 1.0e-6_wp) Then
 
           ! secondary atomic type and global index
 
-          aj=ltype(j)
-          idj=ltg(j)
+          aj=config%ltype(j)
+          idj=config%ltg(j)
 
           ! Get gaussian random number with zero mean
 
@@ -208,7 +206,8 @@ Contains
           rgamma =  thermo%sigdpd(key) * scrn * gauss * rstsq
 
           tmp    =  thermo%gamdpd(key) * (scrn**2)
-          dgamma = -tmp * ( xxt(k)*(vxx(i)-vxx(j)) + yyt(k)*(vyy(i)-vyy(j)) + zzt(k)*(vzz(i)-vzz(j)) )
+          dgamma = -tmp * ( xxt(k)*(config%vxx(i)-config%vxx(j)) + &
+                    yyt(k)*(config%vyy(i)-config%vyy(j)) + zzt(k)*(config%vzz(i)-config%vzz(j)) )
 
           gamma=rgamma+dgamma
 
@@ -222,7 +221,7 @@ Contains
           fiy=fiy+fy
           fiz=fiz+fz
 
-          If (j <= natms) Then
+          If (j <= config%natms) Then
 
             fdpdx(j)=fdpdx(j)-fx
             fdpdy(j)=fdpdy(j)-fy
@@ -230,7 +229,7 @@ Contains
 
           End If
 
-          If (j <= natms .or. idi < idj) Then
+          If (j <= config%natms .or. idi < idj) Then
 
             ! add virial
 
@@ -273,18 +272,18 @@ Contains
 
     ! Update velocities or add to conservative forces
 
-    Do i=1,natms
-      If (lfree(i) == 0) Then
-        If (weight(i) > 1.0e-6_wp) Then
-          tmp=hstep/weight(i)
-          vxx(i)=vxx(i)+tmp*fdpdx(i)
-          vyy(i)=vyy(i)+tmp*fdpdy(i)
-          vzz(i)=vzz(i)+tmp*fdpdz(i)
+    Do i=1,config%natms
+      If (config%lfree(i) == 0) Then
+        If (config%weight(i) > 1.0e-6_wp) Then
+          tmp=hstep/config%weight(i)
+          config%vxx(i)=config%vxx(i)+tmp*fdpdx(i)
+          config%vyy(i)=config%vyy(i)+tmp*fdpdy(i)
+          config%vzz(i)=config%vzz(i)+tmp*fdpdz(i)
         End If
       Else ! a RB member
-        parts(i)%fxx=parts(i)%fxx+fdpdx(i)
-        parts(i)%fyy=parts(i)%fyy+fdpdy(i)
-        parts(i)%fzz=parts(i)%fzz+fdpdz(i)
+        config%parts(i)%fxx=config%parts(i)%fxx+fdpdx(i)
+        config%parts(i)%fyy=config%parts(i)%fyy+fdpdy(i)
+        config%parts(i)%fzz=config%parts(i)%fzz+fdpdz(i)
       End If
     End Do
 
@@ -292,7 +291,7 @@ Contains
 
     ! Refresh halo velocities
 
-    Call dpd_v_set_halo(domain,comm)
+    Call dpd_v_set_halo(domain,config,comm)
 
     ! Initialise forces
 
@@ -302,20 +301,20 @@ Contains
 
     ! outer loop over atoms
 
-    Do i=1,natms
+    Do i=1,config%natms
 
       ! Get neigh%list limit
 
-      limit=Merge(neigh%list(0,i),0,weight(i) > 1.0e-6_wp)
+      limit=Merge(neigh%list(0,i),0,config%weight(i) > 1.0e-6_wp)
 
       ! calculate interatomic distances
 
       Do k=1,limit
         j=neigh%list(k,i)
 
-        xxt(k)=parts(i)%xxx-parts(j)%xxx
-        yyt(k)=parts(i)%yyy-parts(j)%yyy
-        zzt(k)=parts(i)%zzz-parts(j)%zzz
+        xxt(k)=config%parts(i)%xxx-config%parts(j)%xxx
+        yyt(k)=config%parts(i)%yyy-config%parts(j)%yyy
+        zzt(k)=config%parts(i)%zzz-config%parts(j)%zzz
       End Do
 
       ! square of distances
@@ -335,8 +334,8 @@ Contains
 
       ! global identity and atomic type of i
 
-      idi=ltg(i)
-      ai=ltype(i)
+      idi=config%ltg(i)
+      ai=config%ltype(i)
 
       ! load forces
 
@@ -358,12 +357,12 @@ Contains
 
         ! validity of thermalisation
 
-        If (rrr < rcut .and. weight(j) > 1.0e-6_wp) Then
+        If (rrr < rcut .and. config%weight(j) > 1.0e-6_wp) Then
 
           ! secondary atomic type and global index
 
-          aj=ltype(j)
-          idj=ltg(j)
+          aj=config%ltype(j)
+          idj=config%ltg(j)
 
           ! Get gaussian random number with zero mean
 
@@ -387,7 +386,8 @@ Contains
 
           tmp    =  thermo%gamdpd(key) * (scrn**2)
           scl    =  tmp / (1.0_wp+tmp*tst_p)
-          dgamma = -tmp * ( xxt(k)*(vxx(i)-vxx(j)) + yyt(k)*(vyy(i)-vyy(j)) + zzt(k)*(vzz(i)-vzz(j)) )
+          dgamma = -tmp * ( xxt(k)*(config%vxx(i)-config%vxx(j)) + &
+                    yyt(k)*(config%vyy(i)-config%vyy(j)) + zzt(k)*(config%vzz(i)-config%vzz(j)) )
 
           gamma=rgamma + scl*(dgamma-rgamma)
 
@@ -401,7 +401,7 @@ Contains
           fiy=fiy+fy
           fiz=fiz+fz
 
-          If (j <= natms) Then
+          If (j <= config%natms) Then
 
             fdpdx(j)=fdpdx(j)-fx
             fdpdy(j)=fdpdy(j)-fy
@@ -409,7 +409,7 @@ Contains
 
           End If
 
-          If (j <= natms .or. idi < idj) Then
+          If (j <= config%natms .or. idi < idj) Then
 
             ! add virial
 
@@ -452,26 +452,26 @@ Contains
 
     ! Update velocities
 
-    Do i=1,natms
-      If (lfree(i) == 0) Then
-        If (weight(i) > 1.0e-6_wp) Then
-          tmp=hstep/weight(i)
-          vxx(i)=vxx(i)+tmp*fdpdx(i)
-          vyy(i)=vyy(i)+tmp*fdpdy(i)
-          vzz(i)=vzz(i)+tmp*fdpdz(i)
+    Do i=1,config%natms
+      If (config%lfree(i) == 0) Then
+        If (config%weight(i) > 1.0e-6_wp) Then
+          tmp=hstep/config%weight(i)
+          config%vxx(i)=config%vxx(i)+tmp*fdpdx(i)
+          config%vyy(i)=config%vyy(i)+tmp*fdpdy(i)
+          config%vzz(i)=config%vzz(i)+tmp*fdpdz(i)
         End If
       Else ! a RB member
-        parts(i)%fxx=parts(i)%fxx+fdpdx(i)
-        parts(i)%fyy=parts(i)%fyy+fdpdy(i)
-        parts(i)%fzz=parts(i)%fzz+fdpdz(i)
+        config%parts(i)%fxx=config%parts(i)%fxx+fdpdx(i)
+        config%parts(i)%fyy=config%parts(i)%fyy+fdpdy(i)
+        config%parts(i)%fzz=config%parts(i)%fzz+fdpdz(i)
       End If
     End Do
 
     ! Update forces on RBs
 
     If (rigid%share) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-        rigid%map_shared,parts,SHARED_UNIT_UPDATE_FORCES,domain,comm)
+      Call update_shared_units(config,rigid%list_shared, &
+        rigid%map_shared,SHARED_UNIT_UPDATE_FORCES,domain,comm)
     End If
 
     ! globalise stats%virdpd
@@ -487,7 +487,7 @@ Contains
 
   End Subroutine dpd_thermostat
 
-  Subroutine dpd_v_export(mdir,mlast,ixyz0,domain,comm)
+  Subroutine dpd_v_export(mdir,mlast,ixyz0,domain,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -503,6 +503,7 @@ Contains
     Integer,           Intent( In    ) :: mdir
     Integer,           Intent( InOut ) :: mlast,ixyz0(1:mxatms)
     Type( domains_type ), Intent( In    ) :: domain
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: safe
@@ -623,9 +624,9 @@ Contains
 
             ! pack particle velocity and halo indexing
 
-            buffer(imove+1)=vxx(i)
-            buffer(imove+2)=vyy(i)
-            buffer(imove+3)=vzz(i)
+            buffer(imove+1)=config%vxx(i)
+            buffer(imove+2)=config%vyy(i)
+            buffer(imove+3)=config%vzz(i)
 
             ! Use the corrected halo reduction factor when the particle is halo to both +&- sides
 
@@ -695,9 +696,9 @@ Contains
 
       ! unpack particle velocity and remaining halo indexing
 
-      vxx(mlast)=buffer(j+1)
-      vyy(mlast)=buffer(j+2)
-      vzz(mlast)=buffer(j+3)
+      config%vxx(mlast)=buffer(j+1)
+      config%vyy(mlast)=buffer(j+2)
+      config%vzz(mlast)=buffer(j+3)
       ixyz0(mlast)=Nint(buffer(j+4))
 
       j=j+iadd
@@ -711,7 +712,7 @@ Contains
 
   End Subroutine dpd_v_export
 
-  Subroutine dpd_v_set_halo(domain,comm)
+  Subroutine dpd_v_set_halo(domain,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -725,6 +726,7 @@ Contains
 
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
+    Type( configuration_type ), Intent( InOut ) :: config
 
     Logical :: safe
     Integer :: fail,mlast
@@ -738,30 +740,30 @@ Contains
       Write(message,'(a)') 'dpd_v_set_halo allocation failure'
       Call error(0,message)
     End If
-    ixyz0(1:nlast) = ixyz(1:nlast)
+    ixyz0(1:config%nlast) = config%ixyz(1:config%nlast)
 
     ! No halo, start with domain only particles
 
-    mlast=natms
+    mlast=config%natms
 
     ! exchange atom data in -/+ x directions
 
-    Call dpd_v_export(-1,mlast,ixyz0,domain,comm)
-    Call dpd_v_export( 1,mlast,ixyz0,domain,comm)
+    Call dpd_v_export(-1,mlast,ixyz0,domain,config,comm)
+    Call dpd_v_export( 1,mlast,ixyz0,domain,config,comm)
 
     ! exchange atom data in -/+ y directions
 
-    Call dpd_v_export(-2,mlast,ixyz0,domain,comm)
-    Call dpd_v_export( 2,mlast,ixyz0,domain,comm)
+    Call dpd_v_export(-2,mlast,ixyz0,domain,config,comm)
+    Call dpd_v_export( 2,mlast,ixyz0,domain,config,comm)
 
     ! exchange atom data in -/+ z directions
 
-    Call dpd_v_export(-3,mlast,ixyz0,domain,comm)
-    Call dpd_v_export( 3,mlast,ixyz0,domain,comm)
+    Call dpd_v_export(-3,mlast,ixyz0,domain,config,comm)
+    Call dpd_v_export( 3,mlast,ixyz0,domain,config,comm)
 
     ! check atom totals after data transfer
 
-    safe=(mlast == nlast)
+    safe=(mlast == config%nlast)
     Call gcheck(comm,safe)
     If (.not.safe) Call error(96)
 

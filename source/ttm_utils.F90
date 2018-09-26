@@ -296,7 +296,7 @@ Contains
     If (freq /= 0) Then
       If (Mod(nstep,freq)==0) Then
 
-        ! check over all active ionic temperature cells (CIT)
+        ! check over all active ionic temperature config%cells (CIT)
         Do k = 1,ntcell(3)
           Do j = 1,ntcell(2)
             Do i = 1,ntcell(1)
@@ -405,7 +405,7 @@ Contains
                     lx = i + ntcelloff(1) + (ii + eltcell(1)) * ntsys(1) - zeroE(1)
                     ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
                     ! integrate electronic heat capacity from temp0 to electronic temperature
-                    ! of cell if it is within global range and active (within ionic temperature cells)
+                    ! of config%cell if it is within global range and active (within ionic temperature config%cells)
                     If (lx>0 .and. lx<=eltsys(1) .and. ly>0 .and. ly<=eltsys(2) .and. lz>0 .and. lz<=eltsys(3)) Then
                       eltmp = eltemp(ijk,ii,jj,kk)
                       tmp = Merge(1.0_wp,0.0_wp,(act_ele_cell(ijk,0,0,0)>zero_plus .or. (ii/=0 .or. jj/=0 .or. kk/=0)))
@@ -562,7 +562,7 @@ Contains
           ijkpz = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (k + 1))
           ijkmz = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * (k - 1))
           If (act_ele_cell(ijk,0,0,0)<=zero_plus .and. old_ele_cell(ijk,0,0,0)>zero_plus) Then
-        ! Calculate amount of energy left in the cell 
+        ! Calculate amount of energy left in the config%cell 
         ! (Ue = integral of Ce(Te)d(Te) between temp0 and Te)
             U_e = 0.0_wp
             end_Te = eltemp(ijk,0,0,0)
@@ -588,10 +588,10 @@ Contains
               End Do
               U_e = U_e + 0.5_wp * (Ce(temp0+Real(numint, Kind=wp))+Ce(end_Te))
             End Select
-            ! Check how many cells are connected to the now turned-off cell
+            ! Check how many config%cells are connected to the now turned-off config%cell
             act_sur_cells = act_ele_cell(ijkmx,0,0,0) + act_ele_cell(ijkpx,0,0,0) + act_ele_cell(ijkmy,0,0,0) + &
                             act_ele_cell(ijkpy,0,0,0) + act_ele_cell(ijkmz,0,0,0) + act_ele_cell(ijkpz,0,0,0)
-            ! Calculate energy redistribution to each cell and assign to cells
+            ! Calculate energy redistribution to each config%cell and assign to config%cells
             If (act_sur_cells>zero_plus) energy_per_cell = U_e / act_sur_cells
             If (act_ele_cell(ijkmx,0,0,0)>zero_plus) energydist (ijkmx,0,0,0) = energydist (ijkmx,0,0,0) + energy_per_cell
             If (act_ele_cell(ijkpx,0,0,0)>zero_plus) energydist (ijkpx,0,0,0) = energydist (ijkpx,0,0,0) + energy_per_cell
@@ -714,9 +714,9 @@ Contains
       End Do
     End If
 
-    ! work through electronic temperature cells within ionic temperature voxels
+    ! work through electronic temperature config%cells within ionic temperature voxels
     ! and in immediate borders: determine electronic temperatures needed to add
-    ! redistributed energies and identify relevant cells - split according to
+    ! redistributed energies and identify relevant config%cells - split according to
     ! available functional form of heat capacity
 
     Select Case (CeType)
@@ -794,7 +794,7 @@ Contains
                 sgnplus = Sign(1.0_wp,energy_per_cell)
                 energy_diff = sgnplus*energy_per_cell
                 oldCe = Ce(start_Te)
-                ! increase/decrease temperature of electronic cell by 1 kelvin until
+                ! increase/decrease temperature of electronic config%cell by 1 kelvin until
                 ! required energy change is reached or exceeded
                 Do While(energy_diff>=zero_plus)
                   newCe = Ce(start_Te+sgnplus)

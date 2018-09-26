@@ -8,10 +8,7 @@ Module trajectory
   Use setup
   Use parse,         Only : tabs_2_blanks, get_line, get_word, &
                             strip_blanks, word_2_real
-  Use configuration, Only : cfgname,imcon,cell,natms, &
-                            ltg,atmnam,weight,   &
-                            vxx,vyy,vzz,&
-                            lsa,lsi,ltg,nlast
+  Use configuration, Only : configuration_type
   Use netcdf_wrap,   Only : netcdf_param
   Use io,            Only : io_set_parameters,             &
                             io_get_parameters,             &
@@ -154,7 +151,7 @@ Contains
   End Function trajectory_file_key
 
 Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
-  traj,sites,domain,parts,comm)
+  traj,sites,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -176,7 +173,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
   Type( trajectory_type), Intent( InOut ) :: traj
   Type( site_type ), Intent( In    ) :: sites
   Type( domains_type ), Intent( In    ) :: domain
-  Type( corePart ),     Intent( InOut ) :: parts(:)
+  Type( configuration_type ),     Intent( InOut ) :: config
   Type( comms_type),    Intent( InOut ) :: comm
 
 
@@ -316,7 +313,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 ! Reinitialise local-to-global counters and all levels of information at every bloody read
 ! Ilian's & Alin's fix to clear incoherencies with re-emptied/re-filled domains
 
-  lsi=0 ; lsa=0 ; ltg=0                     ! A must unfortunately
+  config%lsi=0 ; config%lsa=0 ; config%ltg=0                     ! A must unfortunately
 
 ! Necessary to not initialise keep the last frame info after hitting EOF
 !  xxx=0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp ! unfortunate but
@@ -343,24 +340,24 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
      Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 200
 
      Do i=1,mxatms
-       parts(i)%xxx=0.0_wp
-       parts(i)%yyy=0.0_wp
-       parts(i)%zzz=0.0_wp
-       parts(i)%fxx=0.0_wp
-       parts(i)%fyy=0.0_wp
-       parts(i)%fzz=0.0_wp
+       config%parts(i)%xxx=0.0_wp
+       config%parts(i)%yyy=0.0_wp
+       config%parts(i)%zzz=0.0_wp
+       config%parts(i)%fxx=0.0_wp
+       config%parts(i)%fyy=0.0_wp
+       config%parts(i)%fzz=0.0_wp
      End Do
-     vxx=0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
+     config%vxx=0.0_wp ; config%vyy = 0.0_wp ; config%vzz = 0.0_wp
 
      Call get_word(record,word) ! timestep
      Call get_word(record,word) ; nstep = Nint(word_2_real(word))
      Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
      Call get_word(record,word) ; levcfg = Nint(word_2_real(word))
-     Call get_word(record,word) ; imcon = Nint(word_2_real(word))
+     Call get_word(record,word) ; config%imcon = Nint(word_2_real(word))
 
 ! image conditions not compliant with DD and link-cell
 
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+     If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
 
      Call get_word(record,word) ; tstep = word_2_real(word)
      Call get_word(record,word) ; time = word_2_real(word)
@@ -371,25 +368,25 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 ! read cell vectors
 
      Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
-     Call get_word(record,word); cell(1)=word_2_real(word)
-     Call get_word(record,word); cell(2)=word_2_real(word)
-     Call get_word(record,word); cell(3)=word_2_real(word)
+     Call get_word(record,word); config%cell(1)=word_2_real(word)
+     Call get_word(record,word); config%cell(2)=word_2_real(word)
+     Call get_word(record,word); config%cell(3)=word_2_real(word)
 
      Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
-     Call get_word(record,word); cell(4)=word_2_real(word)
-     Call get_word(record,word); cell(5)=word_2_real(word)
-     Call get_word(record,word); cell(6)=word_2_real(word)
+     Call get_word(record,word); config%cell(4)=word_2_real(word)
+     Call get_word(record,word); config%cell(5)=word_2_real(word)
+     Call get_word(record,word); config%cell(6)=word_2_real(word)
 
      Call get_line(safe,nconf,record,comm); If (.not.safe) Go To 300
-     Call get_word(record,word); cell(7)=word_2_real(word)
-     Call get_word(record,word); cell(8)=word_2_real(word)
-     Call get_word(record,word); cell(9)=word_2_real(word)
+     Call get_word(record,word); config%cell(7)=word_2_real(word)
+     Call get_word(record,word); config%cell(8)=word_2_real(word)
+     Call get_word(record,word); config%cell(9)=word_2_real(word)
 
-     Call invert(cell,rcell,det)
+     Call invert(config%cell,rcell,det)
 
 ! Initialise domain localised atom counter (configuration)
 
-     natms=0
+     config%natms=0
 
 ! Initialise dispatched atom counter
 
@@ -505,9 +502,9 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
 ! fold back coordinatesc
 
-                    axx(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
-                    ayy(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
-                    azz(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+                    axx(i)=config%cell(1)*sxx+config%cell(4)*syy+config%cell(7)*szz
+                    ayy(i)=config%cell(2)*sxx+config%cell(5)*syy+config%cell(8)*szz
+                    azz(i)=config%cell(3)*sxx+config%cell(6)*syy+config%cell(9)*szz
 
 ! assign domain coordinates (call for errors)
 
@@ -519,30 +516,30 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
                     If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
                        Call error(513)
                     Else If (idm == comm%idnode)                 Then
-                       natms=natms+1
+                       config%natms=config%natms+1
 
-                       If (natms < mxatms) Then
-                          atmnam(natms)=chbuf(i)
-                          ltg(natms)=iwrk(i)
+                       If (config%natms < mxatms) Then
+                          config%atmnam(config%natms)=chbuf(i)
+                          config%ltg(config%natms)=iwrk(i)
 
                           If (levcfg /= 3) Then
-                             parts(natms)%xxx=axx(i)
-                             parts(natms)%yyy=ayy(i)
-                             parts(natms)%zzz=azz(i)
+                             config%parts(config%natms)%xxx=axx(i)
+                             config%parts(config%natms)%yyy=ayy(i)
+                             config%parts(config%natms)%zzz=azz(i)
                              If (levcfg > 0) Then
-                                vxx(natms)=bxx(i)
-                                vyy(natms)=byy(i)
-                                vzz(natms)=bzz(i)
+                                config%vxx(config%natms)=bxx(i)
+                                config%vyy(config%natms)=byy(i)
+                                config%vzz(config%natms)=bzz(i)
                                 If (levcfg > 1) Then
-                                   parts(natms)%fxx=cxx(i)
-                                   parts(natms)%fyy=cyy(i)
-                                   parts(natms)%fzz=czz(i)
+                                   config%parts(config%natms)%fxx=cxx(i)
+                                   config%parts(config%natms)%fyy=cyy(i)
+                                   config%parts(config%natms)%fzz=czz(i)
                                 End If
                              End If
                           Else
-                             parts(natms)%xxx=axx(i)
-                             parts(natms)%yyy=ayy(i)
-                             parts(natms)%zzz=azz(i)
+                             config%parts(config%natms)%xxx=axx(i)
+                             config%parts(config%natms)%yyy=ayy(i)
+                             config%parts(config%natms)%zzz=azz(i)
                           End If
                        Else
                           safe=.false.
@@ -590,11 +587,11 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
      Call get_word(record,word) ; nstep = Nint(word_2_real(word))
      Call get_word(record,word) ; If (Nint(word_2_real(word)) /= megatm) Go To 300
      Call get_word(record,word) ; levcfg = Nint(word_2_real(word))
-     Call get_word(record,word) ; imcon = Nint(word_2_real(word))
+     Call get_word(record,word) ; config%imcon = Nint(word_2_real(word))
 
 ! image conditions not compliant with DD and link-cell
 
-    If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+    If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
 
      Call get_word(record,word) ; tstep = word_2_real(word)
      Call get_word(record,word) ; time = word_2_real(word)
@@ -608,28 +605,28 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
      Do i = 1, Min( Size( traj%buffer, Dim = 1 ) - 1, Len( record ) )
         record( i:i ) = traj%buffer( i, 2 )
      End Do
-     Call get_word(record,word); cell(1)=word_2_real(word)
-     Call get_word(record,word); cell(2)=word_2_real(word)
-     Call get_word(record,word); cell(3)=word_2_real(word)
+     Call get_word(record,word); config%cell(1)=word_2_real(word)
+     Call get_word(record,word); config%cell(2)=word_2_real(word)
+     Call get_word(record,word); config%cell(3)=word_2_real(word)
 
      record = ' '
      Do i = 1, Min( Size( traj%buffer, Dim = 1 ) - 1, Len( record ) )
         record( i:i ) = traj%buffer( i, 3 )
      End Do
-     Call get_word(record,word); cell(4)=word_2_real(word)
-     Call get_word(record,word); cell(5)=word_2_real(word)
-     Call get_word(record,word); cell(6)=word_2_real(word)
+     Call get_word(record,word); config%cell(4)=word_2_real(word)
+     Call get_word(record,word); config%cell(5)=word_2_real(word)
+     Call get_word(record,word); config%cell(6)=word_2_real(word)
 
      record = ' '
      Do i = 1, Min( Size( traj%buffer, Dim = 1 ) - 1, Len( record ) )
         record( i:i ) = traj%buffer( i, 4 )
      End Do
-     Call get_word(record,word); cell(7)=word_2_real(word)
-     Call get_word(record,word); cell(8)=word_2_real(word)
-     Call get_word(record,word); cell(9)=word_2_real(word)
+     Call get_word(record,word); config%cell(7)=word_2_real(word)
+     Call get_word(record,word); config%cell(8)=word_2_real(word)
+     Call get_word(record,word); config%cell(9)=word_2_real(word)
 
      Call read_config_parallel                  &
-           (levcfg, dvar, traj%l_ind_read, l_str, megatm, &
+           (config,levcfg, dvar, traj%l_ind_read, l_str, megatm, &
             traj%l_his_read, traj%l_xtr_read, traj%fast_read, traj%fh_read, traj%top_skip_read, xhi, yhi, zhi, &
             domain,comm)
 
@@ -659,11 +656,11 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
      Call io_nc_get_var( 'time'           , traj%fh_read,   time, i, 1 )
      Call io_nc_get_var( 'datalevel'      , traj%fh_read, levcfg, i, 1 )
-     Call io_nc_get_var( 'imageconvention', traj%fh_read,  imcon, i, 1 )
+     Call io_nc_get_var( 'imageconvention', traj%fh_read,  config%imcon, i, 1 )
 
 ! image conditions not compliant with DD and link-cell
 
-     If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+     If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
 
      Call io_nc_get_var( 'timestep'       , traj%fh_read,  tstep, i, 1 )
      Call io_nc_get_var( 'step'           , traj%fh_read,  nstep, i, 1 )
@@ -674,10 +671,10 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 ! Note that in netCDF the frames are not long integers - Int( traj%frm1_read )
 
      Call io_nc_get_var( 'cell'           , traj%fh_read, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-     cell = Reshape( cell_vecs, (/ Size( cell ) /) )
+     config%cell = Reshape( cell_vecs, (/ Size( config%cell ) /) )
 
      Call read_config_parallel                  &
-           (levcfg, dvar, traj%l_ind_read, l_str, megatm, &
+           (config,levcfg, dvar, traj%l_ind_read, l_str, megatm, &
             traj%l_his_read, traj%l_xtr_read, traj%fast_read, traj%fh_read, Int( i, Kind( traj%top_skip_read ) ), xhi, yhi, zhi, &
             domain,comm)
 
@@ -688,23 +685,23 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 ! To prevent users from the danger of changing the order of calls
 ! in dl_poly set 'nlast' to the innocent 'natms'
 
-  nlast=natms
+  config%nlast=config%natms
 
 ! Does the number of atoms in the system (MD cell) derived by
 ! topology description (FIELD) match the crystallographic (CONFIG) one?
 ! Check number of atoms in system (CONFIG = FIELD)
 
-  totatm=natms
+  totatm=config%natms
   Call gsum(comm,totatm)
   If (totatm /= megatm) Call error(58)
 
 ! Record global atom indices for local sorting (configuration)
 
-  Do i=1,natms
-     lsi(i)=i
-     lsa(i)=ltg(i)
+  Do i=1,config%natms
+     config%lsi(i)=i
+     config%lsa(i)=config%ltg(i)
   End Do
-  Call shellsort2(natms,lsi,lsa)
+  Call shellsort2(config%natms,config%lsi,config%lsa)
 
   exout = 0 ! more to read indicator
 
@@ -717,30 +714,30 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 ! To prevent users from the danger of changing the order of calls
 ! in dl_poly set 'nlast' to the innocent 'natms'
 
-  nlast=natms
+  config%nlast=config%natms
 
 ! Does the number of atoms in the system (MD cell) derived by
 ! topology description (FIELD) match the crystallographic (CONFIG) one?
 ! Check number of atoms in system (CONFIG = FIELD)
 
-  totatm=natms
+  totatm=config%natms
   Call gsum(comm,totatm)
   If (totatm /= megatm) Call error(58)
 
 ! Record global atom indices for local sorting (configuration)
 
-  Do i=1,natms
-     lsi(i)=i
-     lsa(i)=ltg(i)
+  Do i=1,config%natms
+     config%lsi(i)=i
+     config%lsa(i)=config%ltg(i)
   End Do
-  Call shellsort2(natms,lsi,lsa)
+  Call shellsort2(config%natms,config%lsi,config%lsa)
 
   exout = 1 ! It's an indicator of the end of reading.
 
   Call info('HISTORY end of file reached',.true.)
 
   If (traj%io_read == IO_READ_MASTER) Then
-     If (imcon == 0) Close(Unit=nconf)
+     If (config%imcon == 0) Close(Unit=nconf)
      Deallocate (chbuf,       Stat=fail(1))
      Deallocate (iwrk,        Stat=fail(2))
      Deallocate (axx,ayy,azz, Stat=fail(3))
@@ -764,7 +761,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
   Call info('HISTORY data mishmash detected',.true.)
   exout = -1 ! It's an indicator of the end of reading.
   If (traj%io_read == IO_READ_MASTER) Then
-     If (imcon == 0) Close(Unit=nconf)
+     If (config%imcon == 0) Close(Unit=nconf)
      Deallocate (chbuf,       Stat=fail(1))
      Deallocate (iwrk,        Stat=fail(2))
      Deallocate (axx,ayy,azz, Stat=fail(3))
@@ -790,7 +787,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 End Subroutine read_history
 
 Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
-                            time,rsd,netcdf,parts,traj,comm)
+                            time,rsd,netcdf,config,traj,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -810,7 +807,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
   Real( Kind = wp ), Intent( In    ) :: tstep,time
   Real( Kind = wp ), Intent( In    ) :: rsd(:)
   Type( netcdf_param ), Intent( In    ) :: netcdf
-  Type( corePart ),     Intent( InOut ) :: parts(:)
+  Type( configuration_type ),     Intent( InOut ) :: config
   Type( trajectory_type ), Intent( InOut ) :: traj
   Type( comms_type ),   Intent( InOut ) :: comm
 
@@ -888,8 +885,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
            If (comm%idnode == 0) Then
               Open(Unit=nhist, File=traj%fname, Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
-              Write(Unit=nhist, Fmt='(a72,a1)',       Rec=Int(1,li)) cfgname(1:72),lf
-              Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+              Write(Unit=nhist, Fmt='(a72,a1)',       Rec=Int(1,li)) config%cfgname(1:72),lf
+              Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),config%imcon,megatm,traj%frm_write,&
+              traj%rec_write,lf
               Close(Unit=nhist)
            End If
            traj%rec_write=Int(2,li)
@@ -897,7 +895,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
         Else
            If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = comm_self )
-              Call io_nc_create( netcdf, comm_self, traj%fname, cfgname, megatm )
+              Call io_nc_create( netcdf, comm_self, traj%fname, config%cfgname, megatm )
            End If
         End If
 
@@ -1086,7 +1084,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
      End If
 
      chbat=' '
-     n_atm=0 ; n_atm(comm%idnode+1)=natms
+     n_atm=0 ; n_atm(comm%idnode+1)=config%natms
      Call gsum(comm,n_atm)
      n_atm(0)=Sum(n_atm(0:comm%idnode))
   End If
@@ -1117,7 +1115,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
         Call io_init( traj%recsz_write )
         Call io_open( io_write, comm_self, traj%fname, mode_wronly, fh )
 
-        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
+        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),&
+         config%imcon,tstep,time,lf
         jj=jj+1
         Do k=1,traj%recsz_write
            chbat(k,jj) = record(k:k)
@@ -1125,7 +1124,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
         Do i = 0, 2
            Write(record(1:traj%recsz_write), Fmt='(3f20.10,a12,a1)') &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            jj=jj+1
            Do k=1,traj%recsz_write
               chbat(k,jj) = record(k:k)
@@ -1155,22 +1154,24 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
      Call io_init( traj%recsz_write )
      Call io_open( io_write, comm%comm, traj%fname, mode_wronly, fh )
 
-     Do i=1,natms
-       Write(record(1:traj%recsz_write), Fmt='(a8,i10,3f12.6,a18,a1)') atmnam(i),ltg(i),weight(i),parts(i)%chge,rsd(i),&
-         Repeat(' ',18),lf
-       jj=jj+1
-       Do k=1,traj%recsz_write
-         chbat(k,jj) = record(k:k)
+     Do i=1,config%natms
+        Write(record(1:traj%recsz_write), Fmt='(a8,i10,3f12.6,a18,a1)') config%atmnam(i),config%ltg(i),config%weight(i),&
+                                                             config%parts(i)%chge,rsd(i),Repeat(' ',18),lf
+        jj=jj+1
+        Do k=1,traj%recsz_write
+           chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,Repeat(' ',12),lf
+        Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') config%parts(i)%xxx,config%parts(i)%yyy,&
+                                                       config%parts(i)%zzz,Repeat(' ',12),lf
         jj=jj+1
         Do k=1,traj%recsz_write
            chbat(k,jj) = record(k:k)
         End Do
 
         If (traj%key /= TRAJ_KEY_COORD) Then
-           Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') vxx(i),vyy(i),vzz(i),Repeat(' ',12),lf
+           Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') config%vxx(i),config%vyy(i),config%vzz(i),&
+                                                          Repeat(' ',12),lf
            jj=jj+1
            Do k=1,traj%recsz_write
               chbat(k,jj) = record(k:k)
@@ -1178,7 +1179,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
         End If
 
         If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
-           Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') parts(i)%fxx,parts(i)%fyy,parts(i)%fzz,Repeat(' ',12),lf
+           Write(record(1:traj%recsz_write), Fmt='(3g20.10,a12,a1)') config%parts(i)%fxx,config%parts(i)%fyy,&
+                                                          config%parts(i)%fzz,Repeat(' ',12),lf
            jj=jj+1
            Do k=1,traj%recsz_write
               chbat(k,jj) = record(k:k)
@@ -1187,7 +1189,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Dump batch and update start of file
 
-        If (jj + traj%record_size >= batsz .or. i == natms) Then
+        If (jj + traj%record_size >= batsz .or. i == config%natms) Then
            Call io_write_batch( fh, rec_mpi_io, jj, chbat )
            rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
            jj=0
@@ -1198,7 +1200,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
      traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
      If (comm%idnode == 0) Then
-        Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+        Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),config%imcon,megatm,traj%frm_write,&
+           traj%rec_write,lf
         Call io_write_record( fh, Int(1,offset_kind), record(1:traj%recsz_write) )
      End If
 
@@ -1227,7 +1230,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Accumulate header
 
-        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,time,lf
+        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),&
+          config%imcon,tstep,time,lf
         jj=jj+1
         Do k=1,traj%recsz_write
            chbat(k,jj) = record(k:k)
@@ -1235,7 +1239,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
         Do i = 0, 2
            Write(record(1:traj%recsz_write), Fmt='(3f20.10,a12,a1)') &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            jj=jj+1
            Do k=1,traj%recsz_write
               chbat(k,jj) = record(k:k)
@@ -1248,36 +1252,36 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
         traj%rec_write=traj%rec_write+Int(jj,li)
         jj=0
 
-        Do i=1,natms
-           iwrk(i)=ltg(i)
+        Do i=1,config%natms
+           iwrk(i)=config%ltg(i)
 
-           temp_parts(i)%xxx=parts(i)%xxx
-           temp_parts(i)%yyy=parts(i)%yyy
-           temp_parts(i)%zzz=parts(i)%zzz
+           temp_parts(i)%xxx=config%parts(i)%xxx
+           temp_parts(i)%yyy=config%parts(i)%yyy
+           temp_parts(i)%zzz=config%parts(i)%zzz
 
-           chbuf(i)=atmnam(i)
-           temp_parts(i)%chge=parts(i)%chge
-           eee(i)=weight(i)
+           chbuf(i)=config%atmnam(i)
+           temp_parts(i)%chge=config%parts(i)%chge
+           eee(i)=config%weight(i)
            fff(i)=rsd(i)
         End Do
 
         If (Any(traj%key == [TRAJ_KEY_COORD_VEL,TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
-           Do i=1,natms
-              bxx(i)=vxx(i)
-              byy(i)=vyy(i)
-              bzz(i)=vzz(i)
+           Do i=1,config%natms
+              bxx(i)=config%vxx(i)
+              byy(i)=config%vyy(i)
+              bzz(i)=config%vzz(i)
            End Do
         End If
 
         If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
-           Do i=1,natms
-              temp_parts(i)%fxx=parts(i)%fxx
-              temp_parts(i)%fyy=parts(i)%fyy
-              temp_parts(i)%fzz=parts(i)%fzz
+           Do i=1,config%natms
+              temp_parts(i)%fxx=config%parts(i)%fxx
+              temp_parts(i)%fyy=config%parts(i)%fyy
+              temp_parts(i)%fzz=config%parts(i)%fzz
            End Do
         End If
 
-        jatms=natms
+        jatms=config%natms
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
@@ -1350,7 +1354,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Update main header
 
-        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),config%imcon,megatm,traj%frm_write,&
+         traj%rec_write,lf
 
         Close(Unit=nhist)
 
@@ -1358,20 +1363,20 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
         Call grecv(comm,ready,0,Traject_tag)
 
-        Call gsend(comm,natms,0,Traject_tag)
-        If (natms > 0) Then
-           Call gsend(comm,atmnam(:),0,Traject_tag)
-           Call gsend(comm,ltg(:),0,Traject_tag)
+        Call gsend(comm,config%natms,0,Traject_tag)
+        If (config%natms > 0) Then
+           Call gsend(comm,config%atmnam(:),0,Traject_tag)
+           Call gsend(comm,config%ltg(:),0,Traject_tag)
 
-           Call gsend(comm,parts(:),0,Traject_tag)
-           Call gsend(comm,weight(:),0,Traject_tag)
+           Call gsend(comm,config%parts(:),0,Traject_tag)
+           Call gsend(comm,config%weight(:),0,Traject_tag)
            Call gsend(comm,rsd(:),0,Traject_tag)
 
 
            If (traj%key /= TRAJ_KEY_COORD) Then
-              Call gsend(comm,vxx(:),0,Traject_tag)
-              Call gsend(comm,vyy(:),0,Traject_tag)
-              Call gsend(comm,vzz(:),0,Traject_tag)
+              Call gsend(comm,config%vxx(:),0,Traject_tag)
+              Call gsend(comm,config%vyy(:),0,Traject_tag)
+              Call gsend(comm,config%vzz(:),0,Traject_tag)
            End If
 
         End If
@@ -1414,14 +1419,14 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Write header and cell information
 
-          Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),imcon,tstep,&
-            time,lf
+          Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),&
+           config%imcon,tstep,time,lf
            Call io_write_record( fh, jj_io, record(1:traj%recsz_write) )
            jj_io=jj_io + Int(1,offset_kind)
 
            Do i = 0, 2
               Write(record(1:traj%recsz_write), Fmt='(3f20.10,a12,a1)') &
-                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                   config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
               Call io_write_record( fh, jj_io, record(1:traj%recsz_write) )
               jj_io=jj_io+Int(1,offset_kind)
            End Do
@@ -1436,12 +1441,12 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
            Call io_nc_put_var( 'time'           , fh,   time, jj, 1 )
            Call io_nc_put_var( 'step'           , fh,  nstep, jj, 1 )
            Call io_nc_put_var( 'datalevel'      , fh, traj%file_key(), jj, 1 )
-           Call io_nc_put_var( 'imageconvention', fh,  imcon, jj, 1 )
+           Call io_nc_put_var( 'imageconvention', fh,  config%imcon, jj, 1 )
            Call io_nc_put_var( 'timestep '      , fh,  tstep, jj, 1 )
 
-           Call dcell(cell,celprp) ! get cell properties
+           Call dcell(config%cell,celprp) ! get config%cell properties
 
-           cell_vecs = Reshape( cell, (/ 3, 3 /) )
+           cell_vecs = Reshape( config%cell, (/ 3, 3 /) )
 
            lengths( 1 ) = celprp( 1 )
            lengths( 2 ) = celprp( 2 )
@@ -1454,9 +1459,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Print
 
-           Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
-           Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
-           Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var( 'config%cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
+           Call io_nc_put_var( 'config%cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var( 'config%cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
 
         End If
 
@@ -1481,9 +1486,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
      Call io_init( traj%recsz_write )
      Call io_open( io_write, comm%comm, traj%fname, mode_wronly, fh )
 
-     Call io_write_sorted_file( fh, traj%file_key(), IO_HISTORY, rec_mpi_io, natms, &
-          ltg, atmnam, weight, rsd, parts,                   &
-          vxx, vyy, vzz,  ierr )
+     Call io_write_sorted_file( fh, traj%file_key(), IO_HISTORY, rec_mpi_io, config%natms, &
+          config%ltg, config%atmnam, config%weight, rsd, config%parts,                   &
+          config%vxx, config%vyy, config%vzz,  ierr )
 
      If ( ierr /= 0 ) Then
         Select Case( ierr )
@@ -1503,7 +1508,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
         If (comm%idnode == 0) Then
-           Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+           Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),config%imcon,megatm,traj%frm_write,&
+              traj%rec_write,lf
            Call io_write_record( fh, Int(1,offset_kind), record(1:traj%recsz_write) )
         End If
      End If
@@ -1531,44 +1537,44 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
         traj%rec_write=traj%rec_write+Int(1,li)
         Write(Unit=nhist, Fmt='(a8,2i10,2i2,2f20.6,a1)', Rec=traj%rec_write) 'timestep',nstep,megatm,traj%file_key(),&
-          imcon,tstep,time,lf
+          config%imcon,tstep,time,lf
 
         Do i = 0, 2
            traj%rec_write=traj%rec_write+Int(1,li)
-           Write(Unit=nhist, Fmt='(3f20.10,a12,a1)', Rec=traj%rec_write) &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+           Write(Unit=nhist, Fmt='(3f20.10,a12,a1)', Rec=traj%rec_write ) &
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
         End Do
 
-        Do i=1,natms
-           iwrk(i)=ltg(i)
+        Do i=1,config%natms
+           iwrk(i)=config%ltg(i)
 
-           temp_parts(i)%xxx=parts(i)%xxx
-           temp_parts(i)%yyy=parts(i)%yyy
-           temp_parts(i)%zzz=parts(i)%zzz
+           temp_parts(i)%xxx=config%parts(i)%xxx
+           temp_parts(i)%yyy=config%parts(i)%yyy
+           temp_parts(i)%zzz=config%parts(i)%zzz
 
-           chbuf(i)=atmnam(i)
-           temp_parts(i)%chge=parts(i)%chge
-           eee(i)=weight(i)
+           chbuf(i)=config%atmnam(i)
+           temp_parts(i)%chge=config%parts(i)%chge
+           eee(i)=config%weight(i)
            fff(i)=rsd(i)
         End Do
 
         If (Any(traj%key == [TRAJ_KEY_COORD_VEL,TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
-           Do i=1,natms
-              bxx(i)=vxx(i)
-              byy(i)=vyy(i)
-              bzz(i)=vzz(i)
+           Do i=1,config%natms
+              bxx(i)=config%vxx(i)
+              byy(i)=config%vyy(i)
+              bzz(i)=config%vzz(i)
            End Do
         End If
 
         If (Any(traj%key == [TRAJ_KEY_COORD_VEL_FORCE,TRAJ_KEY_COMPRESSED])) Then
-           Do i=1,natms
-              temp_parts(i)%fxx=parts(i)%fxx
-              temp_parts(i)%fyy=parts(i)%fyy
-              temp_parts(i)%fzz=parts(i)%fzz
+           Do i=1,config%natms
+              temp_parts(i)%fxx=config%parts(i)%fxx
+              temp_parts(i)%fyy=config%parts(i)%fyy
+              temp_parts(i)%fzz=config%parts(i)%fzz
            End Do
         End If
 
-        jatms=natms
+        jatms=config%natms
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
@@ -1622,7 +1628,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Update main header
 
         traj%rec_write=traj%rec_write+Int(megatm,li)*Int(traj%record_size,li)
-        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+        Write(Unit=nhist, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) traj%file_key(),config%imcon,megatm,traj%frm_write,traj%rec_write,lf
 
         Close(Unit=nhist)
 
@@ -1630,20 +1636,20 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
         Call grecv(comm,ready,0,Traject_tag)
 
-        Call gsend(comm,natms,0,Traject_tag)
-        If (natms > 0) Then
-           Call gsend(comm,atmnam(:),0,Traject_tag)
-           Call gsend(comm,ltg(:),0,Traject_tag)
+        Call gsend(comm,config%natms,0,Traject_tag)
+        If (config%natms > 0) Then
+           Call gsend(comm,config%atmnam(:),0,Traject_tag)
+           Call gsend(comm,config%ltg(:),0,Traject_tag)
 
-           Call gsend(comm,parts(:),0,Traject_tag)
-           Call gsend(comm,weight(:),0,Traject_tag)
+           Call gsend(comm,config%parts(:),0,Traject_tag)
+           Call gsend(comm,config%weight(:),0,Traject_tag)
            Call gsend(comm,rsd(:),0,Traject_tag)
 
 
            If (traj%key /= TRAJ_KEY_COORD) Then
-              Call gsend(comm,vxx(:),0,Traject_tag)
-              Call gsend(comm,vyy(:),0,Traject_tag)
-              Call gsend(comm,vzz(:),0,Traject_tag)
+              Call gsend(comm,config%vxx(:),0,Traject_tag)
+              Call gsend(comm,config%vyy(:),0,Traject_tag)
+              Call gsend(comm,config%vzz(:),0,Traject_tag)
            End If
 
         End If
@@ -1711,8 +1717,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
            If (comm%idnode == 0) Then
               Open(Unit=nhist, File=traj%fname, Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
-              Write(Unit=nhist, Fmt='(a34,a1)',      Rec=Int(1,li)) cfgname(1:34),lf
-              Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+              Write(Unit=nhist, Fmt='(a34,a1)',      Rec=Int(1,li)) config%cfgname(1:34),lf
+              Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),config%imcon,megatm,traj%frm_write,&
+              traj%rec_write,lf
               Close(Unit=nhist)
            End If
            traj%rec_write=Int(2,li)
@@ -1720,7 +1727,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
         Else
            If (comm%idnode == 0) Then
               Call io_set_parameters( user_comm = comm_self )
-              Call io_nc_create( netcdf, comm_self, traj%fname, cfgname, megatm )
+              Call io_nc_create( netcdf, comm_self, traj%fname, config%cfgname, megatm )
            End If
         End If
 
@@ -1905,7 +1912,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
      End If
 
      chbat=' '
-     n_atm=0 ; n_atm(comm%idnode+1)=natms
+     n_atm=0 ; n_atm(comm%idnode+1)=config%natms
      Call gsum(comm,n_atm)
      n_atm(0)=Sum(n_atm(0:comm%idnode))
   End If
@@ -1953,7 +1960,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
            Do i = 0, 2
               Write(record(1:traj%recsz_write), Fmt='(3f10.3,a4,a1)') &
-                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 4 ), lf
+                   config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 4 ), lf
               Call io_write_record( fh, jj_io, record(1:traj%recsz_write) )
               jj_io=jj_io+Int(1,offset_kind)
            End Do
@@ -1969,9 +1976,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
            Call io_nc_put_var( 'step'           , fh,  nstep, jj, 1 )
            Call io_nc_put_var( 'timestep '      , fh,  tstep, jj, 1 )
 
-           Call dcell(cell,celprp) ! get cell properties
+           Call dcell(config%cell,celprp) ! get config%cell properties
 
-           cell_vecs = Reshape( cell, (/ 3, 3 /) )
+           cell_vecs = Reshape( config%cell, (/ 3, 3 /) )
 
            lengths( 1 ) = celprp( 1 )
            lengths( 2 ) = celprp( 2 )
@@ -1984,9 +1991,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
 ! Print
 
-           Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
-           Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
-           Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var( 'config%cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
+           Call io_nc_put_var( 'config%cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var( 'config%cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
 
         End If
 
@@ -2011,8 +2018,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
      Call io_init( traj%recsz_write )
      Call io_open( io_write, comm%comm, traj%fname, mode_wronly, fh )
 
-     Call io_write_sorted_file( fh, 0*traj%file_key(), IO_HISTORD, rec_mpi_io, natms, &
-          ltg, atmnam, (/ 0.0_wp /),  rsd, parts,     &
+     Call io_write_sorted_file( fh, 0*traj%file_key(), IO_HISTORD, rec_mpi_io, config%natms, &
+          config%ltg, config%atmnam, (/ 0.0_wp /),  rsd, config%parts,     &
           (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                        &
           IO_SUBSET_POSITIONS,  ierr )
 
@@ -2034,7 +2041,8 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)
         If (comm%idnode == 0) Then
-           Write(record(1:traj%recsz_write), Fmt='(2i2,3i10,a1)') traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+           Write(record(1:traj%recsz_write), Fmt='(2i2,3i10,a1)') traj%file_key(),config%imcon,megatm,traj%frm_write,&
+             traj%rec_write,lf
            Call io_write_record( fh, Int(1,offset_kind), record(1:traj%recsz_write) )
         End If
      End If
@@ -2066,21 +2074,21 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
         Do i = 0, 2
            traj%rec_write=traj%rec_write+Int(1,li)
            Write(Unit=nhist, Fmt='(3f10.3,a4,a1)', Rec=traj%rec_write) &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 4 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 4 ), lf
         End Do
 
-        Do i=1,natms
-           iwrk(i)=ltg(i)
+        Do i=1,config%natms
+           iwrk(i)=config%ltg(i)
 
-           temp_parts(i)%xxx=parts(i)%xxx
-           temp_parts(i)%yyy=parts(i)%yyy
-           temp_parts(i)%zzz=parts(i)%zzz
+           temp_parts(i)%xxx=config%parts(i)%xxx
+           temp_parts(i)%yyy=config%parts(i)%yyy
+           temp_parts(i)%zzz=config%parts(i)%zzz
 
-           chbuf(i)=atmnam(i)
+           chbuf(i)=config%atmnam(i)
            fff(i)=rsd(i)
         End Do
 
-        jatms=natms
+        jatms=config%natms
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
@@ -2107,7 +2115,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 ! Update main header
 
         traj%rec_write=traj%rec_write+Int(megatm,li)
-        Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),imcon,megatm,traj%frm_write,traj%rec_write,lf
+        Write(Unit=nhist, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) traj%file_key(),config%imcon,megatm,traj%frm_write,traj%rec_write,lf
 
         Close(Unit=nhist)
 
@@ -2115,14 +2123,14 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep, &
 
         Call grecv(comm,ready,0,Traject_tag)
 
-        Call gsend(comm,natms,0,Traject_tag)
-        If (natms > 0) Then
-           Call gsend(comm,atmnam(:),0,Traject_tag)
-           Call gsend(comm,ltg(:),0,Traject_tag)
+        Call gsend(comm,config%natms,0,Traject_tag)
+        If (config%natms > 0) Then
+           Call gsend(comm,config%atmnam(:),0,Traject_tag)
+           Call gsend(comm,config%ltg(:),0,Traject_tag)
 
            Call gsend(comm,rsd(:),0,Traject_tag)
 
-           Call gsend(comm,parts(:),0,Traject_tag)
+           Call gsend(comm,config%parts(:),0,Traject_tag)
         End If
 
 ! Save offset pointer

@@ -2,10 +2,10 @@ Module deport_data
   Use kinds,            Only : wp
   Use comms,            Only : comms_type,gcheck,wp_mpi, Deport_tag, &
                                Export_tag, MetLdExp_tag, ExpMplRM_tag, &
-                               PassUnit_tag,gsend,gwait,girecv
+                               PassUnit_tag,gsend,gwait,girecv,gmax,gsum
   Use setup
   Use domains, Only : domains_type
-  Use configuration
+  Use configuration, Only : configuration_type, site_type
   Use kontrol, Only : control_type
   Use rigid_bodies, Only : rigid_bodies_type
   Use tethers,      Only : tethers_type
@@ -23,7 +23,7 @@ Module deport_data
   Use constraints,  Only : constraints_type 
   Use errors_warnings, Only : error, warning
   Use mpoles_container, Only : rotate_mpoles, rotate_mpoles_d
-  Use numerics, Only : local_index
+  Use numerics, Only : local_index,dcell,invert,shellsort2,pbcshift
   Use pmf, Only : pmf_units_set, pmf_type
   Use build_book, Only : compress_book_intra
   Use shared_units, Only : pass_shared_units, tag_legend
@@ -38,7 +38,7 @@ Module deport_data
 
 Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,&
     green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,domain, &
-    comm)
+    config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -73,6 +73,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   Type( minimise_type ), Intent( InOut ) :: minim
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -177,9 +178,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
   lwrap = (Abs(uuu)+Abs(vvv)+Abs(www) > 0.5_wp)
 
   If (lwrap) Then
-     xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
-     yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
-     zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
+     xadd = config%cell(1)*uuu+config%cell(4)*vvv+config%cell(7)*www
+     yadd = config%cell(2)*uuu+config%cell(5)*vvv+config%cell(8)*www
+     zadd = config%cell(3)*uuu+config%cell(6)*vvv+config%cell(9)*www
   End If
 
 ! Initialise counters for length of sending and receiving buffers
@@ -205,18 +206,18 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! LOOP OVER ALL PARTICLES ON THIS NODE
 
-  Do i=1,natms
+  Do i=1,config%natms
      stay=.false. ! the particle is assumed to be leaving
 
 ! If the particle is no longer scheduled to leave
 ! this domain in any direction
 
-     If (ixyz(i) == 0) Then
+     If (config%ixyz(i) == 0) Then
         stay=.true.
-     Else ! If (ixyz(i) > 0) Then ! Get the necessary halo indices
-        ix=Mod(ixyz(i),10)           ! [0,1,2]
-        iy=Mod(ixyz(i)-ix,100)       ! [0,10,20]
-        iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200]
+     Else ! If (config%ixyz(i) > 0) Then ! Get the necessary halo indices
+        ix=Mod(config%ixyz(i),10)           ! [0,1,2]
+        iy=Mod(config%ixyz(i)-ix,100)       ! [0,10,20]
+        iz=Mod(config%ixyz(i)-(ix+iy),1000) ! [0,100,200]
 
 ! Filter the move index for the selected direction
 
@@ -226,7 +227,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 ! direction then reduce its move index, otherwise tag it as staying
 
         If (j == jxyz) Then
-           ixyz(i)=ixyz(i)-jxyz
+           config%ixyz(i)=config%ixyz(i)-jxyz
         Else
            stay=.true.
         End If
@@ -251,32 +252,32 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 ! pack positions and apply possible PBC shift for the receiver
 
            If (.not.lwrap) Then
-              buffer(imove+1)=parts(i)%xxx
-              buffer(imove+2)=parts(i)%yyy
-              buffer(imove+3)=parts(i)%zzz
+              buffer(imove+1)=config%parts(i)%xxx
+              buffer(imove+2)=config%parts(i)%yyy
+              buffer(imove+3)=config%parts(i)%zzz
            Else
-              buffer(imove+1)=parts(i)%xxx+xadd
-              buffer(imove+2)=parts(i)%yyy+yadd
-              buffer(imove+3)=parts(i)%zzz+zadd
+              buffer(imove+1)=config%parts(i)%xxx+xadd
+              buffer(imove+2)=config%parts(i)%yyy+yadd
+              buffer(imove+3)=config%parts(i)%zzz+zadd
            End If
 
 ! pack velocities
 
-           buffer(imove+4)=vxx(i)
-           buffer(imove+5)=vyy(i)
-           buffer(imove+6)=vzz(i)
+           buffer(imove+4)=config%vxx(i)
+           buffer(imove+5)=config%vyy(i)
+           buffer(imove+6)=config%vzz(i)
 
 ! pack forces
 
-           buffer(imove+7)=parts(i)%fxx
-           buffer(imove+8)=parts(i)%fyy
-           buffer(imove+9)=parts(i)%fzz
+           buffer(imove+7)=config%parts(i)%fxx
+           buffer(imove+8)=config%parts(i)%fyy
+           buffer(imove+9)=config%parts(i)%fzz
 
 ! pack config indexing, site and move indexing arrays
 
-           buffer(imove+10)=Real(ltg(i),wp)
-           buffer(imove+11)=Real(lsite(i),wp)
-           buffer(imove+12)=Real(ixyz(i),wp)
+           buffer(imove+10)=Real(config%ltg(i),wp)
+           buffer(imove+11)=Real(config%lsite(i),wp)
+           buffer(imove+12)=Real(config%ixyz(i),wp)
 
 ! pack initial positions
 
@@ -796,21 +797,21 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
      keep=ind_off(ii) ; If (keep > ind_on(k)) Exit ! Thanks to Alin Elena
      i   =ind_on(k-ii+1)
 
-     parts(keep)%xxx=parts(i)%xxx
-     parts(keep)%yyy=parts(i)%yyy
-     parts(keep)%zzz=parts(i)%zzz
+     config%parts(keep)%xxx=config%parts(i)%xxx
+     config%parts(keep)%yyy=config%parts(i)%yyy
+     config%parts(keep)%zzz=config%parts(i)%zzz
 
-     vxx(keep)=vxx(i)
-     vyy(keep)=vyy(i)
-     vzz(keep)=vzz(i)
+     config%vxx(keep)=config%vxx(i)
+     config%vyy(keep)=config%vyy(i)
+     config%vzz(keep)=config%vzz(i)
 
-     parts(keep)%fxx=parts(i)%fxx
-     parts(keep)%fyy=parts(i)%fyy
-     parts(keep)%fzz=parts(i)%fzz
+     config%parts(keep)%fxx=config%parts(i)%fxx
+     config%parts(keep)%fyy=config%parts(i)%fyy
+     config%parts(keep)%fzz=config%parts(i)%fzz
 
-     ltg(keep)=ltg(i)
-     lsite(keep)=lsite(i)
-     ixyz(keep)=ixyz(i)
+     config%ltg(keep)=config%ltg(i)
+     config%lsite(keep)=config%lsite(i)
+     config%ixyz(keep)=config%ixyz(i)
 
      stats%xin(keep)=stats%xin(i)
      stats%yin(keep)=stats%yin(i)
@@ -898,7 +899,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! record of number of atoms for transfer
 
-   buffer(1)=Real(natms-keep,wp)
+  buffer(1)=Real(config%natms-keep,wp)
 
 ! exchange information on buffer sizes
 
@@ -921,13 +922,13 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
    kmove=iblock+1
    jmove=Nint(buffer(kmove))
 
-   natms=keep+jmove
+  config%natms=keep+jmove
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-   safe=(natms <= mxatms)
-   Call gcheck(comm,safe)
-   If (.not.safe) Call error(44)
+  safe=(config%natms <= mxatms)
+  Call gcheck(comm,safe)
+  If (.not.safe) Call error(44)
 
    Deallocate (ind_on,ind_off,                        Stat=fail(1))
    Allocate   (i1pmf(1:pmf%mxtpmf(1)),i2pmf(1:pmf%mxtpmf(2)), Stat=fail(2))
@@ -943,27 +944,27 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! unpack positions
 
-     parts(newatm)%xxx=buffer(kmove+1)
-     parts(newatm)%yyy=buffer(kmove+2)
-     parts(newatm)%zzz=buffer(kmove+3)
+     config%parts(newatm)%xxx=buffer(kmove+1)
+     config%parts(newatm)%yyy=buffer(kmove+2)
+     config%parts(newatm)%zzz=buffer(kmove+3)
 
 ! unpack velocities
 
-     vxx(newatm)=buffer(kmove+4)
-     vyy(newatm)=buffer(kmove+5)
-     vzz(newatm)=buffer(kmove+6)
+     config%vxx(newatm)=buffer(kmove+4)
+     config%vyy(newatm)=buffer(kmove+5)
+     config%vzz(newatm)=buffer(kmove+6)
 
 ! unpack forces
 
-     parts(newatm)%fxx=buffer(kmove+7)
-     parts(newatm)%fyy=buffer(kmove+8)
-     parts(newatm)%fzz=buffer(kmove+9)
+     config%parts(newatm)%fxx=buffer(kmove+7)
+     config%parts(newatm)%fyy=buffer(kmove+8)
+     config%parts(newatm)%fzz=buffer(kmove+9)
 
 ! unpack config indexing, site and move indexing arrays
 
-     ltg(newatm)=Nint(buffer(kmove+10))
-     lsite(newatm)=Nint(buffer(kmove+11))
-     ixyz(newatm)=Nint(buffer(kmove+12))
+     config%ltg(newatm)=Nint(buffer(kmove+10))
+     config%lsite(newatm)=Nint(buffer(kmove+11))
+     config%ixyz(newatm)=Nint(buffer(kmove+12))
 
 ! unpack initial positions arrays
 
@@ -1649,7 +1650,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 End Subroutine deport_atomic_data
 
-Subroutine export_atomic_data(mdir,domain,kim_data,comm)
+Subroutine export_atomic_data(mdir,domain,config,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1666,6 +1667,7 @@ Subroutine export_atomic_data(mdir,domain,kim_data,comm)
   Integer,            Intent( In    ) :: mdir
   Type( domains_type ), Intent( In    ) :: domain
   Type( kim_type ), Intent( InOut ) :: kim_data
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap
@@ -1769,9 +1771,9 @@ Subroutine export_atomic_data(mdir,domain,kim_data,comm)
   lwrap = (Abs(uuu)+Abs(vvv)+Abs(www) > 0.5_wp)
 
   If (lwrap) Then
-     xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
-     yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
-     zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
+     xadd = config%cell(1)*uuu+config%cell(4)*vvv+config%cell(7)*www
+     yadd = config%cell(2)*uuu+config%cell(5)*vvv+config%cell(8)*www
+     zadd = config%cell(3)*uuu+config%cell(6)*vvv+config%cell(9)*www
   End If
 
 ! Initialise counters for length of sending and receiving buffers
@@ -1786,17 +1788,17 @@ Subroutine export_atomic_data(mdir,domain,kim_data,comm)
 
 ! LOOP OVER ALL PARTICLES ON THIS NODE
 
-  Do i=1,nlast
+  Do i=1,config%nlast
 
 ! If the particle is within the remaining 'inverted halo' of this domain
 
-     If (ixyz(i) > 0) Then
+     If (config%ixyz(i) > 0) Then
 
 ! Get the necessary halo indices
 
-        ix=Mod(ixyz(i),10)           ! [0,1,2,3=1+2]
-        iy=Mod(ixyz(i)-ix,100)       ! [0,10,20,30=10+20]
-        iz=Mod(ixyz(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
+        ix=Mod(config%ixyz(i),10)           ! [0,1,2,3=1+2]
+        iy=Mod(config%ixyz(i)-ix,100)       ! [0,10,20,30=10+20]
+        iz=Mod(config%ixyz(i)-(ix+iy),1000) ! [0,100,200,300=100+200]
 
 ! Filter the halo index for the selected direction
 
@@ -1813,23 +1815,23 @@ Subroutine export_atomic_data(mdir,domain,kim_data,comm)
 ! pack positions and apply possible PBC shift for the receiver
 
               If (.not.lwrap) Then
-                 buffer(imove+1)=parts(i)%xxx
-                 buffer(imove+2)=parts(i)%yyy
-                 buffer(imove+3)=parts(i)%zzz
+                 buffer(imove+1)=config%parts(i)%xxx
+                 buffer(imove+2)=config%parts(i)%yyy
+                 buffer(imove+3)=config%parts(i)%zzz
               Else
-                 buffer(imove+1)=parts(i)%xxx+xadd
-                 buffer(imove+2)=parts(i)%yyy+yadd
-                 buffer(imove+3)=parts(i)%zzz+zadd
+                 buffer(imove+1)=config%parts(i)%xxx+xadd
+                 buffer(imove+2)=config%parts(i)%yyy+yadd
+                 buffer(imove+3)=config%parts(i)%zzz+zadd
               End If
 
 ! pack config indexing, site and remaining halo indexing arrays
 
-              buffer(imove+4)=Real(ltg(i),wp)
-              buffer(imove+5)=Real(lsite(i),wp)
+              buffer(imove+4)=Real(config%ltg(i),wp)
+              buffer(imove+5)=Real(config%lsite(i),wp)
 
 ! Use the corrected halo reduction factor when the particle is halo to both +&- sides
 
-              buffer(imove+iadd)=Real(ixyz(i)-Merge(jxyz,kxyz,j == jxyz),wp)
+              buffer(imove+iadd)=Real(config%ixyz(i)-Merge(jxyz,kxyz,j == jxyz),wp)
 
            Else
 
@@ -1866,10 +1868,10 @@ Subroutine export_atomic_data(mdir,domain,kim_data,comm)
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=((nlast+jmove/iadd) <= mxatms)
+  safe=((config%nlast+jmove/iadd) <= mxatms)
   Call gcheck(comm,safe)
   If (.not.safe) Then
-     itmp=nlast+jmove/iadd
+     itmp=config%nlast+jmove/iadd
      Call gmax(comm,itmp)
      Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
      Call error(56)
@@ -1890,7 +1892,7 @@ Subroutine export_atomic_data(mdir,domain,kim_data,comm)
 ! openKIM halo indicators
   If (kim_data%active) Then
      i = Merge(2*mdir, -2*mdir-1, mdir>0)
-     Call kim_data%kcomms%set(i, imove/iadd, nlast+1, nlast+jmove/iadd)
+     Call kim_data%kcomms%set(i, imove/iadd, config%nlast+1, config%nlast+jmove/iadd)
    End If
 
 
@@ -1898,22 +1900,22 @@ Subroutine export_atomic_data(mdir,domain,kim_data,comm)
 
   j=Merge(iblock,0,comm%mxnode > 1)
   Do i=1,jmove/iadd
-     nlast=nlast+1
+     config%nlast=config%nlast+1
 
 ! unpack positions
 
-     parts(nlast)%xxx=buffer(j+1)
-     parts(nlast)%yyy=buffer(j+2)
-     parts(nlast)%zzz=buffer(j+3)
+     config%parts(config%nlast)%xxx=buffer(j+1)
+     config%parts(config%nlast)%yyy=buffer(j+2)
+     config%parts(config%nlast)%zzz=buffer(j+3)
 
 ! unpack config indexing, site and halo indexing arrays
 
-     ltg(nlast)  =Nint(buffer(j+4))
-     lsite(nlast)=Nint(buffer(j+5))
+     config%ltg(config%nlast)  =Nint(buffer(j+4))
+     config%lsite(config%nlast)=Nint(buffer(j+5))
 
 ! unpack remaining halo indexing
 
-     ixyz(nlast) =Nint(buffer(j+iadd))
+     config%ixyz(config%nlast) =Nint(buffer(j+iadd))
 
      j=j+iadd
   End Do
@@ -1926,7 +1928,7 @@ Subroutine export_atomic_data(mdir,domain,kim_data,comm)
 
 End Subroutine export_atomic_data
 
-Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,kim_data,comm)
+Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,config,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1942,6 +1944,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,kim_data,comm)
   Integer, Intent( InOut ) :: mlast
   Type( domains_type ), Intent( In    ) :: domain
   Type( kim_type ), Intent( InOut ) :: kim_data
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ), Intent (InOut) :: comm
 
 
@@ -2039,9 +2042,9 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,kim_data,comm)
   lwrap = (Abs(uuu)+Abs(vvv)+Abs(www) > 0.5_wp)
 
   If (lwrap) Then
-     xadd = cell(1)*uuu+cell(4)*vvv+cell(7)*www
-     yadd = cell(2)*uuu+cell(5)*vvv+cell(8)*www
-     zadd = cell(3)*uuu+cell(6)*vvv+cell(9)*www
+     xadd = config%cell(1)*uuu+config%cell(4)*vvv+config%cell(7)*www
+     yadd = config%cell(2)*uuu+config%cell(5)*vvv+config%cell(8)*www
+     zadd = config%cell(3)*uuu+config%cell(6)*vvv+config%cell(9)*www
   End If
 
 ! Initialise counters for length of sending and receiving buffers
@@ -2083,13 +2086,13 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,kim_data,comm)
 ! pack positions and apply possible PBC shift for the receiver
 
               If (.not.lwrap) Then
-                 buffer(imove+1)=parts(i)%xxx
-                 buffer(imove+2)=parts(i)%yyy
-                 buffer(imove+3)=parts(i)%zzz
+                 buffer(imove+1)=config%parts(i)%xxx
+                 buffer(imove+2)=config%parts(i)%yyy
+                 buffer(imove+3)=config%parts(i)%zzz
               Else
-                 buffer(imove+1)=parts(i)%xxx+xadd
-                 buffer(imove+2)=parts(i)%yyy+yadd
-                 buffer(imove+3)=parts(i)%zzz+zadd
+                 buffer(imove+1)=config%parts(i)%xxx+xadd
+                 buffer(imove+2)=config%parts(i)%yyy+yadd
+                 buffer(imove+3)=config%parts(i)%zzz+zadd
               End If
 
            Else
@@ -2162,9 +2165,9 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,kim_data,comm)
 
 ! unpack positions
 
-     parts(mlast)%xxx=buffer(j+1)
-     parts(mlast)%yyy=buffer(j+2)
-     parts(mlast)%zzz=buffer(j+3)
+     config%parts(mlast)%xxx=buffer(j+1)
+     config%parts(mlast)%yyy=buffer(j+2)
+     config%parts(mlast)%zzz=buffer(j+3)
 
      j=j+iadd
   End Do
@@ -2408,7 +2411,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,domain,comm)
 
 End Subroutine mpoles_rotmat_export
 
-Subroutine mpoles_rotmat_set_halo(mpoles,domain,comm)
+Subroutine mpoles_rotmat_set_halo(mpoles,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2424,6 +2427,7 @@ Subroutine mpoles_rotmat_set_halo(mpoles,domain,comm)
 
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( domains_type ), Intent( In    ) :: domain
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: safe
@@ -2433,12 +2437,12 @@ Subroutine mpoles_rotmat_set_halo(mpoles,domain,comm)
 
   Character ( Len = 256 )  ::  message
 
-  Do i=1,natms
+  Do i=1,config%natms
      mpoles%flg(i)=0
      If (mpoles%max_order < 3) Then
-        Call rotate_mpoles_d(i,mpoles,parts,comm)
+        Call rotate_mpoles_d(i,mpoles,config,comm)
      Else
-        Call rotate_mpoles(i,mpoles,parts,comm)
+        Call rotate_mpoles(i,mpoles,config,comm)
      End If
   End Do
 
@@ -2450,11 +2454,11 @@ Subroutine mpoles_rotmat_set_halo(mpoles,domain,comm)
      Write(message,'(a)') 'mpoles_rotmat_set_halo allocation failure'
      Call error(0,message)
   End If
-  ixyz0(1:nlast) = ixyz(1:nlast)
+  ixyz0(1:config%nlast) = config%ixyz(1:config%nlast)
 
 ! No halo, start with domain only particles
 
-  mlast=natms
+  mlast=config%natms
 
 ! exchange atom data in -/+ x directions
 
@@ -2473,7 +2477,7 @@ Subroutine mpoles_rotmat_set_halo(mpoles,domain,comm)
 
 ! check atom totals after data transfer
 
-  safe=(mlast == nlast)
+  safe=(mlast == config%nlast)
   Call gcheck(comm,safe)
   If (.not.safe) Call error(174)
 
@@ -2487,7 +2491,7 @@ End Subroutine mpoles_rotmat_set_halo
 
 Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,cons, &
   pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
-  neigh,sites,minim,mpoles,rigid,domain,comm)
+  neigh,sites,minim,mpoles,rigid,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2523,6 +2527,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
   Type( minimise_type ), Intent( InOut ) :: minim
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ) :: cut
@@ -2539,36 +2544,36 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
 
 ! rescale mock cell vectors for non-periodic system
 
-  If (imcon == 0 .or. imcon == 6) Then
+  If (config%imcon == 0 .or. config%imcon == 6) Then
 
 ! find maximum x,y,z positions
 
     big=0.0_wp
 
-    Do i =1,natms
-      big(1)=Max(big(1),Abs(parts(i)%xxx))
-      big(2)=Max(big(2),Abs(parts(i)%yyy))
-        big(3)=Max(big(3),Abs(parts(i)%zzz))
+     Do i =1,config%natms
+        big(1)=Max(big(1),Abs(config%parts(i)%xxx))
+        big(2)=Max(big(2),Abs(config%parts(i)%yyy))
+        big(3)=Max(big(3),Abs(config%parts(i)%zzz))
      End Do
 
      Call gmax(comm,big)
 
-     If (imcon == 0) Then
+     If (config%imcon == 0) Then
 
-        cell(1)=Max(2.0_wp*big(1)+cut,3.0_wp*cut,cell(1))
-        cell(5)=Max(2.0_wp*big(2)+cut,3.0_wp*cut,cell(5))
-        cell(9)=Max(2.0_wp*big(3)+cut,3.0_wp*cut,cell(9))
+        config%cell(1)=Max(2.0_wp*big(1)+cut,3.0_wp*cut,config%cell(1))
+        config%cell(5)=Max(2.0_wp*big(2)+cut,3.0_wp*cut,config%cell(5))
+        config%cell(9)=Max(2.0_wp*big(3)+cut,3.0_wp*cut,config%cell(9))
 
-        cell(2)=0.0_wp
-        cell(3)=0.0_wp
-        cell(4)=0.0_wp
-        cell(6)=0.0_wp
-        cell(7)=0.0_wp
-        cell(8)=0.0_wp
+        config%cell(2)=0.0_wp
+        config%cell(3)=0.0_wp
+        config%cell(4)=0.0_wp
+        config%cell(6)=0.0_wp
+        config%cell(7)=0.0_wp
+        config%cell(8)=0.0_wp
 
-     Else If (imcon == 6) Then
+     Else If (config%imcon == 6) Then
 
-        cell(9)=Max(2.0_wp*big(3)+cut,3.0_wp*cut,cell(9))
+        config%cell(9)=Max(2.0_wp*big(3)+cut,3.0_wp*cut,config%cell(9))
 
      End If
 
@@ -2576,13 +2581,13 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
 
 ! Get the dimensional properties of the MD cell
 
-  Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
 
 ! Only when we have more than one domain we need real relocation
 
   If (comm%mxnode > 1) Then
 
-     Call invert(cell,rcell,det)
+     Call invert(config%cell,rcell,det)
 
 ! Convert atomic positions from MD centred
 ! Cartesian coordinates to reduced space ones.
@@ -2591,11 +2596,11 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
 ! a link-cell width (> cutoff_extended) in any direction
 ! since last call to relocate as we don't test this!!!
 
-     ixyz(1:natms)=0 ! Initialise move (former halo) indicator
-     Do i=1,natms
-        x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
-        y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
-        z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+     config%ixyz(1:config%natms)=0 ! Initialise move (former halo) indicator
+     Do i=1,config%natms
+        x=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*config%parts(i)%zzz
+        y=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*config%parts(i)%zzz
+        z=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*config%parts(i)%zzz
 
 ! assign domain coordinates (call for errors)
 
@@ -2604,36 +2609,36 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
         ipz=Int((z+0.5_wp)*domain%nz_real)
 
         If (domain%idx == 0) Then
-           If (x < -half_plus) ixyz(i)=ixyz(i)+1
+           If (x < -half_plus) config%ixyz(i)=config%ixyz(i)+1
         Else
-           If (ipx < domain%idx) ixyz(i)=ixyz(i)+1
+           If (ipx < domain%idx) config%ixyz(i)=config%ixyz(i)+1
         End If
         If (domain%idx == domain%nx-1) Then
-           If (x >= half_minus) ixyz(i)=ixyz(i)+2
+           If (x >= half_minus) config%ixyz(i)=config%ixyz(i)+2
         Else
-           If (ipx > domain%idx) ixyz(i)=ixyz(i)+2
+           If (ipx > domain%idx) config%ixyz(i)=config%ixyz(i)+2
         End If
 
         If (domain%idy == 0) Then
-           If (y < -half_plus) ixyz(i)=ixyz(i)+10
+           If (y < -half_plus) config%ixyz(i)=config%ixyz(i)+10
         Else
-           If (ipy < domain%idy) ixyz(i)=ixyz(i)+10
+           If (ipy < domain%idy) config%ixyz(i)=config%ixyz(i)+10
         End If
         If (domain%idy == domain%ny-1) Then
-           If (y >= half_minus) ixyz(i)=ixyz(i)+20
+           If (y >= half_minus) config%ixyz(i)=config%ixyz(i)+20
         Else
-           If (ipy > domain%idy) ixyz(i)=ixyz(i)+20
+           If (ipy > domain%idy) config%ixyz(i)=config%ixyz(i)+20
         End If
 
         If (domain%idz == 0) Then
-           If (z < -half_plus) ixyz(i)=ixyz(i)+100
+           If (z < -half_plus) config%ixyz(i)=config%ixyz(i)+100
         Else
-           If (ipz < domain%idz) ixyz(i)=ixyz(i)+100
+           If (ipz < domain%idz) config%ixyz(i)=config%ixyz(i)+100
         End If
         If (domain%idz == domain%nz-1) Then
-           If (z >= half_minus) ixyz(i)=ixyz(i)+200
+           If (z >= half_minus) config%ixyz(i)=config%ixyz(i)+200
         Else
-           If (ipz > domain%idz) ixyz(i)=ixyz(i)+200
+           If (ipz > domain%idz) config%ixyz(i)=config%ixyz(i)+200
         End If
      End Do
 
@@ -2641,44 +2646,44 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
 
      Call deport_atomic_data(-1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
        green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-       domain,comm)
+       domain,config,comm)
      Call deport_atomic_data( 1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
        green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-       domain,comm)
+       domain,config,comm)
 
 ! exchange atom data in -/+ y directions
 
      Call deport_atomic_data(-2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
        green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-       domain,comm)
+       domain,config,comm)
      Call deport_atomic_data( 2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
        green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-       domain,comm)
+       domain,config,comm)
 
 ! exchange atom data in -/+ z directions
 
      Call deport_atomic_data(-3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
        green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-       domain,comm)
+       domain,config,comm)
      Call deport_atomic_data( 3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
        green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-       domain,comm)
+       domain,config,comm)
 
 ! check system for loss of atoms
 
-     safe(1)=(All(ixyz(1:natms) == 0)) ; Call gcheck(comm,safe(1),"enforce")
-     nlimit=natms ; Call gsum(comm,nlimit)
+     safe(1)=(All(config%ixyz(1:config%natms) == 0)) ; Call gcheck(comm,safe(1),"enforce")
+     nlimit=config%natms ; Call gsum(comm,nlimit)
      If ((.not.safe(1)) .or. nlimit /= megatm) Call error(58)
 
 ! reassign atom properties
 
-     Do i=1,natms
-        atmnam(i)=sites%site_name(lsite(i))
-        ltype(i)=sites%type_site(lsite(i))
-        parts(i)%chge=sites%charge_site(lsite(i))
-        weight(i)=sites%weight_site(lsite(i))
-        lfrzn(i)=sites%freeze_site(lsite(i))
-        lfree(i)=sites%free_site(lsite(i))
+     Do i=1,config%natms
+        config%atmnam(i)=sites%site_name(config%lsite(i))
+        config%ltype(i)=sites%type_site(config%lsite(i))
+        config%parts(i)%chge=sites%charge_site(config%lsite(i))
+        config%weight(i)=sites%weight_site(config%lsite(i))
+        config%lfrzn(i)=sites%freeze_site(config%lsite(i))
+        config%lfree(i)=sites%free_site(config%lsite(i))
      End Do
 
      If (lbook) Then
@@ -2691,12 +2696,12 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
 ! Otherwise, everywhere else in the code, the search is over nlast as
 ! domain only indices are caught by the condition (1 >= index <= natms)!!!
 
-        nlast=natms
-        Do i=1,nlast
-           lsi(i)=i
-           lsa(i)=ltg(i)
+        config%nlast=config%natms
+        Do i=1,config%nlast
+           config%lsi(i)=i
+           config%lsa(i)=config%ltg(i)
         End Do
-        Call shellsort2(nlast,lsi,lsa)
+        Call shellsort2(config%nlast,config%lsi,config%lsa)
 
 ! Check safety of working arrays for all active bookkeeping arrays
 
@@ -2749,22 +2754,24 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
 ! Update shared core-shell, constraint, PMF and RB units
 
         If (cshell%megshl > 0) Call pass_shared_units &
-          (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl, cshell%listshl,cshell%mxfshl,&
+          (config,cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),&
+                                       cshell%ntshl, cshell%listshl,cshell%mxfshl,&
           cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl, &
           flw%oldjob_shared_units,domain,comm,&
           rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
           rigid%oxx,rigid%oyy,rigid%ozz)
 
         If (cons%m_con  > 0) Call pass_shared_units &
-          (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,cons%legcon,&
+          (config,cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),&
+           cons%ntcons,cons%listcon,cons%mxfcon,cons%legcon,&
           cons%lshmv_con,cons%lishp_con,cons%lashp_con,flw%oldjob_shared_units,domain,comm,&
           rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
           rigid%oxx,rigid%oyy,rigid%ozz)
 
-        If (pmf%megpmf > 0) Call pmf_units_set(pmf,comm)
+        If (pmf%megpmf > 0) Call pmf_units_set(pmf,config,comm)
 
         If (rigid%on) Call pass_shared_units &
-          (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
+          (config,rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
           rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
           rigid%map_shared,flw%oldjob_shared_units,domain,comm,&
           rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
@@ -2774,22 +2781,22 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
 
         If (tether%total > 0) Call compress_book_intra &
            (tether%mxteth,tether%ntteth,Ubound(tether%listtet,Dim=1),&
-            tether%listtet,tether%mxftet,tether%legtet,cons,comm)
+            tether%listtet,tether%mxftet,tether%legtet,cons,config,comm)
         If (bond%total > 0) Then
           Call compress_book_intra(bond%max_bonds,bond%n_types, &
-            Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,cons,comm)
+            Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,cons,config,comm)
         End If
         If (angle%total > 0) Then
           Call compress_book_intra(angle%max_angles,angle%n_types, &
-            Ubound(angle%list,Dim=1),angle%list,angle%max_legend,angle%legend,cons,comm)
+            Ubound(angle%list,Dim=1),angle%list,angle%max_legend,angle%legend,cons,config,comm)
         End If
         If (dihedral%total > 0) Then
           Call compress_book_intra(dihedral%max_angles,dihedral%n_types, &
-            Ubound(dihedral%list,Dim=1),dihedral%list,dihedral%max_legend,dihedral%legend,cons,comm)
+            Ubound(dihedral%list,Dim=1),dihedral%list,dihedral%max_legend,dihedral%legend,cons,config,comm)
         End If
         If (inversion%total > 0) Then
           Call compress_book_intra(inversion%max_angles,inversion%n_types, &
-            Ubound(inversion%list,Dim=1),inversion%list,inversion%max_legend,inversion%legend,cons,comm)
+            Ubound(inversion%list,Dim=1),inversion%list,inversion%max_legend,inversion%legend,cons,config,comm)
         End If
 
      End If
@@ -2798,7 +2805,7 @@ Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flw,cshell,
 
 ! Restore periodic boundaries (re-bound > re-wrap)
 
-     Call pbcshift(imcon,cell,natms,parts)
+     Call pbcshift(config%imcon,config%cell,config%natms,config%parts)
 
   End If
 

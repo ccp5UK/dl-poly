@@ -12,7 +12,7 @@ Module tethers
 
   Use kinds, Only : wp, wi
   Use comms,      Only : comms_type,gsum,gcheck
-  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn
+  Use configuration,     Only : configuration_type
   Use particle,   Only : corePart
   Use statistics, Only : stats_type
   Use setup, Only : nrite
@@ -113,7 +113,7 @@ Contains
     End If
   End Subroutine cleanup
 
-  Subroutine tethers_forces(stats,tether,parts,comm)
+  Subroutine tethers_forces(stats,tether,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -128,7 +128,7 @@ Contains
 
     Type( stats_type )   , Intent( InOut ) :: stats
     Type( tethers_type ) , Intent( InOut ) :: tether
-    Type( corePart ),      Intent( InOut ) :: parts(:)
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type )   , Intent( InOut ) :: comm
 
     Logical           :: safe
@@ -158,11 +158,11 @@ Contains
 
 ! indices of tethered atoms
 
-     ia=local_index(tether%listtet(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
+     ia=local_index(tether%listtet(1,i),config%nlast,config%lsi,config%lsa) ; lstopt(1,i)=ia
 
      lstopt(0,i)=0
-     If (ia > 0 .and. ia <= natms) Then !Tag
-        If (lfrzn(ia) == 0) lstopt(0,i)=1
+     If (ia > 0 .and. ia <= config%natms) Then !Tag
+        If (config%lfrzn(ia) == 0) lstopt(0,i)=1
      End If
 
 ! There is no need to check for uncompressed unit since
@@ -171,9 +171,9 @@ Contains
 ! components of tether vector
 
      If (lstopt(0,i) > 0) Then
-        xdab(i) = parts(ia)%xxx-stats%xin(ia)
-        ydab(i) = parts(ia)%yyy-stats%yin(ia)
-        zdab(i) = parts(ia)%zzz-stats%zin(ia)
+        xdab(i) = config%parts(ia)%xxx-stats%xin(ia)
+        ydab(i) = config%parts(ia)%yyy-stats%yin(ia)
+        zdab(i) = config%parts(ia)%zzz-stats%zin(ia)
      Else ! (DEBUG)
         xdab(i)=0.0_wp
         ydab(i)=0.0_wp
@@ -184,7 +184,7 @@ Contains
 
 ! periodic boundary condition
 
-  Call images(imcon,cell,tether%ntteth,xdab,ydab,zdab)
+  Call images(config%imcon,config%cell,tether%ntteth,xdab,ydab,zdab)
 
 ! initialise stress tensor accumulators
 
@@ -274,9 +274,9 @@ Contains
         fz = -gamma*zdab(i)
 
 
-        parts(ia)%fxx=parts(ia)%fxx+fx
-        parts(ia)%fyy=parts(ia)%fyy+fy
-        parts(ia)%fzz=parts(ia)%fzz+fz
+        config%parts(ia)%fxx=config%parts(ia)%fxx+fx
+        config%parts(ia)%fyy=config%parts(ia)%fyy+fy
+        config%parts(ia)%fzz=config%parts(ia)%fzz+fz
 
 ! calculate tether energy and virial
 

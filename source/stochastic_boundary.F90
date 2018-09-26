@@ -2,9 +2,7 @@ Module stochastic_boundary
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum
   use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr
-  Use configuration, Only : vxx,vyy,vzz,cell,natms,&
-    weight,lfrzn,lstfre,lsite,lfree,ltg,nlast,nfree,&
-    lsi,lsa,imcon
+  Use configuration, Only : configuration_type
   Use errors_warnings, Only : error,warning,info
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use numerics, Only : seed_type,local_index,images,dcell,invert,box_mueller_saru3
@@ -24,18 +22,18 @@ Module stochastic_boundary
   Contains
 
   Subroutine stochastic_boundary_vv(isw,tstep,nstep,dof_site,cshell,stats, &
-      thermo,rigid,domain,parts,seed,comm)
+      thermo,rigid,domain,config,seed,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 subroutine to scale the velocities of particles from
+! dl_poly_4 subroutine to scale the config%velocities of particles from
 ! boundary thermostat layer to the target temperature
 !
-! velocity verlet version
+! config%velocity config%verlet config%version
 !
 ! Note: (1) This algorithm breaks true ensembles!!!
 ! Additionally, for Langevin temperature control (thermo%key_pseudo=1):
-!       (2) Random forces do not contribute to the stress and virial
+!       (2) Random forces do not contribute to the stress and config%virial
 !           of the thermo%system (but are picked up in the pressure).
 !       (3) Random forces do not apply to frozen and massless particles
 !           as well as to shells.
@@ -54,7 +52,7 @@ Module stochastic_boundary
   Type( thermostat_type ), Intent( InOut    ) :: thermo
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( domains_type ), Intent( In    ) :: domain
-  Type (corePart ), Intent( InOut ) :: parts(:)
+  Type( configuration_type ), Intent( InOut ) :: config
   Type(seed_type), Intent(InOut) :: seed
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -82,8 +80,8 @@ Module stochastic_boundary
 
 ! set matms
 
-  matms=nlast
-  If (comm%mxnode == 1) matms=natms
+  matms=config%nlast
+  If (comm%mxnode == 1) matms=config%natms
 
   If (isw == 0) Then
 
@@ -103,8 +101,8 @@ Module stochastic_boundary
            End If
         End If
 
-        Call invert(cell,thermo%rcell,celprp(10))
-        Call dcell(cell,celprp)
+        Call invert(config%cell,thermo%rcell,celprp(10))
+        Call dcell(config%cell,celprp)
 
 ! The origin of the Coordinate System is in the middle of the MD box (remember)
 ! Get the real coordinates of the close end edge of the thermostat as if the
@@ -133,21 +131,24 @@ Module stochastic_boundary
 ! thermo%tpn(comm%idnode) number of thermostatted particles on this node (comm%idnode)
 ! thermo%ntp - grand total of non-shell, non-frozen particles to thermostat
 
-     thermo%qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
+     thermo%qn(1:config%natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
      thermo%qs(0:2,1:cshell%ntshl) = 0 ! unqualified core-shell unit with a local shell
      thermo%qr(1:rigid%n_types)     = 0 ! unqualified RB
 
      j = 0
-     Do i=1,natms
+     Do i=1,config%natms
 
 ! For all particles on this domain get how far they are
 ! from the origin of the MD box
 
-        ssx=thermo%rcell(1)*parts(i)%xxx+thermo%rcell(4)*parts(i)%yyy+thermo%rcell(7)*parts(i)%zzz ; ssx=Abs(ssx-Anint(ssx))
-        ssy=thermo%rcell(2)*parts(i)%xxx+thermo%rcell(5)*parts(i)%yyy+thermo%rcell(8)*parts(i)%zzz ; ssy=Abs(ssy-Anint(ssy))
-        ssz=thermo%rcell(3)*parts(i)%xxx+thermo%rcell(6)*parts(i)%yyy+thermo%rcell(9)*parts(i)%zzz ; ssz=Abs(ssz-Anint(ssz))
+        ssx=thermo%rcell(1)*config%parts(i)%xxx+thermo%rcell(4)*config%parts(i)%yyy+&
+            thermo%rcell(7)*config%parts(i)%zzz ; ssx=Abs(ssx-Anint(ssx))
+        ssy=thermo%rcell(2)*config%parts(i)%xxx+thermo%rcell(5)*config%parts(i)%yyy+&
+            thermo%rcell(8)*config%parts(i)%zzz ; ssy=Abs(ssy-Anint(ssy))
+        ssz=thermo%rcell(3)*config%parts(i)%xxx+thermo%rcell(6)*config%parts(i)%yyy+&
+            thermo%rcell(9)*config%parts(i)%zzz ; ssz=Abs(ssz-Anint(ssz))
 
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0 .and. &
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0 .and. &
             (ssx >= thermo%sx .or. ssy >= thermo%sy .or. ssz >= thermo%sz)) Then
            j = j + 1
            thermo%qn(i) = 1
@@ -175,21 +176,21 @@ Module stochastic_boundary
      End If
 
 ! Get gaussian distribution
-! Get scaler to target variance*Sqrt(weight)
+! Get scaler to target config%variance*Sqrt(config%weight)
 
      scale = Sqrt(2.0_wp * thermo%chit_sb * boltz * thermo%temp_pseudo / tstep)
 
      vom = 0.0_wp
-     Do i=1,natms
+     Do i=1,config%natms
         If (thermo%qn(i) == 1) Then
 
-! Get gaussian distribution (unit variance)
+! Get gaussian distribution (unit config%variance)
 
-           Call box_mueller_saru3(seed,ltg(i),nstep,xxt(i),yyt(i),zzt(i))
+           Call box_mueller_saru3(seed,config%ltg(i),nstep,xxt(i),yyt(i),zzt(i))
 
-! Get scaler to target variance*Sqrt(weight)
+! Get scaler to target config%variance*Sqrt(config%weight)
 
-           tmp = scale*Sqrt(weight(i))
+           tmp = scale*Sqrt(config%weight(i))
 
            xxt(i) = xxt(i)*tmp
            yyt(i) = yyt(i)*tmp
@@ -206,11 +207,11 @@ Module stochastic_boundary
 
 ! Add random force and remove thermostat COM force
 
-     Do i=1,natms
+     Do i=1,config%natms
         If (thermo%qn(i) == 1) Then
-           parts(i)%fxx = parts(i)%fxx + xxt(i) - vom(1)
-           parts(i)%fyy = parts(i)%fyy + yyt(i) - vom(2)
-           parts(i)%fzz = parts(i)%fzz + zzt(i) - vom(3)
+           config%parts(i)%fxx = config%parts(i)%fxx + xxt(i) - vom(1)
+           config%parts(i)%fyy = config%parts(i)%fyy + yyt(i) - vom(2)
+           config%parts(i)%fzz = config%parts(i)%fzz + zzt(i) - vom(3)
         End If
      End Do
 
@@ -229,7 +230,7 @@ Module stochastic_boundary
      j = 0 ! no qualified good RB (one qualified RB is enough to trigger all)
      Do i=1,matms
         If (thermo%qn(i) == 1) Then
-           If (lfree(i) == 1) j = j + 1
+           If (config%lfree(i) == 1) j = j + 1
         End If
      End Do
      Call gsum(comm,j)
@@ -241,8 +242,8 @@ Module stochastic_boundary
      k = 0
      If (j > 0) Then
         If (rigid%share) Then
-           thermo%qn(natms+1:nlast) = 0 ! refresh the q array for shared RB units
-           Call update_shared_units_int(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,thermo%qn,domain,comm)
+           thermo%qn(config%natms+1:config%nlast) = 0 ! refresh the q array for shared RB units
+           Call update_shared_units_int(config,rigid%list_shared,rigid%map_shared,thermo%qn,domain,comm)
         End If
 
         j = 0
@@ -261,7 +262,7 @@ Module stochastic_boundary
                        j = j + 1
                     End If
 
-                    If (i <= natms) thermo%tpn(comm%idnode) = thermo%tpn(comm%idnode) - 1 ! Less free particles are hit
+                    If (i <= config%natms) thermo%tpn(comm%idnode) = thermo%tpn(comm%idnode) - 1 ! Less free particles are hit
                  End If
               End Do
 
@@ -269,9 +270,9 @@ Module stochastic_boundary
                  i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
                  i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
                  If (rigid%frozen(0,rgdtyp) == 0) Then
-                    If (i1 <= natms) k = k + 1
+                    If (i1 <= config%natms) k = k + 1
                  End If
-                 If (i2 <= natms) k = k + 1
+                 If (i2 <= config%natms) k = k + 1
               End If
            End If
         End Do
@@ -300,16 +301,16 @@ Module stochastic_boundary
      j = 0
      If (cshell%keyshl == SHELL_ADIABATIC) Then
         If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
-           thermo%qn(natms+1:nlast) = 0
-           Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,thermo%qn,domain,comm)
+           thermo%qn(config%natms+1:config%nlast) = 0
+           Call update_shared_units_int(config,cshell%lishp_shl,cshell%lashp_shl,thermo%qn,domain,comm)
         End If
 
         If (cshell%ntshl > 0) Then
            Do k=1,cshell%ntshl
-              i1=local_index(cshell%listshl(1,k),matms,lsi,lsa)
-              i2=local_index(cshell%listshl(2,k),matms,lsi,lsa)
+              i1=local_index(cshell%listshl(1,k),matms,config%lsi,config%lsa)
+              i2=local_index(cshell%listshl(2,k),matms,config%lsi,config%lsa)
 
-              If (thermo%qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
+              If (thermo%qn(i1) == 1 .and. i2 > 0 .and. i2 <= config%natms) Then
                  j = j + 1
 
                  thermo%qs(0,k)=1
@@ -333,11 +334,11 @@ Module stochastic_boundary
 
      If (thermo%key_pseudo < 3)  Then ! Apply LANGEVIN temperature scaling
 
-! Allocate random velocities array of length k
+! Allocate random config%velocities array of length k
 
         Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
         If (fail(1) > 0) Then
-           Write(message,'(a,i0)') 'pseudo (velocities) allocation failure'
+           Write(message,'(a,i0)') 'pseudo (config%velocities) allocation failure'
            Call error(0,message)
         End If
 
@@ -349,23 +350,23 @@ Module stochastic_boundary
 
         tkin = 0.0_wp
         mxdr = 0.0_wp
-        Do i=1,natms
-           If (thermo%qn(i) == 1 .and. lfree(i) == 0) Then
-              If (dof_site(lsite(i)) > zero_plus) mxdr = mxdr + dof_site(lsite(i))
+        Do i=1,config%natms
+           If (thermo%qn(i) == 1 .and. config%lfree(i) == 0) Then
+              If (dof_site(config%lsite(i)) > zero_plus) mxdr = mxdr + dof_site(config%lsite(i))
 
-! Get gaussian distribution (unit variance)
+! Get gaussian distribution (unit config%variance)
 
-              Call box_mueller_saru3(seed,ltg(i),nstep,xxt(i),yyt(i),zzt(i))
+              Call box_mueller_saru3(seed,config%ltg(i),nstep,xxt(i),yyt(i),zzt(i))
 
-! Get scaler to target variance/Sqrt(weight)
+! Get scaler to target config%variance/Sqrt(config%weight)
 
-              tmp = 1.0_wp/Sqrt(weight(i))
+              tmp = 1.0_wp/Sqrt(config%weight(i))
 
               xxt(i) = xxt(i)*tmp
               yyt(i) = yyt(i)*tmp
               zzt(i) = zzt(i)*tmp
 
-              tkin = tkin + weight(i)*(xxt(i)**2+yyt(i)**2+zzt(i)**2)
+              tkin = tkin + config%weight(i)*(xxt(i)**2+yyt(i)**2+zzt(i)**2)
            End If
         End Do
 
@@ -377,21 +378,21 @@ Module stochastic_boundary
                  lrgd=rigid%list(-1,irgd)
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd) ! particle index
-                    If (i <= natms) Then
-                       If (dof_site(lsite(i)) > zero_plus) mxdr = mxdr + dof_site(lsite(i))
+                    If (i <= config%natms) Then
+                       If (dof_site(config%lsite(i)) > zero_plus) mxdr = mxdr + dof_site(config%lsite(i))
                     End If
                  End Do
 
                  i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
                  i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
 
-                 If (rigid%frozen(0,rgdtyp) == 0 .and. i1 <= natms) Then
+                 If (rigid%frozen(0,rgdtyp) == 0 .and. i1 <= config%natms) Then
 
-! Get gaussian distribution (unit variance)
+! Get gaussian distribution (unit config%variance)
 
-                    Call box_mueller_saru3(seed,ltg(i1),nstep,xxt(i1),yyt(i1),zzt(i1))
+                    Call box_mueller_saru3(seed,config%ltg(i1),nstep,xxt(i1),yyt(i1),zzt(i1))
 
-! Get scaler to target variance/Sqrt(weight)
+! Get scaler to target config%variance/Sqrt(config%weight)
 
                     tmp = 1.0_wp/Sqrt(rigid%weight(0,rgdtyp))
 
@@ -403,13 +404,13 @@ Module stochastic_boundary
 
                  End If
 
-                 If (i2 <= natms) Then
+                 If (i2 <= config%natms) Then
 
-! Get gaussian distribution (unit variance)
+! Get gaussian distribution (unit config%variance)
 
-                    Call box_mueller_saru3(seed,ltg(i2),nstep,xxt(i2),yyt(i2),zzt(i2))
+                    Call box_mueller_saru3(seed,config%ltg(i2),nstep,xxt(i2),yyt(i2),zzt(i2))
 
-! Get scaler to target variance/Sqrt(weight) -
+! Get scaler to target config%variance/Sqrt(config%weight) -
 ! 3 different reciprocal moments of inertia
 
                     xxt(i2) = xxt(i2)*Sqrt(rigid%rix(2,rgdtyp))
@@ -433,29 +434,29 @@ Module stochastic_boundary
 
         scale = Sqrt(mxdr * boltz * thermo%temp_pseudo / tkin)
 
-! Scale velocity within the thermostat layer to the gaussian velocities
-! scaled with the variance for the target temperature
+! Scale config%velocity within the thermostat layer to the gaussian config%velocities
+! scaled with the config%variance for the target temperature
 
-        Do i=1,natms
-           If (thermo%qn(i) == 1 .and. lfree(i) == 0) Then
+        Do i=1,config%natms
+           If (thermo%qn(i) == 1 .and. config%lfree(i) == 0) Then
               tmp = scale * Sqrt( (xxt(i)**2+yyt(i)**2+zzt(i)**2) / &
-                                  (vxx(i)**2+vyy(i)**2+vzz(i)**2) )
+                                  (config%vxx(i)**2+config%vyy(i)**2+config%vzz(i)**2) )
 
-              vxx(i) = vxx(i)*tmp
-              vyy(i) = vyy(i)*tmp
-              vzz(i) = vzz(i)*tmp
+              config%vxx(i) = config%vxx(i)*tmp
+              config%vyy(i) = config%vyy(i)*tmp
+              config%vzz(i) = config%vzz(i)*tmp
            End If
         End Do
 
         If (thermo%rtp > 0) Then
 
-! Update shared RBs' velocities
+! Update shared RBs' config%velocities
 
            If (rigid%share) Then
-             Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,xxt,yyt,zzt,domain,comm)
+             Call update_shared_units(config,rigid%list_shared,rigid%map_shared,xxt,yyt,zzt,domain,comm)
            End If
 
-! calculate new RBs' COM and angular velocities
+! calculate new RBs' COM and angular config%velocities
 
            Do irgd=1,rigid%n_types
               If (thermo%qr(irgd) == 1) Then
@@ -486,29 +487,29 @@ Module stochastic_boundary
 
                  Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
-! update RB members new velocities
+! update RB members new config%velocities
 
                  lrgd=rigid%list(-1,irgd)
                  Do jrgd=1,lrgd
                     If (rigid%frozen(jrgd,rgdtyp) == 0) Then
                        i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                       If (i <= natms) Then
+                       If (i <= config%natms) Then
                           x(1)=rigid%x(jrgd,rgdtyp)
                           y(1)=rigid%y(jrgd,rgdtyp)
                           z(1)=rigid%z(jrgd,rgdtyp)
 
-! new atomic velocities in body frame
+! new atomic config%velocities in body frame
 
                           vpx=rigid%oyy(irgd)*z(1)-rigid%ozz(irgd)*y(1)
                           vpy=rigid%ozz(irgd)*x(1)-rigid%oxx(irgd)*z(1)
                           vpz=rigid%oxx(irgd)*y(1)-rigid%oyy(irgd)*x(1)
 
-! new atomic velocities in lab frame
+! new atomic config%velocities in lab frame
 
-                          vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
-                          vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
-                          vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
+                          config%vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                          config%vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                          config%vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                        End If
                     End If
                  End Do
@@ -517,11 +518,11 @@ Module stochastic_boundary
 
         End If
 
-! Deallocate gaussian random velocities array
+! Deallocate gaussian random config%velocities array
 
         Deallocate (xxt,yyt,zzt, Stat=fail(1))
         If (fail(1) > 0) Then
-           Write(message,'(a)') 'pseudo (velocities) deallocation failure'
+           Write(message,'(a)') 'pseudo (config%velocities) deallocation failure'
            Call error(0,message)
         End If
 
@@ -529,7 +530,7 @@ Module stochastic_boundary
 
         If (thermo%stp > 0) Then
            If (cshell%lshmv_shl) Then
-             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
+             Call update_shared_units(config,cshell%lishp_shl,cshell%lashp_shl,config%vxx,config%vyy,config%vzz,domain,comm)
            End If
 
            If (thermo%tps(comm%idnode) > 0) Then
@@ -541,9 +542,9 @@ Module stochastic_boundary
                     i1=thermo%qs(1,k)
                     i2=thermo%qs(2,k)
 
-                    vxx(i2)=vxx(i1)
-                    vyy(i2)=vyy(i1)
-                    vzz(i2)=vzz(i1)
+                    config%vxx(i2)=config%vxx(i1)
+                    config%vyy(i2)=config%vyy(i1)
+                    config%vzz(i2)=config%vzz(i1)
                  End If
               End Do
            End If
@@ -551,17 +552,17 @@ Module stochastic_boundary
 
         If (rigid%total > 0) Then
 
-! remove thermo%system centre of mass velocity (random momentum walk)
+! remove thermo%system centre of mass config%velocity (random momentum walk)
 
-           Call getvom(vom,vxx,vyy,vzz,rigid,comm)
+           Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
 
-           Do j=1,nfree
-              i=lstfre(j)
+           Do j=1,config%nfree
+              i=config%lstfre(j)
 
-              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                 vxx(i) = vxx(i) - vom(1)
-                 vyy(i) = vyy(i) - vom(2)
-                 vzz(i) = vzz(i) - vom(3)
+              If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                 config%vxx(i) = config%vxx(i) - vom(1)
+                 config%vyy(i) = config%vyy(i) - vom(2)
+                 config%vzz(i) = config%vzz(i) - vom(3)
               End If
            End Do
 
@@ -577,10 +578,10 @@ Module stochastic_boundary
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                    If (i <= natms) Then
-                       vxx(i) = vxx(i) - vom(1)
-                       vyy(i) = vyy(i) - vom(2)
-                       vzz(i) = vzz(i) - vom(3)
+                    If (i <= config%natms) Then
+                       config%vxx(i) = config%vxx(i) - vom(1)
+                       config%vyy(i) = config%vyy(i) - vom(2)
+                       config%vzz(i) = config%vzz(i) - vom(3)
                     End If
                  End Do
               End If
@@ -595,12 +596,13 @@ Module stochastic_boundary
 
 ! Free particles
 
-           Do j=1,nfree
-              i=lstfre(j)
+           Do j=1,config%nfree
+              i=config%lstfre(j)
 
               If (thermo%qn(i) == 1) Then
-                 tkin  = tkin  + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
-                 vdotf = vdotf + vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
+                 tkin  = tkin  + config%weight(i)*(config%vxx(i)**2+config%vyy(i)**2+config%vzz(i)**2)
+                 vdotf = vdotf + config%vxx(i)*config%parts(i)%fxx+config%vyy(i)*config%parts(i)%fyy+&
+                                 config%vzz(i)*config%parts(i)%fzz
               End If
            End Do
 
@@ -621,7 +623,7 @@ Module stochastic_boundary
                  Call error(0,message)
               End If
 
-! Get the RB particles vectors wrt the RB's COM
+! Get the RB particles config%vectors wrt the RB's COM
 
               krgd=0
               Do irgd=1,rigid%n_types
@@ -636,16 +638,16 @@ Module stochastic_boundary
 
 ! COM distances
 
-                       ggx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-                       ggy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-                       ggz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+                       ggx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+                       ggy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+                       ggz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
                     End Do
                  End If
               End Do
 
-! minimum image convention for bond vectors
+! minimum image convention for bond config%vectors
 
-              Call images(imcon,cell,krgd,ggx,ggy,ggz)
+              Call images(config%imcon,config%cell,krgd,ggx,ggy,ggz)
 
 ! Get RB force and torque
 
@@ -667,14 +669,14 @@ Module stochastic_boundary
 ! If the RB has a frozen particle then no net force
 
                        If (rigid%frozen(0,rgdtyp) == 0) Then
-                          fmx=fmx+parts(i)%fxx
-                          fmy=fmy+parts(i)%fyy
-                          fmz=fmz+parts(i)%fzz
+                          fmx=fmx+config%parts(i)%fxx
+                          fmy=fmy+config%parts(i)%fyy
+                          fmz=fmz+config%parts(i)%fzz
                        End If
 
-                       tqx=tqx+ggy(krgd)*parts(i)%fzz-ggz(krgd)*parts(i)%fyy
-                       tqy=tqy+ggz(krgd)*parts(i)%fxx-ggx(krgd)*parts(i)%fzz
-                       tqz=tqz+ggx(krgd)*parts(i)%fyy-ggy(krgd)*parts(i)%fxx
+                       tqx=tqx+ggy(krgd)*config%parts(i)%fzz-ggz(krgd)*config%parts(i)%fyy
+                       tqy=tqy+ggz(krgd)*config%parts(i)%fxx-ggx(krgd)*config%parts(i)%fzz
+                       tqz=tqz+ggx(krgd)*config%parts(i)%fyy-ggy(krgd)*config%parts(i)%fxx
                     End Do
 
 ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -684,11 +686,11 @@ Module stochastic_boundary
                        i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
                        i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-                       x(1)=parts(i1)%xxx-parts(i2)%xxx
-                       y(1)=parts(i1)%yyy-parts(i2)%yyy
-                       z(1)=parts(i1)%zzz-parts(i2)%zzz
+                       x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
+                       y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
+                       z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
 
-                       Call images(imcon,cell,1,x,y,z)
+                       Call images(config%imcon,config%cell,1,x,y,z)
 
                        tmp=(x(1)*tqx+y(1)*tqy+z(1)*tqz)/(x(1)**2+y(1)**2+z(1)**2)
                        tqx=x(1)*tmp
@@ -773,8 +775,9 @@ Module stochastic_boundary
                     If (thermo%qs(0,k) == 1) Then
                        i2=thermo%qs(2,k)
 
-                       tkin  = tkin  + weight(i2)*(vxx(i2)**2+vyy(i2)**2+vzz(i2)**2)
-                       vdotf = vdotf + vxx(i2)*parts(i2)%fxx+vyy(i2)*parts(i2)%fyy+vzz(i2)*parts(i2)%fzz
+                       tkin  = tkin  + config%weight(i2)*(config%vxx(i2)**2+config%vyy(i2)**2+config%vzz(i2)**2)
+                       vdotf = vdotf + config%vxx(i2)*config%parts(i2)%fxx+config%vyy(i2)*config%parts(i2)%fyy+&
+                                       config%vzz(i2)*config%parts(i2)%fzz
                     End If
                  End Do
               End If
@@ -796,15 +799,15 @@ Module stochastic_boundary
 
         Else
 
-! remove thermo%system centre of mass velocity (random momentum walk)
+! remove thermo%system centre of mass config%velocity (random momentum walk)
 
-           Call getvom(vom,vxx,vyy,vzz,comm)
+           Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
 
-           Do i=1,natms
-              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                 vxx(i) = vxx(i) - vom(1)
-                 vyy(i) = vyy(i) - vom(2)
-                 vzz(i) = vzz(i) - vom(3)
+           Do i=1,config%natms
+              If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                 config%vxx(i) = config%vxx(i) - vom(1)
+                 config%vyy(i) = config%vyy(i) - vom(2)
+                 config%vzz(i) = config%vzz(i) - vom(3)
               End If
            End Do
 
@@ -813,10 +816,11 @@ Module stochastic_boundary
            tkin  = 0.0_wp
            vdotf = 0.0_wp
 
-           Do i=1,natms
+           Do i=1,config%natms
               If (thermo%qn(i) == 1) Then
-                 tkin   = tkin  + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
-                 vdotf  = vdotf + vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
+                 tkin   = tkin  + config%weight(i)*(config%vxx(i)**2+config%vyy(i)**2+config%vzz(i)**2)
+                 vdotf  = vdotf + config%vxx(i)*config%parts(i)%fxx+config%vyy(i)*config%parts(i)%fyy+&
+                                  config%vzz(i)*config%parts(i)%fzz
               End If
            End Do
 
@@ -828,8 +832,9 @@ Module stochastic_boundary
                     If (thermo%qs(0,k) == 1) Then
                        i2=thermo%qs(2,k)
 
-                       tkin  = tkin  + weight(i2)*(vxx(i2)**2+vyy(i2)**2+vzz(i2)**2)
-                       vdotf = vdotf + vxx(i2)*parts(i2)%fxx+vyy(i2)*parts(i2)%fyy+vzz(i2)*parts(i2)%fzz
+                       tkin  = tkin  + config%weight(i2)*(config%vxx(i2)**2+config%vyy(i2)**2+config%vzz(i2)**2)
+                       vdotf = vdotf + config%vxx(i2)*config%parts(i2)%fxx+config%vyy(i2)*config%parts(i2)%fyy+&
+                                       config%vzz(i2)*config%parts(i2)%fzz
                     End If
                  End Do
               End If
@@ -854,24 +859,25 @@ Module stochastic_boundary
 
         scale = boltz * thermo%temp_pseudo
 
-! Scale velocity within the thermostat layer
+! Scale config%velocity within the thermostat layer
 
-        Do i=1,natms
-           If (thermo%qn(i) == 1 .and. lfree(i) == 0) Then
+        Do i=1,config%natms
+           If (thermo%qn(i) == 1 .and. config%lfree(i) == 0) Then
 
 ! Get particle kinetic energy and produce a scaler to target temperature
 
-              tmp = Sqrt(scale * dof_site(lsite(i)) / (weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)))
+              tmp = Sqrt(scale * dof_site(config%lsite(i)) / (config%weight(i)*(config%vxx(i)**2+&
+                                          config%vyy(i)**2+config%vzz(i)**2)))
 
-              vxx(i) = vxx(i)*tmp
-              vyy(i) = vyy(i)*tmp
-              vzz(i) = vzz(i)*tmp
+              config%vxx(i) = config%vxx(i)*tmp
+              config%vyy(i) = config%vyy(i)*tmp
+              config%vzz(i) = config%vzz(i)*tmp
            End If
         End Do
 
         If (thermo%rtp > 0) Then
 
-! calculate new RBs' COM and angular velocities
+! calculate new RBs' COM and angular config%velocities
 
            Do irgd=1,rigid%n_types
               If (thermo%qr(irgd) == 1) Then
@@ -905,29 +911,29 @@ Module stochastic_boundary
 
                  Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
 
-! update RB members new velocities
+! update RB members new config%velocities
 
                  lrgd=rigid%list(-1,irgd)
                  Do jrgd=1,lrgd
                     If (rigid%frozen(jrgd,rgdtyp) == 0) Then
                        i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                       If (i <= natms) Then
+                       If (i <= config%natms) Then
                           x(1)=rigid%x(jrgd,rgdtyp)
                           y(1)=rigid%y(jrgd,rgdtyp)
                           z(1)=rigid%z(jrgd,rgdtyp)
 
-! new atomic velocities in body frame
+! new atomic config%velocities in body frame
 
                           vpx=rigid%oyy(irgd)*z(1)-rigid%ozz(irgd)*y(1)
                           vpy=rigid%ozz(irgd)*x(1)-rigid%oxx(irgd)*z(1)
                           vpz=rigid%oxx(irgd)*y(1)-rigid%oyy(irgd)*x(1)
 
-! new atomic velocities in lab frame
+! new atomic config%velocities in lab frame
 
-                          vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
-                          vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
-                          vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
+                          config%vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                          config%vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                          config%vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                        End If
                     End If
                  End Do
@@ -940,7 +946,7 @@ Module stochastic_boundary
 
         If (thermo%stp > 0) Then
            If (cshell%lshmv_shl) Then
-             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
+             Call update_shared_units(config,cshell%lishp_shl,cshell%lashp_shl,config%vxx,config%vyy,config%vzz,domain,comm)
            End If
 
            If (thermo%tps(comm%idnode) > 0) Then
@@ -949,27 +955,27 @@ Module stochastic_boundary
                     i1=thermo%qs(1,k)
                     i2=thermo%qs(2,k)
 
-                    vxx(i2)=vxx(i1)
-                    vyy(i2)=vyy(i1)
-                    vzz(i2)=vzz(i1)
+                    config%vxx(i2)=config%vxx(i1)
+                    config%vyy(i2)=config%vyy(i1)
+                    config%vzz(i2)=config%vzz(i1)
                  End If
               End Do
            End If
         End If
 
-! remove thermo%system centre of mass velocity (random momentum walk)
+! remove thermo%system centre of mass config%velocity (random momentum walk)
 
         If (rigid%total > 0) Then
 
-           Call getvom(vom,vxx,vyy,vzz,rigid,comm)
+           Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
 
-           Do j=1,nfree
-              i=lstfre(j)
+           Do j=1,config%nfree
+              i=config%lstfre(j)
 
-              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                 vxx(i) = vxx(i) - vom(1)
-                 vyy(i) = vyy(i) - vom(2)
-                 vzz(i) = vzz(i) - vom(3)
+              If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                 config%vxx(i) = config%vxx(i) - vom(1)
+                 config%vyy(i) = config%vyy(i) - vom(2)
+                 config%vzz(i) = config%vzz(i) - vom(3)
               End If
            End Do
 
@@ -985,10 +991,10 @@ Module stochastic_boundary
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                    If (i <= natms) Then
-                       vxx(i) = vxx(i) - vom(1)
-                       vyy(i) = vyy(i) - vom(2)
-                       vzz(i) = vzz(i) - vom(3)
+                    If (i <= config%natms) Then
+                       config%vxx(i) = config%vxx(i) - vom(1)
+                       config%vyy(i) = config%vyy(i) - vom(2)
+                       config%vzz(i) = config%vzz(i) - vom(3)
                     End If
                  End Do
               End If
@@ -996,13 +1002,13 @@ Module stochastic_boundary
 
         Else
 
-           Call getvom(vom,vxx,vyy,vzz,comm)
+           Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
 
-           Do i=1,natms
-              If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                 vxx(i) = vxx(i) - vom(1)
-                 vyy(i) = vyy(i) - vom(2)
-                 vzz(i) = vzz(i) - vom(3)
+           Do i=1,config%natms
+              If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                 config%vxx(i) = config%vxx(i) - vom(1)
+                 config%vyy(i) = config%vyy(i) - vom(2)
+                 config%vzz(i) = config%vzz(i) - vom(3)
               End If
            End Do
 
@@ -1013,7 +1019,7 @@ Module stochastic_boundary
 ! Update total kinetic stress and energy
 
      If (rigid%total > 0) Then
-        Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
+        Call kinstresf(config%vxx,config%vyy,config%vzz,stats%strknf,config,comm)
         Call kinstrest(rigid,stats%strknt,comm)
 
         stats%strkin=stats%strknf+stats%strknt
@@ -1022,7 +1028,7 @@ Module stochastic_boundary
 
         stats%engrot=getknr(rigid,comm)
      Else
-        Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
+        Call kinstress(config%vxx,config%vyy,config%vzz,stats%strkin,config,comm)
      End If
      stats%engke = 0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
 

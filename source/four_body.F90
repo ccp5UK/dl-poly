@@ -13,7 +13,7 @@ Module four_body
   Use kinds,          Only : wp,wi
   Use comms,          Only : comms_type,gsum,gcheck
   Use domains, Only : domains_type
-  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype
+  Use configuration,  Only : configuration_type
   Use particle, Only : corePart
   Use setup, Only : zero_plus,mxatms,nrite
   Use errors_warnings, Only : error, warning
@@ -83,7 +83,7 @@ Contains
     T%rct = 0.0_wp
   End Subroutine allocate_four_body_arrays
 
-  Subroutine four_body_forces(fourbody,stats,neigh,domain,parts,comm)
+  Subroutine four_body_forces(fourbody,stats,neigh,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -105,7 +105,7 @@ Contains
   Type( stats_type ),      Intent( InOut ) :: stats
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( domains_type ), Intent( In    ) :: domain
-  Type( corePart ),        Intent( InOut ) :: parts(:)
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ),      Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -152,7 +152,7 @@ Contains
 
 ! Get the dimensional properties of the MD cell
 
-  Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
 
 ! Calculate the number of link-cells per domain in every direction
 
@@ -198,17 +198,20 @@ Contains
 
 ! Get the inverse cell matrix
 
-  Call invert(cell,rcell,det)
+  Call invert(config%cell,rcell,det)
 
 ! Convert atomic positions (ALL - halo included) from centred
 ! Cartesian coordinates to reduced space coordinates of
 ! the left-most link-cell
 
-  Do i=1,nlast
-     If (fourbody%lfr(ltype(i))) Then
-        xxt(i)=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+dispx
-        yyt(i)=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+dispy
-        zzt(i)=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+dispz
+  Do i=1,config%nlast
+     If (fourbody%lfr(config%ltype(i))) Then
+        xxt(i)=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+&
+               rcell(7)*config%parts(i)%zzz+dispx
+        yyt(i)=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+&
+               rcell(8)*config%parts(i)%zzz+dispy
+        zzt(i)=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+&
+               rcell(9)*config%parts(i)%zzz+dispz
      End If
   End Do
 
@@ -241,8 +244,8 @@ Contains
 ! cell layer are not considered.
 !***************************************************************
 
-  Do i=1,nlast
-     If (fourbody%lfr(ltype(i))) Then
+  Do i=1,config%nlast
+     If (fourbody%lfr(config%ltype(i))) Then
 
 ! Push cell coordinates accordingly
 
@@ -409,7 +412,7 @@ Contains
 ! index of the primary atom (and table type)
 
               ia=listin(ii)
-              ifbp=fourbody%mx3fbp*(ltype(ia)-1)
+              ifbp=fourbody%mx3fbp*(config%ltype(ia)-1)
 
 ! bypass if primary atom type is not involved in interaction
 
@@ -433,12 +436,12 @@ Contains
 
 ! get types of atoms
 
-     jfbp=Max(ltype(ib),ltype(ic),ltype(id))
-     lfbp=Min(ltype(ib),ltype(ic),ltype(id))
+     jfbp=Max(config%ltype(ib),config%ltype(ic),config%ltype(id))
+     lfbp=Min(config%ltype(ib),config%ltype(ic),config%ltype(id))
 
 ! get index of interaction
 
-     kfbp=ltype(ib)+ltype(ic)+ltype(id)-jfbp-lfbp
+     kfbp=config%ltype(ib)+config%ltype(ic)+config%ltype(id)-jfbp-lfbp
      jklbd=ifbp+lfbp+(kfbp*(kfbp-1))/2+(jfbp*(jfbp**2-1))/6
      kkfbp=fourbody%list(jklbd)
 
@@ -448,19 +451,19 @@ Contains
 
 ! only for non-frozen triplets
 
-        If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic)*lfrzn(id) == 0) Then
+        If (config%lfrzn(ia)*config%lfrzn(ib)*config%lfrzn(ic)*config%lfrzn(id) == 0) Then
 
            sxab = xxt(ib)-xxt(ia)
            syab = yyt(ib)-yyt(ia)
            szab = zzt(ib)-zzt(ia)
 
-           xab=cell(1)*sxab+cell(4)*syab+cell(7)*szab
+           xab=config%cell(1)*sxab+config%cell(4)*syab+config%cell(7)*szab
            If (Abs(xab) < fourbody%cutoff) Then
 
-              yab=cell(2)*sxab+cell(5)*syab+cell(8)*szab
+              yab=config%cell(2)*sxab+config%cell(5)*syab+config%cell(8)*szab
               If (Abs(yab) < fourbody%cutoff) Then
 
-                 zab=cell(3)*sxab+cell(6)*syab+cell(9)*szab
+                 zab=config%cell(3)*sxab+config%cell(6)*syab+config%cell(9)*szab
                  If (Abs(zab) < fourbody%cutoff) Then
 
                     rab2=xab*xab+yab*yab+zab*zab
@@ -469,13 +472,13 @@ Contains
                     syac = yyt(ic)-yyt(ia)
                     szac = zzt(ic)-zzt(ia)
 
-                    xac=cell(1)*sxac+cell(4)*syac+cell(7)*szac
+                    xac=config%cell(1)*sxac+config%cell(4)*syac+config%cell(7)*szac
                     If (Abs(xac) < fourbody%cutoff) Then
 
-                       yac=cell(2)*sxac+cell(5)*syac+cell(8)*szac
+                       yac=config%cell(2)*sxac+config%cell(5)*syac+config%cell(8)*szac
                        If (Abs(yac) < fourbody%cutoff) Then
 
-                          zac=cell(3)*sxac+cell(6)*syac+cell(9)*szac
+                          zac=config%cell(3)*sxac+config%cell(6)*syac+config%cell(9)*szac
                           If (Abs(zac) < fourbody%cutoff) Then
 
                              rac2=xac*xac+yac*yac+zac*zac
@@ -484,13 +487,13 @@ Contains
                              syad = yyt(id)-yyt(ia)
                              szad = zzt(id)-zzt(ia)
 
-                             xad=cell(1)*sxad+cell(4)*syad+cell(7)*szad
+                             xad=config%cell(1)*sxad+config%cell(4)*syad+config%cell(7)*szad
                              If (Abs(xad) < fourbody%cutoff) Then
 
-                                yad=cell(2)*sxad+cell(5)*syad+cell(8)*szad
+                                yad=config%cell(2)*sxad+config%cell(5)*syad+config%cell(8)*szad
                                 If (Abs(yad) < fourbody%cutoff) Then
 
-                                   zad=cell(3)*sxad+cell(6)*syad+cell(9)*szad
+                                   zad=config%cell(3)*sxad+config%cell(6)*syad+config%cell(9)*szad
                                    If (Abs(zad) < fourbody%cutoff) Then
 
                                       rad2=xad*xad+yad*yad+zad*zad
@@ -726,7 +729,7 @@ Contains
      fay = -(fby+fcy+fdy)
      faz = -(fbz+fcz+fdz)
 
-     If (ia <= natms) Then
+     If (ia <= config%natms) Then
 
 ! sum inversion energy
 
@@ -741,33 +744,33 @@ Contains
         strs6 = strs6 + yab*fbz + yac*fcz + yad*fdz
         strs9 = strs9 + zab*fbz + zac*fcz + zad*fdz
 
-        parts(ia)%fxx=parts(ia)%fxx+fax
-        parts(ia)%fyy=parts(ia)%fyy+fay
-        parts(ia)%fzz=parts(ia)%fzz+faz
+        config%parts(ia)%fxx=config%parts(ia)%fxx+fax
+        config%parts(ia)%fyy=config%parts(ia)%fyy+fay
+        config%parts(ia)%fzz=config%parts(ia)%fzz+faz
 
      End If
 
-     If (ib <= natms) Then
+     If (ib <= config%natms) Then
 
-        parts(ib)%fxx=parts(ib)%fxx+fbx
-        parts(ib)%fyy=parts(ib)%fyy+fby
-        parts(ib)%fzz=parts(ib)%fzz+fbz
-
-     End If
-
-     If (ic <= natms) Then
-
-        parts(ic)%fxx=parts(ic)%fxx+fcx
-        parts(ic)%fyy=parts(ic)%fyy+fcy
-        parts(ic)%fzz=parts(ic)%fzz+fcz
+        config%parts(ib)%fxx=config%parts(ib)%fxx+fbx
+        config%parts(ib)%fyy=config%parts(ib)%fyy+fby
+        config%parts(ib)%fzz=config%parts(ib)%fzz+fbz
 
      End If
 
-     If (id <= natms) Then
+     If (ic <= config%natms) Then
 
-        parts(id)%fxx=parts(id)%fxx+fdx
-        parts(id)%fyy=parts(id)%fyy+fdy
-        parts(id)%fzz=parts(id)%fzz+fdz
+        config%parts(ic)%fxx=config%parts(ic)%fxx+fcx
+        config%parts(ic)%fyy=config%parts(ic)%fyy+fcy
+        config%parts(ic)%fzz=config%parts(ic)%fzz+fcz
+
+     End If
+
+     If (id <= config%natms) Then
+
+        config%parts(id)%fxx=config%parts(id)%fxx+fdx
+        config%parts(id)%fyy=config%parts(id)%fyy+fdy
+        config%parts(id)%fzz=config%parts(id)%fzz+fdz
 
      End If
 

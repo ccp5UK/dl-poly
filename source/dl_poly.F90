@@ -285,6 +285,7 @@ program dl_poly
   Type( trajectory_type ) :: traj
   Type( kim_type ), Target :: kim_data
   Type( rsd_type ), Target :: rsdsc
+  Type( configuration_type ) :: config
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -355,7 +356,7 @@ program dl_poly
     dvar,rbin,nstfce,width,sites%max_site,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
-    rigid,electro,domain,ewld,kim_data,comm)
+    rigid,electro,domain,config,ewld,kim_data,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -364,7 +365,7 @@ program dl_poly
   ! ALLOCATE SITE & CONFIG
 
   Call sites%init(mxtmls,mxatyp)
-  Call allocate_config_arrays()
+  Call allocate_config_arrays(config)
   Call neigh%init_list(mxatdm)
 
   ! ALLOCATE DPD ARRAYS
@@ -408,7 +409,7 @@ program dl_poly
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
-  Call allocate_ttm_arrays(domain,comm)
+  Call allocate_ttm_arrays(domain,config,comm)
   Call ttm_table_scan(comm)
 
   ! Setup KIM
@@ -432,14 +433,18 @@ program dl_poly
     dfcts,          &
     ndump,pdplnc,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
-    minim,mpoles,electro,ewld,seed,traj,tmr,comm)
+    minim,mpoles,electro,ewld,seed,traj,tmr,config,comm)
 
   ! READ SIMULATION FORCE FIELD
 
-  Call read_field(l_str,l_top,l_n_v,neigh%cutoff,width,lecx,lbook,lexcl,atmfre, &
-    atmfrz,megatm,megfrz,core_shells,pmfs,cons,thermo,met,bond,angle,dihedral, &
-    inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
-    ext_field,rigid,electro,kim_data,comm)
+  Call read_field                          &
+    (l_str,l_top,l_n_v,             &
+    neigh%cutoff,width, &
+    lecx,lbook,lexcl,               &
+    atmfre,atmfrz,megatm,megfrz,    &
+    core_shells,pmfs,cons,thermo,met,bond,angle,   &
+    dihedral,inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
+    ext_field,rigid,electro,config,kim_data,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -448,7 +453,7 @@ program dl_poly
 
   ! CHECK MD CONFIGURATION
 
-  Call check_config(levcfg,l_str,electro%key,keyres,megatm,thermo,sites,comm)
+  Call check_config(config,levcfg,l_str,electro%key,keyres,megatm,thermo,sites,comm)
 
   Call info('',.true.)
   Call info("*** all reading and connectivity checks DONE ***",.true.)
@@ -460,7 +465,7 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
 
-    Call origin_config(megatm,devel,netcdf,comm)
+    Call origin_config(config,megatm,devel,netcdf,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -472,7 +477,7 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
 
-    Call scale_config(megatm,devel,netcdf,comm)
+    Call scale_config(config,megatm,devel,netcdf,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -487,7 +492,7 @@ program dl_poly
     Call traj%init(key=0,freq=1,start=0)
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,megatm,nstep,tstep,time,stats%rsd,netcdf,parts,traj,comm)
+    Call trajectory_write(keyres,megatm,nstep,tstep,time,stats%rsd,netcdf,config,traj,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -497,7 +502,7 @@ program dl_poly
 
   If (l_exp) Then
     Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,core_shells, &
-      cons,bond,angle,dihedral,inversion,sites,netcdf,rigid,parts,comm)
+      cons,bond,angle,dihedral,inversion,sites,netcdf,rigid,config,comm)
   End If
 
   ! EXIT gracefully
@@ -513,12 +518,12 @@ program dl_poly
   Call system_init                                                 &
     (levcfg,neigh%cutoff,rbin,keyres,megatm,    &
     time,tmst,nstep,tstep,core_shells,stats,devel, &
-    green,thermo,met,bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,parts,comm)
+    green,thermo,met,bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,config,comm)
 
-  ! SET domain borders and link-cells as default for new jobs
+  ! SET domain borders and link-config%cells as default for new jobs
   ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,ewld,kim_data,comm)
+  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,config,ewld,kim_data,comm)
 
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
@@ -530,20 +535,20 @@ program dl_poly
   If (lbook) Then
     Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre,atmfrz, &
       degrot,degtra,flow,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
-      neigh,sites,mpoles,rigid,domain,parts,comm)
+      neigh,sites,mpoles,rigid,domain,config,comm)
     If (mpoles%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
-        mpoles,comm)
+        mpoles,config,comm)
       ! multipoles topology for internal coordinate system
       If (mpoles%key == POLARISATION_CHARMM) Then
         Call build_chrm_intra(neigh%max_exclude,core_shells,cons,bond,angle, &
-          dihedral,inversion,mpoles,rigid,comm)
+          dihedral,inversion,mpoles,rigid,config,comm)
       End If
        ! CHARMM core-shell screened electrostatic induction interactions
     End If
     If (lexcl) Then
       Call build_excl_intra(lecx,core_shells,cons,bond,angle,dihedral, &
-        inversion,neigh,rigid,comm)
+        inversion,neigh,rigid,config,comm)
     End If
   Else
     Call report_topology(megatm,megfrz,atmfre,atmfrz,core_shells,cons, &
@@ -570,7 +575,7 @@ program dl_poly
   ! set and halo rotational matrices and their infinitesimal rotations
 
   If (mpoles%max_mpoles > 0) Then
-    Call mpoles_rotmat_set_halo(mpoles,domain,comm)
+    Call mpoles_rotmat_set_halo(mpoles,domain,config,comm)
   End If
 
   ! SET initial system temperature
@@ -578,7 +583,7 @@ program dl_poly
   Call set_temperature               &
     (levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra,degrot,degfre,degshl, &
     stats%engrot,sites%dof_site,core_shells,stats,cons,pmfs,thermo,minim, &
-    rigid,domain,parts,seed,comm)
+    rigid,domain,config,seed,comm)
 
   Call info('',.true.)
   Call info("*** temperature setting DONE ***",.true.)
@@ -594,11 +599,11 @@ program dl_poly
 
   ! Frozen atoms option
 
-  Call freeze_atoms()
+  Call freeze_atoms(config)
 
   ! Cap forces in equilibration mode
 
-  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,parts,comm)
+  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,config,comm)
 
   ! PLUMED initialisation or information message
 
@@ -621,17 +626,19 @@ program dl_poly
     Call info(message,.true.)
   End If
 
-  j=(natms+19)/20
+  j=(config%natms+19)/20
   If (j > 0) Then
-    Do i=1,natms,j
+    Do i=1,config%natms,j
       If (levcfg <= 1) Then
         Write(message,'(i8,1p,6e12.4)') &
-          ltg(i),parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,vxx(i),vyy(i),vzz(i)
+          config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),config%vzz(i)
       End If
 
       If (levcfg == 2) Then
         Write(message,"(i8,1p,9e12.4)") &
-        ltg(i),parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,vxx(i),vyy(i),vzz(i),parts(i)%fxx,parts(i)%fyy,parts(i)%fzz
+        config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,&
+        config%vxx(i),config%vyy(i),config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,&
+        config%parts(i)%fzz
       End If
       Call info(message,.true.)
     End Do
@@ -641,7 +648,7 @@ program dl_poly
   ! Indicate nodes mapped on vacuum (no particles)
 
   j=0
-  If (natms == 0) Then
+  If (config%natms == 0) Then
     j=1
     Call warning('mapped on vacuum (no particles)')
   End If
@@ -699,17 +706,18 @@ program dl_poly
     'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)', &
     'fx(i)', 'fy(i)', 'fz(i)'
   Call info(message,.true.)
-  j=(natms+19)/20
+  j=(config%natms+19)/20
   If (j > 0) Then
-    Do i=1,natms,j
+    Do i=1,config%natms,j
       If (levcfg <= 1) Then
         Write(message,'(i8,1p,6e12.4)') &
-          ltg(i),parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,vxx(i),vyy(i),vzz(i)
+          config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),config%vzz(i)
       End If
 
       If (levcfg == 2) Then
         Write(message,"(i8,1p,9e12.4)") &
-        ltg(i),parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,vxx(i),vyy(i),vzz(i),parts(i)%fxx,parts(i)%fyy,parts(i)%fzz
+        config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),&
+        config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,config%parts(i)%fzz
       End If
       Call info(message,.true.)
     End Do
@@ -721,7 +729,7 @@ program dl_poly
   ! (final)
 
   If (l_ttm) Then
-    Call ttm_ion_temperature (thermo,domain,comm)
+    Call ttm_ion_temperature (thermo,domain,config,comm)
     Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep, ttmstats,comm)
     Call peakProfilerElec('LATS_E', nstep, ttmtraj,comm)
     Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats,comm)
@@ -733,7 +741,7 @@ program dl_poly
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
       (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
-      stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,comm)
+      stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
 
@@ -749,7 +757,7 @@ program dl_poly
   End If
 
   Call statistics_result                                        &
-    (minim%minimise,msd_data%l_msd, &
+    (config,minim%minimise,msd_data%l_msd, &
     nstrun,core_shells%keyshl,cons%megcon,pmfs%megpmf,              &
     nstep,tstep,time,tmst,mxatdm,neigh%unconditional_update,&
     stats,thermo,green,sites,comm)
@@ -757,7 +765,7 @@ program dl_poly
   ! Final anlysis
   Call analysis_result(lpana, &
                        nstep,tstep,neigh%cutoff,stats%sumval(2),thermo%ensemble, &
-                       bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,comm)
+                       bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
 
   10 Continue
 

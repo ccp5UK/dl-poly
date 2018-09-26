@@ -12,9 +12,7 @@ Module external_field
   Use kinds, Only : wp,wi
   Use comms,   Only : comms_type,gcheck,gsum
   Use setup,   Only : twopi,nrite,mxatms
-  Use configuration,  Only : imcon,cell,natms,nfree,nlast,lsi,lsa,ltg, &
-                             lfrzn,lstfre,weight,                 &
-                             vxx,vyy,vzz
+  Use configuration,  Only : configuration_type
   Use particle, Only : corePart
   Use kinetics, Only : getcom_mol
   Use rigid_bodies, Only : rigid_bodies_type
@@ -45,7 +43,7 @@ Module external_field
   Integer( Kind = wi ), Parameter, Public :: FIELD_MAGNETIC = 5
   !> Containing sphere, $r^{-n}$ potential
   Integer( Kind = wi ), Parameter, Public :: FIELD_SPHERE = 6
-  !> Repulsive wall (harmonic) starting at z0
+  !> Repuconfig%lsive wall (harmonic) starting at z0
   Integer( Kind = wi ), Parameter, Public :: FIELD_WALL = 7
   !> Piston wall pushing along the X=bxc direction
   Integer( Kind = wi ), Parameter, Public :: FIELD_WALL_PISTON = 8
@@ -109,7 +107,7 @@ Contains
   End subroutine cleanup
 
   Subroutine external_field_apply(time,leql,nsteql,nstep,cshell,stats,rdf, &
-      ext_field,rigid,domain,parts,comm)
+      ext_field,rigid,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -134,7 +132,7 @@ Contains
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( Inout ) :: comm
-  Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+  Type( configuration_type ),               Intent( InOut ) :: config
 
   Logical           :: safe,l1,l2
   Integer           :: i,j,ia,ib,ic,id,fail(1:2), &
@@ -155,11 +153,11 @@ Contains
 
 ! electric field: ext_field%param(1-3) are field components
 
-     Do i=1,natms
-        If (lfrzn(i) == 0) Then
-           parts(i)%fxx=parts(i)%fxx + parts(i)%chge*ext_field%param(1)
-           parts(i)%fyy=parts(i)%fyy + parts(i)%chge*ext_field%param(2)
-           parts(i)%fzz=parts(i)%fzz + parts(i)%chge*ext_field%param(3)
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0) Then
+           config%parts(i)%fxx=config%parts(i)%fxx + config%parts(i)%chge*ext_field%param(1)
+           config%parts(i)%fyy=config%parts(i)%fyy + config%parts(i)%chge*ext_field%param(2)
+           config%parts(i)%fzz=config%parts(i)%fzz + config%parts(i)%chge*ext_field%param(3)
         End If
      End Do
 
@@ -167,19 +165,20 @@ Contains
 
 ! oscillating shear: orthorhombic box:  Fx=a*Cos(b.2.pi.z/L)
 
-     If (imcon /= 1 .and. imcon /= 2) Return
+     If (config%imcon /= 1 .and. config%imcon /= 2) Return
 
-     rz=twopi/cell(9)
+     rz=twopi/config%cell(9)
 
-     Do i=1,natms
-        If (lfrzn(i) == 0) parts(i)%fxx=parts(i)%fxx + ext_field%param(1)*Cos(ext_field%param(2)*parts(i)%zzz*rz)
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0) config%parts(i)%fxx=config%parts(i)%fxx +&
+                                  ext_field%param(1)*Cos(ext_field%param(2)*config%parts(i)%zzz*rz)
      End Do
 
   Else If (ext_field%key == FIELD_SHEAR_CONTINUOUS) Then
 
 ! continuous shear of walls : 2D periodic box (imcon=6)
 
-     If (imcon /= 6) Return
+     If (config%imcon /= 6) Return
 
 ! shear rate=ext_field%param(1) angstrom per ps for non-frozen
 ! and non-weightless atoms at Abs(z) > ext_field%param(2)
@@ -187,11 +186,11 @@ Contains
      If (rigid%total > 0) Then
 
 ! FPs
-        Do j=1,nfree
-           i=lstfre(j)
+        Do j=1,config%nfree
+           i=config%lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(parts(i)%zzz) > ext_field%param(2)) &
-           vxx(i)=0.5_wp*Sign(ext_field%param(1),parts(i)%zzz)
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. Abs(config%parts(i)%zzz) > ext_field%param(2)) &
+           config%vxx(i)=0.5_wp*Sign(ext_field%param(1),config%parts(i)%zzz)
         End Do
 
 ! RBs
@@ -204,7 +203,7 @@ Contains
            lrgd=rigid%list(-1,irgd)
            If (rigid%frozen(0,rgdtyp) == 0) Then
               x=rigid%xxx(irgd) ; y=rigid%yyy(irgd) ; z=rigid%zzz(irgd)
-              Call images(imcon,cell,1,x,y,z)
+              Call images(config%imcon,config%cell,1,x,y,z)
 
               rz=z(1)
               If (Abs(rz) > ext_field%param(2)) Then
@@ -215,7 +214,7 @@ Contains
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                    If (i <= natms) vxx(i)=vxx(i)+vxt
+                    If (i <= config%natms) config%vxx(i)=config%vxx(i)+vxt
                  End Do
               End If
            End If
@@ -223,9 +222,9 @@ Contains
 
      Else
 
-        Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(parts(i)%zzz) > ext_field%param(2)) &
-           vxx(i)=0.5_wp*Sign(ext_field%param(1),parts(i)%zzz)
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. Abs(config%parts(i)%zzz) > ext_field%param(2)) &
+           config%vxx(i)=0.5_wp*Sign(ext_field%param(1),config%parts(i)%zzz)
         End Do
 
      End If
@@ -236,11 +235,11 @@ Contains
 
      If (cshell%keyshl == SHELL_ADIABATIC) Then
 
-        Do i=1,natms
-           If (lfrzn(i) == 0) Then
-              parts(i)%fxx=parts(i)%fxx + ext_field%param(1)*weight(i)
-              parts(i)%fyy=parts(i)%fyy + ext_field%param(2)*weight(i)
-              parts(i)%fzz=parts(i)%fzz + ext_field%param(3)*weight(i)
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0) Then
+              config%parts(i)%fxx=config%parts(i)%fxx + ext_field%param(1)*config%weight(i)
+              config%parts(i)%fyy=config%parts(i)%fyy + ext_field%param(2)*config%weight(i)
+              config%parts(i)%fzz=config%parts(i)%fzz + ext_field%param(3)*config%weight(i)
            End If
         End Do
 
@@ -255,15 +254,15 @@ Contains
         End If
 
         Do i=1,cshell%ntshl
-           lstopt(1,i)=local_index(cshell%listshl(1,i),nlast,lsi,lsa)
-           lstopt(2,i)=local_index(cshell%listshl(2,i),nlast,lsi,lsa)
+           lstopt(1,i)=local_index(cshell%listshl(1,i),config%nlast,config%lsi,config%lsa)
+           lstopt(2,i)=local_index(cshell%listshl(2,i),config%nlast,config%lsi,config%lsa)
         End Do
 
-        Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              oxt(i)=ext_field%param(1)*weight(i)
-              oyt(i)=ext_field%param(2)*weight(i)
-              ozt(i)=ext_field%param(3)*weight(i)
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              oxt(i)=ext_field%param(1)*config%weight(i)
+              oyt(i)=ext_field%param(2)*config%weight(i)
+              ozt(i)=ext_field%param(3)*config%weight(i)
            Else ! for the sake of massless sites of RBs
               oxt(i)=0.0_wp
               oyt(i)=0.0_wp
@@ -272,7 +271,7 @@ Contains
         End Do
 
         If (cshell%lshmv_shl) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+          Call update_shared_units(config,cshell%lishp_shl, &
             cshell%lashp_shl,oxt,oyt,ozt,domain,comm)
         End If
 
@@ -281,18 +280,18 @@ Contains
         Do i=1,cshell%ntshl
            ia=lstopt(1,i)
            ib=lstopt(2,i)
-           If (ia > 0 .and. (ib > 0 .and. ib <= natms)) Then
+           If (ia > 0 .and. (ib > 0 .and. ib <= config%natms)) Then
               oxt(ib)=oxt(ia)
               oyt(ib)=oyt(ia)
               ozt(ib)=ozt(ia)
            End If
         End Do
 
-        Do i=1,natms
-           If (lfrzn(i) == 0) Then
-              parts(i)%fxx=parts(i)%fxx + oxt(i)
-              parts(i)%fyy=parts(i)%fyy + oyt(i)
-              parts(i)%fzz=parts(i)%fzz + ozt(i)
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0) Then
+              config%parts(i)%fxx=config%parts(i)%fxx + oxt(i)
+              config%parts(i)%fyy=config%parts(i)%fyy + oyt(i)
+              config%parts(i)%fzz=config%parts(i)%fzz + ozt(i)
            End If
         End Do
 
@@ -311,11 +310,14 @@ Contains
 
      If (cshell%keyshl == SHELL_ADIABATIC) Then
 
-        Do i=1,natms
-           If (lfrzn(i) == 0) Then
-              parts(i)%fxx=parts(i)%fxx + (vyy(i)*ext_field%param(3)-vzz(i)*ext_field%param(2))*parts(i)%chge
-              parts(i)%fyy=parts(i)%fyy + (vzz(i)*ext_field%param(1)-vxx(i)*ext_field%param(3))*parts(i)%chge
-              parts(i)%fzz=parts(i)%fzz + (vxx(i)*ext_field%param(2)-vyy(i)*ext_field%param(1))*parts(i)%chge
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0) Then
+              config%parts(i)%fxx=config%parts(i)%fxx + &
+              (config%vyy(i)*ext_field%param(3)-config%vzz(i)*ext_field%param(2))*config%parts(i)%chge
+              config%parts(i)%fyy=config%parts(i)%fyy + &
+              (config%vzz(i)*ext_field%param(1)-config%vxx(i)*ext_field%param(3))*config%parts(i)%chge
+              config%parts(i)%fzz=config%parts(i)%fzz + &
+              (config%vxx(i)*ext_field%param(2)-config%vyy(i)*ext_field%param(1))*config%parts(i)%chge
            End If
         End Do
 
@@ -330,17 +332,17 @@ Contains
         End If
 
         Do i=1,cshell%ntshl
-           lstopt(1,i)=local_index(cshell%listshl(1,i),nlast,lsi,lsa)
-           lstopt(2,i)=local_index(cshell%listshl(2,i),nlast,lsi,lsa)
+           lstopt(1,i)=local_index(cshell%listshl(1,i),config%nlast,config%lsi,config%lsa)
+           lstopt(2,i)=local_index(cshell%listshl(2,i),config%nlast,config%lsi,config%lsa)
         End Do
 
 ! cores' velocities
 
-        Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              oxt(i)=vxx(i)
-              oyt(i)=vyy(i)
-              ozt(i)=vzz(i)
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              oxt(i)=config%vxx(i)
+              oyt(i)=config%vyy(i)
+              ozt(i)=config%vzz(i)
            Else
               oxt(i)=0.0_wp
               oyt(i)=0.0_wp
@@ -349,8 +351,7 @@ Contains
         End Do
 
         If (cshell%lshmv_shl) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
-            cshell%lashp_shl,oxt,oyt,ozt,domain,comm)
+          Call update_shared_units(config,cshell%lishp_shl,cshell%lashp_shl,oxt,oyt,ozt,domain,comm)
         End If
 
 ! Transfer cores' velocities to shells
@@ -358,18 +359,21 @@ Contains
         Do i=1,cshell%ntshl
            ia=lstopt(1,i)
            ib=lstopt(2,i)
-           If (ia > 0 .and. (ib > 0 .and. ib <= natms)) Then
+           If (ia > 0 .and. (ib > 0 .and. ib <= config%natms)) Then
               oxt(ib)=oxt(ia)
               oyt(ib)=oyt(ia)
               ozt(ib)=ozt(ia)
            End If
         End Do
 
-        Do i=1,natms
-           If (lfrzn(i) == 0) Then
-              parts(i)%fxx=parts(i)%fxx + (oyt(i)*ext_field%param(3)-ozt(i)*ext_field%param(2))*parts(i)%chge
-              parts(i)%fyy=parts(i)%fyy + (ozt(i)*ext_field%param(1)-oxt(i)*ext_field%param(3))*parts(i)%chge
-              parts(i)%fzz=parts(i)%fzz + (oxt(i)*ext_field%param(2)-oyt(i)*ext_field%param(1))*parts(i)%chge
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0) Then
+              config%parts(i)%fxx=config%parts(i)%fxx + &
+                (oyt(i)*ext_field%param(3)-ozt(i)*ext_field%param(2))*config%parts(i)%chge
+              config%parts(i)%fyy=config%parts(i)%fyy + &
+                (ozt(i)*ext_field%param(1)-oxt(i)*ext_field%param(3))*config%parts(i)%chge
+              config%parts(i)%fzz=config%parts(i)%fzz + &
+                (oxt(i)*ext_field%param(2)-oyt(i)*ext_field%param(1))*config%parts(i)%chge
            End If
         End Do
 
@@ -386,9 +390,9 @@ Contains
 
 ! containing sphere : r^(-n) potential
 
-     Do i=1,natms
-        If (lfrzn(i) == 0) Then
-           rrr=Sqrt(parts(i)%xxx**2+parts(i)%yyy**2+parts(i)%zzz**2)
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0) Then
+           rrr=Sqrt(config%parts(i)%xxx**2+config%parts(i)%yyy**2+config%parts(i)%zzz**2)
            If (rrr > ext_field%param(4)) Then
               rrr=ext_field%param(2)-rrr
               If (rrr < 0.0_wp) rrr=0.1_wp
@@ -397,9 +401,9 @@ Contains
               stats%engfld=stats%engfld + gamma
               gamma=-ext_field%param(3)*gamma/(rrr*rrr)
 
-              parts(i)%fxx=parts(i)%fxx + gamma*parts(i)%xxx
-              parts(i)%fyy=parts(i)%fyy + gamma*parts(i)%yyy
-              parts(i)%fzz=parts(i)%fzz + gamma*parts(i)%zzz
+              config%parts(i)%fxx=config%parts(i)%fxx + gamma*config%parts(i)%xxx
+              config%parts(i)%fyy=config%parts(i)%fyy + gamma*config%parts(i)%yyy
+              config%parts(i)%fzz=config%parts(i)%fzz + gamma*config%parts(i)%zzz
            End If
         End If
      End Do
@@ -410,12 +414,12 @@ Contains
 
 ! repulsive wall (harmonic) starting at z0
 
-     Do i=1,natms
-        If (lfrzn(i) == 0 .and. ext_field%param(3)*parts(i)%zzz > ext_field%param(3)*ext_field%param(2)) Then
-           zdif=parts(i)%zzz-ext_field%param(2)
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0 .and. ext_field%param(3)*config%parts(i)%zzz > ext_field%param(3)*ext_field%param(2)) Then
+           zdif=config%parts(i)%zzz-ext_field%param(2)
            gamma=-ext_field%param(1)*zdif
 
-           parts(i)%fzz=parts(i)%fzz + gamma
+           config%parts(i)%fzz=config%parts(i)%fzz + gamma
            stats%engfld=stats%engfld - gamma*zdif
         End If
      End Do
@@ -430,7 +434,7 @@ Contains
 ! ext_field%param(3) is the pressure applied to the layer of molecules (membrane) in the
 ! +X=bxc direction - i.e. left to right.  The layer plane is defined as _|_ bxc
 
-     If (imcon /= 1 .and. imcon /= 2) Return
+     If (config%imcon /= 1 .and. config%imcon /= 2) Return
 
      ia = Nint(ext_field%param(1))
      ib = Nint(ext_field%param(2))
@@ -440,11 +444,11 @@ Contains
 
 !        ext_field%mass=0.0_wp ! defined and initialise in external_field_module
         safe=.true.
-        Do i=1,natms
-           If ((ltg(i) >= ia .and. ltg(i) <= ib) .and. lfrzn(i) > 0) Then
+        Do i=1,config%natms
+           If ((config%ltg(i) >= ia .and. config%ltg(i) <= ib) .and. config%lfrzn(i) > 0) Then
               safe=.false.
            Else
-              ext_field%mass=ext_field%mass+weight(i)
+              ext_field%mass=ext_field%mass+config%weight(i)
            End If
         End Do
 
@@ -454,11 +458,11 @@ Contains
      End If
 
      rtmp=0.0_wp  ! average velocity and force per atom in x direction of the piston
-     Do i=1,natms ! preserve momentum and velocity in the direction of the push
-        If (ltg(i) >= ia .and. ltg(i) <= ib) Then
-           rtmp(1)=rtmp(1)+weight(i)*vxx(i) ; rtmp(2)=rtmp(2)+parts(i)%fxx
-           vyy(i) = 0.0_wp                  ; parts(i)%fyy = 0.0_wp
-           vzz(i) = 0.0_wp                  ; parts(i)%fzz = 0.0_wp
+     Do i=1,config%natms ! preserve momentum and velocity in the direction of the push
+        If (config%ltg(i) >= ia .and. config%ltg(i) <= ib) Then
+           rtmp(1)=rtmp(1)+config%weight(i)*config%vxx(i) ; rtmp(2)=rtmp(2)+config%parts(i)%fxx
+           config%vyy(i) = 0.0_wp                  ; config%parts(i)%fyy = 0.0_wp
+           config%vzz(i) = 0.0_wp                  ; config%parts(i)%fzz = 0.0_wp
         End If
      End Do
      Call gsum(comm,rtmp) ! net velocity and force to ensure solid wall behaviour
@@ -466,11 +470,11 @@ Contains
      rtmp(1)=rtmp(1)/ext_field%mass             ! averaged velocity per particle
      rtmp(2)=(rtmp(2)+ext_field%param(3))/ext_field%mass ! averaged acceleration of the slab
 
-     Do i=1,natms
-        If (ltg(i) >= ia .and. ltg(i) <= ib) Then
-           stats%engfld=weight(i)*(rtmp(1)-vxx(i))**2 ! must change E_kin to reflect solidity
-           vxx(i)=rtmp(1)
-           parts(i)%fxx=rtmp(2)*weight(i) ! force per particle
+     Do i=1,config%natms
+        If (config%ltg(i) >= ia .and. config%ltg(i) <= ib) Then
+           stats%engfld=config%weight(i)*(rtmp(1)-config%vxx(i))**2 ! must change E_kin to reflect solidity
+           config%vxx(i)=rtmp(1)
+           config%parts(i)%fxx=rtmp(2)*config%weight(i) ! force per particle
         End If
      End Do
 
@@ -491,18 +495,18 @@ Contains
 
 ! Get molecule's weight and COM
 
-     Call getcom_mol(ia,ib,cmm,comm)
+     Call getcom_mol(config,ia,ib,cmm,comm)
 
 ! Apply force corrections
 
-     Do i=1,natms
-        If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
+     Do i=1,config%natms
+        If (config%ltg(i) >= ia .and. config%ltg(i) <= ib .and. config%lfrzn(i) == 0) Then
            If (cmm(3) < ext_field%param(4) .or. cmm(3) > ext_field%param(5)) Then
               If (cmm(3) < ext_field%param(4)) zdif = cmm(3) - ext_field%param(4)
               If (cmm(3) > ext_field%param(5)) zdif = cmm(3) - ext_field%param(5)
 
-              gamma=-ext_field%param(3)*zdif*weight(i)/cmm(0)
-              parts(i)%fzz=parts(i)%fzz + gamma
+              gamma=-ext_field%param(3)*zdif*config%weight(i)/cmm(0)
+              config%parts(i)%fzz=config%parts(i)%fzz + gamma
               stats%engfld=stats%engfld - gamma*zdif
            End If
         End If
@@ -524,19 +528,19 @@ Contains
 
       ia = Nint(ext_field%param(1))
       ib = Nint(ext_field%param(2))
-      Do i=1,natms
-         If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-            If (parts(i)%zzz > ext_field%param(4) .and. parts(i)%zzz < ext_field%param(5)) Then
+      Do i=1,config%natms
+         If (config%ltg(i) >= ia .and. config%ltg(i) <= ib .and. config%lfrzn(i) == 0) Then
+            If (config%parts(i)%zzz > ext_field%param(4) .and. config%parts(i)%zzz < ext_field%param(5)) Then
                tmp = ext_field%param(5) + ext_field%param(4)
 
-               If (parts(i)%zzz <  tmp) Then
-                  zdif = parts(i)%zzz - ext_field%param(4)
+               If (config%parts(i)%zzz <  tmp) Then
+                  zdif = config%parts(i)%zzz - ext_field%param(4)
                Else
-                  zdif = parts(i)%zzz - ext_field%param(5)
+                  zdif = config%parts(i)%zzz - ext_field%param(5)
                End If
 
                gamma=-ext_field%param(3)*zdif
-               parts(i)%fzz=parts(i)%fzz + gamma
+               config%parts(i)%fzz=config%parts(i)%fzz + gamma
                stats%engfld=stats%engfld - gamma*zdif
             End If
          End If
@@ -557,14 +561,14 @@ Contains
 
      ia = Nint(ext_field%param(1))
      ib = Nint(ext_field%param(2))
-     Do i=1,natms
-        If (ltg(i) >= ia .and. ltg(i) <= ib .and. lfrzn(i) == 0) Then
-           If (parts(i)%zzz < ext_field%param(4) .or. parts(i)%zzz > ext_field%param(5)) Then
-              If (parts(i)%zzz < ext_field%param(4)) zdif = parts(i)%zzz - ext_field%param(4)
-              If (parts(i)%zzz > ext_field%param(5)) zdif = parts(i)%zzz - ext_field%param(5)
+     Do i=1,config%natms
+        If (config%ltg(i) >= ia .and. config%ltg(i) <= ib .and. config%lfrzn(i) == 0) Then
+           If (config%parts(i)%zzz < ext_field%param(4) .or. config%parts(i)%zzz > ext_field%param(5)) Then
+              If (config%parts(i)%zzz < ext_field%param(4)) zdif = config%parts(i)%zzz - ext_field%param(4)
+              If (config%parts(i)%zzz > ext_field%param(5)) zdif = config%parts(i)%zzz - ext_field%param(5)
 
               gamma=-ext_field%param(3)*zdif
-              parts(i)%fzz=parts(i)%fzz + gamma
+              config%parts(i)%fzz=config%parts(i)%fzz + gamma
               stats%engfld=stats%engfld - gamma*zdif
            End If
         End If
@@ -578,11 +582,11 @@ Contains
 ! ext_field%param(4) is the oscillating frequency defined in ps^-1!
 
      tmp=Sin(time*ext_field%param(4)*twopi)
-     Do i=1,natms
-        If (lfrzn(i) == 0) Then
-           parts(i)%fxx=parts(i)%fxx + parts(i)%chge*ext_field%param(1)*tmp
-           parts(i)%fyy=parts(i)%fyy + parts(i)%chge*ext_field%param(2)*tmp
-           parts(i)%fzz=parts(i)%fzz + parts(i)%chge*ext_field%param(3)*tmp
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0) Then
+           config%parts(i)%fxx=config%parts(i)%fxx + config%parts(i)%chge*ext_field%param(1)*tmp
+           config%parts(i)%fyy=config%parts(i)%fyy + config%parts(i)%chge*ext_field%param(2)*tmp
+           config%parts(i)%fzz=config%parts(i)%fzz + config%parts(i)%chge*ext_field%param(3)*tmp
         End If
      End Do
 
@@ -601,14 +605,14 @@ Contains
 
 ! Get first molecule's weight and COM
 
-     Call getcom_mol(ia,ib,cmm,comm)
+     Call getcom_mol(config,ia,ib,cmm,comm)
 
      ic = Nint(ext_field%param(3))
      id = Nint(ext_field%param(4))
 
 ! Get second molecule's weight and COM
 
-     Call getcom_mol(ic,id,cm2,comm)
+     Call getcom_mol(config,ic,id,cm2,comm)
 
 ! Apply PBC to COMS vector
 
@@ -616,7 +620,7 @@ Contains
      y(1)=cm2(2)-cmm(2)
      z(1)=cm2(3)-cmm(3)
 
-     Call images(imcon,cell,1,x,y,z)
+     Call images(config%imcon,config%cell,1,x,y,z)
 
      rrr=Sqrt(x(1)**2+y(1)**2+z(1)**2)
 
@@ -625,7 +629,7 @@ Contains
 
      If ((.not.leql) .or. nstep >= nsteql) Then
         If (Mod(nstep,50)  == 0) Call usr_collect(rrr,rdf)
-        If (Mod(nstep,500) == 0) Call usr_compute(rdf,comm)
+        If (Mod(nstep,500) == 0) Call usr_compute(rdf,config,comm)
      End If
 
 ! get force magnitude
@@ -635,12 +639,12 @@ Contains
 
 ! Apply force corrections
 
-     Do i=1,natms
-        l1=(ltg(i) >= ia .and. ltg(i) <= ib)
-        l2=(ltg(i) >= ic .and. ltg(i) <= id)
+     Do i=1,config%natms
+        l1=(config%ltg(i) >= ia .and. config%ltg(i) <= ib)
+        l2=(config%ltg(i) >= ic .and. config%ltg(i) <= id)
 
-        If ((l1 .or. l2) .and. lfrzn(i) == 0) Then
-           tmp=stats%engfld*weight(i)
+        If ((l1 .or. l2) .and. config%lfrzn(i) == 0) Then
+           tmp=stats%engfld*config%weight(i)
 
            If (l2) Then
               tmp=tmp/cm2(0)
@@ -648,9 +652,9 @@ Contains
               tmp=-tmp/cmm(0)
            End If
 
-           parts(i)%fxx=parts(i)%fxx + tmp*x(1)
-           parts(i)%fyy=parts(i)%fyy + tmp*y(1)
-           parts(i)%fzz=parts(i)%fzz + tmp*z(1)
+           config%parts(i)%fxx=config%parts(i)%fxx + tmp*x(1)
+           config%parts(i)%fyy=config%parts(i)%fyy + tmp*y(1)
+           config%parts(i)%fzz=config%parts(i)%fzz + tmp*z(1)
         End If
      End Do
 
@@ -676,7 +680,7 @@ Contains
      stats%virfld = rtmp(2)
 End Subroutine external_field_apply
 
-Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
+Subroutine external_field_correct(engfld,ext_field,rigid,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -694,7 +698,7 @@ Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
   Type( external_field_type ), Intent( In    ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
-  Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+  Type( configuration_type ),               Intent( InOut ) :: config
 
   Integer           :: i,j,ia,ib, irgd,jrgd,lrgd,rgdtyp
   Real( Kind = wp ) :: rz,vxt,tmp,rtmp(1:2), &
@@ -704,7 +708,7 @@ Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
 
 ! continuous shear of walls : 2D periodic box (imcon=6)
 
-     If (imcon /= 6) Return
+     If (config%imcon /= 6) Return
 
 ! shear rate=ext_field%param(1) angstrom per ps for non-frozen
 ! and non-weightless atoms at Abs(z) > ext_field%param(2)
@@ -712,11 +716,11 @@ Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
      If (rigid%total > 0) Then
 
 ! FPs
-        Do j=1,nfree
-           i=lstfre(j)
+        Do j=1,config%nfree
+           i=config%lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(parts(i)%zzz) > ext_field%param(2)) &
-           vxx(i)=0.5_wp*Sign(ext_field%param(1),parts(i)%zzz)
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. Abs(config%parts(i)%zzz) > ext_field%param(2)) &
+           config%vxx(i)=0.5_wp*Sign(ext_field%param(1),config%parts(i)%zzz)
         End Do
 
 ! RBs
@@ -729,7 +733,7 @@ Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
            lrgd=rigid%list(-1,irgd)
            If (rigid%frozen(0,rgdtyp) == 0) Then
               x=rigid%xxx(irgd) ; y=rigid%yyy(irgd) ; z=rigid%zzz(irgd)
-              Call images(imcon,cell,1,x,y,z)
+              Call images(config%imcon,config%cell,1,x,y,z)
 
               rz=z(1)
               If (Abs(rz) > ext_field%param(2)) Then
@@ -740,7 +744,7 @@ Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                    If (i <= natms) vxx(i)=vxx(i)+vxt
+                    If (i <= config%natms) config%vxx(i)=config%vxx(i)+vxt
                  End Do
               End If
            End If
@@ -748,9 +752,9 @@ Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
 
      Else
 
-        Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. Abs(parts(i)%zzz) > ext_field%param(2)) &
-           vxx(i)=0.5_wp*Sign(ext_field%param(1),parts(i)%zzz)
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. Abs(config%parts(i)%zzz) > ext_field%param(2)) &
+           config%vxx(i)=0.5_wp*Sign(ext_field%param(1),config%parts(i)%zzz)
         End Do
 
      End If
@@ -765,17 +769,17 @@ Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
 ! ext_field%param(3) is the pressure applied to the layer of molecules (membrane) in the
 ! +X=bxc direction - i.e. left to right.  The layer plane is defined as _|_ bxc
 
-     If (imcon /= 1 .and. imcon /= 2) Return
+     If (config%imcon /= 1 .and. config%imcon /= 2) Return
 
      ia = Nint(ext_field%param(1))
      ib = Nint(ext_field%param(2))
 
      rtmp=0.0_wp  ! average velocity and force per atom in x direction of the piston
-     Do i=1,natms ! preserve momentum and velocity in the direction of the push
-        If (ltg(i) >= ia .and. ltg(i) <= ib) Then
-           rtmp(1)=rtmp(1)+weight(i)*vxx(i) ; rtmp(2)=rtmp(2)+parts(i)%fxx
-           vyy(i) = 0.0_wp                  ; parts(i)%fyy = 0.0_wp
-           vzz(i) = 0.0_wp                  ; parts(i)%fzz = 0.0_wp
+     Do i=1,config%natms ! preserve momentum and velocity in the direction of the push
+        If (config%ltg(i) >= ia .and. config%ltg(i) <= ib) Then
+           rtmp(1)=rtmp(1)+config%weight(i)*config%vxx(i) ; rtmp(2)=rtmp(2)+config%parts(i)%fxx
+           config%vyy(i) = 0.0_wp                  ; config%parts(i)%fyy = 0.0_wp
+           config%vzz(i) = 0.0_wp                  ; config%parts(i)%fzz = 0.0_wp
         End If
      End Do
      Call gsum(comm,rtmp) ! net velocity and force to ensure solid wall behaviour
@@ -783,11 +787,11 @@ Subroutine external_field_correct(engfld,ext_field,rigid,parts,comm)
      rtmp(1)=rtmp(1)/ext_field%mass             ! averaged velocity per particle
      rtmp(2)=(rtmp(2)+ext_field%param(3))/ext_field%mass ! averaged acceleration of the slab
 
-     Do i=1,natms
-        If (ltg(i) >= ia .and. ltg(i) <= ib) Then
-           engfld=weight(i)*(rtmp(1)-vxx(i))**2 ! must change E_kin to reflect solidity
-           vxx(i)=rtmp(1)
-           parts(i)%fxx=rtmp(2)*weight(i) ! force per particle
+     Do i=1,config%natms
+        If (config%ltg(i) >= ia .and. config%ltg(i) <= ib) Then
+           engfld=config%weight(i)*(rtmp(1)-config%vxx(i))**2 ! must change E_kin to reflect solidity
+           config%vxx(i)=rtmp(1)
+           config%parts(i)%fxx=rtmp(2)*config%weight(i) ! force per particle
         End If
      End Do
 

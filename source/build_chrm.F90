@@ -6,7 +6,7 @@ Module build_chrm
   Use setup
 
 
-  Use configuration, Only : natms,nlast,lsi,lsa,ltg,lfrzn
+  Use configuration, Only : configuration_type
 
   Use core_shell, Only : core_shell_type
 
@@ -29,7 +29,7 @@ Module build_chrm
   Public :: build_chrm_intra
 Contains
   Subroutine build_chrm_intra(max_exclude,cshell,cons,bond,angle,dihedral, &
-      inversion,mpoles,rigid,comm)
+      inversion,mpoles,rigid,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -60,6 +60,7 @@ Contains
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( rigid_bodies_type ), Intent( In    ) :: rigid
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ),  Intent( InOut) :: comm
 
     Logical :: safe
@@ -81,11 +82,11 @@ Contains
       ia=cshell%listshl(1,i) ! This is the core
       ib=cshell%listshl(2,i) ! This is the shell
 
-      ia0=local_index(ia,nlast,lsi,lsa)
-      ib0=local_index(ib,nlast,lsi,lsa)
+      ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+      ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
 
-      If (ia0 > natms) ia0=0
-      If (ib0 > natms) ib0=0
+      If (ia0 > config%natms) ia0=0
+      If (ib0 > config%natms) ib0=0
 
       ! add sites on basis of constraint bonds to core-shell units
 
@@ -93,11 +94,11 @@ Contains
         ja=cons%listcon(1,kk)
         jb=cons%listcon(2,kk)
 
-        ja0=local_index(ja,nlast,lsi,lsa)
-        jb0=local_index(jb,nlast,lsi,lsa)
+        ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+        jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
 
-        If (ja0 > natms) ja0=0
-        If (jb0 > natms) jb0=0
+        If (ja0 > config%natms) ja0=0
+        If (jb0 > config%natms) jb0=0
 
         ! Check for adjacent core or shell so that all possible, even between
         ! adjacent particles in any intra-unit, interactions are excluded.
@@ -111,22 +112,22 @@ Contains
         Do j=1,cshell%ntshl2
           If (cshell%listshl(1,j) == ja) Then
             ka=cshell%listshl(2,j)
-            ka0=local_index(ka,nlast,lsi,lsa)
-            If (ka0 > natms) ka0=0
+            ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+            If (ka0 > config%natms) ka0=0
             !           Else If (cshell%listshl(2,j) == ja) Then
             !              ka=cshell%listshl(1,j)
-            !              ka0=local_index(ka,nlast,lsi,lsa)
-            !              If (ka0 > natms) ka0=0
+            !              ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+            !              If (ka0 > config%natms) ka0=0
           End If
 
           If (cshell%listshl(1,j) == jb) Then
             kb=cshell%listshl(2,j)
-            kb0=local_index(kb,nlast,lsi,lsa)
-            If (kb0 > natms) kb0=0
+            kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+            If (kb0 > config%natms) kb0=0
             !           Else If (cshell%listshl(2,j) == jb) Then
             !              kb=cshell%listshl(1,j)
-            !              kb0=local_index(kb,nlast,lsi,lsa)
-            !              If (kb0 > natms) kb0=0
+            !              kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+            !              If (kb0 > config%natms) kb0=0
           End If
         End Do
 
@@ -176,11 +177,11 @@ Contains
           ja=bond%list(1,kk)
           jb=bond%list(2,kk)
 
-          ja0=local_index(ja,nlast,lsi,lsa)
-          jb0=local_index(jb,nlast,lsi,lsa)
+          ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+          jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
 
-          If (ja0 > natms) ja0=0
-          If (jb0 > natms) jb0=0
+          If (ja0 > config%natms) ja0=0
+          If (jb0 > config%natms) jb0=0
 
           ! Check for adjacent core or shell so that all possible, even between
           ! adjacent particles in any intra-unit, interactions are excluded
@@ -191,22 +192,22 @@ Contains
           Do j=1,cshell%ntshl2
             If (cshell%listshl(1,j) == ja) Then
               ka=cshell%listshl(2,j)
-              ka0=local_index(ka,nlast,lsi,lsa)
-              If (ka0 > natms) ka0=0
+              ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+              If (ka0 > config%natms) ka0=0
             Else If (cshell%listshl(2,j) == ja) Then
               ka=cshell%listshl(1,j)
-              ka0=local_index(ka,nlast,lsi,lsa)
-              If (ka0 > natms) ka0=0
+              ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+              If (ka0 > config%natms) ka0=0
             End If
 
             If (cshell%listshl(1,j) == jb) Then
               kb=cshell%listshl(2,j)
-              kb0=local_index(kb,nlast,lsi,lsa)
-              If (kb0 > natms) kb0=0
+              kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+              If (kb0 > config%natms) kb0=0
             Else If (cshell%listshl(2,j) == jb) Then
               kb=cshell%listshl(1,j)
-              kb0=local_index(kb,nlast,lsi,lsa)
-              If (kb0 > natms) kb0=0
+              kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+              If (kb0 > config%natms) kb0=0
             End If
           End Do
 
@@ -258,13 +259,13 @@ Contains
           jb=angle%list(2,kk)
           jc=angle%list(3,kk)
 
-          ja0=local_index(ja,nlast,lsi,lsa)
-          jb0=local_index(jb,nlast,lsi,lsa)
-          jc0=local_index(jc,nlast,lsi,lsa)
+          ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+          jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
+          jc0=local_index(jc,config%nlast,config%lsi,config%lsa)
 
-          If (ja0 > natms) ja0=0
-          If (jb0 > natms) jb0=0
-          If (jc0 > natms) jc0=0
+          If (ja0 > config%natms) ja0=0
+          If (jb0 > config%natms) jb0=0
+          If (jc0 > config%natms) jc0=0
 
           ! Check for adjacent core or shell so that all possible, even between
           ! adjacent particles in any intra-unit, interactions are excluded
@@ -276,32 +277,32 @@ Contains
           Do j=1,cshell%ntshl2
             If (cshell%listshl(1,j) == ja) Then
               ka=cshell%listshl(2,j)
-              ka0=local_index(ka,nlast,lsi,lsa)
-              If (ka0 > natms) ka0=0
+              ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+              If (ka0 > config%natms) ka0=0
             Else If (cshell%listshl(2,j) == ja) Then
               ka=cshell%listshl(1,j)
-              ka0=local_index(ka,nlast,lsi,lsa)
-              If (ka0 > natms) ka0=0
+              ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+              If (ka0 > config%natms) ka0=0
             End If
 
             If (cshell%listshl(1,j) == jb) Then
               kb=cshell%listshl(2,j)
-              kb0=local_index(kb,nlast,lsi,lsa)
-              If (kb0 > natms) kb0=0
+              kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+              If (kb0 > config%natms) kb0=0
             Else If (cshell%listshl(2,j) == jb) Then
               kb=cshell%listshl(1,j)
-              kb0=local_index(kb,nlast,lsi,lsa)
-              If (kb0 > natms) kb0=0
+              kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+              If (kb0 > config%natms) kb0=0
             End If
 
             If (cshell%listshl(1,j) == jc) Then
               kc=cshell%listshl(2,j)
-              kc0=local_index(kc,nlast,lsi,lsa)
-              If (kc0 > natms) kc0=0
+              kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+              If (kc0 > config%natms) kc0=0
             Else If (cshell%listshl(2,j) == jc) Then
               kc=cshell%listshl(1,j)
-              kc0=local_index(kc,nlast,lsi,lsa)
-              If (kc0 > natms) kc0=0
+              kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+              If (kc0 > config%natms) kc0=0
             End If
           End Do
 
@@ -460,15 +461,15 @@ Contains
           jc=dihedral%list(3,kk)
           jd=dihedral%list(4,kk)
 
-          ja0=local_index(ja,nlast,lsi,lsa)
-          jb0=local_index(jb,nlast,lsi,lsa)
-          jc0=local_index(jc,nlast,lsi,lsa)
-          jd0=local_index(jd,nlast,lsi,lsa)
+          ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+          jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
+          jc0=local_index(jc,config%nlast,config%lsi,config%lsa)
+          jd0=local_index(jd,config%nlast,config%lsi,config%lsa)
 
-          If (ja0 > natms) ja0=0
-          If (jb0 > natms) jb0=0
-          If (jc0 > natms) jc0=0
-          If (jd0 > natms) jd0=0
+          If (ja0 > config%natms) ja0=0
+          If (jb0 > config%natms) jb0=0
+          If (jc0 > config%natms) jc0=0
+          If (jd0 > config%natms) jd0=0
 
           ! Check for adjacent core or shell so that all possible, even between
           ! adjacent particles in any intra-unit, interactions are excluded
@@ -481,42 +482,42 @@ Contains
           Do j=1,cshell%ntshl2
             If (cshell%listshl(1,j) == ja) Then
               ka=cshell%listshl(2,j)
-              ka0=local_index(ka,nlast,lsi,lsa)
-              If (ka0 > natms) ka0=0
+              ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+              If (ka0 > config%natms) ka0=0
             Else If (cshell%listshl(2,j) == ja) Then
               ka=cshell%listshl(1,j)
-              ka0=local_index(ka,nlast,lsi,lsa)
-              If (ka0 > natms) ka0=0
+              ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+              If (ka0 > config%natms) ka0=0
             End If
 
             If (cshell%listshl(1,j) == jb) Then
               kb=cshell%listshl(2,j)
-              kb0=local_index(kb,nlast,lsi,lsa)
-              If (kb0 > natms) kb0=0
+              kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+              If (kb0 > config%natms) kb0=0
             Else If (cshell%listshl(2,j) == jb) Then
               kb=cshell%listshl(1,j)
-              kb0=local_index(kb,nlast,lsi,lsa)
-              If (kb0 > natms) kb0=0
+              kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+              If (kb0 > config%natms) kb0=0
             End If
 
             If (cshell%listshl(1,j) == jc) Then
               kc=cshell%listshl(2,j)
-              kc0=local_index(kc,nlast,lsi,lsa)
-              If (kc0 > natms) kc0=0
+              kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+              If (kc0 > config%natms) kc0=0
             Else If (cshell%listshl(2,j) == jc) Then
               kc=cshell%listshl(1,j)
-              kc0=local_index(kc,nlast,lsi,lsa)
-              If (kc0 > natms) kc0=0
+              kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+              If (kc0 > config%natms) kc0=0
             End If
 
             If (cshell%listshl(1,j) == jd) Then
               kd=cshell%listshl(2,j)
-              kd0=local_index(kd,nlast,lsi,lsa)
-              If (kd0 > natms) kd0=0
+              kd0=local_index(kd,config%nlast,config%lsi,config%lsa)
+              If (kd0 > config%natms) kd0=0
             Else If (cshell%listshl(2,j) == jd) Then
               kd=cshell%listshl(1,j)
-              kd0=local_index(kd,nlast,lsi,lsa)
-              If (kd0 > natms) kd0=0
+              kd0=local_index(kd,config%nlast,config%lsi,config%lsa)
+              If (kd0 > config%natms) kd0=0
             End If
           End Do
 
@@ -763,15 +764,15 @@ Contains
           jc=inversion%list(3,kk)
           jd=inversion%list(4,kk)
 
-          ja0=local_index(ja,nlast,lsi,lsa)
-          jb0=local_index(jb,nlast,lsi,lsa)
-          jc0=local_index(jc,nlast,lsi,lsa)
-          jd0=local_index(jd,nlast,lsi,lsa)
+          ja0=local_index(ja,config%nlast,config%lsi,config%lsa)
+          jb0=local_index(jb,config%nlast,config%lsi,config%lsa)
+          jc0=local_index(jc,config%nlast,config%lsi,config%lsa)
+          jd0=local_index(jd,config%nlast,config%lsi,config%lsa)
 
-          If (ja0 > natms) ja0=0
-          If (jb0 > natms) jb0=0
-          If (jc0 > natms) jc0=0
-          If (jd0 > natms) jd0=0
+          If (ja0 > config%natms) ja0=0
+          If (jb0 > config%natms) jb0=0
+          If (jc0 > config%natms) jc0=0
+          If (jd0 > config%natms) jd0=0
 
           ! Check for adjacent core or shell so that all possible, even between
           ! adjacent particles in any intra-unit, interactions are excluded
@@ -784,42 +785,42 @@ Contains
           Do j=1,cshell%ntshl2
             If (cshell%listshl(1,j) == ja) Then
               ka=cshell%listshl(2,j)
-              ka0=local_index(ka,nlast,lsi,lsa)
-              If (ka0 > natms) ka0=0
+              ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+              If (ka0 > config%natms) ka0=0
             Else If (cshell%listshl(2,j) == ja) Then
               ka=cshell%listshl(1,j)
-              ka0=local_index(ka,nlast,lsi,lsa)
-              If (ka0 > natms) ka0=0
+              ka0=local_index(ka,config%nlast,config%lsi,config%lsa)
+              If (ka0 > config%natms) ka0=0
             End If
 
             If (cshell%listshl(1,j) == jb) Then
               kb=cshell%listshl(2,j)
-              kb0=local_index(kb,nlast,lsi,lsa)
-              If (kb0 > natms) kb0=0
+              kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+              If (kb0 > config%natms) kb0=0
             Else If (cshell%listshl(2,j) == jb) Then
               kb=cshell%listshl(1,j)
-              kb0=local_index(kb,nlast,lsi,lsa)
-              If (kb0 > natms) kb0=0
+              kb0=local_index(kb,config%nlast,config%lsi,config%lsa)
+              If (kb0 > config%natms) kb0=0
             End If
 
             If (cshell%listshl(1,j) == jc) Then
               kc=cshell%listshl(2,j)
-              kc0=local_index(kc,nlast,lsi,lsa)
-              If (kc0 > natms) kc0=0
+              kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+              If (kc0 > config%natms) kc0=0
             Else If (cshell%listshl(2,j) == jc) Then
               kc=cshell%listshl(1,j)
-              kc0=local_index(kc,nlast,lsi,lsa)
-              If (kc0 > natms) kc0=0
+              kc0=local_index(kc,config%nlast,config%lsi,config%lsa)
+              If (kc0 > config%natms) kc0=0
             End If
 
             If (cshell%listshl(1,j) == jd) Then
               kd=cshell%listshl(2,j)
-              kd0=local_index(kd,nlast,lsi,lsa)
-              If (kd0 > natms) kd0=0
+              kd0=local_index(kd,config%nlast,config%lsi,config%lsa)
+              If (kd0 > config%natms) kd0=0
             Else If (cshell%listshl(2,j) == jd) Then
               kd=cshell%listshl(1,j)
-              kd0=local_index(kd,nlast,lsi,lsa)
-              If (kd0 > natms) kd0=0
+              kd0=local_index(kd,config%nlast,config%lsi,config%lsa)
+              If (kd0 > config%natms) kd0=0
             End If
           End Do
 
@@ -1109,10 +1110,10 @@ Contains
 
     ! EXCLUDE core sites mapped on the same RB unit
 
-    Do i=1,natms                                                 ! on this node only (& below)
+    Do i=1,config%natms                                                 ! on this node only (& below)
       l=mpoles%charmm(0,i)                                             ! end of list tag
       If (l > 0 .and. cshell%legshl(0,i) > 0) Then                     ! this is a qualifying CHARMMing core
-        ibig=ltg(i)
+        ibig=config%ltg(i)
         Do j=1,rigid%n_types_book                                          ! loop over the extended list of all RB
           k=rigid%list(-1,j)
           If (Any(rigid%list(1:k,j) == ibig)) Then               ! This core resides on a RB
@@ -1134,14 +1135,14 @@ Contains
 
     ! EXCLUDE core sites on basis of frozen-frozen interactions
 
-    Do i=1,natms                                     ! on this node only (& below)
+    Do i=1,config%natms                                     ! on this node only (& below)
       l=mpoles%charmm(0,i)                                 ! end of list tag
-      If (l > 0 .and. lfrzn(i) > 0) Then            ! this is a qualifying CHARMMing core
+      If (l > 0 .and. config%lfrzn(i) > 0) Then            ! this is a qualifying CHARMMing core
         kk=l                                       ! running index
         Do While (kk > 0)                          ! run down to the beginning of the list
           k=mpoles%charmm(kk,i)
-          j=local_index(k,nlast,lsi,lsa)
-          If (lfrzn(j) > 0) Then                  ! any other frozen cores
+          j=local_index(k,config%nlast,config%lsi,config%lsa)
+          If (config%lfrzn(j) > 0) Then                  ! any other frozen cores
             If (kk < l) mpoles%charmm(kk,i)=mpoles%charmm(l,i) ! swap with last "valid"
             mpoles%charmm(l,i)=0                        ! invalidate the last entry
             l=l-1                                ! reduce "the end of list" tag
@@ -1155,7 +1156,7 @@ Contains
     ! sort mpoles%charmm
 
     kk=0
-    Do i=1,natms
+    Do i=1,config%natms
       j=mpoles%charmm(0,i)
       If (j > 0) Call shellsort(j,mpoles%charmm(1:j,i))
       kk=kk+j

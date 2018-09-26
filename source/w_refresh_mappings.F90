@@ -3,11 +3,11 @@
 
 ! Scale t=0 reference positions
 
-If (nstep > 0) Call xscale(tstep,thermo,stat,neigh,rigid,domain,comm)
+If (nstep > 0) Call xscale(config,tstep,thermo,stat,neigh,rigid,domain,comm)
 
 ! Check VNL conditioning
 
-Call vnl_check(l_str,width,neigh,stat,domain,parts,ewld%bspline,kim_data,comm)
+Call vnl_check(l_str,width,neigh,stat,domain,config,ewld%bspline,kim_data,comm)
 
 If (neigh%update) Then
 
@@ -16,31 +16,31 @@ If (neigh%update) Then
   Call relocate_particles(dvar,neigh%cutoff_extended,lbook, &
     msd_data%l_msd,megatm,flw,cshell,cons,pmf,stat,ewld,thermo,green, &
     bond,angle,dihedral,inversion,tether,neigh,sites,minim,mpoles, &
-    rigid,domain,comm)
+    rigid,domain,config,comm)
 
   ! Exchange atomic data in border regions
 
-  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,ewld,kim_data,comm) ! inducing in here only
+  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,config,ewld,kim_data,comm) ! inducing in here only
 
   ! Re-tag RBs when called again after the very first time
   ! when it's done in rigid_bodies_setup <- build_book_intra
 
   If (rigid%on) Then
-    Call rigid_bodies_tags(rigid,comm)
-    Call rigid_bodies_coms(parts,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+    Call rigid_bodies_tags(config,rigid,comm)
+    Call rigid_bodies_coms(config,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
   End If
 
 Else
 
   ! Exchange atomic positions in border regions
 
-  Call refresh_halo_positions(domain,kim_data,comm)
+  Call refresh_halo_positions(domain,config,kim_data,comm)
 End If
 
 ! set and halo rotational matrices and their infinitesimal rotations
 
 If (mpoles%max_mpoles > 0) Then
-  Call mpoles_rotmat_set_halo(mpoles,domain,comm)
+  Call mpoles_rotmat_set_halo(mpoles,domain,config,comm)
 End If
 
 !!!!!!!!!!!!!!!!!!  W_REFRESH_MAPPINGS INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

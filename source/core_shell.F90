@@ -12,8 +12,7 @@ Module core_shell
 
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gsync,gsum,gcheck,gmax
-  Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa, &
-                              weight,vxx,vyy,vzz,lfrzn,freeze_atoms
+  Use configuration,   Only : configuration_type,freeze_atoms
   Use particle,        Only : corePart
   Use setup,           Only : nrite,boltz,engunit,output,mxatms,mxatdm,zero_plus,&
     mxtmls,mxlshp
@@ -132,7 +131,7 @@ Contains
   End Subroutine deallocate_core_shell_arrays
 
 
-  Subroutine core_shell_forces(cshell,stat,parts,comm)
+  Subroutine core_shell_forces(cshell,stat,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -148,7 +147,7 @@ Contains
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( stats_type ), Intent( InOut ) :: stat
     Type( comms_type ),                  Intent( InOut ) :: comm
-    Type( corePart ), Dimension( : ),    Intent( InOut ) :: parts
+    Type( configuration_type ),          Intent( InOut ) :: config
 
     Logical           :: safe
     Integer           :: fail(1:2),i,j,ia,ib,kk
@@ -177,26 +176,26 @@ Contains
 
       ! indices of atoms in a core-shell
 
-      ia=local_index(cshell%listshl(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
-      ib=local_index(cshell%listshl(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
+      ia=local_index(cshell%listshl(1,i),config%nlast,config%lsi,config%lsa) ; lstopt(1,i)=ia
+      ib=local_index(cshell%listshl(2,i),config%nlast,config%lsi,config%lsa) ; lstopt(2,i)=ib
 
       lstopt(0,i)=0
       If (ia > 0 .and. ib > 0) Then ! Tag
-        If (ia <= natms .or. ib <= natms) Then
+        If (ia <= config%natms .or. ib <= config%natms) Then
           lstopt(0,i)=1
         End If
       Else                          ! Detect uncompressed unit
-        If ( ((ia > 0 .and. ia <= natms) .or.   &
-          (ib > 0 .and. ib <= natms)) .and. &
+        If ( ((ia > 0 .and. ia <= config%natms) .or.   &
+          (ib > 0 .and. ib <= config%natms)) .and. &
           (ia == 0 .or. ib == 0) ) lunsafe(i)=.true.
       End If
 
       ! components of bond vector
 
       If (lstopt(0,i) > 0) Then
-        xdab(i)=parts(ia)%xxx-parts(ib)%xxx
-        ydab(i)=parts(ia)%yyy-parts(ib)%yyy
-        zdab(i)=parts(ia)%zzz-parts(ib)%zzz
+        xdab(i)=config%parts(ia)%xxx-config%parts(ib)%xxx
+        ydab(i)=config%parts(ia)%yyy-config%parts(ib)%yyy
+        zdab(i)=config%parts(ia)%zzz-config%parts(ib)%zzz
       Else ! (DEBUG)
         xdab(i)=0.0_wp
         ydab(i)=0.0_wp
@@ -228,7 +227,7 @@ Contains
 
     ! periodic boundary condition
 
-    Call images(imcon,cell,cshell%ntshl,xdab,ydab,zdab)
+    Call images(config%imcon,config%cell,cshell%ntshl,xdab,ydab,zdab)
 
     ! initialise stress tensor accumulators
 
@@ -274,11 +273,11 @@ Contains
         fy = -gamma*ydab(i)
         fz = -gamma*zdab(i)
 
-        If (ia <= natms) Then
+        If (ia <= config%natms) Then
 
-          parts(ia)%fxx=parts(ia)%fxx+fx
-          parts(ia)%fyy=parts(ia)%fyy+fy
-          parts(ia)%fzz=parts(ia)%fzz+fz
+          config%parts(ia)%fxx=config%parts(ia)%fxx+fx
+          config%parts(ia)%fyy=config%parts(ia)%fyy+fy
+          config%parts(ia)%fzz=config%parts(ia)%fzz+fz
 
           ! calculate core-shell unit energy
 
@@ -296,11 +295,11 @@ Contains
 
         End If
 
-        If (ib <= natms) Then
+        If (ib <= config%natms) Then
 
-          parts(ib)%fxx=parts(ib)%fxx-fx
-          parts(ib)%fyy=parts(ib)%fyy-fy
-          parts(ib)%fzz=parts(ib)%fzz-fz
+          config%parts(ib)%fxx=config%parts(ib)%fxx-fx
+          config%parts(ib)%fyy=config%parts(ib)%fyy-fy
+          config%parts(ib)%fzz=config%parts(ib)%fzz-fz
 
         End If
 
@@ -338,7 +337,7 @@ Contains
 
   End Subroutine core_shell_forces
 
-  Subroutine core_shell_kinetic(shlke,cshell,domain,comm)
+  Subroutine core_shell_kinetic(config,shlke,cshell,domain,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -354,6 +353,7 @@ Contains
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
+    Type( configuration_type ), Intent( InOut ) :: config
 
     Integer           :: i,j,k
     Real( Kind = wp ) :: rmu,rvx,rvy,rvz
@@ -361,8 +361,8 @@ Contains
     ! gather velocities of shared particles
 
     If (cshell%lshmv_shl) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
-        cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
+      Call update_shared_units(config,cshell%lishp_shl,cshell%lashp_shl,config%vxx,&
+                               config%vyy,config%vzz,domain,comm)
     End If
 
     ! initialise energy
@@ -375,27 +375,27 @@ Contains
 
       ! indices of atoms involved
 
-      i=local_index(cshell%listshl(1,k),nlast,lsi,lsa)
-      j=local_index(cshell%listshl(2,k),nlast,lsi,lsa)
+      i=local_index(cshell%listshl(1,k),config%nlast,config%lsi,config%lsa)
+      j=local_index(cshell%listshl(2,k),config%nlast,config%lsi,config%lsa)
 
       ! for all native and natively shared core-shell units
 
-      If ((i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms)) Then
+      If ((i > 0 .and. j > 0) .and. (i <= config%natms .or. j <= config%natms)) Then
 
         ! calculate reduced mass
 
-        rmu=(weight(i)*weight(j))/(weight(i)+weight(j))
+        rmu=(config%weight(i)*config%weight(j))/(config%weight(i)+config%weight(j))
 
         ! frozen particles' velocities are zero
         ! calculate constraint vector normal
 
-        rvx=vxx(j)-vxx(i)
-        rvy=vyy(j)-vyy(i)
-        rvz=vzz(j)-vzz(i)
+        rvx=config%vxx(j)-config%vxx(i)
+        rvy=config%vyy(j)-config%vyy(i)
+        rvz=config%vzz(j)-config%vzz(i)
 
         ! calculate core-shell internal kinetic energy
 
-        If (i <= natms .and. j <= natms) Then
+        If (i <= config%natms .and. j <= config%natms) Then
 
           ! for native core-shell units - full contribution
 
@@ -403,7 +403,7 @@ Contains
 
         Else
 
-          ! If ( (i <= natms .and. j > natms) .or. (j <= natms .and. i > natms) ) Then
+          ! If ( (i <= config%natms .and. j > config%natms) .or. (j <= config%natms .and. i > config%natms) ) Then
           ! for shared core-shell units - halved contribution
 
           shlke=shlke+0.25_wp*rmu*(rvx*rvx+rvy*rvy+rvz*rvz)
@@ -420,7 +420,7 @@ Contains
 
   End Subroutine core_shell_kinetic
 
-  Subroutine core_shell_on_top(cshell,parts,comm)
+  Subroutine core_shell_on_top(cshell,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -434,7 +434,7 @@ Contains
 
     Type( comms_type ),  Intent( InOut ) :: comm
     Type( core_shell_type ) , Intent( InOut ) :: cshell
-    Type( corePart ), Dimension(:), Intent( InOut ) :: parts
+    Type( configuration_type ), Intent( InOut ) :: config
     Logical :: safe
     Integer :: fail,i,j,ia,ib
 
@@ -456,23 +456,23 @@ Contains
 
       ! indices of atoms in a core-shell
 
-      ia=local_index(cshell%listshl(1,i),nlast,lsi,lsa) ! This is a core
-      ib=local_index(cshell%listshl(2,i),nlast,lsi,lsa) ! This is a shell
+      ia=local_index(cshell%listshl(1,i),config%nlast,config%lsi,config%lsa) ! This is a core
+      ib=local_index(cshell%listshl(2,i),config%nlast,config%lsi,config%lsa) ! This is a shell
 
       ! For every shell in the domain get the coordinates of its
       ! corresponding core (which must be in the domain+hello
       ! area by construction, if not go to a controlled termination)
 
-      If (ib > 0 .and. ib <= natms .and. ia > 0) Then
-        parts(ib)%xxx=parts(ia)%xxx
-        parts(ib)%yyy=parts(ia)%yyy
-        parts(ib)%zzz=parts(ia)%zzz
+      If (ib > 0 .and. ib <= config%natms .and. ia > 0) Then
+        config%parts(ib)%xxx=config%parts(ia)%xxx
+        config%parts(ib)%yyy=config%parts(ia)%yyy
+        config%parts(ib)%zzz=config%parts(ia)%zzz
       End If
 
       ! Detect uncompressed unit
 
-      If ( ((ia > 0 .and. ia <= natms) .or.   &
-        (ib > 0 .and. ib <= natms)) .and. &
+      If ( ((ia > 0 .and. ia <= config%natms) .or.   &
+        (ib > 0 .and. ib <= config%natms)) .and. &
         (ia == 0 .or. ib == 0) ) lunsafe(i)=.true.
     End Do
 
@@ -506,7 +506,7 @@ Contains
 
   End Subroutine core_shell_on_top
 
-  Subroutine core_shell_quench(safe,temp,cshell,domain,comm)
+  Subroutine core_shell_quench(config,safe,temp,cshell,domain,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -524,6 +524,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: temp
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type), Intent( InOut ) :: comm
+    Type( configuration_type ), Intent( InOut ) :: config
 
     Logical           :: safek
     Integer           :: ia,ib,k
@@ -536,7 +537,7 @@ Contains
     ! gather velocities of shared particles
 
     If (cshell%lshmv_shl) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
+      Call update_shared_units(config,cshell%lishp_shl,cshell%lashp_shl,config%vxx,config%vyy,config%vzz,domain,comm)
     End If
 
     ! permitted core-shell internal kinetic energy
@@ -546,17 +547,17 @@ Contains
     ! amend core and shell velocities preserving total momentum
 
     Do k=1,cshell%ntshl
-      ia=local_index(cshell%listshl(1,k),nlast,lsi,lsa)
-      ib=local_index(cshell%listshl(2,k),nlast,lsi,lsa)
+      ia=local_index(cshell%listshl(1,k),config%nlast,config%lsi,config%lsa)
+      ib=local_index(cshell%listshl(2,k),config%nlast,config%lsi,config%lsa)
 
-      If ((ia > 0 .and. ib > 0) .and. (ia <= natms .or. ib <= natms)) Then
-        rmu=(weight(ia)*weight(ib))/(weight(ia)+weight(ib))
+      If ((ia > 0 .and. ib > 0) .and. (ia <= config%natms .or. ib <= config%natms)) Then
+        rmu=(config%weight(ia)*config%weight(ib))/(config%weight(ia)+config%weight(ib))
 
         ! frozen atoms have zero velocity (no worries)
 
-        dvx=vxx(ib)-vxx(ia)
-        dvy=vyy(ib)-vyy(ia)
-        dvz=vzz(ib)-vzz(ia)
+        dvx=config%vxx(ib)-config%vxx(ia)
+        dvy=config%vyy(ib)-config%vyy(ia)
+        dvz=config%vzz(ib)-config%vzz(ia)
 
         tke=rmu*(dvx*dvx+dvy*dvy+dvz*dvz)
 
@@ -564,24 +565,24 @@ Contains
         If (.not.safek) Then
           scl=Sqrt(pke/tke)
 
-          tmx=weight(ia)*vxx(ia)+weight(ib)*vxx(ib)
-          tmy=weight(ia)*vyy(ia)+weight(ib)*vyy(ib)
-          tmz=weight(ia)*vzz(ia)+weight(ib)*vzz(ib)
+          tmx=config%weight(ia)*config%vxx(ia)+config%weight(ib)*config%vxx(ib)
+          tmy=config%weight(ia)*config%vyy(ia)+config%weight(ib)*config%vyy(ib)
+          tmz=config%weight(ia)*config%vzz(ia)+config%weight(ib)*config%vzz(ib)
 
           ! no corrections for frozen cores
 
-          If (lfrzn(ia) == 0) Then
-            vxx(ia)=tmx/(weight(ia)+weight(ib))-scl*rmu*dvx/weight(ia)
-            vyy(ia)=tmy/(weight(ia)+weight(ib))-scl*rmu*dvy/weight(ia)
-            vzz(ia)=tmz/(weight(ia)+weight(ib))-scl*rmu*dvz/weight(ia)
+          If (config%lfrzn(ia) == 0) Then
+            config%vxx(ia)=tmx/(config%weight(ia)+config%weight(ib))-scl*rmu*dvx/config%weight(ia)
+            config%vyy(ia)=tmy/(config%weight(ia)+config%weight(ib))-scl*rmu*dvy/config%weight(ia)
+            config%vzz(ia)=tmz/(config%weight(ia)+config%weight(ib))-scl*rmu*dvz/config%weight(ia)
 
-            vxx(ib)=tmx/(weight(ia)+weight(ib))+scl*rmu*dvx/weight(ib)
-            vyy(ib)=tmy/(weight(ia)+weight(ib))+scl*rmu*dvy/weight(ib)
-            vzz(ib)=tmz/(weight(ia)+weight(ib))+scl*rmu*dvz/weight(ib)
+            config%vxx(ib)=tmx/(config%weight(ia)+config%weight(ib))+scl*rmu*dvx/config%weight(ib)
+            config%vyy(ib)=tmy/(config%weight(ia)+config%weight(ib))+scl*rmu*dvy/config%weight(ib)
+            config%vzz(ib)=tmz/(config%weight(ia)+config%weight(ib))+scl*rmu*dvz/config%weight(ib)
           Else
-            vxx(ib)=tmx/(weight(ia)+weight(ib))+scl*rmu*dvx/weight(ib)
-            vyy(ib)=tmy/(weight(ia)+weight(ib))+scl*rmu*dvy/weight(ib)
-            vzz(ib)=tmz/(weight(ia)+weight(ib))+scl*rmu*dvz/weight(ib)
+            config%vxx(ib)=tmx/(config%weight(ia)+config%weight(ib))+scl*rmu*dvx/config%weight(ib)
+            config%vyy(ib)=tmy/(config%weight(ia)+config%weight(ib))+scl*rmu*dvy/config%weight(ib)
+            config%vzz(ib)=tmz/(config%weight(ia)+config%weight(ib))+scl*rmu*dvz/config%weight(ib)
           End If
 
           safe=.false.
@@ -594,7 +595,7 @@ Contains
   End Subroutine core_shell_quench
 
   Subroutine core_shell_relax(l_str,relaxed,rdf_collect,rlx_tol,stpcfg,cshell, &
-      stat,domain,parts,comm)
+      stat,domain,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -615,7 +616,7 @@ Contains
     Type( stats_type ), Intent( InOut ) :: stat
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
-    Type( corePart ), Dimension(:), Intent( InOut ) :: parts
+    Type( configuration_type ), Intent( InOut ) :: config
 
     Integer                 :: fail(1:2),i,ia,ib,jshl
 
@@ -707,8 +708,8 @@ Contains
     ! gather new forces on shared shells
 
     If (cshell%lshmv_shl) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,parts,&
-        SHARED_UNIT_UPDATE_FORCES,domain,comm)
+      Call update_shared_units(config,cshell%lishp_shl,cshell%lashp_shl,&
+                               SHARED_UNIT_UPDATE_FORCES,domain,comm)
     End If
 
     ! Load shell forces on cores (cores don't move during the shell relaxation)
@@ -716,17 +717,17 @@ Contains
     fxt(1:cshell%mxshl)=0.0_wp ; fyt(1:cshell%mxshl)=0.0_wp ; fzt(1:cshell%mxshl)=0.0_wp
     jshl=0
     Do i=1,cshell%ntshl
-      ia=local_index(cshell%listshl(1,i),nlast,lsi,lsa)
-      ib=local_index(cshell%listshl(2,i),nlast,lsi,lsa)
-      If (ia > 0 .and. ia <= natms) Then ! THERE IS AN ib>0 FOR SURE
+      ia=local_index(cshell%listshl(1,i),config%nlast,config%lsi,config%lsa)
+      ib=local_index(cshell%listshl(2,i),config%nlast,config%lsi,config%lsa)
+      If (ia > 0 .and. ia <= config%natms) Then ! THERE IS AN ib>0 FOR SURE
         jshl=jshl+1
-        fxt(jshl)=parts(ib)%fxx
-        fyt(jshl)=parts(ib)%fyy
-        fzt(jshl)=parts(ib)%fzz
-      End If
-      lstopt(1,i)=ia
-      lstopt(2,i)=ib
-    End Do
+        fxt(jshl)=config%parts(ib)%fxx
+        fyt(jshl)=config%parts(ib)%fyy
+        fzt(jshl)=config%parts(ib)%fzz
+     End If
+     lstopt(1,i)=ia
+     lstopt(2,i)=ib
+  End Do
 
     ! Current configuration energy
 
@@ -877,7 +878,7 @@ Contains
     jshl=0
     Do i=1,cshell%ntshl
       ia=lstopt(1,i)
-      If (ia > 0 .and. ia <= natms) Then
+      If (ia > 0 .and. ia <= config%natms) Then
         jshl=jshl+1
         fxt(ia)=cshell%oxt(jshl)
         fyt(ia)=cshell%oyt(jshl)
@@ -888,7 +889,7 @@ Contains
     ! Exchange original shell forces on shared cores across domains
 
     If (cshell%lshmv_shl) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl,cshell%lashp_shl,fxt,fyt,fzt,domain,comm)
+      Call update_shared_units(config,cshell%lishp_shl,cshell%lashp_shl,fxt,fyt,fzt,domain,comm)
     End If
 
     ! Move shells accordingly to their new positions
@@ -896,14 +897,15 @@ Contains
    Do i=1,cshell%ntshl
      ia=lstopt(1,i)
      ib=lstopt(2,i)
-     If (ia > 0 .and. (ib > 0 .and. ib <= natms)) Then
-       parts(ib)%xxx=parts(ib)%xxx+cshell%stride*fxt(ia)
-       parts(ib)%yyy=parts(ib)%yyy+cshell%stride*fyt(ia)
-       parts(ib)%zzz=parts(ib)%zzz+cshell%stride*fzt(ia)
-       cshell%dist_tol(1)=Max(cshell%dist_tol(1),fxt(ia)**2+fyt(ia)**2+fzt(ia)**2) ! - shell move
-       cshell%x(1)=parts(ib)%xxx-parts(ia)%xxx ; cshell%y(1)=parts(ib)%yyy-parts(ia)%yyy
-       cshell%z(1)=parts(ib)%zzz-parts(ia)%zzz
-       Call images(imcon,cell,1,cshell%x,cshell%y,cshell%z)
+     If (ia > 0 .and. (ib > 0 .and. ib <= config%natms)) Then
+        config%parts(ib)%xxx=config%parts(ib)%xxx+cshell%stride*fxt(ia)
+        config%parts(ib)%yyy=config%parts(ib)%yyy+cshell%stride*fyt(ia)
+        config%parts(ib)%zzz=config%parts(ib)%zzz+cshell%stride*fzt(ia)
+        cshell%dist_tol(1)=Max(cshell%dist_tol(1),fxt(ia)**2+fyt(ia)**2+fzt(ia)**2) ! - shell move
+        cshell%x(1)=config%parts(ib)%xxx-config%parts(ia)%xxx 
+        cshell%y(1)=config%parts(ib)%yyy-config%parts(ia)%yyy
+        cshell%z(1)=config%parts(ib)%zzz-config%parts(ia)%zzz
+        Call images(config%imcon,config%cell,1,cshell%x,cshell%y,cshell%z)
         cshell%dist_tol(2)=Max(cshell%dist_tol(2),cshell%x(1)**2+cshell%y(1)**2+cshell%z(1)**2) ! - core-shell separation
       End If
     End Do
@@ -980,32 +982,35 @@ Contains
       ! the residual force to the rest of the system to prevent
       ! COM force generation
 
-      lst_sh(1:natms)=0
-      cshell%fff(0)=Real(natms,wp)
+      lst_sh(1:config%natms)=0
+      cshell%fff(0)=Real(config%natms,wp)
       cshell%fff(1:3)=0.0_wp
       Do i=1,cshell%ntshl
         ib=lstopt(2,i)
         If (ib > 0) Then
            lst_sh(ib)=1
            cshell%fff(0)=cshell%fff(0)-1.0_wp
-           cshell%fff(1)=cshell%fff(1)+parts(ib)%fxx ; parts(ib)%fxx=0.0_wp ; vxx(ib)=0.0_wp
-           cshell%fff(2)=cshell%fff(2)+parts(ib)%fyy ; parts(ib)%fyy=0.0_wp ; vyy(ib)=0.0_wp
-           cshell%fff(3)=cshell%fff(3)+parts(ib)%fzz ; parts(ib)%fzz=0.0_wp ; vzz(ib)=0.0_wp
+           cshell%fff(1)=cshell%fff(1)+config%parts(ib)%fxx ; config%parts(ib)%fxx=0.0_wp 
+           config%vxx(ib)=0.0_wp
+           cshell%fff(2)=cshell%fff(2)+config%parts(ib)%fyy ; config%parts(ib)%fyy=0.0_wp 
+           config%vyy(ib)=0.0_wp
+           cshell%fff(3)=cshell%fff(3)+config%parts(ib)%fzz ; config%parts(ib)%fzz=0.0_wp 
+           config%vzz(ib)=0.0_wp
         End If
       End Do
       Call gsum(comm,cshell%fff)
       cshell%fff(1:3)=cshell%fff(1:3)/cshell%fff(0)
-      Do i=1,natms
+      Do i=1,config%natms
         If (lst_sh(i) == 0) Then
-           parts(i)%fxx=parts(i)%fxx+cshell%fff(1)
-           parts(i)%fyy=parts(i)%fyy+cshell%fff(2)
-           parts(i)%fzz=parts(i)%fzz+cshell%fff(3)
+           config%parts(i)%fxx=config%parts(i)%fxx+cshell%fff(1)
+           config%parts(i)%fyy=config%parts(i)%fyy+cshell%fff(2)
+           config%parts(i)%fzz=config%parts(i)%fzz+cshell%fff(3)
         End If
       End Do
 
       ! Frozen atoms option
 
-      Call freeze_atoms()
+      Call freeze_atoms(config)
     End If
 
     Deallocate (lstopt,lst_sh, Stat=fail(1))

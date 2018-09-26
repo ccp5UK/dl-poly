@@ -15,8 +15,7 @@ Module inversions
   Use setup, Only : mxtmls,mxatdm,pi,boltz,delth_max,nrite,npdfdt,npdgdt, &
                     engunit,zero_plus,ntable
   Use site, Only : site_type
-  Use configuration,     Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
-                                cfgname
+  Use configuration,     Only : configuration_type
   Use particle, Only : corePart
   Use parse, Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info
@@ -160,7 +159,7 @@ Contains
 
   End Subroutine allocate_invr_dst_arrays
 
-  Subroutine inversions_compute(temp,unique_atom,inversion,comm)
+  Subroutine inversions_compute(temp,unique_atom,inversion,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -175,6 +174,7 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: temp
     Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
     Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: zero
@@ -243,7 +243,7 @@ Contains
 
     If (comm%idnode == 0) Then
        Open(Unit=npdfdt, File='INVDAT', Status='replace')
-       Write(npdfdt,'(a)') '# '//cfgname
+       Write(npdfdt,'(a)') '# '//config%cfgname
        Write(npdfdt,'(a)') '# INVERSIONS: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dTheta_bin'
        Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',inversion%bin_adf,180,inversion%n_frames,kk
        Write(npdfdt,'(a)') '#'
@@ -344,13 +344,13 @@ Contains
 
     If (comm%idnode == 0) Then
        Open(Unit=npdgdt, File='INVPMF', Status='replace')
-       Write(npdgdt,'(a)') '# '//cfgname
+       Write(npdgdt,'(a)') '# '//config%cfgname
        Write(npdgdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',inversion%bin_adf, &
          delth*Real(inversion%bin_adf,wp)*rad2dgr,delth*rad2dgr,kk, &
          '   conversion factor(kT -> energy units) =',kT2engo
 
        Open(Unit=npdfdt, File='INVPMF', Status='replace')
-       Write(npdfdt,'(a)') '# '//cfgname
+       Write(npdfdt,'(a)') '# '//config%cfgname
        Write(npdfdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',ngrid, &
          dgrid*Real(ngrid,wp)*rad2dgr,dgrid*rad2dgr,kk, &
          '   conversion factor(kT -> energy units) =',kT2engo
@@ -493,7 +493,7 @@ Contains
 
   End Subroutine inversions_compute
 
-  Subroutine inversions_forces(isw,enginv,virinv,stress,inversion,parts,comm)
+  Subroutine inversions_forces(isw,enginv,virinv,stress,inversion,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -516,7 +516,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( comms_type ),                  Intent( InOut ) :: comm
-    Type( corePart ),                    Intent( InOut ) :: parts(:)
+    Type( configuration_type ),          Intent( InOut ) :: config
 
     Logical           :: safe
     Integer           :: fail(1:4),i,j,l,ia,ib,ic,id,kk,keyi
@@ -561,32 +561,33 @@ Contains
 
   ! indices of atoms involved
 
-       ia=local_index(inversion%list(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
-       ib=local_index(inversion%list(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
-       ic=local_index(inversion%list(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
-       id=local_index(inversion%list(4,i),nlast,lsi,lsa) ; lstopt(4,i)=id
+       ia=local_index(inversion%list(1,i),config%nlast,config%lsi,config%lsa) ; lstopt(1,i)=ia
+       ib=local_index(inversion%list(2,i),config%nlast,config%lsi,config%lsa) ; lstopt(2,i)=ib
+       ic=local_index(inversion%list(3,i),config%nlast,config%lsi,config%lsa) ; lstopt(3,i)=ic
+       id=local_index(inversion%list(4,i),config%nlast,config%lsi,config%lsa) ; lstopt(4,i)=id
 
        lstopt(0,i)=0
        If (ia > 0 .and. ib > 0 .and. ic > 0 .and. id > 0) Then !Tag
-          If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic)*lfrzn(id) == 0) Then
-             If (ia <= natms .or. ib <= natms .or. ic <= natms .or. id <= natms) Then
+          If (config%lfrzn(ia)*config%lfrzn(ib)*config%lfrzn(ic)*config%lfrzn(id) == 0) Then
+             If (ia <= config%natms .or. ib <= config%natms .or. &
+                 ic <= config%natms .or. id <= config%natms) Then
                 lstopt(0,i)=1
               End If
           End If
        Else                                                    ! Detect uncompressed unit
-          If ( ((ia > 0 .and. ia <= natms) .or.   &
-                (ib > 0 .and. ib <= natms) .or.   &
-                (ic > 0 .and. ic <= natms) .or.   &
-                (id > 0 .and. id <= natms)) .and. &
+          If ( ((ia > 0 .and. ia <= config%natms) .or.   &
+                (ib > 0 .and. ib <= config%natms) .or.   &
+                (ic > 0 .and. ic <= config%natms) .or.   &
+                (id > 0 .and. id <= config%natms)) .and. &
                (ia == 0 .or. ib == 0 .or. ic == 0 .or. id == 0) ) lunsafe(i)=.true.
        End If
 
   ! define components of bond vectors
 
        If (lstopt(0,i) > 0) Then
-          xdab(i)=parts(ib)%xxx-parts(ia)%xxx
-          ydab(i)=parts(ib)%yyy-parts(ia)%yyy
-          zdab(i)=parts(ib)%zzz-parts(ia)%zzz
+          xdab(i)=config%parts(ib)%xxx-config%parts(ia)%xxx
+          ydab(i)=config%parts(ib)%yyy-config%parts(ia)%yyy
+          zdab(i)=config%parts(ib)%zzz-config%parts(ia)%zzz
 
   ! select potential energy function type
 
@@ -594,21 +595,21 @@ Contains
           keyi = Abs(inversion%key(kk))
 
           If (keyi == 5) Then
-             xdac(i)=parts(ic)%xxx-parts(ib)%xxx
-             ydac(i)=parts(ic)%yyy-parts(ib)%yyy
-             zdac(i)=parts(ic)%zzz-parts(ib)%zzz
+             xdac(i)=config%parts(ic)%xxx-config%parts(ib)%xxx
+             ydac(i)=config%parts(ic)%yyy-config%parts(ib)%yyy
+             zdac(i)=config%parts(ic)%zzz-config%parts(ib)%zzz
 
-             xdad(i)=parts(id)%xxx-parts(ib)%xxx
-             ydad(i)=parts(id)%yyy-parts(ib)%yyy
-             zdad(i)=parts(id)%zzz-parts(ib)%zzz
+             xdad(i)=config%parts(id)%xxx-config%parts(ib)%xxx
+             ydad(i)=config%parts(id)%yyy-config%parts(ib)%yyy
+             zdad(i)=config%parts(id)%zzz-config%parts(ib)%zzz
           Else
-             xdac(i)=parts(ic)%xxx-parts(ia)%xxx
-             ydac(i)=parts(ic)%yyy-parts(ia)%yyy
-             zdac(i)=parts(ic)%zzz-parts(ia)%zzz
+             xdac(i)=config%parts(ic)%xxx-config%parts(ia)%xxx
+             ydac(i)=config%parts(ic)%yyy-config%parts(ia)%yyy
+             zdac(i)=config%parts(ic)%zzz-config%parts(ia)%zzz
 
-             xdad(i)=parts(id)%xxx-parts(ia)%xxx
-             ydad(i)=parts(id)%yyy-parts(ia)%yyy
-             zdad(i)=parts(id)%zzz-parts(ia)%zzz
+             xdad(i)=config%parts(id)%xxx-config%parts(ia)%xxx
+             ydad(i)=config%parts(id)%yyy-config%parts(ia)%yyy
+             zdad(i)=config%parts(id)%zzz-config%parts(ia)%zzz
           End If
        Else ! (DEBUG)
           xdab(i)=0.0_wp
@@ -648,9 +649,9 @@ Contains
 
   ! periodic boundary condition
 
-    Call images(imcon,cell,inversion%n_types,xdab,ydab,zdab)
-    Call images(imcon,cell,inversion%n_types,xdac,ydac,zdac)
-    Call images(imcon,cell,inversion%n_types,xdad,ydad,zdad)
+    Call images(config%imcon,config%cell,inversion%n_types,xdab,ydab,zdab)
+    Call images(config%imcon,config%cell,inversion%n_types,xdac,ydac,zdac)
+    Call images(config%imcon,config%cell,inversion%n_types,xdad,ydad,zdad)
 
     If (Mod(isw,3) > 0) Then
 
@@ -806,7 +807,7 @@ Contains
 
   ! accumulate the histogram (distribution)
 
-             If (Mod(isw,2) == 0 .and. ib <= natms) Then
+             If (Mod(isw,2) == 0 .and. ib <= config%natms) Then
                 j = inversion%ldf(kk)
 
                 thb=Acos(cosb)
@@ -1124,7 +1125,7 @@ Contains
 
           End If
 
-          If (ia <= natms) Then
+          If (ia <= config%natms) Then
 
   ! inversion energy and virial (associated to the head atom)
 
@@ -1149,33 +1150,33 @@ Contains
                 strs9 = strs9 + zab*fbz + zac*fcz + zad*fdz
              End If
 
-             parts(ia)%fxx=parts(ia)%fxx+fax
-             parts(ia)%fyy=parts(ia)%fyy+fay
-             parts(ia)%fzz=parts(ia)%fzz+faz
+             config%parts(ia)%fxx=config%parts(ia)%fxx+fax
+             config%parts(ia)%fyy=config%parts(ia)%fyy+fay
+             config%parts(ia)%fzz=config%parts(ia)%fzz+faz
 
           End If
 
-          If (ib <= natms) Then
+          If (ib <= config%natms) Then
 
-             parts(ib)%fxx=parts(ib)%fxx+fbx
-             parts(ib)%fyy=parts(ib)%fyy+fby
-             parts(ib)%fzz=parts(ib)%fzz+fbz
-
-          End If
-
-          If (ic <= natms) Then
-
-             parts(ic)%fxx=parts(ic)%fxx+fcx
-             parts(ic)%fyy=parts(ic)%fyy+fcy
-             parts(ic)%fzz=parts(ic)%fzz+fcz
+             config%parts(ib)%fxx=config%parts(ib)%fxx+fbx
+             config%parts(ib)%fyy=config%parts(ib)%fyy+fby
+             config%parts(ib)%fzz=config%parts(ib)%fzz+fbz
 
           End If
 
-          If (id <= natms) Then
+          If (ic <= config%natms) Then
 
-             parts(id)%fxx=parts(id)%fxx+fdx
-             parts(id)%fyy=parts(id)%fyy+fdy
-             parts(id)%fzz=parts(id)%fzz+fdz
+             config%parts(ic)%fxx=config%parts(ic)%fxx+fcx
+             config%parts(ic)%fyy=config%parts(ic)%fyy+fcy
+             config%parts(ic)%fzz=config%parts(ic)%fzz+fcz
+
+          End If
+
+          If (id <= config%natms) Then
+
+             config%parts(id)%fxx=config%parts(id)%fxx+fdx
+             config%parts(id)%fyy=config%parts(id)%fyy+fdy
+             config%parts(id)%fzz=config%parts(id)%fzz+fdz
 
           End If
 

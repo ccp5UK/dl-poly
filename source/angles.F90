@@ -17,8 +17,7 @@ Module angles
                      engunit,zero_plus,twopi, &
                      delth_max,ntable,mxatdm,mxtmls
   Use site, Only : site_type
-  Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
-                            cfgname
+  Use configuration, Only : configuration_type
   Use parse, Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : local_index,images
@@ -161,7 +160,7 @@ Contains
 
   End Subroutine allocate_angl_dst_arrays
   
-  Subroutine angles_compute(temp,unique_atom,angle,comm)
+  Subroutine angles_compute(temp,unique_atom,angle,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -177,6 +176,7 @@ Contains
   Real( Kind = wp ),  Intent( In    ) :: temp
   Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
   Type( angles_type ), Intent( InOut ) :: angle
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: zero
@@ -244,7 +244,7 @@ Contains
 
   If (comm%idnode == 0) Then
      Open(Unit=npdfdt, File='ANGDAT', Status='replace')
-     Write(npdfdt,'(a)') '# '//cfgname
+     Write(npdfdt,'(a)') '# '//config%cfgname
      Write(npdfdt,'(a)') '# ANGLES: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dTheta_bin'
      Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',angle%bin_adf,180,angle%n_frames,kk
      Write(npdfdt,'(a)') '#'
@@ -349,12 +349,12 @@ Contains
 
   If (comm%idnode == 0) Then
      Open(Unit=npdgdt, File='ANGPMF', Status='replace')
-     Write(npdgdt,'(a)') '# '//cfgname
+     Write(npdgdt,'(a)') '# '//config%cfgname
      Write(npdgdt,'(a,2i6,f12.5,i10,a,e15.7)') '# ',angle%bin_adf,180,delth*rad2dgr,kk, &
           '   conversion factor(kT -> energy units) = ', kT2engo
 
      Open(Unit=npdfdt, File='ANGTAB', Status='replace')
-     Write(npdfdt,'(a)') '# '//cfgname
+     Write(npdfdt,'(a)') '# '//config%cfgname
      Write(npdfdt,'(a,2i6,f12.5,i10,a,e15.7)') '# ',ngrid,180,dgrid*rad2dgr,kk, &
           '   conversion factor(kT -> energy units) = ', kT2engo
   End If
@@ -497,7 +497,7 @@ Contains
 
 End Subroutine angles_compute
 
-Subroutine angles_forces(isw,engang,virang,stress,angle,parts,comm)
+Subroutine angles_forces(isw,engang,virang,stress,angle,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -518,7 +518,7 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,parts,comm)
   Integer,                             Intent( In    ) :: isw
   Real( Kind = wp ),                   Intent(   Out ) :: engang,virang
   Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
-  Type( corePart ),  Dimension(  :  ), Intent( InOut ) :: parts
+  Type( configuration_type ),          Intent( InOut ) :: config
   Type( angles_type ), Intent( InOut ) :: angle
   Type( comms_type),                   Intent( InOut ) :: comm
 
@@ -557,34 +557,34 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,parts,comm)
 
 ! indices of angle bonded atoms
 
-     ia=local_index(angle%list(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
-     ib=local_index(angle%list(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
-     ic=local_index(angle%list(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
+     ia=local_index(angle%list(1,i),config%nlast,config%lsi,config%lsa) ; lstopt(1,i)=ia
+     ib=local_index(angle%list(2,i),config%nlast,config%lsi,config%lsa) ; lstopt(2,i)=ib
+     ic=local_index(angle%list(3,i),config%nlast,config%lsi,config%lsa) ; lstopt(3,i)=ic
 
      lstopt(0,i)=0
      If (ia > 0 .and. ib > 0 .and. ic > 0) Then ! Tag
-        If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic) == 0) Then
-           If (ia <= natms .or. ib <= natms .or. ic <= natms) Then
+        If (config%lfrzn(ia)*config%lfrzn(ib)*config%lfrzn(ic) == 0) Then
+           If (ia <= config%natms .or. ib <= config%natms .or. ic <= config%natms) Then
               lstopt(0,i)=1
             End If
         End If
      Else                                       ! Detect uncompressed unit
-        If ( ((ia > 0 .and. ia <= natms) .or.   &
-              (ib > 0 .and. ib <= natms) .or.   &
-              (ic > 0 .and. ic <= natms)) .and. &
+        If ( ((ia > 0 .and. ia <= config%natms) .or.   &
+              (ib > 0 .and. ib <= config%natms) .or.   &
+              (ic > 0 .and. ic <= config%natms)) .and. &
              (ia == 0 .or. ib == 0 .or. ic == 0) ) lunsafe(i)=.true.
      End If
 
 ! define components of bond vectors
 
      If (lstopt(0,i) > 0) Then
-        xdab(i)=parts(ia)%xxx-parts(ib)%xxx
-        ydab(i)=parts(ia)%yyy-parts(ib)%yyy
-        zdab(i)=parts(ia)%zzz-parts(ib)%zzz
+        xdab(i)=config%parts(ia)%xxx-config%parts(ib)%xxx
+        ydab(i)=config%parts(ia)%yyy-config%parts(ib)%yyy
+        zdab(i)=config%parts(ia)%zzz-config%parts(ib)%zzz
 
-        xdbc(i)=parts(ic)%xxx-parts(ib)%xxx
-        ydbc(i)=parts(ic)%yyy-parts(ib)%yyy
-        zdbc(i)=parts(ic)%zzz-parts(ib)%zzz
+        xdbc(i)=config%parts(ic)%xxx-config%parts(ib)%xxx
+        ydbc(i)=config%parts(ic)%yyy-config%parts(ib)%yyy
+        zdbc(i)=config%parts(ic)%zzz-config%parts(ib)%zzz
      Else ! (DEBUG)
         xdab(i)=0.0_wp
         ydab(i)=0.0_wp
@@ -620,8 +620,8 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,parts,comm)
 
 ! periodic boundary condition
 
-  Call images(imcon,cell,angle%n_types,xdab,ydab,zdab)
-  Call images(imcon,cell,angle%n_types,xdbc,ydbc,zdbc)
+  Call images(config%imcon,config%cell,angle%n_types,xdab,ydab,zdab)
+  Call images(config%imcon,config%cell,angle%n_types,xdbc,ydbc,zdbc)
 
   If (Mod(isw,3) > 0) Then
 
@@ -696,7 +696,7 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,parts,comm)
 
 ! accumulate the histogram (distribution)
 
-        If (Mod(isw,2) == 0 .and. ib <= natms) Then
+        If (Mod(isw,2) == 0 .and. ib <= config%natms) Then
            j = angle%ldf(kk)
            l = Min(1+Int(theta*rdelth),angle%bin_adf)
 
@@ -1016,15 +1016,15 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,parts,comm)
         fyc = gamma*(yab-ybc*cost)*rrbc+gamsc*ybc
         fzc = gamma*(zab-zbc*cost)*rrbc+gamsc*zbc
 
-        If (ia <= natms) Then
+        If (ia <= config%natms) Then
 
-           parts(ia)%fxx=parts(ia)%fxx+fxa
-           parts(ia)%fyy=parts(ia)%fyy+fya
-           parts(ia)%fzz=parts(ia)%fzz+fza
+           config%parts(ia)%fxx=config%parts(ia)%fxx+fxa
+           config%parts(ia)%fyy=config%parts(ia)%fyy+fya
+           config%parts(ia)%fzz=config%parts(ia)%fzz+fza
 
         End If
 
-        If (ib <= natms) Then
+        If (ib <= config%natms) Then
 
 ! energy and virial (associated to the head atom)
 
@@ -1040,17 +1040,17 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,parts,comm)
            strs6 = strs6 + rab*yab*fza + rbc*ybc*fzc
            strs9 = strs9 + rab*zab*fza + rbc*zbc*fzc
 
-           parts(ib)%fxx=parts(ib)%fxx-fxa-fxc
-           parts(ib)%fyy=parts(ib)%fyy-fya-fyc
-           parts(ib)%fzz=parts(ib)%fzz-fza-fzc
+           config%parts(ib)%fxx=config%parts(ib)%fxx-fxa-fxc
+           config%parts(ib)%fyy=config%parts(ib)%fyy-fya-fyc
+           config%parts(ib)%fzz=config%parts(ib)%fzz-fza-fzc
 
         End If
 
-        If (ic <= natms) Then
+        If (ic <= config%natms) Then
 
-           parts(ic)%fxx=parts(ic)%fxx+fxc
-           parts(ic)%fyy=parts(ic)%fyy+fyc
-           parts(ic)%fzz=parts(ic)%fzz+fzc
+           config%parts(ic)%fxx=config%parts(ic)%fxx+fxc
+           config%parts(ic)%fyy=config%parts(ic)%fyy+fyc
+           config%parts(ic)%fzz=config%parts(ic)%fzz+fzc
 
         End If
 

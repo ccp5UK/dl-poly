@@ -13,7 +13,7 @@ Module z_density
   Use comms,  Only : comms_type,gsum
   Use setup,  Only : nrite,nzdndt
   Use site, Only : site_type
-  Use configuration, Only : cfgname,cell,volm,natms,ltype
+  Use configuration, Only : configuration_type
   Use particle,        Only : corePart
   Use errors_warnings, Only : error,info
   Implicit None
@@ -63,7 +63,7 @@ Contains
 
   End Subroutine allocate_z_density_arrays
 
-  Subroutine z_density_collect(max_grid_rdf,zdensity,parts)
+  Subroutine z_density_collect(max_grid_rdf,zdensity,config)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -76,7 +76,7 @@ Contains
 
   Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
   Type( z_density_type ), Intent( InOut ) :: zdensity
-  Type( corePart ),       Intent( InOut ) :: parts(:)
+  Type( configuration_type ), Intent( InOut ) :: config 
 
   Integer           :: i,k,l
   Real( Kind = wp ) :: zlen,zleno2,rdelr
@@ -87,7 +87,7 @@ Contains
 
 ! length of cell in z direction
 
-  zlen=Abs(cell(3))+Abs(cell(6))+Abs(cell(9))
+  zlen=Abs(config%cell(3))+Abs(config%cell(6))+Abs(config%cell(9))
 
 ! half of z length
 
@@ -99,10 +99,10 @@ Contains
 
 ! set up atom iatm type and accumulate statistic
 
-  Do i=1,natms
-     k=ltype(i)
+  Do i=1,config%natms
+     k=config%ltype(i)
 
-     l=Min(1+Int((parts(i)%zzz+zleno2)*rdelr),max_grid_rdf)
+     l=Min(1+Int((config%parts(i)%zzz+zleno2)*rdelr),max_grid_rdf)
 
      zdensity%density(l,k)=zdensity%density(l,k) + 1.0_wp
   End Do
@@ -110,7 +110,7 @@ Contains
 End Subroutine z_density_collect
 
 
-Subroutine z_density_compute(max_grid_rdf,zdensity,sites,comm)
+Subroutine z_density_compute(config,max_grid_rdf,zdensity,sites,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -124,6 +124,7 @@ Subroutine z_density_compute(max_grid_rdf,zdensity,sites,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( z_density_type ), Intent( InOut ) :: zdensity
   Type( site_type ), Intent( In    ) :: sites
   Type( comms_type ), Intent( InOut ) :: comm
@@ -140,13 +141,13 @@ Subroutine z_density_compute(max_grid_rdf,zdensity,sites,comm)
 
   If (comm%idnode == 0) Then
      Open(Unit=nzdndt, File='ZDNDAT', Status='replace')
-     Write(nzdndt,'(a)') cfgname
+     Write(nzdndt,'(a)') config%cfgname
      Write(nzdndt,'(2i10)') sites%ntype_atom,max_grid_rdf
   End If
 
 ! length of cell in z direction
 
-  zlen=Abs(cell(3))+Abs(cell(6))+Abs(cell(9))
+  zlen=Abs(config%cell(3))+Abs(config%cell(6))+Abs(config%cell(9))
 
 ! grid interval for density profiles
 
@@ -154,7 +155,7 @@ Subroutine z_density_compute(max_grid_rdf,zdensity,sites,comm)
 
 ! volume of z-strip
 
-  dvolz=(volm/zlen)*delr
+  dvolz=(config%volm/zlen)*delr
 
 ! normalisation factor
 

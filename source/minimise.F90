@@ -13,10 +13,7 @@ Module minimise
   Use comms,           Only : comms_type,gsum,gmax
   Use setup,           Only : engunit,nrite,output, &
                               zero_plus,mxatms
-  Use configuration,   Only : natms,nlast,nfree,          &
-                              lsi,lsa,lfrzn,lfree,lstfre, &
-                              weight, &
-                              imcon,cell,vxx,vyy,vzz, &
+  Use configuration,   Only : configuration_type, &
                               write_config,getcom
   Use particle,        Only : corePart
   Use rigid_bodies,    Only : rigid_bodies_type,q_setup,getrotmat, &
@@ -126,7 +123,7 @@ Contains
   End Subroutine deallocate_minimise_arrays
 
   Subroutine minimise_relax(l_str,rdf_collect,megatm,tstep,stpcfg,stats, &
-    pmf,cons,netcdf,minim,rigid,domain,parts,comm)
+    pmf,cons,netcdf,minim,rigid,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -158,7 +155,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
-    type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
 
 
     Integer                    :: fail(1:8),i,j,levcfg
@@ -219,8 +216,8 @@ Contains
 ! minim%total number of active particles (excluding frozen sites and massless shells)
 
      minim%total=0.0_wp
-     Do i=1,natms
-        If (lfrzn(i) == 0 .and. (weight(i) > 1.0e-6_wp .or. lfree(i) == 1)) &
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0 .and. (config%weight(i) > 1.0e-6_wp .or. config%lfree(i) == 1)) &
            minim%total=minim%total+1.0_wp
      End Do
      Call gsum(comm,minim%total)
@@ -303,11 +300,11 @@ Contains
 
 ! Load original forces
 
-   Do i=1,natms
-     gxx(i)=parts(i)%fxx
-     gyy(i)=parts(i)%fyy
-     gzz(i)=parts(i)%fzz
-   End Do
+  Do i=1,config%natms
+     gxx(i)=config%parts(i)%fxx
+     gyy(i)=config%parts(i)%fyy
+     gzz(i)=config%parts(i)%fzz
+  End Do
 
 ! Minimised energy is current configuration energy
 
@@ -316,17 +313,17 @@ Contains
 ! Calculate pseudo forces and energy for constraint bonds and PMFs
 
    If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-     lstitr(1:natms)=.false. ! initialise lstitr
+     lstitr(1:config%natms)=.false. ! initialise lstitr
 
      If (cons%megcon > 0) Then
-       Call constraints_tags(lstitr,cons,parts,comm)
-       Call constraints_pseudo_bonds(gxx,gyy,gzz,stats,cons,comm)
+       Call constraints_tags(lstitr,cons,config,comm)
+       Call constraints_pseudo_bonds(gxx,gyy,gzz,stats,cons,config,comm)
        minim%eng=minim%eng+stats%engcon
      End If
 
      If (pmf%megpmf > 0) Then
-        Call pmf_tags(lstitr,pmf,parts,comm)
-        Call pmf_pseudo_bonds(gxx,gyy,gzz,stats,pmf,comm)
+        Call pmf_tags(lstitr,pmf,config,comm)
+        Call pmf_pseudo_bonds(gxx,gyy,gzz,stats,pmf,config,comm)
         minim%eng=minim%eng+stats%engpmf
      End If
   End If
@@ -335,10 +332,10 @@ Contains
 
   If (rigid%total > 0) Then
      If (rigid%share) Then
-       Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+       Call update_shared_units(config,rigid%list_shared, &
          rigid%map_shared,gxx,gyy,gzz,domain,comm)
      End If
-     Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,parts,comm)
+     Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,config,comm)
   End If
 
 ! Initialise/get minim%eng_tol & verify relaxed condition
@@ -353,7 +350,7 @@ Contains
 ! massless shells and frozen particles have zero forces!
 
   minim%grad=0.0_wp
-  Do i=1,natms
+  Do i=1,config%natms
     minim%grad=minim%grad+gxx(i)**2+gyy(i)**2+gzz(i)**2
   End Do
   Call gsum(comm,minim%grad)
@@ -424,7 +421,7 @@ Contains
 
 ! Set original search direction
 
-     Do i=1,natms
+     Do i=1,config%natms
         minim%oxx(i)=gxx(i)
         minim%oyy(i)=gyy(i)
         minim%ozz(i)=gzz(i)
@@ -443,7 +440,7 @@ Contains
 
      minim%grad1=minim%grad2
      minim%grad2=0.0_wp
-     Do i=1,natms
+     Do i=1,config%natms
         minim%grad2=minim%grad2+minim%oxx(i)*gxx(i)+minim%oyy(i)*gyy(i)+minim%ozz(i)*gzz(i)
      End Do
      Call gsum(comm,minim%grad2)
@@ -469,7 +466,7 @@ Contains
      minim%grad0=minim%grad
      minim%grad2=0.0_wp
      minim%onorm=0.0_wp
-     Do i=1,natms
+     Do i=1,config%natms
         minim%oxx(i)=gxx(i)+minim%gamma*minim%oxx(i)
         minim%oyy(i)=gyy(i)+minim%gamma*minim%oyy(i)
         minim%ozz(i)=gzz(i)+minim%gamma*minim%ozz(i)
@@ -495,13 +492,13 @@ Contains
 
 ! active free particles
 
-     Do j=1,nfree
-        i=lstfre(j)
+     Do j=1,config%nfree
+        i=config%lstfre(j)
 
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           parts(i)%xxx=parts(i)%xxx+minim%stride*minim%oxx(i)
-           parts(i)%yyy=parts(i)%yyy+minim%stride*minim%oyy(i)
-           parts(i)%zzz=parts(i)%zzz+minim%stride*minim%ozz(i)
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+           config%parts(i)%xxx=config%parts(i)%xxx+minim%stride*minim%oxx(i)
+           config%parts(i)%yyy=config%parts(i)%yyy+minim%stride*minim%oyy(i)
+           config%parts(i)%zzz=config%parts(i)%zzz+minim%stride*minim%ozz(i)
            minim%dist_tol=Max(minim%dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
         End If
      End Do
@@ -510,18 +507,18 @@ Contains
 ! RB particles
 
      Call rigid_bodies_move(minim%stride,minim%oxx,minim%oyy,minim%ozz, &
-       txx,tyy,tzz,uxx,uyy,uzz,minim%dist_tol,rigid,parts)
+       txx,tyy,tzz,uxx,uyy,uzz,minim%dist_tol,rigid,config)
      minim%l_mov=.true.
 
   Else
 
 ! active particles
 
-     Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           parts(i)%xxx=parts(i)%xxx+minim%stride*minim%oxx(i)
-           parts(i)%yyy=parts(i)%yyy+minim%stride*minim%oyy(i)
-           parts(i)%zzz=parts(i)%zzz+minim%stride*minim%ozz(i)
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+           config%parts(i)%xxx=config%parts(i)%xxx+minim%stride*minim%oxx(i)
+           config%parts(i)%yyy=config%parts(i)%yyy+minim%stride*minim%oyy(i)
+           config%parts(i)%zzz=config%parts(i)%zzz+minim%stride*minim%ozz(i)
            minim%dist_tol=Max(minim%dist_tol,minim%oxx(i)**2+minim%oyy(i)**2+minim%ozz(i)**2)
         End If
      End Do
@@ -610,17 +607,17 @@ Contains
        name = 'CFGMIN' ! file name
        levcfg = 0      ! define level of information in file
 
-       Call write_config(name,levcfg,megatm,i-1,minim%eng_min/engunit,minim%eng_0/engunit,netcdf,comm)
+       Call write_config(config,name,levcfg,megatm,i-1,minim%eng_min/engunit,minim%eng_0/engunit,netcdf,comm)
      End If
 
 ! setup new quaternions
 
      If (minim%l_mov) Then
         If (rigid%share) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-            rigid%map_shared,parts,SHARED_UNIT_UPDATE_POSITIONS,domain,comm)
+          Call update_shared_units(config,rigid%list_shared, &
+            rigid%map_shared,SHARED_UNIT_UPDATE_POSITIONS,domain,comm)
         End If
-        Call q_setup(rigid,parts,comm)
+        Call q_setup(rigid,config,comm)
      End If
 
   End If
@@ -642,7 +639,7 @@ Contains
 
 End Subroutine minimise_relax
 
-Subroutine zero_k_optimise(stats,rigid,parts,comm)
+Subroutine zero_k_optimise(stats,rigid,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -673,7 +670,7 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
   Type( stats_type ), Intent( InOut ) :: stats
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( comms_type ), Intent( InOut ) :: comm
-  Type( corePart ),   Intent( InOut ) :: parts(:)
+  Type( configuration_type ),   Intent( InOut ) :: config
 
   Integer           :: fail,i,j,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
   Real( Kind = wp ) :: e_f,e_t,e_r,engkf,engkt,scale,vdotf,fsq, &
@@ -725,39 +722,40 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! COM distances
 
-              ggx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-              ggy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-              ggz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+              ggx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+              ggy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+              ggz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
            End Do
         End If
      End Do
 
 ! minimum image convention for bond vectors
 
-     Call images(imcon,cell,krgd,ggx,ggy,ggz)
+     Call images(config%imcon,config%cell,krgd,ggx,ggy,ggz)
 
 ! Free particles
 
-     Do j=1,nfree
-        i=lstfre(j)
+     Do j=1,config%nfree
+        i=config%lstfre(j)
 
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
 
 ! take component of velocity in direction of force
 
-           vdotf = vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
+           vdotf = config%vxx(i)*config%parts(i)%fxx+config%vyy(i)*config%parts(i)%fyy+&
+                   config%vzz(i)*config%parts(i)%fzz
 
            If (vdotf < 0.0_wp) Then
-              vxx(i) = 0.0_wp
-              vyy(i) = 0.0_wp
-              vzz(i) = 0.0_wp
+              config%vxx(i) = 0.0_wp
+              config%vyy(i) = 0.0_wp
+              config%vzz(i) = 0.0_wp
            Else
-              fsq = parts(i)%fxx**2+parts(i)%fyy**2+parts(i)%fzz**2
+              fsq = config%parts(i)%fxx**2+config%parts(i)%fyy**2+config%parts(i)%fzz**2
               scale = vdotf/Max(1.0e-10_wp,fsq)
 
-              vxx(i) = parts(i)%fxx*scale
-              vyy(i) = parts(i)%fyy*scale
-              vzz(i) = parts(i)%fzz*scale
+              config%vxx(i) = config%parts(i)%fxx*scale
+              config%vyy(i) = config%parts(i)%fyy*scale
+              config%vzz(i) = config%parts(i)%fzz*scale
            End If
 
         End If
@@ -788,14 +786,14 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 ! If the RB has a frozen particle then no net force
 
               If (rigid%frozen(0,rgdtyp) == 0) Then
-                 fmx=fmx+parts(i)%fxx
-                 fmy=fmy+parts(i)%fyy
-                 fmz=fmz+parts(i)%fzz
+                 fmx=fmx+config%parts(i)%fxx
+                 fmy=fmy+config%parts(i)%fyy
+                 fmz=fmz+config%parts(i)%fzz
               End If
 
-              tqx=tqx+ggy(krgd)*parts(i)%fzz-ggz(krgd)*parts(i)%fyy
-              tqy=tqy+ggz(krgd)*parts(i)%fxx-ggx(krgd)*parts(i)%fzz
-              tqz=tqz+ggx(krgd)*parts(i)%fyy-ggy(krgd)*parts(i)%fxx
+              tqx=tqx+ggy(krgd)*config%parts(i)%fzz-ggz(krgd)*config%parts(i)%fyy
+              tqy=tqy+ggz(krgd)*config%parts(i)%fxx-ggx(krgd)*config%parts(i)%fzz
+              tqz=tqz+ggx(krgd)*config%parts(i)%fyy-ggy(krgd)*config%parts(i)%fxx
            End Do
 
 ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -805,11 +803,11 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
               i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
               i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-              x(1)=parts(i1)%xxx-parts(i2)%xxx
-              y(1)=parts(i1)%yyy-parts(i2)%yyy
-              z(1)=parts(i1)%zzz-parts(i2)%zzz
+              x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
+              y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
+              z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
 
-              Call images(imcon,cell,1,x,y,z)
+              Call images(config%imcon,config%cell,1,x,y,z)
 
               tmp=(x(1)*tqx+y(1)*tqy+z(1)*tqz)/(x(1)**2+y(1)**2+z(1)**2)
               tqx=x(1)*tmp
@@ -872,7 +870,7 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
               If (rigid%frozen(jrgd,rgdtyp) == 0) Then
                  i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                 If (i <= natms) Then
+                 If (i <= config%natms) Then
                     x(1)=rigid%x(jrgd,rgdtyp)
                     y(1)=rigid%y(jrgd,rgdtyp)
                     z(1)=rigid%z(jrgd,rgdtyp)
@@ -885,9 +883,9 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! new atomic velocities in lab frame
 
-                    vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
-                    vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
-                    vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
+                    config%vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                    config%vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                    config%vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                  End If
               End If
            End Do
@@ -896,17 +894,17 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! Subtract COM velocity
 
-     Call getvom(vom,vxx,vyy,vzz,rigid,comm)
+     Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
 
 ! remove centre of mass motion
 
-     Do j=1,nfree
-        i=lstfre(j)
+     Do j=1,config%nfree
+        i=config%lstfre(j)
 
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           vxx(i) = vxx(i) - vom(1)
-           vyy(i) = vyy(i) - vom(2)
-           vzz(i) = vzz(i) - vom(3)
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+           config%vxx(i) = config%vxx(i) - vom(1)
+           config%vyy(i) = config%vyy(i) - vom(2)
+           config%vzz(i) = config%vzz(i) - vom(3)
         End If
      End Do
 
@@ -922,10 +920,10 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
            Do jrgd=1,lrgd
               i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-              If (i <= natms) Then
-                 vxx(i) = vxx(i) - vom(1)
-                 vyy(i) = vyy(i) - vom(2)
-                 vzz(i) = vzz(i) - vom(3)
+              If (i <= config%natms) Then
+                 config%vxx(i) = config%vxx(i) - vom(1)
+                 config%vyy(i) = config%vyy(i) - vom(2)
+                 config%vzz(i) = config%vzz(i) - vom(3)
               End If
            End Do
         End If
@@ -933,7 +931,7 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! update kinetic energy and stress
 
-     Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
+     Call kinstresf(config%vxx,config%vyy,config%vzz,stats%strknf,config,comm)
      Call kinstrest(rigid,stats%strknt,comm)
 
      stats%strkin=stats%strknf+stats%strknt
@@ -949,24 +947,25 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
         Call error(0,message)
      End If
   Else
-     Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
 
 ! take component of velocity in direction of force
 
-           vdotf = vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
+           vdotf = config%vxx(i)*config%parts(i)%fxx+config%vyy(i)*config%parts(i)%fyy+&
+                   config%vzz(i)*config%parts(i)%fzz
 
            If (vdotf < 0.0_wp) Then
-              vxx(i) = 0.0_wp
-              vyy(i) = 0.0_wp
-              vzz(i) = 0.0_wp
+              config%vxx(i) = 0.0_wp
+              config%vyy(i) = 0.0_wp
+              config%vzz(i) = 0.0_wp
            Else
-              fsq = parts(i)%fxx**2+parts(i)%fyy**2+parts(i)%fzz**2
+              fsq = config%parts(i)%fxx**2+config%parts(i)%fyy**2+config%parts(i)%fzz**2
               scale = vdotf/Max(1.0e-10_wp,fsq)
 
-              vxx(i) = parts(i)%fxx*scale
-              vyy(i) = parts(i)%fyy*scale
-              vzz(i) = parts(i)%fzz*scale
+              config%vxx(i) = config%parts(i)%fxx*scale
+              config%vyy(i) = config%parts(i)%fyy*scale
+              config%vzz(i) = config%parts(i)%fzz*scale
            End If
 
         End If
@@ -974,25 +973,25 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! Subtract COM velocity
 
-     Call getvom(vom,vxx,vyy,vzz,comm)
+     Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
 
-     Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           vxx(i) = vxx(i) - vom(1)
-           vyy(i) = vyy(i) - vom(2)
-           vzz(i) = vzz(i) - vom(3)
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+           config%vxx(i) = config%vxx(i) - vom(1)
+           config%vyy(i) = config%vyy(i) - vom(2)
+           config%vzz(i) = config%vzz(i) - vom(3)
         End If
      End Do
 
 ! Update kinetic stress and energy
 
-     Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
+     Call kinstress(config%vxx,config%vyy,config%vzz,stats%strkin,config,comm)
      stats%engke=0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
   End If
 
 ! zero angular momentum about centre of mass - non-periodic system
 
-  If (imcon == 0) Then
+  If (config%imcon == 0) Then
      fail=0
      Allocate (buffer(1:12), Stat=fail)
      If (fail > 0) Then
@@ -1007,19 +1006,19 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! calculate centre of mass position
 
-     Call getcom(parts,com,comm)
+     Call getcom(config,com,comm)
 
      If (rigid%total > 0) Then
 
 ! move to centre of mass origin
 
-        Do j=1,nfree
-           i=lstfre(j)
+        Do j=1,config%nfree
+           i=config%lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              parts(i)%xxx = parts(i)%xxx - com(1)
-              parts(i)%yyy = parts(i)%yyy - com(2)
-              parts(i)%zzz = parts(i)%zzz - com(3)
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              config%parts(i)%xxx = config%parts(i)%xxx - com(1)
+              config%parts(i)%yyy = config%parts(i)%yyy - com(2)
+              config%parts(i)%zzz = config%parts(i)%zzz - com(3)
            End If
         End Do
 
@@ -1043,21 +1042,21 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
         rot = 0.0_wp
 
-        Do j=1,nfree
-           i=lstfre(j)
+        Do j=1,config%nfree
+           i=config%lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              amx = amx + weight(i)*(parts(i)%yyy*vzz(i) - parts(i)%zzz*vyy(i))
-              amy = amy + weight(i)*(parts(i)%zzz*vxx(i) - parts(i)%xxx*vzz(i))
-              amz = amz + weight(i)*(parts(i)%xxx*vyy(i) - parts(i)%yyy*vxx(i))
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              amx = amx + config%weight(i)*(config%parts(i)%yyy*config%vzz(i) - config%parts(i)%zzz*config%vyy(i))
+              amy = amy + config%weight(i)*(config%parts(i)%zzz*config%vxx(i) - config%parts(i)%xxx*config%vzz(i))
+              amz = amz + config%weight(i)*(config%parts(i)%xxx*config%vyy(i) - config%parts(i)%yyy*config%vxx(i))
 
-              tmp = parts(i)%xxx**2 + parts(i)%yyy**2 + parts(i)%zzz**2
-              rot(1) = rot(1) + weight(i)*(parts(i)%xxx*parts(i)%xxx - tmp)
-              rot(2) = rot(2) + weight(i)* parts(i)%xxx*parts(i)%yyy
-              rot(3) = rot(3) + weight(i)* parts(i)%xxx*parts(i)%zzz
-              rot(5) = rot(5) + weight(i)*(parts(i)%yyy*parts(i)%yyy - tmp)
-              rot(6) = rot(6) + weight(i)* parts(i)%yyy*parts(i)%zzz
-              rot(9) = rot(9) + weight(i)*(parts(i)%zzz*parts(i)%zzz - tmp)
+              tmp = config%parts(i)%xxx**2 + config%parts(i)%yyy**2 + config%parts(i)%zzz**2
+              rot(1) = rot(1) + config%weight(i)*(config%parts(i)%xxx*config%parts(i)%xxx - tmp)
+              rot(2) = rot(2) + config%weight(i)* config%parts(i)%xxx*config%parts(i)%yyy
+              rot(3) = rot(3) + config%weight(i)* config%parts(i)%xxx*config%parts(i)%zzz
+              rot(5) = rot(5) + config%weight(i)*(config%parts(i)%yyy*config%parts(i)%yyy - tmp)
+              rot(6) = rot(6) + config%weight(i)* config%parts(i)%yyy*config%parts(i)%zzz
+              rot(9) = rot(9) + config%weight(i)*(config%parts(i)%zzz*config%parts(i)%zzz - tmp)
            End If
         End Do
 
@@ -1122,13 +1121,13 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! correction to linear velocity
 
-        Do j=1,nfree
-           i=lstfre(j)
+        Do j=1,config%nfree
+           i=config%lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              vxx(i) = vxx(i) + (wyy*parts(i)%zzz - wzz*parts(i)%yyy)
-              vyy(i) = vyy(i) + (wzz*parts(i)%xxx - wxx*parts(i)%zzz)
-              vzz(i) = vzz(i) + (wxx*parts(i)%yyy - wyy*parts(i)%xxx)
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              config%vxx(i) = config%vxx(i) + (wyy*config%parts(i)%zzz - wzz*config%parts(i)%yyy)
+              config%vyy(i) = config%vyy(i) + (wzz*config%parts(i)%xxx - wxx*config%parts(i)%zzz)
+              config%vzz(i) = config%vzz(i) + (wxx*config%parts(i)%yyy - wyy*config%parts(i)%xxx)
            End If
         End Do
 
@@ -1148,10 +1147,10 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
               Do jrgd=1,lrgd
                  i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                 If (i <= natms) Then
-                    vxx(i) = vxx(i) + x(1)
-                    vyy(i) = vyy(i) + y(1)
-                    vzz(i) = vzz(i) + z(1)
+                 If (i <= config%natms) Then
+                    config%vxx(i) = config%vxx(i) + x(1)
+                    config%vyy(i) = config%vyy(i) + y(1)
+                    config%vzz(i) = config%vzz(i) + z(1)
                  End If
               End Do
            End If
@@ -1159,19 +1158,19 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! get kinetic energy
 
-        engkf=getknf(vxx,vyy,vzz,comm)
+        engkf=getknf(config%vxx,config%vyy,config%vzz,config,comm)
         engkt=getknt(rigid,comm)
         stats%engke=engkf+engkt
 
 ! reset positions to original reference frame
 
-        Do j=1,nfree
-           i=lstfre(j)
+        Do j=1,config%nfree
+           i=config%lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              parts(i)%xxx = parts(i)%xxx + com(1)
-              parts(i)%yyy = parts(i)%yyy + com(2)
-              parts(i)%zzz = parts(i)%zzz + com(3)
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              config%parts(i)%xxx = config%parts(i)%xxx + com(1)
+              config%parts(i)%yyy = config%parts(i)%yyy + com(2)
+              config%parts(i)%zzz = config%parts(i)%zzz + com(3)
            End If
         End Do
 
@@ -1189,11 +1188,11 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! move to centre of mass origin
 
-        Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              parts(i)%xxx = parts(i)%xxx - com(1)
-              parts(i)%yyy = parts(i)%yyy - com(2)
-              parts(i)%zzz = parts(i)%zzz - com(3)
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              config%parts(i)%xxx = config%parts(i)%xxx - com(1)
+              config%parts(i)%yyy = config%parts(i)%yyy - com(2)
+              config%parts(i)%zzz = config%parts(i)%zzz - com(3)
            End If
         End Do
 
@@ -1207,19 +1206,22 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
         rot = 0.0_wp
 
-        Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              amx = amx + weight(i)*(parts(i)%yyy*vzz(i) - parts(i)%zzz*vyy(i))
-              amy = amy + weight(i)*(parts(i)%zzz*vxx(i) - parts(i)%xxx*vzz(i))
-              amz = amz + weight(i)*(parts(i)%xxx*vyy(i) - parts(i)%yyy*vxx(i))
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              amx = amx + config%weight(i)*(config%parts(i)%yyy*config%vzz(i) - &
+                          config%parts(i)%zzz*config%vyy(i))
+              amy = amy + config%weight(i)*(config%parts(i)%zzz*config%vxx(i) - &
+                          config%parts(i)%xxx*config%vzz(i))
+              amz = amz + config%weight(i)*(config%parts(i)%xxx*config%vyy(i) - &
+                          config%parts(i)%yyy*config%vxx(i))
 
-              tmp = parts(i)%xxx**2 + parts(i)%yyy**2 + parts(i)%zzz**2
-              rot(1) = rot(1) + weight(i)*(parts(i)%xxx*parts(i)%xxx - tmp)
-              rot(2) = rot(2) + weight(i)* parts(i)%xxx*parts(i)%yyy
-              rot(3) = rot(3) + weight(i)* parts(i)%xxx*parts(i)%zzz
-              rot(5) = rot(5) + weight(i)*(parts(i)%yyy*parts(i)%yyy - tmp)
-              rot(6) = rot(6) + weight(i)* parts(i)%yyy*parts(i)%zzz
-              rot(9) = rot(9) + weight(i)*(parts(i)%zzz*parts(i)%zzz - tmp)
+              tmp = config%parts(i)%xxx**2 + config%parts(i)%yyy**2 + config%parts(i)%zzz**2
+              rot(1) = rot(1) + config%weight(i)*(config%parts(i)%xxx*config%parts(i)%xxx - tmp)
+              rot(2) = rot(2) + config%weight(i)* config%parts(i)%xxx*config%parts(i)%yyy
+              rot(3) = rot(3) + config%weight(i)* config%parts(i)%xxx*config%parts(i)%zzz
+              rot(5) = rot(5) + config%weight(i)*(config%parts(i)%yyy*config%parts(i)%yyy - tmp)
+              rot(6) = rot(6) + config%weight(i)* config%parts(i)%yyy*config%parts(i)%zzz
+              rot(9) = rot(9) + config%weight(i)*(config%parts(i)%zzz*config%parts(i)%zzz - tmp)
            End If
         End Do
 
@@ -1261,25 +1263,25 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! correction to linear velocity
 
-        Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              vxx(i) = vxx(i) + (wyy*parts(i)%zzz - wzz*parts(i)%yyy)
-              vyy(i) = vyy(i) + (wzz*parts(i)%xxx - wxx*parts(i)%zzz)
-              vzz(i) = vzz(i) + (wxx*parts(i)%yyy - wyy*parts(i)%xxx)
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              config%vxx(i) = config%vxx(i) + (wyy*config%parts(i)%zzz - wzz*config%parts(i)%yyy)
+              config%vyy(i) = config%vyy(i) + (wzz*config%parts(i)%xxx - wxx*config%parts(i)%zzz)
+              config%vzz(i) = config%vzz(i) + (wxx*config%parts(i)%yyy - wyy*config%parts(i)%xxx)
            End If
         End Do
 
 ! get kinetic energy
 
-        stats%engke=getkin(vxx,vyy,vzz,comm)
+        stats%engke=getkin(config,config%vxx,config%vyy,config%vzz,comm)
 
 ! reset positions to original reference frame
 
-        Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              parts(i)%xxx = parts(i)%xxx + com(1)
-              parts(i)%yyy = parts(i)%yyy + com(2)
-              parts(i)%zzz = parts(i)%zzz + com(3)
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              config%parts(i)%xxx = config%parts(i)%xxx + com(1)
+              config%parts(i)%yyy = config%parts(i)%yyy + com(2)
+              config%parts(i)%zzz = config%parts(i)%zzz + com(3)
            End If
         End Do
 
@@ -1303,13 +1305,13 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
   If (engkf+engkt+stats%engrot > 1.0e-6_wp .and. e_f+e_t+e_r > 1.0e-6_wp) Then
      If (rigid%total > 0) Then
         tmp=Sqrt((e_f+e_t+e_r)/(engkf+engkt+stats%engrot))
-        Do j=1,nfree
-           i=lstfre(j)
+        Do j=1,config%nfree
+           i=config%lstfre(j)
 
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              vxx(i)=vxx(i)*tmp
-              vyy(i)=vyy(i)*tmp
-              vzz(i)=vzz(i)*tmp
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              config%vxx(i)=config%vxx(i)*tmp
+              config%vyy(i)=config%vyy(i)*tmp
+              config%vzz(i)=config%vzz(i)*tmp
            End If
         End Do
 
@@ -1341,7 +1343,7 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
                  If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
                     i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                    If (i <= natms) Then
+                    If (i <= config%natms) Then
                        x(1)=rigid%x(jrgd,rgdtyp)
                        y(1)=rigid%y(jrgd,rgdtyp)
                        z(1)=rigid%z(jrgd,rgdtyp)
@@ -1354,9 +1356,9 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! new atomic velocities in lab frame
 
-                       vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
-                       vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
-                       vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
+                       config%vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
+                       config%vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
+                       config%vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
                     End If
                  End If
               End Do
@@ -1365,7 +1367,7 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
 
 ! update kinetic energy and stress
 
-        Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
+        Call kinstresf(config%vxx,config%vyy,config%vzz,stats%strknf,config,comm)
         Call kinstrest(rigid,stats%strknt,comm)
 
         stats%strkin=stats%strknf+stats%strknt
@@ -1376,22 +1378,22 @@ Subroutine zero_k_optimise(stats,rigid,parts,comm)
         stats%engrot=getknr(rigid,comm)
      Else
         tmp=Sqrt(e_f/stats%engke)
-        Do i=1,natms
-           If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-              vxx(i)=vxx(i)*tmp
-              vyy(i)=vyy(i)*tmp
-              vzz(i)=vzz(i)*tmp
+        Do i=1,config%natms
+           If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+              config%vxx(i)=config%vxx(i)*tmp
+              config%vyy(i)=config%vyy(i)*tmp
+              config%vzz(i)=config%vzz(i)*tmp
            End If
         End Do
 
 ! Update kinetic stress and energy
 
-        Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
+        Call kinstress(config%vxx,config%vyy,config%vzz,stats%strkin,config,comm)
         stats%engke=0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
      End If
   Else ! zero them and let's see if we can crash
-     Do i=1,natms
-        vxx(i)=0.0_wp ; vyy(i)=0.0_wp ; vzz(i)=0.0_wp
+     Do i=1,config%natms
+        config%vxx(i)=0.0_wp ; config%vyy(i)=0.0_wp ; config%vzz(i)=0.0_wp
      End Do
 
      If (rigid%total > 0) Then

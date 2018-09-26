@@ -2,7 +2,7 @@
 Module analysis
   Use kinds,         Only : wp,wi
   Use setup,         Only : zero_plus
-  Use configuration, Only : volm,cell
+  Use configuration, Only : configuration_type
   Use site, Only : site_type
   Use statistics,    Only : stats_type
   Use bonds,         Only : bonds_type,bonds_compute
@@ -26,7 +26,8 @@ Contains
   !> Calculate and print final analysis
   Subroutine analysis_result(lpana, &
                              nstep,tstep,rcut,temp,ensemble, &
-                             bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,comm)
+                             bond,angle,dihedral,inversion,stats, &
+                             green,zdensity,neigh,sites,rdf,config,comm)
 
     Logical, Intent( In    ) :: lpana
     !> Number of simulation steps
@@ -59,6 +60,8 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     !> RDF data
     Type( rdf_type ), Intent( InOut ) :: rdf
+    !> Config data
+    Type( configuration_type ), Intent( InOut ) :: config
     !> Comms
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -73,36 +76,36 @@ Contains
 
     ! Average volume
     avvol = stats%sumval(19)
-    ! Scale densities for average volume and average volume and cell
+    ! Scale densities for average volume and average volume and config%cell
     Do i = 1,sites%ntype_atom
-      sites%dens(i) = sites%dens(i)*(volm/avvol)
+      sites%dens(i) = sites%dens(i)*(config%volm/avvol)
     End Do
 
     ! Redefine volume for analysis routines
-    volm = avvol
-    ! Redefine cell dimensions for analysis routines for npt/nst
+    config%volm = avvol
+    ! Redefine config%cell dimensions for analysis routines for npt/nst
     If (ensemble >= 20) Then
       Do i = 1, 9
-        cell(i) = stats%sumval(36+sites%ntype_atom+i)
+        config%cell(i) = stats%sumval(36+sites%ntype_atom+i)
       End Do
     End If
 
     ! Calculate and print radial distribution functions
     ! If block average errors, output that, else if jackknife errors output those, else just RDF.
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. rdf%l_errors_block) Then
-      Call calculate_errors(temp,rcut,nstep,neigh,sites,rdf,comm)
+      Call calculate_errors(temp,rcut,nstep,neigh,sites,rdf,config,comm)
     End If
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. rdf%l_errors_jack .and. .not. rdf%l_errors_block) Then
-      Call calculate_errors_jackknife(temp,rcut,nstep,neigh,sites,rdf,comm)
+      Call calculate_errors_jackknife(temp,rcut,nstep,neigh,sites,rdf,config,comm)
     End If
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. .not.(rdf%l_errors_block .or. rdf%l_errors_jack)) Then
-      Call rdf_compute(lpana,rcut,temp,sites,rdf,comm)
+      Call rdf_compute(lpana,rcut,temp,sites,rdf,config,comm)
     End IF
-    If (rdf%n_configs_usr > 0) Call usr_compute(rdf,comm)
+    If (rdf%n_configs_usr > 0) Call usr_compute(rdf,config,comm)
 
     ! calculate and print z-density profile
     If (zdensity%l_collect .and. zdensity%l_print .and. zdensity%n_samples > 0) Then
-      Call z_density_compute(rdf%max_grid,zdensity,sites,comm)
+      Call z_density_compute(config,rdf%max_grid,zdensity,sites,comm)
     End If
 
     ! calculate and print velocity autocorrelation function
@@ -113,16 +116,16 @@ Contains
     ! Calculate and print PDFs
     If (lpana) Then
       If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Then
-        Call bonds_compute(temp,sites%unique_atom,bond,comm)
+        Call bonds_compute(temp,sites%unique_atom,bond,config,comm)
       End If
       If (angle%bin_adf > 0 .and. angle%n_frames > 0) Then
-        Call angles_compute(temp,sites%unique_atom,angle,comm)
+        Call angles_compute(temp,sites%unique_atom,angle,config,comm)
       End If
       If (dihedral%bin_adf > 0 .and. dihedral%n_frames > 0) Then
-        Call dihedrals_compute(temp,sites%unique_atom,dihedral,comm)
+        Call dihedrals_compute(temp,sites%unique_atom,dihedral,config,comm)
       End If
       If (inversion%bin_adf > 0 .and. inversion%n_frames > 0) Then
-        Call inversions_compute(temp,sites%unique_atom,inversion,comm)
+        Call inversions_compute(temp,sites%unique_atom,inversion,config,comm)
       End If
     End If
   End Subroutine analysis_result

@@ -158,7 +158,7 @@ Module setup
 
 ! this is the default name for the CONFIG file
 
-  Character( Len = 1024 ), Save :: config = "CONFIG"
+  Character( Len = 1024 ), Save :: config_name = "CONFIG"
 
 ! this is the default name for the FIELD file
 

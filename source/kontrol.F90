@@ -2,7 +2,7 @@ Module kontrol
   Use kinds, only : wi,wp,real32,real64
   Use comms,      Only : comms_type,gcheck
   Use timer,      Only : timer_type
-  Use configuration,     Only : sysname
+  Use configuration,     Only : configuration_type
   Use mpole,     Only : mpole_type,POLARISATION_DEFAULT,POLARISATION_CHARMM
   Use langevin,   Only : langevin_allocate_arrays
   Use bonds,      Only : bonds_type
@@ -19,7 +19,7 @@ Module kontrol
   Use kinetics,  Only : l_vom
   Use plumed,   Only : plumed_type
   Use setup,       Only : nread,control,pi,zero_plus, &
-                          output,field,config,statis, &
+                          output,field,config_name,statis, &
                           history,historf,revive,revcon,revold
   Use parse,       Only : get_line,get_word,lower_case,word_2_real
   
@@ -129,7 +129,7 @@ Subroutine read_control                                &
   dfcts,       &
   ndump,pdplnc,rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
   met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-  rdf,minim,mpoles,electro,ewld,seed,traj,tmr,comm)
+  rdf,minim,mpoles,electro,ewld,seed,traj,tmr,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -204,6 +204,7 @@ Subroutine read_control                                &
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( seed_type ), Intent( InOut ) :: seed
   Type( trajectory_type ), Intent( InOut ) :: traj
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ),     Intent( InOut )  :: comm
 
   Integer( Kind = wi ) :: tmp_seed(1:3)
@@ -569,16 +570,16 @@ Subroutine read_control                                &
 
 ! read simulation control name
 
-  Call get_line(safe,nread,sysname,comm)
+  Call get_line(safe,nread,config%sysname,comm)
   If (.not.safe) Go To 1000
-  Call strip_blanks(sysname)
+  Call strip_blanks(config%sysname)
 
   If (.not.safe) Go To 1000
 
   Write(banner(1),'(a)') ''
   Write(banner(2),'(a)') Repeat('*',80)
   Write(banner(3),'(a4,a72,a4)') '*** ', 'title:'//Repeat(' ',66), ' ***'
-  Write(banner(4),'(a4,a72,a4)') '*** ', sysname, ' ***'
+  Write(banner(4),'(a4,a72,a4)') '*** ', config%sysname, ' ***'
   Write(banner(5),'(a)') Repeat('*',80)
   Write(banner(6),'(a)') ''
   Call info(banner,6,.true.)
@@ -3674,10 +3675,15 @@ Subroutine read_control                                &
 
 End Subroutine read_control
 
-Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
-    l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce,cshell,stats, &
-    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
+Subroutine scan_control                                    &
+           (rcter, &
+           max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,             &
+           mxgana,         &
+           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
+           rbin,                          &
+           nstfce,cshell,stats,  &
+           thermo,green,devel,msd_data,met,pois,bond,angle, &
+           dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3699,7 +3705,8 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: max_rigid,imcon
   Integer,           Intent( InOut ) :: imc_n
-  Integer,           Intent(   Out ) :: mxgana, nstfce
+  Integer,           Intent(   Out ) :: mxgana, &
+                                        nstfce
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
   Real( Kind = wp ), Intent(   Out ) :: rbin
@@ -5261,7 +5268,7 @@ Subroutine scan_control_io(netcdf,comm)
           If (word(1:6) == 'output') Then
             Call info('OUTPUT file is '//Trim(output),.true.)
           Else If (word(1:6) == 'config') Then
-            Call info('CONFIG file is '//Trim(config),.true.)
+            Call info('CONFIG file is '//Trim(config_name),.true.)
           Else If (word(1:5) == 'field') Then
             Call info('FIELD file is '//Trim(field),.true.)
           Else If (word(1:6) == 'statis') Then
@@ -5455,7 +5462,7 @@ Subroutine scan_control_output(comm)
           Call get_word( rec_case_sensitive, output )
 
         Else If (word1(1:6) == 'config') Then
-          Call get_word( rec_case_sensitive, config )
+          Call get_word( rec_case_sensitive, config_name )
 
         Else If (word1(1:5) == 'field') Then
           Call get_word( rec_case_sensitive, field )

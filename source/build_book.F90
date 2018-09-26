@@ -3,7 +3,7 @@ Module build_book
   Use comms,  Only : comms_type,gcheck,gmax
   Use setup
   Use site, Only : site_type
-  Use configuration, Only : natms,nlast,lsi,lsa
+  Use configuration, Only : configuration_type
   Use particle,      Only : corePart
   Use core_shell
   Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_setup,rigid_bodies_tags, &
@@ -35,9 +35,9 @@ Contains
 Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-  degrot,degtra,flw,        &
-  cshell,cons,pmf,bond,angle,dihedral,  &
-  inversion,tether,neigh,sites,mpoles,rigid,domain,parts,comm)
+           degrot,degtra,flw,        &
+           cshell,cons,pmf,bond,angle,dihedral,  &
+           inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -72,7 +72,7 @@ Subroutine build_book_intra             &
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
 
-  Type( corePart ), Dimension( : ), Intent( InOut ) :: parts
+  Type( configuration_type ), Intent( InOut ) :: config
 
 
   Logical :: safe(1:11),go
@@ -187,8 +187,8 @@ Subroutine build_book_intra             &
 ! of localised atoms on this node and save their local_index in iwrk
 
         Do iatm=nsatm+1,neatm
-           iat0=local_index(iatm,nlast,lsi,lsa)
-           If (iat0 > natms) iat0=0
+           iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+           If (iat0 > config%natms) iat0=0
 
            If (iat0 > 0) Then
               nlapm=nlapm+1
@@ -213,11 +213,11 @@ Subroutine build_book_intra             &
               iatm=cshell%lstshl(1,lshels+kshels)+isite
               jatm=cshell%lstshl(2,lshels+kshels)+isite
 
-              iat0=local_index(iatm,nlast,lsi,lsa)
-              jat0=local_index(jatm,nlast,lsi,lsa)
+              iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+              jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
 
-              If (iat0 > natms) iat0=0
-              If (jat0 > natms) jat0=0
+              If (iat0 > config%natms) iat0=0
+              If (jat0 > config%natms) jat0=0
 
               If (iat0 > 0 .or. jat0 > 0) Then
                  jshels=jshels+1
@@ -271,11 +271,11 @@ Subroutine build_book_intra             &
               iatm=cons%lstcon(1,lconst+kconst)+isite
               jatm=cons%lstcon(2,lconst+kconst)+isite
 
-              iat0=local_index(iatm,nlast,lsi,lsa)
-              jat0=local_index(jatm,nlast,lsi,lsa)
+              iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+              jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
 
-              If (iat0 > natms) iat0=0
-              If (jat0 > natms) jat0=0
+              If (iat0 > config%natms) iat0=0
+              If (jat0 > config%natms) jat0=0
 
               If (iat0 > 0 .or. jat0 > 0) Then
                  jconst=jconst+1
@@ -336,15 +336,15 @@ Subroutine build_book_intra             &
               i1pmf=0 ; i1pmf0=0
               Do i=1,pmf%mxtpmf(1)
                  i1pmf(i) =pmf%lstpmf(i,1)+isite
-                 i1pmf0(i)=local_index(i1pmf(i),nlast,lsi,lsa)
-                 If (i1pmf0(i) > natms) i1pmf0(i)=0
+                 i1pmf0(i)=local_index(i1pmf(i),config%nlast,config%lsi,config%lsa)
+                 If (i1pmf0(i) > config%natms) i1pmf0(i)=0
               End Do
 
               i2pmf=0 ; i2pmf0=0
               Do i=1,pmf%mxtpmf(2)
                  i2pmf(i) =pmf%lstpmf(i,2)+isite
-                 i2pmf0(i)=local_index(i2pmf(i),nlast,lsi,lsa)
-                 If (i2pmf0(i) > natms) i2pmf0(i)=0
+                 i2pmf0(i)=local_index(i2pmf(i),config%nlast,config%lsi,config%lsa)
+                 If (i2pmf0(i) > config%natms) i2pmf0(i)=0
               End Do
 
               If (Any(i1pmf0 > 0) .or. Any(i2pmf0 > 0)) Then
@@ -423,8 +423,8 @@ Subroutine build_book_intra             &
               irgd=0 ; irgd0=0
               Do irigid=1,mrigid
                  irgd(irigid)=rigid%lst(irigid,lrigid+krigid)+isite
-                 irgd0(irigid)=local_index(irgd(irigid),nlast,lsi,lsa)
-                 If (irgd0(irigid) > natms) irgd0(irigid)=0
+                 irgd0(irigid)=local_index(irgd(irigid),config%nlast,config%lsi,config%lsa)
+                 If (irgd0(irigid) > config%natms) irgd0(irigid)=0
               End Do
 
               If (Any(irgd0 > 0)) Then
@@ -461,8 +461,8 @@ Subroutine build_book_intra             &
 
            Do lteths=1,tether%numteth(itmols)
               iatm=tether%lsttet(lteths+kteths)+isite
-              iat0=local_index(iatm,nlast,lsi,lsa)
-              If (iat0 > natms) iat0=0
+              iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+              If (iat0 > config%natms) iat0=0
 
               If (iat0 > 0) Then
                  jteths=jteths+1
@@ -496,11 +496,11 @@ Subroutine build_book_intra             &
               iatm=bond%lst(1,lbonds+kbonds)+isite
               jatm=bond%lst(2,lbonds+kbonds)+isite
 
-              iat0=local_index(iatm,nlast,lsi,lsa)
-              jat0=local_index(jatm,nlast,lsi,lsa)
+              iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+              jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
 
-              If (iat0 > natms) iat0=0
-              If (jat0 > natms) jat0=0
+              If (iat0 > config%natms) iat0=0
+              If (jat0 > config%natms) jat0=0
 
               If (iat0 > 0 .or. jat0 > 0) Then
                  jbonds=jbonds+1
@@ -555,13 +555,13 @@ Subroutine build_book_intra             &
               jatm=angle%lst(2,langle+kangle)+isite
               katm=angle%lst(3,langle+kangle)+isite
 
-              iat0=local_index(iatm,nlast,lsi,lsa)
-              jat0=local_index(jatm,nlast,lsi,lsa)
-              kat0=local_index(katm,nlast,lsi,lsa)
+              iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+              jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
+              kat0=local_index(katm,config%nlast,config%lsi,config%lsa)
 
-              If (iat0 > natms) iat0=0
-              If (jat0 > natms) jat0=0
-              If (kat0 > natms) kat0=0
+              If (iat0 > config%natms) iat0=0
+              If (jat0 > config%natms) jat0=0
+              If (kat0 > config%natms) kat0=0
 
               If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0) Then
                  jangle=jangle+1
@@ -637,25 +637,25 @@ Subroutine build_book_intra             &
                  natm=dihedral%lst(6,ldihed+kdihed)+isite
               End If
 
-              iat0=local_index(iatm,nlast,lsi,lsa)
-              jat0=local_index(jatm,nlast,lsi,lsa)
-              kat0=local_index(katm,nlast,lsi,lsa)
-              lat0=local_index(latm,nlast,lsi,lsa)
+              iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+              jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
+              kat0=local_index(katm,config%nlast,config%lsi,config%lsa)
+              lat0=local_index(latm,config%nlast,config%lsi,config%lsa)
               If (dihedral%l_core_shell) Then
-                 mat0=local_index(matm,nlast,lsi,lsa)
-                 nat0=local_index(natm,nlast,lsi,lsa)
+                 mat0=local_index(matm,config%nlast,config%lsi,config%lsa)
+                 nat0=local_index(natm,config%nlast,config%lsi,config%lsa)
               Else
                  mat0=0
                  nat0=0
               End If
 
-              If (iat0 > natms) iat0=0
-              If (jat0 > natms) jat0=0
-              If (kat0 > natms) kat0=0
-              If (lat0 > natms) lat0=0
+              If (iat0 > config%natms) iat0=0
+              If (jat0 > config%natms) jat0=0
+              If (kat0 > config%natms) kat0=0
+              If (lat0 > config%natms) lat0=0
               If (dihedral%l_core_shell) Then
-                 If (mat0 > natms) mat0=0
-                 If (nat0 > natms) nat0=0
+                 If (mat0 > config%natms) mat0=0
+                 If (nat0 > config%natms) nat0=0
               Else
                  mat0=0
                  nat0=0
@@ -785,15 +785,15 @@ Subroutine build_book_intra             &
               katm=inversion%lst(3,linver+kinver)+isite
               latm=inversion%lst(4,linver+kinver)+isite
 
-              iat0=local_index(iatm,nlast,lsi,lsa)
-              jat0=local_index(jatm,nlast,lsi,lsa)
-              kat0=local_index(katm,nlast,lsi,lsa)
-              lat0=local_index(latm,nlast,lsi,lsa)
+              iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+              jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
+              kat0=local_index(katm,config%nlast,config%lsi,config%lsa)
+              lat0=local_index(latm,config%nlast,config%lsi,config%lsa)
 
-              If (iat0 > natms) iat0=0
-              If (jat0 > natms) jat0=0
-              If (kat0 > natms) kat0=0
-              If (lat0 > natms) lat0=0
+              If (iat0 > config%natms) iat0=0
+              If (jat0 > config%natms) jat0=0
+              If (kat0 > config%natms) kat0=0
+              If (lat0 > config%natms) lat0=0
 
               If (iat0 > 0 .or. jat0 > 0 .or. kat0 > 0 .or. lat0 > 0) Then
                  jinver=jinver+1
@@ -941,15 +941,15 @@ Subroutine build_book_intra             &
      iatm=cons%listcon(1,i)
      jatm=cons%listcon(2,i)
 
-     iat0=local_index(iatm,nlast,lsi,lsa)
-     jat0=local_index(jatm,nlast,lsi,lsa)
+     iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+     jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
 
-     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+     If (iat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
         mshels=mshels+1
         iwrk(mshels)=iatm
      End If
 
-     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+     If (jat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
         mshels=mshels+1
         iwrk(mshels)=jatm
      End If
@@ -959,9 +959,9 @@ Subroutine build_book_intra             &
 
      Do lrigid=1,mrigid
         iatm=rigid%list(lrigid,i)
-        iat0=local_index(iatm,nlast,lsi,lsa)
+        iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
 
-        If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+        If (iat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
            mshels=mshels+1
            iwrk(mshels)=iatm
         End If
@@ -971,15 +971,15 @@ Subroutine build_book_intra             &
      iatm=bond%list(1,i)
      jatm=bond%list(2,i)
 
-     iat0=local_index(iatm,nlast,lsi,lsa)
-     jat0=local_index(jatm,nlast,lsi,lsa)
+     iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+     jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
 
-     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+     If (iat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
         mshels=mshels+1
         iwrk(mshels)=iatm
      End If
 
-     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+     If (jat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
         mshels=mshels+1
         iwrk(mshels)=jatm
      End If
@@ -989,21 +989,21 @@ Subroutine build_book_intra             &
      jatm=angle%list(2,i)
      katm=angle%list(3,i)
 
-     iat0=local_index(iatm,nlast,lsi,lsa)
-     jat0=local_index(jatm,nlast,lsi,lsa)
-     kat0=local_index(katm,nlast,lsi,lsa)
+     iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+     jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
+     kat0=local_index(katm,config%nlast,config%lsi,config%lsa)
 
-     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+     If (iat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
         mshels=mshels+1
         iwrk(mshels)=iatm
      End If
 
-     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+     If (jat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
         mshels=mshels+1
         iwrk(mshels)=jatm
      End If
 
-     If (kat0 > natms .and. (.not.Any(iwrk(1:mshels) == katm))) Then
+     If (kat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == katm))) Then
         mshels=mshels+1
         iwrk(mshels)=katm
      End If
@@ -1018,44 +1018,44 @@ Subroutine build_book_intra             &
         natm=dihedral%list(6,i)
      End If
 
-     iat0=local_index(iatm,nlast,lsi,lsa)
-     jat0=local_index(jatm,nlast,lsi,lsa)
-     kat0=local_index(katm,nlast,lsi,lsa)
-     lat0=local_index(latm,nlast,lsi,lsa)
+     iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+     jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
+     kat0=local_index(katm,config%nlast,config%lsi,config%lsa)
+     lat0=local_index(latm,config%nlast,config%lsi,config%lsa)
      If (dihedral%l_core_shell) Then
-        mat0=local_index(matm,nlast,lsi,lsa)
-        nat0=local_index(natm,nlast,lsi,lsa)
+        mat0=local_index(matm,config%nlast,config%lsi,config%lsa)
+        nat0=local_index(natm,config%nlast,config%lsi,config%lsa)
      Else
         mat0=0
         nat0=0
      End If
 
-     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+     If (iat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
         mshels=mshels+1
         iwrk(mshels)=iatm
      End If
 
-     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+     If (jat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
         mshels=mshels+1
         iwrk(mshels)=jatm
      End If
 
-     If (kat0 > natms .and. (.not.Any(iwrk(1:mshels) == katm))) Then
+     If (kat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == katm))) Then
         mshels=mshels+1
         iwrk(mshels)=katm
      End If
 
-     If (lat0 > natms .and. (.not.Any(iwrk(1:mshels) == latm))) Then
+     If (lat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == latm))) Then
         mshels=mshels+1
         iwrk(mshels)=latm
      End If
 
-     If (mat0 > natms .and. (.not.Any(iwrk(1:mshels) == matm))) Then
+     If (mat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == matm))) Then
         mshels=mshels+1
         iwrk(mshels)=matm
      End If
 
-     If (nat0 > natms .and. (.not.Any(iwrk(1:mshels) == natm))) Then
+     If (nat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == natm))) Then
         mshels=mshels+1
         iwrk(mshels)=natm
      End If
@@ -1066,26 +1066,26 @@ Subroutine build_book_intra             &
      katm=inversion%list(3,i)
      latm=inversion%list(4,i)
 
-     iat0=local_index(iatm,nlast,lsi,lsa)
-     jat0=local_index(jatm,nlast,lsi,lsa)
-     kat0=local_index(katm,nlast,lsi,lsa)
-     lat0=local_index(latm,nlast,lsi,lsa)
+     iat0=local_index(iatm,config%nlast,config%lsi,config%lsa)
+     jat0=local_index(jatm,config%nlast,config%lsi,config%lsa)
+     kat0=local_index(katm,config%nlast,config%lsi,config%lsa)
+     lat0=local_index(latm,config%nlast,config%lsi,config%lsa)
 
-     If (iat0 > natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
+     If (iat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == iatm))) Then
         mshels=mshels+1
         iwrk(mshels)=iatm
      End If
 
-     If (jat0 > natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
+     If (jat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == jatm))) Then
         mshels=mshels+1
         iwrk(mshels)=jatm
      End If
 
-     If (kat0 > natms .and. (.not.Any(iwrk(1:mshels) == katm))) Then
+     If (kat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == katm))) Then
         mshels=mshels+1
         iwrk(mshels)=katm
      End If
-     If (lat0 > natms .and. (.not.Any(iwrk(1:mshels) == latm))) Then
+     If (lat0 > config%natms .and. (.not.Any(iwrk(1:mshels) == latm))) Then
         mshels=mshels+1
         iwrk(mshels)=latm
      End If
@@ -1164,21 +1164,21 @@ Subroutine build_book_intra             &
      iatm=cshell%listshl(1,i)
      jatm=cshell%listshl(2,i)
 
-     iat0=local_index(iatm,nlast,lsi,lsa) ! This is a core
-     jat0=local_index(jatm,nlast,lsi,lsa) ! This is a shell
+     iat0=local_index(iatm,config%nlast,config%lsi,config%lsa) ! This is a core
+     jat0=local_index(jatm,config%nlast,config%lsi,config%lsa) ! This is a shell
 
      If (iat0 == 0 .and. jat0 == 0) safe(11)=.false.
 
 ! Core is out
 
-     If (iat0 > natms) Then
+     If (iat0 > config%natms) Then
         mshels=mshels+1
         iwrk(mshels)=iatm
      End If
 
 ! Shell is out
 
-     If (jat0 > natms) Then
+     If (jat0 > config%natms) Then
         mshels=mshels+1
         iwrk(mshels)=jatm
      End If
@@ -1653,7 +1653,7 @@ Subroutine build_book_intra             &
 ! Set RB particulars and quaternions
 
      If (rigid%on) Then
-       Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,neigh%cutoff,sites,rigid,parts,comm)
+       Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,neigh%cutoff,sites,rigid,config,comm)
      End If
 
      Call report_topology(megatm,megfrz,atmfre,atmfrz, &
@@ -1676,9 +1676,9 @@ Subroutine build_book_intra             &
 
 ! Tag RBs, find their COMs and check their widths to neigh%cutoff (system cutoff)
 
-     Call rigid_bodies_tags(rigid,comm)
-     Call rigid_bodies_coms(parts,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
-     Call rigid_bodies_widths(neigh%cutoff,rigid,parts,comm)
+     Call rigid_bodies_tags(config,rigid,comm)
+     Call rigid_bodies_coms(config,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+     Call rigid_bodies_widths(neigh%cutoff,rigid,config,comm)
 
   End If
 
@@ -1686,21 +1686,21 @@ Subroutine build_book_intra             &
 ! (pmf data updated by construction)
 
   If (cshell%megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-    (cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl,&
+    (config,cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl,&
     cshell%listshl,cshell%mxfshl,cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl, &
     flw%oldjob_shared_units,domain,comm,&
     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
     rigid%oxx,rigid%oyy,rigid%ozz)
 
   If (cons%m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
-    (cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,&
+    (config,cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,&
     cons%legcon,cons%lshmv_con,&
     cons%lishp_con,cons%lashp_con,flw%oldjob_shared_units,domain,comm,&
     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
     rigid%oxx,rigid%oyy,rigid%ozz)
 
   If (rigid%on .and. comm%mxnode > 1) Call pass_shared_units &
-    (rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
+    (config,rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
     rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
     rigid%map_shared,flw%oldjob_shared_units,domain,comm,&
     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
@@ -1708,7 +1708,7 @@ Subroutine build_book_intra             &
 
 End Subroutine build_book_intra
 
-Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,comm)
+Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1726,6 +1726,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,comm)
   Integer, Intent( In    )          :: mxf_u,mx_u,b_u
   Integer, Intent( InOut )          :: nt_u,list_u(0:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
   Type( constraints_type), Intent( InOut) :: cons
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type), Intent( InOut) :: comm
 
   Logical :: ok,keep_k,keep_nt
@@ -1747,7 +1748,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,comm)
 
         keep_k=.false.
         Do i=1,b_u
-           keep_k=keep_k .or. (local_index(list_u(i,k),natms,lsi,lsa) /= 0)
+           keep_k=keep_k .or. (local_index(list_u(i,k),config%natms,config%lsi,config%lsa) /= 0)
         End Do
 
         If (.not.keep_k) Then
@@ -1759,7 +1760,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,comm)
 
               keep_nt=.false.
               Do i=1,b_u
-                 j=local_index(list_u(i,nt_u),natms,lsi,lsa)
+                 j=local_index(list_u(i,nt_u),config%natms,config%lsi,config%lsa)
                  If (j > 0) Then         ! For all particles in list_u(1:b_u,nt_u),
                     keep_nt=.true.       ! [indicate that this unit is being kept]
                     m=leg_u(0,j)         ! if present on this node, repoint unit

@@ -14,7 +14,7 @@ Module langevin
 
   Use kinds, Only : wp
   Use setup,      Only : boltz,mxatms
-  Use configuration,     Only : natms,ltg,lfrzn,weight
+  Use configuration,     Only : configuration_type
   Use particle,          Only : corePart
   Use core_shell, Only : core_shell_type
   Use ttm,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
@@ -43,8 +43,8 @@ Contains
     thermo%fxl = 0.0_wp ; thermo%fyl = 0.0_wp ; thermo%fzl = 0.0_wp
 
   End Subroutine langevin_allocate_arrays
-
-  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr,cshell,parts,seed)
+  
+  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr,cshell,config,seed)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -69,7 +69,7 @@ Contains
   Real( Kind = wp ), Intent( In    ) :: temp,tstep,chi
   Real( Kind = wp ), Intent(   Out ) :: fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms)
   Type( core_shell_type ), Intent( InOut ) :: cshell
-  Type( corePart ), Intent( InOut ) :: parts(:)
+  Type( configuration_type ), Intent( InOut ) :: config
   Type(seed_type), Intent(InOut) :: seed
   Integer           :: i,ia,ja,ka,ijk
   Real( Kind = wp ) :: scale,tmp
@@ -84,14 +84,14 @@ Contains
     ! constant electron-phonon chi parameter and homogeneous
     ! e-p coupling cases
       scale = Sqrt(2.0_wp * chi * boltz / tstep)
-      Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-          Call box_mueller_saru3(seed,ltg(i),nstep,fxr(i),fyr(i),fzr(i))
-          ia = Floor((parts(i)%xxx+zerocell(1))/delx) + 1
-          ja = Floor((parts(i)%yyy+zerocell(2))/dely) + 1
-          ka = Floor((parts(i)%zzz+zerocell(3))/delz) + 1
+      Do i=1,config%natms
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
+          Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
+          ia = Floor((config%parts(i)%xxx+zerocell(1))/delx) + 1
+          ja = Floor((config%parts(i)%yyy+zerocell(2))/dely) + 1
+          ka = Floor((config%parts(i)%zzz+zerocell(3))/delz) + 1
           ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-          tmp = scale*Sqrt(eltemp(ijk,0,0,0)*weight(i))
+          tmp = scale*Sqrt(eltemp(ijk,0,0,0)*config%weight(i))
 
           fxr(i) = fxr(i)*tmp
           fyr(i) = fyr(i)*tmp
@@ -107,14 +107,14 @@ Contains
     ! heterogeneous electron-phonon coupling case: calculate individual
     ! chi value for each ionic temperature voxel (ignore input value)
       scale = Sqrt(2.0_wp * boltz / tstep)
-      Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-          Call box_mueller_saru3(seed,ltg(i),nstep,fxr(i),fyr(i),fzr(i))
-          ia = Floor((parts(i)%xxx+zerocell(1))/delx) + 1
-          ja = Floor((parts(i)%yyy+zerocell(2))/dely) + 1
-          ka = Floor((parts(i)%zzz+zerocell(3))/delz) + 1
+      Do i=1,config%natms
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
+          Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
+          ia = Floor((config%parts(i)%xxx+zerocell(1))/delx) + 1
+          ja = Floor((config%parts(i)%yyy+zerocell(2))/dely) + 1
+          ka = Floor((config%parts(i)%zzz+zerocell(3))/delz) + 1
           ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-          tmp = scale*Sqrt(Gep(eltemp(ijk,0,0,0))*eltemp(ijk,0,0,0)*weight(i))
+          tmp = scale*Sqrt(Gep(eltemp(ijk,0,0,0))*eltemp(ijk,0,0,0)*config%weight(i))
 
           fxr(i) = fxr(i)*tmp
           fyr(i) = fyr(i)*tmp
@@ -137,11 +137,11 @@ Contains
 
 ! Make variance = target variance and nullify the rest
 
-    Do i=1,natms
-       If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-          Call box_mueller_saru3(seed,ltg(i),nstep,fxr(i),fyr(i),fzr(i))
+    Do i=1,config%natms
+       If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
+          Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
 
-          tmp = scale*Sqrt(weight(i))
+          tmp = scale*Sqrt(config%weight(i))
 
           fxr(i) = fxr(i)*tmp
           fyr(i) = fyr(i)*tmp
