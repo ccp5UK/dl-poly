@@ -13,7 +13,7 @@ Module ewald
   Use comms,           Only : ExchgGrid_tag,comms_type,wp_mpi,gsend,gwait, &
                               girecv
   Use setup,           Only : mxatms,nrite,twopi
-  Use configuration,   Only : natms,imcon
+  Use configuration,   Only : configuration_type
   Use particle,           Only : corePart
   Use domains,         Only : domains_type
   Use errors_warnings, Only : error
@@ -177,20 +177,20 @@ Contains
     End If
   End Subroutine ewald_check
 
-  Subroutine ewald_refresh(T,engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress,parts)
+  Subroutine ewald_refresh(T,engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stress,config)
 
     Class( ewald_type ), Intent( InOut ) :: T
     Real( Kind = wp ),   Intent( InOut ) :: engcpe_rc,vircpe_rc, &
                                           engcpe_fr,vircpe_fr, &
                                           stress(1:9)
-    Type( corePart ),    Intent( InOut ) :: parts(:)
+    Type( configuration_type ),    Intent( InOut ) :: config
 
     Integer :: i
 
-    Do i=1,natms
-       parts(i)%fxx=parts(i)%fxx+T%fcx(i)
-       parts(i)%fyy=parts(i)%fyy+T%fcy(i)
-       parts(i)%fzz=parts(i)%fzz+T%fcz(i)
+    Do i=1,config%natms
+       config%parts(i)%fxx=config%parts(i)%fxx+T%fcx(i)
+       config%parts(i)%fyy=config%parts(i)%fyy+T%fcy(i)
+       config%parts(i)%fzz=config%parts(i)%fzz+T%fcz(i)
     End Do
 
     engcpe_rc=T%e_rc
@@ -508,7 +508,7 @@ Contains
 
   End Subroutine bspcoe
 
-  Subroutine bspgen(natms,txx,tyy,tzz,bspx,bspy,bspz,bsdx,bsdy,bsdz,ewld,comm)
+  Subroutine bspgen(config,nospl,txx,tyy,tzz,bspx,bspy,bspz,bsdx,bsdy,bsdz,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -521,7 +521,8 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( ewald_type ), Intent( In    ) :: ewld
-    Integer,                                  Intent( In    ) :: natms
+    Integer, Intent( In    ) :: nospl
+    Type( configuration_type ),               Intent( In    ) :: config
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: txx,tyy,tzz
 
     Real( Kind = wp ), Dimension( 1:ewld%bspline , 1:mxatms ), Intent(   Out ) :: &
@@ -549,7 +550,7 @@ Contains
        inv_no(i)  = 1.0_wp / real_no(i)
     End Do
 
-    Do i=1,natms
+    Do i=1,nospl
 
   ! initializing 2nd order B-spline
   ! for u where (0<u<1) and (1<u<2)
@@ -635,7 +636,6 @@ Contains
           bspx(j,i)=(aaa*bspx(j,i)+(k_r-aaa)*bspx(j-1,i))*km1_rr
           bspy(j,i)=(bbb*bspy(j,i)+(k_r-bbb)*bspy(j-1,i))*km1_rr
           bspz(j,i)=(ccc*bspz(j,i)+(k_r-ccc)*bspz(j-1,i))*km1_rr
-
        End Do
 
        bsdx(1,i)=bspx(1,i)
@@ -656,8 +656,8 @@ Contains
 
   End Subroutine bspgen
 
-  Subroutine bspgen_mpoles(natms,xxx,yyy,zzz,bspx,bspy,bspz, &
-      bsddx,bsddy,bsddz,n_choose_k,parts,ewld,comm)
+  Subroutine bspgen_mpoles(nospl,xxx,yyy,zzz,bspx,bspy,bspz, &
+      bsddx,bsddy,bsddz,n_choose_k,config,ewld,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -671,13 +671,13 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( ewald_type ), Intent( In    ) :: ewld
-    Integer,                                                      Intent( In    ) :: natms
+    Integer,                                                      Intent( In    ) :: nospl
     Real( Kind = wp ), Dimension( 1:mxatms ),                     Intent( In    ) :: xxx,yyy,zzz
 
     Real( Kind = wp ), Dimension( 1:ewld%bspline , 1:mxatms ),           Intent(   Out ) :: bspx,bspy,bspz
     Real( Kind = wp ), Dimension( 0:ewld%bspline , 1:ewld%bspline , 1:mxatms ), Intent(   Out ) :: bsddx,bsddy,bsddz
     Real( Kind = wp ), Dimension(1:,1:) :: n_choose_k
-    Type( corePart ),  Dimension( : ),                            Intent( InOut ) :: parts
+    Type( configuration_type ),                                   Intent( InOut ) :: config
     Type( comms_type),                                            Intent( In    ) :: comm
 
     Integer           :: fail,i,j,k,m,n,p,r,s
@@ -710,14 +710,14 @@ Contains
        pmo_no(i)  = Real(-1**i,wp)
     End Do
 
-    Do i=1,natms
+    Do i=1,nospl
 
   ! initializing 2nd order B-spline
   ! for u where (0<u<1) and (1<u<2)
 
-       bspx(1,i)=parts(i)%xxx-Aint(parts(i)%xxx,wp)
-       bspy(1,i)=parts(i)%yyy-Aint(parts(i)%yyy,wp)
-       bspz(1,i)=parts(i)%zzz-Aint(parts(i)%zzz,wp)
+       bspx(1,i)=config%parts(i)%xxx-Aint(config%parts(i)%xxx,wp)
+       bspy(1,i)=config%parts(i)%yyy-Aint(config%parts(i)%yyy,wp)
+       bspz(1,i)=config%parts(i)%zzz-Aint(config%parts(i)%zzz,wp)
 
        bspx(2,i)=1.0_wp-bspx(1,i)
        bspy(2,i)=1.0_wp-bspy(1,i)
@@ -859,7 +859,7 @@ Contains
 
   End Subroutine bspgen_mpoles
 
-  Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz,n_choose_k,ewld)
+  Function Dtpbsp(s1,s2,s3,rcell,bsddx,bsddy,bsddz,n_choose_k,config,ewld)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -879,6 +879,7 @@ Contains
     Real( Kind = wp ),                       Intent( In   ) :: rcell(9)
     Real( Kind = wp ), Dimension( 0:ewld%bspline ), Intent( In   ) :: bsddx,bsddy,bsddz
     Real( Kind = wp ), Intent( In    ) :: n_choose_k(1:,1:)
+    Type( configuration_type ),              Intent( In    ) :: config
 
     Real( Kind = wp ) :: tx,ty,tz,sx,sy,sz
     Real( Kind = wp ) :: ka11,ka12,ka13,kb21,kb22,kb23,kc31,kc32,kc33
@@ -898,7 +899,7 @@ Contains
 
   ! Typically, the box is orthogonal => only diagonals-ka11,kb22,kc33-are non-zero
 
-    If (imcon /= 3) Then
+    If (config%imcon /= 3) Then
 
        Dtpbsp = ka11**s1 * kb22**s2 * kc33**s3 * bsddx(s1) * bsddy(s2) * bsddz(s3)
 

@@ -2,9 +2,7 @@ Module drivers
   use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum
   use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr
-  Use configuration, Only : vxx,vyy,vzz,cell,natms,&
-                            weight,lfrzn,lstfre,lsite,lfree,ltg,nlast,nfree,&
-                            lsi,lsa,imcon
+  Use configuration, Only : configuration_type
   Use particle, Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat
   Use setup, Only : boltz,mxatms,zero_plus
@@ -25,13 +23,14 @@ Module drivers
   Public :: w_impact_option
 Contains
 
-  Subroutine w_impact_option(levcfg,nstep,nsteql,rigid,cshell,stats,impa,comm)
+  Subroutine w_impact_option(levcfg,nstep,nsteql,rigid,cshell,stats,impa,config,comm)
 
     Integer( Kind = wi ),   Intent( InOut ) :: levcfg,nstep,nsteql
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type(stats_type)   ,   Intent( InOut ) :: stats
     Type(core_shell_type)   ,   Intent( InOut ) :: cshell
     Type(impact_type)   ,   Intent( InOut ) :: impa
+    Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type)    ,   Intent( InOut ) :: comm
 
     Character( Len = 256 ) :: messages(6)
@@ -52,19 +51,19 @@ Contains
 
         If (nstep+1 <= nsteql) Call warning(380,Real(nsteql,wp),0.0_wp,0.0_wp)
 
-        Call impact(rigid,cshell,impa,comm)
+        Call impact(rigid,cshell,impa,config,comm)
 
 ! Correct kinetic stress and energy
 
         If (rigid%total > 0) Then
-           Call kinstresf(vxx,vyy,vzz,stats%strknf,comm)
+           Call kinstresf(config%vxx,config%vyy,config%vzz,stats%strknf,config,comm)
            Call kinstrest(rigid,stats%strknt,comm)
 
            stats%strkin=stats%strknf+stats%strknt
 
            stats%engrot=getknr(rigid,comm)
         Else
-           Call kinstress(vxx,vyy,vzz,stats%strkin,comm)
+           Call kinstress(config%vxx,config%vyy,config%vzz,stats%strkin,config,comm)
         End If
         stats%engke = 0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
      End If
@@ -123,6 +122,4 @@ Contains
 !
 !    Include 'w_replay_historf.F90'
 !  End Subroutine w_replay_historf
-
-
 End Module drivers

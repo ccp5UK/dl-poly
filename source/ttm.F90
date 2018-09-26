@@ -1,6 +1,5 @@
 Module ttm
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 ! dl_poly_4 module for defining arrays and initial parameters for 
 ! two-temperature model (ttm)
@@ -14,7 +13,7 @@ Module ttm
 
   Use kinds,           Only : wp
   Use setup
-  Use configuration,   Only : cell
+  Use configuration,   Only : configuration_type
   Use domains,         Only : domains_type,idcube
   Use comms,           Only : wp_mpi,comms_type,gsum,gmin,gmax,gcheck,gsync, &
                               grid1_tag,grid2_tag
@@ -76,8 +75,9 @@ Module ttm
 
 Contains
 
-  Subroutine allocate_ttm_arrays(domain,comm)
+  Subroutine allocate_ttm_arrays(domain,config,comm)
     Type( domains_type ), Intent( In    ) :: domain
+    Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type), Intent(In) :: comm
 
     Real ( Kind = wp ) :: start, finish
@@ -108,23 +108,23 @@ Contains
 ! Determine number of ion temperature cells for domain and
 ! offsets for ion temperature determination
 
-      start = cell(1)*Real(domain%idx,wp)*domain%nx_recip
-      finish = cell(1)*Real(domain%idx+1,wp)*domain%nx_recip
+      start = config%cell(1)*Real(domain%idx,wp)*domain%nx_recip
+      finish = config%cell(1)*Real(domain%idx+1,wp)*domain%nx_recip
       ntcell(1) = Ceiling(finish/delx) - Ceiling(start/delx)
       ntcelloff(1) = Ceiling(start/delx)
-      zerocell(1) = 0.5_wp*cell(1) - delx*Real(Ceiling(start/delx),wp)
+      zerocell(1) = 0.5_wp*config%cell(1) - delx*Real(Ceiling(start/delx),wp)
 
-      start = cell(5)*Real(domain%idy,wp)*domain%ny_recip
-      finish = cell(5)*Real(domain%idy+1,wp)*domain%ny_recip
+      start = config%cell(5)*Real(domain%idy,wp)*domain%ny_recip
+      finish = config%cell(5)*Real(domain%idy+1,wp)*domain%ny_recip
       ntcell(2) = Ceiling(finish/dely) - Ceiling(start/dely)
       ntcelloff(2) = Ceiling(start/dely)
-      zerocell(2) = 0.5_wp*cell(5) - dely*Real(Ceiling(start/dely),wp)
+      zerocell(2) = 0.5_wp*config%cell(5) - dely*Real(Ceiling(start/dely),wp)
 
-      start = cell(9)*Real(domain%idz,wp)*domain%nz_recip
-      finish = cell(9)*Real(domain%idz+1,wp)*domain%nz_recip
+      start = config%cell(9)*Real(domain%idz,wp)*domain%nz_recip
+      finish = config%cell(9)*Real(domain%idz+1,wp)*domain%nz_recip
       ntcell(3) = Ceiling(finish/delz) - Ceiling(start/delz)
       ntcelloff(3) = Ceiling(start/delz)
-      zerocell(3) = 0.5_wp*cell(9) - delz*Real(Ceiling(start/delz),wp)
+      zerocell(3) = 0.5_wp*config%cell(9) - delz*Real(Ceiling(start/delz),wp)
 
       numcell = (ntcell(1)+2)*(ntcell(2)+2)*(ntcell(3)+2)
 
@@ -151,8 +151,8 @@ Contains
       If (numbc>ntcelloff(1) .and. numbc<=(ntcelloff(1)+ntcell(1))) Then
         ttmbc(1) = numbc - ntcelloff(1)
         Do i = 0, domain%nx-1
-          start = cell(1)*Real(i,wp)*domain%nx_recip
-          finish = cell(1)*Real(i+1,wp)*domain%nx_recip
+          start = config%cell(1)*Real(i,wp)*domain%nx_recip
+          finish = config%cell(1)*Real(i+1,wp)*domain%nx_recip
           If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) Then
             ttmbcmap(1) = idcube(i,domain%idy,domain%idz,domain)
           End If
@@ -170,8 +170,8 @@ Contains
       If (numbc>ntcelloff(1) .and. numbc<=(ntcelloff(1)+ntcell(1))) Then
         ttmbc(2) = numbc - ntcelloff(1)
         Do i = 0, domain%nx-1
-          start = cell(1)*Real(i,wp)*domain%nx_recip
-          finish = cell(1)*Real(i+1,wp)*domain%nx_recip
+          start = config%cell(1)*Real(i,wp)*domain%nx_recip
+          finish = config%cell(1)*Real(i+1,wp)*domain%nx_recip
           If (numbcmap>Ceiling(start/delx) .and. numbcmap<=Ceiling(finish/delx)) Then
             ttmbcmap(2) = idcube(i,domain%idy,domain%idz,domain)
           End If
@@ -190,8 +190,8 @@ Contains
       If (numbc>ntcelloff(2) .and. numbc<=(ntcelloff(2)+ntcell(2))) Then
         ttmbc(3) = numbc - ntcelloff(2)
         Do i = 0, domain%ny-1
-          start = cell(5)*Real(i,wp)*domain%ny_recip
-          finish = cell(5)*Real(i+1,wp)*domain%ny_recip
+          start = config%cell(5)*Real(i,wp)*domain%ny_recip
+          finish = config%cell(5)*Real(i+1,wp)*domain%ny_recip
           If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) Then
             ttmbcmap(3) = idcube(domain%idx,i,domain%idz,domain)
           End If
@@ -209,8 +209,8 @@ Contains
       If (numbc>ntcelloff(2) .and. numbc<=(ntcelloff(2)+ntcell(2))) Then
         ttmbc(4) = numbc - ntcelloff(2)
         Do i = 0, domain%ny-1
-          start = cell(5)*Real(i,wp)*domain%ny_recip
-          finish = cell(5)*Real(i+1,wp)*domain%ny_recip
+          start = config%cell(5)*Real(i,wp)*domain%ny_recip
+          finish = config%cell(5)*Real(i+1,wp)*domain%ny_recip
           If (numbcmap>Ceiling(start/dely) .and. numbcmap<=Ceiling(finish/dely)) Then
             ttmbcmap(4) = idcube(domain%idx,i,domain%idz,domain)
           End If
@@ -229,8 +229,8 @@ Contains
       If (numbc>ntcelloff(3) .and. numbc<=(ntcelloff(3)+ntcell(3))) Then
         ttmbc(5) = numbc - ntcelloff(3)
         Do i = 0, domain%nz-1
-          start = cell(9)*Real(i,wp)*domain%nz_recip
-          finish = cell(9)*Real(i+1,wp)*domain%nz_recip
+          start = config%cell(9)*Real(i,wp)*domain%nz_recip
+          finish = config%cell(9)*Real(i+1,wp)*domain%nz_recip
           If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) Then
             ttmbcmap(5) = idcube(domain%idx,domain%idy,i,domain)
           End If
@@ -248,8 +248,8 @@ Contains
       If (numbc>ntcelloff(3) .and. numbc<=(ntcelloff(3)+ntcell(3))) Then
         ttmbc(6) = numbc - ntcelloff(3)
         Do i = 0, domain%nz-1
-          start = cell(9)*Real(i,wp)*domain%nz_recip
-          finish = cell(9)*Real(i+1,wp)*domain%nz_recip
+          start = config%cell(9)*Real(i,wp)*domain%nz_recip
+          finish = config%cell(9)*Real(i+1,wp)*domain%nz_recip
           If (numbcmap>Ceiling(start/delz) .and. numbcmap<=Ceiling(finish/delz)) Then
             ttmbcmap(6) = idcube(domain%idx,domain%idy,i,domain)
           End If
@@ -816,8 +816,8 @@ Contains
     ! check restart file is at same timestep as restart
     ! (can proceed if not, but need to warn user)
     If (nstp/=nstep .or. Abs(tme-time)>zero_plus) Call warning(520,0.0_wp,0.0_wp,0.0_wp)
-    ! read in each line, find appropriate grid cell and assign
-    ! electronic temperature if processor has that cell
+    ! read in each line, find appropriate grid config%cell and assign
+    ! electronic temperature if processor has that config%cell
     Do i=1,eltsys(1)*eltsys(2)*eltsys(3)
       Call get_line(safe,iounit,record,comm); If (.not.safe) Goto 100
       Call get_word(record,word) ; ipos(1)=Nint(word_2_real(word,0.0_wp))
@@ -2192,7 +2192,7 @@ Subroutine uniformDist(lat_in)
     dEdV = dEdX/(Real(ntsys(1),Kind=wp)*Real(ntsys(2),Kind=wp)*delx*dely)
   End If
 
-  ! homogeneous excitation: each temperature cell receives
+  ! homogeneous excitation: each temperature config%cell receives
   ! the same energy
 
   lat_in(1:ntcell(1),1:ntcell(2),1:ntcell(3))=dEdV*volume
@@ -2218,8 +2218,8 @@ Subroutine uniformDistZexp(lat_in)
   End If
   dEdVmax = fluence*rpdepth
 
-  ! loop through z-cells: calculate stopping power per
-  ! cell based on z-position (maximum at z=0, grid centre)
+  ! loop through z-config%cells: calculate stopping power per
+  ! config%cell based on z-position (maximum at z=0, grid centre)
   ! and assign across all x and y points in plane
 
   Do k = 1, ntcell(3)
@@ -2243,7 +2243,7 @@ Subroutine gaussianTrack(lat_in, comm)
 
   lat_in(:,:,:) = 0.0_wp
 
-  ! converting stopping power to a value per cell (in z-direction)
+  ! converting stopping power to a value per config%cell (in z-direction)
 
   normdEdX = dEdX*delz
 

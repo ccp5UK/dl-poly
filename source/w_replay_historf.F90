@@ -42,12 +42,12 @@
 ! Calculate kinetic tensor and energy at restart as it may not exists later
 
   If (rigid%total > 0) Then
-     Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+     Call kinstresf(config%vxx,config%vyy,config%vzz,stat%strknf,config,comm)
      Call kinstrest(rigid,stat%strknt,comm)
 
      stat%strkin=stat%strknf+stat%strknt
   Else
-     Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
+     Call kinstress(config%vxx,config%vyy,config%vzz,stat%strkin,config,comm)
   End If
   stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
@@ -56,11 +56,11 @@
   Do
      Call allocate_statistics_connect(mxatdm,stat)
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,parts,comm)
+     If (nstph > nstpe) Call statistics_connect_set(config,neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,comm)
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,traj,sites,domain,parts,comm)
+     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,traj,sites,domain,config,comm)
 
      If (newjb) Then
         newjb = .false.
@@ -76,39 +76,39 @@
 
 ! Deal with restarts but remember the old cell parameters
 
-           stat%clin=cell
+           stat%clin=config%cell
            Go To 10
 
         Else
 
 ! CHECK MD CONFIGURATION
 
-           Call check_config(levcfg,l_str,electro%key,keyres,megatm,thermo,sites,comm)
+           Call check_config(config,levcfg,l_str,electro%key,keyres,megatm,thermo,sites,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
            If (nstph == 1) Then
-              Do i=1,natms
-                 stat%xin(i)=parts(i)%xxx
-                 stat%yin(i)=parts(i)%yyy
-                 stat%zin(i)=parts(i)%zzz
+              Do i=1,config%natms
+                 stat%xin(i)=config%parts(i)%xxx
+                 stat%yin(i)=config%parts(i)%yyy
+                 stat%zin(i)=config%parts(i)%zzz
               End Do
-              stat%clin=cell
+              stat%clin=config%cell
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,parts,comm)
+              Call statistics_connect_set(config,neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
 
-           Call statistics_connect_frames(megatm,mxatdm_,msd_data%l_msd,stat,domain,comm)
+           Call statistics_connect_frames(config,megatm,mxatdm_,msd_data%l_msd,stat,domain,comm)
            Call deallocate_statistics_connect(stat)
 
 ! SET domain borders and link-cells as default for new jobs
 ! exchange atomic data and positions in border regions
 
-           Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,ewld,kim_data,comm)
+           Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,config,ewld,kim_data,comm)
 
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
@@ -116,10 +116,10 @@
            If (lbook) Then
              Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
                atmfrz,degrot,degtra,flw,cshell,cons,pmf,bond,angle,dihedral, &
-               inversion,tether,neigh,sites,mpoles,rigid,domain,parts,comm)
+               inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
               If (lexcl) Then
                 Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
-                  inversion,neigh,rigid,comm)
+                  inversion,neigh,rigid,config,comm)
               End If
            End If
 
@@ -133,28 +133,28 @@
 
            If (levcfg > 0 .and. levcfg < 3) Then
               If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,thermo%freq_zero) == 0) Then
-                Call zero_k_optimise(stat,rigid,parts,comm)
+                Call zero_k_optimise(stat,rigid,config,comm)
               End If
 
               If (thermo%l_zero .and. nstep <= nsteql) Then
-                Call zero_k_optimise(stat,rigid,parts,comm)
+                Call zero_k_optimise(stat,rigid,config,comm)
               End If
 
 ! Calculate kinetic stress and energy if available
 
               If (rigid%total > 0) Then
-                Call rigid_bodies_quench(rigid,domain,parts,comm)
+                Call rigid_bodies_quench(rigid,domain,config,comm)
 
-                 Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+                 Call kinstresf(config%vxx,config%vyy,config%vzz,stat%strknf,config,comm)
                  Call kinstrest(rigid,stat%strknt,comm)
 
                  stat%strkin=stat%strknf+stat%strknt
 
                  stat%engrot=getknr(rigid,comm)
-                 Call rigid_bodies_str_ss(stat%strcom,rigid,parts,comm)
+                 Call rigid_bodies_str_ss(stat%strcom,rigid,config,comm)
                  stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
               Else
-                 Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
+                 Call kinstress(config%vxx,config%vyy,config%vzz,stat%strkin,config,comm)
               End If
               stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
@@ -165,7 +165,7 @@
 ! Get core-shell kinetic energy for adiabatic shell model
 
               If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Then
-                Call core_shell_kinetic(stat%shlke,cshell,domain,comm)
+                Call core_shell_kinetic(config,stat%shlke,cshell,domain,comm)
               End If
            End If
 
@@ -181,15 +181,15 @@
 
 ! Collect VAF if kinetics is available
 
-           Call vaf_collect(leql,nsteql,nstph-1,time,green,comm)
+           Call vaf_collect(config,leql,nsteql,nstph-1,time,green,comm)
 
            Call statistics_collect        &
-           (lsim,leql,nsteql,msd_data%l_msd, &
+           (config,lsim,leql,nsteql,msd_data%l_msd, &
            keyres,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
            mxatdm_,rdf%max_grid,stat,thermo,&
-           zdensity,sites,parts,comm)
+           zdensity,sites,comm)
 
 ! line-printer output
 ! Update cpu time
@@ -225,29 +225,29 @@
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
-           If (ltraj) Call trajectory_write(keyres,megatm,nstep,tstep,time, &
-             stat%rsd,netcdf,parts,traj,comm)
+           If (ltraj) Call trajectory_write &
+           (keyres,megatm,nstep,tstep,time,stat%rsd,netcdf,config,traj,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell, &
-               dfcts(1),neigh,sites,netcdf,domain,parts,comm)
+               dfcts(1),neigh,sites,netcdf,domain,config,comm)
              If (dfcts(2)%ldef)Then
                Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell, &
-                 dfcts(2),neigh,sites,netcdf,domain,parts,comm)
+                 dfcts(2),neigh,sites,netcdf,domain,config,comm)
              End If
            End If
            If (msd_data%l_msd) Call msd_write &
-             (keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site,msd_data,comm)
+             (config,keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site,msd_data,comm)
            If (rsdc%lrsd) Call rsd_write &
-             (keyres,nstep,tstep,rsdc,time,cshell,stat%rsd,parts,comm)
+             (keyres,nstep,tstep,rsdc,time,cshell,stat%rsd,config,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
-           (keyres,nstph,tsths,green,sites,comm)
+           (config,keyres,nstph,tsths,green,sites,comm)
 
 ! Save restart data in event of system crash
 
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
            (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,comm)
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -272,12 +272,12 @@
 
 ! Save last frame positions (for estimates of MSD when levcfg==0)
 
-        Do i=1,natms
-           stat%xin(i)=parts(i)%xxx
-           stat%yin(i)=parts(i)%yyy
-           stat%zin(i)=parts(i)%zzz
+        Do i=1,config%natms
+           stat%xin(i)=config%parts(i)%xxx
+           stat%yin(i)=config%parts(i)%yyy
+           stat%zin(i)=config%parts(i)%zzz
         End Do
-        stat%clin=cell
+        stat%clin=config%cell
      Else
         Exit
      End If
@@ -290,25 +290,25 @@
 ! recover connectivity arrays for REVCON, REVIVE and printing purposes
 ! read_history MUST NOT initialise R,V,F arrays!!!
 
-     ltg(1:natms) = stat%ltg0(1:natms)
-     lsa(1:natms) = stat%lsa0(1:natms)
-     lsi(1:natms) = stat%lsi0(1:natms)
+     config%ltg(1:config%natms) = stat%ltg0(1:config%natms)
+     config%lsa(1:config%natms) = stat%lsa0(1:config%natms)
+     config%lsi(1:config%natms) = stat%lsi0(1:config%natms)
 
   Else If (exout < 0) Then ! abnormal exit
 
 ! If reading HISTORY finished awkwardly
 ! recover positions and generate kinetics
 
-     Do i=1,natms
-        parts(i)%xxx=stat%xin(i)
-        parts(i)%yyy=stat%yin(i)
-        parts(i)%zzz=stat%zin(i)
+     Do i=1,config%natms
+        config%parts(i)%xxx=stat%xin(i)
+        config%parts(i)%yyy=stat%yin(i)
+        config%parts(i)%zzz=stat%zin(i)
      End Do
-     cell=stat%clin
+     config%cell=stat%clin
 
      Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
        degrot,degfre,degshl,stat%engrot,sites%dof_site,cshell,stat,cons,pmf, &
-       thermo,minim,rigid,domain,parts,seed,comm)
+       thermo,minim,rigid,domain,config,seed,comm)
 
   End If
   Call deallocate_statistics_connect(stat)
@@ -317,7 +317,7 @@
 
   If (.not. devel%l_tor) Call system_revive                         &
            (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,comm)
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
 

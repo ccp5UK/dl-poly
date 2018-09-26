@@ -13,8 +13,7 @@ Module pmf
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gcheck,gsum,gsync
   Use setup
-  Use configuration,   Only : imcon,cell,natms,lfrzn, &
-                              vxx,vyy,vzz,nlast,lsi,lsa
+  Use configuration,   Only : configuration_type
   Use errors_warnings, Only : error,warning,info
   Use numerics,        Only : images,local_index,dcell
   Use statistics, Only : stats_type
@@ -158,7 +157,7 @@ Subroutine allocate_work(T)
 End Subroutine deallocate_pmf_arrays
   
   
-Subroutine pmf_coms(pmf,pxx,pyy,pzz,parts,comm)
+Subroutine pmf_coms(pmf,pxx,pyy,pzz,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -175,7 +174,7 @@ Subroutine pmf_coms(pmf,pxx,pyy,pzz,parts,comm)
 
   Type( pmf_type), Intent( InOut ) :: pmf
   Real( Kind = wp ), Intent(   Out ) :: pxx(1:),pyy(1:),pzz(1:)
-  Type( corePart ),   Intent( InOut ) :: parts(:)
+  Type( configuration_type ),   Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                 :: safe(1:2)
@@ -207,7 +206,7 @@ Subroutine pmf_coms(pmf,pxx,pyy,pzz,parts,comm)
 
 ! Get the dimensional properties of the MD cell
 
-  Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
   width=Min(celprp(7),celprp(8),celprp(9))
 
 ! Initialise PMF COMs' and inter-COMs' vector arrays
@@ -239,11 +238,11 @@ Subroutine pmf_coms(pmf,pxx,pyy,pzz,parts,comm)
 
 ! Copy particles' coordinates to buffer in an orderly manner
 
-                    If (j > 0 .and. j <= natms) Then ! j is a domain particle
+                    If (j > 0 .and. j <= config%natms) Then ! j is a domain particle
                        l=((gpmf-gpmf1)*(pmf%mxtpmf(1)+pmf%mxtpmf(2))+(jpmf-1)*pmf%mxtpmf(1)+(k-1))*iadd
-                       buffer(l+1)=parts(j)%xxx
-                       buffer(l+2)=parts(j)%yyy
-                       buffer(l+3)=parts(j)%zzz
+                       buffer(l+1)=config%parts(j)%xxx
+                       buffer(l+2)=config%parts(j)%yyy
+                       buffer(l+3)=config%parts(j)%zzz
                     End If
                  End Do
               End If
@@ -276,7 +275,7 @@ Subroutine pmf_coms(pmf,pxx,pyy,pzz,parts,comm)
                        zzt(k)=buffer(l+3)-buffer(m+3)
                     End Do
 
-                    Call images(imcon,cell,pmf%mxtpmf(jpmf),xxt,yyt,zzt)
+                    Call images(config%imcon,config%cell,pmf%mxtpmf(jpmf),xxt,yyt,zzt)
 
                     xmin=0.0_wp ; xmax = 0.0_wp
                     ymin=0.0_wp ; ymax = 0.0_wp
@@ -331,7 +330,7 @@ Subroutine pmf_coms(pmf,pxx,pyy,pzz,parts,comm)
 
 ! Minimum image convention for bond vectors
 
-  Call images(imcon,cell,pmf%ntpmf,pxx,pyy,pzz)
+  Call images(config%imcon,config%cell,pmf%ntpmf,pxx,pyy,pzz)
 
   Deallocate (xxt,yyt,zzt,    Stat=fail(1))
   Deallocate (xpmf,ypmf,zpmf, Stat=fail(2))
@@ -343,7 +342,7 @@ Subroutine pmf_coms(pmf,pxx,pyy,pzz,parts,comm)
 
 End Subroutine pmf_coms
 
-Subroutine pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,comm)
+Subroutine pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -360,6 +359,7 @@ Subroutine pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,comm)
   Type( stats_type ), Intent( InOut ) :: stat
   Type( pmf_type), Intent( InOut ) :: pmf
   Type( comms_type), Intent( InOut ) :: comm
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Real( Kind = wp ), Parameter :: rigid=1.0e6_wp
 
@@ -389,7 +389,7 @@ Subroutine pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,comm)
 
 ! For domain particles
 
-              If (l > 0 .and. l <= natms) Then
+              If (l > 0 .and. l <= config%natms) Then
 
 ! Accumulate energy
 
@@ -397,7 +397,7 @@ Subroutine pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,comm)
 
 ! Add forces
 
-                 If (lfrzn(l) == 0) Then
+                 If (config%lfrzn(l) == 0) Then
                     gxx(l)=gxx(l)+pmf%pxx(ipmf)*tmp
                     gyy(l)=gyy(l)+pmf%pyy(ipmf)*tmp
                     gzz(l)=gzz(l)+pmf%pzz(ipmf)*tmp
@@ -419,7 +419,7 @@ Subroutine pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,comm)
 
 End Subroutine pmf_pseudo_bonds
 
-Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
+Subroutine pmf_quench(mxshak,tolnce,stat,pmf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -434,7 +434,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
   Real( Kind = wp ), Intent( In    ) :: tolnce
   Type( stats_type ), Intent( InOut ) :: stat
   Type( pmf_type), Intent( InOut ) :: pmf
-  Type( corePart ),  Intent( InOut ) :: parts(:)
+  Type( configuration_type ),  Intent( InOut ) :: config
   Type( comms_type), intent( InOut ) :: comm
 
 
@@ -471,8 +471,8 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
      End Do
   End If
 
-  lstitr(1:natms)=.false. ! initialise lstitr
-  Call pmf_tags(lstitr,pmf,parts,comm)
+  lstitr(1:config%natms)=.false. ! initialise lstitr
+  Call pmf_tags(lstitr,pmf,config,comm)
 
 ! normalise PMF constraint vectors
 
@@ -494,7 +494,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
 
 ! initialise velocity correction arrays
 
-     Do l=1,natms
+     Do l=1,config%natms
         vxt(l)=0.0_wp
         vyt(l)=0.0_wp
         vzt(l)=0.0_wp
@@ -502,7 +502,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
 
 ! calculate temporary COM velocity of each unit
 
-     Call pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
+     Call pmf_vcoms(xpmf,ypmf,zpmf,pmf,config,comm)
 
 ! calculate PMF velocity corrections
 
@@ -530,8 +530,8 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
 
 ! improve approximate PMF particles velocity and force (if non-frozen)
 
-                 If (l > 0 .and. l <= natms) Then ! l is a domain particle
-                    If (lfrzn(l) == 0) Then
+                 If (l > 0 .and. l <= config%natms) Then ! l is a domain particle
+                    If (config%lfrzn(l) == 0) Then
                        vxt(l)=vxt(l)+pmf%pxx(ipmf)*gamm(jpmf)
                        vyt(l)=vyt(l)+pmf%pyy(ipmf)*gamm(jpmf)
                        vzt(l)=vzt(l)+pmf%pzz(ipmf)*gamm(jpmf)
@@ -557,11 +557,11 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
               If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
                  Do k=1,pmf%mxtpmf(jpmf)
                     l=pmf%indpmf(k,jpmf,ipmf)
-                    If (l > 0 .and. l <= natms) Then ! l is a domain particle
-                       If (lfrzn(l) == 0) Then
-                          vxx(l)=vxx(l)+vxt(l)
-                          vyy(l)=vyy(l)+vyt(l)
-                          vzz(l)=vzz(l)+vzt(l)
+                    If (l > 0 .and. l <= config%natms) Then ! l is a domain particle
+                       If (config%lfrzn(l) == 0) Then
+                          config%vxx(l)=config%vxx(l)+vxt(l)
+                          config%vyy(l)=config%vyy(l)+vyt(l)
+                          config%vzz(l)=config%vzz(l)+vzt(l)
                        End If
                     End If
                  End Do
@@ -594,7 +594,7 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,parts,comm)
 
 End Subroutine pmf_quench
 
-Subroutine pmf_tags(lstitr,pmf,parts,comm)
+Subroutine pmf_tags(lstitr,pmf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -610,7 +610,7 @@ Subroutine pmf_tags(lstitr,pmf,parts,comm)
 
   Logical,           Intent( InOut ) :: lstitr(1:mxatms)
   Type(pmf_type), Intent( Inout ) :: pmf
-  Type( corePart ),   Intent( InOut ) :: parts(:)
+  Type( configuration_type ),   Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer :: ipmf,jpmf,j,k
@@ -628,9 +628,9 @@ Subroutine pmf_tags(lstitr,pmf,parts,comm)
      Do jpmf=1,2
         If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
            Do k=1,pmf%mxtpmf(jpmf)
-              j=local_index(pmf%listpmf(k,jpmf,ipmf),nlast,lsi,lsa)
+              j=local_index(pmf%listpmf(k,jpmf,ipmf),config%nlast,config%lsi,config%lsa)
               pmf%indpmf(k,jpmf,ipmf)=j
-              If (j > 0 .and. j <= natms) lstitr(j)=(lfrzn(j) == 0)
+              If (j > 0 .and. j <= config%natms) lstitr(j)=(config%lfrzn(j) == 0)
            End Do
         End If
      End Do
@@ -639,11 +639,11 @@ Subroutine pmf_tags(lstitr,pmf,parts,comm)
 
 ! Get PMF units' COM vectors
 
-  Call pmf_coms(pmf,pmf%pxx,pmf%pyy,pmf%pzz,parts,comm)
+  Call pmf_coms(pmf,pmf%pxx,pmf%pyy,pmf%pzz,config,comm)
 
 End Subroutine pmf_tags
 
-Subroutine pmf_units_set(pmf,comm)
+Subroutine pmf_units_set(pmf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -661,6 +661,7 @@ Subroutine pmf_units_set(pmf,comm)
 
   Type (pmf_type ), Intent( InOut ) :: pmf
   Type( comms_type ), Intent( InOut) :: comm
+  Type( configuration_type ), Intent( InOut ) :: config
   Logical :: safe,ok
   Integer :: fail,ipmf,jpmf,gpmf
 
@@ -704,7 +705,7 @@ Subroutine pmf_units_set(pmf,comm)
         pmf%listpmf(0,2,ipmf)=0
 
         Do jpmf=1,pmf%mxtpmf(1)
-           i1pmf0(jpmf)=local_index(pmf%listpmf(jpmf,1,ipmf),natms,lsi,lsa)
+           i1pmf0(jpmf)=local_index(pmf%listpmf(jpmf,1,ipmf),config%natms,config%lsi,config%lsa)
 
            If (i1pmf0(jpmf) > 0) Then
 
@@ -718,7 +719,7 @@ Subroutine pmf_units_set(pmf,comm)
         If (Any(i1pmf0 > 0)) pmf%listpmf(0,2,ipmf)=pmf%listpmf(0,2,ipmf)+1
 
         Do jpmf=1,pmf%mxtpmf(2)
-           i2pmf0(jpmf)=local_index(pmf%listpmf(jpmf,2,ipmf),natms,lsi,lsa)
+           i2pmf0(jpmf)=local_index(pmf%listpmf(jpmf,2,ipmf),config%natms,config%lsi,config%lsa)
 
            If (i2pmf0(jpmf) > 0) Then
 
@@ -766,7 +767,7 @@ Subroutine pmf_units_set(pmf,comm)
   End If
 
 End Subroutine pmf_units_set
-Subroutine pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
+Subroutine pmf_vcoms(xpmf,ypmf,zpmf,pmf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -783,6 +784,7 @@ Subroutine pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
 
   Real( Kind = wp ), Intent(   Out ) :: xpmf(1:,1:),ypmf(1:,1:),zpmf(1:,1:)
   Type(pmf_type), Intent( Inout ) :: pmf
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                 :: safe
@@ -833,11 +835,11 @@ Subroutine pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
 
 ! Copy particles' velocities to buffer in an orderly manner
 
-                    If (j > 0 .and. j <= natms) Then ! j is a domain particle
+                    If (j > 0 .and. j <= config%natms) Then ! j is a domain particle
                        l=((gpmf-gpmf1)*(pmf%mxtpmf(1)+pmf%mxtpmf(2))+(jpmf-1)*pmf%mxtpmf(1)+(k-1))*iadd
-                       buffer(l+1)=vxx(j)
-                       buffer(l+2)=vyy(j)
-                       buffer(l+3)=vzz(j)
+                       buffer(l+1)=config%vxx(j)
+                       buffer(l+2)=config%vyy(j)
+                       buffer(l+3)=config%vzz(j)
                     End If
                  End Do
               End If
@@ -894,7 +896,7 @@ End Subroutine pmf_vcoms
 
 Subroutine pmf_shake_vv          &
            (mxshak,tolnce,tstep, &
-           parts,strpmf,   &
+           config,strpmf,   &
            virpmf,stat,pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -913,7 +915,7 @@ Subroutine pmf_shake_vv          &
 
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
-  Type( corePart  ), Intent( InOut ) :: parts(1:mxatms)
+  Type( configuration_type  ), Intent( InOut ) :: config
   Real( Kind = wp ), Intent(   Out ) :: strpmf(1:9),virpmf
   Type( stats_type ), Intent( InOut ) :: stat
   Type(pmf_type), Intent( Inout ) :: pmf
@@ -974,7 +976,7 @@ Subroutine pmf_shake_vv          &
 
 ! calculate temporary PMF units' COM vectors
 
-     Call pmf_coms(pmf,pxt,pyt,pzt,parts,comm)
+     Call pmf_coms(pmf,pxt,pyt,pzt,config,comm)
 
 ! calculate maximum error in bondlength
 
@@ -1015,8 +1017,8 @@ Subroutine pmf_shake_vv          &
 ! for non-frozen domain particles accumulate PMF constraint stress
 ! and atomic position corrections
 
-                    If (l > 0 .and. l <= natms) Then ! l is a domain particle
-                       If (lfrzn(l) == 0) Then
+                    If (l > 0 .and. l <= config%natms) Then ! l is a domain particle
+                       If (config%lfrzn(l) == 0) Then
                           strpmf(1) = strpmf(1) - tmp*pmf%pxx(ipmf)*pmf%pxx(ipmf)
                           strpmf(2) = strpmf(2) - tmp*pmf%pxx(ipmf)*pmf%pyy(ipmf)
                           strpmf(3) = strpmf(3) - tmp*pmf%pxx(ipmf)*pmf%pzz(ipmf)
@@ -1024,9 +1026,9 @@ Subroutine pmf_shake_vv          &
                           strpmf(6) = strpmf(6) - tmp*pmf%pyy(ipmf)*pmf%pzz(ipmf)
                           strpmf(9) = strpmf(9) - tmp*pmf%pzz(ipmf)*pmf%pzz(ipmf)
 
-                          parts(l)%xxx=parts(l)%xxx+pmf%pxx(ipmf)*gamm(jpmf)
-                          parts(l)%yyy=parts(l)%yyy+pmf%pyy(ipmf)*gamm(jpmf)
-                          parts(l)%zzz=parts(l)%zzz+pmf%pzz(ipmf)*gamm(jpmf)
+                          config%parts(l)%xxx=config%parts(l)%xxx+pmf%pxx(ipmf)*gamm(jpmf)
+                          config%parts(l)%yyy=config%parts(l)%yyy+pmf%pyy(ipmf)*gamm(jpmf)
+                          config%parts(l)%zzz=config%parts(l)%zzz+pmf%pzz(ipmf)*gamm(jpmf)
                        End If
                     End If
                  End Do
@@ -1096,7 +1098,7 @@ End Subroutine pmf_shake_vv
 
 Subroutine pmf_rattle                      &
            (mxshak,tolnce,tstep,lfst,lcol, &
-           vxx,vyy,vzz,stat,pmf,comm)
+           config,stat,pmf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1114,7 +1116,7 @@ Subroutine pmf_rattle                      &
   Integer,           Intent( In    ) :: mxshak
   Real( Kind = wp ), Intent( In    ) :: tolnce,tstep
   Logical,           Intent( In    ) :: lfst,lcol
-  Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( stats_type ), Intent( InOut ) :: stat
   Type(pmf_type), Intent( Inout ) :: pmf
   Type( comms_type ), Intent( InOut ) :: comm
@@ -1171,7 +1173,7 @@ Subroutine pmf_rattle                      &
 
 ! initialise velocity correction arrays
 
-      Do l=1,natms
+     Do l=1,config%natms
         vxt(l)=0.0_wp
         vyt(l)=0.0_wp
         vzt(l)=0.0_wp
@@ -1179,7 +1181,7 @@ Subroutine pmf_rattle                      &
 
 ! calculate temporary COM velocity of each unit
 
-      Call pmf_vcoms(xpmf,ypmf,zpmf,pmf,comm)
+     Call pmf_vcoms(xpmf,ypmf,zpmf,pmf,config,comm)
 
 ! calculate PMF velocity corrections
 
@@ -1207,8 +1209,8 @@ Subroutine pmf_rattle                      &
 
 ! improve approximate PMF particles velocity and force (if non-frozen)
 
-                 If (l > 0 .and. l <= natms) Then ! l is a domain particle
-                    If (lfrzn(l) == 0) Then
+                 If (l > 0 .and. l <= config%natms) Then ! l is a domain particle
+                    If (config%lfrzn(l) == 0) Then
                        vxt(l)=vxt(l)+pmf%pxx(ipmf)*gamm(jpmf)
                        vyt(l)=vyt(l)+pmf%pyy(ipmf)*gamm(jpmf)
                        vzt(l)=vzt(l)+pmf%pzz(ipmf)*gamm(jpmf)
@@ -1234,11 +1236,11 @@ Subroutine pmf_rattle                      &
               If (pmf%listpmf(0,2,ipmf) == jpmf .or. pmf%listpmf(0,2,ipmf) == 3) Then
                  Do k=1,pmf%mxtpmf(jpmf)
                     l=pmf%indpmf(k,jpmf,ipmf)
-                    If (l > 0 .and. l <= natms) Then ! l is a domain particle
-                       If (lfrzn(l) == 0) Then
-                          vxx(l)=vxx(l)+vxt(l)
-                          vyy(l)=vyy(l)+vyt(l)
-                          vzz(l)=vzz(l)+vzt(l)
+                    If (l > 0 .and. l <= config%natms) Then ! l is a domain particle
+                       If (config%lfrzn(l) == 0) Then
+                          config%vxx(l)=config%vxx(l)+vxt(l)
+                          config%vyy(l)=config%vyy(l)+vyt(l)
+                          config%vzz(l)=config%vzz(l)+vzt(l)
                        End If
                     End If
                  End Do

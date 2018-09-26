@@ -13,7 +13,7 @@ Module thermostat
 
     !> Ensemble key
     Integer( Kind = wi ), Public :: ensemble
-    !> Flag for variable cell size e.g. NPT ensembles
+    !> Flag for variable config%cell size e.g. NPT ensembles
     Logical, Public :: variable_cell = .false.
     !> Flag for anisotropic pressure
     Logical, Public :: anisotropic_pressure = .false.

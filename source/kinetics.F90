@@ -25,9 +25,7 @@ Module kinetics
   Use kinds, only : wp
   Use comms, Only : comms_type, gsum
   Use setup,  Only : nrite,zero_plus,mxatms,boltz
-  Use configuration, Only : imcon,cell,natms,ltg,lfrzn,weight,&
-                            nfree, lstfre, vxx,vyy,vzz,getcom, & 
-                            getcom_mol
+  Use configuration, Only : configuration_type,getcom_mol
   Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type
   Implicit None
@@ -48,7 +46,7 @@ Module kinetics
 
 Contains
 
-  Function getkin(vxx,vyy,vzz,comm)
+  Function getkin(config,vxx,vyy,vzz,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -61,7 +59,7 @@ Contains
 
 
     Real( Kind = wp )                                    :: getkin
-
+    Type( configuration_type ), Intent( In    )                 :: config
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
     Type(comms_type), Intent ( InOut )                   :: comm
 
@@ -70,9 +68,9 @@ Contains
 
     engke = 0.0_wp
 
-    Do i=1,natms
-       If (lfrzn(i) == 0) &
-          engke = engke + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
+    Do i=1,config%natms
+       If (config%lfrzn(i) == 0) &
+          engke = engke + config%weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
     End Do
 
     Call gsum(comm,engke)
@@ -81,7 +79,7 @@ Contains
 
   End Function getkin
 
-  Function getknf(vxx,vyy,vzz,comm)
+  Function getknf(vxx,vyy,vzz,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -96,18 +94,19 @@ Contains
     Real( Kind = wp )                                    :: getknf
 
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
-    Type(comms_type), Intent (InOut)                     :: comm
+    Type( configuration_type ),          Intent( InOut ) :: config
+    Type(comms_type),                    Intent( InOut ) :: comm
 
     Integer           :: i,j
     Real( Kind = wp ) :: engke
 
     engke = 0.0_wp
 
-    Do j=1,nfree
-       i=lstfre(j)
+    Do j=1,config%nfree
+       i=config%lstfre(j)
 
-       If (lfrzn(i) == 0) &
-          engke = engke + weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
+       If (config%lfrzn(i) == 0) &
+          engke = engke + config%weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
     End Do
 
     Call gsum(comm,engke)
@@ -198,7 +197,7 @@ Contains
 
   End Function getknr
 
-  Subroutine kinstress(vxx,vyy,vzz,strkin,comm)
+  Subroutine kinstress(vxx,vyy,vzz,strkin,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -212,20 +211,21 @@ Contains
 
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: strkin
+    Type( configuration_type ),          Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut )                   :: comm
 
     Integer :: i
 
     strkin = 0.0_wp
 
-    Do i=1,natms
-       If (lfrzn(i) == 0) Then
-          strkin(1) = strkin(1) + weight(i)*vxx(i)*vxx(i)
-          strkin(2) = strkin(2) + weight(i)*vxx(i)*vyy(i)
-          strkin(3) = strkin(3) + weight(i)*vxx(i)*vzz(i)
-          strkin(5) = strkin(5) + weight(i)*vyy(i)*vyy(i)
-          strkin(6) = strkin(6) + weight(i)*vyy(i)*vzz(i)
-          strkin(9) = strkin(9) + weight(i)*vzz(i)*vzz(i)
+    Do i=1,config%natms
+       If (config%lfrzn(i) == 0) Then
+          strkin(1) = strkin(1) + config%weight(i)*vxx(i)*vxx(i)
+          strkin(2) = strkin(2) + config%weight(i)*vxx(i)*vyy(i)
+          strkin(3) = strkin(3) + config%weight(i)*vxx(i)*vzz(i)
+          strkin(5) = strkin(5) + config%weight(i)*vyy(i)*vyy(i)
+          strkin(6) = strkin(6) + config%weight(i)*vyy(i)*vzz(i)
+          strkin(9) = strkin(9) + config%weight(i)*vzz(i)*vzz(i)
        End If
     End Do
 
@@ -239,7 +239,7 @@ Contains
 
   End Subroutine kinstress
 
-  Subroutine kinstresf(vxx,vyy,vzz,strknf,comm)
+  Subroutine kinstresf(vxx,vyy,vzz,strknf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -253,22 +253,23 @@ Contains
 
     Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: strknf
+    Type( configuration_type ),          Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut )                   :: comm
 
     Integer :: i,j
 
     strknf = 0.0_wp
 
-    Do j=1,nfree
-       i=lstfre(j)
+    Do j=1,config%nfree
+       i=config%lstfre(j)
 
-       If (lfrzn(i) == 0) Then
-          strknf(1) = strknf(1) + weight(i)*vxx(i)*vxx(i)
-          strknf(2) = strknf(2) + weight(i)*vxx(i)*vyy(i)
-          strknf(3) = strknf(3) + weight(i)*vxx(i)*vzz(i)
-          strknf(5) = strknf(5) + weight(i)*vyy(i)*vyy(i)
-          strknf(6) = strknf(6) + weight(i)*vyy(i)*vzz(i)
-          strknf(9) = strknf(9) + weight(i)*vzz(i)*vzz(i)
+       If (config%lfrzn(i) == 0) Then
+          strknf(1) = strknf(1) + config%weight(i)*vxx(i)*vxx(i)
+          strknf(2) = strknf(2) + config%weight(i)*vxx(i)*vyy(i)
+          strknf(3) = strknf(3) + config%weight(i)*vxx(i)*vzz(i)
+          strknf(5) = strknf(5) + config%weight(i)*vyy(i)*vyy(i)
+          strknf(6) = strknf(6) + config%weight(i)*vyy(i)*vzz(i)
+          strknf(9) = strknf(9) + config%weight(i)*vzz(i)*vzz(i)
        End If
     End Do
 
@@ -353,7 +354,7 @@ Contains
 
   End Subroutine chvom
 
-  Subroutine getvom(vom,vxx,vyy,vzz,comm)
+  Subroutine getvom(vom,vxx,vyy,vzz,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -366,6 +367,7 @@ Contains
 
     Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
     Real( Kind = wp ), Intent( In    ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+    Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -381,8 +383,8 @@ Contains
 ! For all unfrozen, free particles
 
        totmas = 0.0_wp
-       Do i=1,natms
-          If (lfrzn(i) == 0) totmas = totmas + weight(i)
+       Do i=1,config%natms
+          If (config%lfrzn(i) == 0) totmas = totmas + config%weight(i)
        End Do
 
        Call gsum(comm,totmas)
@@ -394,11 +396,11 @@ Contains
 
 ! For all unfrozen, free particles
 
-    Do i=1,natms
-       If (lfrzn(i) == 0) Then
-          vom(1) = vom(1) + weight(i)*vxx(i)
-          vom(2) = vom(2) + weight(i)*vyy(i)
-          vom(3) = vom(3) + weight(i)*vzz(i)
+    Do i=1,config%natms
+       If (config%lfrzn(i) == 0) Then
+          vom(1) = vom(1) + config%weight(i)*vxx(i)
+          vom(2) = vom(2) + config%weight(i)*vyy(i)
+          vom(3) = vom(3) + config%weight(i)*vzz(i)
        End If
     End Do
 
@@ -407,7 +409,7 @@ Contains
 
   End Subroutine getvom
 
-  Subroutine getvom_rgd(vom,vxx,vyy,vzz,rigid,comm)
+  Subroutine getvom_rgd(vom,vxx,vyy,vzz,rigid,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -421,6 +423,7 @@ Contains
     Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
     Real( Kind = wp ), Intent( In    ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
     Type( rigid_bodies_type ), Intent( In    ) :: rigid
+    Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut ) :: comm
 
     Logical,           Save :: newjob = .true.
@@ -438,10 +441,10 @@ Contains
 
 ! For all unfrozen, free particles
 
-       Do j=1,nfree
-          i=lstfre(j)
+       Do j=1,config%nfree
+          i=config%lstfre(j)
 
-          If (lfrzn(i) == 0) totmas = totmas + weight(i)
+          If (config%lfrzn(i) == 0) totmas = totmas + config%weight(i)
        End Do
 
 ! For all RBs without any frozen particles
@@ -465,11 +468,11 @@ Contains
 
 ! For all unfrozen, free particles
 
-    Do j=1,nfree
-       i=lstfre(j)
+    Do j=1,config%nfree
+       i=config%lstfre(j)
 
-       If (lfrzn(i) == 0) Then
-          tmp=weight(i)
+       If (config%lfrzn(i) == 0) Then
+          tmp=config%weight(i)
           vom(1) = vom(1) + tmp*vxx(i)
           vom(2) = vom(2) + tmp*vyy(i)
           vom(3) = vom(3) + tmp*vzz(i)
@@ -497,7 +500,7 @@ Contains
   End Subroutine getvom_rgd
 
 
-  Subroutine cap_forces(fmax,temp,parts,comm)
+  Subroutine cap_forces(fmax,temp,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -512,7 +515,7 @@ Contains
 
     Real( Kind = wp ), Intent( In    ) :: fmax,temp
     Type(comms_type),  Intent( InOut ) :: comm
-    Type( corePart ),  Intent( InOut ) :: parts(:)
+    Type( configuration_type ),  Intent( InOut ) :: config
 
     Logical,           Save :: newjob = .true.
     Real( Kind = wp ), Save :: meg
@@ -526,8 +529,8 @@ Contains
 ! Get the total number of non-frozen&non-massless particles
 
        meg=0.0_wp
-       Do i=1,natms
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) &
+       Do i=1,config%natms
+          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) &
              meg=meg+1.0_wp
        End Do
        Call gsum(comm,meg)
@@ -541,22 +544,22 @@ Contains
 ! for non-frozen&non-massless particles
 
     fcom = 0.0_wp
-    Do i=1,natms
-       If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-          fmod = parts(i)%fxx**2 + parts(i)%fyy**2 + parts(i)%fzz**2
+    Do i=1,config%natms
+       If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+          fmod = config%parts(i)%fxx**2 + config%parts(i)%fyy**2 + config%parts(i)%fzz**2
 
           If (fmod > fmax2) Then
              scale  = Sqrt(fmax2/fmod)
-             parts(i)%fxx = parts(i)%fxx*scale
-             parts(i)%fyy = parts(i)%fyy*scale
-             parts(i)%fzz = parts(i)%fzz*scale
+             config%parts(i)%fxx = config%parts(i)%fxx*scale
+             config%parts(i)%fyy = config%parts(i)%fyy*scale
+             config%parts(i)%fzz = config%parts(i)%fzz*scale
           End If
 
 ! accumulate forces - to check on momentum conservation
 
-          fcom(1) = fcom(1) + parts(i)%fxx
-          fcom(2) = fcom(2) + parts(i)%fyy
-          fcom(3) = fcom(3) + parts(i)%fzz
+          fcom(1) = fcom(1) + config%parts(i)%fxx
+          fcom(2) = fcom(2) + config%parts(i)%fyy
+          fcom(3) = fcom(3) + config%parts(i)%fzz
        End If
     End Do
 
@@ -567,11 +570,11 @@ Contains
 
 ! conserve momentum
 
-    Do i=1,natms
-       If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-          parts(i)%fxx = parts(i)%fxx - fcom(1)
-          parts(i)%fyy = parts(i)%fyy - fcom(2)
-          parts(i)%fzz = parts(i)%fzz - fcom(3)
+    Do i=1,config%natms
+       If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+          config%parts(i)%fxx = config%parts(i)%fxx - fcom(1)
+          config%parts(i)%fyy = config%parts(i)%fyy - fcom(2)
+          config%parts(i)%fzz = config%parts(i)%fzz - fcom(3)
        End If
     End Do
 

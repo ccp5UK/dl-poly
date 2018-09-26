@@ -88,7 +88,7 @@ Contains
     End Select
 
     ! if (still) depositing energy, add to electronic temperature
-    ! grid (active cells only) and adjust electronic temperatures 
+    ! grid (active config%cells only) and adjust electronic temperatures 
     ! accordingly
 
     If (deposit) Then
@@ -245,7 +245,7 @@ Contains
 
   End Subroutine depoevolve
 
-  Subroutine ttm_ion_temperature(thermo,domain,comm)
+  Subroutine ttm_ion_temperature(thermo,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -261,7 +261,8 @@ Contains
 
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( domains_type ), Intent( In    ) :: domain
-  Type ( comms_type ), Intent( InOut) :: comm
+  Type( comms_type ), Intent( InOut) :: comm
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Integer :: ia,ja,ka,ijk,ijk1,ijk2,i,ii,jj,kk
   Real ( Kind = wp ) :: velsq,tmp,gsadd,vx,vy,vz,crho
@@ -273,7 +274,7 @@ Contains
 
   ! allocate and zero arrays
 
-  Allocate (nat (1:2*numcell), ijkatm (1:natms), Stat=fail)
+  Allocate (nat (1:2*numcell), ijkatm (1:config%natms), Stat=fail)
   If (fail > 0) Call error(1085)
 
   nat = 0
@@ -300,20 +301,20 @@ Contains
 
 ! calculate overall momenta of cells for ionic temperature corrections
 
-  Do i=1,natms
+  Do i=1,config%natms
 
-    ia = Floor((parts(i)%xxx+zerocell(1))/delx) + 1
-    ja = Floor((parts(i)%yyy+zerocell(2))/dely) + 1
-    ka = Floor((parts(i)%zzz+zerocell(3))/delz) + 1
+    ia = Floor((config%parts(i)%xxx+zerocell(1))/delx) + 1
+    ja = Floor((config%parts(i)%yyy+zerocell(2))/dely) + 1
+    ka = Floor((config%parts(i)%zzz+zerocell(3))/delz) + 1
 
     ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
     ijkatm (i) = ijk
 
-    tmp = weight(i)
-    If (lfrzn(i) == 0) Then
-      ttmvom(ijk,1) = ttmvom(ijk,1) + tmp*vxx(i)
-      ttmvom(ijk,2) = ttmvom(ijk,2) + tmp*vyy(i)
-      ttmvom(ijk,3) = ttmvom(ijk,3) + tmp*vzz(i)
+    tmp = config%weight(i)
+    If (config%lfrzn(i) == 0) Then
+      ttmvom(ijk,1) = ttmvom(ijk,1) + tmp*config%vxx(i)
+      ttmvom(ijk,2) = ttmvom(ijk,2) + tmp*config%vyy(i)
+      ttmvom(ijk,3) = ttmvom(ijk,3) + tmp*config%vzz(i)
       ttmvom(ijk,4) = ttmvom(ijk,4) + tmp
     End If
 
@@ -322,7 +323,7 @@ Contains
   If (comm%mxnode>1) Then
     Allocate (buf1(1:numcell), buf2(1:numcell), buf3(1:numcell), buf4(1:numcell), Stat=fail)
     If (fail>0) Call error(1085)
-    ! Sum up cell momenta and atomic masses in boundaries for ionic temperature corrections
+    ! Sum up config%cell momenta and atomic masses in boundaries for ionic temperature corrections
     ! -z/+z directions
     buf1 = 0.0_wp
     buf2 = 0.0_wp
@@ -435,15 +436,15 @@ Contains
 ! and source terms: electron-phonon (gsource) and electronic 
 ! stopping (asource)
 
-  Do i=1,natms
+  Do i=1,config%natms
 
     ijk = ijkatm(i)
 
-    vx=vxx(i)-ttmvom(ijk,1)
-    vy=vyy(i)-ttmvom(ijk,2)
-    vz=vzz(i)-ttmvom(ijk,3)
+    vx=config%vxx(i)-ttmvom(ijk,1)
+    vy=config%vyy(i)-ttmvom(ijk,2)
+    vz=config%vzz(i)-ttmvom(ijk,3)
     velsq = vx*vx+vy*vy+vz*vz
-    tmp = weight(i)
+    tmp = config%weight(i)
 
     tempion(ijk) = tempion(ijk) + tmp*velsq
 
@@ -538,11 +539,11 @@ Contains
     Do ja = 1, ntcell(2)
       Do ia = 1, ntcell(1)
         ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-        ! calculate ionic temperature for all cells with at least
+        ! calculate ionic temperature for all config%cells with at least
         ! minimum number of particles (1 during deposition, amin 
-        ! at all other times), calculating dynamic cell density
-        ! (if required) from active cells, removing centre of mass
-        ! motion and determining any inactive ionic temperature cells
+        ! at all other times), calculating dynamic config%cell density
+        ! (if required) from active config%cells, removing centre of mass
+        ! motion and determining any inactive ionic temperature config%cells
         If (nat(2*ijk-1)>natmin .and. nat(2*ijk-1)>1) Then
           tempion(ijk) = tempion(ijk)/(3.0_wp*boltz*Real(nat(2*ijk-1),Kind=wp))
           acell = acell + 1
@@ -815,8 +816,8 @@ Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
     Write(messages(2),'(4x,a,3x,a,5x,a)') 'optimal/ps','actual/ps','diff/md'
     Write(messages(3),'(2x,2es12.4,2x,i10)') opttstep, tstep/Real(redtstepmx,Kind=wp),redtstepmx
     If (ttmdyndens) Then
-      Write(messages(4),'(a)') 'active ion temperature cells:'
-      Write(messages(5),'(4x,a,2x,a)') 'atom dens.','no. of active cells'
+      Write(messages(4),'(a)') 'active ion temperature config%cells:'
+      Write(messages(5),'(4x,a,2x,a)') 'atom dens.','no. of active config%cells'
       Write(messages(6),'(2x,es12.4,11x,i10)') cellrho,acell
       Call info(messages,6,.true.)
     Else
@@ -891,7 +892,7 @@ Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
     Case (1)
 ! constant thermal conductivity or non-metal case 
       If (redistribute) Then
-      ! system with cell deactivation/energy redistribution
+      ! system with config%cell deactivation/energy redistribution
         Do kk=-eltcell(3),eltcell(3)
           Do jj=-eltcell(2),eltcell(2)
             Do ii=-eltcell(1),eltcell(1)
@@ -925,7 +926,7 @@ Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
                   End Do
                 End Do
               Else
-              ! standard thermal diffusion calculation applies for electronic cells away from ionic cells
+              ! standard thermal diffusion calculation applies for electronic config%cells away from ionic config%cells
                 Do k=1,ntcell(3)
                   Do j=1,ntcell(2)
                     Do i=1,ntcell(1)
@@ -974,7 +975,7 @@ Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
     Case (2)
 ! Drude-type thermal conductivity case
       If (redistribute) Then
-      ! system with cell deactivation/energy redistribution
+      ! system with config%cell deactivation/energy redistribution
         Do kk=-eltcell(3),eltcell(3)
           Do jj=-eltcell(2),eltcell(2)
             Do ii=-eltcell(1),eltcell(1)
@@ -1013,7 +1014,7 @@ Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
                   End Do
                 End Do
               Else
-              ! standard thermal diffusion calculation applies for electronic cells away from ionic cells
+              ! standard thermal diffusion calculation applies for electronic config%cells away from ionic config%cells
                 Do k=1,ntcell(3)
                   Do j=1,ntcell(2)
                     Do i=1,ntcell(1)
@@ -1073,7 +1074,7 @@ Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
     Case (3)
 ! tabulated thermal conductivity: uses local ionic or system temperature to calculate value
       If (redistribute) Then
-      ! system with cell deactivation/energy redistribution
+      ! system with config%cell deactivation/energy redistribution
         Do kk=-eltcell(3),eltcell(3)
           Do jj=-eltcell(2),eltcell(2)
             Do ii=-eltcell(1),eltcell(1)
@@ -1108,13 +1109,13 @@ Subroutine ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump,nstrun, &
                   End Do
                 End Do
               Else
-              ! standard thermal diffusion calculation applies for electronic cells away from ionic cells
+              ! standard thermal diffusion calculation applies for electronic config%cells away from ionic config%cells
                 Do k=1,ntcell(3)
                   Do j=1,ntcell(2)
                     Do i=1,ntcell(1)
                       ijk = 1 + i + (ntcell(1)+2) * (j + (ntcell(2)+2) * k)
                       ! note that temperature for thermal conductivity is always system
-                      ! temperature for electronic cells away from ionic cells
+                      ! temperature for electronic config%cells away from ionic config%cells
                       alploc = Ke(temp)/Ce(eltemp(ijk,ii,jj,kk))
                       eltemp1(ijk,ii,jj,kk) = eltemp(ijk,ii,jj,kk)+&
                         fomAx*alploc*(eltemp(ijk-1,ii,jj,kk)-eltemp(ijk,ii,jj,kk))+&

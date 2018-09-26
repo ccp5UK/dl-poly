@@ -9,7 +9,7 @@ Module neighbours
   Use comms,   Only : comms_type,gcheck,gmax,gsum
   Use setup,   Only : nrite,mxatms,half_plus
   Use domains,       Only : domains_type
-  Use configuration,  Only : imcon,cell,natms,nlast,ltg,lfrzn
+  Use configuration,  Only : configuration_type
   Use core_shell,    Only : core_shell_type
   Use mpole,         Only : mpole_type,POLARISATION_CHARMM
   Use development, Only : development_type
@@ -28,7 +28,7 @@ Module neighbours
     Private
 
     ! Verlet neighbour list data
-    !> Update cells flag
+    !> Update config%cells flag
     Logical, Public :: update = .true.
     !> Unconditional update flag
     Logical, Public :: unconditional_update = .false.
@@ -44,11 +44,11 @@ Module neighbours
     !> Actual Verlet neighbour list cutoff (cutoff+padding)
     Real( Kind = wp ), Public :: cutoff_extended
 
-    !> Linked cell list
+    !> Linked config%cell list
     Integer( Kind = wi ), Allocatable, Public :: list(:,:)
-    !> Maximum rank of linked cell list
+    !> Maximum rank of linked config%cell list
     Integer( Kind = wi ), Public :: max_list
-    !> Maximum number of cells per domain
+    !> Maximum number of config%cells per domain
     Integer( Kind = wi ), Public :: max_cell
 
     !> Excluded atom list
@@ -69,7 +69,7 @@ Module neighbours
 
 Contains
 
-  !> Initialise the linked cell list
+  !> Initialise the linked config%cell list
   Subroutine init_list(neigh,mxatdm)
     Class( neighbours_type ) :: neigh
     Integer( Kind = wi ), Intent( In    ) :: mxatdm
@@ -88,13 +88,13 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !>
   !> Contrib   - I.J.Bush february 2014
-  Subroutine vnl_check(l_str,width,neigh,stat,domain,parts,bspline,kim_data,comm)
+  Subroutine vnl_check(l_str,width,neigh,stat,domain,config,bspline,kim_data,comm)
     Logical,           Intent ( In    ) :: l_str
     Real( Kind = wp ), Intent ( InOut ) :: width
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type( stats_type ), Intent( InOut) :: stat
     Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ),   Intent ( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent ( InOut ) :: config
     Integer( Kind = wi ), Intent( In    ) :: bspline
     Type( kim_type ), Intent( In    ) :: kim_data
     Type( comms_type ), Intent ( InOut ) :: comm
@@ -117,18 +117,18 @@ Contains
       Call error(0,message)
     End If
 
-    Do i=1,nlast
-      x(i) = parts(i)%xxx - neigh%xbg(i)
-      y(i) = parts(i)%yyy - neigh%ybg(i)
-      z(i) = parts(i)%zzz - neigh%zbg(i)
+    Do i=1,config%nlast
+      x(i) = config%parts(i)%xxx - neigh%xbg(i)
+      y(i) = config%parts(i)%yyy - neigh%ybg(i)
+      z(i) = config%parts(i)%zzz - neigh%zbg(i)
     End Do
 
-    Call images(imcon,cell,nlast,x,y,z)
+    Call images(config%imcon,config%cell,config%nlast,x,y,z)
 
-    If (nlast > 0) r(1:nlast) = Sqrt(x(1:nlast)**2 + y(1:nlast)**2 + z(1:nlast)**2)
+    If (config%nlast > 0) r(1:config%nlast) = Sqrt(x(1:config%nlast)**2 + y(1:config%nlast)**2 + z(1:config%nlast)**2)
 
     safe=.true.
-    Q:Do i=1,natms
+    Q:Do i=1,config%natms
       If (r(i) > 0.5_wp*neigh%padding) Then
         Do ii=1,neigh%list(-2,i)
           j=neigh%list(ii,i) ! may be in the halo!!!
@@ -138,9 +138,9 @@ Contains
             zz(1)=z(i)-z(j)
             cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
             If (cut > neigh%padding) Then
-              xx(1)=parts(i)%xxx-parts(j)%xxx
-              yy(1)=parts(i)%yyy-parts(j)%yyy
-              zz(1)=parts(i)%zzz-parts(j)%zzz
+              xx(1)=config%parts(i)%xxx-config%parts(j)%xxx
+              yy(1)=config%parts(i)%yyy-config%parts(j)%yyy
+              zz(1)=config%parts(i)%zzz-config%parts(j)%zzz
               cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
               If (cut > neigh%cutoff_extended) Then
                 safe=.false. ! strong violation
@@ -161,14 +161,14 @@ Contains
     Call gcheck(comm,safe,"enforce")
     neigh%update=.not.safe
 
-    ! Get the dimensional properties of the MD cell
-    Call dcell(cell,celprp) ! cut=neigh%cutoff_extended+1.0e-6_wp in link_cell_pairs
+    ! Get the dimensional properties of the MD config%cell
+    Call dcell(config%cell,celprp) ! cut=neigh%cutoff_extended+1.0e-6_wp in link_cell_pairs
     width=Min(celprp(7),celprp(8),celprp(9))
 
     ! define cut
     cut=neigh%cutoff_extended+1.0e-6_wp
 
-    ! calculate link cell dimensions per node
+    ! calculate link config%cell dimensions per node
     ilx=Int(domain%nx_recip*celprp(7)/cut)
     ily=Int(domain%ny_recip*celprp(8)/cut)
     ilz=Int(domain%nz_recip*celprp(9)/cut)
@@ -253,10 +253,10 @@ Contains
   !> Copyright - Daresbury Laboratory
   !>
   !> Author    - I.T.Todorov january 2017
-  Subroutine vnl_set_check(neigh,parts,comm)
+  Subroutine vnl_set_check(neigh,config,comm)
     Type( neighbours_type ), Intent( InOut ) :: neigh
     Type ( comms_type ), Intent( InOut ) :: comm
-    Type( corePart ),    Intent( InOut ) :: parts(:)
+    Type( configuration_type ),    Intent( InOut ) :: config
 
     Integer :: fail,i
     Character( Len = 256 ):: message
@@ -283,14 +283,14 @@ Contains
     End If
 
     ! set tracking point
-    Do i = 1,nlast
-      neigh%xbg(i) = parts(i)%xxx
-      neigh%ybg(i) = parts(i)%yyy
-      neigh%zbg(i) = parts(i)%zzz
+    Do i = 1,config%nlast
+      neigh%xbg(i) = config%parts(i)%xxx
+      neigh%ybg(i) = config%parts(i)%yyy
+      neigh%zbg(i) = config%parts(i)%zzz
     End Do
   End Subroutine vnl_set_check
 
-  !> Verlet neighbour list based on link-cell method
+  !> Verlet neighbour list based on link-config%cell method
   !>
   !> Copyright - Daresbury Laboratory
   !>
@@ -298,7 +298,7 @@ Contains
   !>
   !> Contrib   - I.J.Bush february 2014
   Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,cshell,devel,neigh, &
-      mpoles,domain,tmr,parts,comm)
+      mpoles,domain,tmr,config,comm)
     Logical,            Intent( In    ) :: lbook
     Integer,            Intent( In    ) :: megfrz
     Real( Kind = wp ) , Intent( In    ) :: rvdw,rmet,pdplnc
@@ -308,7 +308,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -333,14 +333,14 @@ Contains
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt
 
     Character( Len = 256 ) :: message,messages(3)
-    ! Get the dimensional properties of the MD cell
+    ! Get the dimensional properties of the MD config%cell
 
 #ifdef CHRONO
     Call start_timer(tmr%t_linkcell)
 #endif
-    Call dcell(cell,celprp)
+    Call dcell(config%cell,celprp)
 
-    ! halt program if potential cutoff exceeds the minimum half-cell width
+    ! halt program if potential cutoff exceeds the minimum half-config%cell width
     det=Min(celprp(7),celprp(8),celprp(9))
     If (neigh%cutoff_extended > det/2.0_wp) Then
       Call warning(3,neigh%cutoff_extended,det/2.0_wp,0.0_wp)
@@ -351,7 +351,7 @@ Contains
     cut=neigh%cutoff_extended+1.0e-6_wp
     rcsq=neigh%cutoff_extended**2
 
-    ! Calculate the number of link-cells per domain in every direction
+    ! Calculate the number of link-config%cells per domain in every direction
     dispx=domain%nx_recip*celprp(7)/cut
     dispy=domain%ny_recip*celprp(8)/cut
     dispz=domain%nz_recip*celprp(9)/cut
@@ -360,7 +360,7 @@ Contains
     nly=Int(dispy)
     nlz=Int(dispz)
 
-    ! check for link cell algorithm violations
+    ! check for link config%cell algorithm violations
     If (nlx*nly*nlz == 0) Call error(307)
 
     ncells=(nlx+2)*(nly+2)*(nlz+2)
@@ -370,9 +370,9 @@ Contains
       If (ncells > mxatms) Call error(69)
     End If
 
-    ! subcelling and new link-cell parameters
+    ! subcelling and new link-config%cell parameters
     nlp=1
-    nlr2=Real(natms,wp)
+    nlr2=Real(config%natms,wp)
     det=nlr2/Real(nlx*nly*nlz,wp)
     Do While (det > pdplnc)
       nlp=nlp+1
@@ -403,7 +403,7 @@ Contains
     cell_dom(0)=nlp3 ! save array's limit
     cell_bor(0)=nlp4 ! save array's limit
 
-    ! Create jump-around arrays in link-cell space mapping a
+    ! Create jump-around arrays in link-config%cell space mapping a
     ! discrete 3D BALL so that ALL two body interactions are
     ! single counted within a domain (but not over-all as
     ! double counting still occurs globally for all shared
@@ -461,37 +461,37 @@ Contains
     End Do
     !  Write(*,*) 'NLP',nlp,nsbcll,nlx,nly,nlz
 
-    ! Get the total number of link-cells in MD cell per direction
+    ! Get the total number of link-config%cells in MD config%cell per direction
     xdc=Real(nlx*domain%nx,wp)
     ydc=Real(nly*domain%ny,wp)
     zdc=Real(nlz*domain%nz,wp)
 
-    ! Shifts from global to local link-cell space:
-    ! (0,0,0) left-most link-cell on the domain (halo)
+    ! Shifts from global to local link-config%cell space:
+    ! (0,0,0) left-most link-config%cell on the domain (halo)
     ! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
-    ! link-cell on the domain (halo)
+    ! link-config%cell on the domain (halo)
     jx=nlp-nlx*domain%idx
     jy=nlp-nly*domain%idy
     jz=nlp-nlz*domain%idz
 
     !***************************************************************
     ! Note(1): Due to numerical inaccuracy it is possible that some
-    ! domain particles (1,natms) may have link-cell space
+    ! domain particles (1,config%natms) may have link-config%cell space
     ! coordinates in the halo / at least one coordinate as shown
     ! (nlx+nlp,nly+nlp,nlz+nlp)^(nlp-1,nlp-1,nlp-1) /
-    ! as well as halo particles (natms+1,nlast) may have link-cell
+    ! as well as halo particles (config%natms+1,config%nlast) may have link-config%cell
     ! coordinates in the domain / all coordinate as shown
     ! (nlx,nly,nlz)^(nlp,nlp,nlp) / or even outside the
-    ! standard one link-cell width, domain-surrounding halo
+    ! standard one link-config%cell width, domain-surrounding halo
     ! / at least one coordinate as shown
     ! (>nlx+2*nlp-1,>nly+2*nlp-1,>nlz+2*nlp-1)^(<0,<0,<0) /.
     !
     ! Note(2): In SPME, at high accuracy of the ewald summation
     ! the b-splines may need more positive halo width than the
-    ! standard one of one link-cell (in set_halo_particles it is
+    ! standard one of one link-config%cell (in set_halo_particles it is
     ! ensured that such is supplied).  Such large positive halo may
-    ! lead to EDGE EFFECTs - link-cells constituting the positive
-    ! halo may have larger dimensions than the domain link-cells.
+    ! lead to EDGE EFFECTs - link-config%cells constituting the positive
+    ! halo may have larger dimensions than the domain link-config%cells.
     !***************************************************************
 
     ! LC limits
@@ -516,53 +516,53 @@ Contains
     nlz1e=nlz+2*nlp-1
 
     ! Form linked list
-    ! Initialise cell contents counter
+    ! Initialise config%cell contents counter
     lct_count = 0
 
-    ! Get the inverse cell matrix
-    Call invert(cell,rcell,det)
+    ! Get the inverse config%cell matrix
+    Call invert(config%cell,rcell,det)
 
-    Do i=1,natms
-      ! Convert atomic positions from MD cell centred
+    Do i=1,config%natms
+      ! Convert atomic positions from MD config%cell centred
       ! Cartesian coordinates to reduced space coordinates
-      x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
-      y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
-      z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+      x=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*config%parts(i)%zzz
+      y=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*config%parts(i)%zzz
+      z=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*config%parts(i)%zzz
 
-      ! Get cell coordinates accordingly
+      ! Get config%cell coordinates accordingly
       ix = Int(xdc*(x+0.5_wp)) + jx
       iy = Int(ydc*(y+0.5_wp)) + jy
       iz = Int(zdc*(z+0.5_wp)) + jz
 
-      ! Correction for domain (idnode) only particles (1,natms) but due to
-      ! some tiny numerical inaccuracy kicked into its halo link-cell space
-      ! Put all particles in a bounded link-cell space: lower and upper bounds
+      ! Correction for domain (idnode) only particles (1,config%natms) but due to
+      ! some tiny numerical inaccuracy kicked into its halo link-config%cell space
+      ! Put all particles in a bounded link-config%cell space: lower and upper bounds
       ! as follows nl_coordinate_0e+1 <= i_coordinate <= nl_coordinate_1s-1 !
       ix = Max( Min( ix , nlx1s-1) , nlx0e+1)
       iy = Max( Min( iy , nly1s-1) , nly0e+1)
       iz = Max( Min( iz , nlz1s-1) , nlz0e+1)
 
       ! Hypercube function transformation (counting starts from one
-      ! rather than zero /map_domains/ and 2*nlp more link-cells per
+      ! rather than zero /map_domains/ and 2*nlp more link-config%cells per
       ! dimension are accounted /coming from the halo/)
       icell = 1 + ix + (nlx + 2*nlp)*(iy + (nly + 2*nlp)*iz)
 
-      ! count cell content
+      ! count config%cell content
       lct_count(icell) = lct_count(icell) + 1
 
       ! backwards relationship
       which_cell(i) = icell
     End Do
 
-    Do i=natms+1,nlast
+    Do i=config%natms+1,config%nlast
 
-      ! Convert atomic positions from MD cell centred
+      ! Convert atomic positions from MD config%cell centred
       ! Cartesian coordinates to reduced space coordinates
-      x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
-      y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
-      z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+      x=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*config%parts(i)%zzz
+      y=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*config%parts(i)%zzz
+      z=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*config%parts(i)%zzz
 
-      ! Get cell coordinates accordingly
+      ! Get config%cell coordinates accordingly
       If (x > -half_plus) Then
         dispx=xdc*(x+0.5_wp)
         ix = Int(dispx) + jx
@@ -588,9 +588,9 @@ Contains
       ! Exclude any negatively bound residual halo
       If (ix >= nlx0s .and. iy >= nly0s .and. iz >= nlz0s) Then
 
-        ! Correction for halo particles (natms+1,nlast) of this domain
+        ! Correction for halo particles (config%natms+1,config%nlast) of this domain
         ! (idnode) but due to some tiny numerical inaccuracy kicked into
-        ! the domain only link-cell space
+        ! the domain only link-config%cell space
         lx0=(ix > nlx0e)
         lx1=(ix < nlx1s)
         ly0=(iy > nly0e)
@@ -639,30 +639,30 @@ Contains
           lz0 .or. lz1) ) Then
 
           ! Hypercube function transformation (counting starts from one
-          ! rather than zero /map_domains/ and 2*nlp more link-cells per
+          ! rather than zero /map_domains/ and 2*nlp more link-config%cells per
           ! dimension are accounted /coming from the halo/)
           icell = 1 + ix + (nlx + 2*nlp)*(iy + (nly + 2*nlp)*iz)
         Else
 
-          ! Put possible residual halo in cell=0
+          ! Put possible residual halo in config%cell=0
           icell = 0
         End If
 
       Else
 
-        ! Put possible residual halo in cell=0
+        ! Put possible residual halo in config%cell=0
         icell = 0
 
       End If
 
-      ! count cell content
+      ! count config%cell content
       lct_count(icell) = lct_count(icell) + 1
 
       ! backwards relationship
       which_cell(i) = icell
     End Do
 
-    ! break down local list to list of linked-cell lists
+    ! break down local list to list of linked-config%cell lists
     lct_start(0) = 1
     Do icell=1,ncells+1
       lct_start(icell) = lct_start(icell-1) + lct_count(icell-1)
@@ -670,16 +670,16 @@ Contains
 
     ! domain local to linked-lists local mapping
     lct_where = lct_start
-    Do i=1,nlast
+    Do i=1,config%nlast
       !     at_list( lct_where( which_cell( i ) ) ) = i
       ! create a reordered coordinates arrays in the
       ! same manner to speeds up performance later
       j = lct_where( which_cell( i ) )
       at_list( j ) = i
 
-      xxt(j) = parts(i)%xxx
-      yyt(j) = parts(i)%yyy
-      zzt(j) = parts(i)%zzz
+      xxt(j) = config%parts(i)%xxx
+      yyt(j) = config%parts(i)%yyy
+      zzt(j) = config%parts(i)%zzz
 
       lct_where( which_cell( i ) ) = lct_where( which_cell( i ) ) + 1
     End Do
@@ -696,13 +696,13 @@ Contains
           ix1=ix-nlx0e
           ix2=ix-nlx1s
 
-          ! index of the primary cell
+          ! index of the primary config%cell
           ic=1+ix+(nlx+2*nlp)*(iy+(nly+2*nlp)*iz)
 
           nlp3=nlp3+1
           cell_dom(nlp3)=ic
 
-          ! loop over the domain's border cells only - ipass==2
+          ! loop over the domain's border config%cells only - ipass==2
           If ( (ix1 >=  1 .and. ix1 <=  nlp) .or. &
             (ix2 <= -1 .and. ix2 >= -nlp) .or. &
             (iy1 >=  1 .and. iy1 <=  nlp) .or. &
@@ -718,48 +718,48 @@ Contains
 
     ! initialise Verlet neighbourlist (VNL) arrays
     !  neigh%list=0               ! (DEBUG)
-    neigh%list(-2:0,1:natms)=0 ! (COUNTING DIMENSIONS ONLY)
+    neigh%list(-2:0,1:config%natms)=0 ! (COUNTING DIMENSIONS ONLY)
     ! initial values of control variables
     ibig=0
     safe=.true.
-    ! primary loop over domain subcells
-    ! loop over the domain's cells only
+    ! primary loop over domain subconfig%cells
+    ! loop over the domain's config%cells only
     ipass=1
     Do icell=1,cell_dom(0)
-      ! index of the primary cell and its coordinates
+      ! index of the primary config%cell and its coordinates
       ic=cell_dom(icell)
       ix=Mod(ic-1,nlx + 2*nlp)
       iz=(ic-1)/((nlx + 2*nlp)*(nly + 2*nlp))
       iy=(ic-1)/(nlx + 2*nlp) - (nly + 2*nlp)*iz
 
-      ! loop over the primary cell contents
+      ! loop over the primary config%cell contents
       Do ii=lct_start(ic),lct_start(ic+1)-1
-        i=at_list(ii) ! get the particle index, by construction [1,natms]
+        i=at_list(ii) ! get the particle index, by construction [1,config%natms]
 
-        ! secondary loop over neighbouring cells
+        ! secondary loop over neighbouring config%cells
         ! ipass == 1 - non-negative non-repeatable semi-ball
         Do kk=ipass,nsbcll
 
-          ! be on domain + possible positive halo cells only - ipass==1
+          ! be on domain + possible positive halo config%cells only - ipass==1
           jx=ix+nix(kk)
           jy=iy+niy(kk)
           jz=iz+niz(kk)
 
-          ! index of the secondary cell
+          ! index of the secondary config%cell
           jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
 
           ! get the secondary list's starting particle index
           If (jc /= ic) Then
-            ! if the secondary cell is different from the primary cell
-            ! get the head of chain of the secondary cell
+            ! if the secondary config%cell is different from the primary config%cell
+            ! get the head of chain of the secondary config%cell
             j_start=lct_start(jc)
           Else ! only when ipass==1
-            ! if the secondary cell is same as the primary cell
-            ! get the next in line from the primary cell running index
+            ! if the secondary config%cell is same as the primary config%cell
+            ! get the next in line from the primary config%cell running index
             j_start=ii+1
           End If
 
-          ! bypass on real space cutoff check for safe cells when
+          ! bypass on real space cutoff check for safe config%cells when
           ! atom pairs' distances are guaranteed to be within the cutoff
           If (nir(kk)) Then
 
@@ -767,7 +767,7 @@ Contains
             ll=neigh%list(0,i)+lct_start(jc+1)-j_start
             If (ll <= neigh%max_list) Then
 
-              ! loop over the secondary cell contents
+              ! loop over the secondary config%cell contents
               Do jj=j_start,lct_start(jc+1)-1
                 ! get the particle index
                 j=at_list(jj)
@@ -781,7 +781,7 @@ Contains
               ! overflow is to occur
             Else
 
-              ! loop over the secondary cell contents
+              ! loop over the secondary config%cell contents
               Do jj=j_start,lct_start(jc+1)-1
 
                 ! get the particle index
@@ -800,12 +800,12 @@ Contains
 
             End If
 
-            ! no bypass on real space cutoff check for safe cells when
+            ! no bypass on real space cutoff check for safe config%cells when
             ! atom pairs' distances are not guaranteed to be within the cutoff
             ! distances in real space are needed for checking the cutoff criterion
           Else
 
-            ! loop over the secondary cell contents
+            ! loop over the secondary config%cell contents
             Do jj=j_start,lct_start(jc+1)-1
               ! get the particle index
               j=at_list(jj)
@@ -813,7 +813,7 @@ Contains
               ! check cutoff criterion (all atom pairs MUST BE within the cutoff)
               !                 rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
               ! use reordered coordinate list in order to get "ordered" rather than "random" access
-              rsq=(xxt(jj)-parts(i)%xxx)**2+(yyt(jj)-parts(i)%yyy)**2+(zzt(jj)-parts(i)%zzz)**2
+              rsq=(xxt(jj)-config%parts(i)%xxx)**2+(yyt(jj)-config%parts(i)%yyy)**2+(zzt(jj)-config%parts(i)%zzz)**2
               If (rsq <= rcsq) Then
 
                 ! check for overflow and add an entry
@@ -837,22 +837,22 @@ Contains
 
     End Do
 
-    ! secondary loop over domain's border subcells only
+    ! secondary loop over domain's border subconfig%cells only
     ipass=2
     Do icell=1,cell_bor(0)
 
-      ! index of the primary cell and its coordinates
+      ! index of the primary config%cell and its coordinates
       ic=cell_bor(icell)
       ix=Mod(ic-1,nlx + 2*nlp)
       iz=(ic-1)/((nlx + 2*nlp)*(nly + 2*nlp))
       iy=(ic-1)/(nlx + 2*nlp) - (nly + 2*nlp)*iz
 
-      ! loop over the primary cell contents
+      ! loop over the primary config%cell contents
       Do ii=lct_start(ic),lct_start(ic+1)-1
 
-        i=at_list(ii) ! get the particle index, by construction [1,natms]
+        i=at_list(ii) ! get the particle index, by construction [1,config%natms]
 
-        ! secondary loop over neighbouring cells,
+        ! secondary loop over neighbouring config%cells,
         ! when ipass==2 exclude self-self (i.e. domain - kk=1)
         Do kk=ipass,nsbcll
 
@@ -861,20 +861,20 @@ Contains
           jy=iy-niy(kk)
           jz=iz-niz(kk)
 
-          ! be on halo cells only - ipass==2
+          ! be on halo config%cells only - ipass==2
           If ( (jx <= nlx0e) .or. (jx >= nlx1s) .or. &
             (jy <= nly0e) .or. (jy >= nly1s) .or. &
             (jz <= nlz0e) .or. (jz >= nlz1s) ) Then
 
-            ! index of the secondary cell
+            ! index of the secondary config%cell
             jc=1+jx+(nlx+2*nlp)*(jy+(nly+2*nlp)*jz)
 
             ! get the secondary list's starting particle index as
-            ! ipass==2 the secondary cell is always different from the
-            ! primary cell get the head of chain of the secondary cell
+            ! ipass==2 the secondary config%cell is always different from the
+            ! primary config%cell get the head of chain of the secondary config%cell
             If (jc /= ic) j_start=lct_start(jc)
 
-            ! bypass on real space cutoff check for safe cells when
+            ! bypass on real space cutoff check for safe config%cells when
             ! atom pairs' distances are guaranteed to be within the cutoff
             If (nir(kk)) Then
 
@@ -882,7 +882,7 @@ Contains
               ll=neigh%list(0,i)+lct_start(jc+1)-j_start
               If (ll <= neigh%max_list) Then
 
-                ! loop over the secondary cell contents
+                ! loop over the secondary config%cell contents
                 Do jj=j_start,lct_start(jc+1)-1
                   ! get the particle index
                   j=at_list(jj)
@@ -895,7 +895,7 @@ Contains
 
               Else
 
-                ! loop over the secondary cell contents
+                ! loop over the secondary config%cell contents
                 Do jj=j_start,lct_start(jc+1)-1
                   ! get the particle index
                   j=at_list(jj)
@@ -912,20 +912,20 @@ Contains
 
               End If
 
-              ! no bypass on real space cutoff check for safe cells when
+              ! no bypass on real space cutoff check for safe config%cells when
               ! atom pairs' distances are not guaranteed to be within the cutoff
               ! distances in real space are needed for checking the cutoff criterion
 
             Else
 
-              ! loop over the secondary cell contents
+              ! loop over the secondary config%cell contents
               Do jj=j_start,lct_start(jc+1)-1
                 ! get the particle index
                 j=at_list(jj)
                 ! check cutoff criterion (all atom pairs MUST BE within the cutoff)
                 !                    rsq=(xxx(j)-xxx(i))**2+(yyy(j)-yyy(i))**2+(zzz(j)-zzz(i))**2
                 ! use reordered coordinate list in order to get "ordered" rather than "random" access
-                rsq=(xxt(jj)-parts(i)%xxx)**2+(yyt(jj)-parts(i)%yyy)**2+(zzt(jj)-parts(i)%zzz)**2
+                rsq=(xxt(jj)-config%parts(i)%xxx)**2+(yyt(jj)-config%parts(i)%yyy)**2+(zzt(jj)-config%parts(i)%zzz)**2
 
                 If (rsq <= rcsq) Then
                   ! check for overflow and add an entry
@@ -961,15 +961,15 @@ Contains
 
     ! Rear down frozen pairs
     If (megfrz > 1) Then
-      Do i=1,natms
+      Do i=1,config%natms
         l_end=neigh%list(0,i)
         m_end=l_end
 
-        ii=lfrzn(i)
+        ii=config%lfrzn(i)
         If (ii > 0) Then
           Do kk=l_end,1,-1
             j =neigh%list(kk,i)
-            jj=lfrzn(j)
+            jj=config%lfrzn(j)
             If (jj > 0) Then
               If (kk < m_end) Then
                 neigh%list(kk,i)=neigh%list(m_end,i)
@@ -984,14 +984,14 @@ Contains
         neigh%list( 0,i)=m_end     ! End of new neigh%list with no frozen pairs (NFP)
       End Do
     Else
-      Do i=1,natms
+      Do i=1,config%natms
         neigh%list(-2,i)=neigh%list(0,i) ! End of full non-repeatable half VNL (FNRH VNL)
       End Do
     End If
 
     ! Rear down excluded pairs on top of the frozen ones
     If (lbook) Then
-      Do i=1,natms
+      Do i=1,config%natms
         l_end=neigh%list(0,i)
         m_end=l_end
 
@@ -999,7 +999,7 @@ Contains
         If (ii > 0) Then
           Do kk=l_end,1,-1
             j =neigh%list(kk,i)
-            jj=ltg(j)
+            jj=config%ltg(j)
             If (match(jj,ii,neigh%list_excl(1:ii,i))) Then
               If (kk < m_end) Then
                 neigh%list(kk,i)=neigh%list(m_end,i)
@@ -1017,7 +1017,7 @@ Contains
       ! CHARMM core-shell screened electrostatic induction interactions
       ! Push up CHARMM pairs at the top of the bonded part of the neigh%list
       If (mpoles%key == POLARISATION_CHARMM) Then
-        Do i=1,natms
+        Do i=1,config%natms
           l_end=neigh%list(-1,i) ! search marker to move up
           m_end=neigh%list( 0,i) ! CHARMM marker to move down
 
@@ -1027,7 +1027,7 @@ Contains
 
               ! Check for space at the top
               j =neigh%list(m_end+1,i)
-              jj=ltg(j)
+              jj=config%ltg(j)
               If (match(jj,ii,mpoles%charmm(1:ii,i))) Then
                 m_end=m_end+1    ! move down CHARMM marker
                 Cycle outside
@@ -1037,7 +1037,7 @@ Contains
               ! check for a qualifier (l_end) at the bottom
               inside:          Do While (l_end > m_end+1) ! Only when space for swap exists
                 j =neigh%list(l_end,i)
-                jj=ltg(j)
+                jj=config%ltg(j)
                 If (match(jj,ii,mpoles%charmm(1:ii,i))) Then
                   ibig            = neigh%list(m_end+1,i)
                   neigh%list(m_end+1,i) = neigh%list(l_end,i)
@@ -1055,12 +1055,12 @@ Contains
           neigh%list(-3,i)=m_end     ! CHARMM end within NFP FNRH VNL, offset wrt NXI end
         End Do
       Else
-        Do i=1,natms
+        Do i=1,config%natms
           neigh%list(-3,i)=neigh%list(0,i) ! CHARMM end coincides with NXI end
         End Do
       End If
     Else
-      Do i=1,natms
+      Do i=1,config%natms
         neigh%list(-1,i)=neigh%list(0,i)    ! End of NFP FNRH VNL
         neigh%list(-3,i)=neigh%list(0,i)    ! CHARMM end coincides with NXI end
       End Do
@@ -1070,8 +1070,8 @@ Contains
     If (devel%l_dis) Then
       !     devel%l_dis=.false. ! at re/start ONLY
       cnt=0.0_wp
-      Do i=1,natms
-        ii=ltg(i)
+      Do i=1,config%natms
+        ii=config%ltg(i)
         ll=cshell%legshl(0,i)
 
         !        iz=(which_cell(i)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
@@ -1079,7 +1079,7 @@ Contains
         !        ix=Mod(which_cell(i)-1,nlx + 2*nlp)
         Do kk=1,neigh%list(-2,i)
           j =neigh%list(kk,i)
-          jj=ltg(j)
+          jj=config%ltg(j)
 
           !           jz=(which_cell(j)-1)/((nlx + 2*nlp)*(nlx + 2*nlp))
           !           jy=(which_cell(j)-1)/(nlx + 2*nlp) - (nly + 2*nlp)*jz
@@ -1087,7 +1087,7 @@ Contains
 
           ! Exclude core-shell units' pairs from the check
           If (ll /= 0) Then ! the primary particle is part of a unit
-            If (j <= natms) Then ! can check directly if the pair is part of the same unit
+            If (j <= config%natms) Then ! can check directly if the pair is part of the same unit
               If (cshell%legshl(0,j) /= 0) Then ! the secondary particle is part of a unit
                 If (cshell%legshl(1,i) == cshell%legshl(1,j)) Cycle ! both are part of the same unit
               End If
@@ -1100,11 +1100,11 @@ Contains
             End If
           End If
 
-          If (j <= natms .or. ii < jj) Then
+          If (j <= config%natms .or. ii < jj) Then
             cnt(1)=cnt(1)+1.0_wp ! sum up all pairs (neigh%cutoff_extended=neigh%cutoff+neigh%padding)
 
-            det=Sqrt((parts(i)%xxx-parts(j)%xxx)**2+(parts(i)%yyy-parts(j)%yyy)**2&
-               +     (parts(i)%zzz-parts(j)%zzz)**2)
+            det=Sqrt((config%parts(i)%xxx-config%parts(j)%xxx)**2+(config%parts(i)%yyy-config%parts(j)%yyy)**2&
+               +     (config%parts(i)%zzz-config%parts(j)%zzz)**2)
 
             If (det < devel%r_dis) Then
               safe=.false.
@@ -1164,26 +1164,27 @@ Contains
 
   End Subroutine link_cell_pairs
 
-  !> Verlet neighbour list based on link-cell method
+  !> Verlet neighbour list based on link-config%cell method
   !>
   !> Copyright - Daresbury Laboratory
   !>
   !> Author    - I.T.Todorov january 2015
-  Subroutine defects_link_cells(cut,mxcldef,na,nl,xxt,yyt,zzt,nlx,nly,nlz,link, &
+  Subroutine defects_link_cells(config,cut,mxcldef,na,nl,xxt,yyt,zzt,nlx,nly,nlz,link, &
       lct,domain)
     Integer,            Intent( In    ) :: mxcldef,na,nl
     Real( Kind = wp ) , Intent( In    ) :: cut,xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms)
     Integer,            Intent(   Out ) :: nlx,nly,nlz,link(1:mxatms),lct(0:mxcldef)
     Type( domains_type ), Intent( In    ) :: domain
+    Type( configuration_type ), Intent( In    ) :: config
 
     Logical           :: lx0,lx1,ly0,ly1,lz0,lz1
     Integer           :: icell,ncells,i,ix,iy,iz,jx,jy,jz
     Real( Kind = wp ) :: celprp(1:10), dispx,dispy,dispz, xdc,ydc,zdc
 
-    ! Get the dimensional properties of the MD cell
-    Call dcell(cell,celprp)
+    ! Get the dimensional properties of the MD config%cell
+    Call dcell(config%cell,celprp)
 
-    ! Calculate the number of link-cells per domain in every direction
+    ! Calculate the number of link-config%cells per domain in every direction
     dispx=celprp(7)/(cut*domain%nx_real)
     dispy=celprp(8)/(cut*domain%ny_real)
     dispz=celprp(9)/(cut*domain%nz_real)
@@ -1192,7 +1193,7 @@ Contains
     nly=Int(dispy)
     nlz=Int(dispz)
 
-    ! check for link cell algorithm violations
+    ! check for link config%cell algorithm violations
     If (nlx*nly*nlz == 0) Call error(307)
 
     ncells=(nlx+2)*(nly+2)*(nlz+2)
@@ -1201,36 +1202,36 @@ Contains
       Call error(392)
     End If
 
-    ! Get the total number of link-cells in MD cell per direction
+    ! Get the total number of link-config%cells in MD config%cell per direction
     xdc=Real(nlx*domain%nx,wp)
     ydc=Real(nly*domain%ny,wp)
     zdc=Real(nlz*domain%nz,wp)
 
-    ! Shifts from global to local link-cell space:
-    ! (0,0,0) left-most link-cell on the domain (halo)
+    ! Shifts from global to local link-config%cell space:
+    ! (0,0,0) left-most link-config%cell on the domain (halo)
     ! (nlx+1,nly+1,nly+1) right-most
-    ! link-cell on the domain (halo)
+    ! link-config%cell on the domain (halo)
     jx=1-nlx*domain%idx
     jy=1-nly*domain%idy
     jz=1-nlz*domain%idz
 
     !***************************************************************
     ! Note(1): Due to numerical inaccuracy it is possible that some
-    ! domain particles (1,na) may have link-cell space
+    ! domain particles (1,na) may have link-config%cell space
     ! coordinates in the halo / at least one coordinate as shown
     ! (nlx+1,nly+1,nlz+1)^(0,0,0) / as well as halo particles
-    ! (na+1,nl) may have link-cell coordinates in the domain
+    ! (na+1,nl) may have link-config%cell coordinates in the domain
     ! / all coordinate as shown (nlx,nly,nlz)^(1,1,1) / or even
-    ! outside the standard one link-cell width, domain-surrounding
+    ! outside the standard one link-config%cell width, domain-surrounding
     ! halo / at least one coordinate as shown
     ! (>nlx+1,>nly+1,>nlz+1)^(<0,<0,<0) /.
     !
     ! Note(2): In SPME, at high accuracy of the ewald summation
     ! the b-splines may need more positive halo width than the
-    ! standard one of one link-cell (in set_halo_particles it is
+    ! standard one of one link-config%cell (in set_halo_particles it is
     ! insured that such is supplied).  Such large positive halo may
-    ! lead to EDGE EFFECTs - link-cells constituting the positive
-    ! halo may have larger dimensions than the domain link-cells.
+    ! lead to EDGE EFFECTs - link-config%cells constituting the positive
+    ! halo may have larger dimensions than the domain link-config%cells.
     !***************************************************************
 
     ! Form linked list
@@ -1244,7 +1245,7 @@ Contains
 
     Do i=nl,na+1,-1 !!! BACKWARDS ORDER IS ESSENTIAL !!!
 
-      ! Get cell coordinates accordingly
+      ! Get config%cell coordinates accordingly
       If (xxt(i) > -half_plus) Then
         ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
       Else
@@ -1263,7 +1264,7 @@ Contains
 
       ! Correction for halo particles (na+1,nl) of this domain
       ! (idnode) but due to some tiny numerical inaccuracy kicked into
-      ! the domain only link-cell space
+      ! the domain only link-config%cell space
       lx0=(ix == 1)
       lx1=(ix == nlx)
       ly0=(iy == 1)
@@ -1301,11 +1302,11 @@ Contains
         lz0 .or. lz1) ) Then
 
         ! Hypercube function transformation (counting starts from one
-        ! rather than zero /map_domains/ and two more link-cells per
+        ! rather than zero /map_domains/ and two more link-config%cells per
         ! dimension are accounted /coming from the halo/)
         icell = 1 + ix + (nlx + 2)*(iy + (nly + 2)*iz)
       Else
-        ! Put possible residual halo in cell=0
+        ! Put possible residual halo in config%cell=0
         icell = 0
       End If
 
@@ -1314,27 +1315,27 @@ Contains
       link(i) = lct(icell)
 
       ! at the end of the do-loop lct will point to the head of chain
-      ! for this link-cell (update of lct(icell))
+      ! for this link-config%cell (update of lct(icell))
       lct(icell) = i
 
     End Do
     Do i=na,1,-1 !!! BACKWARDS ORDER IS ESSENTIAL !!!
 
-      ! Get cell coordinates accordingly
+      ! Get config%cell coordinates accordingly
       ix = Int(xdc*(xxt(i)+0.5_wp)) + jx
       iy = Int(ydc*(yyt(i)+0.5_wp)) + jy
       iz = Int(zdc*(zzt(i)+0.5_wp)) + jz
 
       ! Correction for domain (idnode) only particles (1,na) but due to
-      ! some tiny numerical inaccuracy kicked into its halo link-cell space
-      ! Put all particles in bounded link-cell space: lower and upper
+      ! some tiny numerical inaccuracy kicked into its halo link-config%cell space
+      ! Put all particles in bounded link-config%cell space: lower and upper
       ! bounds as 1 <= i_coordinate <= nl_coordinate
       ix = Max( Min( ix , nlx) , 1)
       iy = Max( Min( iy , nly) , 1)
       iz = Max( Min( iz , nlz) , 1)
 
       ! Hypercube function transformation (counting starts from one
-      ! rather than zero /map_domains/ and two more link-cells per
+      ! rather than zero /map_domains/ and two more link-config%cells per
       ! dimension are accounted /coming from the halo/)
       icell = 1 + ix + (nlx + 2)*(iy + (nly + 2)*iz)
 
@@ -1343,7 +1344,7 @@ Contains
       link(i) = lct(icell)
 
       ! at the end of the do-loop lct will point to the head of chain
-      ! for this link-cell (update of lct(icell))
+      ! for this link-config%cell (update of lct(icell))
       lct(icell) = i
 
     End Do

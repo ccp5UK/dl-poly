@@ -74,7 +74,7 @@ Module errors_warnings
      Else If (kode ==   3) Then
 
         Write(ounit,'(/,1x,3(a,f7.3),a,/)') &
-        '*** warning - system cutoff(+padding) is: ', a, ' , minimum half-cell width is: ', b, ' !!! ***'
+        '*** warning - system cutoff(+padding) is: ', a, ' , minimum half-config%cell width is: ', b, ' !!! ***'
 
      Else If (kode ==   4) Then
 
@@ -93,7 +93,7 @@ Module errors_warnings
         ib = Nint(b)
 
         Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,a,/,1x,a)')                    &
-        '*** warning - maximum length of linked cell neigh%list: ', ia,          &
+        '*** warning - maximum length of linked config%cell neigh%list: ', ia,          &
         ' + 1 is less than maximum length of particle exclusion neigh%list: ',   &
         ib, ' !!! ***',                                                    &
         '*** this may be due to using too short a cutoff in CONTROL ',     &
@@ -188,7 +188,7 @@ Module errors_warnings
 
         If      (ic == 0) Then
            Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                             &
-           '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in link_cell_pairs !!! ***', &
+           '*** warning - allocating more link-config%cells ', ia,' than initially envisaged ', ib,' , in linkcell_pairs !!! ***',&
            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else If (ic == 1) Then
            Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                               &
@@ -210,7 +210,7 @@ Module errors_warnings
      Else If (kode == 100) Then
 
         Write(ounit,'(2(/,1x,a),/)')                                                               &
-        '*** warning - primary link cell algorithm has a link cell dimension that is < 3 !!! ***', &
+        '*** warning - primary link config%cell algorithm has a link config%cell dimension that is < 3 !!! ***', &
         '*** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
 
      Else If (kode == 110) Then
@@ -220,7 +220,7 @@ Module errors_warnings
 
         Write(ounit,'(2(/,1x,a),2(i0,a),/)')                                         &
         '*** warning - image convention incompatible with the set NsT ensemble ***', &
-        '*** imcon reset from ', ia,' to ', ib,' !!! ***'
+        '*** config%imcon reset from ', ia,' to ', ib,' !!! ***'
 
      Else If (kode == 120) Then
 
@@ -292,8 +292,8 @@ Module errors_warnings
         ia = Nint(a)
 
         Write(ounit,'(/,1x,a,i0,a,/,1x,a,/)')                              &
-        '*** warning - PMF unit ', ia, ' weight is detected zero !!! ***', &
-        '*** member weights defaulted to atom type masses (or units) !!! ***'
+        '*** warning - PMF unit ', ia, ' config%weight is detected zero !!! ***', &
+        '*** member config%weights defaulted to atom type masses (or units) !!! ***'
 
      Else If (kode == 240) Then
 
@@ -313,7 +313,7 @@ Module errors_warnings
      Else If (kode == 260) Then
 
         Write(ounit,'(2(/,1x,a),/)')                                                         &
-        '*** warning - system volume in non-periodic systems is the MD cell volume !!! ***', &
+        '*** warning - system volume in non-periodic systems is the MD config%cell volume !!! ***', &
         '*** system pressure is calculated with respect to this volume !!! ***'
 
      Else If (kode == 270) Then
@@ -328,7 +328,7 @@ Module errors_warnings
 
         Write(ounit,'(/,1x,a,/,1x,2(a,f8.5),a,/)')                              &
         '*** warning - pseudo thermostat cannot be applied for system !!! ***', &
-        '*** minimum thermostat wall thickness ', a, ' minimum MD cell width ', b, ' !!! ***'
+        '*** minimum thermostat wall thickness ', a, ' minimum MD config%cell width ', b, ' !!! ***'
 
      Else If (kode == 290) Then
 
@@ -336,7 +336,7 @@ Module errors_warnings
         ib = Nint(b)
 
         Write(ounit,'(/,1x,a,2(i0,a),/)') &
-        '*** warning - required link-cell neigh%list size is ', ia, ' and actual (neigh%max_list) ', ib, ' !!! ***'
+        '*** warning - required link-config%cell neigh%list size is ', ia, ' and actual (neigh%max_list) ', ib, ' !!! ***'
 
      Else If (kode == 295) Then
 
@@ -643,7 +643,7 @@ Module errors_warnings
 
         Write(ounit,'(/,1x,a,f6.2,a,/,1x,a,/)') &
         '*** warning - possible time energy deposition discrepancy of at least ',a,'% !!! ***', &
-        '*** discrepancy may be due to inactive cells !!! ***'
+        '*** discrepancy may be due to inactive config%cells !!! ***'
 
      Else If (kode == 535) Then
 
@@ -1033,7 +1033,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==   69) Then
 
-        Write(ounit,'(/,1x,a)') 'error - too many link cells required'
+        Write(ounit,'(/,1x,a)') 'error - too many link config%cells required'
 
      Else If (kode ==   70) Then
 
@@ -1121,7 +1121,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==   95) Then
 
-        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff (or neigh%cutoff+neigh%padding) > minimum of all half-cell widths'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff (or neigh%cutoff+neigh%padding) > minimum of all half-config%cell widths'
 
      Else If (kode ==   96) Then
 
@@ -1161,7 +1161,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  106) Then
 
-        Write(ounit,'(/,1x,a)') 'error - neighbour neigh%list array too small in link_cell_pairs'
+        Write(ounit,'(/,1x,a)') 'error - neighbour neigh%list array too small in link_config%cell_pairs'
 
      Else If (kode ==  107) Then
 
@@ -1334,19 +1334,19 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  300) Then
 
-        Write(ounit,'(/,1x,a)') 'error - incorrect boundary condition for link-cell algorithms'
+        Write(ounit,'(/,1x,a)') 'error - incorrect boundary condition for link-config%cell algorithms'
 
      Else If (kode ==  305) Then
 
-        Write(ounit,'(/,1x,a)') 'error - too few link cells per dimension for many-body and tersoff forces subroutines'
+        Write(ounit,'(/,1x,a)') 'error - too few link config%cells per dimension for many-body and tersoff forces subroutines'
 
      Else If (kode ==  307) Then
 
-        Write(ounit,'(/,1x,a)') 'error - link cell algorithm violation'
+        Write(ounit,'(/,1x,a)') 'error - link config%cell algorithm violation'
 
      Else If (kode ==  308) Then
 
-        Write(ounit,'(/,1x,a)') 'error - link cell algorithm in contention with SPME sum precision'
+        Write(ounit,'(/,1x,a)') 'error - link config%cell algorithm in contention with SPME sum precision'
 
      Else If (kode ==  321) Then
 
@@ -1390,7 +1390,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  410) Then
 
-        Write(ounit,'(/,1x,a)') 'error - cell not consistent with image convention'
+        Write(ounit,'(/,1x,a)') 'error - config%cell not consistent with image convention'
 
      Else If (kode ==  414) Then
 
@@ -1530,7 +1530,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  480) Then
 
-        Write(ounit,'(/,1x,a)') 'error - PMF length > minimum of all half-cell widths'
+        Write(ounit,'(/,1x,a)') 'error - PMF length > minimum of all half-config%cell widths'
 
      Else If (kode ==  484) Then
 
@@ -1550,7 +1550,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  492) Then
 
-        Write(ounit,'(/,1x,a)') 'error - a diameter of a PMF unit > minimum of all half cell widths'
+        Write(ounit,'(/,1x,a)') 'error - a diameter of a PMF unit > minimum of all half config%cell widths'
 
      Else If (kode ==  494) Then
 
@@ -1651,12 +1651,12 @@ Subroutine info_sl(message,master_only)
      Else If (kode ==  530) Then
 
         Write(ounit,'(/,2(1x,a,/))') 'error - pseudo thermostat thickness MUST comply with', &
-             '2 Angs <= thickness < a quarter of the minimum MD cell width'
+             '2 Angs <= thickness < a quarter of the minimum MD config%cell width'
 
      Else If (kode ==  540) Then
 
         Write(ounit,'(/,2(1x,a,/))') 'error - pseudo thermostat can ONLY be used in bulk simulations', &
-             'i.e. imcon MUST be 1, 2 or 3'
+             'i.e. config%imcon MUST be 1, 2 or 3'
 
      Else If (kode ==  551) Then
 
@@ -1664,7 +1664,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  552) Then
 
-        Write(ounit,'(/,1x,a)') 'error - REFERENCE MUST contain cell parameters !!!'
+        Write(ounit,'(/,1x,a)') 'error - REFERENCE MUST contain config%cell parameters !!!'
 
      Else If (kode ==  553) Then
 
@@ -1793,7 +1793,7 @@ Subroutine info_sl(message,master_only)
 
      Else If (kode ==  670) Then
 
-        Write(ounit,'(/,1x,a)') 'error - insufficient electronic temperature cells for TTM heat diffusion'
+        Write(ounit,'(/,1x,a)') 'error - insufficient electronic temperature config%cells for TTM heat diffusion'
 
      Else If (kode ==  671) Then
 

@@ -3,15 +3,13 @@ Module temperature
   Use comms,           Only : comms_type,gsum
   Use setup,           Only : nrite,boltz,mxatms,zero_plus
   Use site, Only : site_type
-  Use configuration,   Only : imcon,natms,nlast,nfree,lsite,  &
-                              lsi,lsa,ltg,lfrzn,lfree,lstfre, &
-                              weight,vxx,vyy,vzz
+  Use configuration,   Only : configuration_type,getcom
   Use particle,        Only : corePart
   Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,rigid_bodies_quench
   Use constraints,     Only : constraints_type, constraints_quench
   Use pmf,             Only : pmf_quench, pmf_type
   Use core_shell,      Only : core_shell_type,core_shell_quench,SHELL_ADIABATIC
-  Use kinetics,        Only : l_vom,chvom,getcom,getvom,getkin,getknf,getknt,getknr
+  Use kinetics,        Only : l_vom,chvom,getvom,getkin,getknf,getknt,getknr
   Use numerics,        Only : seed_type,invert,uni,local_index,box_mueller_saru3
   use shared_units,    Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,warning,info
@@ -29,7 +27,7 @@ Contains
 
   Subroutine set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
       degrot,degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minim, &
-      rigid,domain,parts,seed,comm)
+      rigid,domain,config,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -55,7 +53,7 @@ Contains
     Type( minimise_type ), Intent( In    ) :: minim
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -104,7 +102,7 @@ Contains
   ! (non-periodic systems only)
 
     non=Int(0,li)
-    If (imcon == 0) non=Int(3,li)
+    If (config%imcon == 0) non=Int(3,li)
 
   ! lost to shells
 
@@ -135,9 +133,9 @@ Contains
   ! Check DoF distribution
 
     tmp=0.0_wp
-    Do i=1,natms
-       If (dof_site(lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
-          tmp=tmp+dof_site(lsite(i))
+    Do i=1,config%natms
+       If (dof_site(config%lsite(i)) > zero_plus) & ! Omit shells' negative DoFs
+          tmp=tmp+dof_site(config%lsite(i))
     End Do
     Call gsum(comm,tmp)
     If (Nint(tmp,li)-non-com /= degfre) Call error(360)
@@ -156,13 +154,13 @@ Contains
   ! avoid user defined 0K field to break up anything
 
     If (rigid%total > 0) Then
-       engf=getknf(vxx,vyy,vzz,comm)/Real(Max(1_li,degfre),wp)
+       engf=getknf(config%vxx,config%vyy,config%vzz,config,comm)/Real(Max(1_li,degfre),wp)
        engt=getknt(rigid,comm)/Real(Max(1_li,degtra),wp)
 
        engr=getknr(rigid,comm)/Real(Max(1_li,degrot),wp)
        engk=engf+engt
     Else
-       engk=getkin(vxx,vyy,vzz,comm)/Real(Max(1_li,degfre),wp)
+       engk=getkin(config,config%vxx,config%vyy,config%vzz,comm)/Real(Max(1_li,degfre),wp)
     End If
     If (thermo%sigma > 1.0e-6_wp .and. engk < 1.0e-6_wp .and. (keyres /= 0 .and. nstrun /= 0)) Then
        Call warning('0K velocity field detected in CONFIG with a restart at non 0K temperature in CONTROL',.true.)
@@ -183,12 +181,12 @@ Contains
   ! tpn(idnode) number of particles on this node (idnode)
   ! ntp - grand total of non-shell, non-frozen particles
 
-       qn(1:natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
+       qn(1:config%natms)     = 0 ! unqualified particle (non-massless, non-shells, non-frozen)
        qs(0:2,1:cshell%ntshl) = 0 ! unqualified core-shell unit with a local shell
 
        j = 0
-       Do i=1,natms
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
+       Do i=1,config%natms
+          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
              j = j + 1
              qn(i) = 1
           End If
@@ -207,19 +205,19 @@ Contains
        j = 0
        If (cshell%keyshl == SHELL_ADIABATIC) Then ! just for the adiabatic shell model
           If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
-             qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+             qn(config%natms+1:config%nlast) = 0
+             Call update_shared_units_int(config,cshell%lishp_shl, &
                cshell%lashp_shl,qn,domain,comm)
-             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
-               cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
+             Call update_shared_units(config,cshell%lishp_shl, &
+               cshell%lashp_shl,config%vxx,config%vyy,config%vzz,domain,comm)
           End If
 
           If (cshell%ntshl > 0) Then
              Do k=1,cshell%ntshl
-                i1=local_index(cshell%listshl(1,k),nlast,lsi,lsa)
-                i2=local_index(cshell%listshl(2,k),nlast,lsi,lsa)
+                i1=local_index(cshell%listshl(1,k),config%nlast,config%lsi,config%lsa)
+                i2=local_index(cshell%listshl(2,k),config%nlast,config%lsi,config%lsa)
 
-                If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= natms) Then
+                If (qn(i1) == 1 .and. i2 > 0 .and. i2 <= config%natms) Then
                    j = j + 1
 
                    qs(0,k)=1
@@ -248,15 +246,15 @@ Contains
              If (rigid%frozen(0,rgdtyp) < lrgd) Then
                 Do jrgd=1,lrgd
                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
-                   If (i <= natms) tpn(comm%idnode) = tpn(comm%idnode) - 1 ! Less free particles are hit
+                   If (i <= config%natms) tpn(comm%idnode) = tpn(comm%idnode) - 1 ! Less free particles are hit
                 End Do
 
                 i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
                 i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
                 If (rigid%frozen(0,rgdtyp) == 0) Then
-                   If (i1 <= natms) k = k + 1
+                   If (i1 <= config%natms) k = k + 1
                 End If
-                If (i2 <= natms) k = k + 1
+                If (i2 <= config%natms) k = k + 1
              End If
           End Do
   ! tpn(idnode) number of thermostatted free particles on this node (idnode)
@@ -269,7 +267,7 @@ Contains
 
   ! generate starting velocities
 
-          Do i=1,natms
+          Do i=1,config%natms
 
   ! frozen and massless atoms are either motionless
   ! (with no actual DoF - relaxed shells, frozen sites)
@@ -279,15 +277,15 @@ Contains
   ! (adiabatic shells, constraints, PMFs and RBs are
   ! to be sorted out later by quenching)
 
-             If (qn(i) == 1 .and. lfree(i) == 0) Then
-                Call box_mueller_saru3(seed,ltg(i),0,vxx(i),vyy(i),vzz(i))
+             If (qn(i) == 1 .and. config%lfree(i) == 0) Then
+                Call box_mueller_saru3(seed,config%ltg(i),0,config%vxx(i),config%vyy(i),config%vzz(i))
 
-  ! Get scaler to target variance/Sqrt(weight)
+  ! Get scaler to target variance/Sqrt(config%weight)
 
-                tmp = 1.0_wp/Sqrt(weight(i))
-                vxx(i) = vxx(i)*tmp
-                vyy(i) = vyy(i)*tmp
-                vzz(i) = vzz(i)*tmp
+                tmp = 1.0_wp/Sqrt(config%weight(i))
+                config%vxx(i) = config%vxx(i)*tmp
+                config%vyy(i) = config%vyy(i)*tmp
+                config%vzz(i) = config%vzz(i)*tmp
              End If
           End Do
 
@@ -301,26 +299,26 @@ Contains
                 i1=rigid%index_local(1,irgd) ! particle to bare the random RB COM momentum
                 i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
 
-                If (rigid%frozen(0,rgdtyp) == 0 .and. i1 <= natms) Then
-                   Call box_mueller_saru3(seed,ltg(i1),0,vxx(i1),vyy(i1),vzz(i1))
+                If (rigid%frozen(0,rgdtyp) == 0 .and. i1 <= config%natms) Then
+                   Call box_mueller_saru3(seed,config%ltg(i1),0,config%vxx(i1),config%vyy(i1),config%vzz(i1))
 
-  ! Get scaler to target variance/Sqrt(weight)
+  ! Get scaler to target variance/Sqrt(config%weight)
 
                    tmp = 1.0_wp/Sqrt(rigid%weight(0,rgdtyp))
-                   vxx(i1) = vxx(i1)*tmp
-                   vyy(i1) = vyy(i1)*tmp
-                   vzz(i1) = vzz(i1)*tmp
+                   config%vxx(i1) = config%vxx(i1)*tmp
+                   config%vyy(i1) = config%vyy(i1)*tmp
+                   config%vzz(i1) = config%vzz(i1)*tmp
                 End If
 
-                If (i2 <= natms) Then
-                   Call box_mueller_saru3(seed,ltg(i2),0,vxx(i2),vyy(i2),vzz(i2))
+                If (i2 <= config%natms) Then
+                   Call box_mueller_saru3(seed,config%ltg(i2),0,config%vxx(i2),config%vyy(i2),config%vzz(i2))
 
-  ! Get scaler to target variance/Sqrt(weight) -
+  ! Get scaler to target variance/Sqrt(config%weight) -
   ! 3 different reciprocal moments of inertia
 
-                   vxx(i2) = vxx(i2)*Sqrt(rigid%rix(2,rgdtyp))
-                   vyy(i2) = vyy(i2)*Sqrt(rigid%riy(2,rgdtyp))
-                   vzz(i2) = vzz(i2)*Sqrt(rigid%riz(2,rgdtyp))
+                   config%vxx(i2) = config%vxx(i2)*Sqrt(rigid%rix(2,rgdtyp))
+                   config%vyy(i2) = config%vyy(i2)*Sqrt(rigid%riy(2,rgdtyp))
+                   config%vzz(i2) = config%vzz(i2)*Sqrt(rigid%riz(2,rgdtyp))
                 End If
              End If
           End Do
@@ -328,8 +326,8 @@ Contains
   ! Update shared RBs' velocities
 
           If (rigid%share) Then
-            Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-              rigid%map_shared,vxx,vyy,vzz,domain,comm)
+            Call update_shared_units(config,rigid%list_shared, &
+              rigid%map_shared,config%vxx,config%vyy,config%vzz,domain,comm)
           End If
 
   ! calculate new RBs' COM and angular velocities
@@ -345,19 +343,19 @@ Contains
                 i2=rigid%index_local(2,irgd) ! particle to bare the random RB angular momentum
 
                 If (rigid%frozen(0,rgdtyp) == 0) Then
-                   rigid%vxx(irgd) = vxx(i1)
-                   rigid%vyy(irgd) = vyy(i1)
-                   rigid%vzz(irgd) = vzz(i1)
+                   rigid%vxx(irgd) = config%vxx(i1)
+                   rigid%vyy(irgd) = config%vyy(i1)
+                   rigid%vzz(irgd) = config%vzz(i1)
                 End If
 
-                rigid%oxx(irgd) = vxx(i2)
-                rigid%oyy(irgd) = vyy(i2)
-                rigid%ozz(irgd) = vzz(i2)
-                If (i2 <= natms) Then
-                   If (lfrzn(i2) > 0 .or. weight(i) < 1.0e-6_wp) Then
-                      vxx(i2) = 0.0_wp
-                      vyy(i2) = 0.0_wp
-                      vzz(i2) = 0.0_wp
+                rigid%oxx(irgd) = config%vxx(i2)
+                rigid%oyy(irgd) = config%vyy(i2)
+                rigid%ozz(irgd) = config%vzz(i2)
+                If (i2 <= config%natms) Then
+                   If (config%lfrzn(i2) > 0 .or. config%weight(i) < 1.0e-6_wp) Then
+                      config%vxx(i2) = 0.0_wp
+                      config%vyy(i2) = 0.0_wp
+                      config%vzz(i2) = 0.0_wp
                    End If
                 End If
 
@@ -372,7 +370,7 @@ Contains
                    If (rigid%frozen(jrgd,rgdtyp) == 0) Then
                       i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                      If (i <= natms) Then
+                      If (i <= config%natms) Then
                          x(1)=rigid%x(jrgd,rgdtyp)
                          y(1)=rigid%y(jrgd,rgdtyp)
                          z(1)=rigid%z(jrgd,rgdtyp)
@@ -385,9 +383,9 @@ Contains
 
   ! new atomic velocities in lab frame
 
-                         vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
-                         vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
-                         vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
+                         config%vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                         config%vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                         config%vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                       End If
                    End If
                 End Do
@@ -398,7 +396,7 @@ Contains
 
   ! generate starting velocities
 
-          Do i=1,natms
+          Do i=1,config%natms
 
   ! frozen and massless atoms are either motionless
   ! (with no actual DoF - relaxed shells, frozen sites)
@@ -407,14 +405,14 @@ Contains
   ! to be sorted out later by quenching)
 
              If (qn(i) == 1) Then
-                Call box_mueller_saru3(seed,ltg(i),0,vxx(i),vyy(i),vzz(i))
+                Call box_mueller_saru3(seed,config%ltg(i),0,config%vxx(i),config%vyy(i),config%vzz(i))
 
-  ! Get scaler to target variance/Sqrt(weight)
+  ! Get scaler to target variance/Sqrt(config%weight)
 
-                tmp = 1.0_wp/Sqrt(weight(i))
-                vxx(i) = vxx(i)*tmp
-                vyy(i) = vyy(i)*tmp
-                vzz(i) = vzz(i)*tmp
+                tmp = 1.0_wp/Sqrt(config%weight(i))
+                config%vxx(i) = config%vxx(i)*tmp
+                config%vyy(i) = config%vyy(i)*tmp
+                config%vzz(i) = config%vzz(i)*tmp
              End If
           End Do
 
@@ -422,11 +420,11 @@ Contains
 
        If (stp > 0) Then
           If (cshell%lshmv_shl) Then ! refresh the q array for shared core-shell units
-             qn(natms+1:nlast) = 0
-             Call update_shared_units_int(natms,nlast,lsi,lsa,cshell%lishp_shl, &
+             qn(config%natms+1:config%nlast) = 0
+             Call update_shared_units_int(config,cshell%lishp_shl, &
                cshell%lashp_shl,qn,domain,comm)
-             Call update_shared_units(natms,nlast,lsi,lsa,cshell%lishp_shl, &
-               cshell%lashp_shl,vxx,vyy,vzz,domain,comm)
+             Call update_shared_units(config,cshell%lishp_shl, &
+               cshell%lashp_shl,config%vxx,config%vyy,config%vzz,domain,comm)
           End If
 
           If (tps(comm%idnode) > 0) Then
@@ -435,9 +433,9 @@ Contains
                    i1=qs(1,k)
                    i2=qs(2,k)
 
-                   vxx(i2)=vxx(i1)
-                   vyy(i2)=vyy(i1)
-                   vzz(i2)=vzz(i1)
+                   config%vxx(i2)=config%vxx(i1)
+                   config%vyy(i2)=config%vyy(i1)
+                   config%vzz(i2)=config%vzz(i1)
                 End If
              End Do
           End If
@@ -453,15 +451,15 @@ Contains
   ! remove centre of mass motion
 
        If (rigid%total > 0) Then
-          Call getvom(vom,vxx,vyy,vzz,rigid,comm)
+          Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
 
-          Do j=1,nfree
-             i=lstfre(j)
+          Do j=1,config%nfree
+             i=config%lstfre(j)
 
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i) = vxx(i) - vom(1)
-                vyy(i) = vyy(i) - vom(2)
-                vzz(i) = vzz(i) - vom(3)
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%vxx(i) = config%vxx(i) - vom(1)
+                config%vyy(i) = config%vyy(i) - vom(2)
+                config%vzz(i) = config%vzz(i) - vom(3)
              End If
           End Do
 
@@ -477,22 +475,22 @@ Contains
                 Do jrgd=1,lrgd
                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                   If (i <= natms) Then
-                      vxx(i) = vxx(i) - vom(1)
-                      vyy(i) = vyy(i) - vom(2)
-                      vzz(i) = vzz(i) - vom(3)
+                   If (i <= config%natms) Then
+                      config%vxx(i) = config%vxx(i) - vom(1)
+                      config%vyy(i) = config%vyy(i) - vom(2)
+                      config%vzz(i) = config%vzz(i) - vom(3)
                    End If
                 End Do
              End If
           End Do
        Else
-          Call getvom(vom,vxx,vyy,vzz,comm)
+          Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
 
-          Do i=1,natms
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i) = vxx(i) - vom(1)
-                vyy(i) = vyy(i) - vom(2)
-                vzz(i) = vzz(i) - vom(3)
+          Do i=1,config%natms
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%vxx(i) = config%vxx(i) - vom(1)
+                config%vyy(i) = config%vyy(i) - vom(2)
+                config%vzz(i) = config%vzz(i) - vom(3)
              End If
           End Do
        End If
@@ -502,7 +500,7 @@ Contains
   ! quench RBs
 
        If (rigid%total > 0) Then
-         Call rigid_bodies_quench(rigid,domain,parts,comm)
+         Call rigid_bodies_quench(rigid,domain,config,comm)
        End If
 
     End If
@@ -524,30 +522,30 @@ Contains
 
        If (no_min_0) Then
           If (cons%megcon > 0) Then
-            Call constraints_quench(cons,stat,domain,parts,comm)
+            Call constraints_quench(cons,stat,domain,config,comm)
           End If
-          If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,parts,comm)
+          If (pmf%megpmf > 0) Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,config,comm)
        End If
 
   ! quench core-shell units in adiabatic model
 
        If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC .and. no_min_0) Then
           Do
-             Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,parts,comm)
-             Call core_shell_quench(safe,thermo%temp,cshell,domain,comm)
+             Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,config,comm)
+             Call core_shell_quench(config,safe,thermo%temp,cshell,domain,comm)
              If (cons%megcon > 0) Then
-               Call constraints_quench(cons,stat,domain,parts,comm)
+               Call constraints_quench(cons,stat,domain,config,comm)
              End If
              If (pmf%megpmf > 0) Then
-               Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,parts,comm)
+               Call pmf_quench(cons%max_iter_shake,cons%tolerance,stat,pmf,config,comm)
              End If
              If (rigid%total > 0) Then
-               Call rigid_bodies_quench(rigid,domain,parts,comm)
+               Call rigid_bodies_quench(rigid,domain,config,comm)
              End If
              If (safe) Exit
           End Do
        Else
-          Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,parts,comm)
+          Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,config,comm)
        End If
 
     End If
@@ -557,15 +555,15 @@ Contains
   ! remove centre of mass motion
 
        If (rigid%total > 0) Then
-          Call getvom(vom,vxx,vyy,vzz,rigid,comm)
+          Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
 
-          Do j=1,nfree
-             i=lstfre(j)
+          Do j=1,config%nfree
+             i=config%lstfre(j)
 
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i) = vxx(i) - vom(1)
-                vyy(i) = vyy(i) - vom(2)
-                vzz(i) = vzz(i) - vom(3)
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%vxx(i) = config%vxx(i) - vom(1)
+                config%vyy(i) = config%vyy(i) - vom(2)
+                config%vzz(i) = config%vzz(i) - vom(3)
              End If
           End Do
 
@@ -581,22 +579,22 @@ Contains
                 Do jrgd=1,lrgd
                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                   If (i <= natms) Then
-                      vxx(i) = vxx(i) - vom(1)
-                      vyy(i) = vyy(i) - vom(2)
-                      vzz(i) = vzz(i) - vom(3)
+                   If (i <= config%natms) Then
+                      config%vxx(i) = config%vxx(i) - vom(1)
+                      config%vyy(i) = config%vyy(i) - vom(2)
+                      config%vzz(i) = config%vzz(i) - vom(3)
                    End If
                 End Do
              End If
           End Do
        Else
-          Call getvom(vom,vxx,vyy,vzz,comm)
+          Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
 
-          Do i=1,natms
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i) = vxx(i) - vom(1)
-                vyy(i) = vyy(i) - vom(2)
-                vzz(i) = vzz(i) - vom(3)
+          Do i=1,config%natms
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%vxx(i) = config%vxx(i) - vom(1)
+                config%vyy(i) = config%vyy(i) - vom(2)
+                config%vzz(i) = config%vzz(i) - vom(3)
              End If
           End Do
        End If
@@ -611,7 +609,7 @@ Contains
 
   End Subroutine set_temperature
 
-  Subroutine regauss_temperature(rigid,domain,parts,seed,comm)
+  Subroutine regauss_temperature(rigid,domain,config,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -626,7 +624,7 @@ Contains
 
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -638,7 +636,7 @@ Contains
     Character ( Len = 256 )  :: message
 
     fail=0
-    Allocate (ind(1:natms),pair(1:2,natms/2), Stat=fail)
+    Allocate (ind(1:config%natms),pair(1:2,config%natms/2), Stat=fail)
     If (fail > 0) Then
        Write(message,'(a)') 'regauss_temperature allocation failure'
        Call error(0,message)
@@ -647,8 +645,8 @@ Contains
   ! Create and index array containing the indices of the
   ! dynamically active particles and zeros for the inactive
 
-    Do i=1,natms
-       If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
+    Do i=1,config%natms
+       If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
           ind(i)=i
        Else
           ind(i)=0
@@ -658,7 +656,7 @@ Contains
   ! Compress the index array
 
     i=1
-    j=natms
+    j=config%natms
     Do While (i < j)
        Do While (ind(j) == 0 .and. j > i)
           j=j-1
@@ -695,38 +693,38 @@ Contains
        j=pair(1,i)
        l=pair(2,i)
 
-       vom(1)=vxx(j)
-       vom(2)=vyy(j)
-       vom(3)=vzz(j)
+       vom(1)=config%vxx(j)
+       vom(2)=config%vyy(j)
+       vom(3)=config%vzz(j)
 
-       tmp=Sqrt(weight(l)/weight(j))
-       vxx(j)=vxx(l)*tmp
-       vyy(j)=vyy(l)*tmp
-       vzz(j)=vzz(l)*tmp
+       tmp=Sqrt(config%weight(l)/config%weight(j))
+       config%vxx(j)=config%vxx(l)*tmp
+       config%vyy(j)=config%vyy(l)*tmp
+       config%vzz(j)=config%vzz(l)*tmp
 
        tmp=1.0_wp/tmp
-       vxx(l)=vom(1)*tmp
-       vyy(l)=vom(2)*tmp
-       vzz(l)=vom(3)*tmp
+       config%vxx(l)=vom(1)*tmp
+       config%vyy(l)=vom(2)*tmp
+       config%vzz(l)=vom(3)*tmp
     End Do
 
     If (rigid%total > 0) Then
 
   ! quench RBs
 
-      Call rigid_bodies_quench(rigid,domain,parts,comm)
+      Call rigid_bodies_quench(rigid,domain,config,comm)
 
   ! remove centre of mass motion
 
-       Call getvom(vom,vxx,vyy,vzz,rigid,comm)
+       Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
 
-       Do j=1,nfree
-          i=lstfre(j)
+       Do j=1,config%nfree
+          i=config%lstfre(j)
 
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-             vxx(i) = vxx(i) - vom(1)
-             vyy(i) = vyy(i) - vom(2)
-             vzz(i) = vzz(i) - vom(3)
+          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+             config%vxx(i) = config%vxx(i) - vom(1)
+             config%vyy(i) = config%vyy(i) - vom(2)
+             config%vzz(i) = config%vzz(i) - vom(3)
           End If
        End Do
 
@@ -742,10 +740,10 @@ Contains
              Do jrgd=1,lrgd
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                If (i <= natms) Then
-                   vxx(i) = vxx(i) - vom(1)
-                   vyy(i) = vyy(i) - vom(2)
-                   vzz(i) = vzz(i) - vom(3)
+                If (i <= config%natms) Then
+                   config%vxx(i) = config%vxx(i) - vom(1)
+                   config%vyy(i) = config%vyy(i) - vom(2)
+                   config%vzz(i) = config%vzz(i) - vom(3)
                 End If
              End Do
           End If
@@ -755,13 +753,13 @@ Contains
 
   ! remove centre of mass motion
 
-       Call getvom(vom,vxx,vyy,vzz,comm)
+       Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
 
-       Do i=1,natms
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-             vxx(i) = vxx(i) - vom(1)
-             vyy(i) = vyy(i) - vom(2)
-             vzz(i) = vzz(i) - vom(3)
+       Do i=1,config%natms
+          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+             config%vxx(i) = config%vxx(i) - vom(1)
+             config%vyy(i) = config%vyy(i) - vom(2)
+             config%vzz(i) = config%vzz(i) - vom(3)
           End If
        End Do
 
@@ -775,7 +773,7 @@ Contains
 
   End Subroutine regauss_temperature
 
-  Subroutine scale_temperature(sigma,degtra,degrot,degfre,rigid,parts,comm)
+  Subroutine scale_temperature(sigma,degtra,degrot,degfre,rigid,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -794,7 +792,7 @@ Contains
     Real( Kind = wp ),   Intent( In    ) :: sigma
     Integer( Kind=li ),  Intent( In    ) :: degtra,degrot,degfre
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( corePart ),    Intent( InOut ) :: parts(:)
+    Type( configuration_type ),    Intent( InOut ) :: config
     Type ( comms_type ), Intent( InOut ) :: comm
 
 
@@ -810,15 +808,15 @@ Contains
   ! remove centre of mass motion
 
     If (rigid%total > 0) Then
-       Call getvom(vom,vxx,vyy,vzz,rigid,comm)
+       Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
 
-       Do j=1,nfree
-          i=lstfre(j)
+       Do j=1,config%nfree
+          i=config%lstfre(j)
 
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-             vxx(i) = vxx(i) - vom(1)
-             vyy(i) = vyy(i) - vom(2)
-             vzz(i) = vzz(i) - vom(3)
+          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+             config%vxx(i) = config%vxx(i) - vom(1)
+             config%vyy(i) = config%vyy(i) - vom(2)
+             config%vzz(i) = config%vzz(i) - vom(3)
           End If
        End Do
 
@@ -834,29 +832,29 @@ Contains
              Do jrgd=1,lrgd
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                If (i <= natms) Then
-                   vxx(i) = vxx(i) - vom(1)
-                   vyy(i) = vyy(i) - vom(2)
-                   vzz(i) = vzz(i) - vom(3)
+                If (i <= config%natms) Then
+                   config%vxx(i) = config%vxx(i) - vom(1)
+                   config%vyy(i) = config%vyy(i) - vom(2)
+                   config%vzz(i) = config%vzz(i) - vom(3)
                 End If
              End Do
           End If
        End Do
     Else
-       Call getvom(vom,vxx,vyy,vzz,comm)
+       Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
 
-       Do i=1,natms
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-             vxx(i) = vxx(i) - vom(1)
-             vyy(i) = vyy(i) - vom(2)
-             vzz(i) = vzz(i) - vom(3)
+       Do i=1,config%natms
+          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+             config%vxx(i) = config%vxx(i) - vom(1)
+             config%vyy(i) = config%vyy(i) - vom(2)
+             config%vzz(i) = config%vzz(i) - vom(3)
           End If
        End Do
     End If
 
   ! zero angular momentum about centre of mass - non-periodic system
 
-    If (imcon == 0) Then
+    If (config%imcon == 0) Then
        fail=0
        Allocate (buffer(1:12), Stat=fail)
        If (fail > 0) Then
@@ -866,19 +864,19 @@ Contains
 
   ! calculate centre of mass position
 
-       Call getcom(parts,com,comm)
+       Call getcom(config,com,comm)
 
        If (rigid%total > 0) Then
 
   ! move to centre of mass origin
 
-          Do j=1,nfree
-             i=lstfre(j)
+          Do j=1,config%nfree
+             i=config%lstfre(j)
 
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                parts(i)%xxx = parts(i)%xxx - com(1)
-                parts(i)%yyy = parts(i)%yyy - com(2)
-                parts(i)%zzz = parts(i)%zzz - com(3)
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%parts(i)%xxx = config%parts(i)%xxx - com(1)
+                config%parts(i)%yyy = config%parts(i)%yyy - com(2)
+                config%parts(i)%zzz = config%parts(i)%zzz - com(3)
              End If
           End Do
 
@@ -902,21 +900,21 @@ Contains
 
           rot = 0.0_wp
 
-          Do j=1,nfree
-             i=lstfre(j)
+          Do j=1,config%nfree
+             i=config%lstfre(j)
 
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                amx = amx + weight(i)*(parts(i)%yyy*vzz(i) - parts(i)%zzz*vyy(i))
-                amy = amy + weight(i)*(parts(i)%zzz*vxx(i) - parts(i)%xxx*vzz(i))
-                amz = amz + weight(i)*(parts(i)%xxx*vyy(i) - parts(i)%yyy*vxx(i))
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                amx = amx + config%weight(i)*(config%parts(i)%yyy*config%vzz(i) - config%parts(i)%zzz*config%vyy(i))
+                amy = amy + config%weight(i)*(config%parts(i)%zzz*config%vxx(i) - config%parts(i)%xxx*config%vzz(i))
+                amz = amz + config%weight(i)*(config%parts(i)%xxx*config%vyy(i) - config%parts(i)%yyy*config%vxx(i))
 
-                tmp = parts(i)%xxx**2 + parts(i)%yyy**2 + parts(i)%zzz**2
-                rot(1) = rot(1) + weight(i)*(parts(i)%xxx*parts(i)%xxx - tmp)
-                rot(2) = rot(2) + weight(i)* parts(i)%xxx*parts(i)%yyy
-                rot(3) = rot(3) + weight(i)* parts(i)%xxx*parts(i)%zzz
-                rot(5) = rot(5) + weight(i)*(parts(i)%yyy*parts(i)%yyy - tmp)
-                rot(6) = rot(6) + weight(i)* parts(i)%yyy*parts(i)%zzz
-                rot(9) = rot(9) + weight(i)*(parts(i)%zzz*parts(i)%zzz - tmp)
+                tmp = config%parts(i)%xxx**2 + config%parts(i)%yyy**2 + config%parts(i)%zzz**2
+                rot(1) = rot(1) + config%weight(i)*(config%parts(i)%xxx*config%parts(i)%xxx - tmp)
+                rot(2) = rot(2) + config%weight(i)* config%parts(i)%xxx*config%parts(i)%yyy
+                rot(3) = rot(3) + config%weight(i)* config%parts(i)%xxx*config%parts(i)%zzz
+                rot(5) = rot(5) + config%weight(i)*(config%parts(i)%yyy*config%parts(i)%yyy - tmp)
+                rot(6) = rot(6) + config%weight(i)* config%parts(i)%yyy*config%parts(i)%zzz
+                rot(9) = rot(9) + config%weight(i)*(config%parts(i)%zzz*config%parts(i)%zzz - tmp)
              End If
           End Do
 
@@ -979,13 +977,13 @@ Contains
 
   ! correction to linear velocity
 
-          Do j=1,nfree
-             i=lstfre(j)
+          Do j=1,config%nfree
+             i=config%lstfre(j)
 
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i) = vxx(i) + (wyy*parts(i)%zzz - wzz*parts(i)%yyy)
-                vyy(i) = vyy(i) + (wzz*parts(i)%xxx - wxx*parts(i)%zzz)
-                vzz(i) = vzz(i) + (wxx*parts(i)%yyy - wyy*parts(i)%xxx)
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%vxx(i) = config%vxx(i) + (wyy*config%parts(i)%zzz - wzz*config%parts(i)%yyy)
+                config%vyy(i) = config%vyy(i) + (wzz*config%parts(i)%xxx - wxx*config%parts(i)%zzz)
+                config%vzz(i) = config%vzz(i) + (wxx*config%parts(i)%yyy - wyy*config%parts(i)%xxx)
              End If
           End Do
 
@@ -1005,10 +1003,10 @@ Contains
                 Do jrgd=1,lrgd
                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                   If (i <= natms) Then
-                      vxx(i) = vxx(i) + x
-                      vyy(i) = vyy(i) + y
-                      vzz(i) = vzz(i) + z
+                   If (i <= config%natms) Then
+                      config%vxx(i) = config%vxx(i) + x
+                      config%vyy(i) = config%vyy(i) + y
+                      config%vzz(i) = config%vzz(i) + z
                    End If
                 End Do
              End If
@@ -1016,13 +1014,13 @@ Contains
 
   ! reset positions to original reference frame
 
-          Do j=1,nfree
-             i=lstfre(j)
+          Do j=1,config%nfree
+             i=config%lstfre(j)
 
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                parts(i)%xxx = parts(i)%xxx + com(1)
-                parts(i)%yyy = parts(i)%yyy + com(2)
-                parts(i)%zzz = parts(i)%zzz + com(3)
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%parts(i)%xxx = config%parts(i)%xxx + com(1)
+                config%parts(i)%yyy = config%parts(i)%yyy + com(2)
+                config%parts(i)%zzz = config%parts(i)%zzz + com(3)
              End If
           End Do
 
@@ -1040,11 +1038,11 @@ Contains
 
   ! move to centre of mass origin
 
-          Do i=1,natms
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                parts(i)%xxx = parts(i)%xxx - com(1)
-                parts(i)%yyy = parts(i)%yyy - com(2)
-                parts(i)%zzz = parts(i)%zzz - com(3)
+          Do i=1,config%natms
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%parts(i)%xxx = config%parts(i)%xxx - com(1)
+                config%parts(i)%yyy = config%parts(i)%yyy - com(2)
+                config%parts(i)%zzz = config%parts(i)%zzz - com(3)
              End If
           End Do
 
@@ -1058,19 +1056,19 @@ Contains
 
           rot = 0.0_wp
 
-          Do i=1,natms
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                amx = amx + weight(i)*(parts(i)%yyy*vzz(i) - parts(i)%zzz*vyy(i))
-                amy = amy + weight(i)*(parts(i)%zzz*vxx(i) - parts(i)%xxx*vzz(i))
-                amz = amz + weight(i)*(parts(i)%xxx*vyy(i) - parts(i)%yyy*vxx(i))
+          Do i=1,config%natms
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                amx = amx + config%weight(i)*(config%parts(i)%yyy*config%vzz(i) - config%parts(i)%zzz*config%vyy(i))
+                amy = amy + config%weight(i)*(config%parts(i)%zzz*config%vxx(i) - config%parts(i)%xxx*config%vzz(i))
+                amz = amz + config%weight(i)*(config%parts(i)%xxx*config%vyy(i) - config%parts(i)%yyy*config%vxx(i))
 
-                tmp = parts(i)%xxx**2 + parts(i)%yyy**2 + parts(i)%zzz**2
-                rot(1) = rot(1) + weight(i)*(parts(i)%xxx*parts(i)%xxx - tmp)
-                rot(2) = rot(2) + weight(i)* parts(i)%xxx*parts(i)%yyy
-                rot(3) = rot(3) + weight(i)* parts(i)%xxx*parts(i)%zzz
-                rot(5) = rot(5) + weight(i)*(parts(i)%yyy*parts(i)%yyy - tmp)
-                rot(6) = rot(6) + weight(i)* parts(i)%yyy*parts(i)%zzz
-                rot(9) = rot(9) + weight(i)*(parts(i)%zzz*parts(i)%zzz - tmp)
+                tmp = config%parts(i)%xxx**2 + config%parts(i)%yyy**2 + config%parts(i)%zzz**2
+                rot(1) = rot(1) + config%weight(i)*(config%parts(i)%xxx*config%parts(i)%xxx - tmp)
+                rot(2) = rot(2) + config%weight(i)* config%parts(i)%xxx*config%parts(i)%yyy
+                rot(3) = rot(3) + config%weight(i)* config%parts(i)%xxx*config%parts(i)%zzz
+                rot(5) = rot(5) + config%weight(i)*(config%parts(i)%yyy*config%parts(i)%yyy - tmp)
+                rot(6) = rot(6) + config%weight(i)* config%parts(i)%yyy*config%parts(i)%zzz
+                rot(9) = rot(9) + config%weight(i)*(config%parts(i)%zzz*config%parts(i)%zzz - tmp)
              End If
           End Do
 
@@ -1110,21 +1108,21 @@ Contains
 
   ! correction to linear velocity
 
-          Do i=1,natms
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i) = vxx(i) + (wyy*parts(i)%zzz - wzz*parts(i)%yyy)
-                vyy(i) = vyy(i) + (wzz*parts(i)%xxx - wxx*parts(i)%zzz)
-                vzz(i) = vzz(i) + (wxx*parts(i)%yyy - wyy*parts(i)%xxx)
+          Do i=1,config%natms
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%vxx(i) = config%vxx(i) + (wyy*config%parts(i)%zzz - wzz*config%parts(i)%yyy)
+                config%vyy(i) = config%vyy(i) + (wzz*config%parts(i)%xxx - wxx*config%parts(i)%zzz)
+                config%vzz(i) = config%vzz(i) + (wxx*config%parts(i)%yyy - wyy*config%parts(i)%xxx)
              End If
           End Do
 
   ! reset positions to original reference frame
 
-          Do i=1,natms
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                parts(i)%xxx = parts(i)%xxx + com(1)
-                parts(i)%yyy = parts(i)%yyy + com(2)
-                parts(i)%zzz = parts(i)%zzz + com(3)
+          Do i=1,config%natms
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%parts(i)%xxx = config%parts(i)%xxx + com(1)
+                config%parts(i)%yyy = config%parts(i)%yyy + com(2)
+                config%parts(i)%zzz = config%parts(i)%zzz + com(3)
              End If
           End Do
 
@@ -1142,7 +1140,7 @@ Contains
 
     engrot=0.0_wp
     If (rigid%total > 0) Then
-       engkf=getknf(vxx,vyy,vzz,comm)
+       engkf=getknf(config%vxx,config%vyy,config%vzz,config,comm)
        engkt=getknt(rigid,comm)
 
        engrot=getknr(rigid,comm)
@@ -1198,7 +1196,7 @@ Contains
 
        engke=engkf+engkt
     Else
-       engke=getkin(vxx,vyy,vzz,comm)
+       engke=getkin(config,config%vxx,config%vyy,config%vzz,comm)
     End If
 
   ! apply temperature scaling
@@ -1207,13 +1205,13 @@ Contains
        tmp=Sqrt(sigma/(engke+engrot))
 
        If (rigid%total > 0) Then
-          Do j=1,nfree
-             i=lstfre(j)
+          Do j=1,config%nfree
+             i=config%lstfre(j)
 
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i)=vxx(i)*tmp
-                vyy(i)=vyy(i)*tmp
-                vzz(i)=vzz(i)*tmp
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%vxx(i)=config%vxx(i)*tmp
+                config%vyy(i)=config%vyy(i)*tmp
+                config%vzz(i)=config%vzz(i)*tmp
              End If
           End Do
 
@@ -1245,7 +1243,7 @@ Contains
                    If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
                       i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                      If (i <= natms) Then
+                      If (i <= config%natms) Then
                          x=rigid%x(jrgd,rgdtyp)
                          y=rigid%y(jrgd,rgdtyp)
                          z=rigid%z(jrgd,rgdtyp)
@@ -1258,26 +1256,26 @@ Contains
 
   ! new atomic velocities in lab frame
 
-                         vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
-                         vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
-                         vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
+                         config%vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
+                         config%vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
+                         config%vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
                       End If
                    End If
                 End Do
              End If
           End Do
        Else
-          Do i=1,natms
-             If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-                vxx(i)=vxx(i)*tmp
-                vyy(i)=vyy(i)*tmp
-                vzz(i)=vzz(i)*tmp
+          Do i=1,config%natms
+             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+                config%vxx(i)=config%vxx(i)*tmp
+                config%vyy(i)=config%vyy(i)*tmp
+                config%vzz(i)=config%vzz(i)*tmp
              End If
           End Do
        End If
     Else ! sigma must be zero
-       Do i=1,natms
-          vxx(i)=0.0_wp ; vyy(i)=0.0_wp ; vzz(i)=0.0_wp
+       Do i=1,config%natms
+          config%vxx(i)=0.0_wp ; config%vyy(i)=0.0_wp ; config%vzz(i)=0.0_wp
        End Do
 
        If (rigid%total > 0) Then

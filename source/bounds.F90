@@ -3,7 +3,7 @@ Module bounds
   Use comms,           Only : comms_type
   Use setup
   Use domains,         Only : domains_type,map_domains
-  Use configuration,   Only : imcon,imc_n,cfgname,cell,volm
+  Use configuration,   Only : configuration_type
   Use neighbours,      Only : neighbours_type
   Use msd,             Only : msd_type
   Use rdfs,            Only : rdf_type
@@ -54,7 +54,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
-           mpoles,ext_field,rigid,electro,domain,ewld,kim_data,comm)
+           mpoles,ext_field,rigid,electro,domain,config,ewld,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -100,6 +100,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
   Type( external_field_type ), Intent( InOut ) :: ext_field
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( electrostatic_type ), Intent( InOut ) :: electro
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( InOut ) :: domain
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( kim_type ), Intent( InOut ) :: kim_data
@@ -125,43 +126,48 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! Get imc_r & set dvar
 
-  Call scan_control_pre(imc_n,dvar,comm)
+  Call scan_control_pre(config%imc_n,dvar,comm)
 
 ! scan CONFIG file data
 
-  Call scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi,domain,comm)
+  Call scan_config(config,megatm,config%imc_n,dvar,levcfg,xhi,yhi,zhi,domain,comm)
 
 ! halt execution for unsupported image conditions in DD
 ! checks for some inherited from DL_POLY_2 are though kept
 
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(514)
+  If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(514)
 
 ! scan CONTROL file data
 
-  Call scan_control(rcter,rigid%max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
-    l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce,cshell,stats, &
-    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
+  Call scan_control                                        &
+           (rcter, &
+           rigid%max_rigid,config%imcon,config%imc_n,config%cell,xhi,yhi,zhi,             &
+           mxgana,         &
+           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
+           rbin,                         &
+           nstfce,cshell,stats,thermo, &
+           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
+           zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
 
-  If (imcon == 1 .or. imcon == 4 .or. imcon == 5) Then
+  If (config%imcon == 1 .or. config%imcon == 4 .or. config%imcon == 5) Then
 
-     ats = (Abs(cell(1))+Abs(cell(5)))/2.0_wp
+     ats = (Abs(config%cell(1))+Abs(config%cell(5)))/2.0_wp
      test = 1.0e-10_wp*ats
-     If (Abs(cell(1)-ats) > test) Then
+     If (Abs(config%cell(1)-ats) > test) Then
        Call error(410)
      End If
-     If (Abs(cell(5)-ats) > test) Then
+     If (Abs(config%cell(5)-ats) > test) Then
        Call error(410)
      End If
-     If (imcon == 5) Then
-        If (Abs(cell(9)-ats*rt2) > test) Then
+     If (config%imcon == 5) Then
+        If (Abs(config%cell(9)-ats*rt2) > test) Then
           Call error(410)
         End If
      Else
-        If (Abs(cell(9)-ats) > test) Then
+        If (Abs(config%cell(9)-ats) > test) Then
           Call error(410)
         End If
      End If
@@ -169,45 +175,45 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! check integrity of hexagonal prism cell vectors
 
-  If (imcon == 7) Then
-     If (Abs(cell(1)-rt3*cell(5)) > 1.0e-6_wp) Then
+  If (config%imcon == 7) Then
+     If (Abs(config%cell(1)-rt3*config%cell(5)) > 1.0e-6_wp) Then
        Call error(410)
      End If
   End If
 
 ! check for diagonal cell matrix if appropriate: imcon=1,2,4,5,7
 
-  If (imcon /= 0 .and. imcon /= 3 .and. imcon /= 6) Then
-    If (Any(Abs(cell(2:4)) > zero_plus)) Then
+  If (config%imcon /= 0 .and. config%imcon /= 3 .and. config%imcon /= 6) Then
+    If (Any(Abs(config%cell(2:4)) > zero_plus)) Then
       Call error(410)
     End If
-    !If (Abs(cell(2)) > zero_plus) Call error(410)
-    !If (Abs(cell(3)) > zero_plus) Call error(410)
-    !If (Abs(cell(4)) > zero_plus) Call error(410)
-    If (Any(Abs(cell(6:8)) > zero_plus)) Then
+    !If (Abs(config%cell(2)) > zero_plus) Call error(410)
+    !If (Abs(config%cell(3)) > zero_plus) Call error(410)
+    !If (Abs(config%cell(4)) > zero_plus) Call error(410)
+    If (Any(Abs(config%cell(6:8)) > zero_plus)) Then
       Call error(410)
     End If
-    !If (Abs(cell(6)) > zero_plus) Call error(410)
-    !If (Abs(cell(7)) > zero_plus) Call error(410)
-    !If (Abs(cell(8)) > zero_plus) Call error(410)
+    !If (Abs(config%cell(6)) > zero_plus) Call error(410)
+    !If (Abs(config%cell(7)) > zero_plus) Call error(410)
+    !If (Abs(config%cell(8)) > zero_plus) Call error(410)
   End If
 
 ! calculate dimensional properties of simulation cell
 ! (for use in link-cells) and volume and define min cell width
 
-  Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
   width=Min(celprp(7),celprp(8),celprp(9))
 
-  volm = celprp(10)
+  config%volm = celprp(10)
 
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) volm=0.5_wp*volm
+  If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) config%volm=0.5_wp*config%volm
 
 ! check value of cutoff and reset if necessary
 
-  If (imcon > 0) Then
-     If (imcon == 4) width=rt3*cell(1)/2.0_wp
-     If (imcon == 5) width=cell(1)
-     If (imcon == 6) width=Min(celprp(7),celprp(8))
+  If (config%imcon > 0) Then
+     If (config%imcon == 4) width=rt3*config%cell(1)/2.0_wp
+     If (config%imcon == 5) width=config%cell(1)
+     If (config%imcon == 6) width=Min(celprp(7),celprp(8))
 
 ! halt program if potential cutoff exceeds the minimum half-cell width
 
@@ -525,7 +531,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
 ! Dependences: MD cell widths (explicit) and machine resources (implicit)
 
-  Call map_domains(imc_n,celprp(7),celprp(8),celprp(9),domain,comm)
+  Call map_domains(config%imc_n,celprp(7),celprp(8),celprp(9),domain,comm)
 
   Call info(' ',.true.)
   Write(message,'(a,3(i6,1x))') 'node/domain decomposition (x,y,z): ', &
@@ -598,7 +604,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! print link cell algorithm and check for violations or...
 
-  Write(message,'(a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
+  Write(message,'(a,3i6)') "link-config%cell decomposition 1 (x,y,z): ",ilx,ily,ilz
   Call info(message,.true.)
 
   tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
@@ -686,9 +692,9 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 ! allow for thermal expansion of unsettled systems
 ! total link-cells per node/domain is ncells = (ilx+4)*(ily+4)*(ilz+4)
 
-  If      (imcon == 0                ) Then
+  If      (config%imcon == 0                ) Then
      neigh%max_cell = Nint((fdvar**4) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
-  Else If (imcon == 6 .or. imc_n == 6) Then
+  Else If (config%imcon == 6 .or. config%imc_n == 6) Then
      neigh%max_cell = Nint((fdvar**3) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
   Else
      neigh%max_cell = Nint((fdvar**2) * Real((ilx+4)*(ily+4)*(ilz+4),wp))
@@ -759,11 +765,11 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! decide on MXATMS while reading CONFIG and scan particle density
 
-  Call read_config(megatm,levcfg,l_ind,l_str,neigh%cutoff,dvar,xhi,yhi,zhi,dens0,dens,domain,comm)
+  Call read_config(config,megatm,levcfg,l_ind,l_str,neigh%cutoff,dvar,xhi,yhi,zhi,dens0,dens,domain,comm)
 
 ! Create f(fdvar,dens0,dens)
 
-  If (comm%mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
+  If (comm%mxnode == 1 .or. (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6)) Then
      fdens = fdvar * (0.65_wp*dens0 + 0.35_wp*dens)
   Else If (Min(ilx,ily,ilz) == 1) Then
      fdens = fdvar * (0.50_wp*dens0 + 0.50_wp*dens)
@@ -788,7 +794,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! get link-cell volume
 
-  vcell = volm / (Real(ilx*ily*ilz,wp) * Real(comm%mxnode,wp))
+  vcell = config%volm / (Real(ilx*ily*ilz,wp) * Real(comm%mxnode,wp))
 
 ! get averaged link-cell particle number, boosted by fdens
 ! + 25% extra tolerance
@@ -798,7 +804,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 ! set dimension of working coordinate arrays
 
   mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
-  If (comm%mxnode == 1 .or. (imcon == 0 .or. imcon == 6 .or. imc_n == 6)) Then
+  If (comm%mxnode == 1 .or. (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6)) Then
     mxatms = Nint(Min(Real(mxatms,wp),Real(27.00_wp,wp)*Real(megatm,wp)))
 !  Else If (Min(ilx,ily,ilz) == 1) Then
 !    mxatms = Nint(Min(Real(mxatms,wp),Real(20.25_wp,wp)*Real(megatm,wp)))
@@ -876,14 +882,14 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
      ily=Int(domain%ny_recip*celprp(8)/cut)
      ilz=Int(domain%nz_recip*celprp(9)/cut)
 
-     Write(message,'(a,3i6)') "link-cell decomposition 2 (x,y,z): ",ilx,ily,ilz
+     Write(message,'(a,3i6)') "link-config%cell decomposition 2 (x,y,z): ",ilx,ily,ilz
      Call info(message,.true.)
 
      If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
 
-     If      (imcon == 0                ) Then
+     If      (config%imcon == 0                ) Then
         neigh%max_cell = Max(neigh%max_cell,Nint((fdvar**4) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
-     Else If (imcon == 6 .or. imc_n == 6) Then
+     Else If (config%imcon == 6 .or. config%imc_n == 6) Then
         neigh%max_cell = Max(neigh%max_cell,Nint((fdvar**3) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
      Else
         neigh%max_cell = Max(neigh%max_cell,Nint((fdvar**2) * Real((ilx+5)*(ily+5)*(ilz+5),wp)))
@@ -894,11 +900,11 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 ! in x- and y-directions based on number in z-direction
 ! and system size
 
-  delz     = cell(9)/Real(ntsys(3),wp)
-  ntsys(1) = Nint(cell(1)/delz)
-  ntsys(2) = Nint(cell(5)/delz)
-  delx     = cell(1)/Real(ntsys(1),wp)
-  dely     = cell(5)/Real(ntsys(2),wp)
+  delz     = config%cell(9)/Real(ntsys(3),wp)
+  ntsys(1) = Nint(config%cell(1)/delz)
+  ntsys(2) = Nint(config%cell(5)/delz)
+  delx     = config%cell(1)/Real(ntsys(1),wp)
+  dely     = config%cell(5)/Real(ntsys(2),wp)
   volume   = delx*dely*delz
   rvolume  = 1.0_wp/volume
 
@@ -921,7 +927,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 ! to convert specific heat capacities to volumetric 
 ! heat capacity etc.
 
-  sysrho = Real(megatm,Kind=wp)/(cell(1)*cell(5)*cell(9))
+  sysrho = Real(megatm,Kind=wp)/(config%cell(1)*config%cell(5)*config%cell(9))
 
 End Subroutine set_bounds
 

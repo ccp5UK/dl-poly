@@ -2,9 +2,7 @@ Module impacts
   Use kinds, Only : wp
   Use setup,        Only : eu_ev
   Use comms,               Only : comms_type,gcheck
-  Use configuration,       Only : natms,nlast,nfree,          &
-                                  lfrzn,lfree,lstfre,lsi,lsa, &
-                                  weight,vxx,vyy,vzz
+  Use configuration,       Only : configuration_type
   Use rigid_bodies, Only : rigid_bodies_type
   Use core_shell,   Only : core_shell_type
   Use kinetics,      Only : getvom,l_vom,chvom
@@ -23,7 +21,7 @@ Module impacts
   
   Contains
 
-Subroutine impact(rigid,cshell,impa,comm)
+Subroutine impact(rigid,cshell,impa,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -37,6 +35,7 @@ Subroutine impact(rigid,cshell,impa,comm)
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( impact_type ), Intent( In    ) :: impa
   Type( core_shell_type ), Intent( In    ) :: cshell
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ) , Intent( InOut ) :: comm
   Logical           :: safe = .true.
 
@@ -46,13 +45,13 @@ Subroutine impact(rigid,cshell,impa,comm)
 
 ! Apply impact to the selected non-frozen, non-massless and non-shell particle
 
-  i=local_index(impa%imd,nlast,lsi,lsa)
-  If (i > 0 .and. i <= natms) Then
-     If (lfrzn(i) == 0 .and. lfree(i) == 0 .and. All(cshell%listshl(2,1:cshell%ntshl) /= impa%imd)) Then
-        tmp=Sqrt(2000.0_wp*impa%emd*eu_ev/weight(i)/(impa%vmx**2+impa%vmy**2+impa%vmz**2)) !impa%emd is in keV=1000*eu_ev
-        vxx(i)=tmp*impa%vmx
-        vyy(i)=tmp*impa%vmy
-        vzz(i)=tmp*impa%vmz
+  i=local_index(impa%imd,config%nlast,config%lsi,config%lsa)
+  If (i > 0 .and. i <= config%natms) Then
+     If (config%lfrzn(i) == 0 .and. config%lfree(i) == 0 .and. All(cshell%listshl(2,1:cshell%ntshl) /= impa%imd)) Then
+        tmp=Sqrt(2000.0_wp*impa%emd*eu_ev/config%weight(i)/(impa%vmx**2+impa%vmy**2+impa%vmz**2)) !impa%emd is in keV=1000*eu_ev
+        config%vxx(i)=tmp*impa%vmx
+        config%vyy(i)=tmp*impa%vmy
+        config%vzz(i)=tmp*impa%vmz
      Else
         safe=.false.
      End If
@@ -66,15 +65,15 @@ Subroutine impact(rigid,cshell,impa,comm)
 ! remove centre of mass motion
 
   If (rigid%total > 0) Then
-     Call getvom(vom,vxx,vyy,vzz,rigid,comm)
+     Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
 
-     Do j=1,nfree
-        i=lstfre(j)
+     Do j=1,config%nfree
+        i=config%lstfre(j)
 
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           vxx(i) = vxx(i) - vom(1)
-           vyy(i) = vyy(i) - vom(2)
-           vzz(i) = vzz(i) - vom(3)
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+           config%vxx(i) = config%vxx(i) - vom(1)
+           config%vyy(i) = config%vyy(i) - vom(2)
+           config%vzz(i) = config%vzz(i) - vom(3)
         End If
      End Do
 
@@ -90,22 +89,22 @@ Subroutine impact(rigid,cshell,impa,comm)
            Do jrgd=1,lrgd
               i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-              If (i <= natms) Then
-                 vxx(i) = vxx(i) - vom(1)
-                 vyy(i) = vyy(i) - vom(2)
-                 vzz(i) = vzz(i) - vom(3)
+              If (i <= config%natms) Then
+                 config%vxx(i) = config%vxx(i) - vom(1)
+                 config%vyy(i) = config%vyy(i) - vom(2)
+                 config%vzz(i) = config%vzz(i) - vom(3)
               End If
            End Do
         End If
      End Do
   Else
-     Call getvom(vom,vxx,vyy,vzz,comm)
+     Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
 
-     Do i=1,natms
-        If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-           vxx(i) = vxx(i) - vom(1)
-           vyy(i) = vyy(i) - vom(2)
-           vzz(i) = vzz(i) - vom(3)
+     Do i=1,config%natms
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+           config%vxx(i) = config%vxx(i) - vom(1)
+           config%vyy(i) = config%vyy(i) - vom(2)
+           config%vzz(i) = config%vzz(i) - vom(3)
         End If
      End Do
   End If

@@ -17,8 +17,7 @@ Module bonds
                               engunit,zero_plus,r4pie0,ntable,delr_max,nrite, &
                               zero_plus,engunit
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
-  Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,lfrzn, &
-                              cfgname
+  Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use site, Only : site_type
   Use parse,           Only : get_line,get_word,word_2_real
@@ -171,7 +170,7 @@ Contains
   End Subroutine allocate_bond_dst_arrays
 
 
-  Subroutine bonds_compute(temp,unique_atom,bond,comm)
+  Subroutine bonds_compute(temp,unique_atom,bond,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -187,6 +186,7 @@ Contains
   Real( Kind = wp ), Intent( In    ) :: temp
   Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
   Type( bonds_type ), Intent( InOut ) :: bond
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical           :: zero
@@ -249,7 +249,7 @@ Contains
 
   If (comm%idnode == 0) Then
      Open(Unit=npdfdt, File='BNDDAT', Status='replace')
-     Write(npdfdt,'(a)') '# '//cfgname
+     Write(npdfdt,'(a)') '# '//config%cfgname
      Write(npdfdt,'(a)') '# BONDS: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dr_bin'
      Write(npdfdt,'(a,i10,1x,f8.3,2(1x,i10))') '# bins, cutoff, frames, types: ',bond%bin_pdf,bond%rcut,bond%n_frames,kk
      Write(npdfdt,'(a)') '#'
@@ -343,12 +343,12 @@ Contains
 
   If (comm%idnode == 0) Then
      Open(Unit=npdgdt, File='BNDPMF', Status='replace')
-     Write(npdgdt,'(a)') '# '//cfgname
+     Write(npdgdt,'(a)') '# '//config%cfgname
      Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*Real(bond%bin_pdf,wp),bond%bin_pdf,delr,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
 
      Open(Unit=npdfdt, File='BNDTAB', Status='replace')
-     Write(npdfdt,'(a)') '# '//cfgname
+     Write(npdfdt,'(a)') '# '//config%cfgname
      Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*Real(ngrid,wp),ngrid,dgrid,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
   End If
@@ -490,7 +490,7 @@ Contains
 End Subroutine bonds_compute
 
 Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
-    mpoles,electro,parts,comm)
+    mpoles,electro,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -515,8 +515,8 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
   Real( Kind = wp ),                   Intent( InOut ) :: engcpe,vircpe
   Type( bonds_type ),                  Intent( InOut ) :: bond
   Type( mpole_type ),                  Intent( InOut ) :: mpoles
-  Type( electrostatic_type ), Intent( InOut    ) :: electro
-  Type( corePart ), Dimension(  :  ),  Intent( InOut ) :: parts
+  Type( electrostatic_type ),          Intent( InOut ) :: electro
+  Type( configuration_type ),          Intent( InOut ) :: config
   Type( comms_type),                   Intent( InOut ) :: comm
 
   Logical           :: safe(1:3)
@@ -550,28 +550,28 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
 ! indices of bonded atoms
 
-     ia=local_index(bond%list(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
-     ib=local_index(bond%list(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
+     ia=local_index(bond%list(1,i),config%nlast,config%lsi,config%lsa) ; lstopt(1,i)=ia
+     ib=local_index(bond%list(2,i),config%nlast,config%lsi,config%lsa) ; lstopt(2,i)=ib
 
      lstopt(0,i)=0
      If (ia > 0 .and. ib > 0) Then ! Tag
-        If (lfrzn(ia)*lfrzn(ib) == 0) Then
-           If (ia <= natms .or. ib <= natms) Then
+        If (config%lfrzn(ia)*config%lfrzn(ib) == 0) Then
+           If (ia <= config%natms .or. ib <= config%natms) Then
               lstopt(0,i)=1
            End If
         End If
      Else                          ! Detect uncompressed unit
-        If ( ((ia > 0 .and. ia <= natms) .or.   &
-              (ib > 0 .and. ib <= natms)) .and. &
+        If ( ((ia > 0 .and. ia <= config%natms) .or.   &
+              (ib > 0 .and. ib <= config%natms)) .and. &
              (ia == 0 .or. ib == 0) ) lunsafe(i)=.true.
      End If
 
 ! components of bond vector
 
      If (lstopt(0,i) > 0) Then
-        xdab(i)=parts(ia)%xxx-parts(ib)%xxx
-        ydab(i)=parts(ia)%yyy-parts(ib)%yyy
-        zdab(i)=parts(ia)%zzz-parts(ib)%zzz
+        xdab(i)=config%parts(ia)%xxx-config%parts(ib)%xxx
+        ydab(i)=config%parts(ia)%yyy-config%parts(ib)%yyy
+        zdab(i)=config%parts(ia)%zzz-config%parts(ib)%zzz
      Else ! (DEBUG)
         xdab(i)=0.0_wp
         ydab(i)=0.0_wp
@@ -602,7 +602,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
 ! periodic boundary condition
 
-  Call images(imcon,cell,bond%n_types,xdab,ydab,zdab)
+  Call images(config%imcon,config%cell,bond%n_types,xdab,ydab,zdab)
 
 ! Initialise safety flag
 
@@ -662,7 +662,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
 ! accumulate the histogram (distribution)
 
-        If (Mod(isw,2) == 0 .and. ia <= natms) Then
+        If (Mod(isw,2) == 0 .and. ia <= config%natms) Then
            j = bond%ldf(kk)
            l = Min(1+Int(rab*rdelr),bond%bin_pdf)
 
@@ -780,11 +780,11 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
 ! scaled charge product times dielectric constants
 
-           chgprd=bond%param(1,kk)*parts(ia)%chge*parts(ib)%chge*r4pie0/electro%eps
+           chgprd=bond%param(1,kk)*config%parts(ia)%chge*config%parts(ib)%chge*r4pie0/electro%eps
            If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
               If (mpoles%max_mpoles > 0) Then
                  Call intra_mcoul(rcut,ia,ib,chgprd,rab,xdab(i),ydab(i),zdab(i), &
-                   omega,viracc,fx,fy,fz,safe(1),mpoles,electro)
+                   omega,viracc,fx,fy,fz,safe(1),mpoles,electro,config)
               Else
                  Call intra_coul(rcut,chgprd,rab,rab2,omega,gamma,safe(1),electro)
 
@@ -797,7 +797,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
 ! correct electrostatic energy and virial
 
-              If (ia <= natms) Then
+              If (ia <= config%natms) Then
                  engc12 = engc12 + omega
                  virc12 = virc12 + viracc
               End If
@@ -891,11 +891,11 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
 ! add forces
 
-        If (ia <= natms) Then
+        If (ia <= config%natms) Then
 
-           parts(ia)%fxx=parts(ia)%fxx+fx
-           parts(ia)%fyy=parts(ia)%fyy+fy
-           parts(ia)%fzz=parts(ia)%fzz+fz
+           config%parts(ia)%fxx=config%parts(ia)%fxx+fx
+           config%parts(ia)%fyy=config%parts(ia)%fyy+fy
+           config%parts(ia)%fzz=config%parts(ia)%fzz+fz
 
 ! calculate bond energy and virial
 
@@ -913,11 +913,11 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
 
         End If
 
-        If (ib <= natms) Then
+        If (ib <= config%natms) Then
 
-           parts(ib)%fxx=parts(ib)%fxx-fx
-           parts(ib)%fyy=parts(ib)%fyy-fy
-           parts(ib)%fzz=parts(ib)%fzz-fz
+           config%parts(ib)%fxx=config%parts(ib)%fxx-fx
+           config%parts(ib)%fyy=config%parts(ib)%fyy-fy
+           config%parts(ib)%fzz=config%parts(ib)%fzz-fz
 
         End If
 

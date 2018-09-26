@@ -12,7 +12,7 @@ Module ffield
 ! Fuchs correction of charge non-neutral systems
 ! Global_To_Local variables
 
-  Use configuration, Only : imcon,cell,sumchg
+  Use configuration, Only : configuration_type
 
 ! INTERACTION MODULES
 
@@ -83,7 +83,7 @@ Subroutine read_field                      &
            atmfre,atmfrz,megatm,megfrz,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,sites,vdws, &
-           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,kim_data,comm)
+           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,config,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -134,6 +134,7 @@ Subroutine read_field                      &
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( kim_type ), Intent( InOut ) :: kim_data
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -488,7 +489,7 @@ Subroutine read_field                      &
 
 ! sum absolute charges
 
-                       sumchg=sumchg+Abs(charge)
+                       config%sumchg=config%sumchg+Abs(charge)
 
                        Call get_word(record,word)
                        ifrz=Nint(word_2_real(word))
@@ -2844,7 +2845,7 @@ Subroutine read_field                      &
 ! Process MPOLES
 
         If (mpoles%max_mpoles > 0) Then
-          Call read_mpoles(l_top,sumchg,cshell,sites,mpoles,comm)
+          Call read_mpoles(l_top,config%sumchg,cshell,sites,mpoles,comm)
         End If
 
 ! check charmming shells (cshell%megshl) globalisation
@@ -2966,7 +2967,7 @@ Subroutine read_field                      &
                        Else
                           sites%charge_site(isite2)=charge
                           mpoles%local_frame(1,isite2)=charge
-                          sumchg=sumchg+Abs(charge)
+                          config%sumchg=config%sumchg+Abs(charge)
                        End If
                     Else If (p_core <= zero_plus) Then ! set drude force constants
                        If (k_crsh <= zero_plus) Then
@@ -3032,8 +3033,8 @@ Subroutine read_field                      &
 
 ! check (electro%key) for charges in the system
 
-        If (electro%key /= ELECTROSTATIC_NULL .and. Abs(sumchg) <= zero_plus) Then
-           If (comm%idnode == 0) Call warning(4,sumchg,0.0_wp,0.0_wp)
+        If (electro%key /= ELECTROSTATIC_NULL .and. Abs(config%sumchg) <= zero_plus) Then
+           If (comm%idnode == 0) Call warning(4,config%sumchg,0.0_wp,0.0_wp)
            If (l_str) Then
               electro%key=ELECTROSTATIC_NULL
               Call info('Electrostatics switched off!!!',.true.)
@@ -3042,16 +3043,16 @@ Subroutine read_field                      &
 
 ! calculate total system charge
 
-        sumchg=0.0_wp
+        config%sumchg=0.0_wp
         jsite=0
         Do itmols=1,sites%ntype_mol
            Do msite=1,sites%num_site(itmols)
               jsite=jsite+1
-              sumchg=sumchg+Real(sites%num_mols(itmols),wp)*sites%charge_site(jsite)
+              config%sumchg=config%sumchg+Real(sites%num_mols(itmols),wp)*sites%charge_site(jsite)
            End Do
         End Do
 
-        If (Abs(sumchg) > 1.0e-6_wp .and. comm%idnode == 0) Call warning(5,sumchg,0.0_wp,0.0_wp)
+        If (Abs(config%sumchg) > 1.0e-6_wp .and. comm%idnode == 0) Call warning(5,config%sumchg,0.0_wp,0.0_wp)
 
 ! check (cshell%megshl) shell topological irregularities
 
@@ -4746,7 +4747,7 @@ Subroutine read_field                      &
            ext_field%param(1) = ext_field%param(1)*engunit
         Else If (ext_field%key == FIELD_WALL_PISTON) Then
            ext_field%param(3) = ext_field%param(3)/prsunt ! piston pressure specified in k-atm
-           ext_field%param(3) = ext_field%param(3)*cell(5)*cell(9) ! convert to force
+           ext_field%param(3) = ext_field%param(3)*config%cell(5)*config%cell(9) ! convert to force
         Else If (Any([FIELD_ZRES,FIELD_ZRES_MINUS,FIELD_ZRES_PLUS] == ext_field%key)) Then
            If (.not.lunits) Call error(6)
 
@@ -4757,11 +4758,12 @@ Subroutine read_field                      &
            ext_field%param(5) = ext_field%param(5)*engunit
         End If
 
-        If (Any([FIELD_SHEAR_OSCILLATING,FIELD_WALL_PISTON] == ext_field%key) .and. (imcon /= 1 .and. imcon /= 2)) Then
-          Call warning('external field is ignored as only applicable for imcon=1,2 (orthorhombic geometry)',.true.)
+        If (Any([FIELD_SHEAR_OSCILLATING,FIELD_WALL_PISTON] == ext_field%key) .and. &
+             (config%imcon /= 1 .and. config%imcon /= 2)) Then
+          Call warning('external field is ignored as only applicable for config%imcon=1,2 (orthorhombic geometry)',.true.)
         End If
-        If (ext_field%key == FIELD_SHEAR_CONTINUOUS .and. imcon /= 6) Then
-          Call warning('external field is ignored as only applicable for imcon=6 (SLAB geometry)',.true.)
+        If (ext_field%key == FIELD_SHEAR_CONTINUOUS .and. config%imcon /= 6) Then
+          Call warning('external field is ignored as only applicable for config%imcon=6 (SLAB geometry)',.true.)
         End If
 
         If (ext_field%key == FIELD_WALL_PISTON .and. thermo%ensemble /= ENS_NVE) Call error(7)

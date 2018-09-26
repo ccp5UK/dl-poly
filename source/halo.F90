@@ -22,7 +22,7 @@ Module halo
 
 Contains
 
-  Subroutine refresh_halo_positions(domain,kim_data,comm)
+  Subroutine refresh_halo_positions(domain,config,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -39,6 +39,7 @@ Contains
 
   Type( domains_type ), Intent( In    ) :: domain
   Type( kim_type ), Intent( InOut ) :: kim_data
+  Type( configuration_type ) , Intent( InOut ) :: config
   Type( comms_type ), Intent(InOut) :: comm
 
   Logical :: safe
@@ -54,28 +55,28 @@ Contains
      Write(message,'(a)') 'refresh_halo_ppositions allocation failure'
      Call error(0,message)
   End If
-  ixyz0(1:nlast) = ixyz(1:nlast)
+  ixyz0(1:config%nlast) = config%ixyz(1:config%nlast)
 
 ! No halo, start with domain only particles
 
-  mlast=natms
+  mlast=config%natms
 
 ! exchange atom data in -/+ x directions
 
-  Call export_atomic_positions(-1,mlast,ixyz0,domain,kim_data,comm)
-  Call export_atomic_positions( 1,mlast,ixyz0,domain,kim_data,comm)
+  Call export_atomic_positions(-1,mlast,ixyz0,domain,config,kim_data,comm)
+  Call export_atomic_positions( 1,mlast,ixyz0,domain,config,kim_data,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call export_atomic_positions(-2,mlast,ixyz0,domain,kim_data,comm)
-  Call export_atomic_positions( 2,mlast,ixyz0,domain,kim_data,comm)
+  Call export_atomic_positions(-2,mlast,ixyz0,domain,config,kim_data,comm)
+  Call export_atomic_positions( 2,mlast,ixyz0,domain,config,kim_data,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call export_atomic_positions(-3,mlast,ixyz0,domain,kim_data,comm)
-  Call export_atomic_positions( 3,mlast,ixyz0,domain,kim_data,comm)
+  Call export_atomic_positions(-3,mlast,ixyz0,domain,config,kim_data,comm)
+  Call export_atomic_positions( 3,mlast,ixyz0,domain,config,kim_data,comm)
 
-  safe=(mlast == nlast)
+  safe=(mlast == config%nlast)
   Call gcheck(comm,safe)
   If (.not.safe) Call error(138)
 
@@ -87,7 +88,7 @@ Contains
 End Subroutine refresh_halo_positions
 
 
-Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,kim_data,comm)
+Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,config,ewld,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -104,6 +105,7 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,kim_dat
   Type( site_type ), Intent( In    ) :: sites
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( domains_type ), Intent( In    ) :: domain
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( ewald_type ), Intent( In    ) :: ewld
   Type( kim_type ), Intent( InOut ) :: kim_data
   Type ( comms_type ), Intent( InOut  ) :: comm
@@ -120,7 +122,7 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,kim_dat
 
 ! Get the dimensional properties of the MD cell
 
-  Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
 
 ! calculate link cell dimensions per node
 
@@ -174,86 +176,86 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,kim_dat
 
 ! Get the inverse cell matrix
 
-  Call invert(cell,rcell,det)
+  Call invert(config%cell,rcell,det)
 
 ! Convert atomic positions from MD cell centred
 ! Cartesian coordinates to reduced space ones
 ! Populate the halo indicator array
 
-  nlast=natms     ! No halo exists yet
-  ixyz(1:nlast)=0 ! Initialise halo indicator
-  Do i=1,nlast
-     x=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
-     y=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
-     z=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+  config%nlast=config%natms     ! No halo exists yet
+  config%ixyz(1:config%nlast)=0 ! Initialise halo indicator
+  Do i=1,config%nlast
+     x=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*config%parts(i)%zzz
+     y=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*config%parts(i)%zzz
+     z=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*config%parts(i)%zzz
 
-     If (x <= ecwx) ixyz(i)=ixyz(i)+1
-     If (x >=  cwx) ixyz(i)=ixyz(i)+2
+     If (x <= ecwx) config%ixyz(i)=config%ixyz(i)+1
+     If (x >=  cwx) config%ixyz(i)=config%ixyz(i)+2
 
-     If (y <= ecwy) ixyz(i)=ixyz(i)+10
-     If (y >=  cwy) ixyz(i)=ixyz(i)+20
+     If (y <= ecwy) config%ixyz(i)=config%ixyz(i)+10
+     If (y >=  cwy) config%ixyz(i)=config%ixyz(i)+20
 
-     If (z <= ecwz) ixyz(i)=ixyz(i)+100
-     If (z >=  cwz) ixyz(i)=ixyz(i)+200
+     If (z <= ecwz) config%ixyz(i)=config%ixyz(i)+100
+     If (z >=  cwz) config%ixyz(i)=config%ixyz(i)+200
   End Do
 
 ! exchange atom data in -/+ x directions
 
-  Call export_atomic_data(-1,domain,kim_data,comm)
-  Call export_atomic_data( 1,domain,kim_data,comm)
+  Call export_atomic_data(-1,domain,config,kim_data,comm)
+  Call export_atomic_data( 1,domain,config,kim_data,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call export_atomic_data(-2,domain,kim_data,comm)
-  Call export_atomic_data( 2,domain,kim_data,comm)
+  Call export_atomic_data(-2,domain,config,kim_data,comm)
+  Call export_atomic_data( 2,domain,config,kim_data,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call export_atomic_data(-3,domain,kim_data,comm)
-  Call export_atomic_data( 3,domain,kim_data,comm)
+  Call export_atomic_data(-3,domain,config,kim_data,comm)
+  Call export_atomic_data( 3,domain,config,kim_data,comm)
 
 ! assign incoming atom properties (of the halo only)
 
-  Do i=natms+1,nlast
-     ltype(i)=sites%type_site(lsite(i))
-     parts(i)%chge=sites%charge_site(lsite(i))
-     weight(i)=sites%weight_site(lsite(i))
-     lfrzn(i)=sites%freeze_site(lsite(i))
-     lfree(i)=sites%free_site(lsite(i))
+  Do i=config%natms+1,config%nlast
+     config%ltype(i)=sites%type_site(config%lsite(i))
+     config%parts(i)%chge=sites%charge_site(config%lsite(i))
+     config%weight(i)=sites%weight_site(config%lsite(i))
+     config%lfrzn(i)=sites%freeze_site(config%lsite(i))
+     config%lfree(i)=sites%free_site(config%lsite(i))
   End Do
 
 ! Assign polarisation and dumping factor
 
   If (mpoles%max_mpoles > 0) Then
-     Do i=natms+1,nlast
-        mpoles%polarisation_atom(i)=mpoles%polarisation_site(lsite(i))
-        mpoles%dump_atom(i)=mpoles%dump_site(lsite(i))
+     Do i=config%natms+1,config%nlast
+        mpoles%polarisation_atom(i)=mpoles%polarisation_site(config%lsite(i))
+        mpoles%dump_atom(i)=mpoles%dump_site(config%lsite(i))
      End Do
   End If
 
 ! Set VNL checkpoint
 
-  Call vnl_set_check(neigh,parts,comm)
+  Call vnl_set_check(neigh,config,comm)
 
 ! Record global atom indices for local+halo sorting
 ! and sort multiple entries
 
-  Do i=1,nlast
-     lsi(i)=i
-     lsa(i)=ltg(i)
+  Do i=1,config%nlast
+     config%lsi(i)=i
+     config%lsa(i)=config%ltg(i)
   End Do
-  Call shellsort2(nlast,lsi,lsa)
+  Call shellsort2(config%nlast,config%lsi,config%lsa)
 
 ! Sort multiple entries
 
-  Do i=1,nlast-1
+  Do i=1,config%nlast-1
      j=1
-     Do While ((i+j) <= nlast)
-        If (lsa(i) == lsa(i+j)) Then
-           ia=Min(lsi(i),lsi(i+j))
-           ib=Max(lsi(i),lsi(i+j))
-           lsi(i)=ia
-           lsi(i+j)=ib
+     Do While ((i+j) <= config%nlast)
+        If (config%lsa(i) == config%lsa(i+j)) Then
+           ia=Min(config%lsi(i),config%lsi(i+j))
+           ib=Max(config%lsi(i),config%lsi(i+j))
+           config%lsi(i)=ia
+           config%lsi(i+j)=ib
            j=j+1
         Else
            Exit
@@ -261,11 +263,11 @@ Subroutine set_halo_particles(electro_key,neigh,sites,mpoles,domain,ewld,kim_dat
      End Do
   End Do
 
-  nfree=0
-  Do i=1,natms
-     If (lfree(i) == 0) Then
-        nfree=nfree+1
-        lstfre(nfree)=i
+  config%nfree=0
+  Do i=1,config%natms
+     If (config%lfree(i) == 0) Then
+        config%nfree=config%nfree+1
+        config%lstfre(config%nfree)=i
      End If
   End Do
 

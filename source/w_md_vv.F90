@@ -10,12 +10,12 @@
 ! Calculate kinetic tensor and energy at restart
 
   If (rigid%total > 0) Then
-     Call kinstresf(vxx,vyy,vzz,stat%strknf,comm)
+     Call kinstresf(config%vxx,config%vyy,config%vzz,stat%strknf,config,comm)
      Call kinstrest(rigid,stat%strknt,comm)
 
      stat%strkin=stat%strknf+stat%strknt
   Else
-     Call kinstress(vxx,vyy,vzz,stat%strkin,comm)
+     Call kinstress(config%vxx,config%vyy,config%vzz,stat%strkin,config,comm)
   End If
   stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
@@ -26,18 +26,18 @@
   If (levcfg == 2) Then
     If (rigid%total > 0) Then
       If (rigid%share) Then
-        Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,parts,SHARED_UNIT_UPDATE_FORCES,domain,comm)
+        Call update_shared_units(config,rigid%list_shared,rigid%map_shared,SHARED_UNIT_UPDATE_FORCES,domain,comm)
       End If
 
       If (thermo%l_langevin) Then
-        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,parts,seed)
+        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
         If (rigid%share) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared,rigid%map_shared,&
-            thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
+          Call update_shared_units(config,rigid%list_shared,rigid%map_shared,&
+              thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
         End If
-        Call rigid_bodies_str__s(stat%strcom,parts(:),rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
+        Call rigid_bodies_str__s(stat%strcom,config,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
       Else
-        Call rigid_bodies_str_ss(stat%strcom,rigid,parts,comm)
+        Call rigid_bodies_str_ss(stat%strcom,rigid,config,comm)
       End If
 
       stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
@@ -55,7 +55,7 @@
 
 ! Apply impact
 
-     Call w_impact_option(levcfg,nstep,nsteql,rigid,cshell,stat,impa,comm)
+     Call w_impact_option(levcfg,nstep,nsteql,rigid,cshell,stat,impa,config,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 ! levcfg == 2 avoids application twice when forces are calculated at (re)start
@@ -83,7 +83,7 @@
 ! zero Kelvin structure optimisation
 
         If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_zero) == 0) Then
-          Call zero_k_optimise(stat,rigid,parts,comm)
+          Call zero_k_optimise(stat,rigid,config,comm)
         End If
 
 ! Switch on electron-phonon coupling only after time offset
@@ -121,7 +121,7 @@
 ! Evolve electronic temperature for two-temperature model
 
         If (l_ttm) Then
-          Call ttm_ion_temperature(thermo,domain,comm)
+          Call ttm_ion_temperature(thermo,domain,config,comm)
           Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump, &
             nstrun,thermo,domain,comm)
         End If
@@ -152,7 +152,7 @@
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
            (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,comm)
+           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
 

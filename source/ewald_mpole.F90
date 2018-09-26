@@ -1,8 +1,7 @@
 Module ewald_mpole
   Use kinds, Only : wp, sp
   Use comms, Only : comms_type, gcheck, gsum
-  Use configuration, Only : natms,ltg,cell,volm,nlast, &
-                            lfrzn
+  Use configuration, Only : configuration_type
   Use particle, Only : corePart
   Use setup, Only :  r4pie0, sqrpi, zero_plus,mxatdm,mxatms, &
                             twopi
@@ -26,7 +25,7 @@ Module ewald_mpole
   Contains
 
   Subroutine ewald_real_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress, &
-      neigh,mpoles,electro,domain,parts,comm)
+      neigh,mpoles,electro,domain,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -48,7 +47,7 @@ Module ewald_mpole
     Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ),                       Intent( In    ) :: comm
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
@@ -106,7 +105,7 @@ Module ewald_mpole
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! get the multipoles for site i
 
@@ -132,9 +131,9 @@ Module ewald_mpole
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! initialize torques for atom i (temporary)
 
@@ -316,11 +315,11 @@ Module ewald_mpole
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
                 mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
                 mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
@@ -328,7 +327,7 @@ Module ewald_mpole
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! accumulate potential energy
 
@@ -355,9 +354,9 @@ Module ewald_mpole
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! and torques due to multipoles
 
@@ -382,7 +381,7 @@ Module ewald_mpole
   End Subroutine ewald_real_mforces
 
   Subroutine ewald_real_mforces_d(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl, &
-      stress,ewld,neigh,mpoles,electro,parts,comm)
+      stress,ewld,neigh,mpoles,electro,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -405,7 +404,7 @@ Module ewald_mpole
     Type( mpole_type ),                               Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( comms_type ),                               Intent( In    ) :: comm
-    Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
+    Type( configuration_type ),                       Intent( InOut ) :: config
 
 
     Integer           :: fail,idi,jatm,k,m
@@ -511,7 +510,7 @@ Module ewald_mpole
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! get the multipoles for site i
 
@@ -610,9 +609,9 @@ Module ewald_mpole
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! start of primary loop for forces evaluation
 
@@ -1009,11 +1008,11 @@ Module ewald_mpole
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
                 mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
                 mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
@@ -1021,7 +1020,7 @@ Module ewald_mpole
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! accumulate potential energy
 
@@ -1048,9 +1047,9 @@ Module ewald_mpole
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! and torques due to multipoles
 
@@ -1075,7 +1074,7 @@ Module ewald_mpole
   End Subroutine ewald_real_mforces_d
 
   Subroutine ewald_spme_mforces(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro, &
-      domain,parts,comm)
+      domain,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1100,7 +1099,7 @@ Module ewald_mpole
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
-    Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
+    Type( configuration_type ),                       Intent( InOut ) :: config
 
 
     Logical              :: llspl=.true.
@@ -1276,7 +1275,7 @@ Module ewald_mpole
   ! compute self-interaction energy (per node) and torques
 
     ewld%engsic=0.0_wp; exclcoef = 0.5_wp*r4pie0/electro%eps
-    Do i=1,natms
+    Do i=1,config%natms
 
   ! get the multipoles for site i
 
@@ -1370,18 +1369,18 @@ Module ewald_mpole
 
   ! set working parameters
 
-    rvolm=twopi/volm
+    rvolm=twopi/config%volm
     ralph=-0.25_wp/electro%alpha**2
 
   ! set scaling constant
 
     scale=rvolm*r4pie0/electro%eps
 
-  ! Convert cell coordinates to fractional coordinates intervalled [0,1)
-  ! (bottom left corner of MD cell) and stretch over kmaxs in different
-  ! directions.  Only the halo (natms,nlast] has fractional coordinates
+  ! Convert config%cell coordinates to fractional coordinates intervalled [0,1)
+  ! (bottom left corner of MD config%cell) and stretch over kmaxs in different
+  ! directions.  Only the halo (config%natms,config%nlast] has fractional coordinates
   ! outside the [0,1) interval.  In the worst case scenario of one
-  ! "effective" link-cell per domain and one domain in the MD cell only,
+  ! "effective" link-config%cell per domain and one domain in the MD config%cell only,
   ! the halo will have fractional coordinates intervalled as
   ! [n,0)u[1,2), where -1 <= n < 0.  Only the positive halo is needed by
   ! the B-splines since they distribute/spread charge density in
@@ -1389,20 +1388,23 @@ Module ewald_mpole
   !
   ! The story has become more complicated with cutoff padding and the
   ! conditional updates of the VNL and thus the halo as now a domain
-  ! (1:natms) particle can enter the halo and vice versa.  So DD
+  ! (1:config%natms) particle can enter the halo and vice versa.  So DD
   ! bounding is unsafe!!!
 
-    Call invert(cell,rcell,det)
+    Call invert(config%cell,rcell,det)
     If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-    Do i=1,nlast
-       txx(i)=electro%kmaxa_r_mf*(rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+0.5_wp)
-       tyy(i)=electro%kmaxb_r_mf*(rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+0.5_wp)
-       tzz(i)=electro%kmaxc_r_mf*(rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+0.5_wp)
+    Do i=1,config%nlast
+       txx(i)=electro%kmaxa_r_mf*(rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+&
+                                  rcell(7)*config%parts(i)%zzz+0.5_wp)
+       tyy(i)=electro%kmaxb_r_mf*(rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+&
+                                  rcell(8)*config%parts(i)%zzz+0.5_wp)
+       tzz(i)=electro%kmaxc_r_mf*(rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+&
+                                  rcell(9)*config%parts(i)%zzz+0.5_wp)
 
   ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
 
-       If (ewld%bspline1 == ewld%bspline .and. i <= natms) Then
+       If (ewld%bspline1 == ewld%bspline .and. i <= config%natms) Then
           If (txx(i) < electro%ixbm1_r .or. txx(i) > electro%ixtm0_r_mf .or. &
               tyy(i) < electro%iybm1_r_mf .or. tyy(i) > electro%iytm0_r_mf .or. &
               tzz(i) < electro%izbm1_r_mf .or. tzz(i) > electro%iztm0_r_mf) llspl=.false.
@@ -1412,7 +1414,7 @@ Module ewald_mpole
        iyy(i)=Int(tyy(i))
        izz(i)=Int(tzz(i))
 
-  ! Detect if a particle is charged and in the MD cell or in its positive halo
+  ! Detect if a particle is charged and in the MD config%cell or in its positive halo
   ! (t(i) >= -zero_plus) as the B-splines are negative directionally by propagation
 
        If (tzz(i) >= -zero_plus .and. &
@@ -1435,7 +1437,7 @@ Module ewald_mpole
 
   ! construct B-splines for atoms
 
-    Call bspgen_mpoles(nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,parts,ewld,comm)
+    Call bspgen_mpoles(config%nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -1455,9 +1457,9 @@ Module ewald_mpole
 
     If (mpoles%max_order < 5) Then
 
-       Do i=1,nlast
+       Do i=1,config%nlast
 
-  ! If a particle is charged and in the MD cell or in its positive halo
+  ! If a particle is charged and in the MD config%cell or in its positive halo
   ! (t(i) >= 0) as the B-splines are negative directionally by propagation
 
           If (it(i) == 1) Then
@@ -1503,7 +1505,7 @@ Module ewald_mpole
 
                       Call explicit_spme_loops        &
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,config,ewld)
 
                       electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)   + dtp
 
@@ -1522,7 +1524,7 @@ Module ewald_mpole
 
                          Call explicit_spme_loops     &
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,config,ewld)
 
                          electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)   + dtp
 
@@ -1544,7 +1546,7 @@ Module ewald_mpole
 
                          Call explicit_spme_loops     &
              (0,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,config,ewld)
 
                          electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)   + dtp
 
@@ -1563,9 +1565,9 @@ Module ewald_mpole
 
     Else
 
-       Do i=1,nlast
+       Do i=1,config%nlast
 
-  ! If a particle is charged and in the MD cell or in its positive halo
+  ! If a particle is charged and in the MD config%cell or in its positive halo
   ! (t(i) >= 0) as the B-splines are negative directionally by propagation
 
           If (it(i) == 1) Then
@@ -1615,7 +1617,7 @@ Module ewald_mpole
 
                                bdx=bsddx(:,j,i)
 
-                               tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
+                               tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,config,ewld)
 
                                electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)   &
                                  + tmp
@@ -1636,7 +1638,7 @@ Module ewald_mpole
 
                                   bdx=bsddx(:,j,i)
 
-                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
+                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,config,ewld)
 
                                   electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)&
                                     + tmp
@@ -1659,7 +1661,7 @@ Module ewald_mpole
                                   j_local = jj - electro%ixb_mf + 1
 
                                   bdx=bsddx(:,j,i)
-                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
+                                  tmp = mptmp*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,config,ewld)
 
                                   electro%qqc_local_mf(j_local,k_local,l_local)   = electro%qqc_local_mf(j_local,k_local,l_local)&
                                     + tmp
@@ -1968,7 +1970,7 @@ Module ewald_mpole
 
       If (mpoles%max_order < 5) Then
 
-         Do i=1,natms
+         Do i=1,config%natms
 
   ! get the multipoles for site i
 
@@ -2010,7 +2012,7 @@ Module ewald_mpole
 
                         Call explicit_spme_loops      &
              (1,rcell,bdx,bdy,bdz,imp,impx,impy,impz, &
-             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,ewld)
+             dtp,tq1,tq2,tq3,dt1,dt2,dt3,td1,td2,td3,mpoles,config,ewld)
 
   ! force
 
@@ -2036,9 +2038,9 @@ Module ewald_mpole
 
   ! load forces
 
-               parts(i)%fxx=parts(i)%fxx+fix
-               parts(i)%fyy=parts(i)%fyy+fiy
-               parts(i)%fzz=parts(i)%fzz+fiz
+               config%parts(i)%fxx=config%parts(i)%fxx+fix
+               config%parts(i)%fyy=config%parts(i)%fyy+fiy
+               config%parts(i)%fzz=config%parts(i)%fzz+fiz
 
   ! and torque (ITT - is sum of all torques zero? I.e. does SPME machinery generate non-0 torque)
 
@@ -2060,7 +2062,7 @@ Module ewald_mpole
 
       Else
 
-         Do i=1,natms
+         Do i=1,config%natms
 
   ! get the multipoles for site i
 
@@ -2109,13 +2111,13 @@ Module ewald_mpole
 
                                  gmp = qsum*imp(mm)
 
-                                 fix = fix + gmp*dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
-                                 fiy = fiy + gmp*dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
-                                 fiz = fiz + gmp*dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
+                                 fix = fix + gmp*dtpbsp(s1+1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,config,ewld)
+                                 fiy = fiy + gmp*dtpbsp(s1,s2+1,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,config,ewld)
+                                 fiz = fiz + gmp*dtpbsp(s1,s2,s3+1,rcell,bdx,bdy,bdz,mpoles%n_choose_k,config,ewld)
 
   ! torque
 
-                                 tmpi = qsum*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,ewld)
+                                 tmpi = qsum*dtpbsp(s1,s2,s3,rcell,bdx,bdy,bdz,mpoles%n_choose_k,config,ewld)
 
                                  tix = tix + impx(mm)*tmpi
                                  tiy = tiy + impy(mm)*tmpi
@@ -2136,9 +2138,9 @@ Module ewald_mpole
 
   ! load forces
 
-               parts(i)%fxx=parts(i)%fxx+fix
-               parts(i)%fyy=parts(i)%fyy+fiy
-               parts(i)%fzz=parts(i)%fzz+fiz
+               config%parts(i)%fxx=config%parts(i)%fxx+fix
+               config%parts(i)%fyy=config%parts(i)%fyy+fiy
+               config%parts(i)%fzz=config%parts(i)%fzz+fiz
 
   ! and torque
 
@@ -2166,13 +2168,13 @@ Module ewald_mpole
       If (fff(0) > zero_plus) Then
          fff(1:3)=fff(1:3)/fff(0)
 
-         Do i=1,natms
+         Do i=1,config%natms
             imp=mpoles%global_frame(:,i)
             If (Maxval(Abs(imp)) > zero_plus) Then
 
-               parts(i)%fxx=parts(i)%fxx-fff(1)
-               parts(i)%fyy=parts(i)%fyy-fff(2)
-               parts(i)%fzz=parts(i)%fzz-fff(3)
+               config%parts(i)%fxx=config%parts(i)%fxx-fff(1)
+               config%parts(i)%fyy=config%parts(i)%fyy-fff(2)
+               config%parts(i)%fzz=config%parts(i)%fzz-fff(3)
 
   ! infrequent calculations copying
 
@@ -2197,7 +2199,7 @@ Module ewald_mpole
   End Subroutine ewald_spme_mforces
 
   Subroutine ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro, &
-      domain,parts,comm)
+      domain,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2222,7 +2224,7 @@ Module ewald_mpole
     Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ), Intent( InOut ) :: comm
-    Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
+    Type( configuration_type ),                       Intent( InOut ) :: config
 
 
     Logical              :: llspl=.true.
@@ -2400,18 +2402,18 @@ Module ewald_mpole
 
   ! set working parameters
 
-    rvolm=twopi/volm
+    rvolm=twopi/config%volm
     ralph=-0.25_wp/electro%alpha**2
 
   ! set scaling constant
 
     scale=rvolm*r4pie0/electro%eps
 
-  ! Convert cell coordinates to fractional coordinates intervalled [0,1)
-  ! (bottom left corner of MD cell) and stretch over kmaxs in different
-  ! directions.  Only the halo (natms,nlast] has fractional coordinates
+  ! Convert config%cell coordinates to fractional coordinates intervalled [0,1)
+  ! (bottom left corner of MD config%cell) and stretch over kmaxs in different
+  ! directions.  Only the halo (config%natms,config%nlast] has fractional coordinates
   ! outside the [0,1) interval.  In the worst case scenario of one
-  ! "effective" link-cell per domain and one domain in the MD cell only,
+  ! "effective" link-config%cell per domain and one domain in the MD config%cell only,
   ! the halo will have fractional coordinates intervalled as
   ! [n,0)u[1,2), where -1 <= n < 0.  Only the positive halo is needed by
   ! the B-splines since they distribute/spread charge density in
@@ -2419,20 +2421,23 @@ Module ewald_mpole
   !
   ! The story has become more complicated with cutoff padding and the
   ! conditional updates of the VNL and thus the halo as now a domain
-  ! (1:natms) particle can enter the halo and vice versa.  So DD
+  ! (1:config%natms) particle can enter the halo and vice versa.  So DD
   ! bounding is unsafe!!!
 
-    Call invert(cell,rcell,det)
+    Call invert(config%cell,rcell,det)
     If (Abs(det) < 1.0e-6_wp) Call error(120)
 
-    Do i=1,nlast
-       txx(i)=electro%kmaxa_r_mfd*(rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+0.5_wp)
-       tyy(i)=electro%kmaxb_r_mfd*(rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+0.5_wp)
-       tzz(i)=electro%kmaxc_r_mfd*(rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+0.5_wp)
+    Do i=1,config%nlast
+       txx(i)=electro%kmaxa_r_mfd*(rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+&
+                                   rcell(7)*config%parts(i)%zzz+0.5_wp)
+       tyy(i)=electro%kmaxb_r_mfd*(rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+&
+                                   rcell(8)*config%parts(i)%zzz+0.5_wp)
+       tzz(i)=electro%kmaxc_r_mfd*(rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+&
+                                   rcell(9)*config%parts(i)%zzz+0.5_wp)
 
   ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
 
-       If (ewld%bspline1 == ewld%bspline .and. i <= natms) Then
+       If (ewld%bspline1 == ewld%bspline .and. i <= config%natms) Then
           If (txx(i) < electro%ixbm1_r_mfd .or. txx(i) > electro%ixtm0_r_mfd .or. &
               tyy(i) < electro%iybm1_r_mfd .or. tyy(i) > electro%iytm0_r_mfd .or. &
               tzz(i) < electro%izbm1_r_mfd .or. tzz(i) > electro%iztm0_r_mfd) llspl=.false.
@@ -2442,7 +2447,7 @@ Module ewald_mpole
        iyy(i)=Int(tyy(i))
        izz(i)=Int(tzz(i))
 
-  ! Detect if a particle is charged and in the MD cell or in its positive halo
+  ! Detect if a particle is charged and in the MD config%cell or in its positive halo
   ! (t(i) >= -zero_plus) as the B-splines are negative directionally by propagation
 
        If (tzz(i) >= -zero_plus .and. &
@@ -2465,7 +2470,7 @@ Module ewald_mpole
 
   ! construct B-splines for atoms
 
-    Call bspgen_mpoles(nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,parts,ewld,comm)
+    Call bspgen_mpoles(config%nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -2491,9 +2496,9 @@ Module ewald_mpole
 
   ! DaFT version - use array that holds only the local data
 
-    Do i=1,nlast
+    Do i=1,config%nlast
 
-  ! If a particle is charged and in the MD cell or in its positive halo
+  ! If a particle is charged and in the MD config%cell or in its positive halo
   ! (t(i) >= 0) as the B-splines are negative directionally by propagation
 
        If (it(i) == 1) Then
@@ -4241,7 +4246,7 @@ Module ewald_mpole
 
       fff=0.0_wp
 
-      Do i=1,natms
+      Do i=1,config%natms
 
   ! get the multipoles for site i
 
@@ -4372,9 +4377,9 @@ Module ewald_mpole
 
   ! load forces
 
-            parts(i)%fxx=parts(i)%fxx+fix
-            parts(i)%fyy=parts(i)%fyy+fiy
-            parts(i)%fzz=parts(i)%fzz+fiz
+            config%parts(i)%fxx=config%parts(i)%fxx+fix
+            config%parts(i)%fyy=config%parts(i)%fyy+fiy
+            config%parts(i)%fzz=config%parts(i)%fzz+fiz
 
   ! and torque
 
@@ -4400,13 +4405,13 @@ Module ewald_mpole
       If (fff(0) > zero_plus) Then
          fff(1:3)=fff(1:3)/fff(0)
 
-         Do i=1,natms
+         Do i=1,config%natms
             imp=mpoles%global_frame(:,i)
             If (Maxval(Abs(imp)) > zero_plus) Then
 
-               parts(i)%fxx=parts(i)%fxx-fff(1)
-               parts(i)%fyy=parts(i)%fyy-fff(2)
-               parts(i)%fzz=parts(i)%fzz-fff(3)
+               config%parts(i)%fxx=config%parts(i)%fxx-fff(1)
+               config%parts(i)%fyy=config%parts(i)%fyy-fff(2)
+               config%parts(i)%fzz=config%parts(i)%fzz-fff(3)
 
   ! infrequent calculations copying
 
@@ -4431,7 +4436,7 @@ Module ewald_mpole
   End Subroutine ewald_spme_mforces_d
 
   Subroutine ewald_excl_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
-      neigh,mpoles,electro,domain,parts)
+      neigh,mpoles,electro,domain,config)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -4455,7 +4460,7 @@ Module ewald_mpole
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
+    Type( configuration_type ),                       Intent( InOut ) :: config
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -4499,7 +4504,7 @@ Module ewald_mpole
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! get the multipoles for site i
 
@@ -4525,9 +4530,9 @@ Module ewald_mpole
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! initialize torques for atom i (temporary)
 
@@ -4737,11 +4742,11 @@ Module ewald_mpole
              fiy=fiy-fy
              fiz=fiz-fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx+fx
-                parts(jatm)%fyy=parts(jatm)%fyy+fy
-                parts(jatm)%fzz=parts(jatm)%fzz+fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx+fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy+fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz+fz
 
                 mpoles%torque_x(jatm)=mpoles%torque_x(jatm)-tjx
                 mpoles%torque_y(jatm)=mpoles%torque_y(jatm)-tjy
@@ -4749,7 +4754,7 @@ Module ewald_mpole
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! accumulate potential energy
 
@@ -4776,9 +4781,9 @@ Module ewald_mpole
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! and torques due to multipoles
 
@@ -4803,7 +4808,7 @@ Module ewald_mpole
   End Subroutine ewald_excl_mforces
 
   Subroutine ewald_excl_mforces_d(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex, &
-      stress,neigh,mpoles,electro,parts)
+      stress,neigh,mpoles,electro,config)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -4826,7 +4831,7 @@ Module ewald_mpole
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
+    Type( configuration_type ),                       Intent( InOut ) :: config
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -4915,7 +4920,7 @@ Module ewald_mpole
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! get the multipoles for site i
 
@@ -4967,9 +4972,9 @@ Module ewald_mpole
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! Get neigh%list limit
 
@@ -5395,11 +5400,11 @@ Module ewald_mpole
              fiy=fiy-fy
              fiz=fiz-fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx+fx
-                parts(jatm)%fyy=parts(jatm)%fyy+fy
-                parts(jatm)%fzz=parts(jatm)%fzz+fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx+fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy+fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz+fz
 
                 mpoles%torque_x(jatm)=mpoles%torque_x(jatm)-tjx
                 mpoles%torque_y(jatm)=mpoles%torque_y(jatm)-tjy
@@ -5407,7 +5412,7 @@ Module ewald_mpole
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! accumulate potential energy
 
@@ -5434,9 +5439,9 @@ Module ewald_mpole
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! and torques due to multipoles
 
@@ -5461,7 +5466,7 @@ Module ewald_mpole
   End Subroutine ewald_excl_mforces_d
 
   Subroutine ewald_frzn_mforces(engcpe_fr,vircpe_fr,stress,ewld,neigh,mpoles, &
-      electro,domain,parts,comm)
+      electro,domain,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -5488,7 +5493,7 @@ Module ewald_mpole
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ),                    Intent( InOut ) :: comm
-    Type( corePart ), Dimension( : ),                 Intent( InOut ) :: parts
+    Type( configuration_type ),                       Intent( InOut ) :: config
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
     Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
@@ -5523,10 +5528,10 @@ Module ewald_mpole
     Character( Len = 256 ) :: message
 
     If (.not.ewld%lf_fce) Then ! All's been done but needs copying
-       Do i=1,natms
-          parts(i)%fxx=parts(i)%fxx+ewld%ffx(i)
-          parts(i)%fyy=parts(i)%fyy+ewld%ffy(i)
-          parts(i)%fzz=parts(i)%fzz+ewld%ffz(i)
+       Do i=1,config%natms
+          config%parts(i)%fxx=config%parts(i)%fxx+ewld%ffx(i)
+          config%parts(i)%fyy=config%parts(i)%fyy+ewld%ffy(i)
+          config%parts(i)%fzz=config%parts(i)%fzz+ewld%ffz(i)
        End Do
 
        engcpe_fr=ewld%ef_fr
@@ -5534,7 +5539,7 @@ Module ewald_mpole
        stress=stress+ewld%sf_fr
 
        If (ewld%l_cp) Then
-          Do i=1,natms
+          Do i=1,config%natms
              ewld%fcx(i)=ewld%fcx(i)+ewld%ffx(i)
              ewld%fcy(i)=ewld%fcy(i)+ewld%ffy(i)
              ewld%fcz(i)=ewld%fcz(i)+ewld%ffz(i)
@@ -5555,7 +5560,7 @@ Module ewald_mpole
        Call error(0,message)
     End If
 
-    Call invert(cell,rcell,det)
+    Call invert(config%cell,rcell,det)
 
   ! Initialise contributions
 
@@ -5574,13 +5579,13 @@ Module ewald_mpole
     tix = 0.0_wp; tiy = 0.0_wp; tiz = 0.0_wp
 
     l_ind=0 ; nz_fr=0
-    Do i=1,natms
+    Do i=1,config%natms
 
   ! If using multipoles then get multipoles in global frame for atom i
 
        imp=mpoles%global_frame(:,i)
 
-       If (lfrzn(i) > 0 .and. Maxval(Abs(imp)) > zero_plus) Then
+       If (config%lfrzn(i) > 0 .and. Maxval(Abs(imp)) > zero_plus) Then
           nz_fr(comm%idnode+1)=nz_fr(comm%idnode+1)+1
           l_ind(nz_fr(comm%idnode+1))=i
        End If
@@ -5616,9 +5621,9 @@ Module ewald_mpole
           mmpy(:,ii)=mpoles%rotation_y(:,l_ind(i))
           mmpz(:,ii)=mpoles%rotation_z(:,l_ind(i))
 
-          xfr(ii)=parts(l_ind(i))%xxx
-          yfr(ii)=parts(l_ind(i))%yyy
-          zfr(ii)=parts(l_ind(i))%zzz
+          xfr(ii)=config%parts(l_ind(i))%xxx
+          yfr(ii)=config%parts(l_ind(i))%yyy
+          zfr(ii)=config%parts(l_ind(i))%zzz
        End Do
        Call gsum(comm,mmp)
        Call gsum(comm,mmpx)
@@ -5655,9 +5660,9 @@ Module ewald_mpole
              yss=yss-Anint(yss)
              zss=zss-Anint(zss)
 
-             xrr=(cell(1)*xss+cell(4)*yss+cell(7)*zss)
-             yrr=(cell(2)*xss+cell(5)*yss+cell(8)*zss)
-             zrr=(cell(3)*xss+cell(6)*yss+cell(9)*zss)
+             xrr=(config%cell(1)*xss+config%cell(4)*yss+config%cell(7)*zss)
+             yrr=(config%cell(2)*xss+config%cell(5)*yss+config%cell(8)*zss)
+             zrr=(config%cell(3)*xss+config%cell(6)*yss+config%cell(9)*zss)
 
   ! calculate interatomic distance
 
@@ -5815,9 +5820,9 @@ Module ewald_mpole
 
   ! calculate forces
 
-             parts(l_ind(i))%fxx=parts(l_ind(i))%fxx-fx
-             parts(l_ind(i))%fyy=parts(l_ind(i))%fyy-fy
-             parts(l_ind(i))%fzz=parts(l_ind(i))%fzz-fz
+             config%parts(l_ind(i))%fxx=config%parts(l_ind(i))%fxx-fx
+             config%parts(l_ind(i))%fyy=config%parts(l_ind(i))%fyy-fy
+             config%parts(l_ind(i))%fzz=config%parts(l_ind(i))%fzz-fz
 
   ! redundant calculations copying
 
@@ -5851,9 +5856,9 @@ Module ewald_mpole
              yss=yss-Anint(yss)
              zss=zss-Anint(zss)
 
-             xrr=(cell(1)*xss+cell(4)*yss+cell(7)*zss)
-             yrr=(cell(2)*xss+cell(5)*yss+cell(8)*zss)
-             zrr=(cell(3)*xss+cell(6)*yss+cell(9)*zss)
+             xrr=(config%cell(1)*xss+config%cell(4)*yss+config%cell(7)*zss)
+             yrr=(config%cell(2)*xss+config%cell(5)*yss+config%cell(8)*zss)
+             zrr=(config%cell(3)*xss+config%cell(6)*yss+config%cell(9)*zss)
 
   ! interatomic distance
 
@@ -6009,13 +6014,13 @@ Module ewald_mpole
 
   ! calculate forces
 
-             parts(l_ind(i))%fxx=parts(l_ind(i))%fxx-fx
-             parts(l_ind(i))%fyy=parts(l_ind(i))%fyy-fy
-             parts(l_ind(i))%fzz=parts(l_ind(i))%fzz-fz
+             config%parts(l_ind(i))%fxx=config%parts(l_ind(i))%fxx-fx
+             config%parts(l_ind(i))%fyy=config%parts(l_ind(i))%fyy-fy
+             config%parts(l_ind(i))%fzz=config%parts(l_ind(i))%fzz-fz
 
-             parts(l_ind(j))%fxx=parts(l_ind(j))%fxx+fx
-             parts(l_ind(j))%fyy=parts(l_ind(j))%fyy+fy
-             parts(l_ind(j))%fzz=parts(l_ind(j))%fzz+fz
+             config%parts(l_ind(j))%fxx=config%parts(l_ind(j))%fxx+fx
+             config%parts(l_ind(j))%fyy=config%parts(l_ind(j))%fyy+fy
+             config%parts(l_ind(j))%fzz=config%parts(l_ind(j))%fzz+fz
 
              mpoles%torque_x(l_ind(j))=mpoles%torque_x(l_ind(j))+tjx
              mpoles%torque_y(l_ind(j))=mpoles%torque_y(l_ind(j))+tjy
@@ -6073,9 +6078,9 @@ Module ewald_mpole
              yss=yss-Anint(yss)
              zss=zss-Anint(zss)
 
-             xrr=(cell(1)*xss+cell(4)*yss+cell(7)*zss)
-             yrr=(cell(2)*xss+cell(5)*yss+cell(8)*zss)
-             zrr=(cell(3)*xss+cell(6)*yss+cell(9)*zss)
+             xrr=(config%cell(1)*xss+config%cell(4)*yss+config%cell(7)*zss)
+             yrr=(config%cell(2)*xss+config%cell(5)*yss+config%cell(8)*zss)
+             zrr=(config%cell(3)*xss+config%cell(6)*yss+config%cell(9)*zss)
 
   ! interatomic distance
 
@@ -6231,9 +6236,9 @@ Module ewald_mpole
 
   ! calculate forces
 
-             parts(l_ind(i))%fxx=parts(l_ind(i))%fxx-fx
-             parts(l_ind(i))%fyy=parts(l_ind(i))%fyy-fy
-             parts(l_ind(i))%fzz=parts(l_ind(i))%fzz-fz
+             config%parts(l_ind(i))%fxx=config%parts(l_ind(i))%fxx-fx
+             config%parts(l_ind(i))%fyy=config%parts(l_ind(i))%fyy-fy
+             config%parts(l_ind(i))%fzz=config%parts(l_ind(i))%fzz-fz
 
   ! redundant calculations copying
 
@@ -6276,7 +6281,7 @@ Module ewald_mpole
     Else
 
   ! We resort to approximating N*(N-1)/2 interactions
-  ! with the short-range one from the two body linked cell neigh%list
+  ! with the short-range one from the two body linked config%cell neigh%list
 
        Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat=fail)
        If (fail > 0) Then
@@ -6286,7 +6291,7 @@ Module ewald_mpole
 
        Do ii=1,nz_fr(comm%idnode+1)
           i=l_ind(nz_fr(comm%idnode+1))
-          idi=ltg(ii)
+          idi=config%ltg(ii)
 
   ! get the multipoles for site i
 
@@ -6308,14 +6313,14 @@ Module ewald_mpole
              Do k=1,limit
                 j=neigh%list(neigh%list(-1,i)+k,i)
 
-                xxt(k)=parts(i)%xxx-parts(j)%xxx
-                yyt(k)=parts(i)%yyy-parts(j)%yyy
-                zzt(k)=parts(i)%zzz-parts(j)%zzz
+                xxt(k)=config%parts(i)%xxx-config%parts(j)%xxx
+                yyt(k)=config%parts(i)%yyy-config%parts(j)%yyy
+                zzt(k)=config%parts(i)%zzz-config%parts(j)%zzz
              End Do
 
   ! periodic boundary conditions
   !
-  !           Call images(imcon,cell,limit,xxt,yyt,zzt)
+  !           Call images(config%imcon,config%cell,limit,xxt,yyt,zzt)
 
   ! get distances
 
@@ -6487,9 +6492,9 @@ Module ewald_mpole
 
   ! calculate forces
 
-                   parts(i)%fxx=parts(i)%fxx-fx
-                   parts(i)%fyy=parts(i)%fyy-fy
-                   parts(i)%fzz=parts(i)%fzz-fz
+                   config%parts(i)%fxx=config%parts(i)%fxx-fx
+                   config%parts(i)%fyy=config%parts(i)%fyy-fy
+                   config%parts(i)%fzz=config%parts(i)%fzz-fz
 
   ! redundant calculations copying
 
@@ -6507,11 +6512,11 @@ Module ewald_mpole
                       ewld%fcz(i)=ewld%fcz(i)-fz
                    End If
 
-                   If (j <= natms) Then
+                   If (j <= config%natms) Then
 
-                      parts(j)%fxx=parts(j)%fxx+fx
-                      parts(j)%fyy=parts(j)%fyy+fy
-                      parts(j)%fzz=parts(j)%fzz+fz
+                      config%parts(j)%fxx=config%parts(j)%fxx+fx
+                      config%parts(j)%fyy=config%parts(j)%fyy+fy
+                      config%parts(j)%fzz=config%parts(j)%fzz+fz
 
                       mpoles%torque_x(j)=mpoles%torque_x(j)+tjx
                       mpoles%torque_y(j)=mpoles%torque_y(j)+tjy
@@ -6535,7 +6540,7 @@ Module ewald_mpole
 
                    End If
 
-                   If (j <= natms .or. idi < ltg(j)) Then
+                   If (j <= config%natms .or. idi < config%ltg(j)) Then
 
   ! calculate potential energy and virial
 

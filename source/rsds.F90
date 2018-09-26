@@ -3,8 +3,7 @@ Module rsds
   Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync,gcheck, &
                     gsend,grecv,offset_kind,comm_self,mode_wronly
   Use setup
-  Use configuration,     Only : cfgname,imcon,cell,natms, &
-                                atmnam,ltg
+  Use configuration,     Only : configuration_type
   Use particle,   Only : corePart
   Use core_shell, Only : core_shell_type
   ! this is assymetric with respect to the rest. will need probably rsd defined in this type
@@ -43,7 +42,7 @@ Module rsds
 Contains
 
 
-  Subroutine rsd_write(keyres,nstep,tstep,rsdc,time,cshell,rsd,parts,comm)
+  Subroutine rsd_write(keyres,nstep,tstep,rsdc,time,cshell,rsd,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -55,13 +54,13 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: keyres,nstep
-    Real( Kind = wp ),  Intent( In    ) :: tstep,time
-    Type( core_shell_type ), Intent( InOut ) :: cshell
+  Integer,            Intent( In    ) :: keyres,nstep
+  Real( Kind = wp ),  Intent( In    ) :: tstep,time
+  Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( rsd_type ), Intent( InOut ) :: rsdc
-    Real( Kind = wp ),  Intent( InOut ) :: rsd(:)
-    Type( corePart ),   Intent( InOut ) :: parts(:)
-    Type( comms_type ), Intent( InOut ) :: comm
+  Real( Kind = wp ),  Intent( InOut ) :: rsd(:)
+  Type( configuration_type ),   Intent( InOut ) :: config
+  Type( comms_type ), Intent( InOut ) :: comm
 
     Integer, Parameter :: recsz = 73 ! default record size
 
@@ -124,7 +123,7 @@ Contains
 
         If (comm%idnode == 0) Then
            Open(Unit=nrsddt, File='RSDDAT', Form='formatted', Access='direct', Status='replace', Recl=recsz)
-           Write(Unit=nrsddt, Fmt='(a72,a1)',           Rec=1) cfgname(1:72),lf
+           Write(Unit=nrsddt, Fmt='(a72,a1)',           Rec=1) config%cfgname(1:72),lf
            Write(Unit=nrsddt, Fmt='(f11.3,a19,2i21,a1)', Rec=2) rsdc%rrsd,Repeat(' ',19),rsdc%frm,rsdc%rec,lf
            Close(Unit=nrsddt)
         End If
@@ -179,7 +178,7 @@ Contains
                  Call tabs_2_blanks(record) ; Call get_word(record,word)
                  Call get_word(record,word) ; j=Nint(word_2_real(word))
 
-                 Do i=1,3+2*j ! 3 lines for cell parameters and 2*j entries for displacements
+                 Do i=1,3+2*j ! 3 lines for config%cell parameters and 2*j entries for displacements
                     Read(Unit=nrsddt, Fmt=*, End=20)
                     rsdc%rec=rsdc%rec+Int(1,li)
                  End Do
@@ -224,16 +223,16 @@ Contains
   End If
 
   n=0
-  Do i=1,natms
+  Do i=1,config%natms
      If (rsd(i) > rsdc%rrsd .and. cshell%legshl(0,i) >= 0) Then
         n=n+1
-        nam(n)=atmnam(i)
-        ind(n)=ltg(i)
+        nam(n)=config%atmnam(i)
+        ind(n)=config%ltg(i)
         dr(n) =rsd(i)
 
-        axx(n)=parts(i)%xxx
-        ayy(n)=parts(i)%yyy
-        azz(n)=parts(i)%zzz
+        axx(n)=config%parts(i)%xxx
+        ayy(n)=config%parts(i)%yyy
+        azz(n)=config%parts(i)%zzz
      End If
   End Do
 
@@ -284,7 +283,7 @@ Contains
         Call io_open( io_write, comm_self, 'RSDDAT', mode_wronly, fh )
 
         Write(record, Fmt='(a8,i10,2f20.6,i3,f11.3,a1)') &
-           'timestep',nstep,tstep,time,imcon,rsdc%rrsd,lf
+           'timestep',nstep,tstep,time,config%imcon,rsdc%rrsd,lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -298,7 +297,7 @@ Contains
 
         Do i = 0, 2
            Write( record, '( 3f20.10, a12, a1 )' ) &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            j=j+1
            Do k=1,recsz
               chbat(k,j) = record(k:k)
@@ -381,7 +380,7 @@ Contains
 ! Accumulate header
 
         Write(record, Fmt='(a8,i10,2f20.6,i3,f11.3,a1)') &
-           'timestep',nstep,tstep,time,imcon,rsdc%rrsd,lf
+           'timestep',nstep,tstep,time,config%imcon,rsdc%rrsd,lf
         j=j+1
         Do k=1,recsz
            chbat(k,j) = record(k:k)
@@ -395,7 +394,7 @@ Contains
 
         Do i = 0, 2
            Write(record, Fmt='(3f20.10,a12,a1)') &
-                cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            j=j+1
            Do k=1,recsz
               chbat(k,j) = record(k:k)

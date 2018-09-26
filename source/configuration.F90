@@ -17,7 +17,7 @@ Module configuration
                     offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
   Use site, Only : site_type
 
-  Use setup,   Only : nconf,nrite,config,mxatms,half_minus,zero_plus, &
+  Use setup,   Only : nconf,nrite,config_name,mxatms,half_minus,zero_plus, &
                       mxatdm
   Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line
@@ -63,34 +63,36 @@ Module configuration
   Use electrostatic, Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
   Implicit None
 
-  Character( Len = 72 ), Save :: cfgname = ' ' , &
+Type configuration_type
+  Character( Len = 72 )       :: cfgname = ' ' , &
                                  sysname = ' '
 
-  Integer,               Save :: imcon =-1 , &
+  Integer                     :: imcon =-1 , &
                                  imc_n =-1 , &
                                  natms = 0 , &
                                  nlast = 0 , &
                                  nfree = 0
 
-  Real( Kind = wp ),     Save :: cell(1:9) = 0.0_wp , &
+  Real( Kind = wp )           :: cell(1:9) = 0.0_wp , &
                                  volm      = 0.0_wp , &
                                  sumchg    = 0.0_wp
 
 
-  Character( Len = 8 ), Allocatable, Save :: atmnam(:)
+  Character( Len = 8 ), Allocatable       :: atmnam(:)
 
-  Integer,              Allocatable, Save :: lsite(:),ltype(:)
-  Integer,              Allocatable, Save :: lfrzn(:),lfree(:)
-  Integer,              Allocatable, Save :: lsi(:),lsa(:),ltg(:)
-  Integer,              Allocatable, Save :: ixyz(:)
-  Integer,              Allocatable, Save :: lstfre(:)
+  Integer,              Allocatable       :: lsite(:),ltype(:)
+  Integer,              Allocatable       :: lfrzn(:),lfree(:)
+  Integer,              Allocatable       :: lsi(:),lsa(:),ltg(:)
+  Integer,              Allocatable       :: ixyz(:)
+  Integer,              Allocatable       :: lstfre(:)
 
-  Real( Kind = wp ),    Allocatable, Save :: weight(:)!,chge(:)
+  Real( Kind = wp ),    Allocatable       :: weight(:)!,chge(:)
 !  Real( Kind = wp ),    Allocatable, Save :: xxx(:),yyy(:),zzz(:)
-  Real( Kind = wp ),    Allocatable, Save :: vxx(:),vyy(:),vzz(:)
+  Real( Kind = wp ),    Allocatable       :: vxx(:),vyy(:),vzz(:)
 !  Real( Kind = wp ),    Allocatable, Save :: fxx(:),fyy(:),fzz(:)
 
-  Type(corePart),       Allocatable, Save :: parts(:)
+  Type(corePart),       Allocatable       :: parts(:)
+End Type configuration_type
 
   Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
   Public :: check_config
@@ -224,81 +226,79 @@ Contains
   End Subroutine reallocate_rwp_v
 
 
-  Subroutine allocate_config_arrays_read( isize )
+  Subroutine allocate_config_arrays_read( config, isize )
 
+    Type(configuration_type), Intent(InOut) :: config
     Integer, Intent( In    ) :: isize
 
     Integer :: fail(1:4), i
 
     fail = 0
 
-    Allocate (atmnam(1:isize),                        Stat = fail(1))
-    Allocate (lsi(1:isize),lsa(1:isize),ltg(1:isize), Stat = fail(2))
-    Allocate (parts(1:isize),                         Stat = fail(3))
-    !Allocate (xxx(1:isize),yyy(1:isize),zzz(1:isize), Stat = fail(3))
-    Allocate (vxx(1:isize),vyy(1:isize),vzz(1:isize), Stat = fail(4))
-    !Allocate (fxx(1:isize),fyy(1:isize),fzz(1:isize), Stat = fail(5))
+    Allocate (config%atmnam(1:isize),                                      Stat = fail(1))
+    Allocate (config%lsi(1:isize),config%lsa(1:isize),config%ltg(1:isize), Stat = fail(2))
+    Allocate (config%parts(1:isize),                                       Stat = fail(3))
+    Allocate (config%vxx(1:isize),config%vyy(1:isize),config%vzz(1:isize), Stat = fail(4))
     If (Any(fail > 0)) Call error(1025)
 
-    atmnam = ' '
-    lsi = 0 ; lsa = 0 ; ltg = 0
+    config%atmnam = ' '
+    config%lsi = 0 ; config%lsa = 0 ; config%ltg = 0
 
-!    xxx = 0.0_wp ; yyy = 0.0_wp ; zzz = 0.0_wp
-    vxx = 0.0_wp ; vyy = 0.0_wp ; vzz = 0.0_wp
-!    fxx = 0.0_wp ; fyy = 0.0_wp ; fzz = 0.0_wp
+    config%vxx = 0.0_wp ; config%vyy = 0.0_wp ; config%vzz = 0.0_wp
     Do i=1,isize
-      parts(i)%xxx=0.0_wp
-      parts(i)%yyy=0.0_wp
-      parts(i)%zzz=0.0_wp
-      parts(i)%fxx=0.0_wp
-      parts(i)%fyy=0.0_wp
-      parts(i)%fzz=0.0_wp
-      parts(i)%chge=0.0_wp
+      config%parts(i)%xxx=0.0_wp
+      config%parts(i)%yyy=0.0_wp
+      config%parts(i)%zzz=0.0_wp
+      config%parts(i)%fxx=0.0_wp
+      config%parts(i)%fyy=0.0_wp
+      config%parts(i)%fzz=0.0_wp
+      config%parts(i)%chge=0.0_wp
     End Do
 
   End Subroutine allocate_config_arrays_read
 
-  Subroutine allocate_config_arrays()
+  Subroutine allocate_config_arrays( config )
 
+    Type(configuration_type), Intent(InOut) :: config
 
     Integer           :: fail(1:5),stat(1:13)
 
     fail = 0
 
-    Allocate (lsite(1:mxatms),ltype(1:mxatms),           Stat = fail(1))
-    Allocate (lfrzn(1:mxatms),lfree(1:mxatms),           Stat = fail(2))
-    Allocate (ixyz(1:mxatms),  Stat = fail(3))
-    Allocate (lstfre(1:mxatdm), Stat = fail(4))
-    Allocate (weight(1:mxatms),                          Stat = fail(5))
+    Allocate (config%lsite(1:mxatms),config%ltype(1:mxatms),           Stat = fail(1))
+    Allocate (config%lfrzn(1:mxatms),config%lfree(1:mxatms),           Stat = fail(2))
+    Allocate (config%ixyz(1:mxatms),                                   Stat = fail(3))
+    Allocate (config%lstfre(1:mxatdm),                                 Stat = fail(4))
+    Allocate (config%weight(1:mxatms),                                 Stat = fail(5))
 
     If (Any(fail > 0)) Call error(1025)
 
-    lsite = 0 ; ltype = 0
-    lfrzn = 0 ; lfree = 0
+    config%lsite = 0 ; config%ltype = 0
+    config%lfrzn = 0 ; config%lfree = 0
 
-    ixyz = 0
-    lstfre = 0
+    config%ixyz = 0
+    config%lstfre = 0
 
-    weight = 0.0_wp
+    config%weight = 0.0_wp
 
 ! Resize the arrays in allocate_config_arrays_read
 
     stat = 0
 
-    Call reallocate( mxatms - Size( atmnam ), atmnam, stat( 1) )
-    Call reallocate( mxatms - Size( lsi    ), lsi,    stat( 2) )
-    Call reallocate( mxatms - Size( lsa    ), lsa,    stat( 3) )
-    Call reallocate( mxatms - Size( ltg    ), ltg,    stat( 4) )
-    Call reallocate( mxatms - Size( parts  ), parts,  stat( 5) )
-    Call reallocate( mxatms - Size( vxx    ), vxx,    stat( 6) )
-    Call reallocate( mxatms - Size( vyy    ), vyy,    stat( 7) )
-    Call reallocate( mxatms - Size( vzz    ), vzz,    stat( 8) )
+    Call reallocate( mxatms - Size( config%atmnam ), config%atmnam, stat( 1) )
+    Call reallocate( mxatms - Size( config%lsi    ), config%lsi,    stat( 2) )
+    Call reallocate( mxatms - Size( config%lsa    ), config%lsa,    stat( 3) )
+    Call reallocate( mxatms - Size( config%ltg    ), config%ltg,    stat( 4) )
+    Call reallocate( mxatms - Size( config%parts  ), config%parts,  stat( 5) )
+    Call reallocate( mxatms - Size( config%vxx    ), config%vxx,    stat( 6) )
+    Call reallocate( mxatms - Size( config%vyy    ), config%vyy,    stat( 7) )
+    Call reallocate( mxatms - Size( config%vzz    ), config%vzz,    stat( 8) )
 
     If ( Any(stat /= 0 )) Call error(1025)
 
   End Subroutine allocate_config_arrays
 
-  Subroutine check_config(levcfg,l_str,electro_key,keyres,megatm,thermo,sites,comm)
+  Subroutine check_config(config,levcfg,l_str,electro_key,keyres,megatm,thermo,sites,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -314,6 +314,7 @@ Contains
 
   Logical, Intent( In    ) :: l_str
   Integer, Intent( In    ) :: levcfg,electro_key,keyres,megatm
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( site_type ), Intent( In    ) :: sites
   Type( comms_type ), Intent( InOut ) :: comm
@@ -338,15 +339,15 @@ Contains
 
 
   If (newjob) Then
-     Write(message,"('configuration file name: ',10x,a)") cfgname
+     Write(message,"('configuration file name: ',10x,a)") config%cfgname
      Call info(message,.true.)
-     Write(message,"('selected image convention',6x,i10)") imcon
+     Write(message,"('selected image convention',6x,i10)") config%imcon
      Call info(message,.true.)
   End If
 
 ! Check things for non-periodic systems
 
-  If (imcon == 0 .or. imcon == 6) Then
+  If (config%imcon == 0 .or. config%imcon == 6) Then
      If (electro_key == ELECTROSTATIC_EWALD) Then
         Call warning(220,0.0_wp,0.0_wp,0.0_wp)
      Else If (electro_key /= ELECTROSTATIC_NULL) Then
@@ -362,34 +363,34 @@ Contains
 
   If (thermo%anisotropic_pressure) Then
      If (thermo%iso == CONSTRAINT_NONE) Then
-        If (imcon == 1 .or. imcon == 2) Then
-           Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)
-           imcon = 3
+        If (config%imcon == 1 .or. config%imcon == 2) Then
+           Call warning(110,Real(config%imcon,wp),3.0_wp,0.0_wp)
+           config%imcon = 3
         End If
-     Else ! thermo%iso /= CONSTRAINT_NONE
-        If (imcon == 1) Then
-           Call warning(110,Real(imcon,wp),3.0_wp,0.0_wp)
-           imcon = 2
+     Else ! thermo%iso > 0
+        If (config%imcon == 1) Then
+           Call warning(110,Real(config%imcon,wp),3.0_wp,0.0_wp)
+           config%imcon = 2
         End If
      End If
   End If
 
 ! Check image condition for pseudo
 
-  If (thermo%l_stochastic_boundaries .and. (imcon == 0 .or. imcon == 6)) Call error(540)
+  If (thermo%l_stochastic_boundaries .and. (config%imcon == 0 .or. config%imcon == 6)) Call error(540)
 
-  Call invert(cell,rcell,det)
+  Call invert(config%cell,rcell,det)
 
 ! Specify molecular dynamics simulation cell
 
   If (newjob) Then
      Write(message,"('simulation cell vectors')")
      Call Info(message,.true.)
-     Write(message,"(3f20.10)") cell(1:3)
+     Write(message,"(3f20.10)") config%cell(1:3)
      Call Info(message,.true.)
-     Write(message,"(3f20.10)") cell(4:6)
+     Write(message,"(3f20.10)") config%cell(4:6)
      Call Info(message,.true.)
-     Write(message,"(3f20.10)") cell(7:9)
+     Write(message,"(3f20.10)") config%cell(7:9)
      Call Info(message,.true.)
      Write(message,"('system volume     ',2x,1p,g22.12)") det
      Call Info(message,.true.)
@@ -399,7 +400,7 @@ Contains
 
   If (keyres > 0 .and. levcfg < 1) Call error(85)
 
-  If (l_str) iwrk(1:natms) = 0 ! initialise
+  If (l_str) iwrk(1:config%natms) = 0 ! initialise
 
 ! Safe flag
 
@@ -432,30 +433,30 @@ Contains
 
 ! If a local atom has a global index totatm
 
-           If (lsa(indatm) == totatm) Then
+           If (config%lsa(indatm) == totatm) Then
 
 ! Get the local index. mol_sit+m is the global site
 
-              loc_ind=lsi(indatm)
+              loc_ind=config%lsi(indatm)
 
 ! Second check: Do particle identities and their order from the topology
 ! (FIELD) match the one found in the crystallographic data (CONFIG)?
 ! Check for unidentified atoms in CONFIG by their existence in FIELD
 
-              If (atmnam(loc_ind) /= sites%site_name(mol_sit+m)) Then
-                 Write(message,"( 'unidentified atom label :',a8,': atom number ',i5)") atmnam(loc_ind),loc_ind
+              If (config%atmnam(loc_ind) /= sites%site_name(mol_sit+m)) Then
+                 Write(message,"( 'unidentified atom label :',a8,': atom number ',i5)") config%atmnam(loc_ind),loc_ind
                  Call info(message)
                  safe=.false.
               End If
 
 ! Assign global sites, type, weight, charge & frozen status to localised atoms
 
-              lsite(loc_ind)=mol_sit+m
-              ltype(loc_ind)=sites%type_site(mol_sit+m)
-              weight(loc_ind)=sites%weight_site(mol_sit+m)
-              parts(loc_ind)%chge=sites%charge_site(mol_sit+m)
-              lfrzn(loc_ind)=sites%freeze_site(mol_sit+m)
-              lfree(loc_ind)=sites%free_site(mol_sit+m)
+              config%lsite(loc_ind)=mol_sit+m
+              config%ltype(loc_ind)=sites%type_site(mol_sit+m)
+              config%weight(loc_ind)=sites%weight_site(mol_sit+m)
+              config%parts(loc_ind)%chge=sites%charge_site(mol_sit+m)
+              config%lfrzn(loc_ind)=sites%freeze_site(mol_sit+m)
+              config%lfree(loc_ind)=sites%free_site(mol_sit+m)
 
 ! Print global indices for a later check on ordering (mixed indexing)
 
@@ -677,7 +678,7 @@ End Subroutine check_config
 
 
 
-Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,domain,comm)
+Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -696,6 +697,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
   Real( Kind = wp ), Intent( In    ) :: rcut,dvar
   Real( Kind = wp ), Intent( InOut ) :: xhi,yhi,zhi
   Real( Kind = wp ), Intent(   Out ) :: dens0,dens
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type), Intent( InOut ) :: comm
 
@@ -736,7 +738,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
   Character( Len = 256) :: messages(3)
 ! image conditions not compliant with DD and link-cell
 
-  If (imcon == 4 .or. imcon == 5 .or. imcon == 7) Call error(300)
+  If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
 
 ! Real space cutoff shortened by 50% but not < 1 Angstrom
 !(or ==rcut_def in scan_control)
@@ -745,7 +747,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 ! Get the dimensional properties of the MD cell
 
-  Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
   volm = celprp(10)
 
 ! Calculate the number of link-cells per domain in every direction
@@ -763,14 +765,14 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 ! Amend volume of density cell if cluster, slab or bulk slab
 ! cell dimensional properties overwritten but not needed anyway
 
-  If (imcon == 0 .or. imcon == 6 .or. imc_n == 6) Then
-     celh=cell
+  If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
+     celh=config%cell
 
-     If (imcon == 0) Then
+     If (config%imcon == 0) Then
         celh(1) = Max(1.0_wp,xhi)
         celh(5) = Max(1.0_wp,yhi)
         celh(9) = Max(1.0_wp,zhi)
-     Else If (imcon == 6) Then
+     Else If (config%imcon == 6) Then
         celh(9) = Max(1.0_wp,zhi)
      End If
 
@@ -787,7 +789,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 ! Allocate necessary arrays to read CONFIG
 
-  Call allocate_config_arrays_read(mxatms)
+  Call allocate_config_arrays_read(config,mxatms)
 
 ! Get type of I/O for reading
 
@@ -796,9 +798,9 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 ! Define filename ASCII or netCDF
 
   If (io_read /= IO_READ_NETCDF) Then
-     fname=Trim(config)
+     fname=Trim(config_name)
   Else
-     fname=Trim(config) // '.nc'
+     fname=Trim(config_name) // '.nc'
   End If
 
 ! Define/Detect the FAST reading status
@@ -882,7 +884,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
   If (io_read == IO_READ_MASTER) Then
 
-     Call invert(cell,rcell,det)
+     Call invert(config%cell,rcell,det)
 
 ! Open CONFIG and skip the header
 
@@ -892,7 +894,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
         Read(Unit=nconf, Fmt=*)    ! CONFIG file header (TITLE record)
         Read(Unit=nconf, Fmt=*)    ! configuration level and image condition
 
-        If (imcon /= 0) Then
+        If (config%imcon /= 0) Then
            Read(Unit=nconf, Fmt=*) ! cell vectors (not defined for imcon=0) but cell
            Read(Unit=nconf, Fmt=*) ! is modified in set_bounds for imcon 0 and 6!!!
            Read(Unit=nconf, Fmt=*)
@@ -911,7 +913,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 ! Initialise domain localised atom counter (configuration)
 ! and dispatched atom counter
 
-     natms =0
+     config%natms =0
      indatm=0
      Do nattot=1,megatm
         indatm=indatm+1
@@ -1020,9 +1022,9 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 ! fold back coordinates
 
-              axx(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
-              ayy(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
-              azz(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+              axx(i)=config%cell(1)*sxx+config%cell(4)*syy+config%cell(7)*szz
+              ayy(i)=config%cell(2)*sxx+config%cell(5)*syy+config%cell(8)*szz
+              azz(i)=config%cell(3)*sxx+config%cell(6)*syy+config%cell(9)*szz
 
 ! assign domain coordinates (call for errors)
 
@@ -1034,34 +1036,34 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
               If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
                  Call error(513)
                Else If (idm == comm%idnode)                 Then
-                 natms=natms+1
+                 config%natms=config%natms+1
 
-                 If (natms < mxatms) Then
-                    atmnam(natms)=chbuf(i)
-                    ltg(natms)=iwrk(i)
+                 If (config%natms < mxatms) Then
+                    config%atmnam(config%natms)=chbuf(i)
+                    config%ltg(config%natms)=iwrk(i)
 
-                    parts(natms)%xxx=axx(i)
-                    parts(natms)%yyy=ayy(i)
-                    parts(natms)%zzz=azz(i)
+                    config%parts(config%natms)%xxx=axx(i)
+                    config%parts(config%natms)%yyy=ayy(i)
+                    config%parts(config%natms)%zzz=azz(i)
 
                     If (levcfg > 0) Then
-                       vxx(natms)=bxx(i)
-                       vyy(natms)=byy(i)
-                       vzz(natms)=bzz(i)
+                       config%vxx(config%natms)=bxx(i)
+                       config%vyy(config%natms)=byy(i)
+                       config%vzz(config%natms)=bzz(i)
                     Else
-                       vxx(natms)=0.0_wp
-                       vyy(natms)=0.0_wp
-                       vzz(natms)=0.0_wp
+                       config%vxx(config%natms)=0.0_wp
+                       config%vyy(config%natms)=0.0_wp
+                       config%vzz(config%natms)=0.0_wp
                     End If
 
                     If (levcfg > 1) Then
-                       parts(natms)%fxx=cxx(i)
-                       parts(natms)%fyy=cyy(i)
-                       parts(natms)%fzz=czz(i)
+                       config%parts(config%natms)%fxx=cxx(i)
+                       config%parts(config%natms)%fyy=cyy(i)
+                       config%parts(config%natms)%fzz=czz(i)
                     Else
-                       parts(natms)%fxx=0.0_wp
-                       parts(natms)%fyy=0.0_wp
-                       parts(natms)%fzz=0.0_wp
+                       config%parts(config%natms)%fxx=0.0_wp
+                       config%parts(config%natms)%fyy=0.0_wp
+                       config%parts(config%natms)%fzz=0.0_wp
                     End If
                  Else
                     safe=.false.
@@ -1071,8 +1073,8 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 ! Check if all is dispatched fine
 
-           max_fail=natms
-           min_fail=natms
+           max_fail=config%natms
+           min_fail=config%natms
               Call gcheck(comm,safe)
               Call gmax(comm,max_fail)
               Call gmin(comm,min_fail)
@@ -1125,7 +1127,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 ! top_skip is header size
 
      If (io_read /= IO_READ_NETCDF) Then
-        If (imcon == 0) Then
+        If (config%imcon == 0) Then
            top_skip = Int(2,offset_kind)
         Else
            top_skip = Int(5,offset_kind)
@@ -1134,7 +1136,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
         top_skip = Int(1,offset_kind) ! This is now the frame = 1
      End If
 
-     Call read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
+     Call read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
        fast,fh,top_skip,xhi,yhi,zhi,domain,comm)
 
 ! Close CONFIG
@@ -1151,22 +1153,22 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 ! To prevent users from the danger of changing the order of calls
 ! in dl_poly set 'nlast' to the innocent 'natms'
 
-  nlast=natms
+  config%nlast=config%natms
 
 ! Check if the number of atoms in the system (MD cell) derived by
 ! topology description (FIELD) match the crystallographic (CONFIG) one?
 
-  totatm=natms
+  totatm=config%natms
   Call gsum(comm,totatm)
   If (totatm /= megatm) Call error(58)
 
 ! Record global atom indices for local sorting (configuration)
 
-  Do i=1,natms
-     lsi(i)=i
-     lsa(i)=ltg(i)
+  Do i=1,config%natms
+     config%lsi(i)=i
+     config%lsa(i)=config%ltg(i)
   End Do
-  Call shellsort2(natms,lsi,lsa)
+  Call shellsort2(config%natms,config%lsi,config%lsa)
 
   If (io_read /= IO_READ_MASTER) Then
 
@@ -1181,27 +1183,27 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 ! means the initial velocities will not be the same as the old method for
 ! the arbitrary ordering case.
 
-     atmnam( 1:natms ) = atmnam( lsi( 1:natms ) )
-     ltg( 1:natms ) = ltg( lsi( 1:natms ) )
+     config%atmnam( 1:config%natms ) = config%atmnam( config%lsi( 1:config%natms ) )
+     config%ltg( 1:config%natms ) = config%ltg( config%lsi( 1:config%natms ) )
 
-     parts(1:natms)%xxx = parts( lsi( 1:natms ) )%xxx
-     parts(1:natms)%yyy = parts( lsi( 1:natms ) )%yyy
-     parts(1:natms)%zzz = parts( lsi( 1:natms ) )%zzz
+     config%parts(1:config%natms)%xxx = config%parts( config%lsi( 1:config%natms ) )%xxx
+     config%parts(1:config%natms)%yyy = config%parts( config%lsi( 1:config%natms ) )%yyy
+     config%parts(1:config%natms)%zzz = config%parts( config%lsi( 1:config%natms ) )%zzz
 
      If (levcfg > 0) Then
-        vxx( 1:natms ) = vxx( lsi( 1:natms ) )
-        vyy( 1:natms ) = vyy( lsi( 1:natms ) )
-        vzz( 1:natms ) = vzz( lsi( 1:natms ) )
+        config%vxx( 1:config%natms ) = config%vxx( config%lsi( 1:config%natms ) )
+        config%vyy( 1:config%natms ) = config%vyy( config%lsi( 1:config%natms ) )
+        config%vzz( 1:config%natms ) = config%vzz( config%lsi( 1:config%natms ) )
 
         If (levcfg > 1) Then
-           parts( 1:natms )%fxx = parts( lsi( 1:natms ) )%fxx
-           parts( 1:natms )%fyy = parts( lsi( 1:natms ) )%fyy
-           parts( 1:natms )%fzz = parts( lsi( 1:natms ) )%fzz
+           config%parts( 1:config%natms )%fxx = config%parts( config%lsi( 1:config%natms ) )%fxx
+           config%parts( 1:config%natms )%fyy = config%parts( config%lsi( 1:config%natms ) )%fyy
+           config%parts( 1:config%natms )%fzz = config%parts( config%lsi( 1:config%natms ) )%fzz
         End If
      End If
-     Do i=1,natms
-        lsi(i)=i
-        lsa(i)=ltg(i)
+     Do i=1,config%natms
+        config%lsi(i)=i
+        config%lsa(i)=config%ltg(i)
      End Do
 
   End If
@@ -1235,12 +1237,12 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 ! Get the inverse cell matrix
 
-  Call invert(cell,rcell,celprp(10))
+  Call invert(config%cell,rcell,celprp(10))
 
-  Do i=1,natms
-     sxx=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz
-     syy=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz
-     szz=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz
+  Do i=1,config%natms
+     sxx=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*config%parts(i)%zzz
+     syy=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*config%parts(i)%zzz
+     szz=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*config%parts(i)%zzz
 
 ! Get cell coordinates accordingly
 
@@ -1320,7 +1322,7 @@ Subroutine read_config(megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,den
 
 End Subroutine read_config
 
-Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast, &
+Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast, &
     fh,top_skip,xhi,yhi,zhi,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1338,6 +1340,7 @@ Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast,
   Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
   Real( Kind = wp ),                 Intent( In    ) :: dvar
   Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ),                Intent( InOut ) :: comm
 
@@ -1517,12 +1520,12 @@ Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast,
   yhi = 0.0_wp
   zhi = 0.0_wp
 
-  If (.not.l_xtr) Call invert(cell,rcell,det)
+  If (.not.l_xtr) Call invert(config%cell,rcell,det)
 
 ! Initialise domain localised atom counter (configuration),
 ! dispatched atom counter and safe dispatch flag
 
-  natms =0
+  config%natms =0
   indatm=0
   safe  =.true.
 
@@ -1693,9 +1696,9 @@ Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast,
 
 ! fold back coordinates
 
-              axx_read(i)=cell(1)*sxx+cell(4)*syy+cell(7)*szz
-              ayy_read(i)=cell(2)*sxx+cell(5)*syy+cell(8)*szz
-              azz_read(i)=cell(3)*sxx+cell(6)*syy+cell(9)*szz
+              axx_read(i)=config%cell(1)*sxx+config%cell(4)*syy+config%cell(7)*szz
+              ayy_read(i)=config%cell(2)*sxx+config%cell(5)*syy+config%cell(8)*szz
+              azz_read(i)=config%cell(3)*sxx+config%cell(6)*syy+config%cell(9)*szz
 
 ! assign domain coordinates (call for errors)
 
@@ -1795,38 +1798,38 @@ Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast,
 ! Assign atoms to correct domains
 
               Do i=1,n_loc
-                 natms=natms+1
+                 config%natms=config%natms+1
 
 ! Check safety by the upper bound of: atmnam,ltg,xxx,yyy,zzz &
 ! possibly vxx,vyy,vzz & possibly fxx,fyy,fzz as guided by xxx
 
-                 If (natms <= mxatms) Then
-                    atmnam(natms)=chbuf(i)
-                    ltg(natms)=iwrk(i)
+                 If (config%natms <= mxatms) Then
+                    config%atmnam(config%natms)=chbuf(i)
+                    config%ltg(config%natms)=iwrk(i)
 
-                    parts(natms)%xxx=scatter_buffer(1,i)
-                    parts(natms)%yyy=scatter_buffer(2,i)
-                    parts(natms)%zzz=scatter_buffer(3,i)
+                    config%parts(config%natms)%xxx=scatter_buffer(1,i)
+                    config%parts(config%natms)%yyy=scatter_buffer(2,i)
+                    config%parts(config%natms)%zzz=scatter_buffer(3,i)
 
                     If (levcfg /=3 ) Then
                        If (levcfg > 0) Then
-                          vxx(natms)=scatter_buffer(4,i)
-                          vyy(natms)=scatter_buffer(5,i)
-                          vzz(natms)=scatter_buffer(6,i)
+                          config%vxx(config%natms)=scatter_buffer(4,i)
+                          config%vyy(config%natms)=scatter_buffer(5,i)
+                          config%vzz(config%natms)=scatter_buffer(6,i)
                        Else
-                          vxx(natms)=0.0_wp
-                          vyy(natms)=0.0_wp
-                          vzz(natms)=0.0_wp
+                          config%vxx(config%natms)=0.0_wp
+                          config%vyy(config%natms)=0.0_wp
+                          config%vzz(config%natms)=0.0_wp
                        End If
 
                        If (levcfg > 1) Then
-                          parts(natms)%fxx=scatter_buffer(7,i)
-                          parts(natms)%fyy=scatter_buffer(8,i)
-                          parts(natms)%fzz=scatter_buffer(9,i)
+                          config%parts(config%natms)%fxx=scatter_buffer(7,i)
+                          config%parts(config%natms)%fyy=scatter_buffer(8,i)
+                          config%parts(config%natms)%fzz=scatter_buffer(9,i)
                        Else
-                          parts(natms)%fxx=0.0_wp
-                          parts(natms)%fyy=0.0_wp
-                          parts(natms)%fzz=0.0_wp
+                          config%parts(config%natms)%fxx=0.0_wp
+                          config%parts(config%natms)%fyy=0.0_wp
+                          config%parts(config%natms)%fzz=0.0_wp
                        End If
                     End If
                   Else
@@ -1837,8 +1840,8 @@ Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast,
 
 ! Check if all is dispatched fine
 
-           max_fail=natms
-           min_fail=natms
+           max_fail=config%natms
+           min_fail=config%natms
               Call gcheck(comm,safe)
               Call gmax(comm,max_fail)
               Call gmin(comm,min_fail)
@@ -1966,7 +1969,7 @@ Subroutine read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast,
   Call error(55)
 End Subroutine read_config_parallel
 
-Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, &
+Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
     domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1982,9 +1985,9 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
 
   Integer,              Intent( In    ) :: megatm,imc_n
   Real( Kind = wp ),    Intent( In    ) :: dvar
-  Character( Len = * ), Intent(   Out ) :: cfgname
-  Integer,              Intent(   Out ) :: levcfg,imcon
-  Real( Kind = wp ),    Intent(   Out ) :: cell(1:9),xhi,yhi,zhi
+  Integer,              Intent(   Out ) :: levcfg
+  Real( Kind = wp ),    Intent(   Out ) :: xhi,yhi,zhi
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ),   Intent( InOut ) :: comm
 
@@ -2013,9 +2016,9 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
 ! Define filename ASCII or netCDF
 
   If (io_read /= IO_READ_NETCDF) Then
-     fname=Trim(config)
+     fname=Trim(config_name)
   Else
-     fname=Trim(config)//'nc'
+     fname=Trim(config_name)//'nc'
   End If
 
 ! Check if we have a CONFIG
@@ -2114,7 +2117,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
      If (.not.safe) Go To 50
 
      Call strip_blanks(record)
-     cfgname=record
+     config%cfgname=record
 
 ! Read configuration level and image condition
 
@@ -2129,41 +2132,41 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
      If (levcfg < 0 .or. levcfg > 2) Call error(517)
 
      Call get_word(record,word)
-     imcon=Nint(word_2_real(word))
+     config%imcon=Nint(word_2_real(word))
 
 ! halt execution if image conventions is unsupported
 
-     If (imcon < 0 .or. imcon > 7) Call error(514)
+     If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
 
 ! specify MD cell (not defined for imcon=0)
 
-     If (imcon /= 0) Then
+     If (config%imcon /= 0) Then
         Call get_line(safe,nconf,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
-        cell(1)=word_2_real(word)
+        config%cell(1)=word_2_real(word)
         Call get_word(record,word)
-        cell(2)=word_2_real(word)
+        config%cell(2)=word_2_real(word)
         Call get_word(record,word)
-        cell(3)=word_2_real(word)
+        config%cell(3)=word_2_real(word)
 
         Call get_line(safe,nconf,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
-        cell(4)=word_2_real(word)
+        config%cell(4)=word_2_real(word)
         Call get_word(record,word)
-        cell(5)=word_2_real(word)
+        config%cell(5)=word_2_real(word)
         Call get_word(record,word)
-        cell(6)=word_2_real(word)
+        config%cell(6)=word_2_real(word)
 
         Call get_line(safe,nconf,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
-        cell(7)=word_2_real(word)
+        config%cell(7)=word_2_real(word)
         Call get_word(record,word)
-        cell(8)=word_2_real(word)
+        config%cell(8)=word_2_real(word)
         Call get_word(record,word)
-        cell(9)=word_2_real(word)
+        config%cell(9)=word_2_real(word)
      End If
 
 ! Close CONFIG
@@ -2180,16 +2183,16 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
 
      i=1 ! For config there is only one frame
 
-     Call io_nc_get_att( 'title'          , fh, cfgname )
+     Call io_nc_get_att( 'title'          , fh, config%cfgname )
 
      Call io_nc_get_var( 'datalevel'      , fh, levcfg, i, 1  )
      If (levcfg < 0 .or. levcfg > 2) Call error(517)
 
-     Call io_nc_get_var( 'imageconvention', fh,  imcon, i, 1  )
-     If (imcon < 0 .or. imcon > 7) Call error(514)
+     Call io_nc_get_var( 'imageconvention', fh,  config%imcon, i, 1  )
+     If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
 
      Call io_nc_get_var( 'cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-     cell = Reshape( cell_vecs, (/ Size( cell ) /) )
+     config%cell = Reshape( cell_vecs, (/ Size( config%cell ) /) )
 
 ! Close CONFIG
 
@@ -2204,7 +2207,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
   yhi = 0.0_wp
   zhi = 0.0_wp
 
-  If (imcon == 0 .or. imcon == 6 .or. imc_n == 6) Then
+  If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
 
 ! If MASTER read
 
@@ -2220,7 +2223,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
 
            Read(Unit=nconf, Fmt=*)
            Read(Unit=nconf, Fmt=*)
-           If (imcon /= 0) Then
+           If (config%imcon /= 0) Then
               Read(Unit=nconf, Fmt=*)
               Read(Unit=nconf, Fmt=*)
               Read(Unit=nconf, Fmt=*)
@@ -2289,7 +2292,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
 ! top_skip is header size
 
         If (io_read /= IO_READ_NETCDF) Then
-           If (imcon == 0) Then
+           If (config%imcon == 0) Then
               top_skip = Int(2,offset_kind)
            Else
               top_skip = Int(5,offset_kind)
@@ -2298,7 +2301,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
            top_skip = Int(1,offset_kind) ! This is now the frame = 1
         End If
 
-        Call read_config_parallel(levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
+        Call read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
           fast,fh,top_skip,xhi,yhi,zhi,domain,comm)
 
 ! Close CONFIG
@@ -2324,7 +2327,7 @@ Subroutine scan_config(megatm,imc_n,dvar,cfgname,levcfg,imcon,cell,xhi,yhi,zhi, 
 
 End Subroutine scan_config
 
-Subroutine scale_config(megatm,devel,netcdf,comm)
+Subroutine scale_config(config,megatm,devel,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2337,7 +2340,7 @@ Subroutine scale_config(megatm,devel,netcdf,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer, Intent( In    ) :: megatm
-
+  Type( configuration_type ), Intent( InOut ) :: config
   Character ( Len = 6 ) :: name
   Integer               :: i,nstep
   Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
@@ -2347,26 +2350,26 @@ Subroutine scale_config(megatm,devel,netcdf,comm)
 
 ! Get the inverse cell matrix
 
-  Call invert(cell,rcell,det)
+  Call invert(config%cell,rcell,det)
 
 ! Rescale
 
-  Do i=1,natms
-     uuu=parts(i)%xxx
-     vvv=parts(i)%yyy
-     www=parts(i)%zzz
+  Do i=1,config%natms
+     uuu=config%parts(i)%xxx
+     vvv=config%parts(i)%yyy
+     www=config%parts(i)%zzz
 
-     parts(i)%xxx=rcell(1)*uuu+rcell(4)*vvv+rcell(7)*www
-     parts(i)%yyy=rcell(2)*uuu+rcell(5)*vvv+rcell(8)*www
-     parts(i)%zzz=rcell(3)*uuu+rcell(6)*vvv+rcell(9)*www
+     config%parts(i)%xxx=rcell(1)*uuu+rcell(4)*vvv+rcell(7)*www
+     config%parts(i)%yyy=rcell(2)*uuu+rcell(5)*vvv+rcell(8)*www
+     config%parts(i)%zzz=rcell(3)*uuu+rcell(6)*vvv+rcell(9)*www
 
-     uuu=parts(i)%xxx
-     vvv=parts(i)%yyy
-     www=parts(i)%zzz
+     uuu=config%parts(i)%xxx
+     vvv=config%parts(i)%yyy
+     www=config%parts(i)%zzz
 
-     parts(i)%xxx=devel%cels(1)*uuu+devel%cels(4)*vvv+devel%cels(7)*www
-     parts(i)%yyy=devel%cels(2)*uuu+devel%cels(5)*vvv+devel%cels(8)*www
-     parts(i)%zzz=devel%cels(3)*uuu+devel%cels(6)*vvv+devel%cels(9)*www
+     config%parts(i)%xxx=devel%cels(1)*uuu+devel%cels(4)*vvv+devel%cels(7)*www
+     config%parts(i)%yyy=devel%cels(2)*uuu+devel%cels(5)*vvv+devel%cels(8)*www
+     config%parts(i)%zzz=devel%cels(3)*uuu+devel%cels(6)*vvv+devel%cels(9)*www
   End Do
 
 ! Write REVCON
@@ -2376,14 +2379,14 @@ Subroutine scale_config(megatm,devel,netcdf,comm)
   tstep  = 0.0_wp   ! no step exists
   time   = 0.0_wp   ! time is not relevant
 
-  rcell = cell ; cell = devel%cels
-  Call write_config(name,devel%lvcfscl,megatm,nstep,tstep,time,netcdf,comm)
-  cell = rcell
+  rcell = config%cell ; config%cell = devel%cels
+  Call write_config(config,name,devel%lvcfscl,megatm,nstep,tstep,time,netcdf,comm)
+  config%cell = rcell
 
 End Subroutine scale_config
 
 
-Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
+Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2399,6 +2402,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
   Integer,              Intent( In    ) :: levcfg,megatm,nstep
   Real( Kind = wp ),    Intent( In    ) :: tstep,time
   Type( netcdf_param ), Intent( In    ) :: netcdf
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Integer, Parameter :: recsz    =   73 ! default record size
@@ -2450,7 +2454,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
      End If
 
      chbat=' '
-     n_atm=0 ; n_atm(comm%idnode+1)=natms
+     n_atm=0 ; n_atm(comm%idnode+1)=config%natms
      Call gsum(comm,n_atm)
      n_atm(0)=Sum(n_atm(0:comm%idnode))
   End If
@@ -2480,13 +2484,13 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Accumulate header
 
-        Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+        Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
+        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,nstep,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -2494,10 +2498,10 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Accumulate header - optional cell information (if present)
 
-        If (imcon > 0) Then
+        If (config%imcon > 0) Then
            Do i = 0, 2
               Write(record, Fmt='(3f20.10,a12,a1)') &
-                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                   config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
               jj=jj+1
               Do k=1,recsz
                  chbat(k,jj) = record(k:k)
@@ -2515,7 +2519,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
      Else
 
         jj=jj+2
-        If (imcon > 0) jj=jj+3
+        If (config%imcon > 0) jj=jj+3
 
      End If
      Call gsync(comm)
@@ -2529,28 +2533,28 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
      rec_mpi_io=Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(levcfg+2,offset_kind)
      jj=0
-     Do i=1,natms
-        Write(record, Fmt='(a8,i10,a54,a1)') atmnam(i),ltg(i),Repeat(' ',54),lf
+     Do i=1,config%natms
+        Write(record, Fmt='(a8,i10,a54,a1)') config%atmnam(i),config%ltg(i),Repeat(' ',54),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(3g20.10,a12,a1)') parts(i)%xxx,parts(i)%yyy,parts(i)%zzz,Repeat(' ',12),lf
+        Write(record, Fmt='(3g20.10,a12,a1)') config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,Repeat(' ',12),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
         End Do
 
         If (levcfg > 0) Then
-           Write(record, Fmt='(3g20.10,a12,a1)') vxx(i),vyy(i),vzz(i),Repeat(' ',12),lf
+           Write(record, Fmt='(3g20.10,a12,a1)') config%vxx(i),config%vyy(i),config%vzz(i),Repeat(' ',12),lf
            jj=jj+1
            Do k=1,recsz
               chbat(k,jj) = record(k:k)
            End Do
 
            If (levcfg > 1) Then
-              Write(record, Fmt='(3g20.10,a12,a1)') parts(i)%fxx,parts(i)%fyy,parts(i)%fzz,Repeat(' ',12),lf
+              Write(record, Fmt='(3g20.10,a12,a1)') config%parts(i)%fxx,config%parts(i)%fyy,config%parts(i)%fzz,Repeat(' ',12),lf
               jj=jj+1
               Do k=1,recsz
                  chbat(k,jj) = record(k:k)
@@ -2560,7 +2564,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Dump batch and update start of file
 
-        If (jj + levcfg + 2 >= batsz .or. i == natms) Then
+        If (jj + levcfg + 2 >= batsz .or. i == config%natms) Then
            Call io_write_batch( fh, rec_mpi_io, jj, chbat )
            rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
            jj=0
@@ -2596,13 +2600,13 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Accumulate header
 
-        Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+        Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
+        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,nstep,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -2610,10 +2614,10 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Accumulate header - optional cell information (if present)
 
-        If (imcon > 0) Then
+        If (config%imcon > 0) Then
            Do i = 0, 2
               Write(record, Fmt='(3f20.10,a12,a1)') &
-                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                   config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
               jj=jj+1
               Do k=1,recsz
                  chbat(k,jj) = record(k:k)
@@ -2627,28 +2631,28 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
         rec=Int(jj,li)
         jj=0
 
-        Do i=1,natms
-           iwrk(i)=ltg(i)
-           chbuf(i)=atmnam(i)
+        Do i=1,config%natms
+           iwrk(i)=config%ltg(i)
+           chbuf(i)=config%atmnam(i)
 
-           axx(i)=parts(i)%xxx
-           ayy(i)=parts(i)%yyy
-           azz(i)=parts(i)%zzz
+           axx(i)=config%parts(i)%xxx
+           ayy(i)=config%parts(i)%yyy
+           azz(i)=config%parts(i)%zzz
 
            If (levcfg > 0) Then
-              bxx(i)=vxx(i)
-              byy(i)=vyy(i)
-              bzz(i)=vzz(i)
+              bxx(i)=config%vxx(i)
+              byy(i)=config%vyy(i)
+              bzz(i)=config%vzz(i)
 
               If (levcfg > 1) Then
-                 cxx(i)=parts(i)%fxx
-                 cyy(i)=parts(i)%fyy
-                 czz(i)=parts(i)%fzz
+                 cxx(i)=config%parts(i)%fxx
+                 cyy(i)=config%parts(i)%fyy
+                 czz(i)=config%parts(i)%fzz
               End If
            End If
         End Do
 
-        jatms=natms
+        jatms=config%natms
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
@@ -2679,7 +2683,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
            jj=0
            Do i=1,jatms
-              Write(record, Fmt='(a8,i10,a54,a1)') atmnam(i),iwrk(i),Repeat(' ',54),lf
+              Write(record, Fmt='(a8,i10,a54,a1)') config%atmnam(i),iwrk(i),Repeat(' ',54),lf
               jj=jj+1
               Do k=1,recsz
                  chbat(k,jj) = record(k:k)
@@ -2723,16 +2727,16 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
         Call grecv(comm,ready,0,WriteConf_tag)
 
-        Call gsend(comm,natms,0,WriteConf_tag)
-        If (natms > 0) Then
-           Call gsend(comm,atmnam(1:natms),0,WriteConf_tag)
-           Call gsend(comm,ltg(1:natms),0,WriteConf_tag)
+        Call gsend(comm,config%natms,0,WriteConf_tag)
+        If (config%natms > 0) Then
+           Call gsend(comm,config%atmnam(1:config%natms),0,WriteConf_tag)
+           Call gsend(comm,config%ltg(1:config%natms),0,WriteConf_tag)
 
-           Call gsend(comm, parts(1:natms), 0, WriteConf_tag)
+           Call gsend(comm, config%parts(1:config%natms), 0, WriteConf_tag)
            If (levcfg > 0) Then
-              Call gsend(comm,vxx(1:natms),0,WriteConf_tag)
-              Call gsend(comm,vyy(1:natms),0,WriteConf_tag)
-              Call gsend(comm,vzz(1:natms),0,WriteConf_tag)
+              Call gsend(comm,config%vxx(1:config%natms),0,WriteConf_tag)
+              Call gsend(comm,config%vyy(1:config%natms),0,WriteConf_tag)
+              Call gsend(comm,config%vzz(1:config%natms),0,WriteConf_tag)
 
            End If
         End If
@@ -2773,7 +2777,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
         Call io_init( recsz )
         Call io_delete( fname,comm ) ! Sort existence issues
         If (io_write == IO_WRITE_SORTED_NETCDF) Then
-          Call io_nc_create( netcdf, comm_self, fname, cfgname, megatm )
+          Call io_nc_create( netcdf, comm_self, fname, config%cfgname, megatm )
         End If
         Call io_open( io_write, comm_self, fname, mode_wronly + mode_create, fh )
 
@@ -2783,20 +2787,20 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Write header
 
-           Write(record, Fmt='(a72,a1)') cfgname(1:72),lf
+           Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
            Call io_write_record( fh, Int(jj,offset_kind), record )
            jj=jj+1
 
-           Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,imcon,megatm,nstep,tstep,time,lf
+           Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,nstep,tstep,time,lf
            Call io_write_record( fh, Int(jj,offset_kind), record )
            jj=jj+1
 
 ! Write optional cell information (if present)
 
-           If (imcon > 0) Then
+           If (config%imcon > 0) Then
               Do i = 0, 2
                  Write( record, '( 3f20.10, a12, a1 )' ) &
-                      cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                      config%cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
                  Call io_write_record( fh, Int(jj,offset_kind), record )
                  jj=jj+1
               End Do
@@ -2809,13 +2813,13 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
            Call io_nc_put_var( 'time'           , fh,   time, jj, 1 )
            Call io_nc_put_var( 'step'           , fh,  nstep, jj, 1 )
            Call io_nc_put_var( 'datalevel'      , fh, levcfg, jj, 1 )
-           Call io_nc_put_var( 'imageconvention', fh,  imcon, jj, 1 )
+           Call io_nc_put_var( 'imageconvention', fh,  config%imcon, jj, 1 )
            Call io_nc_put_var( 'timestep'       , fh,  tstep, jj, 1 )
 
-           If (imcon > 0) Then
-              Call dcell(cell,celprp) ! get cell properties
+           If (config%imcon > 0) Then
+              Call dcell(config%cell,celprp) ! get cell properties
 
-              cell_vecs = Reshape( cell, (/ 3, 3 /) )
+              cell_vecs = Reshape( config%cell, (/ 3, 3 /) )
 
               lengths( 1 ) = celprp( 1 )
               lengths( 2 ) = celprp( 2 )
@@ -2842,7 +2846,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
            jj=jj+2
-           If (imcon > 0) jj=jj+3
+           If (config%imcon > 0) jj=jj+3
         Else
            jj=1
         End If
@@ -2857,9 +2861,9 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
      Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
 
      rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
-     Call io_write_sorted_file( fh, levcfg, IO_RESTART, rec_mpi_io, natms,      &
-          ltg, atmnam, (/ 0.0_wp /), (/ 0.0_wp /), parts, &
-          vxx, vyy, vzz,IO_SUBSET_POSITIONS+IO_SUBSET_FORCES, ierr )
+     Call io_write_sorted_file( fh, levcfg, IO_RESTART, rec_mpi_io, config%natms,      &
+          config%ltg, config%atmnam, (/ 0.0_wp /), (/ 0.0_wp /), config%parts, &
+          config%vxx, config%vyy, config%vzz,IO_SUBSET_POSITIONS+IO_SUBSET_FORCES, ierr )
 
      If ( ierr /= 0 ) Then
         Select Case( ierr )
@@ -2903,42 +2907,42 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 ! Write header
 
         rec=rec+Int(1,li)
-        Write(Unit=nconf, Fmt='(a72,a1)',            Rec=rec) cfgname(1:72),lf
+        Write(Unit=nconf, Fmt='(a72,a1)',            Rec=rec) config%cfgname(1:72),lf
         rec=rec+Int(1,li)
-        Write(Unit=nconf, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,imcon,megatm,nstep,tstep,time,lf
+        Write(Unit=nconf, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,config%imcon,megatm,nstep,tstep,time,lf
 
 ! Write optional cell information (if present)
 
-        If (imcon > 0) Then
+        If (config%imcon > 0) Then
            Do i = 0, 2
               rec=rec+Int(1,li)
               Write(Unit=nconf, Fmt='(3f20.10,a12,a1)', Rec=rec) &
-                   cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+                   config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            End Do
         End If
 
-        Do i=1,natms
-           iwrk(i)=ltg(i)
-           chbuf(i)=atmnam(i)
+        Do i=1,config%natms
+           iwrk(i)=config%ltg(i)
+           chbuf(i)=config%atmnam(i)
 
-           axx(i)=parts(i)%xxx
-           ayy(i)=parts(i)%yyy
-           azz(i)=parts(i)%zzz
+           axx(i)=config%parts(i)%xxx
+           ayy(i)=config%parts(i)%yyy
+           azz(i)=config%parts(i)%zzz
 
            If (levcfg > 0) Then
-              bxx(i)=vxx(i)
-              byy(i)=vyy(i)
-              bzz(i)=vzz(i)
+              bxx(i)=config%vxx(i)
+              byy(i)=config%vyy(i)
+              bzz(i)=config%vzz(i)
 
               If (levcfg > 1) Then
-                 cxx(i)=parts(i)%fxx
-                 cyy(i)=parts(i)%fyy
-                 czz(i)=parts(i)%fzz
+                 cxx(i)=config%parts(i)%fxx
+                 cyy(i)=config%parts(i)%fyy
+                 czz(i)=config%parts(i)%fzz
               End If
            End If
         End Do
 
-        jatms=natms
+        jatms=config%natms
         ready=.true.
         Do jdnode=0,comm%mxnode-1
            If (jdnode > 0) Then
@@ -2991,17 +2995,17 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
         Call grecv(comm,ready,0,WriteConf_tag)
 
-        Call gsend(comm,natms,0,WriteConf_tag)
-        If (natms > 0) Then
-           Call gsend(comm,atmnam(1:natms),0,WriteConf_tag)
-           Call gsend(comm,ltg(1:natms),0,WriteConf_tag)
+        Call gsend(comm,config%natms,0,WriteConf_tag)
+        If (config%natms > 0) Then
+           Call gsend(comm,config%atmnam(1:config%natms),0,WriteConf_tag)
+           Call gsend(comm,config%ltg(1:config%natms),0,WriteConf_tag)
 
-           Call gsend(comm,parts(1:natms),0,WriteConf_tag)
+           Call gsend(comm,config%parts(1:config%natms),0,WriteConf_tag)
 
            If (levcfg > 0) Then
-              Call gsend(comm,vxx(1:natms),0,WriteConf_tag)
-              Call gsend(comm,vyy(1:natms),0,WriteConf_tag)
-              Call gsend(comm,vzz(1:natms),0,WriteConf_tag)
+              Call gsend(comm,config%vxx(1:config%natms),0,WriteConf_tag)
+              Call gsend(comm,config%vyy(1:config%natms),0,WriteConf_tag)
+              Call gsend(comm,config%vzz(1:config%natms),0,WriteConf_tag)
 
            End If
         End If
@@ -3034,7 +3038,7 @@ Subroutine write_config(name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 End Subroutine write_config
 
-Subroutine getcom_arrays(txx,tyy,tzz,com,comm)
+Subroutine getcom_arrays(txx,tyy,tzz,config,com,comm)
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -3047,6 +3051,7 @@ Subroutine getcom_arrays(txx,tyy,tzz,com,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: txx,tyy,tzz
+  Type(configuration_type),            Intent( InOut ) :: config
   Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
   Type(comms_type),                    Intent( InOut ) :: comm
 
@@ -3060,8 +3065,8 @@ Subroutine getcom_arrays(txx,tyy,tzz,com,comm)
        newjob = .false.
 
        totmas = 0.0_wp
-       Do i=1,natms
-          If (lfrzn(i) == 0) totmas = totmas + weight(i)
+       Do i=1,config%natms
+          If (config%lfrzn(i) == 0) totmas = totmas + config%weight(i)
        End Do
 
        Call gsum(comm,totmas)
@@ -3069,11 +3074,11 @@ Subroutine getcom_arrays(txx,tyy,tzz,com,comm)
 
     com = 0.0_wp
 
-    Do i=1,natms
-       If (lfrzn(i) == 0) Then
-          com(1) = com(1) + weight(i)*txx(i)
-          com(2) = com(2) + weight(i)*tyy(i)
-          com(3) = com(3) + weight(i)*tzz(i)
+    Do i=1,config%natms
+       If (config%lfrzn(i) == 0) Then
+          com(1) = com(1) + config%weight(i)*txx(i)
+          com(2) = com(2) + config%weight(i)*tyy(i)
+          com(3) = com(3) + config%weight(i)*tzz(i)
        End If
     End Do
 
@@ -3084,7 +3089,7 @@ Subroutine getcom_arrays(txx,tyy,tzz,com,comm)
 End Subroutine getcom_arrays
 
 
-Subroutine getcom_parts(parts,com,comm)
+Subroutine getcom_parts(config,com,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3095,7 +3100,7 @@ Subroutine getcom_parts(parts,com,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( corePart ) , Dimension( 1:* ), Intent( In    ) :: parts
+    Type( configuration_type ),          Intent( In    ) :: config
     Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
     Type(comms_type), Intent ( InOut )                   :: comm
 
@@ -3110,8 +3115,8 @@ Subroutine getcom_parts(parts,com,comm)
        newjob = .false.
 
        totmas = 0.0_wp
-       Do i=1,natms
-          If (lfrzn(i) == 0) totmas = totmas + weight(i)
+       Do i=1,config%natms
+          If (config%lfrzn(i) == 0) totmas = totmas + config%weight(i)
        End Do
 
        Call gsum(comm,totmas)
@@ -3119,11 +3124,11 @@ Subroutine getcom_parts(parts,com,comm)
 
     com = 0.0_wp
 
-    Do i=1,natms
-       If (lfrzn(i) == 0) Then
-          com(1) = com(1) + weight(i)*parts(i)%xxx
-          com(2) = com(2) + weight(i)*parts(i)%yyy
-          com(3) = com(3) + weight(i)*parts(i)%zzz
+    Do i=1,config%natms
+       If (config%lfrzn(i) == 0) Then
+          com(1) = com(1) + config%weight(i)*config%parts(i)%xxx
+          com(2) = com(2) + config%weight(i)*config%parts(i)%yyy
+          com(3) = com(3) + config%weight(i)*config%parts(i)%zzz
        End If
     End Do
 
@@ -3132,7 +3137,7 @@ Subroutine getcom_parts(parts,com,comm)
 
   End Subroutine getcom_parts
 
-  Subroutine getcom_mol(istart,ifinish,cmm,comm)
+  Subroutine getcom_mol(config,istart,ifinish,cmm,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3150,6 +3155,7 @@ Subroutine getcom_parts(parts,com,comm)
     Integer,           Intent( In    ) :: istart,ifinish
 
     Real( Kind = wp ), Intent(   Out ) :: cmm(0:3)
+    Type(configuration_type), Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut ) :: comm
 
     Integer           :: fail,i,j,k
@@ -3172,15 +3178,15 @@ Subroutine getcom_parts(parts,com,comm)
     cmm  = 0.0_wp
 
     mol = 0.0_wp
-    Do i=1,natms
-       j=ltg(i)
+    Do i=1,config%natms
+       j=config%ltg(i)
        If (j >= istart .and. j <= ifinish) Then
           k=j-istart+1
 
-          mol(k,0) = weight(i)
-          mol(k,1) = parts(i)%xxx
-          mol(k,2) = parts(i)%yyy
-          mol(k,3) = parts(i)%zzz
+          mol(k,0) = config%weight(i)
+          mol(k,1) = config%parts(i)%xxx
+          mol(k,2) = config%parts(i)%yyy
+          mol(k,3) = config%parts(i)%zzz
        End If
     End Do
 
@@ -3195,7 +3201,7 @@ Subroutine getcom_parts(parts,com,comm)
     mol(:,3) = mol(:,3)-r(3)
 
     k=ifinish-istart+1
-    Call images(imcon,cell,k,mol(:,1),mol(:,2),mol(:,3))
+    Call images(config%imcon,config%cell,k,mol(:,1),mol(:,2),mol(:,3))
 
     mol(:,1) = mol(:,1)+r(1)
     mol(:,2) = mol(:,2)+r(2)
@@ -3203,7 +3209,7 @@ Subroutine getcom_parts(parts,com,comm)
 
     Do i=1,k
        mass   = mass   + mol(i,0)
-       cmm(0) = cmm(0) + mol(i,0)*Real(1-lfrzn(i),wp)
+       cmm(0) = cmm(0) + mol(i,0)*Real(1-config%lfrzn(i),wp)
        cmm(1) = cmm(1) + mol(i,0)*mol(i,1)
        cmm(2) = cmm(2) + mol(i,0)*mol(i,2)
        cmm(3) = cmm(3) + mol(i,0)*mol(i,3)
@@ -3221,7 +3227,7 @@ Subroutine getcom_parts(parts,com,comm)
   End Subroutine getcom_mol
 
 
-  Subroutine freeze_atoms()
+  Subroutine freeze_atoms(config)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3232,19 +3238,19 @@ Subroutine getcom_parts(parts,com,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+    Type( configuration_type ), Intent( InOut ) :: config
     Integer :: i
 
-    Do i=1,natms
-       If (lfrzn(i) /= 0) Then
-           vxx(i) = 0.0_wp ; vyy(i) = 0.0_wp ; vzz(i) = 0.0_wp
-           parts(i)%fxx = 0.0_wp ; parts(i)%fyy = 0.0_wp ; parts(i)%fzz = 0.0_wp
+    Do i=1,config%natms
+       If (config%lfrzn(i) /= 0) Then
+           config%vxx(i) = 0.0_wp ; config%vyy(i) = 0.0_wp ; config%vzz(i) = 0.0_wp
+           config%parts(i)%fxx = 0.0_wp ; config%parts(i)%fyy = 0.0_wp ; config%parts(i)%fzz = 0.0_wp
        End If
     End Do
 
   End Subroutine freeze_atoms
 
-  Subroutine origin_config(megatm,devel,netcdf,comm)
+  Subroutine origin_config(config,megatm,devel,netcdf,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -3258,6 +3264,7 @@ Subroutine getcom_parts(parts,com,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,            Intent( In    ) :: megatm
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( development_type ), Intent( In    ) :: devel
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( comms_type ), Intent( InOut ) :: comm
@@ -3268,15 +3275,15 @@ Subroutine getcom_parts(parts,com,comm)
 
   ! Translate
 
-    Do i=1,natms
-       parts(i)%xxx=parts(i)%xxx+devel%xorg
-       parts(i)%yyy=parts(i)%yyy+devel%yorg
-       parts(i)%zzz=parts(i)%zzz+devel%zorg
+    Do i=1,config%natms
+       config%parts(i)%xxx=config%parts(i)%xxx+devel%xorg
+       config%parts(i)%yyy=config%parts(i)%yyy+devel%yorg
+       config%parts(i)%zzz=config%parts(i)%zzz+devel%zorg
     End Do
 
   ! Restore periodic boundaries
 
-    Call pbcshift(imcon,cell,natms,parts)
+    Call pbcshift(config%imcon,config%cell,config%natms,config%parts)
 
   ! Write REVCON
 
@@ -3285,7 +3292,7 @@ Subroutine getcom_parts(parts,com,comm)
     tstep  = 0.0_wp   ! no step exists
     time   = 0.0_wp   ! time is not relevant
 
-    Call write_config(name,devel%lvcforg,megatm,nstep,tstep,time,netcdf,comm)
+    Call write_config(config,name,devel%lvcforg,megatm,nstep,tstep,time,netcdf,comm)
 
   End Subroutine origin_config
 End Module configuration

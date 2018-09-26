@@ -6,7 +6,7 @@ Module shared_units
                     gcheck,gsync,gsend,gwait,girecv
   Use setup
   Use domains,      Only : domains_type
-  Use configuration,       Only : natms,nlast,lsi,lsa
+  Use configuration,       Only : configuration_type
   Use numerics, Only : local_index,shellsort
   Use errors_warnings, Only : error
 
@@ -29,8 +29,8 @@ Module shared_units
   End Interface update_shared_units
   Contains
 
-    Subroutine pass_shared_units(mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv, &
-      lishp,lashp,oldjob,domain,comm,q0,q1,q2,q3,vxx,vyy,vzz,oxx,oyy,ozz)
+    Subroutine pass_shared_units(config,mx_u,b_l,b_u,nt_u,list_u,mxf_u,leg_u,lshmv, &
+        lishp,lashp,oldjob,domain,comm,q0,q1,q2,q3,vxx,vyy,vzz,oxx,oyy,ozz)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -52,19 +52,20 @@ Module shared_units
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Type( configuration_type ), Intent( InOut ) :: config
+  Integer, Intent( In    ) :: mx_u,b_l,b_u,mxf_u
+  Integer, Intent( InOut ) :: nt_u,list_u(b_l:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
+  Logical, Intent(   Out ) :: lshmv
+  Type( domains_type ), Intent( In    ) :: domain
+  Integer, Intent(   Out ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
+  Type( comms_type ), Intent( InOut ) :: comm
+  Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,vxx,vyy,&
+                                                      vzz,oxx,oyy,ozz
 
-      Integer, Intent( In    ) :: mx_u,b_l,b_u,mxf_u
-      Integer, Intent( InOut ) :: nt_u,list_u(b_l:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
-      Logical, Intent(   Out ) :: lshmv
-      Type( domains_type ), Intent( In    ) :: domain
-      Integer, Intent(   Out ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
-      Type( comms_type ), Intent( InOut ) :: comm
-      Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,vxx,vyy,&
-        vzz,oxx,oyy,ozz
       Logical, Intent( InOut ) :: oldjob
 
-      Logical :: safe,ok
-      Integer :: fail,i,j,k,l,m,n_k,n_nt,k0,l_me,l_out,l_in,jdnode,kdnode
+  Logical :: safe,ok
+  Integer :: fail,i,j,k,l,m,n_k,n_nt,k0,l_me,l_out,l_in,jdnode,kdnode
 
   Integer, Dimension( : ), Allocatable :: i0,j0,listme,lstout,listin
   Character( Len = 256 ) :: message
@@ -125,8 +126,8 @@ Module shared_units
 
      i0=0
      Do i=1,n_k
-        i0(i)=local_index(list_u(i,k),nlast,lsi,lsa)
-        If (i0(i) > natms) i0(i)=0
+        i0(i)=local_index(list_u(i,k),config%nlast,config%lsi,config%lsa)
+        If (i0(i) > config%natms) i0(i)=0
      End Do
 
      If (All(i0(1:n_k) == 0) .and. (.not.ok)) Then
@@ -148,8 +149,8 @@ Module shared_units
 
            j0=0
            Do i=1,n_nt
-              j0(i)=local_index(list_u(i,nt_u),nlast,lsi,lsa)
-              If (j0(i) > natms) j0(i)=0
+              j0(i)=local_index(list_u(i,nt_u),config%nlast,config%lsi,config%lsa)
+              If (j0(i) > config%natms) j0(i)=0
            End Do
 
            If (Any(j0(1:n_nt) > 0)) Then ! Do repointing
@@ -398,7 +399,7 @@ Module shared_units
 
 End Subroutine pass_shared_units
 
-Subroutine update_shared_units_parts(natms,nlast,lsi,lsa,lishp,lashp,parts,subtype,domain,comm)
+Subroutine update_shared_units_parts(config,lishp,lashp,subtype,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -414,12 +415,10 @@ Subroutine update_shared_units_parts(natms,nlast,lsi,lsa,lishp,lashp,parts,subty
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,              Intent( In    ) :: natms,nlast
-  Integer,              Intent( In    ) :: lsi(1:mxatms),lsa(1:mxatms)
+  Type( configuration_type), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
   Integer,              Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
   Integer,              Intent( In    ) :: subtype
-  Type( corePart ),     Intent( InOut ) :: parts(1:mxatms)
   Type( comms_type),    Intent( InOut ) :: comm
   Integer                               :: mpi_type
 
@@ -474,8 +473,8 @@ Subroutine update_shared_units_parts(natms,nlast,lsi,lsa,lishp,lashp,parts,subty
 ! If no out of bound so far then carry on
 
            If (i+iadd <= iblock) Then
-              m=local_index(lishp(j),nlast,lsi,lsa)
-              If (m > natms) m=0
+              m=local_index(lishp(j),config%nlast,config%lsi,config%lsa)
+              If (m > config%natms) m=0
 
 ! m should always be > 0 (halo particles have local index > natms)
 ! (consistency - a particle strictly belongs to only one domain)
@@ -484,13 +483,13 @@ Subroutine update_shared_units_parts(natms,nlast,lsi,lsa,lishp,lashp,parts,subty
                  buffer(i+1)=Real(lishp(j),wp)
 
                  If(subtype == SHARED_UNIT_UPDATE_POSITIONS) Then
-                   buffer(i+2)=parts(m)%xxx
-                   buffer(i+3)=parts(m)%yyy
-                   buffer(i+4)=parts(m)%zzz
+                   buffer(i+2)=config%parts(m)%xxx
+                   buffer(i+3)=config%parts(m)%yyy
+                   buffer(i+4)=config%parts(m)%zzz
                  Else
-                   buffer(i+2) = parts(m)%fxx
-                   buffer(i+3) = parts(m)%fyy
-                   buffer(i+4) = parts(m)%fzz
+                   buffer(i+2) = config%parts(m)%fxx
+                   buffer(i+3) = config%parts(m)%fyy
+                   buffer(i+4) = config%parts(m)%fzz
                  End If
               Else
                  safe(2)=.false.
@@ -534,20 +533,20 @@ Subroutine update_shared_units_parts(natms,nlast,lsi,lsa,lishp,lashp,parts,subty
 
         Do j=1,n/iadd
            If (i+iadd <= limit) Then
-              m=local_index(Nint(buffer(i+1)),nlast,lsi,lsa)
+              m=local_index(Nint(buffer(i+1)),config%nlast,config%lsi,config%lsa)
 
 ! m should always be > natms (halo particles have local index > natms)
 ! (consistency - a particle strictly belongs to only one domain)
 
-              If (m > natms) Then
+              If (m > config%natms) Then
                  If(subtype == SHARED_UNIT_UPDATE_POSITIONS) Then
-                   parts(m)%xxx=buffer(i+2)
-                   parts(m)%yyy=buffer(i+3)
-                   parts(m)%zzz=buffer(i+4)
+                   config%parts(m)%xxx=buffer(i+2)
+                   config%parts(m)%yyy=buffer(i+3)
+                   config%parts(m)%zzz=buffer(i+4)
                  Else
-                   parts(m)%fxx=buffer(i+2)
-                   parts(m)%fyy=buffer(i+3)
-                   parts(m)%fzz=buffer(i+4)
+                   config%parts(m)%fxx=buffer(i+2)
+                   config%parts(m)%fyy=buffer(i+3)
+                   config%parts(m)%fzz=buffer(i+4)
                  End If
               Else
                  safe(2)=.false.
@@ -582,7 +581,7 @@ Subroutine update_shared_units_parts(natms,nlast,lsi,lsa,lishp,lashp,parts,subty
 End Subroutine update_shared_units_parts
 
 
-Subroutine update_shared_units_arrays(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qzz,domain,comm)
+Subroutine update_shared_units_arrays(config,lishp,lashp,qxx,qyy,qzz,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -598,8 +597,7 @@ Subroutine update_shared_units_arrays(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qz
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( In    ) :: natms,nlast
-  Integer,           Intent( In    ) :: lsi(1:mxatms),lsa(1:mxatms)
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
   Integer,           Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
   Real( Kind = wp ), Intent( InOut ) :: qxx(1:mxatms),qyy(1:mxatms),qzz(1:mxatms)
@@ -651,8 +649,8 @@ Subroutine update_shared_units_arrays(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qz
 ! If no out of bound so far then carry on
 
            If (i+iadd <= iblock) Then
-              m=local_index(lishp(j),nlast,lsi,lsa)
-              If (m > natms) m=0
+              m=local_index(lishp(j),config%nlast,config%lsi,config%lsa)
+              If (m > config%natms) m=0
 
 ! m should always be > 0 (halo particles have local index > natms)
 ! (consistency - a particle strictly belongs to only one domain)
@@ -705,12 +703,12 @@ Subroutine update_shared_units_arrays(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qz
 
         Do j=1,n/iadd
            If (i+iadd <= limit) Then
-              m=local_index(Nint(buffer(i+1)),nlast,lsi,lsa)
+              m=local_index(Nint(buffer(i+1)),config%nlast,config%lsi,config%lsa)
 
 ! m should always be > natms (halo particles have local index > natms)
 ! (consistency - a particle strictly belongs to only one domain)
 
-              If (m > natms) Then
+              If (m > config%natms) Then
                  qxx(m)=buffer(i+2)
                  qyy(m)=buffer(i+3)
                  qzz(m)=buffer(i+4)
@@ -746,7 +744,7 @@ Subroutine update_shared_units_arrays(natms,nlast,lsi,lsa,lishp,lashp,qxx,qyy,qz
 
 End Subroutine update_shared_units_arrays
 
-Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,domain,comm)
+Subroutine update_shared_units_int(config,lishp,lashp,iii,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -761,9 +759,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,domain,co
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
-  Integer, Intent( In    ) :: natms,nlast
-  Integer, Intent( In    ) :: lsi(1:mxatms),lsa(1:mxatms)
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
   Integer, Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
   Integer, Intent( InOut ) :: iii(1:mxatms)
@@ -816,8 +812,8 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,domain,co
 ! If no out of bound so far then carry on
 
            If (i+iadd <= iblock) Then
-              m=local_index(lishp(j),nlast,lsi,lsa)
-              If (m > natms) m=0
+              m=local_index(lishp(j),config%nlast,config%lsi,config%lsa)
+              If (m > config%natms) m=0
 
 ! m should always be > 0 (halo particles have local index > natms)
 ! (consistency - a particle strictly belongs to only one domain)
@@ -868,12 +864,12 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,domain,co
 
         Do j=1,n/iadd
            If (i+iadd <= limit) Then
-              m=local_index(ibuffer(i+1),nlast,lsi,lsa)
+              m=local_index(ibuffer(i+1),config%nlast,config%lsi,config%lsa)
 
 ! m should always be > natms (halo particles have local index > natms)
 ! (consistency - a particle strictly belongs to only one domain)
 
-              If (m > natms) Then
+              If (m > config%natms) Then
                  iii(m)=ibuffer(i+2)
               Else
                  safe(2)=.false.
@@ -907,7 +903,7 @@ Subroutine update_shared_units_int(natms,nlast,lsi,lsa,lishp,lashp,iii,domain,co
 
 End Subroutine update_shared_units_int
 
-Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,domain,comm)
+Subroutine update_shared_units_rwp(config,lishp,lashp,rrr,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -922,8 +918,7 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,domain,co
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( In    ) :: natms,nlast
-  Integer,           Intent( In    ) :: lsi(1:mxatms),lsa(1:mxatms)
+  Type( configuration_type ), Intent( In    ) :: config
   Type( domains_type ), Intent( In    ) :: domain
   Integer,           Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
   Real( Kind = wp ), Intent( InOut ) :: rrr(1:mxatms)
@@ -976,8 +971,8 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,domain,co
 ! If no out of bound so far then carry on
 
            If (i+iadd <= iblock) Then
-              m=local_index(lishp(j),nlast,lsi,lsa)
-              If (m > natms) m=0
+              m=local_index(lishp(j),config%nlast,config%lsi,config%lsa)
+              If (m > config%natms) m=0
 
 ! m should always be > 0 (halo particles have local index > natms)
 ! (consistency - a particle strictly belongs to only one domain)
@@ -1028,12 +1023,12 @@ Subroutine update_shared_units_rwp(natms,nlast,lsi,lsa,lishp,lashp,rrr,domain,co
 
         Do j=1,n/iadd
            If (i+iadd <= limit) Then
-              m=local_index(Nint(buffer(i+1)),nlast,lsi,lsa)
+              m=local_index(Nint(buffer(i+1)),config%nlast,config%lsi,config%lsa)
 
 ! m should always be > natms (halo particles have local index > natms)
 ! (consistency - a particle strictly belongs to only one domain)
 
-              If (m > natms) Then
+              If (m > config%natms) Then
                  rrr(m)=buffer(i+2)
               Else
                  safe(2)=.false.

@@ -8,17 +8,17 @@ stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strco
 ! Get core-shell kinetic energy for adiabatic shell model
 
 If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Then
-  Call core_shell_kinetic(stat%shlke,cshell,domain,comm)
+  Call core_shell_kinetic(config,stat%shlke,cshell,domain,comm)
 End If
 
 ! Calculate physical quantities and collect statistics
 
 Call statistics_collect           &
-  (lsim,leql,nsteql,msd_data%l_msd, &
+  (config,lsim,leql,nsteql,msd_data%l_msd, &
   keyres,      &
   degfre,degshl,degrot,          &
   nstep,tstep,time,tmst,         &
-  mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,parts,comm)
+  mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,comm)
 
 ! VV forces evaluation report for 0th or weird restart
 
@@ -129,7 +129,7 @@ End If
 
 ! Calculate green-kubo properties
 
-If (green%samp > 0) Call vaf_collect(leql,nsteql,nstep,time,green,comm)
+If (green%samp > 0) Call vaf_collect(config,leql,nsteql,nstep,time,green,comm)
 
 
 !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

@@ -1,7 +1,7 @@
 Module coul_spole
   Use kinds,           Only : wp
   Use comms,           Only : comms_type
-  Use configuration,   Only : natms,ltg
+  Use configuration,   Only : configuration_type     
   Use particle,         Only : corePart
   Use setup,           Only :  r4pie0, zero_plus,  nrite,sqrpi
   Use errors_warnings, Only : error
@@ -25,7 +25,7 @@ Module coul_spole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for calculating bond's or 1-4 dihedral
-  ! electrostatics: adjusted by a weighting factor
+  ! electrostatics: adjusted by a config%weighting factor
   !
   ! copyright - daresbury laboratory
   ! amended   - i.t.todorov february 2016
@@ -140,7 +140,7 @@ Module coul_spole
   End Subroutine intra_coul
 
   Subroutine coul_fscp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
-      electro,parts,comm)
+      electro,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -169,7 +169,7 @@ Module coul_spole
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
 
     Integer           :: fail,k,idi,jatm,m
@@ -242,11 +242,11 @@ Module coul_spole
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! ignore interaction if the charge is zero
 
-    chgea = parts(iatm)%chge
+    chgea = config%parts(iatm)%chge
 
     If (Abs(chgea) > zero_plus) Then
 
@@ -254,9 +254,9 @@ Module coul_spole
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! start of primary loop for forces evaluation
 
@@ -265,7 +265,7 @@ Module coul_spole
   ! atomic index and charge
 
           jatm=neigh%list(m,iatm)
-          chgprd=parts(jatm)%chge
+          chgprd=config%parts(jatm)%chge
 
   ! interatomic distance
 
@@ -311,15 +311,15 @@ Module coul_spole
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! calculate potential energy and virial
 
@@ -361,9 +361,9 @@ Module coul_spole
 
            ! load back forces
 
-           parts(iatm)%fxx=fix
-           parts(iatm)%fyy=fiy
-           parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
            ! complete stress tensor
 
@@ -380,8 +380,8 @@ Module coul_spole
          End If
        End Subroutine coul_fscp_forces
 
-       Subroutine coul_rfp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
-         electro,parts,comm)
+  Subroutine coul_rfp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
+      electro,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -409,7 +409,7 @@ Module coul_spole
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
 
 
@@ -488,11 +488,11 @@ Module coul_spole
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! ignore interaction if the charge is zero
 
-    chgea = parts(iatm)%chge
+    chgea = config%parts(iatm)%chge
 
     If (Abs(chgea) > zero_plus) Then
 
@@ -500,9 +500,9 @@ Module coul_spole
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! start of primary loop for forces evaluation
 
@@ -511,7 +511,7 @@ Module coul_spole
   ! atomic index and charge
 
           jatm=neigh%list(m,iatm)
-          chgprd=parts(jatm)%chge
+          chgprd=config%parts(jatm)%chge
 
   ! interatomic distance
 
@@ -557,15 +557,15 @@ Module coul_spole
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! calculate potential energy and virial
 
@@ -608,9 +608,9 @@ Module coul_spole
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! complete stress tensor
 
@@ -627,7 +627,7 @@ Module coul_spole
     End If
   End Subroutine coul_rfp_forces
 
-  Subroutine coul_cp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,parts)
+  Subroutine coul_cp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,config)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -646,7 +646,7 @@ Module coul_spole
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: idi,jatm,m
 
@@ -670,11 +670,11 @@ Module coul_spole
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! ignore interaction if the charge is zero
 
-    chgea = parts(iatm)%chge
+    chgea = config%parts(iatm)%chge
 
     If (Abs(chgea) > zero_plus) Then
 
@@ -682,9 +682,9 @@ Module coul_spole
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! start of primary loop for forces evaluation
 
@@ -693,7 +693,7 @@ Module coul_spole
   ! atomic index and charge
 
           jatm=neigh%list(m,iatm)
-          chgprd=parts(jatm)%chge
+          chgprd=config%parts(jatm)%chge
 
   ! interatomic distance
 
@@ -720,15 +720,15 @@ Module coul_spole
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! calculate potential energy
 
@@ -751,9 +751,9 @@ Module coul_spole
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! virial
 
@@ -774,7 +774,7 @@ Module coul_spole
     End If
   End Subroutine coul_cp_forces
 
-  Subroutine coul_dddp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,parts)
+  Subroutine coul_dddp_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,config)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -794,7 +794,7 @@ Module coul_spole
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: idi,jatm,m
 
@@ -818,11 +818,11 @@ Module coul_spole
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! ignore interaction if the charge is zero
 
-    chgea = parts(iatm)%chge
+    chgea = config%parts(iatm)%chge
 
     If (Abs(chgea) > zero_plus) Then
 
@@ -830,9 +830,9 @@ Module coul_spole
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! start of primary loop for forces evaluation
 
@@ -841,7 +841,7 @@ Module coul_spole
   ! atomic index and charge
 
           jatm=neigh%list(m,iatm)
-          chgprd=parts(jatm)%chge
+          chgprd=config%parts(jatm)%chge
 
   ! interatomic distance
 
@@ -872,15 +872,15 @@ Module coul_spole
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! calculate potential energy
 
@@ -903,9 +903,9 @@ Module coul_spole
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! virial
 

@@ -64,7 +64,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,           Intent( In    ) :: imcon
-    Real( Kind = wp ), Intent( In    ) :: wx,wy,wz ! MD cell Cartesian widths
+    Real( Kind = wp ), Intent( In    ) :: wx,wy,wz ! MD config%cell Cartesian widths
     Type( domains_type ), Intent( InOut ) :: domain
     Type(comms_type),  Intent( InOut ) :: comm
 
@@ -72,14 +72,14 @@ Contains
     !> Limits on the (x,y,z) sizes of the processor grid
     Integer                            :: limx,limy,limz
     !> processor factorisations of and factorised grid vectors over the x and y
-    !> sides of the Cartesian rectangular parallelepiped approximating the MD cell
+    !> sides of the Cartesian rectangular parallelepiped approximating the MD config%cell
     Integer                            :: nfacsx, nfacsy
     Integer, Dimension( 1:max_factor ) :: pfacsx, pfacsy
     !> Target grid product and running value of the (y,z) processor grid product
     Integer                            :: P,Pyz
     !> Running values of the (x,y,z) sizes of the processor producing P and Pyz
     Integer                            :: nx,ny,nz
-    !> Running values of the (x,y,z) sizes of the grid cell volume and surface
+    !> Running values of the (x,y,z) sizes of the grid config%cell volume and surface
     !> Minimum surface
     Real( Kind = wp )                  :: dx,dy,dz,S,min_S
     !> Search tolerance

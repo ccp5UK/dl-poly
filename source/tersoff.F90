@@ -14,7 +14,7 @@ Module tersoff
   Use comms,   Only : comms_type,gsum
   Use setup
   Use domains, Only : domains_type
-  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype
+  Use configuration,  Only : configuration_type
   Use particle,       Only : corePart
   Use errors_warnings, Only : error,warning
   use numerics, Only : dcell, invert
@@ -112,7 +112,7 @@ Contains
 
   End Subroutine allocate_tersoff_arrays
 
-  Subroutine tersoff_forces(tersoffs,stats,neigh,domain,parts,comm)
+  Subroutine tersoff_forces(tersoffs,stats,neigh,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -139,7 +139,7 @@ Contains
   Type( stats_type ), Intent( InOut )  :: stats
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( domains_type ), Intent( In    ) :: domain
-  Type( corePart ),   Intent( InOut )  :: parts(:)
+  Type( configuration_type ),   Intent( InOut )  :: config
   Type( comms_type ), Intent( InOut )  :: comm
 
 ! flag for undefined potentials NOT NEEDED HERE YET
@@ -188,7 +188,7 @@ Contains
 
 ! Get the dimensional properties of the MD cell
 
-  Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
 
 ! Calculate the number of link-cells per domain in every direction
 
@@ -239,17 +239,20 @@ Contains
 
 ! Get the inverse cell matrix
 
-  Call invert(cell,rcell,det)
+  Call invert(config%cell,rcell,det)
 
 ! Convert atomic positions (ALL - halo included) from centred
 ! Cartesian coordinates to reduced space coordinates of
 ! the left-most link-cell
 
-  Do i=1,nlast
-     If (tersoffs%lfr(ltype(i))) Then
-        xxt(i)=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+dispx
-        yyt(i)=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+dispy
-        zzt(i)=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+dispz
+  Do i=1,config%nlast
+     If (tersoffs%lfr(config%ltype(i))) Then
+        xxt(i)=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*&
+                        config%parts(i)%zzz+dispx
+        yyt(i)=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*&
+                        config%parts(i)%zzz+dispy
+        zzt(i)=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*&
+                        config%parts(i)%zzz+dispz
      End If
   End Do
 
@@ -282,8 +285,8 @@ Contains
 ! cell layer are not considered.
 !***************************************************************
 
-  Do i=1,nlast
-     If (tersoffs%lfr(ltype(i))) Then
+  Do i=1,config%nlast
+     If (tersoffs%lfr(config%ltype(i))) Then
 
 ! Push cell coordinates accordingly
 
@@ -308,7 +311,7 @@ Contains
 ! the halo link-cell space and vice-versa particles from the
 ! halo (natms+1,nlast) kicked into the domain link-cell space
 
-        If (i <= natms) Then
+        If (i <= config%natms) Then
            If (ix < 2)     ix=2
            If (ix > nbx+1) ix=nbx+1
 
@@ -442,7 +445,7 @@ Contains
 ! index of the primary atom (and table type)
 
                  iatm=listin(ii)
-                 iter=tersoffs%list(ltype(iatm))
+                 iter=tersoffs%list(config%ltype(iatm))
 
 ! bypass if primary atom type is not involved in interaction
 
@@ -470,7 +473,7 @@ Contains
 ! index of the secondary atom
 
                        jatm=listin(jj)
-                       jter=tersoffs%list(ltype(jatm))
+                       jter=tersoffs%list(config%ltype(jatm))
 
 ! bypass if secondary atom type is not involved in interaction
 
@@ -480,9 +483,9 @@ Contains
                           syij = yyt(jatm)-yyt(iatm)
                           szij = zzt(jatm)-zzt(iatm)
 
-                          xtf(jj)=cell(1)*sxij+cell(4)*syij+cell(7)*szij
-                          ytf(jj)=cell(2)*sxij+cell(5)*syij+cell(8)*szij
-                          ztf(jj)=cell(3)*sxij+cell(6)*syij+cell(9)*szij
+                          xtf(jj)=config%cell(1)*sxij+config%cell(4)*syij+config%cell(7)*szij
+                          ytf(jj)=config%cell(2)*sxij+config%cell(5)*syij+config%cell(8)*szij
+                          ztf(jj)=config%cell(3)*sxij+config%cell(6)*syij+config%cell(9)*szij
 
                           rtf(jj)=Sqrt(xtf(jj)**2+ytf(jj)**2+ztf(jj)**2)
 
@@ -500,7 +503,7 @@ Contains
 
 ! if pair is not frozen
 
-                             If (lfrzn(iatm)*lfrzn(jatm) == 0) Then
+                             If (config%lfrzn(iatm)*config%lfrzn(jatm) == 0) Then
 
                                 ll  = Int(rdr*rtf(jj))
                                 ppp = rtf(jj)*rdr - Real(ll,wp)
@@ -609,7 +612,7 @@ Contains
 ! index of the first secondary atom
 
                        jatm=listin(jj)
-                       jter=tersoffs%list(ltype(jatm))
+                       jter=tersoffs%list(config%ltype(jatm))
 
 ! bypass if secondary atom type is not involved in interaction
 
@@ -654,7 +657,7 @@ Contains
 ! index of the second secondary atom
 
      katm=listin(kk)
-     kter=tersoffs%list(ltype(katm))
+     kter=tersoffs%list(config%ltype(katm))
 
 ! bypass if secondary atom type is not involved in interaction
 
@@ -670,7 +673,7 @@ Contains
 
 ! only for not fully frozen triplets
 
-           If (lfrzn(iatm)*lfrzn(jatm)*lfrzn(katm) == 0) Then
+           If (config%lfrzn(iatm)*config%lfrzn(jatm)*config%lfrzn(katm) == 0) Then
 
               flag3 = .true.
 
@@ -738,14 +741,14 @@ Contains
 
 ! Counteract the double counting with the 0.5_wp factor
 
-  If (iatm <= natms) Then
+  If (iatm <= config%natms) Then
 
      stats%engter = stats%engter + 0.5_wp*(ert(jj) - gam_ij*eat(jj))    ! energy_ij
      stats%virter = stats%virter + 0.5_wp*(gamma*vterm + gterm*rtf(jj)) ! virial_ij
 
-     parts(iatm)%fxx=parts(iatm)%fxx+0.5_wp*gterm*xtf(jj)
-     parts(iatm)%fyy=parts(iatm)%fyy+0.5_wp*gterm*ytf(jj)
-     parts(iatm)%fzz=parts(iatm)%fzz+0.5_wp*gterm*ztf(jj)
+     config%parts(iatm)%fxx=config%parts(iatm)%fxx+0.5_wp*gterm*xtf(jj)
+     config%parts(iatm)%fyy=config%parts(iatm)%fyy+0.5_wp*gterm*ytf(jj)
+     config%parts(iatm)%fzz=config%parts(iatm)%fzz+0.5_wp*gterm*ztf(jj)
 
      strs1 = strs1 - 0.5_wp*gterm*rtf(jj)*xtf(jj)*xtf(jj)
      strs2 = strs2 - 0.5_wp*gterm*rtf(jj)*xtf(jj)*ytf(jj)
@@ -756,11 +759,11 @@ Contains
 
   End If
 
-  If (jatm <= natms) Then
+  If (jatm <= config%natms) Then
 
-     parts(jatm)%fxx=parts(jatm)%fxx-0.5_wp*gterm*xtf(jj)
-     parts(jatm)%fyy=parts(jatm)%fyy-0.5_wp*gterm*ytf(jj)
-     parts(jatm)%fzz=parts(jatm)%fzz-0.5_wp*gterm*ztf(jj)
+     config%parts(jatm)%fxx=config%parts(jatm)%fxx-0.5_wp*gterm*xtf(jj)
+     config%parts(jatm)%fyy=config%parts(jatm)%fyy-0.5_wp*gterm*ytf(jj)
+     config%parts(jatm)%fzz=config%parts(jatm)%fzz-0.5_wp*gterm*ztf(jj)
 
   End If
 
@@ -771,7 +774,7 @@ Contains
 ! index of the second secondary atom
 
      katm=listin(kk)
-     kter=tersoffs%list(ltype(katm))
+     kter=tersoffs%list(config%ltype(katm))
 
 ! bypass if secondary atom type is not involved in interaction
 
@@ -787,7 +790,7 @@ Contains
 
 ! only for not fully frozen triplets
 
-           If (lfrzn(iatm)*lfrzn(jatm)*lfrzn(katm) == 0) Then
+           If (config%lfrzn(iatm)*config%lfrzn(jatm)*config%lfrzn(katm) == 0) Then
 
 ! term in d/dr_k L_{ij} no derivative of gamma
 
@@ -824,11 +827,11 @@ Contains
                  fzk = gam_dg*(ztf(jj)-ztf(kk)*cost)/rtf(kk) - gam_df*ztf(kk) + gam_dw*ztf(kk)
               End If
 
-              If (iatm <= natms) Then
+              If (iatm <= config%natms) Then
 
-                 parts(iatm)%fxx=parts(iatm)%fxx-(fxj+fxk)
-                 parts(iatm)%fyy=parts(iatm)%fyy-(fyj+fyk)
-                 parts(iatm)%fzz=parts(iatm)%fzz-(fzj+fzk)
+                 config%parts(iatm)%fxx=config%parts(iatm)%fxx-(fxj+fxk)
+                 config%parts(iatm)%fyy=config%parts(iatm)%fyy-(fyj+fyk)
+                 config%parts(iatm)%fzz=config%parts(iatm)%fzz-(fzj+fzk)
 
 ! calculate contribution to stress tensor (associated to the head atom)
 
@@ -841,19 +844,19 @@ Contains
 
               End If
 
-              If (jatm <= natms) Then
+              If (jatm <= config%natms) Then
 
-                 parts(jatm)%fxx=parts(jatm)%fxx+fxj
-                 parts(jatm)%fyy=parts(jatm)%fyy+fyj
-                 parts(jatm)%fzz=parts(jatm)%fzz+fzj
+                 config%parts(jatm)%fxx=config%parts(jatm)%fxx+fxj
+                 config%parts(jatm)%fyy=config%parts(jatm)%fyy+fyj
+                 config%parts(jatm)%fzz=config%parts(jatm)%fzz+fzj
 
               End If
 
-              If (katm <= natms) Then
+              If (katm <= config%natms) Then
 
-                 parts(katm)%fxx=parts(katm)%fxx+fxk
-                 parts(katm)%fyy=parts(katm)%fyy+fyk
-                 parts(katm)%fzz=parts(katm)%fzz+fzk
+                 config%parts(katm)%fxx=config%parts(katm)%fxx+fxk
+                 config%parts(katm)%fyy=config%parts(katm)%fyy+fyk
+                 config%parts(katm)%fzz=config%parts(katm)%fzz+fzk
 
               End If
 

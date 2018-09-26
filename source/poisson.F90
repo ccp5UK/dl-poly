@@ -5,7 +5,7 @@ Module poisson
   Use domains,         Only : domains_type
   Use setup,           Only : fourpi,r4pie0,nrite,            &
                               mxatms,mxatdm,half_minus,zero_plus
-  Use configuration,   Only : imcon,cell,natms,nlast,ltg,lfrzn
+  Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use ewald,           Only : ewald_type
   Use errors_warnings, Only : error,info
@@ -71,14 +71,14 @@ Module poisson
 
 Contains
 
-  Subroutine poisson_forces(engcpe,vircpe,stress,pois,electro,domain,parts,ewld,comm)
+  Subroutine poisson_forces(engcpe,vircpe,stress,pois,electro,domain,config,ewld,comm)
 
     Real( Kind = wp ), Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
     Type( poisson_type ), Intent( InOut ) :: pois
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ), Intent( InOut )     :: parts(:)
+    Type( configuration_type ), Intent( InOut )     :: config
     Type( ewald_type ), Intent( InOut ) :: ewld
     Type(comms_type), Intent( InOut )     :: comm
 
@@ -90,9 +90,9 @@ Contains
        pois%converged=.false.
        pois%maxbicgst =0 ! the number of steps to solve eq. without a guess (pois%phi=0)
        pois%delta=1.0_wp/electro%alpha
-       Call biCGStab_init(pois,parts,domain,ewld)
+       Call biCGStab_init(pois,config,domain,ewld)
 
-       Call biCGStab_charge_density(pois,electro,parts,comm)
+       Call biCGStab_charge_density(pois,electro,config,comm)
 
        If (pois%normb > zero_plus) Then
           Call biCGStab_solver_omp(pois,comm)
@@ -104,13 +104,13 @@ Contains
 
     Else
 
-       Call biCGStab_charge_density(pois,electro,parts,comm)
+       Call biCGStab_charge_density(pois,electro,config,comm)
 
     End If
 
     If (pois%normb > zero_plus) Then
        Call P_solver_omp(pois,comm)
-       Call biCGStab_calc_forces(eng,virr,strs,pois,parts,ewld,comm)
+       Call biCGStab_calc_forces(eng,virr,strs,pois,config,ewld,comm)
     Else
        Call error(0,'pois%normb too small')
     End If
@@ -121,9 +121,9 @@ Contains
 
   End Subroutine poisson_forces
 
-  Subroutine biCGStab_init(pois,parts,domain,ewld)
+  Subroutine biCGStab_init(pois,config,domain,ewld)
     Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ),     Intent( InOut ) :: parts(:)
+    Type( configuration_type ),     Intent( InOut ) :: config
     Type( poisson_type ), Intent( InOut ) :: pois
     Type( ewald_type ), Intent( InOut ) :: ewld
 
@@ -133,15 +133,15 @@ Contains
     Character( Len = 256 ) :: message
     pois%lmap=domain%map
 
-    If (imcon == 0 .or. imcon == 6) Then
-       If      (imcon == 0) Then
+    If (config%imcon == 0 .or. config%imcon == 6) Then
+       If      (config%imcon == 0) Then
           If (domain%idx == 0     ) pois%lmap(1)=-1
           If (domain%idy == 0     ) pois%lmap(3)=-1
           If (domain%idz == 0     ) pois%lmap(5)=-1
           If (domain%idx == domain%nx-1) pois%lmap(2)=-1
           If (domain%idy == domain%ny-1) pois%lmap(4)=-1
           If (domain%idz == domain%nz-1) pois%lmap(6)=-1
-       Else If (imcon == 6) Then
+       Else If (config%imcon == 6) Then
           If (domain%idz == 0     ) pois%lmap(5)=-1
           If (domain%idz == domain%nz-1) pois%lmap(6)=-1
        End If
@@ -149,7 +149,7 @@ Contains
 
 ! (re)set grid size along x, y and z direction
 
-    Call dcell(cell,pois%celprp)
+    Call dcell(config%cell,pois%celprp)
 
     ewld%fft_dim_a=Nint(pois%celprp(7)/pois%delta)
     ewld%fft_dim_b=Nint(pois%celprp(8)/pois%delta)
@@ -225,13 +225,13 @@ Contains
 
   End Subroutine biCGStab_init
 
-  Subroutine biCGStab_charge_density(pois,electro,parts,comm)
+  Subroutine biCGStab_charge_density(pois,electro,config,comm)
 
 ! calculates charge dansity at 0th order
 
     Type( poisson_type ), Intent( InOut ) :: pois
     Type( electrostatic_type ), Intent( In    ) :: electro
-    Type( corePart ), Intent( InOut ) :: parts(:)
+    Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type), Intent( InOut ) :: comm
 
     Integer           :: i,j,k,n
@@ -239,8 +239,8 @@ Contains
 
     reps0dv=fourpi*r4pie0*electro%alpha/electro%eps ! dv collapsed to dr=pois%delta=1/electro%alpha
 
-    ! get reciprocal cell
-    Call invert(cell,rcell,det)
+    ! get reciprocal config%cell
+    Call invert(config%cell,rcell,det)
     If (Abs(det) < 1.0e-6_wp) Call error(120)
 
 #ifdef __OPENMP
@@ -260,10 +260,13 @@ Contains
       cczzz=0.0_wp
 
       !$omp paralleldo default(shared) private(n) reduction(+:b,ccsum,ccxxx,ccyyy,cczzz)
-      Do n=1,natms !nlast
-         txx=pois%kmaxa_r*(rcell(1)*parts(n)%xxx+rcell(4)*parts(n)%yyy+rcell(7)*parts(n)%zzz+0.5_wp)
-         tyy=pois%kmaxb_r*(rcell(2)*parts(n)%xxx+rcell(5)*parts(n)%yyy+rcell(8)*parts(n)%zzz+0.5_wp)
-         tzz=pois%kmaxc_r*(rcell(3)*parts(n)%xxx+rcell(6)*parts(n)%yyy+rcell(9)*parts(n)%zzz+0.5_wp)
+      Do n=1,config%natms !config%nlast
+         txx=pois%kmaxa_r*(rcell(1)*config%parts(n)%xxx+rcell(4)*config%parts(n)%yyy+&
+                           rcell(7)*config%parts(n)%zzz+0.5_wp)
+         tyy=pois%kmaxb_r*(rcell(2)*config%parts(n)%xxx+rcell(5)*config%parts(n)%yyy+&
+                           rcell(8)*config%parts(n)%zzz+0.5_wp)
+         tzz=pois%kmaxc_r*(rcell(3)*config%parts(n)%xxx+rcell(6)*config%parts(n)%yyy+&
+                           rcell(9)*config%parts(n)%zzz+0.5_wp)
 
   ! global indeces
 
@@ -280,14 +283,14 @@ Contains
          If ( (i < 1 .or. i > pois%block_x) .or. &
               (j < 1 .or. j > pois%block_y) .or. &
               (k < 1 .or. k > pois%block_z) .or. &
-              (Abs(parts(n)%chge) <= zero_plus) ) Cycle
+              (Abs(config%parts(n)%chge) <= zero_plus) ) Cycle
 
-         b(i,j,k)=b(i,j,k)+parts(n)%chge*reps0dv
+         b(i,j,k)=b(i,j,k)+config%parts(n)%chge*reps0dv
 
-         ccsum=ccsum+Abs(parts(n)%chge)
-         ccxxx=ccxxx+Abs(parts(n)%chge)*parts(n)%xxx
-         ccyyy=ccyyy+Abs(parts(n)%chge)*parts(n)%yyy
-         cczzz=cczzz+Abs(parts(n)%chge)*parts(n)%zzz
+         ccsum=ccsum+Abs(config%parts(n)%chge)
+         ccxxx=ccxxx+Abs(config%parts(n)%chge)*config%parts(n)%xxx
+         ccyyy=ccyyy+Abs(config%parts(n)%chge)*config%parts(n)%yyy
+         cczzz=cczzz+Abs(config%parts(n)%chge)*config%parts(n)%zzz
       End Do
       !$omp End paralleldo
 
@@ -299,10 +302,13 @@ Contains
       pois%cczzz=cczzz
     End Block
 #else
-    Do n=1,natms !nlast
-       txx=pois%kmaxa_r*(rcell(1)*parts(n)%xxx+rcell(4)*parts(n)%yyy+rcell(7)*parts(n)%zzz+0.5_wp)
-       tyy=pois%kmaxb_r*(rcell(2)*parts(n)%xxx+rcell(5)*parts(n)%yyy+rcell(8)*parts(n)%zzz+0.5_wp)
-       tzz=pois%kmaxc_r*(rcell(3)*parts(n)%xxx+rcell(6)*parts(n)%yyy+rcell(9)*parts(n)%zzz+0.5_wp)
+    Do n=1,config%natms !config%nlast
+       txx=pois%kmaxa_r*(rcell(1)*config%parts(n)%xxx+rcell(4)*config%parts(n)%yyy+&
+                         rcell(7)*config%parts(n)%zzz+0.5_wp)
+       tyy=pois%kmaxb_r*(rcell(2)*config%parts(n)%xxx+rcell(5)*config%parts(n)%yyy+&
+                         rcell(8)*config%parts(n)%zzz+0.5_wp)
+       tzz=pois%kmaxc_r*(rcell(3)*config%parts(n)%xxx+rcell(6)*config%parts(n)%yyy+&
+                         rcell(9)*config%parts(n)%zzz+0.5_wp)
 
 ! global indeces
 
@@ -319,14 +325,14 @@ Contains
        If ( (i < 1 .or. i > pois%block_x) .or. &
             (j < 1 .or. j > pois%block_y) .or. &
             (k < 1 .or. k > pois%block_z) .or. &
-            (Abs(parts(n)%chge) <= zero_plus) ) Cycle
+            (Abs(config%parts(n)%chge) <= zero_plus) ) Cycle
 
-       pois%b(i,j,k)=pois%b(i,j,k)+parts(n)%chge*reps0dv
+       pois%b(i,j,k)=pois%b(i,j,k)+config%parts(n)%chge*reps0dv
 
-       pois%ccsum=pois%ccsum+Abs(parts(n)%chge)
-       pois%ccxxx=pois%ccxxx+Abs(parts(n)%chge)*parts(n)%xxx
-       pois%ccyyy=pois%ccyyy+Abs(parts(n)%chge)*parts(n)%yyy
-       pois%cczzz=pois%cczzz+Abs(parts(n)%chge)*parts(n)%zzz
+       pois%ccsum=pois%ccsum+Abs(config%parts(n)%chge)
+       pois%ccxxx=pois%ccxxx+Abs(config%parts(n)%chge)*config%parts(n)%xxx
+       pois%ccyyy=pois%ccyyy+Abs(config%parts(n)%chge)*config%parts(n)%yyy
+       pois%cczzz=pois%cczzz+Abs(config%parts(n)%chge)*config%parts(n)%zzz
     End Do
 
 #endif
@@ -811,11 +817,11 @@ Contains
 
   End Subroutine Adot_omp
 
-  Subroutine biCGStab_calc_forces(cenergy,vir,stress,pois,parts,ewld,comm)
+  Subroutine biCGStab_calc_forces(cenergy,vir,stress,pois,config,ewld,comm)
 
     Real( Kind = wp ), Intent( InOut ) :: cenergy, vir, stress(1:9)
     Type( poisson_type ), Intent( InOut ) :: pois
-    Type( corePart ),  Intent( InOut ) :: parts(:)
+    Type( configuration_type ),  Intent( InOut ) :: config
     Type( ewald_type ), Intent( In    ) :: ewld
     Type( comms_type), Intent( InOut ) :: comm
 
@@ -838,17 +844,20 @@ Contains
     vir=0.0_wp
     stress=0.0_wp
 
-    Call invert(cell,rcell,det)
+    Call invert(config%cell,rcell,det)
     If (Abs(det) < 1.0e-6_wp) Call error(120)
 
     !$omp paralleldo default(shared) private(n,txx,tyy,tzz,ii,jj,kk,i,j,k,cfxx,cfyy,cfzz) &
     !$omp reduction(+:stress,vir,cenergy)
-    Do n=1,natms
-       If (Abs(parts(n)%chge) < Abs(half_minus)) Cycle
+    Do n=1,config%natms
+       If (Abs(config%parts(n)%chge) < Abs(half_minus)) Cycle
 
-       txx=Real(ewld%fft_dim_a,wp)*(rcell(1)*parts(n)%xxx+rcell(4)*parts(n)%yyy+rcell(7)*parts(n)%zzz+half_minus)
-       tyy=Real(ewld%fft_dim_b,wp)*(rcell(2)*parts(n)%xxx+rcell(5)*parts(n)%yyy+rcell(8)*parts(n)%zzz+half_minus)
-       tzz=Real(ewld%fft_dim_c,wp)*(rcell(3)*parts(n)%xxx+rcell(6)*parts(n)%yyy+rcell(9)*parts(n)%zzz+half_minus)
+       txx=Real(ewld%fft_dim_a,wp)*(rcell(1)*config%parts(n)%xxx+rcell(4)*config%parts(n)%yyy+&
+                           rcell(7)*config%parts(n)%zzz+half_minus)
+       tyy=Real(ewld%fft_dim_b,wp)*(rcell(2)*config%parts(n)%xxx+rcell(5)*config%parts(n)%yyy+&
+                           rcell(8)*config%parts(n)%zzz+half_minus)
+       tzz=Real(ewld%fft_dim_c,wp)*(rcell(3)*config%parts(n)%xxx+rcell(6)*config%parts(n)%yyy+&
+                           rcell(9)*config%parts(n)%zzz+half_minus)
 
 ! global indeces
 
@@ -862,29 +871,29 @@ Contains
        j = jj - pois%iyb + 2
        k = kk - pois%izb + 2
 
-       cfxx=parts(n)%chge*dPhidX(i,j,k,pois)
-       cfyy=parts(n)%chge*dPhidY(i,j,k,pois)
-       cfzz=parts(n)%chge*dPhidZ(i,j,k,pois)
+       cfxx=config%parts(n)%chge*dPhidX(i,j,k,pois)
+       cfyy=config%parts(n)%chge*dPhidY(i,j,k,pois)
+       cfzz=config%parts(n)%chge*dPhidZ(i,j,k,pois)
 
 ! calculate atomic energy
 
-       uenergy=parts(n)%chge*pois%phi(i,j,k)
+       uenergy=config%parts(n)%chge*pois%phi(i,j,k)
 
 !caclulate atomic contribution to the stress tensor
 
-       stress(1)=stress(1)+parts(n)%xxx*cfxx
-       stress(2)=stress(2)+parts(n)%xxx*cfyy
-       stress(3)=stress(3)+parts(n)%xxx*cfzz
-       stress(4)=stress(4)+parts(n)%yyy*cfxx
-       stress(5)=stress(5)+parts(n)%yyy*cfyy
-       stress(6)=stress(6)+parts(n)%yyy*cfzz
-       stress(7)=stress(7)+parts(n)%zzz*cfxx
-       stress(8)=stress(8)+parts(n)%zzz*cfyy
-       stress(9)=stress(9)+parts(n)%zzz*cfzz
+       stress(1)=stress(1)+config%parts(n)%xxx*cfxx
+       stress(2)=stress(2)+config%parts(n)%xxx*cfyy
+       stress(3)=stress(3)+config%parts(n)%xxx*cfzz
+       stress(4)=stress(4)+config%parts(n)%yyy*cfxx
+       stress(5)=stress(5)+config%parts(n)%yyy*cfyy
+       stress(6)=stress(6)+config%parts(n)%yyy*cfzz
+       stress(7)=stress(7)+config%parts(n)%zzz*cfxx
+       stress(8)=stress(8)+config%parts(n)%zzz*cfyy
+       stress(9)=stress(9)+config%parts(n)%zzz*cfzz
 
-       parts(n)%fxx=parts(n)%fxx+cfxx
-       parts(n)%fyy=parts(n)%fyy+cfyy
-       parts(n)%fzz=parts(n)%fzz+cfzz
+       config%parts(n)%fxx=config%parts(n)%fxx+cfxx
+       config%parts(n)%fyy=config%parts(n)%fyy+cfyy
+       config%parts(n)%fzz=config%parts(n)%fzz+cfzz
 
 !add enegry to the total energy
 
@@ -1096,7 +1105,7 @@ Contains
 
   End Function d2PhidZ2
 
-  Subroutine poisson_excl_forces(iatm,rcut,eps,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress,neigh,parts)
+  Subroutine poisson_excl_forces(iatm,rcut,eps,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress,neigh,config)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1115,7 +1124,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( corePart ),  Dimension(  :  ),      Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: limit,idi,jatm,m
 
@@ -1139,8 +1148,8 @@ Contains
 
 ! global identity and type of of iatm
 
-    idi=ltg(iatm)
-    chgea = parts(iatm)%chge
+    idi=config%ltg(iatm)
+    chgea = config%parts(iatm)%chge
 
 ! ignore interaction if the charge is zero
 
@@ -1150,9 +1159,9 @@ Contains
 
 ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
 ! Get limit
 
@@ -1165,7 +1174,7 @@ Contains
 ! atomic index and charge
 
           jatm=neigh%list(m,iatm)
-          chgprd=parts(jatm)%chge
+          chgprd=config%parts(jatm)%chge
 
 ! interatomic distance
 
@@ -1192,15 +1201,15 @@ Contains
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
 ! calculate potential energy
 
@@ -1223,9 +1232,9 @@ Contains
 
 ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
 ! virial
 
@@ -1247,7 +1256,7 @@ Contains
 
   End Subroutine poisson_excl_forces
 
-  Subroutine poisson_frzn_forces(eps,engcpe_fr,vircpe_fr,stress,ewld,neigh,parts,comm)
+  Subroutine poisson_frzn_forces(eps,engcpe_fr,vircpe_fr,stress,ewld,neigh,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1272,7 +1281,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
     Type(ewald_type), Intent( InOut )                    :: ewld
     Type( neighbours_type ), Intent( In    )             :: neigh
-    Type( corePart ),  Dimension( : ),   Intent( InOut ) :: parts
+    Type( configuration_type ),          Intent( InOut ) :: config
     Type(comms_type), Intent( InOut )                    :: comm
 
     Integer           :: fail,i,j,k,ii,jj,idi,nzfr,limit
@@ -1287,10 +1296,10 @@ Contains
     Character( Len = 256 ) :: message
 
     If (.not.ewld%lf_fce) Then ! All's been done but needs copying
-       Do i=1,natms
-          parts(i)%fxx=parts(i)%fxx+ewld%ffx(i)
-          parts(i)%fyy=parts(i)%fyy+ewld%ffy(i)
-          parts(i)%fzz=parts(i)%fzz+ewld%ffz(i)
+       Do i=1,config%natms
+          config%parts(i)%fxx=config%parts(i)%fxx+ewld%ffx(i)
+          config%parts(i)%fyy=config%parts(i)%fyy+ewld%ffy(i)
+          config%parts(i)%fzz=config%parts(i)%fzz+ewld%ffz(i)
        End Do
 
        engcpe_fr=ewld%ef_fr
@@ -1298,7 +1307,7 @@ Contains
        stress=stress+ewld%sf_fr
 
        If (ewld%l_cp) Then
-          Do i=1,natms
+          Do i=1,config%natms
              ewld%fcx(i)=ewld%fcx(i)+ewld%ffx(i)
              ewld%fcy(i)=ewld%fcy(i)+ewld%ffy(i)
              ewld%fcz(i)=ewld%fcz(i)+ewld%ffz(i)
@@ -1320,7 +1329,7 @@ Contains
        Call error(0,message)
     End If
 
-    Call invert(cell,rcell,det)
+    Call invert(config%cell,rcell,det)
 
 ! Initialise contributions
 
@@ -1335,8 +1344,8 @@ Contains
     strs9 = 0.0_wp
 
     l_ind=0 ; nz_fr=0
-    Do i=1,natms
-       If (lfrzn(i) > 0 .and. Abs(parts(i)%chge) > zero_plus) Then
+    Do i=1,config%natms
+       If (config%lfrzn(i) > 0 .and. Abs(config%parts(i)%chge) > zero_plus) Then
           nz_fr(comm%idnode+1)=nz_fr(comm%idnode+1)+1
           l_ind(nz_fr(comm%idnode+1))=i
        End If
@@ -1360,10 +1369,10 @@ Contains
        Do i=1,nz_fr(comm%idnode+1)
           ii=nz_fr(0)+i
 
-          cfr(ii)=parts(l_ind(i))%chge
-          xfr(ii)=parts(l_ind(i))%xxx
-          yfr(ii)=parts(l_ind(i))%yyy
-          zfr(ii)=parts(l_ind(i))%zzz
+          cfr(ii)=config%parts(l_ind(i))%chge
+          xfr(ii)=config%parts(l_ind(i))%xxx
+          yfr(ii)=config%parts(l_ind(i))%yyy
+          zfr(ii)=config%parts(l_ind(i))%zzz
        End Do
        Call gsum(comm,cfr)
        Call gsum(comm,xfr)
@@ -1386,9 +1395,9 @@ Contains
              yss=yss-Anint(yss)
              zss=zss-Anint(zss)
 
-             xrr=(cell(1)*xss+cell(4)*yss+cell(7)*zss)
-             yrr=(cell(2)*xss+cell(5)*yss+cell(8)*zss)
-             zrr=(cell(3)*xss+cell(6)*yss+cell(9)*zss)
+             xrr=(config%cell(1)*xss+config%cell(4)*yss+config%cell(7)*zss)
+             yrr=(config%cell(2)*xss+config%cell(5)*yss+config%cell(8)*zss)
+             zrr=(config%cell(3)*xss+config%cell(6)*yss+config%cell(9)*zss)
 
 ! calculate interatomic distance
 
@@ -1408,9 +1417,9 @@ Contains
 
 ! calculate forces
 
-             parts(l_ind(i))%fxx=parts(l_ind(i))%fxx-fx
-             parts(l_ind(i))%fyy=parts(l_ind(i))%fyy-fy
-             parts(l_ind(i))%fzz=parts(l_ind(i))%fzz-fz
+             config%parts(l_ind(i))%fxx=config%parts(l_ind(i))%fxx-fx
+             config%parts(l_ind(i))%fyy=config%parts(l_ind(i))%fyy-fy
+             config%parts(l_ind(i))%fzz=config%parts(l_ind(i))%fzz-fz
 
 ! redundant calculations copying
 
@@ -1444,9 +1453,9 @@ Contains
              yss=yss-Anint(yss)
              zss=zss-Anint(zss)
 
-             xrr=(cell(1)*xss+cell(4)*yss+cell(7)*zss)
-             yrr=(cell(2)*xss+cell(5)*yss+cell(8)*zss)
-             zrr=(cell(3)*xss+cell(6)*yss+cell(9)*zss)
+             xrr=(config%cell(1)*xss+config%cell(4)*yss+config%cell(7)*zss)
+             yrr=(config%cell(2)*xss+config%cell(5)*yss+config%cell(8)*zss)
+             zrr=(config%cell(3)*xss+config%cell(6)*yss+config%cell(9)*zss)
 
 ! calculate interatomic distance
 
@@ -1466,13 +1475,13 @@ Contains
 
 ! calculate forces
 
-             parts(l_ind(i))%fxx=parts(l_ind(i))%fxx-fx
-             parts(l_ind(i))%fyy=parts(l_ind(i))%fyy-fy
-             parts(l_ind(i))%fzz=parts(l_ind(i))%fzz-fz
+             config%parts(l_ind(i))%fxx=config%parts(l_ind(i))%fxx-fx
+             config%parts(l_ind(i))%fyy=config%parts(l_ind(i))%fyy-fy
+             config%parts(l_ind(i))%fzz=config%parts(l_ind(i))%fzz-fz
 
-             parts(l_ind(j))%fxx=parts(l_ind(j))%fxx+fx
-             parts(l_ind(j))%fyy=parts(l_ind(j))%fyy+fy
-             parts(l_ind(j))%fzz=parts(l_ind(j))%fzz+fz
+             config%parts(l_ind(j))%fxx=config%parts(l_ind(j))%fxx+fx
+             config%parts(l_ind(j))%fyy=config%parts(l_ind(j))%fyy+fy
+             config%parts(l_ind(j))%fzz=config%parts(l_ind(j))%fzz+fz
 
 ! redundant calculations copying
 
@@ -1525,9 +1534,9 @@ Contains
              yss=yss-Anint(yss)
              zss=zss-Anint(zss)
 
-             xrr=(cell(1)*xss+cell(4)*yss+cell(7)*zss)
-             yrr=(cell(2)*xss+cell(5)*yss+cell(8)*zss)
-             zrr=(cell(3)*xss+cell(6)*yss+cell(9)*zss)
+             xrr=(config%cell(1)*xss+config%cell(4)*yss+config%cell(7)*zss)
+             yrr=(config%cell(2)*xss+config%cell(5)*yss+config%cell(8)*zss)
+             zrr=(config%cell(3)*xss+config%cell(6)*yss+config%cell(9)*zss)
 
 ! calculate interatomic distance
 
@@ -1545,9 +1554,9 @@ Contains
              fy = fcoul*yrr
              fz = fcoul*zrr
 
-             parts(l_ind(i))%fxx=parts(l_ind(i))%fxx-fx
-             parts(l_ind(i))%fyy=parts(l_ind(i))%fyy-fy
-             parts(l_ind(i))%fzz=parts(l_ind(i))%fzz-fz
+             config%parts(l_ind(i))%fxx=config%parts(l_ind(i))%fxx-fx
+             config%parts(l_ind(i))%fyy=config%parts(l_ind(i))%fyy-fy
+             config%parts(l_ind(i))%fzz=config%parts(l_ind(i))%fzz-fz
 
 ! redundant calculations copying
 
@@ -1599,7 +1608,7 @@ Contains
 
        Do ii=1,nz_fr(comm%idnode+1)
           i=l_ind(nz_fr(comm%idnode+1))
-          idi=ltg(ii)
+          idi=config%ltg(ii)
 
 ! Get neigh%list limit
 
@@ -1611,9 +1620,9 @@ Contains
              Do k=1,limit
                 j=neigh%list(neigh%list(-1,i)+k,i)
 
-                xxt(k)=parts(i)%xxx-parts(j)%xxx
-                yyt(k)=parts(i)%yyy-parts(j)%yyy
-                zzt(k)=parts(i)%zzz-parts(j)%zzz
+                xxt(k)=config%parts(i)%xxx-config%parts(j)%xxx
+                yyt(k)=config%parts(i)%yyy-config%parts(j)%yyy
+                zzt(k)=config%parts(i)%zzz-config%parts(j)%zzz
              End Do
 
 ! periodic boundary conditions not needed by LC construction
@@ -1630,8 +1639,8 @@ Contains
                 j=neigh%list(neigh%list(-1,i)+k,i)
 
                 rrr=rrt(k)
-                If (Abs(parts(j)%chge) > zero_plus .and. rrr < neigh%cutoff) Then
-                   chgprd=-parts(i)%chge*parts(j)%chge/eps*r4pie0 ! the MINUS signifies the exclusion!!!
+                If (Abs(config%parts(j)%chge) > zero_plus .and. rrr < neigh%cutoff) Then
+                   chgprd=-config%parts(i)%chge*config%parts(j)%chge/eps*r4pie0 ! the MINUS signifies the exclusion!!!
                    rsq=rrr**2
 
 ! calculate forces
@@ -1644,9 +1653,9 @@ Contains
                    fz = fcoul*zrr
 
 
-                   parts(i)%fxx=parts(i)%fxx-fx
-                   parts(i)%fyy=parts(i)%fyy-fy
-                   parts(i)%fzz=parts(i)%fzz-fz
+                   config%parts(i)%fxx=config%parts(i)%fxx-fx
+                   config%parts(i)%fyy=config%parts(i)%fyy-fy
+                   config%parts(i)%fzz=config%parts(i)%fzz-fz
 
 ! redundant calculations copying
 
@@ -1664,11 +1673,11 @@ Contains
                       ewld%fcz(i)=ewld%fcz(i)-fz
                    End If
 
-                   If (j <= natms) Then
+                   If (j <= config%natms) Then
 
-                      parts(j)%fxx=parts(j)%fxx+fx
-                      parts(j)%fyy=parts(j)%fyy+fy
-                      parts(j)%fzz=parts(j)%fzz+fz
+                      config%parts(j)%fxx=config%parts(j)%fxx+fx
+                      config%parts(j)%fyy=config%parts(j)%fyy+fy
+                      config%parts(j)%fzz=config%parts(j)%fzz+fz
 
 ! redundant calculations copying
 
@@ -1688,7 +1697,7 @@ Contains
 
                    End If
 
-                   If (j <= natms .or. idi < ltg(j)) Then
+                   If (j <= config%natms .or. idi < config%ltg(j)) Then
 
 ! calculate potential energy
 

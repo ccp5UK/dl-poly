@@ -15,7 +15,7 @@ Module greenkubo
 
   Use comms,     Only : comms_type,gsum,gcheck
   Use setup,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt,mxatms
-  Use configuration,    Only : natms,ltype,lfrzn,vxx,vyy,vzz,cfgname
+  Use configuration,    Only : configuration_type
   Use site, Only : site_type
 
   Use errors_warnings, Only : error,info
@@ -93,7 +93,7 @@ Contains
 
   End Subroutine allocate_greenkubo_arrays
 
-  Subroutine vaf_collect(leql,nsteql,nstep,time,green,comm)
+  Subroutine vaf_collect(config,leql,nsteql,nstep,time,green,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -109,6 +109,7 @@ Contains
     Logical,           Intent( In    ) :: leql
     Integer,           Intent( In    ) :: nsteql,nstep
     Real( Kind = wp ), Intent( In    ) :: time
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( greenkubo_Type ), Intent( InOut ) :: green
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -132,9 +133,9 @@ Contains
     If (nstep <= green%t_start+(green%samp-1)*green%freq) Then
       Do j=1,green%samp
         If (nstep == (green%t_start+(j-1)*green%freq)) Then
-          green%vxi(1:natms,j) = vxx(1:natms)
-          green%vyi(1:natms,j) = vyy(1:natms)
-          green%vzi(1:natms,j) = vzz(1:natms)
+          green%vxi(1:config%natms,j) = config%vxx(1:config%natms)
+          green%vyi(1:config%natms,j) = config%vyy(1:config%natms)
+          green%vzi(1:config%natms,j) = config%vzz(1:config%natms)
         End If
       End Do
     End If
@@ -147,10 +148,10 @@ Contains
 
       If (k >= 0 .and. k <= green%binsize) Then
         vafcoll=0.0_wp
-        Do i=1,natms
-          If (lfrzn(i) == 0) Then
-            l=ltype(i)
-            vafcoll(l) = vafcoll(l) + vxx(i)*green%vxi(i,j)+vyy(i)*green%vyi(i,j)+vzz(i)*green%vzi(i,j)
+        Do i=1,config%natms
+          If (config%lfrzn(i) == 0) Then
+            l=config%ltype(i)
+            vafcoll(l) = vafcoll(l) + config%vxx(i)*green%vxi(i,j)+config%vyy(i)*green%vyi(i,j)+config%vzz(i)*green%vzi(i,j)
           End If
         End Do
 
@@ -194,14 +195,14 @@ Contains
       If (k == green%binsize .or. (green%freq > green%binsize .and. k == green%freq)) Then
         green%step(j) = 0
 
-        green%vxi(1:natms,j) = vxx(1:natms)
-        green%vyi(1:natms,j) = vyy(1:natms)
-        green%vzi(1:natms,j) = vzz(1:natms)
+        green%vxi(1:config%natms,j) = config%vxx(1:config%natms)
+        green%vyi(1:config%natms,j) = config%vyy(1:config%natms)
+        green%vzi(1:config%natms,j) = config%vzz(1:config%natms)
 
         vafcoll = 0.0_wp
-        Do i=1,natms
-          If (lfrzn(i) == 0) Then
-            l=ltype(i)
+        Do i=1,config%natms
+          If (config%lfrzn(i) == 0) Then
+            l=config%ltype(i)
             vafcoll(l) = vafcoll(l) + green%vxi(i,j)*green%vxi(i,j)+green%vyi(i,j)*green%vyi(i,j)+green%vzi(i,j)*green%vzi(i,j)
           End If
         End Do
@@ -291,7 +292,7 @@ Contains
 
   End Subroutine vaf_compute
 
-  Subroutine vaf_write(keyres,nstep,tstep,green,sites,comm)
+  Subroutine vaf_write(config,keyres,nstep,tstep,green,sites,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -305,7 +306,8 @@ Contains
 
     Integer,           Intent( In    ) :: keyres,nstep
     Real( Kind = wp ), Intent( In    ) :: tstep
-    Type( greenkubo_type), Intent( InOut    ) :: green
+    Type( greenkubo_type), Intent( InOut ) :: green
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( site_type ), Intent( In    ) :: sites
     Type( comms_type), Intent( InOut ) :: comm
 
@@ -336,7 +338,7 @@ Contains
         If ((.not.lexist) .or. green%l_average) Then
           If (comm%idnode == 0) Then
             Open(Unit=nvafdt, File='VAFDAT_'//sites%unique_atom(i), Status='replace')
-            Write(nvafdt,'(a)') cfgname
+            Write(nvafdt,'(a)') config%cfgname
             Close(Unit=nvafdt)
           End If
         End If
@@ -359,7 +361,7 @@ Contains
       If (comm%idnode == 0) Then
         If (green%l_average) Then
           Open(Unit=nvafdt, File='VAFDAT_'//sites%unique_atom(j), Status='replace')
-          Write(nvafdt,'(a)') cfgname
+          Write(nvafdt,'(a)') config%cfgname
           Close(Unit=nvafdt)
         End If
         Open(Unit=nvafdt, File='VAFDAT_'//sites%unique_atom(j), Position='append')

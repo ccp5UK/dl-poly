@@ -2,9 +2,7 @@ Module nvt_ekin
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gmax,gsum
   Use setup,           Only : zero_plus,mxatms
-  Use configuration,   Only : imcon,cell,natms,nlast,nfree, &
-                              lstfre,weight,                &
-                              vxx,vyy,vzz
+  Use configuration,   Only : configuration_type
   Use domains,         Only : domains_type
   Use kinetics,        Only : kinstress,kinstresf,kinstrest
   Use constraints,     Only : constraints_tags,apply_shake,&
@@ -25,30 +23,30 @@ Module nvt_ekin
   Public :: nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
 
   Interface nvt_e0_scl
-    Module Procedure nvt_e0_scl_parts
+    Module Procedure nvt_e0_scl_config
     Module Procedure nvt_e0_scl_arrays
   End Interface nvt_e0_scl
 
   Interface nvt_e1_scl
-    Module Procedure nvt_e1_scl_parts
+    Module Procedure nvt_e1_scl_config
     Module Procedure nvt_e1_scl_arrays
   End Interface nvt_e1_scl
 
 Contains
 
   Subroutine nvt_e0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,chit,strkin,engke, &
-    thermo,cshell,cons,pmf,stat,domain,tmr,parts,comm)
+      thermo,cshell,cons,pmf,stat,domain,tmr,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for integrating newtonian equations of motion in
-    ! molecular dynamics - velocity verlet with Gaussian temperature
-    ! constraints (Ekin conservation, symplectic)
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov august 2016
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for integrating newtonian equations of motion in
+  ! molecular dynamics - velocity verlet with Gaussian temperature
+  ! constraints (Ekin conservation, symplectic)
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov august 2016
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,           Intent( In    ) :: isw
     Logical,           Intent( In    ) :: lvar
@@ -63,7 +61,7 @@ Contains
     Type( pmf_type ), Intent( InOut ) :: pmf
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -108,20 +106,20 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
     End If
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       lstitr(1:natms)=.false. ! initialise lstitr
+       lstitr(1:config%natms)=.false. ! initialise lstitr
 
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
        If (cons%megcon > 0) Then
-         Call constraints_tags(lstitr,cons,parts,comm)
+         Call constraints_tags(lstitr,cons,config,comm)
        End If
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
        If (pmf%megpmf > 0) Then
-         Call pmf_tags(lstitr,pmf,parts,comm)
+         Call pmf_tags(lstitr,pmf,config,comm)
        End If
     End If
 
@@ -136,18 +134,18 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! store initial values
 
-       Do i=1,natms
-          xxt(i) = parts(i)%xxx
-          yyt(i) = parts(i)%yyy
-          zzt(i) = parts(i)%zzz
+       Do i=1,config%natms
+          xxt(i) = config%parts(i)%xxx
+          yyt(i) = config%parts(i)%yyy
+          zzt(i) = config%parts(i)%zzz
 
-          vxt(i) = vxx(i)
-          vyt(i) = vyy(i)
-          vzt(i) = vzz(i)
+          vxt(i) = config%vxx(i)
+          vyt(i) = config%vyy(i)
+          vzt(i) = config%vzz(i)
 
-          fxt(i) = parts(i)%fxx
-          fyt(i) = parts(i)%fyy
-          fzt(i) = parts(i)%fzz
+          fxt(i) = config%parts(i)%fxx
+          fyt(i) = config%parts(i)%fyy
+          fzt(i) = config%parts(i)%fzz
        End Do
 
   100  Continue
@@ -168,20 +166,20 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! integrate and apply nvt_e0_scl thermostat - half a step
 
-       Call nvt_e0_scl(1,hstep,fxt,fyt,fzt,vxx,vyy,vzz,chit,engke,comm)
+       Call nvt_e0_scl(1,hstep,fxt,fyt,fzt,config%vxx,config%vyy,config%vzz,chit,engke,config,comm)
 
   ! update velocity and position
 
-       Do i=1,natms
-          If (weight(i) > 1.0e-6_wp) Then
-             tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*fxt(i)
-             vyy(i)=vyy(i)+tmp*fyt(i)
-             vzz(i)=vzz(i)+tmp*fzt(i)
+       Do i=1,config%natms
+          If (config%weight(i) > 1.0e-6_wp) Then
+             tmp=hstep/config%weight(i)
+             config%vxx(i)=config%vxx(i)+tmp*fxt(i)
+             config%vyy(i)=config%vyy(i)+tmp*fyt(i)
+             config%vzz(i)=config%vzz(i)+tmp*fzt(i)
 
-             parts(i)%xxx=xxt(i)+tstep*vxx(i)
-             parts(i)%yyy=yyt(i)+tstep*vyy(i)
-             parts(i)%zzz=zzt(i)+tstep*vzz(i)
+             config%parts(i)%xxx=xxt(i)+tstep*config%vxx(i)
+             config%parts(i)%yyy=yyt(i)+tstep*config%vyy(i)
+             config%parts(i)%zzz=zzt(i)+tstep*config%vzz(i)
           End If
        End Do
 
@@ -189,22 +187,22 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
         Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-          lstitr,stat,pmf,cons,domain,tmr,parts,comm)
+          lstitr,stat,pmf,cons,domain,tmr,config,comm)
        End If
 
   ! check timestep for variable timestep
 
        If (lvar) Then
-If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
+If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%parts,&
  xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restore initial conditions
 
-             Do i=1,natms
-                vxx(i) = vxt(i)
-                vyy(i) = vyt(i)
-                vzz(i) = vzt(i)
+             Do i=1,config%natms
+                config%vxx(i) = vxt(i)
+                config%vyy(i) = vyt(i)
+                config%vzz(i) = vzt(i)
              End Do
 
   ! restart vv1
@@ -219,12 +217,12 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! update velocity
 
-       Do i=1,natms
-          If (weight(i) > 1.0e-6_wp) Then
-             tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*parts(i)%fxx
-             vyy(i)=vyy(i)+tmp*parts(i)%fyy
-             vzz(i)=vzz(i)+tmp*parts(i)%fzz
+       Do i=1,config%natms
+          If (config%weight(i) > 1.0e-6_wp) Then
+             tmp=hstep/config%weight(i)
+             config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
+             config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
+             config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
           End If
        End Do
 
@@ -232,16 +230,16 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,config,comm)
        End If
 
   ! integrate and apply nvt_e0_scl thermostat - half a step
 
-       Call nvt_e0_scl(1,hstep,parts,vxx,vyy,vzz,chit,engke,comm)
+       Call nvt_e0_scl(1,hstep,config,config%vxx,config%vyy,config%vzz,chit,engke,comm)
 
   ! kinetic contribution to stress tensor
 
-       Call kinstress(vxx,vyy,vzz,strkin,comm)
+       Call kinstress(config%vxx,config%vyy,config%vzz,strkin,config,comm)
 
     End If
 
@@ -262,20 +260,20 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   End Subroutine nvt_e0_vv
 
   Subroutine nvt_e1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,chit,strkin,strknf, &
-    strknt,engke,engrot,strcom,vircom,&
-    thermo,cshell,cons,pmf,stat,rigid,domain,tmr,parts,comm)
+      strknt,engke,engrot,strcom,vircom,&
+      thermo,cshell,cons,pmf,stat,rigid,domain,tmr,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for integrating newtonian and rotational, singled
-    ! RBs, equations of motion in molecular dynamics
-    ! - velocity verlet with Gaussian temperature constraints
-    ! (Ekin conservation, symplectic)
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov august 2016
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for integrating newtonian and rotational, singled
+  ! RBs, equations of motion in molecular dynamics
+  ! - velocity verlet with Gaussian temperature constraints
+  ! (Ekin conservation, symplectic)
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov august 2016
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,           Intent( In    ) :: isw
     Logical,           Intent( In    ) :: lvar
@@ -293,7 +291,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
 
@@ -379,24 +377,24 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! set matms
 
-    matms=nlast
-    If (comm%mxnode == 1) matms=natms
+    matms=config%nlast
+    If (comm%mxnode == 1) matms=config%natms
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       lstitr(1:natms)=.false. ! initialise lstitr
+       lstitr(1:config%natms)=.false. ! initialise lstitr
 
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
        If (cons%megcon > 0) Then
-         Call constraints_tags(lstitr,cons,parts,comm)
+         Call constraints_tags(lstitr,cons,config,comm)
        End If
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
        If (pmf%megpmf > 0) Then
-         Call pmf_tags(lstitr,pmf,parts,comm)
+         Call pmf_tags(lstitr,pmf,config,comm)
        End If
     End If
 
@@ -417,16 +415,16 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! COM distances
 
-             ggx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-             ggy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-             ggz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+             ggx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+             ggy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+             ggz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
           End Do
        End If
     End Do
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,ggx,ggy,ggz)
+    Call images(config%imcon,config%cell,krgd,ggx,ggy,ggz)
 
   ! timestep derivatives
 
@@ -456,14 +454,14 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! If the RB has a frozen particle then no net force
 
              If (rigid%frozen(0,rgdtyp) == 0) Then
-                fmx=fmx+parts(i)%fxx
-                fmy=fmy+parts(i)%fyy
-                fmz=fmz+parts(i)%fzz
+                fmx=fmx+config%parts(i)%fxx
+                fmy=fmy+config%parts(i)%fyy
+                fmz=fmz+config%parts(i)%fzz
              End If
 
-             tqx=tqx+ggy(krgd)*parts(i)%fzz-ggz(krgd)*parts(i)%fyy
-             tqy=tqy+ggz(krgd)*parts(i)%fxx-ggx(krgd)*parts(i)%fzz
-             tqz=tqz+ggx(krgd)*parts(i)%fyy-ggy(krgd)*parts(i)%fxx
+             tqx=tqx+ggy(krgd)*config%parts(i)%fzz-ggz(krgd)*config%parts(i)%fyy
+             tqy=tqy+ggz(krgd)*config%parts(i)%fxx-ggx(krgd)*config%parts(i)%fzz
+             tqz=tqz+ggx(krgd)*config%parts(i)%fyy-ggy(krgd)*config%parts(i)%fxx
           End Do
 
   ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -473,11 +471,11 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
              i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
              i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-             x(1)=parts(i1)%xxx-parts(i2)%xxx
-             y(1)=parts(i1)%yyy-parts(i2)%yyy
-             z(1)=parts(i1)%zzz-parts(i2)%zzz
+             x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
+             y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
+             z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
 
-             Call images(imcon,cell,1,x,y,z)
+             Call images(config%imcon,config%cell,1,x,y,z)
 
              tmp=(x(1)*tqx+y(1)*tqy+z(1)*tqz)/(x(1)**2+y(1)**2+z(1)**2)
              tqx=x(1)*tmp
@@ -525,17 +523,17 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! store initial values
 
        Do i=1,matms
-          xxt(i) = parts(i)%xxx
-          yyt(i) = parts(i)%yyy
-          zzt(i) = parts(i)%zzz
+          xxt(i) = config%parts(i)%xxx
+          yyt(i) = config%parts(i)%yyy
+          zzt(i) = config%parts(i)%zzz
 
-          vxt(i) = vxx(i)
-          vyt(i) = vyy(i)
-          vzt(i) = vzz(i)
+          vxt(i) = config%vxx(i)
+          vyt(i) = config%vyy(i)
+          vzt(i) = config%vzz(i)
 
-          fxt(i) = parts(i)%fxx
-          fyt(i) = parts(i)%fyy
-          fzt(i) = parts(i)%fzz
+          fxt(i) = config%parts(i)%fxx
+          fyt(i) = config%parts(i)%fyy
+          fzt(i) = config%parts(i)%fzz
        End Do
 
        Do irgd=1,rigid%n_types
@@ -576,24 +574,24 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! integrate and apply nvt_e1_scl thermostat - half a step
 
        Call nvt_e1_scl &
-             (1,hstep,fxt,fyt,fzt,vxx,vyy,vzz,          &
+             (1,hstep,fxt,fyt,fzt,config%vxx,config%vyy,config%vzz,          &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
-             chit,engke,engrot,rigid,comm)
+             chit,engke,engrot,rigid,config,comm)
 
   ! update velocity and position of FPs
 
-       Do j=1,nfree
-          i=lstfre(j)
+       Do j=1,config%nfree
+          i=config%lstfre(j)
 
-          If (weight(i) > 1.0e-6_wp) Then
-             tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*fxt(i)
-             vyy(i)=vyy(i)+tmp*fyt(i)
-             vzz(i)=vzz(i)+tmp*fzt(i)
+          If (config%weight(i) > 1.0e-6_wp) Then
+             tmp=hstep/config%weight(i)
+             config%vxx(i)=config%vxx(i)+tmp*fxt(i)
+             config%vyy(i)=config%vyy(i)+tmp*fyt(i)
+             config%vzz(i)=config%vzz(i)+tmp*fzt(i)
 
-             parts(i)%xxx=xxt(i)+tstep*vxx(i)
-             parts(i)%yyy=yyt(i)+tstep*vyy(i)
-             parts(i)%zzz=zzt(i)+tstep*vzz(i)
+             config%parts(i)%xxx=xxt(i)+tstep*config%vxx(i)
+             config%parts(i)%yyy=yyt(i)+tstep*config%vyy(i)
+             config%parts(i)%zzz=zzt(i)+tstep*config%vzz(i)
           End If
        End Do
 
@@ -601,7 +599,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
         Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-          lstitr,stat,pmf,cons,domain,tmr,parts,comm)
+          lstitr,stat,pmf,cons,domain,tmr,config,comm)
        End If
 
   ! update velocity and position of RBs
@@ -684,7 +682,7 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
              Do jrgd=1,lrgd
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                If (i <= natms) Then
+                If (i <= config%natms) Then
                    If (rigid%frozen(jrgd,rgdtyp) == 0) Then
                       x(1)=rigid%x(jrgd,rgdtyp)
                       y(1)=rigid%y(jrgd,rgdtyp)
@@ -692,9 +690,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! new atomic positions
 
-                      parts(i)%xxx=rot(1)*x(1)+rot(2)*y(1)+rot(3)*z(1) + rigid%xxx(irgd)
-                      parts(i)%yyy=rot(4)*x(1)+rot(5)*y(1)+rot(6)*z(1) + rigid%yyy(irgd)
-                      parts(i)%zzz=rot(7)*x(1)+rot(8)*y(1)+rot(9)*z(1) + rigid%zzz(irgd)
+                      config%parts(i)%xxx=rot(1)*x(1)+rot(2)*y(1)+rot(3)*z(1) + rigid%xxx(irgd)
+                      config%parts(i)%yyy=rot(4)*x(1)+rot(5)*y(1)+rot(6)*z(1) + rigid%yyy(irgd)
+                      config%parts(i)%zzz=rot(7)*x(1)+rot(8)*y(1)+rot(9)*z(1) + rigid%zzz(irgd)
 
   ! new atomic velocities in body frame
 
@@ -705,20 +703,20 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! DD bound positions
 
                       If (thermo%unsafe) Then
-                         x(1)=parts(i)%xxx-xxt(i)
-                         y(1)=parts(i)%yyy-yyt(i)
-                         z(1)=parts(i)%zzz-zzt(i)
-                         Call images(imcon,cell,1,x,y,z)
-                         parts(i)%xxx=x(1)+xxt(i)
-                         parts(i)%yyy=y(1)+yyt(i)
-                         parts(i)%zzz=z(1)+zzt(i)
+                         x(1)=config%parts(i)%xxx-xxt(i)
+                         y(1)=config%parts(i)%yyy-yyt(i)
+                         z(1)=config%parts(i)%zzz-zzt(i)
+                         Call images(config%imcon,config%cell,1,x,y,z)
+                         config%parts(i)%xxx=x(1)+xxt(i)
+                         config%parts(i)%yyy=y(1)+yyt(i)
+                         config%parts(i)%zzz=z(1)+zzt(i)
                       End If
 
   ! new atomic velocities in lab frame
 
-                      vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
-                      vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
-                      vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
+                      config%vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                      config%vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                      config%vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                    End If
                 End If
              End Do
@@ -729,16 +727,16 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! check timestep for variable timestep
 
        If (lvar) Then
-If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
+If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%parts,&
  xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restore initial conditions
 
              Do i=1,matms
-                vxx(i) = vxt(i)
-                vyy(i) = vyt(i)
-                vzz(i) = vzt(i)
+                config%vxx(i) = vxt(i)
+                config%vyy(i) = vyt(i)
+                config%vzz(i) = vzt(i)
              End Do
 
              Do irgd=1,rigid%n_types
@@ -768,14 +766,14 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! update velocity of FPs
 
-       Do j=1,nfree
-          i=lstfre(j)
+       Do j=1,config%nfree
+          i=config%lstfre(j)
 
-          If (weight(i) > 1.0e-6_wp) Then
-             tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*parts(i)%fxx
-             vyy(i)=vyy(i)+tmp*parts(i)%fyy
-             vzz(i)=vzz(i)+tmp*parts(i)%fzz
+          If (config%weight(i) > 1.0e-6_wp) Then
+             tmp=hstep/config%weight(i)
+             config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
+             config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
+             config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
           End If
        End Do
 
@@ -783,12 +781,12 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,config,comm)
        End If
 
   ! Get RB COM stress and virial
 
-       Call rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,parts,comm)
+       Call rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,config,comm)
        vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   ! update velocity of RBs
@@ -862,7 +860,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
                 If (rigid%frozen(jrgd,rgdtyp) == 0) Then
                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                   If (i <= natms) Then
+                   If (i <= config%natms) Then
                       x(1)=rigid%x(jrgd,rgdtyp)
                       y(1)=rigid%y(jrgd,rgdtyp)
                       z(1)=rigid%z(jrgd,rgdtyp)
@@ -875,9 +873,9 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! new atomic velocities in lab frame
 
-                      vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
-                      vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
-                      vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
+                      config%vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                      config%vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                      config%vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                    End If
                 End If
              End Do
@@ -888,13 +886,13 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply nvt_e1_scl thermostat - half a step
 
        Call nvt_e1_scl &
-             (1,hstep,parts,vxx,vyy,vzz,          &
+             (1,hstep,config,config%vxx,config%vyy,config%vzz,          &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
              chit,engke,engrot,rigid,comm)
 
   ! kinetic contributions to stress tensor
 
-       Call kinstresf(vxx,vyy,vzz,strknf,comm)
+       Call kinstresf(config%vxx,config%vyy,config%vzz,strknf,config,comm)
        Call kinstrest(rigid,strknt,comm)
 
        strkin=strknf+strknt
@@ -924,7 +922,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nvt_e1_vv
 
-  Subroutine nvt_e0_scl_arrays(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke,comm)
+  Subroutine nvt_e0_scl_arrays(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -941,6 +939,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: fxx,fyy,fzz
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
+    Type( configuration_type ),               Intent( InOut ) :: config
     Type( comms_type), Intent ( InOut ) :: comm
 
     Integer           :: i
@@ -948,8 +947,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     engke = 0.0_wp
     vdotf = 0.0_wp
-    Do i=1,natms
-       engke = engke+weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
+    Do i=1,config%natms
+       engke = engke+config%weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
        vdotf = vdotf+vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
     End Do
 
@@ -975,7 +974,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! thermostat velocities
 
     scale=Exp(-chit*tstep)
-    Do i=1,natms
+    Do i=1,config%natms
        vxx(i)=vxx(i)*scale
        vyy(i)=vyy(i)*scale
        vzz(i)=vzz(i)*scale
@@ -988,7 +987,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nvt_e0_scl_arrays
 
-  Subroutine nvt_e0_scl_parts(isw,tstep,parts,vxx,vyy,vzz,chit,engke,comm)
+  Subroutine nvt_e0_scl_config(isw,tstep,config,vxx,vyy,vzz,chit,engke,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1002,7 +1001,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     Integer,                                  Intent( In    ) :: isw
     Real( Kind = wp ),                        Intent( In    ) :: tstep
-    Type( corePart ),  Dimension( 1:mxatms ), Intent( In    ) :: parts
+    Type( configuration_type ),               Intent( In    ) :: config
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
     Type( comms_type), Intent ( InOut ) :: comm
@@ -1012,9 +1011,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     engke = 0.0_wp
     vdotf = 0.0_wp
-    Do i=1,natms
-       engke = engke+weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
-       vdotf = vdotf+vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
+    Do i=1,config%natms
+       engke = engke+config%weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
+       vdotf = vdotf+vxx(i)*config%parts(i)%fxx+vyy(i)*config%parts(i)%fyy+vzz(i)*config%parts(i)%fzz
     End Do
 
    
@@ -1039,7 +1038,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! thermostat velocities
 
     scale=Exp(-chit*tstep)
-    Do i=1,natms
+    Do i=1,config%natms
        vxx(i)=vxx(i)*scale
        vyy(i)=vyy(i)*scale
        vzz(i)=vzz(i)*scale
@@ -1049,12 +1048,12 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     engke = engke*scale**2
 
-  End Subroutine nvt_e0_scl_parts
+  End Subroutine nvt_e0_scl_config
 
   Subroutine nvt_e1_scl_arrays &
              (isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,        &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
-             chit,engke,engrot,rigid,comm)
+             chit,engke,engrot,rigid,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1074,6 +1073,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ), Dimension( 1:rigid%max_rigid  ), Intent( In    ) :: rgdfxx,rgdfyy,rgdfzz, &
                                                                  rgdtxx,rgdtyy,rgdtzz
     Real( Kind = wp ),                        Intent(   Out ) :: chit,engke,engrot
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent ( InOut ) :: comm
 
     Real( Kind = wp ) :: buffer(1:4),vdotf,odott,scale,tmp
@@ -1086,10 +1086,10 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! Free particles
 
-    Do j=1,nfree
-       i=lstfre(j)
+    Do j=1,config%nfree
+       i=config%lstfre(j)
 
-       engke = engke+weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
+       engke = engke+config%weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
        vdotf = vdotf+vxx(i)*fxx(i)+vyy(i)*fyy(i)+vzz(i)*fzz(i)
     End Do
 
@@ -1152,8 +1152,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     scale=Exp(-chit*tstep)
 
-    Do j=1,nfree
-       i=lstfre(j)
+    Do j=1,config%nfree
+       i=config%lstfre(j)
 
        vxx(i)=vxx(i)*scale
        vyy(i)=vyy(i)*scale
@@ -1177,8 +1177,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     engrot = engrot*tmp
 
   End Subroutine nvt_e1_scl_arrays
-  Subroutine nvt_e1_scl_parts &
-             (isw,tstep,parts,vxx,vyy,vzz,        &
+  Subroutine nvt_e1_scl_config &
+             (isw,tstep,config,vxx,vyy,vzz,        &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
              chit,engke,engrot,rigid,comm)
 
@@ -1194,7 +1194,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     Integer,                                  Intent( In    ) :: isw
     Real( Kind = wp ),                        Intent( In    ) :: tstep
-    Type( corePart ),  Dimension( 1:mxatms ), Intent( In    ) :: parts
+    Type( configuration_type ),               Intent( In    ) :: config
     Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Real( Kind = wp ), Dimension( 1:rigid%max_rigid  ), Intent( In    ) :: rgdfxx,rgdfyy,rgdfzz, &
@@ -1212,11 +1212,11 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! Free particles
 
-    Do j=1,nfree
-       i=lstfre(j)
+    Do j=1,config%nfree
+       i=config%lstfre(j)
 
-       engke = engke+weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
-       vdotf = vdotf+vxx(i)*parts(i)%fxx+vyy(i)*parts(i)%fyy+vzz(i)*parts(i)%fzz
+       engke = engke+config%weight(i)*(vxx(i)**2+vyy(i)**2+vzz(i)**2)
+       vdotf = vdotf+vxx(i)*config%parts(i)%fxx+vyy(i)*config%parts(i)%fyy+vzz(i)*config%parts(i)%fzz
     End Do
 
   ! RBs
@@ -1278,8 +1278,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     scale=Exp(-chit*tstep)
 
-    Do j=1,nfree
-       i=lstfre(j)
+    Do j=1,config%nfree
+       i=config%lstfre(j)
 
        vxx(i)=vxx(i)*scale
        vyy(i)=vyy(i)*scale
@@ -1302,5 +1302,5 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     engke = engke*tmp
     engrot = engrot*tmp
 
-  End Subroutine nvt_e1_scl_parts
+  End Subroutine nvt_e1_scl_config
 End Module nvt_ekin

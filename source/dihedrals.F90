@@ -18,8 +18,7 @@ Module dihedrals
                             rtwopi,r4pie0,    &
                             ntable,mxatdm
   Use site, Only : site_type
-  Use configuration, Only : imcon,cell,natms,nlast,lsi,lsa,ltg,lfrzn,ltype, &
-                                cfgname
+  Use configuration, Only : configuration_type
   Use particle,      Only : corePart
   Use vdw,    Only : vdw_type
   Use parse,  Only : get_line,get_word,word_2_real
@@ -314,7 +313,7 @@ Contains
 
 End Subroutine dihedrals_14_check
 
-Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
+Subroutine dihedrals_compute(temp,unique_atom,dihedral,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -331,6 +330,7 @@ Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
   Character( Len = 8 ), Dimension(:), Intent( In    ) :: unique_atom
   Type( dihedrals_type ), Intent( InOut ) :: dihedral
   Type( comms_type ), Intent( InOut ) :: comm
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Logical           :: zero
   Integer           :: fail,ngrid,i,j,ig,kk,ll
@@ -399,7 +399,7 @@ Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
 
   If (comm%idnode == 0) Then
      Open(Unit=npdfdt, File='DIHDAT', Status='replace')
-     Write(npdfdt,'(a)') '# '//cfgname
+     Write(npdfdt,'(a)') '# '//config%cfgname
      Write(npdfdt,'(a)') '# DIHEDRALS: Probability Density Functions (PDF) := histogram(bin)/hist_sum(bins)/dTheta_bin'
      Write(npdfdt,'(a,4(1x,i10))') '# bins, cutoff, frames, types: ',dihedral%bin_adf,360,dihedral%n_frames,kk
      Write(npdfdt,'(a)') '#'
@@ -499,12 +499,12 @@ Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
 
   If (comm%idnode == 0) Then
      Open(Unit=npdgdt, File='DIHPMF', Status='replace')
-     Write(npdgdt,'(a)') '# '//cfgname
+     Write(npdgdt,'(a)') '# '//config%cfgname
      Write(npdgdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',dihedral%bin_adf,delth*Real(dihedral%bin_adf,wp)*rad2dgr,delth*rad2dgr,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
 
      Open(Unit=npdfdt, File='DIHTAB', Status='replace')
-     Write(npdfdt,'(a)') '# '//cfgname
+     Write(npdfdt,'(a)') '# '//config%cfgname
      Write(npdfdt,'(a,i10,2f12.5,i10,a,e15.7)') '# ',ngrid,dgrid*Real(ngrid,wp)*rad2dgr,dgrid*rad2dgr,kk, &
           '   conversion factor(kT -> energy units) =',kT2engo
   End If
@@ -647,7 +647,7 @@ Subroutine dihedrals_compute(temp,unique_atom,dihedral,comm)
 End Subroutine dihedrals_compute
 
 Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
-    engsrp,virsrp,dihedral,vdws,mpoles,electro,parts,comm)
+    engsrp,virsrp,dihedral,vdws,mpoles,electro,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -678,7 +678,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( comms_type),                   Intent( InOut ) :: comm
-  Type( corePart ), Dimension( : ),    Intent( InOut ) :: parts
+  Type( configuration_type ),          Intent( InOut ) :: config
 
   Logical                 :: safe(1:3),csa,csd
   Integer                 :: fail(1:5),i,j,l,ia,ib,ic,id,kk,keyd, &
@@ -726,47 +726,49 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 
 ! indices of dihedral atoms
 
-     ia=local_index(dihedral%list(1,i),nlast,lsi,lsa) ; lstopt(1,i)=ia
-     ib=local_index(dihedral%list(2,i),nlast,lsi,lsa) ; lstopt(2,i)=ib
-     ic=local_index(dihedral%list(3,i),nlast,lsi,lsa) ; lstopt(3,i)=ic
-     id=local_index(dihedral%list(4,i),nlast,lsi,lsa) ; lstopt(4,i)=id
+     ia=local_index(dihedral%list(1,i),config%nlast,config%lsi,config%lsa) ; lstopt(1,i)=ia
+     ib=local_index(dihedral%list(2,i),config%nlast,config%lsi,config%lsa) ; lstopt(2,i)=ib
+     ic=local_index(dihedral%list(3,i),config%nlast,config%lsi,config%lsa) ; lstopt(3,i)=ic
+     id=local_index(dihedral%list(4,i),config%nlast,config%lsi,config%lsa) ; lstopt(4,i)=id
      If (dihedral%l_core_shell) Then
-        ia0=local_index(dihedral%list(5,i),nlast,lsi,lsa) ; lstopt(5,i)=ia0
-        id0=local_index(dihedral%list(6,i),nlast,lsi,lsa) ; lstopt(6,i)=id0
+        ia0=local_index(dihedral%list(5,i),config%nlast,config%lsi,config%lsa) ; lstopt(5,i)=ia0
+        id0=local_index(dihedral%list(6,i),config%nlast,config%lsi,config%lsa) ; lstopt(6,i)=id0
      End If
 
      lstopt(0,i)=0
      If (dihedral%l_core_shell) Then
         If (ia > 0 .and. ib > 0 .and. ic > 0 .and. id > 0 .and. &
             ia0 > 0 .and. id0 > 0) Then !Tag
-           If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic)*lfrzn(id) == 0) Then
-              If (ia <= natms .or. ib <= natms .or. ic <= natms .or. id <= natms .or. &
-                  ia0 <= natms .or. id0 <= natms) Then
+           If (config%lfrzn(ia)*config%lfrzn(ib)*config%lfrzn(ic)*config%lfrzn(id) == 0) Then
+              If (ia <= config%natms .or. ib <= config%natms .or. &
+                  ic <= config%natms .or. id <= config%natms .or. &
+                  ia0 <= config%natms .or. id0 <= config%natms) Then
                  lstopt(0,i)=1
               End If
            End If
         Else                            ! Detect uncompressed unit
-           If ( ((ia > 0  .and. ia <= natms)  .or.   &
-                 (ib > 0  .and. ib <= natms)  .or.   &
-                 (ic > 0  .and. ic <= natms)  .or.   &
-                 (id > 0  .and. id <= natms)  .or.   &
-                 (ia0 > 0 .and. ia0 <= natms) .or.   &
-                 (id0 > 0 .and. id0 <= natms)) .and. &
+           If ( ((ia > 0  .and. ia <= config%natms)  .or.   &
+                 (ib > 0  .and. ib <= config%natms)  .or.   &
+                 (ic > 0  .and. ic <= config%natms)  .or.   &
+                 (id > 0  .and. id <= config%natms)  .or.   &
+                 (ia0 > 0 .and. ia0 <= config%natms) .or.   &
+                 (id0 > 0 .and. id0 <= config%natms)) .and. &
                 (ia == 0 .or. ib == 0 .or. ic == 0 .or. id == 0 .or. &
                  ia0 == 0 .or. id0 == 0) ) lunsafe(i)=.true.
         End If
      Else
         If (ia > 0 .and. ib > 0 .and. ic > 0 .and. id > 0) Then !Tag
-           If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic)*lfrzn(id) == 0) Then
-              If (ia <= natms .or. ib <= natms .or. ic <= natms .or. id <= natms) Then
+           If (config%lfrzn(ia)*config%lfrzn(ib)*config%lfrzn(ic)*config%lfrzn(id) == 0) Then
+              If (ia <= config%natms .or. ib <= config%natms .or. &
+                  ic <= config%natms .or. id <= config%natms) Then
                  lstopt(0,i)=1
                End If
            End If
         Else                                                    ! Detect uncompressed unit
-           If ( ((ia > 0 .and. ia <= natms) .or.   &
-                 (ib > 0 .and. ib <= natms) .or.   &
-                 (ic > 0 .and. ic <= natms) .or.   &
-                 (id > 0 .and. id <= natms)) .and. &
+           If ( ((ia > 0 .and. ia <= config%natms) .or.   &
+                 (ib > 0 .and. ib <= config%natms) .or.   &
+                 (ic > 0 .and. ic <= config%natms) .or.   &
+                 (id > 0 .and. id <= config%natms)) .and. &
                 (ia == 0 .or. ib == 0 .or. ic == 0 .or. id == 0) ) lunsafe(i)=.true.
         End If
      End If
@@ -774,17 +776,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 ! define components of bond vectors
 
      If (lstopt(0,i) > 0) Then
-        xdab(i)=parts(ia)%xxx-parts(ib)%xxx
-        ydab(i)=parts(ia)%yyy-parts(ib)%yyy
-        zdab(i)=parts(ia)%zzz-parts(ib)%zzz
+        xdab(i)=config%parts(ia)%xxx-config%parts(ib)%xxx
+        ydab(i)=config%parts(ia)%yyy-config%parts(ib)%yyy
+        zdab(i)=config%parts(ia)%zzz-config%parts(ib)%zzz
 
-        xdbc(i)=parts(ib)%xxx-parts(ic)%xxx
-        ydbc(i)=parts(ib)%yyy-parts(ic)%yyy
-        zdbc(i)=parts(ib)%zzz-parts(ic)%zzz
+        xdbc(i)=config%parts(ib)%xxx-config%parts(ic)%xxx
+        ydbc(i)=config%parts(ib)%yyy-config%parts(ic)%yyy
+        zdbc(i)=config%parts(ib)%zzz-config%parts(ic)%zzz
 
-        xdcd(i)=parts(ic)%xxx-parts(id)%xxx
-        ydcd(i)=parts(ic)%yyy-parts(id)%yyy
-        zdcd(i)=parts(ic)%zzz-parts(id)%zzz
+        xdcd(i)=config%parts(ic)%xxx-config%parts(id)%xxx
+        ydcd(i)=config%parts(ic)%yyy-config%parts(id)%yyy
+        zdcd(i)=config%parts(ic)%zzz-config%parts(id)%zzz
 
         If (dihedral%l_core_shell) Then
            csa=(dihedral%list(1,i) /= dihedral%list(5,i))
@@ -794,29 +796,29 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            If (csa .or. csd) Then
               If (csa .and. csd) Then
                  lad(1,i)=.true.
-                 xdad(1,i)=parts(ia0)%xxx-parts(id)%xxx
-                 ydad(1,i)=parts(ia0)%yyy-parts(id)%yyy
-                 zdad(1,i)=parts(ia0)%zzz-parts(id)%zzz
+                 xdad(1,i)=config%parts(ia0)%xxx-config%parts(id)%xxx
+                 ydad(1,i)=config%parts(ia0)%yyy-config%parts(id)%yyy
+                 zdad(1,i)=config%parts(ia0)%zzz-config%parts(id)%zzz
 
                  lad(2,i)=.true.
-                 xdad(2,i)=parts(ia)%xxx-parts(id0)%xxx
-                 ydad(2,i)=parts(ia)%yyy-parts(id0)%yyy
-                 zdad(2,i)=parts(ia)%zzz-parts(id0)%zzz
+                 xdad(2,i)=config%parts(ia)%xxx-config%parts(id0)%xxx
+                 ydad(2,i)=config%parts(ia)%yyy-config%parts(id0)%yyy
+                 zdad(2,i)=config%parts(ia)%zzz-config%parts(id0)%zzz
 
                  lad(3,i)=.true.
-                 xdad(3,i)=parts(ia0)%xxx-parts(id0)%xxx
-                 ydad(3,i)=parts(ia0)%yyy-parts(id0)%yyy
-                 zdad(3,i)=parts(ia0)%zzz-parts(id0)%zzz
+                 xdad(3,i)=config%parts(ia0)%xxx-config%parts(id0)%xxx
+                 ydad(3,i)=config%parts(ia0)%yyy-config%parts(id0)%yyy
+                 zdad(3,i)=config%parts(ia0)%zzz-config%parts(id0)%zzz
               Else If (csa) Then
                  lad(1,i)=.true.
-                 xdad(1,i)=parts(ia0)%xxx-parts(id)%xxx
-                 ydad(1,i)=parts(ia0)%yyy-parts(id)%yyy
-                 zdad(1,i)=parts(ia0)%zzz-parts(id)%zzz
+                 xdad(1,i)=config%parts(ia0)%xxx-config%parts(id)%xxx
+                 ydad(1,i)=config%parts(ia0)%yyy-config%parts(id)%yyy
+                 zdad(1,i)=config%parts(ia0)%zzz-config%parts(id)%zzz
               Else If (csd) Then
                  lad(2,i)=.true.
-                 xdad(2,i)=parts(ia)%xxx-parts(id0)%xxx
-                 ydad(2,i)=parts(ia)%yyy-parts(id0)%yyy
-                 zdad(2,i)=parts(ia)%zzz-parts(id0)%zzz
+                 xdad(2,i)=config%parts(ia)%xxx-config%parts(id0)%xxx
+                 ydad(2,i)=config%parts(ia)%yyy-config%parts(id0)%yyy
+                 zdad(2,i)=config%parts(ia)%zzz-config%parts(id0)%zzz
               End If
            End If
         End If
@@ -866,23 +868,23 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 
 ! periodic boundary condition
 
-  Call images(imcon,cell,dihedral%n_types,xdab,ydab,zdab)
-  Call images(imcon,cell,dihedral%n_types,xdbc,ydbc,zdbc)
-  Call images(imcon,cell,dihedral%n_types,xdcd,ydcd,zdcd)
+  Call images(config%imcon,config%cell,dihedral%n_types,xdab,ydab,zdab)
+  Call images(config%imcon,config%cell,dihedral%n_types,xdbc,ydbc,zdbc)
+  Call images(config%imcon,config%cell,dihedral%n_types,xdcd,ydcd,zdcd)
 
   If (Mod(isw,3) > 0) Then
 
     If (dihedral%l_core_shell) Then
       If (Any(lad(1,1:dihedral%n_types))) Then
-        Call images(imcon,cell,dihedral%n_types,xdad(1,1:dihedral%n_types), &
+        Call images(config%imcon,config%cell,dihedral%n_types,xdad(1,1:dihedral%n_types), &
           ydad(1,1:dihedral%n_types),zdad(1,1:dihedral%n_types))
       End If
       If (Any(lad(2,1:dihedral%n_types))) Then
-        Call images(imcon,cell,dihedral%n_types,xdad(2,1:dihedral%n_types), &
+        Call images(config%imcon,config%cell,dihedral%n_types,xdad(2,1:dihedral%n_types), &
           ydad(2,1:dihedral%n_types),zdad(2,1:dihedral%n_types))
       End If
       If (Any(lad(3,1:dihedral%n_types))) Then
-        Call images(imcon,cell,dihedral%n_types,xdad(3,1:dihedral%n_types), &
+        Call images(config%imcon,config%cell,dihedral%n_types,xdad(3,1:dihedral%n_types), &
           ydad(3,1:dihedral%n_types),zdad(3,1:dihedral%n_types))
       End If
     End If
@@ -1003,7 +1005,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 
 ! accumulate the histogram (distribution)
 
-        If (Mod(isw,2) == 0 .and. ia <= natms) Then
+        If (Mod(isw,2) == 0 .and. ia <= config%natms) Then
            j = dihedral%ldf(kk)
            l = Min(1+Int((theta+pi)*rdelth),dihedral%bin_adf)
 
@@ -1174,7 +1176,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
         fd1y= gamma*(( pbx*zbc-pbz*xbc)-pbpc*rpc2*( pcx*zbc-pcz*xbc))
         fd1z= gamma*((-pbx*ybc+pby*xbc)-pbpc*rpc2*(-pcx*ybc+pcy*xbc))
 
-        If (ia <= natms) Then
+        If (ia <= config%natms) Then
 
 ! sum of dihedral energy (dihedral virial is zero!!!)
 
@@ -1189,33 +1191,33 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            strs6 = strs6 + yab*faz + ybc*(fb1z-fcz) - ycd*fd1z
            strs9 = strs9 + zab*faz + zbc*(fb1z-fcz) - zcd*fd1z
 
-           parts(ia)%fxx=parts(ia)%fxx+fax
-           parts(ia)%fyy=parts(ia)%fyy+fay
-           parts(ia)%fzz=parts(ia)%fzz+faz
+           config%parts(ia)%fxx=config%parts(ia)%fxx+fax
+           config%parts(ia)%fyy=config%parts(ia)%fyy+fay
+           config%parts(ia)%fzz=config%parts(ia)%fzz+faz
 
         End If
 
-        If (ib <= natms) Then
+        If (ib <= config%natms) Then
 
-           parts(ib)%fxx=parts(ib)%fxx-fax-fcx+fb1x
-           parts(ib)%fyy=parts(ib)%fyy-fay-fcy+fb1y
-           parts(ib)%fzz=parts(ib)%fzz-faz-fcz+fb1z
-
-        End If
-
-        If (ic <= natms) Then
-
-           parts(ic)%fxx=parts(ic)%fxx+fcx-fb1x-fd1x
-           parts(ic)%fyy=parts(ic)%fyy+fcy-fb1y-fd1y
-           parts(ic)%fzz=parts(ic)%fzz+fcz-fb1z-fd1z
+           config%parts(ib)%fxx=config%parts(ib)%fxx-fax-fcx+fb1x
+           config%parts(ib)%fyy=config%parts(ib)%fyy-fay-fcy+fb1y
+           config%parts(ib)%fzz=config%parts(ib)%fzz-faz-fcz+fb1z
 
         End If
 
-        If (id <= natms) Then
+        If (ic <= config%natms) Then
 
-           parts(id)%fxx=parts(id)%fxx+fd1x
-           parts(id)%fyy=parts(id)%fyy+fd1y
-           parts(id)%fzz=parts(id)%fzz+fd1z
+           config%parts(ic)%fxx=config%parts(ic)%fxx+fcx-fb1x-fd1x
+           config%parts(ic)%fyy=config%parts(ic)%fyy+fcy-fb1y-fd1y
+           config%parts(ic)%fzz=config%parts(ic)%fzz+fcz-fb1z-fd1z
+
+        End If
+
+        If (id <= config%natms) Then
+
+           config%parts(id)%fxx=config%parts(id)%fxx+fd1x
+           config%parts(id)%fyy=config%parts(id)%fyy+fd1y
+           config%parts(id)%fzz=config%parts(id)%fzz+fd1z
 
         End If
 
@@ -1249,34 +1251,34 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            Write(messages(1),*) 'AB',xab,yab,zab
            Write(messages(2),*) 'BC',xbc,ybc,zbc,xac,yac,zac
            Write(messages(3),*) 'CD',xcd,ycd,zcd,xad,yad,zad
-           Write(messages(4),*) 'A',parts(ia)%xxx,parts(ia)%yyy,parts(ia)%zzz
-           Write(messages(5),*) 'B',parts(ib)%xxx,parts(ib)%yyy,parts(ib)%zzz
-           Write(messages(6),*) 'C',parts(ic)%xxx,parts(ic)%yyy,parts(ic)%zzz
-           Write(messages(7),*) 'D',parts(id)%xxx,parts(id)%yyy,parts(id)%zzz
+           Write(messages(4),*) 'A',config%parts(ia)%xxx,config%parts(ia)%yyy,config%parts(ia)%zzz
+           Write(messages(5),*) 'B',config%parts(ib)%xxx,config%parts(ib)%yyy,config%parts(ib)%zzz
+           Write(messages(6),*) 'C',config%parts(ic)%xxx,config%parts(ic)%yyy,config%parts(ic)%zzz
+           Write(messages(7),*) 'D',config%parts(id)%xxx,config%parts(id)%yyy,config%parts(id)%zzz
            Call info(messages,7)
            If (dihedral%l_core_shell) Then
               If (lad(1,i)) Then
-                Write(message,*) 'A0',parts(ia0)%xxx,parts(ia0)%yyy,parts(ia0)%zzz
+                Write(message,*) 'A0',config%parts(ia0)%xxx,config%parts(ia0)%yyy,config%parts(ia0)%zzz
                 Call info(message)
               End If
               If (lad(2,i)) Then
-                Write(message,*) 'D0',parts(id0)%xxx,parts(id0)%yyy,parts(id0)%zzz
+                Write(message,*) 'D0',config%parts(id0)%xxx,config%parts(id0)%yyy,config%parts(id0)%zzz
                 Call info(message)
               End If
            End If
-           Write(message,*) i,ltg(ia),ltg(ib),ltg(ic),ltg(id),rcut,rad(0)
+           Write(message,*) i,config%ltg(ia),config%ltg(ib),config%ltg(ic),config%ltg(id),rcut,rad(0)
            Call info(message)
            If (dihedral%l_core_shell) Then
               If (lad(1,i)) Then
-                Write(message,*) i,ltg(ia0),ltg(id),rad(1)
+                Write(message,*) i,config%ltg(ia0),config%ltg(id),rad(1)
                 Call info(message)
               End If
               If (lad(2,i)) Then
-                Write(message,*) i,ltg(ia),ltg(id0),rad(2)
+                Write(message,*) i,config%ltg(ia),config%ltg(id0),rad(2)
                 Call info(message)
               End If
               If (lad(3,i)) Then
-                Write(message,*) i,ltg(ia0),ltg(id0),rad(3)
+                Write(message,*) i,config%ltg(ia0),config%ltg(id0),rad(3)
                 Call info(message)
               End If
            End If
@@ -1290,12 +1292,12 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 
 ! scaled charge product times dielectric constants
 
-        chgprd=scale*parts(ia)%chge*parts(id)%chge*r4pie0/electro%eps
+        chgprd=scale*config%parts(ia)%chge*config%parts(id)%chge*r4pie0/electro%eps
         If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
 
            If (mpoles%max_mpoles > 0) Then
               Call intra_mcoul(rcut,ia,id,scale,rad(0),xad,yad,zad,coul, &
-                virele,fx,fy,fz,safe(3),mpoles,electro)
+                virele,fx,fy,fz,safe(3),mpoles,electro,config)
            Else
               Call intra_coul(rcut,chgprd,rad(0),rad2(0),coul,fcoul,safe(3),electro)
 
@@ -1306,7 +1308,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
               virele = -fcoul*rad2(0)
            End If
 
-           If (ia <= natms) Then
+           If (ia <= config%natms) Then
 
 ! correction to electrostatic energy and virial
 
@@ -1322,17 +1324,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
               strs6 = strs6 + yad*fz
               strs9 = strs9 + zad*fz
 
-              parts(ia)%fxx = parts(ia)%fxx + fx
-              parts(ia)%fyy = parts(ia)%fyy + fy
-              parts(ia)%fzz = parts(ia)%fzz + fz
+              config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+              config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+              config%parts(ia)%fzz = config%parts(ia)%fzz + fz
 
            End If
 
-           If (id <= natms) Then
+           If (id <= config%natms) Then
 
-              parts(id)%fxx = parts(id)%fxx - fx
-              parts(id)%fyy = parts(id)%fyy - fy
-              parts(id)%fzz = parts(id)%fzz - fz
+              config%parts(id)%fxx = config%parts(id)%fxx - fx
+              config%parts(id)%fyy = config%parts(id)%fyy - fy
+              config%parts(id)%fzz = config%parts(id)%fzz - fz
 
            End If
 
@@ -1340,11 +1342,11 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 
         If (dihedral%l_core_shell) Then
            If (lad(1,i)) Then
-              chgprd=scale*parts(ia0)%chge*parts(id)%chge*r4pie0/electro%eps
+              chgprd=scale*config%parts(ia0)%chge*config%parts(id)%chge*r4pie0/electro%eps
               If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
                  If (mpoles%max_mpoles > 0) Then
                     Call intra_mcoul(rcut,ia0,id,scale,rad(1),xdad(1,i), &
-                      ydad(1,i),zdad(1,i),coul,virele,fx,fy,fz,safe(3),mpoles,electro)
+                      ydad(1,i),zdad(1,i),coul,virele,fx,fy,fz,safe(3),mpoles,electro,config)
                  Else
                     Call intra_coul(rcut,chgprd,rad(1),rad2(1),coul,fcoul,safe(3),electro)
 
@@ -1355,7 +1357,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     virele = -fcoul*rad2(1)
                  End If
 
-                 If (ia0 <= natms) Then
+                 If (ia0 <= config%natms) Then
 
 ! correction to electrostatic energy and virial
 
@@ -1371,17 +1373,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(1,i)*fz
                     strs9 = strs9 + zdad(1,i)*fz
 
-                    parts(ia0)%fxx = parts(ia0)%fxx + fx
-                    parts(ia0)%fyy = parts(ia0)%fyy + fy
-                    parts(ia0)%fzz = parts(ia0)%fzz + fz
+                    config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
+                    config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
+                    config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
 
                  End If
 
-                 If (id <= natms) Then
+                 If (id <= config%natms) Then
 
-                    parts(id)%fxx = parts(id)%fxx - fx
-                    parts(id)%fyy = parts(id)%fyy - fy
-                    parts(id)%fzz = parts(id)%fzz - fz
+                    config%parts(id)%fxx = config%parts(id)%fxx - fx
+                    config%parts(id)%fyy = config%parts(id)%fyy - fy
+                    config%parts(id)%fzz = config%parts(id)%fzz - fz
 
                  End If
 
@@ -1389,11 +1391,11 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            End If
 
            If (lad(2,i)) Then
-              chgprd=scale*parts(ia)%chge*parts(id0)%chge*r4pie0/electro%eps
+              chgprd=scale*config%parts(ia)%chge*config%parts(id0)%chge*r4pie0/electro%eps
               If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
                  If (mpoles%max_mpoles > 0) Then
                     Call intra_mcoul(rcut,ia,id0,scale,rad(2),xdad(2,i), &
-                      ydad(2,i),zdad(2,i),coul,virele,fx,fy,fz,safe(3),mpoles,electro)
+                      ydad(2,i),zdad(2,i),coul,virele,fx,fy,fz,safe(3),mpoles,electro,config)
                  Else
                     Call intra_coul(rcut,chgprd,rad(2),rad2(2),coul,fcoul,safe(3),electro)
 
@@ -1404,7 +1406,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     virele = -fcoul*rad2(2)
                  End If
 
-                 If (ia <= natms) Then
+                 If (ia <= config%natms) Then
 
 ! correction to electrostatic energy and virial
 
@@ -1420,28 +1422,28 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(2,i)*fz
                     strs9 = strs9 + zdad(2,i)*fz
 
-                    parts(ia)%fxx = parts(ia)%fxx + fx
-                    parts(ia)%fyy = parts(ia)%fyy + fy
-                    parts(ia)%fzz = parts(ia)%fzz + fz
+                    config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+                    config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+                    config%parts(ia)%fzz = config%parts(ia)%fzz + fz
 
                  End If
 
-                 If (id0 <= natms) Then
+                 If (id0 <= config%natms) Then
 
-                    parts(id0)%fxx = parts(id0)%fxx - fx
-                    parts(id0)%fyy = parts(id0)%fyy - fy
-                    parts(id0)%fzz = parts(id0)%fzz - fz
+                    config%parts(id0)%fxx = config%parts(id0)%fxx - fx
+                    config%parts(id0)%fyy = config%parts(id0)%fyy - fy
+                    config%parts(id0)%fzz = config%parts(id0)%fzz - fz
 
                  End If
               End If
            End If
 
            If (lad(3,i)) Then
-              chgprd=scale*parts(ia0)%chge*parts(id0)%chge*r4pie0/electro%eps
+              chgprd=scale*config%parts(ia0)%chge*config%parts(id0)%chge*r4pie0/electro%eps
               If ((Abs(chgprd) > zero_plus .or. mpoles%max_mpoles > 0) .and. electro%key /= ELECTROSTATIC_NULL) Then
                  If (mpoles%max_mpoles > 0) Then
                     Call intra_mcoul(rcut,ia0,id0,scale,rad(3),xdad(3,i), &
-                      ydad(3,i),zdad(3,i),coul,virele,fx,fy,fz,safe(3),mpoles,electro)
+                      ydad(3,i),zdad(3,i),coul,virele,fx,fy,fz,safe(3),mpoles,electro,config)
                  Else
                     Call intra_coul(rcut,chgprd,rad(3),rad2(3),coul,fcoul,safe(3),electro)
 
@@ -1452,7 +1454,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     virele = -fcoul*rad2(3)
                  End If
 
-                 If (ia0 <= natms) Then
+                 If (ia0 <= config%natms) Then
 
 ! correction to electrostatic energy and virial
 
@@ -1468,17 +1470,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(3,i)*fz
                     strs9 = strs9 + zdad(3,i)*fz
 
-                    parts(ia0)%fxx = parts(ia0)%fxx + fx
-                    parts(ia0)%fyy = parts(ia0)%fyy + fy
-                    parts(ia0)%fzz = parts(ia0)%fzz + fz
+                    config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
+                    config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
+                    config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
 
                  End If
 
-                 If (id0 <= natms) Then
+                 If (id0 <= config%natms) Then
 
-                    parts(id0)%fxx = parts(id0)%fxx - fx
-                    parts(id0)%fyy = parts(id0)%fyy - fy
-                    parts(id0)%fzz = parts(id0)%fzz - fz
+                    config%parts(id0)%fxx = config%parts(id0)%fxx - fx
+                    config%parts(id0)%fyy = config%parts(id0)%fyy - fy
+                    config%parts(id0)%fzz = config%parts(id0)%fzz - fz
 
                  End If
               End If
@@ -1493,8 +1495,8 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
 
 ! atomic type indices
 
-           ai=ltype(ia)
-           aj=ltype(id)
+           ai=config%ltype(ia)
+           aj=config%ltype(id)
 
            Call dihedrals_14_vdw(ai,aj,rad(0),rad2(0),eng,gamma,dihedral,vdws)
 
@@ -1505,7 +1507,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
            fy = gamma*yad
            fz = gamma*zad
 
-           If (ia <= natms) Then
+           If (ia <= config%natms) Then
 
 ! add scaled 1-4 short-range potential energy and virial
 
@@ -1521,24 +1523,24 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
               strs6 = strs6 + yad*fz
               strs9 = strs9 + zad*fz
 
-              parts(ia)%fxx = parts(ia)%fxx + fx
-              parts(ia)%fyy = parts(ia)%fyy + fy
-              parts(ia)%fzz = parts(ia)%fzz + fz
+              config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+              config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+              config%parts(ia)%fzz = config%parts(ia)%fzz + fz
 
            End If
 
-           If (id <= natms) Then
+           If (id <= config%natms) Then
 
-              parts(id)%fxx = parts(id)%fxx - fx
-              parts(id)%fyy = parts(id)%fyy - fy
-              parts(id)%fzz = parts(id)%fzz - fz
+              config%parts(id)%fxx = config%parts(id)%fxx - fx
+              config%parts(id)%fyy = config%parts(id)%fyy - fy
+              config%parts(id)%fzz = config%parts(id)%fzz - fz
 
            End If
 
            If (dihedral%l_core_shell) Then
               If (lad(1,i)) Then
-                 ai=ltype(ia0)
-                 aj=ltype(id)
+                 ai=config%ltype(ia0)
+                 aj=config%ltype(id)
 
                  Call dihedrals_14_vdw(ai,aj,rad(1),rad2(1),eng,gamma,dihedral,vdws)
 
@@ -1549,7 +1551,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                  fy = gamma*ydad(1,i)
                  fz = gamma*zdad(1,i)
 
-                 If (ia0 <= natms) Then
+                 If (ia0 <= config%natms) Then
 
 ! add scaled 1-4 short-range potential energy and virial
 
@@ -1565,24 +1567,24 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(1,i)*fz
                     strs9 = strs9 + zdad(1,i)*fz
 
-                    parts(ia0)%fxx = parts(ia0)%fxx + fx
-                    parts(ia0)%fyy = parts(ia0)%fyy + fy
-                    parts(ia0)%fzz = parts(ia0)%fzz + fz
+                    config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
+                    config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
+                    config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
 
                  End If
 
-                 If (id <= natms) Then
+                 If (id <= config%natms) Then
 
-                    parts(id)%fxx = parts(id)%fxx - fx
-                    parts(id)%fyy = parts(id)%fyy - fy
-                    parts(id)%fzz = parts(id)%fzz - fz
+                    config%parts(id)%fxx = config%parts(id)%fxx - fx
+                    config%parts(id)%fyy = config%parts(id)%fyy - fy
+                    config%parts(id)%fzz = config%parts(id)%fzz - fz
 
                  End If
               End If
 
               If (lad(2,i)) Then
-                 ai=ltype(ia)
-                 aj=ltype(id0)
+                 ai=config%ltype(ia)
+                 aj=config%ltype(id0)
 
                  Call dihedrals_14_vdw(ai,aj,rad(2),rad2(2),eng,gamma,dihedral,vdws)
 
@@ -1593,7 +1595,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                  fy = gamma*ydad(2,i)
                  fz = gamma*zdad(2,i)
 
-                 If (ia <= natms) Then
+                 If (ia <= config%natms) Then
 
 ! add scaled 1-4 short-range potential energy and virial
 
@@ -1609,24 +1611,24 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(2,i)*fz
                     strs9 = strs9 + zdad(2,i)*fz
 
-                    parts(ia)%fxx = parts(ia)%fxx + fx
-                    parts(ia)%fyy = parts(ia)%fyy + fy
-                    parts(ia)%fzz = parts(ia)%fzz + fz
+                    config%parts(ia)%fxx = config%parts(ia)%fxx + fx
+                    config%parts(ia)%fyy = config%parts(ia)%fyy + fy
+                    config%parts(ia)%fzz = config%parts(ia)%fzz + fz
 
                  End If
 
-                 If (id0 <= natms) Then
+                 If (id0 <= config%natms) Then
 
-                    parts(id0)%fxx = parts(id0)%fxx - fx
-                    parts(id0)%fyy = parts(id0)%fyy - fy
-                    parts(id0)%fzz = parts(id0)%fzz - fz
+                    config%parts(id0)%fxx = config%parts(id0)%fxx - fx
+                    config%parts(id0)%fyy = config%parts(id0)%fyy - fy
+                    config%parts(id0)%fzz = config%parts(id0)%fzz - fz
 
                  End If
               End If
 
               If (lad(3,i)) Then
-                 ai=ltype(ia0)
-                 aj=ltype(id0)
+                 ai=config%ltype(ia0)
+                 aj=config%ltype(id0)
 
                  Call dihedrals_14_vdw(ai,aj,rad(3),rad2(3),eng,gamma,dihedral,vdws)
 
@@ -1637,7 +1639,7 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                  fy = gamma*ydad(3,i)
                  fz = gamma*zdad(3,i)
 
-                 If (ia0 <= natms) Then
+                 If (ia0 <= config%natms) Then
 
 ! add scaled 1-4 short-range potential energy and virial
 
@@ -1653,17 +1655,17 @@ Subroutine dihedrals_forces(isw,engdih,virdih,stress,rcut,engcpe,vircpe, &
                     strs6 = strs6 + ydad(3,i)*fz
                     strs9 = strs9 + zdad(3,i)*fz
 
-                    parts(ia0)%fxx = parts(ia0)%fxx + fx
-                    parts(ia0)%fyy = parts(ia0)%fyy + fy
-                    parts(ia0)%fzz = parts(ia0)%fzz + fz
+                    config%parts(ia0)%fxx = config%parts(ia0)%fxx + fx
+                    config%parts(ia0)%fyy = config%parts(ia0)%fyy + fy
+                    config%parts(ia0)%fzz = config%parts(ia0)%fzz + fz
 
                  End If
 
-                 If (id0 <= natms) Then
+                 If (id0 <= config%natms) Then
 
-                    parts(id0)%fxx = parts(id0)%fxx - fx
-                    parts(id0)%fyy = parts(id0)%fyy - fy
-                    parts(id0)%fzz = parts(id0)%fzz - fz
+                    config%parts(id0)%fxx = config%parts(id0)%fxx - fx
+                    config%parts(id0)%fyy = config%parts(id0)%fyy - fy
+                    config%parts(id0)%fzz = config%parts(id0)%fzz - fz
 
                  End If
               End If

@@ -15,7 +15,7 @@ Module three_body
   Use comms,   Only : comms_type,gsum,gcheck
   Use setup
   Use domains, Only : domains_type
-  Use configuration,  Only : cell,natms,nlast,lfrzn,ltype
+  Use configuration,  Only : configuration_type
   Use particle,        Only : corePart
   Use errors_warnings, Only : error,warning
   Use numerics, Only : dcell, invert
@@ -62,7 +62,7 @@ Contains
     threebody%rcttbp = 0.0_wp
   End Subroutine allocate_three_body_arrays
 
-  Subroutine three_body_forces(stats,threebody,neigh,domain,parts,comm)
+  Subroutine three_body_forces(stats,threebody,neigh,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -85,7 +85,7 @@ Contains
   Type(threebody_type), Intent( InOut ) :: threebody
   Type( neighbours_type ), Intent( InOut ) :: neigh
   Type( domains_type ), Intent( In    ) :: domain
-  Type( corePart ),     Intent( InOut ) :: parts(:)
+  Type( configuration_type ),     Intent( InOut ) :: config
   Type(comms_type), Intent( InOut ) :: comm
 
   Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
@@ -127,7 +127,7 @@ Contains
 
 ! Get the dimensional properties of the MD cell
 
-  Call dcell(cell,celprp)
+  Call dcell(config%cell,celprp)
 
 ! Calculate the number of link-cells per domain in every direction
 
@@ -173,17 +173,20 @@ Contains
 
 ! Get the inverse cell matrix
 
-  Call invert(cell,rcell,det)
+  Call invert(config%cell,rcell,det)
 
 ! Convert atomic positions (ALL - halo included) from centred
 ! Cartesian coordinates to reduced space coordinates of
 ! the left-most link-cell
 
-  Do i=1,nlast
-     If (threebody%lfrtbp(ltype(i))) Then
-        xxt(i)=rcell(1)*parts(i)%xxx+rcell(4)*parts(i)%yyy+rcell(7)*parts(i)%zzz+dispx
-        yyt(i)=rcell(2)*parts(i)%xxx+rcell(5)*parts(i)%yyy+rcell(8)*parts(i)%zzz+dispy
-        zzt(i)=rcell(3)*parts(i)%xxx+rcell(6)*parts(i)%yyy+rcell(9)*parts(i)%zzz+dispz
+  Do i=1,config%nlast
+     If (threebody%lfrtbp(config%ltype(i))) Then
+        xxt(i)=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+&
+               rcell(7)*config%parts(i)%zzz+dispx
+        yyt(i)=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+&
+               rcell(8)*config%parts(i)%zzz+dispy
+        zzt(i)=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+&
+               rcell(9)*config%parts(i)%zzz+dispz
      End If
   End Do
 
@@ -216,8 +219,8 @@ Contains
 ! cell layer are not considered.
 !***************************************************************
 
-  Do i=1,nlast
-     If (threebody%lfrtbp(ltype(i))) Then
+  Do i=1,config%nlast
+     If (threebody%lfrtbp(config%ltype(i))) Then
 
 ! Push cell coordinates accordingly
 
@@ -385,7 +388,7 @@ Contains
 ! index of the primary atom (and table type)
 
               ib=listin(ii)
-              itbp=threebody%mx2tbp*(ltype(ib)-1)
+              itbp=threebody%mx2tbp*(config%ltype(ib)-1)
 
 ! bypass if primary atom type is not involved in interaction
 
@@ -426,8 +429,8 @@ Contains
 
 ! get types of atoms
 
-                          jtbp=Max(ltype(ia),ltype(ic))
-                          ktbp=Min(ltype(ia),ltype(ic))
+                          jtbp=Max(config%ltype(ia),config%ltype(ic))
+                          ktbp=Min(config%ltype(ia),config%ltype(ic))
 
 ! get index of interaction
 
@@ -441,19 +444,19 @@ Contains
 ! (FIRST SHIFT TO LEFT)
 ! only for non-frozen triplets
 
-  If (lfrzn(ia)*lfrzn(ib)*lfrzn(ic) == 0) Then
+  If (config%lfrzn(ia)*config%lfrzn(ib)*config%lfrzn(ic) == 0) Then
 
      sxab = xxt(ia)-xxt(ib)
      syab = yyt(ia)-yyt(ib)
      szab = zzt(ia)-zzt(ib)
 
-     xab=cell(1)*sxab+cell(4)*syab+cell(7)*szab
+     xab=config%cell(1)*sxab+config%cell(4)*syab+config%cell(7)*szab
      If (Abs(xab) < threebody%cutoff) Then
 
-        yab=cell(2)*sxab+cell(5)*syab+cell(8)*szab
+        yab=config%cell(2)*sxab+config%cell(5)*syab+config%cell(8)*szab
         If (Abs(yab) < threebody%cutoff) Then
 
-          zab=cell(3)*sxab+cell(6)*syab+cell(9)*szab
+          zab=config%cell(3)*sxab+config%cell(6)*syab+config%cell(9)*szab
           If (Abs(zab) < threebody%cutoff) Then
 
              rab=Sqrt(xab*xab+yab*yab+zab*zab)
@@ -462,13 +465,13 @@ Contains
              sybc = yyt(ic)-yyt(ib)
              szbc = zzt(ic)-zzt(ib)
 
-             xbc=cell(1)*sxbc+cell(4)*sybc+cell(7)*szbc
+             xbc=config%cell(1)*sxbc+config%cell(4)*sybc+config%cell(7)*szbc
              If (Abs(xbc) < threebody%cutoff) Then
 
-                ybc=cell(2)*sxbc+cell(5)*sybc+cell(8)*szbc
+                ybc=config%cell(2)*sxbc+config%cell(5)*sybc+config%cell(8)*szbc
                 If (Abs(ybc) < threebody%cutoff) Then
 
-                   zbc=cell(3)*sxbc+cell(6)*sybc+cell(9)*szbc
+                   zbc=config%cell(3)*sxbc+config%cell(6)*sybc+config%cell(9)*szbc
                    If (Abs(zbc) < threebody%cutoff) Then
 
                       rbc=Sqrt(xbc*xbc+ybc*ybc+zbc*zbc)
@@ -672,15 +675,15 @@ Contains
   fyc = gamma*(yab-ybc*cost)*rrbc+gamsc*ybc-gamsb*yac
   fzc = gamma*(zab-zbc*cost)*rrbc+gamsc*zbc-gamsb*zac
 
-  If (ia <= natms) Then
+  If (ia <= config%natms) Then
 
-     parts(ia)%fxx=parts(ia)%fxx+fxa
-     parts(ia)%fyy=parts(ia)%fyy+fya
-     parts(ia)%fzz=parts(ia)%fzz+fza
+     config%parts(ia)%fxx=config%parts(ia)%fxx+fxa
+     config%parts(ia)%fyy=config%parts(ia)%fyy+fya
+     config%parts(ia)%fzz=config%parts(ia)%fzz+fza
 
   End If
 
-  If (ib <= natms) Then
+  If (ib <= config%natms) Then
 
 ! energy and virial (associated to the head atom)
 
@@ -696,17 +699,17 @@ Contains
      strs6 = strs6 + rab*yab*fza + rbc*ybc*fzc
      strs9 = strs9 + rab*zab*fza + rbc*zbc*fzc
 
-     parts(ib)%fxx=parts(ib)%fxx-(fxa+fxc)
-     parts(ib)%fyy=parts(ib)%fyy-(fya+fyc)
-     parts(ib)%fzz=parts(ib)%fzz-(fza+fzc)
+     config%parts(ib)%fxx=config%parts(ib)%fxx-(fxa+fxc)
+     config%parts(ib)%fyy=config%parts(ib)%fyy-(fya+fyc)
+     config%parts(ib)%fzz=config%parts(ib)%fzz-(fza+fzc)
 
   End If
 
-  If (ic <= natms) Then
+  If (ic <= config%natms) Then
 
-     parts(ic)%fxx=parts(ic)%fxx+fxc
-     parts(ic)%fyy=parts(ic)%fyy+fyc
-     parts(ic)%fzz=parts(ic)%fzz+fzc
+     config%parts(ic)%fxx=config%parts(ic)%fxx+fxc
+     config%parts(ic)%fyy=config%parts(ic)%fyy+fyc
+     config%parts(ic)%fzz=config%parts(ic)%fzz+fzc
 
   End If
 

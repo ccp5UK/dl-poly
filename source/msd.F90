@@ -13,8 +13,7 @@ Module msd
     gsend,grecv,offset_kind,comm_self,mode_wronly
   Use setup
   Use site, Only : site_type
-  Use configuration,     Only : cfgname,natms,atmnam,lsite,ltg, &
-    weight
+  Use configuration,     Only : configuration_type
 
   Use parse,      Only : tabs_2_blanks, get_word, word_2_real
   Use io,         Only : io_set_parameters,             &
@@ -62,7 +61,7 @@ Module msd
   Public :: msd_write
 Contains
 
-  Subroutine msd_write(keyres,megatm,nstep,tstep,time,stpval,dof_site,msd_data,comm)
+    Subroutine msd_write(config,keyres,megatm,nstep,tstep,time,stpval,dof_site,msd_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -75,13 +74,14 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: keyres, &
-      megatm,nstep
-    Real( Kind = wp ), Intent( In    ) :: tstep,time
-    Real( Kind = wp ), Intent( InOut ) :: stpval(:)
-    Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
-    Type( msd_type ), Intent( Inout ) :: msd_data
-    Type( comms_type), Intent( InOut ) :: comm
+  Integer,           Intent( In    ) :: keyres, &
+                                        megatm,nstep
+  Real( Kind = wp ), Intent( In    ) :: tstep,time
+  Real( Kind = wp ), Intent( InOut ) :: stpval(:)
+  Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
+  Type( configuration_type ), Intent( InOut ) :: config
+  Type( msd_type ), Intent( Inout ) :: msd_data
+  Type( comms_type), Intent( InOut ) :: comm
 
     Integer, Parameter :: recsz = 53 ! default record size
 
@@ -142,7 +142,7 @@ Contains
 
         If (comm%idnode == 0) Then
           Open(Unit=nhist, File=msd_data%fname, Form='formatted', Access='direct', Status='replace', Recl=recsz)
-          Write(Unit=nhist, Fmt='(a52,a1)',      Rec=Int(1,li)) cfgname(1:52),lf
+          Write(Unit=nhist, Fmt='(a52,a1)',      Rec=Int(1,li)) config%cfgname(1:52),lf
           Write(Unit=nhist, Fmt='(i10,2i21,a1)', Rec=Int(2,li)) megatm,msd_data%frm,msd_data%rec,lf
           Close(Unit=nhist)
         End If
@@ -250,11 +250,11 @@ Contains
         Call error(0,message)
       End If
 
-      chbat=' '
-      n_atm=0 ; n_atm(comm%idnode+1)=natms
-      Call gsum(comm,n_atm)
-      n_atm(0)=Sum(n_atm(0:comm%idnode))
-    End If
+    chbat=' '
+    n_atm=0 ; n_atm(comm%idnode+1)=config%natms
+    Call gsum(comm,n_atm)
+    n_atm(0)=Sum(n_atm(0:comm%idnode))
+  End If
 
 ! Notes:
 ! the MPI-I/O records are numbered from 0 (not 1)
@@ -302,12 +302,12 @@ Contains
       Call io_init( recsz )
       Call io_open( io_write, comm%comm, msd_data%fname, mode_wronly, fh )
 
-      Do i=1,natms
+    Do i=1,config%natms
         k=2*i
 
-        If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp=config%weight(i)*stpval(27+k)/(boltz*3.0_wp)
 
-        Write(record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') atmnam(i),ltg(i),Sqrt(stpval(27+k-1)),tmp,Repeat(' ',8),lf
+        Write(record, Fmt='(a8,i10,1p,2e13.4,a8,a1)') config%atmnam(i),config%ltg(i),Sqrt(stpval(27+k-1)),tmp,Repeat(' ',8),lf
         jj=jj+1
         Do k=1,recsz
           chbat(k,jj) = record(k:k)
@@ -315,7 +315,7 @@ Contains
 
 ! Dump batch and update start of file
 
-        If (jj >= batsz .or. i == natms) Then
+        If (jj >= batsz .or. i == config%natms) Then
           Call io_write_batch( fh, rec_mpi_io, jj, chbat )
           rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
           jj=0
@@ -352,19 +352,19 @@ Contains
         msd_data%rec=msd_data%rec+Int(1,li)
         Write(Unit=nhist, Fmt='(a8,2i10,2f12.6,a1)', Rec=msd_data%rec) 'timestep',nstep,megatm,tstep,time,lf
 
-        Do i=1,natms
+        Do i=1,config%natms
           k=2*i
 
-          iwrk(i)=ltg(i)
-          chbuf(i)=atmnam(i)
+          iwrk(i)=config%ltg(i)
+          chbuf(i)=config%atmnam(i)
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp=config%weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
-        jatms=natms
+        jatms=config%natms
         ready=.true.
         Do jdnode=0,comm%mxnode-1
           If (jdnode > 0) Then
@@ -406,24 +406,24 @@ Contains
 
       Else
 
-        Do i=1,natms
+        Do i=1,config%natms
           k=2*i
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp=config%weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
         Call grecv(comm,ready,0,MsdWrite_tag)
 
-        Call gsend(comm,natms,0,MsdWrite_tag)
-        If (natms > 0) Then
-          Call gsend(comm,atmnam(1:natms),0,MsdWrite_tag)
-          Call gsend(comm,ltg(1:natms),0,MsdWrite_tag)
+        Call gsend(comm,config%natms,0,MsdWrite_tag)
+        If (config%natms > 0) Then
+          Call gsend(comm,config%atmnam(1:config%natms),0,MsdWrite_tag)
+          Call gsend(comm,config%ltg(1:config%natms),0,MsdWrite_tag)
 
-          Call gsend(comm,ddd(1:natms),0,MsdWrite_tag)
-          Call gsend(comm,eee(1:natms),0,MsdWrite_tag)
+          Call gsend(comm,ddd(1:config%natms),0,MsdWrite_tag)
+          Call gsend(comm,eee(1:config%natms),0,MsdWrite_tag)
         End If
 
 ! Save offset pointer
@@ -478,20 +478,20 @@ Contains
         Call error(0,message)
       End If
 
-      Do i=1,natms
+    Do i=1,config%natms
         k=2*i
 
         ddd(i)=Sqrt(stpval(27+k-1))
 
-        If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+        If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp=config%weight(i)*stpval(27+k)/(boltz*3.0_wp)
         eee(i)=tmp
       End Do
 
-      Call io_write_sorted_file( fh, 0, IO_MSDTMP, rec_mpi_io, natms, &
-        ltg, atmnam, ddd, eee, (/ 0.0_wp /),                       &
-        (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
-        (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
-        (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),  ierr )
+    Call io_write_sorted_file( fh, 0, IO_MSDTMP, rec_mpi_io, config%natms, &
+          config%ltg, config%atmnam, ddd, eee, (/ 0.0_wp /),                       &
+          (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
+          (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
+          (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),  ierr )
 
       If ( ierr /= 0 ) Then
         Select Case( ierr )
@@ -542,19 +542,19 @@ Contains
         msd_data%rec=msd_data%rec+Int(1,li)
         Write(Unit=nhist, Fmt='(a8,2i10,2f12.6,a1)', Rec=msd_data%rec) 'timestep',nstep,megatm,tstep,time,lf
 
-        Do i=1,natms
+        Do i=1,config%natms
           k=2*i
 
-          iwrk(i)=ltg(i)
-          chbuf(i)=atmnam(i)
+          iwrk(i)=config%ltg(i)
+          chbuf(i)=config%atmnam(i)
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp=config%weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
-        jatms=natms
+        jatms=config%natms
         ready=.true.
         Do jdnode=0,comm%mxnode-1
           If (jdnode > 0) Then
@@ -585,24 +585,24 @@ Contains
 
       Else
 
-        Do i=1,natms
+        Do i=1,config%natms
           k=2*i
 
           ddd(i)=Sqrt(stpval(27+k-1))
 
-          If (Abs(dof_site(lsite(i))) > zero_plus) tmp=weight(i)*stpval(27+k)/(boltz*3.0_wp)
+          If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp=config%weight(i)*stpval(27+k)/(boltz*3.0_wp)
           eee(i)=tmp
         End Do
 
         Call grecv(comm,ready,0,MsdWrite_tag)
 
-        Call gsend(comm,natms,0,MsdWrite_tag)
-        If (natms > 0) Then
-          Call gsend(comm,atmnam(1:natms),0,MsdWrite_tag)
-          Call gsend(comm,ltg(1:natms),0,MsdWrite_tag)
+        Call gsend(comm,config%natms,0,MsdWrite_tag)
+        If (config%natms > 0) Then
+          Call gsend(comm,config%atmnam(1:config%natms),0,MsdWrite_tag)
+          Call gsend(comm,config%ltg(1:config%natms),0,MsdWrite_tag)
 
-          Call gsend(comm,ddd(1:natms),0,MsdWrite_tag)
-          Call gsend(comm,eee(1:natms),0,MsdWrite_tag)
+          Call gsend(comm,ddd(1:config%natms),0,MsdWrite_tag)
+          Call gsend(comm,eee(1:config%natms),0,MsdWrite_tag)
         End If
 
         msd_data%rec=msd_data%rec+Int(megatm+1,li)

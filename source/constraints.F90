@@ -13,8 +13,7 @@ Module constraints
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type,gsum,gcheck,gsync
   Use particle,        Only : corePart
-  Use configuration,   Only : natms,lfrzn,nlast, vxx,vyy,vzz,weight,lsa,lsi, &
-                              imcon,cell,nfree,lstfre
+  Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
   Use setup,           Only : mxatms,mxlshp,mxtmls,zero_plus
@@ -156,7 +155,7 @@ Subroutine allocate_work(T,n)
 
   End Subroutine deallocate_constraints_arrays
 
-  Subroutine constraints_pseudo_bonds(gxx,gyy,gzz,stat,cons,comm)
+  Subroutine constraints_pseudo_bonds(gxx,gyy,gzz,stat,cons,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -173,6 +172,7 @@ Subroutine allocate_work(T,n)
     Real( Kind = wp ), Intent( InOut )  :: gxx(:),gyy(:),gzz(:)
     Type( stats_type), Intent( InOut ) :: stat
     Type( constraints_type), Intent( InOut) :: cons
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Real( Kind = wp ), Parameter :: rigid=1.0e6_wp
@@ -198,17 +198,17 @@ Subroutine allocate_work(T,n)
 
         ! Accumulate energy and add forces
 
-        If (i <= natms) Then
+        If (i <= config%natms) Then
           stat%engcon=stat%engcon+ebond
 
-          If (lfrzn(i) == 0) Then
+          If (config%lfrzn(i) == 0) Then
             gxx(i)=gxx(i)-cons%dxx(k)*gamma
             gyy(i)=gyy(i)-cons%dyy(k)*gamma
             gzz(i)=gzz(i)-cons%dzz(k)*gamma
           End If
         End If
 
-        If (j <= natms .and. lfrzn(j) == 0) Then
+        If (j <= config%natms .and. config%lfrzn(j) == 0) Then
           gxx(j)=gxx(j)+cons%dxx(k)*gamma
           gyy(j)=gyy(j)+cons%dyy(k)*gamma
           gzz(j)=gzz(j)+cons%dzz(k)*gamma
@@ -222,7 +222,7 @@ Subroutine allocate_work(T,n)
 
   End Subroutine constraints_pseudo_bonds
 
-  Subroutine constraints_quench(cons,stat,domain,parts,comm)
+  Subroutine constraints_quench(cons,stat,domain,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -239,7 +239,7 @@ Subroutine allocate_work(T,n)
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type), Intent( InOut ) :: comm
 
-    Type( corePart ), Dimension(:), Intent( InOut ) :: parts
+    Type( configuration_type ), Intent( InOut ) :: config
 
     Logical           :: safe
     Integer           :: fail(1:2),i,j,k,icyc
@@ -261,15 +261,15 @@ Subroutine allocate_work(T,n)
     ! gather velocities of shared atoms
 
     If (cons%lshmv_con) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con, &
-        cons%lashp_con,vxx,vyy,vzz,domain,comm)
+      Call update_shared_units(config,cons%lishp_con, &
+        cons%lashp_con,config%vxx,config%vyy,config%vzz,domain,comm)
     End If
 
     ! construct current constrained bond vectors and listot array (shared
     ! constraint atoms) for iterative (constraints) algorithms
 
-    lstitr(1:natms)=.false. ! initialise lstitr
-    Call constraints_tags(lstitr,cons,parts,comm)
+    lstitr(1:config%natms)=.false. ! initialise lstitr
+    Call constraints_tags(lstitr,cons,config,comm)
 
     ! normalise constraint vectors
 
@@ -297,7 +297,7 @@ Subroutine allocate_work(T,n)
 
       ! initialise velocity correction arrays
 
-      Do i=1,natms
+      Do i=1,config%natms
         vxt(i)=0.0_wp
         vyt(i)=0.0_wp
         vzt(i)=0.0_wp
@@ -314,17 +314,18 @@ Subroutine allocate_work(T,n)
           ! if a pair is frozen and constraint bonded, it is more frozen
           ! than constrained (users!!!)
 
-          amti=1.0_wp/weight(i)
-          amtj=1.0_wp/weight(j)
+          amti=1.0_wp/config%weight(i)
+          amtj=1.0_wp/config%weight(j)
 
           ! no corrections for frozen atoms
 
-          If (lfrzn(i) /= 0) amti=0.0_wp
-          If (lfrzn(j) /= 0) amtj=0.0_wp
+          If (config%lfrzn(i) /= 0) amti=0.0_wp
+          If (config%lfrzn(j) /= 0) amtj=0.0_wp
 
           ! calculate constraint force parameter - gamma
 
-          gamma = cons%dxx(k)*(vxx(i)-vxx(j)) + cons%dyy(k)*(vyy(i)-vyy(j)) + cons%dzz(k)*(vzz(i)-vzz(j))
+          gamma = cons%dxx(k)*(config%vxx(i)-config%vxx(j)) + cons%dyy(k)*&
+                 (config%vyy(i)-config%vyy(j)) + cons%dzz(k)*(config%vzz(i)-config%vzz(j))
 
           esig=Max(esig,0.5_wp*Abs(gamma))
 
@@ -332,14 +333,14 @@ Subroutine allocate_work(T,n)
 
           ! improve approximate constraint velocity
 
-          If (i <= natms .and. lfrzn(i) == 0) Then
+          If (i <= config%natms .and. config%lfrzn(i) == 0) Then
             gammi =-gamma*amti
             vxt(i)=vxt(i)+cons%dxx(k)*gammi
             vyt(i)=vyt(i)+cons%dyy(k)*gammi
             vzt(i)=vzt(i)+cons%dzz(k)*gammi
           End If
 
-          If (j <= natms .and. lfrzn(j) == 0) Then
+          If (j <= config%natms .and. config%lfrzn(j) == 0) Then
             gammj = gamma*amtj
             vxt(j)=vxt(j)+cons%dxx(k)*gammj
             vyt(j)=vyt(j)+cons%dyy(k)*gammj
@@ -364,26 +365,26 @@ Subroutine allocate_work(T,n)
             i=cons%lstopt(1,k)
             j=cons%lstopt(2,k)
 
-            If (i <= natms .and. lfrzn(i) == 0) Then
+            If (i <= config%natms .and. config%lfrzn(i) == 0) Then
               dli = 1.0_wp/Real(cons%listot(i),wp)
-              vxx(i)=vxx(i)+vxt(i)*dli
-              vyy(i)=vyy(i)+vyt(i)*dli
-              vzz(i)=vzz(i)+vzt(i)*dli
+              config%vxx(i)=config%vxx(i)+vxt(i)*dli
+              config%vyy(i)=config%vyy(i)+vyt(i)*dli
+              config%vzz(i)=config%vzz(i)+vzt(i)*dli
             End If
 
-            If (j <= natms .and. lfrzn(j) == 0) Then
+            If (j <= config%natms .and. config%lfrzn(j) == 0) Then
               dlj = 1.0_wp/Real(cons%listot(j),wp)
-              vxx(j)=vxx(j)+vxt(j)*dlj
-              vyy(j)=vyy(j)+vyt(j)*dlj
-              vzz(j)=vzz(j)+vzt(j)*dlj
+              config%vxx(j)=config%vxx(j)+vxt(j)*dlj
+              config%vyy(j)=config%vyy(j)+vyt(j)*dlj
+              config%vzz(j)=config%vzz(j)+vzt(j)*dlj
             End If
           End If
         End Do
 
         ! transport velocity updates to other nodes
         If (cons%lshmv_con) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con, &
-            cons%lashp_con,vxx,vyy,vzz,domain,comm)
+          Call update_shared_units(config,cons%lishp_con, &
+            cons%lashp_con,config%vxx,config%vyy,config%vzz,domain,comm)
         End If
       End If
     End Do
@@ -409,7 +410,7 @@ Subroutine allocate_work(T,n)
     Call cons%deallocate_work()
   End Subroutine constraints_quench
 
-  Subroutine constraints_tags(lstitr,cons,parts,comm)
+  Subroutine constraints_tags(lstitr,cons,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -425,7 +426,7 @@ Subroutine allocate_work(T,n)
 
     Logical,            Intent( InOut ) :: lstitr(:)
     Type( constraints_type ), Intent( InOut ) :: cons
-    Type( corePart), Dimension(:), Intent( InOut ) :: parts
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
@@ -444,7 +445,7 @@ Subroutine allocate_work(T,n)
 
     ! initialise cons%listot array (shared constraint bond)
 
-    Do k=1,natms
+    Do k=1,config%natms
       cons%listot(k)=0
     End Do
 
@@ -457,8 +458,8 @@ Subroutine allocate_work(T,n)
 
       ! indices of atoms in bond
 
-      i=local_index(cons%listcon(1,k),nlast,lsi,lsa)
-      j=local_index(cons%listcon(2,k),nlast,lsi,lsa)
+      i=local_index(cons%listcon(1,k),config%nlast,config%lsi,config%lsa)
+      j=local_index(cons%listcon(2,k),config%nlast,config%lsi,config%lsa)
 
       ! store indices
 
@@ -467,12 +468,12 @@ Subroutine allocate_work(T,n)
 
       ! for all native and natively shared constraints
 
-      If ((i > 0 .and. j > 0) .and. (i <= natms .or. j <= natms)) Then
+      If ((i > 0 .and. j > 0) .and. (i <= config%natms .or. j <= config%natms)) Then
 
         ! if a pair is frozen and constraint bonded
         ! it is more frozen than constrained (users!!!)
 
-        If (lfrzn(i)*lfrzn(j) == 0) Then
+        If (config%lfrzn(i)*config%lfrzn(j) == 0) Then
 
           ! Select bond for action if product gives zero
 
@@ -480,22 +481,22 @@ Subroutine allocate_work(T,n)
 
           ! calculate bond vectors
 
-          cons%dxx(k)=parts(i)%xxx-parts(j)%xxx
-          cons%dyy(k)=parts(i)%yyy-parts(j)%yyy
-          cons%dzz(k)=parts(i)%zzz-parts(j)%zzz
+          cons%dxx(k)=config%parts(i)%xxx-config%parts(j)%xxx
+          cons%dyy(k)=config%parts(i)%yyy-config%parts(j)%yyy
+          cons%dzz(k)=config%parts(i)%zzz-config%parts(j)%zzz
 
           ! indicate sharing on local ends of bonds
           ! summed contributions (quench/shake/rattle) for each local
-          ! constrained bonded atom must be weighted by cons%listot(atom) -
+          ! constrained bonded atom must be config%weighted by cons%listot(atom) -
           ! how many bond constraints an atom is involved in
 
-          If (i <= natms) cons%listot(i)=cons%listot(i)+1
-          If (j <= natms) cons%listot(j)=cons%listot(j)+1
+          If (i <= config%natms) cons%listot(i)=cons%listot(i)+1
+          If (j <= config%natms) cons%listot(j)=cons%listot(j)+1
 
         End If
 
-      Else If ((i == 0 .and. j == 0) .or. (i > natms .and. j > natms) .or. &
-        (i == 0 .and. j > natms) .or. (j == 0 .and. i > natms)) Then
+      Else If ((i == 0 .and. j == 0) .or. (i > config%natms .and. j > config%natms) .or. &
+        (i == 0 .and. j > config%natms) .or. (j == 0 .and. i > config%natms)) Then
 
         ! constraints lying outside or completely in the halo, or partly in the
         ! halo and partly outside it are not considered and zero bond vectors
@@ -539,12 +540,12 @@ Subroutine allocate_work(T,n)
 
     ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,cons%ntcons,cons%dxx,cons%dyy,cons%dzz)
+    Call images(config%imcon,config%cell,cons%ntcons,cons%dxx,cons%dyy,cons%dzz)
 
     ! update lstitr
 
-    Do k=1,natms
-      lstitr(k)=(cons%listot(k) > 0 .and. lfrzn(k) == 0)
+    Do k=1,config%natms
+      lstitr(k)=(cons%listot(k) > 0 .and. config%lfrzn(k) == 0)
     End Do
 
     Deallocate (lunsafe, Stat=fail)
@@ -555,7 +556,7 @@ Subroutine allocate_work(T,n)
 
   End Subroutine constraints_tags
 
-  Subroutine constraints_rattle(tstep,lfst,lcol,vxx,vyy,vzz,stat,cons,domain,tmr,comm)
+  Subroutine constraints_rattle(tstep,lfst,lcol,config,stat,cons,domain,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -572,7 +573,7 @@ Subroutine allocate_work(T,n)
 
     Real( Kind = wp ), Intent( In    ) :: tstep
     Logical,           Intent( In    ) :: lfst,lcol
-    Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( stats_type ), Intent( InOut ) :: stat
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( domains_type ), Intent( In    ) :: domain
@@ -625,13 +626,13 @@ Subroutine allocate_work(T,n)
       ! update velocities globally: transport velocity updates of shared atoms to other nodes
 
       If (cons%lshmv_con) Then
-        Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con, &
-          cons%lashp_con,vxx,vyy,vzz,domain,comm)
+        Call update_shared_units(config,cons%lishp_con, &
+          cons%lashp_con,config%vxx,config%vyy,config%vzz,domain,comm)
       End If
 
       ! initialise velocity correction arrays
 
-      Do i=1,natms
+      Do i=1,config%natms
         vxt(i)=0.0_wp
         vyt(i)=0.0_wp
         vzt(i)=0.0_wp
@@ -645,17 +646,18 @@ Subroutine allocate_work(T,n)
           i=cons%lstopt(1,k)
           j=cons%lstopt(2,k)
 
-          amti=tstep/weight(i)
-          amtj=tstep/weight(j)
+          amti=tstep/config%weight(i)
+          amtj=tstep/config%weight(j)
 
           ! no corrections for frozen atoms
 
-          If (lfrzn(i) /= 0) amti=0.0_wp
-          If (lfrzn(j) /= 0) amtj=0.0_wp
+          If (config%lfrzn(i) /= 0) amti=0.0_wp
+          If (config%lfrzn(j) /= 0) amtj=0.0_wp
 
           ! calculate constraint force parameter - gamma
 
-          gamma = cons%dxx(k)*(vxx(i)-vxx(j)) + cons%dyy(k)*(vyy(i)-vyy(j)) + cons%dzz(k)*(vzz(i)-vzz(j))
+          gamma = cons%dxx(k)*(config%vxx(i)-config%vxx(j)) + cons%dyy(k)&
+                  *(config%vyy(i)-config%vyy(j)) + cons%dzz(k)*(config%vzz(i)-config%vzz(j))
 
           esig=Max(esig,0.5_wp*tstep*Abs(gamma))
 
@@ -663,14 +665,14 @@ Subroutine allocate_work(T,n)
 
           ! improve approximate constraint velocity and force
 
-          If (i <= natms .and. lfrzn(i) == 0) Then
+          If (i <= config%natms .and. config%lfrzn(i) == 0) Then
             gammi =-gamma*amti
             vxt(i)=vxt(i)+cons%dxx(k)*gammi
             vyt(i)=vyt(i)+cons%dyy(k)*gammi
             vzt(i)=vzt(i)+cons%dzz(k)*gammi
           End If
 
-          If (j <= natms .and. lfrzn(j) == 0) Then
+          If (j <= config%natms .and. config%lfrzn(j) == 0) Then
             gammj = gamma*amtj
             vxt(j)=vxt(j)+cons%dxx(k)*gammj
             vyt(j)=vyt(j)+cons%dyy(k)*gammj
@@ -695,18 +697,18 @@ Subroutine allocate_work(T,n)
             i=cons%lstopt(1,k)
             j=cons%lstopt(2,k)
 
-            If (i <= natms .and. lfrzn(i) == 0) Then
+            If (i <= config%natms .and. config%lfrzn(i) == 0) Then
               dli = 1.0_wp/Real(cons%listot(i),wp)
-              vxx(i)=vxx(i)+vxt(i)*dli
-              vyy(i)=vyy(i)+vyt(i)*dli
-              vzz(i)=vzz(i)+vzt(i)*dli
+              config%vxx(i)=config%vxx(i)+vxt(i)*dli
+              config%vyy(i)=config%vyy(i)+vyt(i)*dli
+              config%vzz(i)=config%vzz(i)+vzt(i)*dli
             End If
 
-            If (j <= natms .and. lfrzn(j) == 0) Then
+            If (j <= config%natms .and. config%lfrzn(j) == 0) Then
               dlj = 1.0_wp/Real(cons%listot(j),wp)
-              vxx(j)=vxx(j)+vxt(j)*dlj
-              vyy(j)=vyy(j)+vyt(j)*dlj
-              vzz(j)=vzz(j)+vzt(j)*dlj
+              config%vxx(j)=config%vxx(j)+vxt(j)*dlj
+              config%vyy(j)=config%vyy(j)+vyt(j)*dlj
+              config%vzz(j)=config%vzz(j)+vzt(j)*dlj
             End If
           End If
         End Do
@@ -748,7 +750,7 @@ Subroutine allocate_work(T,n)
   End Subroutine constraints_rattle
 
 
-  Subroutine constraints_shake_vv(tstep,parts,str,vir,stat,cons,domain,tmr,comm)
+  Subroutine constraints_shake_vv(tstep,config,str,vir,stat,cons,domain,tmr,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -765,7 +767,7 @@ Subroutine allocate_work(T,n)
 
 
     Real( Kind = wp ), Intent( In    ) :: tstep
-    Type( corePart ), Intent( InOut ) :: parts(:)
+    Type( configuration_type ), Intent( InOut ) :: config
     Real( Kind = wp ), Intent( InOut ) :: vir, str(:) 
     Type( constraints_type), Intent( InOut ) :: cons
     Type( stats_type), Intent( InOut ) :: stat
@@ -814,8 +816,8 @@ Subroutine allocate_work(T,n)
       ! update positions globally: transport position updates of shared atoms to other nodes
 
       If (cons%lshmv_con) Then
-        Call update_shared_units(natms,nlast,lsi,lsa,cons%lishp_con, &
-          cons%lashp_con,parts,SHARED_UNIT_UPDATE_POSITIONS,domain,comm)
+        Call update_shared_units(config,cons%lishp_con, &
+          cons%lashp_con,SHARED_UNIT_UPDATE_POSITIONS,domain,comm)
       End If
 
       ! calculate temporary bond vector
@@ -825,9 +827,9 @@ Subroutine allocate_work(T,n)
           i=cons%lstopt(1,k)
           j=cons%lstopt(2,k)
 
-          dxt(k)=parts(i)%xxx-parts(j)%xxx
-          dyt(k)=parts(i)%yyy-parts(j)%yyy
-          dzt(k)=parts(i)%zzz-parts(j)%zzz
+          dxt(k)=config%parts(i)%xxx-config%parts(j)%xxx
+          dyt(k)=config%parts(i)%yyy-config%parts(j)%yyy
+          dzt(k)=config%parts(i)%zzz-config%parts(j)%zzz
         Else ! DEBUG
           dxt(k)=0.0_wp
           dyt(k)=0.0_wp
@@ -837,7 +839,7 @@ Subroutine allocate_work(T,n)
 
       ! periodic boundary condition
 
-      Call images(imcon,cell,cons%ntcons,dxt,dyt,dzt)
+      Call images(config%imcon,config%cell,cons%ntcons,dxt,dyt,dzt)
 
       ! calculate maximum error in bondlength and
       ! do a global verification of convergence
@@ -861,7 +863,7 @@ Subroutine allocate_work(T,n)
 
         ! initialise position correction arrays
 
-        Do i=1,natms
+        Do i=1,config%natms
           xxt(i)=0.0_wp
           yyt(i)=0.0_wp
           zzt(i)=0.0_wp
@@ -874,19 +876,19 @@ Subroutine allocate_work(T,n)
             i=cons%lstopt(1,k)
             j=cons%lstopt(2,k)
 
-            amti=tstep2/weight(i)
-            amtj=tstep2/weight(j)
+            amti=tstep2/config%weight(i)
+            amtj=tstep2/config%weight(j)
 
             ! no corrections for frozen atoms
 
-            If (lfrzn(i) /= 0) amti=0.0_wp
-            If (lfrzn(j) /= 0) amtj=0.0_wp
+            If (config%lfrzn(i) /= 0) amti=0.0_wp
+            If (config%lfrzn(j) /= 0) amtj=0.0_wp
 
             ! calculate constraint force parameter
 
             gamma = dt2(k) / ((amti+amtj)*(cons%dxx(k)*dxt(k)+cons%dyy(k)*dyt(k)+cons%dzz(k)*dzt(k)))
 
-            If (i <= natms) Then
+            If (i <= config%natms) Then
 
               ! accumulate bond stress
 
@@ -899,7 +901,7 @@ Subroutine allocate_work(T,n)
 
               ! calculate atomic position constraint corrections
 
-              If (lfrzn(i) == 0) Then
+              If (config%lfrzn(i) == 0) Then
                 gammi =-0.5_wp*gamma*amti
                 xxt(i)=xxt(i)+cons%dxx(k)*gammi
                 yyt(i)=yyt(i)+cons%dyy(k)*gammi
@@ -908,7 +910,7 @@ Subroutine allocate_work(T,n)
 
             End If
 
-            If (j <= natms .and. lfrzn(j) == 0) Then
+            If (j <= config%natms .and. config%lfrzn(j) == 0) Then
               gammj = 0.5_wp*gamma*amtj
               xxt(j)=xxt(j)+cons%dxx(k)*gammj
               yyt(j)=yyt(j)+cons%dyy(k)*gammj
@@ -926,18 +928,18 @@ Subroutine allocate_work(T,n)
 
             ! apply position corrections if non-frozen
 
-              If (i <= natms .and. lfrzn(i) == 0) Then
+              If (i <= config%natms .and. config%lfrzn(i) == 0) Then
                  dli = 1.0_wp/Real(cons%listot(i),wp)
-                 parts(i)%xxx=parts(i)%xxx+xxt(i)*dli
-                 parts(i)%yyy=parts(i)%yyy+yyt(i)*dli
-                 parts(i)%zzz=parts(i)%zzz+zzt(i)*dli
+                 config%parts(i)%xxx=config%parts(i)%xxx+xxt(i)*dli
+                 config%parts(i)%yyy=config%parts(i)%yyy+yyt(i)*dli
+                 config%parts(i)%zzz=config%parts(i)%zzz+zzt(i)*dli
               End If
 
-              If (j <= natms .and. lfrzn(j) == 0) Then
+              If (j <= config%natms .and. config%lfrzn(j) == 0) Then
                  dlj = 1.0_wp/Real(cons%listot(j),wp)
-                 parts(j)%xxx=parts(j)%xxx+xxt(j)*dlj
-                 parts(j)%yyy=parts(j)%yyy+yyt(j)*dlj
-                 parts(j)%zzz=parts(j)%zzz+zzt(j)*dlj
+                 config%parts(j)%xxx=config%parts(j)%xxx+xxt(j)*dlj
+                 config%parts(j)%yyy=config%parts(j)%yyy+yyt(j)*dlj
+                 config%parts(j)%zzz=config%parts(j)%zzz+zzt(j)*dlj
               End If
            End If
         End Do
@@ -1006,9 +1008,10 @@ Subroutine allocate_work(T,n)
 #endif
   End Subroutine constraints_shake_vv
 
-  Subroutine apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,comm)
+  Subroutine apply_rattle(tstep,kit,pmf,cons,stat,domain,tmr,config,comm)
 
     Integer, Intent( In ) :: kit
+    Type( configuration_type ), Intent( InOut ) :: config
     Real( Kind = wp ), Intent( In ) :: tstep
     Type( stats_type), Intent( InOut ) :: stat
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -1024,18 +1027,18 @@ Subroutine allocate_work(T,n)
       lcol = (i == kit)
 
       If (cons%megcon > 0) Then
-        Call constraints_rattle(tstep,lfst,lcol,vxx,vyy,vzz,stat,cons,domain,tmr,comm)
+        Call constraints_rattle(tstep,lfst,lcol,config,stat,cons,domain,tmr,comm)
       End IF
 
       If (pmf%megpmf > 0) Then
         Call pmf_rattle(cons%max_iter_shake,cons%tolerance,tstep,lfst,lcol, &
-          vxx,vyy,vzz,stat,pmf,comm)
+          config,stat,pmf,comm)
       End If
     End Do
   End Subroutine apply_rattle
 
   Subroutine apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
-      domain,tmr,parts,comm)
+      domain,tmr,config,comm)
     Integer, Intent( InOut ) :: kit
     Integer, Intent( In ) :: mxkit
     Logical, Intent( In ) :: lstitr(:)
@@ -1048,7 +1051,7 @@ Subroutine allocate_work(T,n)
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Type( corePart), Dimension(:), Intent( InOut ) :: parts
+    Type( configuration_type), Intent( InOut ) :: config
     ! constraint virial and stress tensor
 
     Logical :: safe
@@ -1064,13 +1067,13 @@ Subroutine allocate_work(T,n)
 
     ! store integrated positions
 
-    Do j=1,nfree
-      i=lstfre(j)
+    Do j=1,config%nfree
+      i=config%lstfre(j)
 
       If (lstitr(i)) Then
-        oxt(i)=parts(i)%xxx
-        oyt(i)=parts(i)%yyy
-        ozt(i)=parts(i)%zzz
+        oxt(i)=config%parts(i)%xxx
+        oyt(i)=config%parts(i)%yyy
+        ozt(i)=config%parts(i)%zzz
       End If
     End Do
 
@@ -1081,7 +1084,7 @@ Subroutine allocate_work(T,n)
 
         ! apply constraint correction: stat%vircon,stat%strcon - constraint virial,stress
 
-        Call constraints_shake_vv(tstep,parts,str,vir,stat,cons,domain,tmr,comm)
+        Call constraints_shake_vv(tstep,config,str,vir,stat,cons,domain,tmr,comm)
 
         ! constraint virial and stress tensor
 
@@ -1097,7 +1100,7 @@ Subroutine allocate_work(T,n)
 
         Call pmf_shake_vv  &
           (cons%max_iter_shake,cons%tolerance,tstep, &
-          parts,str,vir,stat,pmf,comm)
+          config,str,vir,stat,pmf,comm)
 
         ! PMF virial and stress tensor
 
@@ -1132,26 +1135,26 @@ Subroutine allocate_work(T,n)
 
     ! calculate velocity and force correction
 
-    Do j=1,nfree
-      i=lstfre(j)
+    Do j=1,config%nfree
+      i=config%lstfre(j)
 
       If (lstitr(i)) Then
-        xt=(parts(i)%xxx-oxt(i))*rstep
-        yt=(parts(i)%yyy-oyt(i))*rstep
-        zt=(parts(i)%zzz-ozt(i))*rstep
+        xt=(config%parts(i)%xxx-oxt(i))*rstep
+        yt=(config%parts(i)%yyy-oyt(i))*rstep
+        zt=(config%parts(i)%zzz-ozt(i))*rstep
 
-        vxx(i)=vxx(i)+xt
-        vyy(i)=vyy(i)+yt
-        vzz(i)=vzz(i)+zt
+        config%vxx(i)=config%vxx(i)+xt
+        config%vyy(i)=config%vyy(i)+yt
+        config%vzz(i)=config%vzz(i)+zt
 
-        tmp=weight(i)/hstep
+        tmp=config%weight(i)/hstep
         xt=xt*tmp
         yt=yt*tmp
         zt=zt*tmp
 
-        parts(i)%fxx=parts(i)%fxx+xt
-        parts(i)%fyy=parts(i)%fyy+yt
-        parts(i)%fzz=parts(i)%fzz+zt
+        config%parts(i)%fxx=config%parts(i)%fxx+xt
+        config%parts(i)%fyy=config%parts(i)%fyy+yt
+        config%parts(i)%fzz=config%parts(i)%fzz+zt
       End If
     End Do
   End Subroutine apply_shake

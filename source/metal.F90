@@ -13,8 +13,7 @@ Module metal
   Use kinds, Only : wp,wi
   Use setup
   Use site, Only : site_type
-  Use configuration, Only : natms,ltg,ltype,&
-                            imcon,volm,nlast,ixyz
+  Use configuration, Only : configuration_type
   Use particle, Only : corePart
   Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag,wp_mpi,gsend, &
                      gwait,girecv
@@ -167,7 +166,7 @@ Contains
   End Subroutine allocate_metal_erf_arrays
 
   Subroutine metal_forces &
-          (iatm,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,ntype_atom,met,neigh,parts)
+          (iatm,xxt,yyt,zzt,rrt,engmet,virmet,stress,safe,ntype_atom,met,neigh,config)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -187,7 +186,7 @@ Contains
   Real( Kind = wp ),                        Intent(   Out ) :: engmet,virmet
   Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
   Logical,                                  Intent( InOut ) :: safe
-  Type( corePart),   Dimension( : ),        Intent( InOut ) :: parts
+  Type( configuration_type ),               Intent( InOut ) :: config
   Integer( Kind = wi ), Intent( In    ) :: ntype_atom
   Type( metal_type ), Intent( InOut ) :: met
 
@@ -222,14 +221,14 @@ Contains
 
 ! global identity and type of atom iatm
 
-  idi=ltg(iatm)
-  ai=ltype(iatm)
+  idi=config%ltg(iatm)
+  ai=config%ltype(iatm)
 
 ! load forces
 
-  fix=parts(iatm)%fxx
-  fiy=parts(iatm)%fyy
-  fiz=parts(iatm)%fzz
+  fix=config%parts(iatm)%fxx
+  fiy=config%parts(iatm)%fyy
+  fiz=config%parts(iatm)%fzz
 
 ! start of primary loop for forces evaluation
 
@@ -238,7 +237,7 @@ Contains
 ! atomic and potential function indices
 
      jatm=neigh%list(m,iatm)
-     aj=ltype(jatm)
+     aj=config%ltype(jatm)
 
      If      (met%tab == 1 .or. met%tab == 3) Then ! EAM & 2BEAM
         ki=ai
@@ -313,7 +312,7 @@ Contains
                  gamma1 = -rrr*(2.0_wp*(cc0+cc1*rrr+cc2*rrr**2) * &
                           (rrr-ccc)+(cc1+2.0_wp*cc2*rrr)*(rrr-ccc)**2)
 
-                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                     eng = (cc0+cc1*rrr+cc2*rrr**2)*(rrr-ccc)**2
               End If
 
@@ -351,7 +350,7 @@ Contains
                  gamma1 = -rrr*(2.0_wp*(cc0+cc1*rrr+cc2*rrr**2+cc3*rrr**3+cc4*rrr**4)*(rrr-ccc) + &
                                 (cc1+2.0_wp*cc2*rrr+3.0_wp*cc3*rrr**2+4.0_wp*cc4*rrr**3)*(rrr-ccc)**2)
 
-                 If (jatm <= natms .or. idi < ltg(jatm)) &
+                 If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                     eng = (cc0+cc1*rrr+cc2*rrr**2+cc3*rrr**3+cc4*rrr**4)*(rrr-ccc)**2
               End If
 
@@ -380,7 +379,7 @@ Contains
 ! calculate pair forces and energies
 
               gamma1=nnnr*eps*(sig/rrr)**nnn
-              If (jatm <= natms .or. idi < ltg(jatm)) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                  eng = gamma1/nnnr
 
 ! calculate density contributions
@@ -410,7 +409,7 @@ Contains
 ! calculate pair forces and energies
 
               gamma1=2.0_wp*aaa*Exp(-ppp*cut1)*ppp*cut2
-              If (jatm <= natms .or. idi < ltg(jatm)) &
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
                  eng = gamma1/(ppp*cut2)
 
 ! calculate density contributions
@@ -500,15 +499,15 @@ Contains
            fiy=fiy+fy
            fiz=fiz+fz
 
-           If (jatm <= natms) Then
+           If (jatm <= config%natms) Then
 
-              parts(jatm)%fxx=parts(jatm)%fxx-fx
-              parts(jatm)%fyy=parts(jatm)%fyy-fy
-              parts(jatm)%fzz=parts(jatm)%fzz-fz
+              config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+              config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+              config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
            End If
 
-           If (jatm <= natms .or. idi < ltg(jatm)) Then
+           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
 ! add interaction energy
 
@@ -572,7 +571,7 @@ Contains
 
 ! calculate interaction energy using 3-point interpolation
 
-                 If ((jatm <= natms .or. idi < ltg(jatm)) .and. keypot /= 5) Then
+                 If ((jatm <= config%natms .or. idi < config%ltg(jatm)) .and. keypot /= 5) Then
 
                     vk0 = met%vmet(l-1,k0,1)
                     vk1 = met%vmet(l  ,k0,1)
@@ -790,15 +789,15 @@ Contains
            fiy=fiy+fy
            fiz=fiz+fz
 
-           If (jatm <= natms) Then
+           If (jatm <= config%natms) Then
 
-              parts(jatm)%fxx=parts(jatm)%fxx-fx
-              parts(jatm)%fyy=parts(jatm)%fyy-fy
-              parts(jatm)%fzz=parts(jatm)%fzz-fz
+              config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+              config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+              config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
            End If
 
-           If (jatm <= natms .or. idi < ltg(jatm)) Then
+           If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
 ! add interaction energy using 3-point interpolation
 
@@ -827,9 +826,9 @@ Contains
 
 ! load back forces
 
-  parts(iatm)%fxx=fix
-  parts(iatm)%fyy=fiy
-  parts(iatm)%fzz=fiz
+  config%parts(iatm)%fxx=fix
+  config%parts(iatm)%fyy=fiy
+  config%parts(iatm)%fzz=fiz
 
 ! complete stress tensor
 
@@ -844,7 +843,7 @@ Contains
   stress(9) = stress(9) + strs9
 End Subroutine metal_forces
 
-Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,parts,comm)
+Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -868,7 +867,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ),                       Intent( InOut ) :: comm
-  Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+  Type( configuration_type ),               Intent( InOut ) :: config
 
   Logical           :: safe = .true.
   Integer           :: fail,limit,i,j,k,l,k0
@@ -902,7 +901,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
      Call error(0,message)
   End If
 
-  Do i=1,natms
+  Do i=1,config%natms
      limit=neigh%list(0,i) ! Get list limit
 
 ! calculate interatomic distances
@@ -910,9 +909,9 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
      Do k=1,limit
         j=neigh%list(k,i)
 
-        xxt(k)=parts(i)%xxx-parts(j)%xxx
-        yyt(k)=parts(i)%yyy-parts(j)%yyy
-        zzt(k)=parts(i)%zzz-parts(j)%zzz
+        xxt(k)=config%parts(i)%xxx-config%parts(j)%xxx
+        yyt(k)=config%parts(i)%yyy-config%parts(j)%yyy
+        zzt(k)=config%parts(i)%zzz-config%parts(j)%zzz
      End Do
 
 ! periodic boundary conditions not needed by LC construction
@@ -928,9 +927,9 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
 ! calculate contributions to local density
 
      If (met%tab > 0) Then         ! EAM contributions
-        Call metal_ld_collect_eam(i,rrt,safe,ntype_atom,met,neigh)
+        Call metal_ld_collect_eam(i,rrt,safe,ntype_atom,met,neigh,config)
      Else ! If (met%tab == 0) Then ! FST contributions
-        Call metal_ld_collect_fst(i,rrt,safe,met,neigh)
+        Call metal_ld_collect_fst(i,rrt,safe,met,neigh,config)
      End If
   End Do
 
@@ -945,7 +944,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
   Call gcheck(comm,safe)
   If (.not.safe) Call error(506)
 
-  Do i=1,natms
+  Do i=1,config%natms
 
 ! calculate density terms to energy and virial
 
@@ -953,7 +952,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
 
 ! potential function index
 
-        k0=ltype(i)
+        k0=config%ltype(i)
 
 ! Now start traditional s-band (EAM & EEAM) or d-band for 2B(EAM & EEAM)
 
@@ -977,7 +976,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
                  rrr = rhosqr - met%fmet(2,k0,1)
                  l   = Min(Nint(rrr*rdr),Nint(met%fmet(1,k0,1))-1)
                  If (l < 5) Then ! catch unsafe value
-                    Write(*,*) 'good density range problem: (LTG,RHO) ',ltg(i),met%rho(i)
+                    Write(*,*) 'good density range problem: (LTG,RHO) ',config%ltg(i),met%rho(i)
                     safe=.false.
                     l=6
                  End If
@@ -1040,7 +1039,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
 
               End If
            Else
-              Write(*,*) 'bad density range problem: (LTG,RHO) ',ltg(i),met%rho(i)
+              Write(*,*) 'bad density range problem: (LTG,RHO) ',config%ltg(i),met%rho(i)
               safe=.false.
            End If
 
@@ -1074,7 +1073,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
                     rrr = rhosqr - met%fmes(2,k0,1)
                     l   = Min(Nint(rrr*rdr),Nint(met%fmes(1,k0,1))-1)
                     If (l < 5) Then ! catch unsafe value
-                       Write(*,*) 'good density range problem: (LTG,RHS) ',ltg(i),met%rhs(i)
+                       Write(*,*) 'good density range problem: (LTG,RHS) ',config%ltg(i),met%rhs(i)
                        safe=.false.
                        l=6
                     End If
@@ -1137,7 +1136,7 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
 
                  End If
               Else
-                 Write(message,'(a,2(i0,1x))') 'bad density range problem: (LTG,RHS) ',ltg(i),met%rhs(i)
+                 Write(message,'(a,2(i0,1x))') 'bad density range problem: (LTG,RHS) ',config%ltg(i),met%rhs(i)
                  Call info(message)
                  safe=.false.
               End If
@@ -1152,9 +1151,9 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
 
 ! calculate analytical square root of (density + lrc to it)
 
-           rhosqr = Sqrt(met%rho(i) + met%elrc(ltype(i)))
+           rhosqr = Sqrt(met%rho(i) + met%elrc(config%ltype(i)))
            engden = engden - rhosqr
-           virden = virden + met%vlrc(ltype(i))/rhosqr
+           virden = virden + met%vlrc(config%ltype(i))/rhosqr
 
 ! store the derivatives of the FST embedding-like function
 ! (with corrected density) in met%rho array
@@ -1192,10 +1191,10 @@ Subroutine metal_ld_compute(engden,virden,stress,ntype_atom,met,neigh,domain,par
 
 ! obtain atomic densities for outer border regions
 
-  Call metal_ld_set_halo(met,domain,comm)
+  Call metal_ld_set_halo(met,domain,config,comm)
 End Subroutine metal_ld_compute
 
-Subroutine metal_lrc(met,sites,comm)
+Subroutine metal_lrc(met,sites,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1210,6 +1209,7 @@ Subroutine metal_lrc(met,sites,comm)
 
   Type( metal_type ), Intent( InOut ) :: met
   Type( site_type ), Intent( In    ) :: sites
+  Type( configuration_type ), Intent( In    ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer           :: i,j,k0,k1,k2,kmet,keypot,nnn,mmm
@@ -1226,7 +1226,7 @@ Subroutine metal_lrc(met,sites,comm)
   met%vlrc   = 0.0_wp
   elrcsum = 0.0_wp
 
-  If (imcon /= 0 .and. imcon /= 6) Then
+  If (config%imcon /= 0 .and. config%imcon /= 6) Then
      kmet = 0
 
      Do i=1,sites%ntype_atom
@@ -1265,14 +1265,14 @@ Subroutine metal_lrc(met,sites,comm)
                  vlrc0 = vlrc0*2.0_wp
               End If
 
-              met%elrc(0) = met%elrc(0) + twopi*volm*sites%dens(i)*sites%dens(j)*elrc0
-              met%vlrc(0) = met%vlrc(0) - twopi*volm*sites%dens(i)*sites%dens(j)*vlrc0
+              met%elrc(0) = met%elrc(0) + twopi*config%volm*sites%dens(i)*sites%dens(j)*elrc0
+              met%vlrc(0) = met%vlrc(0) - twopi*config%volm*sites%dens(i)*sites%dens(j)*vlrc0
 
               tmp=sig**3*(sig/met%rcut)**(mmm-3)/(mmmr-3.0_wp)
               If (i == j) Then
                  elrc1=tmp*(eps*ccc)**2
                  met%elrc(i)=met%elrc(i)+fourpi*sites%dens(i)*elrc1
-                 elrcsum=elrcsum+twopi*volm*sites%dens(i)**2*elrc1
+                 elrcsum=elrcsum+twopi*config%volm*sites%dens(i)**2*elrc1
 
                  vlrc1=mmmr*elrc1
                  met%vlrc(i)=met%vlrc(i)+twopi*sites%dens(i)*vlrc1
@@ -1284,7 +1284,7 @@ Subroutine metal_lrc(met,sites,comm)
                  elrc2=tmp*(met%prm(1,k2)*met%prm(5,k2))**2
                  met%elrc(i)=met%elrc(i)+fourpi*sites%dens(j)*elrc1
                  met%elrc(j)=met%elrc(j)+fourpi*sites%dens(i)*elrc2
-                 elrcsum=elrcsum+twopi*volm*sites%dens(i)*sites%dens(j)*(elrc1+elrc2)
+                 elrcsum=elrcsum+twopi*config%volm*sites%dens(i)*sites%dens(j)*(elrc1+elrc2)
 
                  vlrc1=mmmr*elrc1
                  vlrc2=mmmr*elrc2
@@ -1314,8 +1314,8 @@ Subroutine metal_lrc(met,sites,comm)
                  vlrc0=vlrc0*2.0_wp
               End If
 
-              met%elrc(0)=met%elrc(0)+twopi*volm*sites%dens(i)*sites%dens(j)*elrc0
-              met%vlrc(0)=met%vlrc(0)-twopi*volm*sites%dens(i)*sites%dens(j)*vlrc0
+              met%elrc(0)=met%elrc(0)+twopi*config%volm*sites%dens(i)*sites%dens(j)*elrc0
+              met%vlrc(0)=met%vlrc(0)-twopi*config%volm*sites%dens(i)*sites%dens(j)*vlrc0
 
               eee=Exp(-2.0_wp*qqq*(met%rcut-rr0)/rr0)
 
@@ -1323,7 +1323,7 @@ Subroutine metal_lrc(met,sites,comm)
                  elrc1=(met%rcut**2+2.0_wp*met%rcut*(0.5_wp*rr0/qqq)+ &
                    2.0_wp*(0.5_wp*rr0/qqq)**2)*(0.5_wp*rr0/qqq)*eee*zet**2
                  met%elrc(i)=met%elrc(i)+fourpi*sites%dens(i)*elrc1
-                 elrcsum=elrcsum+twopi*volm*sites%dens(i)**2*elrc1
+                 elrcsum=elrcsum+twopi*config%volm*sites%dens(i)**2*elrc1
 
                  vlrc1=(met%rcut**3+3.0_wp*met%rcut**2*(0.5_wp*rr0/qqq)+ &
                    6.0_wp*met%rcut*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
@@ -1334,7 +1334,7 @@ Subroutine metal_lrc(met,sites,comm)
                  elrc2=elrc2
                  met%elrc(i)=met%elrc(i)+fourpi*sites%dens(j)*elrc1
                  met%elrc(j)=met%elrc(j)+fourpi*sites%dens(i)*elrc2
-                 elrcsum=elrcsum+twopi*volm*sites%dens(i)*sites%dens(j)*(elrc1+elrc2)
+                 elrcsum=elrcsum+twopi*config%volm*sites%dens(i)*sites%dens(j)*(elrc1+elrc2)
 
                  vlrc1=(met%rcut**3+3.0_wp*met%rcut**2*(0.5_wp*rr0/qqq)+ &
                    6.0_wp*met%rcut*(0.5_wp*rr0/qqq)**2+(0.5_wp*rr0/qqq)**3)*eee*zet**2
@@ -1371,7 +1371,7 @@ Subroutine metal_lrc(met,sites,comm)
               If (i == j) Then
                  elrc1=tmp*eps**2
                  met%elrc(i)=met%elrc(i)+fourpi*sites%dens(i)*elrc1
-                 elrcsum=elrcsum+twopi*volm*sites%dens(i)**2*elrc1
+                 elrcsum=elrcsum+twopi*config%volm*sites%dens(i)**2*elrc1
 
                  vlrc1=mmmr*elrc1
                  met%vlrc(i)=met%vlrc(i)+twopi*sites%dens(i)*vlrc1
@@ -1383,7 +1383,7 @@ Subroutine metal_lrc(met,sites,comm)
                  elrc2=tmp*met%prm(1,k2)**2
                  met%elrc(i)=met%elrc(i)+fourpi*sites%dens(j)*elrc1
                  met%elrc(j)=met%elrc(j)+fourpi*sites%dens(i)*elrc2
-                 elrcsum=elrcsum+twopi*volm*sites%dens(i)*sites%dens(j)*(elrc1+elrc2)
+                 elrcsum=elrcsum+twopi*config%volm*sites%dens(i)*sites%dens(j)*(elrc1+elrc2)
 
                  vlrc1=mmmr*elrc1
                  vlrc2=mmmr*elrc2
@@ -2127,7 +2127,7 @@ Subroutine metal_generate_erf(met)
   End If
 End Subroutine metal_generate_erf
 
-Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
+Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh,config)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2151,13 +2151,14 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
   Logical,                                  Intent( InOut ) :: safe
   Integer( Kind = wi ), Intent( In    ) :: ntype_atom
   Type( metal_type ), Intent( InOut ) :: met
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Integer           :: m,ai,ki,jatm,aj,kj,l,key,k0
   Real( Kind = wp ) :: rrr,rdr,rr1,ppp,vk0,vk1,vk2,t1,t2,density
 
 ! global type of itam
 
-  ai=ltype(iatm)
+  ai=config%ltype(iatm)
 
 ! start of primary loop for density
 
@@ -2166,7 +2167,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
 ! atomic and potential function indices
 
      jatm=neigh%list(m,iatm)
-     aj=ltype(jatm)
+     aj=config%ltype(jatm)
 
      If      (met%tab == 1 .or. met%tab == 3) Then ! EAM & 2BEAM
         ki=ai
@@ -2219,7 +2220,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
            End If
 
            met%rho(iatm) = met%rho(iatm) + density
-           If (ki == kj .and. jatm <= natms) met%rho(jatm) = met%rho(jatm) + density
+           If (ki == kj .and. jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density
 
         End If
      End If
@@ -2227,7 +2228,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
 ! second metal atom density and validity and truncation of potential
 
      If (Abs(met%dmet(1,ki,1)) > zero_plus .and. Nint(met%dmet(1,ki,1)) > 5) Then
-        If (ki /= kj .and. jatm <= natms) Then
+        If (ki /= kj .and. jatm <= config%natms) Then
            If (rrr <= met%dmet(3,ki,1)) Then
 
 ! interpolation parameters
@@ -2315,7 +2316,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
                  End If
 
                  met%rhs(iatm) = met%rhs(iatm) + density
-                 If (jatm <= natms) met%rhs(jatm) = met%rhs(jatm) + density
+                 If (jatm <= config%natms) met%rhs(jatm) = met%rhs(jatm) + density
 
               End If
            End If
@@ -2359,7 +2360,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
                  End If
 
                  met%rhs(iatm) = met%rhs(iatm) + density
-                 If (ki == kj .and. jatm <= natms) met%rhs(jatm) = met%rhs(jatm) + density
+                 If (ki == kj .and. jatm <= config%natms) met%rhs(jatm) = met%rhs(jatm) + density
 
               End If
            End If
@@ -2367,7 +2368,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
 ! second metal atom density and validity and truncation of potential
 
            If (Abs(met%dmes(1,ki,1)) > zero_plus .and. Nint(met%dmes(1,ki,1)) > 5) Then
-              If (ki /= kj .and. jatm <= natms) Then
+              If (ki /= kj .and. jatm <= config%natms) Then
                  If (rrr <= met%dmes(3,ki,1)) Then
 
 ! interpolation parameters
@@ -2411,7 +2412,7 @@ Subroutine metal_ld_collect_eam(iatm,rrt,safe,ntype_atom,met,neigh)
   End Do
 End Subroutine metal_ld_collect_eam
 
-Subroutine metal_ld_collect_fst(iatm,rrt,safe,met,neigh)
+Subroutine metal_ld_collect_fst(iatm,rrt,safe,met,neigh,config)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2431,6 +2432,7 @@ Subroutine metal_ld_collect_fst(iatm,rrt,safe,met,neigh)
   Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
   Logical,                                  Intent( InOut ) :: safe
   Type( metal_type ), Intent( InOut ) :: met
+  Type( configuration_type ), Intent( In    ) :: config
 
   Integer           :: m,ai,aj,jatm,key,kmn,kmx,k0,k1,k2, &
                        keypot,nnn,mmm,l
@@ -2442,7 +2444,7 @@ Subroutine metal_ld_collect_fst(iatm,rrt,safe,met,neigh)
 
 ! global type of itam
 
-  ai=ltype(iatm)
+  ai=config%ltype(iatm)
 
 ! start of primary loop for density
 
@@ -2451,7 +2453,7 @@ Subroutine metal_ld_collect_fst(iatm,rrt,safe,met,neigh)
 ! atomic and potential function indices
 
      jatm=neigh%list(m,iatm)
-     aj=ltype(jatm)
+     aj=config%ltype(jatm)
 
      If (ai > aj) Then
         key=ai*(ai-1)/2 + aj
@@ -2618,10 +2620,10 @@ Subroutine metal_ld_collect_fst(iatm,rrt,safe,met,neigh)
 
            If (ai > aj) Then
               met%rho(iatm) = met%rho(iatm) + density*t1
-              If (jatm <= natms) met%rho(jatm) = met%rho(jatm) + density*t2
+              If (jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density*t2
            Else
               met%rho(iatm) = met%rho(iatm) + density*t2
-              If (jatm <= natms) met%rho(jatm) = met%rho(jatm) + density*t1
+              If (jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density*t1
            End If
 
         Else ! tabulated calculation
@@ -2661,10 +2663,10 @@ Subroutine metal_ld_collect_fst(iatm,rrt,safe,met,neigh)
 
               If (ai > aj) Then
                  met%rho(iatm) = met%rho(iatm) + density*met%dmet(1,k0,2)
-                 If (jatm <= natms) met%rho(jatm) = met%rho(jatm) + density*met%dmet(2,k0,2)
+                 If (jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density*met%dmet(2,k0,2)
               Else
                  met%rho(iatm) = met%rho(iatm) + density*met%dmet(2,k0,2)
-                 If (jatm <= natms) met%rho(jatm) = met%rho(jatm) + density*met%dmet(1,k0,2)
+                 If (jatm <= config%natms) met%rho(jatm) = met%rho(jatm) + density*met%dmet(1,k0,2)
               End If
 
            End If
@@ -3005,7 +3007,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,met,domain,comm)
   End If
 End Subroutine metal_ld_export
 
-Subroutine metal_ld_set_halo(met,domain,comm)
+Subroutine metal_ld_set_halo(met,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3022,6 +3024,7 @@ Subroutine metal_ld_set_halo(met,domain,comm)
 
   Type( metal_type ), Intent( InOut ) :: met
   Type( domains_type ), Intent( In    ) :: domain
+  Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical :: safe
@@ -3036,11 +3039,11 @@ Subroutine metal_ld_set_halo(met,domain,comm)
      Write(message,'(a)') 'metal_ld_set_halo allocation failure'
      Call error(0,message)
   End If
-  ixyz0(1:nlast) = ixyz(1:nlast)
+  ixyz0(1:config%nlast) = config%ixyz(1:config%nlast)
 
 ! No halo, start with domain only particles
 
-  mlast=natms
+  mlast=config%natms
 
 ! exchange atom data in -/+ x directions
 
@@ -3059,7 +3062,7 @@ Subroutine metal_ld_set_halo(met,domain,comm)
 
 ! check atom totals after data transfer
 
-  safe=(mlast == nlast)
+  safe=(mlast == config%nlast)
   Call gcheck(comm,safe)
   If (.not.safe) Call error(96)
 

@@ -7,7 +7,7 @@ Module build_tplg
 
   ! CONFIG MODULE
 
-  Use configuration, Only : natms,nlast,lsi,lsa
+  Use configuration, Only : configuration_type
 
   ! INTERACTION MODULES
 
@@ -31,7 +31,7 @@ Module build_tplg
 
 Contains
 
-  Subroutine build_tplg_intra(max_exclude,bond,angle,dihedral,inversion,mpoles,comm)
+  Subroutine build_tplg_intra(max_exclude,bond,angle,dihedral,inversion,mpoles,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -50,6 +50,7 @@ Contains
     Type( dihedrals_type ), Intent( In    ) :: dihedral
     Type( inversions_type ), Intent( InOut ) :: inversion
     Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical :: safe
@@ -67,11 +68,11 @@ Contains
         ia=bond%list(1,i)
         ib=bond%list(2,i)
 
-        ia0=local_index(ia,nlast,lsi,lsa)
-        ib0=local_index(ib,nlast,lsi,lsa)
+        ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+        ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
 
-        If (ia0 > natms) ia0=0
-        If (ib0 > natms) ib0=0
+        If (ia0 > config%natms) ia0=0
+        If (ib0 > config%natms) ib0=0
 
         ! add atoms to topology list
 
@@ -88,13 +89,13 @@ Contains
         ib=angle%list(2,i)
         ic=angle%list(3,i)
 
-        ia0=local_index(ia,nlast,lsi,lsa)
-        ib0=local_index(ib,nlast,lsi,lsa)
-        ic0=local_index(ic,nlast,lsi,lsa)
+        ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+        ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
+        ic0=local_index(ic,config%nlast,config%lsi,config%lsa)
 
-        If (ia0 > natms) ia0=0
-        If (ib0 > natms) ib0=0
-        If (ic0 > natms) ic0=0
+        If (ia0 > config%natms) ia0=0
+        If (ib0 > config%natms) ib0=0
+        If (ic0 > config%natms) ic0=0
 
         ! add atoms to topology list
 
@@ -123,15 +124,15 @@ Contains
       ic=dihedral%list(3,i)
       id=dihedral%list(4,i)
 
-      ia0=local_index(ia,nlast,lsi,lsa)
-      ib0=local_index(ib,nlast,lsi,lsa)
-      ic0=local_index(ic,nlast,lsi,lsa)
-      id0=local_index(id,nlast,lsi,lsa)
+      ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+      ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
+      ic0=local_index(ic,config%nlast,config%lsi,config%lsa)
+      id0=local_index(id,config%nlast,config%lsi,config%lsa)
 
-      If (ia0 > natms) ia0=0
-      If (ib0 > natms) ib0=0
-      If (ic0 > natms) ic0=0
-      If (id0 > natms) id0=0
+      If (ia0 > config%natms) ia0=0
+      If (ib0 > config%natms) ib0=0
+      If (ic0 > config%natms) ic0=0
+      If (id0 > config%natms) id0=0
 
       ! add atoms to topology list
 
@@ -164,15 +165,15 @@ Contains
       ic=inversion%list(3,i)
       id=inversion%list(4,i)
 
-      ia0=local_index(ia,nlast,lsi,lsa)
-      ib0=local_index(ib,nlast,lsi,lsa)
-      ic0=local_index(ic,nlast,lsi,lsa)
-      id0=local_index(id,nlast,lsi,lsa)
+      ia0=local_index(ia,config%nlast,config%lsi,config%lsa)
+      ib0=local_index(ib,config%nlast,config%lsi,config%lsa)
+      ic0=local_index(ic,config%nlast,config%lsi,config%lsa)
+      id0=local_index(id,config%nlast,config%lsi,config%lsa)
 
-      If (ia0 > natms) ia0=0
-      If (ib0 > natms) ib0=0
-      If (ic0 > natms) ic0=0
-      If (id0 > natms) id0=0
+      If (ia0 > config%natms) ia0=0
+      If (ib0 > config%natms) ib0=0
+      If (ic0 > config%natms) ic0=0
+      If (id0 > config%natms) id0=0
 
       ! add atoms to topology list
 
@@ -212,7 +213,7 @@ Contains
 
     ! sort mpoles%ltp
 
-    Do i=1,natms
+    Do i=1,config%natms
       j=mpoles%ltp(0,i)
       If (j > 0) Call shellsort(j,mpoles%ltp(1:j,i))
     End Do

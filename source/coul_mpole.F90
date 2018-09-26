@@ -14,7 +14,7 @@ Module coul_mpole
   Use comms,  Only : comms_type
   Use setup, Only : mxatdm,mxatms, &
                             r4pie0, zero_plus, nrite, sqrpi
-  Use configuration, Only : imcon,natms,ltg, cell
+  Use configuration, Only : configuration_type
   Use particle,  Only : corePart
   Use mpole, Only : mpole_type
   Use mpoles_container, Only : coul_deriv, ewald_deriv, &
@@ -38,12 +38,12 @@ Module coul_mpole
 Contains
 
   Subroutine intra_mcoul(rcut,iatm,jatm,scale, &
-      rrr,xdf,ydf,zdf,coul,virele,fx,fy,fz,safe,mpoles,electro)
+      rrr,xdf,ydf,zdf,coul,virele,fx,fy,fz,safe,mpoles,electro,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for calculating bond's or 1-4 dihedral
-    ! electrostatics: adjusted by a weighting factor
+    ! electrostatics: adjusted by a config%weighting factor
     !
     ! copyright - daresbury laboratory
     ! amended   - i.t.todorov & h.a.boateng february 2016
@@ -57,6 +57,7 @@ Contains
     Logical,           Intent( InOut ) :: safe
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut ) :: electro
+    Type( configuration_type ), Intent( In    ) :: config
 
     Integer                 :: k1,k2,k3,s1,s2,s3,n
     Integer                 :: ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -391,7 +392,7 @@ Contains
       tiy = tiy*r4pie0/electro%eps
       tiz = tiz*r4pie0/electro%eps
 
-      If (iatm <= natms) Then
+      If (iatm <= config%natms) Then
 
         mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+tix
         mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+tiy
@@ -399,7 +400,7 @@ Contains
 
       End If
 
-      If (jatm <= natms) Then
+      If (jatm <= config%natms) Then
 
         mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
         mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
@@ -411,7 +412,7 @@ Contains
   End Subroutine intra_mcoul
 
   Subroutine coul_fscp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
-      mpoles,electro,parts,comm)
+      mpoles,electro,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -442,7 +443,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
@@ -524,7 +525,7 @@ Contains
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! get the multipoles for site i
 
@@ -550,9 +551,9 @@ Contains
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! initialize torques for atom i (temporary)
 
@@ -911,11 +912,11 @@ Contains
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
                 mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
                 mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
@@ -923,7 +924,7 @@ Contains
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! accumulate potential energy
 
@@ -950,9 +951,9 @@ Contains
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! and torques due to multipoles
 
@@ -977,7 +978,7 @@ Contains
   End Subroutine coul_fscp_mforces
 
   Subroutine coul_rfp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
-      mpoles,electro,parts,comm)
+      mpoles,electro,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1006,7 +1007,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( comms_type ),                       Intent( In    ) :: comm
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
                          k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -1094,7 +1095,7 @@ Contains
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! get the multipoles for site i
 
@@ -1120,9 +1121,9 @@ Contains
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! initialize torques for atom i (temporary)
 
@@ -1503,11 +1504,11 @@ Contains
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
                 mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
                 mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
@@ -1515,7 +1516,7 @@ Contains
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! accumulate potential energy
 
@@ -1542,9 +1543,9 @@ Contains
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! and torques due to multipoles
 
@@ -1569,7 +1570,7 @@ Contains
   End Subroutine coul_rfp_mforces
 
   Subroutine coul_cp_mforces &
-             (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,parts)
+             (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1590,7 +1591,7 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: idi,jatm,k1,k2,k3,s1,s2,s3,m, &
                          ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -1621,7 +1622,7 @@ Contains
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! get the multipoles for site i
 
@@ -1647,9 +1648,9 @@ Contains
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! initialize torques for atom i (temporary)
 
@@ -1809,11 +1810,11 @@ Contains
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
                 mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
                 mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
@@ -1821,7 +1822,7 @@ Contains
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! accumulate potential energy
 
@@ -1844,9 +1845,9 @@ Contains
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! and torques due to multipoles
 
@@ -1875,7 +1876,7 @@ Contains
   End Subroutine coul_cp_mforces
 
   Subroutine coul_dddp_mforces &
-             (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,parts)
+             (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -1896,7 +1897,7 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: idi,jatm,k1,k2,k3,s1,s2,s3,m, &
                          ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
@@ -1927,7 +1928,7 @@ Contains
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! get the multipoles for site i
 
@@ -1953,9 +1954,9 @@ Contains
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! initialize torques for atom i (temporary)
 
@@ -2115,11 +2116,11 @@ Contains
              fiy=fiy+fy
              fiz=fiz+fz
 
-             If (jatm <= natms) Then
+             If (jatm <= config%natms) Then
 
-                parts(jatm)%fxx=parts(jatm)%fxx-fx
-                parts(jatm)%fyy=parts(jatm)%fyy-fy
-                parts(jatm)%fzz=parts(jatm)%fzz-fz
+                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
                 mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
                 mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
@@ -2127,7 +2128,7 @@ Contains
 
              End If
 
-             If (jatm <= natms .or. idi < ltg(jatm)) Then
+             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! accumulate potential energy
 
@@ -2150,9 +2151,9 @@ Contains
 
   ! load back forces
 
-       parts(iatm)%fxx=fix
-       parts(iatm)%fyy=fiy
-       parts(iatm)%fzz=fiz
+       config%parts(iatm)%fxx=fix
+       config%parts(iatm)%fyy=fiy
+       config%parts(iatm)%fzz=fiz
 
   ! and torques due to multipoles
 
@@ -2180,7 +2181,7 @@ Contains
 
   End Subroutine coul_dddp_mforces
 
-  Subroutine coul_chrm_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress,neigh,mpoles,parts)
+  Subroutine coul_chrm_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress,neigh,mpoles,config)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2206,7 +2207,7 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ch,vircpe_ch
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: limit,idi,jatm,m
 
@@ -2231,11 +2232,11 @@ Contains
 
   ! global identity of iatm
 
-    idi=ltg(iatm)
+    idi=config%ltg(iatm)
 
   ! charge, inverse polarisability and dumping
 
-    chgea = parts(iatm)%chge
+    chgea = config%parts(iatm)%chge
     plra  = mpoles%polarisation_atom(iatm)
     dmpa  = mpoles%dump_atom(iatm)
 
@@ -2245,9 +2246,9 @@ Contains
 
   ! load forces
 
-    fix=parts(iatm)%fxx
-    fiy=parts(iatm)%fyy
-    fiz=parts(iatm)%fzz
+    fix=config%parts(iatm)%fxx
+    fiy=config%parts(iatm)%fyy
+    fiz=config%parts(iatm)%fzz
 
   ! start of primary loop for forces evaluation
 
@@ -2266,7 +2267,7 @@ Contains
   ! and total inter-atomic summed dumping
 
        jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
-       chgprd=chgea*parts(jatm)%chge
+       chgprd=chgea*config%parts(jatm)%chge
        plrprd=plra*mpoles%polarisation_atom(jatm)
        dmpsum=dmpa+mpoles%dump_atom(jatm)
 
@@ -2290,15 +2291,15 @@ Contains
        fiy=fiy+fy
        fiz=fiz+fz
 
-       If (jatm <= natms) Then
+       If (jatm <= config%natms) Then
 
-          parts(jatm)%fxx=parts(jatm)%fxx-fx
-          parts(jatm)%fyy=parts(jatm)%fyy-fy
-          parts(jatm)%fzz=parts(jatm)%fzz-fz
+          config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+          config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+          config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
        End If
 
-       If (jatm <= natms .or. idi < ltg(jatm)) Then
+       If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! calculate potential energy and virial
 
@@ -2320,9 +2321,9 @@ Contains
 
   ! load back forces
 
-    parts(iatm)%fxx=fix
-    parts(iatm)%fyy=fiy
-    parts(iatm)%fzz=fiz
+    config%parts(iatm)%fxx=fix
+    config%parts(iatm)%fyy=fiy
+    config%parts(iatm)%fzz=fiz
 
   ! complete stress tensor
 
@@ -2339,7 +2340,7 @@ Contains
   End Subroutine coul_chrm_forces
 
 
-  Subroutine d_ene_trq_mpoles(vircpe_dt,stress,mpoles,parts)
+  Subroutine d_ene_trq_mpoles(vircpe_dt,stress,mpoles,config)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2359,7 +2360,7 @@ Contains
     Real( Kind = wp ),                   Intent(   Out ) :: vircpe_dt
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( corePart ), Dimension( : ),         Intent( InOut ) :: parts
+    Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: idi,j,iatm,jatm
 
@@ -2387,17 +2388,17 @@ Contains
     strs8=0.0_wp
     strs9=0.0_wp
 
-    Do iatm = 1, natms
+    Do iatm = 1, config%natms
 
   ! load forces
 
-       fix=parts(iatm)%fxx
-       fiy=parts(iatm)%fyy
-       fiz=parts(iatm)%fzz
+       fix=config%parts(iatm)%fxx
+       fiy=config%parts(iatm)%fyy
+       fiz=config%parts(iatm)%fzz
 
   ! global identity of iatm
 
-       idi=ltg(iatm)
+       idi=config%ltg(iatm)
 
        If (mpoles%rotation(iatm)%flag == 1) Then
 
@@ -2476,11 +2477,11 @@ Contains
              jatm = mpoles%rotation(iatm)%mbnd(j)
 
              If (jatm > 0) Then
-                xdf = parts(jatm)%xxx - parts(iatm)%xxx
-                ydf = parts(jatm)%yyy - parts(iatm)%yyy
-                zdf = parts(jatm)%zzz - parts(iatm)%zzz
+                xdf = config%parts(jatm)%xxx - config%parts(iatm)%xxx
+                ydf = config%parts(jatm)%yyy - config%parts(iatm)%yyy
+                zdf = config%parts(jatm)%zzz - config%parts(iatm)%zzz
 
-                Call images_s(imcon,cell,xdf,ydf,zdf)
+                Call images_s(config%imcon,config%cell,xdf,ydf,zdf)
 
                 rsq   = xdf*xdf + ydf*ydf + zdf*zdf
                 rrr   = sqrt(rsq)
@@ -2509,15 +2510,15 @@ Contains
                 fiy = fiy + fy
                 fiz = fiz + fz
 
-                If (jatm <= natms) Then
+                If (jatm <= config%natms) Then
 
-                   parts(jatm)%fxx=parts(jatm)%fxx-fx
-                   parts(jatm)%fyy=parts(jatm)%fyy-fy
-                   parts(jatm)%fzz=parts(jatm)%fzz-fz
+                   config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+                   config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+                   config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
                 End If
 
-                If (jatm <= natms .or. idi < ltg(jatm)) Then
+                If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
   ! calculate virial
 
@@ -2543,9 +2544,9 @@ Contains
 
   ! load back forces
 
-          parts(iatm)%fxx=fix
-          parts(iatm)%fyy=fiy
-          parts(iatm)%fzz=fiz
+          config%parts(iatm)%fxx=fix
+          config%parts(iatm)%fyy=fiy
+          config%parts(iatm)%fzz=fiz
 
        End If
 

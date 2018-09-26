@@ -13,7 +13,7 @@ Module plumed
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type
   Use setup,  Only : boltz, mxatms, DLP_VERSION
-  Use configuration, Only : cell,natms,weight,ltg
+  Use configuration, Only : configuration_type
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
   Use particle, Only : corePart
@@ -140,15 +140,15 @@ Contains
 
   End Subroutine plumed_print_about
 
-  Subroutine plumed_apply(parts,nstrun,nstep,stats,plume,comm)
+  Subroutine plumed_apply(config,nstrun,nstep,stats,plume,comm)
 
     Integer,           Intent( In    ) :: nstep
     Integer,           Intent(   Out ) :: nstrun
 
-    Type(corePart),    Intent( InOut ) :: parts(1:mxatms)
-    Type(stats_type),  Intent( InOut ) :: stats
-    Type(plumed_type), Intent( InOut ) :: plume
-    Type(comms_type),  Intent( InOut ) :: comm
+    Type(configuration_type),    Intent( InOut ) :: config
+    Type(stats_type),            Intent( InOut ) :: stats
+    Type(plumed_type),           Intent( InOut ) :: plume
+    Type(comms_type),            Intent( InOut ) :: comm
 
 #ifdef PLUMED
     Character( Len = 256 ) :: message
@@ -158,24 +158,24 @@ Contains
     Allocate(tfx(1:mxatms),tfy(1:mxatms),tfz(1:mxatms),stat=fail(2))
 !    If(Any(fail)) Call error(0)
     Do i = 1,mxatms
-      tx(i) = parts(i)%xxx
-      ty(i) = parts(i)%yyy
-      tz(i) = parts(i)%zzz
-      tfx(i) = parts(i)%fxx
-      tfy(i) = parts(i)%fyy
-      tfz(i) = parts(i)%fzz
-      tchge(i) = parts(i)%chge
+      tx(i) = config%parts(i)%xxx
+      ty(i) = config%parts(i)%yyy
+      tz(i) = config%parts(i)%zzz
+      tfx(i) = config%parts(i)%fxx
+      tfy(i) = config%parts(i)%fyy
+      tfz(i) = config%parts(i)%fzz
+      tchge(i) = config%parts(i)%chge
     End Do
 
-    Call plumed_f_gcmd("setAtomsNlocal"//sn,natms)
-    Call plumed_f_gcmd("setAtomsFGatindex"//sn,ltg)
+    Call plumed_f_gcmd("setAtomsNlocal"//sn,config%natms)
+    Call plumed_f_gcmd("setAtomsFGatindex"//sn,config%ltg)
     Call plumed_f_gcmd("setStep"//sn,nstep)
-    Call plumed_f_gcmd("setMasses"//sn,weight)
+    Call plumed_f_gcmd("setMasses"//sn,config%weight)
     Call plumed_f_gcmd("setCharges"//sn,tchge)
     Call plumed_f_gcmd("setPositionsX"//sn,tx)
     Call plumed_f_gcmd("setPositionsY"//sn,ty)
     Call plumed_f_gcmd("setPositionsZ"//sn,tz)
-    Call plumed_f_gcmd("setBox"//sn,cell)
+    Call plumed_f_gcmd("setBox"//sn,config%cell)
     plume%eng = stats%stpcfg / real(comm%mxnode)
     Call plumed_f_gcmd("setEnergy"//sn,plume%eng)
     Call plumed_f_gcmd("setForcesX"//sn,tfx)
@@ -193,13 +193,13 @@ Contains
        nstrun=nstep
     End If
     Do i=1,mxatms
-      parts(i)%xxx=tx(i)
-      parts(i)%yyy=ty(i)
-      parts(i)%zzz=tz(i)
-      parts(i)%fxx=tfx(i)
-      parts(i)%fyy=tfy(i)
-      parts(i)%fzz=tfz(i)
-      parts(i)%chge=tchge(i)
+      config%parts(i)%xxx=tx(i)
+      config%parts(i)%yyy=ty(i)
+      config%parts(i)%zzz=tz(i)
+      config%parts(i)%fxx=tfx(i)
+      config%parts(i)%fyy=tfy(i)
+      config%parts(i)%fzz=tfz(i)
+      config%parts(i)%chge=tchge(i)
     End Do
     Deallocate(tx,ty,tz,tfx,tfy,tfz,tchge)
 #else

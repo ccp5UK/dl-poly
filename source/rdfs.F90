@@ -13,12 +13,11 @@ Module rdfs
 
   Use kinds, Only : wp,wi
   Use site, Only : site_type
-  Use configuration, Only : natms,ltg,ltype
+  Use configuration, Only : configuration_type
   Use comms,  Only : comms_type,gsum
   Use setup,  Only : fourpi,boltz,delr_max,nrdfdt,npdfdt,npdgdt, &
                      engunit,zero_plus
   Use site, Only : site_type
-  Use configuration, Only : cfgname,volm
   Use parse
   Use io
   Use errors_warnings, Only : error,info
@@ -137,7 +136,7 @@ Contains
     T%tmp_rdf = 0.0_wp
   End Subroutine allocate_block_average_array
 
-  Subroutine rdf_collect(iatm,rrt,neigh,rdf)
+  Subroutine rdf_collect(iatm,rrt,neigh,config,rdf)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -158,6 +157,7 @@ Contains
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
     Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( configuration_type ), Intent( InOut ) :: config
 
     Integer                 :: idi,jatm,ai,aj,keyrdf,kk,ll,m
     Real( Kind = wp )       :: rdelr,rrr
@@ -166,16 +166,16 @@ Contains
     rdelr= Real(rdf%max_grid,wp)/neigh%cutoff
 
     ! global identity and type of iatm
-    idi=ltg(iatm)
-    ai=ltype(iatm)
+    idi=config%ltg(iatm)
+    ai=config%ltype(iatm)
 
     ! start of primary loop for rdf%rdf accumulation
     Do m=1,neigh%list(0,iatm)
       ! atomic and type indices
       jatm=neigh%list(m,iatm)
-      aj=ltype(jatm)
+      aj=config%ltype(jatm)
 
-      If (jatm <= natms .or. idi < ltg(jatm)) Then
+      If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
         ! rdf%rdf function indices
         keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
         kk=rdf%list(keyrdf)
@@ -198,7 +198,7 @@ Contains
 
   End Subroutine rdf_collect
 
-Subroutine rdf_compute(lpana,rcut,temp,sites,rdf,comm)
+Subroutine rdf_compute(lpana,rcut,temp,sites,rdf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -217,6 +217,7 @@ Subroutine rdf_compute(lpana,rcut,temp,sites,rdf,comm)
   Type( site_type ), Intent( In    ) :: sites
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type(comms_type), Intent( InOut )  :: comm
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Logical           :: zero
   Integer           :: fail,ngrid,i,ia,ib,kk,ig,ll
@@ -260,7 +261,7 @@ Subroutine rdf_compute(lpana,rcut,temp,sites,rdf,comm)
 
   If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
-     Write(nrdfdt,'(a)') cfgname
+     Write(nrdfdt,'(a)') config%cfgname
      Write(nrdfdt,'(2i10)') rdf%n_pairs,rdf%max_grid
   End If
 
@@ -293,7 +294,7 @@ Subroutine rdf_compute(lpana,rcut,temp,sites,rdf,comm)
 
 ! normalisation factor
 
-           factor1=volm*sites%dens(ia)*sites%dens(ib)*Real(rdf%n_configs,wp)
+           factor1=config%volm*sites%dens(ia)*sites%dens(ib)*Real(rdf%n_configs,wp)
            If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/sites%num_type(ia))
 
 ! running integration of rdf%rdf
@@ -361,12 +362,12 @@ Subroutine rdf_compute(lpana,rcut,temp,sites,rdf,comm)
 
      If (comm%idnode == 0) Then
         Open(Unit=npdgdt, File='VDWPMF', Status='replace')
-        Write(npdgdt,'(a)') '# '//cfgname
+        Write(npdgdt,'(a)') '# '//config%cfgname
         Write(npdgdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',delr*Real(rdf%max_grid,wp),rdf%max_grid,delr,rdf%n_pairs, &
              '   conversion factor(kT -> energy units) =',kT2engo
 
         Open(Unit=npdfdt, File='VDWTAB', Status='replace')
-        Write(npdfdt,'(a)') '# '//cfgname
+        Write(npdfdt,'(a)') '# '//config%cfgname
         Write(npdfdt,'(a,f12.5,i10,f12.5,i10,a,e15.7)') '# ',dgrid*Real(ngrid,wp),ngrid,dgrid,rdf%n_pairs, &
           '   conversion factor(kT -> energy units) =',kT2engo
      End If
@@ -516,11 +517,12 @@ Subroutine rdf_compute(lpana,rcut,temp,sites,rdf,comm)
 
 End Subroutine rdf_compute
 
-Subroutine calculate_block(temp,rcut,neigh,sites,rdf)
+Subroutine calculate_block(temp,rcut,neigh,sites,config,rdf)
   Real( Kind = wp ), Intent(in)            :: temp, rcut
   Type( neighbours_type), Intent( In    ) :: neigh
   Type( site_type ), Intent( In    ) :: sites
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Real( Kind = wp ), Dimension( 1:neigh%max_list ) :: rrt, xxt, yyt, zzt
   Real( Kind = wp )                        :: kT2engo, delr, rdlr, dgrid, pdfzero, factor1, rrr,dvol,gofr,gofr1
@@ -543,7 +545,7 @@ Subroutine calculate_block(temp,rcut,neigh,sites,rdf)
 ! only for valid interactions specified for a look up
 ! global sum of data on all nodes
 ! normalisation factor
-        factor1=volm*sites%dens(ia)*sites%dens(ib)*Real(rdf%n_configs,wp)
+        factor1=config%volm*sites%dens(ia)*sites%dens(ib)*Real(rdf%n_configs,wp)
         If (ia == ib) factor1=factor1*0.5_wp*(1.0_wp-1.0_wp/sites%num_type(ia))
 ! loop over distances
         zero=.true.
@@ -567,13 +569,14 @@ Subroutine calculate_block(temp,rcut,neigh,sites,rdf)
 
 End Subroutine calculate_block
 
-Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, comm)
+Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, config, comm)
 
   Real( Kind = wp ), Intent( In )                      :: temp, rcut
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( site_type ), Intent( In    ) :: sites
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type(comms_type), Intent( InOut )                    :: comm
+  Type( configuration_type ), Intent( InOut )          :: config
 
   Real( Kind = wp )                                    :: test1, delr
   Real( kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
@@ -604,7 +607,7 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, comm)
 
 !Compute the rdf for each of the blocks
   Do nr_blocks=1, num_blocks+1
-     Call calculate_block(temp, rcut,neigh,sites,rdf)
+     Call calculate_block(temp, rcut,neigh,sites,config,rdf)
   End Do
   rdf%block_number = nr_blocks
 
@@ -642,7 +645,7 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, comm)
 !output errors
   If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
-     Write(nrdfdt,'(a)') cfgname
+     Write(nrdfdt,'(a)') config%cfgname
      Write(nrdfdt,'(2i10)') rdf%n_pairs,rdf%max_grid
 
      delr = rcut/Real(rdf%max_grid,wp)
@@ -665,13 +668,14 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, comm)
   Deallocate(averages, errors)
 End Subroutine calculate_errors
 
-Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,comm)
+Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,config,comm)
 
   Real( Kind = wp ), Intent(In)                        :: temp, rcut
   Type( neighbours_type ), Intent( In    ) :: neigh
   Type( site_type ), Intent( In    ) :: sites
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type(comms_type), Intent( InOut )                    :: comm
+  Type( configuration_type ), Intent( InOut )          :: config
 
   Real( Kind = wp )                                    :: test1
   Real( Kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
@@ -702,7 +706,7 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,comm)
 
 !Compute the rdf%rdf for each of the blocks
   Do nr_blocks=1,num_blocks+1
-     Call calculate_block(temp, rcut,neigh,sites,rdf)
+     Call calculate_block(temp, rcut,neigh,sites,config,rdf)
   End Do
   rdf%block_number = nr_blocks
   i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)
@@ -764,7 +768,7 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,comm)
 !output errors
   If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='RDFDAT', Status='replace')
-     Write(nrdfdt,'(a)') cfgname
+     Write(nrdfdt,'(a)') config%cfgname
      Write(nrdfdt,'(2i10)') rdf%n_pairs,rdf%max_grid
 
      delr = rcut/Real(rdf%max_grid,wp)
@@ -786,7 +790,7 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,comm)
   End If
 End Subroutine calculate_errors_jackknife
 
-Subroutine rdf_excl_collect(iatm,rrt,neigh,rdf)
+Subroutine rdf_excl_collect(iatm,rrt,neigh,config,rdf)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -805,6 +809,7 @@ Subroutine rdf_excl_collect(iatm,rrt,neigh,rdf)
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
   Real( Kind = wp )       :: rdelr,rrr
@@ -813,8 +818,8 @@ Subroutine rdf_excl_collect(iatm,rrt,neigh,rdf)
   rdelr= Real(rdf%max_grid,wp)/neigh%cutoff
 
   ! global identity and type of iatm
-  idi=ltg(iatm)
-  ai=ltype(iatm)
+  idi=config%ltg(iatm)
+  ai=config%ltype(iatm)
 
   ! Get neigh%list limit
   limit=neigh%list(-1,iatm)-neigh%list(0,iatm)
@@ -824,8 +829,8 @@ Subroutine rdf_excl_collect(iatm,rrt,neigh,rdf)
 
     ! atomic and type indices
     jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
-    aj=ltype(jatm)
-    If (jatm <= natms .or. idi < ltg(jatm)) Then
+    aj=config%ltype(jatm)
+    If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
       ! rdf%rdf function indices
       keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
       kk=rdf%list(keyrdf)
@@ -848,7 +853,7 @@ Subroutine rdf_excl_collect(iatm,rrt,neigh,rdf)
 
 End Subroutine rdf_excl_collect
 
-Subroutine rdf_frzn_collect(iatm,rrt,neigh,rdf)
+Subroutine rdf_frzn_collect(iatm,rrt,neigh,config,rdf)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -867,6 +872,7 @@ Subroutine rdf_frzn_collect(iatm,rrt,neigh,rdf)
   Integer,                                  Intent( In    ) :: iatm
   Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: rrt
   Type( rdf_type ), Intent( InOut ) :: rdf
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Integer                 :: limit,idi,jatm,ai,aj,keyrdf,kk,ll,m
   Real( Kind = wp )       :: rdelr,rrr
@@ -875,8 +881,8 @@ Subroutine rdf_frzn_collect(iatm,rrt,neigh,rdf)
   rdelr= Real(rdf%max_grid,wp)/neigh%cutoff
 
   ! global identity and type of iatm
-  idi=ltg(iatm)
-  ai=ltype(iatm)
+  idi=config%ltg(iatm)
+  ai=config%ltype(iatm)
 
   ! Get neigh%list limit
   limit=neigh%list(-2,iatm)-neigh%list(-1,iatm)
@@ -885,9 +891,9 @@ Subroutine rdf_frzn_collect(iatm,rrt,neigh,rdf)
   Do m=1,limit
     ! atomic and type indices
     jatm=neigh%list(neigh%list(-1,iatm)+m,iatm)
-    aj=ltype(jatm)
+    aj=config%ltype(jatm)
 
-    If (jatm <= natms .or. idi < ltg(jatm)) Then
+    If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
       ! rdf%rdf function indices
       keyrdf=(Max(ai,aj)*(Max(ai,aj)-1))/2+Min(ai,aj)
       kk=rdf%list(keyrdf)
@@ -941,7 +947,7 @@ Subroutine usr_collect(rrt,rdf)
 
 End Subroutine usr_collect
 
-Subroutine usr_compute(rdf,comm)
+Subroutine usr_compute(rdf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -957,6 +963,7 @@ Subroutine usr_compute(rdf,comm)
 
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( comms_type ), Intent( InOut ) :: comm
+  Type( configuration_type ), Intent( InOut ) :: config
 
   Integer           :: i
   Real( Kind = wp ) :: delr,rdlr,factor1,rrr,dvol,gofr,sum0,sum1
@@ -970,10 +977,10 @@ Subroutine usr_compute(rdf,comm)
 
   If (comm%idnode == 0) Then
      Open(Unit=nrdfdt, File='USRDAT', Status='replace')
-     Write(nrdfdt,'(2a)') '# '//cfgname
+     Write(nrdfdt,'(2a)') '# '//config%cfgname
      Write(nrdfdt,'(a)')  "# RDF for the two fragments' COMs (umbrella sampling)"
      Write(nrdfdt,'(a,i10,f12.6,i10,e15.6,/)') '# bins, cutoff, frames, volume: ', &
-       rdf%max_grid_usr,rdf%cutoff_usr,rdf%n_configs_usr,volm
+       rdf%max_grid_usr,rdf%cutoff_usr,rdf%n_configs_usr,config%volm
      Write(nrdfdt,'(a)') '#'
   End If
 
@@ -998,7 +1005,7 @@ Subroutine usr_compute(rdf,comm)
 
      rrr  = (Real(i,wp)-0.5_wp)*delr
      dvol = fourpi*delr*(rrr**2+delr**2/12.0_wp)
-     gofr = gofr*volm/dvol
+     gofr = gofr*config%volm/dvol
      sum1 = sum1 + gofr
 
 ! print out information

@@ -4,12 +4,10 @@ Module nst_nose_hoover
   Use comms,       Only : comms_type,gmax
   Use setup
   Use site, Only : site_type
-  Use configuration,      Only : imcon,cell,volm,natms,nlast,nfree, &
-                                 lfrzn,lstfre,weight,               &
-                                 vxx,vyy,vzz
+  Use configuration,      Only : configuration_type,getcom
   Use particle,    Only : corePart
   Use domains,     Only : domains_type
-  Use kinetics,     Only : getcom,getvom,kinstress,kinstresf,kinstrest
+  Use kinetics,     Only : getvom,kinstress,kinstresf,kinstrest
   Use constraints, Only : constraints_tags,apply_rattle,&
                           apply_shake, constraints_type
   Use pmf,         Only : pmf_tags,pmf_type
@@ -38,7 +36,7 @@ Contains
              consv,                             &
              strkin,engke,                      &
              cshell,cons,pmf,stat,thermo,sites, &
-             vdws,rigid,domain,tmr,parts,comm)
+             vdws,rigid,domain,tmr,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -46,7 +44,7 @@ Contains
   ! molecular dynamics - velocity verlet with Nose-Hoover thermostat and
   ! barostat (anisotropic pressure control) (symplectic)
   !
-  ! Parrinello-Rahman type: changing cell shape
+  ! Parrinello-Rahman type: changing config%cell shape
   !
   ! Note: (1) this ensemble is modified from its original form as in
   !           reference1 to that shown in reference2, and now there is
@@ -87,7 +85,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -136,7 +134,7 @@ Contains
 
   ! store initial values of volume, long range corrections and density
 
-       thermo%volm0   = volm
+       thermo%volm0   = config%volm
        thermo%elrc0   = vdws%elrc
        thermo%virlrc0 = vdws%vlrc
 
@@ -159,7 +157,7 @@ Contains
           thermo%eta(2:4) = 0.0_wp
           thermo%eta(6:8) = 0.0_wp
 
-          Call dcell(cell,celprp)
+          Call dcell(config%cell,celprp)
           thermo%h_z=celprp(9)
        End If
 
@@ -195,20 +193,20 @@ Contains
     End If
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       lstitr(1:natms)=.false. ! initialise lstitr
+       lstitr(1:config%natms)=.false. ! initialise lstitr
 
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
        If (cons%megcon > 0)Then
-         Call constraints_tags(lstitr,cons,parts,comm)
+         Call constraints_tags(lstitr,cons,config,comm)
        End if
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
        If (pmf%megpmf > 0)Then
-         Call pmf_tags(lstitr,pmf,parts,comm)
+         Call pmf_tags(lstitr,pmf,config,comm)
        End If
     End If
 
@@ -224,24 +222,24 @@ Contains
 
   ! store initial values
 
-       Do i=1,natms
-          xxt(i) = parts(i)%xxx
-          yyt(i) = parts(i)%yyy
-          zzt(i) = parts(i)%zzz
+       Do i=1,config%natms
+          xxt(i) = config%parts(i)%xxx
+          yyt(i) = config%parts(i)%yyy
+          zzt(i) = config%parts(i)%zzz
 
-          vxt(i) = vxx(i)
-          vyt(i) = vyy(i)
-          vzt(i) = vzz(i)
+          vxt(i) = config%vxx(i)
+          vyt(i) = config%vyy(i)
+          vzt(i) = config%vzz(i)
 
-          fxt(i) = parts(i)%fxx
-          fyt(i) = parts(i)%fyy
-          fzt(i) = parts(i)%fzz
+          fxt(i) = config%parts(i)%fxx
+          fyt(i) = config%parts(i)%fyy
+          fzt(i) = config%parts(i)%fzz
        End Do
 
   ! store current integration variables
 
-       cell0=cell
-       vzero=volm
+       cell0=config%cell
+       vzero=config%volm
        chit0=thermo%chi_t
        cint0=thermo%cint
        eta0 =thermo%eta
@@ -249,7 +247,7 @@ Contains
 
   ! calculate system centre of mass
 
-       Call getcom(parts,com,comm)
+       Call getcom(config,com,comm)
 
   100  Continue
 
@@ -273,7 +271,7 @@ Contains
 
           Call nvt_h0_scl &
             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-            vxx,vyy,vzz,engke,thermo,comm)
+            config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
 
   ! constraint+pmf virial and stress
 
@@ -283,9 +281,9 @@ Contains
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
           Call nst_h0_scl &
-             (0,hstep,degfre,thermo%pmass,thermo%chi_t,volm, &
+             (0,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm, &
              thermo%h_z,str,stress,         &
-             vxx,vyy,vzz,strkin,engke,thermo,comm)
+             config%vxx,config%vyy,config%vzz,strkin,engke,thermo,config,comm)
 
   ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -297,42 +295,42 @@ Contains
 
           Call nvt_h0_scl &
             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-            vxx,vyy,vzz,engke,thermo,comm)
+            config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
 
   ! update velocities
 
-          Do i=1,natms
-             If (weight(i) > 1.0e-6_wp) Then
-                tmp=hstep/weight(i)
-                vxx(i)=vxx(i)+tmp*parts(i)%fxx
-                vyy(i)=vyy(i)+tmp*parts(i)%fyy
-                vzz(i)=vzz(i)+tmp*parts(i)%fzz
+          Do i=1,config%natms
+             If (config%weight(i) > 1.0e-6_wp) Then
+                tmp=hstep/config%weight(i)
+                config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
+                config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
+                config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
              End If
           End Do
 
-  ! scale cell vectors: second order taylor expansion of Exp(tstep*thermo%eta)
+  ! scale config%cell vectors: second order taylor expansion of Exp(tstep*thermo%eta)
 
           aaa=tstep*thermo%eta
           Call mat_mul(aaa,aaa,bbb)
           aaa=uni+aaa+0.5_wp*bbb
-          Call mat_mul(aaa,cell0,cell)
+          Call mat_mul(aaa,cell0,config%cell)
 
   ! update volume and construct a 'mock' thermo%chi_p=Tr[thermo%eta]/3
 
           thermo%chi_p = thermo%eta(1)+thermo%eta(5)+thermo%eta(9)
-          volm = volm*Exp(tstep*thermo%chi_p)
+          config%volm = config%volm*Exp(tstep*thermo%chi_p)
           thermo%chi_p = thermo%chi_p / 3.0_wp
 
   ! update positions: second order taylor expansion of Exp(tstep*thermo%eta)
 
-          Do i=1,natms
-             If (weight(i) > 1.0e-6_wp) Then
+          Do i=1,config%natms
+             If (config%weight(i) > 1.0e-6_wp) Then
                 xt=xxt(i)-com(1)
                 yt=yyt(i)-com(2)
                 zt=zzt(i)-com(3)
-                parts(i)%xxx = tstep*vxx(i) + com(1) + xt*aaa(1) + yt*aaa(2) + zt*aaa(3)
-                parts(i)%yyy = tstep*vyy(i) + com(2) + xt*aaa(2) + yt*aaa(5) + zt*aaa(6)
-                parts(i)%zzz = tstep*vzz(i) + com(3) + xt*aaa(3) + yt*aaa(6) + zt*aaa(9)
+                config%parts(i)%xxx = tstep*config%vxx(i) + com(1) + xt*aaa(1) + yt*aaa(2) + zt*aaa(3)
+                config%parts(i)%yyy = tstep*config%vyy(i) + com(2) + xt*aaa(2) + yt*aaa(5) + zt*aaa(6)
+                config%parts(i)%zzz = tstep*config%vzz(i) + com(3) + xt*aaa(3) + yt*aaa(6) + zt*aaa(9)
              End If
           End Do
 
@@ -340,7 +338,7 @@ Contains
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
             Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-              lstitr,stat,pmf,cons,domain,tmr,parts,comm)
+              lstitr,stat,pmf,cons,domain,tmr,config,comm)
           End If
 
   ! restore original integration parameters as well as
@@ -348,16 +346,16 @@ Contains
   ! in the next iteration stat%strcon and stat%strpmf are freshly new
 
           If (iter < thermo%mxiter) Then
-             volm=vzero
+             config%volm=vzero
              thermo%chi_t=chit0
              thermo%cint=cint0
              thermo%eta =eta0
              thermo%chip0=chpzr
 
-             Do i=1,natms
-                vxx(i) = vxt(i)
-                vyy(i) = vyt(i)
-                vzz(i) = vzt(i)
+             Do i=1,config%natms
+                config%vxx(i) = vxt(i)
+                config%vyy(i) = vyt(i)
+                config%vzz(i) = vzt(i)
              End Do
           End If
        End Do
@@ -365,26 +363,26 @@ Contains
   ! check timestep for variable timestep
 
        If (lvar) Then
-If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
+If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,config%natms,config%parts,&
  xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restore initial conditions
 
-             volm=vzero
+             config%volm=vzero
              thermo%chi_t=chit0
              thermo%cint=cint0
              thermo%eta =eta0
              thermo%chip0=chpzr
 
-             Do i=1,natms
-                vxx(i) = vxt(i)
-                vyy(i) = vyt(i)
-                vzz(i) = vzt(i)
+             Do i=1,config%natms
+                config%vxx(i) = vxt(i)
+                config%vyy(i) = vyt(i)
+                config%vzz(i) = vzt(i)
 
-                parts(i)%fxx = fxt(i)
-                parts(i)%fyy = fyt(i)
-                parts(i)%fzz = fzt(i)
+                config%parts(i)%fxx = fxt(i)
+                config%parts(i)%fyy = fyt(i)
+                config%parts(i)%fzz = fzt(i)
              End Do
 
   ! restart vv1
@@ -395,7 +393,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! adjust long range corrections and number density
 
-       tmp=(thermo%volm0/volm)
+       tmp=(thermo%volm0/config%volm)
        vdws%elrc=thermo%elrc0*tmp
        vdws%vlrc=thermo%virlrc0*tmp
        Do i=1,sites%ntype_atom
@@ -405,7 +403,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! get thermo%h_z for orthorhombic constraints
 
        If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
-          Call dcell(cell,celprp)
+          Call dcell(config%cell,celprp)
           thermo%h_z=celprp(9)
        End If
 
@@ -415,12 +413,12 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! update velocity
 
-       Do i=1,natms
-          If (weight(i) > 1.0e-6_wp) Then
-             tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*parts(i)%fxx
-             vyy(i)=vyy(i)+tmp*parts(i)%fyy
-             vzz(i)=vzz(i)+tmp*parts(i)%fzz
+       Do i=1,config%natms
+          If (config%weight(i) > 1.0e-6_wp) Then
+             tmp=hstep/config%weight(i)
+             config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
+             config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
+             config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
           End If
        End Do
 
@@ -428,14 +426,14 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,config,comm)
        End If
 
   ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
        Call nvt_h0_scl &
              (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-             vxx,vyy,vzz,engke,thermo,comm)
+             config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
 
   ! constraint+pmf virial and stress
 
@@ -445,9 +443,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! integrate and apply nst_h0_scl barostat - 1/2 step
 
        Call nst_h0_scl &
-             (0,hstep,degfre,thermo%pmass,thermo%chi_t,volm, &
+             (0,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm, &
              thermo%h_z,str,stress,         &
-             vxx,vyy,vzz,strkin,engke,thermo,comm)
+             config%vxx,config%vyy,config%vzz,strkin,engke,thermo,config,comm)
 
   ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -459,28 +457,28 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
        Call nvt_h0_scl &
              (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-             vxx,vyy,vzz,engke,thermo,comm)
+             config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
        consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + 0.5_wp*thermo%pmass*thermo%chip0**2 + &
-         thermo%ceng*thermo%cint + thermo%press*volm
+         thermo%ceng*thermo%cint + thermo%press*config%volm
 
   ! remove system centre of mass velocity
 
-       Call getvom(vom,vxx,vyy,vzz,comm)
+       Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
 
-       Do i=1,natms
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-             vxx(i)=vxx(i)-vom(1)
-             vyy(i)=vyy(i)-vom(2)
-             vzz(i)=vzz(i)-vom(3)
+       Do i=1,config%natms
+          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+             config%vxx(i)=config%vxx(i)-vom(1)
+             config%vyy(i)=config%vyy(i)-vom(2)
+             config%vzz(i)=config%vzz(i)-vom(3)
           End If
        End Do
 
   ! update kinetic energy and stress
 
-       Call kinstress(vxx,vyy,vzz,strkin,comm)
+       Call kinstress(config%vxx,config%vyy,config%vzz,strkin,config,comm)
        engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
     End If
@@ -507,7 +505,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
              cshell,cons,pmf,stat,thermo,sites, &
-             vdws,rigid,domain,tmr,parts,comm)
+             vdws,rigid,domain,tmr,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -516,7 +514,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! - velocity verlet with Nose-Hoover thermostat and
   ! barostat (anisotropic pressure control) (symplectic)
   !
-  ! Parrinello-Rahman type: changing cell shape
+  ! Parrinello-Rahman type: changing config%cell shape
   !
   ! Note: (1) this ensemble is modified from its original form as in
   !           reference1 to that shown in reference2, and now there is
@@ -554,7 +552,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut) :: comm
 
     Logical                 :: safe,lcol,lfst
@@ -631,7 +629,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! store initial values of volume, long range corrections and density
 
-       thermo%volm0   = volm
+       thermo%volm0   = config%volm
        thermo%elrc0   = vdws%elrc
        thermo%virlrc0 = vdws%vlrc
 
@@ -654,7 +652,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
           thermo%eta(2:4) = 0.0_wp
           thermo%eta(6:8) = 0.0_wp
 
-          Call dcell(cell,celprp)
+          Call dcell(config%cell,celprp)
           thermo%h_z=celprp(9)
        End If
 
@@ -695,24 +693,24 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! set matms
 
-    matms=nlast
-    If (comm%mxnode == 1) matms=natms
+    matms=config%nlast
+    If (comm%mxnode == 1) matms=config%natms
 
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       lstitr(1:natms)=.false. ! initialise lstitr
+       lstitr(1:config%natms)=.false. ! initialise lstitr
 
   ! construct current bond vectors and listot array (shared
   ! constraint atoms) for iterative bond algorithms
 
        If (cons%megcon > 0)Then
-         Call constraints_tags(lstitr,cons,parts,comm)
+         Call constraints_tags(lstitr,cons,config,comm)
        End If 
 
   ! construct current PMF constraint vectors and shared description
   ! for iterative PMF constraint algorithms
 
        If (pmf%megpmf > 0)Then
-         Call pmf_tags(lstitr,pmf,parts,comm)
+         Call pmf_tags(lstitr,pmf,config,comm)
        End If
 
     End If
@@ -734,16 +732,16 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! COM distances
 
-             ggx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-             ggy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-             ggz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+             ggx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+             ggy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+             ggz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
           End Do
        End If
     End Do
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,ggx,ggy,ggz)
+    Call images(config%imcon,config%cell,krgd,ggx,ggy,ggz)
 
   ! timestep derivatives
 
@@ -758,17 +756,17 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! store initial values
 
        Do i=1,matms
-          xxt(i) = parts(i)%xxx
-          yyt(i) = parts(i)%yyy
-          zzt(i) = parts(i)%zzz
+          xxt(i) = config%parts(i)%xxx
+          yyt(i) = config%parts(i)%yyy
+          zzt(i) = config%parts(i)%zzz
 
-          vxt(i) = vxx(i)
-          vyt(i) = vyy(i)
-          vzt(i) = vzz(i)
+          vxt(i) = config%vxx(i)
+          vyt(i) = config%vyy(i)
+          vzt(i) = config%vzz(i)
 
-          fxt(i) = parts(i)%fxx
-          fyt(i) = parts(i)%fyy
-          fzt(i) = parts(i)%fzz
+          fxt(i) = config%parts(i)%fxx
+          fyt(i) = config%parts(i)%fyy
+          fzt(i) = config%parts(i)%fzz
        End Do
 
        Do irgd=1,rigid%n_types
@@ -792,8 +790,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! store current integration variables
 
-       cell0=cell
-       vzero=volm
+       cell0=config%cell
+       vzero=config%volm
        chit0=thermo%chi_t
        cint0=thermo%cint
        eta0 =thermo%eta
@@ -801,7 +799,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! calculate system centre of mass
 
-       Call getcom(parts,com,comm)
+       Call getcom(config,com,comm)
 
   100  Continue
 
@@ -825,8 +823,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
           Call nvt_h1_scl &
             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-            vxx,vyy,vzz,                  &
-            engke,engrot,thermo,rigid,comm)
+            config%vxx,config%vyy,config%vzz,                  &
+            engke,engrot,thermo,rigid,config,comm)
 
   ! constraint+pmf virial and stress
 
@@ -835,9 +833,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
-          Call nst_h1_scl(0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,volm, &
+          Call nst_h1_scl(0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
              thermo%h_z,str,stress,strcom,         &
-             vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,comm)
+             config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
 
   ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -849,47 +847,47 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
           Call nvt_h1_scl &
             (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-            vxx,vyy,vzz,                  &
-            engke,engrot,thermo,rigid,comm)
+            config%vxx,config%vyy,config%vzz,                  &
+            engke,engrot,thermo,rigid,config,comm)
 
   ! update velocity of FPs
 
-          Do j=1,nfree
-             i=lstfre(j)
+          Do j=1,config%nfree
+             i=config%lstfre(j)
 
-             If (weight(i) > 1.0e-6_wp) Then
-                tmp=hstep/weight(i)
-                vxx(i)=vxx(i)+tmp*parts(i)%fxx
-                vyy(i)=vyy(i)+tmp*parts(i)%fyy
-                vzz(i)=vzz(i)+tmp*parts(i)%fzz
+             If (config%weight(i) > 1.0e-6_wp) Then
+                tmp=hstep/config%weight(i)
+                config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
+                config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
+                config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
              End If
           End Do
 
-  ! scale cell vectors: second order taylor expansion of Exp(tstep*thermo%eta)
+  ! scale config%cell vectors: second order taylor expansion of Exp(tstep*thermo%eta)
 
           aaa=tstep*thermo%eta
           Call mat_mul(aaa,aaa,bbb)
           aaa=uni+aaa+0.5_wp*bbb
-          Call mat_mul(aaa,cell0,cell)
+          Call mat_mul(aaa,cell0,config%cell)
 
   ! update volume and construct a 'mock' thermo%chi_p=Tr[thermo%eta]/3
 
           thermo%chi_p = thermo%eta(1)+thermo%eta(5)+thermo%eta(9)
-          volm = volm*Exp(tstep*thermo%chi_p)
+          config%volm = config%volm*Exp(tstep*thermo%chi_p)
           thermo%chi_p = thermo%chi_p / 3.0_wp
 
   ! update position of FPs: second order taylor expansion of Exp(tstep*thermo%eta)
 
-          Do j=1,nfree
-             i=lstfre(j)
+          Do j=1,config%nfree
+             i=config%lstfre(j)
 
-             If (weight(i) > 1.0e-6_wp) Then
+             If (config%weight(i) > 1.0e-6_wp) Then
                 xt=xxt(i)-com(1)
                 yt=yyt(i)-com(2)
                 zt=zzt(i)-com(3)
-                parts(i)%xxx = tstep*vxx(i) + com(1) + xt*aaa(1) + yt*aaa(2) + zt*aaa(3)
-                parts(i)%yyy = tstep*vyy(i) + com(2) + xt*aaa(2) + yt*aaa(5) + zt*aaa(6)
-                parts(i)%zzz = tstep*vzz(i) + com(3) + xt*aaa(3) + yt*aaa(6) + zt*aaa(9)
+                config%parts(i)%xxx = tstep*config%vxx(i) + com(1) + xt*aaa(1) + yt*aaa(2) + zt*aaa(3)
+                config%parts(i)%yyy = tstep*config%vyy(i) + com(2) + xt*aaa(2) + yt*aaa(5) + zt*aaa(6)
+                config%parts(i)%zzz = tstep*config%vzz(i) + com(3) + xt*aaa(3) + yt*aaa(6) + zt*aaa(9)
              End If
           End Do
 
@@ -897,7 +895,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
           If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
             Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-              lstitr,stat,pmf,cons,domain,tmr,parts,comm)
+              lstitr,stat,pmf,cons,domain,tmr,config,comm)
           End If
 
   ! restore original integration parameters as well as
@@ -905,18 +903,18 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! in the next iteration stat%strcon and stat%strpmf are freshly new
 
           If (iter < thermo%mxiter) Then
-             volm=vzero
+             config%volm=vzero
              thermo%chi_t=chit0
              thermo%cint=cint0
              thermo%eta =eta0
              thermo%chip0=chpzr
 
-             Do j=1,nfree
-                i=lstfre(j)
+             Do j=1,config%nfree
+                i=config%lstfre(j)
 
-                vxx(i) = vxt(i)
-                vyy(i) = vyt(i)
-                vzz(i) = vzt(i)
+                config%vxx(i) = vxt(i)
+                config%vyy(i) = vyt(i)
+                config%vzz(i) = vzt(i)
              End Do
 
              Do irgd=1,rigid%n_types
@@ -975,7 +973,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
                 y(1)=yyt(i1)-yyt(i2)
                 z(1)=zzt(i1)-zzt(i2)
 
-                Call images(imcon,cell0,1,x,y,z)
+                Call images(config%imcon,cell0,1,x,y,z)
 
                 tmp=(x(1)*tqx+y(1)*tqy+z(1)*tqz)/(x(1)**2+y(1)**2+z(1)**2)
                 tqx=x(1)*tmp
@@ -1055,7 +1053,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              Do jrgd=1,lrgd
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                If (i <= natms) Then
+                If (i <= config%natms) Then
                    If (rigid%frozen(jrgd,rgdtyp) == 0) Then
                       x(1)=rigid%x(jrgd,rgdtyp)
                       y(1)=rigid%y(jrgd,rgdtyp)
@@ -1063,9 +1061,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! new atomic positions
 
-                      parts(i)%xxx=rot(1)*x(1)+rot(2)*y(1)+rot(3)*z(1) + rigid%xxx(irgd)
-                      parts(i)%yyy=rot(4)*x(1)+rot(5)*y(1)+rot(6)*z(1) + rigid%yyy(irgd)
-                      parts(i)%zzz=rot(7)*x(1)+rot(8)*y(1)+rot(9)*z(1) + rigid%zzz(irgd)
+                      config%parts(i)%xxx=rot(1)*x(1)+rot(2)*y(1)+rot(3)*z(1) + rigid%xxx(irgd)
+                      config%parts(i)%yyy=rot(4)*x(1)+rot(5)*y(1)+rot(6)*z(1) + rigid%yyy(irgd)
+                      config%parts(i)%zzz=rot(7)*x(1)+rot(8)*y(1)+rot(9)*z(1) + rigid%zzz(irgd)
 
   ! new atomic velocities in body frame
 
@@ -1079,32 +1077,32 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
                          xt=xxt(i)-com(1)
                          yt=yyt(i)-com(2)
                          zt=zzt(i)-com(3)
-                         vxx(i)=xt*aaa(1)+yt*aaa(2)+zt*aaa(3)
-                         vyy(i)=xt*aaa(2)+yt*aaa(5)+zt*aaa(6)
-                         vzz(i)=xt*aaa(3)+yt*aaa(6)+zt*aaa(9)
+                         config%vxx(i)=xt*aaa(1)+yt*aaa(2)+zt*aaa(3)
+                         config%vyy(i)=xt*aaa(2)+yt*aaa(5)+zt*aaa(6)
+                         config%vzz(i)=xt*aaa(3)+yt*aaa(6)+zt*aaa(9)
 
-                         x(1)=(parts(i)%xxx-com(1))-vxx(i)
-                         y(1)=(parts(i)%yyy-com(2))-vyy(i)
-                         z(1)=(parts(i)%zzz-com(3))-vzz(i)
-                         Call images(imcon,cell,1,x,y,z)
-                         parts(i)%xxx=(x(1)+com(1))+vxx(i)
-                         parts(i)%yyy=(y(1)+com(2))+vyy(i)
-                         parts(i)%zzz=(z(1)+com(3))+vzz(i)
+                         x(1)=(config%parts(i)%xxx-com(1))-config%vxx(i)
+                         y(1)=(config%parts(i)%yyy-com(2))-config%vyy(i)
+                         z(1)=(config%parts(i)%zzz-com(3))-config%vzz(i)
+                         Call images(config%imcon,config%cell,1,x,y,z)
+                         config%parts(i)%xxx=(x(1)+com(1))+config%vxx(i)
+                         config%parts(i)%yyy=(y(1)+com(2))+config%vyy(i)
+                         config%parts(i)%zzz=(z(1)+com(3))+config%vzz(i)
                       End If
 
   ! new atomic velocities in lab frame
 
-                      vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
-                      vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
-                      vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
+                      config%vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                      config%vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                      config%vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                    Else
                       x(1)=rigid%xxx(irgd)-rgdxxt(irgd)
                       y(1)=rigid%yyy(irgd)-rgdyyt(irgd)
                       z(1)=rigid%zzz(irgd)-rgdzzt(irgd)
-                      If (thermo%unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
-                      parts(i)%xxx=xxt(i)+x(1)
-                      parts(i)%yyy=yyt(i)+y(1)
-                      parts(i)%zzz=zzt(i)+z(1)
+                      If (thermo%unsafe) Call images(config%imcon,config%cell,1,x,y,z) ! DD bound positions
+                      config%parts(i)%xxx=xxt(i)+x(1)
+                      config%parts(i)%yyy=yyt(i)+y(1)
+                      config%parts(i)%zzz=zzt(i)+z(1)
                    End If
                 End If
              End Do
@@ -1125,14 +1123,14 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
              Do jrgd=1,lrgd
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                If (i <= natms) Then
+                If (i <= config%natms) Then
                    x(1)=rigid%xxx(irgd)-rgdxxt(irgd)
                    y(1)=rigid%yyy(irgd)-rgdyyt(irgd)
                    z(1)=rigid%zzz(irgd)-rgdzzt(irgd)
-                   If (thermo%unsafe) Call images(imcon,cell,1,x,y,z) ! DD bound positions
-                   parts(i)%xxx=xxt(i)+x(1)
-                   parts(i)%yyy=yyt(i)+y(1)
-                   parts(i)%zzz=zzt(i)+z(1)
+                   If (thermo%unsafe) Call images(config%imcon,config%cell,1,x,y,z) ! DD bound positions
+                   config%parts(i)%xxx=xxt(i)+x(1)
+                   config%parts(i)%yyy=yyt(i)+y(1)
+                   config%parts(i)%zzz=zzt(i)+z(1)
                 End If
              End Do
 
@@ -1142,26 +1140,26 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! check timestep for variable timestep
 
        If (lvar) Then
-If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
+If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,config%natms,config%parts,&
  xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
             Call info(message,.true.)
 
   ! restore initial conditions
 
-             volm=vzero
+             config%volm=vzero
              thermo%chi_t=chit0
              thermo%cint=cint0
              thermo%eta =eta0
              thermo%chip0=chpzr
 
              Do i=1,matms
-                vxx(i) = vxt(i)
-                vyy(i) = vyt(i)
-                vzz(i) = vzt(i)
+                config%vxx(i) = vxt(i)
+                config%vyy(i) = vyt(i)
+                config%vzz(i) = vzt(i)
 
-                parts(i)%fxx = fxt(i)
-                parts(i)%fyy = fyt(i)
-                parts(i)%fzz = fzt(i)
+                config%parts(i)%fxx = fxt(i)
+                config%parts(i)%fyy = fyt(i)
+                config%parts(i)%fzz = fzt(i)
              End Do
 
              Do irgd=1,rigid%n_types
@@ -1187,7 +1185,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! adjust long range corrections and number density
 
-       tmp=(thermo%volm0/volm)
+       tmp=(thermo%volm0/config%volm)
        vdws%elrc=thermo%elrc0*tmp
        vdws%vlrc=thermo%virlrc0*tmp
        Do i=1,sites%ntype_atom
@@ -1197,7 +1195,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! get thermo%h_z for orthorhombic constraints
 
        If (Any(thermo%iso == [CONSTRAINT_SURFACE_TENSION,CONSTRAINT_SEMI_ORTHORHOMBIC])) Then
-          Call dcell(cell,celprp)
+          Call dcell(config%cell,celprp)
           thermo%h_z=celprp(9)
        End If
 
@@ -1207,14 +1205,14 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! update velocity of FPs
 
-       Do j=1,nfree
-          i=lstfre(j)
+       Do j=1,config%nfree
+          i=config%lstfre(j)
 
-          If (weight(i) > 1.0e-6_wp) Then
-             tmp=hstep/weight(i)
-             vxx(i)=vxx(i)+tmp*parts(i)%fxx
-             vyy(i)=vyy(i)+tmp*parts(i)%fyy
-             vzz(i)=vzz(i)+tmp*parts(i)%fzz
+          If (config%weight(i) > 1.0e-6_wp) Then
+             tmp=hstep/config%weight(i)
+             config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
+             config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
+             config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
           End If
        End Do
 
@@ -1222,12 +1220,12 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! apply velocity corrections to bond and PMF constraints
 
        If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,comm)
+         Call apply_rattle(tstep,thermo%kit,pmf,cons,stat,domain,tmr,config,comm)
        End If
 
   ! Get RB COM stress and virial
 
-       Call rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,parts,comm)
+       Call rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,config,comm)
        vircom=-(strcom(1)+strcom(5)+strcom(9))
 
   ! update velocity of RBs
@@ -1253,14 +1251,14 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   ! If the RB has a frozen particle then no net force
 
                 If (rigid%frozen(0,rgdtyp) == 0) Then
-                   fmx=fmx+parts(i)%fxx
-                   fmy=fmy+parts(i)%fyy
-                   fmz=fmz+parts(i)%fzz
+                   fmx=fmx+config%parts(i)%fxx
+                   fmy=fmy+config%parts(i)%fyy
+                   fmz=fmz+config%parts(i)%fzz
                 End If
 
-                tqx=tqx+ggy(krgd)*parts(i)%fzz-ggz(krgd)*parts(i)%fyy
-                tqy=tqy+ggz(krgd)*parts(i)%fxx-ggx(krgd)*parts(i)%fzz
-                tqz=tqz+ggx(krgd)*parts(i)%fyy-ggy(krgd)*parts(i)%fxx
+                tqx=tqx+ggy(krgd)*config%parts(i)%fzz-ggz(krgd)*config%parts(i)%fyy
+                tqy=tqy+ggz(krgd)*config%parts(i)%fxx-ggx(krgd)*config%parts(i)%fzz
+                tqz=tqz+ggx(krgd)*config%parts(i)%fyy-ggy(krgd)*config%parts(i)%fxx
              End Do
 
   ! If the RB has 2+ frozen particles (ill=1) the net torque
@@ -1270,11 +1268,11 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
                 i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
                 i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-                x(1)=parts(i1)%xxx-parts(i2)%xxx
-                y(1)=parts(i1)%yyy-parts(i2)%yyy
-                z(1)=parts(i1)%zzz-parts(i2)%zzz
+                x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
+                y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
+                z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
 
-                Call images(imcon,cell,1,x,y,z)
+                Call images(config%imcon,config%cell,1,x,y,z)
 
                 tmp=(x(1)*tqx+y(1)*tqy+z(1)*tqz)/(x(1)**2+y(1)**2+z(1)**2)
                 tqx=x(1)*tmp
@@ -1338,7 +1336,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
                 If (rigid%frozen(jrgd,rgdtyp) == 0) Then
                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                   If (i <= natms) Then
+                   If (i <= config%natms) Then
                       x(1)=rigid%x(jrgd,rgdtyp)
                       y(1)=rigid%y(jrgd,rgdtyp)
                       z(1)=rigid%z(jrgd,rgdtyp)
@@ -1351,9 +1349,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! new atomic velocities in lab frame
 
-                      vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
-                      vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
-                      vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
+                      config%vxx(i)=rot(1)*vpx+rot(2)*vpy+rot(3)*vpz+rigid%vxx(irgd)
+                      config%vyy(i)=rot(4)*vpx+rot(5)*vpy+rot(6)*vpz+rigid%vyy(irgd)
+                      config%vzz(i)=rot(7)*vpx+rot(8)*vpy+rot(9)*vpz+rigid%vzz(irgd)
                    End If
                 End If
              End Do
@@ -1365,8 +1363,8 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
        Call nvt_h1_scl &
              (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-             vxx,vyy,vzz,                  &
-             engke,engrot,thermo,rigid,comm)
+             config%vxx,config%vyy,config%vzz,                  &
+             engke,engrot,thermo,rigid,config,comm)
 
   ! constraint+pmf virial and stress
 
@@ -1375,9 +1373,9 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! integrate and apply nst_h1_scl barostat - 1/2 step
 
-       Call nst_h1_scl(0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,volm, &
+       Call nst_h1_scl(0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
              thermo%h_z,str,stress,strcom,         &
-             vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,comm)
+             config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
 
   ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -1389,25 +1387,25 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
        Call nvt_h1_scl &
              (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-             vxx,vyy,vzz,                  &
-             engke,engrot,thermo,rigid,comm)
+             config%vxx,config%vyy,config%vzz,                  &
+             engke,engrot,thermo,rigid,config,comm)
 
   ! conserved quantity less kinetic and potential energy terms
 
        consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + 0.5_wp*thermo%pmass*thermo%chip0**2 + &
-         thermo%ceng*thermo%cint + thermo%press*volm
+         thermo%ceng*thermo%cint + thermo%press*config%volm
 
   ! remove system centre of mass velocity
 
-       Call getvom(vom,vxx,vyy,vzz,rigid,comm)
+       Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
 
-       Do j=1,nfree
-          i=lstfre(j)
+       Do j=1,config%nfree
+          i=config%lstfre(j)
 
-          If (lfrzn(i) == 0 .and. weight(i) > 1.0e-6_wp) Then
-             vxx(i) = vxx(i) - vom(1)
-             vyy(i) = vyy(i) - vom(2)
-             vzz(i) = vzz(i) - vom(3)
+          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+             config%vxx(i) = config%vxx(i) - vom(1)
+             config%vyy(i) = config%vyy(i) - vom(2)
+             config%vzz(i) = config%vzz(i) - vom(3)
           End If
        End Do
 
@@ -1423,10 +1421,10 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
              Do jrgd=1,lrgd
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                If (i <= natms) Then
-                   vxx(i) = vxx(i) - vom(1)
-                   vyy(i) = vyy(i) - vom(2)
-                   vzz(i) = vzz(i) - vom(3)
+                If (i <= config%natms) Then
+                   config%vxx(i) = config%vxx(i) - vom(1)
+                   config%vyy(i) = config%vyy(i) - vom(2)
+                   config%vzz(i) = config%vzz(i) - vom(3)
                 End If
              End Do
           End If
@@ -1434,7 +1432,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
   ! update kinetic energy and stress
 
-       Call kinstresf(vxx,vyy,vzz,strknf,comm)
+       Call kinstresf(config%vxx,config%vyy,config%vzz,strknf,config,comm)
        Call kinstrest(rigid,strknt,comm)
 
        strkin=strknf+strknt
@@ -1464,27 +1462,33 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
   End Subroutine nst_h1_vv
 
   Subroutine nst_h0_scl &
-    (sw,tstep,degfre,pmass,chit,volm, &
-    h_z,strcon,stress,       &
-    vxx,vyy,vzz,strkin,engke,thermo,comm)
+             (sw,tstep,degfre,pmass,chit,volm, &
+             h_z,strcon,stress,       &
+             vxx,vyy,vzz,strkin,engke,thermo,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine to integrate and apply NsT barostat
-    !
-    ! sw=1 coupling to NVT thermostat for nst_m ensemble and
-    !                                     additional scaling factor
-    !
-    ! sw=0 coupling to NVT thermostat for nst_h ensemble and
-    !                                     no additional scaling factor
-    !
-    ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov december 2012
-    ! contrib.  - a.m.elena december 2017
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 routine to integrate and apply NsT barostat
+  !
+  ! sw=1 coupling to NVT thermostat for nst_m ensemble and
+  !                                     additional scaling thermo%factor
+  !
+  ! sw=0 coupling to NVT thermostat for nst_h ensemble and
+  !                                     no additional scaling thermo%factor
+  !
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  !
+  ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov december 2012
+  ! contrib.  - a.m.elena december 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,           Intent( In    ) :: sw
     Integer(Kind=li),  Intent( In    ) :: degfre
@@ -1495,6 +1499,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
     Real( Kind = wp ), Intent(   Out ) :: strkin(1:9)
     Real( Kind = wp ), Intent(   Out ) :: engke
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut) :: comm
 
 
@@ -1512,7 +1517,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
     Real( Kind = wp ) :: hstep,qstep
 
 
-    ! Initialise factor and 1/Nf for Nose-Hoover ensembles
+    ! Initialise thermo%factor and 1/Nf for Nose-Hoover ensembles
 
     If (thermo%newjob_nst_scl) Then
       thermo%newjob_nst_scl = .false.
@@ -1533,7 +1538,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
     ! calculate kinetic contribution to stress tensor
 
-    Call kinstress(vxx,vyy,vzz,strkin,comm)
+    Call kinstress(vxx,vyy,vzz,strkin,config,comm)
 
     ! kinetic energy
 
@@ -1546,22 +1551,22 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
     ! split anisotropic from semi-isotropic barostats
 
     If (thermo%iso == CONSTRAINT_NONE) Then
-      thermo%eta=thermo%eta + hstep*(strcon+stress+strkin + thermo%factor*uni - &
-        (thermo%press*uni+thermo%stress)*volm)/pmass
+       thermo%eta=thermo%eta + hstep*(strcon+stress+strkin + thermo%factor*uni - &
+         (thermo%press*uni+thermo%stress)*volm)/pmass
     Else
-      If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
-        thermo%eta(1)=thermo%eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
-          thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
-        thermo%eta(5)=thermo%eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
-          thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
-      Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
-        thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp*                        &
-          (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
-          thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
-        thermo%eta(5)=thermo%eta(1)
-      End If
-      thermo%eta(9)=thermo%eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + &
-        thermo%factor - (thermo%press+thermo%stress(9))*volm)/pmass
+       If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
+          thermo%eta(1)=thermo%eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
+            thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*config%volm)/pmass
+          thermo%eta(5)=thermo%eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
+            thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*config%volm)/pmass
+       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
+          thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp*                        &
+                 (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
+                 thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*config%volm ) / pmass
+          thermo%eta(5)=thermo%eta(1)
+       End If
+       thermo%eta(9)=thermo%eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + &
+         thermo%factor - (thermo%press+thermo%stress(9))*config%volm)/pmass
     End If
 
     ! thermostat thermo%eta to 2/4*tstep
@@ -1569,10 +1574,10 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
     thermo%eta=thermo%eta*Exp(-qstep*chit)
 
     ! barostat the velocities to full 1*tstep
-    ! second order taylor expansion of Exp[-tstep*(thermo%eta+factor*I)],
+    ! second order taylor expansion of Exp[-tstep*(thermo%eta+thermo%factor*I)],
     ! where I is the unit tensor
-    ! factor = Tr(thermo%eta)/Nf if sw=1, where Nf is degfre,
-    ! else if sw=0 then factor=0, by default
+    ! thermo%factor = Tr(thermo%eta)/Nf if sw=1, where Nf is degfre,
+    ! else if sw=0 then thermo%factor=0, by default
 
     If (sw == 1) thermo%factor = (thermo%eta(1)+thermo%eta(5)+thermo%eta(9))*thermo%rf
 
@@ -1590,21 +1595,21 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
     b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
     b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-    Do i=1,natms
-      vxt=vxx(i)
-      vyt=vyy(i)
-      vzt=vzz(i)
+    Do i=1,config%natms
+       vxt=vxx(i)
+       vyt=vyy(i)
+       vzt=vzz(i)
 
        vxx(i) = b1*vxt + b2*vyt + b3*vzt
        vyy(i) = b2*vxt + b5*vyt + b6*vzt
        vzz(i) = b3*vxt + b6*vyt + b9*vzt
-     End Do
+    End Do
 
      ! thermostat thermo%eta to 2/4*tstep
 
      ! calculate kinetic contribution to stress tensor
 
-     Call kinstress(vxx,vyy,vzz,strkin,comm)
+    Call kinstress(vxx,vyy,vzz,strkin,config,comm)
 
      ! kinetic energy
 
@@ -1620,73 +1625,79 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
      ! split anisotropic from semi-isotropic barostats
 
-     If (thermo%iso == CONSTRAINT_NONE) Then
+    If (thermo%iso == CONSTRAINT_NONE) Then
        thermo%eta=thermo%eta + hstep*(strcon+stress+strkin + thermo%factor*uni - &
          (thermo%press*uni+thermo%stress)*volm)/pmass
-     Else
+    Else
        If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
-         thermo%eta(1)=thermo%eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
-           thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
-         thermo%eta(5)=thermo%eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
-           thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          thermo%eta(1)=thermo%eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
+            thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          thermo%eta(5)=thermo%eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
+            thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
        Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
-         thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp*                        &
-           (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
-           thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
-         thermo%eta(5)=thermo%eta(1)
+          thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp*                        &
+                 (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
+                 thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
+          thermo%eta(5)=thermo%eta(1)
        End If
        thermo%eta(9)=thermo%eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + &
          thermo%factor - (thermo%press+thermo%stress(9))*volm)/pmass
-     End If
+    End If
 
-     ! thermostat thermo%eta to full (4/4)*tstep
+  ! thermostat thermo%eta to full (4/4)*tstep
 
-     thermo%eta=thermo%eta*Exp(-qstep*chit)
+    thermo%eta=thermo%eta*Exp(-qstep*chit)
 
-   End Subroutine nst_h0_scl
+  End Subroutine nst_h0_scl
 
-   Subroutine nst_h1_scl(sw,tstep,degfre,degrot,pmass,chit,volm,  &
-     h_z,strcon,stress,strcom,        &
-     vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,comm)
+  Subroutine nst_h1_scl(sw,tstep,degfre,degrot,pmass,chit,volm,  &
+             h_z,strcon,stress,strcom,        &
+             vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
 
-     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-     !
-     ! dl_poly_4 routine to integrate and apply NsT barostat
-     ! when singled RBs are present
-     !
-     ! sw=1 coupling to NVT thermostat for nst_m ensemble and
-     !                                     additional scaling factor
-     !
-     ! sw=0 coupling to NVT thermostat for nst_h ensemble and
-     !                                     no additional scaling factor
-     !
-     !
-     ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
-     !
-     ! copyright - daresbury laboratory
-     ! author    - i.t.todorov december 2012
-     ! contrib   - a.m.elena december 2017
-     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 routine to integrate and apply NsT barostat
+  ! when singled RBs are present
+  !
+  ! sw=1 coupling to NVT thermostat for nst_m ensemble and
+  !                                     additional scaling thermo%factor
+  !
+  ! sw=0 coupling to NVT thermostat for nst_h ensemble and
+  !                                     no additional scaling thermo%factor
+  !
+  ! thermo%iso=0 fully anisotropic barostat
+  ! thermo%iso=1 semi-isotropic barostat to constant normal pressure & surface area
+  ! thermo%iso=2 semi-isotropic barostat to constant normal pressure & surface tension
+  !                               or with orthorhombic constraints (thermo%tension=0.0_wp)
+  ! thermo%iso=3 semi-isotropic barostat with semi-orthorhombic constraints
+  !
+  ! reference: Mitsunori Ikeguchi, J. Comp. Chem. (2004), 25, p529
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov december 2012
+  ! contrib   - a.m.elena december 2017
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-     Integer,           Intent( In    ) :: sw
-     Integer(Kind=li),  Intent( In    ) :: degfre,degrot
+    Integer,           Intent( In    ) :: sw
+    Integer(Kind=li),  Intent( In    ) :: degfre,degrot
 
-     Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,h_z
-     Real( Kind = wp ), Intent( In    ) :: strcon(1:9),stress(1:9),strcom(1:9)
-     Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
-     Real( Kind = wp ), Intent(   Out ) :: strkin(1:9),strknf(1:9),strknt(1:9)
-     Real( Kind = wp ), Intent(   Out ) :: engke
-     Type( thermostat_type ), Intent( InOut ) :: thermo
-     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-     Type( domains_type ), Intent( In    ) :: domain
-     Type( comms_type ), Intent( InOut) :: comm
+    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,h_z
+    Real( Kind = wp ), Intent( In    ) :: strcon(1:9),stress(1:9),strcom(1:9)
+    Real( Kind = wp ), Intent( InOut ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+    Real( Kind = wp ), Intent(   Out ) :: strkin(1:9),strknf(1:9),strknt(1:9)
+    Real( Kind = wp ), Intent(   Out ) :: engke
+    Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
+    Type( domains_type ), Intent( In    ) :: domain
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type( comms_type ), Intent( InOut) :: comm
 
 
      Integer           :: i,j,irgd
 
      Real( Kind = wp ) :: a1,a2,a3,a5,a6,a9,b1,b2,b3,b5,b6,b9, vxt,vyt,vzt
 
-     ! initialise factor for Nose-Hoover ensembles
+     ! initialise thermo%factor for Nose-Hoover ensembles
 
      ! uni is the diagonal unit matrix
 
@@ -1696,7 +1707,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
      Real( Kind = wp ) :: hstep,qstep
 
 
-     ! Initialise factor and 1/Nf for Nose-Hoover ensembles
+     ! Initialise thermo%factor and 1/Nf for Nose-Hoover ensembles
 
      If (thermo%newjob_nst_scl) Then
        thermo%newjob_nst_scl = .false.
@@ -1717,8 +1728,8 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
      ! calculate kinetic contributions to stress tensor
 
-     Call kinstresf(vxx,vyy,vzz,strknf,comm)
-     Call kinstrest(rigid,strknt,comm)
+    Call kinstresf(vxx,vyy,vzz,strknf,config,comm)
+    Call kinstrest(rigid,strknt,comm)
 
      strkin=strknf+strknt
 
@@ -1732,34 +1743,34 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
      ! split anisotropic from semi-isotropic barostats
 
-     If (thermo%iso == CONSTRAINT_NONE) Then
+    If (thermo%iso == CONSTRAINT_NONE) Then
        thermo%eta=thermo%eta + hstep*(strcom+strcon+stress+strkin + thermo%factor*uni - &
          (thermo%press*uni+thermo%stress)*volm)/pmass
-     Else
+    Else
        If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
-         thermo%eta(1)=thermo%eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
-           thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
-         thermo%eta(5)=thermo%eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
-           thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          thermo%eta(1)=thermo%eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
+            thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          thermo%eta(5)=thermo%eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
+            thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
        Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
-         thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp* &
-           (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
-           thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm )/pmass
-         thermo%eta(5)=thermo%eta(1)
+          thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp* &
+                 (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
+                 thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
+          thermo%eta(5)=thermo%eta(1)
        End If
        thermo%eta(9)=thermo%eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + &
          thermo%factor - (thermo%press+thermo%stress(9))*volm)/pmass
-     End If
+    End If
 
      ! thermostat thermo%eta to 2/4*tstep
 
      thermo%eta=thermo%eta*Exp(-qstep*chit)
 
      ! barostat the velocities to full 1*tstep
-     ! second order taylor expansion of Exp[-tstep*(thermo%eta+factor*I)],
+     ! second order taylor expansion of Exp[-tstep*(thermo%eta+thermo%factor*I)],
      ! where I is the unit tensor
-     ! factor = Tr(thermo%eta)/Nf if sw=1, where Nf is degfre-degrot,
-     ! else if sw=0 then factor=0, by default
+     ! thermo%factor = Tr(thermo%eta)/Nf if sw=1, where Nf is degfre-degrot,
+     ! else if sw=0 then thermo%factor=0, by default
 
      If (sw == 1) thermo%factor = (thermo%eta(1)+thermo%eta(5)+thermo%eta(9))*thermo%rf
 
@@ -1777,8 +1788,8 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
      b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
      b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-     Do j=1,nfree
-       i=lstfre(j)
+    Do j=1,config%nfree
+       i=config%lstfre(j)
 
        vxt=vxx(i)
        vyt=vyy(i)
@@ -1787,7 +1798,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
        vxx(i) = b1*vxt + b2*vyt + b3*vzt
        vyy(i) = b2*vxt + b5*vyt + b6*vzt
        vzz(i) = b3*vxt + b6*vyt + b9*vzt
-     End Do
+    End Do
 
      Do irgd=1,rigid%n_types
        vxt=rigid%vxx(irgd)
@@ -1803,8 +1814,8 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
      ! calculate kinetic contributions to stress tensor
 
-     Call kinstresf(vxx,vyy,vzz,strknf,comm)
-     Call kinstrest(rigid,strknt,comm)
+    Call kinstresf(vxx,vyy,vzz,strknf,config,comm)
+    Call kinstrest(rigid,strknt,comm)
 
      strkin=strknf+strknt
 
@@ -1822,23 +1833,23 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
 
      ! split anisotropic from semi-isotropic barostats
 
-     If (thermo%iso == CONSTRAINT_NONE) Then
+    If (thermo%iso == CONSTRAINT_NONE) Then
        thermo%eta=thermo%eta + hstep*(strcom+strcon+stress+strkin + thermo%factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
-     Else
+    Else
        If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
-         thermo%eta(1)=thermo%eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
-           thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
-         thermo%eta(5)=thermo%eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
-           thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          thermo%eta(1)=thermo%eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
+            thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          thermo%eta(5)=thermo%eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
+            thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
        Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
-         thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp* &
-           (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
-           thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
-         thermo%eta(5)=thermo%eta(1)
+          thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp* &
+                 (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
+                 thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
+          thermo%eta(5)=thermo%eta(1)
        End If
        thermo%eta(9)=thermo%eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + &
          thermo%factor - (thermo%press+thermo%stress(9))*volm)/pmass
-     End If
+    End If
 
      ! thermostat thermo%eta to full (4/4)*tstep
 

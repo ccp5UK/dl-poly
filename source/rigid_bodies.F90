@@ -14,8 +14,7 @@ Module rigid_bodies
                               mxatms,zero_plus
   Use site, Only : site_type
   Use neighbours,      Only : neighbours_type
-  Use configuration,   Only : imcon,cell,natms,nlast,lsi,lsa,vxx,vyy,vzz, &
-                              ltg,lsite,lfrzn,nfree,lstfre,getcom
+  Use configuration,   Only : configuration_type,getcom
   Use statistics,      Only : stats_type
   Use numerics,        Only : images, jacobi, invert
   Use shared_units,    Only : update_shared_units
@@ -317,7 +316,7 @@ Contains
     End If
   End Subroutine cleanup
 
-  Subroutine rigid_bodies_coms_arrays(xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,rigid,comm)
+  Subroutine rigid_bodies_coms_arrays(config,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,rigid,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -337,6 +336,7 @@ Contains
                                            rgdyyy(1:rigid%max_rigid), &
                                            rgdzzz(1:rigid%max_rigid)
     Type( comms_type ), Intent( In    ) :: comm
+    Type( configuration_type ), Intent( InOut ) :: config
 
     Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp ) :: tmp
@@ -369,7 +369,7 @@ Contains
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
 
   ! Get the COM vector
 
@@ -411,7 +411,7 @@ Contains
 
 
 
-  Subroutine rigid_bodies_coms_parts(parts,rgdxxx,rgdyyy,rgdzzz,rigid,comm)
+  Subroutine rigid_bodies_coms_parts(config,rgdxxx,rgdyyy,rgdzzz,rigid,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -425,7 +425,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( corePart ) ,  Intent( In    ) :: parts(1:mxatms)
+    Type( configuration_type ) ,  Intent( In    ) :: config
     Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Real( Kind = wp ),  Intent(   Out ), Dimension(1:rigid%max_rigid) :: rgdxxx,rgdyyy,rgdzzz
     Type( comms_type ), Intent( In    ) :: comm
@@ -453,15 +453,15 @@ Contains
        Do jrgd=1,lrgd
           krgd=krgd+1
 
-          gxx(krgd) = parts(rigid%index_local(jrgd,irgd))%xxx - parts(rigid%index_local(1,irgd))%xxx
-          gyy(krgd) = parts(rigid%index_local(jrgd,irgd))%yyy - parts(rigid%index_local(1,irgd))%yyy
-          gzz(krgd) = parts(rigid%index_local(jrgd,irgd))%zzz - parts(rigid%index_local(1,irgd))%zzz
+          gxx(krgd) = config%parts(rigid%index_local(jrgd,irgd))%xxx - config%parts(rigid%index_local(1,irgd))%xxx
+          gyy(krgd) = config%parts(rigid%index_local(jrgd,irgd))%yyy - config%parts(rigid%index_local(1,irgd))%yyy
+          gzz(krgd) = config%parts(rigid%index_local(jrgd,irgd))%zzz - config%parts(rigid%index_local(1,irgd))%zzz
        End Do
     End Do
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
 
   ! Get the COM vector
 
@@ -488,9 +488,9 @@ Contains
 
        tmp=1.0_wp/rigid%weightless(0,rgdtyp)
 
-       rgdxxx(irgd) = rgdxxx(irgd)*tmp + parts(rigid%index_local(1,irgd))%xxx
-       rgdyyy(irgd) = rgdyyy(irgd)*tmp + parts(rigid%index_local(1,irgd))%yyy
-       rgdzzz(irgd) = rgdzzz(irgd)*tmp + parts(rigid%index_local(1,irgd))%zzz
+       rgdxxx(irgd) = rgdxxx(irgd)*tmp + config%parts(rigid%index_local(1,irgd))%xxx
+       rgdyyy(irgd) = rgdyyy(irgd)*tmp + config%parts(rigid%index_local(1,irgd))%yyy
+       rgdzzz(irgd) = rgdzzz(irgd)*tmp + config%parts(rigid%index_local(1,irgd))%zzz
     End Do
 
     Deallocate (gxx,gyy,gzz, Stat = fail)
@@ -503,7 +503,7 @@ Contains
   End Subroutine rigid_bodies_coms_parts
 
 
-  Subroutine rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol,rigid,parts)
+  Subroutine rigid_bodies_move(stride,oxx,oyy,ozz,txx,tyy,tzz,uxx,uyy,uzz,dist_tol,rigid,config)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 routine for updating positions of atoms in RBs
@@ -521,7 +521,7 @@ Contains
                                           uxx(1:mxatms),uyy(1:mxatms),uzz(1:mxatms)
     Real( Kind = wp ), Intent( InOut ) :: dist_tol
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( corePart),           Intent( InOut ) :: parts(:)
+    Type( configuration_type ),           Intent( InOut ) :: config
 
     Integer           :: i,irgd,jrgd,lrgd,rgdtyp
     Real( Kind = wp ) :: ttt,uuu,the,dtol,coz,zin,x,y,z
@@ -538,7 +538,7 @@ Contains
              If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                If (i <= natms) Then
+                If (i <= config%natms) Then
 
   ! translational motion
 
@@ -578,9 +578,9 @@ Contains
 
   ! Add motion
 
-                   parts(i)%xxx=parts(i)%xxx+x
-                   parts(i)%yyy=parts(i)%yyy+y
-                   parts(i)%zzz=parts(i)%zzz+z
+                   config%parts(i)%xxx=config%parts(i)%xxx+x
+                   config%parts(i)%yyy=config%parts(i)%yyy+y
+                   config%parts(i)%zzz=config%parts(i)%zzz+z
 
                    dtol=Max(dtol,x**2+y**2+z**2)
 
@@ -593,7 +593,7 @@ Contains
     dist_tol=Max(dist_tol,Sqrt(dtol))
   End Subroutine rigid_bodies_move
 
-  Subroutine rigid_bodies_quench(rigid,domain,parts,comm)
+  Subroutine rigid_bodies_quench(rigid,domain,config,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine to convert atomic velocities to RB COM and
@@ -606,7 +606,7 @@ Contains
 
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -628,8 +628,8 @@ Contains
   ! Halo velocity field across onto neighbouring domains
 
     If (rigid%share) Then
-       Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-         rigid%map_shared,vxx,vyy,vzz,domain,comm)
+       Call update_shared_units(config,rigid%list_shared, &
+         rigid%map_shared,config%vxx,config%vyy,config%vzz,domain,comm)
     End If
 
   ! translate atomic velocities to COM velocity & angular velocity
@@ -655,16 +655,16 @@ Contains
 
   ! COM distances
 
-             gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-             gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-             gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+             gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+             gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+             gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
 
   ! If the RB has a frozen particle then no net COM momentum
 
              If (rigid%frozen(0,rgdtyp) == 0) Then
-                rigid%vxx(irgd)=rigid%vxx(irgd)+weight*vxx(i)
-                rigid%vyy(irgd)=rigid%vyy(irgd)+weight*vyy(i)
-                rigid%vzz(irgd)=rigid%vzz(irgd)+weight*vzz(i)
+                rigid%vxx(irgd)=rigid%vxx(irgd)+weight*config%vxx(i)
+                rigid%vyy(irgd)=rigid%vyy(irgd)+weight*config%vyy(i)
+                rigid%vzz(irgd)=rigid%vzz(irgd)+weight*config%vzz(i)
              End If
           End Do
 
@@ -682,7 +682,7 @@ Contains
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
 
   ! Get RBs' angular momenta
 
@@ -715,9 +715,9 @@ Contains
              i=rigid%index_local(jrgd,irgd)
              weight=rigid%weight(jrgd,rgdtyp)
 
-             wxx=wxx+weight*(gyy(krgd)*vzz(i)-gzz(krgd)*vyy(i))
-             wyy=wyy+weight*(gzz(krgd)*vxx(i)-gxx(krgd)*vzz(i))
-             wzz=wzz+weight*(gxx(krgd)*vyy(i)-gyy(krgd)*vxx(i))
+             wxx=wxx+weight*(gyy(krgd)*config%vzz(i)-gzz(krgd)*config%vyy(i))
+             wyy=wyy+weight*(gzz(krgd)*config%vxx(i)-gxx(krgd)*config%vzz(i))
+             wzz=wzz+weight*(gxx(krgd)*config%vyy(i)-gyy(krgd)*config%vxx(i))
           End Do
 
   ! If the RB has 2+ frozen particles (ill=1) the net angular momentum
@@ -727,11 +727,11 @@ Contains
              i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
              i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-             x(1)=parts(i1)%xxx-parts(i2)%xxx
-             y(1)=parts(i1)%yyy-parts(i2)%yyy
-             z(1)=parts(i1)%zzz-parts(i2)%zzz
+             x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
+             y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
+             z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
 
-             Call images(imcon,cell,1,x,y,z)
+             Call images(config%imcon,config%cell,1,x,y,z)
 
              tmp=Sign( Sqrt((wxx**2+wyy**2+wzz**2)/(x(1)**2+y(1)**2+z(1)**2)) , &
                        Nearest((x(1)*wxx+y(1)*wyy+z(1)*wzz),-1.0_wp) )
@@ -751,7 +751,7 @@ Contains
              If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                If (i <= natms) Then
+                If (i <= config%natms) Then
 
   ! site velocity in body frame
 
@@ -765,9 +765,9 @@ Contains
 
   ! new atomic velocities in lab frame
 
-                   vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
-                   vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
-                   vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
+                   config%vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
+                   config%vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
+                   config%vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
 
                 End If
              End If
@@ -782,7 +782,7 @@ Contains
     End If
   End Subroutine rigid_bodies_quench
 
-  Subroutine rigid_bodies_q_ench(qr,rigid,domain,parts,comm)
+  Subroutine rigid_bodies_q_ench(qr,rigid,domain,config,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine to convert atomic velocities to RB COM and
@@ -796,7 +796,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Integer,            Intent( In    ) :: qr(1:rigid%max_rigid)
     Type( domains_type ), Intent( In    ) :: domain
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -818,8 +818,8 @@ Contains
   ! Halo velocity field across onto neighbouring domains
 
     If (rigid%share) Then
-      Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
-        rigid%map_shared,vxx,vyy,vzz,domain,comm)
+      Call update_shared_units(config,rigid%list_shared, &
+        rigid%map_shared,config%vxx,config%vyy,config%vzz,domain,comm)
     End If
 
   ! translate atomic velocities to COM velocity & angular velocity
@@ -846,16 +846,16 @@ Contains
 
   ! COM distances
 
-                gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-                gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-                gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+                gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+                gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+                gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
 
   ! If the RB has a frozen particle then no net COM momentum
 
                 If (rigid%frozen(0,rgdtyp) == 0) Then
-                   rigid%vxx(irgd)=rigid%vxx(irgd)+weight*vxx(i)
-                   rigid%vyy(irgd)=rigid%vyy(irgd)+weight*vyy(i)
-                   rigid%vzz(irgd)=rigid%vzz(irgd)+weight*vzz(i)
+                   rigid%vxx(irgd)=rigid%vxx(irgd)+weight*config%vxx(i)
+                   rigid%vyy(irgd)=rigid%vyy(irgd)+weight*config%vyy(i)
+                   rigid%vzz(irgd)=rigid%vzz(irgd)+weight*config%vzz(i)
                 End If
              End Do
 
@@ -874,7 +874,7 @@ Contains
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
 
   ! Get RBs' angular momenta
 
@@ -908,9 +908,9 @@ Contains
                 i=rigid%index_local(jrgd,irgd)
                 weight=rigid%weight(jrgd,rgdtyp)
 
-                wxx=wxx+weight*(gyy(krgd)*vzz(i)-gzz(krgd)*vyy(i))
-                wyy=wyy+weight*(gzz(krgd)*vxx(i)-gxx(krgd)*vzz(i))
-                wzz=wzz+weight*(gxx(krgd)*vyy(i)-gyy(krgd)*vxx(i))
+                wxx=wxx+weight*(gyy(krgd)*config%vzz(i)-gzz(krgd)*config%vyy(i))
+                wyy=wyy+weight*(gzz(krgd)*config%vxx(i)-gxx(krgd)*config%vzz(i))
+                wzz=wzz+weight*(gxx(krgd)*config%vyy(i)-gyy(krgd)*config%vxx(i))
              End Do
 
   ! If the RB has 2+ frozen particles (ill=1) the net angular momentum
@@ -920,11 +920,11 @@ Contains
                 i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
                 i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-                x(1)=parts(i1)%xxx-parts(i2)%xxx
-                y(1)=parts(i1)%yyy-parts(i2)%yyy
-                z(1)=parts(i1)%zzz-parts(i2)%zzz
+                x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
+                y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
+                z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
 
-                Call images(imcon,cell,1,x,y,z)
+                Call images(config%imcon,config%cell,1,x,y,z)
 
                 tmp=Sign( Sqrt((wxx**2+wyy**2+wzz**2)/(x(1)**2+y(1)**2+z(1)**2)) , &
                           Nearest((x(1)*wxx+y(1)*wyy+z(1)*wzz),-1.0_wp) )
@@ -944,7 +944,7 @@ Contains
                 If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
                    i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                   If (i <= natms) Then
+                   If (i <= config%natms) Then
 
   ! site velocity in body frame
 
@@ -958,9 +958,9 @@ Contains
 
   ! new atomic velocities in lab frame
 
-                      vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
-                      vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
-                      vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
+                      config%vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
+                      config%vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
+                      config%vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
 
                    End If
                 End If
@@ -976,7 +976,7 @@ Contains
     End If
   End Subroutine rigid_bodies_q_ench
 
-  Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,rcut,sites,rigid,parts,comm)
+  Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,rcut,sites,rigid,config,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for constructing RBs' rotational inertia tesnors
@@ -993,7 +993,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: rcut
     Type( site_type ), Intent( InOut ) :: sites
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: l_print,safe,pass1,pass2
@@ -1028,9 +1028,9 @@ Contains
 
   ! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
 
-    Call rigid_bodies_tags(rigid,comm)
-    Call rigid_bodies_coms(parts,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
-    Call rigid_bodies_widths(rcut,rigid,parts,comm)
+    Call rigid_bodies_tags(config,rigid,comm)
+    Call rigid_bodies_coms(config,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+    Call rigid_bodies_widths(rcut,rigid,config,comm)
 
   ! Find as many as possible different groups of RB units on this domain
   ! and qualify a representative by the oldest copy of the very first one
@@ -1044,7 +1044,7 @@ Contains
 
        If (allrgd(rgdtyp) == 1) Then
           i1=rigid%index_local(1,irgd) ! local index of first member
-          iatm1=ltg(i1)     ! global index of first member
+          iatm1=config%ltg(i1)     ! global index of first member
           If (iatm1 < fstrgd(rgdtyp)) fstrgd(rgdtyp) = iatm1
        End If
     End Do
@@ -1056,7 +1056,7 @@ Contains
     Do irgd=1,rigid%n_types
        rgdtyp=rigid%list(0,irgd)
 
-       If (allrgd(rgdtyp) == 1 .and. fstrgd(rgdtyp) == ltg(rigid%index_local(1,irgd))) Then
+       If (allrgd(rgdtyp) == 1 .and. fstrgd(rgdtyp) == config%ltg(rigid%index_local(1,irgd))) Then
 
   ! Get in the local scope of the unit if not fully frozen
 
@@ -1069,9 +1069,9 @@ Contains
 
                 i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-                gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-                gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-                gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+                gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+                gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+                gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
              End Do
           Else                              ! Fully frozen (as if frozen point particle)
              rigid%index_global(0,rgdtyp)=5
@@ -1084,7 +1084,7 @@ Contains
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
 
   ! Get RB members internal coordinates for these unique RB unit types
   ! that are not fully frozen
@@ -1093,7 +1093,7 @@ Contains
     Do irgd=1,rigid%n_types
        rgdtyp=rigid%list(0,irgd)
 
-       If (allrgd(rgdtyp) == 1 .and. fstrgd(rgdtyp) == ltg(rigid%index_local(1,irgd))) Then
+       If (allrgd(rgdtyp) == 1 .and. fstrgd(rgdtyp) == config%ltg(rigid%index_local(1,irgd))) Then
           lrgd=rigid%list(-1,irgd)
           If (rigid%frozen(0,rgdtyp) < lrgd) Then ! If not fully frozen
              rotinr=0.0_wp
@@ -1612,8 +1612,8 @@ Contains
   ! In case of any refreezing changes refresh the local neigh%list of frozen atoms
 
     If (lstsit(0) > 0) Then
-       Do i=1,nlast
-          lfrzn(i)=sites%freeze_site(lsite(i))
+       Do i=1,config%nlast
+          config%lfrzn(i)=sites%freeze_site(config%lsite(i))
        End Do
     End If
 
@@ -1807,11 +1807,11 @@ Contains
 
   ! set-up quaternions
 
-    Call q_setup(rigid,parts,comm)
+    Call q_setup(rigid,config,comm)
 
   End Subroutine rigid_bodies_setup
 
-  Subroutine rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,parts,comm)
+  Subroutine rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,config,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 subroutine for resolving RBs' torques into equivalent atomic
@@ -1827,7 +1827,7 @@ Contains
     Real( Kind = wp ),  Intent(   Out ) :: txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms), &
                                            uxx(1:mxatms),uyy(1:mxatms),uzz(1:mxatms)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( In    ) :: comm
 
     Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -1862,16 +1862,16 @@ Contains
 
   ! COM distances
 
-             ggx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-             ggy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-             ggz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+             ggx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+             ggy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+             ggz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
           End Do
        End If
     End Do
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,ggx,ggy,ggz)
+    Call images(config%imcon,config%cell,krgd,ggx,ggy,ggz)
 
     krgd=0
     Do irgd=1,rigid%n_types
@@ -1934,11 +1934,11 @@ Contains
              i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
              i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
 
-             x(1)=parts(i1)%xxx-parts(i2)%xxx
-             y(1)=parts(i1)%yyy-parts(i2)%yyy
-             z(1)=parts(i1)%zzz-parts(i2)%zzz
+             x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
+             y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
+             z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
 
-             Call images(imcon,cell,1,x,y,z)
+             Call images(config%imcon,config%cell,1,x,y,z)
 
              tmp=(x(1)*tqx+y(1)*tqy+z(1)*tqz)/(x(1)**2+y(1)**2+z(1)**2)
              tqx=x(1)*tmp
@@ -2064,7 +2064,7 @@ Contains
     End If
   End Subroutine rigid_bodies_split_torque
 
-  Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,parts,comm)
+  Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,config,comm)
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
   ! dl_poly_4 routine to calculate RB contributions to the atomic stress
@@ -2080,7 +2080,7 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: ggx(1:rigid%max_list*rigid%max_rigid), &
                                           ggy(1:rigid%max_list*rigid%max_rigid), &
                                           ggz(1:rigid%max_list*rigid%max_rigid)
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -2105,16 +2105,16 @@ Contains
 
              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-             If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
-                strcom(1)=strcom(1)-ggx(krgd)*parts(i)%fxx
-                strcom(2)=strcom(2)-ggx(krgd)*parts(i)%fyy
-                strcom(3)=strcom(3)-ggx(krgd)*parts(i)%fzz
-                strcom(4)=strcom(4)-ggy(krgd)*parts(i)%fxx
-                strcom(5)=strcom(5)-ggy(krgd)*parts(i)%fyy
-                strcom(6)=strcom(6)-ggy(krgd)*parts(i)%fzz
-                strcom(7)=strcom(7)-ggz(krgd)*parts(i)%fxx
-                strcom(8)=strcom(8)-ggz(krgd)*parts(i)%fyy
-                strcom(9)=strcom(9)-ggz(krgd)*parts(i)%fzz
+             If (i > 0 .and. i <= config%natms .and. config%lfrzn(i) == 0) Then
+                strcom(1)=strcom(1)-ggx(krgd)*config%parts(i)%fxx
+                strcom(2)=strcom(2)-ggx(krgd)*config%parts(i)%fyy
+                strcom(3)=strcom(3)-ggx(krgd)*config%parts(i)%fzz
+                strcom(4)=strcom(4)-ggy(krgd)*config%parts(i)%fxx
+                strcom(5)=strcom(5)-ggy(krgd)*config%parts(i)%fyy
+                strcom(6)=strcom(6)-ggy(krgd)*config%parts(i)%fzz
+                strcom(7)=strcom(7)-ggz(krgd)*config%parts(i)%fxx
+                strcom(8)=strcom(8)-ggz(krgd)*config%parts(i)%fyy
+                strcom(9)=strcom(9)-ggz(krgd)*config%parts(i)%fzz
              End If
           End Do
        End If
@@ -2133,7 +2133,7 @@ Contains
 
   End subroutine rigid_bodies_stress
 
-  Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,parts,rigid,comm,fxl,fyl,fzl)
+  Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,config,rigid,comm,fxl,fyl,fzl)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2150,7 +2150,7 @@ Contains
     Real( Kind = wp ),  Intent( In    ) :: ggx(1:rigid%max_list*rigid%max_rigid), &
                                            ggy(1:rigid%max_list*rigid%max_rigid), &
                                            ggz(1:rigid%max_list*rigid%max_rigid)
-    Type( corePart ),   Intent( In    ) :: parts(1:mxatms)
+    Type( configuration_type ),   Intent( In    ) :: config
     Real( Kind = wp ),  Intent( In    ) :: fxl(1:mxatms),fyl(1:mxatms),fzl(1:mxatms)
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -2177,10 +2177,10 @@ Contains
 
              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-             If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
-                tmp_fx = parts(i)%fxx+fxl(i)
-                tmp_fy = parts(i)%fyy+fyl(i)
-                tmp_fz = parts(i)%fzz+fzl(i)
+             If (i > 0 .and. i <= config%natms .and. config%lfrzn(i) == 0) Then
+                tmp_fx = config%parts(i)%fxx+fxl(i)
+                tmp_fy = config%parts(i)%fyy+fyl(i)
+                tmp_fz = config%parts(i)%fzz+fzl(i)
                 strcom(1)=strcom(1)-ggx(krgd)*tmp_fx
                 strcom(2)=strcom(2)-ggx(krgd)*tmp_fy
                 strcom(3)=strcom(3)-ggx(krgd)*tmp_fz
@@ -2208,7 +2208,7 @@ Contains
 
   End Subroutine rigid_bodies_stre_s
 
-  Subroutine rigid_bodies_str_ss(strcom,rigid,parts,comm)
+  Subroutine rigid_bodies_str_ss(strcom,rigid,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2222,7 +2222,7 @@ Contains
 
     Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -2254,16 +2254,16 @@ Contains
 
   ! COM distances
 
-             gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-             gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-             gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+             gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+             gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+             gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
           End Do
        End If
     End Do
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
 
   ! Initialise stress
 
@@ -2285,16 +2285,16 @@ Contains
 
              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-             If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
-                strcom(1)=strcom(1)-gxx(krgd)*parts(i)%fxx
-                strcom(2)=strcom(2)-gxx(krgd)*parts(i)%fyy
-                strcom(3)=strcom(3)-gxx(krgd)*parts(i)%fzz
-                strcom(4)=strcom(4)-gyy(krgd)*parts(i)%fxx
-                strcom(5)=strcom(5)-gyy(krgd)*parts(i)%fyy
-                strcom(6)=strcom(6)-gyy(krgd)*parts(i)%fzz
-                strcom(7)=strcom(7)-gzz(krgd)*parts(i)%fxx
-                strcom(8)=strcom(8)-gzz(krgd)*parts(i)%fyy
-                strcom(9)=strcom(9)-gzz(krgd)*parts(i)%fzz
+             If (i > 0 .and. i <= config%natms .and. config%lfrzn(i) == 0) Then
+                strcom(1)=strcom(1)-gxx(krgd)*config%parts(i)%fxx
+                strcom(2)=strcom(2)-gxx(krgd)*config%parts(i)%fyy
+                strcom(3)=strcom(3)-gxx(krgd)*config%parts(i)%fzz
+                strcom(4)=strcom(4)-gyy(krgd)*config%parts(i)%fxx
+                strcom(5)=strcom(5)-gyy(krgd)*config%parts(i)%fyy
+                strcom(6)=strcom(6)-gyy(krgd)*config%parts(i)%fzz
+                strcom(7)=strcom(7)-gzz(krgd)*config%parts(i)%fxx
+                strcom(8)=strcom(8)-gzz(krgd)*config%parts(i)%fyy
+                strcom(9)=strcom(9)-gzz(krgd)*config%parts(i)%fzz
              End If
           End Do
        End If
@@ -2320,7 +2320,7 @@ Contains
 
   End subroutine rigid_bodies_str_ss
 
-  Subroutine rigid_bodies_str__s(strcom,parts,rigid,comm,fxl,fyl,fzl)
+  Subroutine rigid_bodies_str__s(strcom,config,rigid,comm,fxl,fyl,fzl)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2333,7 +2333,7 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
-    Type( corePart ),   Intent( In    ) :: parts(1:mxatms)
+    Type( configuration_type ),   Intent( In    ) :: config
     Real( Kind = wp ),  Intent( In    ) :: fxl(1:mxatms),fyl(1:mxatms)
     Real( Kind = wp ),  Intent( In    ) :: fzl(1:mxatms)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
@@ -2370,16 +2370,16 @@ Contains
 
   ! COM distances
 
-             gxx(krgd)=parts(i)%xxx-rigid%xxx(irgd)
-             gyy(krgd)=parts(i)%yyy-rigid%yyy(irgd)
-             gzz(krgd)=parts(i)%zzz-rigid%zzz(irgd)
+             gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
+             gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
+             gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
           End Do
        End If
     End Do
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
 
   ! Initialise stress
 
@@ -2401,10 +2401,10 @@ Contains
 
              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
 
-             If (i > 0 .and. i <= natms .and. lfrzn(i) == 0) Then
-                tmp_fx = parts(i)%fxx+fxl(i)
-                tmp_fy = parts(i)%fyy+fyl(i)
-                tmp_fz = parts(i)%fzz+fzl(i)
+             If (i > 0 .and. i <= config%natms .and. config%lfrzn(i) == 0) Then
+                tmp_fx = config%parts(i)%fxx+fxl(i)
+                tmp_fy = config%parts(i)%fyy+fyl(i)
+                tmp_fz = config%parts(i)%fzz+fzl(i)
                 strcom(1)=strcom(1)-gxx(krgd)*tmp_fx
                 strcom(2)=strcom(2)-gxx(krgd)*tmp_fy
                 strcom(3)=strcom(3)-gxx(krgd)*tmp_fz
@@ -2438,7 +2438,7 @@ Contains
     End If
   End subroutine rigid_bodies_str__s
 
-  Subroutine rigid_bodies_tags(rigid,comm)
+  Subroutine rigid_bodies_tags(config,rigid,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2451,6 +2451,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type( configuration_type ), Intent( InOut ) :: config
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -2480,10 +2481,10 @@ Contains
        rigid%index_local(:,irgd)=0
        Do jrgd=1,lrgd
           s=rigid%list(jrgd,irgd)
-          i=local_index(s,nlast,lsi,lsa)
+          i=local_index(s,config%nlast,config%lsi,config%lsa)
 
           rigid%index_local(jrgd,irgd)=i
-          If (i > 0 .and. i <= natms) rigid%index_local(0,irgd)=rigid%index_local(0,irgd)+1
+          If (i > 0 .and. i <= config%natms) rigid%index_local(0,irgd)=rigid%index_local(0,irgd)+1
        End Do
 
   ! Detect uncompressed unit
@@ -2524,7 +2525,7 @@ Contains
     End If
   End Subroutine rigid_bodies_tags
 
-  Subroutine rigid_bodies_widths(rcut,rigid,parts,comm)
+  Subroutine rigid_bodies_widths(rcut,rigid,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -2538,7 +2539,7 @@ Contains
 
     Real( Kind = wp ),  Intent( In    ) :: rcut
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( corePart ),   Intent( InOut ) :: parts(:)
+    Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: fail,irgd,jrgd,krgd,lrgd,mrgd,nrgd,rgdtyp
@@ -2565,15 +2566,15 @@ Contains
        Do jrgd=1,lrgd
           krgd=krgd+1
 
-          gxx(krgd) = parts(rigid%index_local(jrgd,irgd))%xxx - parts(rigid%index_local(1,irgd))%xxx
-          gyy(krgd) = parts(rigid%index_local(jrgd,irgd))%yyy - parts(rigid%index_local(1,irgd))%yyy
-          gzz(krgd) = parts(rigid%index_local(jrgd,irgd))%zzz - parts(rigid%index_local(1,irgd))%zzz
+          gxx(krgd) = config%parts(rigid%index_local(jrgd,irgd))%xxx - config%parts(rigid%index_local(1,irgd))%xxx
+          gyy(krgd) = config%parts(rigid%index_local(jrgd,irgd))%yyy - config%parts(rigid%index_local(1,irgd))%yyy
+          gzz(krgd) = config%parts(rigid%index_local(jrgd,irgd))%zzz - config%parts(rigid%index_local(1,irgd))%zzz
        End Do
     End Do
 
   ! minimum image convention for bond vectors
 
-    Call images(imcon,cell,krgd,gxx,gyy,gzz)
+    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
 
   ! Get the COM vector and check of diameter safety of units
 
@@ -2617,7 +2618,7 @@ Contains
     End If
   End Subroutine rigid_bodies_widths
 
-  Subroutine xscale(tstep,thermo,stats,neigh,rigid,domain,comm)
+  Subroutine xscale(config,tstep,thermo,stats,neigh,rigid,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2629,6 +2630,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Type( configuration_type ), Intent( InOut ) :: config
   Real( Kind = wp ), Intent( In    ) :: tstep
   Type( thermostat_type), Intent( InOut ) :: thermo
   Type( stats_type), Intent( InOut ) :: stats
@@ -2656,7 +2658,7 @@ Contains
 
            scale = thermo%eta(1)
 
-           Do i=1,natms
+           Do i=1,config%natms
               stats%xin(i) = scale*stats%xin(i)
               stats%yin(i) = scale*stats%yin(i)
               stats%zin(i) = scale*stats%zin(i)
@@ -2664,7 +2666,7 @@ Contains
 
         Else
 
-           Do i=1,natms
+           Do i=1,config%natms
               xa = stats%xin(i)*thermo%eta(1)+stats%yin(i)*thermo%eta(2)+stats%zin(i)*thermo%eta(3)
               ya = stats%xin(i)*thermo%eta(4)+stats%yin(i)*thermo%eta(5)+stats%zin(i)*thermo%eta(6)
               za = stats%xin(i)*thermo%eta(7)+stats%yin(i)*thermo%eta(8)+stats%zin(i)*thermo%eta(9)
@@ -2680,13 +2682,13 @@ Contains
 
 ! hoover npt/nst
 
-        Call getcom(stats%xin,stats%yin,stats%zin,com,comm)
+        Call getcom(stats%xin,stats%yin,stats%zin,config,com,comm)
 
         If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
            scale = Exp(tstep*thermo%eta(1))
 
-           Do i=1,natms
+           Do i=1,config%natms
               stats%xin(i) = scale*(stats%xin(i)-com(1))+com(1)
               stats%yin(i) = scale*(stats%yin(i)-com(2))+com(2)
               stats%zin(i) = scale*(stats%zin(i)-com(3))+com(3)
@@ -2710,7 +2712,7 @@ Contains
            b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-           Do i=1,natms
+           Do i=1,config%natms
               xa = stats%xin(i)-com(1)
               ya = stats%yin(i)-com(2)
               za = stats%zin(i)-com(3)
@@ -2733,7 +2735,7 @@ Contains
 
            scale = Exp(tstep*thermo%eta(1))
 
-           Do i=1,natms
+           Do i=1,config%natms
               stats%xin(i) = scale*stats%xin(i)
               stats%yin(i) = scale*stats%yin(i)
               stats%zin(i) = scale*stats%zin(i)
@@ -2757,7 +2759,7 @@ Contains
            b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-           Do i=1,natms
+           Do i=1,config%natms
               xa = stats%xin(i)
               ya = stats%yin(i)
               za = stats%zin(i)
@@ -2781,7 +2783,7 @@ Contains
 
               scale = thermo%eta(1)
 
-              Do i=1,natms
+              Do i=1,config%natms
                  neigh%xbg(i) = scale*neigh%xbg(i)
                  neigh%ybg(i) = scale*neigh%ybg(i)
                  neigh%zbg(i) = scale*neigh%zbg(i)
@@ -2789,7 +2791,7 @@ Contains
 
            Else
 
-              Do i=1,natms
+              Do i=1,config%natms
                  xa = neigh%xbg(i)*thermo%eta(1)+neigh%ybg(i)*thermo%eta(2)+neigh%zbg(i)*thermo%eta(3)
                  ya = neigh%xbg(i)*thermo%eta(4)+neigh%ybg(i)*thermo%eta(5)+neigh%zbg(i)*thermo%eta(6)
                  za = neigh%xbg(i)*thermo%eta(7)+neigh%ybg(i)*thermo%eta(8)+neigh%zbg(i)*thermo%eta(9)
@@ -2805,13 +2807,13 @@ Contains
 
 ! hoover npt/nst
 
-           Call getcom(neigh%xbg,neigh%ybg,neigh%zbg,com,comm)
+           Call getcom(neigh%xbg,neigh%ybg,neigh%zbg,config,com,comm)
 
            If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
               scale = Exp(tstep*thermo%eta(1))
 
-              Do i=1,natms
+              Do i=1,config%natms
                  neigh%xbg(i) = scale*(neigh%xbg(i)-com(1))+com(1)
                  neigh%ybg(i) = scale*(neigh%ybg(i)-com(2))+com(2)
                  neigh%zbg(i) = scale*(neigh%zbg(i)-com(3))+com(3)
@@ -2835,7 +2837,7 @@ Contains
               b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
               b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-              Do i=1,natms
+              Do i=1,config%natms
                  xa = neigh%xbg(i)-com(1)
                  ya = neigh%ybg(i)-com(2)
                  za = neigh%zbg(i)-com(3)
@@ -2858,7 +2860,7 @@ Contains
 
               scale = Exp(tstep*thermo%eta(1))
 
-              Do i=1,natms
+              Do i=1,config%natms
                  neigh%xbg(i) = scale*neigh%xbg(i)
                  neigh%ybg(i) = scale*neigh%ybg(i)
                  neigh%zbg(i) = scale*neigh%zbg(i)
@@ -2882,7 +2884,7 @@ Contains
               b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
               b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-              Do i=1,natms
+              Do i=1,config%natms
                  xa = neigh%xbg(i)
                  ya = neigh%ybg(i)
                  za = neigh%zbg(i)
@@ -2911,10 +2913,10 @@ Contains
 ! to get initial COMs
 
      If (rigid%share) Then
-       Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+       Call update_shared_units(config,rigid%list_shared, &
          rigid%map_shared,stats%xin,stats%yin,stats%zin,domain,comm)
      End If
-     Call rigid_bodies_coms(stats%xin,stats%yin,stats%zin,rgdxin,rgdyin,rgdzin,rigid,comm)
+     Call rigid_bodies_coms(config,stats%xin,stats%yin,stats%zin,rgdxin,rgdyin,rgdzin,rigid,comm)
 
      If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -2924,8 +2926,8 @@ Contains
 
            scale = thermo%eta(1)
 
-           Do j=1,nfree
-              i=lstfre(j)
+           Do j=1,config%nfree
+              i=config%lstfre(j)
 
               stats%xin(i) = scale*stats%xin(i)
               stats%yin(i) = scale*stats%yin(i)
@@ -2945,7 +2947,7 @@ Contains
               Do jrgd=1,lrgd
                  i=rigid%index_local(jrgd,irgd)
 
-                 If (i <= natms) Then
+                 If (i <= config%natms) Then
                     stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
                     stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
                     stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
@@ -2955,8 +2957,8 @@ Contains
 
         Else
 
-           Do j=1,nfree
-              i=lstfre(j)
+           Do j=1,config%nfree
+              i=config%lstfre(j)
 
               xa = stats%xin(i)*thermo%eta(1)+stats%yin(i)*thermo%eta(2)+stats%zin(i)*thermo%eta(3)
               ya = stats%xin(i)*thermo%eta(4)+stats%yin(i)*thermo%eta(5)+stats%zin(i)*thermo%eta(6)
@@ -2984,7 +2986,7 @@ Contains
               Do jrgd=1,lrgd
                  i=rigid%index_local(jrgd,irgd)
 
-                 If (i <= natms) Then
+                 If (i <= config%natms) Then
                     stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
                     stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
                     stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
@@ -2998,14 +3000,14 @@ Contains
 
 ! hoover npt/nst
 
-        Call getcom(stats%xin,stats%yin,stats%zin,com,comm)
+        Call getcom(stats%xin,stats%yin,stats%zin,config,com,comm)
 
         If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
            scale = Exp(tstep*thermo%eta(1))
 
-           Do j=1,nfree
-              i=lstfre(j)
+           Do j=1,config%nfree
+              i=config%lstfre(j)
 
               stats%xin(i) = scale*(stats%xin(i)-com(1))+com(1)
               stats%yin(i) = scale*(stats%yin(i)-com(2))+com(2)
@@ -3025,7 +3027,7 @@ Contains
               Do jrgd=1,lrgd
                  i=rigid%index_local(jrgd,irgd)
 
-                 If (i <= natms) Then
+                 If (i <= config%natms) Then
                     stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
                     stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
                     stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
@@ -3051,8 +3053,8 @@ Contains
            b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-           Do j=1,nfree
-              i=lstfre(j)
+           Do j=1,config%nfree
+              i=config%lstfre(j)
 
               xa = stats%xin(i)-com(1)
               ya = stats%yin(i)-com(2)
@@ -3080,7 +3082,7 @@ Contains
               Do jrgd=1,lrgd
                  i=rigid%index_local(jrgd,irgd)
 
-                 If (i <= natms) Then
+                 If (i <= config%natms) Then
                     stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
                     stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
                     stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
@@ -3101,8 +3103,8 @@ Contains
 
            scale = Exp(tstep*thermo%eta(1))
 
-           Do j=1,nfree
-              i=lstfre(j)
+           Do j=1,config%nfree
+              i=config%lstfre(j)
 
               stats%xin(i) = scale*stats%xin(i)
               stats%yin(i) = scale*stats%yin(i)
@@ -3122,7 +3124,7 @@ Contains
               Do jrgd=1,lrgd
                  i=rigid%index_local(jrgd,irgd)
 
-                 If (i <= natms) Then
+                 If (i <= config%natms) Then
                     stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
                     stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
                     stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
@@ -3148,8 +3150,8 @@ Contains
            b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
            b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-           Do j=1,nfree
-              i=lstfre(j)
+           Do j=1,config%nfree
+              i=config%lstfre(j)
 
               xa = stats%xin(i)
               ya = stats%yin(i)
@@ -3177,7 +3179,7 @@ Contains
               Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd)
 
-                 If (i <= natms) Then
+                 If (i <= config%natms) Then
                     stats%xin(i) = stats%xin(i) - x + rgdxin(irgd)
                     stats%yin(i) = stats%yin(i) - y + rgdyin(irgd)
                     stats%zin(i) = stats%zin(i) - z + rgdzin(irgd)
@@ -3191,7 +3193,7 @@ Contains
 
      If (.not.neigh%update) Then
 
-        Call rigid_bodies_coms(neigh%xbg,neigh%ybg,neigh%zbg,rgdxin,rgdyin,rgdzin,rigid,comm)
+        Call rigid_bodies_coms(config,neigh%xbg,neigh%ybg,neigh%zbg,rgdxin,rgdyin,rgdzin,rigid,comm)
 
         If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -3201,8 +3203,8 @@ Contains
 
               scale = thermo%eta(1)
 
-              Do j=1,nfree
-                 i=lstfre(j)
+              Do j=1,config%nfree
+                 i=config%lstfre(j)
 
                  neigh%xbg(i) = scale*neigh%xbg(i)
                  neigh%ybg(i) = scale*neigh%ybg(i)
@@ -3222,7 +3224,7 @@ Contains
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd)
 
-                    If (i <= natms) Then
+                    If (i <= config%natms) Then
                        neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
                        neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
                        neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
@@ -3232,8 +3234,8 @@ Contains
 
            Else
 
-              Do j=1,nfree
-                 i=lstfre(j)
+              Do j=1,config%nfree
+                 i=config%lstfre(j)
 
                  xa = neigh%xbg(i)*thermo%eta(1)+neigh%ybg(i)*thermo%eta(2)+neigh%zbg(i)*thermo%eta(3)
                  ya = neigh%xbg(i)*thermo%eta(4)+neigh%ybg(i)*thermo%eta(5)+neigh%zbg(i)*thermo%eta(6)
@@ -3261,7 +3263,7 @@ Contains
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd)
 
-                    If (i <= natms) Then
+                    If (i <= config%natms) Then
                        neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
                        neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
                        neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
@@ -3275,14 +3277,14 @@ Contains
 
 ! hoover npt/nst
 
-           Call getcom(neigh%xbg,neigh%ybg,neigh%zbg,com,comm)
+           Call getcom(neigh%xbg,neigh%ybg,neigh%zbg,config,com,comm)
 
            If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
               scale = Exp(tstep*thermo%eta(1))
 
-              Do j=1,nfree
-                 i=lstfre(j)
+              Do j=1,config%nfree
+                 i=config%lstfre(j)
 
                  neigh%xbg(i) = scale*(neigh%xbg(i)-com(1))+com(1)
                  neigh%ybg(i) = scale*(neigh%ybg(i)-com(2))+com(2)
@@ -3302,7 +3304,7 @@ Contains
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd)
 
-                    If (i <= natms) Then
+                    If (i <= config%natms) Then
                        neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
                        neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
                        neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
@@ -3328,8 +3330,8 @@ Contains
               b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
               b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-              Do j=1,nfree
-                 i=lstfre(j)
+              Do j=1,config%nfree
+                 i=config%lstfre(j)
 
                  xa = neigh%xbg(i)-com(1)
                  ya = neigh%ybg(i)-com(2)
@@ -3357,7 +3359,7 @@ Contains
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd)
 
-                    If (i <= natms) Then
+                    If (i <= config%natms) Then
                        neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
                        neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
                        neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
@@ -3378,8 +3380,8 @@ Contains
 
               scale = Exp(tstep*thermo%eta(1))
 
-              Do j=1,nfree
-                 i=lstfre(j)
+              Do j=1,config%nfree
+                 i=config%lstfre(j)
 
                  neigh%xbg(i) = scale*neigh%xbg(i)
                  neigh%ybg(i) = scale*neigh%ybg(i)
@@ -3399,7 +3401,7 @@ Contains
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd)
 
-                    If (i <= natms) Then
+                    If (i <= config%natms) Then
                        neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
                        neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
                        neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
@@ -3425,8 +3427,8 @@ Contains
               b6 = (a2*a3 + a5*a6 + a6*a9)*0.5_wp + a6
               b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
-              Do j=1,nfree
-                 i=lstfre(j)
+              Do j=1,config%nfree
+                 i=config%lstfre(j)
 
                  xa = neigh%xbg(i)
                  ya = neigh%ybg(i)
@@ -3454,7 +3456,7 @@ Contains
                  Do jrgd=1,lrgd
                     i=rigid%index_local(jrgd,irgd)
 
-                    If (i <= natms) Then
+                    If (i <= config%natms) Then
                        neigh%xbg(i) = neigh%xbg(i) - x + rgdxin(irgd)
                        neigh%ybg(i) = neigh%ybg(i) - y + rgdyin(irgd)
                        neigh%zbg(i) = neigh%zbg(i) - z + rgdzin(irgd)
@@ -3469,7 +3471,7 @@ Contains
 ! Halo final RB members positions across onto neighbouring domains
 
         If (rigid%share) Then
-          Call update_shared_units(natms,nlast,lsi,lsa,rigid%list_shared, &
+          Call update_shared_units(config,rigid%list_shared, &
             rigid%map_shared,neigh%xbg,neigh%ybg,neigh%zbg,domain,comm)
         End If
      End If
@@ -3482,8 +3484,8 @@ Contains
 
   End If
 
-  Call pbcshift(imcon,cell,natms,stats%xin,stats%yin,stats%zin)
-  If (neigh%unconditional_update) Call pbcshift(imcon,cell,natms,neigh%xbg,neigh%ybg,neigh%zbg)
+  Call pbcshift(config%imcon,config%cell,config%natms,stats%xin,stats%yin,stats%zin)
+  If (neigh%unconditional_update) Call pbcshift(config%imcon,config%cell,config%natms,neigh%xbg,neigh%ybg,neigh%zbg)
 
 End Subroutine xscale
 
@@ -3501,7 +3503,7 @@ End Subroutine xscale
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-Subroutine q_setup(rigid,parts,comm)
+Subroutine q_setup(rigid,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3513,7 +3515,7 @@ Subroutine q_setup(rigid,parts,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-  Type( corePart ),   Intent( InOut ) :: parts(:)
+  Type( configuration_type ),   Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp, &
@@ -3549,19 +3551,19 @@ Subroutine q_setup(rigid,parts,comm)
 
 ! group basis vectors
 
-        aa(1)=parts(i1)%xxx-parts(i2)%xxx
-        aa(4)=parts(i1)%yyy-parts(i2)%yyy
-        aa(7)=parts(i1)%zzz-parts(i2)%zzz
+        aa(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
+        aa(4)=config%parts(i1)%yyy-config%parts(i2)%yyy
+        aa(7)=config%parts(i1)%zzz-config%parts(i2)%zzz
 
 ! minimum image convention for bond vectors
 
-        Call images(imcon,cell,1,aa(1),aa(4),aa(7))
+        Call images(config%imcon,config%cell,1,aa(1),aa(4),aa(7))
 
         ill=rigid%index_global(0,rgdtyp)
         If (ill == 0) Then
-           aa(2)=parts(i1)%xxx-parts(i3)%xxx
-           aa(5)=parts(i1)%yyy-parts(i3)%yyy
-           aa(8)=parts(i1)%zzz-parts(i3)%zzz
+           aa(2)=config%parts(i1)%xxx-config%parts(i3)%xxx
+           aa(5)=config%parts(i1)%yyy-config%parts(i3)%yyy
+           aa(8)=config%parts(i1)%zzz-config%parts(i3)%zzz
         Else
            rsq=Sqrt(aa(1)**2+aa(4)**2+aa(7)**2)
            If      (Abs(aa(7)/rsq) > 0.5_wp) Then
@@ -3584,7 +3586,7 @@ Subroutine q_setup(rigid,parts,comm)
 
 ! minimum image convention for bond vectors
 
-        Call images(imcon,cell,1,aa(2),aa(5),aa(8))
+        Call images(config%imcon,config%cell,1,aa(2),aa(5),aa(8))
 
         aa(3)=aa(4)*aa(8)-aa(7)*aa(5)
         aa(6)=aa(7)*aa(2)-aa(1)*aa(8)
@@ -3679,9 +3681,9 @@ Subroutine q_setup(rigid,parts,comm)
              rot(8)*rigid%y(jrgd,rgdtyp)+ &
              rot(9)*rigid%z(jrgd,rgdtyp)+rigid%zzz(irgd)
 
-           gxx(krgd)=parts(rigid%index_local(jrgd,irgd))%xxx-x
-           gyy(krgd)=parts(rigid%index_local(jrgd,irgd))%yyy-y
-           gzz(krgd)=parts(rigid%index_local(jrgd,irgd))%zzz-z
+           gxx(krgd)=config%parts(rigid%index_local(jrgd,irgd))%xxx-x
+           gyy(krgd)=config%parts(rigid%index_local(jrgd,irgd))%yyy-y
+           gzz(krgd)=config%parts(rigid%index_local(jrgd,irgd))%zzz-z
         End Do
 
      End If
@@ -3689,7 +3691,7 @@ Subroutine q_setup(rigid,parts,comm)
 
 ! minimum image convention for bond vectors
 
-  Call images(imcon,cell,krgd,gxx,gyy,gzz)
+  Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
 
 ! test quaternion setup
 
