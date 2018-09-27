@@ -16,7 +16,6 @@ Module kontrol
   Use metal,      Only : metal_type
   Use poisson,    Only : poisson_type
   Use msd,        Only : msd_type
-  Use kinetics,  Only : l_vom
   Use plumed,   Only : plumed_type
   Use setup,       Only : nread,control,pi,zero_plus, &
                           output,field,config_name,statis, &
@@ -375,7 +374,6 @@ Subroutine read_control                                &
 
 ! default switch for removing COM momentum for ensembles
 !
-!  l_vom = .true. ! initialised in kinetics
 
 ! defaults for: force key = no electrostatics,
 ! specified force field = not yet, relative dielectric constant = 1
@@ -2101,7 +2099,7 @@ Subroutine read_control                                &
                //'and a manifestation of the "flying ice-cube" effect',.true.)
            End If
 
-           l_vom    = .false.
+           config%l_vom    = .false.
 
         Else If (word1(1:4) == 'link') Then ! NON-TRANSFERABLE OPTION FROM DL_POLY_2
 
@@ -3189,11 +3187,11 @@ Subroutine read_control                                &
 
 ! report no vom option: its use recommended with ttm
 
-  If (.not.l_vom .and. .not.l_ttm) Then
+   If (.not.config%l_vom .and. .not.l_ttm) Then
     Call info('no vom option on - COM momentum removal will be abandoned',.true.)
     Call warning('this may lead to a build up of the COM momentum and a' &
       //'manifestation of the "flying ice-cube" effect',.true.)
-  Else If (l_vom .and. l_ttm) Then
+  Else If (config%l_vom .and. l_ttm) Then
     Call info('no vom option off - COM momentum removal will be used',.true.)
     Call warning('this may lead to incorrect dynamic behaviour for' &
       //'two-temperature model: COM momentum removal recommended',.true.)

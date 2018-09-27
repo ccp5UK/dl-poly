@@ -32,12 +32,9 @@ Module kinetics
 
 ! Remove COM motion defaults
 
-  Logical,          Save :: l_vom = .true.
-  Logical, Private, Save :: lvom  = .true.
 
   Public :: getkin,getknf,getknt,getknr,    &
-            kinstress,kinstresf,kinstrest,  &
-            getvom,chvom
+            kinstress,kinstresf,kinstrest,getvom
 
   Interface getvom
      Module Procedure getvom
@@ -332,27 +329,6 @@ Contains
   End Subroutine kinstrest
 
   
-  Subroutine chvom(flag)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to change behaviour for COM momentum removal
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Logical, Intent( In ) :: flag
-
-
-    If (flag) Then
-       lvom=.true.  ! Remove COM momentum
-    Else
-       lvom=.false. ! Don't
-    End If
-
-  End Subroutine chvom
 
   Subroutine getvom(vom,vxx,vyy,vzz,config,comm)
 
@@ -370,46 +346,43 @@ Contains
     Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut ) :: comm
 
-    Logical,           Save :: newjob = .true.
-    Real( Kind = wp ), Save :: totmas
-
     Integer                 :: i
 
 ! total system mass not including frozen mass
 
-    If (newjob) Then
-       newjob = .false.
+    If (config%newjob_totmas) Then
+      config%newjob_totmas = .false.
 
 ! For all unfrozen, free particles
 
-       totmas = 0.0_wp
+      config%totmas = 0.0_wp
        Do i=1,config%natms
-          If (config%lfrzn(i) == 0) totmas = totmas + config%weight(i)
+         If (config%lfrzn(i) == 0) config%totmas = config%totmas + config%weight(i)
        End Do
 
-       Call gsum(comm,totmas)
-    End If
+       Call gsum(comm,config%totmas)
+     End If
 
-    vom = 0.0_wp
+     vom = 0.0_wp
 
-    If (.not.lvom) Return
+     If (.not.config%lvom) Return
 
 ! For all unfrozen, free particles
 
-    Do i=1,config%natms
+     Do i=1,config%natms
        If (config%lfrzn(i) == 0) Then
-          vom(1) = vom(1) + config%weight(i)*vxx(i)
-          vom(2) = vom(2) + config%weight(i)*vyy(i)
-          vom(3) = vom(3) + config%weight(i)*vzz(i)
+         vom(1) = vom(1) + config%weight(i)*vxx(i)
+         vom(2) = vom(2) + config%weight(i)*vyy(i)
+         vom(3) = vom(3) + config%weight(i)*vzz(i)
        End If
-    End Do
+     End Do
 
-    Call gsum(comm,vom)
-    If (totmas >= zero_plus) vom = vom/totmas
+     Call gsum(comm,vom)
+     If (config%totmas >= zero_plus) vom = vom/config%totmas
 
-  End Subroutine getvom
+   End Subroutine getvom
 
-  Subroutine getvom_rgd(vom,vxx,vyy,vzz,rigid,config,comm)
+   Subroutine getvom_rgd(vom,vxx,vyy,vzz,rigid,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -420,31 +393,28 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
-    Real( Kind = wp ), Intent( In    ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
-    Type( rigid_bodies_type ), Intent( In    ) :: rigid
-    Type( configuration_type ), Intent( InOut ) :: config
-    Type(comms_type), Intent ( InOut ) :: comm
+     Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
+     Real( Kind = wp ), Intent( In    ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+     Type( rigid_bodies_type ), Intent( In    ) :: rigid
+     Type( configuration_type ), Intent( InOut ) :: config
+     Type(comms_type), Intent ( InOut ) :: comm
 
-    Logical,           Save :: newjob = .true.
-    Real( Kind = wp ), Save :: totmas
-
-    Integer                 :: i,j,irgd,lrgd,rgdtyp
-    Real( Kind = wp )       :: tmp
+     Integer                 :: i,j,irgd,lrgd,rgdtyp
+     Real( Kind = wp )       :: tmp
 
 ! total system mass not including frozen mass
 
-    If (newjob) Then
-       newjob = .false.
+     If (config%newjob_totmas_r) Then
+       config%newjob_totmas_r = .false.
 
-       totmas = 0.0_wp
+       config%totmas_r = 0.0_wp
 
 ! For all unfrozen, free particles
 
        Do j=1,config%nfree
-          i=config%lstfre(j)
+         i=config%lstfre(j)
 
-          If (config%lfrzn(i) == 0) totmas = totmas + config%weight(i)
+         If (config%lfrzn(i) == 0) config%totmas_r = config%totmas_r + config%weight(i)
        End Do
 
 ! For all RBs without any frozen particles
@@ -452,52 +422,52 @@ Contains
 ! have zero net momentum enforced!
 
        Do irgd=1,rigid%n_types
-          rgdtyp=rigid%list(0,irgd)
+         rgdtyp=rigid%list(0,irgd)
 
-          lrgd=rigid%list(-1,irgd)
-          If (rigid%frozen(0,rgdtyp) == 0) &
-             totmas = totmas + rigid%weight(0,rgdtyp)*Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
+         lrgd=rigid%list(-1,irgd)
+         If (rigid%frozen(0,rgdtyp) == 0) &
+           config%totmas_r = config%totmas_r + rigid%weight(0,rgdtyp)*Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
        End Do
 
-       Call gsum(comm,totmas)
-    End If
+       Call gsum(comm,config%totmas_r)
+     End If
 
-    vom = 0.0_wp
+     vom = 0.0_wp
 
-    If (.not.lvom) Return
+     If (.not.config%lvom) Return
 
 ! For all unfrozen, free particles
 
-    Do j=1,config%nfree
+     Do j=1,config%nfree
        i=config%lstfre(j)
 
        If (config%lfrzn(i) == 0) Then
-          tmp=config%weight(i)
-          vom(1) = vom(1) + tmp*vxx(i)
-          vom(2) = vom(2) + tmp*vyy(i)
-          vom(3) = vom(3) + tmp*vzz(i)
+         tmp=config%weight(i)
+         vom(1) = vom(1) + tmp*vxx(i)
+         vom(2) = vom(2) + tmp*vyy(i)
+         vom(3) = vom(3) + tmp*vzz(i)
        End If
-    End Do
+     End Do
 
-    Do irgd=1,rigid%n_types
+     Do irgd=1,rigid%n_types
        rgdtyp=rigid%list(0,irgd)
 
 ! For all RBs without any frozen particles
 
        lrgd=rigid%list(-1,irgd)
        If (rigid%frozen(0,rgdtyp) == 0) Then
-          tmp=rigid%weight(0,rgdtyp)*Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
+         tmp=rigid%weight(0,rgdtyp)*Real(rigid%index_local(0,irgd),wp)/Real(lrgd,wp)
 
-          vom(1) = vom(1) + tmp*rigid%vxx(irgd)
-          vom(2) = vom(2) + tmp*rigid%vyy(irgd)
-          vom(3) = vom(3) + tmp*rigid%vzz(irgd)
+         vom(1) = vom(1) + tmp*rigid%vxx(irgd)
+         vom(2) = vom(2) + tmp*rigid%vyy(irgd)
+         vom(3) = vom(3) + tmp*rigid%vzz(irgd)
        End If
-    End Do
+     End Do
 
-    Call gsum(comm,vom)
-    If (totmas >= zero_plus) vom = vom/totmas
+     Call gsum(comm,vom)
+     If (config%totmas_r >= zero_plus) vom = vom/config%totmas_r
 
-  End Subroutine getvom_rgd
+   End Subroutine getvom_rgd
 
 
   Subroutine cap_forces(fmax,temp,config,comm)
@@ -517,23 +487,20 @@ Contains
     Type(comms_type),  Intent( InOut ) :: comm
     Type( configuration_type ),  Intent( InOut ) :: config
 
-    Logical,           Save :: newjob = .true.
-    Real( Kind = wp ), Save :: meg
-
     Integer           :: i
     Real( Kind = wp ) :: fmax2,fmod,scale,fcom(1:3)
 
-    If (newjob) Then
-       newjob = .false.
+    If (config%newjob_meg) Then
+      config%newjob_meg = .false.
 
 ! Get the total number of non-frozen&non-massless particles
 
-       meg=0.0_wp
-       Do i=1,config%natms
-          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) &
-             meg=meg+1.0_wp
-       End Do
-       Call gsum(comm,meg)
+      config%meg=0.0_wp
+      Do i=1,config%natms
+        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) &
+          config%meg=config%meg+1.0_wp
+      End Do
+      Call gsum(comm,config%meg)
     End If
 
 ! maximum force permitted
@@ -545,37 +512,37 @@ Contains
 
     fcom = 0.0_wp
     Do i=1,config%natms
-       If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
-          fmod = config%parts(i)%fxx**2 + config%parts(i)%fyy**2 + config%parts(i)%fzz**2
+      If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+        fmod = config%parts(i)%fxx**2 + config%parts(i)%fyy**2 + config%parts(i)%fzz**2
 
-          If (fmod > fmax2) Then
-             scale  = Sqrt(fmax2/fmod)
-             config%parts(i)%fxx = config%parts(i)%fxx*scale
-             config%parts(i)%fyy = config%parts(i)%fyy*scale
-             config%parts(i)%fzz = config%parts(i)%fzz*scale
-          End If
+        If (fmod > fmax2) Then
+          scale  = Sqrt(fmax2/fmod)
+          config%parts(i)%fxx = config%parts(i)%fxx*scale
+          config%parts(i)%fyy = config%parts(i)%fyy*scale
+          config%parts(i)%fzz = config%parts(i)%fzz*scale
+        End If
 
 ! accumulate forces - to check on momentum conservation
 
-          fcom(1) = fcom(1) + config%parts(i)%fxx
-          fcom(2) = fcom(2) + config%parts(i)%fyy
-          fcom(3) = fcom(3) + config%parts(i)%fzz
-       End If
+        fcom(1) = fcom(1) + config%parts(i)%fxx
+        fcom(2) = fcom(2) + config%parts(i)%fyy
+        fcom(3) = fcom(3) + config%parts(i)%fzz
+      End If
     End Do
 
 ! ensure net forces sum to zero
 
     Call gsum(comm,fcom)
-    fcom = fcom/meg
+    fcom = fcom/config%meg
 
 ! conserve momentum
 
     Do i=1,config%natms
-       If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
-          config%parts(i)%fxx = config%parts(i)%fxx - fcom(1)
-          config%parts(i)%fyy = config%parts(i)%fyy - fcom(2)
-          config%parts(i)%fzz = config%parts(i)%fzz - fcom(3)
-       End If
+      If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
+        config%parts(i)%fxx = config%parts(i)%fxx - fcom(1)
+        config%parts(i)%fyy = config%parts(i)%fyy - fcom(2)
+        config%parts(i)%fzz = config%parts(i)%fzz - fcom(3)
+      End If
     End Do
 
   End Subroutine cap_forces

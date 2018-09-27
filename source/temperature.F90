@@ -9,7 +9,7 @@ Module temperature
   Use constraints,     Only : constraints_type, constraints_quench
   Use pmf,             Only : pmf_quench, pmf_type
   Use core_shell,      Only : core_shell_type,core_shell_quench,SHELL_ADIABATIC
-  Use kinetics,        Only : l_vom,chvom,getvom,getkin,getknf,getknt,getknr
+  Use kinetics,        Only : getvom,getkin,getknf,getknt,getknr
   Use numerics,        Only : seed_type,invert,uni,local_index,box_mueller_saru3
   use shared_units,    Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,warning,info
@@ -92,7 +92,7 @@ Contains
 
   ! 3 lost for fixing COM translation
 
-    If (l_vom .and. thermo%key_dpd == 0) Then
+    If (config%l_vom .and. thermo%key_dpd == 0) Then
        com=Int(3,li)
     Else
        com=Int(0,li)
@@ -550,7 +550,7 @@ Contains
 
     End If
 
-    If (l_vom) Then
+    If (config%l_vom) Then
 
   ! remove centre of mass motion
 
@@ -599,7 +599,7 @@ Contains
           End Do
        End If
     Else                 ! make getvom always return 0, which is not good for
-       Call chvom(l_vom) ! standard MD as the flying ice-cub effect may happen
+       Call config%chvom() ! standard MD as the flying ice-cub effect may happen
     End If               ! and/or T(MD) is loses its microscopic meaning!
 
   ! Initialise engrot and if RBs exist calculate it
