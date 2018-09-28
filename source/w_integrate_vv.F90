@@ -91,8 +91,8 @@
             Call nvt_l2_vv                  &
          (isw,lvar,mndis,mxdis,mxstp,tstep, &
          nstep,  &
-         stat%strkin,stat%engke,                      &
-         cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
+              stat%strkin,stat%engke,                      &
+              ttm,cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
 
          Else If (thermo%ensemble == ENS_NPT_LANGEVIN) Then
 

@@ -19,14 +19,14 @@ Module kontrol
   Use plumed,   Only : plumed_type
   Use setup,       Only : nread,control,pi,zero_plus, &
                           output,field,config_name,statis, &
-                          history,historf,revive,revcon,revold
-  Use parse,       Only : get_line,get_word,lower_case,word_2_real
-  
+    history,historf,revive,revcon,revold,&
+    prsunt,tenunt,nrite,mxgana
+  Use parse,       Only : get_line,get_word,lower_case,word_2_real,strip_blanks
   Use kim,         Only : kim_type
   Use greenkubo,   Only : greenkubo_type
   Use rdfs,        Only : rdf_type
   Use development, Only : development_type
-  Use ttm
+  Use ttm, Only : ttm_type
   Use impacts,     Only : impact_type
   Use defects,     Only : defects_type
   Use rsds, Only : rsd_type
@@ -70,6 +70,7 @@ Module kontrol
                             ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
   Use ewald, Only : ewald_type
   Use trajectory, Only : trajectory_type
+  Use errors_warnings, Only : error,info,warning
   Implicit None
 
   Private
@@ -125,7 +126,7 @@ Subroutine read_control                                &
   fmax,nstbpo,             &
   rlx_tol,mxquat,quattol,       &
   nstbnd,nstang,nstdih,nstinv,  &
-  dfcts,       &
+  ttm,dfcts,       &
   ndump,pdplnc,rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
   met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
   rdf,minim,mpoles,electro,ewld,seed,traj,tmr,config,comm)
@@ -147,7 +148,7 @@ Subroutine read_control                                &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-
+  Type( ttm_type ), Intent( InOut ) :: ttm
   Logical,                Intent( In    ) :: l_str,lsim,l_vv,l_n_e,l_n_v
   Integer,                Intent( In    ) :: levcfg
   Integer,                Intent( InOut ) :: nstfce
@@ -402,68 +403,68 @@ Subroutine read_control                                &
 ! already determined its use in scan_control but repeating
 ! here to output message
 
-  l_ttm = .false.
+  ttm%l_ttm = .false.
 
 ! default values for (i) electronic specific heat capacities,
 ! (ii) thermal conductivity, (iii) thermal diffusivity,
-! (iv) atomic density (converting specific heats to volumetric values)
+! (iv) atomic density (converting specific heats to ttm%volumetric values)
 
-  Ce0     = 1.0_wp
-  sh_A    = 0.0_wp
-  sh_B    = 0.0_wp
-  Cemax   = 0.0_wp
-  Tfermi  = 0.0_wp
+  ttm%Ce0     = 1.0_wp
+  ttm%sh_A    = 0.0_wp
+  ttm%sh_B    = 0.0_wp
+  ttm%Cemax   = 0.0_wp
+  ttm%Tfermi  = 0.0_wp
 
-  Ka0     = 0.0_wp
+  ttm%Ka0     = 0.0_wp
 
-  Diff0   = 0.0_wp
+  ttm%Diff0   = 0.0_wp
 
-  cellrho = 0.0_wp
+  ttm%cellrho = 0.0_wp
 
 ! default initial stopping power to be deposited in
 ! electronic system (standard cascade) and laser 
-! fluence and penetration depth
+! ttm%fluence and penetration depth
 
-  dEdX    = 0.0_wp
-  fluence = 0.0_wp
-  pdepth  = 0.0_wp
+  ttm%dEdX    = 0.0_wp
+  ttm%fluence = 0.0_wp
+  ttm%pdepth  = 0.0_wp
 
 ! default values for (i) spatial, (ii) temporal
 ! energy deposition
 
-  sdepoType = 0
-  sig       = 1.0_wp
-  sigmax    = 5
+  ttm%sdepoType = 0
+  ttm%sig       = 1.0_wp
+  ttm%sigmax    = 5
 
-  tdepoType = 1
-  tdepo     = 1.0e-3_wp
-  tcdepo    = 5
+  ttm%tdepoType = 1
+  ttm%tdepo     = 1.0e-3_wp
+  ttm%tcdepo    = 5
 
 ! default boundary conditions for electronic temperature
 
-  bcTypeE = 3
+  ttm%bcTypeE = 3
 
 ! default minimum number of atoms required per voxel cell
 ! to calculate ionic temperatures and one-way electron-phonon
 ! coupling in thermal diffusion and thermostat
 
-  amin     = 1
-  oneway   = .false.
+  ttm%amin     = 1
+  ttm%oneway   = .false.
 
 ! default values for time step frequencies to output
 ! (i) statistical data and (ii) electronic/ionic temperature
 ! grid values
 
-  ttmstats = 0
-  ttmtraj  = 0
+  ttm%ttmstats = 0
+  ttm%ttmtraj  = 0
 
 ! default value for time to start electron-phonon coupling
 
-  ttmoffset = 0.0_wp
+  ttm%ttmoffset = 0.0_wp
 
 ! default switch for dynamic cell density calculations
 
-  ttmdyndens = .false.
+  ttm%ttmdyndens = .false.
 
 ! proceed normal simulation
 
@@ -661,7 +662,7 @@ Subroutine read_control                                &
         Write(messages(4),'(1x,a,3f20.10,a)')   '%%% ', devel%cels(4:6), ' %%%'
         Write(messages(5),'(1x,a,3f20.10,a)')   '%%% ', devel%cels(7:9), ' %%%'
         Write(messages(6),'(1x,a)')             '%%%'
-        Write(messages(7),'(1x,a,1p,g22.12,a)') '%%% CFGSCL volume ', tmp, '%%%'
+        Write(messages(7),'(1x,a,1p,g22.12,a)') '%%% CFGSCL ttm%volume ', tmp, '%%%'
         Call info(messages,7,.true.)
 
         If (tmp > zero_plus) Then
@@ -2093,7 +2094,7 @@ Subroutine read_control                                &
 
         Else If (word1(1:3) == 'vom' ) Then ! "no vom" should be used with TTM
 
-           If (.not. l_ttm) Then
+           If (.not. ttm%l_ttm) Then
              Call info('"no vom" option auto-switched on - COM momentum removal will be abandoned',.true.)
              Call warning('this may lead to a build up of the COM momentum ' &
                //'and a manifestation of the "flying ice-cube" effect',.true.)
@@ -2165,10 +2166,10 @@ Subroutine read_control                                &
 
      Else If (word(1:3) == 'ttm') Then
 
-        ! detecting l_ttm purely to print message on first occasion
+        ! detecting ttm%l_ttm purely to print message on first occasion
 
-        If (.not. l_ttm) Then
-          l_ttm = .true.
+        If (.not. ttm%l_ttm) Then
+          ttm%l_ttm = .true.
           Call info('Two Temperature Model (TTM) opted for',.true.)
         End If
 
@@ -2179,9 +2180,9 @@ Subroutine read_control                                &
         ! number of coarse-grained ion temperature cells (CIT):
         ! already determined in scan_control
 
-           Write(messages(1),'(a,3(1x,i8))') 'ionic temperature grid size (x,y,z):',ntsys(1:3)
-           Write(messages(2),'(a,3(1x,f8.4))') 'temperature grid size (x,y,z):',delx,dely,delz
-           Write(messages(3),'(a,f10.4)') 'average number of atoms/cell: ',sysrho*volume
+           Write(messages(1),'(a,3(1x,i8))') 'ionic temperature grid size (x,y,z):',ttm%ntsys(1:3)
+           Write(messages(2),'(a,3(1x,f8.4))') 'temperature grid size (x,y,z):',ttm%delx,ttm%dely,ttm%delz
+           Write(messages(3),'(a,f10.4)') 'average number of atoms/cell: ',ttm%sysrho*ttm%volume
            Call info(messages,3,.true.)
 
         Else If (word1(1:4) == 'ncet') Then
@@ -2190,7 +2191,7 @@ Subroutine read_control                                &
         ! already determined in scan_control
 
            Write(message,'(a,3(1x,i8))') 'electronic temperature grid size (x,y,z):', &
-             eltsys(1:3)
+             ttm%eltsys(1:3)
            Call info(message,.true.)
 
         Else If (word1(1:5) == 'metal') Then
@@ -2211,9 +2212,9 @@ Subroutine read_control                                &
         ! electronic specific heat capacity given as constant value
 
           Call get_word(record,word)
-          Ce0 = word_2_real(word)
+          ttm%Ce0 = word_2_real(word)
           Call info('electronic specific heat capacity set to constant value',.true.)
-          Write(message,'(a,1p,e12.4)') 'electronic s.h.c. (kB/atom) ', Ce0
+          Write(message,'(a,1p,e12.4)') 'electronic s.h.c. (kB/atom) ', ttm%Ce0
           Call info(message,.true.)
 
         Else If (word1(1:6) == 'cetanh') Then
@@ -2221,12 +2222,12 @@ Subroutine read_control                                &
         ! electronic specific heat capacity given as tanh function
 
           Call get_word(record,word)
-          sh_A = word_2_real(word)
+          ttm%sh_A = word_2_real(word)
           Call get_word(record,word)
-          sh_B = word_2_real(word)
+          ttm%sh_B = word_2_real(word)
           Write(messages(1),'(a)') 'electronic specific heat capacity set to hyperbolic tangent function'
-          Write(messages(2),'(a,1p,e12.4)') 'constant term A (kB/atom) ',sh_A
-          Write(messages(3),'(a,1p,e12.4)') 'emperature term B (K^-1) ',sh_B
+          Write(messages(2),'(a,1p,e12.4)') 'constant term A (kB/atom) ',ttm%sh_A
+          Write(messages(3),'(a,1p,e12.4)') 'emperature term B (K^-1) ',ttm%sh_B
           Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'celin') Then
@@ -2235,19 +2236,19 @@ Subroutine read_control                                &
         ! up to Fermi temperature, constant afterwards
 
           Call get_word(record,word)
-          Cemax = word_2_real(word)
+          ttm%Cemax = word_2_real(word)
           Call get_word(record,word)
-          Tfermi = word_2_real(word)
+          ttm%Tfermi = word_2_real(word)
           Write(messages(1),'(a)') 'electronic specific heat capacity set to linear function up to Fermi temperature'
-          Write(messages(2),'(a,1p,e12.4)') 'max. electronic s.h.c. (kB/atom) ',Cemax
-          Write(messages(3),'(a,1p,e12.4)') 'Fermi temperature (K)',Tfermi
+          Write(messages(2),'(a,1p,e12.4)') 'max. electronic s.h.c. (kB/atom) ',ttm%Cemax
+          Write(messages(3),'(a,1p,e12.4)') 'Fermi temperature (K)',ttm%Tfermi
           Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'cetab') Then
 
-        ! electronic volumetric heat capacity given in tabulated form
+        ! electronic ttm%volumetric heat capacity given in tabulated form
 
-          Call info('electronic volumetric heat capacity given as tabulated function of temperature',.true.)
+          Call info('electronic ttm%volumetric heat capacity given as tabulated function of temperature',.true.)
 
         Else If (word1(1:5) == 'keinf') Then
 
@@ -2260,9 +2261,9 @@ Subroutine read_control                                &
         ! electronic thermal conductivity given as constant value
 
           Call get_word(record,word)
-          Ka0 = word_2_real(word)
+          ttm%Ka0 = word_2_real(word)
           Write(messages(1),'(a)') 'electronic thermal conductivity set to constant value'
-          Write(messages(2),'(a,1p,e12.4)') 'electronic t.c. (W m^-1 K^-1) ',Ka0
+          Write(messages(2),'(a,1p,e12.4)') 'electronic t.c. (W m^-1 K^-1) ',ttm%Ka0
           Call info(messages,2,.true.)
 
         Else If (word1(1:7) == 'kedrude') Then
@@ -2271,9 +2272,9 @@ Subroutine read_control                                &
         ! electronic temperature, giving t.c. at system temperature)
 
           Call get_word(record,word)
-          Ka0 = word_2_real(word)
+          ttm%Ka0 = word_2_real(word)
           Write(messages(1),'(a)') 'electronic thermal conductivity set to drude model'
-          Write(messages(2),'(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ',Ka0
+          Write(messages(2),'(a,1p,e12.4)') 't.c. at system thermo%temp. (W m^-1 K^-1) ',ttm%Ka0
           Call info(messages,2,.true.)
 
         Else If (word1(1:5) == 'ketab') Then
@@ -2291,9 +2292,9 @@ Subroutine read_control                                &
         ! (for non-metal systems)
 
           Call get_word(record,word)
-          Diff0 = word_2_real(word)
+          ttm%Diff0 = word_2_real(word)
           Write(messages(1),'(a)') 'electronic thermal diffusivity set to constant value'
-          Write(messages(2),'(a,1p,e12.4)') 'electronic t.d. (m^2 s^-1) ',Diff0
+          Write(messages(2),'(a,1p,e12.4)') 'electronic t.d. (m^2 s^-1) ',ttm%Diff0
           Call info(messages,2,.true.)
 
         Else If (word1(1:7) == 'derecip') Then
@@ -2302,12 +2303,12 @@ Subroutine read_control                                &
         ! of temperature (up to Fermi temperature), constant afterwards
 
           Call get_word(record,word)
-          Diff0 = word_2_real(word)
+          ttm%Diff0 = word_2_real(word)
           Call get_word(record,word)
-          Tfermi = word_2_real(word)
+          ttm%Tfermi = word_2_real(word)
           Write(messages(1),'(a)') 'electronic thermal diffusivity set to reciprocal function up to Fermi temperature'
-          Write(messages(2),'(a,1p,e12.4)') 'datum electronic t.d. (m^2 s^-1) ',Diff0
-          Write(messages(3),'(a,1p,e12.4)') 'Fermi temperature (K) ',Tfermi
+          Write(messages(2),'(a,1p,e12.4)') 'datum electronic t.d. (m^2 s^-1) ',ttm%Diff0
+          Write(messages(3),'(a,1p,e12.4)') 'Fermi temperature (K) ',ttm%Tfermi
           Call info(messages,3,.true.)
 
         Else If (word1(1:4) == 'detab') Then
@@ -2319,32 +2320,32 @@ Subroutine read_control                                &
         Else If (word1(1:8) == 'atomdens') Then
 
         ! user-specified atomic density, used to convert specific
-        ! heat capacities to volumetric values
+        ! heat capacities to ttm%volumetric values
 
           Call get_word(record,word)
-          cellrho = word_2_real(word)
-          Write(message,'(a,f10.4)') 'user-specified atomic density (A^-3) ',cellrho
+          ttm%cellrho = word_2_real(word)
+          Write(message,'(a,f10.4)') 'user-specified atomic density (A^-3) ',ttm%cellrho
           Call info(message,.true.)
 
         Else If (word1(1:7) == 'dyndens') Then
 
         ! dynamic calculation of atom density in active cells during
         ! TTM calculations, used to convert specific heat capacities
-        ! to volumetric values
+        ! to ttm%volumetric values
 
-          ttmdyndens = .true.
+          ttm%ttmdyndens = .true.
           Call info('dynamic calculations of average atomic density in active ionic cells',.true.)
 
-        Else If (word1(1:4) == 'amin') Then
+        Else If (word1(1:4) == 'ttm%amin') Then
 
         ! minimum number of atoms needed per ionic temperature cell
         ! to give definable ionic temperature (default = 1): smaller
         ! number deactivates ionic and electronic temperature cells
-        ! (by default, electronic energies are not redistributed)
+        ! (by default, electronic energies are not ttm%redistributed)
 
           Call get_word(record,word)
-          amin = Abs(Nint(word_2_real(word)))
-          Write(message,'(a,1p,i8)') 'min. atom no. for ionic cells ',amin
+          ttm%amin = Abs(Nint(word_2_real(word)))
+          Write(message,'(a,1p,i8)') 'min. atom no. for ionic cells ',ttm%amin
           Call info(message,.true.)
 
         Else If (word1(1:6) == 'redist') Then
@@ -2352,7 +2353,7 @@ Subroutine read_control                                &
         ! redistribution of electronic energy from deactivated cells 
         ! to active neighbours
 
-          If (redistribute) Then
+          If (ttm%redistribute) Then
             Write(messages(1),'(a)') 'redistributing energy from deactivated electronic cells into active neighbours'
             Write(messages(2),'(a)') '(requires at least one electronic temperature cell beyond ionic cells)'
             Call info(messages,2,.true.)
@@ -2363,23 +2364,23 @@ Subroutine read_control                                &
         ! electronic stopping power of projectile entering electronic system
 
           Call get_word(record,word)
-          dEdX = word_2_real(word)
-          Write(message,'(a,1p,e12.4)') 'elec. stopping power (eV/nm) ',dEdX
+          ttm%dEdX = word_2_real(word)
+          Write(message,'(a,1p,e12.4)') 'elec. stopping power (eV/nm) ',ttm%dEdX
           Call info(message,.true.)
 
-        Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'thermo%sigma') Then
+        Else If (word1(1:6) == 'sgauss' .or. word1(1:5) == 'thermo%ttm%sigma') Then
 
         ! gaussian spatial distribution for initial energy deposition into
         ! electronic system
 
-          sdepoType = 1
+          ttm%sdepoType = 1
           Call get_word(record,word)
-          sig = word_2_real(word)
+          ttm%sig = word_2_real(word)
           Call get_word(record,word)
-          sigmax = word_2_real(word)
+          ttm%sigmax = word_2_real(word)
           Write(messages(1),'(a)') 'initial gaussian spatial energy deposition in electronic system'
-          Write(messages(2),'(a,1p,e12.4)') 'thermo%sigma of distribution (nm) ',sig
-          Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (nm) ',sigmax*sig
+          Write(messages(2),'(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (nm) ',ttm%sig
+          Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (nm) ',ttm%sigmax*ttm%sig
           Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'sflat') Then
@@ -2387,35 +2388,35 @@ Subroutine read_control                                &
         ! homogeneous spatial distribution for initial energy deposition into
         ! electronic system
 
-          sdepoType = 2
+          ttm%sdepoType = 2
           Call info('initial homogeneous (flat) spatial energy deposition in electronic system',.true.)
 
         Else If (word1(1:5) == 'laser') Then
 
         ! homogeneous spatial distribution for initial energy deposition into
-        ! electronic system due to laser: setting absorbed fluence and
+        ! electronic system due to laser: setting absorbed ttm%fluence and
         ! penetration depth
 
-          sdepoType = 2
+          ttm%sdepoType = 2
           Call get_word(record,word)
-          fluence = word_2_real(word)
+          ttm%fluence = word_2_real(word)
           Call get_word(record,word)
-          pdepth = word_2_real(word)
+          ttm%pdepth = word_2_real(word)
           Call get_word(record,word)
-          If (word(1:4) == 'zdep') sdepoType = 3
-          Select Case (sdepoType)
+          If (word(1:4) == 'zdep') ttm%sdepoType = 3
+          Select Case (ttm%sdepoType)
           Case (2)
             Write(messages(1),'(a)') 'initial homogeneous (flat) spatial ' &
               //'energy deposition in electronic system due to laser'
             Write(messages(2),'(a,1p,e12.4)') &
-              'absorbed fluence (mJ cm^-2) ',fluence
-            Write(messages(3),'(a,1p,e12.4)') 'penetration depth (nm) ',pdepth
+              'absorbed ttm%fluence (mJ cm^-2) ',ttm%fluence
+            Write(messages(3),'(a,1p,e12.4)') 'penetration depth (nm) ',ttm%pdepth
           Case (3)
             Write(messages(1),'(a)') 'initial xy-homogeneous, z-exponential ' &
               //'decaying spatial energy deposition in electronic system due to laser'
             Write(messages(2),'(a,1p,e12.4)') &
-              'absorbed fluence at surface (mJ cm^-2) ',fluence
-            Write(messages(3),'(a,1p,e12.4)') 'penetration depth (nm) ',pdepth
+              'absorbed ttm%fluence at surface (mJ cm^-2) ',ttm%fluence
+            Write(messages(3),'(a,1p,e12.4)') 'penetration depth (nm) ',ttm%pdepth
           End Select
           Call info(messages,3,.true.)
 
@@ -2424,14 +2425,14 @@ Subroutine read_control                                &
         ! gaussian temporal distribution for energy deposition into
         ! electronic system
 
-          tdepoType = 1
+          ttm%tdepoType = 1
           Call get_word(record,word)
-          tdepo = word_2_real(word)
+          ttm%tdepo = word_2_real(word)
           Call get_word(record,word)
-          tcdepo = word_2_real(word)
+          ttm%tcdepo = word_2_real(word)
           Write(messages(1),'(a)') 'gaussian temporal energy deposition in electronic system'
-          Write(messages(2),'(a,1p,e12.4)') 'thermo%sigma of distribution (ps) ',tdepo
-          Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (ps) ',2.0_wp*tcdepo*tdepo
+          Write(messages(2),'(a,1p,e12.4)') 'thermo%ttm%sigma of distribution (ps) ',ttm%tdepo
+          Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (ps) ',2.0_wp*ttm%tcdepo*ttm%tdepo
           Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'nexp') Then
@@ -2439,14 +2440,14 @@ Subroutine read_control                                &
         ! decaying exponential temporal distribution for energy deposition into
         ! electronic system
 
-          tdepoType = 2
+          ttm%tdepoType = 2
           Call get_word(record,word)
-          tdepo = word_2_real(word)
+          ttm%tdepo = word_2_real(word)
           Call get_word(record,word)
-          tcdepo = word_2_real(word)
+          ttm%tcdepo = word_2_real(word)
           Write(messages(1),'(a)') 'decaying exponential temporal energy deposition in electronic system'
-          Write(messages(2),'(a,1p,e12.4)') 'tau of distribution (ps) ',tdepo
-          Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (ps) ',tcdepo*tdepo
+          Write(messages(2),'(a,1p,e12.4)') 'tau of distribution (ps) ',ttm%tdepo
+          Write(messages(3),'(a,1p,e12.4)') 'distribution cutoff (ps) ',ttm%tcdepo*ttm%tdepo
           Call info(messages,3,.true.)
 
         Else If (word1(1:5) == 'delta') Then
@@ -2454,7 +2455,7 @@ Subroutine read_control                                &
         ! dirac delta temporal distribution for energy deposition into
         ! electronic system
 
-          tdepoType = 3
+          ttm%tdepoType = 3
           Call info('dirac delta temporal energy deposition in electronic system',.true.)
 
         Else If (word1(1:5) == 'pulse') Then
@@ -2463,16 +2464,16 @@ Subroutine read_control                                &
         ! electronic system (defaults to dirac delta if pulse duration
         ! set to zero)
 
-          tdepoType = 4
+          ttm%tdepoType = 4
           Call get_word(record,word)
-          tdepo = word_2_real(word)
-          If (tdepo<=zero_plus) Then
-            tdepoType = 3
+          ttm%tdepo = word_2_real(word)
+          If (ttm%tdepo<=zero_plus) Then
+            ttm%tdepoType = 3
             Call info('square pulse temporal energy deposition in electronic' &
               //'system of zero duration: being treated as dirac delta')
           Else
             Write(messages(1),'(a)') 'square pulse temporal energy deposition in electronic system'
-            Write(messages(2),'(a,1p,e12.4)') 'pulse duration (ps) ',tdepo
+            Write(messages(2),'(a,1p,e12.4)') 'pulse duration (ps) ',ttm%tdepo
             Call info(messages,2,.true.)
           End If
 
@@ -2484,7 +2485,7 @@ Subroutine read_control                                &
         ! electronic temperature) or heterogeneously (using local 
         ! electronic temperature for each voxel)
 
-          Select Case (gvar)
+          Select Case (ttm%gvar)
           Case (1)
             Write(messages(1),'(a)') 'variable electron-phonon coupling values to be applied homogeneously'
           Case (2)
@@ -2501,37 +2502,37 @@ Subroutine read_control                                &
           Call get_word(record,word)
 
           If (word(1:8) == 'periodic') Then
-            bcTypeE = 1
+            ttm%bcTypeE = 1
             Call info('electronic temperature boundary conditions set as periodic',.true.)
           Else If (word(1:6) == 'dirich') Then
-            bcTypeE = 2
+            ttm%bcTypeE = 2
             Write(messages(1),'(a)') 'electronic temperature boundary conditions set as dirichlet:'
             Write(messages(2),'(a)') 'setting boundaries to system temperature'
             Call info(messages,2,.true.)
           Else If (word(1:7) == 'neumann') Then
-            bcTypeE = 3
+            ttm%bcTypeE = 3
             Write(messages(1),'(a)') 'electronic temperature boundary conditions set as neumann:'
             Write(messages(2),'(a)') 'zero energy flux at boundaries'
             Call info(messages,2,.true.)
           Else If (word(1:8) == 'xydirich') Then
-            bcTypeE = 4
+            ttm%bcTypeE = 4
             Write(messages(1),'(a)') 'electronic temperature boundary conditions set as dirichlet (xy), neumann (z):'
             Write(messages(2),'(a)') 'system temperature at x and y boundaries'
             Write(messages(3),'(a)') 'zero energy flux at z boundaries'
             Call info(messages,3,.true.)
           Else If (word(1:5) == 'robin') Then
-            bcTypeE = 5
+            ttm%bcTypeE = 5
             Call get_word(record,word)
-            fluxout = word_2_real(word)
+            ttm%fluxout = word_2_real(word)
             Write(messages(1),'(a)') 'electronic temperature boundary conditions set as robin:'
-            Write(messages(2),'(a,1p,e11.4)') 'temperature leakage at boundaries of ',fluxout
+            Write(messages(2),'(a,1p,e11.4)') 'temperature leakage at boundaries of ',ttm%fluxout
             Call info(messages,2,.true.)
           Else If (word(1:7) == 'xyrobin') Then
-            bcTypeE = 6
+            ttm%bcTypeE = 6
             Call get_word(record,word)
-            fluxout = word_2_real(word)
+            ttm%fluxout = word_2_real(word)
             Write(messages(1),'(a)') 'electronic temperature boundary conditions set as robin (xy), neumann (z):'
-            Write(messages(2),'(a,1p,e11.4)') 'temperature leakage at x and y boundaries of ',fluxout
+            Write(messages(2),'(a,1p,e11.4)') 'temperature leakage at x and y boundaries of ',ttm%fluxout
             Write(messages(3),'(a)') 'zero energy flux at z boundaries'
             Call info(messages,3,.true.)
           End If
@@ -2541,17 +2542,17 @@ Subroutine read_control                                &
         ! time offset in coupling electronic and ionic systems
 
           Call get_word(record,word)
-          ttmoffset = word_2_real(word)
-          Write(message,'(a,1p,e12.4)') 'electron-ion coupling offset (ps) ',ttmoffset
+          ttm%ttmoffset = word_2_real(word)
+          Write(message,'(a,1p,e12.4)') 'electron-ion coupling offset (ps) ',ttm%ttmoffset
           Call info(message,.true.)
 
-        Else If (word1(1:6) == 'oneway') Then
+        Else If (word1(1:6) == 'ttm%oneway') Then
 
         ! one-way electron-phonon coupling in thermostat and thermal
         ! diffusion: only apply when electronic temperature exceeds
         ! ionic temperature
 
-          oneway = .true.
+          ttm%oneway = .true.
           Call info('one-way electron-phonon coupling option switched on',.true.)
 
         Else If (word1(1:5) == 'stats') Then
@@ -2560,9 +2561,9 @@ Subroutine read_control                                &
         ! electronic energy) file option and output frequency
 
           Call get_word(record,word)
-          ttmstats = Abs(Nint(word_2_real(word)))
+          ttm%ttmstats = Abs(Nint(word_2_real(word)))
           Write(messages(1),'(a)') 'ttm statistics file option on'
-          Write(messages(2),'(a,i10)') 'ttm statistics file interval ',ttmstats
+          Write(messages(2),'(a,i10)') 'ttm statistics file interval ',ttm%ttmstats
           Call info(messages,2,.true.)
 
         Else If (word1(1:4) == 'traj') Then
@@ -2571,9 +2572,9 @@ Subroutine read_control                                &
         ! temperature profile) file option and output frequency
 
           Call get_word(record,word)
-          ttmtraj = Abs(Nint(word_2_real(word)))
+          ttm%ttmtraj = Abs(Nint(word_2_real(word)))
           Write(messages(1),'(a)') 'ttm trajectory (temperature profile) file option on'
-          Write(messages(2),'(a,i10)') 'ttm trajectory file interval',ttmtraj
+          Write(messages(2),'(a,i10)') 'ttm trajectory file interval',ttm%ttmtraj
           Call info(messages,2,.true.)
 
         End If
@@ -3050,7 +3051,7 @@ Subroutine read_control                                &
     Else
       Call info('Integration : Leapfrog Verlet',.true.)
     End If
-    If (l_ttm) Then
+    If (ttm%l_ttm) Then
       Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
       Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',thermo%chi_ep
       Write(messages(3),'(a,1p,e12.4)') 'e-stopping friction (ps^-1) ',thermo%chi_es
@@ -3059,7 +3060,7 @@ Subroutine read_control                                &
     Else
       Call info('Ensemble : NVE (Microcanonical)',.true.)
     End If
-    If (l_ttm) thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
+    If (ttm%l_ttm) thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
     lens=.true.
   End If
 
@@ -3069,7 +3070,7 @@ Subroutine read_control                                &
 ! standard Langevin thermostat (if supplied), and use of
 ! thermal velocities only for thermostat
 
-  If (l_ttm .and. thermo%ensemble/=ENS_NVT_LANGEVIN_INHOMO) Then
+  If (ttm%l_ttm .and. thermo%ensemble/=ENS_NVT_LANGEVIN_INHOMO) Then
     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
     If (thermo%ensemble==ENS_NVT_LANGEVIN .or. &
         thermo%ensemble==ENS_NPT_LANGEVIN .or. &
@@ -3083,9 +3084,9 @@ Subroutine read_control                                &
     Write(messages(4),'(a,1p,e12.4)') 'e-stopping velocity (A ps^-1)',thermo%vel_es2
     Call info(messages,4,.true.)
 
-    If (ttmthvel) Then
+    If (ttm%ttmthvel) Then
       Call info('applying to thermal velocities in all directions',.true.)
-    Else If (ttmthvelz) Then
+    Else If (ttm%ttmthvelz) Then
       Call info('applying to total velocities in x and y directions, thermal velocities in z direction',.true.)
     Else
       Call info('applying to total velocities in all directions',.true.)
@@ -3187,11 +3188,11 @@ Subroutine read_control                                &
 
 ! report no vom option: its use recommended with ttm
 
-   If (.not.config%l_vom .and. .not.l_ttm) Then
+   If (.not.config%l_vom .and. .not.ttm%l_ttm) Then
     Call info('no vom option on - COM momentum removal will be abandoned',.true.)
     Call warning('this may lead to a build up of the COM momentum and a' &
       //'manifestation of the "flying ice-cube" effect',.true.)
-  Else If (config%l_vom .and. l_ttm) Then
+  Else If (config%l_vom .and. ttm%l_ttm) Then
     Call info('no vom option off - COM momentum removal will be used',.true.)
     Call warning('this may lead to incorrect dynamic behaviour for' &
       //'two-temperature model: COM momentum removal recommended',.true.)
@@ -3493,7 +3494,7 @@ Subroutine read_control                                &
   End If
 
   thermo%vel_es2 = thermo%vel_es2 * thermo%vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
-  amin = Max (amin, 1)        ! minimum number of atoms for ttm ionic temperature cell
+  ttm%amin = Max (ttm%amin, 1)        ! minimum number of atoms for ttm ionic temperature cell
 
 !!! ERROR CHECKS !!!
 ! Temperature
@@ -3514,7 +3515,7 @@ Subroutine read_control                                &
   End IF
 
   If (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO ) Then
-    If (gvar==0 .and. thermo%chi_ep <= zero_plus) Call error(462)
+    If (ttm%gvar==0 .and. thermo%chi_ep <= zero_plus) Call error(462)
     If (Abs(thermo%chi_es) <= zero_plus) Then
       Call info('assuming no electronic stopping in inhomogeneous Langevin thermostat',.true.)
     End If
@@ -3589,87 +3590,87 @@ Subroutine read_control                                &
 ! already specified and electron-phonon friction
 ! conversion factor (to calculate thermo%chi_ep from G_ep values)
 
-  If (cellrho<=zero_plus) cellrho = sysrho
-  If (cellrho>zero_plus) Then
-    rcellrho = 1.0_wp/cellrho
+  If (ttm%cellrho<=zero_plus) ttm%cellrho = ttm%sysrho
+  If (ttm%cellrho>zero_plus) Then
+    ttm%rcellrho = 1.0_wp/ttm%cellrho
   Else
-    rcellrho = 0.0_wp
+    ttm%rcellrho = 0.0_wp
   End If
 
-  epc_to_chi = 1.0e-12_wp*Jm3K_to_kBA3/3.0_wp
-  If (.not. ttmdyndens) epc_to_chi = epc_to_chi*rcellrho
+  ttm%epc_to_chi = 1.0e-12_wp*ttm%Jm3K_to_kBA3/3.0_wp
+  If (.not. ttm%ttmdyndens) ttm%epc_to_chi = ttm%epc_to_chi*ttm%rcellrho
 
 ! Check sufficient parameters are specified for TTM electronic specific
 ! heats, thermal conductivity/diffusivity, energy loss and laser deposition
 
-  If (ttmdyndens) CeType = CeType + 4
-  Select Case (CeType)
+  If (ttm%ttmdyndens) ttm%CeType = ttm%CeType + 4
+  Select Case (ttm%CeType)
   Case (0)
   ! constant electronic specific heat: will convert from kB/atom to kB/A^3
   ! by multiplication of atomic density
-    Ce0 = Ce0*cellrho
+    ttm%Ce0 = ttm%Ce0*ttm%cellrho
   Case (1)
   ! hyperbolic tangent electronic specific heat: multiplier will be converted
   ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
-    sh_A = sh_A*cellrho
-    sh_B = sh_B*1.0e-4_wp
+    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(671)
+    ttm%sh_A = ttm%sh_A*ttm%cellrho
+    ttm%sh_B = ttm%sh_B*1.0e-4_wp
   Case (2)
   ! linear electronic specific heat to Fermi temperature: maximum
   ! value will be converted from kB/atom to kB/A^3
-    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
-    Cemax = Cemax*cellrho
+    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(671)
+    ttm%Cemax = ttm%Cemax*ttm%cellrho
   Case (4)
   ! constant electronic specific heat: will convert from kB/atom to kB/A^3
   ! by multiplication of atomic density
   Case (5)
   ! hyperbolic tangent electronic specific heat: multiplier will be converted
   ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-    If (Abs(sh_A) <= zero_plus .or. Abs(sh_B) <= zero_plus) Call error(671)
-    sh_B = sh_B*1.0e-4_wp
+    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(671)
+    ttm%sh_B = ttm%sh_B*1.0e-4_wp
   Case (6)
   ! linear electronic specific heat to Fermi temperature: maximum
   ! value will be converted from kB/atom to kB/A^3
-    If (Abs(Tfermi) <= zero_plus .or. Abs(Cemax) <= zero_plus) Call error(671)
+    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(671)
   End Select
 
-  Select Case (KeType)
+  Select Case (ttm%KeType)
   ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
   ! to kB ps^-1 A^-1
   Case (1,2)
-    If (isMetal .and. Abs(Ka0) <= zero_plus) Call error(672)
-    Ka0 = Ka0*JKms_to_kBAps
+    If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(672)
+    ttm%Ka0 = ttm%Ka0*ttm%JKms_to_kBAps
   End Select
 
-  Select Case (DeType)
+  Select Case (ttm%DeType)
   Case (1)
   ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-    If (.not. isMetal .and. Abs(Diff0) <= zero_plus) Call error(673)
-    Diff0 = Diff0*1.0e8_wp
+    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(673)
+    ttm%Diff0 = ttm%Diff0*1.0e8_wp
   Case (2)
   ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-  ! and Diff0 scaled with system temperature
-    If (.not. isMetal .and. Abs(Diff0) <= zero_plus .or. Abs(Tfermi) <= zero_plus) Call error(673)
-    Diff0 = Diff0*thermo%temp*1.0e8_wp
+  ! and ttm%Diff0 scaled with system temperature
+    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(673)
+    ttm%Diff0 = ttm%Diff0*thermo%temp*1.0e8_wp
   End Select
 
   ! spatial deposition (gaussian) standard deviation: convert from nm to A
-  sig = sig*10.0_wp
+  ttm%sig = ttm%sig*10.0_wp
 
   ! penetration depth: convert from nm to A
-  If ((sdepoType == 2 .and. Abs(dEdX) <= zero_plus .and. Abs(pdepth-1.0_wp)<=zero_plus) .or. &
-      (sdepoType == 3 .and. Abs(pdepth-1.0_wp) <= zero_plus)) &
+  If ((ttm%sdepoType == 2 .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth-1.0_wp)<=zero_plus) .or. &
+      (ttm%sdepoType == 3 .and. Abs(ttm%pdepth-1.0_wp) <= zero_plus)) &
   Call warning(510,0.0_wp,0.0_wp,0.0_wp)
-  pdepth = 10.0_wp*pdepth
+  ttm%pdepth = 10.0_wp*ttm%pdepth
 
 
   ! electronic stopping power: convert from eV/nm to eV/A
-  ! fluence: convert from mJ cm^-2 to eV A^-2
-  If (sdepoType>0 .and. sdepoType<3 .and. (Abs(dEdx) <= zero_plus .or. Abs(fluence)<zero_plus)) &
+  ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
+  If (ttm%sdepoType>0 .and. ttm%sdepoType<3 .and. (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence)<zero_plus)) &
   Call warning(515,0.0_wp,0.0_wp,0.0_wp)
 
-  fluence = fluence*mJcm2_to_eVA2
-  dEdX = 0.1_wp*dEdX
+  ttm%fluence = ttm%fluence*ttm%mJcm2_to_eVA2
+  ttm%dEdX = 0.1_wp*ttm%dEdX
 
 End Subroutine read_control
 
@@ -3679,7 +3680,7 @@ Subroutine scan_control                                    &
            mxgana,         &
            l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
            rbin,                          &
-           nstfce,cshell,stats,  &
+  nstfce,ttm,cshell,stats,  &
            thermo,green,devel,msd_data,met,pois,bond,angle, &
            dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
 
@@ -3698,7 +3699,7 @@ Subroutine scan_control                                    &
 ! contrib   - a.b.g.chalk march 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+  Type( ttm_type ), Intent( InOut ) :: ttm
   Logical,           Intent( InOut ) :: l_n_e
   Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: max_rigid,imcon
@@ -3823,35 +3824,35 @@ Subroutine scan_control                                    &
 
 ! default switch for two-temperature model (ttm)
 
-  l_ttm = .false.
+  ttm%l_ttm = .false.
 
 ! default switch for redistribution of energy from
 ! deactivated electronic cells for ttm
 
-  redistribute = .false.
+  ttm%redistribute = .false.
 
 ! default switches for removing centre-of-mass motion
 ! when applying inhomogeneous Langevin thermostat with ttm
 
-  ttmthvel  = .true.
-  ttmthvelz = .false.
+  ttm%ttmthvel  = .true.
+  ttm%ttmthvelz = .false.
 
 ! default values for ttm ionic and electronic voxel grid sizes
 
-  ntsys(3)  = 10
-  eltsys(1) = 50
-  eltsys(2) = 50
-  eltsys(3) = 50
+  ttm%ntsys(3)  = 10
+  ttm%eltsys(1) = 50
+  ttm%eltsys(2) = 50
+  ttm%eltsys(3) = 50
 
 ! default ttm heat capacity, conductivity and diffusivity types
 
-  CeType = 0
-  KeType = 0
-  DeType = 0
+  ttm%CeType = 0
+  ttm%KeType = 0
+  ttm%DeType = 0
 
 ! default ttm electron-phonon coupling type
 
-  gvar = 0
+  ttm%gvar = 0
 
 ! Set safe flag
 
@@ -4171,7 +4172,7 @@ Subroutine scan_control                                    &
 
      Else If (word(1:3) == 'ttm') Then
 
-        l_ttm = .true.
+        ttm%l_ttm = .true.
 
         Call get_word(record,word)
 
@@ -4182,7 +4183,7 @@ Subroutine scan_control                                    &
         ! CITs in x- and y-directions
 
           Call get_word(record,word)
-          ntsys(3) = Abs(Nint(word_2_real(word)))
+          ttm%ntsys(3) = Abs(Nint(word_2_real(word)))
 
         Else If (word(1:4) == 'ncet') Then
 
@@ -4190,107 +4191,107 @@ Subroutine scan_control                                    &
         ! (CET) in x-, y- and z-directions
 
           Call get_word(record,word)
-          eltsys(1) = Abs(Nint(word_2_real(word)))
+          ttm%eltsys(1) = Abs(Nint(word_2_real(word)))
           Call get_word(record,word)
-          eltsys(2) = Abs(Nint(word_2_real(word)))
+          ttm%eltsys(2) = Abs(Nint(word_2_real(word)))
           Call get_word(record,word)
-          eltsys(3) = Abs(Nint(word_2_real(word)))
+          ttm%eltsys(3) = Abs(Nint(word_2_real(word)))
 
         Else If (word1(1:5) == 'metal') Then
 
         ! sets properties of electronic subsystem as a metal
 
-          isMetal = .true.
+          ttm%isMetal = .true.
 
         Else If (word1(1:8) == 'nonmetal') Then
 
         ! sets properties of electronic subsystem as a non-metal
 
-          isMetal = .false.
+          ttm%isMetal = .false.
 
         Else If (word(1:7) == 'ceconst') Then
 
         ! electronic specific heat capacity given as constant value
 
-          CeType = 0
+          ttm%CeType = 0
 
         Else If (word(1:6) == 'cetanh') Then
 
         ! electronic specific heat capacity given as tanh function
 
-          CeType = 1
+          ttm%CeType = 1
 
         Else If (word(1:5) == 'celin') Then
 
         ! electronic specific heat capacity given as linear function
         ! up to Fermi temperature, constant afterwards
 
-          CeType = 2
+          ttm%CeType = 2
 
         Else If (word(1:5) == 'cetab') Then
 
-        ! electronic volumetric heat capacity given in tabulated form
+        ! electronic ttm%volumetric heat capacity given in tabulated form
 
-          CeType = 3
+          ttm%CeType = 3
 
         Else If (word(1:5) == 'keinf') Then
 
         ! infinite electronic thermal conductivity
 
-          DeType = 0
-          KeType = 0
-          isMetal = .true.
+          ttm%DeType = 0
+          ttm%KeType = 0
+          ttm%isMetal = .true.
 
         Else If (word(1:7) == "keconst") Then
 
         ! electronic thermal conductivity given as constant value
 
-          DeType = 0
-          KeType = 1
-          isMetal = .true.
+          ttm%DeType = 0
+          ttm%KeType = 1
+          ttm%isMetal = .true.
 
         Else If (word(1:7) == 'kedrude') Then
 
         ! electronic thermal conductivity given as drude model (propertional to
         ! electronic temperature, giving t.c. at system temperature)
 
-          DeType = 0
-          KeType = 2
-          isMetal = .true.
+          ttm%DeType = 0
+          ttm%KeType = 2
+          ttm%isMetal = .true.
 
         Else If (word(1:5) == 'ketab') Then
 
         ! electronic thermal conductivity given in tabulated form
 
-          DeType = 0
-          KeType = 3
-          isMetal = .true.
+          ttm%DeType = 0
+          ttm%KeType = 3
+          ttm%isMetal = .true.
 
         Else If (word(1:4) == 'diff' .or. word(1:7)=='deconst') Then
 
         ! electronic thermal diffusivity given as constant value
         ! (for non-metal systems)
 
-          KeType = 1
-          DeType = 1
-          isMetal = .false.
+          ttm%KeType = 1
+          ttm%DeType = 1
+          ttm%isMetal = .false.
 
         Else If (word(1:7) == 'derecip') Then
 
         ! electronic thermal diffusivity given as reciprocal function
         ! of temperature (up to Fermi temperature), constant afterwards
 
-          KeType = 1
-          DeType = 2
-          isMetal = .false.
+          ttm%KeType = 1
+          ttm%DeType = 2
+          ttm%isMetal = .false.
 
         Else If (word(1:4) == 'detab') Then
 
         ! electronic thermal diffusivity given in tabulated form
 
-          KeType = 1
-          DeType = 3
-          isMetal = .false.
+          ttm%KeType = 1
+          ttm%DeType = 3
+          ttm%isMetal = .false.
 
         Else If (word(1:4) == 'varg') Then
 
@@ -4302,9 +4303,9 @@ Subroutine scan_control                                    &
 
           Call get_word(record,word)
           If (word(1:4) == 'homo') Then
-            gvar = 1
+            ttm%gvar = 1
           Else If (word(1:6) == 'hetero') Then
-            gvar = 2
+            ttm%gvar = 2
           End If
 
         Else If (word(1:7) == 'nothvel') Then
@@ -4312,8 +4313,8 @@ Subroutine scan_control                                    &
         ! option to switch off centre-of-mass motion correction to
         ! velocities used in inhomogeneous Langevin thermostat
 
-          ttmthvel = .false.
-          ttmthvelz = .false.
+          ttm%ttmthvel = .false.
+          ttm%ttmthvelz = .false.
 
         Else If (word(1:6) == 'thvelz') Then
 
@@ -4321,17 +4322,17 @@ Subroutine scan_control                                    &
         ! z components of velocities, when used in inhomogeneous
         ! Langevin thermostat
 
-          ttmthvelz = .true.
-          ttmthvel = .true.
+          ttm%ttmthvelz = .true.
+          ttm%ttmthvel = .true.
 
         Else If (word(1:6) == 'redist') Then
 
-        ! redistribute electronic energy from any deactivated cells
+        ! ttm%redistribute electronic energy from any deactivated cells
         ! to active neighbouring cells: note that this requires overlap
         ! of electronic and ionic temperature grids in at least
         ! x- and y-directions
 
-          redistribute = .true.
+          ttm%redistribute = .true.
 
         End If
 
