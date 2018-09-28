@@ -25,7 +25,7 @@ Module system
   Use parse,        Only : tabs_2_blanks, get_word, strip_blanks, &
                                   lower_case, word_2_real
   Use netcdf_wrap,  Only : netcdf_param
-  Use io,           Only : io_set_parameters,        &
+  Use io,           Only : io_set_parameters,io_type,        &
                                   io_get_parameters,        &
                                   io_init, io_nc_create,    &
                                   io_open, io_write_record, &
@@ -626,7 +626,7 @@ Module system
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
+Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
                          dihedral,inversion,sites,netcdf,rigid,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -645,6 +645,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( io_type ), Intent( InOut ) :: io
   Logical,           Intent( In    ) :: l_str
   Integer,           Intent( In    ) :: nx,ny,megatm
   Real( Kind = wp ), Intent( In    ) :: rcut
@@ -722,8 +723,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 
 ! Get write buffer size and line feed character
 
-  Call io_get_parameters( user_method_write      = io_write )
-  Call io_get_parameters( user_line_feed         = lf       )
+  Call io_get_parameters(io, user_method_write      = io_write )
+  Call io_get_parameters(io, user_line_feed         = lf       )
 
 ! Print elapsed time and option header
 
@@ -826,13 +827,13 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
          io_write == IO_WRITE_SORTED_DIRECT   .or. &
          io_write == IO_WRITE_SORTED_NETCDF) Then
 
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_delete( fcfg(1:Len_Trim(fcfg) ),comm )
+        Call io_set_parameters(io, user_comm = comm_self )
+        Call io_init(io, recsz )
+        Call io_delete(io, fcfg(1:Len_Trim(fcfg) ),comm )
         If (io_write == IO_WRITE_SORTED_NETCDF) Then
           Call io_nc_create( netcdf, comm_self, fcfg(1:Len_Trim(fcfg)), config%cfgname, megatm*nall )
         End If
-        Call io_open( io_write, comm_self, fcfg(1:Len_Trim(fcfg)), mode_wronly + mode_create, fh )
+        Call io_open(io, io_write, comm_self, fcfg(1:Len_Trim(fcfg)), mode_wronly + mode_create, fh )
 
      Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
               io_write == IO_WRITE_SORTED_MASTER ) Then
@@ -853,28 +854,28 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
               io_write == IO_WRITE_SORTED_DIRECT) Then
 
         Write(record2, Fmt='(a72,a1)') config%cfgname(1:72),lf
-        Call io_write_record( fh, Int(0,offset_kind), record2 )
+        Call io_write_record(io, fh, Int(0,offset_kind), record2 )
 
         Write(record2, Fmt='(3i10,a42,a1)') 0,config%imcon,nall*megatm,Repeat(' ',42),lf
-        Call io_write_record( fh, Int(1,offset_kind), record2 )
+        Call io_write_record(io, fh, Int(1,offset_kind), record2 )
 
         Write(record2, Fmt='(3f20.10,a12,a1)') fx*config%cell(1),fx*config%cell(2),fx*config%cell(3),Repeat(' ',12),lf
-        Call io_write_record( fh, Int(2,offset_kind), record2 )
+        Call io_write_record(io, fh, Int(2,offset_kind), record2 )
 
         Write(record2, Fmt='(3f20.10,a12,a1)') fy*config%cell(4),fy*config%cell(5),fy*config%cell(6),Repeat(' ',12),lf
-        Call io_write_record( fh, Int(3,offset_kind), record2 )
+        Call io_write_record(io, fh, Int(3,offset_kind), record2 )
 
         Write(record2, Fmt='(3f20.10,a12,a1)') fz*config%cell(7),fz*config%cell(8),fz*config%cell(9),Repeat(' ',12),lf
-        Call io_write_record( fh, Int(4,offset_kind), record2 )
+        Call io_write_record(io, fh, Int(4,offset_kind), record2 )
 
      Else If (io_write == IO_WRITE_SORTED_NETCDF) Then
 
         i=1 ! For config there is only one frame
 
-        Call io_nc_put_var( 'time'           , fh, 0.0_wp, i, 1 )
-        Call io_nc_put_var( 'step'           , fh,      0, i, 1 )
-        Call io_nc_put_var( 'datalevel'      , fh,      0, i, 1 )
-        Call io_nc_put_var( 'imageconvention', fh,  config%imcon, i, 1 )
+        Call io_nc_put_var(io, 'time'           , fh, 0.0_wp, i, 1 )
+        Call io_nc_put_var(io, 'step'           , fh,      0, i, 1 )
+        Call io_nc_put_var(io, 'datalevel'      , fh,      0, i, 1 )
+        Call io_nc_put_var(io, 'imageconvention', fh,  config%imcon, i, 1 )
 
         cell_vecs( :, 1 ) = fx * config%cell( 1:3 )
         cell_vecs( :, 2 ) = fy * config%cell( 4:6 )
@@ -889,9 +890,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
         angles ( 3 ) = Acos( celprp( 4 ) )
         angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
 
-        Call io_nc_put_var( 'config%cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-        Call io_nc_put_var( 'config%cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
-        Call io_nc_put_var( 'config%cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
+        Call io_nc_put_var(io, 'config%cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
+        Call io_nc_put_var(io, 'config%cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
+        Call io_nc_put_var(io, 'config%cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
 
      Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
               io_write == IO_WRITE_SORTED_MASTER ) Then
@@ -914,8 +915,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
       io_write == IO_WRITE_SORTED_NETCDF) Then
 
      If (comm%idnode == 0) Then
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
      End If
 
      Allocate ( atmnam_scaled( 1:config%natms * nall ), ltg_scaled( 1:config%natms * nall ), Stat = fail(1) )
@@ -1540,9 +1541,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
                           If (io_write == IO_WRITE_UNSORTED_DIRECT .or. &
                               io_write == IO_WRITE_SORTED_DIRECT) Then
 
-                             Call io_write_record( fh, Int(rec,offset_kind), record2 )
+                             Call io_write_record(io, fh, Int(rec,offset_kind), record2 )
                              rec=rec+Int(1,li)
-                             Call io_write_record( fh, Int(rec,offset_kind), record3 )
+                             Call io_write_record(io, fh, Int(rec,offset_kind), record3 )
 
                           Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
                                    io_write == IO_WRITE_SORTED_MASTER) Then
@@ -1616,9 +1617,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
            io_write == IO_WRITE_SORTED_MPIIO   .or. &
            io_write == IO_WRITE_SORTED_NETCDF) Then
 
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fcfg(1:Len_Trim(fcfg)), mode_wronly, fh )
+     Call io_set_parameters(io, user_comm = comm%comm )
+     Call io_init(io, recsz )
+     Call io_open(io, io_write, comm%comm, fcfg(1:Len_Trim(fcfg)), mode_wronly, fh )
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         top_skip = Int(5,offset_kind)
@@ -1626,7 +1627,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
         top_skip = Int(1,offset_kind) ! netCDF frame
      End If
 
-     Call io_write_sorted_file( fh, 0, IO_RESTART, top_skip, at_scaled, &
+     Call io_write_sorted_file(io, fh, 0, IO_RESTART, top_skip, at_scaled, &
           ltg_scaled, atmnam_scaled,                                    &
           (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /),                     &
           x_scaled, y_scaled, z_scaled,                                 &
@@ -1646,8 +1647,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
         End Select
      End If
 
-     Call io_close( fh )
-     Call io_finalize
+     Call io_close(io, fh )
+     Call io_finalize(io)
 
      Deallocate ( atmnam_scaled, ltg_scaled,    Stat = fail(1) )
      Deallocate ( x_scaled, y_scaled, z_scaled, Stat = fail(2) )
@@ -1659,8 +1660,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
   Else If (io_write == IO_WRITE_UNSORTED_DIRECT .or. &
            io_write == IO_WRITE_SORTED_DIRECT) Then
 
-     Call io_close( fh )
-     Call io_finalize
+     Call io_close(io, fh )
+     Call io_finalize(io)
 
   Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
            io_write == IO_WRITE_SORTED_MASTER) Then
@@ -1820,9 +1821,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,cshell,cons,bond,angle, &
 End Subroutine system_expand
 
 Subroutine system_revive                                      &
-           (rcut,rbin,megatm,nstep,tstep,time,tmst, &
-           stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity, &
-           rdf,netcdf,config,comm)
+  (rcut,rbin,megatm,nstep,tstep,time,io,tmst, &
+  stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity, &
+  rdf,netcdf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1836,6 +1837,7 @@ Subroutine system_revive                                      &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( io_type ), Intent( InOut ) :: io
   Integer,           Intent( In    ) :: megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst
   Type( stats_type ), Intent( InOut ) :: stats
@@ -2005,7 +2007,7 @@ Subroutine system_revive                                      &
   name = Trim(revcon) ! file name
   levcfg = 2      ! define level of information in REVCON
 
-  Call write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
+  Call write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,comm)
 
 ! node 0 handles I/O
 

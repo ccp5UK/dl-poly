@@ -20,7 +20,7 @@ Module defects
   Use configuration,     Only : configuration_type
   Use particle,          Only : corePart
   Use parse,             Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
-  Use io,                Only : io_set_parameters,        &
+  Use io,                Only : io_type,io_set_parameters,        &
                                 io_get_parameters,        &
                                 io_init, io_open,         &
                                 io_write_record,          &
@@ -397,7 +397,7 @@ End Subroutine defects_reference_export
 
 !> defects_reference_read
 
-Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
+Subroutine defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -410,6 +410,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Type( io_type ), Intent( InOut ) :: io
   Integer,              Intent( In    ) :: nstep
   Type( defects_type ), Intent( InOut ) :: dfcts
   Type( site_type ), Intent( In    ) :: sites
@@ -444,7 +445,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
 
 ! Get type of I/O for reading
 
-  Call io_get_parameters( user_method_read = io_read )
+  Call io_get_parameters(io, user_method_read = io_read )
 
 ! Define filename ASCII or netCDF
 
@@ -627,25 +628,25 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
 
 ! Open file
 
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
+     Call io_set_parameters(io, user_comm = comm%comm )
+     Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
 
      i=1 ! For config there is only one frame
 
-     Call io_nc_get_var( 'datalevel'      , fh, lvcfgr, i, 1  )
+     Call io_nc_get_var(io, 'datalevel'      , fh, lvcfgr, i, 1  )
 
-     Call io_nc_get_var( 'imageconvention', fh, imconr, i, 1  )
+     Call io_nc_get_var(io, 'imageconvention', fh, imconr, i, 1  )
 
 ! image conditions not compliant with DD and link-cell
 
      If (imconr == 4 .or. imconr == 5 .or. imconr == 7) Call error(300)
 
-     Call io_nc_get_var( 'config%cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-     dfcts%celr = Reshape( cell_vecs, (/ Size( dfcts%celr ) /) )
+     Call io_nc_get_var(io, 'config%cell'           , fh, cell_vecs, [1, 1, i], [3, 3, 1] )
+     dfcts%celr = Reshape( cell_vecs, [Size( dfcts%celr )] )
 
 ! Close REFERENCE
 
-     Call io_close( fh )
+     Call io_close(io, fh )
 
   End If
 
@@ -850,9 +851,9 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
 ! Open file
 
      If (fast) Then
-        Call io_set_parameters( user_comm = comm%comm )
-        Call io_init( recsz )
-        Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
+        Call io_set_parameters(io, user_comm = comm%comm )
+        Call io_init(io, recsz )
+        Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
      Else
         Open(Unit=nrefdt, File=fname)
      End If
@@ -866,13 +867,13 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
      End If
 
      Call defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
-       top_skip,dfcts,domain,comm)
+       top_skip,io,dfcts,domain,comm)
 
 ! Close REFERENCE
 
      If (fast) Then
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
      Else
         Close(Unit=nrefdt)
      End If
@@ -925,7 +926,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
 ! MATCH glitch fix
 
   If (.not.match) Then
-     Call defects_reference_write(fname,megref,dfcts,netcdf,config,comm)
+    Call defects_reference_write(fname,megref,io,dfcts,netcdf,config,comm)
      Go To 5
   End If
 
@@ -940,7 +941,7 @@ Subroutine defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
 End Subroutine defects_reference_read
 
 Subroutine defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
-    top_skip,dfcts,domain,comm)
+  top_skip,io,dfcts,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -953,6 +954,7 @@ Subroutine defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Type( io_type ), Intent( InOut ) :: io
   Logical,                           Intent( In    ) :: l_ind,l_str,fast
   Integer,                           Intent( In    ) :: lvcfgr,megref,fh
   Integer( Kind = offset_kind ),     Intent( In    ) :: top_skip
@@ -1004,9 +1006,9 @@ Subroutine defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
 
 ! Get reading method, total number of I/O heads and buffer size
 
-  Call io_get_parameters( user_method_read      = io_read          )
-  Call io_get_parameters( user_n_io_procs_read  = n_read_procs_use )
-  Call io_get_parameters( user_buffer_size_read = batsz            )
+  Call io_get_parameters(io, user_method_read      = io_read          )
+  Call io_get_parameters(io, user_n_io_procs_read  = n_read_procs_use )
+  Call io_get_parameters(io, user_buffer_size_read = batsz            )
 
   fail = 0 ! fail initialisation
 
@@ -1144,7 +1146,7 @@ Subroutine defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
                  If (.not.fast) Then
                     Read(Unit=nrefdt, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
-                    Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
+                    Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
                     rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                  End If
               End If
@@ -1175,7 +1177,7 @@ Subroutine defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
                  If (.not.fast) Then
                     Read(Unit=nrefdt, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
-                    Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
+                    Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
                     rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                  End If
               End If
@@ -1194,7 +1196,7 @@ Subroutine defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
                     If (.not.fast) Then
                        Read(Unit=nrefdt, Fmt=forma) rec_buff( :, 1:recs_to_read )
                     Else
-                       Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
+                       Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
                        rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                     End If
                  End If
@@ -1211,7 +1213,7 @@ Subroutine defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
                        If (.not.fast) Then
                           Read(Unit=nrefdt, Fmt=forma) rec_buff( :, 1:recs_to_read )
                        Else
-                          Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
+                          Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, comm%ierr )
                           rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                        End If
                     End If
@@ -1234,20 +1236,20 @@ Subroutine defects_reference_read_parallel(lvcfgr,l_ind,l_str,megref,fast,fh, &
            If (to_read /= 0) Then
               frame = Int(top_skip,Kind(frame))
 
-              Call io_nc_get_var( 'atomnames', fh, rec_buff, (/ first_at( my_read_proc_num ) + 1, frame /), (/ 8, to_read, 1 /) )
+              Call io_nc_get_var(io, 'atomnames', fh, rec_buff, [first_at( my_read_proc_num ) + 1, frame], [8, to_read, 1] )
               Do i = 1, to_read
                  Do j = 1, Min( Len( chbuf_read ), Size( rec_buff, Dim = 1 ) )
                     chbuf_read( i )( j:j ) = rec_buff( j, i )
                  End Do
               End Do
               If (l_ind) Then
-                 Call io_nc_get_var( 'indices', fh, iwrk_read , (/ first_at( my_read_proc_num ) + 1, frame /), (/ to_read, 1 /) )
+                 Call io_nc_get_var(io, 'indices', fh, iwrk_read , [first_at( my_read_proc_num ) + 1, frame], [to_read, 1] )
               End If
 
-              start = (/ 1, first_at( my_read_proc_num ) + 1, frame /)
-              count = (/ 3, to_read, 1 /)
+              start = [1, first_at( my_read_proc_num ) + 1, frame]
+              count = [3, to_read, 1]
 
-              Call io_get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+              Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
            End If
 
         End If No_netCDF
@@ -1382,7 +1384,7 @@ Dispatch:  Do i=1,n_loc
         If (.not.fast) Then
            Read(Unit=nrefdt, Fmt=forma, Iostat=ierr) rec_buff( :, 1:recs_to_read )
         Else
-           Call io_read_batch( fh, rec_mpi_io, 1, rec_buff, ierr )
+           Call io_read_batch(io, fh, rec_mpi_io, 1, rec_buff, ierr )
         End If
         safe = (ierr /= 0)
      End If
@@ -1562,7 +1564,7 @@ Subroutine defects_reference_set_halo(cut,dfcts,domain,config,comm)
 End Subroutine defects_reference_set_halo
 
 
-Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
+Subroutine defects_reference_write(name,megref,io,dfcts,netcdf,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1575,6 +1577,7 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( io_type ), Intent( InOut ) :: io
   Character( Len = * ), Intent( In    ) :: name
   Integer,              Intent( In    ) :: megref
   Type( defects_type),  Intent( InOut ) :: dfcts
@@ -1615,10 +1618,10 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 
 ! Get write buffer size and line feed character
 
-  Call io_get_parameters( user_method_write      = io_write )
-  Call io_get_parameters( user_method_read       = io_read  )
-  Call io_get_parameters( user_buffer_size_write = batsz    )
-  Call io_get_parameters( user_line_feed         = lf       )
+  Call io_get_parameters(io, user_method_write      = io_write )
+  Call io_get_parameters(io, user_method_read       = io_read  )
+  Call io_get_parameters(io, user_buffer_size_write = batsz    )
+  Call io_get_parameters(io, user_line_feed         = lf       )
 
 ! Nasty fix here as this is a REWRITE!!!
 
@@ -1660,10 +1663,10 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_delete( name ,comm) ! Sort existence issues
-        Call io_open( io_write, comm_self, name, mode_wronly + mode_create, fh )
+        Call io_set_parameters(io, user_comm = comm_self )
+        Call io_init(io, recsz )
+        Call io_delete(io, name ,comm) ! Sort existence issues
+        Call io_open(io, io_write, comm_self, name, mode_wronly + mode_create, fh )
 
 ! Accumulate header
 
@@ -1690,10 +1693,10 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 
 ! Dump header
 
-        Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+        Call io_write_batch(io, fh, rec_mpi_io, jj, chbat )
 
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
 
      Else
 
@@ -1702,9 +1705,9 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
      End If
      Call gsync(comm)! Start of file (updated)
 
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, name, mode_wronly, fh )
+     Call io_set_parameters(io, user_comm = comm%comm )
+     Call io_init(io, recsz )
+     Call io_open(io, io_write, comm%comm, name, mode_wronly, fh )
 
 ! Get to real space
 
@@ -1738,14 +1741,14 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 ! Dump batch and update start of file
 
         If (jj + 2 >= batsz .or. i == dfcts%nrefs) Then
-           Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+           Call io_write_batch(io, fh, rec_mpi_io, jj, chbat )
            rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
            jj=0
         End If
      End Do
 
-     Call io_close( fh )
-     Call io_finalize
+     Call io_close(io, fh )
+     Call io_finalize(io)
 
 ! UNSORTED Serial Direct Access FORTRAN
 
@@ -1900,13 +1903,13 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_delete( name, comm ) ! Sort existence issues
+        Call io_set_parameters(io, user_comm = comm_self )
+        Call io_init(io, recsz )
+        Call io_delete(io, name, comm ) ! Sort existence issues
         If (io_write == IO_WRITE_SORTED_NETCDF) Then
           Call io_nc_create( netcdf, comm_self, name, config%cfgname, megref )
         End If
-        Call io_open( io_write, comm_self, name, mode_wronly + mode_create, fh )
+        Call io_open(io, io_write, comm_self, name, mode_wronly + mode_create, fh )
 
 ! Non netCDF
 
@@ -1915,16 +1918,16 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 ! Write header
 
            Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
-           Call io_write_record( fh, Int(jj,offset_kind), record )
+           Call io_write_record(io, fh, Int(jj,offset_kind), record )
            jj=jj+1
 
            Write(record, Fmt='(3i10,a42,a1)') 0,config%imcon,megref,Repeat(' ',42),lf
-           Call io_write_record( fh, Int(jj,offset_kind), record )
+           Call io_write_record(io, fh, Int(jj,offset_kind), record )
            jj=jj+1
 
            Do i = 0, 2
               Write( record, '( 3f20.10, a12, a1 )' ) config%cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
-              Call io_write_record( fh, Int(jj,offset_kind), record )
+              Call io_write_record(io, fh, Int(jj,offset_kind), record )
               jj=jj+1
            End Do
 
@@ -1932,15 +1935,15 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 
            jj=1 ! For config there is only one frame
 
-           Call io_nc_put_var( 'time'           , fh, 0.0_wp, jj, 1 )
-           Call io_nc_put_var( 'step'           , fh,      0, jj, 1 )
-           Call io_nc_put_var( 'datalevel'      , fh,      0, jj, 1 )
-           Call io_nc_put_var( 'imageconvention', fh,  config%imcon, jj, 1 )
-           Call io_nc_put_var( 'timestep'       , fh, 0.0_wp, jj, 1 )
+           Call io_nc_put_var(io, 'time'           , fh, 0.0_wp, jj, 1 )
+           Call io_nc_put_var(io, 'step'           , fh,      0, jj, 1 )
+           Call io_nc_put_var(io, 'datalevel'      , fh,      0, jj, 1 )
+           Call io_nc_put_var(io, 'imageconvention', fh,  config%imcon, jj, 1 )
+           Call io_nc_put_var(io, 'timestep'       , fh, 0.0_wp, jj, 1 )
 
            Call dcell(config%cell,celprp) ! get config%cell properties
 
-           cell_vecs = Reshape( config%cell, (/ 3, 3 /) )
+           cell_vecs = Reshape( config%cell, [3, 3] )
 
            lengths( 1 ) = celprp( 1 )
            lengths( 2 ) = celprp( 2 )
@@ -1953,14 +1956,14 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 
 ! Print
 
-           Call io_nc_put_var( 'config%cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
-           Call io_nc_put_var( 'config%cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
-           Call io_nc_put_var( 'config%cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+           Call io_nc_put_var(io, 'config%cell'        , fh, cell_vecs, [1, 1, jj], [3, 3, 1] )
+           Call io_nc_put_var(io, 'config%cell_lengths', fh, lengths  , [   1, jj], [   3, 1] )
+           Call io_nc_put_var(io, 'config%cell_angles' , fh, angles   , [   1, jj], [   3, 1] )
 
         End If
 
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
 
      Else
 
@@ -1975,9 +1978,9 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 
 ! Write the rest
 
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, name, mode_wronly, fh )
+     Call io_set_parameters(io, user_comm = comm%comm )
+     Call io_init(io, recsz )
+     Call io_open(io, io_write, comm%comm, name, mode_wronly, fh )
 
 ! Get to real space
 
@@ -1994,10 +1997,10 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 ! Write the rest
 
      rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
-     Call io_write_sorted_file( fh, 0, IO_RESTART, rec_mpi_io, dfcts%nrefs,          &
-          dfcts%indr, dfcts%namr, (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), axx, ayy, azz, &
-          (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /),                            &
-          (/ 0.0_wp /), (/ 0.0_wp /), (/ 0.0_wp /), ierr )
+     Call io_write_sorted_file(io, fh, 0, IO_RESTART, rec_mpi_io, dfcts%nrefs,          &
+          dfcts%indr, dfcts%namr, [0.0_wp], [0.0_wp], [0.0_wp], axx, ayy, azz, &
+          [0.0_wp], [0.0_wp], [0.0_wp],                            &
+          [0.0_wp], [0.0_wp], [0.0_wp], ierr )
 
      If ( ierr /= 0 ) Then
         Select Case( ierr )
@@ -2012,8 +2015,8 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
         End Select
      End If
 
-     Call io_close( fh )
-     Call io_finalize
+     Call io_close(io, fh )
+     Call io_finalize(io)
 
 ! SORTED Serial Direct Access FORTRAN
 
@@ -2144,7 +2147,7 @@ Subroutine defects_reference_write(name,megref,dfcts,netcdf,config,comm)
 End Subroutine defects_reference_write
 
 !> defects_write
-Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
+Subroutine defects_write(keyres,ensemble,nstep,tstep,time,io,cshell,dfcts,neigh, &
     sites,netcdf,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2158,6 +2161,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( io_type ), Intent( InOut ) :: io
   Integer,              Intent( In    ) :: keyres,ensemble,nstep
   Real( Kind = wp )   , Intent( In    ) :: tstep,time
   Type( defects_type ), Intent( InOut ) :: dfcts
@@ -2193,9 +2197,9 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 ! Direction arrays for jumping around in link-cell space
 
   Integer, Dimension( 1:nsbcll ), Parameter :: &
-  nix = (/ 0,  -1,-1,-1, 0, 0, 0, 1, 1, 1, -1,-1,-1, 0, 0, 1, 1, 1, -1,-1,-1, 0, 0, 0, 1, 1, 1 /) , &
-  niy = (/ 0,  -1, 0, 1,-1, 0, 1,-1, 0, 1, -1, 0, 1,-1, 1,-1, 0, 1, -1, 0, 1,-1, 0, 1,-1, 0, 1 /) , &
-  niz = (/ 0,  -1,-1,-1,-1,-1,-1,-1,-1,-1,  0, 0, 0, 0, 0, 0, 0, 0,  1, 1, 1, 1, 1, 1, 1, 1, 1 /)
+  nix = [0,  -1,-1,-1, 0, 0, 0, 1, 1, 1, -1,-1,-1, 0, 0, 1, 1, 1, -1,-1,-1, 0, 0, 0, 1, 1, 1] , &
+  niy = [0,  -1, 0, 1,-1, 0, 1,-1, 0, 1, -1, 0, 1,-1, 1,-1, 0, 1, -1, 0, 1,-1, 0, 1,-1, 0, 1] , &
+  niz = [0,  -1,-1,-1,-1,-1,-1,-1,-1,-1,  0, 0, 0, 0, 0, 0, 0, 0,  1, 1, 1, 1, 1, 1, 1, 1, 1]
 
   Real( Kind = wp ),    Dimension( : ),    Allocatable :: dr
   Character( Len = 8 ), Dimension( : ),    Allocatable :: namv,nami
@@ -2215,9 +2219,9 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Get write buffer size and line feed character
 
-  Call io_get_parameters( user_method_write      = io_write )
-  Call io_get_parameters( user_buffer_size_write = batsz    )
-  Call io_get_parameters( user_line_feed         = lf       )
+  Call io_get_parameters(io, user_method_write      = io_write )
+  Call io_get_parameters(io, user_buffer_size_write = batsz    )
+  Call io_get_parameters(io, user_line_feed         = lf       )
 
 ! netCDF not implemented for DEFECTS.  Switch to DEFAULT temporarily.
 
@@ -2233,7 +2237,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Build lattice sites list from REFERENCE
      Call allocate_defects_arrays(dfcts)
-     Call defects_reference_read(nstep,dfcts,sites,netcdf,domain,config,comm)
+     Call defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
 ! the one provided in REFERENCE, a smaller halo(cutoff(rdef)) is to be set
@@ -2773,9 +2777,9 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
      j=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_open( io_write, comm_self, trim(dfcts%deffile), mode_wronly, fh )
+        Call io_set_parameters(io, user_comm = comm_self )
+        Call io_init(io, recsz )
+        Call io_open(io, io_write, comm_self, trim(dfcts%deffile), mode_wronly, fh )
 
         Write(record, Fmt='(a8,i10,2f20.6,i5,f7.3,a2,a1)') &
            'timestep',nstep,tstep,time,config%imcon,dfcts%rdef,Repeat(' ',2),lf
@@ -2802,10 +2806,10 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
 ! Dump header and cell information
 
-        Call io_write_batch( fh, rec_mpi_io, j, chbat )
+        Call io_write_batch(io, fh, rec_mpi_io, j, chbat )
 
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
 
      Else
 
@@ -2818,9 +2822,9 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
      dfcts%rec=dfcts%rec+Int(j,li)
 
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, trim(dfcts%deffile), mode_wronly, fh )
+     Call io_set_parameters(io, user_comm = comm%comm )
+     Call io_init(io, recsz )
+     Call io_open(io, io_write, comm%comm, trim(dfcts%deffile), mode_wronly, fh )
 
 ! Start of file
 
@@ -2842,7 +2846,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 ! Dump batch and update start of file
 
         If (j + 2 >= batsz .or. i == ni) Then
-           Call io_write_batch( fh, rec_mpi_io, j, chbat )
+           Call io_write_batch(io, fh, rec_mpi_io, j, chbat )
            rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
            j=0
         End If
@@ -2871,7 +2875,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 ! Dump batch and update start of file
 
         If (j + 2 >= batsz .or. i == nv) Then
-           Call io_write_batch( fh, rec_mpi_io, j, chbat )
+           Call io_write_batch(io, fh, rec_mpi_io, j, chbat )
            rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
            j=0
         End If
@@ -2882,11 +2886,11 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,cshell,dfcts,neigh, &
 
      If (comm%idnode == 0) Then
         Write(record, Fmt='(f7.3,a23,2i21,a1)') dfcts%rdef,Repeat(' ',23),dfcts%frm,dfcts%rec,lf
-        Call io_write_record( fh, Int(1,offset_kind), record )
+        Call io_write_record(io, fh, Int(1,offset_kind), record )
      End If
 
-     Call io_close( fh )
-     Call io_finalize
+     Call io_close(io, fh )
+     Call io_finalize(io)
 
   Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
            io_write == IO_WRITE_SORTED_MASTER) Then

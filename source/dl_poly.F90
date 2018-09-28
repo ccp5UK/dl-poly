@@ -61,7 +61,7 @@ program dl_poly
   ! SITE & CONFIG MODULES
 
   Use site, Only : site_type
-  Use configuration
+  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms,allocate_config_arrays
   Use kontrol, Only : read_control
 
   ! VNL module
@@ -75,14 +75,14 @@ program dl_poly
   ! INTERACTION MODULES
 
   Use core_shell, Only : core_shell_type,core_shell_relax,SHELL_RELAXED,SHELL_ADIABATIC,&
-                         core_shell_kinetic,core_shell_quench,core_shell_on_top,&
-                         core_shell_forces
+    core_shell_kinetic,core_shell_quench,core_shell_on_top,&
+    core_shell_forces
 
   Use pmf, only : pmf_type,pmf_quench
 
   Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_str_ss, &
-                           rigid_bodies_str__s,xscale,rigid_bodies_tags, &
-                           rigid_bodies_coms
+    rigid_bodies_str__s,xscale,rigid_bodies_tags, &
+    rigid_bodies_coms
 
   Use tethers, Only : tethers_type, tethers_forces
 
@@ -103,13 +103,13 @@ program dl_poly
   Use plumed, Only : plumed_type,plumed_init,plumed_finalize,plumed_apply
 
   Use external_field, Only : external_field_type, external_field_apply, &
-                             external_field_correct, &
-                             FIELD_NULL, FIELD_ELECTRIC, FIELD_SHEAR_OSCILLATING, &
-                             FIELD_SHEAR_CONTINUOUS, FIELD_GRAVITATIONAL, &
-                             FIELD_MAGNETIC, FIELD_SPHERE, FIELD_WALL, &
-                             FIELD_WALL_PISTON, FIELD_ZRES, FIELD_ZRES_MINUS, &
-                             FIELD_ZRES_PLUS, FIELD_ELECTRIC_OSCILLATING, &
-                             FIELD_UMBRELLA
+    external_field_correct, &
+    FIELD_NULL, FIELD_ELECTRIC, FIELD_SHEAR_OSCILLATING, &
+    FIELD_SHEAR_CONTINUOUS, FIELD_GRAVITATIONAL, &
+    FIELD_MAGNETIC, FIELD_SPHERE, FIELD_WALL, &
+    FIELD_WALL_PISTON, FIELD_ZRES, FIELD_ZRES_MINUS, &
+    FIELD_ZRES_PLUS, FIELD_ELECTRIC_OSCILLATING, &
+    FIELD_UMBRELLA
 
   ! STATISTICS MODULES
 
@@ -120,7 +120,7 @@ program dl_poly
     allocate_statistics_connect,statistics_connect_set, &
     statistics_connect_frames
   Use greenkubo, Only : greenkubo_type,allocate_greenkubo_arrays,vaf_compute, &
-                        vaf_collect,vaf_write
+    vaf_collect,vaf_write
 
   ! MSD MODULE
 
@@ -138,10 +138,10 @@ program dl_poly
 
   Use ttm
   Use ttm_utils
-  
+
   Use drivers
   Use errors_warnings, Only : init_error_system
-  
+
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
   Use ewald, Only : ewald_type
@@ -168,12 +168,12 @@ program dl_poly
   Use build_tplg, Only : build_tplg_intra
   use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type, &
-                         ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
-                         ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
-                         ENS_NVT_GENTLE, ENS_NVT_LANGEVIN_INHOMO, &
-                         ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
-                         ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
-                         ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
+    ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
+    ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
+    ENS_NVT_GENTLE, ENS_NVT_LANGEVIN_INHOMO, &
+    ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
+    ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
+    ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
   Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
   Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
   Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
@@ -198,7 +198,8 @@ program dl_poly
   Use stochastic_boundary, Only : stochastic_boundary_vv
   Use numerics, Only : seed_type
   Use trajectory, Only : trajectory_type
-    ! MAIN PROGRAM VARIABLES
+  Use io, Only : io_type
+  ! MAIN PROGRAM VARIABLES
   Implicit None
 
   ! newjob used for trajectory_write &
@@ -284,8 +285,9 @@ program dl_poly
   Type( seed_type ) :: seed
   Type( trajectory_type ) :: traj
   Type( kim_type ), Target :: kim_data
-  Type( rsd_type ), Target :: rsdsc
+  Type( rsd_type )  :: rsdsc
   Type( configuration_type ) :: config
+  Type( io_type) :: ios
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -347,13 +349,13 @@ program dl_poly
 
   ! TEST I/O
 
-  Call scan_control_io(netcdf,comm)
+  Call scan_control_io(ios,netcdf,comm)
 
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rbin,nstfce,width,sites%max_site,core_shells,cons,pmfs,stats, &
+    dvar,rbin,nstfce,width,sites%max_site,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
     rigid,electro,domain,config,ewld,kim_data,comm)
@@ -465,7 +467,7 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
 
-    Call origin_config(config,megatm,devel,netcdf,comm)
+    Call origin_config(config,megatm,ios,devel,netcdf,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -477,7 +479,7 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
 
-    Call scale_config(config,megatm,devel,netcdf,comm)
+    Call scale_config(config,megatm,ios,devel,netcdf,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -492,7 +494,7 @@ program dl_poly
     Call traj%init(key=0,freq=1,start=0)
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,megatm,nstep,tstep,time,stats%rsd,netcdf,config,traj,comm)
+    Call trajectory_write(keyres,megatm,nstep,tstep,time,ios,stats%rsd,netcdf,config,traj,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -501,7 +503,7 @@ program dl_poly
   ! Expand current system if opted for
 
   If (l_exp) Then
-    Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,core_shells, &
+    Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,ios,core_shells, &
       cons,bond,angle,dihedral,inversion,sites,netcdf,rigid,config,comm)
   End If
 
@@ -669,17 +671,17 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
+    Call w_md_vv(mxatdm,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
       netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,tmr)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
+      Call w_replay_historf(mxatdm,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
         fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
         kim_data,tmr)
     Else
-      Call w_replay_history(mxatdm,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
+      Call w_replay_history(mxatdm,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
         netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data)
     End If
@@ -740,7 +742,7 @@ program dl_poly
 
   If (lsim .and. (.not.devel%l_tor)) Then
     Call system_revive &
-      (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
+      (neigh%cutoff,rbin,megatm,nstep,tstep,time,ios,tmst, &
       stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
     If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
   End If
@@ -823,9 +825,10 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(flw,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
-      inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-      minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
+  Subroutine w_calculate_forces(flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+    inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
+    minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
+    Type( io_type ), Intent( InOut ) :: io
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -923,7 +926,8 @@ Contains
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
-  Subroutine w_write_options(rsdc,cshell,stat,sites,netcdf,domain,traj)
+  Subroutine w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj)
+    Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type(stats_type), Intent(InOut) :: stat
@@ -940,9 +944,10 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,rsdc,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
+  Subroutine w_md_vv(mxatdm_,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
     dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
     ext_field,rigid,domain,seed,traj,kim_data,tmr)
+    Type( io_type ), Intent( InOut ) :: io
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( rsd_type ), Intent( InOut ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw
@@ -974,9 +979,10 @@ Contains
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,rsdc,flw,cshell,cons,pmf,stat,thermo,msd_data, &
-      met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-      netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data)
+  Subroutine w_replay_history(mxatdm_,io,rsdc,flw,cshell,cons,pmf,stat,thermo,msd_data, &
+    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
+    netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data)
+    Type( io_type ), Intent( InOut ) :: io
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw
@@ -1018,11 +1024,12 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
+  Subroutine w_replay_historf(mxatdm_,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
     msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
     fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
     kim_data,tmr)
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
+    Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw
     Type( core_shell_type ), Intent( InOut ) :: cshell

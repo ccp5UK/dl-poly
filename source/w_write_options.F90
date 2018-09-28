@@ -5,25 +5,25 @@
 
 If (ltraj) Then
   Call trajectory_write(keyres,megatm,nstep,tstep,time, &
-    stat%rsd,netcdf,config,traj,comm)
+    io,stat%rsd,netcdf,config,traj,comm)
 End If
 
 If(dfcts(1)%ldef) Then
-  Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(1), &
+  Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,io,cshell,dfcts(1), &
     neigh,sites,netcdf,domain,config,comm)
   If (dfcts(2)%ldef) Then
-    Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell,dfcts(2), &
+    Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,io,cshell,dfcts(2), &
       neigh,sites,netcdf,domain,config,comm)
   End If
 End If
 
 If (msd_data%l_msd) Then
   Call msd_write(config,keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site, &
-    msd_data,comm)
+    io,msd_data,comm)
 End If
 
 If (rsdc%lrsd) Then
-  Call rsd_write(keyres,nstep,tstep,rsdc,time,cshell,stat%rsd,config,comm)
+  Call rsd_write(keyres,nstep,tstep,io,rsdc,time,cshell,stat%rsd,config,comm)
 End If
 
 If (green%samp > 0) Then

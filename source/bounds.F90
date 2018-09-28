@@ -41,6 +41,7 @@ Module bounds
   Use rigid_bodies, Only : rigid_bodies_type
   Use electrostatic, Only : electrostatic_type
   Use ewald, Only : ewald_type
+  Use io, Only : io_type
   Implicit None
 
   Private
@@ -51,7 +52,7 @@ Contains
 
 Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
            dvar,rbin,nstfce,      &
-           width,max_site,cshell,cons,pmf,stats,thermo,green,devel,      &
+  width,max_site,io,cshell,cons,pmf,stats,thermo,green,devel,      &
            msd_data,met,pois,bond,angle,dihedral,     &
            inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
            mpoles,ext_field,rigid,electro,domain,config,ewld,kim_data,comm)
@@ -74,6 +75,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
   Real( Kind = wp ), Intent(   Out ) :: dvar
   Real( Kind = wp ), Intent(   Out ) :: rbin,width
   Integer( Kind = wi ), Intent(   Out ) :: max_site
+  Type( io_type ), Intent( InOut ) :: io
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( constraints_type ), Intent( InOut ) :: cons
@@ -108,12 +110,12 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
   Logical           :: l_usr,l_n_r,lzdn,lext
   Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
-                       mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
+    mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
-                       dens0,dens,fdens,fdvar,  &
-                       test,vcell,tol,          &
-                       rcter,rctbp,rcfbp,       &
-                       xhi,yhi,zhi
+    dens0,dens,fdens,fdvar,  &
+    test,vcell,tol,          &
+    rcter,rctbp,rcfbp,       &
+    xhi,yhi,zhi
   Integer( Kind = wi ) :: mxgrid
   Character( Len = 256 ) :: message
 
@@ -130,7 +132,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! scan CONFIG file data
 
-  Call scan_config(config,megatm,config%imc_n,dvar,levcfg,xhi,yhi,zhi,domain,comm)
+  Call scan_config(config,megatm,config%imc_n,dvar,levcfg,xhi,yhi,zhi,io,domain,comm)
 
 ! halt execution for unsupported image conditions in DD
 ! checks for some inherited from DL_POLY_2 are though kept
@@ -765,7 +767,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
 ! decide on MXATMS while reading CONFIG and scan particle density
 
-  Call read_config(config,megatm,levcfg,l_ind,l_str,neigh%cutoff,dvar,xhi,yhi,zhi,dens0,dens,domain,comm)
+  Call read_config(config,megatm,levcfg,l_ind,l_str,neigh%cutoff,dvar,xhi,yhi,zhi,dens0,dens,io,domain,comm)
 
 ! Create f(fdvar,dens0,dens)
 

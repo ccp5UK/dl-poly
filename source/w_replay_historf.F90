@@ -60,7 +60,7 @@
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,traj,sites,domain,config,comm)
+     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,io,traj,sites,domain,config,comm)
 
      If (newjb) Then
         newjb = .false.
@@ -125,7 +125,7 @@
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(flw,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
+           Call w_calculate_forces(flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
              netcdf,minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
 
@@ -226,19 +226,19 @@
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
            If (ltraj) Call trajectory_write &
-           (keyres,megatm,nstep,tstep,time,stat%rsd,netcdf,config,traj,comm)
+             (keyres,megatm,nstep,tstep,time,io,stat%rsd,netcdf,config,traj,comm)
            If (dfcts(1)%ldef)Then
-             Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell, &
+             Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,io,cshell, &
                dfcts(1),neigh,sites,netcdf,domain,config,comm)
              If (dfcts(2)%ldef)Then
-               Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,cshell, &
+               Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,io,cshell, &
                  dfcts(2),neigh,sites,netcdf,domain,config,comm)
              End If
            End If
            If (msd_data%l_msd) Call msd_write &
-             (config,keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site,msd_data,comm)
+             (config,keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site,io,msd_data,comm)
            If (rsdc%lrsd) Call rsd_write &
-             (keyres,nstep,tstep,rsdc,time,cshell,stat%rsd,config,comm)
+             (keyres,nstep,tstep,io,rsdc,time,cshell,stat%rsd,config,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (config,keyres,nstph,tsths,green,sites,comm)
 
@@ -246,7 +246,7 @@
 
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
               Call system_revive                              &
-           (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
+             (neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
            stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
@@ -316,7 +316,7 @@
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
   If (.not. devel%l_tor) Call system_revive                         &
-           (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
+    (neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
            stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
 
 ! step counter is data counter now, so statistics_result is triggered
