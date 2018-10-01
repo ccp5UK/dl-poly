@@ -9,7 +9,7 @@ Module rsds
   ! this is assymetric with respect to the rest. will need probably rsd defined in this type
 
   Use parse,      Only : tabs_2_blanks, get_word, word_2_real
-  Use io,         Only : io_set_parameters,        &
+  Use io,         Only : io_set_parameters,io_type,        &
                                 io_get_parameters,        &
                                 io_init, io_open,         &
                                 io_write_record,          &
@@ -42,7 +42,7 @@ Module rsds
 Contains
 
 
-  Subroutine rsd_write(keyres,nstep,tstep,rsdc,time,cshell,rsd,config,comm)
+  Subroutine rsd_write(keyres,nstep,tstep,io,rsdc,time,cshell,rsd,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -54,6 +54,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( io_type ), Intent( InOut ) :: io
   Integer,            Intent( In    ) :: keyres,nstep
   Real( Kind = wp ),  Intent( In    ) :: tstep,time
   Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -94,9 +95,9 @@ Contains
 
 ! Get write buffer size and line feed character
 
-    Call io_get_parameters( user_method_write      = io_write )
-    Call io_get_parameters( user_buffer_size_write = batsz    )
-  Call io_get_parameters( user_line_feed         = lf       )
+    Call io_get_parameters(io, user_method_write      = io_write )
+    Call io_get_parameters(io, user_buffer_size_write = batsz    )
+  Call io_get_parameters(io, user_line_feed         = lf       )
 
 ! netCDF not implemented for RSDDAT.  Switch to DEFAULT temporarily.
 
@@ -278,9 +279,9 @@ Contains
      j=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_open( io_write, comm_self, 'RSDDAT', mode_wronly, fh )
+        Call io_set_parameters(io, user_comm = comm_self )
+        Call io_init(io, recsz )
+        Call io_open(io, io_write, comm_self, 'RSDDAT', mode_wronly, fh )
 
         Write(record, Fmt='(a8,i10,2f20.6,i3,f11.3,a1)') &
            'timestep',nstep,tstep,time,config%imcon,rsdc%rrsd,lf
@@ -306,10 +307,10 @@ Contains
 
 ! Dump header and cell information
 
-        Call io_write_batch( fh, rec_mpi_io, j, chbat )
+        Call io_write_batch(io, fh, rec_mpi_io, j, chbat )
 
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
 
      Else
 
@@ -323,9 +324,9 @@ Contains
      rec_mpi_io=Int(rsdc%rec,offset_kind)+Int(j,offset_kind)+Int(2,offset_kind)*Int(n_n(0),offset_kind)
      j=0
 
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, 'RSDDAT', mode_wronly, fh )
+     Call io_set_parameters(io, user_comm = comm%comm )
+     Call io_init(io, recsz )
+     Call io_open(io, io_write, comm%comm, 'RSDDAT', mode_wronly, fh )
 
      Do i=1,n
         Write(record, Fmt='(a8,i10,f11.3,a43,a1)') nam(i),ind(i),dr(i),Repeat(' ',43),lf
@@ -343,7 +344,7 @@ Contains
 ! Dump batch and update start of file
 
         If (j + 2 >= batsz .or. i == n) Then
-           Call io_write_batch( fh, rec_mpi_io, j, chbat )
+           Call io_write_batch(io, fh, rec_mpi_io, j, chbat )
            rec_mpi_io=rec_mpi_io+Int(j,offset_kind)
            j=0
         End If
@@ -354,11 +355,11 @@ Contains
      rsdc%rec=rsdc%rec+Int(5,li)+Int(2,li)*Int(megn,li)
      If (comm%idnode == 0) Then
         Write(record, Fmt='(f11.3,a19,2i21,a1)') rsdc%rrsd,Repeat(' ',19),rsdc%frm,rsdc%rec,lf
-        Call io_write_record( fh, Int(1,offset_kind), record )
+        Call io_write_record(io, fh, Int(1,offset_kind), record )
      End If
 
-     Call io_close( fh )
-     Call io_finalize
+     Call io_close(io, fh )
+     Call io_finalize(io)
 
   Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
            io_write == IO_WRITE_SORTED_MASTER) Then

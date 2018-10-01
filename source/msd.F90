@@ -16,7 +16,7 @@ Module msd
   Use configuration,     Only : configuration_type
 
   Use parse,      Only : tabs_2_blanks, get_word, word_2_real
-  Use io,         Only : io_set_parameters,             &
+  Use io,         Only : io_type,io_set_parameters,             &
     io_get_parameters,             &
     io_init,                       &
     io_open, io_write_record,      &
@@ -61,7 +61,7 @@ Module msd
   Public :: msd_write
 Contains
 
-    Subroutine msd_write(config,keyres,megatm,nstep,tstep,time,stpval,dof_site,msd_data,comm)
+  Subroutine msd_write(config,keyres,megatm,nstep,tstep,time,stpval,dof_site,io,msd_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -74,7 +74,8 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( In    ) :: keyres, &
+  Type( io_type ), Intent( InOut ) :: io
+    Integer,           Intent( In    ) :: keyres, &
                                         megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time
   Real( Kind = wp ), Intent( InOut ) :: stpval(:)
@@ -109,9 +110,9 @@ Contains
 
 ! Get write buffer size and line feed character
 
-    Call io_get_parameters( user_method_write      = io_write )
-    Call io_get_parameters( user_buffer_size_write = batsz    )
-    Call io_get_parameters( user_line_feed         = lf       )
+    Call io_get_parameters(io, user_method_write      = io_write )
+    Call io_get_parameters(io, user_buffer_size_write = batsz    )
+    Call io_get_parameters(io, user_line_feed         = lf       )
 
 ! netCDF not implemented for MSDTMP.  Switch to DEFAULT temporarily.
 
@@ -277,18 +278,18 @@ Contains
       rec_mpi_io=Int(msd_data%rec,offset_kind)
       If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_open( io_write, comm_self, msd_data%fname, mode_wronly, fh )
+        Call io_set_parameters(io, user_comm = comm_self )
+        Call io_init(io, recsz )
+        Call io_open(io, io_write, comm_self, msd_data%fname, mode_wronly, fh )
 
         Write(record, Fmt='(a8,2i10,2f12.6,a1)') 'timestep',nstep,megatm,tstep,time,lf
 
 ! Dump header information
 
-        Call io_write_record( fh, rec_mpi_io, record )
+        Call io_write_record(io, fh, rec_mpi_io, record )
 
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
 
       End If
 
@@ -298,9 +299,9 @@ Contains
       rec_mpi_io=Int(msd_data%rec,offset_kind)+Int(n_atm(0),offset_kind)
       jj=0
 
-      Call io_set_parameters( user_comm = comm%comm )
-      Call io_init( recsz )
-      Call io_open( io_write, comm%comm, msd_data%fname, mode_wronly, fh )
+      Call io_set_parameters(io, user_comm = comm%comm )
+      Call io_init(io, recsz )
+      Call io_open(io, io_write, comm%comm, msd_data%fname, mode_wronly, fh )
 
     Do i=1,config%natms
         k=2*i
@@ -316,7 +317,7 @@ Contains
 ! Dump batch and update start of file
 
         If (jj >= batsz .or. i == config%natms) Then
-          Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+          Call io_write_batch(io, fh, rec_mpi_io, jj, chbat )
           rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
           jj=0
         End If
@@ -327,11 +328,11 @@ Contains
       msd_data%rec=msd_data%rec+Int(megatm,li)
       If (comm%idnode == 0) Then
         Write(record, Fmt='(i10,2i21,a1)') megatm,msd_data%frm,msd_data%rec,lf
-        Call io_write_record( fh, Int(1,offset_kind), record )
+        Call io_write_record(io, fh, Int(1,offset_kind), record )
       End If
 
-      Call io_close( fh )
-      Call io_finalize
+      Call io_close(io, fh )
+      Call io_finalize(io)
 
 ! UNSORTED Serial Direct Access FORTRAN
 
@@ -447,17 +448,17 @@ Contains
       jj=0
       If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_open( io_write, comm_self, msd_data%fname, mode_wronly, fh )
+        Call io_set_parameters(io, user_comm = comm_self )
+        Call io_init(io, recsz )
+        Call io_open(io, io_write, comm_self, msd_data%fname, mode_wronly, fh )
 
 ! Write header information
 
         Write(record, Fmt='(a8,2i10,2f12.6,a1)') 'timestep',nstep,megatm,tstep,time,lf
-        Call io_write_record( fh, rec_mpi_io, record )
+        Call io_write_record(io, fh, rec_mpi_io, record )
 
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
 
       End If
       Call gsync(comm)
@@ -468,9 +469,9 @@ Contains
 
 ! Write the rest
 
-      Call io_set_parameters( user_comm = comm%comm )
-      Call io_init( recsz )
-      Call io_open( io_write, comm%comm, msd_data%fname,  mode_wronly, fh )
+      Call io_set_parameters(io, user_comm = comm%comm )
+      Call io_init(io, recsz )
+      Call io_open(io, io_write, comm%comm, msd_data%fname,  mode_wronly, fh )
 
       Allocate (ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
       If (fail(1) > 0) Then
@@ -487,7 +488,7 @@ Contains
         eee(i)=tmp
       End Do
 
-    Call io_write_sorted_file( fh, 0, IO_MSDTMP, rec_mpi_io, config%natms, &
+      Call io_write_sorted_file(io, fh, 0, IO_MSDTMP, rec_mpi_io, config%natms, &
           config%ltg, config%atmnam, ddd, eee, (/ 0.0_wp /),                       &
           (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
           (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
@@ -511,11 +512,11 @@ Contains
       msd_data%rec=msd_data%rec+Int(1,li)+Int(megatm,li)
       If (comm%idnode == 0) Then
         Write(record, Fmt='(i10,2i21,a1)') megatm,msd_data%frm,msd_data%rec,lf
-        Call io_write_record( fh, Int(1,offset_kind), record )
+        Call io_write_record(io, fh, Int(1,offset_kind), record )
       End If
 
-      Call io_close( fh )
-      Call io_finalize
+      Call io_close(io, fh )
+      Call io_finalize(io)
 
       Deallocate (ddd,eee, Stat=fail(1))
       If (fail(1) > 0) Then

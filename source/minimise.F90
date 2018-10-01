@@ -30,6 +30,7 @@ Module minimise
   Use constraints, Only : constraints_type,constraints_tags,constraints_pseudo_bonds
   Use netcdf_wrap, Only : netcdf_param
   Use domains, Only : domains_type
+  Use io, Only : io_type
   Implicit None
 
   Private
@@ -122,7 +123,7 @@ Contains
     End If
   End Subroutine deallocate_minimise_arrays
 
-  Subroutine minimise_relax(l_str,rdf_collect,megatm,tstep,stpcfg,stats, &
+  Subroutine minimise_relax(l_str,rdf_collect,megatm,tstep,stpcfg,io,stats, &
     pmf,cons,netcdf,minim,rigid,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -143,6 +144,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type( io_type ), Intent( InOut ) :: io
     Logical,           Intent( In    ) :: l_str
     Logical,           Intent( InOut ) :: rdf_collect
     Integer,           Intent( In    ) :: megatm
@@ -607,7 +609,7 @@ Contains
        name = 'CFGMIN' ! file name
        levcfg = 0      ! define level of information in file
 
-       Call write_config(config,name,levcfg,megatm,i-1,minim%eng_min/engunit,minim%eng_0/engunit,netcdf,comm)
+       Call write_config(config,name,levcfg,megatm,i-1,minim%eng_min/engunit,io,minim%eng_0/engunit,netcdf,comm)
      End If
 
 ! setup new quaternions

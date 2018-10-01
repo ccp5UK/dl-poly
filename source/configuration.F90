@@ -26,7 +26,7 @@ Module configuration
   Use particle, Only : corePart
 
   Use netcdf_wrap, Only : netcdf_param
-  Use io,     Only : io_set_parameters,         &
+  Use io,     Only : io_type,io_set_parameters,         &
                             io_get_parameters,         &
                             io_init, io_nc_create,     &
                             io_open, io_write_record,  &
@@ -716,7 +716,7 @@ End Subroutine check_config
 
 
 
-Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,domain,comm)
+Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,io,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -730,6 +730,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Type( io_type ), Intent( InOut ) :: io
   Integer,           Intent( In    ) :: megatm,levcfg
   Logical,           Intent( In    ) :: l_ind,l_str
   Real( Kind = wp ), Intent( In    ) :: rcut,dvar
@@ -831,7 +832,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 
 ! Get type of I/O for reading
 
-  Call io_get_parameters( user_method_read = io_read )
+  Call io_get_parameters(io, user_method_read = io_read )
 
 ! Define filename ASCII or netCDF
 
@@ -1155,9 +1156,9 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 ! Open CONFIG
 
      If (fast) Then
-        Call io_set_parameters( user_comm = comm%comm )
-        Call io_init( recsz )
-        Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
+        Call io_set_parameters(io, user_comm = comm%comm )
+         Call io_init(io, recsz )
+        Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
      Else
         Open(Unit=nconf, File=fname)
      End If
@@ -1175,13 +1176,13 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
      End If
 
      Call read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
-       fast,fh,top_skip,xhi,yhi,zhi,domain,comm)
+       fast,fh,top_skip,xhi,yhi,zhi,io,domain,comm)
 
 ! Close CONFIG
 
      If (fast) Then
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
      Else
         Close(Unit=nconf)
      End If
@@ -1361,7 +1362,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 End Subroutine read_config
 
 Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast, &
-    fh,top_skip,xhi,yhi,zhi,domain,comm)
+  fh,top_skip,xhi,yhi,zhi,io,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1373,6 +1374,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Type( io_type ), Intent( InOut ) :: io
   Logical,                           Intent( In    ) :: l_ind,l_str,l_his,fast,l_xtr
   Integer,                           Intent( In    ) :: levcfg,megatm,fh
   Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
@@ -1431,9 +1433,9 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
 
 ! Get reading method, total number of I/O heads and buffer size
 
-  Call io_get_parameters( user_method_read      = io_read          )
-  Call io_get_parameters( user_n_io_procs_read  = n_read_procs_use )
-  Call io_get_parameters( user_buffer_size_read = batsz            )
+  Call io_get_parameters(io, user_method_read      = io_read          )
+  Call io_get_parameters(io, user_n_io_procs_read  = n_read_procs_use )
+  Call io_get_parameters(io, user_buffer_size_read = batsz            )
 
   fail = 0 ! fail initialisation
 
@@ -1584,7 +1586,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
                  If (.not.fast) Then
                     Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
-                    Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                     Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
                     rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                  End If
               End If
@@ -1618,7 +1620,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
                  If (.not.fast) Then
                     Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
-                    Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                     Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
                     rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                  End If
               End If
@@ -1639,7 +1641,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
                        If (.not.fast) Then
                           Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
                        Else
-                          Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                           Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
                           rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                        End If
                     End If
@@ -1660,7 +1662,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
                           If (.not.fast) Then
                              Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
                           Else
-                             Call io_read_batch( fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                              Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
                              rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
                           End If
                        End If
@@ -1688,29 +1690,29 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
            If (to_read /= 0) Then
               frame = Int(top_skip,Kind(frame))
 
-              Call io_nc_get_var( 'atomnames', fh, rec_buff, (/ first_at( my_read_proc_num ) + 1, frame /), (/ 8, to_read, 1 /) )
+               Call io_nc_get_var(io, 'atomnames', fh, rec_buff, [ first_at( my_read_proc_num ) + 1, frame ], [ 8, to_read, 1 ] )
               Do i = 1, to_read
                  Do j = 1, Min( Len( chbuf_read ), Size( rec_buff, Dim = 1 ) )
                     chbuf_read( i )( j:j ) = rec_buff( j, i )
                  End Do
               End Do
               If (l_ind) Then
-                 Call io_nc_get_var( 'indices', fh, iwrk_read , (/ first_at( my_read_proc_num ) + 1, frame /), (/ to_read, 1 /) )
+                  Call io_nc_get_var(io, 'indices', fh, iwrk_read , [ first_at( my_read_proc_num ) + 1, frame ], [ to_read, 1 ] )
               End If
 
-              start = (/ 1, first_at( my_read_proc_num ) + 1, frame /)
-              count = (/ 3, to_read, 1 /)
+              start = [ 1, first_at( my_read_proc_num ) + 1, frame ]
+              count = [ 3, to_read, 1 ]
 
               Select Case( levcfg )
               Case( 0, 3 )
-                 Call io_get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+                 Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
               Case( 1 )
-                 Call io_get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
-                 Call io_get_var( 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
+                 Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+                 Call io_get_var(io, 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
               Case( 2 )
-                 Call io_get_var( 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
-                 Call io_get_var( 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
-                 Call io_get_var( 'forces'     , fh, start, count, cxx_read, cyy_read, czz_read )
+                 Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+                 Call io_get_var(io, 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
+                 Call io_get_var(io, 'forces'     , fh, start, count, cxx_read, cyy_read, czz_read )
               End Select
            End If
 
@@ -1924,18 +1926,18 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
         If (n_sk > n_jj) Then
            Do n_ii=1_li,n_sk/n_jj
               forma=' '
-              Write(forma,'( "(", i0, "/)" )') n_jj
+              Write(forma,'( "(", i0, "]" )') n_jj
               Read(Unit=nconf, Fmt=forma, End=100)
            End Do
            n_ii=Mod(Int(n_skip,li),n_jj)
            If (n_ii > 0_li) Then
               forma=' '
-              Write(forma,'( "(", i0, "/)" )') n_ii
+              Write(forma,'( "(", i0, "]" )') n_ii
               Read(Unit=nconf, Fmt=forma, End=100)
            End If
         Else
            forma=' '
-           Write(forma,'( "(", i0, "/)" )') n_sk
+           Write(forma,'( "(", i0, "]" )') n_sk
            Read(Unit=nconf, Fmt=forma, End=100)
         End If
      End If
@@ -1954,7 +1956,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
               If (.not.fast) Then
                  Read(Unit=nconf, Fmt=forma, Iostat=ierr) rec_buff( :, 1:recs_to_read )
               Else
-                 Call io_read_batch( fh, rec_mpi_io, 1, rec_buff, ierr )
+                  Call io_read_batch(io, fh, rec_mpi_io, 1, rec_buff, ierr )
               End If
               safe = (ierr /= 0)
            End If
@@ -1964,7 +1966,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
 ! As netCDF files have no real concept of line numbers,
 ! instead check the arrays are the correct size
 
-           Call io_nc_get_dim( 'atom', fh, n_ats_in_file )
+           Call io_nc_get_dim(io, 'atom', fh, n_ats_in_file )
            safe = n_ats_in_file == megatm
 
         End If
@@ -2008,7 +2010,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
 End Subroutine read_config_parallel
 
 Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
-    domain,comm)
+  io,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2021,6 +2023,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( io_type ), Intent( InOut ) :: io
   Integer,              Intent( In    ) :: megatm,imc_n
   Real( Kind = wp ),    Intent( In    ) :: dvar
   Integer,              Intent(   Out ) :: levcfg
@@ -2049,7 +2052,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 ! Get type of I/O for reading
 
-  Call io_get_parameters( user_method_read = io_read )
+  Call io_get_parameters(io, user_method_read = io_read )
 
 ! Define filename ASCII or netCDF
 
@@ -2216,25 +2219,25 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 ! Open CONFIG
 
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
+     Call io_set_parameters(io, user_comm = comm%comm )
+     Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
 
      i=1 ! For config there is only one frame
 
-     Call io_nc_get_att( 'title'          , fh, config%cfgname )
+      Call io_nc_get_att(io, 'title'          , fh, config%cfgname )
 
-     Call io_nc_get_var( 'datalevel'      , fh, levcfg, i, 1  )
+      Call io_nc_get_var(io, 'datalevel'      , fh, levcfg, i, 1  )
      If (levcfg < 0 .or. levcfg > 2) Call error(517)
 
-     Call io_nc_get_var( 'imageconvention', fh,  config%imcon, i, 1  )
+      Call io_nc_get_var(io, 'imageconvention', fh,  config%imcon, i, 1  )
      If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
 
-     Call io_nc_get_var( 'cell'           , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-     config%cell = Reshape( cell_vecs, (/ Size( config%cell ) /) )
+      Call io_nc_get_var(io, 'cell'           , fh, cell_vecs, [ 1, 1, i ], [ 3, 3, 1 ] )
+     config%cell = Reshape( cell_vecs, [ Size( config%cell ) ] )
 
 ! Close CONFIG
 
-     Call io_close( fh )
+     Call io_close(io, fh )
 
   End If
 
@@ -2320,9 +2323,9 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 ! Open CONFIG
 
         If (fast) Then
-           Call io_set_parameters( user_comm = comm%comm )
-           Call io_init( recsz )
-           Call io_open( io_read, comm%comm, fname, mode_rdonly, fh )
+           Call io_set_parameters(io, user_comm = comm%comm )
+            Call io_init(io, recsz )
+           Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
         Else
            Open(Unit=nconf, File=fname)
         End If
@@ -2340,13 +2343,13 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
         End If
 
         Call read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
-          fast,fh,top_skip,xhi,yhi,zhi,domain,comm)
+          fast,fh,top_skip,xhi,yhi,zhi,io,domain,comm)
 
 ! Close CONFIG
 
         If (fast) Then
-           Call io_close( fh )
-           Call io_finalize
+           Call io_close(io, fh )
+           Call io_finalize(io)
         Else
            Close(Unit=nconf)
         End If
@@ -2365,7 +2368,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 End Subroutine scan_config
 
-Subroutine scale_config(config,megatm,devel,netcdf,comm)
+Subroutine scale_config(config,megatm,io,devel,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2377,6 +2380,7 @@ Subroutine scale_config(config,megatm,devel,netcdf,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( io_type ), Intent( InOut ) :: io
   Integer, Intent( In    ) :: megatm
   Type( configuration_type ), Intent( InOut ) :: config
   Character ( Len = 6 ) :: name
@@ -2418,13 +2422,13 @@ Subroutine scale_config(config,megatm,devel,netcdf,comm)
   time   = 0.0_wp   ! time is not relevant
 
   rcell = config%cell ; config%cell = devel%cels
-  Call write_config(config,name,devel%lvcfscl,megatm,nstep,tstep,time,netcdf,comm)
+  Call write_config(config,name,devel%lvcfscl,megatm,nstep,tstep,io,time,netcdf,comm)
   config%cell = rcell
 
 End Subroutine scale_config
 
 
-Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
+Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2435,7 +2439,7 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 ! contrib   - i.j.bush
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+  Type( io_type ), Intent( InOut ) :: io
   Character( Len = * ), Intent( In    ) :: name
   Integer,              Intent( In    ) :: levcfg,megatm,nstep
   Real( Kind = wp ),    Intent( In    ) :: tstep,time
@@ -2474,9 +2478,9 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Get write method buffer size and line feed character
 
-  Call io_get_parameters( user_method_write      = io_write )
-  Call io_get_parameters( user_buffer_size_write = batsz    )
-  Call io_get_parameters( user_line_feed         = lf       )
+  Call io_get_parameters(io, user_method_write      = io_write )
+  Call io_get_parameters(io, user_buffer_size_write = batsz    )
+  Call io_get_parameters(io, user_line_feed         = lf       )
 
 ! Get offsets and define batch
 
@@ -2515,10 +2519,10 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_delete( name,comm ) ! Sort existence issues
-        Call io_open( io_write, comm_self, name, mode_wronly + mode_create, fh )
+        Call io_set_parameters(io, user_comm = comm_self )
+         Call io_init(io, recsz )
+        Call io_delete(io, name,comm ) ! Sort existence issues
+        Call io_open(io, io_write, comm_self, name, mode_wronly + mode_create, fh )
 
 ! Accumulate header
 
@@ -2549,10 +2553,10 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Dump header
 
-        Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+        Call io_write_batch(io, fh, rec_mpi_io, jj, chbat )
 
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
 
      Else
 
@@ -2562,10 +2566,10 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
      End If
      Call gsync(comm)
 
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_delete( name ,comm)
-     Call io_open( io_write, comm%comm, name, mode_wronly, fh )
+     Call io_set_parameters(io, user_comm = comm%comm )
+      Call io_init(io, recsz )
+     Call io_delete(io, name ,comm)
+     Call io_open(io, io_write, comm%comm, name, mode_wronly, fh )
 
 ! Start of file (updated)
 
@@ -2603,14 +2607,14 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 ! Dump batch and update start of file
 
         If (jj + levcfg + 2 >= batsz .or. i == config%natms) Then
-           Call io_write_batch( fh, rec_mpi_io, jj, chbat )
+           Call io_write_batch(io, fh, rec_mpi_io, jj, chbat )
            rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
            jj=0
         End If
      End Do
 
-     Call io_close( fh )
-     Call io_finalize
+     Call io_close(io, fh )
+     Call io_finalize(io)
 
 ! UNSORTED Serial Direct Access FORTRAN
 
@@ -2811,13 +2815,13 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters( user_comm = comm_self )
-        Call io_init( recsz )
-        Call io_delete( fname,comm ) ! Sort existence issues
+        Call io_set_parameters(io, user_comm = comm_self )
+         Call io_init(io, recsz )
+        Call io_delete(io, fname,comm ) ! Sort existence issues
         If (io_write == IO_WRITE_SORTED_NETCDF) Then
           Call io_nc_create( netcdf, comm_self, fname, config%cfgname, megatm )
         End If
-        Call io_open( io_write, comm_self, fname, mode_wronly + mode_create, fh )
+        Call io_open(io, io_write, comm_self, fname, mode_wronly + mode_create, fh )
 
 ! Non netCDF
 
@@ -2826,11 +2830,11 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 ! Write header
 
            Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
-           Call io_write_record( fh, Int(jj,offset_kind), record )
+           Call io_write_record(io, fh, Int(jj,offset_kind), record )
            jj=jj+1
 
            Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,nstep,tstep,time,lf
-           Call io_write_record( fh, Int(jj,offset_kind), record )
+           Call io_write_record(io, fh, Int(jj,offset_kind), record )
            jj=jj+1
 
 ! Write optional cell information (if present)
@@ -2839,7 +2843,7 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
               Do i = 0, 2
                  Write( record, '( 3f20.10, a12, a1 )' ) &
                       config%cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
-                 Call io_write_record( fh, Int(jj,offset_kind), record )
+                 Call io_write_record(io, fh, Int(jj,offset_kind), record )
                  jj=jj+1
               End Do
            End If
@@ -2848,16 +2852,16 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
            jj=1 ! For config there is only one frame
 
-           Call io_nc_put_var( 'time'           , fh,   time, jj, 1 )
-           Call io_nc_put_var( 'step'           , fh,  nstep, jj, 1 )
-           Call io_nc_put_var( 'datalevel'      , fh, levcfg, jj, 1 )
-           Call io_nc_put_var( 'imageconvention', fh,  config%imcon, jj, 1 )
-           Call io_nc_put_var( 'timestep'       , fh,  tstep, jj, 1 )
+           Call io_nc_put_var(io, 'time'           , fh,   time, jj, 1 )
+           Call io_nc_put_var(io, 'step'           , fh,  nstep, jj, 1 )
+           Call io_nc_put_var(io, 'datalevel'      , fh, levcfg, jj, 1 )
+           Call io_nc_put_var(io, 'imageconvention', fh,  config%imcon, jj, 1 )
+           Call io_nc_put_var(io, 'timestep'       , fh,  tstep, jj, 1 )
 
            If (config%imcon > 0) Then
               Call dcell(config%cell,celprp) ! get cell properties
 
-              cell_vecs = Reshape( config%cell, (/ 3, 3 /) )
+              cell_vecs = Reshape( config%cell, [ 3, 3 ] )
 
               lengths( 1 ) = celprp( 1 )
               lengths( 2 ) = celprp( 2 )
@@ -2870,15 +2874,15 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Print
 
-              Call io_nc_put_var( 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
-              Call io_nc_put_var( 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
-              Call io_nc_put_var( 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+              Call io_nc_put_var(io, 'cell'        , fh, cell_vecs, [ 1, 1, jj ], [ 3, 3, 1 ] )
+              Call io_nc_put_var(io, 'cell_lengths', fh, lengths  , [    1, jj ], [    3, 1 ] )
+              Call io_nc_put_var(io, 'cell_angles' , fh, angles   , [    1, jj ], [    3, 1 ] )
            End If
 
         End If
 
-        Call io_close( fh )
-        Call io_finalize
+        Call io_close(io, fh )
+        Call io_finalize(io)
 
      Else
 
@@ -2894,13 +2898,13 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
 
 ! Write the rest
 
-     Call io_set_parameters( user_comm = comm%comm )
-     Call io_init( recsz )
-     Call io_open( io_write, comm%comm, fname, mode_wronly, fh )
+     Call io_set_parameters(io, user_comm = comm%comm )
+      Call io_init(io, recsz )
+     Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh )
 
      rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
-     Call io_write_sorted_file( fh, levcfg, IO_RESTART, rec_mpi_io, config%natms,      &
-          config%ltg, config%atmnam, (/ 0.0_wp /), (/ 0.0_wp /), config%parts, &
+      Call io_write_sorted_file(io, fh, levcfg, IO_RESTART, rec_mpi_io, config%natms,      &
+          config%ltg, config%atmnam, [ 0.0_wp ], [ 0.0_wp ], config%parts, &
           config%vxx, config%vyy, config%vzz,IO_SUBSET_POSITIONS+IO_SUBSET_FORCES, ierr )
 
      If ( ierr /= 0 ) Then
@@ -2916,8 +2920,8 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,time,netcdf,comm)
         End Select
      End If
 
-     Call io_close( fh )
-     Call io_finalize
+     Call io_close(io, fh )
+     Call io_finalize(io)
 
 ! SORTED Serial Direct Access FORTRAN
 
@@ -3201,7 +3205,7 @@ Subroutine getcom_parts(config,com,comm)
     fail = 0
     Allocate (mol(1:(ifinish-istart+1),0:3), Stat = fail)
     If (fail > 0) Then
-       Write(message,'(/,1x,a,i0)') 'getcom_mol allocation failure'
+      Write(message,'(/,1x,a,i0)') 'getcom_mol allocation failure'
        Call error(0,message)
     End If
 
@@ -3283,19 +3287,20 @@ Subroutine getcom_parts(config,com,comm)
 
   End Subroutine freeze_atoms
 
-  Subroutine origin_config(config,megatm,devel,netcdf,comm)
+  Subroutine origin_config(config,megatm,io,devel,netcdf,comm)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for translating the origin of the MD box as
-  ! defined in CONFIG by the (devel%xorg,devel%yorg,devel%zorg) vector and saving it in
-  ! CFGORG
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov february 2015
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for translating the origin of the MD box as
+    ! defined in CONFIG by the (devel%xorg,devel%yorg,devel%zorg) vector and saving it in
+    ! CFGORG
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2015
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Type( io_type ), Intent( InOut ) :: io
     Integer,            Intent( In    ) :: megatm
     Type( configuration_type ), Intent( InOut ) :: config
     Type( development_type ), Intent( In    ) :: devel
@@ -3306,26 +3311,26 @@ Subroutine getcom_parts(config,com,comm)
     Integer               :: i,nstep
     Real( Kind = wp )     :: tstep,time
 
-  ! Translate
+    ! Translate
 
     Do i=1,config%natms
-       config%parts(i)%xxx=config%parts(i)%xxx+devel%xorg
+      config%parts(i)%xxx=config%parts(i)%xxx+devel%xorg
        config%parts(i)%yyy=config%parts(i)%yyy+devel%yorg
        config%parts(i)%zzz=config%parts(i)%zzz+devel%zorg
-    End Do
+     End Do
 
-  ! Restore periodic boundaries
+    ! Restore periodic boundaries
 
     Call pbcshift(config%imcon,config%cell,config%natms,config%parts)
 
-  ! Write REVCON
+    ! Write REVCON
 
     name   = 'CFGORG' ! file name
     nstep  = 0        ! no steps done
     tstep  = 0.0_wp   ! no step exists
     time   = 0.0_wp   ! time is not relevant
 
-    Call write_config(config,name,devel%lvcforg,megatm,nstep,tstep,time,netcdf,comm)
+    Call write_config(config,name,devel%lvcforg,megatm,nstep,tstep,io,time,netcdf,comm)
 
   End Subroutine origin_config
 End Module configuration

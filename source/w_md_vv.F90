@@ -61,11 +61,11 @@
 ! levcfg == 2 avoids application twice when forces are calculated at (re)start
 
      If (newjob) Then
-        If (levcfg == 2) Then
-           newjob = .false.
+       If (levcfg == 2) Then
+          newjob = .false.
 
            If (keyres /= 1) Then
-             Call w_write_options(rsdc,cshell,stat,sites,netcdf,domain,traj)
+             Call w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj)
            End If
 
            If (nstep == 0 .and. nstep == nstrun) Go To 1000
@@ -103,7 +103,7 @@
 
 ! Evaluate forces
 
-      Call w_calculate_forces(flw,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+      Call w_calculate_forces(flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
        minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
 
@@ -145,13 +145,13 @@
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
-        Call w_write_options(rsdc,cshell,stat,sites,netcdf,domain,traj)
+        Call w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj)
 
 ! Save restart data in event of system crash
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) &
            Call system_revive                                 &
-           (neigh%cutoff,rbin,megatm,nstep,tstep,time,tmst, &
+          (neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
            stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
 
      End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)

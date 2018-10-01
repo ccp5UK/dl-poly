@@ -31,7 +31,7 @@ Module kontrol
   Use defects,     Only : defects_type
   Use rsds, Only : rsd_type
   
-  Use io,     Only : io_set_parameters,        &
+  Use io,     Only : io_set_parameters,io_type,        &
                             io_get_parameters,        &
                             io_nc_set_real_precision, &
                             io_nc_compiled,           &
@@ -4884,7 +4884,7 @@ Subroutine scan_control_pre(imc_n,dvar,comm)
 
 End Subroutine scan_control_pre
 
-Subroutine scan_control_io(netcdf,comm)
+Subroutine scan_control_io(io,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4896,6 +4896,7 @@ Subroutine scan_control_io(netcdf,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( io_type ), Intent( InOut ) :: io
   Type( netcdf_param ), Intent( InOut ) :: netcdf
   Type( comms_type ), Intent( InOut ) :: comm
 
@@ -4980,7 +4981,7 @@ Subroutine scan_control_io(netcdf,comm)
               Call error(3)
            End If
 
-           Call io_set_parameters( user_method_read = io_read )
+           Call io_set_parameters(io, user_method_read = io_read )
 
 ! get number of readers
 ! 1 <= readers <= mxnode or be wise, default = 8 or 1 when master
@@ -5021,7 +5022,7 @@ Subroutine scan_control_io(netcdf,comm)
 
 ! the number of readers is now ready to set
 
-              Call io_set_parameters( user_n_io_procs_read = itmp )
+              Call io_set_parameters(io, user_n_io_procs_read = itmp )
 
 ! get read batch size
 ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
@@ -5030,12 +5031,12 @@ Subroutine scan_control_io(netcdf,comm)
               Call get_word( record, word )
               itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
               If (itmp == 0) Then
-                 Call io_get_parameters( user_batch_size_read = itmp )
+                 Call io_get_parameters(io, user_batch_size_read = itmp )
                  Write(message,'(a,i10)') 'I/O read batch size (assumed) ', itmp
                  Call info(message,.true.)
               Else
                  itmp = Min( itmp, MAX_BATCH_SIZE )
-                 Call io_set_parameters( user_batch_size_read = itmp )
+                 Call io_set_parameters(io, user_batch_size_read = itmp )
                  Write(message,'(a,i10)') 'I/O read batch size set to ', itmp
                  Call info(message,.true.)
               End If
@@ -5048,7 +5049,7 @@ Subroutine scan_control_io(netcdf,comm)
               Write(message,'(a,i10)') 'I/O readers (enforced) ', itmp
               Call info(message,.true.)
 ! the number of readers is now ready to set
-              Call io_set_parameters( user_n_io_procs_read = itmp )
+              Call io_set_parameters(io, user_n_io_procs_read = itmp )
            End If
 
 ! get read buffer size
@@ -5058,12 +5059,12 @@ Subroutine scan_control_io(netcdf,comm)
            Call get_word( record, word )
            itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
            If (itmp == 0) Then
-              Call io_get_parameters( user_buffer_size_read = itmp )
+              Call io_get_parameters(io, user_buffer_size_read = itmp )
               Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
               Call info(message,.true.)
            Else
               itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
-              Call io_set_parameters( user_buffer_size_read = itmp )
+              Call io_set_parameters(io, user_buffer_size_read = itmp )
               Write(message,'(a,i10)') 'I/O read buffer size set to ',itmp
               Call info(message,.true.)
            End If
@@ -5078,7 +5079,7 @@ Subroutine scan_control_io(netcdf,comm)
               Else
                  Call info('I/O parallel read error checking on',.true.)
               End If
-              Call io_set_parameters( user_error_check = l_tmp )
+              Call io_set_parameters(io, user_error_check = l_tmp )
            End If
 
         Else If (word(1:4) == 'writ'  .or. &
@@ -5159,7 +5160,7 @@ Subroutine scan_control_io(netcdf,comm)
 
 ! the write method and type are now ready to set
 
-           Call io_set_parameters( user_method_write = io_write )
+           Call io_set_parameters(io, user_method_write = io_write )
 
 ! get number of writers
 ! 1 <= writers <= mxnode or be wise, default = 8 or 1 when master
@@ -5198,7 +5199,7 @@ Subroutine scan_control_io(netcdf,comm)
 
 ! the number of writers is now ready to set
 
-              Call io_set_parameters( user_n_io_procs_write = itmp )
+              Call io_set_parameters(io, user_n_io_procs_write = itmp )
 
 ! get write batch size
 ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
@@ -5207,12 +5208,12 @@ Subroutine scan_control_io(netcdf,comm)
               Call get_word( record, word )
               itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
               If (itmp == 0) Then
-                 Call io_get_parameters( user_batch_size_write = itmp )
+                 Call io_get_parameters(io, user_batch_size_write = itmp )
                  Write(message,'(a,i10)') 'I/O write batch size (assumed) ',itmp
                  Call info(message,.true.)
               Else
                  itmp = Min( itmp, MAX_BATCH_SIZE )
-                 Call io_set_parameters( user_batch_size_write = itmp )
+                 Call io_set_parameters(io, user_batch_size_write = itmp )
                  Write(message,'(a,i10)') 'I/O write batch size set to ',itmp
                  Call info(message,.true.)
               End If
@@ -5225,7 +5226,7 @@ Subroutine scan_control_io(netcdf,comm)
               Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
               Call info(message,.true.)
 ! the number of writers is now ready to set
-              Call io_set_parameters( user_n_io_procs_write = itmp )
+              Call io_set_parameters(io, user_n_io_procs_write = itmp )
            End If
 
 ! get write buffer size
@@ -5235,12 +5236,12 @@ Subroutine scan_control_io(netcdf,comm)
            Call get_word( record, word )
            itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
            If (itmp == 0) Then
-              Call io_get_parameters( user_buffer_size_write = itmp )
+              Call io_get_parameters(io, user_buffer_size_write = itmp )
               Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
               Call info(message,.true.)
            Else
               itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
-              Call io_set_parameters( user_buffer_size_write = itmp )
+              Call io_set_parameters(io, user_buffer_size_write = itmp )
               Write(message,'(a,i10)') 'I/O write buffer size set to ',itmp
               Call info(message,.true.)
            End If
@@ -5255,7 +5256,7 @@ Subroutine scan_control_io(netcdf,comm)
               Else
                  Call info('I/O parallel write error checking on',.true.)
               End If
-              Call io_set_parameters( user_error_check = l_tmp )
+              Call io_set_parameters(io, user_error_check = l_tmp )
            End If
 
         Else If ((word(1:6) == 'output') .or. (word(1:6) == 'config') .or. &
@@ -5308,7 +5309,7 @@ Subroutine scan_control_io(netcdf,comm)
 
 ! read method
 
-     Call io_set_parameters( user_method_read = IO_READ_MPIIO ) ; io_read = IO_READ_MPIIO
+     Call io_set_parameters(io, user_method_read = IO_READ_MPIIO ) ; io_read = IO_READ_MPIIO
      Call info('',.true.)
      Call info('I/O read method: parallel by using MPI-I/O (assumed)',.true.)
 
@@ -5319,26 +5320,26 @@ Subroutine scan_control_io(netcdf,comm)
      Do While ( Mod( comm%mxnode, itmp ) /= 0 )
         itmp = itmp - 1
      End Do
-     Call io_set_parameters( user_n_io_procs_read = itmp )
+     Call io_set_parameters(io, user_n_io_procs_read = itmp )
      Write(message,'(a,i10)') 'I/O readers (assumed) ',itmp
      Call info(message,.true.)
 
 ! read batch size
 
-     Call io_get_parameters( user_batch_size_read = itmp )
+     Call io_get_parameters(io, user_batch_size_read = itmp )
      Write(message,'(a,i10)') 'I/O read batch size (assumed) ',itmp
      Call info(message,.true.)
 
 ! read buffer size
 
-     Call io_get_parameters( user_buffer_size_read = itmp )
+     Call io_get_parameters(io, user_buffer_size_read = itmp )
      Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
      Call info(message,.true.)
 
 ! error checking flag for reading
 
      If (io_read /= IO_READ_MASTER) Then
-        Call io_set_parameters( user_error_check = .false. )
+        Call io_set_parameters(io, user_error_check = .false. )
         Call info('I/O parallel read error checking off (assumed)',.true.)
      End If
 
@@ -5348,7 +5349,7 @@ Subroutine scan_control_io(netcdf,comm)
 
 ! write method
 
-     Call io_set_parameters( user_method_write = IO_WRITE_SORTED_MPIIO ) ; io_write = IO_WRITE_SORTED_MPIIO
+     Call io_set_parameters(io, user_method_write = IO_WRITE_SORTED_MPIIO ) ; io_write = IO_WRITE_SORTED_MPIIO
      call info('',.true.)
      Call info('I/O write method: parallel by using MPI-I/O (assumed)',.true.)
 
@@ -5363,26 +5364,26 @@ Subroutine scan_control_io(netcdf,comm)
      Do While ( Mod( comm%mxnode, itmp ) /= 0 )
         itmp = itmp - 1
      End Do
-     Call io_set_parameters( user_n_io_procs_write = itmp )
+     Call io_set_parameters(io, user_n_io_procs_write = itmp )
      Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
      Call info(message,.true.)
 
 ! batch size
 
-     Call io_get_parameters( user_batch_size_write = itmp )
+     Call io_get_parameters(io, user_batch_size_write = itmp )
      Write(message,'(a,i10)') 'I/O write batch size (assumed) ',itmp
      Call info(message,.true.)
 
 ! write buffer size
 
-     Call io_get_parameters( user_buffer_size_write = itmp )
+     Call io_get_parameters(io, user_buffer_size_write = itmp )
      Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
      Call info(message,.true.)
 
 ! error checking flag for writing
 
      If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
-        Call io_set_parameters( user_error_check = .false. )
+        Call io_set_parameters(io, user_error_check = .false. )
         Call info('I/O parallel write error checking off (assumed)',.true.)
      End If
 
