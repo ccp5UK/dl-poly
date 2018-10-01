@@ -41,7 +41,7 @@ program dl_poly
   ! SETUP MODULES
 
   Use kinds, Only : wp,li,wi
-  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime 
+  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gmax 
   Use setup
 
   ! PARSE MODULE
@@ -136,11 +136,8 @@ program dl_poly
 
   ! TWO-TEMPERATURE MODEL MODULES
 
-  Use ttm
-  Use ttm_utils
-
   Use drivers
-  Use errors_warnings, Only : init_error_system
+  Use errors_warnings, Only : init_error_system,info
 
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
@@ -159,7 +156,6 @@ program dl_poly
   Use defects, Only : defects_write
   Use trajectory, Only : trajectory_write,read_history
   use system, Only : system_revive,system_expand,system_init
-  Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
   Use build_excl, Only : build_excl_intra 
   Use build_book, Only : build_book_intra
   Use ffield, Only : read_field,report_topology
@@ -199,6 +195,11 @@ program dl_poly
   Use numerics, Only : seed_type
   Use trajectory, Only : trajectory_type
   Use io, Only : io_type
+  Use ttm, Only : ttm_type, ttm_system_init,ttm_system_revive,ttm_table_scan,&
+    ttm_table_read,allocate_ttm_arrays
+  Use ttm_utils, Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
+    peakProfilerElec,peakProfiler
+  Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
   ! MAIN PROGRAM VARIABLES
   Implicit None
 
@@ -288,6 +289,7 @@ program dl_poly
   Type( rsd_type )  :: rsdsc
   Type( configuration_type ) :: config
   Type( io_type) :: ios
+  Type( ttm_type) :: ttms
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
@@ -355,7 +357,7 @@ program dl_poly
   ! (setup and domains)
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rbin,nstfce,width,sites%max_site,ios,core_shells,cons,pmfs,stats, &
+    dvar,rbin,nstfce,width,sites%max_site,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
     rigid,electro,domain,config,ewld,kim_data,comm)
@@ -411,8 +413,8 @@ program dl_poly
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
-  Call allocate_ttm_arrays(domain,config,comm)
-  Call ttm_table_scan(comm)
+  Call allocate_ttm_arrays(ttms,domain,config,comm)
+  Call ttm_table_scan(ttms,comm)
 
   ! Setup KIM
   Call kim_setup(kim_data,mxatms,mxatdm,megatm,neigh%max_list,mxbfxp,comm%mxnode)
@@ -432,7 +434,7 @@ program dl_poly
     fmax,nstbpo,             &
     rlx_tol,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
-    dfcts,          &
+    ttms,dfcts,          &
     ndump,pdplnc,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
     minim,mpoles,electro,ewld,seed,traj,tmr,config,comm)
@@ -594,9 +596,9 @@ program dl_poly
   ! Read ttm table file and initialise electronic temperature
   ! grid from any available restart file
 
-  If (l_ttm) Then
-    Call ttm_table_read(comm)
-    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,thermo%temp,domain,comm)
+  If (ttms%l_ttm) Then
+    Call ttm_table_read(ttms,comm)
+    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,thermo%temp,domain,ttms,comm)
   End If
 
   ! Frozen atoms option
@@ -671,7 +673,7 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
+    Call w_md_vv(mxatdm,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
       netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,tmr)
   Else
@@ -730,12 +732,12 @@ program dl_poly
   ! ionic temperatures and print statistics to files
   ! (final)
 
-  If (l_ttm) Then
-    Call ttm_ion_temperature (thermo,domain,config,comm)
-    Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep, ttmstats,comm)
-    Call peakProfilerElec('LATS_E', nstep, ttmtraj,comm)
-    Call printLatticeStatsToFile(tempion, 'PEAK_I', time, nstep, ttmstats,comm)
-    Call peakProfiler(tempion, 'LATS_I', nstep, ttmtraj,comm)
+  If (ttms%l_ttm) Then
+    Call ttm_ion_temperature (ttms,thermo,domain,config,comm)
+    Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep, ttms%ttmstats,ttms,comm)
+    Call peakProfilerElec('LATS_E', nstep, ttms%ttmtraj,ttms,comm)
+    Call printLatticeStatsToFile(ttms%tempion, 'PEAK_I', time, nstep, ttms%ttmstats,ttms,comm)
+    Call peakProfiler(ttms%tempion, 'LATS_I', nstep, ttms%ttmtraj,ttms,comm)
   End If
 
   ! Save restart data for real simulations only (final)
@@ -744,7 +746,7 @@ program dl_poly
     Call system_revive &
       (neigh%cutoff,rbin,megatm,nstep,tstep,time,ios,tmst, &
       stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
-    If (l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,comm)
+    If (ttms%l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,ttms,comm)
   End If
 
   ! Produce summary of simulation
@@ -882,8 +884,9 @@ Contains
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
+  Subroutine w_integrate_vv(isw,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
     Integer, Intent( In    ) :: isw ! used for vv stage control
+    Type( ttm_type ), Intent( InOut ) :: ttm
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -944,9 +947,10 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
+  Subroutine w_md_vv(mxatdm_,ttm,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
     dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
     ext_field,rigid,domain,seed,traj,kim_data,tmr)
+    Type( ttm_type ), Intent( InOut ) :: ttm
     Type( io_type ), Intent( InOut ) :: io
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( rsd_type ), Intent( InOut ) :: rsdc

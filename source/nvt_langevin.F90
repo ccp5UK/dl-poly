@@ -10,9 +10,8 @@ Module nvt_langevin
                               apply_rattle,constraints_type
   Use pmf,             Only : pmf_tags,pmf_type
   Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
-  Use ttm,             Only : delx,dely,delz,gvar,l_epcp,l_ttm,oneway,zerocell, &
-                              ttmvom,ntcell,act_ele_cell,eltemp,tempion
-  Use ttm_utils,       Only : Gep,calcchies,eltemp_max
+  Use ttm, Only : ttm_type,eltemp_max
+  Use ttm_utils,       Only : Gep,calcchies
   Use numerics,        Only : seed_type,images
   Use langevin,        Only : langevin_forces
   Use shared_units,    Only : update_shared_units
@@ -1174,28 +1173,28 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   End Subroutine nvt_l1_vv
 
   Subroutine nvt_l2_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,engke, &
-      cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
+    ttm,cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for integrating newtonian equations of motion in
-  ! molecular dynamics - velocity verlet with inhomogeneous
-  ! (two-temperature) Langevin thermostat, based on Langevin impulse 
-  ! (LI) integration
-  !
-  ! Ref: Jesus A. Izaguirre, `Langevin Stabilisation of Multiscale
-  !      Mollified Dynamics', editors: A. Brandt, K. Binder, J. Bernholc,
-  !      Multiscale Computational Methods in Chemistry and Physics,
-  !      January 2001, vol. 117 of NATO Science Series: Series III -
-  !      Computer and System Sciences, pp. 34-47, IOS Press, Amsterdam
-  !
-  ! (brownian dynamics is not symplectic due to the random forces)
-  !
-  ! copyright - daresbury laboratory
-  ! authors   - i.t.todorov & m.a.seaton june 2017
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for integrating newtonian equations of motion in
+    ! molecular dynamics - velocity verlet with inhomogeneous
+    ! (two-temperature) Langevin thermostat, based on Langevin impulse 
+    ! (LI) integration
+    !
+    ! Ref: Jesus A. Izaguirre, `Langevin Stabilisation of Multiscale
+    !      Mollified Dynamics', editors: A. Brandt, K. Binder, J. Bernholc,
+    !      Multiscale Computational Methods in Chemistry and Physics,
+    !      January 2001, vol. 117 of NATO Science Series: Series III -
+    !      Computer and System Sciences, pp. 34-47, IOS Press, Amsterdam
+    !
+    ! (brownian dynamics is not symplectic due to the random forces)
+    !
+    ! copyright - daresbury laboratory
+    ! authors   - i.t.todorov & m.a.seaton june 2017
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type( ttm_type ), Intent(InOut ) :: ttm
     Integer,           Intent( In    ) :: isw
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
@@ -1218,9 +1217,9 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Integer                 :: fail(1:9),i,ia,ja,ka,ijk
     Real( Kind = wp )       :: hstep,rstep,chi
     Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,vom(1:3), &
-                               t0,t1,t2,scr1,scl1,scv1,                 &
-                               t0a,t1a,t2a,t0b,t1b,t2b,scr1a,scl1a,     &
-                               scv1a,scr1b,scl1b,scv1b,velsq,eltempmax
+      t0,t1,t2,scr1,scl1,scv1,                 &
+      t0a,t1a,t2a,t0b,t1b,t2b,scr1a,scl1a,     &
+      scv1a,scr1b,scl1b,scv1b,velsq,eltempmax
 
 
     Logical,           Allocatable :: lstitr(:)
@@ -1280,14 +1279,14 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! Rescale chi to match average electronic temperature if
   ! using homogeneous electron-phonon coupling
-    If (l_ttm .and. gvar==1) Then
-      Call calcchies(thermo%chi_ep,comm)
+    If (ttm%l_ttm .and. ttm%gvar==1) Then
+      Call calcchies(thermo%chi_ep,ttm,comm)
     End If
 
   ! check whether or not Langevin forces are needed: if electron-phonon
   ! friction coefficient is/will be greater than zero and coupling is 
   ! switched on after time offset
-    lrand = ((thermo%chi_ep>zero_plus .or. gvar==2) .and. l_epcp)
+    lrand = ((thermo%chi_ep>zero_plus .or. ttm%gvar==2) .and. ttm%l_epcp)
 
   ! first pass of velocity verlet algorithm
     If (isw == 0) Then
@@ -1316,8 +1315,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
        End If
 
        If (lrand) Then
-         Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi_ep,fxr,fyr,fzr,cshell,config,seed)
-         Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi_ep,fxl,fyl,fzl,cshell,config,seed)
+         Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi_ep,fxr,fyr,fzr,cshell,config,seed,ttm)
+         Call langevin_forces(-nstep,thermo%temp,tstep,thermo%chi_ep,fxl,fyl,fzl,cshell,config,seed,ttm)
        Else
          fxr = 0.0_wp; fyr = 0.0_wp; fzr = 0.0_wp
          fxl = 0.0_wp; fyl = 0.0_wp; fzl = 0.0_wp
@@ -1342,12 +1341,12 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! Create primitive scalers and adjust/increase timestep if need be
   ! when Cholesky factorisation is compromised
 
-       Select Case (gvar)
+       Select Case (ttm%gvar)
        Case (0,1)
          chi = Max (thermo%chi_ep, thermo%chi_ep+thermo%chi_es)
        Case (2)
-         Call eltemp_max (eltempmax,comm)
-         chi = Gep(eltempmax)
+         Call eltemp_max (eltempmax,ttm,comm)
+         chi = Gep(eltempmax,ttm)
          chi = Max (chi, chi+thermo%chi_es)
        End Select
        t0 = Exp(-chi*tstep)
@@ -1376,9 +1375,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
   ! Create complex scalers: only for constant and homogeneous 
   ! electron-phonon coupling
 
-       Select Case (gvar)
+       Select Case (ttm%gvar)
        Case (0,1)
-         chi = Merge(thermo%chi_ep,0.0_wp,l_epcp)+thermo%chi_es
+         chi = Merge(thermo%chi_ep,0.0_wp,ttm%l_epcp)+thermo%chi_es
          t0a = Exp(-chi*tstep)
          If (chi>zero_plus) Then
            t1a = (1.0_wp-t0a   )/(  chi)
@@ -1412,9 +1411,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! update velocity and position
 
-       If (l_ttm) Then
+       If (ttm%l_ttm) Then
 
-         If (oneway) Then
+         If (ttm%oneway) Then
          ! one-way electron-phonon coupling
            Do i=1,config%natms
               velsq = config%vxx(i)*config%vxx(i)+config%vyy(i)*config%vyy(i)+config%vzz(i)*config%vzz(i)
@@ -1422,12 +1421,12 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
               If (config%weight(i) > 1.0e-6_wp) Then
                  ! check for active config%cell and electronic temperature is
                  ! higher than ionic tmeperature: if not, switch off thermostat
-                 ia = Floor((config%parts(i)%xxx+zerocell(1))/delx) + 1
-                 ja = Floor((config%parts(i)%yyy+zerocell(2))/dely) + 1
-                 ka = Floor((config%parts(i)%zzz+zerocell(3))/delz) + 1
-                 ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-                 If (act_ele_cell(ijk,0,0,0)>zero_plus .and. eltemp(ijk,0,0,0)>tempion(ijk)) Then
-                   Select Case (gvar)
+                 ia = Floor((config%parts(i)%xxx+ttm%zerocell(1))/ttm%delx) + 1
+                 ja = Floor((config%parts(i)%yyy+ttm%zerocell(2))/ttm%dely) + 1
+                 ka = Floor((config%parts(i)%zzz+ttm%zerocell(3))/ttm%delz) + 1
+                 ijk = 1 + ia + (ttm%ntcell(1)+2) * (ja + (ttm%ntcell(2)+2) * ka)
+                 If (ttm%act_ele_cell(ijk,0,0,0)>zero_plus .and. ttm%eltemp(ijk,0,0,0)>ttm%tempion(ijk)) Then
+                   Select Case (ttm%gvar)
                    Case (0,1)
                      t0 = Merge(t0a,t0b,lvel)
                      t1 = Merge(t1a,t1b,lvel)
@@ -1435,8 +1434,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
                      scl1 = Merge(scl1a,scl1b,lvel)
                      scv1 = Merge(scv1a,scv1b,lvel)
                    Case (2)
-                     chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
-                     If (l_epcp) Then
+                     chi = Merge(Gep(ttm%eltemp(ijk,0,0,0),ttm),0.0_wp,ttm%l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
+                     If (ttm%l_epcp) Then
                        t0 = Exp(-tstep*chi)
                        t1 = (1.0_wp-t0)/chi
                        t2 = (1.0_wp-t0**2)/(2*chi)
@@ -1476,9 +1475,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! Full time fluctuations on half-kick perculiar (thermal only) velocity
 
-                 config%vxx(i)=(config%vxx(i)-ttmvom(ijk,1))*t0+tmp*fxr(i)*scv1+ttmvom(ijk,1)
-                 config%vyy(i)=(config%vyy(i)-ttmvom(ijk,2))*t0+tmp*fyr(i)*scv1+ttmvom(ijk,2)
-                 config%vzz(i)=(config%vzz(i)-ttmvom(ijk,3))*t0+tmp*fzr(i)*scv1+ttmvom(ijk,3)
+                 config%vxx(i)=(config%vxx(i)-ttm%ttmvom(ijk,1))*t0+tmp*fxr(i)*scv1+ttm%ttmvom(ijk,1)
+                 config%vyy(i)=(config%vyy(i)-ttm%ttmvom(ijk,2))*t0+tmp*fyr(i)*scv1+ttm%ttmvom(ijk,2)
+                 config%vzz(i)=(config%vzz(i)-ttm%ttmvom(ijk,3))*t0+tmp*fzr(i)*scv1+ttm%ttmvom(ijk,3)
 
               End If
            End Do
@@ -1490,12 +1489,12 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
               lvel = (velsq>thermo%vel_es2 .and. thermo%chi_es>zero_plus)
               If (config%weight(i) > 1.0e-6_wp) Then
                  ! check for active config%cell: if not, switch off thermostat
-                 ia = Floor((config%parts(i)%xxx+zerocell(1))/delx) + 1
-                 ja = Floor((config%parts(i)%yyy+zerocell(2))/dely) + 1
-                 ka = Floor((config%parts(i)%zzz+zerocell(3))/delz) + 1
-                 ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-                 If (act_ele_cell(ijk,0,0,0)>zero_plus) Then
-                   Select Case (gvar)
+                 ia = Floor((config%parts(i)%xxx+ttm%zerocell(1))/ttm%delx) + 1
+                 ja = Floor((config%parts(i)%yyy+ttm%zerocell(2))/ttm%dely) + 1
+                 ka = Floor((config%parts(i)%zzz+ttm%zerocell(3))/ttm%delz) + 1
+                 ijk = 1 + ia + (ttm%ntcell(1)+2) * (ja + (ttm%ntcell(2)+2) * ka)
+                 If (ttm%act_ele_cell(ijk,0,0,0)>zero_plus) Then
+                   Select Case (ttm%gvar)
                    Case (0,1)
                      t0 = Merge(t0a,t0b,lvel)
                      t1 = Merge(t1a,t1b,lvel)
@@ -1503,8 +1502,8 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
                      scl1 = Merge(scl1a,scl1b,lvel)
                      scv1 = Merge(scv1a,scv1b,lvel)
                    Case (2)
-                     chi = Merge(Gep(eltemp(ijk,0,0,0)),0.0_wp,l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
-                     If (l_epcp) Then
+                     chi = Merge(Gep(ttm%eltemp(ijk,0,0,0),ttm),0.0_wp,ttm%l_epcp) + Merge(thermo%chi_es,0.0_wp,lvel)
+                     If (ttm%l_epcp) Then
                        t0 = Exp(-tstep*chi)
                        t1 = (1.0_wp-t0)/chi
                        t2 = (1.0_wp-t0**2)/(2*chi)
@@ -1546,9 +1545,9 @@ Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
 
   ! Full time fluctuations on half-kick peculiar (thermal only) velocity
 
-                 config%vxx(i)=(config%vxx(i)-ttmvom(ijk,1))*t0+tmp*fxr(i)*scv1+ttmvom(ijk,1)
-                 config%vyy(i)=(config%vyy(i)-ttmvom(ijk,2))*t0+tmp*fyr(i)*scv1+ttmvom(ijk,2)
-                 config%vzz(i)=(config%vzz(i)-ttmvom(ijk,3))*t0+tmp*fzr(i)*scv1+ttmvom(ijk,3)
+                 config%vxx(i)=(config%vxx(i)-ttm%ttmvom(ijk,1))*t0+tmp*fxr(i)*scv1+ttm%ttmvom(ijk,1)
+                 config%vyy(i)=(config%vyy(i)-ttm%ttmvom(ijk,2))*t0+tmp*fyr(i)*scv1+ttm%ttmvom(ijk,2)
+                 config%vzz(i)=(config%vzz(i)-ttm%ttmvom(ijk,3))*t0+tmp*fzr(i)*scv1+ttm%ttmvom(ijk,3)
 
               End If
            End Do

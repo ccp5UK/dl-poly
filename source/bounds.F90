@@ -18,7 +18,7 @@ Module bounds
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
   Use mpole,           Only : mpole_type,POLARISATION_CHARMM
-  Use ttm,             Only : delx,dely,delz,volume,rvolume,ntsys,eltsys,redistribute,sysrho
+  Use ttm,             Only : ttm_type 
   Use numerics,        Only : dcell
   Use Kontrol,         Only : scan_control, scan_control_pre
   Use configuration,   Only : scan_config,read_config
@@ -50,12 +50,12 @@ Module bounds
 
 Contains
 
-Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-           dvar,rbin,nstfce,      &
-  width,max_site,io,cshell,cons,pmf,stats,thermo,green,devel,      &
-           msd_data,met,pois,bond,angle,dihedral,     &
-           inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
-           mpoles,ext_field,rigid,electro,domain,config,ewld,kim_data,comm)
+  Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
+    dvar,rbin,nstfce,      &
+    width,max_site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
+    msd_data,met,pois,bond,angle,dihedral,     &
+    inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
+    mpoles,ext_field,rigid,electro,domain,config,ewld,kim_data,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -75,6 +75,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
   Real( Kind = wp ), Intent(   Out ) :: dvar
   Real( Kind = wp ), Intent(   Out ) :: rbin,width
   Integer( Kind = wi ), Intent(   Out ) :: max_site
+  Type( ttm_type ), Intent( InOut ) :: ttm
   Type( io_type ), Intent( InOut ) :: io
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -142,12 +143,12 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 ! scan CONTROL file data
 
   Call scan_control                                        &
-           (rcter, &
-           rigid%max_rigid,config%imcon,config%imc_n,config%cell,xhi,yhi,zhi,             &
-           mxgana,         &
-           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rbin,                         &
-           nstfce,cshell,stats,thermo, &
+    (rcter, &
+    rigid%max_rigid,config%imcon,config%imc_n,config%cell,xhi,yhi,zhi,             &
+    mxgana,         &
+    l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
+    rbin,                         &
+    nstfce,ttm,cshell,stats,thermo, &
            green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
            zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
 
@@ -201,7 +202,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
   End If
 
 ! calculate dimensional properties of simulation cell
-! (for use in link-cells) and volume and define min cell width
+! (for use in link-cells) and ttm%volume and define min cell width
 
   Call dcell(config%cell,celprp)
   width=Min(celprp(7),celprp(8),celprp(9))
@@ -401,7 +402,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 
   If (l_usr) Then
      rdf%cutoff_usr   = 0.45_wp*width
-     rdf%max_grid_usr = Nint(rdf%cutoff_usr/rbin)      ! allows for up to ~75% system volume shrinkage
+     rdf%max_grid_usr = Nint(rdf%cutoff_usr/rbin)      ! allows for up to ~75% system ttm%volume shrinkage
      rdf%cutoff_usr   = Real(rdf%max_grid_usr,wp)*rbin ! round up and beautify for Andrey Brukhno's sake
   Else
      rdf%cutoff_usr   = 0.0_wp
@@ -794,7 +795,7 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
      neigh%max_list=neigh%max_exclude-1
   End If
 
-! get link-cell volume
+! get link-cell ttm%volume
 
   vcell = config%volm / (Real(ilx*ily*ilz,wp) * Real(comm%mxnode,wp))
 
@@ -902,34 +903,35 @@ Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
 ! in x- and y-directions based on number in z-direction
 ! and system size
 
-  delz     = config%cell(9)/Real(ntsys(3),wp)
-  ntsys(1) = Nint(config%cell(1)/delz)
-  ntsys(2) = Nint(config%cell(5)/delz)
-  delx     = config%cell(1)/Real(ntsys(1),wp)
-  dely     = config%cell(5)/Real(ntsys(2),wp)
-  volume   = delx*dely*delz
-  rvolume  = 1.0_wp/volume
+  ttm%delz     = config%cell(9)/Real(ttm%ntsys(3),wp)
+  ttm%ntsys(1) = Nint(config%cell(1)/ttm%delz)
+  ttm%ntsys(2) = Nint(config%cell(5)/ttm%delz)
+  ttm%delx     = config%cell(1)/Real(ttm%ntsys(1),wp)
+  ttm%dely     = config%cell(5)/Real(ttm%ntsys(2),wp)
+  ttm%volume   = ttm%delx*ttm%dely*ttm%delz
+  ttm%rvolume  = 1.0_wp/ttm%volume
 
 ! Check number of electronic temperature cells is greater than/
 ! equal to number of ionic temperature cells
 
-  If (Any(eltsys<ntsys)) Call error(670)
+  If (Any(ttm%eltsys<ttm%ntsys)) Call error(670)
 
-! If redistribute option selected, check for sufficient electronic temperature
-! cells to redistribute energy when ionic tmeperature cells are switched off:
+! If ttm%redistribute option selected, check for sufficient electronic temperature
+! cells to ttm%redistribute energy when ionic tmeperature cells are switched off:
 ! if not available, switch off this option
 
-  If (redistribute .and. (eltsys(1)<ntsys(1)+2 .or. eltsys(2)<ntsys(2)+2 .or. eltsys(3)<ntsys(3)+2)) Then
+  If (ttm%redistribute .and. (ttm%eltsys(1)<ttm%ntsys(1)+2 &
+    .or. ttm%eltsys(2)<ttm%ntsys(2)+2 .or. ttm%eltsys(3)<ttm%ntsys(3)+2)) Then
     Call warning(500,0.0_wp,0.0_wp,0.0_wp)
-    redistribute = .false.
+    ttm%redistribute = .false.
   End If
 
 ! Calculate average atomic density: if not overridden by
 ! 'ttm atomdens' directive in CONTROL file, will be used
-! to convert specific heat capacities to volumetric 
+! to convert specific heat capacities to ttm%volumetric 
 ! heat capacity etc.
 
-  sysrho = Real(megatm,Kind=wp)/(config%cell(1)*config%cell(5)*config%cell(9))
+  ttm%sysrho = Real(megatm,Kind=wp)/(config%cell(1)*config%cell(5)*config%cell(9))
 
 End Subroutine set_bounds
 

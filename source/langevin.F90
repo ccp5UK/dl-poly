@@ -17,7 +17,7 @@ Module langevin
   Use configuration,     Only : configuration_type
   Use particle,          Only : corePart
   Use core_shell, Only : core_shell_type
-  Use ttm,        Only : eltemp,zerocell,ntcell,delx,dely,delz,gvar,l_ttm,nstepcpl
+  Use ttm,        Only : ttm_type 
   Use ttm_utils,         Only : Gep
   Use numerics, Only : seed_type,box_mueller_saru3
   Use errors_warnings, Only : error
@@ -44,7 +44,7 @@ Contains
 
   End Subroutine langevin_allocate_arrays
   
-  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr,cshell,config,seed)
+  Subroutine langevin_forces(nstep,temp,tstep,chi,fxr,fyr,fzr,cshell,config,seed,ttm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -65,33 +65,34 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer          , Intent( In    ) :: nstep
-  Real( Kind = wp ), Intent( In    ) :: temp,tstep,chi
-  Real( Kind = wp ), Intent(   Out ) :: fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms)
-  Type( core_shell_type ), Intent( InOut ) :: cshell
-  Type( configuration_type ), Intent( InOut ) :: config
-  Type(seed_type), Intent(InOut) :: seed
-  Integer           :: i,ia,ja,ka,ijk
-  Real( Kind = wp ) :: scale,tmp
+    Type( ttm_type ), Intent( InOut ),Optional :: ttm   
+    Integer          , Intent( In    ) :: nstep
+    Real( Kind = wp ), Intent( In    ) :: temp,tstep,chi
+    Real( Kind = wp ), Intent(   Out ) :: fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms)
+    Type( core_shell_type ), Intent( InOut ) :: cshell
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type(seed_type), Intent(InOut) :: seed
+    Integer           :: i,ia,ja,ka,ijk
+    Real( Kind = wp ) :: scale,tmp
 
-  If (l_ttm .and. nstep>nstepcpl) Then
+    If (Present(ttm) .and. ttm%l_ttm .and. nstep>ttm%nstepcpl) Then
 
 ! Rescale chi for average electronic temperature if using
 ! homogeneous electron-phonon coupling
 
-    Select Case (gvar)
-    Case (0,1)
-    ! constant electron-phonon chi parameter and homogeneous
-    ! e-p coupling cases
-      scale = Sqrt(2.0_wp * chi * boltz / tstep)
-      Do i=1,config%natms
-        If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
-          Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
-          ia = Floor((config%parts(i)%xxx+zerocell(1))/delx) + 1
-          ja = Floor((config%parts(i)%yyy+zerocell(2))/dely) + 1
-          ka = Floor((config%parts(i)%zzz+zerocell(3))/delz) + 1
-          ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-          tmp = scale*Sqrt(eltemp(ijk,0,0,0)*config%weight(i))
+      Select Case (ttm%gvar)
+       Case (0,1)
+        ! constant electron-phonon chi parameter and homogeneous
+        ! e-p coupling cases
+        scale = Sqrt(2.0_wp * chi * boltz / tstep)
+        Do i=1,config%natms
+          If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
+            Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
+            ia = Floor((config%parts(i)%xxx+ttm%zerocell(1))/ttm%delx) + 1
+            ja = Floor((config%parts(i)%yyy+ttm%zerocell(2))/ttm%dely) + 1
+          ka = Floor((config%parts(i)%zzz+ttm%zerocell(3))/ttm%delz) + 1
+          ijk = 1 + ia + (ttm%ntcell(1)+2) * (ja + (ttm%ntcell(2)+2) * ka)
+          tmp = scale*Sqrt(ttm%eltemp(ijk,0,0,0)*config%weight(i))
 
           fxr(i) = fxr(i)*tmp
           fyr(i) = fyr(i)*tmp
@@ -110,11 +111,11 @@ Contains
       Do i=1,config%natms
         If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp .and. cshell%legshl(0,i) >= 0) Then
           Call box_mueller_saru3(seed,config%ltg(i),nstep,fxr(i),fyr(i),fzr(i))
-          ia = Floor((config%parts(i)%xxx+zerocell(1))/delx) + 1
-          ja = Floor((config%parts(i)%yyy+zerocell(2))/dely) + 1
-          ka = Floor((config%parts(i)%zzz+zerocell(3))/delz) + 1
-          ijk = 1 + ia + (ntcell(1)+2) * (ja + (ntcell(2)+2) * ka)
-          tmp = scale*Sqrt(Gep(eltemp(ijk,0,0,0))*eltemp(ijk,0,0,0)*config%weight(i))
+          ia = Floor((config%parts(i)%xxx+ttm%zerocell(1))/ttm%delx) + 1
+          ja = Floor((config%parts(i)%yyy+ttm%zerocell(2))/ttm%dely) + 1
+          ka = Floor((config%parts(i)%zzz+ttm%zerocell(3))/ttm%delz) + 1
+          ijk = 1 + ia + (ttm%ntcell(1)+2) * (ja + (ttm%ntcell(2)+2) * ka)
+          tmp = scale*Sqrt(Gep(ttm%eltemp(ijk,0,0,0),ttm)*ttm%eltemp(ijk,0,0,0)*config%weight(i))
 
           fxr(i) = fxr(i)*tmp
           fyr(i) = fyr(i)*tmp

@@ -88,11 +88,11 @@
 
 ! Switch on electron-phonon coupling only after time offset
 
-        l_epcp = (time >= ttmoffset)
+        ttm%l_epcp = (time >= ttm%ttmoffset)
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
+        Call w_integrate_vv(0,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
 
 ! Refresh mappings
 
@@ -120,15 +120,15 @@
 
 ! Evolve electronic temperature for two-temperature model
 
-        If (l_ttm) Then
-          Call ttm_ion_temperature(thermo,domain,config,comm)
+       If (ttm%l_ttm) Then
+         Call ttm_ion_temperature(ttm,thermo,domain,config,comm)
           Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump, &
-            nstrun,thermo,domain,comm)
+            nstrun,ttm,thermo,domain,comm)
         End If
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
+        Call w_integrate_vv(1,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
 
 ! Apply kinetic options
 
