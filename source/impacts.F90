@@ -5,7 +5,7 @@ Module impacts
   Use configuration,       Only : configuration_type
   Use rigid_bodies, Only : rigid_bodies_type
   Use core_shell,   Only : core_shell_type
-  Use kinetics,      Only : getvom,l_vom,chvom
+  Use kinetics,      Only : getvom
 
   Use numerics, Only : local_index
   Use errors_warnings, Only : error
@@ -60,7 +60,7 @@ Subroutine impact(rigid,cshell,impa,config,comm)
   Call gcheck(comm,safe)
   If (.not.safe) Call error(610)
 
-  Call chvom(.true.) ! Enable COM momentum removal
+  Call config%chvom(.true.) ! Enable COM momentum removal
 
 ! remove centre of mass motion
 
@@ -109,7 +109,7 @@ Subroutine impact(rigid,cshell,impa,config,comm)
      End Do
   End If
 
-  Call chvom(l_vom) ! default to specification
+  Call config%chvom() ! default to specification
 
 End Subroutine impact
 End Module impacts

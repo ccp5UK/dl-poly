@@ -94,29 +94,64 @@ Type configuration_type
   Type(corePart),       Allocatable       :: parts(:)
   Logical :: newjob_check_config = .true.
   Logical :: newjob_totmas = .true.
+  Logical :: newjob_totmas_r = .true.
+  Logical :: newjob_meg = .true.
   Real( Kind = wp ) :: totmas
-
-End Type configuration_type
-
-  Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
-  Public :: check_config
-  Public :: read_config_parallel
-  Public :: scan_config
-
-  Interface reallocate
-     Module Procedure reallocate_chr_v
-     Module Procedure reallocate_int_v
-     Module Procedure reallocate_rwp_v
-     Module Procedure reallocate_corePart_v
-  End Interface
-  Interface getcom
-    Module Procedure getcom_parts
-    Module Procedure getcom_arrays
-  End Interface getcom
-
-  Private :: reallocate_chr_v, reallocate_int_v, reallocate_rwp_v
+  Real( Kind = wp ) :: totmas_r
+  Real( Kind = wp ) :: meg
+  Logical, Public :: l_vom=.true.,lvom=.true. ! this is confusing and needless complicated
 
 Contains
+  Private
+  Procedure, Public :: chvom
+End Type configuration_type
+
+Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
+Public :: check_config
+Public :: read_config_parallel
+Public :: scan_config
+
+Interface reallocate
+  Module Procedure reallocate_chr_v
+  Module Procedure reallocate_int_v
+  Module Procedure reallocate_rwp_v
+  Module Procedure reallocate_corePart_v
+End Interface
+Interface getcom
+  Module Procedure getcom_parts
+  Module Procedure getcom_arrays
+End Interface getcom
+
+Private :: reallocate_chr_v, reallocate_int_v, reallocate_rwp_v
+
+Contains
+Pure Subroutine chvom(T,flag)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!
+! dl_poly_4 routine to change behaviour for COM momentum removal
+!
+! copyright - daresbury laboratory
+! author    - i.t.todorov july 2013
+!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Class(configuration_type), Intent( InOut ) :: T
+  Logical, Intent( In ),Optional :: flag
+
+
+  Logical :: lflag
+
+  lflag=T%l_vom
+  If (present(flag)) lflag=flag
+
+  If (lflag) Then
+    T%lvom=.true.  ! Remove COM momentum
+  Else
+    T%lvom=.false. ! Don't
+  End If
+
+End Subroutine chvom
+
 
   Subroutine  reallocate_corePart_v( delta, a, stat )
     Integer,                           Intent( In    ) :: delta

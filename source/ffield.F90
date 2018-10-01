@@ -49,8 +49,6 @@ Module ffield
                              FIELD_ZRES_PLUS, FIELD_ELECTRIC_OSCILLATING, &
                              FIELD_UMBRELLA
 
-  Use kinetics, Only : l_vom
-
 ! RDF MODULE
 
   Use rdfs, Only : rdf_type
@@ -4698,11 +4696,11 @@ Subroutine read_field                      &
            ext_field%key=FIELD_WALL
         Else If (keyword == 'xpis') Then
            ext_field%key=FIELD_WALL_PISTON
-           If (l_vom) Then
+           If (config%l_vom) Then
              Call info('"no vom" option auto-switched on - COM momentum removal will be abandoned',.true.)
              Call warning('this may lead to a build up of the COM momentum' &
                //'and a manifestation of the "flying ice-cube" effect',.true.)
-              l_vom=.false. ! exclude COM momentum rescaling by default
+             config%l_vom=.false. ! exclude COM momentum rescaling by default
            End If
         Else If (keyword == 'zres') Then
            ext_field%key=FIELD_ZRES
