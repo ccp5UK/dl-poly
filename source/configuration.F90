@@ -92,6 +92,10 @@ Type configuration_type
 !  Real( Kind = wp ),    Allocatable, Save :: fxx(:),fyy(:),fzz(:)
 
   Type(corePart),       Allocatable       :: parts(:)
+  Logical :: newjob_check_config = .true.
+  Logical :: newjob_totmas = .true.
+  Real( Kind = wp ) :: totmas
+
 End Type configuration_type
 
   Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
@@ -319,7 +323,6 @@ Contains
   Type( site_type ), Intent( In    ) :: sites
   Type( comms_type ), Intent( InOut ) :: comm
 
-  Logical, Save     :: newjob = .true.
   Logical           :: safe
   Integer           :: fail,k,l,m, &
                        indatm,totatm,mol_sit,loc_ind
@@ -338,7 +341,7 @@ Contains
   End If
 
 
-  If (newjob) Then
+  If (config%newjob_check_config) Then
      Write(message,"('configuration file name: ',10x,a)") config%cfgname
      Call info(message,.true.)
      Write(message,"('selected image convention',6x,i10)") config%imcon
@@ -383,7 +386,7 @@ Contains
 
 ! Specify molecular dynamics simulation cell
 
-  If (newjob) Then
+  If (config%newjob_check_config) Then
      Write(message,"('simulation cell vectors')")
      Call Info(message,.true.)
      Write(message,"(3f20.10)") config%cell(1:3)
@@ -500,7 +503,7 @@ Contains
 
 ! For subsequent checks
 
-  If (newjob) newjob=.false.
+  If (config%newjob_check_config) config%newjob_check_config=.false.
 
 Contains
 
@@ -3055,21 +3058,19 @@ Subroutine getcom_arrays(txx,tyy,tzz,config,com,comm)
   Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
   Type(comms_type),                    Intent( InOut ) :: comm
 
-  Logical,           Save :: newjob = .true.
-  Real( Kind = wp ), Save :: totmas
   Integer                 :: i
 
   ! total system mass
 
-    If (newjob) Then
-       newjob = .false.
+    If (config%newjob_totmas) Then
+       config%newjob_totmas = .false.
 
-       totmas = 0.0_wp
+       config%totmas = 0.0_wp
        Do i=1,config%natms
-          If (config%lfrzn(i) == 0) totmas = totmas + config%weight(i)
+          If (config%lfrzn(i) == 0) config%totmas = config%totmas + config%weight(i)
        End Do
 
-       Call gsum(comm,totmas)
+       Call gsum(comm,config%totmas)
     End If
 
     com = 0.0_wp
@@ -3083,7 +3084,7 @@ Subroutine getcom_arrays(txx,tyy,tzz,config,com,comm)
     End Do
 
     Call gsum(comm,com)
-    If (totmas >= zero_plus) com = com/totmas
+    If (config%totmas >= zero_plus) com = com/config%totmas
 
 
 End Subroutine getcom_arrays
@@ -3100,26 +3101,23 @@ Subroutine getcom_parts(config,com,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( configuration_type ),          Intent( In    ) :: config
+  Type( configuration_type ),          Intent( InOut    ) :: config
     Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
     Type(comms_type), Intent ( InOut )                   :: comm
-
-    Logical,           Save :: newjob = .true.
-    Real( Kind = wp ), Save :: totmas
 
     Integer                 :: i
 
 ! total system mass
 
-    If (newjob) Then
-       newjob = .false.
+    If (config%newjob_totmas) Then
+       config%newjob_totmas = .false.
 
-       totmas = 0.0_wp
+       config%totmas = 0.0_wp
        Do i=1,config%natms
-          If (config%lfrzn(i) == 0) totmas = totmas + config%weight(i)
+          If (config%lfrzn(i) == 0) config%totmas = config%totmas + config%weight(i)
        End Do
 
-       Call gsum(comm,totmas)
+       Call gsum(comm,config%totmas)
     End If
 
     com = 0.0_wp
@@ -3133,7 +3131,7 @@ Subroutine getcom_parts(config,com,comm)
     End Do
 
     Call gsum(comm,com)
-    If (totmas >= zero_plus) com = com/totmas
+    If (config%totmas >= zero_plus) com = com/config%totmas
 
   End Subroutine getcom_parts
 
