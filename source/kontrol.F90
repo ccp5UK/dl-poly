@@ -113,7 +113,7 @@ Contains
   End Subroutine control_type_line_printed
 
   Subroutine read_control                                &
-    (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
+    (levcfg,l_str,lsim,l_n_e,l_n_v,        &
     rbin,nstfce,width,     &
     l_exp,lecx,lfcap,l_top,          &
     lvar,leql,               &
@@ -148,7 +148,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( ttm_type ), Intent( InOut ) :: ttm
-  Logical,                Intent( In    ) :: l_str,lsim,l_vv,l_n_e,l_n_v
+  Logical,                Intent( In    ) :: l_str,lsim,l_n_e,l_n_v
   Integer,                Intent( In    ) :: levcfg
   Integer,                Intent( InOut ) :: nstfce
   Real( Kind = wp ),      Intent( In    ) :: rbin,width
@@ -209,7 +209,7 @@ Contains
   Integer( Kind = wi ) :: tmp_seed(1:3)
 
 
-  Logical                                 :: limp,lvv,lens,lforc,     &
+  Logical                                 :: limp,lens,lforc,     &
                                              ltemp,l_0,lpres,lstrext, &
                                              lstep,lplumed,safe,      &
                                              l_timjob,l_timcls
@@ -332,9 +332,8 @@ Contains
   thermo%freq_zero = 0
   l_0     = .false. ! T/=10K
 
-! default integration type (VV), ensemble switch (not defined) and key
+! default ensemble switch (not defined) and key
 
-  lvv    = .true.
   lens   = .false.
   thermo%ensemble = ENS_NVE
 
@@ -1221,23 +1220,10 @@ Contains
         Call get_word(record,word)
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
-        If (word(1:8) == 'leapfrog') lvv=.false.
-
-! thermo%key_dpd detected in scan_control
-
-        If (thermo%key_dpd > 0 .and. (lvv .neqv. l_vv)) Then
-          Call warning('Leapfrog Verlet selected integration defaulted to Velocity Verlet for DPD thermostats',.true.)
-        End If
 
 ! read ensemble
 
      Else If (word(1:8) == 'ensemble') Then
-
-        If (l_vv) Then
-          Call info('Integration : Velocity Verlet',.true.)
-        Else
-          Call info('Integration : Leapfrog Verlet',.true.)
-        End If
 
         Call get_word(record,word)
 
@@ -1267,7 +1253,6 @@ Contains
            Else If (word(1:4) == 'lang') Then
 
               thermo%ensemble = ENS_NVT_LANGEVIN
-              If (.not.l_vv) thermo%l_langevin = .true.
 
               Call get_word(record,word)
               thermo%chi = Abs(word_2_real(word))
@@ -1346,7 +1331,6 @@ Contains
            Else If (word(1:4) == 'ttm' .or. word(1:6) == 'inhomo') Then
 
               thermo%ensemble = ENS_NVT_LANGEVIN_INHOMO
-              If (.not.l_vv) thermo%l_langevin = .true.
 
               Call get_word(record,word)
               thermo%chi_ep  = Abs(word_2_real(word))
@@ -3045,11 +3029,6 @@ Contains
 
   If (.not.lens) Then
     Call warning(130,0.0_wp,0.0_wp,0.0_wp)
-    If (l_vv) Then
-      Call info('Integration : Velocity Verlet',.true.)
-    Else
-      Call info('Integration : Leapfrog Verlet',.true.)
-    End If
     If (ttm%l_ttm) Then
       Write(messages(1),'(a)') 'Ensemble : NVT inhomogeneous Langevin (Stochastic Dynamics)'
       Write(messages(2),'(a,1p,e12.4)') 'e-phonon friction (ps^-1) ',thermo%chi_ep
@@ -3674,7 +3653,7 @@ Contains
 End Subroutine read_control
 
 Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
-    l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce,ttm,cshell,stats, &
+    l_str,lsim,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce,ttm,cshell,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,files,comm)
 
@@ -3695,7 +3674,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( ttm_type ), Intent( InOut ) :: ttm
   Logical,           Intent( InOut ) :: l_n_e
-  Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_r,lzdn,l_n_v,l_ind
+  Logical,           Intent(   Out ) :: l_str,lsim,l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: max_rigid,imcon
   Integer,           Intent( InOut ) :: imc_n
   Integer,           Intent(   Out ) :: mxgana, &
@@ -3755,10 +3734,6 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 ! slab option default
 
   imc_n = imcon
-
-! integration flavour - velocity verlet assumed
-
-  l_vv = .true.
 
 ! default switches for intramolecular analysis grids
 
@@ -4094,7 +4069,6 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
         Call get_word(record,word)
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
         If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
-        If (word(1:8) == 'leapfrog') l_vv=.false.
 
 ! read analysis (intramolecular distribution calculation) option
 
@@ -4755,10 +4729,6 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   End Do
 
   If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
-
-! Enforce VV for DPD thermostat
-
-  If (thermo%key_dpd > 0) l_vv = .true.
 
 ! When not having dynamics or prepared to terminate
 ! expanding and not running the small system prepare to exit gracefully

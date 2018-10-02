@@ -22,7 +22,7 @@ Call statistics_collect           &
 
 ! VV forces evaluation report for 0th or weird restart
 
-If (l_vv .and. levcfg == 1) Then
+If (levcfg == 1) Then
   Call info('forces evaluated at (re)start for VV integration...',.true.)
   Call info('',.true.)
 End If

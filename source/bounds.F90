@@ -52,7 +52,7 @@ Module bounds
 
 Contains
 
-  Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
+  Subroutine set_bounds(levcfg,l_str,lsim,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,      &
     width,site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
     msd_data,met,pois,bond,angle,dihedral,     &
@@ -72,7 +72,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent(   Out ) :: l_str,lsim,l_vv,l_n_e,l_n_v,l_ind
+  Logical,           Intent(   Out ) :: l_str,lsim,l_n_e,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar
   Real( Kind = wp ), Intent(   Out ) :: rbin,width
@@ -146,7 +146,7 @@ Contains
 ! scan CONTROL file data
 
   Call scan_control(rcter,rigid%max_rigid,config%imcon,config%imc_n,config%cell, &
-    xhi,yhi,zhi,config%mxgana,l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce, &
+    xhi,yhi,zhi,config%mxgana,l_str,lsim,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce, &
     ttm,cshell,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral, &
     inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data, &
     files,comm)
