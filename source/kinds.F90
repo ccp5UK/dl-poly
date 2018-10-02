@@ -1,36 +1,30 @@
+!> Module setting the real and integer kinds used in the program
+!>
+!> Copyright - Daresbury Laboratory
 Module kinds
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module setting global working precision for Real numbers and
-! double precision for Integer numbers @ compile time
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov february 2012
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
-  Use iso_fortran_env, Only : real32, real64, real128,int64,int32
+  Use iso_fortran_env, Only : real32,real64,real128,int16,int32,int64
   Implicit None
 
-  Integer, Parameter :: sp = real32                      
-  !! single real
-  Integer, Parameter :: dp = real64  
-  !! double real
-  Integer, Parameter :: qp = real128 
-  !! quadrupole real
+  Private
 
-  Integer, Parameter :: wp = dp
-  
-  !! working real
-  
-  Integer, Parameter :: ni = int32       
-  !! normal 4byte integer
+  !> Single real
+  Integer, Parameter, Public :: sp = real32
+  !> Double real
+  Integer, Parameter, Public :: dp = real64
+  !> Quadrupole real
+  Integer, Parameter, Public :: qp = real128
 
-  Integer, Parameter :: li = int64       
-  !! long integer
+  !> Working real
+  Integer, Parameter, Public :: wp = dp
 
-  Integer, Parameter :: wi = ni
-    !! integer precision
+  !> Normal 4byte integer
+  Integer, Parameter, Public :: ni = int32
+  !> Long integer
+  Integer, Parameter, Public :: li = int64
+  !> Short integer
+  Integer, Parameter, Public :: si = int16
 
+  !> Working integer
+  Integer, Parameter, Public :: wi = ni
 End Module kinds

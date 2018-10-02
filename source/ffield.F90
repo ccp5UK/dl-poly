@@ -63,6 +63,7 @@ Module ffield
   Use constraints, Only : constraints_type
   Use pmf, Only : pmf_type
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
+  Use filename, Only : file_type,FILE_FIELD
 
   Implicit None
 
@@ -81,7 +82,7 @@ Subroutine read_field                      &
            atmfre,atmfrz,megatm,megfrz,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,sites,vdws, &
-           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,config,kim_data,comm)
+           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,config,kim_data,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -133,6 +134,7 @@ Subroutine read_field                      &
   Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( kim_type ), Intent( InOut ) :: kim_data
   Type( configuration_type ), Intent( InOut ) :: config
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -284,7 +286,7 @@ Subroutine read_field                      &
 ! open force field data file
 
   If (comm%idnode == 0) Then
-     Open(Unit=nfield, File = Trim(field), Status = 'old')
+     Open(Newunit=files(FILE_FIELD)%unit_no, File=files(FILE_FIELD)%filename,  Status = 'old')
   End If
   Call info(' ',.true.)
   Call info('system specification',.true.)
@@ -294,7 +296,7 @@ Subroutine read_field                      &
 
 ! omit first line
 
-  Call get_line(safe,nfield,record,comm)
+  Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
   If (.not.safe) Go To 2000
 
 ! read and process directives from field file
@@ -303,7 +305,7 @@ Subroutine read_field                      &
 
      word(1:1)='#'
      Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-        Call get_line(safe,nfield,record,comm)
+        Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
         If (.not.safe) Go To 2000
         Call get_word(record,word) ; Call lower_case(word)
      End Do
@@ -407,7 +409,7 @@ Subroutine read_field                      &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 2000
               Call get_word(record,word)
            End Do
@@ -426,7 +428,7 @@ Subroutine read_field                      &
 
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                 Call get_line(safe,nfield,record,comm)
+                 Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                  If (.not.safe) Go To 2000
                  Call lower_case(record)
                  Call get_word(record,word)
@@ -468,7 +470,7 @@ Subroutine read_field                      &
 
                        word(1:1)='#'
                        Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                          Call get_line(safe,nfield,record,comm)
+                          Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                           If (.not.safe) Go To 2000
                           Call get_word(record,word)
                        End Do
@@ -572,7 +574,7 @@ Subroutine read_field                      &
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 2000
                        Call get_word(record,word)
                     End Do
@@ -694,7 +696,7 @@ Subroutine read_field                      &
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 2000
                        Call get_word(record,word)
                     End Do
@@ -810,7 +812,7 @@ Subroutine read_field                      &
                  Do ipmf=1,2
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 2000
                        Call lower_case(record)
                        Call get_word(record,word)
@@ -833,7 +835,7 @@ Subroutine read_field                      &
                     Do jpmf=1,pmf%mxtpmf(ipmf)
                        word(1:1)='#'
                        Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                          Call get_line(safe,nfield,record,comm)
+                          Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                           If (.not.safe) Go To 2000
                           Call get_word(record,word)
                        End Do
@@ -994,7 +996,7 @@ Subroutine read_field                      &
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 2000
                        Call get_word(record,word)
                     End Do
@@ -1008,7 +1010,7 @@ Subroutine read_field                      &
                        If (Mod(jrgd,16) == 0) Then
                           word(1:1)='#'
                           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                             Call get_line(safe,nfield,record,comm)
+                             Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                              If (.not.safe) Go To 2000
                              Call get_word(record,word)
                           End Do
@@ -1130,7 +1132,7 @@ Subroutine read_field                      &
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 2000
                        Call get_word(record,word)
                     End Do
@@ -1238,7 +1240,7 @@ Subroutine read_field                      &
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 2000
                        Call get_word(record,word)
                     End Do
@@ -1469,7 +1471,7 @@ Subroutine read_field                      &
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 2000
                        Call get_word(record,word)
                     End Do
@@ -1721,7 +1723,7 @@ Subroutine read_field                      &
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 2000
                        Call get_word(record,word)
                     End Do
@@ -1976,7 +1978,7 @@ Subroutine read_field                      &
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 2000
                        Call get_word(record,word)
                     End Do
@@ -3336,7 +3338,7 @@ Subroutine read_field                      &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 2000
               Call get_word(record,word)
            End Do
@@ -3399,7 +3401,7 @@ Subroutine read_field                      &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 2000
               Call get_word(record,word)
            End Do
@@ -3990,7 +3992,7 @@ Subroutine read_field                      &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 2000
               Call get_word(record,word)
            End Do
@@ -4172,7 +4174,7 @@ Subroutine read_field                      &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 2000
               Call get_word(record,word)
            End Do
@@ -4205,7 +4207,7 @@ Subroutine read_field                      &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 2000
               Call get_word(record,word)
            End Do
@@ -4246,7 +4248,7 @@ Subroutine read_field                      &
 
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                 Call get_line(safe,nfield,record,comm)
+                 Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                  If (.not.safe) Go To 2000
                  Call get_word(record,word)
               End Do
@@ -4335,7 +4337,7 @@ Subroutine read_field                      &
 
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                 Call get_line(safe,nfield,record,comm)
+                 Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                  If (.not.safe) Go To 2000
                  Call get_word(record,word)
               End Do
@@ -4405,7 +4407,7 @@ Subroutine read_field                      &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 2000
               Call get_word(record,word)
            End Do
@@ -4545,7 +4547,7 @@ Subroutine read_field                      &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 2000
               Call get_word(record,word)
            End Do
@@ -4672,7 +4674,7 @@ Subroutine read_field                      &
 
         word(1:1)='#'
         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-           Call get_line(safe,nfield,record,comm)
+           Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
            If (.not.safe) Go To 2000
            Call get_word(record,word)
         End Do
@@ -4770,7 +4772,7 @@ Subroutine read_field                      &
 
      Else If (word(1:5) == 'close') Then
 
-        If (comm%idnode == 0) Close(Unit=nfield)
+        If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
 
 ! Precautions: (vdws,met) may have led to rdf scanning (rdf%max_rdf > 0), see set_bounds
 
@@ -4832,14 +4834,14 @@ Subroutine read_field                      &
 
 ! uncontrolled error exit from field file processing
 
-  If (comm%idnode == 0) Close(Unit=nfield)
+  If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
   Call error(16)
 
 ! end of field file error exit
 
 2000 Continue
 
-  If (comm%idnode == 0) Close(Unit=nfield)
+  If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
   Call error(52)
 
 End Subroutine read_field
@@ -5052,7 +5054,7 @@ End Subroutine report_topology
 Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
     mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
     lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
-    vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,comm)
+    vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5090,6 +5092,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( kim_type ), Intent( InOut ) :: kim_data
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude,mtshl
 ! Max number of different atom types
@@ -5228,22 +5231,22 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
 
 ! Open the interactions input file
 
-  If (comm%idnode == 0) Inquire(File=Trim(field), Exist=safe)
+  If (comm%idnode == 0) Inquire(File=files(FILE_FIELD)%filename, Exist=safe)
   Call gcheck(comm,safe,"enforce")
   If (.not.safe) Then
      Go To 20
   Else
-     If (comm%idnode == 0) Open(Unit=nfield, File=Trim(field), Status='old')
+     If (comm%idnode == 0) Open(Newunit=files(FILE_FIELD)%unit_no, File=files(FILE_FIELD)%filename, Status='old')
   End If
 
-  Call get_line(safe,nfield,record,comm)
+  Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
   If (.not.safe) Go To 30
 
   Do
 
      word(1:1)='#'
      Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-        Call get_line(safe,nfield,record,comm)
+        Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
         record_raw = record ! KIM needs case sensitive IM name
         If (.not.safe) Go To 30
         Call lower_case(record)
@@ -5273,7 +5276,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 30
               Call lower_case(record)
               Call get_word(record,word)
@@ -5283,7 +5286,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
 
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                 Call get_line(safe,nfield,record,comm)
+                 Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                  If (.not.safe) Go To 30
                  Call lower_case(record)
                  Call get_word(record,word)
@@ -5307,7 +5310,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
 
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
@@ -5354,7 +5357,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  Do ishls=1,numshl
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
@@ -5372,7 +5375,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  Do icon=1,numcon
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
@@ -5385,7 +5388,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  Do ipmf=1,2
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call lower_case(record)
                        Call get_word(record,word)
@@ -5406,7 +5409,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                     Do jpmf=1,pmf%mxtpmf(ipmf)
                        word(1:1)='#'
                        Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                          Call get_line(safe,nfield,record,comm)
+                          Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                           If (.not.safe) Go To 30
                           Call get_word(record,word)
                        End Do
@@ -5425,7 +5428,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  Do irgd=1,numrgd
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
@@ -5436,7 +5439,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                        If (Mod(lrgd,16) == 0) Then
                           word(1:1)='#'
                           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                             Call get_line(safe,nfield,record,comm)
+                             Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                              If (.not.safe) Go To 30
                              Call get_word(record,word)
                           End Do
@@ -5458,7 +5461,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  Do iteth=1,inumteth
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
@@ -5478,7 +5481,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  Do ibonds=1,numbonds
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
@@ -5522,7 +5525,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  Do iang=1,numang
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
@@ -5563,7 +5566,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  Do idih=1,numdih
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
@@ -5604,7 +5607,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  Do iinv=1,numinv
                     word(1:1)='#'
                     Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,nfield,record,comm)
+                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                        If (.not.safe) Go To 30
                        Call get_word(record,word)
                     End Do
@@ -5651,7 +5654,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
         Do itprdf=1,rdf%max_rdf
             word(1:1)='#'
             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-               Call get_line(safe,nfield,record,comm)
+               Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                If (.not.safe) Go To 30
                Call get_word(record,word)
             End Do
@@ -5673,7 +5676,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
         Do itpvdw=1,vdws%max_vdw
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 30
               Call lower_case(record)
               Call get_word(record,word)
@@ -5736,7 +5739,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
         Do itpmet=1,met%max_metal
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 30
               Call lower_case(record)
               Call get_word(record,word)
@@ -5834,7 +5837,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
         Do itpter=1,tersoffs%max_ter
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 30
               Call lower_case(record)
               Call get_word(record,word)
@@ -5849,7 +5852,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 30
               Call get_word(record,word)
            End Do
@@ -5860,7 +5863,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
            If (tersoffs%key_pot == 2) Then
               word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                 Call get_line(safe,nfield,record,comm)
+                 Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                  If (.not.safe) Go To 30
                  Call get_word(record,word)
               End Do
@@ -5872,7 +5875,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
               Do itpter=1,(tersoffs%max_ter*(tersoffs%max_ter+1))/2
                  word(1:1)='#'
                  Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                    Call get_line(safe,nfield,record,comm)
+                    Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                     If (.not.safe) Go To 30
                     Call get_word(record,word)
                  End Do
@@ -5890,7 +5893,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
         Do itptbp=1,threebody%mxtbp
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 30
               Call get_word(record,word)
            End Do
@@ -5911,7 +5914,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
         Do itpfbp=1,fourbody%max_four_body
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,nfield,record,comm)
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
               If (.not.safe) Go To 30
               Call get_word(record,word)
            End Do
@@ -5940,7 +5943,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
 
         word(1:1)='#'
         Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-           Call get_line(safe,nfield,record,comm)
+           Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
            If (.not.safe) Go To 30
            Call get_word(record,word)
         End Do
@@ -5956,7 +5959,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
   End Do
 
 10 Continue
-  If (comm%idnode == 0) Close(Unit=nfield)
+  If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
 
 ! Define legend arrays lengths.  If length > 0 then
 ! length=Max(length)+1 for the violation excess element
@@ -6003,7 +6006,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
   Return
 
 30 Continue
-  If (comm%idnode == 0) Close(Unit=nfield)
+  If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
   Call error(52)
   Return
 

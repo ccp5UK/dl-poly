@@ -1,7 +1,6 @@
 Module mpole
   Use kinds, Only : wp,wi
-  Use setup, Only : mxatdm, mxatms, &
-                           sqrpi,r4pie0,zero_plus,nrite,nmpldt
+  Use setup, Only : mxatdm,mxatms,sqrpi,r4pie0,zero_plus,nmpldt
   Use site, Only : site_type
   Use core_shell, Only : core_shell_type
   Use parse

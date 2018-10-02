@@ -49,6 +49,8 @@ Module system
   Use errors_warnings, Only : error, info, warning
   Use numerics, Only : dcell, images
   Use thermostat, Only : thermostat_type
+  Use filename, Only : file_type,FILE_REVOLD,FILE_REVIVE,FILE_CONFIG, &
+                       FILE_REVCON,FILE_FIELD
   Implicit None
   Private
   Public :: system_revive
@@ -56,10 +58,9 @@ Module system
   Public :: system_expand
   Contains
 
-  Subroutine system_init                                             &
-           (levcfg,rcut,rbin,keyres,megatm,    &
-           time,tmst,nstep,tstep,cshell,stats,devel,green,thermo,met, &
-           bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,config,comm)
+  Subroutine system_init(levcfg,rcut,rbin,keyres,megatm,time,tmst,nstep,tstep, &
+      cshell,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
+      zdensity,sites,vdws,rdf,config,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -94,6 +95,7 @@ Module system
   Type( vdw_type ), Intent( InOut ) :: vdws
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( configuration_type ), Intent( InOut ) :: config
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Character( Len = 40 ) :: forma  = ' '
@@ -213,7 +215,7 @@ Module system
 ! If REVOLD doesn't exist then abort (mishmashed REVOLD is handled separately)
 
      l_tmp=.true.
-     If (comm%idnode == 0) Inquire(File=Trim(revold), Exist=l_tmp)
+     If (comm%idnode == 0) Inquire(File=files(FILE_REVOLD)%filename, Exist=l_tmp)
      Call gcheck(comm,l_tmp,"enforce")
      If (.not.l_tmp) Call error(519)
 
@@ -222,11 +224,11 @@ Module system
      xyz(1:3)=0.0_wp
      If (comm%idnode == 0) Then
         If (devel%l_rin) Then
-           Open(Unit=nrest, file=Trim(revold), form='formatted', IOStat=keyio)
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) xyz(1),xyz(2),xyz(3)
+           Open(Newunit=files(FILE_REVOLD)%unit_no, file=files(FILE_REVOLD)%filename, form='formatted', IOStat=keyio)
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) xyz(1),xyz(2),xyz(3)
         Else
-           Open(Unit=nrest, file=Trim(revold), form='unformatted', IOStat=keyio)
-           Read(Unit=nrest, IOStat=keyio, End=100) xyz(1),xyz(2),xyz(3)
+           Open(Newunit=files(FILE_REVOLD)%unit_no, file=files(FILE_REVOLD)%filename, form='unformatted', IOStat=keyio)
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) xyz(1),xyz(2),xyz(3)
         End If
      End If
      Call gbcast(comm,xyz,0)
@@ -237,65 +239,79 @@ Module system
 
      If (comm%idnode == 0) Then
         If (devel%l_rin) Then
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) &
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) &
                dnstep,dtstep,time,tmst,dnumacc,thermo%chi_t,thermo%chi_p,thermo%cint
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) thermo%eta
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stpval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stpvl0
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%sumval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%ssqval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%zumval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%ravval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stkval
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%strcon
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%strpmf
-           Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stress
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) thermo%eta
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stpval
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stpvl0
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%sumval
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%ssqval
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%zumval
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%ravval
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stkval
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%strcon
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%strpmf
+           Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) stats%stress
 
-           If (rdf%l_collect) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf%rdf
-           If (rdf%max_grid_usr > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,rdf%usr
-           If (zdensity%l_collect) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfzdn,zdensity%density
+           If (rdf%l_collect) Then
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfrdf,rdf%rdf
+           ENd If
+           If (rdf%max_grid_usr > 0) Then
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,rdf%usr
+           End If
+           If (zdensity%l_collect) Then
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfzdn,zdensity%density
+           End If
            If (green%samp > 0) Then
-             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vafcount
-             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dvafstep
-             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vafdata
-             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vaf
-             Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%time
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vafcount
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) dvafstep
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vafdata
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%vaf
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) green%time
            End If
 
-           If (bond%bin_pdf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,bond%dst
-           If (angle%bin_adf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfang,angle%dst
-           If (dihedral%bin_adf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfdih,dihedral%dst
-           If (inversion%bin_adf > 0) Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfinv,inversion%dst
+           If (bond%bin_pdf > 0) Then
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfbnd,bond%dst
+           End If
+           If (angle%bin_adf > 0) Then
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfang,angle%dst
+           End If
+           If (dihedral%bin_adf > 0) Then
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfdih,dihedral%dst
+           End If
+           If (inversion%bin_adf > 0) Then
+             Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio, End=100) dncfinv,inversion%dst
+           End If
         Else
-           Read(Unit=nrest, IOStat=keyio, End=100) &
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) &
                dnstep,dtstep,time,tmst,dnumacc,thermo%chi_t,thermo%chi_p,thermo%cint
-           Read(Unit=nrest, IOStat=keyio, End=100) thermo%eta
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%stpval
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%stpvl0
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%sumval
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%ssqval
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%zumval
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%ravval
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%stkval
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%strcon
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%strpmf
-           Read(Unit=nrest, IOStat=keyio, End=100) stats%stress
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) thermo%eta
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%stpval
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%stpvl0
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%sumval
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%ssqval
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%zumval
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%ravval
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%stkval
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%strcon
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%strpmf
+           Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) stats%stress
 
-           If (rdf%l_collect) Read(Unit=nrest, IOStat=keyio, End=100) dncfrdf,rdf%rdf
-           If (rdf%max_grid_usr > 0) Read(Unit=nrest, IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,rdf%usr
-           If (zdensity%l_collect) Read(Unit=nrest, IOStat=keyio, End=100) dncfzdn,zdensity%density
+           If (rdf%l_collect) Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) dncfrdf,rdf%rdf
+           If (rdf%max_grid_usr > 0) Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) dmxgusr,drusr,dncfusr,rdf%usr
+           If (zdensity%l_collect) Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) dncfzdn,zdensity%density
            If (green%samp > 0) Then
-             Read(Unit=nrest, IOStat=keyio, End=100) green%vafcount
-             Read(Unit=nrest, IOStat=keyio, End=100) dvafstep
-             Read(Unit=nrest, IOStat=keyio, End=100) green%vafdata
-             Read(Unit=nrest, IOStat=keyio, End=100) green%vaf
-             Read(Unit=nrest, IOStat=keyio, End=100) green%time
+             Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) green%vafcount
+             Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) dvafstep
+             Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) green%vafdata
+             Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) green%vaf
+             Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) green%time
            End If
 
-           If (bond%bin_pdf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfbnd,bond%dst
-           If (angle%bin_adf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfang,angle%dst
-           If (dihedral%bin_adf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfdih,dihedral%dst
-           If (inversion%bin_adf > 0) Read(Unit=nrest, IOStat=keyio, End=100) dncfinv,inversion%dst
+           If (bond%bin_pdf > 0) Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) dncfbnd,bond%dst
+           If (angle%bin_adf > 0) Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) dncfang,angle%dst
+           If (dihedral%bin_adf > 0) Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) dncfdih,dihedral%dst
+           If (inversion%bin_adf > 0) Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio, End=100) dncfinv,inversion%dst
         End If
 
         nstep =Nint(dnstep)
@@ -331,7 +347,7 @@ Module system
      If (keyio /= 0) Then
         If (comm%idnode == 0) Then
            Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-           Close(Unit=nrest)
+           Close(Unit=files(FILE_REVOLD)%unit_no)
         End If
         keyres=3
         Go To 50
@@ -489,10 +505,10 @@ Module system
 
         If (comm%idnode == 0) Then
            If (devel%l_rin) Then
-              Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) &
+              Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio) &
                   xyz(0),xyz(1),xyz(2),xyz(3),xyz(4),xyz(5),xyz(6)
            Else
-              Read(Unit=nrest, IOStat=keyio) &
+              Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio) &
                   xyz(0),xyz(1),xyz(2),xyz(3),xyz(4),xyz(5),xyz(6)
            End If
         End If
@@ -523,7 +539,7 @@ Module system
      If (i_tmp /= 0) Then
         If (comm%idnode == 0) Then
            Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-           Close(Unit=nrest)
+           Close(Unit=files(FILE_REVOLD)%unit_no)
         End If
         keyres=3
         Go To 50
@@ -541,10 +557,10 @@ Module system
 
             If (comm%idnode == 0) Then
                If (devel%l_rin) Then
-                  Read(Unit=nrest, Fmt=forma, Advance='No', IOStat=keyio) &
+                  Read(Unit=files(FILE_REVOLD)%unit_no, Fmt=forma, Advance='No', IOStat=keyio) &
                       xyz(0),xyz(1),xyz(2),xyz(3)
                Else
-                  Read(Unit=nrest, IOStat=keyio) &
+                  Read(Unit=files(FILE_REVOLD)%unit_no, IOStat=keyio) &
                       xyz(0),xyz(1),xyz(2),xyz(3)
                End If
             End If
@@ -571,7 +587,7 @@ Module system
        If (i_tmp /= 0) Then
           If (comm%idnode == 0) Then
              Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-             Close(Unit=nrest)
+             Close(Unit=files(FILE_REVOLD)%unit_no)
           End If
           keyres=3
           Go To 50
@@ -579,7 +595,7 @@ Module system
 
      End If
 
-     If (comm%idnode == 0) Close(Unit=nrest)
+     If (comm%idnode == 0) Close(Unit=files(FILE_REVOLD)%unit_no)
 
   Else
 
@@ -627,7 +643,7 @@ Module system
 End Subroutine system_init
 
 Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
-                         dihedral,inversion,sites,netcdf,rigid,config,comm)
+    dihedral,inversion,sites,netcdf,rigid,config,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -660,6 +676,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( rigid_bodies_type ), Intent( In    ) :: rigid
   Type( configuration_type ),   Intent( InOut ) :: config
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Integer, Parameter     :: recsz = 73 ! default record size
@@ -752,9 +769,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
   record= ' ' ; Write(record,'(3(a1,i0))') '_',nx,'_',ny,'_',nz
   fcfg=' '
-  fcfg=Trim(config_name) // record(1:Len_Trim(record))
+  fcfg=Trim(files(FILE_CONFIG)%filename) // record(1:Len_Trim(record))
   ffld=' '
-  ffld=Trim(field) // record(1:Len_Trim(record))
+  ffld=Trim(files(FILE_FIELD)%filename) // record(1:Len_Trim(record))
   fmpl=' '
   fmpl="MPOLES" // record(1:Len_Trim(record))
 
@@ -838,9 +855,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
      Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
               io_write == IO_WRITE_SORTED_MASTER ) Then
 
-        Open(Unit=nconf, File=fcfg(1:Len_Trim(fcfg)), Status='replace')
-        Close(Unit=nconf)
-        Open(Unit=nconf, File=fcfg(1:Len_Trim(fcfg)), Form='formatted', Access='direct', Recl=recsz)
+        Open(Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Status='replace')
+        Close(Unit=files(FILE_CONFIG)%unit_no)
+        Open(Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Form='formatted', Access='direct', Recl=recsz)
      End If
 
 ! Write configuration file headers
@@ -897,14 +914,16 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
      Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
               io_write == IO_WRITE_SORTED_MASTER ) Then
 
-        Write(Unit=nconf, Fmt='(a72,a1)',         Rec=Int(1,li)) config%cfgname(1:72),lf
-        Write(Unit=nconf, Fmt='(3i10,a42,a1)',    Rec=Int(2,li)) 0,config%imcon,nall*megatm,Repeat(' ',42),lf
-        Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(3,li)) fx*config%cell(1),fx*config%cell(2),&
-                                                                 fx*config%cell(3),Repeat(' ',12),lf
-        Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(4,li)) fy*config%cell(4),fy*config%cell(5),&
-                                                                 fy*config%cell(6),Repeat(' ',12),lf
-        Write(Unit=nconf, Fmt='(3f20.12,a12,a1)', Rec=Int(5,li)) fz*config%cell(7),fz*config%cell(8),&
-                                                                 fz*config%cell(9),Repeat(' ',12),lf
+        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a72,a1)',         Rec=Int(1,li)) &
+          config%cfgname(1:72),lf
+        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3i10,a42,a1)',    Rec=Int(2,li)) &
+          0,config%imcon,nall*megatm,Repeat(' ',42),lf
+        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(3,li)) &
+          fx*config%cell(1),fx*config%cell(2),fx*config%cell(3),Repeat(' ',12),lf
+        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(4,li)) &
+          fy*config%cell(4),fy*config%cell(5),fy*config%cell(6),Repeat(' ',12),lf
+        Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(5,li)) &
+          fz*config%cell(7),fz*config%cell(8),fz*config%cell(9),Repeat(' ',12),lf
 
      End If
 
@@ -1550,9 +1569,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
                              If (comm%idnode == 0) Then
                                 rec=rec+Int(1,li)
-                                Write(Unit=nconf, Fmt='(a73)', Rec=rec) record2
+                                Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record2
                                 rec=rec+Int(1,li)
-                                Write(Unit=nconf, Fmt='(a73)', Rec=rec) record3
+                                Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record3
                              Else
                                 Call gsend(comm,record2,0,SysExpand_tag)
                                 Call gsend(comm,record3,0,SysExpand_tag)
@@ -1589,9 +1608,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
                              Call grecv(comm,record3,idm,SysExpand_tag)
 
                              rec=rec+Int(1,li)
-                             Write(Unit=nconf, Fmt='(a73)', Rec=rec) record2
+                             Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record2
                              rec=rec+Int(1,li)
-                             Write(Unit=nconf, Fmt='(a73)', Rec=rec) record3
+                             Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a73)', Rec=rec) record3
                           End If
                        End Do
                     End Do
@@ -1666,7 +1685,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
   Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
            io_write == IO_WRITE_SORTED_MASTER) Then
 
-     Close(Unit=nconf)
+     Close(Unit=files(FILE_CONFIG)%unit_no)
 
   End If
 
@@ -1685,23 +1704,23 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
   Call info(message,.true.)
 
   If (comm%idnode == 0) Then
-     Open(Unit=nfield, File='FIELD', Status='old')
-     Open(Unit=nconf, File=ffld(1:Len_Trim(ffld)), Status='replace')
+     Open(Newunit=files(FILE_FIELD)%unit_no, File='FIELD', Status='old')
+     Open(Newunit=files(FILE_CONFIG)%unit_no, File=ffld(1:Len_Trim(ffld)), Status='replace')
      Write(message,'(2a)')'*** Expanding FIELD in file ', ffld(1:Len_Trim(ffld))
      Call info(message,.true.)
 
 ! omit first line
 
      record=' '
-     Read(Unit=nfield, Fmt='(a)', End=10) record
+     Read(Unit=files(FILE_FIELD)%unit_no, Fmt='(a)', End=10) record
      Call tabs_2_blanks(record) ; Call strip_blanks(record)
-     Write(nconf,'(a)') record(1:Len_Trim(record))
+     Write(files(FILE_CONFIG)%unit_no,'(a)') record(1:Len_Trim(record))
 
 ! read and process directives from field file
 
      Do
         record=' '
-        Read(Unit=nfield, Fmt='(a)', End=10) record
+        Read(Unit=files(FILE_FIELD)%unit_no, Fmt='(a)', End=10) record
         Call tabs_2_blanks(record) ; Call strip_blanks(record)
         record1=record
         Call get_word(record,word)
@@ -1720,7 +1739,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
            Call get_word(record,word)
            index=Nint(word_2_real(word))
            Call get_word(record1,word)
-           Write(Unit=nconf,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
+           Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
 
 ! close force field file
 
@@ -1728,9 +1747,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
            Call gtime(t)
 
-           Write(Unit=nconf,Fmt='(a)') record1(1:Len_Trim(record1))
-           Close(Unit=nfield)
-           Close(Unit=nconf)
+           Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
+           Close(Unit=files(FILE_FIELD)%unit_no)
+           Close(Unit=files(FILE_CONFIG)%unit_no)
            Write(message,'(3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done !'
            Call info(message,.true.)
            Exit
@@ -1739,7 +1758,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
         Else
 
-           Write(nconf,'(a)') record1(1:Len_Trim(record1))
+           Write(files(FILE_CONFIG)%unit_no,'(a)') record1(1:Len_Trim(record1))
 
         End If
      End Do
@@ -1749,7 +1768,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
      If (lmpldt) Inquire(File='MPOLES', Exist=lmpldt)
      If (lmpldt) Then
         Open(Unit=nmpldt, File='MPOLES', Status='old')
-        Open(Unit=nconf, File=fmpl(1:Len_Trim(fmpl)), Status='replace')
+        Open(Newunit=files(FILE_CONFIG)%unit_no, File=fmpl(1:Len_Trim(fmpl)), Status='replace')
         Write(message,'(2a)')'*** Expanding MPOLES in file ', fmpl(1:Len_Trim(fmpl))
         Call info(message,.true.)
 
@@ -1758,7 +1777,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
         record=' '
         Read(Unit=nmpldt, Fmt='(a)', End=10) record
         Call tabs_2_blanks(record) ; Call strip_blanks(record)
-        Write(nconf,'(a)') record(1:Len_Trim(record))
+        Write(files(FILE_CONFIG)%unit_no,'(a)') record(1:Len_Trim(record))
 
 ! read and process directives from mpoles file
 
@@ -1775,7 +1794,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
               Call get_word(record,word)
               index=Nint(word_2_real(word))
               Call get_word(record1,word)
-              Write(Unit=nconf,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
+              Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a,i10)') word(1:Len_Trim(word)), nall*index
 
 ! close mpoles file
 
@@ -1783,9 +1802,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
               Call gtime(t)
 
-              Write(Unit=nconf,Fmt='(a)') record1(1:Len_Trim(record1))
+              Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
               Close(Unit=nmpldt)
-              Close(Unit=nconf)
+              Close(Unit=files(FILE_CONFIG)%unit_no)
               Write(message,'(3a)') '*** ', fmpl(1:Len_Trim(fmpl)), ' expansion done !'
               Call info(message,.true.)
               Exit
@@ -1794,7 +1813,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
            Else
 
-              Write(nconf,'(a)') record1(1:Len_Trim(record1))
+              Write(files(FILE_CONFIG)%unit_no,'(a)') record1(1:Len_Trim(record1))
 
            End If
         End Do
@@ -1820,10 +1839,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
 End Subroutine system_expand
 
-Subroutine system_revive                                      &
-  (rcut,rbin,megatm,nstep,tstep,time,io,tmst, &
-  stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity, &
-  rdf,netcdf,config,comm)
+Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, &
+    green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
+    files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1852,6 +1870,7 @@ Subroutine system_revive                                      &
   Type( rdf_type ), Intent( InOut ) :: rdf
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( configuration_type ), Intent( InOut ) :: config
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical               :: ready
@@ -2003,11 +2022,8 @@ Subroutine system_revive                                      &
   End If
 
 ! Write REVCON
-
-  name = Trim(revcon) ! file name
   levcfg = 2      ! define level of information in REVCON
-
-  Call write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,comm)
+  Call write_config(config,files(FILE_REVCON),levcfg,megatm,nstep,tstep,io,time,netcdf,comm)
 
 ! node 0 handles I/O
 
@@ -2016,74 +2032,101 @@ Subroutine system_revive                                      &
 ! Write accumulator data to dump file
 
      If (devel%l_rout) Then
-        Open(Unit=nrest, File=Trim(revive), Form='formatted', Status='replace')
+        Open(Newunit=files(FILE_REVIVE)%unit_no, File=files(FILE_REVIVE)%filename, Form='formatted', Status='replace')
 
-        Write(Unit=nrest, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
-        Write(Unit=nrest, Fmt=forma, Advance='No') &
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') &
              Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
-        Write(Unit=nrest, Fmt=forma, Advance='No') thermo%eta
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%stpval
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%stpvl0
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%sumval
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%ssqval
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%zumval
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%ravval
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%stkval
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%strcon
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%strpmf
-        Write(Unit=nrest, Fmt=forma, Advance='No') stats%stress
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') thermo%eta
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%stpval
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%stpvl0
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%sumval
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%ssqval
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%zumval
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%ravval
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%stkval
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%strcon
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%strpmf
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%stress
 
-        If (rdf%l_collect) Write(Unit=nrest, Fmt=forma, Advance='No') Real(rdf%n_configs,wp),rdf%rdf
+        If (rdf%l_collect) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') Real(rdf%n_configs,wp),rdf%rdf
+        End If
         If (rdf%max_grid_usr > 0) Then
-          Write(Unit=nrest, Fmt=forma, Advance='No') Real(rdf%max_grid_usr), &
-            rdf%cutoff_usr,Real(rdf%n_configs_usr,wp),rdf%usr
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') &
+            Real(rdf%max_grid_usr),rdf%cutoff_usr,Real(rdf%n_configs_usr,wp),rdf%usr
         End If
-        If (zdensity%l_collect) Write(Unit=nrest, Fmt=forma, Advance='No') Real(zdensity%n_samples,wp),zdensity%density
+        If (zdensity%l_collect) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') &
+            Real(zdensity%n_samples,wp),zdensity%density
+        End If
         If (green%samp > 0) Then
-          Write(Unit=nrest, Fmt=forma, Advance='No') green%vafcount
-          Write(Unit=nrest, Fmt=forma, Advance='No') Real(green%step,wp)
-          Write(Unit=nrest, Fmt=forma, Advance='No') green%vafdata
-          Write(Unit=nrest, Fmt=forma, Advance='No') green%vaf
-          Write(Unit=nrest, Fmt=forma, Advance='No') green%time
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') green%vafcount
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') Real(green%step,wp)
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') green%vafdata
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') green%vaf
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') green%time
         End If
 
-        If (bond%bin_pdf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(bond%n_frames,wp),bond%dst
-        If (angle%bin_adf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(angle%n_frames,wp),angle%dst
-        If (dihedral%bin_adf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(dihedral%n_frames,wp),dihedral%dst
-        If (inversion%bin_adf > 0) Write(Unit=nrest, Fmt=forma, Advance='No') Real(inversion%n_frames,wp),inversion%dst
+        If (bond%bin_pdf > 0) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') Real(bond%n_frames,wp),bond%dst
+        End If
+        If (angle%bin_adf > 0) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') Real(angle%n_frames,wp),angle%dst
+        End If
+        If (dihedral%bin_adf > 0) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') Real(dihedral%n_frames,wp),dihedral%dst
+        End If
+        If (inversion%bin_adf > 0) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') Real(inversion%n_frames,wp),inversion%dst
+        End If
      Else
-        Open(Unit=nrest, File=Trim(revive), Form='unformatted', Status='replace')
+        Open(Newunit=files(FILE_REVIVE)%unit_no, File=files(FILE_REVIVE)%filename, Form='unformatted', Status='replace')
 
-        Write(Unit=nrest) rcut,rbin,Real(megatm,wp)
-        Write(Unit=nrest) &
+        Write(Unit=files(FILE_REVIVE)%unit_no) rcut,rbin,Real(megatm,wp)
+        Write(Unit=files(FILE_REVIVE)%unit_no) &
              Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
-        Write(Unit=nrest) thermo%eta
-        Write(Unit=nrest) stats%stpval
-        Write(Unit=nrest) stats%stpvl0
-        Write(Unit=nrest) stats%sumval
-        Write(Unit=nrest) stats%ssqval
-        Write(Unit=nrest) stats%zumval
-        Write(Unit=nrest) stats%ravval
-        Write(Unit=nrest) stats%stkval
-        Write(Unit=nrest) stats%strcon
-        Write(Unit=nrest) stats%strpmf
-        Write(Unit=nrest) stats%stress
+        Write(Unit=files(FILE_REVIVE)%unit_no) thermo%eta
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%stpval
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%stpvl0
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%sumval
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%ssqval
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%zumval
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%ravval
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%stkval
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%strcon
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%strpmf
+        Write(Unit=files(FILE_REVIVE)%unit_no) stats%stress
 
-        If (rdf%l_collect) Write(Unit=nrest) Real(rdf%n_configs,wp),rdf%rdf
-        If (rdf%max_grid_usr > 0) Write(Unit=nrest) Real(rdf%max_grid_usr),rdf%cutoff_usr,Real(rdf%n_configs_usr,wp),rdf%usr
-        If (zdensity%l_collect) Write(Unit=nrest) Real(zdensity%n_samples,wp),zdensity%density
+        If (rdf%l_collect) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no) Real(rdf%n_configs,wp),rdf%rdf
+        End If
+        If (rdf%max_grid_usr > 0) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no) Real(rdf%max_grid_usr),rdf%cutoff_usr,Real(rdf%n_configs_usr,wp),rdf%usr
+        End If
+        If (zdensity%l_collect) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no) Real(zdensity%n_samples,wp),zdensity%density
+        End If
         If (green%samp > 0) Then
-          Write(Unit=nrest) green%vafcount
-          Write(Unit=nrest) Real(green%step,wp)
-          Write(Unit=nrest) green%vafdata
-          Write(Unit=nrest) green%vaf
-          Write(Unit=nrest) green%time
+          Write(Unit=files(FILE_REVIVE)%unit_no) green%vafcount
+          Write(Unit=files(FILE_REVIVE)%unit_no) Real(green%step,wp)
+          Write(Unit=files(FILE_REVIVE)%unit_no) green%vafdata
+          Write(Unit=files(FILE_REVIVE)%unit_no) green%vaf
+          Write(Unit=files(FILE_REVIVE)%unit_no) green%time
         End If
 
-        If (bond%bin_pdf > 0) Write(Unit=nrest) Real(bond%n_frames,wp),bond%dst
-        If (angle%bin_adf > 0) Write(Unit=nrest) Real(angle%n_frames,wp),angle%dst
-        If (dihedral%bin_adf > 0) Write(Unit=nrest) Real(dihedral%n_frames,wp),dihedral%dst
-        If (inversion%bin_adf > 0) Write(Unit=nrest) Real(inversion%n_frames,wp),inversion%dst
+        If (bond%bin_pdf > 0) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no) Real(bond%n_frames,wp),bond%dst
+        End If
+        If (angle%bin_adf > 0) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no) Real(angle%n_frames,wp),angle%dst
+        End If
+        If (dihedral%bin_adf > 0) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no) Real(dihedral%n_frames,wp),dihedral%dst
+        End If
+        If (inversion%bin_adf > 0) Then
+          Write(Unit=files(FILE_REVIVE)%unit_no) Real(inversion%n_frames,wp),inversion%dst
+        End If
      End If
 
 ! Write initial position and final displacement data to REVIVE
@@ -2122,12 +2165,12 @@ Subroutine system_revive                                      &
 
         If (devel%l_rout) Then
            Do i=1,jatms
-              Write(Unit=nrest, Fmt=forma, Advance='No') &
+              Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') &
                    Real(iwrk(i),wp),axx(i),ayy(i),azz(i),bxx(i),byy(i),bzz(i)
            End Do
         Else
            Do i=1,jatms
-              Write(Unit=nrest) Real(iwrk(i),wp),axx(i),ayy(i),azz(i),bxx(i),byy(i),bzz(i)
+              Write(Unit=files(FILE_REVIVE)%unit_no) Real(iwrk(i),wp),axx(i),ayy(i),azz(i),bxx(i),byy(i),bzz(i)
            End Do
         End If
      End Do
@@ -2182,12 +2225,12 @@ Subroutine system_revive                                      &
 
             If (devel%l_rout) Then
                Do i=1,jatms
-                  Write(Unit=nrest, Fmt=forma, Advance='No') &
+                  Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') &
                        Real(iwrk(i),wp),axx(i),ayy(i),azz(i)
                End Do
             Else
                Do i=1,jatms
-                  Write(Unit=nrest) Real(iwrk(i),wp),axx(i),ayy(i),azz(i)
+                  Write(Unit=files(FILE_REVIVE)%unit_no) Real(iwrk(i),wp),axx(i),ayy(i),azz(i)
                End Do
             End If
          End Do
@@ -2214,7 +2257,7 @@ Subroutine system_revive                                      &
   End If
 
   Call gsync(comm)
-  If (comm%idnode == 0) Close(Unit=nrest)
+  If (comm%idnode == 0) Close(Unit=files(FILE_REVIVE)%unit_no)
 
        r_mxnode=1.0_wp/Real(comm%mxnode,wp)
 

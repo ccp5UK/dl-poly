@@ -37,6 +37,7 @@ program dl_poly
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
+  Use, Intrinsic :: iso_fortran_env, Only : error_unit
 
   ! SETUP MODULES
 
@@ -200,7 +201,7 @@ program dl_poly
   Use ttm_utils, Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
-  ! MAIN PROGRAM VARIABLES
+  Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS
   Implicit None
 
   ! newjob used for trajectory_write &
@@ -286,13 +287,15 @@ program dl_poly
   Type( seed_type ) :: seed
   Type( trajectory_type ) :: traj
   Type( kim_type ), Target :: kim_data
-  Type( rsd_type )  :: rsdsc
   Type( configuration_type ) :: config
   Type( io_type) :: ios
   Type( ttm_type) :: ttms
+  Type( rsd_type ), Target :: rsdsc
+  Type( file_type ), Allocatable :: files(:)
 
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
+  Character( Len = 1024 ) :: control_filename
 
   Character( Len = * ), Parameter :: fmt1 = '(a)', &
                                      fmt2 = '(a25,a8,a4,a14,a15)', &
@@ -302,28 +305,41 @@ program dl_poly
 
   Allocate(dlp_world(0:0))
   Call init_comms(dlp_world(0))
-  dlp_world(0)%ou=nrite
-  Call init_error_system(nrite,dlp_world(0))
+  !dlp_world(0)%ou=nrite
+  !Call init_error_system(nrite,dlp_world(0))
   comm=dlp_world(0) ! this shall vanish asap w_ are proper things
   Call gsync(dlp_world(0))
   Call gtime(tmr%elapsed) ! Initialise wall clock time
   If (dlp_world(0)%idnode == 0) Then
     If (command_argument_count() == 1 ) Then
-      Call get_command_argument(1, control)
+      Call get_command_argument(1, control_filename)
     End If
   End If
 
-  Call scan_development(devel,comm)
+  ! Set default file names
+  Call default_filenames(files)
+  ! Rename control file if argument was passed
+  If (command_argument_count() == 1) Then
+    Call files(FILE_CONTROL)%rename(control_filename)
+  End If
+
+  Call scan_development(devel,files,comm)
 
   ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
 
-  Call scan_control_output(comm)
+  Call scan_control_output(files,comm)
 
   If (dlp_world(0)%idnode == 0) Then
+    ! Open output file, or direct output unit to stderr
     If (.not.devel%l_scr) Then
-      Open(Unit=nrite, File=Trim(output), Status='replace')
+      Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
+    Else
+      files(FILE_OUTPUT)%unit_no = error_unit
     End If
   End If
+  Call gbcast(dlp_world(0),files(FILE_OUTPUT)%unit_no,0)
+  dlp_world(0)%ou=files(FILE_OUTPUT)%unit_no
+  Call init_error_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
 
   Write(banner(1),fmt1)  Repeat("*",66)
   Write(banner(2),fmt1)  "*************  stfc/ccp5  program  library  package  ** D ********"
@@ -351,8 +367,7 @@ program dl_poly
 
   ! TEST I/O
 
-  Call scan_control_io(ios,netcdf,comm)
-
+  Call scan_control_io(ios,netcdf,files,comm)
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
@@ -360,7 +375,7 @@ program dl_poly
     dvar,rbin,nstfce,width,sites%max_site,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
-    rigid,electro,domain,config,ewld,kim_data,comm)
+    rigid,electro,domain,config,ewld,kim_data,files,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -437,18 +452,14 @@ program dl_poly
     ttms,dfcts,          &
     ndump,pdplnc,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
-    minim,mpoles,electro,ewld,seed,traj,tmr,config,comm)
+    minim,mpoles,electro,ewld,seed,traj,files,tmr,config,comm)
 
   ! READ SIMULATION FORCE FIELD
 
-  Call read_field                          &
-    (l_str,l_top,l_n_v,             &
-    neigh%cutoff,width, &
-    lecx,lbook,lexcl,               &
-    atmfre,atmfrz,megatm,megfrz,    &
-    core_shells,pmfs,cons,thermo,met,bond,angle,   &
-    dihedral,inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
-    ext_field,rigid,electro,config,kim_data,comm)
+  Call read_field(l_str,l_top,l_n_v,neigh%cutoff,width,lecx,lbook,lexcl,atmfre, &
+    atmfrz,megatm,megfrz,core_shells,pmfs,cons,thermo,met,bond,angle,dihedral, &
+    inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
+    ext_field,rigid,electro,config,kim_data,files,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -496,7 +507,7 @@ program dl_poly
     Call traj%init(key=0,freq=1,start=0)
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,megatm,nstep,tstep,time,ios,stats%rsd,netcdf,config,traj,comm)
+    Call trajectory_write(keyres,megatm,nstep,tstep,time,ios,stats%rsd,netcdf,config,traj,files,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -506,7 +517,7 @@ program dl_poly
 
   If (l_exp) Then
     Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,ios,core_shells, &
-      cons,bond,angle,dihedral,inversion,sites,netcdf,rigid,config,comm)
+      cons,bond,angle,dihedral,inversion,sites,netcdf,rigid,config,files,comm)
   End If
 
   ! EXIT gracefully
@@ -519,10 +530,9 @@ program dl_poly
 
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
-  Call system_init                                                 &
-    (levcfg,neigh%cutoff,rbin,keyres,megatm,    &
-    time,tmst,nstep,tstep,core_shells,stats,devel, &
-    green,thermo,met,bond,angle,dihedral,inversion,zdensity,sites,vdws,rdf,config,comm)
+  Call system_init(levcfg,neigh%cutoff,rbin,keyres,megatm,time,tmst,nstep,tstep, &
+    core_shells,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
+    zdensity,sites,vdws,rdf,config,files,comm)
 
   ! SET domain borders and link-config%cells as default for new jobs
   ! exchange atomic data and positions in border regions
@@ -675,22 +685,22 @@ program dl_poly
   If (lsim) Then
     Call w_md_vv(mxatdm,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
-      netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,tmr)
+      netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr)
   Else
     If (lfce) Then
       Call w_replay_historf(mxatdm,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
         fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
-        kim_data,tmr)
+        kim_data,files,tmr)
     Else
       Call w_replay_history(mxatdm,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-        netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data)
+        netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,files)
     End If
   End If
 
   !Close the statis file if we used it.
-  If (stats%statis_file_open) Close(Unit=nstats)
+  If (stats%statis_file_open) Close(Unit=files(FILE_STATS)%unit_no)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -743,9 +753,9 @@ program dl_poly
   ! Save restart data for real simulations only (final)
 
   If (lsim .and. (.not.devel%l_tor)) Then
-    Call system_revive &
-      (neigh%cutoff,rbin,megatm,nstep,tstep,time,ios,tmst, &
-      stats,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
+    Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,ios,tmst,stats, &
+      devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
+      files,comm)
     If (ttms%l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,ttms,comm)
   End If
 
@@ -767,9 +777,8 @@ program dl_poly
     stats,thermo,green,sites,comm)
 
   ! Final anlysis
-  Call analysis_result(lpana, &
-                       nstep,tstep,neigh%cutoff,stats%sumval(2),thermo%ensemble, &
-                       bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
+  Call analysis_result(lpana,nstep,tstep,neigh%cutoff,stats%sumval(2),thermo%ensemble, &
+    bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
 
   10 Continue
 
@@ -816,7 +825,7 @@ program dl_poly
 
   ! Close output channel
 
-  If (dlp_world(0)%idnode == 0 .and. (.not.devel%l_scr)) Close(Unit=nrite)
+  If (dlp_world(0)%idnode == 0 .and. (.not.devel%l_scr)) Close(unit=files(FILE_OUTPUT)%unit_no)
 
   ! Terminate job
 
@@ -914,7 +923,7 @@ Contains
   End Subroutine w_kinetic_options
 
   Subroutine w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
-      sites,rdf,domain,flw)
+      sites,rdf,domain,flw,files)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -926,10 +935,11 @@ Contains
     Type( rdf_type ), Intent( In    ) :: rdf
     Type( domains_type ), Intent( In    ) :: domain
     Type( control_type ), Intent( InOut ) :: flw
+    Type( file_type ), Intent( InOut ) :: files(:)
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
-  Subroutine w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj)
+  Subroutine w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj,files)
     Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -938,6 +948,7 @@ Contains
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( domains_type ), Intent( In    ) :: domain
     Type( trajectory_type ), Intent( InOut ) :: traj
+    Type( file_type ), Intent( InOut ) :: files(:)
     Include 'w_write_options.F90'
   End Subroutine w_write_options
 
@@ -947,9 +958,9 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,ttm,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume,pois,bond,angle, &
-    dihedral,inversion,zdensity,neigh,sites,fourbody,rdf,netcdf,mpoles, &
-    ext_field,rigid,domain,seed,traj,kim_data,tmr)
+  Subroutine w_md_vv(mxatdm_,ttm,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
+      pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
+      netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr)
     Type( ttm_type ), Intent( InOut ) :: ttm
     Type( io_type ), Intent( InOut ) :: io
     Integer( Kind = wi ), Intent( In ) :: mxatdm_
@@ -980,14 +991,16 @@ Contains
     Type( trajectory_type ), Intent( InOut ) :: traj
     Type( kim_type ), Intent( InOut ) :: kim_data
     Type( timer_type ), Intent( InOut ) :: tmr
+    Type( file_type ), Intent( InOut ) :: files(:)
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
   Subroutine w_replay_history(mxatdm_,io,rsdc,flw,cshell,cons,pmf,stat,thermo,msd_data, &
-    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-    netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data)
-    Type( io_type ), Intent( InOut ) :: io
+      met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
+      netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,files)
+    Use filename, Only : file_type,FILE_HISTORY
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
+    Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -1017,6 +1030,7 @@ Contains
     Type( seed_type ), Intent( InOut ) :: seed
     Type( trajectory_type ), Intent( InOut ) :: traj
     Type( kim_type ), Intent( InOut ) :: kim_data
+    Type( file_type ), Intent( InOut ) :: files(:)
 
     Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
@@ -1029,9 +1043,10 @@ Contains
   End Subroutine w_replay_history
 
   Subroutine w_replay_historf(mxatdm_,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
-    msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
-    fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
-    kim_data,tmr)
+      msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
+      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
+      kim_data,files,tmr)
+    Use filename, Only : file_type,FILE_HISTORF,FILE_HISTORY
     Integer( Kind = wi ), Intent( In  )  :: mxatdm_
     Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
@@ -1064,6 +1079,7 @@ Contains
     Type( seed_type ), Intent( InOut ) :: seed
     Type( trajectory_type ), Intent( InOut ) :: traj
     Type( kim_type ), Intent( InOut ) :: kim_data
+    Type( file_type ), Intent( InOut ) :: files(:)
     Type( timer_type ), Intent( InOut ) :: tmr
 
     Logical,     Save :: newjb = .true.

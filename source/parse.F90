@@ -10,8 +10,8 @@ Module parse
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp
   Use comms, Only : comms_type,gsync,gbcast,gcheck
-  Use setup, Only : nrite
   Use errors_warnings, Only : error,warning
+  Use filename, Only : UNIT_TYPE
   Implicit None
 
   Public :: tabs_2_blanks, nls_2_blanks, strip_blanks, get_word, &
@@ -399,7 +399,7 @@ Subroutine get_line(safe,ifile,record,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Logical,              Intent(   Out ) :: safe
-    Integer,              Intent( In    ) :: ifile
+    Integer( Kind = UNIT_TYPE), Intent( In    ) :: ifile
     Character( Len = * ), Intent(   Out ) :: record
     Type(comms_type),     Intent( InOut ) :: comm
 

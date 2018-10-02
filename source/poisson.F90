@@ -3,8 +3,7 @@ Module poisson
   Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend, &
                               gwait,girecv,gtime
   Use domains,         Only : domains_type
-  Use setup,           Only : fourpi,r4pie0,nrite,            &
-                              mxatms,mxatdm,half_minus,zero_plus
+  Use setup,           Only : fourpi,r4pie0,mxatms,mxatdm,half_minus,zero_plus
   Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use ewald,           Only : ewald_type

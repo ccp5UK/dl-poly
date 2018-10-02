@@ -1,7 +1,7 @@
 Module temperature
   Use kinds,           Only : wp, li
   Use comms,           Only : comms_type,gsum
-  Use setup,           Only : nrite,boltz,mxatms,zero_plus
+  Use setup,           Only : boltz,mxatms,zero_plus
   Use site, Only : site_type
   Use configuration,   Only : configuration_type,getcom
   Use particle,        Only : corePart

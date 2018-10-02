@@ -1,5 +1,5 @@
 Module kontrol
-  Use kinds, only : wi,wp,real32,real64
+  Use kinds, only : wi,wp,sp,dp
   Use comms,      Only : comms_type,gcheck
   Use timer,      Only : timer_type
   Use configuration,     Only : configuration_type
@@ -17,10 +17,7 @@ Module kontrol
   Use poisson,    Only : poisson_type
   Use msd,        Only : msd_type
   Use plumed,   Only : plumed_type
-  Use setup,       Only : nread,control,pi,zero_plus, &
-                          output,field,config_name,statis, &
-    history,historf,revive,revcon,revold,&
-    prsunt,tenunt,nrite,mxgana
+  Use setup,       Only : pi,zero_plus,mxgana,prsunt,tenunt
   Use parse,       Only : get_line,get_word,lower_case,word_2_real,strip_blanks
   Use kim,         Only : kim_type
   Use greenkubo,   Only : greenkubo_type
@@ -30,7 +27,6 @@ Module kontrol
   Use impacts,     Only : impact_type
   Use defects,     Only : defects_type
   Use rsds, Only : rsd_type
-  
   Use io,     Only : io_set_parameters,io_type,        &
                             io_get_parameters,        &
                             io_nc_set_real_precision, &
@@ -71,6 +67,9 @@ Module kontrol
   Use ewald, Only : ewald_type
   Use trajectory, Only : trajectory_type
   Use errors_warnings, Only : error,info,warning
+  Use filename, Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
+                       FILE_STATS,FILE_HISTORY,FILE_HISTORF,FILE_REVIVE,FILE_REVCON, &
+                       FILE_REVOLD
   Implicit None
 
   Private
@@ -120,16 +119,17 @@ Subroutine read_control                                &
            lvar,leql,               &
            lfce,lpana,           &
            ltraj,               &
-  nx,ny,nz,impa,                            &
-  keyres,                   &
-  tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-  fmax,nstbpo,             &
-  rlx_tol,mxquat,quattol,       &
-  nstbnd,nstang,nstdih,nstinv,  &
-  ttm,dfcts,       &
-  ndump,pdplnc,rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data, &
-  met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-  rdf,minim,mpoles,electro,ewld,seed,traj,tmr,config,comm)
+           nx,ny,nz,impa,                            &
+           keyres,                   &
+           tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
+           fmax,nstbpo,             &
+           rlx_tol,mxquat,quattol,       &
+           nstbnd,nstang,nstdih,nstinv,  &
+           ttm,dfcts,          &
+           ndump,pdplnc, &
+           rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
+           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
+           rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -205,6 +205,7 @@ Subroutine read_control                                &
   Type( seed_type ), Intent( InOut ) :: seed
   Type( trajectory_type ), Intent( InOut ) :: traj
   Type( configuration_type ), Intent( InOut ) :: config
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ),     Intent( InOut )  :: comm
 
   Integer( Kind = wi ) :: tmp_seed(1:3)
@@ -565,11 +566,11 @@ Subroutine read_control                                &
 
 ! open the simulation control file
 
-  If (comm%idnode == 0) Open(Unit=nread, File = Trim(control), Status = 'old')
+  If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status = 'old')
 
 ! read simulation control name
 
-  Call get_line(safe,nread,config%sysname,comm)
+  Call get_line(safe,files(FILE_CONTROL)%unit_no,config%sysname,comm)
   If (.not.safe) Go To 1000
   Call strip_blanks(config%sysname)
 
@@ -589,7 +590,7 @@ Subroutine read_control                                &
 
   Do
 
-     Call get_line(safe,nread,record,comm)
+     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
      If (.not.safe) Go To 1000
      Call lower_case(record)
      Call get_word(record,word)
@@ -646,7 +647,7 @@ Subroutine read_control                                &
 
         itmp=0
         Do i=1,3
-           Call get_line(safe,nread,record,comm)
+           Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
            Do j=1,3
               Call get_word(record,word)
               itmp=itmp+1
@@ -2320,7 +2321,7 @@ Subroutine read_control                                &
         Else If (word1(1:8) == 'atomdens') Then
 
         ! user-specified atomic density, used to convert specific
-        ! heat capacities to ttm%volumetric values
+        ! heat capacities to volumetric values
 
           Call get_word(record,word)
           ttm%cellrho = word_2_real(word)
@@ -2331,7 +2332,7 @@ Subroutine read_control                                &
 
         ! dynamic calculation of atom density in active cells during
         ! TTM calculations, used to convert specific heat capacities
-        ! to ttm%volumetric values
+        ! to volumetric values
 
           ttm%ttmdyndens = .true.
           Call info('dynamic calculations of average atomic density in active ionic cells',.true.)
@@ -2341,7 +2342,7 @@ Subroutine read_control                                &
         ! minimum number of atoms needed per ionic temperature cell
         ! to give definable ionic temperature (default = 1): smaller
         ! number deactivates ionic and electronic temperature cells
-        ! (by default, electronic energies are not ttm%redistributed)
+        ! (by default, electronic energies are not redistributed)
 
           Call get_word(record,word)
           ttm%amin = Abs(Nint(word_2_real(word)))
@@ -2394,7 +2395,7 @@ Subroutine read_control                                &
         Else If (word1(1:5) == 'laser') Then
 
         ! homogeneous spatial distribution for initial energy deposition into
-        ! electronic system due to laser: setting absorbed ttm%fluence and
+        ! electronic system due to laser: setting absorbed fluence and
         ! penetration depth
 
           ttm%sdepoType = 2
@@ -3007,20 +3008,20 @@ Subroutine read_control                                &
 
 ! no finish record in CONTROL file
 
-  If (comm%idnode == 0) Close(Unit=nread)
+  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
   Call error(17)
 
 ! unexpected end of file
 
 1000 Continue
 
-  If (comm%idnode == 0) Close(Unit=nread)
+  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
   Call error(53)
 
 ! safe termination of reading CONTROL
 
 2000 Continue
-  If (comm%idnode == 0) Close(Unit=nread)
+  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
 
 !!! FIXES !!!
 ! fix on step-dependent options
@@ -3674,15 +3675,10 @@ Subroutine read_control                                &
 
 End Subroutine read_control
 
-Subroutine scan_control                                    &
-           (rcter, &
-           max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,             &
-           mxgana,         &
-           l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-           rbin,                          &
-  nstfce,ttm,cshell,stats,  &
-           thermo,green,devel,msd_data,met,pois,bond,angle, &
-           dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
+Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
+    l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce,ttm,cshell,stats, &
+    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
+    zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3730,6 +3726,7 @@ Subroutine scan_control                                    &
   Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( kim_type), Intent( InOut ) :: kim_data
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3860,23 +3857,23 @@ Subroutine scan_control                                    &
 
 ! Open the simulation input file
 
-  If (comm%idnode == 0) Inquire(File=Trim(control), Exist=safe)
+  If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
   Call gcheck(comm,safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (comm%idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
+     If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
   End If
 
 ! First Pass.  Get cutoff distances, stacksize and density variation.
 
-  Call get_line(safe,nread,record,comm)
+  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
   If (.not.safe) Go To 20
 
   carry = .true.
   Do While (carry)
 
-     Call get_line(safe,nread,record,comm)
+     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
      If (.not.safe) Go To 20
 
      Call lower_case(record)
@@ -4420,17 +4417,17 @@ Subroutine scan_control                                    &
     End If
   End If
 
-  If (comm%idnode == 0) Rewind(nread)
+  If (comm%idnode == 0) Rewind(files(FILE_CONTROL)%unit_no)
 
 ! Second Pass.  Sort out cutoffs, cell parameters and Ewald/Poisson Solver precision.
 
-  Call get_line(safe,nread,record,comm)
+  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
   If (.not.safe) Go To 20
 
   carry = .true.
   Do While (carry)
 
-     Call get_line(safe,nread,record,comm)
+     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
      If (.not.safe) Go To 20
 
      Call lower_case(record)
@@ -4759,7 +4756,7 @@ Subroutine scan_control                                    &
 
   End Do
 
-  If (comm%idnode == 0) Close(Unit=nread)
+  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
 
 ! Enforce VV for DPD thermostat
 
@@ -4788,7 +4785,7 @@ Subroutine scan_control                                    &
 
 End Subroutine scan_control
 
-Subroutine scan_control_pre(imc_n,dvar,comm)
+Subroutine scan_control_pre(imc_n,dvar,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4803,6 +4800,7 @@ Subroutine scan_control_pre(imc_n,dvar,comm)
 
   Integer,           Intent( InOut ) :: imc_n
   Real( Kind = wp ), Intent(   Out ) :: dvar
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe
@@ -4815,23 +4813,23 @@ Subroutine scan_control_pre(imc_n,dvar,comm)
 
   dvar = 1.0_wp
 
-  If (comm%idnode == 0) Inquire(File=Trim(control), Exist=safe)
+  If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
   Call gcheck(comm,safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (comm%idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
+     If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
   End If
 
 ! Read TITLE record
 
-  Call get_line(safe,nread,record,comm)
+  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
   If (.not.safe) Go To 20
 
   carry = .true.
   Do While (carry)
 
-     Call get_line(safe,nread,record,comm)
+     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
      If (.not.safe) Go To 20
 
      Call lower_case(record)
@@ -4868,7 +4866,7 @@ Subroutine scan_control_pre(imc_n,dvar,comm)
 
   End Do
 
-  If (comm%idnode == 0) Close(Unit=nread)
+  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
 
   Return
 
@@ -4885,7 +4883,7 @@ Subroutine scan_control_pre(imc_n,dvar,comm)
 
 End Subroutine scan_control_pre
 
-Subroutine scan_control_io(io,netcdf,comm)
+Subroutine scan_control_io(io,netcdf,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -4899,6 +4897,7 @@ Subroutine scan_control_io(io,netcdf,comm)
 
   Type( io_type ), Intent( InOut ) :: io
   Type( netcdf_param ), Intent( InOut ) :: netcdf
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe
@@ -4925,23 +4924,23 @@ Subroutine scan_control_io(io,netcdf,comm)
 
 ! Open the simulation input file
 
-  If (comm%idnode == 0) Inquire(File=Trim(control), Exist=safe)
+  If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
   Call gcheck(comm,safe,"enforce")
   If (.not.safe) Then
      Go To 10
   Else
-     If (comm%idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
+     If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
   End If
 
 ! Read TITLE record
 
-  Call get_line(safe,nread,record,comm)
+  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
   If (.not.safe) Go To 20
 
   carry = .true.
   Do While (carry)
 
-     Call get_line(safe,nread,record,comm)
+     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
      If (.not.safe) Go To 20
 
      Call lower_case(record)
@@ -5116,11 +5115,11 @@ Subroutine scan_control_io(io,netcdf,comm)
                  ! Use 32-bit quantities in output for real numbers
                  If (comm%idnode == 0) &
                  Call info('I/O write method: parallel by using netCDF in the amber-like/32-bit format',.true.)
-                 Call io_nc_set_real_precision( real32, netcdf, err_r )
+                 Call io_nc_set_real_precision( sp, netcdf, err_r )
               Else
                  ! Use 64-bit quantities in output for real numbers
                  Call info('I/O write method: parallel by using netCDF in 64-bit format',.true.)
-                 Call io_nc_set_real_precision( real64, netcdf, err_r )
+                 Call io_nc_set_real_precision( dp, netcdf, err_r )
                  record1=' '
                  record1=word(1:Len_Trim(word)+1) // record ! back up
                  record=record1
@@ -5266,23 +5265,23 @@ Subroutine scan_control_io(io,netcdf,comm)
           (word(1:6) == 'revcon') .or. (word(1:6) == 'revold')) Then
 
           If (word(1:6) == 'output') Then
-            Call info('OUTPUT file is '//Trim(output),.true.)
+            Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
           Else If (word(1:6) == 'config') Then
-            Call info('CONFIG file is '//Trim(config_name),.true.)
+            Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
           Else If (word(1:5) == 'field') Then
-            Call info('FIELD file is '//Trim(field),.true.)
+            Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
           Else If (word(1:6) == 'statis') Then
-            Call info('STATIS file is '//Trim(statis),.true.)
+            Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
           Else If (word(1:7) == 'history') Then
-            Call info('HISTORY file is '//Trim(history),.true.)
+            Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
           Else If (word(1:7) == 'historf') Then
-            Call info('HISTORF file is '//Trim(historf),.true.)
+            Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
           Else If (word(1:6) == 'revive') Then
-            Call info('REVIVE file is '//Trim(revive),.true.)
+            Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
           Else If (word(1:6) == 'revcon') Then
-            Call info('REVCON file is '//Trim(revcon),.true.)
+            Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
           Else If (word(1:6) == 'revold') Then
-            Call info('REVOLD file is '//Trim(revold),.true.)
+            Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
           End If
 ! close control file
 
@@ -5300,7 +5299,7 @@ Subroutine scan_control_io(io,netcdf,comm)
      End If
   End Do
 
-  If (comm%idnode == 0) Close(Unit=nread)
+  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
 
 !!! IO DEFAULTS
 
@@ -5406,7 +5405,7 @@ Subroutine scan_control_io(io,netcdf,comm)
 
 End Subroutine scan_control_io
 
-Subroutine scan_control_output(comm)
+Subroutine scan_control_output(files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5417,6 +5416,7 @@ Subroutine scan_control_output(comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
   Logical                :: carry,safe
   Character( Len = 200 ) :: record,rec_case_sensitive
@@ -5426,26 +5426,26 @@ Subroutine scan_control_output(comm)
 
 ! Open the simulation input file
 
-  If (comm%idnode == 0) Inquire(File=Trim(control), Exist=safe)
+  If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
   Call gcheck(comm,safe,"enforce")
   If (.not.safe) Then
-    Open(Unit=nrite, File=Trim(output), Status='replace')
+    Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
     Call error(126)
   Else
-     If (comm%idnode == 0) Open(Unit=nread, File=Trim(control), Status='old')
+     If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
   End If
 
 ! Read TITLE record
 
-  Call get_line(safe,nread,record,comm)
+  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
   If (.not.safe) Then
-    Open(Unit=nrite, File=Trim(output), Status='replace')
+    Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
     Call error(17)
   End If
 
   carry = .true.
   Do While (carry)
-     Call get_line(safe,nread,record,comm)
+     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
      If (.not.safe) Then
        Call error(17)
      End If
@@ -5459,31 +5459,31 @@ Subroutine scan_control_output(comm)
         Call get_word( record, word1 )
         Call get_word( rec_case_sensitive, wordo )
         If (word1(1:6) == 'output') Then
-          Call get_word( rec_case_sensitive, output )
+          Call get_word( rec_case_sensitive, files(FILE_OUTPUT)%filename )
 
         Else If (word1(1:6) == 'config') Then
-          Call get_word( rec_case_sensitive, config_name )
+          Call get_word( rec_case_sensitive, files(FILE_CONFIG)%filename )
 
         Else If (word1(1:5) == 'field') Then
-          Call get_word( rec_case_sensitive, field )
+          Call get_word( rec_case_sensitive, files(FILE_FIELD)%filename )
 
         Else If (word1(1:6) == 'statis') Then
-          Call get_word( rec_case_sensitive, statis )
+          Call get_word( rec_case_sensitive, files(FILE_STATS)%filename )
 
         Else If (word1(1:7) == 'history') Then
-          Call get_word( rec_case_sensitive, history )
+          Call get_word( rec_case_sensitive, files(FILE_HISTORY)%filename )
 
         Else If (word1(1:7) == 'historf') Then
-          Call get_word( rec_case_sensitive, historf )
+          Call get_word( rec_case_sensitive, files(FILE_HISTORF)%filename )
 
         Else If (word1(1:6) == 'revive') Then
-          Call get_word( rec_case_sensitive, revive )
+          Call get_word( rec_case_sensitive, files(FILE_REVIVE)%filename )
 
         Else If (word1(1:6) == 'revcon') Then
-          Call get_word( rec_case_sensitive, revcon )
+          Call get_word( rec_case_sensitive, files(FILE_REVCON)%filename )
 
         Else If (word1(1:6) == 'revold') Then
-          Call get_word( rec_case_sensitive, revold )
+          Call get_word( rec_case_sensitive, files(FILE_REVOLD)%filename )
         End If
 ! read finish
 
@@ -5495,7 +5495,7 @@ Subroutine scan_control_output(comm)
 
   End Do
 
-  If (comm%idnode == 0) Close(Unit=nread)
+  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
 
 End Subroutine scan_control_output
 

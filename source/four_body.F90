@@ -15,7 +15,7 @@ Module four_body
   Use domains, Only : domains_type
   Use configuration,  Only : configuration_type
   Use particle, Only : corePart
-  Use setup, Only : zero_plus,mxatms,nrite
+  Use setup, Only : zero_plus,mxatms
   Use errors_warnings, Only : error, warning
   Use numerics, Only : invert, dcell
   Use statistics, Only : stats_type

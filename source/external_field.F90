@@ -11,7 +11,7 @@ Module external_field
 
   Use kinds, Only : wp,wi
   Use comms,   Only : comms_type,gcheck,gsum
-  Use setup,   Only : twopi,nrite,mxatms
+  Use setup,   Only : twopi,mxatms
   Use configuration,  Only : configuration_type
   Use particle, Only : corePart
   Use kinetics, Only : getcom_mol
@@ -43,7 +43,7 @@ Module external_field
   Integer( Kind = wi ), Parameter, Public :: FIELD_MAGNETIC = 5
   !> Containing sphere, $r^{-n}$ potential
   Integer( Kind = wi ), Parameter, Public :: FIELD_SPHERE = 6
-  !> Repuconfig%lsive wall (harmonic) starting at z0
+  !> Repulsive wall (harmonic) starting at z0
   Integer( Kind = wi ), Parameter, Public :: FIELD_WALL = 7
   !> Piston wall pushing along the X=bxc direction
   Integer( Kind = wi ), Parameter, Public :: FIELD_WALL_PISTON = 8

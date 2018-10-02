@@ -17,8 +17,7 @@ Module configuration
                     offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
   Use site, Only : site_type
 
-  Use setup,   Only : nconf,nrite,config_name,mxatms,half_minus,zero_plus, &
-                      mxatdm
+  Use setup,   Only : mxatms,half_minus,zero_plus,mxatdm
   Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line
   Use domains, Only : domains_type
@@ -61,6 +60,7 @@ Module configuration
   use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
   Use thermostat, Only : thermostat_type,CONSTRAINT_NONE
   Use electrostatic, Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
+  Use filename, Only : file_type,FILE_CONFIG
   Implicit None
 
 Type configuration_type
@@ -716,7 +716,7 @@ End Subroutine check_config
 
 
 
-Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,io,domain,comm)
+Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,io,domain,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -738,6 +738,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
   Real( Kind = wp ), Intent(   Out ) :: dens0,dens
   Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type), Intent( InOut ) :: comm
 
   Real( Kind = wp ) :: cut
@@ -837,9 +838,9 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 ! Define filename ASCII or netCDF
 
   If (io_read /= IO_READ_NETCDF) Then
-     fname=Trim(config_name)
+     fname=files(FILE_CONFIG)%filename
   Else
-     fname=Trim(config_name) // '.nc'
+     fname=Trim(files(FILE_CONFIG)%filename) // '.nc'
   End If
 
 ! Define/Detect the FAST reading status
@@ -866,7 +867,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 
 ! Open CONFIG
 
-        Open(Unit=nconf, File=fname)
+        Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
 ! Read the CONFIG file header (TITLE record)
 
@@ -876,7 +877,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
         Do
            i = i + 1
            safe = .false.
-           Read(Unit=nconf, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
            safe = .true.
            If (j < 0) Go To 10
         End Do
@@ -891,7 +892,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
         Do
            i = i + 1
            safe = .false.
-           Read(Unit=nconf, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
            safe = .true.
            If (j < 0) Go To 20
         End Do
@@ -913,7 +914,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 
 ! Close CONFIG
 
-     If (comm%idnode == 0) Close(Unit=nconf)
+     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
 
   End If
 
@@ -928,15 +929,15 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 ! Open CONFIG and skip the header
 
      If (comm%idnode == 0) Then
-        Open(Unit=nconf, File=fname)
+        Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
-        Read(Unit=nconf, Fmt=*)    ! CONFIG file header (TITLE record)
-        Read(Unit=nconf, Fmt=*)    ! configuration level and image condition
+        Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)    ! CONFIG file header (TITLE record)
+        Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)    ! configuration level and image condition
 
         If (config%imcon /= 0) Then
-           Read(Unit=nconf, Fmt=*) ! cell vectors (not defined for imcon=0) but cell
-           Read(Unit=nconf, Fmt=*) ! is modified in set_bounds for imcon 0 and 6!!!
-           Read(Unit=nconf, Fmt=*)
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! cell vectors (not defined for imcon=0) but cell
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! is modified in set_bounds for imcon 0 and 6!!!
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
         End If
      End If
 
@@ -982,7 +983,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 
         If (comm%idnode == 0 .and. safe) Then
            record=' '
-           Read(Unit=nconf, Fmt='(a)', End=30) record
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a)', End=30) record
            Call tabs_2_blanks(record) ; Call strip_blanks(record)
            Call get_word(record,word) ; chbuf(indatm)=word(1:8)
            If (l_ind) Then
@@ -997,11 +998,11 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
               iwrk(indatm)=nattot
            End If
 
-           Read(Unit=nconf, Fmt=*, End=30) axx(indatm),ayy(indatm),azz(indatm)
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) axx(indatm),ayy(indatm),azz(indatm)
 
            If (levcfg > 0) Then
-              Read(Unit=nconf, Fmt=*, End=30) bxx(indatm),byy(indatm),bzz(indatm)
-              If (levcfg > 1) Read(Unit=nconf, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) bxx(indatm),byy(indatm),bzz(indatm)
+              If (levcfg > 1) Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
            End If
            Go To 40
 
@@ -1137,7 +1138,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 
 ! Close CONFIG
 
-     If (comm%idnode == 0) Close(Unit=nconf)
+     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
      Call gsync(comm)
 
      Deallocate (chbuf,iwrk,  Stat=fail(1))
@@ -1160,7 +1161,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
          Call io_init(io, recsz )
         Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
      Else
-        Open(Unit=nconf, File=fname)
+        Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
      End If
 
 ! top_skip is header size
@@ -1176,7 +1177,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
      End If
 
      Call read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
-       fast,fh,top_skip,xhi,yhi,zhi,io,domain,comm)
+       fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
 ! Close CONFIG
 
@@ -1184,7 +1185,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
         Call io_close(io, fh )
         Call io_finalize(io)
      Else
-        Close(Unit=nconf)
+        Close(Unit=files(FILE_CONFIG)%unit_no)
      End If
 
   End If
@@ -1356,13 +1357,13 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 ! error exit for CONFIG file read
 
 50 Continue
-  If (comm%idnode == 0) Close(Unit=nconf)
+  If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
   Call error(55)
 
 End Subroutine read_config
 
-Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr,fast, &
-  fh,top_skip,xhi,yhi,zhi,io,domain,comm)
+Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his, &
+    l_xtr,fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1382,6 +1383,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
   Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
   Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ),                Intent( InOut ) :: comm
 
   Logical                :: safe,do_read
@@ -1496,18 +1498,18 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
            Do n_ii=1_li,n_sk/n_jj
               forma=' '
               Write(forma,'( "(", i0, "/)" )') n_jj
-              Read(Unit=nconf, Fmt=forma, End=100)
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
            End Do
            n_ii=Mod(n_sk,n_jj)-1_li
            If (n_ii > 0_li) Then
               forma=' '
               Write(forma,'( "(", i0, "/)" )') n_ii
-              Read(Unit=nconf, Fmt=forma, End=100)
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
            End If
         Else
            forma=' '
            Write(forma,'( "(", i0, "/)" )') n_sk
-           Read(Unit=nconf, Fmt=forma, End=100)
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
         End If
 
         recsz=200
@@ -1584,7 +1586,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
               If (this_rec_buff == 0) Then
                  recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at )
                  If (.not.fast) Then
-                    Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
+                    Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
                      Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
                     rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
@@ -1618,7 +1620,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
                  this_rec_buff = 0
                  recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 1 )
                  If (.not.fast) Then
-                    Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
+                    Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
                  Else
                      Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
                     rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
@@ -1639,7 +1641,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
                     If (levcfg > 0) Then
                        recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 2 )
                        If (.not.fast) Then
-                          Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
+                          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
                        Else
                            Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
                           rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
@@ -1660,7 +1662,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
                        If (levcfg > 1) Then
                           recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 3 )
                           If (.not.fast) Then
-                             Read(Unit=nconf, Fmt=forma) rec_buff( :, 1:recs_to_read )
+                             Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
                           Else
                               Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
                              rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
@@ -1926,19 +1928,19 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
         If (n_sk > n_jj) Then
            Do n_ii=1_li,n_sk/n_jj
               forma=' '
-              Write(forma,'( "(", i0, "]" )') n_jj
-              Read(Unit=nconf, Fmt=forma, End=100)
+              Write(forma,'( "(", i0, "/)" )') n_jj
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
            End Do
            n_ii=Mod(Int(n_skip,li),n_jj)
            If (n_ii > 0_li) Then
               forma=' '
-              Write(forma,'( "(", i0, "]" )') n_ii
-              Read(Unit=nconf, Fmt=forma, End=100)
+              Write(forma,'( "(", i0, "/)" )') n_ii
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
            End If
         Else
            forma=' '
-           Write(forma,'( "(", i0, "]" )') n_sk
-           Read(Unit=nconf, Fmt=forma, End=100)
+           Write(forma,'( "(", i0, "/)" )') n_sk
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
         End If
      End If
 
@@ -1954,7 +1956,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
            If (first_at(my_read_proc_num) == megatm) Then
               recs_to_read = 1
               If (.not.fast) Then
-                 Read(Unit=nconf, Fmt=forma, Iostat=ierr) rec_buff( :, 1:recs_to_read )
+                 Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, Iostat=ierr) rec_buff( :, 1:recs_to_read )
               Else
                   Call io_read_batch(io, fh, rec_mpi_io, 1, rec_buff, ierr )
               End If
@@ -2010,7 +2012,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xt
 End Subroutine read_config_parallel
 
 Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
-  io,domain,comm)
+  io,domain,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2030,6 +2032,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
   Real( Kind = wp ),    Intent(   Out ) :: xhi,yhi,zhi
   Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ),   Intent( InOut ) :: comm
 
   Character( Len = 200 ) :: record
@@ -2057,9 +2060,9 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 ! Define filename ASCII or netCDF
 
   If (io_read /= IO_READ_NETCDF) Then
-     fname=Trim(config_name)
+     fname=files(FILE_CONFIG)%filename
   Else
-     fname=Trim(config_name)//'nc'
+     fname=files(FILE_CONFIG)%filename//'nc'
   End If
 
 ! Check if we have a CONFIG
@@ -2092,7 +2095,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 ! Open CONFIG
 
-        Open(Unit=nconf, File=fname)
+        Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
 ! Read the CONFIG file header (TITLE record)
 
@@ -2102,7 +2105,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
         Do
            i = i + 1
            safe = .false.
-           Read(Unit=nconf, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
            safe = .true.
            If (j < 0) Go To 10
         End Do
@@ -2117,7 +2120,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
         Do
            i = i + 1
            safe = .false.
-           Read(Unit=nconf, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
            safe = .true.
            If (j < 0) Go To 20
         End Do
@@ -2140,7 +2143,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 ! Close CONFIG
 
-     If (comm%idnode == 0) Close(Unit=nconf)
+     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
 
   End If
 
@@ -2150,11 +2153,11 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 ! Open CONFIG
 
-     If (comm%idnode == 0) Open(Unit=nconf, File=fname)
+     If (comm%idnode == 0) Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
 ! Read TITLE record (file header)
 
-     Call get_line(safe,nconf,record,comm)
+     Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
      If (.not.safe) Go To 50
 
      Call strip_blanks(record)
@@ -2162,7 +2165,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 ! Read configuration level and image condition
 
-     Call get_line(safe,nconf,record,comm)
+     Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
      If (.not.safe) Go To 50
 
      Call get_word(record,word)
@@ -2182,7 +2185,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 ! specify MD cell (not defined for imcon=0)
 
      If (config%imcon /= 0) Then
-        Call get_line(safe,nconf,record,comm)
+        Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
         config%cell(1)=word_2_real(word)
@@ -2191,7 +2194,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
         Call get_word(record,word)
         config%cell(3)=word_2_real(word)
 
-        Call get_line(safe,nconf,record,comm)
+        Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
         config%cell(4)=word_2_real(word)
@@ -2200,7 +2203,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
         Call get_word(record,word)
         config%cell(6)=word_2_real(word)
 
-        Call get_line(safe,nconf,record,comm)
+        Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
         config%cell(7)=word_2_real(word)
@@ -2212,7 +2215,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 ! Close CONFIG
 
-     If (comm%idnode == 0) Close(Unit=nconf)
+     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
      Call gsync(comm)
 
   Else ! netCDF read
@@ -2258,27 +2261,27 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 ! Open CONFIG
 
-           Open(Unit=nconf, File=fname)
+           Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
 ! Skip the header (we know exists from the basic scan)
 
-           Read(Unit=nconf, Fmt=*)
-           Read(Unit=nconf, Fmt=*)
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
            If (config%imcon /= 0) Then
-              Read(Unit=nconf, Fmt=*)
-              Read(Unit=nconf, Fmt=*)
-              Read(Unit=nconf, Fmt=*)
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
            End If
 
 ! Find the extreme dimensions for the system
 
            Do
-              Read(Unit=nconf, Fmt=*, End=40)
-              Read(Unit=nconf, Fmt=*, End=30) xxx,yyy,zzz
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=40)
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) xxx,yyy,zzz
 
               If (levcfg > 0) Then
-                 Read(Unit=nconf, Fmt=*, End=30)
-                 If (levcfg > 1) Read(Unit=nconf, Fmt=*, End=30)
+                 Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30)
+                 If (levcfg > 1) Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30)
               End If
 
               totatm=totatm+1
@@ -2301,7 +2304,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 ! Close CONFIG
 
-        If (comm%idnode == 0) Close(Unit=nconf)
+        If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
 
 
            buffer(1)=xhi
@@ -2327,7 +2330,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
             Call io_init(io, recsz )
            Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
         Else
-           Open(Unit=nconf, File=fname)
+           Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
         End If
 
 ! top_skip is header size
@@ -2343,7 +2346,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
         End If
 
         Call read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
-          fast,fh,top_skip,xhi,yhi,zhi,io,domain,comm)
+          fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
 ! Close CONFIG
 
@@ -2351,7 +2354,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
            Call io_close(io, fh )
            Call io_finalize(io)
         Else
-           Close(Unit=nconf)
+           Close(Unit=files(FILE_CONFIG)%unit_no)
         End If
 
      End If
@@ -2363,7 +2366,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 ! error exit for CONFIG file read
 
 50 Continue
-  If (comm%idnode == 0) Close(Unit=nconf)
+  If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
   Call error(55)
 
 End Subroutine scan_config
@@ -2389,6 +2392,8 @@ Subroutine scale_config(config,megatm,io,devel,netcdf,comm)
   Type( development_type ), Intent( In    ) :: devel
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( comms_type ), Intent( InOut ) :: comm
+
+  Type( file_type ) :: cfgscl
 
 ! Get the inverse cell matrix
 
@@ -2416,19 +2421,19 @@ Subroutine scale_config(config,megatm,io,devel,netcdf,comm)
 
 ! Write REVCON
 
-  name   = 'CFGSCL' ! file name
+  Call cfgscl%init('CFGSCL')
   nstep  = 0        ! no steps done
   tstep  = 0.0_wp   ! no step exists
   time   = 0.0_wp   ! time is not relevant
 
   rcell = config%cell ; config%cell = devel%cels
-  Call write_config(config,name,devel%lvcfscl,megatm,nstep,tstep,io,time,netcdf,comm)
+  Call write_config(config,cfgscl,devel%lvcfscl,megatm,nstep,tstep,io,time,netcdf,comm)
   config%cell = rcell
 
 End Subroutine scale_config
 
 
-Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,comm)
+Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2440,7 +2445,7 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,com
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( io_type ), Intent( InOut ) :: io
-  Character( Len = * ), Intent( In    ) :: name
+  Type( file_type ), Intent( InOut ) :: cfile
   Integer,              Intent( In    ) :: levcfg,megatm,nstep
   Real( Kind = wp ),    Intent( In    ) :: tstep,time
   Type( netcdf_param ), Intent( In    ) :: netcdf
@@ -2519,10 +2524,10 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,com
      jj=0
      If (comm%idnode == 0) Then
 
-        Call io_set_parameters(io, user_comm = comm_self )
-         Call io_init(io, recsz )
-        Call io_delete(io, name,comm ) ! Sort existence issues
-        Call io_open(io, io_write, comm_self, name, mode_wronly + mode_create, fh )
+        Call io_set_parameters(io,user_comm=comm_self)
+        Call io_init(io,recsz)
+        Call io_delete(io,cfile%filename,comm) ! Sort existence issues
+        Call io_open(io,io_write,comm_self,cfile%filename,mode_wronly+mode_create,fh)
 
 ! Accumulate header
 
@@ -2566,10 +2571,10 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,com
      End If
      Call gsync(comm)
 
-     Call io_set_parameters(io, user_comm = comm%comm )
-      Call io_init(io, recsz )
-     Call io_delete(io, name ,comm)
-     Call io_open(io, io_write, comm%comm, name, mode_wronly, fh )
+     Call io_set_parameters(io,user_comm=comm%comm)
+     Call io_init(io,recsz)
+     Call io_delete(io,cfile%filename,comm)
+     Call io_open(io,io_write,comm%comm,cfile%filename,mode_wronly,fh)
 
 ! Start of file (updated)
 
@@ -2638,7 +2643,7 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,com
 
 ! Write configuration data to new configuration file
 
-        Open(Unit=nconf, File=name, Form='formatted', Access='direct', Recl=recsz, Status='replace')
+        Open(Newunit=cfile%unit_no, File=cfile%filename, Form='formatted', Access='direct', Recl=recsz, Status='replace')
 
 ! Accumulate header
 
@@ -2669,7 +2674,7 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,com
 
 ! Dump header and update start of file
 
-        Write(Unit=nconf, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
+        Write(Unit=cfile%unit_no, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
         rec=Int(jj,li)
         jj=0
 
@@ -2756,14 +2761,14 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,com
 ! Dump batch and update start of file
 
               If (jj + levcfg + 2 >= batsz .or. i == jatms) Then
-                 Write(Unit=nconf, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
+                 Write(Unit=cfile%unit_no, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
                  rec=rec+Int(jj,li)
                  jj=0
               End If
            End Do
         End Do
 
-        Close(Unit=nconf)
+        Close(Unit=cfile%unit_no)
 
      Else
 
@@ -2803,9 +2808,9 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,com
 ! name convention
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        fname = name
+        fname = cfile%filename
      Else
-        fname = name(1:Len_Trim(name)) // '.nc'
+        fname = Trim(cfile%filename) // '.nc'
      End If
 
 ! Write header only at start, where just one node is needed
@@ -2944,22 +2949,22 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,com
 
 ! Write configuration data to new configuration file
 
-        Open(Unit=nconf, File=name, Form='formatted', Access='direct', Recl=recsz, Status='replace')
+        Open(Newunit=cfile%unit_no, File=cfile%filename, Form='formatted', Access='direct', Recl=recsz, Status='replace')
 
 ! Write header
 
         rec=rec+Int(1,li)
-        Write(Unit=nconf, Fmt='(a72,a1)',            Rec=rec) config%cfgname(1:72),lf
+        Write(Unit=cfile%unit_no, Fmt='(a72,a1)',            Rec=rec) config%cfgname(1:72),lf
         rec=rec+Int(1,li)
-        Write(Unit=nconf, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,config%imcon,megatm,nstep,tstep,time,lf
+        Write(Unit=cfile%unit_no, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,config%imcon,megatm,nstep,tstep,time,lf
 
 ! Write optional cell information (if present)
 
         If (config%imcon > 0) Then
            Do i = 0, 2
               rec=rec+Int(1,li)
-              Write(Unit=nconf, Fmt='(3f20.10,a12,a1)', Rec=rec) &
-                   config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+              Write(Unit=cfile%unit_no, Fmt='(3f20.10,a12,a1)', Rec=rec) &
+                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
            End Do
         End If
 
@@ -3015,23 +3020,23 @@ Subroutine write_config(config,name,levcfg,megatm,nstep,tstep,io,time,netcdf,com
 
            Do i=1,jatms
               rec1=rec+Int(iwrk(i)-1,li)*Int(levcfg+2)+Int(1,li)
-              Write(Unit=nconf, Fmt='(a8,i10,a54,a1)',     Rec=rec1) chbuf(i),iwrk(i),Repeat(' ',54),lf
+              Write(Unit=cfile%unit_no, Fmt='(a8,i10,a54,a1)',     Rec=rec1) chbuf(i),iwrk(i),Repeat(' ',54),lf
               rec1=rec1+Int(1,li)
-              Write(Unit=nconf, Fmt='(3g20.10,a12,a1)',    Rec=rec1) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+              Write(Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)',    Rec=rec1) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
 
               If (levcfg > 0) Then
                  rec1=rec1+Int(1,li)
-                 Write(Unit=nconf, Fmt='(3g20.10,a12,a1)', Rec=rec1) bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
+                 Write(Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)', Rec=rec1) bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
 
                  If (levcfg > 1) Then
                     rec1=rec1+Int(1,li)
-                    Write(Unit=nconf, Fmt='(3g20.10,a12,a1)', Rec=rec1) cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
+                    Write(Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)', Rec=rec1) cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
                  End If
               End If
            End Do
         End Do
 
-        Close(Unit=nconf)
+        Close(Unit=cfile%unit_no)
 
      Else
 
@@ -3279,10 +3284,10 @@ Subroutine getcom_parts(config,com,comm)
     Integer :: i
 
     Do i=1,config%natms
-       If (config%lfrzn(i) /= 0) Then
-           config%vxx(i) = 0.0_wp ; config%vyy(i) = 0.0_wp ; config%vzz(i) = 0.0_wp
-           config%parts(i)%fxx = 0.0_wp ; config%parts(i)%fyy = 0.0_wp ; config%parts(i)%fzz = 0.0_wp
-       End If
+      If (config%lfrzn(i) /= 0) Then
+        config%vxx(i) = 0.0_wp ; config%vyy(i) = 0.0_wp ; config%vzz(i) = 0.0_wp
+        config%parts(i)%fxx = 0.0_wp ; config%parts(i)%fyy = 0.0_wp ; config%parts(i)%fzz = 0.0_wp
+      End If
     End Do
 
   End Subroutine freeze_atoms
@@ -3307,7 +3312,7 @@ Subroutine getcom_parts(config,com,comm)
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Character ( Len = 6 ) :: name
+    Type( file_type ) :: cfgorg
     Integer               :: i,nstep
     Real( Kind = wp )     :: tstep,time
 
@@ -3325,12 +3330,12 @@ Subroutine getcom_parts(config,com,comm)
 
     ! Write REVCON
 
-    name   = 'CFGORG' ! file name
+    Call cfgorg%init('CFGORG')
     nstep  = 0        ! no steps done
     tstep  = 0.0_wp   ! no step exists
     time   = 0.0_wp   ! time is not relevant
 
-    Call write_config(config,name,devel%lvcforg,megatm,nstep,tstep,io,time,netcdf,comm)
+    Call write_config(config,cfgorg,devel%lvcforg,megatm,nstep,tstep,io,time,netcdf,comm)
 
   End Subroutine origin_config
 End Module configuration

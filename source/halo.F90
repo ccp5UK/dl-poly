@@ -2,7 +2,7 @@ Module halo
 
   Use comms,  Only : comms_type,gcheck
   Use deport_data, Only : export_atomic_positions, export_atomic_data
-  Use setup,  Only : nrite,mxatms
+  Use setup,  Only : mxatms
   Use configuration
   Use domains, Only : domains_type
   Use site, Only : site_type

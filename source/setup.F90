@@ -26,7 +26,7 @@ Module setup
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
+  Use kinds, only : wp,si
 
   Implicit None
 
@@ -82,111 +82,43 @@ Module setup
   Real( Kind = wp ), Parameter :: delth_max = 0.20_wp ! degrees
 
 ! I/O CHANNELS :: STERR = 0 , STINP = 5 , STOUT = 6 , STERR+STOUT = *
-! main input channel
-
-  Integer, Parameter :: nread  = 5
-
-! configuration file input channel
-
-  Integer, Parameter :: nconf  = 11
-
-! force field input channel
-
-  Integer, Parameter :: nfield = 12
 
 ! tabulated potential file channel
 
-  Integer, Parameter :: ntable = 13
+  Integer(Kind=si), Parameter :: ntable = 13
 
 ! reference file input channel
 
-  Integer, Parameter :: nrefdt = 14
-
-! main output channel
-
-  Integer, Parameter :: nrite  = 6
-
-! statistical data file output channel
-
-  Integer, Parameter :: nstats = 21
-
-! accumulators restart dump file
-
-  Integer, Parameter :: nrest  = 22
-
-! trajectory history file channel
-
-  Integer, Parameter :: nhist  = 23
+  Integer(Kind=si), Parameter :: nrefdt = 14
 
 ! defect file output channel
 
-  Integer, Parameter :: ndefdt = 24
+  Integer(Kind=si), Parameter :: ndefdt = 24
 
 ! rdf%rdf file channel number
 
-  Integer, Parameter :: nrdfdt = 25
+  Integer(Kind=si), Parameter :: nrdfdt = 25
 
 ! z-density file channel number
 
-  Integer, Parameter :: nzdndt = 26
+  Integer(Kind=si), Parameter :: nzdndt = 26
 
 ! displacements file channel number
 
-  Integer, Parameter :: nrsddt = 27
+  Integer(Kind=si), Parameter :: nrsddt = 27
 
 ! intramolecular PDF file channels numbers
 
-  Integer, Parameter :: npdfdt = 28, &
+  Integer(Kind=si), Parameter :: npdfdt = 28, &
                         npdgdt = 29
 
 ! vaf file channel number
 
-  Integer, Parameter :: nvafdt = 30
+  Integer(Kind=si), Parameter :: nvafdt = 30
 
 ! multipoles file channel number
 
-  Integer, Parameter :: nmpldt = 31
-
-! this is the default name containing all the
-! simulation control directives
-
-  Character( Len = 1024 ), Save :: control = "CONTROL"
-
-! this is the default name for the OUTPUT file
-
-  Character( Len = 1024 ), Save :: output = "OUTPUT"
-
-! this is the default name for the CONFIG file
-
-  Character( Len = 1024 ), Save :: config_name = "CONFIG"
-
-! this is the default name for the FIELD file
-
-  Character( Len = 1024 ), Save :: field = "FIELD"
-
-! this is the default name for the STATIS file
-
-  Character( Len = 1024 ), Save :: statis = "STATIS"
-
-! this is the default name for the HISTORY file
-
-  Character( Len = 1024 ), Save :: history = "HISTORY"
-
-! this is the default name for the HISTORF file
-
-  Character( Len = 1024 ), Save :: historf = "HISTORF"
-
-! this is the default name for the REVIVE file
-
-  Character( Len = 1024 ), Save :: revive = "REVIVE"
-
-! this is the default name for the REVOLD file
-
-  Character( Len = 1024 ), Save :: revold = "REVOLD"
-
-! this is the default name for the REVCON file
-
-  Character( Len = 1024 ), Save :: revcon = "REVCON"
+  Integer(Kind=si), Parameter :: nmpldt = 31
 
 ! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
   Integer, Save ::                                              &

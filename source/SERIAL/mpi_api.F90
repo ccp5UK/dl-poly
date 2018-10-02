@@ -15,7 +15,7 @@ Module mpi_api
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp, li
+  Use kinds, Only : wp, li,si
   Use particle, Only: corePart
   Implicit None
 
@@ -82,6 +82,7 @@ Module mpi_api
      Module Procedure MPI_BCAST_chr_v
      Module Procedure MPI_BCAST_int_s
      Module Procedure MPI_BCAST_int_v
+     Module Procedure MPI_BCAST_int_s_16
      Module Procedure MPI_BCAST_rwp_s
      Module Procedure MPI_BCAST_rwp_v
   End Interface !MPI_BCAST
@@ -529,6 +530,21 @@ Contains
     End If
 
   End Subroutine MPI_BCAST_int_s
+  Subroutine MPI_BCAST_int_s_16(aaa,n,MPI_INTEGER,idnode,MPI_COMM_WORLD,ierr)
+
+    Integer, Intent( In    ) :: MPI_INTEGER,idnode,MPI_COMM_WORLD
+    Integer, Intent(   Out ) :: ierr
+
+    Integer, Intent( In    ) :: n
+    Integer(Kind=si), Intent( In    ) :: aaa
+
+    ierr = 0
+    If (idnode /= 0 .or. n /= 1) Then
+       ierr = 1
+       Stop
+    End If
+
+  End Subroutine MPI_BCAST_int_s_16
   Subroutine MPI_BCAST_int_v(aaa,n,MPI_INTEGER,idnode,MPI_COMM_WORLD,ierr)
 
     Integer, Intent( In    ) :: MPI_INTEGER,idnode,MPI_COMM_WORLD

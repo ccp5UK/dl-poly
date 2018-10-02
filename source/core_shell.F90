@@ -14,7 +14,7 @@ Module core_shell
   Use comms,           Only : comms_type,gsync,gsum,gcheck,gmax
   Use configuration,   Only : configuration_type,freeze_atoms
   Use particle,        Only : corePart
-  Use setup,           Only : nrite,boltz,engunit,output,mxatms,mxatdm,zero_plus,&
+  Use setup,           Only : boltz,engunit,mxatms,mxatdm,zero_plus,&
     mxtmls,mxlshp
   Use parse,           Only : strip_blanks,lower_case
   Use shared_units,    Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
@@ -22,6 +22,7 @@ Module core_shell
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
   Use domains, Only : domains_type
+  Use filename, Only : file_type, FILE_OUTPUT
 
   Implicit None
   Private
@@ -595,7 +596,7 @@ Contains
   End Subroutine core_shell_quench
 
   Subroutine core_shell_relax(l_str,relaxed,rdf_collect,rlx_tol,stpcfg,cshell, &
-      stat,domain,config,comm)
+      stat,domain,config,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -615,8 +616,9 @@ Contains
     Type(core_shell_type), Intent( InOut ) :: cshell
     Type( stats_type ), Intent( InOut ) :: stat
     Type( domains_type ), Intent( In    ) :: domain
-    Type( comms_type ), Intent( InOut ) :: comm
     Type( configuration_type ), Intent( InOut ) :: config
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( comms_type ), Intent( InOut ) :: comm
 
     Integer                 :: fail(1:2),i,ia,ib,jshl
 
@@ -709,7 +711,7 @@ Contains
 
     If (cshell%lshmv_shl) Then
       Call update_shared_units(config,cshell%lishp_shl,cshell%lashp_shl,&
-                               SHARED_UNIT_UPDATE_FORCES,domain,comm)
+        SHARED_UNIT_UPDATE_FORCES,domain,comm)
     End If
 
     ! Load shell forces on cores (cores don't move during the shell relaxation)
@@ -930,12 +932,12 @@ Contains
         Call info(message,.true.)
 
         If (comm%idnode == 0) Then
-          Inquire(File=Trim(output), Exist=l_out, Position=c_out)
+          Inquire(File=files(FILE_OUTPUT)%filename, Exist=l_out, Position=c_out)
           Call strip_blanks(c_out)
           Call lower_case(c_out)
           If (l_out .and. c_out(1:6) == 'append') Then
-            Close(Unit=nrite)
-            Open(Unit=nrite, File=Trim(output), Position='append')
+            Close(unit=files(FILE_OUTPUT)%unit_no)
+            Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Position='append')
           End If
         End If
       End If

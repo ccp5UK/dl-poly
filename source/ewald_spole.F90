@@ -1,8 +1,7 @@
 Module ewald_spole
   Use kinds,           Only : wp
   Use comms,           Only : comms_type, gcheck, gsum
-  Use setup,           Only : mxatdm, mxatms, nrite, r4pie0, sqrpi, twopi, &
-                              zero_plus
+  Use setup,           Only : mxatdm,mxatms,r4pie0,sqrpi,twopi,zero_plus
   Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use numerics,        Only : erfcgen, invert, dcell
@@ -422,11 +421,11 @@ Module ewald_spole
 
     scale=rvolm*r4pie0/electro%eps
 
-  ! Convert config%cell coordinates to fractional coordinates intervalled [0,1)
-  ! (bottom left corner of MD config%cell) and stretch over kmaxs in different
+  ! Convert cell coordinates to fractional coordinates intervalled [0,1)
+  ! (bottom left corner of MD cell) and stretch over kmaxs in different
   ! directions.  Only the halo (config%natms,config%nlast] has fractional coordinates
   ! outside the [0,1) interval.  In the worst case scenario of one
-  ! "effective" link-config%cell per domain and one domain in the MD config%cell only,
+  ! "effective" link-cell per domain and one domain in the MD cell only,
   ! the halo will have fractional coordinates intervalled as
   ! [n,0)u[1,2), where -1 <= n < 0.  Only the positive halo is needed by
   ! the B-splines since they distribute/spread charge density in

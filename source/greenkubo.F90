@@ -14,7 +14,7 @@ Module greenkubo
   Use kinds, Only : wp,wi
 
   Use comms,     Only : comms_type,gsum,gcheck
-  Use setup,     Only : nrite,mxatyp,mxbuff,zero_plus,nvafdt,mxatms
+  Use setup,     Only : mxatyp,mxbuff,zero_plus,nvafdt,mxatms
   Use configuration,    Only : configuration_type
   Use site, Only : site_type
 

@@ -20,6 +20,7 @@ Module ttm
   Use parse,           Only : tabs_2_blanks, get_line, get_word, &
                               strip_blanks, word_2_real
   Use errors_warnings, Only : error,warning,info
+  Use filename, Only : UNIT_TYPE
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -808,7 +809,7 @@ Module ttm
   Logical                :: safe,l_tmp = .true.
   Integer                :: nxx,nyy,nzz,nstp,i,ix,iy,iz,ii,jj,kk,ijk,ipos(3)
   Real ( Kind = wp )     :: eltmp,tme,lat_sum,lat_max,lat_min
-  Integer                :: iounit = 225
+  Integer(Kind=UNIT_TYPE) :: iounit = 225
   Character( Len = 256 ) :: message
 
 ! check existence of readable restart file (DUMP_E)

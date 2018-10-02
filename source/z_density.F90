@@ -11,7 +11,7 @@ Module z_density
 
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gsum
-  Use setup,  Only : nrite,nzdndt
+  Use setup,  Only : nzdndt
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use particle,        Only : corePart

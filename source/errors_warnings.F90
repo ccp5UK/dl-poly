@@ -1,8 +1,10 @@
 Module errors_warnings
-  Use kinds, Only : wp
+  Use, intrinsic :: iso_fortran_env, only : error_unit,input_unit,output_unit
+  Use kinds, Only : wp,si
   Use comms, Only : comms_type,abort_comms
-  Use setup, Only : nread,nconf,nfield,ntable,nrefdt, &
-                           nstats,nrest,nhist,ndefdt,nrdfdt,nzdndt,nrsddt
+  Use setup, Only : ntable,nrefdt,ndefdt,nrdfdt,nzdndt,nrsddt
+  Use filename, Only : FILE_CONTROL, FILE_CONFIG, FILE_FIELD, &
+                       FILE_STATS, FILE_HISTORY, FILE_REVIVE
 
   Implicit None
 
@@ -32,7 +34,7 @@ Module errors_warnings
 
   Subroutine init_error_system(nrite,comm)
 
-     Integer, Intent( In ) :: nrite
+     Integer(Kind=si), Intent( In ) :: nrite
      Type( comms_type), Intent( In ) :: comm
      eworld%comm=comm%comm
      eworld%idnode=comm%idnode
@@ -2171,20 +2173,7 @@ Subroutine info_sl(message,master_only)
      End If
 
 ! close all I/O channels
-
-     Close(Unit=nread)
-     Close(Unit=nconf)
-     Close(Unit=nfield)
-     Close(Unit=ntable)
-     Close(Unit=nrefdt)
-     Close(Unit=ounit)
-     Close(Unit=nstats)
-     Close(Unit=nrest)
-     Close(Unit=nhist)
-     Close(Unit=ndefdt)
-     Close(Unit=nrdfdt)
-     Close(Unit=nzdndt)
-     Close(Unit=nrsddt)
+  Call close_all_units()
 
   End If
 
@@ -2193,5 +2182,22 @@ Subroutine info_sl(message,master_only)
   Call abort_comms(eworld,kode)
 
 End Subroutine error
+
+!> Close all open file units
+Subroutine close_all_units()
+  Integer(Kind = 2) :: i
+  Integer :: ierr
+  Logical :: is_open,has_name
+  Character(len=256) :: filename
+
+  Do i=-Huge(i),Huge(i)-1
+    Inquire(i,opened=is_open,named=has_name,iostat=ierr)
+
+    If (is_open .and. has_name .and. ierr==0 .and. All(i/=[-1,ERROR_UNIT,INPUT_UNIT,OUTPUT_UNIT])) Then
+      Inquire(i,name=filename)
+      Close(i)
+    End If
+  End Do
+End Subroutine close_all_units
 
 End Module errors_warnings

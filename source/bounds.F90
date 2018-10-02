@@ -18,7 +18,7 @@ Module bounds
   Use development,     Only : development_type
   Use greenkubo,       Only : greenkubo_type
   Use mpole,           Only : mpole_type,POLARISATION_CHARMM
-  Use ttm,             Only : ttm_type 
+  Use ttm,             Only : ttm_type
   Use numerics,        Only : dcell
   Use Kontrol,         Only : scan_control, scan_control_pre
   Use configuration,   Only : scan_config,read_config
@@ -42,6 +42,7 @@ Module bounds
   Use electrostatic, Only : electrostatic_type
   Use ewald, Only : ewald_type
   Use io, Only : io_type
+  Use filename, Only : file_type
   Implicit None
 
   Private
@@ -55,7 +56,7 @@ Contains
     width,max_site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
     msd_data,met,pois,bond,angle,dihedral,     &
     inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
-    mpoles,ext_field,rigid,electro,domain,config,ewld,kim_data,comm)
+    mpoles,ext_field,rigid,electro,domain,config,ewld,kim_data,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -107,6 +108,7 @@ Contains
   Type( domains_type ), Intent( InOut ) :: domain
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( kim_type ), Intent( InOut ) :: kim_data
+  Type( file_type ), Intent( InOut ) :: files(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext
@@ -125,15 +127,15 @@ Contains
   Call scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,neigh%max_exclude,mtshl, &
     mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
     lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
-    vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,comm)
+    vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,comm)
 
 ! Get imc_r & set dvar
 
-  Call scan_control_pre(config%imc_n,dvar,comm)
+  Call scan_control_pre(config%imc_n,dvar,files,comm)
 
 ! scan CONFIG file data
 
-  Call scan_config(config,megatm,config%imc_n,dvar,levcfg,xhi,yhi,zhi,io,domain,comm)
+  Call scan_config(config,megatm,config%imc_n,dvar,levcfg,xhi,yhi,zhi,io,domain,files,comm)
 
 ! halt execution for unsupported image conditions in DD
 ! checks for some inherited from DL_POLY_2 are though kept
@@ -142,15 +144,11 @@ Contains
 
 ! scan CONTROL file data
 
-  Call scan_control                                        &
-    (rcter, &
-    rigid%max_rigid,config%imcon,config%imc_n,config%cell,xhi,yhi,zhi,             &
-    mxgana,         &
-    l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,   &
-    rbin,                         &
-    nstfce,ttm,cshell,stats,thermo, &
-           green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-           zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,comm)
+  Call scan_control(rcter,rigid%max_rigid,config%imcon,config%imc_n,config%cell, &
+    xhi,yhi,zhi,mxgana,l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce, &
+    ttm,cshell,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral, &
+    inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data, &
+    files,comm)
 
 ! check integrity of cell vectors: for cubic, TO and RD cases
 ! i.e. cell(1)=cell(5)=cell(9) (or cell(9)/Sqrt(2) for RD)
@@ -768,7 +766,8 @@ Contains
 
 ! decide on MXATMS while reading CONFIG and scan particle density
 
-  Call read_config(config,megatm,levcfg,l_ind,l_str,neigh%cutoff,dvar,xhi,yhi,zhi,dens0,dens,io,domain,comm)
+  Call read_config(config,megatm,levcfg,l_ind,l_str,neigh%cutoff,dvar,xhi,yhi, &
+    zhi,dens0,dens,io,domain,files,comm)
 
 ! Create f(fdvar,dens0,dens)
 
@@ -795,7 +794,7 @@ Contains
      neigh%max_list=neigh%max_exclude-1
   End If
 
-! get link-cell ttm%volume
+! get link-cell volume
 
   vcell = config%volm / (Real(ilx*ily*ilz,wp) * Real(comm%mxnode,wp))
 
@@ -885,7 +884,7 @@ Contains
      ily=Int(domain%ny_recip*celprp(8)/cut)
      ilz=Int(domain%nz_recip*celprp(9)/cut)
 
-     Write(message,'(a,3i6)') "link-config%cell decomposition 2 (x,y,z): ",ilx,ily,ilz
+     Write(message,'(a,3i6)') "link-ccell decomposition 2 (x,y,z): ",ilx,ily,ilz
      Call info(message,.true.)
 
      If (ilx < 3 .or. ily < 3 .or. ilz < 3) Call error(305)
@@ -917,7 +916,7 @@ Contains
   If (Any(ttm%eltsys<ttm%ntsys)) Call error(670)
 
 ! If ttm%redistribute option selected, check for sufficient electronic temperature
-! cells to ttm%redistribute energy when ionic tmeperature cells are switched off:
+! cells to redistribute energy when ionic tmeperature cells are switched off:
 ! if not available, switch off this option
 
   If (ttm%redistribute .and. (ttm%eltsys(1)<ttm%ntsys(1)+2 &
@@ -928,7 +927,7 @@ Contains
 
 ! Calculate average atomic density: if not overridden by
 ! 'ttm atomdens' directive in CONTROL file, will be used
-! to convert specific heat capacities to ttm%volumetric 
+! to convert specific heat capacities to ttm%volumetric
 ! heat capacity etc.
 
   ttm%sysrho = Real(megatm,Kind=wp)/(config%cell(1)*config%cell(5)*config%cell(9))

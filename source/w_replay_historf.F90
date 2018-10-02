@@ -60,7 +60,8 @@
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,Trim(historf),megatm,levcfg,dvar,nstep,tstep,time,exout,io,traj,sites,domain,config,comm)
+     Call read_history(l_str,files(FILE_HISTORF)%filename,megatm,levcfg,dvar, &
+       nstep,tstep,time,exout,io,traj,sites,domain,config,files,comm)
 
      If (newjb) Then
         newjb = .false.
@@ -189,7 +190,7 @@
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
            mxatdm_,rdf%max_grid,stat,thermo,&
-           zdensity,sites,comm)
+           zdensity,sites,files,comm)
 
 ! line-printer output
 ! Update cpu time
@@ -225,29 +226,31 @@
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
-           If (ltraj) Call trajectory_write &
-             (keyres,megatm,nstep,tstep,time,io,stat%rsd,netcdf,config,traj,comm)
+           If (ltraj) Call trajectory_write(keyres,megatm,nstep,tstep,time, &
+             io,stat%rsd,netcdf,config,traj,files,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,io,cshell, &
-               dfcts(1),neigh,sites,netcdf,domain,config,comm)
+               dfcts(1),neigh,sites,netcdf,domain,config,files,comm)
              If (dfcts(2)%ldef)Then
                Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,io,cshell, &
-                 dfcts(2),neigh,sites,netcdf,domain,config,comm)
+                 dfcts(2),neigh,sites,netcdf,domain,config,files,comm)
              End If
            End If
-           If (msd_data%l_msd) Call msd_write &
-             (config,keyres,megatm,nstep,tstep,time,stat%stpval,sites%dof_site,io,msd_data,comm)
-           If (rsdc%lrsd) Call rsd_write &
-             (keyres,nstep,tstep,io,rsdc,time,cshell,stat%rsd,config,comm)
+           If (msd_data%l_msd) Then
+             Call msd_write(config,keyres,megatm,nstep,tstep,time,stat%stpval, &
+               sites%dof_site,io,msd_data,files,comm)
+           End If
+           If (rsdc%lrsd) Call rsd_write(keyres,nstep,tstep,io,rsdc,time,cshell,stat%rsd,config,comm)
            If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
            (config,keyres,nstph,tsths,green,sites,comm)
 
 ! Save restart data in event of system crash
 
-           If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) &
-              Call system_revive                              &
-             (neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
+            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) Then
+              Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
+                stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity, &
+                rdf,netcdf,config,files,comm)
+            End IF
 
 ! Close and Open OUTPUT at about 'i'th print-out or 'i' minute intervals
 
@@ -258,12 +261,12 @@
                  tmr%elapsed/Real( nstph , wp) ) ) Then
 
               If (comm%idnode == 0) Then
-                 Inquire(File=Trim(output), Exist=l_out, Position=c_out)
+                 Inquire(File=files(FILE_OUTPUT)%filename, Exist=l_out, Position=c_out)
                  Call strip_blanks(c_out)
                  Call lower_case(c_out)
                  If (l_out .and. c_out(1:6) == 'append') Then
-                    Close(Unit=nrite)
-                    Open(Unit=nrite, File=Trim(output), Position='append')
+                    Close(unit=files(FILE_OUTPUT)%unit_no)
+                    Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Position='append')
                  End If
               End If
 
@@ -315,9 +318,11 @@
 
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
-  If (.not. devel%l_tor) Call system_revive                         &
-    (neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
-           stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config,comm)
+  If (.not. devel%l_tor) Then
+    Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst,stat, &
+      devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf, &
+      config,files,comm)
+  End If
 
 ! step counter is data counter now, so statistics_result is triggered
 
