@@ -56,6 +56,9 @@ Module core_shell
       stride,gamma,x(1),y(1),z(1),fff(0:3)
     Real( Kind = wp )  :: grad_pass
     Real( Kind = wp ), Allocatable :: oxt(:),oyt(:),ozt(:)
+
+    !> Relaxed shell indicator
+    Logical, Public :: relaxed = .true.
   Contains
     Private
     Procedure, Public :: init => allocate_core_shell_arrays
@@ -594,7 +597,7 @@ Contains
 
   End Subroutine core_shell_quench
 
-  Subroutine core_shell_relax(l_str,relaxed,rdf_collect,rlx_tol,stpcfg,cshell, &
+  Subroutine core_shell_relax(l_str,rdf_collect,rlx_tol,stpcfg,cshell, &
       stat,domain,config,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -610,7 +613,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Logical,            Intent( In    ) :: l_str
-    Logical,            Intent( InOut ) :: relaxed,rdf_collect
+    Logical,            Intent( InOut ) :: rdf_collect
     Real( Kind = wp ),  Intent( In    ) :: rlx_tol(1:2),stpcfg
     Type(core_shell_type), Intent( InOut ) :: cshell
     Type( stats_type ), Intent( InOut ) :: stat
@@ -684,7 +687,7 @@ Contains
 
       ! No relaxation is yet attempted
 
-      relaxed=.false.
+      cshell%relaxed=.false.
 
       ! Minimum needed for a pass for this minimisation cycle
 
@@ -752,7 +755,7 @@ Contains
     ! Get grad_tol & verify relaxed condition
 
     cshell%grad_tol=cshell%grad/Real(cshell%megshl,wp)
-    relaxed=(cshell%grad_tol < rlx_tol(1))
+    cshell%relaxed=(cshell%grad_tol < rlx_tol(1))
 
     ! Initialise cshell%dist_tol
 
@@ -760,7 +763,7 @@ Contains
 
     ! CHECK FOR CONVERGENCE
 
-    If (.not.relaxed) Then
+    If (.not.cshell%relaxed) Then
 
       ! Increment main passage counter
 
@@ -944,7 +947,7 @@ Contains
 
     100 Continue
 
-    If (relaxed) Then
+    If (cshell%relaxed) Then
 
       ! Final printout
 

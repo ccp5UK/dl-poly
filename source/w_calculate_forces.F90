@@ -133,11 +133,11 @@
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
 
         If (cshell%keyshl == SHELL_RELAXED) Then
-          Call core_shell_relax(l_str,relaxed_shl,rdf%l_collect,rlx_tol, &
+          Call core_shell_relax(l_str,rdf%l_collect,rlx_tol, &
             stat%stpcfg,cshell,stat,domain,config,files,comm)
         End If
 
-        If (.not.relaxed_shl) Go To 200 ! Shells relaxation takes priority over minimisation
+        If (.not.cshell%relaxed) Go To 200 ! Shells relaxation takes priority over minimisation
 
         If (minim%minimise .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
           If      (minim%freq == 0 .and. nstep == 0) Then
@@ -157,7 +157,7 @@
 
 ! Refresh mappings
 
-        If (.not.(relaxed_shl .and. minim%relaxed)) Then
+        If (.not.(cshell%relaxed .and. minim%relaxed)) Then
           Call w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
              dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
            Go To 100

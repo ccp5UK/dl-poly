@@ -212,15 +212,13 @@ program dl_poly
 
   ! general flags
 
-  Logical           :: ltmp,l_vv,l_n_e,l_n_v,       &
-    l_ind,l_str,l_top,           &
+  Logical           :: l_ind,l_str,l_top,           &
     l_exp,lecx,lfcap,      &
-    lvar,leql,lsim,lfce,    &
+    lvar,leql,lsim,    &
     lpana, &
-    safe,lbook,lexcl,            &
-    relaxed_shl = .true.
+    safe,lbook,lexcl
 
-  Integer           :: i,j,isw,levcfg,nstfce,              &
+  Integer           :: isw,levcfg,nstfce,              &
     nx,ny,nz,                           &
     keyres,nstrun,nsteql,               &
     nstbpo,    &
@@ -235,8 +233,7 @@ program dl_poly
 
   ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
 
-  Real( Kind = wp ) :: tsths,                                     &
-    tstep,time,tmst,      &
+  Real( Kind = wp ) :: tstep,time,tmst,      &
     dvar,                       &
     rbin,          &
     fmax,                           &
@@ -290,6 +287,8 @@ program dl_poly
   Type( rsd_type ), Target :: rsdsc
   Type( file_type ), Allocatable :: files(:)
 
+  Integer(Kind=wi) :: i,j
+  Logical :: l_n_e,l_n_v,lfce
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
   Character( Len = 1024 ) :: control_filename
@@ -368,7 +367,7 @@ program dl_poly
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
-  Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
+  Call set_bounds (levcfg,l_str,lsim,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,width,sites,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
@@ -434,7 +433,7 @@ program dl_poly
   ! READ SIMULATION CONTROL PARAMETERS
 
   Call read_control                                    &
-    (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
+    (levcfg,l_str,lsim,l_n_e,l_n_v,        &
     rbin,nstfce,width,     &
     l_exp,lecx,lfcap,l_top,          &
     lvar,leql,               &
@@ -865,6 +864,8 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( kim_type ), Intent( InOut) :: kim_data
     Type( timer_type ), Intent( InOut ) :: tmr
+
+    Logical :: ltmp
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
@@ -1029,6 +1030,7 @@ Contains
     Type( kim_type ), Intent( InOut ) :: kim_data
     Type( file_type ), Intent( InOut ) :: files(:)
 
+    Real(Kind=wp) :: tsths
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer( Kind = wi )           :: nstpe,nstph ! nstep replacements
     Integer           :: exout       ! exit indicator for reading
@@ -1078,6 +1080,7 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( timer_type ), Intent( InOut ) :: tmr
 
+    Real(Kind=wp) :: tsths
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements
     Integer           :: exout       ! exit indicator for reading
