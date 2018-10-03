@@ -209,7 +209,7 @@ program dl_poly
     l_exp,lecx,lfcap,      &
     lvar,leql,lsim,    &
     lpana, &
-    safe,lbook,lexcl
+    lbook,lexcl
 
   Integer           :: isw,levcfg,nstfce,              &
     nx,ny,nz,                           &
@@ -910,6 +910,9 @@ Contains
     Type( external_field_type ), Intent( In    ) :: ext_field
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
+
+    Logical :: safe
+
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
