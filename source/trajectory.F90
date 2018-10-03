@@ -78,6 +78,8 @@ Module trajectory
     Integer          :: recsz_write  = 73 ! default record size
     Integer(Kind=li) :: rec_write    = 0_li , &
       frm_write    = 0_li
+    Logical, Public :: ltraj
+    Logical, Public :: restart = .true.
   Contains
     !> Initialise the trajectory type
     Procedure, Public :: init => init_trajectory_type

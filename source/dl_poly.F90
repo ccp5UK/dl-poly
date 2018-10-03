@@ -217,7 +217,6 @@ program dl_poly
     l_exp,lecx,lfcap,      &
     lvar,leql,lsim,lfce,    &
     lpana, &
-    ltraj,             &
     safe,lbook,lexcl,            &
     relaxed_shl = .true.
 
@@ -441,7 +440,6 @@ program dl_poly
     l_exp,lecx,lfcap,l_top,          &
     lvar,leql,               &
     lfce,lpana,           &
-    ltraj,               &
     nx,ny,nz,impa,                            &
     keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
@@ -1032,7 +1030,6 @@ Contains
     Type( kim_type ), Intent( InOut ) :: kim_data
     Type( file_type ), Intent( InOut ) :: files(:)
 
-    Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer( Kind = wi )           :: nstpe,nstph ! nstep replacements
     Integer           :: exout       ! exit indicator for reading
@@ -1082,7 +1079,6 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( timer_type ), Intent( InOut ) :: tmr
 
-    Logical,     Save :: newjb = .true.
     Real( Kind = wp ) :: tmsh        ! tmst replacement
     Integer           :: nstpe,nstph ! nstep replacements
     Integer           :: exout       ! exit indicator for reading
