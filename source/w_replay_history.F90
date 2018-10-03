@@ -139,7 +139,7 @@
 
            If (lbook) Then
              Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
-               atmfrz,degrot,degtra,flw,cshell,cons,pmf,bond,angle,dihedral, &
+               atmfrz,degrot,degtra,flow,cshell,cons,pmf,bond,angle,dihedral, &
                inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
              If (lexcl) Then
                Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &

@@ -29,13 +29,13 @@ End If
 
 ! line-printer output every nstbpo steps
 
-If (flw%lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
+If (flow%lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
 
   ! Update cpu time
 
   Call gtime(tmr%elapsed)
 
-  If (flw%new_page()) Then
+  If (flow%new_page()) Then
     Write(messages(1),'(a)') Repeat('-',130)
     Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
      'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
@@ -60,7 +60,7 @@ If (flw%lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
   Call info(messages,4,.true.)
 
   If (nstep /= 0) Then
-    Call flw%line_printed()
+    Call flow%line_printed()
   End If
 
 End If

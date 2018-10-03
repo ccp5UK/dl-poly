@@ -14,7 +14,7 @@ If (neigh%update) Then
   ! Relocate atoms to new domains and restore bonding description
 
   Call relocate_particles(dvar,neigh%cutoff_extended,lbook, &
-    msd_data%l_msd,megatm,flw,cshell,cons,pmf,stat,ewld,thermo,green, &
+    msd_data%l_msd,megatm,flow,cshell,cons,pmf,stat,ewld,thermo,green, &
     bond,angle,dihedral,inversion,tether,neigh,sites,minim,mpoles, &
     rigid,domain,config,comm)
 

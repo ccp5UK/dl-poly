@@ -70,26 +70,10 @@ Module kontrol
   Use filename, Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
                        FILE_STATS,FILE_HISTORY,FILE_HISTORF,FILE_REVIVE,FILE_REVCON, &
                        FILE_REVOLD
+  Use flow, Only : flow_type
   Implicit None
 
   Private
-
-  !> Type containing program flow data, do not use to park variables
-  Type, Public :: control_type
-    Private
-    !> Check if is first time we call build_book_intra
-    Logical, Public :: newjob_build_book = .true.
-    Logical, Public :: oldjob_shared_units = .false.
-
-    ! STDOUT printing control
-    !> Number of print events before starting a new 'page'
-    Integer(Kind=wi) :: npage = 8
-    !> Current number of print events
-    Integer(Kind=wi), Public :: lines = 0
-  Contains
-    Procedure, Public :: new_page => control_type_new_page
-    Procedure, Public :: line_printed => controL_type_line_printed
-  End Type control_type
 
   Public :: read_control
   Public :: scan_control_output
@@ -98,19 +82,6 @@ Module kontrol
   Public :: scan_control_pre
 
 Contains
-
-  Pure Function control_type_new_page(T) result(new_page)
-    Class(control_type), Intent(In) :: T
-    Logical :: new_page
-
-    new_page = Mod(T%lines,T%npage) == 0
-  End Function control_type_new_page
-
-  Subroutine control_type_line_printed(T)
-    Class(control_type), Intent(InOut) :: T
-
-    T%lines = T%lines + 1
-  End Subroutine control_type_line_printed
 
   Subroutine read_control                                &
     (levcfg,l_str,lsim,l_n_e,l_n_v,        &
@@ -124,7 +95,7 @@ Contains
     fmax,nstbpo,             &
     rlx_tol,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
-           ttm,dfcts,          &
+    ttm,dfcts,          &
     ndump, &
     rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &

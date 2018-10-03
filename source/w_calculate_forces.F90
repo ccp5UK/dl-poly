@@ -9,7 +9,7 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
+        Call w_refresh_mappings(flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
           dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
      End If
 
@@ -158,7 +158,7 @@
 ! Refresh mappings
 
         If (.not.(cshell%relaxed .and. minim%relaxed)) Then
-          Call w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
+          Call w_refresh_mappings(flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
              dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
            Go To 100
         End If
@@ -166,7 +166,7 @@
 
 ! Get RB COM stress and virial at restart only - also available at w_at_start_vv for levcfg==2
 
-     If (newjob) Then
+     If (flow%newjob) Then
         If (rigid%total > 0) Then
            If (thermo%l_langevin) Then
               Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
