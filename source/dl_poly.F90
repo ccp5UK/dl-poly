@@ -242,8 +242,7 @@ program dl_poly
     fmax,                           &
     width,mndis,mxdis,mxstp,     &
     rlx_tol(1:2),                 &
-    quattol,                 &
-    pdplnc
+    quattol                 
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(thermostat_type) :: thermo
@@ -447,7 +446,7 @@ program dl_poly
     rlx_tol,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
     ttms,dfcts,          &
-    ndump,pdplnc,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
+    ndump,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
     minim,mpoles,electro,ewld,seed,traj,files,tmr,config,comm)
 

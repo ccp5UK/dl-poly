@@ -38,7 +38,7 @@ Module two_body
   Public :: two_body_forces
 Contains
 
-Subroutine two_body_forces(pdplnc,ensemble,    &
+  Subroutine two_body_forces(ensemble,    &
            nstfce,lbook,megfrz, &
            leql,nsteql,nstep,         &
            cshell,stats,ewld,devel,met,pois,neigh,sites,vdws,rdf,mpoles,electro, &
@@ -72,7 +72,6 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
                                                                megfrz, &
                                                                nsteql,nstep
   Type( core_shell_type ), Intent( InOut ) :: cshell
-  Real( Kind = wp ),                        Intent( In    ) :: pdplnc
   Type( stats_type ), Intent( InOut )                       :: stats
   Type( ewald_type ),                       Intent( InOut ) :: ewld
   Type( development_type ),                 Intent( In    ) :: devel
@@ -169,7 +168,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 
 ! Set up non-bonded interaction (verlet) list using link cells
   If (neigh%update) Then
-    Call link_cell_pairs(vdws%cutoff,met%rcut,pdplnc,lbook,megfrz,cshell,devel, &
+    Call link_cell_pairs(vdws%cutoff,met%rcut,lbook,megfrz,cshell,devel, &
       neigh,mpoles,domain,tmr,config,comm)
   End If
 ! Calculate all contributions from KIM

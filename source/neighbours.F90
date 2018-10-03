@@ -57,6 +57,7 @@ Module neighbours
     Integer( Kind = wi ), Public :: max_exclude
     Logical :: newstart=.true.
     Logical :: newjob=.true.
+    Real( Kind = wp ), Public :: pdplnc
 
   Contains
     Private
@@ -297,11 +298,11 @@ Contains
   !> Author    - I.T.Todorov january 2017
   !>
   !> Contrib   - I.J.Bush february 2014
-  Subroutine link_cell_pairs(rvdw,rmet,pdplnc,lbook,megfrz,cshell,devel,neigh, &
+  Subroutine link_cell_pairs(rvdw,rmet,lbook,megfrz,cshell,devel,neigh, &
       mpoles,domain,tmr,config,comm)
     Logical,            Intent( In    ) :: lbook
     Integer,            Intent( In    ) :: megfrz
-    Real( Kind = wp ) , Intent( In    ) :: rvdw,rmet,pdplnc
+    Real( Kind = wp ) , Intent( In    ) :: rvdw,rmet
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( development_type ), Intent( In    ) :: devel
     Type( neighbours_type ), Intent( InOut ) :: neigh
@@ -374,7 +375,7 @@ Contains
     nlp=1
     nlr2=Real(config%natms,wp)
     det=nlr2/Real(nlx*nly*nlz,wp)
-    Do While (det > pdplnc)
+    Do While (det > neigh%pdplnc)
       nlp=nlp+1
       rsq=Real(nlp,wp)
       nlx=Int(dispx*rsq)

@@ -125,10 +125,10 @@ Contains
     rlx_tol,mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
            ttm,dfcts,          &
-           ndump,pdplnc, &
-           rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
-           pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-           rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,comm)
+    ndump, &
+    rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
+    pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
+    rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -170,8 +170,7 @@ Contains
 
   Real( Kind = wp ),      Intent(   Out ) :: tstep,mndis,mxdis,mxstp,    &
     quattol,&
-    fmax,rlx_tol(1:2),     &
-    pdplnc
+    fmax,rlx_tol(1:2)
   Type( rsd_type ), Intent ( InOut ) :: rsdc
   Type( pmf_type ), Intent (   InOut )   :: pmf
   Type( core_shell_type ), Intent (   In  )   :: cshell
@@ -190,7 +189,7 @@ Contains
   Type( dihedrals_type ), Intent( In    ) :: dihedral
   Type( inversions_type ), Intent( InOut ) :: inversion
   Type( z_density_type ), Intent( InOut ) :: zdensity
-  Type( neighbours_type ), Intent( In    ) :: neigh
+  Type( neighbours_type ), Intent( InOut    ) :: neigh
   Type( vdw_type ), Intent( InOut ) :: vdws
   Type( tersoff_type ), Intent( In    )  :: tersoffs
   Type( rdf_type ), Intent( InOut ) :: rdf
@@ -549,7 +548,7 @@ Contains
 ! default value for the particle density per link cell limit
 ! below which subcelling (decreasing link-cell dimensions) stops
 
-  pdplnc = 50.0_wp
+  neigh%pdplnc = 50.0_wp
 
 ! default times for job execution and output dump
 
@@ -2902,7 +2901,7 @@ Contains
         Call get_word(record,word)
         If (word(1:4) == 'dens' .or. word(1:6) == 'thresh') Call get_word(record,word)
         If (word(1:4) == 'dens' .or. word(1:6) == 'thresh') Call get_word(record,word)
-        pdplnc = Max(Abs(word_2_real(word)),1.0_wp) ! disallow any less than 1
+        neigh%pdplnc = Max(Abs(word_2_real(word)),1.0_wp) ! disallow any less than 1
 
 ! read machine time for simulation run (in seconds)
 
@@ -3405,7 +3404,7 @@ Contains
 ! report data dumping interval, subcelling threshold density and job times
 
   Write(messages(1),'(a,i10)') 'data dumping interval (steps) ',ndump
-  Write(messages(2),'(a,1p,e12.4)') 'subcelling threshold density ',pdplnc
+  Write(messages(2),'(a,1p,e12.4)') 'subcelling threshold density ',neigh%pdplnc
   Write(messages(3),'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%job
   Write(messages(4),'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%clear_screen
   Call info(messages,4,.true.)
