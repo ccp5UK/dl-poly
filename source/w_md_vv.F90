@@ -150,7 +150,7 @@
 ! Save restart data in event of system crash
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) Then
-          Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,sites,io,tmst, &
+          Call system_revive(neigh%cutoff,megatm,nstep,tstep,time,sites,io,tmst, &
             stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf, &
             netcdf,config,files,comm)
         End If

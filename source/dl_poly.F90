@@ -228,10 +228,8 @@ program dl_poly
 
   Real( Kind = wp ) :: tstep,time,tmst,      &
     dvar,                       &
-    rbin,          &
     fmax,                           &
     width,mndis,mxdis,mxstp,     &
-    rlx_tol(1:2),                 &
     quattol                 
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
@@ -361,7 +359,7 @@ program dl_poly
   ! (setup and domains)
 
   Call set_bounds (levcfg,l_str,lsim,l_n_e,l_n_v,l_ind, &
-    dvar,rbin,nstfce,width,sites,ttms,ios,core_shells,cons,pmfs,stats, &
+    dvar,nstfce,width,sites,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
     rigid,electro,domain,config,ewld,kim_data,files,comm)
@@ -427,7 +425,7 @@ program dl_poly
 
   Call read_control                                    &
     (levcfg,l_str,lsim,l_n_e,l_n_v,        &
-    rbin,nstfce,width,     &
+    nstfce,width,     &
     l_exp,lecx,lfcap,l_top,          &
     lvar,leql,               &
     lfce,lpana,           &
@@ -435,7 +433,7 @@ program dl_poly
     keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     fmax,nstbpo,             &
-    rlx_tol,mxquat,quattol,       &
+    mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
     ttms,dfcts,          &
     ndump,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
@@ -518,7 +516,7 @@ program dl_poly
 
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
-  Call system_init(levcfg,neigh%cutoff,rbin,keyres,megatm,time,tmst,nstep,tstep, &
+  Call system_init(levcfg,neigh%cutoff,keyres,megatm,time,tmst,nstep,tstep, &
     core_shells,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
     zdensity,sites,vdws,rdf,config,files,comm)
 
@@ -741,7 +739,7 @@ program dl_poly
   ! Save restart data for real simulations only (final)
 
   If (lsim .and. (.not.devel%l_tor)) Then
-    Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,sites,ios,tmst,stats, &
+    Call system_revive(neigh%cutoff,megatm,nstep,tstep,time,sites,ios,tmst,stats, &
       devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
       files,comm)
     If (ttms%l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,ttms,comm)

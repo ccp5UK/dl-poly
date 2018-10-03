@@ -79,6 +79,7 @@ Module rdfs
     Integer( Kind = wi ), Public :: max_grid
     !> Maximum number of USR RDF grid points
     Integer( Kind = wi ), Public :: max_grid_usr
+    Real( Kind = wp ), Public :: rbin
 
   Contains
     Private

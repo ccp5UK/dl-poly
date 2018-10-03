@@ -133,7 +133,7 @@
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
 
         If (cshell%keyshl == SHELL_RELAXED) Then
-          Call core_shell_relax(l_str,rdf%l_collect,rlx_tol, &
+          Call core_shell_relax(l_str,rdf%l_collect, &
             stat%stpcfg,cshell,stat,domain,config,files,comm)
         End If
 
