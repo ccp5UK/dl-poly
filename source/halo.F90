@@ -2,7 +2,6 @@ Module halo
 
   Use comms,  Only : comms_type,gcheck
   Use deport_data, Only : export_atomic_positions, export_atomic_data
-  Use setup,  Only : mxatms
   Use configuration
   Use domains, Only : domains_type
   Use site, Only : site_type
@@ -50,7 +49,7 @@ Contains
 
 
   fail = 0
-  Allocate (ixyz0(1:mxatms), Stat = fail)
+  Allocate (ixyz0(1:config%mxatms), Stat = fail)
   If (fail > 0) Then
      Write(message,'(a)') 'refresh_halo_ppositions allocation failure'
      Call error(0,message)

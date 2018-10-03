@@ -94,14 +94,14 @@ Contains
 
     fail=0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
-       Call cons%allocate_work(mxatms)
+       Allocate (lstitr(1:config%mxatms),                                  Stat=fail(1))
+       Call cons%allocate_work(config%mxatms)
        Call pmf%allocate_work()
-       Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
+       Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail(7))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),            Stat=fail(7))
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),            Stat=fail(8))
+    Allocate (fxt(1:config%mxatms),fyt(1:config%mxatms),fzt(1:config%mxatms),            Stat=fail(9))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'npt_m0 allocation failure'
        Call error(0,message)
@@ -118,7 +118,7 @@ Contains
        thermo%elrc0   = vdws%elrc
        thermo%virlrc0 = vdws%vlrc
 
-       Allocate (thermo%dens0(1:mxatyp), Stat=fail(1))
+       Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
           Write(message,'(a)') 'thermo%dens0 allocation failure'
           Call error(0,message)
@@ -501,18 +501,18 @@ Call pmf%deallocate_work()
 
     fail=0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
-       Call cons%allocate_work(mxatms)
+       Allocate (lstitr(1:config%mxatms),                                  Stat=fail( 1))
+       Call cons%allocate_work(config%mxatms)
 Call pmf%allocate_work()
-       Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail( 6))
+       Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail( 6))
     End If
     Allocate (ggx(1:rigid%max_list*rigid%max_rigid), &
       ggy(1:rigid%max_list*rigid%max_rigid), &
       ggz(1:rigid%max_list*rigid%max_rigid), &
                                                                     Stat=fail( 7))
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 8))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 9))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(10))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),            Stat=fail( 8))
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),            Stat=fail( 9))
+    Allocate (fxt(1:config%mxatms),fyt(1:config%mxatms),fzt(1:config%mxatms),            Stat=fail(10))
     Allocate (q0t(1:rigid%max_rigid), &
       q1t(1:rigid%max_rigid), &
       q2t(1:rigid%max_rigid), &
@@ -542,7 +542,7 @@ Call pmf%allocate_work()
        thermo%elrc0   = vdws%elrc
        thermo%virlrc0 = vdws%vlrc
 
-       Allocate (thermo%dens0(1:mxatyp), Stat=fail(1))
+       Allocate (thermo%dens0(1:sites%mxatyp), Stat=fail(1))
        If (fail(1) > 0) Then
           Write(message,'(a)') 'thermo%dens0 allocation failure'
           Call error(0,message)

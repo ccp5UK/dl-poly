@@ -216,8 +216,8 @@ Contains
   End If
 
   fail=0
-  Allocate (nam(1:mxatms),ind(1:mxatms),dr(1:mxatms),  Stat=fail(1))
-  Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
+  Allocate (nam(1:config%mxatms),ind(1:config%mxatms),dr(1:config%mxatms),  Stat=fail(1))
+  Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'rsd_write allocation failure'
      Call error(0,message)
@@ -364,8 +364,8 @@ Contains
   Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
            io_write == IO_WRITE_SORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
-     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(2))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
+     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(2))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'rsd_write allocation failure 3'
         Call error(0,message)

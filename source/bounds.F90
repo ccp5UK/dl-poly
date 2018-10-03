@@ -43,6 +43,7 @@ Module bounds
   Use ewald, Only : ewald_type
   Use io, Only : io_type
   Use filename, Only : file_type
+  Use site, Only : site_type
   Implicit None
 
   Private
@@ -53,7 +54,7 @@ Contains
 
   Subroutine set_bounds(levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
     dvar,rbin,nstfce,      &
-    width,max_site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
+    width,site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
     msd_data,met,pois,bond,angle,dihedral,     &
     inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
     mpoles,ext_field,rigid,electro,domain,config,ewld,kim_data,files,comm)
@@ -75,7 +76,7 @@ Contains
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar
   Real( Kind = wp ), Intent(   Out ) :: rbin,width
-  Integer( Kind = wi ), Intent(   Out ) :: max_site
+  Type( site_type), Intent( InOut ) :: site
   Type( ttm_type ), Intent( InOut ) :: ttm
   Type( io_type ), Intent( InOut ) :: io
   Type( pmf_type ), Intent( InOut ) :: pmf
@@ -124,7 +125,7 @@ Contains
 
 ! scan the FIELD file data
 
-  Call scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,neigh%max_exclude,mtshl, &
+  Call scan_field(l_n_e,megatm,site,neigh%max_exclude,mtshl, &
     mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
     lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
     vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,comm)
@@ -145,7 +146,7 @@ Contains
 ! scan CONTROL file data
 
   Call scan_control(rcter,rigid%max_rigid,config%imcon,config%imc_n,config%cell, &
-    xhi,yhi,zhi,mxgana,l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce, &
+    xhi,yhi,zhi,config%mxgana,l_str,lsim,l_vv,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce, &
     ttm,cshell,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral, &
     inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data, &
     files,comm)
@@ -270,10 +271,10 @@ Contains
 ! and maximum number of neighbouring domains/nodes in 3D DD (3^3 - 1)
 
   If (comm%mxnode > 1) Then
-     mxlshp = Max((2*cshell%mxshl)/2,(2*cons%mxcons)/2,(rigid%max_list*rigid%max_rigid)/2)
+     config%mxlshp = Max((2*cshell%mxshl)/2,(2*cons%mxcons)/2,(rigid%max_list*rigid%max_rigid)/2)
      domain%neighbours = 26
   Else ! nothing is to be shared on one node
-     mxlshp = 0
+     config%mxlshp = 0
      domain%neighbours = 0
   End If
 
@@ -352,7 +353,7 @@ Contains
 ! Set grids for opted intramolecular distribution analysis if unset
 ! SO THEY ARE SWITCHES FOR EXISTENCE TOO
 
-  If (mxgana > 0) Then
+  If (config%mxgana > 0) Then
      If (bond%bin_pdf == -1) Then
         If (bond%bin_tab > 0) Then
            bond%bin_pdf = bond%bin_tab-4
@@ -381,9 +382,9 @@ Contains
            dihedral%bin_adf = Nint(180.0_wp/delth_max)
         End If
      End If
-     mxgana = Max(bond%bin_pdf,angle%bin_adf,dihedral%bin_adf,inversion%bin_adf)
-  End If
-  mxtana = 0 ! initialise for buffer size purposes, set in read_field
+     config%mxgana = Max(bond%bin_pdf,angle%bin_adf,dihedral%bin_adf,inversion%bin_adf)
+   End If
+   config%mxtana = 0 ! initialise for buffer size purposes, set in read_field
 
 ! maximum number of rdf potentials (rdf%max_rdf = rdf%max_rdf)
 ! rdf%max_grid - maximum dimension of rdf%rdf and z-density arrays
@@ -409,7 +410,7 @@ Contains
 
 ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
-  mxgrid = Max(mxgana,vdws%max_grid,met%maxgrid,rdf%max_grid,rdf%max_grid_usr,1004,Nint(neigh%cutoff/delr_max)+4)
+  mxgrid = Max(config%mxgana,vdws%max_grid,met%maxgrid,rdf%max_grid,rdf%max_grid_usr,1004,Nint(neigh%cutoff/delr_max)+4)
 
 ! grids setting and overrides
 
@@ -490,8 +491,8 @@ Contains
 ! maximum number of three-body potentials and parameters
 
   If (threebody%mxtbp > 0) Then
-     threebody%mx2tbp = (mxatyp*(mxatyp+1))/2
-     threebody%mxtbp  = threebody%mx2tbp*mxatyp
+    threebody%mx2tbp = (site%mxatyp*(site%mxatyp+1))/2
+    threebody%mxtbp  = threebody%mx2tbp*site%mxatyp
      If (rctbp < 1.0e-6_wp) rctbp=0.5_wp*neigh%cutoff
 
      threebody%mxptbp = 5
@@ -506,8 +507,8 @@ Contains
 ! maximum number of four-body potentials and parameters
 
   If (fourbody%max_four_body > 0) Then
-     fourbody%mx3fbp = (mxatyp*(mxatyp+1)*(mxatyp+2))/6
-     fourbody%max_four_body  = fourbody%mx3fbp*mxatyp
+    fourbody%mx3fbp = (site%mxatyp*(site%mxatyp+1)*(site%mxatyp+2))/6
+    fourbody%max_four_body  = fourbody%mx3fbp*site%mxatyp
      If (rcfbp < 1.0e-6_wp) rcfbp=0.5_wp*neigh%cutoff
 
      fourbody%max_param = 3
@@ -805,19 +806,19 @@ Contains
 
 ! set dimension of working coordinate arrays
 
-  mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
+  config%mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
   If (comm%mxnode == 1 .or. (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6)) Then
-    mxatms = Nint(Min(Real(mxatms,wp),Real(27.00_wp,wp)*Real(megatm,wp)))
+    config%mxatms = Nint(Min(Real(config%mxatms,wp),Real(27.00_wp,wp)*Real(megatm,wp)))
 !  Else If (Min(ilx,ily,ilz) == 1) Then
-!    mxatms = Nint(Min(Real(mxatms,wp),Real(20.25_wp,wp)*Real(megatm,wp)))
+!    config%mxatms = Nint(Min(Real(config%mxatms,wp),Real(20.25_wp,wp)*Real(megatm,wp)))
   Else
-    mxatms = Nint(Min(Real(mxatms,wp),Real(13.50_wp,wp)*Real(megatm,wp)))
+    config%mxatms = Nint(Min(Real(config%mxatms,wp),Real(13.50_wp,wp)*Real(megatm,wp)))
   End If
 
 ! maximum number of particles per domain (no halo)
 
-  mxatdm = Max(1 , Nint(test * Real((ilx+1)*(ily+1)*(ilz+1),wp)))
-  mxatdm = Min(mxatdm,megatm)
+  config%mxatdm = Max(1 , Nint(test * Real((ilx+1)*(ily+1)*(ilz+1),wp)))
+  config%mxatdm = Min(config%mxatdm,megatm)
 
 ! maximum number of timesteps in stack arrays
 
@@ -827,7 +828,7 @@ Contains
 ! update number if the MSD option is used, 51=1+27+...+9+9+1+2+2
 ! consult statistic_collect for more information
 
-  stats%mxnstk = 51 + mxatyp + Merge(2*mxatdm,0,msd_data%l_msd)
+  stats%mxnstk = 51 + site%mxatyp + Merge(2*config%mxatdm,0,msd_data%l_msd)
 
 ! maximum dimension of principal transfer buffer
 
@@ -839,8 +840,8 @@ Contains
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(neigh%cutoff_extended/0.2_wp,1.0_wp)
-  mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real( &
-           mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (neigh%max_exclude+1) + &
+  domain%mxbfdp = Merge( 2, 0, comm%mxnode > 1) * Nint( Real( &
+           config%mxatdm*(18+12 + Merge(3,0,neigh%unconditional_update) + (neigh%max_exclude+1) + &
            Merge(neigh%max_exclude+1 + Merge(neigh%max_exclude+1,0,mpoles%key == POLARISATION_CHARMM),0,mpoles%max_mpoles > 0) + &
            Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)) + 3*green%samp  + &
            4*cshell%mxshl+4*cons%mxcons+(Sum(pmf%mxtpmf(1:2)+3))*pmf%mxpmf+(rigid%max_list+13)*rigid%max_rigid + &
@@ -850,22 +851,23 @@ Contains
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) / Real(ilx*ily*ilz,wp)
   dens0 = dens0/Max(neigh%cutoff_extended/0.2_wp,1.0_wp)
-  mxbfss = Merge( 4, 0, comm%mxnode > 1) * Nint( Real(mxatdm*(8 + Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)),wp) * dens0)
+  config%mxbfss = Merge( 4, 0, comm%mxnode > 1) * Nint( Real(config%mxatdm*(8 + Merge(2*(6+stats%mxstak), 0, msd_data%l_msd)),wp)&
+    * dens0)
 
 ! exporting single per atom (times 13 up to 35)
 
 !  dens  = Real(((ilx+3)*(ily+3)*(ilz+3))/Min(ilx,ily,ilz)+3,wp) / Real(ilx*ily*ilz,wp)
   dens  = Real(((qlx+2)*(qly+2)*(qlz+2))/Min(qlx,qly,qlz)+2,wp) / Real(qlx*qly*qlz,wp)
-  mxbfxp = 2 * Nint(Real(mxatdm,wp) * dens) ! included induced dipoles
+  domain%mxbfxp = 2 * Nint(Real(config%mxatdm,wp) * dens) ! included induced dipoles
 
 ! shared units single per atom of all shared unit
 
   dens0 = Real(((ilx+2)*(ily+2)*(ilz+2))/Min(ilx,ily,ilz)+2,wp) - 1.0_wp
   dens0 = dens0/Max(neigh%cutoff_extended/2.0_wp,1.0_wp)
-  mxbfsh = Merge( 1, 0, comm%mxnode > 1) * &
+  domain%mxbfsh = Merge( 1, 0, comm%mxnode > 1) * &
     Nint(Real(Max(2*cshell%mxshl,2*cons%mxcons,rigid%max_list*rigid%max_rigid),wp) * dens0)
 
-  mxbuff = Max(mxbfdp, 35*mxbfxp, 4*mxbfsh, &
+  config%mxbuff = Max(domain%mxbfdp, 35*domain%mxbfxp, 4*domain%mxbfsh, &
     2*(ewld%fft_dim_a/domain%nx)*(ewld%fft_dim_b/domain%ny)*(ewld%fft_dim_c/domain%nz)+10, &
     stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,  &
     rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &

@@ -103,14 +103,14 @@
 
 ! Evaluate forces
 
-      Call w_calculate_forces(flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+      Call w_calculate_forces(cnfig,flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
        minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
     If (nstep == 0) Then
-      Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
+      Call w_statistics_report(cnfig%mxatdm,cshell,cons,pmf,stat,msd_data,zdensity, &
         sites,rdf,domain,flw,files)
     End If
 
@@ -140,7 +140,7 @@
 
 ! Calculate physical quantities, collect statistics and report regularly
 
-        Call w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
+        Call w_statistics_report(cnfig%mxatdm,cshell,cons,pmf,stat,msd_data,zdensity, &
           sites,rdf,domain,flw,files)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
@@ -150,7 +150,7 @@
 ! Save restart data in event of system crash
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) Then
-          Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
+          Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,sites,io,tmst, &
             stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf, &
             netcdf,config,files,comm)
         End If

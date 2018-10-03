@@ -340,7 +340,7 @@ Contains
 
     Else If (io_write == IO_WRITE_UNSORTED_MASTER) Then
 
-      Allocate (chbuf(1:mxatms),iwrk(1:mxatms),ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
+      Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),ddd(1:config%mxatms),eee(1:config%mxatms), Stat=fail(1))
       If (fail(1) > 0) Then
         Write(message,'(a)') 'msd_write allocation failure'
         Call error(0,message)
@@ -475,7 +475,7 @@ Contains
       Call io_init(io, recsz )
       Call io_open(io, io_write, comm%comm, msd_data%fname,  mode_wronly, fh )
 
-      Allocate (ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
+      Allocate (ddd(1:config%mxatms),eee(1:config%mxatms), Stat=fail(1))
       If (fail(1) > 0) Then
         Write(message,'(a)') 'msd_write allocation failure'
         Call error(0,message)
@@ -530,7 +530,7 @@ Contains
 
     Else If (io_write == IO_WRITE_SORTED_MASTER) Then
 
-      Allocate (chbuf(1:mxatms),iwrk(1:mxatms),ddd(1:mxatms),eee(1:mxatms), Stat=fail(1))
+      Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),ddd(1:config%mxatms),eee(1:config%mxatms), Stat=fail(1))
       If (fail(1) > 0) Then
         Write(message,'(a)') 'msd_write allocation failure'
         Call error(0,message)

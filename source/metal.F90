@@ -2766,7 +2766,7 @@ Subroutine metal_table_derivatives(ityp,buffer,v2d,vvv,met)
   End Do
 End Subroutine metal_table_derivatives
 
-Subroutine metal_ld_export(mdir,mlast,ixyz0,met,domain,comm)
+Subroutine metal_ld_export(mdir,mlast,mxatms,ixyz0,met,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2778,8 +2778,8 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,met,domain,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer, Intent( In    ) :: mdir
-  Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+  Integer, Intent( In    ) :: mdir,mxatms
+  Integer, Intent( InOut ) :: mlast,ixyz0(:)
   Type( domains_type ), Intent( In    ) :: domain
   Type( metal_type ), Intent( InOut ) :: met
   Type( comms_type ), Intent( InOut ) :: comm
@@ -2801,7 +2801,7 @@ Subroutine metal_ld_export(mdir,mlast,ixyz0,met,domain,comm)
      iadd=3
   End If
 
-  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  fail=0 ; limit=iadd*domain%mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'metal_ld_export allocation failure'
@@ -3034,7 +3034,7 @@ Subroutine metal_ld_set_halo(met,domain,config,comm)
   Character( Len = 256 ) :: message
 
   fail = 0
-  Allocate (ixyz0(1:mxatms), Stat = fail)
+  Allocate (ixyz0(1:config%mxatms), Stat = fail)
   If (fail > 0) Then
      Write(message,'(a)') 'metal_ld_set_halo allocation failure'
      Call error(0,message)
@@ -3047,18 +3047,18 @@ Subroutine metal_ld_set_halo(met,domain,config,comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call metal_ld_export(-1,mlast,ixyz0,met,domain,comm)
-  Call metal_ld_export( 1,mlast,ixyz0,met,domain,comm)
+  Call metal_ld_export(-1,mlast,config%mxatms,ixyz0,met,domain,comm)
+  Call metal_ld_export( 1,mlast,config%mxatms,ixyz0,met,domain,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call metal_ld_export(-2,mlast,ixyz0,met,domain,comm)
-  Call metal_ld_export( 2,mlast,ixyz0,met,domain,comm)
+  Call metal_ld_export(-2,mlast,config%mxatms,ixyz0,met,domain,comm)
+  Call metal_ld_export( 2,mlast,config%mxatms,ixyz0,met,domain,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call metal_ld_export(-3,mlast,ixyz0,met,domain,comm)
-  Call metal_ld_export( 3,mlast,ixyz0,met,domain,comm)
+  Call metal_ld_export(-3,mlast,config%mxatms,ixyz0,met,domain,comm)
+  Call metal_ld_export( 3,mlast,config%mxatms,ixyz0,met,domain,comm)
 
 ! check atom totals after data transfer
 

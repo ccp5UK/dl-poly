@@ -2188,13 +2188,11 @@ Subroutine close_all_units()
   Integer(Kind = 2) :: i
   Integer :: ierr
   Logical :: is_open,has_name
-  Character(len=256) :: filename
 
   Do i=-Huge(i),Huge(i)-1
     Inquire(i,opened=is_open,named=has_name,iostat=ierr)
 
     If (is_open .and. has_name .and. ierr==0 .and. All(i/=[-1,ERROR_UNIT,INPUT_UNIT,OUTPUT_UNIT])) Then
-      Inquire(i,name=filename)
       Close(i)
     End If
   End Do

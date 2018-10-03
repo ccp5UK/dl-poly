@@ -3,8 +3,7 @@ Module ewald_mpole
   Use comms, Only : comms_type, gcheck, gsum
   Use configuration, Only : configuration_type
   Use particle, Only : corePart
-  Use setup, Only :  r4pie0, sqrpi, zero_plus,mxatdm,mxatms, &
-                            twopi
+  Use setup, Only :  r4pie0, sqrpi, zero_plus,twopi
   Use ewald,        Only : ewald_type,spl_cexp,bspcoe,bspgen_mpoles,dtpbsp,exchange_grid
   Use numerics, Only : invert,dcell,erfcgen
   Use mpoles_container, Only : ewald_deriv,explicit_ewald_real_loops,&
@@ -1261,12 +1260,13 @@ Module ewald_mpole
        Call limit_erfr_deriv(8,electro%alpha,electro%d1_mf)
     End If
 
-    Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
-    Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
-    Allocate (bdx(0:ewld%bspline),bsddx(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
-              bdy(0:ewld%bspline),bsddy(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
-              bdz(0:ewld%bspline),bsddz(0:ewld%bspline,1:ewld%bspline,1:mxatms),                         Stat = fail(3))
-    Allocate (bspx(1:ewld%bspline,1:mxatms),bspy(1:ewld%bspline,1:mxatms),bspz(1:ewld%bspline,1:mxatms), Stat = fail(4))
+    Allocate (txx(1:config%mxatms),tyy(1:config%mxatms),tzz(1:config%mxatms),                            Stat = fail(1))
+    Allocate (ixx(1:config%mxatms),iyy(1:config%mxatms),izz(1:config%mxatms),it(1:config%mxatms),               Stat = fail(2))
+    Allocate (bdx(0:ewld%bspline),bsddx(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+              bdy(0:ewld%bspline),bsddy(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+              bdz(0:ewld%bspline),bsddz(0:ewld%bspline,1:ewld%bspline,1:config%mxatms),                         Stat = fail(3))
+    Allocate (bspx(1:ewld%bspline,1:config%mxatms),&
+      bspy(1:ewld%bspline,1:config%mxatms),bspz(1:ewld%bspline,1:config%mxatms), Stat = fail(4))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'ewald_spme_mforces allocation failure'
        Call error(0,message)
@@ -1919,12 +1919,12 @@ Module ewald_mpole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      Integer,           Intent( In    ) :: ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms), &
+      Integer,           Intent( In    ) :: ixx(1:config%mxatms),iyy(1:config%mxatms),izz(1:config%mxatms), &
                                             ixb,ixt, iyb,iyt, izb,izt
       Real( Kind = wp ), Intent( In    ) :: scale,rcell(1:9),                &
-                                            bsddx(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
-                                            bsddy(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
-                                            bsddz(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+                                            bsddx(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+                                            bsddy(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+                                            bsddz(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
                                             qqc_local( ixb:ixt, iyb:iyt, izb:izt )
       Type( mpole_type ), Intent( InOut ) :: mpoles
       Type( domains_type ), Intent( In    ) :: domain
@@ -2383,12 +2383,13 @@ Module ewald_mpole
   !!! END DAFT SET-UP
     End If
 
-    Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),                            Stat = fail(1))
-    Allocate (ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms),it(1:mxatms),               Stat = fail(2))
-    Allocate (bdx(0:ewld%bspline),bsddx(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
-              bdy(0:ewld%bspline),bsddy(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
-              bdz(0:ewld%bspline),bsddz(0:ewld%bspline,1:ewld%bspline,1:mxatms),                         Stat = fail(3))
-    Allocate (bspx(1:ewld%bspline,1:mxatms),bspy(1:ewld%bspline,1:mxatms),bspz(1:ewld%bspline,1:mxatms), Stat = fail(4))
+    Allocate (txx(1:config%mxatms),tyy(1:config%mxatms),tzz(1:config%mxatms),                            Stat = fail(1))
+    Allocate (ixx(1:config%mxatms),iyy(1:config%mxatms),izz(1:config%mxatms),it(1:config%mxatms),               Stat = fail(2))
+    Allocate (bdx(0:ewld%bspline),bsddx(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+              bdy(0:ewld%bspline),bsddy(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+              bdz(0:ewld%bspline),bsddz(0:ewld%bspline,1:ewld%bspline,1:config%mxatms),                         Stat = fail(3))
+    Allocate (bspx(1:ewld%bspline,1:config%mxatms),bspy(1:ewld%bspline,1:config%mxatms),bspz(1:ewld%bspline,1:config%mxatms), &
+      Stat = fail(4))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'ewald_spme_mforces allocation failure'
        Call error(0,message)
@@ -4180,12 +4181,12 @@ Module ewald_mpole
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      Integer,           Intent( In    ) :: ixx(1:mxatms),iyy(1:mxatms),izz(1:mxatms), &
+      Integer,           Intent( In    ) :: ixx(1:config%mxatms),iyy(1:config%mxatms),izz(1:config%mxatms), &
                                             ixb,ixt, iyb,iyt, izb,izt
       Real( Kind = wp ), Intent( In    ) :: scale,rcell(1:9),                &
-                                            bsddx(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
-                                            bsddy(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
-                                            bsddz(0:ewld%bspline,1:ewld%bspline,1:mxatms), &
+                                            bsddx(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+                                            bsddy(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+                                            bsddz(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
                                             qqc_local( ixb:ixt, iyb:iyt, izb:izt )
       Type( mpole_type ), Intent( InOut ) :: mpoles
 
@@ -5554,7 +5555,7 @@ Module ewald_mpole
     End If
 
     fail=0
-    Allocate (l_ind(1:mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
+    Allocate (l_ind(1:config%mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
     If (fail > 0) Then
        Write(message,'(a)') 'ewald_frzn_mforces allocation failure'
        Call error(0,message)
@@ -5595,7 +5596,7 @@ Module ewald_mpole
 
     scl=2.0_wp*electro%alpha*r4pie0/(sqrpi*electro%eps)
     nzfr = Sum(nz_fr(1:comm%mxnode))     ! Total
-    If (nzfr <= 10*mxatms) Then
+    If (nzfr <= 10*config%mxatms) Then
 
        Allocate (mmp(1:mpoles%max_mpoles,1:nzfr),                                              &
                  mmpx(1:mpoles%max_mpoles,1:nzfr),mmpy(1:mpoles%max_mpoles,1:nzfr),mmpz(1:mpoles%max_mpoles,1:nzfr), &

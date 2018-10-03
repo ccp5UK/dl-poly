@@ -97,9 +97,9 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
   Character( Len = 256 ) :: message
   fail=0
-  Allocate (buffer(1:mxbfdp),                   Stat=fail(1))
+  Allocate (buffer(1:domain%mxbfdp),                   Stat=fail(1))
   Allocate (lrgd(-1:Max(rigid%max_list,rigid%max_rigid)),         Stat=fail(2))
-  Allocate (ind_on(0:mxatms),ind_off(0:mxatms), Stat=fail(3))
+  Allocate (ind_on(0:config%mxatms),ind_off(0:config%mxatms), Stat=fail(3))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'deport_atomic_data allocation failure 1'
      Call error(0,message)
@@ -107,7 +107,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! Set buffer limit (half for outgoing data - half for incoming)
 
-  iblock=mxbfdp/2
+  iblock=domain%mxbfdp/2
 
 ! DIRECTION SETTINGS INITIALISATION
 
@@ -926,7 +926,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=(config%natms <= mxatms)
+  safe=(config%natms <= config%mxatms)
   Call gcheck(comm,safe)
   If (.not.safe) Call error(44)
 
@@ -1684,7 +1684,7 @@ Subroutine export_atomic_data(mdir,domain,config,kim_data,comm)
 
   iadd=6
   fail=0
-  limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  limit=iadd*domain%mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'export_atomic_data allocation failure'
@@ -1868,12 +1868,12 @@ Subroutine export_atomic_data(mdir,domain,config,kim_data,comm)
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=((config%nlast+jmove/iadd) <= mxatms)
+  safe=((config%nlast+jmove/iadd) <= config%mxatms)
   Call gcheck(comm,safe)
   If (.not.safe) Then
      itmp=config%nlast+jmove/iadd
      Call gmax(comm,itmp)
-     Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
+     Call warning(160,Real(itmp,wp),Real(config%mxatms,wp),0.0_wp)
      Call error(56)
   End If
 
@@ -1940,7 +1940,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,config,kim_data,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer, Intent( In    ) :: mdir,ixyz0(1:mxatms)
+  Integer, Intent( In    ) :: mdir,ixyz0(:)
   Integer, Intent( InOut ) :: mlast
   Type( domains_type ), Intent( In    ) :: domain
   Type( kim_type ), Intent( InOut ) :: kim_data
@@ -1962,7 +1962,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,config,kim_data,comm)
 
   iadd=3
 
-  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  fail=0 ; limit=iadd*domain%mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'export_atomic_positions allocation failure'
@@ -2130,12 +2130,12 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,config,kim_data,comm)
 
 ! Check for array bound overflow (can arrays cope with incoming data)
 
-  safe=((mlast+jmove/iadd) <= mxatms)
+  safe=((mlast+jmove/iadd) <= config%mxatms)
   Call gcheck(comm,safe)
   If (.not.safe) Then
      itmp=mlast+jmove/iadd
      Call gmax(comm,itmp)
-     Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
+     Call warning(160,Real(itmp,wp),Real(config%mxatms,wp),0.0_wp)
      Call error(56)
   End If
 
@@ -2180,7 +2180,7 @@ Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,config,kim_data,comm)
 
 End Subroutine export_atomic_positions
 
-Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,domain,comm)
+Subroutine mpoles_rotmat_export(mdir,mlast,mxatms,ixyz0,mpoles,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2192,8 +2192,8 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,domain,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer, Intent( In    ) :: mdir
-  Integer, Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+  Integer, Intent( In    ) :: mdir,mxatms
+  Integer, Intent( InOut ) :: mlast,ixyz0(:)
   Type( mpole_type ), Intent( InOut ) :: mpoles
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type ), Intent( InOut ) :: comm
@@ -2214,7 +2214,7 @@ Subroutine mpoles_rotmat_export(mdir,mlast,ixyz0,mpoles,domain,comm)
   iadd=4*mpoles%max_mpoles+1
   idl1=mpoles%max_mpoles ; idl2=2*mpoles%max_mpoles ; idl3=3*mpoles%max_mpoles ; idl4=4*mpoles%max_mpoles
 
-  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  fail=0 ; limit=iadd*domain%mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'export_atomic_positions allocation failure'
@@ -2449,7 +2449,7 @@ Subroutine mpoles_rotmat_set_halo(mpoles,domain,config,comm)
 ! Communicate the matrices in the halo
 
   fail = 0
-  Allocate (ixyz0(1:mxatms), Stat = fail)
+  Allocate (ixyz0(1:config%mxatms), Stat = fail)
   If (fail > 0) Then
      Write(message,'(a)') 'mpoles_rotmat_set_halo allocation failure'
      Call error(0,message)
@@ -2462,18 +2462,18 @@ Subroutine mpoles_rotmat_set_halo(mpoles,domain,config,comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call mpoles_rotmat_export(-1,mlast,ixyz0,mpoles,domain,comm)
-  Call mpoles_rotmat_export( 1,mlast,ixyz0,mpoles,domain,comm)
+  Call mpoles_rotmat_export(-1,mlast,config%mxatms,ixyz0,mpoles,domain,comm)
+  Call mpoles_rotmat_export( 1,mlast,config%mxatms,ixyz0,mpoles,domain,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call mpoles_rotmat_export(-2,mlast,ixyz0,mpoles,domain,comm)
-  Call mpoles_rotmat_export( 2,mlast,ixyz0,mpoles,domain,comm)
+  Call mpoles_rotmat_export(-2,mlast,config%mxatms,ixyz0,mpoles,domain,comm)
+  Call mpoles_rotmat_export( 2,mlast,config%mxatms,ixyz0,mpoles,domain,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call mpoles_rotmat_export(-3,mlast,ixyz0,mpoles,domain,comm)
-  Call mpoles_rotmat_export( 3,mlast,ixyz0,mpoles,domain,comm)
+  Call mpoles_rotmat_export(-3,mlast,config%mxatms,ixyz0,mpoles,domain,comm)
+  Call mpoles_rotmat_export( 3,mlast,config%mxatms,ixyz0,mpoles,domain,comm)
 
 ! check atom totals after data transfer
 

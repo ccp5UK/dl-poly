@@ -27,7 +27,7 @@
 ! intramolecular PDF analysis for every entry in HISTORF
 ! enforce printing and collection if the calculation exists
 
-  lpana=(mxgana > 0)
+  lpana=(config%mxgana > 0)
   nstbnd = 1
   nstang = 1
   nstdih = 1
@@ -54,9 +54,9 @@
   nstpe = nstep
   nstph = 0 ! HISTORF trajectory points counter
   Do
-     Call allocate_statistics_connect(mxatdm,stat)
+     Call allocate_statistics_connect(cnfig%mxatdm,stat)
 10   Continue
-     If (nstph > nstpe) Call statistics_connect_set(config,neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,comm)
+     If (nstph > nstpe) Call statistics_connect_set(config,neigh%cutoff_extended,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
 
 ! Make a move - Read a frame
 
@@ -98,12 +98,12 @@
 !              xin(natms+1: ) = 0.0_wp
 !              yin(natms+1: ) = 0.0_wp
 !              zin(natms+1: ) = 0.0_wp
-              Call statistics_connect_set(config,neigh%cutoff_extended,mxatdm_,msd_data%l_msd,stat,domain,comm)
+              Call statistics_connect_set(config,neigh%cutoff_extended,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
            End If
 
 ! get xto/xin/msdtmp arrays sorted
 
-           Call statistics_connect_frames(config,megatm,mxatdm_,msd_data%l_msd,stat,domain,comm)
+           Call statistics_connect_frames(config,megatm,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
            Call deallocate_statistics_connect(stat)
 
 ! SET domain borders and link-cells as default for new jobs
@@ -126,7 +126,7 @@
 
 ! Evaluate forces, newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
+           Call w_calculate_forces(cnfig,flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
              netcdf,minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
 
@@ -182,14 +182,14 @@
 
 ! Collect VAF if kinetics is available
 
-           Call vaf_collect(config,leql,nsteql,nstph-1,time,green,comm)
+           Call vaf_collect(config,sites%mxatyp,leql,nsteql,nstph-1,time,green,comm)
 
            Call statistics_collect        &
            (config,lsim,leql,nsteql,msd_data%l_msd, &
            keyres,      &
            degfre,degshl,degrot,          &
            nstph,tsths,time,tmsh,         &
-           mxatdm_,rdf%max_grid,stat,thermo,&
+           cnfig%mxatdm,rdf%max_grid,stat,thermo,&
            zdensity,sites,files,comm)
 
 ! line-printer output
@@ -247,7 +247,7 @@
 ! Save restart data in event of system crash
 
             If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) Then
-              Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst, &
+              Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,sites,io,tmst, &
                 stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity, &
                 rdf,netcdf,config,files,comm)
             End IF
@@ -319,7 +319,7 @@
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
   If (.not. devel%l_tor) Then
-    Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,io,tmst,stat, &
+    Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,sites,io,tmst,stat, &
       devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf, &
       config,files,comm)
   End If

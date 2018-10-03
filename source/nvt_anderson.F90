@@ -2,7 +2,7 @@ Module nvt_anderson
   Use kinds,         Only : wp
   Use comms,         Only : comms_type,gsum,gmax
   Use domains,       Only : domains_type
-  Use setup,         Only : boltz,zero_plus,mxatms
+  Use setup,         Only : boltz,zero_plus
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use particle,      Only : corePart
@@ -92,15 +92,15 @@ Contains
 
     fail=0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
-       Call cons%allocate_work(mxatms)
+       Allocate (lstitr(1:config%mxatms),                                  Stat=fail( 1))
+       Call cons%allocate_work(config%mxatms)
        Call pmf%allocate_work()
-       Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
+       Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 7))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 8))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail( 9))
-    Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),                    Stat=fail(10))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),            Stat=fail( 7))
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),            Stat=fail( 8))
+    Allocate (fxt(1:config%mxatms),fyt(1:config%mxatms),fzt(1:config%mxatms),            Stat=fail( 9))
+    Allocate (qn(1:config%mxatms),tpn(0:comm%mxnode-1),                    Stat=fail(10))
     Allocate (qs(0:2,1:cshell%mxshl),tps(0:comm%mxnode-1),                 Stat=fail(11))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'nvt_a0 allocation failure'
@@ -483,17 +483,17 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
     fail=0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
-       Call cons%allocate_work(mxatms)
+       Allocate (lstitr(1:config%mxatms),                                  Stat=fail( 1))
+       Call cons%allocate_work(config%mxatms)
        Call pmf%allocate_work()
-       Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
+       Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
     Allocate (ggx(1:rigid%max_list*rigid%max_rigid), &
       ggy(1:rigid%max_list*rigid%max_rigid), &
       ggz(1:rigid%max_list*rigid%max_rigid), Stat=fail( 7))
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 8))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 9))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(10))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),            Stat=fail( 8))
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),            Stat=fail( 9))
+    Allocate (fxt(1:config%mxatms),fyt(1:config%mxatms),fzt(1:config%mxatms),            Stat=fail(10))
     Allocate (q0t(1:rigid%max_rigid), &
       q1t(1:rigid%max_rigid), &
       q2t(1:rigid%max_rigid), &
@@ -507,7 +507,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
     Allocate (rgdoxt(1:rigid%max_rigid), &
       rgdoyt(1:rigid%max_rigid), &
       rgdozt(1:rigid%max_rigid),      Stat=fail(14))
-    Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),                    Stat=fail(15))
+    Allocate (qn(1:config%mxatms),tpn(0:comm%mxnode-1),                    Stat=fail(15))
     Allocate (qs(0:2,1:cshell%mxshl),tps(0:comm%mxnode-1),                 Stat=fail(16))
     Allocate (qr(1:rigid%max_rigid),tpr(0:comm%mxnode-1),                     Stat=fail(17))
     If (Any(fail > 0)) Then

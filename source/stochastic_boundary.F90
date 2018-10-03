@@ -12,7 +12,7 @@ Module stochastic_boundary
   Use core_shell,  Only : core_shell_type,SHELL_ADIABATIC 
   Use particle, Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat
-  Use setup, Only : mxatms,zero_plus,boltz
+  Use setup, Only : zero_plus,boltz
 
   Implicit None
   Private
@@ -92,7 +92,7 @@ Module stochastic_boundary
        If (thermo%newjob) Then
          thermo%newjob = .false.
 
-           Allocate (thermo%qn(1:mxatms),thermo%tpn(0:comm%mxnode-1),    Stat=fail(1))
+         Allocate (thermo%qn(1:config%mxatms),thermo%tpn(0:comm%mxnode-1),    Stat=fail(1))
            Allocate (thermo%qs(0:2,1:cshell%mxshl),thermo%tps(0:comm%mxnode-1), Stat=fail(2))
            Allocate (thermo%qr(1:rigid%max_rigid),thermo%tpr(0:comm%mxnode-1),     Stat=fail(3))
            If (Any(fail > 0)) Then
@@ -169,7 +169,7 @@ Module stochastic_boundary
 ! Allocate random force array of length j
 
      j=thermo%tpn(comm%idnode)
-     Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
+     Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
         Write(message,'(a)') 'pseudo (forces) allocation failure'
         Call error(0,message)
@@ -336,7 +336,7 @@ Module stochastic_boundary
 
 ! Allocate random config%velocities array of length k
 
-        Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail(1))
+       Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms), Stat=fail(1))
         If (fail(1) > 0) Then
            Write(message,'(a,i0)') 'pseudo (config%velocities) allocation failure'
            Call error(0,message)

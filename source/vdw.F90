@@ -234,7 +234,7 @@ Contains
   Character( Len = 256 ) :: message,messages(3)
 
   fail=0
-  Allocate (numfrz(mxatyp), Stat=fail)
+  Allocate (numfrz(sites%mxatyp), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'vdw_lrc allocation failure'
      Call error(0,message)

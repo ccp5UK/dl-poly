@@ -12,7 +12,6 @@ Module dpd
   Use kinds, Only : wp,wi
   Use comms,        Only : comms_type,gsum,gcheck,gmax,DpdVExp_tag,wp_mpi, &
                            gsend,gwait,girecv
-  Use setup,        Only : mxatdm,mxatms,mxbfxp
   Use configuration,       Only : configuration_type
   Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type
@@ -76,7 +75,7 @@ Contains
 
     fail=0
     Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat = fail(1))
-    Allocate (fdpdx(1:mxatdm),fdpdy(1:mxatdm),fdpdz(1:mxatdm),         Stat = fail(2))
+    Allocate (fdpdx(1:config%mxatdm),fdpdy(1:config%mxatdm),fdpdz(1:config%mxatdm),         Stat = fail(2))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'dpd_thermostat allocation failure'
       Call error(0,message)
@@ -501,7 +500,7 @@ Contains
 
 
     Integer,           Intent( In    ) :: mdir
-    Integer,           Intent( InOut ) :: mlast,ixyz0(1:mxatms)
+    Integer,           Intent( InOut ) :: mlast,ixyz0(:)
     Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
@@ -518,7 +517,7 @@ Contains
 
     iadd=4
 
-    fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+    fail=0 ; limit=iadd*domain%mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
     Allocate (buffer(1:limit), Stat=fail)
     If (fail > 0) Then
       Write(message,'(a)') 'dpd_v_export allocation failure'
@@ -667,12 +666,12 @@ Contains
 
     ! Check for array bound overflow (can arrays cope with incoming data)
 
-    safe=((mlast+jmove/iadd) <= mxatms)
+    safe=((mlast+jmove/iadd) <= config%mxatms)
     Call gcheck(comm,safe)
     If (.not.safe) Then
       itmp=mlast+jmove/iadd
       Call gmax(comm,itmp)
-      Call warning(160,Real(itmp,wp),Real(mxatms,wp),0.0_wp)
+      Call warning(160,Real(itmp,wp),Real(config%mxatms,wp),0.0_wp)
       Call error(156)
     End If
 
@@ -735,7 +734,7 @@ Contains
     Character ( Len = 256 )  ::  message
 
     fail = 0
-    Allocate (ixyz0(1:mxatms), Stat = fail)
+    Allocate (ixyz0(1:config%mxatms), Stat = fail)
     If (fail > 0) Then
       Write(message,'(a)') 'dpd_v_set_halo allocation failure'
       Call error(0,message)

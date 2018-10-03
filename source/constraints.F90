@@ -16,7 +16,7 @@ Module constraints
   Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
-  Use setup,           Only : mxatms,mxlshp,mxtmls,zero_plus
+  Use setup,           Only : zero_plus
   Use errors_warnings, Only : error,warning,info
   Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_POSITIONS
   Use numerics,        Only : images,local_index
@@ -250,13 +250,13 @@ Subroutine allocate_work(T,n)
     Character( Len = 256 )         :: message
 
     fail=0
-    Allocate (lstitr(1:mxatms),                          Stat=fail(1))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail(2))
+    Allocate (lstitr(1:config%mxatms),                          Stat=fail(1))
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms), Stat=fail(2))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'constraints_quench allocation failure'
       Call error(0,message)
     End If
-    Call cons%allocate_work(mxatms)
+    Call cons%allocate_work(config%mxatms)
 
     ! gather velocities of shared atoms
 
@@ -592,7 +592,7 @@ Subroutine allocate_work(T,n)
     Call start_timer(tmr%t_rattle)
 #endif
     fail=0
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms), Stat=fail)
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms), Stat=fail)
     If (fail > 0) Then
       Write(message,'(a)') 'constraints_rattle allocation failure'
       Call error(0,message)
@@ -787,7 +787,7 @@ Subroutine allocate_work(T,n)
     Call start_timer(tmr%t_shake)
 #endif
     fail=0
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                              Stat=fail(1))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),                              Stat=fail(1))
     Allocate (dxt(1:cons%mxcons),dyt(1:cons%mxcons),dzt(1:cons%mxcons),dt2(1:cons%mxcons),esig(1:cons%mxcons), Stat=fail(2))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'constraints_shake allocation failure'

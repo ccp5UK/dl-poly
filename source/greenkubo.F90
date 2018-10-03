@@ -14,7 +14,7 @@ Module greenkubo
   Use kinds, Only : wp,wi
 
   Use comms,     Only : comms_type,gsum,gcheck
-  Use setup,     Only : mxatyp,mxbuff,zero_plus,nvafdt,mxatms
+  Use setup,     Only : zero_plus,nvafdt
   Use configuration,    Only : configuration_type
   Use site, Only : site_type
 
@@ -56,8 +56,9 @@ Module greenkubo
 
 Contains
 
-  Subroutine allocate_greenkubo_arrays(green)
+  Subroutine allocate_greenkubo_arrays(green,mxatms,mxatyp)
     Type( greenkubo_Type ), Intent( InOut ) :: green
+    Integer, Intent( In ) :: mxatms,mxatyp
 
     Integer :: i
     Integer, Dimension( 1:7 ) :: fail
@@ -93,7 +94,7 @@ Contains
 
   End Subroutine allocate_greenkubo_arrays
 
-  Subroutine vaf_collect(config,leql,nsteql,nstep,time,green,comm)
+  Subroutine vaf_collect(config,mxatyp,leql,nsteql,nstep,time,green,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -110,6 +111,7 @@ Contains
     Integer,           Intent( In    ) :: nsteql,nstep
     Real( Kind = wp ), Intent( In    ) :: time
     Type( configuration_type ), Intent( InOut ) :: config
+    Integer( Kind = wi ), Intent ( In ) :: mxatyp
     Type( greenkubo_Type ), Intent( InOut ) :: green
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -166,7 +168,7 @@ Contains
         green%vafcount = green%vafcount + 1.0_wp
 
         If (comm%mxnode > 1) Then
-          nsum = mxbuff/(green%binsize+1)
+          nsum = config%mxbuff/(green%binsize+1)
 
           l=(j-1)*(mxatyp+1) ! avoid summing up timing information
           Do i=1,mxatyp,nsum
@@ -222,7 +224,7 @@ Contains
 
   End Subroutine vaf_collect
 
-  Subroutine vaf_compute(tstep,num_type_nf,green,comm)
+  Subroutine vaf_compute(tstep,num_type_nf,mxatyp,green,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -237,6 +239,7 @@ Contains
 
     Real( Kind = wp ), Intent( In    ) :: tstep
     Real( Kind = wp ), Dimension(:), Intent( In    ) :: num_type_nf
+    Integer( Kind = wi ), Intent ( In ) :: mxatyp
     Type( greenkubo_type), Intent( In    ) :: green
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -324,7 +327,7 @@ Contains
       ! If the keyres=1, is VAFDAT old (does it exist) and
       ! how many frames and records are in there
 
-      Do i=1,mxatyp
+      Do i=1,sites%mxatyp
         lexist=.true.
         If (keyres == 1) Then
           If (comm%idnode == 0) Inquire(File='VAFDAT_'//sites%unique_atom(i), Exist=lexist)
@@ -349,7 +352,7 @@ Contains
 
     ! loop over species types
 
-    Do j=1,mxatyp
+    Do j=1,sites%mxatyp
       numt = sites%num_type_nf(j)
       factor = 1.0_wp
       If (Abs(green%vaf(0,j)) > 0.0e-6_wp) factor = 1.0_wp/green%vaf(0,j)

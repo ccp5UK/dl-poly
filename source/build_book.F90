@@ -97,7 +97,7 @@ Subroutine build_book_intra             &
   Character ( Len = 256 )   ::  messages(7)
 
   fail=0
-  Allocate (iwrk(1:mxatms),                                Stat=fail(1))
+  Allocate (iwrk(1:config%mxatms),                                Stat=fail(1))
   If (rigid%on) Then
     Allocate (irgd(1:rigid%max_list), &
       irgd0(1:rigid%max_list), Stat=fail(2))
@@ -1724,7 +1724,7 @@ Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,config,com
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Integer, Intent( In    )          :: mxf_u,mx_u,b_u
-  Integer, Intent( InOut )          :: nt_u,list_u(0:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
+  Integer, Intent( InOut )          :: nt_u,list_u(0:b_u,1:mx_u),leg_u(0:,1:)
   Type( constraints_type), Intent( InOut) :: cons
   Type( configuration_type ), Intent( InOut ) :: config
   Type( comms_type), Intent( InOut) :: comm

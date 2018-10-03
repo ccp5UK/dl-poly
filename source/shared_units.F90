@@ -54,10 +54,10 @@ Module shared_units
 
   Type( configuration_type ), Intent( InOut ) :: config
   Integer, Intent( In    ) :: mx_u,b_l,b_u,mxf_u
-  Integer, Intent( InOut ) :: nt_u,list_u(b_l:b_u,1:mx_u),leg_u(0:mxf_u,1:mxatdm)
+  Integer, Intent( InOut ) :: nt_u,list_u(b_l:b_u,1:mx_u),leg_u(0:mxf_u,1:config%mxatdm)
   Logical, Intent(   Out ) :: lshmv
   Type( domains_type ), Intent( In    ) :: domain
-  Integer, Intent(   Out ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
+  Integer, Intent(   Out ) :: lishp(:),lashp(1:domain%neighbours)
   Type( comms_type ), Intent( InOut ) :: comm
   Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,vxx,vyy,&
                                                       vzz,oxx,oyy,ozz
@@ -71,7 +71,7 @@ Module shared_units
   Character( Len = 256 ) :: message
 
   fail=0
-  Allocate (i0(1:b_u),j0(1:b_u),listme(1:mxatms),lstout(1:mxatms),listin(1:mxatms), Stat=fail)
+  Allocate (i0(1:b_u),j0(1:b_u),listme(1:config%mxatms),lstout(1:config%mxatms),listin(1:config%mxatms), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'pass_shared_units allocation failure'
      Call error(0,message)
@@ -255,7 +255,7 @@ Module shared_units
 
 ! The unit is partly shared between domains
 
-        If (l_me > mxatms .or. l_out > mxatms) Then
+        If (l_me > config%mxatms .or. l_out > config%mxatms) Then
 
 ! Test and avoid possible array bound overflow
 
@@ -363,7 +363,7 @@ Module shared_units
            Do j=1,l_in
               If (listme(i) == listin(j)) Then
                  m=m+1
-                 If (m > mxlshp) Then
+                 If (m > config%mxlshp) Then
                     safe=.false.
                  Else
                     lishp(m)=listme(i)
@@ -417,7 +417,7 @@ Subroutine update_shared_units_parts(config,lishp,lashp,subtype,domain,comm)
 
   Type( configuration_type), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
-  Integer,              Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
+  Integer,              Intent( In    ) :: lishp(:),lashp(1:domain%neighbours)
   Integer,              Intent( In    ) :: subtype
   Type( comms_type),    Intent( InOut ) :: comm
   Integer                               :: mpi_type
@@ -433,7 +433,7 @@ Subroutine update_shared_units_parts(config,lishp,lashp,subtype,domain,comm)
 
   iadd=4
 
-  fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
+  fail=0 ; limit=iadd*domain%mxbfsh ! limit=2*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'update_shared_units allocation failure'
@@ -599,8 +599,9 @@ Subroutine update_shared_units_arrays(config,lishp,lashp,qxx,qyy,qzz,domain,comm
 
   Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
-  Integer,           Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
-  Real( Kind = wp ), Intent( InOut ) :: qxx(1:mxatms),qyy(1:mxatms),qzz(1:mxatms)
+  Integer,           Intent( In    ) :: lishp(:),lashp(1:domain%neighbours)
+  !Real( Kind = wp ), Intent( InOut ) :: qxx(1:config%mxatms),qyy(1:config%mxatms),qzz(1:config%mxatms)
+  Real( Kind = wp ), Intent( InOut ) :: qxx(:),qyy(:),qzz(:)
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical :: safe(1:2)
@@ -613,7 +614,7 @@ Subroutine update_shared_units_arrays(config,lishp,lashp,qxx,qyy,qzz,domain,comm
 
   iadd=4
 
-  fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
+  fail=0 ; limit=iadd*domain%mxbfsh ! limit=2*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'update_shared_units allocation failure'
@@ -761,8 +762,8 @@ Subroutine update_shared_units_int(config,lishp,lashp,iii,domain,comm)
 
   Type( configuration_type ), Intent( InOut ) :: config
   Type( domains_type ), Intent( In    ) :: domain
-  Integer, Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
-  Integer, Intent( InOut ) :: iii(1:mxatms)
+  Integer, Intent( In    ) :: lishp(:),lashp(1:domain%neighbours)
+  Integer, Intent( InOut ) :: iii(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical :: safe(1:2)
@@ -776,7 +777,7 @@ Subroutine update_shared_units_int(config,lishp,lashp,iii,domain,comm)
 
   iadd=2
 
-  fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
+  fail=0 ; limit=iadd*domain%mxbfsh ! limit=2*iblock*iadd
   Allocate (ibuffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'update_shared_units_int allocation failure'
@@ -920,8 +921,8 @@ Subroutine update_shared_units_rwp(config,lishp,lashp,rrr,domain,comm)
 
   Type( configuration_type ), Intent( In    ) :: config
   Type( domains_type ), Intent( In    ) :: domain
-  Integer,           Intent( In    ) :: lishp(1:mxlshp),lashp(1:domain%neighbours)
-  Real( Kind = wp ), Intent( InOut ) :: rrr(1:mxatms)
+  Integer,           Intent( In    ) :: lishp(:),lashp(1:domain%neighbours)
+  Real( Kind = wp ), Intent( InOut ) :: rrr(:)
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical :: safe(1:2)
@@ -935,7 +936,7 @@ Subroutine update_shared_units_rwp(config,lishp,lashp,rrr,domain,comm)
 
   iadd=2
 
-  fail=0 ; limit=iadd*mxbfsh ! limit=2*iblock*iadd
+  fail=0 ; limit=iadd*domain%mxbfsh ! limit=2*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'update_shared_units_rwp allocation failure'
@@ -1078,7 +1079,7 @@ Subroutine tag_legend(safe,iatm,nt,legend,mxf)
 
   Logical,                              Intent( InOut) :: safe
   Integer,                              Intent( In   ) :: iatm,nt,mxf
-  Integer, Dimension( 0:mxf, 1:mxatdm), Intent( InOut) :: legend
+  Integer, Dimension( 0:, 1:), Intent( InOut) :: legend
 
   Logical :: safe_local
   Integer :: last

@@ -10,14 +10,14 @@ Module configuration
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp,li
+  Use kinds, Only : wp,li,wi
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
                     gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
                     gallgather,galltoall,galltoallv,gallreduce,op_land, &
                     offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
   Use site, Only : site_type
 
-  Use setup,   Only : mxatms,half_minus,zero_plus,mxatdm
+  Use setup,   Only : half_minus,zero_plus
   Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line
   Use domains, Only : domains_type
@@ -100,6 +100,8 @@ Type configuration_type
   Real( Kind = wp ) :: totmas_r
   Real( Kind = wp ) :: meg
   Logical, Public :: l_vom=.true.,lvom=.true. ! this is confusing and needless complicated
+  Integer( Kind = wi ),Public    :: mxtana,mxgana,mxbfss,mxbuff
+  Integer( Kind = wi ),Public    :: mxlshp,mxatms,mxatdm
 
 Contains
   Private
@@ -304,11 +306,11 @@ End Subroutine chvom
 
     fail = 0
 
-    Allocate (config%lsite(1:mxatms),config%ltype(1:mxatms),           Stat = fail(1))
-    Allocate (config%lfrzn(1:mxatms),config%lfree(1:mxatms),           Stat = fail(2))
-    Allocate (config%ixyz(1:mxatms),                                   Stat = fail(3))
-    Allocate (config%lstfre(1:mxatdm),                                 Stat = fail(4))
-    Allocate (config%weight(1:mxatms),                                 Stat = fail(5))
+    Allocate (config%lsite(1:config%mxatms),config%ltype(1:config%mxatms),           Stat = fail(1))
+    Allocate (config%lfrzn(1:config%mxatms),config%lfree(1:config%mxatms),           Stat = fail(2))
+    Allocate (config%ixyz(1:config%mxatms),                                   Stat = fail(3))
+    Allocate (config%lstfre(1:config%mxatdm),                                 Stat = fail(4))
+    Allocate (config%weight(1:config%mxatms),                                 Stat = fail(5))
 
     If (Any(fail > 0)) Call error(1025)
 
@@ -324,14 +326,14 @@ End Subroutine chvom
 
     stat = 0
 
-    Call reallocate( mxatms - Size( config%atmnam ), config%atmnam, stat( 1) )
-    Call reallocate( mxatms - Size( config%lsi    ), config%lsi,    stat( 2) )
-    Call reallocate( mxatms - Size( config%lsa    ), config%lsa,    stat( 3) )
-    Call reallocate( mxatms - Size( config%ltg    ), config%ltg,    stat( 4) )
-    Call reallocate( mxatms - Size( config%parts  ), config%parts,  stat( 5) )
-    Call reallocate( mxatms - Size( config%vxx    ), config%vxx,    stat( 6) )
-    Call reallocate( mxatms - Size( config%vyy    ), config%vyy,    stat( 7) )
-    Call reallocate( mxatms - Size( config%vzz    ), config%vzz,    stat( 8) )
+    Call reallocate( config%mxatms - Size( config%atmnam ), config%atmnam, stat( 1) )
+    Call reallocate( config%mxatms - Size( config%lsi    ), config%lsi,    stat( 2) )
+    Call reallocate( config%mxatms - Size( config%lsa    ), config%lsa,    stat( 3) )
+    Call reallocate( config%mxatms - Size( config%ltg    ), config%ltg,    stat( 4) )
+    Call reallocate( config%mxatms - Size( config%parts  ), config%parts,  stat( 5) )
+    Call reallocate( config%mxatms - Size( config%vxx    ), config%vxx,    stat( 6) )
+    Call reallocate( config%mxatms - Size( config%vyy    ), config%vyy,    stat( 7) )
+    Call reallocate( config%mxatms - Size( config%vzz    ), config%vzz,    stat( 8) )
 
     If ( Any(stat /= 0 )) Call error(1025)
 
@@ -368,7 +370,7 @@ End Subroutine chvom
 
   fail=0
   If (l_str) Then
-     Allocate (iwrk(1:mxatms), Stat=fail)
+     Allocate (iwrk(1:config%mxatms), Stat=fail)
      If (fail > 0) Then
         Write(message,'(a)') 'check_config allocation failure'
         Call error(0,message)
@@ -825,11 +827,11 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 ! Approximate density and mxatms
 
   dens = Real(megatm,wp) / volm
-  mxatms = Max(1 , Nint( (dvar**1.7_wp) * dens*vcell * Real((nlx+3)*(nly+3)*(nlz+3),wp)))
+  config%mxatms = Max(1 , Nint( (dvar**1.7_wp) * dens*vcell * Real((nlx+3)*(nly+3)*(nlz+3),wp)))
 
 ! Allocate necessary arrays to read CONFIG
 
-  Call allocate_config_arrays_read(config,mxatms)
+  Call allocate_config_arrays_read(config,config%mxatms)
 
 ! Get type of I/O for reading
 
@@ -941,10 +943,10 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
         End If
      End If
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
-     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
-     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
-     Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
+     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
+     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
+     Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(4))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'read_config allocation failure'
         Call error(0,message)
@@ -1014,7 +1016,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 
 ! Circulate configuration data to all nodes when transmission arrays are filled up
 
-        If (indatm == mxatms .or. nattot == megatm) Then
+        If (indatm == config%mxatms .or. nattot == megatm) Then
 
 ! Check if batch was read fine
 
@@ -1078,7 +1080,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
                Else If (idm == comm%idnode)                 Then
                  config%natms=config%natms+1
 
-                 If (config%natms < mxatms) Then
+                 If (config%natms < config%mxatms) Then
                     config%atmnam(config%natms)=chbuf(i)
                     config%ltg(config%natms)=iwrk(i)
 
@@ -1120,11 +1122,11 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
               Call gmin(comm,min_fail)
 
            If (.not.safe) Then
-              Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', mxatms
+             Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', config%mxatms
               Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', &
                  max_fail, ' & ', min_fail
               Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
-                 Ceiling((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+                Ceiling((dvar*(Real(max_fail,wp)/Real(config%mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
               Call info(messages,3,.true.)
               Call error(45)
            End If
@@ -1845,7 +1847,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his, &
 ! Check safety by the upper bound of: atmnam,ltg,xxx,yyy,zzz &
 ! possibly vxx,vyy,vzz & possibly fxx,fyy,fzz as guided by xxx
 
-                 If (config%natms <= mxatms) Then
+                 If (config%natms <= config%mxatms) Then
                     config%atmnam(config%natms)=chbuf(i)
                     config%ltg(config%natms)=iwrk(i)
 
@@ -1889,11 +1891,11 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his, &
               Call gmin(comm,min_fail)
 
            If (.not.safe) Then
-              Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', mxatms
+             Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', config%mxatms
               Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', & 
                  max_fail, ' & ', min_fail
               Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
-                 Ceiling((dvar*(Real(max_fail,wp)/Real(mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+                Ceiling((dvar*(Real(max_fail,wp)/Real(config%mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
               Call info(messages,3,.true.)
               Call error(45)
            End If
@@ -2625,10 +2627,10 @@ Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,co
 
   Else If (io_write == IO_WRITE_UNSORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
-     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
-     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
-     Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
+     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
+     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
+     Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(4))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'write_config allocation failure'
         Call error(0,message)
@@ -2932,10 +2934,10 @@ Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,co
 
   Else If (io_write == IO_WRITE_SORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
-     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
-     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
-     Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(4))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
+     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
+     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
+     Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(4))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'write_config allocation failure'
         Call error(0,message)

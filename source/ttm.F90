@@ -1217,7 +1217,7 @@ Subroutine ttm_table_read(ttm,comm)
 
 End Subroutine ttm_table_read
 
-Subroutine ttm_table_scan(ttm,comm)
+Subroutine ttm_table_scan(mxbuff,ttm,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1234,6 +1234,7 @@ Subroutine ttm_table_scan(ttm,comm)
 
   Type( ttm_type ), Intent( InOut )   :: ttm 
   Type(comms_type), Intent(InOut) :: comm
+  Integer, Intent( InOut ) :: mxbuff
   Logical                :: safe,lexist
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word

@@ -110,7 +110,7 @@ Contains
 
     ! calculate and print velocity autocorrelation function
     If (green%samp > 0 .and. green%l_print .and. green%vafcount > zero_plus) Then
-      Call vaf_compute(tstep,sites%num_type_nf,green,comm)
+      Call vaf_compute(tstep,sites%num_type_nf,sites%mxatyp,green,comm)
     End If
 
     ! Calculate and print PDFs

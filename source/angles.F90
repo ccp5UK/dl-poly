@@ -15,7 +15,7 @@ Module angles
   Use comms,  Only : comms_type,gsum,gbcast,gsync,gcheck
   Use setup,  Only : pi,boltz,delth_max,npdfdt,npdgdt, &
                      engunit,zero_plus,twopi, &
-                     delth_max,ntable,mxatdm,mxtmls
+    delth_max,ntable
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use parse, Only : get_line,get_word,word_2_real
@@ -91,8 +91,9 @@ Module angles
 
 Contains
 
-  Subroutine allocate_angles_arrays(angle)
+  Subroutine allocate_angles_arrays(angle,mxatdm,mxtmls)
     Type( angles_type ), Intent( InOut ) :: angle
+    Integer( Kind =wi ), Intent( In ) :: mxatdm,mxtmls
 
     Integer, Dimension(8) :: fail
 

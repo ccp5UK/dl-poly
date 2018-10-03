@@ -383,7 +383,7 @@ Subroutine read_field                      &
         Write(message,'(a,6x,i10)') 'number of molecular types', sites%ntype_mol
         Call info(message,.true.)
 
-        If (sites%ntype_mol > mxtmls) Then
+        If (sites%ntype_mol > sites%mxtmls) Then
           Call error(10)
         End If
 
@@ -530,7 +530,7 @@ Subroutine read_field                      &
 
                        If (atmchk) Then
                           sites%ntype_atom=sites%ntype_atom+1
-                          If (sites%ntype_atom > mxatyp) Call error(14)
+                          If (sites%ntype_atom > sites%mxatyp) Call error(14)
 
                           sites%unique_atom(sites%ntype_atom)=atom1
 
@@ -628,7 +628,7 @@ Subroutine read_field                      &
                        sites%ntype_shell=sites%ntype_shell+1
                        sites%unique_shell(sites%ntype_shell)=sites%site_name(isite2)
 
-                       If (sites%ntype_shell > mxatyp) Call error(14)
+                       If (sites%ntype_shell > sites%mxatyp) Call error(14)
                     End If
 
 ! There is a massless shell, all shells are massless
@@ -2257,7 +2257,7 @@ Subroutine read_field                      &
 
 ! If some intramolecular PDFs analysis is opted for
 
-        If (mxgana > 0) Then
+        If (config%mxgana > 0) Then
 
 ! Only for the requested types of PDFs (re)initialise:
 ! number of unique intramolecular PDFs and auxiliary identity arrays
@@ -2799,7 +2799,7 @@ Subroutine read_field                      &
               nsite=nsite+sites%num_site(itmols)
            End Do
 
-           mxtana = Max(ntpbnd*Merge(1,0,bond%bin_pdf > 0), &
+           config%mxtana = Max(ntpbnd*Merge(1,0,bond%bin_pdf > 0), &
                         ntpang*Merge(1,0,angle%bin_adf > 0), &
                         ntpdih*Merge(1,0,dihedral%bin_adf > 0), &
                         ntpinv*Merge(1,0,inversion%bin_adf > 0))
@@ -4139,7 +4139,7 @@ Subroutine read_field                      &
 
            Call metal_generate_erf(met)
            If (.not.met%l_direct) Then
-              Call met%init_table(mxatyp)
+             Call met%init_table(sites%mxatyp)
               If (met%tab > 0) Then ! keypot == 0
                  Call metal_table_read(l_top,met,sites,comm)
               Else ! If (met%tab == 0) Then
@@ -5051,10 +5051,10 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
   Call info(banner,18,.true.)
 End Subroutine report_topology
 
-Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
-    mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
-    lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
-    vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,comm)
+Subroutine scan_field(l_n_e,megatm,site,max_exclude,mtshl, &
+  mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
+  lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
+  vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5074,7 +5074,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
   Real( Kind = wp ), Intent(   Out ) :: rcter
   Real( Kind = wp ), Intent(   Out ) :: rctbp
   Real( Kind = wp ), Intent(   Out ) :: rcfbp
-  Integer( Kind = wi ), Intent(   Out ) :: max_site
+  Type( site_type ), Intent( InOut ) :: site
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( metal_type ), Intent( InOut ) :: met
@@ -5110,36 +5110,36 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
   Character( Len = 8   ) :: name
 
   Logical           :: l_n_e,check,safe,l_usr,lext
-  Integer           :: mxtmls,itmols,nummols,numsit,mxnmst,ksite,nrept,        &
-                       mxatyp,megatm,i,j,k,        &
-                       numshl,ishls,                 &
-                       numcon,mtcons,icon,                &
-                       ipmf,jpmf,                     &
-                       numrgd,mtrgd,irgd,jrgd,lrgd, &
-                       inumteth,mtteth,iteth,  &
-                       numbonds,mtbond,ibonds, &
-                       numang,mtangl,iang,         &
-                       numdih,mtdihd,idih,         &
-                       numinv,mtinv,iinv,           &
-                       itprdf,itpvdw,                       &
-                       itpmet,                        &
-                       itpter,itptbp,itpfbp,                 &
-                       mxt(1:9),mxf(1:9)
+  Integer           :: itmols,nummols,numsit,mxnmst,ksite,nrept,        &
+    megatm,i,j,k,        &
+    numshl,ishls,                 &
+    numcon,mtcons,icon,                &
+    ipmf,jpmf,                     &
+    numrgd,mtrgd,irgd,jrgd,lrgd, &
+    inumteth,mtteth,iteth,  &
+    numbonds,mtbond,ibonds, &
+    numang,mtangl,iang,         &
+    numdih,mtdihd,idih,         &
+    numinv,mtinv,iinv,           &
+    itprdf,itpvdw,                       &
+    itpmet,                        &
+    itpter,itptbp,itpfbp,                 &
+    mxt(1:9),mxf(1:9)
   Real( Kind = wp ) :: rct,tmp,tmp1,tmp2
 
   l_n_e=.true.  ! no electrostatics opted
   mpoles%max_order=0      ! default of maximum order of poles (charges)
   mpoles%max_mpoles=0      ! default maximum number of independent poles values
-                ! it initialises to 0 if no MULT directive exists in FIELD
+  ! it initialises to 0 if no MULT directive exists in FIELD
 
   nummols=0
 
   numsit=0
   mxnmst=0
-  max_site=0
-  mxatyp=0
+  site%max_site=0
+  site%mxatyp=0
   megatm=0
-  mxtmls=0
+  site%mxtmls=0
 
   numshl=0
   mtshl =0
@@ -5270,9 +5270,9 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
 
         Call get_word(record,word)
         If (word(1:4) == 'type') Call get_word(record,word)
-        mxtmls=Nint(word_2_real(word))
+        site%mxtmls=Nint(word_2_real(word))
 
-        Do itmols=1,mxtmls
+        Do itmols=1,site%mxtmls
 
            word(1:1)='#'
            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
@@ -5303,7 +5303,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                  numsit=Nint(word_2_real(word))
                  mxnmst=Max(mxnmst,numsit)
                  megatm=megatm+nummols*numsit
-                 max_site=max_site+numsit
+                 site%max_site=site%max_site+numsit
 
                  ksite=0
                  Do While (ksite < numsit)
@@ -5324,18 +5324,18 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
                     nrept=Nint(word_2_real(word))
                     If (nrept == 0) nrept=1
 
-                    If (mxatyp == 0) Then
-                       mxatyp=1
+                    If (site%mxatyp == 0) Then
+                       site%mxatyp=1
                        chr(1)=name
                     Else
                        check=.true.
-                       Do j=1,mxatyp
+                       Do j=1,site%mxatyp
                           If (name == chr(j)) check=.false.
                        End Do
 
                        If (check) Then
-                          mxatyp=mxatyp+1
-                          If (mxatyp <= mmk) chr(mxatyp)=name
+                          site%mxatyp=site%mxatyp+1
+                          If (site%mxatyp <= mmk) chr(site%mxatyp)=name
                        End If
                     End If
 
@@ -5343,7 +5343,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
 
                  End Do
 
-                 If (mmk < mxatyp) Call error(2)
+                 If (mmk < site%mxatyp) Call error(2)
 
               Else If (word(1:5) == 'shell') Then
 
@@ -5660,7 +5660,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
             End Do
         End Do
 
-        If (rdf%max_rdf > 0) rdf%max_rdf=Max(rdf%max_rdf,(mxatyp*(mxatyp+1))/2)
+        If (rdf%max_rdf > 0) rdf%max_rdf=Max(rdf%max_rdf,(site%mxatyp*(site%mxatyp+1))/2)
 
      Else If (word(1:3) == 'vdw') Then
 
@@ -5706,7 +5706,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
         End Do
 
         If (vdws%max_vdw > 0) Then
-           vdws%max_vdw=Max(vdws%max_vdw,(mxatyp*(mxatyp+1))/2)
+           vdws%max_vdw=Max(vdws%max_vdw,(site%mxatyp*(site%mxatyp+1))/2)
 
            If (vdws%l_tab) Then
               If (comm%idnode == 0) Open(Unit=ntable, File='TABLE')
@@ -5773,20 +5773,20 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
         End Do
 
         If (met%max_metal > 0) Then
-           met%max_metal=Max(met%max_metal,(mxatyp*(mxatyp+1))/2)
+           met%max_metal=Max(met%max_metal,(site%mxatyp*(site%mxatyp+1))/2)
 
            If      (met%tab == 0) Then
               met%max_med=met%max_metal
            Else If (met%tab == 1) Then
-              met%max_med=mxatyp
+              met%max_med=site%mxatyp
            Else If (met%tab == 2) Then
-              met%max_med=mxatyp**2
+              met%max_med=site%mxatyp**2
            Else If (met%tab == 3) Then
-              met%max_med=mxatyp
-              met%max_mds=mxatyp*(mxatyp+1)/2
+              met%max_med=site%mxatyp
+              met%max_mds=site%mxatyp*(site%mxatyp+1)/2
            Else If (met%tab == 4) Then
-              met%max_med=mxatyp**2
-              met%max_mds=mxatyp**2
+              met%max_med=site%mxatyp**2
+              met%max_mds=site%mxatyp**2
            End If
 
            If (met%tab > 0) Then
@@ -5882,7 +5882,7 @@ Subroutine scan_field(l_n_e,max_site,mxatyp,megatm,mxtmls,max_exclude,mtshl, &
               End Do
            End If
 
-           tersoffs%max_ter=Max(tersoffs%max_ter,(mxatyp*(mxatyp+1))/2)
+           tersoffs%max_ter=Max(tersoffs%max_ter,(site%mxatyp*(site%mxatyp+1))/2)
         End If
 
      Else If (word(1:3) == 'tbp') Then

@@ -45,6 +45,7 @@ Module domains
     !> Number of neighbours (0 when serial, 26 otherwise). Used as the dimension
     !> of some shared unit arrays
     Integer( Kind = wi ), Public :: neighbours
+    Integer( Kind = wi ), Public :: mxbfdp,mxbfxp,mxbfsh
   End Type domains_type
 
   Public :: map_domains,idcube

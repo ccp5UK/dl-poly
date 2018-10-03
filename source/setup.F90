@@ -120,14 +120,6 @@ Module setup
 
   Integer(Kind=si), Parameter :: nmpldt = 31
 
-! GLOBAL PARAMETERS FOR ARRAYS' BOUNDS LIMITS (set_bounds)
-  Integer, Save ::                                              &
-    mxatyp,mxtmls,                  &
-    mxlshp,     &
-    mxtana,mxgana,              &
-    mxatms,mxatdm,                  &
-    mxbfdp,mxbfss,mxbfxp,mxbfsh,mxbuff
-
   !> +0.0 in working precision
   Real( Kind = wp ), Parameter :: zero_plus = Tiny(1.0_wp)
   !> Nearest number to 0.5, greater than 0.5, in working precision

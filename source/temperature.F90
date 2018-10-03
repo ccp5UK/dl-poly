@@ -1,7 +1,7 @@
 Module temperature
   Use kinds,           Only : wp, li
   Use comms,           Only : comms_type,gsum
-  Use setup,           Only : boltz,mxatms,zero_plus
+  Use setup,           Only : boltz,zero_plus
   Use site, Only : site_type
   Use configuration,   Only : configuration_type,getcom
   Use particle,        Only : corePart
@@ -171,7 +171,7 @@ Contains
 
     If (keyres == 0) Then
 
-       Allocate (qn(1:mxatms),tpn(0:comm%mxnode-1),    Stat=fail(1))
+       Allocate (qn(1:config%mxatms),tpn(0:comm%mxnode-1),    Stat=fail(1))
        Allocate (qs(0:2,1:cshell%mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
        If (Any(fail > 0)) Then
           Write(message,'(a)') 'set_temperature allocation failure'

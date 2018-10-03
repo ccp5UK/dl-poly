@@ -55,7 +55,6 @@ program dl_poly
 
   ! IO & DOMAINS MODULES
 
-  Use io
   Use netcdf_wrap, Only : netcdf_param
   Use domains, Only : domains_type
 
@@ -372,7 +371,7 @@ program dl_poly
   ! (setup and domains)
 
   Call set_bounds (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,l_ind, &
-    dvar,rbin,nstfce,width,sites%max_site,ttms,ios,core_shells,cons,pmfs,stats, &
+    dvar,rbin,nstfce,width,sites,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
     rigid,electro,domain,config,ewld,kim_data,files,comm)
@@ -383,9 +382,9 @@ program dl_poly
 
   ! ALLOCATE SITE & CONFIG
 
-  Call sites%init(mxtmls,mxatyp)
+  Call sites%init(sites%mxtmls,sites%mxatyp)
   Call allocate_config_arrays(config)
-  Call neigh%init_list(mxatdm)
+  Call neigh%init_list(config%mxatdm)
 
   ! ALLOCATE DPD ARRAYS
 
@@ -393,26 +392,26 @@ program dl_poly
 
   ! ALLOCATE INTRA-LIKE INTERACTION ARRAYS
 
-  Call core_shells%init(mxatdm,mxtmls,mxlshp,domain%neighbours)
+  Call core_shells%init(config%mxatdm,sites%mxtmls,config%mxlshp,domain%neighbours)
 
-  Call cons%init(mxtmls,mxatdm,mxlshp,domain%neighbours)
-  Call pmfs%init(mxtmls,mxatdm)
+  Call cons%init(sites%mxtmls,config%mxatdm,config%mxlshp,domain%neighbours)
+  Call pmfs%init(sites%mxtmls,config%mxatdm)
 
-  Call rigid%init(mxtmls,mxatms,domain%neighbours)
+  Call rigid%init(config%mxlshp,sites%mxtmls,config%mxatdm,domain%neighbours)
 
-  Call tether%init(mxtmls,mxatdm)
+  Call tether%init(sites%mxtmls,config%mxatdm)
 
-  Call allocate_bonds_arrays(bond)
-  Call allocate_angles_arrays(angle)
-  Call allocate_dihedrals_arrays(dihedral)
-  Call allocate_inversions_arrays(inversion)
+  Call allocate_bonds_arrays(bond,config%mxatdm,sites%mxtmls)
+  Call allocate_angles_arrays(angle,config%mxatdm,sites%mxtmls)
+  Call allocate_dihedrals_arrays(dihedral,config%mxatdm,sites%mxtmls)
+  Call allocate_inversions_arrays(inversion,config%mxatms,sites%mxtmls)
 
-  Call mpoles%init(sites%max_site,neigh%max_exclude,mxatdm,ewld%bspline,mxatms)
+  Call mpoles%init(sites%max_site,neigh%max_exclude,config%mxatdm,ewld%bspline,config%mxatms)
 
   ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
 
   Call vdws%init()
-  Call met%init(mxatms,mxatyp)
+  Call met%init(config%mxatms,sites%mxatyp)
   Call tersoffs%init(sites%max_site)
   Call allocate_three_body_arrays(sites%max_site,threebody)
   Call fourbody%init(sites%max_site)
@@ -422,17 +421,17 @@ program dl_poly
   ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
 
   Call rdf%init()
-  Call allocate_z_density_arrays(zdensity,rdf%max_grid,mxatyp)
-  Call allocate_statistics_arrays(mxatdm,stats)
-  Call allocate_greenkubo_arrays(green)
+  Call allocate_z_density_arrays(zdensity,rdf%max_grid,sites%mxatyp)
+  Call allocate_statistics_arrays(config%mxatms,stats)
+  Call allocate_greenkubo_arrays(green,config%mxatms,sites%mxatyp)
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
   Call allocate_ttm_arrays(ttms,domain,config,comm)
-  Call ttm_table_scan(ttms,comm)
+  Call ttm_table_scan(config%mxbuff,ttms,comm)
 
   ! Setup KIM
-  Call kim_setup(kim_data,mxatms,mxatdm,megatm,neigh%max_list,mxbfxp,comm%mxnode)
+  Call kim_setup(kim_data,config%mxatms,config%mxatdm,megatm,neigh%max_list,domain%mxbfxp,comm%mxnode)
 
   ! READ SIMULATION CONTROL PARAMETERS
 
@@ -683,17 +682,17 @@ program dl_poly
 
 
   If (lsim) Then
-    Call w_md_vv(mxatdm,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
+    Call w_md_vv(config,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
       netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr)
   Else
     If (lfce) Then
-      Call w_replay_historf(mxatdm,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
+      Call w_replay_historf(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
         msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
         fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
         kim_data,files,tmr)
     Else
-      Call w_replay_history(mxatdm,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
+      Call w_replay_history(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
         met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
         netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,files)
     End If
@@ -753,7 +752,7 @@ program dl_poly
   ! Save restart data for real simulations only (final)
 
   If (lsim .and. (.not.devel%l_tor)) Then
-    Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,ios,tmst,stats, &
+    Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,sites,ios,tmst,stats, &
       devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
       files,comm)
     If (ttms%l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,ttms,comm)
@@ -773,7 +772,7 @@ program dl_poly
   Call statistics_result                                        &
     (config,minim%minimise,msd_data%l_msd, &
     nstrun,core_shells%keyshl,cons%megcon,pmfs%megpmf,              &
-    nstep,tstep,time,tmst,mxatdm,neigh%unconditional_update,&
+    nstep,tstep,time,tmst,config%mxatdm,neigh%unconditional_update,&
     stats,thermo,green,sites,comm)
 
   ! Final anlysis
@@ -836,9 +835,10 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+  Subroutine w_calculate_forces(cnfig,flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
     inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
     minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
+    Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -958,12 +958,12 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(mxatdm_,ttm,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
-      pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
-      netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr)
+  Subroutine w_md_vv(cnfig,ttm,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
+    pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
+    netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr)
+    Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( ttm_type ), Intent( InOut ) :: ttm
     Type( io_type ), Intent( InOut ) :: io
-    Integer( Kind = wi ), Intent( In ) :: mxatdm_
     Type( rsd_type ), Intent( InOut ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -995,11 +995,11 @@ Contains
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(mxatdm_,io,rsdc,flw,cshell,cons,pmf,stat,thermo,msd_data, &
-      met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-      netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,files)
+  Subroutine w_replay_history(cnfig,io,rsdc,flw,cshell,cons,pmf,stat,thermo,msd_data, &
+    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
+    netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,files)
     Use filename, Only : file_type,FILE_HISTORY
-    Integer( Kind = wi ), Intent( In  )  :: mxatdm_
+    Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw
@@ -1042,12 +1042,12 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(mxatdm_,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
+  Subroutine w_replay_historf(cnfig,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
       msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
       kim_data,files,tmr)
     Use filename, Only : file_type,FILE_HISTORF,FILE_HISTORY
-    Integer( Kind = wi ), Intent( In  )  :: mxatdm_
+    Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( control_type ), Intent( InOut ) :: flw

@@ -11,7 +11,7 @@ Module external_field
 
   Use kinds, Only : wp,wi
   Use comms,   Only : comms_type,gcheck,gsum
-  Use setup,   Only : twopi,mxatms
+  Use setup,   Only : twopi
   Use configuration,  Only : configuration_type
   Use particle, Only : corePart
   Use kinetics, Only : getcom_mol
@@ -247,7 +247,7 @@ Contains
 
         fail=0
         Allocate (lstopt(1:2,1:cshell%mxshl),                       Stat=fail(1))
-        Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
+        Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
            Write(message,'(a)') 'external_field_apply allocation failure'
            Call error(0,message)
@@ -325,7 +325,7 @@ Contains
 
         fail=0
         Allocate (lstopt(1:2,1:cshell%mxshl),                       Stat=fail(1))
-        Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms), Stat=fail(2))
+        Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms), Stat=fail(2))
         If (Any(fail > 0)) Then
            Write(message,'(a)') 'external_field_apply allocation failure'
            Call error(0,message)

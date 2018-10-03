@@ -1,7 +1,7 @@
 Module nvt_gst
   Use kinds, Only : wp, li
   Use comms,       Only : comms_type,gmax
-  Use setup,           Only : zero_plus,boltz,mxatms
+  Use setup,           Only : zero_plus,boltz
   Use configuration,      Only : configuration_type
   Use particle,    Only : corePart
   Use domains,     Only : domains_type
@@ -84,14 +84,14 @@ Contains
 
     fail=0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
-       Call cons%allocate_work(mxatms)
+       Allocate (lstitr(1:config%mxatms),                                  Stat=fail(1))
+       Call cons%allocate_work(config%mxatms)
 Call pmf%allocate_work()
-Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
+Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail(7))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),            Stat=fail(7))
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),            Stat=fail(8))
+    Allocate (fxt(1:config%mxatms),fyt(1:config%mxatms),fzt(1:config%mxatms),            Stat=fail(9))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'nvt_g0 allocation failure'
        Call error(0,message)
@@ -358,17 +358,17 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     fail=0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
-       Call cons%allocate_work(mxatms)
+       Allocate (lstitr(1:config%mxatms),                                  Stat=fail( 1))
+       Call cons%allocate_work(config%mxatms)
 Call pmf%allocate_work()
-Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
+Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
     Allocate (ggx(1:rigid%max_list*rigid%max_rigid), &
       ggy(1:rigid%max_list*rigid%max_rigid), &
       ggz(1:rigid%max_list*rigid%max_rigid), Stat=fail( 7))
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 8))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 9))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(10))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),            Stat=fail( 8))
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),            Stat=fail( 9))
+    Allocate (fxt(1:config%mxatms),fyt(1:config%mxatms),fzt(1:config%mxatms),            Stat=fail(10))
     Allocate (q0t(1:rigid%max_rigid), &
       q1t(1:rigid%max_rigid), &
       q2t(1:rigid%max_rigid), &
@@ -978,7 +978,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
                                                                  pmass,chip
     Integer(Kind=li),                         Intent( In    ) :: degfre
     Integer,                                  Intent( In    ) :: isw,nstep
-    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: engke
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( configuration_type ), Intent( InOut ) :: config
@@ -1070,7 +1070,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
                                                                  pmass,chip
     Integer(Kind=li),                         Intent( In    ) :: degfre
     Integer,                                  Intent( In    ) :: isw,nstep
-    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid

@@ -12,7 +12,7 @@ Module inversions
 
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum,gsync,gcheck,gbcast
-  Use setup, Only : mxtmls,mxatdm,pi,boltz,delth_max,npdfdt,npdgdt, &
+  Use setup, Only : pi,boltz,delth_max,npdfdt,npdgdt, &
                     engunit,zero_plus,ntable
   Use site, Only : site_type
   Use configuration,     Only : configuration_type
@@ -90,8 +90,9 @@ Module inversions
 
 Contains
 
-  Subroutine allocate_inversions_arrays(inversion)
+  Subroutine allocate_inversions_arrays(inversion,mxatdm,mxtmls)
     Type( inversions_type ), Intent( InOut ) :: inversion
+    Integer( kind = wi ), Intent( In ) :: mxatdm,mxtmls
 
     Integer, Dimension( 1:8 ) :: fail
 

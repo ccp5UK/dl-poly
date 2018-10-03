@@ -7,7 +7,7 @@
 Module neighbours
   Use kinds, Only : wp,wi,li
   Use comms,   Only : comms_type,gcheck,gmax,gsum
-  Use setup,   Only : mxatms,half_plus
+  Use setup,   Only : half_plus
   Use domains,       Only : domains_type
   Use configuration,  Only : configuration_type
   Use core_shell,    Only : core_shell_type
@@ -111,7 +111,7 @@ Contains
 
     ! Checks
     fail = 0
-    Allocate (x(1:mxatms),y(1:mxatms),z(1:mxatms),r(1:mxatms), Stat = fail)
+    Allocate (x(1:config%mxatms),y(1:config%mxatms),z(1:config%mxatms),r(1:config%mxatms), Stat = fail)
     If (fail > 0) Then
       Write(message,'(a)') 'vnl_check allocation failure'
       Call error(0,message)
@@ -266,7 +266,7 @@ Contains
       neigh%newjob = .false.
 
       fail = 0
-      Allocate (neigh%xbg(1:mxatms),neigh%ybg(1:mxatms),neigh%zbg(1:mxatms), Stat = fail)
+      Allocate (neigh%xbg(1:config%mxatms),neigh%ybg(1:config%mxatms),neigh%zbg(1:config%mxatms), Stat = fail)
       If (fail > 0) Then
         Write(message,'(a)') 'vnl_set_check allocation failure'
         Call error(0,message)
@@ -367,7 +367,7 @@ Contains
     If (ncells > neigh%max_cell) Then
       Call warning(90,Real(ncells,wp),Real(neigh%max_cell,wp),0.0_wp)
       neigh%max_cell = Nint(1.25_wp*Real(ncells,wp))
-      If (ncells > mxatms) Call error(69)
+      If (ncells > config%mxatms) Call error(69)
     End If
 
     ! subcelling and new link-config%cell parameters
@@ -392,10 +392,10 @@ Contains
 
     fail=0
     Allocate (nix(1:nlp2),niy(1:nlp2),niz(1:nlp2),nir(1:nlp2),                 Stat=fail(1))
-    Allocate (which_cell(1:mxatms),at_list(1:mxatms),                          Stat=fail(2))
+    Allocate (which_cell(1:config%mxatms),at_list(1:config%mxatms),                          Stat=fail(2))
     Allocate (lct_count(0:ncells),lct_start(0:ncells+1),lct_where(0:ncells+1), Stat=fail(3))
     Allocate (cell_dom(0:nlp3),cell_bor(0:nlp4),                               Stat=fail(4))
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                       Stat=fail(5))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),                       Stat=fail(5))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'link_cell_pairs allocation failure'
       Call error(0,message)
@@ -1172,8 +1172,8 @@ Contains
   Subroutine defects_link_cells(config,cut,mxcldef,na,nl,xxt,yyt,zzt,nlx,nly,nlz,link, &
       lct,domain)
     Integer,            Intent( In    ) :: mxcldef,na,nl
-    Real( Kind = wp ) , Intent( In    ) :: cut,xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms)
-    Integer,            Intent(   Out ) :: nlx,nly,nlz,link(1:mxatms),lct(0:mxcldef)
+    Real( Kind = wp ) , Intent( In    ) :: cut,xxt(1:),yyt(1:),zzt(1:)
+    Integer,            Intent(   Out ) :: nlx,nly,nlz,link(1:),lct(0:mxcldef)
     Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ), Intent( In    ) :: config
 
