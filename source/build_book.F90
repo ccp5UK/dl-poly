@@ -22,7 +22,7 @@ Module build_book
   Use neighbours, Only : neighbours_type
   Use domains, Only : domains_type
   Use errors_warnings, Only : error,warning,info
-  Use kontrol, Only : control_type
+  Use flow, Only : flow_type
   Implicit None
 
   Private
@@ -35,7 +35,7 @@ Contains
 Subroutine build_book_intra             &
            (l_str,l_top,lsim,dvar,      &
            megatm,megfrz,atmfre,atmfrz, &
-           degrot,degtra,flw,        &
+           degrot,degtra,flow,        &
            cshell,cons,pmf,bond,angle,dihedral,  &
            inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
 
@@ -56,7 +56,7 @@ Subroutine build_book_intra             &
   Integer,           Intent( In    ) :: megatm,atmfre,atmfrz
   Integer,           Intent( InOut ) :: megfrz
   Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
-  Type( control_type ), Intent(InOut) :: flw
+  Type( flow_type ), Intent(InOut) :: flow
   Type( constraints_type), Intent(Inout) :: cons
   Type( pmf_type), Intent(Inout) :: pmf
   Type( bonds_type ), Intent( InOut ) :: bond
@@ -107,7 +107,7 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (.not.(flw%newjob_build_book .or. lsim)) Then
+  If (.not.(flow%newjob_build_book .or. lsim)) Then
     Call init_intra(cshell,cons,pmf,bond,angle,dihedral,inversion,tether,neigh,rigid)
   End If
 
@@ -1646,9 +1646,9 @@ Subroutine build_book_intra             &
      Call error(0,message)
   End If
 
-  If (flw%newjob_build_book) Then
+  If (flow%newjob_build_book) Then
 
-    flw%newjob_build_book=.false.
+    flow%newjob_build_book=.false.
 
 ! Set RB particulars and quaternions
 
@@ -1688,21 +1688,21 @@ Subroutine build_book_intra             &
   If (cshell%megshl > 0 .and. comm%mxnode > 1) Call pass_shared_units &
     (config,cshell%mxshl, Lbound(cshell%listshl,Dim=1),Ubound(cshell%listshl,Dim=1),cshell%ntshl,&
     cshell%listshl,cshell%mxfshl,cshell%legshl,cshell%lshmv_shl,cshell%lishp_shl,cshell%lashp_shl, &
-    flw%oldjob_shared_units,domain,comm,&
+    flow%oldjob_shared_units,domain,comm,&
     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
     rigid%oxx,rigid%oyy,rigid%ozz)
 
   If (cons%m_con > 0 .and. comm%mxnode > 1) Call pass_shared_units &
     (config,cons%mxcons,Lbound(cons%listcon,Dim=1),Ubound(cons%listcon,Dim=1),cons%ntcons,cons%listcon,cons%mxfcon,&
     cons%legcon,cons%lshmv_con,&
-    cons%lishp_con,cons%lashp_con,flw%oldjob_shared_units,domain,comm,&
+    cons%lishp_con,cons%lashp_con,flow%oldjob_shared_units,domain,comm,&
     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
     rigid%oxx,rigid%oyy,rigid%ozz)
 
   If (rigid%on .and. comm%mxnode > 1) Call pass_shared_units &
     (config,rigid%max_rigid, Lbound(rigid%list,Dim=1),Ubound(rigid%list,Dim=1),rigid%n_types, &
     rigid%list,rigid%max_frozen,rigid%legend,rigid%share,rigid%list_shared, &
-    rigid%map_shared,flw%oldjob_shared_units,domain,comm,&
+    rigid%map_shared,flow%oldjob_shared_units,domain,comm,&
     rigid%q0,rigid%q1,rigid%q2,rigid%q3,rigid%vxx,rigid%vyy,rigid%vzz, &
     rigid%oxx,rigid%oyy,rigid%ozz)
 

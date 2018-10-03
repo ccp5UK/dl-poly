@@ -62,7 +62,7 @@ program dl_poly
 
   Use site, Only : site_type
   Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms,allocate_config_arrays
-  Use kontrol, Only : read_control
+  Use kontrol, Only : read_control,scan_control_output,scan_control_io
 
   ! VNL module
 
@@ -159,7 +159,6 @@ program dl_poly
   Use build_excl, Only : build_excl_intra 
   Use build_book, Only : build_book_intra
   Use ffield, Only : read_field,report_topology
-  Use kontrol, Only : scan_control_output,scan_control_io, control_type
   Use bounds, Only : set_bounds
   Use build_tplg, Only : build_tplg_intra
   use build_chrm, Only : build_chrm_intra
@@ -201,14 +200,8 @@ program dl_poly
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS
+  Use flow, Only : flow_type
   Implicit None
-
-  ! newjob used for trajectory_write &
-  !                 defects_write    &
-  !                 msd_write        &
-  !                 rsd_write        &
-
-  Logical, Save :: newjob = .true.
 
   ! general flags
 
@@ -277,7 +270,7 @@ program dl_poly
   Type( rigid_bodies_type ) :: rigid
   Type( electrostatic_type ) :: electro
   Type( domains_type ) :: domain
-  Type( control_type ) :: flow
+  Type( flow_type ) :: flow
   Type( seed_type ) :: seed
   Type( trajectory_type ) :: traj
   Type( kim_type ), Target :: kim_data
@@ -831,12 +824,12 @@ program dl_poly
   Deallocate(dlp_world)
 Contains
 
-  Subroutine w_calculate_forces(cnfig,flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+  Subroutine w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
     inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
     minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
-    Type( control_type ), Intent( InOut ) :: flw
+    Type( flow_type ), Intent( InOut ) :: flow
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -869,9 +862,9 @@ Contains
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
+  Subroutine w_refresh_mappings(flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
     dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
-    Type( control_type ), Intent( InOut ) :: flw
+    Type( flow_type ), Intent( InOut ) :: flow
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -921,7 +914,7 @@ Contains
   End Subroutine w_kinetic_options
 
   Subroutine w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
-      sites,rdf,domain,flw,files)
+      sites,rdf,domain,flow,files)
     Integer( Kind = wi ), Intent ( In ) :: mxatdm_
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -932,7 +925,7 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     Type( rdf_type ), Intent( In    ) :: rdf
     Type( domains_type ), Intent( In    ) :: domain
-    Type( control_type ), Intent( InOut ) :: flw
+    Type( flow_type ), Intent( InOut ) :: flow
     Type( file_type ), Intent( InOut ) :: files(:)
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
@@ -956,14 +949,14 @@ Contains
     Include 'w_refresh_output.F90'
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(cnfig,ttm,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
+  Subroutine w_md_vv(cnfig,ttm,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
     pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
     netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr)
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( ttm_type ), Intent( InOut ) :: ttm
     Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( InOut ) :: rsdc
-    Type( control_type ), Intent( InOut ) :: flw
+    Type( flow_type ), Intent( InOut ) :: flow
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -993,14 +986,14 @@ Contains
     Include 'w_md_vv.F90'
   End Subroutine w_md_vv
 
-  Subroutine w_replay_history(cnfig,io,rsdc,flw,cshell,cons,pmf,stat,thermo,msd_data, &
+  Subroutine w_replay_history(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
     netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,files)
     Use filename, Only : file_type,FILE_HISTORY
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
-    Type( control_type ), Intent( InOut ) :: flw
+    Type( flow_type ), Intent( InOut ) :: flow
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -1040,7 +1033,7 @@ Contains
     Include 'w_replay_history.F90'
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(cnfig,io,rsdc,flw,cshell,cons,pmf,stat,thermo,plume, &
+  Subroutine w_replay_historf(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
       msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
       kim_data,files,tmr)
@@ -1048,7 +1041,7 @@ Contains
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
-    Type( control_type ), Intent( InOut ) :: flw
+    Type( flow_type ), Intent( InOut ) :: flow
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf

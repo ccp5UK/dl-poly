@@ -50,7 +50,7 @@
 
 ! START OF MOLECULAR DYNAMICS CALCULATIONS
 
-  Do While ( (nstep < nstrun .or. (nstep == nstrun .and. newjob)) .and. &
+  Do While ( (nstep < nstrun .or. (nstep == nstrun .and. flow%newjob)) .and. &
              (tmr%job-tmr%elapsed) > tmr%clear_screen )
 
 ! Apply impact
@@ -60,9 +60,9 @@
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 ! levcfg == 2 avoids application twice when forces are calculated at (re)start
 
-     If (newjob) Then
+     If (flow%newjob) Then
        If (levcfg == 2) Then
-          newjob = .false.
+          flow%newjob = .false.
 
            If (keyres /= 1) Then
              Call w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj,files)
@@ -96,14 +96,14 @@
 
 ! Refresh mappings
 
-        Call w_refresh_mappings(flw,cshell,cons,pmf,stat,msd_data,bond,angle, &
+        Call w_refresh_mappings(flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
           dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
 
       End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
 
 ! Evaluate forces
 
-      Call w_calculate_forces(cnfig,flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+      Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
        minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
 
@@ -111,12 +111,12 @@
 
     If (nstep == 0) Then
       Call w_statistics_report(cnfig%mxatdm,cshell,cons,pmf,stat,msd_data,zdensity, &
-        sites,rdf,domain,flw,files)
+        sites,rdf,domain,flow,files)
     End If
 
-! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
+! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
-     If (nstep > 0 .and. nstep <= nstrun .and. (.not.newjob)) Then
+     If (nstep > 0 .and. nstep <= nstrun .and. (.not.flow%newjob)) Then
 
 ! Evolve electronic temperature for two-temperature model
 
@@ -141,7 +141,7 @@
 ! Calculate physical quantities, collect statistics and report regularly
 
         Call w_statistics_report(cnfig%mxatdm,cshell,cons,pmf,stat,msd_data,zdensity, &
-          sites,rdf,domain,flw,files)
+          sites,rdf,domain,flow,files)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT
 
@@ -155,9 +155,9 @@
             netcdf,config,files,comm)
         End If
 
-     End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (newjob=.false.)
+     End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
-1000 Continue ! Escape forces evaluation at t=0 when nstep=nstrun=0 and newjob=.false.
+1000 Continue ! Escape forces evaluation at t=0 when nstep=nstrun=0 and flow%newjob=.false.
 
 ! Refresh output
 

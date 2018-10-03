@@ -116,7 +116,7 @@
 
            If (lbook) Then
              Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
-               atmfrz,degrot,degtra,flw,cshell,cons,pmf,bond,angle,dihedral, &
+               atmfrz,degrot,degtra,flow,cshell,cons,pmf,bond,angle,dihedral, &
                inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
               If (lexcl) Then
                 Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
@@ -124,9 +124,9 @@
               End If
            End If
 
-! Evaluate forces, newjob must always be true for vircom evaluation
+! Evaluate forces, flow%newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(cnfig,flw,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
+           Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
              netcdf,minim,mpoles,ext_field,rigid,electro,domain,kim_data,tmr)
 
@@ -196,7 +196,7 @@
 ! Update cpu time
 
            Call gtime(tmr%elapsed)
-           If (flw%new_page()) Then
+           If (flow%new_page()) Then
              Write(messages(1),'(a)') Repeat('-',130)
              Write(messages(2),'(9x,a4,5x,a7,4x,a8,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7,5x,a7)') &
               'step','eng_tot','temp_tot','eng_cfg','eng_src','eng_cou','eng_bnd','eng_ang','eng_dih','eng_tet'
@@ -221,7 +221,7 @@
            Call info(messages,4,.true.)
 
            If (nstph /= 0) Then
-             Call flw%line_printed()
+             Call flow%line_printed()
            End If
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
