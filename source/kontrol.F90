@@ -112,19 +112,18 @@ Contains
     T%lines = T%lines + 1
   End Subroutine control_type_line_printed
 
-Subroutine read_control                                &
-           (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
-           rbin,nstfce,width,     &
-           l_exp,lecx,lfcap,l_top,          &
-           lvar,leql,               &
-           lfce,lpana,           &
-           ltraj,               &
-           nx,ny,nz,impa,                            &
-           keyres,                   &
-           tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
-           fmax,nstbpo,             &
-           rlx_tol,mxquat,quattol,       &
-           nstbnd,nstang,nstdih,nstinv,  &
+  Subroutine read_control                                &
+    (levcfg,l_str,lsim,l_vv,l_n_e,l_n_v,        &
+    rbin,nstfce,width,     &
+    l_exp,lecx,lfcap,l_top,          &
+    lvar,leql,               &
+    lfce,lpana,           &
+    nx,ny,nz,impa,                            &
+    keyres,                   &
+    tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
+    fmax,nstbpo,             &
+    rlx_tol,mxquat,quattol,       &
+    nstbnd,nstang,nstdih,nstinv,  &
            ttm,dfcts,          &
            ndump,pdplnc, &
            rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
@@ -157,8 +156,7 @@ Subroutine read_control                                &
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
     lfcap,l_top,           &
     lvar,leql,lfce,   &
-    lpana,                 &
-    ltraj
+    lpana
 
 
   Integer,                Intent(   Out ) :: nx,ny,nz,             &
@@ -522,7 +520,7 @@ Subroutine read_control                                &
 ! (i) step to start at, (ii) every step after to be collected,
 ! (iii) level of information to output
 
-  ltraj  = .false.
+  traj%ltraj  = .false.
   Call traj%init(key=0,freq=1,start=0)
 
 ! default switch for defects outputting and defaults for
@@ -2756,7 +2754,7 @@ Subroutine read_control                                &
 
      Else If (word(1:4) == 'traj') Then
 
-        ltraj = .true.
+        traj%ltraj = .true.
 
         Call get_word(record,word)
         traj_start = Abs(Nint(word_2_real(word)))

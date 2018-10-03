@@ -63,8 +63,8 @@
      Call read_history(l_str,files(FILE_HISTORF)%filename,megatm,levcfg,dvar, &
        nstep,tstep,time,exout,io,traj,sites,domain,config,files,comm)
 
-     If (newjb) Then
-        newjb = .false.
+     If (traj%restart) Then
+        traj%restart = .false.
 
         tmst=time
         tmsh=0.0_wp ! tmst substitute
@@ -226,7 +226,7 @@
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
-           If (ltraj) Call trajectory_write(keyres,megatm,nstep,tstep,time, &
+           If (traj%ltraj) Call trajectory_write(keyres,megatm,nstep,tstep,time, &
              io,stat%rsd,netcdf,config,traj,files,comm)
            If (dfcts(1)%ldef)Then
              Call defects_write(keyres,thermo%ensemble,nstep,tstep,time,io,cshell, &

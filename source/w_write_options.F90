@@ -3,7 +3,7 @@
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
-If (ltraj) Then
+If (traj%ltraj) Then
   Call trajectory_write(keyres,megatm,nstep,tstep,time,io,stat%rsd,netcdf,config, &
     traj,files,comm)
 End If
