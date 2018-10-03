@@ -151,7 +151,7 @@
 ! Make sure RDFs are complete (lbook=.false. - no exclusion lists)
 
            If (rdf%l_collect) Then
-             Call two_body_forces(pdplnc,thermo%ensemble,nstfce,.false.,megfrz, &
+             Call two_body_forces(thermo%ensemble,nstfce,.false.,megfrz, &
                leql,nsteql,nstph,cshell,stat,ewld,devel,met,pois,neigh,sites, &
                vdws,rdf,mpoles,electro,domain,tmr,kim_data,config,comm)
            End If
