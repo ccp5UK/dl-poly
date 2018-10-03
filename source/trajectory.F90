@@ -1698,7 +1698,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         traj%fname = files(FILE_HISTORY)%filename
      Else
-        traj%fname = files(FILE_HISTORY)%filename // '.nc'
+        traj%fname = Trim(files(FILE_HISTORY)%filename) // '.nc'
      End If
 
 ! If keyres=1, is HISTORY old (does it exist) and
