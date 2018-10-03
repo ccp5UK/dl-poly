@@ -12,8 +12,7 @@ Module bonds
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp,wi
-  Use setup,           Only : mxtmls,mxatdm, &
-                              fourpi,boltz,delr_max,npdfdt,npdgdt, &
+  Use setup,           Only : fourpi,boltz,delr_max,npdfdt,npdgdt, &
                               engunit,zero_plus,r4pie0,ntable,delr_max, &
                               zero_plus,engunit
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
@@ -100,8 +99,9 @@ Module bonds
 
 Contains
 
-  Subroutine allocate_bonds_arrays(bond)
+  Subroutine allocate_bonds_arrays(bond,mxatdm,mxtmls)
     Type( bonds_type ), Intent( InOut ) :: bond
+    Integer, Intent( In ) :: mxatdm,mxtmls
 
     Integer, Dimension( 1:8 ) :: fail
 

@@ -1,7 +1,7 @@
 Module nvt_ekin
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gmax,gsum
-  Use setup,           Only : zero_plus,mxatms
+  Use setup,           Only : zero_plus
   Use configuration,   Only : configuration_type
   Use domains,         Only : domains_type
   Use kinetics,        Only : kinstress,kinstresf,kinstrest
@@ -82,14 +82,14 @@ Contains
 
     fail=0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
-       Call cons%allocate_work(mxatms)
+       Allocate (lstitr(1:config%mxatms),                                  Stat=fail(1))
+       Call cons%allocate_work(config%mxatms)
 Call pmf%allocate_work()
-Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
+Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail(7))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail(8))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(9))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),            Stat=fail(7))
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),            Stat=fail(8))
+    Allocate (fxt(1:config%mxatms),fyt(1:config%mxatms),fzt(1:config%mxatms),            Stat=fail(9))
     If (Any(fail > 0)) Then
        Write(message,'(a)') 'nvt_e0 allocation failure'
        Call error(0,message)
@@ -326,17 +326,17 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     fail=0
     If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-       Allocate (lstitr(1:mxatms),                                  Stat=fail( 1))
-       Call cons%allocate_work(mxatms)
+       Allocate (lstitr(1:config%mxatms),                                  Stat=fail( 1))
+       Call cons%allocate_work(config%mxatms)
 Call pmf%allocate_work()
-Allocate (oxt(1:mxatms),oyt(1:mxatms),ozt(1:mxatms),         Stat=fail(6))
+Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
     Allocate (ggx(1:rigid%max_list*rigid%max_rigid), &
       ggy(1:rigid%max_list*rigid%max_rigid), &
       ggz(1:rigid%max_list*rigid%max_rigid), Stat=fail( 7))
-    Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),            Stat=fail( 8))
-    Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),            Stat=fail( 9))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms),            Stat=fail(10))
+    Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),            Stat=fail( 8))
+    Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),            Stat=fail( 9))
+    Allocate (fxt(1:config%mxatms),fyt(1:config%mxatms),fzt(1:config%mxatms),            Stat=fail(10))
     Allocate (q0t(1:rigid%max_rigid), &
       q1t(1:rigid%max_rigid), &
       q2t(1:rigid%max_rigid), &
@@ -936,8 +936,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     Integer,                                  Intent( In    ) :: isw
     Real( Kind = wp ),                        Intent( In    ) :: tstep
-    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: fxx,fyy,fzz
-    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ), Dimension( : ), Intent( In    ) :: fxx,fyy,fzz
+    Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
     Type( configuration_type ),               Intent( InOut ) :: config
     Type( comms_type), Intent ( InOut ) :: comm
@@ -1002,7 +1002,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Integer,                                  Intent( In    ) :: isw
     Real( Kind = wp ),                        Intent( In    ) :: tstep
     Type( configuration_type ),               Intent( In    ) :: config
-    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ), Dimension( 1:config%mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: chit,engke
     Type( comms_type), Intent ( InOut ) :: comm
 
@@ -1067,8 +1067,8 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     Integer,                                  Intent( In    ) :: isw
     Real( Kind = wp ),                        Intent( In    ) :: tstep
-    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: fxx,fyy,fzz
-    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ), Dimension( : ), Intent( In    ) :: fxx,fyy,fzz
+    Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Real( Kind = wp ), Dimension( 1:rigid%max_rigid  ), Intent( In    ) :: rgdfxx,rgdfyy,rgdfzz, &
                                                                  rgdtxx,rgdtyy,rgdtzz
@@ -1195,7 +1195,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Integer,                                  Intent( In    ) :: isw
     Real( Kind = wp ),                        Intent( In    ) :: tstep
     Type( configuration_type ),               Intent( In    ) :: config
-    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ), Dimension( 1:config%mxatms ), Intent( InOut ) :: vxx,vyy,vzz
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Real( Kind = wp ), Dimension( 1:rigid%max_rigid  ), Intent( In    ) :: rgdfxx,rgdfyy,rgdfzz, &
                                                                  rgdtxx,rgdtyy,rgdtzz

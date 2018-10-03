@@ -204,12 +204,12 @@ Contains
   If (ncells > neigh%max_cell) Then
      Call warning(90,Real(ncells,wp),Real(neigh%max_cell,wp),3.0_wp)
      neigh%max_cell = Nint(1.25_wp*Real(ncells,wp))
-     If (ncells > mxatms) Call error(69)
+     If (ncells > config%mxatms) Call error(69)
   End If
 
   fail=0
-  Allocate (link(1:mxatms),listin(1:mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
-  Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms),                   Stat=fail(2))
+  Allocate (link(1:config%mxatms),listin(1:config%mxatms),lct(1:ncells),lst(1:ncells), Stat=fail(1))
+  Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),                   Stat=fail(2))
   Allocate (xtf(1:neigh%max_list),ytf(1:neigh%max_list),ztf(1:neigh%max_list),rtf(1:neigh%max_list),     Stat=fail(3))
   Allocate (ert(1:neigh%max_list),eat(1:neigh%max_list),grt(1:neigh%max_list),gat(1:neigh%max_list),     Stat=fail(4))
   Allocate (scr(1:neigh%max_list),gcr(1:neigh%max_list),                                 Stat=fail(5))

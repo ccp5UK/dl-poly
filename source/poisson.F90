@@ -3,7 +3,7 @@ Module poisson
   Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend, &
                               gwait,girecv,gtime
   Use domains,         Only : domains_type
-  Use setup,           Only : fourpi,r4pie0,mxatms,mxatdm,half_minus,zero_plus
+  Use setup,           Only : fourpi,r4pie0,half_minus,zero_plus
   Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use ewald,           Only : ewald_type
@@ -1322,7 +1322,7 @@ Contains
 
 
     fail=0
-    Allocate (l_ind(1:mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
+    Allocate (l_ind(1:config%mxatdm),nz_fr(0:comm%mxnode), Stat=fail)
     If (fail > 0) Then
        Write(message,'(a)') 'poisson_frzn_forces allocation failure'
        Call error(0,message)
@@ -1353,7 +1353,7 @@ Contains
     nz_fr(0) = Sum(nz_fr(0:comm%idnode)) ! Offset
 
     nzfr = Sum(nz_fr(1:comm%mxnode))     ! Total
-    If (nzfr <= 10*mxatms) Then
+    If (nzfr <= 10*config%mxatms) Then
 
        Allocate (cfr(1:nzfr),xfr(1:nzfr),yfr(1:nzfr),zfr(1:nzfr), Stat=fail)
        If (fail > 0) Then

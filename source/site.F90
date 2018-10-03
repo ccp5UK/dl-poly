@@ -66,6 +66,8 @@ Module site
     !> Density of atoms of each type?
     Real( Kind = wp ), Allocatable, Public :: dens(:)
 
+    Integer( Kind = wi ), Public :: mxatyp,mxtmls
+
   Contains
     Private
     Procedure, Public :: init => allocate_site_arrays

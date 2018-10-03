@@ -12,8 +12,8 @@ Module langevin
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp
-  Use setup,      Only : boltz,mxatms
+  Use kinds, Only : wp,wi
+  Use setup,      Only : boltz
   Use configuration,     Only : configuration_type
   Use particle,          Only : corePart
   Use core_shell, Only : core_shell_type
@@ -29,8 +29,9 @@ Module langevin
 
 Contains
 
-  Subroutine langevin_allocate_arrays(thermo)
+  Subroutine langevin_allocate_arrays(thermo,mxatms)
     Type(thermostat_type), Intent(InOut) :: thermo
+    Integer(Kind=wi), Intent( In ) :: mxatms
 
     Integer :: fail
 
@@ -68,7 +69,7 @@ Contains
     Type( ttm_type ), Intent( InOut ),Optional :: ttm   
     Integer          , Intent( In    ) :: nstep
     Real( Kind = wp ), Intent( In    ) :: temp,tstep,chi
-    Real( Kind = wp ), Intent(   Out ) :: fxr(1:mxatms),fyr(1:mxatms),fzr(1:mxatms)
+    Real( Kind = wp ), Intent(   Out ) :: fxr(:),fyr(:),fzr(:)
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( configuration_type ), Intent( InOut ) :: config
     Type(seed_type), Intent(InOut) :: seed

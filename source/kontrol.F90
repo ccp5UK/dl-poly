@@ -17,7 +17,7 @@ Module kontrol
   Use poisson,    Only : poisson_type
   Use msd,        Only : msd_type
   Use plumed,   Only : plumed_type
-  Use setup,       Only : pi,zero_plus,mxgana,prsunt,tenunt
+  Use setup,       Only : pi,zero_plus,prsunt,tenunt
   Use parse,       Only : get_line,get_word,lower_case,word_2_real,strip_blanks
   Use kim,         Only : kim_type
   Use greenkubo,   Only : greenkubo_type
@@ -1791,7 +1791,7 @@ Subroutine read_control                                &
 
 ! For Langevin ensembles that require arrays
 
-        If (thermo%l_langevin) Call langevin_allocate_arrays(thermo)
+        If (thermo%l_langevin) Call langevin_allocate_arrays(thermo,config%mxatms)
 
 ! read density variation option
 
@@ -3201,8 +3201,8 @@ Subroutine read_control                                &
 
 ! report intramolecular analysis options
 
-  If (lpana .or. mxgana > 0) Then
-     If (mxgana == 0) Then
+  If (lpana .or. config%mxgana > 0) Then
+    If (config%mxgana == 0) Then
         Call info('no intramolecular distribution collection requested',.true.)
      Else
         If (bond%bin_pdf > 0 .and. angle%bin_adf > 0 .and. &
@@ -3425,7 +3425,7 @@ Subroutine read_control                                &
         Call info(messages,2,.true.)
 ! abort if there's no structural property to recalculate
         If (.not.(rdf%l_collect .or. zdensity%l_collect .or. dfcts(1)%ldef .or. &
-          msd_data%l_msd .or. rsdc%lrsd .or. (mxgana > 0))) Then
+          msd_data%l_msd .or. rsdc%lrsd .or. (config%mxgana > 0))) Then
           Call error(580)
         End If
      End If

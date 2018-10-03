@@ -17,7 +17,7 @@
 
 ! Initialise force arrays and possible torques for multipolar electrostatics
 ! and stress tensor (these are all additive in the force subroutines)
-     Do i=1,mxatms
+     Do i=1,cnfig%mxatms
        config%parts(i)%fxx=0.0_wp
        config%parts(i)%fyy=0.0_wp
        config%parts(i)%fzz=0.0_wp

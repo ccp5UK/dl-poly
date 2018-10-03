@@ -12,7 +12,7 @@ Module ewald
   Use kinds,           Only : wp,wi
   Use comms,           Only : ExchgGrid_tag,comms_type,wp_mpi,gsend,gwait, &
                               girecv
-  Use setup,           Only : mxatms,twopi
+  Use setup,           Only : twopi
   Use configuration,   Only : configuration_type
   Use particle,           Only : corePart
   Use domains,         Only : domains_type
@@ -61,15 +61,16 @@ Module ewald
 
 Contains
 
-  Subroutine ewald_allocate_kall_arrays(T)
+  Subroutine ewald_allocate_kall_arrays(T,mxa)
 
     Class(ewald_type) :: T
+    Integer( Kind = wi ),Intent( In ) :: mxa
 
     Integer :: fail
 
     fail = 0
 
-    Allocate (T%fcx(1:mxatms),T%fcy(1:mxatms),T%fcz(1:mxatms), Stat = fail)
+    Allocate (T%fcx(1:mxa),T%fcy(1:mxa),T%fcz(1:mxa), Stat = fail)
 
     If (fail > 0) Call error(1040)
 
@@ -78,15 +79,16 @@ Contains
     T%fcz = 0.0_wp
   End Subroutine ewald_allocate_kall_arrays
 
-  Subroutine ewald_allocate_kfrz_arrays(T)
+  Subroutine ewald_allocate_kfrz_arrays(T,mxa)
 
     Class(ewald_type) :: T
+    Integer( Kind = wi ),Intent( In ) :: mxa
 
     Integer :: fail
 
     fail = 0
 
-    Allocate (T%ffx(1:mxatms),T%ffy(1:mxatms),T%ffz(1:mxatms), Stat = fail)
+    Allocate (T%ffx(1:mxa),T%ffy(1:mxa),T%ffz(1:mxa), Stat = fail)
 
     If (fail > 0) Call error(1070)
 
@@ -95,24 +97,24 @@ Contains
     T%ffz = 0.0_wp
   End Subroutine ewald_allocate_kfrz_arrays
 
-  Subroutine ewald_check(T,ensemble,megfrz,nsteql,nstfce,nstep)
+  Subroutine ewald_check(T,ensemble,megfrz,nsteql,nstfce,nstep,mxa)
     Class(ewald_type) :: T
 
     Integer, Intent( In    ) :: ensemble,megfrz, &
-                                nsteql,nstfce,nstep
+      nsteql,nstfce,nstep,mxa
 
 ! Full frozen-frozen evaluation is TRUE by default
 ! otherwise a "refresh" is applied.
 
     If (ensemble < 20 .and. megfrz > 0) Then
-       T%lf_fce = .false.
+      T%lf_fce = .false.
 
        If (T%newjob_kfrz) Then
-          T%newjob_kfrz = .false.
+         T%newjob_kfrz = .false.
 
 ! At restart allocate the "refresh" k-space frozen-frozen SPME arrays
 
-          Call T%ewald_allocate_kfrz_arrays()
+          Call T%ewald_allocate_kfrz_arrays(mxa)
 
 ! Allow copying into these arrays
 
@@ -121,7 +123,7 @@ Contains
 ! Force the full frozen force evaluation
 
           T%lf_fce=.true.
-       End If
+        End If
 
 ! Reinitialise
 
@@ -134,21 +136,21 @@ Contains
          T%vf_fr = 0.0_wp
          T%sf_fr = 0.0_wp
        End If
-    End If
+     End If
 
 ! Full evaluation is TRUE by default and at any 'nstfce' timestep
 ! otherwise a "refresh" is applied.
 
     If (nstfce > 1) Then
-       T%l_fce = ( (nstep <  nsteql .and. Mod(nstep,nstfce) == 0) .or. &
-                 (nstep >= nsteql .and. Mod(nstep-nsteql,nstfce) == 0) )
+      T%l_fce = ( (nstep <  nsteql .and. Mod(nstep,nstfce) == 0) .or. &
+         (nstep >= nsteql .and. Mod(nstep-nsteql,nstfce) == 0) )
 
        If (T%newjob_kall) Then
-          T%newjob_kall = .false.
+         T%newjob_kall = .false.
 
 ! At restart allocate the "refresh" k-space all SPME arrays
 
-          Call ewald_allocate_kall_arrays(T)
+          Call ewald_allocate_kall_arrays(T,mxa)
 
 ! Allow copying into these arrays
 
@@ -523,9 +525,9 @@ Contains
     Type( ewald_type ), Intent( In    ) :: ewld
     Integer, Intent( In    ) :: nospl
     Type( configuration_type ),               Intent( In    ) :: config
-    Real( Kind = wp ), Dimension( 1:mxatms ), Intent( In    ) :: txx,tyy,tzz
+    Real( Kind = wp ), Dimension( : ), Intent( In    ) :: txx,tyy,tzz
 
-    Real( Kind = wp ), Dimension( 1:ewld%bspline , 1:mxatms ), Intent(   Out ) :: &
+    Real( Kind = wp ), Dimension( : , : ), Intent(   Out ) :: &
                                                bsdx,bsdy,bsdz,bspx,bspy,bspz
     Type( comms_type ),                       Intent( In    ) :: comm
 
@@ -672,10 +674,10 @@ Contains
 
     Type( ewald_type ), Intent( In    ) :: ewld
     Integer,                                                      Intent( In    ) :: nospl
-    Real( Kind = wp ), Dimension( 1:mxatms ),                     Intent( In    ) :: xxx,yyy,zzz
+    Real( Kind = wp ), Dimension( : ),                     Intent( In    ) :: xxx,yyy,zzz
 
-    Real( Kind = wp ), Dimension( 1:ewld%bspline , 1:mxatms ),           Intent(   Out ) :: bspx,bspy,bspz
-    Real( Kind = wp ), Dimension( 0:ewld%bspline , 1:ewld%bspline , 1:mxatms ), Intent(   Out ) :: bsddx,bsddy,bsddz
+    Real( Kind = wp ), Dimension( : , : ),           Intent(   Out ) :: bspx,bspy,bspz
+    Real( Kind = wp ), Dimension( 0:, 1: , 1:), Intent(   Out ) :: bsddx,bsddy,bsddz
     Real( Kind = wp ), Dimension(1:,1:) :: n_choose_k
     Type( configuration_type ),                                   Intent( InOut ) :: config
     Type( comms_type),                                            Intent( In    ) :: comm

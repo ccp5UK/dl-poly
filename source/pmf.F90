@@ -355,7 +355,7 @@ Subroutine pmf_pseudo_bonds(gxx,gyy,gzz,stat,pmf,config,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Real( Kind = wp ), Intent( InOut ) :: gxx(1:mxatms),gyy(1:mxatms),gzz(1:mxatms)
+  Real( Kind = wp ), Intent( InOut ) :: gxx(1:),gyy(1:),gzz(1:)
   Type( stats_type ), Intent( InOut ) :: stat
   Type( pmf_type), Intent( InOut ) :: pmf
   Type( comms_type), Intent( InOut ) :: comm
@@ -448,9 +448,9 @@ Subroutine pmf_quench(mxshak,tolnce,stat,pmf,config,comm)
   Character( Len = 256 ) :: message
 
   fail=0
-  Allocate (lstitr(1:mxatms),                                      Stat=fail(1))
+  Allocate (lstitr(1:config%mxatms),                                      Stat=fail(1))
   Call pmf%allocate_work()
-  Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),             Stat=fail(4))
+  Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),             Stat=fail(4))
   Allocate (xpmf(1:2,1:pmf%mxpmf),ypmf(1:2,1:pmf%mxpmf),zpmf(1:2,1:pmf%mxpmf), Stat=fail(5))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'pmf_quench allocation failure'
@@ -608,7 +608,7 @@ Subroutine pmf_tags(lstitr,pmf,config,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent( InOut ) :: lstitr(1:mxatms)
+  Logical,           Intent( InOut ) :: lstitr(1:)
   Type(pmf_type), Intent( Inout ) :: pmf
   Type( configuration_type ),   Intent( InOut ) :: config
   Type( comms_type ), Intent( InOut ) :: comm
@@ -1131,10 +1131,10 @@ Subroutine pmf_rattle                      &
   Character( Len = 256 ) :: message
 
   fail=0
-  Allocate (vxt(1:mxatms),vyt(1:mxatms),vzt(1:mxatms),             Stat=fail(1))
+  Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),             Stat=fail(1))
   Allocate (xpmf(1:2,1:pmf%mxpmf),ypmf(1:2,1:pmf%mxpmf),zpmf(1:2,1:pmf%mxpmf), Stat=fail(2))
   If (Any(fail > 0)) Then
-     Write(message,'(a)') 'pmf_rattle allocation failure'
+    Write(message,'(a)') 'pmf_rattle allocation failure'
      Call error(0,message)
   End If
 

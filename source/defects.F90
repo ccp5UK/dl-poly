@@ -10,7 +10,7 @@ Module defects
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,             Only : wp,li, wi
-  Use setup,             Only : mxatms,mxbfxp,ndefdt,nrefdt,half_minus,zero_plus
+  Use setup,             Only : ndefdt,nrefdt,half_minus,zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
                                 gsend,grecv,gwait,girecv,gscatter,gscatterv, &
@@ -86,10 +86,11 @@ Contains
 
 
 !> allocate_defects_arrays
-  Subroutine allocate_defects_arrays(dfcts)
+  Subroutine allocate_defects_arrays(dfcts,mxatms)
 
-    Integer(Kind =  wi), Dimension( 1:3 )  :: fail
     Type(defects_type) , Intent( InOut )   :: dfcts
+    Integer( Kind = wi ), Intent (In ) :: mxatms
+    Integer(Kind =  wi), Dimension( 1:3 )  :: fail
 
     fail = 0
     Allocate (dfcts%namr(1:mxatms)                                 , Stat = fail(1))
@@ -125,7 +126,7 @@ Contains
   End Subroutine deallocate_defects_arrays
 
 !> defects_reference_export
-  Subroutine defects_reference_export(mdir,ixyz,dfcts,domain,comm)
+  Subroutine defects_reference_export(mdir,mxatms,ixyz,dfcts,domain,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -140,8 +141,8 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,                Intent( In    ) :: mdir
-  Integer,                Intent( InOut ) :: ixyz(1:mxatms)
+    Integer,                Intent( In    ) :: mdir,mxatms
+    Integer,                Intent( InOut ) :: ixyz(:)
   Type( defects_type ),   Intent( InOut ) :: dfcts
   Type( domains_type ), Intent( In    ) :: domain
   Type( comms_type )  ,   Intent( InOut ) :: comm
@@ -158,7 +159,7 @@ Contains
 
   iadd=13
 
-  fail=0 ; limit=iadd*mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
+  fail=0 ; limit=iadd*domain%mxbfxp ! limit=Merge(1,2,mxnode > 1)*iblock*iadd
   Allocate (buffer(1:limit), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'defects_reference_export allocation failure'
@@ -668,8 +669,8 @@ Subroutine defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,file
 
   If (io_read == IO_READ_MASTER) Then
      fail=0
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
-     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
+     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'defects_reference_read allocation failure'
         Call error(0,message)
@@ -767,7 +768,7 @@ Subroutine defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,file
 ! Circulate configuration data to all nodes when transmission arrays
 ! are filled up or this is the last looping
 
-        If (indatm == mxatms .or. ((.not.loop) .and. indatm > 0)) Then
+        If (indatm == config%mxatms .or. ((.not.loop) .and. indatm > 0)) Then
 
 ! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
 !
@@ -812,7 +813,7 @@ Subroutine defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,file
               Else If (idm == comm%idnode)                 Then
                  dfcts%nrefs=dfcts%nrefs+1
 
-                 If (dfcts%nrefs < mxatms) Then
+                 If (dfcts%nrefs < config%mxatms) Then
                     dfcts%namr(dfcts%nrefs)=chbuf(i)
                     dfcts%indr(dfcts%nrefs)=iwrk(i)
 
@@ -1449,7 +1450,7 @@ Subroutine defects_reference_set_halo(cut,dfcts,domain,config,comm)
   Character( Len = 256 ) :: message
 
   fail=0
-  Allocate (ixyz(1:mxatms), Stat=fail)
+  Allocate (ixyz(1:config%mxatms), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'defects_reference_set_halo allocation failure'
      Call error(0,message)
@@ -1508,18 +1509,18 @@ Subroutine defects_reference_set_halo(cut,dfcts,domain,config,comm)
 
 ! exchange atom data in -/+ x directions
 
-  Call defects_reference_export(-1,ixyz,dfcts,domain,comm)
-  Call defects_reference_export( 1,ixyz,dfcts,domain,comm)
+  Call defects_reference_export(-1,config%mxatms,ixyz,dfcts,domain,comm)
+  Call defects_reference_export( 1,config%mxatms,ixyz,dfcts,domain,comm)
 
 ! exchange atom data in -/+ y directions
 
-  Call defects_reference_export(-2,ixyz,dfcts,domain,comm)
-  Call defects_reference_export( 2,ixyz,dfcts,domain,comm)
+  Call defects_reference_export(-2,config%mxatms,ixyz,dfcts,domain,comm)
+  Call defects_reference_export( 2,config%mxatms,ixyz,dfcts,domain,comm)
 
 ! exchange atom data in -/+ z directions
 
-  Call defects_reference_export(-3,ixyz,dfcts,domain,comm)
-  Call defects_reference_export( 3,ixyz,dfcts,domain,comm)
+  Call defects_reference_export(-3,config%mxatms,ixyz,dfcts,domain,comm)
+  Call defects_reference_export( 3,config%mxatms,ixyz,dfcts,domain,comm)
 
   Do i=1,dfcts%nlrefs
      dfcts%lri(i)=i
@@ -1611,7 +1612,7 @@ Subroutine defects_reference_write(name,megref,io,dfcts,netcdf,config,comm)
 
 
   fail=0
-  Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(1))
+  Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(1))
   If (fail(1) > 0) Then
      Write(message,'(a)') 'defects_reference_write allocation failure'
      Call error(0,message)
@@ -1755,7 +1756,7 @@ Subroutine defects_reference_write(name,megref,io,dfcts,netcdf,config,comm)
 
   Else If (io_write == IO_WRITE_UNSORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
         Write(message,'(a)') 'defects_reference_write allocation failure 1'
         Call error(0,message)
@@ -2023,7 +2024,7 @@ Subroutine defects_reference_write(name,megref,io,dfcts,netcdf,config,comm)
 
   Else If (io_write == IO_WRITE_SORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
         Write(message,'(a)') 'defects_reference_write allocation failure 1'
         Call error(0,message)
@@ -2238,7 +2239,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,io,cshell,dfcts,neigh,
      dfcts%rdefsq=dfcts%rdef**2
 
 ! Build lattice sites list from REFERENCE
-     Call allocate_defects_arrays(dfcts)
+     Call allocate_defects_arrays(dfcts,config%mxatms)
      Call defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,files,comm)
 
 ! Assume that the MD cell will not change much in size and shape from
@@ -2369,13 +2370,13 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,io,cshell,dfcts,neigh,
   If (ensemble >= 20) Call invert(config%cell,dfcts%rcell,cut)
 
   fail=0
-  Allocate (dr(1:mxatms),                                                Stat=fail(1))
-  Allocate (namv(1:mxatms),indv(1:mxatms),nami(1:mxatms),indi(1:mxatms), Stat=fail(2))
-  Allocate (interstitial(1:mxatms),occupies(1:mxatms),                   Stat=fail(3))
-  Allocate (linkr(1:mxatms),link(1:mxatms),                              Stat=fail(4))
-  Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms),                   Stat=fail(5))
-  Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),                   Stat=fail(6))
-  Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms),                   Stat=fail(7))
+  Allocate (dr(1:config%mxatms),                                                Stat=fail(1))
+  Allocate (namv(1:config%mxatms),indv(1:config%mxatms),nami(1:config%mxatms),indi(1:config%mxatms), Stat=fail(2))
+  Allocate (interstitial(1:config%mxatms),occupies(1:config%mxatms),                   Stat=fail(3))
+  Allocate (linkr(1:config%mxatms),link(1:config%mxatms),                              Stat=fail(4))
+  Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms),                   Stat=fail(5))
+  Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms),                   Stat=fail(6))
+  Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms),                   Stat=fail(7))
   If (Any(fail > 0)) Then
      Write(message,'(a)') Trim(dfcts%deffile)//'_write allocation failure'
      Call error(0,message)
@@ -2897,7 +2898,7 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,io,cshell,dfcts,neigh,
   Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
            io_write == IO_WRITE_SORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms), Stat=fail(1))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms), Stat=fail(1))
      If (fail(1) > 0) Then
         Write(message,'(a)') Trim(dfcts%deffile)//'_write allocation failure 3'
         Call error(0,message)

@@ -5,7 +5,7 @@ Module drivers
   Use configuration, Only : configuration_type
   Use particle, Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat
-  Use setup, Only : boltz,mxatms,zero_plus
+  Use setup, Only : boltz,zero_plus
   Use angles, Only : angles_type
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type

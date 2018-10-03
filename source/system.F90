@@ -110,7 +110,7 @@ Module system
 
   If (devel%l_rin) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(stats%mxstak*stats%mxnstk,rdf%max_grid*rdf%max_rdf,rdf%max_grid_usr,mxgana*mxtana)
+     j = Max(stats%mxstak*stats%mxnstk,rdf%max_grid*rdf%max_rdf,rdf%max_grid_usr,config%mxgana*config%mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -412,7 +412,7 @@ Module system
 
         If (zdensity%l_collect) Then
            Call gbcast(comm,zdensity%n_samples,0)
-           Do k=1,mxatyp
+           Do k=1,sites%mxatyp
               Call gbcast(comm,zdensity%density(:,k),0)
               zdensity%density(:,k) = zdensity%density(:,k) * r_mxnode
            End Do
@@ -422,14 +422,14 @@ Module system
 
         If (green%samp > 0) Then
            Do j=1,green%samp
-              l=(j-1)*(mxatyp+1)
-              Do k=1,mxatyp+1
+              l=(j-1)*(sites%mxatyp+1)
+              Do k=1,sites%mxatyp+1
                  Call gbcast(comm,green%vafdata(:,l+k),0)
 
 
 ! avoid normalising timing information
 
-                 If (k /= mxatyp+1) green%vafdata(:,l+k) = green%vafdata(:,l+k) * r_mxnode
+                 If (k /= sites%mxatyp+1) green%vafdata(:,l+k) = green%vafdata(:,l+k) * r_mxnode
               End Do
            End Do
         End If
@@ -731,7 +731,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
   Allocate (f4(1:ny),f5(1:ny),f6(1:ny),                      Stat=fail(2))
   Allocate (f7(1:nz),f8(1:nz),f9(1:nz),                      Stat=fail(3))
   Allocate (i_xyz(1:nx,1:ny,1:nz),                           Stat=fail(4))
-  Allocate (xm(1:10*mxatms),ym(1:10*mxatms),zm(1:10*mxatms), Stat=fail(5))
+  Allocate (xm(1:10*config%mxatms),ym(1:10*config%mxatms),zm(1:10*config%mxatms), Stat=fail(5))
 
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'system_expand allocation failure'
@@ -985,7 +985,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
      sapmtt=0
      Do imols=1,sites%num_mols(itmols)
-        If (sites%num_site(itmols) > 10*mxatms) Call error(0,message)
+        If (sites%num_site(itmols) > 10*config%mxatms) Call error(0,message)
 
 ! Grab the coordinates of the atoms constituting this molecule
 
@@ -1839,9 +1839,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
 End Subroutine system_expand
 
-Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, &
-    green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
-    files,comm)
+Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,sites,io,tmst,stats,devel, &
+  green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
+  files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1858,6 +1858,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
   Type( io_type ), Intent( InOut ) :: io
   Integer,           Intent( In    ) :: megatm,nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst
+  Type( site_type ), Intent( InOut ) :: sites
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
   Type( greenkubo_type ), Intent( InOut ) :: green
@@ -1886,9 +1887,9 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
   Character ( Len = 256 )  :: message 
 
   fail=0
-  Allocate (iwrk(1:mxatms),                            Stat=fail(1))
-  Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(2))
-  Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(3))
+  Allocate (iwrk(1:config%mxatms),                            Stat=fail(1))
+  Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
+  Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'system_revive allocation failure '
      Call error(0,message)
@@ -1899,7 +1900,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
 
   If (devel%l_rout) Then
      i = 64/4 - 1 ! Bit_Size(0.0_wp)/4 - 1
-     j = Max(stats%mxstak*stats%mxnstk+1,rdf%max_grid*rdf%max_rdf,rdf%max_grid_usr,mxgana*mxtana)
+     j = Max(stats%mxstak*stats%mxnstk+1,rdf%max_grid*rdf%max_rdf,rdf%max_grid_usr,config%mxgana*config%mxtana)
 
      Write(forma ,10) j/4+1,i+9,i
 10   Format('(1p,',i0,'(/,4e',i0,'.',i0,'E3))')
@@ -1913,7 +1914,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
 
 ! maximum rdfs that can be summed in each step
 
-        nsum = mxbuff/rdf%max_grid
+        nsum = config%mxbuff/rdf%max_grid
         If (nsum == 0) Call error(200)
 
         Do i=1,rdf%max_rdf,nsum
@@ -1932,11 +1933,11 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
 
 ! maximum zdensity%density that can be summed in each step
 
-        nsum = mxbuff/rdf%max_grid
+        nsum = config%mxbuff/rdf%max_grid
         If (nsum == 0) Call error(200)
 
-        Do i=1,mxatyp,nsum
-           Call gsum(comm,zdensity%density(:,i:Min(i+nsum-1,mxatyp)))
+        Do i=1,sites%mxatyp,nsum
+           Call gsum(comm,zdensity%density(:,i:Min(i+nsum-1,sites%mxatyp)))
         End Do
 
      End If
@@ -1947,13 +1948,13 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
 
 ! maximum green%vafdata that can be summed in each step
 
-        nsum = mxbuff/(green%binsize+1)
+        nsum = config%mxbuff/(green%binsize+1)
         If (nsum == 0) Call error(200)
 
         Do j=1,green%samp
-           l=(j-1)*(mxatyp+1) ! avoid summing up timing information
-           Do i=1,mxatyp,nsum
-              Call gsum(comm,green%vafdata(:,l+i:l+Min(i+nsum-1,mxatyp)))
+           l=(j-1)*(sites%mxatyp+1) ! avoid summing up timing information
+           Do i=1,sites%mxatyp,nsum
+              Call gsum(comm,green%vafdata(:,l+i:l+Min(i+nsum-1,sites%mxatyp)))
            End Do
         End Do
 
@@ -1965,7 +1966,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
 
 ! maximum bond%dst that can be summed in each step
 
-        nsum = mxbuff/(bond%bin_pdf+1)
+        nsum = config%mxbuff/(bond%bin_pdf+1)
         If (nsum == 0) Call error(200)
 
         Do i=1,bond%ldf(0),nsum
@@ -1980,7 +1981,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
 
 ! maximum angle%dst that can be summed in each step
 
-        nsum = mxbuff/(angle%bin_adf+1)
+        nsum = config%mxbuff/(angle%bin_adf+1)
         If (nsum == 0) Call error(200)
 
         Do i=1,angle%ldf(0),nsum
@@ -1995,7 +1996,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
 
 ! maximum dihedral%dst that can be summed in each step
 
-        nsum = mxbuff/(dihedral%bin_adf+1)
+        nsum = config%mxbuff/(dihedral%bin_adf+1)
         If (nsum == 0) Call error(200)
 
         Do i=1,dihedral%ldf(0),nsum
@@ -2010,7 +2011,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,io,tmst,stats,devel, 
 
 ! maximum inversion%dst that can be summed in each step
 
-        nsum = mxbuff/(inversion%bin_adf+1)
+        nsum = config%mxbuff/(inversion%bin_adf+1)
         If (nsum == 0) Call error(200)
 
         Do i=1,inversion%ldf(0),nsum

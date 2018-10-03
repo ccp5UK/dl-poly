@@ -11,7 +11,7 @@ Module minimise
 
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type,gsum,gmax
-  Use setup,           Only : engunit,zero_plus,mxatms
+  Use setup,           Only : engunit,zero_plus
   Use configuration,   Only : configuration_type, &
                               write_config,getcom
   Use particle,        Only : corePart
@@ -61,7 +61,7 @@ Module minimise
     !> Relaxed indicator?
     Logical, Public :: relaxed = .true.
     !> Transport switch
-    Logical, Public :: transport
+    Logical, Public :: transport = .false.
 
     !> Minimisation fequency (steps)
     Integer( Kind = wi ), Public :: freq
@@ -185,15 +185,15 @@ Contains
 
   fail=0
   If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-     Allocate (lstitr(1:mxatms),                                  Stat=fail(1))
-     call cons%allocate_work(mxatms)
-     Call pmf%allocate_work()
+    Allocate (lstitr(1:config%mxatms),                                  Stat=fail(1))
+    call cons%allocate_work(config%mxatms)
+    Call pmf%allocate_work()
   End If
   If (rigid%total > 0) Then
-     Allocate (txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms),         Stat=fail(6))
-     Allocate (uxx(1:mxatms),uyy(1:mxatms),uzz(1:mxatms),         Stat=fail(7))
+    Allocate (txx(1:config%mxatms),tyy(1:config%mxatms),tzz(1:config%mxatms),         Stat=fail(6))
+    Allocate (uxx(1:config%mxatms),uyy(1:config%mxatms),uzz(1:config%mxatms),         Stat=fail(7))
   End If
-  Allocate (gxx(1:mxatms),gyy(1:mxatms),gzz(1:mxatms),            Stat=fail(8))
+  Allocate (gxx(1:config%mxatms),gyy(1:config%mxatms),gzz(1:config%mxatms),            Stat=fail(8))
   If (Any(fail > 0)) Then
      Write(message,'(a)') 'minimise_relax allocation failure'
      Call error(0,message)
@@ -252,7 +252,6 @@ Contains
      End If
 
   End If
-
   If (minim%keyopt == NO_OPTIMISATION) Then
 
 ! Initial configuration energy
@@ -260,8 +259,7 @@ Contains
      minim%eng_0=stpcfg
 
 ! Allocate working arrays
-
-     Call minim%init(mxatms)
+     Call minim%init(config%mxatms)
 
 ! No minimisation is yet attempted
 

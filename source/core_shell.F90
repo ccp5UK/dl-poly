@@ -14,8 +14,7 @@ Module core_shell
   Use comms,           Only : comms_type,gsync,gsum,gcheck,gmax
   Use configuration,   Only : configuration_type,freeze_atoms
   Use particle,        Only : corePart
-  Use setup,           Only : boltz,engunit,mxatms,mxatdm,zero_plus,&
-    mxtmls,mxlshp
+  Use setup,           Only : boltz,engunit,zero_plus
   Use parse,           Only : strip_blanks,lower_case
   Use shared_units,    Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
   Use numerics,        Only : local_index,images
@@ -637,8 +636,8 @@ Contains
     Character( Len = 256 ) :: message
 
     fail=0
-    Allocate (lstopt(1:2,1:cshell%mxshl),lst_sh(1:mxatms),      Stat=fail(1))
-    Allocate (fxt(1:mxatms),fyt(1:mxatms),fzt(1:mxatms), Stat=fail(2))
+    Allocate (lstopt(1:2,1:cshell%mxshl),lst_sh(1:config%mxatms),      Stat=fail(1))
+    Allocate (fxt(1:config%mxatms),fyt(1:config%mxatms),fzt(1:config%mxatms), Stat=fail(2))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'core_shell_relax allocation failure'
       Call error(0,message)
@@ -876,7 +875,7 @@ Contains
 
     ! Load original shell forces on their cores in DD representation
 
-    fxt(1:mxatdm)=0.0_wp ; fyt(1:mxatdm)=0.0_wp ; fzt(1:mxatdm)=0.0_wp
+    fxt(1:config%mxatdm)=0.0_wp ; fyt(1:config%mxatdm)=0.0_wp ; fzt(1:config%mxatdm)=0.0_wp
     jshl=0
     Do i=1,cshell%ntshl
       ia=lstopt(1,i)

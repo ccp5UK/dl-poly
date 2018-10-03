@@ -10,8 +10,7 @@ Module rigid_bodies
 
   Use kinds,           Only : wp,wi,li
   Use comms,           Only : comms_type,gsum,gmin,gmax,gsync,gcheck
-  Use setup,           Only : mxtmls,mxlshp,mxatdm, &
-                              mxatms,zero_plus
+  Use setup,           Only : zero_plus
   Use site, Only : site_type
   Use neighbours,      Only : neighbours_type
   Use configuration,   Only : configuration_type,getcom
@@ -147,9 +146,9 @@ Module rigid_bodies
   End Interface rigid_bodies_coms
 Contains
 
-  Subroutine allocate_rigid_bodies_arrays(T,mxtmls,mxatdm,neighbours)
+  Subroutine allocate_rigid_bodies_arrays(T,mxlshp,mxtmls,mxatdm,neighbours)
     Class( rigid_bodies_type) :: T
-    Integer( Kind = wi ), Intent( In    ) :: mxtmls,mxatdm,neighbours
+    Integer( Kind = wi ), Intent( In    ) :: mxlshp, mxtmls,mxatdm,neighbours
 
     Integer, Dimension(1:15) :: fail
 
@@ -330,13 +329,14 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),  Intent( In    ) :: xxx(1:mxatms),yyy(1:mxatms),zzz(1:mxatms)
+    Type( configuration_type ), Intent( InOut ) :: config
+    Real( Kind = wp ),  Intent( In    ) :: xxx(:),yyy(:),zzz(:)
+!    Real( Kind = wp ),  Intent( In    ) :: xxx(1:config%mxatms),yyy(1:config%mxatms),zzz(1:config%mxatms)
     Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Real( Kind = wp ),  Intent(   Out ) :: rgdxxx(1:rigid%max_rigid), &
                                            rgdyyy(1:rigid%max_rigid), &
                                            rgdzzz(1:rigid%max_rigid)
     Type( comms_type ), Intent( In    ) :: comm
-    Type( configuration_type ), Intent( InOut ) :: config
 
     Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp ) :: tmp
@@ -516,9 +516,9 @@ Contains
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ), Intent( In    ) :: stride,                                    &
-                                          oxx(1:mxatms),oyy(1:mxatms),ozz(1:mxatms), &
-                                          txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms), &
-                                          uxx(1:mxatms),uyy(1:mxatms),uzz(1:mxatms)
+                                          oxx(:),oyy(:),ozz(:), &
+                                          txx(:),tyy(:),tzz(:), &
+                                          uxx(:),uyy(:),uzz(:)
     Real( Kind = wp ), Intent( InOut ) :: dist_tol
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( configuration_type ),           Intent( InOut ) :: config
@@ -1823,9 +1823,9 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),  Intent( InOut ) :: gxx(1:mxatms),gyy(1:mxatms),gzz(1:mxatms)
-    Real( Kind = wp ),  Intent(   Out ) :: txx(1:mxatms),tyy(1:mxatms),tzz(1:mxatms), &
-                                           uxx(1:mxatms),uyy(1:mxatms),uzz(1:mxatms)
+    Real( Kind = wp ),  Intent( InOut ) :: gxx(:),gyy(:),gzz(:)
+    Real( Kind = wp ),  Intent(   Out ) :: txx(:),tyy(:),tzz(:), &
+                                           uxx(:),uyy(:),uzz(:)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( In    ) :: comm
@@ -2151,7 +2151,7 @@ Contains
                                            ggy(1:rigid%max_list*rigid%max_rigid), &
                                            ggz(1:rigid%max_list*rigid%max_rigid)
     Type( configuration_type ),   Intent( In    ) :: config
-    Real( Kind = wp ),  Intent( In    ) :: fxl(1:mxatms),fyl(1:mxatms),fzl(1:mxatms)
+    Real( Kind = wp ),  Intent( In    ) :: fxl(:),fyl(:),fzl(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: i,irgd,jrgd,krgd,lrgd,rgdtyp
@@ -2334,8 +2334,7 @@ Contains
 
     Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
     Type( configuration_type ),   Intent( In    ) :: config
-    Real( Kind = wp ),  Intent( In    ) :: fxl(1:mxatms),fyl(1:mxatms)
-    Real( Kind = wp ),  Intent( In    ) :: fzl(1:mxatms)
+    Real( Kind = wp ),  Intent( In    ) :: fxl(:),fyl(:),fzl(:)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( comms_type ), Intent( InOut ) :: comm
 

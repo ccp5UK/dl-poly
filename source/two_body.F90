@@ -122,7 +122,7 @@ Subroutine two_body_forces(pdplnc,ensemble,    &
 ! frozen-frozen evaluations in constant volume ensembles only.
 
   If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) Then
-    Call ewld%check(ensemble,megfrz,nsteql,nstfce,nstep)
+    Call ewld%check(ensemble,megfrz,nsteql,nstfce,nstep,config%mxatms)
   End If
 
 ! initialise energy and virial accumulators

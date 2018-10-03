@@ -14,9 +14,9 @@ Module dihedrals
   Use kinds, only : wp,wi
   Use comms, Only : comms_type,gcheck,gsum,gsync,gbcast
   Use setup,  Only : pi,twopi,boltz,delth_max,npdfdt,npdgdt, &
-                            engunit,zero_plus, mxtmls,     &
+    engunit,zero_plus, &
                             rtwopi,r4pie0,    &
-                            ntable,mxatdm
+    ntable
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use particle,      Only : corePart
@@ -102,8 +102,9 @@ Module dihedrals
 
 Contains
 
-  Subroutine allocate_dihedrals_arrays(dihedral)
+  Subroutine allocate_dihedrals_arrays(dihedral,mxatdm,mxtmls)
     Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    Integer, Intent( In ) :: mxatdm,mxtmls
 
     Integer, Dimension( 1:8 ) :: fail
 

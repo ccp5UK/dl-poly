@@ -12,7 +12,7 @@ Module plumed
 
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type
-  Use setup,  Only : boltz, mxatms, DLP_VERSION
+  Use setup,  Only : boltz,  DLP_VERSION
   Use configuration, Only : configuration_type
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
@@ -154,10 +154,10 @@ Contains
     Character( Len = 256 ) :: message
     Real( Kind = wp ),Dimension(:), Allocatable :: tx,ty,tz,tfx,tfy,tfz,tchge
     Integer :: fail(1:2), i
-    Allocate(tx(1:mxatms),ty(1:mxatms),tz(1:mxatms),tchge(1:mxatms),stat=fail(1))
-    Allocate(tfx(1:mxatms),tfy(1:mxatms),tfz(1:mxatms),stat=fail(2))
+    Allocate(tx(1:config%mxatms),ty(1:config%mxatms),tz(1:config%mxatms),tchge(1:config%mxatms),stat=fail(1))
+    Allocate(tfx(1:config%mxatms),tfy(1:config%mxatms),tfz(1:config%mxatms),stat=fail(2))
 !    If(Any(fail)) Call error(0)
-    Do i = 1,mxatms
+    Do i = 1,config%mxatms
       tx(i) = config%parts(i)%xxx
       ty(i) = config%parts(i)%yyy
       tz(i) = config%parts(i)%zzz
@@ -192,7 +192,7 @@ Contains
        Call warning(message,.true.)
        nstrun=nstep
     End If
-    Do i=1,mxatms
+    Do i=1,config%mxatms
       config%parts(i)%xxx=tx(i)
       config%parts(i)%yyy=ty(i)
       config%parts(i)%zzz=tz(i)

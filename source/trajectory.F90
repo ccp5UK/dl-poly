@@ -328,11 +328,11 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
   If      (traj%io_read == IO_READ_MASTER) Then
 
      fail=0
-     Allocate (chbuf(1:mxatms),                           Stat=fail(1))
-     Allocate (iwrk(1:mxatms),                            Stat=fail(2))
-     Allocate (axx(1:mxatms),ayy(1:mxatms),azz(1:mxatms), Stat=fail(3))
-     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms), Stat=fail(4))
-     Allocate (cxx(1:mxatms),cyy(1:mxatms),czz(1:mxatms), Stat=fail(5))
+     Allocate (chbuf(1:config%mxatms),                           Stat=fail(1))
+     Allocate (iwrk(1:config%mxatms),                            Stat=fail(2))
+     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(3))
+     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(4))
+     Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'read_history allocation failure'
         Call error(0,message)
@@ -342,7 +342,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
      Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm); If (.not.safe) Go To 200
 
-     Do i=1,mxatms
+     Do i=1,config%mxatms
        config%parts(i)%xxx=0.0_wp
        config%parts(i)%yyy=0.0_wp
        config%parts(i)%zzz=0.0_wp
@@ -457,7 +457,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
 ! Circulate configuration data to all nodes when transmission arrays are filled up
 
-              If (indatm == mxatms .or. nattot == megatm) Then
+              If (indatm == config%mxatms .or. nattot == megatm) Then
 
 ! Check if batch was read fine
 
@@ -521,7 +521,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
                     Else If (idm == comm%idnode)                 Then
                        config%natms=config%natms+1
 
-                       If (config%natms < mxatms) Then
+                       If (config%natms < config%mxatms) Then
                           config%atmnam(config%natms)=chbuf(i)
                           config%ltg(config%natms)=iwrk(i)
 
@@ -1213,9 +1213,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
   Else If (io_write == IO_WRITE_UNSORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),                   Stat=fail(1))
-     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),        Stat=fail(3))
-     Allocate (temp_parts(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),                   Stat=fail(1))
+     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms),        Stat=fail(3))
+     Allocate (temp_parts(1:config%mxatms),eee(1:config%mxatms),fff(1:config%mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write allocation failure'
         Call error(0,message)
@@ -1522,9 +1522,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
   Else If (io_write == IO_WRITE_SORTED_MASTER) Then
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),                   Stat=fail(1))
-     Allocate (bxx(1:mxatms),byy(1:mxatms),bzz(1:mxatms),        Stat=fail(3))
-     Allocate (temp_parts(1:mxatms),eee(1:mxatms),fff(1:mxatms), Stat=fail(5))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),                   Stat=fail(1))
+     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms),        Stat=fail(3))
+     Allocate (temp_parts(1:config%mxatms),eee(1:config%mxatms),fff(1:config%mxatms), Stat=fail(5))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write allocation failure'
         Call error(0,message)
@@ -2058,9 +2058,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
   Else
 
-     Allocate (chbuf(1:mxatms),iwrk(1:mxatms),            Stat=fail(1))
-     Allocate (temp_parts(1:mxatms),                      Stat=fail(2))
-     Allocate (fff(1:mxatms),                             Stat=fail(3))
+     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
+     Allocate (temp_parts(1:config%mxatms),                      Stat=fail(2))
+     Allocate (fff(1:config%mxatms),                             Stat=fail(3))
      If (Any(fail > 0)) Then
         Write(message,'(a)') 'trajectory_write allocation failure'
         Call error(0,message)

@@ -24,7 +24,7 @@ Module kinetics
 
   Use kinds, only : wp
   Use comms, Only : comms_type, gsum
-  Use setup,  Only : zero_plus,mxatms,boltz
+  Use setup,  Only : zero_plus,boltz
   Use configuration, Only : configuration_type,getcom_mol
   Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type
@@ -342,7 +342,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
-    Real( Kind = wp ), Intent( In    ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+    Real( Kind = wp ), Intent( In    ) :: vxx(:),vyy(:),vzz(:)
     Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut ) :: comm
 
@@ -394,7 +394,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
      Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
-     Real( Kind = wp ), Intent( In    ) :: vxx(1:mxatms),vyy(1:mxatms),vzz(1:mxatms)
+     Real( Kind = wp ), Intent( In    ) :: vxx(:),vyy(:),vzz(:)
      Type( rigid_bodies_type ), Intent( In    ) :: rigid
      Type( configuration_type ), Intent( InOut ) :: config
      Type(comms_type), Intent ( InOut ) :: comm

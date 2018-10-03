@@ -11,9 +11,9 @@ Module statistics
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,wi,li
-  Use setup, Only : mxbfss,zero_plus,&
+  Use setup, Only : zero_plus,&
     prsunt,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
-    eu_kjpm,mxatyp,pi,mxatms
+    eu_kjpm,pi
 
   Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend, &
     gwait,girecv,gcheck
@@ -240,7 +240,7 @@ Contains
 
 
     fail=0
-    Allocate (amsd(1:mxatyp), Stat=fail)
+    Allocate (amsd(1:sites%mxatyp), Stat=fail)
     If (fail > 0) Then
       Write(message,'(a)') 'statistics_collect allocation failure'
       Call error(0,message)
@@ -393,7 +393,7 @@ Contains
            stats%zto(i)=stats%zto(i)+config%vzz(i)*tstep
         End Do
       Else            ! HISTORY is replayed
-        Allocate (xxt(1:mxatms),yyt(1:mxatms),zzt(1:mxatms), Stat=fail)
+        Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms), Stat=fail)
         If (fail > 0) Then
           Write(message,'(a)') 'statistics_collect allocation failure 1'
           Call error(0,message)
@@ -1042,7 +1042,7 @@ Subroutine statistics_connect_spread(config,mdir,mxatdm,lmsd,stats,domain,comm)
   If (comm%mxnode == 1) Return
 
   fail=0
-  Allocate (buffer(1:mxbfss), Stat=fail)
+  Allocate (buffer(1:config%mxbfss), Stat=fail)
   If (fail > 0) Then
      Write(message,'(a)') 'statistics_connect_spread allocation failure'
      Call error(0,message)
@@ -1050,7 +1050,7 @@ Subroutine statistics_connect_spread(config,mdir,mxatdm,lmsd,stats,domain,comm)
 
 ! Set buffer limit (half for outgoing data - half for incoming)
 
-    iblock=mxbfss/2
+  iblock=config%mxbfss/2
 
 ! DIRECTION SETTINGS INITIALISATION
 
