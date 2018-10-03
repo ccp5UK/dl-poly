@@ -59,6 +59,7 @@ Module core_shell
 
     !> Relaxed shell indicator
     Logical, Public :: relaxed = .true.
+    Real( Kind = wp ), Public :: rlx_tol(1:2)
   Contains
     Private
     Procedure, Public :: init => allocate_core_shell_arrays
@@ -597,7 +598,7 @@ Contains
 
   End Subroutine core_shell_quench
 
-  Subroutine core_shell_relax(l_str,rdf_collect,rlx_tol,stpcfg,cshell, &
+  Subroutine core_shell_relax(l_str,rdf_collect,stpcfg,cshell, &
       stat,domain,config,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -614,7 +615,7 @@ Contains
 
     Logical,            Intent( In    ) :: l_str
     Logical,            Intent( InOut ) :: rdf_collect
-    Real( Kind = wp ),  Intent( In    ) :: rlx_tol(1:2),stpcfg
+    Real( Kind = wp ),  Intent( In    ) :: stpcfg
     Type(core_shell_type), Intent( InOut ) :: cshell
     Type( stats_type ), Intent( InOut ) :: stat
     Type( domains_type ), Intent( In    ) :: domain
@@ -669,11 +670,11 @@ Contains
 
     ! Step length for relaxation
 
-    If (rlx_tol(2) > zero_plus) Then
+    If (cshell%rlx_tol(2) > zero_plus) Then
 
       ! Optionally specified
 
-      cshell%step=rlx_tol(2)
+      cshell%step=cshell%rlx_tol(2)
 
     Else
 
@@ -702,7 +703,7 @@ Contains
 
       If (l_str) Then
         Write(message,'(a,3x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-          'Relaxing shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',cshell%step
+          'Relaxing shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',cshell%rlx_tol(1),'step=',cshell%step
         Call info(message,.true.)
         Write(message,"(1x,130('-'))")
         Call info(message,.true.)
@@ -755,7 +756,7 @@ Contains
     ! Get grad_tol & verify relaxed condition
 
     cshell%grad_tol=cshell%grad/Real(cshell%megshl,wp)
-    cshell%relaxed=(cshell%grad_tol < rlx_tol(1))
+    cshell%relaxed=(cshell%grad_tol < cshell%rlx_tol(1))
 
     ! Initialise cshell%dist_tol
 
@@ -779,12 +780,12 @@ Contains
 
       If (Nint(stat%passshl(2)) == 0) Then
         If (Nint(stat%passshl(1)) >= 10*mxpass) Then
-          Call warning(330,rlx_tol(1),cshell%grad_pass,0.0_wp)
+          Call warning(330,cshell%rlx_tol(1),cshell%grad_pass,0.0_wp)
           Call error(474)
         End If
       Else
         If (Nint(stat%passshl(1)) >= mxpass) Then
-          Call warning(330,rlx_tol(1),cshell%grad_pass,0.0_wp)
+          Call warning(330,cshell%rlx_tol(1),cshell%grad_pass,0.0_wp)
           Call error(474)
         End If
       End If
@@ -928,7 +929,7 @@ Contains
         Write(message,"(1x,130('-'))")
         Call info(message,.true.)
         Write(message,'(1x,a,3x,a,6x,a,11x,a,9x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-          'Relaxing shells to cores:','pass','eng_tot','grad_tol','ds_tol','dcs_max','tol=',rlx_tol(1),'step=',cshell%step
+          'Relaxing shells to cores:','pass','eng_tot','grad_tol','ds_tol','dcs_max','tol=',cshell%rlx_tol(1),'step=',cshell%step
         Call info(message,.true.)
         Write(message,"(1x,130('-'))")
         Call info(message,.true.)
@@ -954,7 +955,7 @@ Contains
       i=Nint(stat%passshl(1))
       If (.not.l_str) Then
         Write(message,'(a,4x,a,6x,a,11x,a,8x,a,4x,a,6x,a,1p,e11.4,3x,a,e11.4)') &
-          'Relaxed shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',rlx_tol(1),'step=',cshell%step
+          'Relaxed shells to cores:','pass','eng_tot','grad_tol','dis_tol','dcs_max','tol=',cshell%rlx_tol(1),'step=',cshell%step
         Call info(message,.true.)
         Write(message,"(1x,130('-'))")
         Call info(message,.true.)

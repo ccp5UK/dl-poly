@@ -275,7 +275,7 @@
 ! Save restart data in event of system crash
 
            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) Then
-             Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,sites,io,tmst, &
+             Call system_revive(neigh%cutoff,megatm,nstep,tstep,time,sites,io,tmst, &
                 stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity, &
                 rdf,netcdf,config,files,comm)
            End If
@@ -347,7 +347,7 @@
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
   If (.not. devel%l_tor) Then
-    Call system_revive(neigh%cutoff,rbin,megatm,nstep,tstep,time,sites,io,tmst,stat, &
+    Call system_revive(neigh%cutoff,megatm,nstep,tstep,time,sites,io,tmst,stat, &
       devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf, &
       config,files,comm)
   End If

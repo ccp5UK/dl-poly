@@ -85,7 +85,7 @@ Contains
 
   Subroutine read_control                                &
     (levcfg,l_str,lsim,l_n_e,l_n_v,        &
-    rbin,nstfce,width,     &
+    nstfce,width,     &
     l_exp,lecx,lfcap,l_top,          &
     lvar,leql,               &
     lfce,lpana,           &
@@ -93,7 +93,7 @@ Contains
     keyres,                   &
     tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
     fmax,nstbpo,             &
-    rlx_tol,mxquat,quattol,       &
+    mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
     ttm,dfcts,          &
     ndump, &
@@ -122,7 +122,7 @@ Contains
   Logical,                Intent( In    ) :: l_str,lsim,l_n_e,l_n_v
   Integer,                Intent( In    ) :: levcfg
   Integer,                Intent( InOut ) :: nstfce
-  Real( Kind = wp ),      Intent( In    ) :: rbin,width
+  Real( Kind = wp ),      Intent( In    ) :: width
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
     lfcap,l_top,           &
@@ -141,10 +141,10 @@ Contains
 
   Real( Kind = wp ),      Intent(   Out ) :: tstep,mndis,mxdis,mxstp,    &
     quattol,&
-    fmax,rlx_tol(1:2)
+    fmax
   Type( rsd_type ), Intent ( InOut ) :: rsdc
   Type( pmf_type ), Intent (   InOut )   :: pmf
-  Type( core_shell_type ), Intent (   In  )   :: cshell
+  Type( core_shell_type ), Intent (   InOut  )   :: cshell
   Type( constraints_type ), Intent (   InOut )   :: cons
   Type( stats_type ), Intent (   InOut )   :: stats
   Type( impact_type ),     Intent(   Out ) :: impa
@@ -365,7 +365,7 @@ Contains
 
 ! Default relaxed shell model tolerance and optional CGM step
 
-  rlx_tol(1:2) = (/ 1.0_wp , -1.0_wp /)
+  cshell%rlx_tol(1:2) = [ 1.0_wp , -1.0_wp ]
 
 ! default switch for two-temperature model (TTM) calculations:
 ! already determined its use in scan_control but repeating
@@ -2073,14 +2073,14 @@ Contains
      Else If (word(1:6) == 'rlxtol') Then
 
         Call get_word(record,word)
-        rlx_tol(1) = Max(1.0_wp,Abs(word_2_real(word)))
-        Write(message,'(a,1p,e12.4)') 'relaxed shell model CGM tolerance ',rlx_tol(1)
+        cshell%rlx_tol(1) = Max(1.0_wp,Abs(word_2_real(word)))
+        Write(message,'(a,1p,e12.4)') 'relaxed shell model CGM tolerance ',cshell%rlx_tol(1)
         Call info(message,.true.)
 
         Call get_word(record,word1)
-        rlx_tol(2) = word_2_real(word1,-1.0_wp)
-        If (rlx_tol(2) > zero_plus) Then
-           Write(message,'(a,1p,e12.4)') 'relaxed shell model CGM step ',rlx_tol(2)
+        cshell%rlx_tol(2) = word_2_real(word1,-1.0_wp)
+        If (cshell%rlx_tol(2) > zero_plus) Then
+          Write(message,'(a,1p,e12.4)') 'relaxed shell model CGM step ',cshell%rlx_tol(2)
            Call info(message,.true.)
         End If
 
@@ -2547,7 +2547,7 @@ Contains
 
         Call get_word(record,word)
         tmp = Abs(word_2_real(word))
-        If (Abs(rbin-tmp) > 1.0e-6_wp) Call warning(340,tmp,neigh%cutoff/4.0_wp,rbin)
+        If (Abs(rdf%rbin-tmp) > 1.0e-6_wp) Call warning(340,tmp,neigh%cutoff/4.0_wp,rdf%rbin)
 
 ! read analysis (intramolecular distributions calculation) option
 
@@ -3262,7 +3262,7 @@ Contains
      If (rdf%l_collect) Then
         Write(messages(1),'(a)') 'rdf collection requested:'
         Write(messages(2),'(2x,a,i10)') 'rdf collection interval ',rdf%freq
-        Write(messages(3),'(2x,a,1p,e12.4)') 'rdf binsize (Angstroms) ',rbin
+        Write(messages(3),'(2x,a,1p,e12.4)') 'rdf binsize (Angstroms) ',rdf%rbin
         Call info(messages,3,.true.)
      Else
         Call info('no rdf collection requested',.true.)
@@ -3298,7 +3298,7 @@ Contains
      If (zdensity%l_collect) Then
         Write(messages(1),'(a)') 'z-density profiles requested:'
         Write(messages(2),'(2x,a,i10)') 'z-density collection interval ',zdensity%frequency
-        Write(messages(3),'(2x,a,1p,e12.4)') 'z-density binsize (Angstroms) ',rbin
+        Write(messages(3),'(2x,a,1p,e12.4)') 'z-density binsize (Angstroms) ',rdf%rbin
         Call info(messages,3,.true.)
      Else
         Call info('no z-density profiles requested',.true.)
@@ -3623,7 +3623,7 @@ Contains
 End Subroutine read_control
 
 Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
-    l_str,lsim,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce,ttm,cshell,stats, &
+  l_str,lsim,l_n_e,l_n_r,lzdn,l_n_v,l_ind,nstfce,ttm,cshell,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,files,comm)
 
@@ -3651,7 +3651,6 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
                                         nstfce
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
-  Real( Kind = wp ), Intent(   Out ) :: rbin
   Type( core_shell_type ), Intent (   In  )   :: cshell
   Type( stats_type ), Intent( InOut ) :: stats
   Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -3739,7 +3738,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   lrpad = .false.
   neigh%padding  = 0.0_wp
 
-  rbin  = rbin_def
+  rdf%rbin  = rbin_def
 
 ! Frequency of the SPME k-space evaluation
 
@@ -3869,8 +3868,8 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
      Else If (word(1:7) == 'binsize') Then
 
         Call get_word(record,word)
-        rbin = Abs(word_2_real(word))
-        zdensity%bin_width = rbin
+        rdf%rbin = Abs(word_2_real(word))
+        zdensity%bin_width = rdf%rbin
 
 ! read dpd ensembles option
 
@@ -4690,7 +4689,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
 ! Sort rbin as now neigh%cutoff is already pinned down
 
-        If (rbin < 1.0e-05_wp .or. rbin > neigh%cutoff/4.0_wp) rbin = Min(rbin_def,neigh%cutoff/4.0_wp)
+        If (rdf%rbin < 1.0e-05_wp .or. rdf%rbin > neigh%cutoff/4.0_wp) rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)
 
         carry=.false.
 

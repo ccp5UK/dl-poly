@@ -58,9 +58,9 @@ Module system
   Public :: system_expand
   Contains
 
-  Subroutine system_init(levcfg,rcut,rbin,keyres,megatm,time,tmst,nstep,tstep, &
-      cshell,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
-      zdensity,sites,vdws,rdf,config,files,comm)
+  Subroutine system_init(levcfg,rcut,keyres,megatm,time,tmst,nstep,tstep, &
+    cshell,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
+    zdensity,sites,vdws,rdf,config,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -73,13 +73,13 @@ Module system
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer,           Intent( InOut ) :: levcfg,keyres
-  Integer,           Intent( In    ) :: megatm
-  Real( Kind = wp ), Intent( In    ) :: rcut,rbin
+    Integer,           Intent( InOut ) :: levcfg,keyres
+    Integer,           Intent( In    ) :: megatm
+    Real( Kind = wp ), Intent( In    ) :: rcut
 
-  Integer,           Intent(   Out ) :: nstep
-  Real( Kind = wp ), Intent( InOut ) :: tstep
-  Real( Kind = wp ), Intent(   Out ) :: time,tmst
+    Integer,           Intent(   Out ) :: nstep
+    Real( Kind = wp ), Intent( InOut ) :: tstep
+    Real( Kind = wp ), Intent(   Out ) :: time,tmst
   Type( stats_type ), Intent( InOut ) :: stats
   Type( core_shell_type ), Intent( InOut ) :: cshell
   Type( development_type ), Intent( In    ) :: devel
@@ -219,7 +219,7 @@ Module system
      Call gcheck(comm,l_tmp,"enforce")
      If (.not.l_tmp) Call error(519)
 
-! Check REVOLD restart compatibility: rcut,rbin,megatm
+! Check REVOLD restart compatibility: rcut,rdf%rbin,megatm
 
      xyz(1:3)=0.0_wp
      If (comm%idnode == 0) Then
@@ -232,7 +232,7 @@ Module system
         End If
      End If
      Call gbcast(comm,xyz,0)
-     If (Abs(xyz(1)-rcut) > 1.0e-6_wp .or. Abs(xyz(2)-rbin) > 1.0e-6_wp .or. &
+     If (Abs(xyz(1)-rcut) > 1.0e-6_wp .or. Abs(xyz(2)-rdf%rbin) > 1.0e-6_wp .or. &
          Nint(xyz(3)) /= megatm) Call error(519)
 
 ! read the rest of the accumulator data from dump file
@@ -1839,7 +1839,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
 End Subroutine system_expand
 
-Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,sites,io,tmst,stats,devel, &
+Subroutine system_revive(rcut,megatm,nstep,tstep,time,sites,io,tmst,stats,devel, &
   green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
   files,comm)
 
@@ -1857,7 +1857,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,sites,io,tmst,stats,d
 
   Type( io_type ), Intent( InOut ) :: io
   Integer,           Intent( In    ) :: megatm,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,rbin,tstep,time,tmst
+  Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
   Type( site_type ), Intent( InOut ) :: sites
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
@@ -2035,7 +2035,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,sites,io,tmst,stats,d
      If (devel%l_rout) Then
         Open(Newunit=files(FILE_REVIVE)%unit_no, File=files(FILE_REVIVE)%filename, Form='formatted', Status='replace')
 
-        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') rcut,rbin,Real(megatm,wp)
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') rcut,rdf%rbin,Real(megatm,wp)
         Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') &
              Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
         Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') thermo%eta
@@ -2084,7 +2084,7 @@ Subroutine system_revive(rcut,rbin,megatm,nstep,tstep,time,sites,io,tmst,stats,d
      Else
         Open(Newunit=files(FILE_REVIVE)%unit_no, File=files(FILE_REVIVE)%filename, Form='unformatted', Status='replace')
 
-        Write(Unit=files(FILE_REVIVE)%unit_no) rcut,rbin,Real(megatm,wp)
+        Write(Unit=files(FILE_REVIVE)%unit_no) rcut,rdf%rbin,Real(megatm,wp)
         Write(Unit=files(FILE_REVIVE)%unit_no) &
              Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
         Write(Unit=files(FILE_REVIVE)%unit_no) thermo%eta

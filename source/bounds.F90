@@ -53,7 +53,7 @@ Module bounds
 Contains
 
   Subroutine set_bounds(levcfg,l_str,lsim,l_n_e,l_n_v,l_ind, &
-    dvar,rbin,nstfce,      &
+    dvar,nstfce,      &
     width,site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
     msd_data,met,pois,bond,angle,dihedral,     &
     inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
@@ -75,7 +75,7 @@ Contains
   Logical,           Intent(   Out ) :: l_str,lsim,l_n_e,l_n_v,l_ind
   Integer,           Intent(   Out ) :: levcfg,nstfce
   Real( Kind = wp ), Intent(   Out ) :: dvar
-  Real( Kind = wp ), Intent(   Out ) :: rbin,width
+  Real( Kind = wp ), Intent(   Out ) :: width
   Type( site_type), Intent( InOut ) :: site
   Type( ttm_type ), Intent( InOut ) :: ttm
   Type( io_type ), Intent( InOut ) :: io
@@ -146,7 +146,7 @@ Contains
 ! scan CONTROL file data
 
   Call scan_control(rcter,rigid%max_rigid,config%imcon,config%imc_n,config%cell, &
-    xhi,yhi,zhi,config%mxgana,l_str,lsim,l_n_e,l_n_r,lzdn,l_n_v,l_ind,rbin,nstfce, &
+    xhi,yhi,zhi,config%mxgana,l_str,lsim,l_n_e,l_n_r,lzdn,l_n_v,l_ind,nstfce, &
     ttm,cshell,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral, &
     inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data, &
     files,comm)
@@ -392,7 +392,7 @@ Contains
   If ((.not. l_n_r) .or. lzdn) Then
      If (((.not. l_n_r) .and. rdf%max_rdf == 0) .and. (vdws%max_vdw > 0 .or. met%max_metal > 0)) &
         rdf%max_rdf = Max(vdws%max_vdw,met%max_metal) ! (vdws,met) == rdf scanning
-     rdf%max_grid = Nint(neigh%cutoff/rbin)
+     rdf%max_grid = Nint(neigh%cutoff/rdf%rbin)
   Else
      rdf%max_grid = 0 ! RDF and Z-density function MUST NOT get called!!!
   End If
@@ -401,8 +401,8 @@ Contains
 
   If (l_usr) Then
      rdf%cutoff_usr   = 0.45_wp*width
-     rdf%max_grid_usr = Nint(rdf%cutoff_usr/rbin)      ! allows for up to ~75% system ttm%volume shrinkage
-     rdf%cutoff_usr   = Real(rdf%max_grid_usr,wp)*rbin ! round up and beautify for Andrey Brukhno's sake
+     rdf%max_grid_usr = Nint(rdf%cutoff_usr/rdf%rbin)      ! allows for up to ~75% system ttm%volume shrinkage
+     rdf%cutoff_usr   = Real(rdf%max_grid_usr,wp)*rdf%rbin ! round up and beautify for Andrey Brukhno's sake
   Else
      rdf%cutoff_usr   = 0.0_wp
      rdf%max_grid_usr = 0 ! decider on calling USR RDF
