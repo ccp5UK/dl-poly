@@ -58,7 +58,7 @@ Module system
   Public :: system_expand
   Contains
 
-  Subroutine system_init(levcfg,rcut,keyres,megatm,time,tmst,nstep,tstep, &
+  Subroutine system_init(levcfg,rcut,keyres,megatm,time,tmst,nstep, &
     cshell,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
     zdensity,sites,vdws,rdf,config,files,comm)
 
@@ -78,12 +78,11 @@ Module system
     Real( Kind = wp ), Intent( In    ) :: rcut
 
     Integer,           Intent(   Out ) :: nstep
-    Real( Kind = wp ), Intent( InOut ) :: tstep
     Real( Kind = wp ), Intent(   Out ) :: time,tmst
-  Type( stats_type ), Intent( InOut ) :: stats
-  Type( core_shell_type ), Intent( InOut ) :: cshell
-  Type( development_type ), Intent( In    ) :: devel
-  Type( greenkubo_type ), Intent( InOut ) :: green
+    Type( stats_type ), Intent( InOut ) :: stats
+    Type( core_shell_type ), Intent( InOut ) :: cshell
+    Type( development_type ), Intent( In    ) :: devel
+    Type( greenkubo_type ), Intent( InOut ) :: green
   Type( thermostat_type ), Intent( InOut ) :: thermo
   Type( metal_type ), Intent( InOut ) :: met
   Type( bonds_type ), Intent( InOut ) :: bond
@@ -384,7 +383,7 @@ Module system
 
 ! Reset timestep
 
-        tstep = dtstep
+        thermo%tstep = dtstep
 
         r_mxnode=1.0_wp/Real(comm%mxnode,wp)
 
@@ -1839,7 +1838,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
 End Subroutine system_expand
 
-Subroutine system_revive(rcut,megatm,nstep,tstep,time,sites,io,tmst,stats,devel, &
+Subroutine system_revive(rcut,megatm,nstep,time,sites,io,tmst,stats,devel, &
   green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
   files,comm)
 
@@ -1857,7 +1856,7 @@ Subroutine system_revive(rcut,megatm,nstep,tstep,time,sites,io,tmst,stats,devel,
 
   Type( io_type ), Intent( InOut ) :: io
   Integer,           Intent( In    ) :: megatm,nstep
-  Real( Kind = wp ), Intent( In    ) :: rcut,tstep,time,tmst
+  Real( Kind = wp ), Intent( In    ) :: rcut,time,tmst
   Type( site_type ), Intent( InOut ) :: sites
   Type( stats_type ), Intent( InOut ) :: stats
   Type( development_type ), Intent( In    ) :: devel
@@ -2024,7 +2023,7 @@ Subroutine system_revive(rcut,megatm,nstep,tstep,time,sites,io,tmst,stats,devel,
 
 ! Write REVCON
   levcfg = 2      ! define level of information in REVCON
-  Call write_config(config,files(FILE_REVCON),levcfg,megatm,nstep,tstep,io,time,netcdf,comm)
+  Call write_config(config,files(FILE_REVCON),levcfg,megatm,nstep,thermo%tstep,io,time,netcdf,comm)
 
 ! node 0 handles I/O
 
@@ -2037,7 +2036,7 @@ Subroutine system_revive(rcut,megatm,nstep,tstep,time,sites,io,tmst,stats,devel,
 
         Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') rcut,rdf%rbin,Real(megatm,wp)
         Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') &
-             Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
+          Real(nstep,wp),thermo%tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
         Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') thermo%eta
         Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%stpval
         Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') stats%stpvl0
@@ -2086,7 +2085,7 @@ Subroutine system_revive(rcut,megatm,nstep,tstep,time,sites,io,tmst,stats,devel,
 
         Write(Unit=files(FILE_REVIVE)%unit_no) rcut,rdf%rbin,Real(megatm,wp)
         Write(Unit=files(FILE_REVIVE)%unit_no) &
-             Real(nstep,wp),tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
+          Real(nstep,wp),thermo%tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
         Write(Unit=files(FILE_REVIVE)%unit_no) thermo%eta
         Write(Unit=files(FILE_REVIVE)%unit_no) stats%stpval
         Write(Unit=files(FILE_REVIVE)%unit_no) stats%stpvl0

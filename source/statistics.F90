@@ -1367,8 +1367,8 @@ Subroutine statistics_connect_spread(config,mdir,mxatdm,lmsd,stats,domain,comm)
 Subroutine statistics_result                                    &
            (config,minim,lmsd, &
            nstrun,keyshl,megcon,megpmf,              &
-           nstep,tstep,time,tmst, &
-           mxatdm,neigh_uncond_update,stats,thermo,green,sites,comm)
+  nstep,time,tmst, &
+  mxatdm,neigh_uncond_update,stats,thermo,green,sites,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -1383,7 +1383,7 @@ Subroutine statistics_result                                    &
 
   Logical,           Intent( In    ) :: minim,lmsd
   Integer( Kind = wi ),    Intent( In    ) :: nstrun,keyshl,megcon,megpmf,nstep
-  Real( Kind = wp ), Intent( In    ) :: tstep,time,tmst
+  Real( Kind = wp ), Intent( In    ) :: time,tmst
   Integer( Kind = wi ),    Intent( In    ) :: mxatdm
   Logical, Intent( InOut ) :: neigh_uncond_update
   Type( configuration_type ), Intent( InOut ) :: config
@@ -1607,7 +1607,7 @@ Subroutine statistics_result                                    &
       Do i=1,sites%ntype_atom
         If (sites%num_type_nf(i) > zero_plus) Then
           dc = 10.0_wp * (stats%ravval(iadd+i)-stats%sumval(iadd+i)) / &
-            (3.0_wp*Real(stats%numacc-Min(stats%mxstak,stats%numacc-1),wp)*tstep)
+            (3.0_wp*Real(stats%numacc-Min(stats%mxstak,stats%numacc-1),wp)*thermo%tstep)
           If (dc < 1.0e-10_wp) dc = 0.0_wp
 
           srmsd = Sqrt(stats%ravval(iadd+i))

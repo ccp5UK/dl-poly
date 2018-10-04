@@ -207,7 +207,7 @@ program dl_poly
 
   Logical           :: l_ind,l_str,l_top,           &
     l_exp,lecx,lfcap,      &
-    lvar,leql,lsim,    &
+    leql,lsim,    &
     lpana, &
     lbook,lexcl
 
@@ -215,7 +215,6 @@ program dl_poly
     nx,ny,nz,                           &
     keyres,nstrun,nsteql,               &
     nstbpo,    &
-    mxquat,               &
     nstbnd,nstang,nstdih,nstinv,        &
     ndump,nstep,                 &
     atmfre,atmfrz,megatm,megfrz
@@ -226,11 +225,10 @@ program dl_poly
 
   ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
 
-  Real( Kind = wp ) :: tstep,time,tmst,      &
+  Real( Kind = wp ) :: time,tmst,      &
     dvar,                       &
     fmax,                           &
-    width,mndis,mxdis,mxstp,     &
-    quattol                 
+    width
 
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(thermostat_type) :: thermo
@@ -427,16 +425,15 @@ program dl_poly
     (levcfg,l_str,lsim,l_n_e,l_n_v,        &
     nstfce,width,     &
     l_exp,lecx,lfcap,l_top,          &
-    lvar,leql,               &
+    leql,               &
     lfce,lpana,           &
     nx,ny,nz,impa,                            &
     keyres,                   &
-    tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
+    nstrun,nsteql,      &
     fmax,nstbpo,             &
-    mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
     ttms,dfcts,          &
-    ndump,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
+    ndump,rigid,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
     minim,mpoles,electro,ewld,seed,traj,files,tmr,config,comm)
 
@@ -493,7 +490,7 @@ program dl_poly
     Call traj%init(key=0,freq=1,start=0)
     nstep  = 0                            ! no steps done
     time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,megatm,nstep,tstep,time,ios,stats%rsd,netcdf,config,traj,files,comm)
+    Call trajectory_write(keyres,megatm,nstep,thermo%tstep,time,ios,stats%rsd,netcdf,config,traj,files,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -516,7 +513,7 @@ program dl_poly
 
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
-  Call system_init(levcfg,neigh%cutoff,keyres,megatm,time,tmst,nstep,tstep, &
+  Call system_init(levcfg,neigh%cutoff,keyres,megatm,time,tmst,nstep, &
     core_shells,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
     zdensity,sites,vdws,rdf,config,files,comm)
 
@@ -607,7 +604,7 @@ program dl_poly
 
   ! PLUMED initialisation or information message
 
-  If (plume%l_plumed) Call plumed_init(megatm,tstep,thermo%temp,plume,comm)
+  If (plume%l_plumed) Call plumed_init(megatm,thermo%tstep,thermo%temp,plume,comm)
 
   ! Print out sample of initial configuration on node zero
 
@@ -739,7 +736,7 @@ program dl_poly
   ! Save restart data for real simulations only (final)
 
   If (lsim .and. (.not.devel%l_tor)) Then
-    Call system_revive(neigh%cutoff,megatm,nstep,tstep,time,sites,ios,tmst,stats, &
+    Call system_revive(neigh%cutoff,megatm,nstep,time,sites,ios,tmst,stats, &
       devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
       files,comm)
     If (ttms%l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,ttms,comm)
@@ -759,11 +756,11 @@ program dl_poly
   Call statistics_result                                        &
     (config,minim%minimise,msd_data%l_msd, &
     nstrun,core_shells%keyshl,cons%megcon,pmfs%megpmf,              &
-    nstep,tstep,time,tmst,config%mxatdm,neigh%unconditional_update,&
+    nstep,time,tmst,config%mxatdm,neigh%unconditional_update,&
     stats,thermo,green,sites,comm)
 
   ! Final anlysis
-  Call analysis_result(lpana,nstep,tstep,neigh%cutoff,stats%sumval(2),thermo%ensemble, &
+  Call analysis_result(lpana,nstep,neigh%cutoff,stats%sumval(2),thermo, &
     bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
 
   10 Continue

@@ -71,6 +71,7 @@ Module kontrol
                        FILE_STATS,FILE_HISTORY,FILE_HISTORF,FILE_REVIVE,FILE_REVCON, &
                        FILE_REVOLD
   Use flow, Only : flow_type
+  Use rigid_bodies, Only : rigid_bodies_type
   Implicit None
 
   Private
@@ -87,16 +88,15 @@ Contains
     (levcfg,l_str,lsim,l_n_e,l_n_v,        &
     nstfce,width,     &
     l_exp,lecx,lfcap,l_top,          &
-    lvar,leql,               &
+    leql,               &
     lfce,lpana,           &
     nx,ny,nz,impa,                            &
     keyres,                   &
-    tstep,mndis,mxdis,mxstp,nstrun,nsteql,      &
+    nstrun,nsteql,      &
     fmax,nstbpo,             &
-    mxquat,quattol,       &
     nstbnd,nstang,nstdih,nstinv,  &
     ttm,dfcts,          &
-    ndump, &
+    ndump, rigid,&
     rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
     rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,comm)
@@ -126,7 +126,7 @@ Contains
 
   Logical,                Intent(   Out ) :: l_exp,lecx,            &
     lfcap,l_top,           &
-    lvar,leql,lfce,   &
+    leql,lfce,   &
     lpana
 
 
@@ -134,14 +134,13 @@ Contains
     keyres,nstrun,        &
     nsteql,       &
     nstbpo,        &
-    mxquat,        &
     nstbnd,nstang,        &
     nstdih,nstinv,        &
     ndump
 
-  Real( Kind = wp ),      Intent(   Out ) :: tstep,mndis,mxdis,mxstp,    &
-    quattol,&
-    fmax
+  Real( Kind = wp ),      Intent(   Out ) :: fmax
+
+  Type( rigid_bodies_type ), Intent ( InOut ) :: rigid
   Type( rsd_type ), Intent ( InOut ) :: rsdc
   Type( pmf_type ), Intent (   InOut )   :: pmf
   Type( core_shell_type ), Intent (   InOut  )   :: cshell
@@ -245,15 +244,15 @@ Contains
 ! timestep switch and default value
 
   lstep = .false.
-  tstep = 0.0_wp
+  thermo%tstep = 0.0_wp
 
 ! variable timestep switches and default minimum and maximum
 ! distances for variable timestep
 
-  lvar  = .false.
-  mndis = 0.03_wp
-  mxdis = 0.10_wp
-  mxstp = 0.0_wp
+  thermo%lvar  = .false.
+  thermo%mndis = 0.03_wp
+  thermo%mxdis = 0.10_wp
+  thermo%mxstp = 0.0_wp
 
 ! total number of steps to run
 
@@ -360,8 +359,8 @@ Contains
 ! default maximum number of iterations and maximum tolerance
 ! for LFV quaternion integration algorithms
 
-  mxquat =100
-  quattol=1.0e-8_wp
+  rigid%mxquat =100
+  rigid%quattol=1.0e-8_wp
 
 ! Default relaxed shell model tolerance and optional CGM step
 
@@ -936,12 +935,12 @@ Contains
         Call get_word(record,word1)
 
         If      (word(1:8) == 'timestep' .and. word1(1:8) /= 'variable') Then
-           tstep = word_2_real(word1)
+          thermo%tstep = word_2_real(word1)
         Else If ( (word(1:8) == 'timestep' .and. word1(1:8) == 'variable') .or. &
                   (word(1:8) == 'variable' .and. word1(1:8) == 'timestep') ) Then
-           lvar = .true.
+           thermo%lvar = .true.
            Call get_word(record,word)
-           tstep = word_2_real(word)
+           thermo%tstep = word_2_real(word)
         Else
            Call strip_blanks(record)
            Write(message,'(3a)') word(1:Len_Trim(word)+1),word1(1:Len_Trim(word1)+1),record
@@ -957,15 +956,15 @@ Contains
 
         If (word(1:6) == 'mindis') Then
            Call get_word(record,word)
-           mndis=Abs(word_2_real(word))
-        End If
-        If (word(1:6) == 'maxdis') Then
+           thermo%mndis=Abs(word_2_real(word))
+         End If
+         If (word(1:6) == 'maxdis') Then
            Call get_word(record,word)
-           mxdis=Abs(word_2_real(word))
-        End If
-        If (word(1:6) == 'mxstep') Then
+           thermo%mxdis=Abs(word_2_real(word))
+         End If
+         If (word(1:6) == 'mxstep') Then
            Call get_word(record,word)
-           mxstp=Abs(word_2_real(word))
+           thermo%mxstp=Abs(word_2_real(word))
         End If
 
 ! read number of timesteps
@@ -2105,15 +2104,15 @@ Contains
      Else If (word(1:6) == 'mxquat') Then
 
         Call get_word(record,word)
-        mxquat = Abs(Nint(word_2_real(word)))
+        rigid%mxquat = Abs(Nint(word_2_real(word)))
 
 ! read tolerance in LFV quaternion integration algorithms
 
-     Else If (word(1:6) == 'quater') Then
+      Else If (word(1:6) == 'quater') Then
 
         Call get_word(record,word)
         If (word(1:9) == 'tolerance') Call get_word(record,word)
-        quattol = Abs(word_2_real(word))
+        rigid%quattol = Abs(word_2_real(word))
 
 ! read two-temperature model (ttm) specific flags
 
@@ -3101,36 +3100,36 @@ Contains
 
 ! report timestep
 
-  If (lvar) Then
+  If (thermo%lvar) Then
 
      If (thermo%key_dpd > 0) Then
-        lvar=.false.
+       thermo%lvar=.false.
         Call warning('variable timestep unavalable in DPD themostats',.true.)
-        Write(message,'(a,1p,e12.4)') 'fixed simulation timestep (ps) ',tstep
+        Write(message,'(a,1p,e12.4)') 'fixed simulation timestep (ps) ',thermo%tstep
         Call info(message,.true.)
-     Else
-        If (mxdis >= 2.5_wp*mndis .and. mndis > 0.0_wp) Then
-          Write(messages(1),'(a,1p,e12.4)') 'variable simulation timestep (ps) ',tstep
+      Else
+        If (thermo%mxdis >= 2.5_wp*thermo%mndis .and. thermo%mndis > 0.0_wp) Then
+          Write(messages(1),'(a,1p,e12.4)') 'variable simulation timestep (ps) ',thermo%tstep
           Write(messages(2),'(a)') 'controls for variable timestep:'
-          Write(messages(3),'(2x,a,1p,e12.4)') 'minimum distance Dmin (Angs) ',mndis
-          Write(messages(4),'(2x,a,1p,e12.4)') 'maximum distance Dmax (Angs) ',mxdis
+          Write(messages(3),'(2x,a,1p,e12.4)') 'minimum distance Dmin (Angs) ',thermo%mndis
+          Write(messages(4),'(2x,a,1p,e12.4)') 'maximum distance Dmax (Angs) ',thermo%mxdis
           Call info(messages,4,.true.)
 
-           If (mxstp > zero_plus) Then
-              Write(message,'(a,1p,e12.4)') 'timestep ceiling mxstp (ps) ',mxstp
-              Call info(message,.true.)
-              tstep=Min(tstep,mxstp)
-           Else
-              mxstp=Huge(1.0_wp)
-           End If
+          If (thermo%mxstp > zero_plus) Then
+            Write(message,'(a,1p,e12.4)') 'timestep ceiling mxstp (ps) ',thermo%mxstp
+            Call info(message,.true.)
+            thermo%tstep=Min(thermo%tstep,thermo%mxstp)
+          Else
+            thermo%mxstp=Huge(1.0_wp)
+          End If
         Else
-           Call warning(140,mndis,mxdis,0.0_wp)
+          Call warning(140,thermo%mndis,thermo%mxdis,0.0_wp)
            Call error(518)
         End If
      End If
 
    Else If (lstep) Then
-     Write(message,'(a,1p,e12.4)') 'fixed simulation timestep (ps) ',tstep
+     Write(message,'(a,1p,e12.4)') 'fixed simulation timestep (ps) ',thermo%tstep
      Call info(message,.true.)
    End If
 
@@ -3390,9 +3389,9 @@ Contains
      lpres = .true. ! zero is ok
 
      lstep = .true. ! zero is not ok
-     If (tstep <= zero_plus) Then
-        tstep = 0.001_wp
-        Write(message,'(a,1p,e12.4)') 'default simulation timestep (ps) ',tstep
+     If (thermo%tstep <= zero_plus) Then
+       thermo%tstep = 0.001_wp
+       Write(message,'(a,1p,e12.4)') 'default simulation timestep (ps) ',thermo%tstep
         Call info(message,.true.)
      End If
   Else If (.not.l_str) Then !!! NO STRICT
@@ -3412,8 +3411,8 @@ Contains
 
      If (.not.lstep) Then ! Simulation timestep
         lstep = .true.
-        tstep = 0.001_wp
-        Write(message,'(a,1p,e12.4)') 'default simulation timestep (ps) ',tstep
+        thermo%tstep = 0.001_wp
+        Write(message,'(a,1p,e12.4)') 'default simulation timestep (ps) ',thermo%tstep
         Call info(message,.true.)
      End If
 
