@@ -128,6 +128,11 @@ Module thermostat
     Real( Kind = wp ), Public              :: fpl(1:9) = 0.0_wp
     Real( Kind = wp ), Public, Allocatable :: fxl(:),fyl(:),fzl(:)
 
+    !> variable timestep control
+    Logical, Public :: lvar
+    Real( Kind = wp ), Public :: tstep
+    Real( Kind = wp ), Public :: mndis,mxdis,mxstp
+
   Contains
     Private
 

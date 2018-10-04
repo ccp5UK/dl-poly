@@ -114,7 +114,7 @@
 ! Apply pseudo thermostat - force cycle (0)
 
      If (thermo%l_stochastic_boundaries) Then
-       Call stochastic_boundary_vv(0,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,config,seed,comm)
+       Call stochastic_boundary_vv(0,thermo%tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,config,seed,comm)
      End If
 
 ! Cap forces in equilibration mode
@@ -142,12 +142,12 @@
         If (minim%minimise .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
           If      (minim%freq == 0 .and. nstep == 0) Then
             Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
-              rdf%l_collect,megatm,tstep,stat%stpcfg,io,stat,pmf,cons, &
+              rdf%l_collect,megatm,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
               netcdf,minim,rigid,domain,config,files,comm)
           Else If (minim%freq >  0 .and. nstep >  0) Then
             If (Mod(nstep-nsteql,minim%freq) == 0) Then
               Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
-                rdf%l_collect,megatm,tstep,stat%stpcfg,io,stat,pmf,cons, &
+                rdf%l_collect,megatm,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
                 netcdf,minim,rigid,domain,config,files,comm)
             End If
           End If
@@ -169,7 +169,7 @@
      If (flow%newjob) Then
         If (rigid%total > 0) Then
            If (thermo%l_langevin) Then
-              Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
+             Call langevin_forces(nstep,thermo%temp,thermo%tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
               If (rigid%share) Then
                 Call update_shared_units(config,rigid%list_shared, &
                   rigid%map_shared,thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)

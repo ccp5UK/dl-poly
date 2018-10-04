@@ -9,7 +9,7 @@
 
 ! Apply pseudo thermostat - velocity cycle (1)
         If (thermo%l_stochastic_boundaries) Then
-          Call stochastic_boundary_vv(1,tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,config,seed,comm)
+          Call stochastic_boundary_vv(1,thermo%tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,config,seed,comm)
         End If
 
 ! Apply temperature regaussing

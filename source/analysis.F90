@@ -15,6 +15,7 @@ Module analysis
   Use z_density,     Only : z_density_type,z_density_compute
   Use neighbours,    Only : neighbours_type
   Use comms,         Only : comms_type
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -25,21 +26,19 @@ Contains
 
   !> Calculate and print final analysis
   Subroutine analysis_result(lpana, &
-                             nstep,tstep,rcut,temp,ensemble, &
-                             bond,angle,dihedral,inversion,stats, &
-                             green,zdensity,neigh,sites,rdf,config,comm)
+    nstep,rcut,temp,thermo, &
+    bond,angle,dihedral,inversion,stats, &
+    green,zdensity,neigh,sites,rdf,config,comm)
 
     Logical, Intent( In    ) :: lpana
     !> Number of simulation steps
     Integer( Kind = wi ), Intent( In    ) :: nstep
-    !> Simulation tiime step (ps)
-    Real( Kind = wp ), Intent( In    ) :: tstep
     !> Cut off
     Real( Kind = wp ), Intent( In    ) :: rcut
     !> Temperature
     Real( Kind = wp ), Intent( In    ) :: temp
     !> Ensemble key
-    Integer( Kind = wi ), Intent( In    ) :: ensemble
+    Type( thermostat_type ), Intent( In    ) :: thermo
     !> Bonds data
     Type( bonds_type ), Intent( InOut ) :: bond
     !> Angles data
@@ -84,7 +83,7 @@ Contains
     ! Redefine volume for analysis routines
     config%volm = avvol
     ! Redefine config%cell dimensions for analysis routines for npt/nst
-    If (ensemble >= 20) Then
+    If (thermo%ensemble >= 20) Then
       Do i = 1, 9
         config%cell(i) = stats%sumval(36+sites%ntype_atom+i)
       End Do
@@ -110,7 +109,7 @@ Contains
 
     ! calculate and print velocity autocorrelation function
     If (green%samp > 0 .and. green%l_print .and. green%vafcount > zero_plus) Then
-      Call vaf_compute(tstep,sites%num_type_nf,sites%mxatyp,green,comm)
+      Call vaf_compute(thermo%tstep,sites%num_type_nf,sites%mxatyp,green,comm)
     End If
 
     ! Calculate and print PDFs

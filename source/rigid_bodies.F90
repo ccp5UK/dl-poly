@@ -125,7 +125,9 @@ Module rigid_bodies
     Integer( Kind = wi ), Public :: max_frozen
     !> Maximum list size
     Integer( Kind = wi ), Public :: max_list
-
+    
+    Integer( Kind = wi ), Public :: mxquat
+    Real( Kind = wp ), Public :: quattol
   Contains
     Private
 

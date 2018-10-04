@@ -30,7 +30,7 @@
       End If
 
       If (thermo%l_langevin) Then
-        Call langevin_forces(nstep,thermo%temp,tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
+        Call langevin_forces(nstep,thermo%temp,thermo%tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
         If (rigid%share) Then
           Call update_shared_units(config,rigid%list_shared,rigid%map_shared,&
               thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
@@ -122,7 +122,7 @@
 
        If (ttm%l_ttm) Then
          Call ttm_ion_temperature(ttm,thermo,domain,config,comm)
-          Call ttm_thermal_diffusion(tstep,time,nstep,nsteql,nstbpo,ndump, &
+         Call ttm_thermal_diffusion(thermo%tstep,time,nstep,nsteql,nstbpo,ndump, &
             nstrun,ttm,thermo,domain,comm)
         End If
 
@@ -136,7 +136,7 @@
 
 ! Update total time of simulation
 
-        time = time + tstep
+        time = time + thermo%tstep
 
 ! Calculate physical quantities, collect statistics and report regularly
 
@@ -150,7 +150,7 @@
 ! Save restart data in event of system crash
 
         If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) Then
-          Call system_revive(neigh%cutoff,megatm,nstep,tstep,time,sites,io,tmst, &
+          Call system_revive(neigh%cutoff,megatm,nstep,time,sites,io,tmst, &
             stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf, &
             netcdf,config,files,comm)
         End If

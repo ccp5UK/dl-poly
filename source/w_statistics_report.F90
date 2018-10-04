@@ -17,7 +17,7 @@ Call statistics_collect           &
   (config,lsim,leql,nsteql,msd_data%l_msd, &
   keyres,      &
   degfre,degshl,degrot,          &
-  nstep,tstep,time,tmst,         &
+  nstep,thermo%tstep,time,tmst,         &
   mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,files,comm)
 
 ! VV forces evaluation report for 0th or weird restart
