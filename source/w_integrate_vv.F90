@@ -1,17 +1,17 @@
 !!!!!!!!!!!!!!!!!!!!!!  W_INTEGRATE_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
 
-! Sharlow's splittings for VV only (LFV->VV) DPD thermostat - no variable time-stepping!!!
+! Sharlow's splittings for VV only (LFV->VV) DPD thermostat - no variable flow%time-stepping!!!
 ! One-off application for first order splitting and symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
 
-      If (thermo%key_dpd > 0 .and. thermo%key_dpd*isw == 0) Then
-        Call dpd_thermostat(isw,l_str,neigh%cutoff,nstep,thermo%tstep,stat,thermo, &
+      If (thermo%key_dpd > 0 .and. thermo%key_dpd*stage == 0) Then
+        Call dpd_thermostat(stage,flow%strict,neigh%cutoff,flow%step,thermo%tstep,stat,thermo, &
           neigh,rigid,domain,config,seed,comm)
       End If
 
 ! Integrate equations of motion - velocity verlet
-! first (isw == 0) or second (isw == 1) stage
+! first (stage == 0) or second (stage == 1) stage
 
       If (.not. rigid%on) Then
          If (thermo%ensemble == ENS_NVE) Then
@@ -19,7 +19,7 @@
 ! Microcanonical ensemble
 
             Call nve_0_vv                   &
-         (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+         (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          stat%strkin,stat%engke,thermo,               &
          cshell,cons,pmf,stat,domain,tmr,config,comm)
 
@@ -28,7 +28,7 @@
 ! Evans thermostat (Gaussian temperature constraints)
 
             Call nvt_e0_vv                  &
-         (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+         (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          thermo%chi_t,                              &
          stat%strkin,stat%engke,thermo,               &
          cshell,cons,pmf,stat,domain,tmr,config,comm)
@@ -38,8 +38,8 @@
 ! Langevin thermostat (Stochastic Dynamics)
 
             Call nvt_l0_vv                  &
-         (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-         nstep,                    &
+         (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+         flow%step,                    &
          stat%strkin,stat%engke,                      &
          cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
 
@@ -48,8 +48,8 @@
 ! Andersen thermostat (Stochastic Dynamics)
 
             Call nvt_a0_vv                  &
-         (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-         nstep,       &
+         (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+         flow%step,       &
          stat%strkin,stat%engke,                      &
          cshell,cons,pmf,stat,thermo,sites,domain,tmr,config,seed,comm)
 
@@ -58,7 +58,7 @@
 ! Berendsen thermostat
 
             Call nvt_b0_vv                  &
-         (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+         (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          stat%strkin,stat%engke,                      &
          cshell,cons,pmf,stat,thermo,domain,tmr,config,comm)
 
@@ -67,7 +67,7 @@
 ! Nose-Hoover thermostat
 
             Call nvt_h0_vv                  &
-         (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+         (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          stat%consv,                             &
          stat%strkin,stat%engke,                      &
          cshell,cons,pmf,stat,thermo,domain,tmr,config,comm)
@@ -77,8 +77,8 @@
 ! Gentle-Stochastic thermostat
 
             Call nvt_g0_vv                  &
-         (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-         nstep,degfre,                 &
+         (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+         flow%step,degfre,                 &
          stat%consv,                             &
          stat%strkin,stat%engke,                      &
          cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
@@ -89,8 +89,8 @@
 ! Langevin thermostat (Stochastic Dynamics)
 
             Call nvt_l2_vv                  &
-         (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-         nstep,  &
+         (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+         flow%step,  &
               stat%strkin,stat%engke,                      &
               ttm,cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
 
@@ -99,8 +99,8 @@
 ! Langevin thermostat and isotropic barostat
 
             Call npt_l0_vv                  &
-         (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-         nstep,          &
+         (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+         flow%step,          &
          degfre,stat%virtot,                     &
          stat%consv,                             &
          stat%strkin,stat%engke,                      &
@@ -112,7 +112,7 @@
 ! Berendsen thermostat and isotropic barostat
 
               Call npt_b0_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            stat%virtot,                            &
            stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,domain, &
@@ -123,7 +123,7 @@
 ! Nose-Hoover thermostat and isotropic barostat
 
               Call npt_h0_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            degfre,stat%virtot,                     &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -135,7 +135,7 @@
 ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
               Call npt_m0_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            degfre,stat%virtot,                     &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -147,8 +147,8 @@
 ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
               Call nst_l0_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           nstep,   &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           flow%step,   &
            degfre,stat%stress,             &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -160,7 +160,7 @@
 ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
               Call nst_b0_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            stat%stress,                    &
            stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,domain,&
@@ -171,7 +171,7 @@
 ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
               Call nst_h0_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            degfre,stat%stress,             &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -183,7 +183,7 @@
 ! MTK thermostat and anisotropic barostat (cell shape varying)
 
               Call nst_m0_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            degfre,stat%stress,             &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
@@ -203,7 +203,7 @@
 ! Microcanonical ensemble
 
               Call nve_1_vv                   &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,thermo,cshell,cons,pmf,&
            stat,rigid,domain,tmr,config,comm)
@@ -213,7 +213,7 @@
 ! Evans thermostat (Gaussian temperature constraints)
 
               Call nvt_e1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            thermo%chi_t,                              &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,thermo,cshell,cons,pmf,&
@@ -224,8 +224,8 @@
 ! Langevin thermostat (Stochastic Dynamics)
 
               Call nvt_l1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           nstep,                    &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           flow%step,                    &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
            stat,thermo,rigid,domain,tmr,config,seed,comm)
@@ -235,8 +235,8 @@
 ! Andersen thermostat (Stochastic Dynamics)
 
               Call nvt_a1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           nstep,       &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           flow%step,       &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
            stat,thermo,sites,rigid,domain,tmr,config,seed,comm)
@@ -246,7 +246,7 @@
 ! Berendsen thermostat
 
               Call nvt_b1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
            stat,thermo,rigid,domain,tmr,config,comm)
@@ -256,7 +256,7 @@
 ! Nose-Hoover thermostat
 
               Call nvt_h1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
@@ -267,8 +267,8 @@
 ! Gentle-Stochastic thermostat
 
               Call nvt_g1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           nstep,degfre,                 &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           flow%step,degfre,                 &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
@@ -279,8 +279,8 @@
 ! Langevin thermostat and isotropic barostat
 
               Call npt_l1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           nstep,          &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           flow%step,          &
            degfre,degrot,stat%virtot,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
@@ -293,7 +293,7 @@
 ! Berendsen thermostat and isotropic barostat
 
               Call npt_b1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            stat%virtot,                            &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,                     &
@@ -305,7 +305,7 @@
 ! Nose-Hoover thermostat and isotropic barostat
 
               Call npt_h1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            degfre,degrot,stat%virtot,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
@@ -318,7 +318,7 @@
 ! Martyna-Tuckerman-Klein (MTK) thermostat and isotropic barostat
 
               Call npt_m1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            degfre,degrot,stat%virtot,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
@@ -331,8 +331,8 @@
 ! Langevin thermostat and barostat anisotropic (cell shape varying)
 
               Call nst_l1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           nstep,   &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           flow%step,   &
            degfre,degrot,stat%stress,      &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%consv,                             &
@@ -345,7 +345,7 @@
 ! Berendsen thermostat and barostat anisotropic (cell shape varying)
 
               Call nst_b1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            stat%stress,                    &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,                     &
@@ -357,7 +357,7 @@
 ! Nose-Hoover thermostat and anisotropic barostat (cell shape varying)
 
               Call nst_h1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            degfre,degrot,stat%stress,      &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
@@ -370,7 +370,7 @@
 ! MTK thermostat and anisotropic barostat (cell shape varying)
 
               Call nst_m1_vv                  &
-           (isw,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
+           (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            degfre,degrot,stat%stress,      &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
@@ -387,12 +387,12 @@
            End If
         End If
 
-! Sharlow's second order splittings for VV only (LFV->VV) DPD thermostat - no variable time-stepping!!!
+! Sharlow's second order splittings for VV only (LFV->VV) DPD thermostat - no variable flow%time-stepping!!!
 ! Symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
 
-        If (thermo%key_dpd > 0 .and. thermo%key_dpd*isw == 2) Then
-          Call dpd_thermostat(isw,l_str,neigh%cutoff,nstep,thermo%tstep,stat,thermo, &
+        If (thermo%key_dpd > 0 .and. thermo%key_dpd*stage == 2) Then
+          Call dpd_thermostat(stage,flow%strict,neigh%cutoff,flow%step,thermo%tstep,stat,thermo, &
             neigh,rigid,domain,config,seed,comm)
         End If
 

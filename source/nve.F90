@@ -24,7 +24,7 @@ Module nve
 
 Contains
 
-  Subroutine nve_0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nve_0_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
       strkin,engke,thermo,               &
       cshell,cons,pmf,stat,domain,tmr,config,comm)
 
@@ -38,7 +38,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -117,7 +117,7 @@ Contains
 
     ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
       ! store initial values
 
@@ -227,7 +227,7 @@ Contains
 
   End Subroutine nve_0_vv
 
-  Subroutine nve_1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nve_1_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
       strkin,strknf,strknt,engke,engrot, &
       strcom,vircom,thermo,cshell,cons,pmf,stat,& 
       rigid,domain,tmr,config,comm)
@@ -243,7 +243,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -394,7 +394,7 @@ Contains
 
     ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
       ! store initial values
 

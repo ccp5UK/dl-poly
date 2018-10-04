@@ -14,10 +14,10 @@ End If
 ! Calculate physical quantities and collect statistics
 
 Call statistics_collect           &
-  (config,lsim,leql,nsteql,msd_data%l_msd, &
-  keyres,      &
+  (config,flow%simulation,flow%equilibration,flow%equil_steps,msd_data%l_msd, &
+  flow%restart_key,      &
   degfre,degshl,degrot,          &
-  nstep,thermo%tstep,time,tmst,         &
+  flow%step,thermo%tstep,flow%time,flow%start_time,         &
   mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,files,comm)
 
 ! VV forces evaluation report for 0th or weird restart
@@ -27,11 +27,11 @@ If (levcfg == 1) Then
   Call info('',.true.)
 End If
 
-! line-printer output every nstbpo steps
+! line-printer output every flow%freq_output steps
 
-If (flow%lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
+If (flow%lines == 0 .or. Mod(flow%step,flow%freq_output) == 0) Then
 
-  ! Update cpu time
+  ! Update cpu flow%time
 
   Call gtime(tmr%elapsed)
 
@@ -47,8 +47,8 @@ If (flow%lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
     Call info(messages,5,.true.)
   End If
 
-  Write(messages(1),'(i13,1p,9e12.4)')nstep,stat%stpval(1:9)
-  Write(messages(2),'(f13.5,1p,9e12.4)')time,stat%stpval(10:18)
+  Write(messages(1),'(i13,1p,9e12.4)')flow%step,stat%stpval(1:9)
+  Write(messages(2),'(f13.5,1p,9e12.4)')flow%time,stat%stpval(10:18)
   Write(messages(3),'(0p,f13.3,1p,9e12.4)') tmr%elapsed,stat%stpval(19:27)
   Write(messages(4),'(a)')''
   Call info(messages,4,.true.)
@@ -59,7 +59,7 @@ If (flow%lines == 0 .or. Mod(nstep,nstbpo) == 0) Then
   Write(messages(4),'(a)') Repeat('-',130)
   Call info(messages,4,.true.)
 
-  If (nstep /= 0) Then
+  If (flow%step /= 0) Then
     Call flow%line_printed()
   End If
 
@@ -67,31 +67,31 @@ End If
 
 ! Reports at end of equilibration period
 
-If (nstep == nsteql) Then
+If (flow%step == flow%equil_steps) Then
 
-  If (nstep > 0) Then
+  If (flow%step > 0) Then
     Call info(repeat('-',130),.true.)
     If (thermo%l_zero) Then
       thermo%l_zero=.false.
-      Write(message,'(a,i10)') 'switching off zero Kelvin optimiser at step ',nstep
+      Write(message,'(a,i10)') 'switching off zero Kelvin optimiser at step ',flow%step
       Call info(message,.true.)
     End If
 
     If (minim%minimise) Then
       minim%minimise=.false.
-      Write(message,'(a,i10)') 'switching off CGM minimiser at step ',nstep
+      Write(message,'(a,i10)') 'switching off CGM minimiser at step ',flow%step
       Call info(message,.true.)
     End If
 
     If (thermo%l_tscale) Then
       thermo%l_tscale=.false.
-      Write(message,'(a,i10)') 'switching off temperature scaling at step ',nstep
+      Write(message,'(a,i10)') 'switching off temperature scaling at step ',flow%step
       Call info(message,.true.)
     End If
 
     If (thermo%l_tgaus) Then
       thermo%l_tgaus=.false.
-      Write(message,'(a,i10)') 'switching off temperature regaussing at step ',nstep
+      Write(message,'(a,i10)') 'switching off temperature regaussing at step ',flow%step
       Call info(message,.true.)
     End If
   End If
@@ -122,14 +122,14 @@ If (nstep == nsteql) Then
     End If
   End If
 
-  If (nstep > 0 .or. cons%megcon > 0 .or. pmf%megpmf > 0) Then
+  If (flow%step > 0 .or. cons%megcon > 0 .or. pmf%megpmf > 0) Then
     Call info(repeat('-',130),.true.)
   End If
 End If
 
 ! Calculate green-kubo properties
 
-If (green%samp > 0) Call vaf_collect(config,sites%mxatyp,leql,nsteql,nstep,time,green,comm)
+If (green%samp > 0) Call vaf_collect(config,sites%mxatyp,flow%equilibration,flow%equil_steps,flow%step,flow%time,green,comm)
 
 
 !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

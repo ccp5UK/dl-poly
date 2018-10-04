@@ -25,7 +25,7 @@ Module nvt_gst
 
 Contains
 
-  Subroutine nvt_g0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,degfre,consv, &
+  Subroutine nvt_g0_vv(stage,lvar,mndis,mxdis,mxstp,tstep,nstep,degfre,consv, &
       strkin,engke,cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -46,7 +46,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -137,7 +137,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -179,7 +179,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
   ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
        Call nvt_g0_scl &
-             (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
+             (hstep,degfre,stage,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              config%vxx,config%vyy,config%vzz,engke,thermo,config,seed,comm)
 
   ! update velocity and position
@@ -253,7 +253,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   ! integrate and apply nvt_g0_scl thermostat - 1/2 step
 
        Call nvt_g0_scl &
-             (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
+             (hstep,degfre,stage,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              config%vxx,config%vyy,config%vzz,engke,thermo,config,seed,comm)
 
   ! conserved quantity less kinetic and potential energy terms
@@ -282,7 +282,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nvt_g0_vv
 
-  Subroutine nvt_g1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,degfre,consv, &
+  Subroutine nvt_g1_vv(stage,lvar,mndis,mxdis,mxstp,tstep,nstep,degfre,consv, &
       strkin,strknf,strknt,engke,engrot,strcom,vircom,cshell,cons,pmf,stat, &
       thermo,rigid,domain,tmr,config,seed,comm)
 
@@ -305,7 +305,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -464,7 +464,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -525,7 +525,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
   ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
        Call nvt_g1_scl &
-             (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
+             (hstep,degfre,stage,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              config%vxx,config%vyy,config%vzz,                                                &
              engke,engrot,thermo,rigid,config,seed,comm)
 
@@ -919,7 +919,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   ! integrate and apply nvt_g1_scl thermostat - 1/2 step
 
        Call nvt_g1_scl &
-             (hstep,degfre,isw,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
+             (hstep,degfre,stage,nstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
              config%vxx,config%vyy,config%vzz,                                                &
              engke,engrot,thermo,rigid,config,seed,comm)
 
@@ -958,7 +958,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   End Subroutine nvt_g1_vv
 
   Subroutine nvt_g0_scl &
-             (tstep,degfre,isw,nstep,ceng,qmass,pmass,chip, &
+             (tstep,degfre,stage,nstep,ceng,qmass,pmass,chip, &
              vxx,vyy,vzz,engke,thermo,config,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -977,7 +977,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
                                                                  pmass,chip
     Integer(Kind=li),                         Intent( In    ) :: degfre
-    Integer,                                  Intent( In    ) :: isw,nstep
+    Integer,                                  Intent( In    ) :: stage,nstep
     Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: engke
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1008,7 +1008,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
 
-    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*isw+1,r_0,.true.)
+    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*stage+1,r_0,.true.)
 
   ! update thermo%chi_t to 1/2*tstep
 
@@ -1035,7 +1035,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
 
-    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*isw+2,r_0,.true.)
+    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*stage+2,r_0,.true.)
 
   ! update thermo%chi_t to full (2/2)*tstep
 
@@ -1049,7 +1049,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   End Subroutine nvt_g0_scl
 
   Subroutine nvt_g1_scl &
-             (tstep,degfre,isw,nstep,ceng,qmass,pmass,chip, &
+             (tstep,degfre,stage,nstep,ceng,qmass,pmass,chip, &
              vxx,vyy,vzz,                                             &
              engke,engrot,thermo,rigid,config,seed,comm)
 
@@ -1069,7 +1069,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
                                                                  pmass,chip
     Integer(Kind=li),                         Intent( In    ) :: degfre
-    Integer,                                  Intent( In    ) :: isw,nstep
+    Integer,                                  Intent( In    ) :: stage,nstep
     Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1106,7 +1106,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
 
-    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*isw+1,r_0,.true.)
+    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*stage+1,r_0,.true.)
 
   ! update thermo%chi_t to 1/2*tstep
 
@@ -1146,7 +1146,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   ! generate a Gaussian random number for use in the
   ! Langevin process on the thermostat friction
 
-    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*isw+2,r_0,.true.)
+    Call box_mueller_saru2(seed,Int(degfre/3_li),nstep-1,2*stage+2,r_0,.true.)
 
   ! update thermo%chi_t to full (2/2)*tstep
 

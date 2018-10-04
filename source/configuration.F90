@@ -61,6 +61,7 @@ Module configuration
   Use thermostat, Only : thermostat_type,CONSTRAINT_NONE
   Use electrostatic, Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
   Use filename, Only : file_type,FILE_CONFIG
+  Use flow, Only : flow_type
   Implicit None
 
 Type configuration_type
@@ -339,7 +340,7 @@ End Subroutine chvom
 
   End Subroutine allocate_config_arrays
 
-  Subroutine check_config(config,levcfg,l_str,electro_key,keyres,megatm,thermo,sites,comm)
+  Subroutine check_config(config,levcfg,electro_key,megatm,thermo,sites,flow,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -353,11 +354,11 @@ End Subroutine chvom
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical, Intent( In    ) :: l_str
-  Integer, Intent( In    ) :: levcfg,electro_key,keyres,megatm
+  Integer, Intent( In    ) :: levcfg,electro_key,megatm
   Type( configuration_type ), Intent( InOut ) :: config
   Type( thermostat_type ), Intent( In    ) :: thermo
   Type( site_type ), Intent( In    ) :: sites
+  Type( flow_type ), Intent( In    ) :: flow
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: safe
@@ -369,7 +370,7 @@ End Subroutine chvom
   Character( Len = 256 ) :: message
 
   fail=0
-  If (l_str) Then
+  If (flow%strict) Then
      Allocate (iwrk(1:config%mxatms), Stat=fail)
      If (fail > 0) Then
         Write(message,'(a)') 'check_config allocation failure'
@@ -438,9 +439,9 @@ End Subroutine chvom
 
 ! Check on validity of config file contents
 
-  If (keyres > 0 .and. levcfg < 1) Call error(85)
+  If (flow%restart_key > 0 .and. levcfg < 1) Call error(85)
 
-  If (l_str) iwrk(1:config%natms) = 0 ! initialise
+  If (flow%strict) iwrk(1:config%natms) = 0 ! initialise
 
 ! Safe flag
 
@@ -500,7 +501,7 @@ End Subroutine chvom
 
 ! Print global indices for a later check on ordering (mixed indexing)
 
-              If (l_str) iwrk(indatm) = totatm ! Populate
+              If (flow%strict) iwrk(indatm) = totatm ! Populate
 
 ! Increase local atom counter
 
@@ -526,7 +527,7 @@ End Subroutine chvom
 
 ! Check CONFIG indices eligibility
 
-  If (l_str) Then
+  If (flow%strict) Then
      Call all_inds_present( iwrk, indatm, megatm, safe )
      Call gcheck(comm,safe)
      If (.not.safe) Call error(28)
@@ -718,7 +719,7 @@ End Subroutine check_config
 
 
 
-Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,dens0,dens,io,domain,files,comm)
+Subroutine read_config(config,megatm,levcfg,l_ind,strict,rcut,dvar,xhi,yhi,zhi,dens0,dens,io,domain,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -734,7 +735,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 
   Type( io_type ), Intent( InOut ) :: io
   Integer,           Intent( In    ) :: megatm,levcfg
-  Logical,           Intent( In    ) :: l_ind,l_str
+  Logical,           Intent( In    ) :: l_ind,strict
   Real( Kind = wp ), Intent( In    ) :: rcut,dvar
   Real( Kind = wp ), Intent( InOut ) :: xhi,yhi,zhi
   Real( Kind = wp ), Intent(   Out ) :: dens0,dens
@@ -904,7 +905,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 ! Read particles total value
 
         Call get_word(record,word) ; Call get_word(record,word)
-        Call get_word(record,word) ; i=Nint(word_2_real(word,0.0_wp,l_str))
+        Call get_word(record,word) ; i=Nint(word_2_real(word,0.0_wp,strict))
         fast = (fast .and. i == megatm)
 
      End If
@@ -990,7 +991,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
            Call get_word(record,word) ; chbuf(indatm)=word(1:8)
            If (l_ind) Then
               Call get_word(record,word)
-              iwrk(indatm)=Nint(word_2_real(word,0.0_wp,l_str))
+              iwrk(indatm)=Nint(word_2_real(word,0.0_wp,strict))
               If (iwrk(indatm) /= 0) Then
                  iwrk(indatm)=Abs(iwrk(indatm))
               Else
@@ -1178,7 +1179,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
         top_skip = Int(1,offset_kind) ! This is now the frame = 1
      End If
 
-     Call read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
+     Call read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his,l_xtr, &
        fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
 ! Close CONFIG
@@ -1364,7 +1365,7 @@ Subroutine read_config(config,megatm,levcfg,l_ind,l_str,rcut,dvar,xhi,yhi,zhi,de
 
 End Subroutine read_config
 
-Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his, &
+Subroutine read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his, &
     l_xtr,fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1378,7 +1379,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his, &
 
 
   Type( io_type ), Intent( InOut ) :: io
-  Logical,                           Intent( In    ) :: l_ind,l_str,l_his,fast,l_xtr
+  Logical,                           Intent( In    ) :: l_ind,strict,l_his,fast,l_xtr
   Integer,                           Intent( In    ) :: levcfg,megatm,fh
   Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
   Real( Kind = wp ),                 Intent( In    ) :: dvar
@@ -1606,7 +1607,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his, &
               Call get_word(record,word) ; chbuf_read(i)=word(1:8)
               If (l_ind) Then
                  Call get_word(record,word)
-                 iwrk_read(i)=Nint(word_2_real(word,0.0_wp,l_str))
+                 iwrk_read(i)=Nint(word_2_real(word,0.0_wp,strict))
                  If (iwrk_read(i) /= 0) Then
                     iwrk_read(i)=Abs(iwrk_read(i))
                  Else
@@ -2041,7 +2042,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
   Character( Len = 40  ) :: word,fname
   Logical                :: safe  = .true.  , &
                             l_ind = .false. , &
-                            l_str = .false. , &
+                            strict = .false. , &
                             l_his = .false. , &
                             l_xtr = .true.  , &
                             fast
@@ -2132,7 +2133,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 ! Read particles total value
 
         Call get_word(record,word) ; Call get_word(record,word)
-        Call get_word(record,word) ; i=Nint(word_2_real(word,0.0_wp,l_str))
+        Call get_word(record,word) ; i=Nint(word_2_real(word,0.0_wp,strict))
         fast = (fast .and. i == megatm)
 
      End If
@@ -2347,7 +2348,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
            top_skip = Int(1,offset_kind) ! This is now the frame = 1
         End If
 
-        Call read_config_parallel(config,levcfg,dvar,l_ind,l_str,megatm,l_his,l_xtr, &
+        Call read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his,l_xtr, &
           fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
 ! Close CONFIG
@@ -2389,7 +2390,7 @@ Subroutine scale_config(config,megatm,io,devel,netcdf,comm)
   Integer, Intent( In    ) :: megatm
   Type( configuration_type ), Intent( InOut ) :: config
   Character ( Len = 6 ) :: name
-  Integer               :: i,nstep
+  Integer               :: i,step
   Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
   Type( development_type ), Intent( In    ) :: devel
   Type( netcdf_param ), Intent( In    ) :: netcdf
@@ -2424,18 +2425,18 @@ Subroutine scale_config(config,megatm,io,devel,netcdf,comm)
 ! Write REVCON
 
   Call cfgscl%init('CFGSCL')
-  nstep  = 0        ! no steps done
+  step  = 0        ! no steps done
   tstep  = 0.0_wp   ! no step exists
   time   = 0.0_wp   ! time is not relevant
 
   rcell = config%cell ; config%cell = devel%cels
-  Call write_config(config,cfgscl,devel%lvcfscl,megatm,nstep,tstep,io,time,netcdf,comm)
+  Call write_config(config,cfgscl,devel%lvcfscl,megatm,step,tstep,io,time,netcdf,comm)
   config%cell = rcell
 
 End Subroutine scale_config
 
 
-Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,comm)
+Subroutine write_config(config,cfile,levcfg,megatm,step,tstep,io,time,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2448,7 +2449,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,co
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( io_type ), Intent( InOut ) :: io
   Type( file_type ), Intent( InOut ) :: cfile
-  Integer,              Intent( In    ) :: levcfg,megatm,nstep
+  Integer,              Intent( In    ) :: levcfg,megatm,step
   Real( Kind = wp ),    Intent( In    ) :: tstep,time
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( configuration_type ), Intent( InOut ) :: config
@@ -2539,7 +2540,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,co
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,nstep,tstep,time,lf
+        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,step,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -2655,7 +2656,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,co
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,nstep,tstep,time,lf
+        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,step,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -2840,7 +2841,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,co
            Call io_write_record(io, fh, Int(jj,offset_kind), record )
            jj=jj+1
 
-           Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,nstep,tstep,time,lf
+           Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,step,tstep,time,lf
            Call io_write_record(io, fh, Int(jj,offset_kind), record )
            jj=jj+1
 
@@ -2860,7 +2861,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,co
            jj=1 ! For config there is only one frame
 
            Call io_nc_put_var(io, 'time'           , fh,   time, jj, 1 )
-           Call io_nc_put_var(io, 'step'           , fh,  nstep, jj, 1 )
+           Call io_nc_put_var(io, 'step'           , fh,  step, jj, 1 )
            Call io_nc_put_var(io, 'datalevel'      , fh, levcfg, jj, 1 )
            Call io_nc_put_var(io, 'imageconvention', fh,  config%imcon, jj, 1 )
            Call io_nc_put_var(io, 'timestep'       , fh,  tstep, jj, 1 )
@@ -2958,7 +2959,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,nstep,tstep,io,time,netcdf,co
         rec=rec+Int(1,li)
         Write(Unit=cfile%unit_no, Fmt='(a72,a1)',            Rec=rec) config%cfgname(1:72),lf
         rec=rec+Int(1,li)
-        Write(Unit=cfile%unit_no, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,config%imcon,megatm,nstep,tstep,time,lf
+        Write(Unit=cfile%unit_no, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,config%imcon,megatm,step,tstep,time,lf
 
 ! Write optional cell information (if present)
 
@@ -3315,7 +3316,7 @@ Subroutine getcom_parts(config,com,comm)
     Type( comms_type ), Intent( InOut ) :: comm
 
     Type( file_type ) :: cfgorg
-    Integer               :: i,nstep
+    Integer               :: i,step
     Real( Kind = wp )     :: tstep,time
 
     ! Translate
@@ -3333,11 +3334,11 @@ Subroutine getcom_parts(config,com,comm)
     ! Write REVCON
 
     Call cfgorg%init('CFGORG')
-    nstep  = 0        ! no steps done
+    step  = 0        ! no steps done
     tstep  = 0.0_wp   ! no step exists
     time   = 0.0_wp   ! time is not relevant
 
-    Call write_config(config,cfgorg,devel%lvcforg,megatm,nstep,tstep,io,time,netcdf,comm)
+    Call write_config(config,cfgorg,devel%lvcforg,megatm,step,tstep,io,time,netcdf,comm)
 
   End Subroutine origin_config
 End Module configuration

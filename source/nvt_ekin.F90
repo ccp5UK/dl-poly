@@ -34,7 +34,7 @@ Module nvt_ekin
 
 Contains
 
-  Subroutine nvt_e0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,chit,strkin,engke, &
+  Subroutine nvt_e0_vv(stage,lvar,mndis,mxdis,mxstp,tstep,chit,strkin,engke, &
       thermo,cshell,cons,pmf,stat,domain,tmr,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -48,7 +48,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -130,7 +130,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -259,7 +259,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nvt_e0_vv
 
-  Subroutine nvt_e1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,chit,strkin,strknf, &
+  Subroutine nvt_e1_vv(stage,lvar,mndis,mxdis,mxstp,tstep,chit,strkin,strknf, &
       strknt,engke,engrot,strcom,vircom,&
       thermo,cshell,cons,pmf,stat,rigid,domain,tmr,config,comm)
 
@@ -275,7 +275,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -518,7 +518,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -922,7 +922,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nvt_e1_vv
 
-  Subroutine nvt_e0_scl_arrays(isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke,config,comm)
+  Subroutine nvt_e0_scl_arrays(stage,tstep,fxx,fyy,fzz,vxx,vyy,vzz,chit,engke,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -934,7 +934,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: isw
+    Integer,                                  Intent( In    ) :: stage
     Real( Kind = wp ),                        Intent( In    ) :: tstep
     Real( Kind = wp ), Dimension( : ), Intent( In    ) :: fxx,fyy,fzz
     Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
@@ -969,7 +969,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     engke = 0.5_wp*engke
 
-    If (isw == 0) Return
+    If (stage == 0) Return
 
   ! thermostat velocities
 
@@ -987,7 +987,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nvt_e0_scl_arrays
 
-  Subroutine nvt_e0_scl_config(isw,tstep,config,vxx,vyy,vzz,chit,engke,comm)
+  Subroutine nvt_e0_scl_config(stage,tstep,config,vxx,vyy,vzz,chit,engke,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -999,7 +999,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: isw
+    Integer,                                  Intent( In    ) :: stage
     Real( Kind = wp ),                        Intent( In    ) :: tstep
     Type( configuration_type ),               Intent( In    ) :: config
     Real( Kind = wp ), Dimension( 1:config%mxatms ), Intent( InOut ) :: vxx,vyy,vzz
@@ -1033,7 +1033,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
     engke = 0.5_wp*engke
 
-    If (isw == 0) Return
+    If (stage == 0) Return
 
   ! thermostat velocities
 
@@ -1051,7 +1051,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   End Subroutine nvt_e0_scl_config
 
   Subroutine nvt_e1_scl_arrays &
-             (isw,tstep,fxx,fyy,fzz,vxx,vyy,vzz,        &
+             (stage,tstep,fxx,fyy,fzz,vxx,vyy,vzz,        &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
              chit,engke,engrot,rigid,config,comm)
 
@@ -1065,7 +1065,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: isw
+    Integer,                                  Intent( In    ) :: stage
     Real( Kind = wp ),                        Intent( In    ) :: tstep
     Real( Kind = wp ), Dimension( : ), Intent( In    ) :: fxx,fyy,fzz
     Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
@@ -1146,7 +1146,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     engke = 0.5_wp*engke
     engrot = 0.5_wp*engrot
 
-    If (isw == 0) Return
+    If (stage == 0) Return
 
   ! thermostat velocities
 
@@ -1178,7 +1178,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nvt_e1_scl_arrays
   Subroutine nvt_e1_scl_config &
-             (isw,tstep,config,vxx,vyy,vzz,        &
+             (stage,tstep,config,vxx,vyy,vzz,        &
              rgdfxx,rgdfyy,rgdfzz,rgdtxx,rgdtyy,rgdtzz, &
              chit,engke,engrot,rigid,comm)
 
@@ -1192,7 +1192,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: isw
+    Integer,                                  Intent( In    ) :: stage
     Real( Kind = wp ),                        Intent( In    ) :: tstep
     Type( configuration_type ),               Intent( In    ) :: config
     Real( Kind = wp ), Dimension( 1:config%mxatms ), Intent( InOut ) :: vxx,vyy,vzz
@@ -1272,7 +1272,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     engke = 0.5_wp*engke
     engrot = 0.5_wp*engrot
 
-    If (isw == 0) Return
+    If (stage == 0) Return
 
   ! thermostat velocities
 

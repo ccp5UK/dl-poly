@@ -85,21 +85,17 @@ Module kontrol
 Contains
 
   Subroutine read_control                                &
-    (levcfg,l_str,lsim,l_n_e,l_n_v,        &
+    (levcfg,l_n_e,l_n_v,        &
     width,     &
-    l_exp,lfcap,l_top,          &
-    leql,               &
-    lfce,           &
+    l_exp,          &
+    lfce, &
     nx,ny,nz,impa,                            &
-    keyres,                   &
-    nstrun,nsteql,      &
-    fmax,nstbpo,             &
-    nstbnd,nstang,nstdih,nstinv,  &
+    fmax,             &
     ttm,dfcts,          &
-    ndump, rigid,&
+    rigid, &
     rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-    rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,comm)
+    rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -119,21 +115,14 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( ttm_type ), Intent( InOut ) :: ttm
-  Logical,                Intent( In    ) :: l_str,lsim,l_n_e,l_n_v
+  Logical,                Intent( In    ) :: l_n_e,l_n_v
   Integer,                Intent( In    ) :: levcfg
   Real( Kind = wp ),      Intent( In    ) :: width
 
-  Logical,                Intent(   Out ) :: l_exp,        &
-    lfcap,l_top,           &
-    leql,lfce
+  Logical,                Intent(   Out ) :: l_exp,lfce
 
-  Integer,                Intent(   Out ) :: nx,ny,nz,             &
-    keyres,nstrun,        &
-    nsteql,       &
-    nstbpo,        &
-    nstbnd,nstang,        &
-    nstdih,nstinv,        &
-    ndump
+
+  Integer,                Intent(   Out ) :: nx,ny,nz
 
   Real( Kind = wp ),      Intent(   Out ) :: fmax
 
@@ -170,6 +159,7 @@ Contains
   Type( trajectory_type ), Intent( InOut ) :: traj
   Type( configuration_type ), Intent( InOut ) :: config
   Type( file_type ), Intent( InOut ) :: files(:)
+  Type( flow_type ), Intent( InOut ) :: flow
   Type( comms_type ),     Intent( InOut )  :: comm
 
   Integer( Kind = wi ) :: tmp_seed(1:3)
@@ -236,7 +226,7 @@ Contains
 
 ! default restart key (general)
 
-  keyres = 0
+  flow%restart_key = 0
 
 ! timestep switch and default value
 
@@ -253,13 +243,13 @@ Contains
 
 ! total number of steps to run
 
-  nstrun = 0
+  flow%run_steps = 0
 
 ! number of steps for equilibration and default for exclusion of
 ! statistics collection during those steps
 
-  nsteql = 0
-  leql   = .true.
+  flow%equil_steps = 0
+  flow%equilibration   = .true.
 
 ! switch for pseudo thermostat (not applied), type of scaling
 ! (default 0 where 0 - Langevin+direct, 1 - Langevin, 2 - gauss, 3 - direct )
@@ -330,12 +320,12 @@ Contains
 
 ! default switch for force capping and cap value
 
-  lfcap = .false.
+  flow%force_cap = .false.
   fmax  = 1000.0_wp
 
 ! default switch for printing topology
 
-  l_top = .true.
+  flow%print_topology = .true.
 
 ! default switch for removing COM momentum for ensembles
 !
@@ -441,10 +431,10 @@ Contains
 ! default switches for calculation and printing of intramolecular analysis
 
   nstana = 0 ; grdana = 0
-  nstbnd = 0 ; grdbnd = 0 ; rcb_d  = 0.0_wp
-  nstang = 0 ; grdang = 0
-  nstdih = 0 ; grddih = 0
-  nstinv = 0 ; grdinv = 0
+  flow%freq_bond = 0 ; grdbnd = 0 ; rcb_d  = 0.0_wp
+  flow%freq_angle = 0 ; grdang = 0
+  flow%freq_dihedral = 0 ; grddih = 0
+  flow%freq_inversion = 0 ; grdinv = 0
   stats%lpana  = .false.
 
 ! default switch for calculation of rdfs, default number of steps
@@ -469,7 +459,7 @@ Contains
 
 ! default for data printing interval
 
-  nstbpo = 100
+  flow%freq_output = 100
 
 ! default for statistics file interval
 
@@ -509,7 +499,7 @@ Contains
 
 ! default value for data dumping interval
 
-  ndump = 1000
+  flow%freq_restart = 1000
 
 ! default value for the particle density per link cell limit
 ! below which subcelling (decreasing link-cell dimensions) stops
@@ -914,13 +904,13 @@ Contains
         Call get_word(record,word)
 
         If (word(1:7) == 'noscale' .or. word(1:7) == 'unscale') Then
-           keyres = 3
+           flow%restart_key = 3
            Call info('unscaled restart requested (starting a new simulation)',.true.)
         Else If (word(1:5) == 'scale') Then
-           keyres = 2
+           flow%restart_key = 2
            Call info('scaled restart requested (starting a new simulation)',.true.)
         Else
-           keyres = 1
+           flow%restart_key = 1
            Call info('restart requested (continuing an old simulation)',.true.)
         End If
 
@@ -968,19 +958,19 @@ Contains
 
      Else If (word(1:5) == 'steps') Then
         Call get_word(record,word)
-        nstrun = Nint(word_2_real(word))
-        Write(message,'(a,i10)') 'selected number of timesteps ',nstrun
+        flow%run_steps = Nint(word_2_real(word))
+        Write(message,'(a,i10)') 'selected number of timesteps ',flow%run_steps
         Call info(message,.true.)
 ! read number of equilibration timesteps
      Else If (word(1:5) == 'equil') Then
         Call get_word(record,word)
         If (word(1:5) == 'steps') Call get_word(record,word)
-        nsteql = Abs(Nint(word_2_real(word)))
-        Write(message,'(a,i10)') 'equilibration period (steps) ', nsteql
+        flow%equil_steps = Abs(Nint(word_2_real(word)))
+        Write(message,'(a,i10)') 'equilibration period (steps) ', flow%equil_steps
         Call info(message,.true.)
 ! read collection option
      Else If (word(1:7) == 'collect') Then
-        leql = .false.
+        flow%equilibration = .false.
         Call info('equilibration included in overall averages',.true.)
 ! read pseudo thermostat option
      Else If (word(1:6) == 'pseudo') Then
@@ -1994,7 +1984,7 @@ Contains
 
      Else If (word(1:3) == 'cap') Then
 
-        lfcap = .true.
+        flow%force_cap = .true.
 
         Call get_word(record,word)
         If (word(1:5) == 'force') Call get_word(record,word)
@@ -2035,7 +2025,7 @@ Contains
 
            Call info('no topology option on (avoids printing extended FIELD topology in OUTPUT)',.true.)
 
-           l_top = .false.
+           flow%print_topology = .false.
 
         Else If (word1(1:5) == 'vafav') Then
 
@@ -2532,7 +2522,7 @@ Contains
 
      Else If (word(1:6) == 'replay') Then
 
-!        lsim = .false. ! done in scan_control
+!        flow%simulation = .false. ! done in scan_control
         Call get_word(record,word)
         If (word(1:4) == 'hist') Call get_word(record,word)
         If (word(1:5) == 'force') lfce=.true.
@@ -2585,17 +2575,17 @@ Contains
            If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
            tmp=Abs(word_2_real(word)) ! bond length
 
-           nstbnd=Max(nstbnd,i)
+           flow%freq_bond=Max(flow%freq_bond,i)
            grdbnd=j
            rcb_d =Max(rcb_d,tmp)
         Else If (akey == 'ang') Then
-           nstang=Max(nstang,i)
+           flow%freq_angle=Max(flow%freq_angle,i)
            grdang=j
         Else If (akey == 'dih') Then
-           nstdih=Max(nstdih,i)
+           flow%freq_dihedral=Max(flow%freq_dihedral,i)
            grddih=j
         Else If (akey == 'inv') Then
-           nstinv=Max(nstinv,i)
+           flow%freq_inversion=Max(flow%freq_inversion,i)
            grdinv=j
         End If
         grdana=Max(grdana,grdbnd,grdang,grddih,grdinv)
@@ -2659,8 +2649,8 @@ Contains
            green%l_print = .true.
         Else
            If (word(1:5) == 'every') Call get_word(record,word)
-           nstbpo = Abs(Nint(word_2_real(word,1.0_wp)))
-           Write(message,'(a,i10)') 'data printing interval (steps) ',nstbpo
+           flow%freq_output = Abs(Nint(word_2_real(word,1.0_wp)))
+           Write(message,'(a,i10)') 'data printing interval (steps) ',flow%freq_output
            Call info(message,.true.)
         End If
 
@@ -2842,7 +2832,7 @@ Contains
         Call get_word(record,word)
         If (word(1:4) == 'data' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:4) == 'data' .or. word(1:5) == 'every') Call get_word(record,word)
-        ndump = Max(Abs(Nint(word_2_real(word))),1)
+        flow%freq_restart = Max(Abs(Nint(word_2_real(word))),1)
 
 ! default for particle density per link cell below
 ! which decreasing link-cell size (subcelling) stops
@@ -2974,19 +2964,19 @@ Contains
 !!! FIXES !!!
 ! fix on step-dependent options
 
-  If (minim%freq  == 0) minim%freq  = nsteql+1
-  If (thermo%freq_zero == 0) thermo%freq_zero = nsteql+1
-  If (thermo%freq_tgaus == 0) thermo%freq_tgaus = nsteql+1
-  If (thermo%freq_tscale == 0) thermo%freq_tscale = nsteql+1
+  If (minim%freq  == 0) minim%freq  = flow%equil_steps+1
+  If (thermo%freq_zero == 0) thermo%freq_zero = flow%equil_steps+1
+  If (thermo%freq_tgaus == 0) thermo%freq_tgaus = flow%equil_steps+1
+  If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps+1
 
 !!! REPORTS !!!
 ! report restart
 
-  If (keyres == 0) Then
+  If (flow%restart_key == 0) Then
      Call info('clean start requested',.true.)
   Else If (levcfg == 0) Then
      Call warning(200,0.0_wp,0.0_wp,0.0_wp)
-     keyres=0
+     flow%restart_key=0
   End If
 
 ! report default ensemble if none is specified:
@@ -3155,16 +3145,16 @@ Contains
            Call info('intramolecular distribution collection requested for:',.true.)
         End If
 
-        i=Max(1,nstana,nstbnd,nstang,nstdih,nstinv)
+        i=Max(1,nstana,flow%freq_bond,flow%freq_angle,flow%freq_dihedral,flow%freq_inversion)
         nstall=Min(i , Merge(nstana , i , nstana > 0), &
-                       Merge(nstbnd , i , nstbnd > 0), &
-                       Merge(nstang , i , nstang > 0), &
-                       Merge(nstdih , i , nstdih > 0), &
-                       Merge(nstinv , i , nstinv > 0))
+                       Merge(flow%freq_bond , i , flow%freq_bond > 0), &
+                       Merge(flow%freq_angle , i , flow%freq_angle > 0), &
+                       Merge(flow%freq_dihedral , i , flow%freq_dihedral > 0), &
+                       Merge(flow%freq_inversion , i , flow%freq_inversion > 0))
 
         If (bond%bin_pdf > 0) Then
-           If (nstbnd == 0 .or. (nstbnd > nstana .and. nstana > 0)) Then
-              nstbnd = Merge(nstana , nstall , nstana > 0)
+           If (flow%freq_bond == 0 .or. (flow%freq_bond > nstana .and. nstana > 0)) Then
+              flow%freq_bond = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
@@ -3172,7 +3162,7 @@ Contains
            j=Merge(1, 0, grdbnd /= bond%bin_pdf)
            k=Merge(1, 0, Abs(bond%rcut-rcb_d) > 1.0e-3_wp)
            Write(message,'(2(a,i10),a,f7.2,a)') &
-             'bonds      - collection every ',nstbnd,' step(s); ngrid = ', &
+             'bonds      - collection every ',flow%freq_bond,' step(s); ngrid = ', &
              bond%bin_pdf,' points; cutoff = ',bond%rcut, ' Angs'
            Call info(message,.true.)
            If (i+j+k > 1) Then
@@ -3184,15 +3174,15 @@ Contains
         End If
 
         If (angle%bin_adf > 0) Then
-           If (nstang == 0 .or. (nstang > nstana .and. nstana > 0)) Then
-              nstang = Merge(nstana , nstall , nstana > 0)
+           If (flow%freq_angle == 0 .or. (flow%freq_angle > nstana .and. nstana > 0)) Then
+              flow%freq_angle = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
            End If
            j=Merge(1, 0, grdang /= angle%bin_adf)
            Write(message,'(2(a,i10),a)') &
-              'angles     - collection every ',nstang,' step(s); ngrid = ',angle%bin_adf,' points'
+              'angles     - collection every ',flow%freq_angle,' step(s); ngrid = ',angle%bin_adf,' points'
            Call info(message,.true.)
            If (i+j > 1) Then
              Write(message,'(2(a,i10))') &
@@ -3202,15 +3192,15 @@ Contains
         End If
 
         If (dihedral%bin_adf > 0) Then
-           If (nstdih == 0 .or. (nstdih > nstana .and. nstana > 0)) Then
-              nstdih = Merge(nstana , nstall , nstana > 0)
+           If (flow%freq_dihedral == 0 .or. (flow%freq_dihedral > nstana .and. nstana > 0)) Then
+              flow%freq_dihedral = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
            End If
            j=Merge(1, 0, grddih /= dihedral%bin_adf)
            Write(message,'(2(a,i10),a)') &
-             'dihedrals  - collection every ',nstdih,' step(s); ngrid = ',dihedral%bin_adf,' points'
+             'dihedrals  - collection every ',flow%freq_dihedral,' step(s); ngrid = ',dihedral%bin_adf,' points'
            Call info(message,.true.)
            If (i+j > 1) Then
              Write(message,'(2(a,i10))') &
@@ -3220,15 +3210,15 @@ Contains
         End If
 
         If (inversion%bin_adf > 0) Then
-           If (nstinv == 0 .or. (nstinv > nstana .and. nstana > 0)) Then
-              nstinv = Merge(nstana , nstall , nstana > 0)
+           If (flow%freq_inversion == 0 .or. (flow%freq_inversion > nstana .and. nstana > 0)) Then
+              flow%freq_inversion = Merge(nstana , nstall , nstana > 0)
               i = 1
            Else
               i = 0
            End If
            j=Merge(1, 0, grdinv /= inversion%bin_adf)
            Write(message,'(2(a,i10),a)') &
-             'inversions - collection every ',nstinv,' step(s); ngrid = ',inversion%bin_adf,' points'
+             'inversions - collection every ',flow%freq_inversion,' step(s); ngrid = ',inversion%bin_adf,' points'
            Call info(message,.true.)
            If (i+j > 1) Then
              Write(message,'(2(a,i10))') &
@@ -3247,10 +3237,10 @@ Contains
 
 ! For safety make them /= 0
 
-  nstbnd=Max(1,nstbnd)
-  nstang=Max(1,nstang)
-  nstdih=Max(1,nstdih)
-  nstinv=Max(1,nstinv)
+  flow%freq_bond=Max(1,flow%freq_bond)
+  flow%freq_angle=Max(1,flow%freq_angle)
+  flow%freq_dihedral=Max(1,flow%freq_dihedral)
+  flow%freq_inversion=Max(1,flow%freq_inversion)
 
 ! report rdf
 
@@ -3349,7 +3339,7 @@ Contains
 
 ! report data dumping interval, subcelling threshold density and job times
 
-  Write(messages(1),'(a,i10)') 'data dumping interval (steps) ',ndump
+  Write(messages(1),'(a,i10)') 'data dumping interval (steps) ',flow%freq_restart
   Write(messages(2),'(a,1p,e12.4)') 'subcelling threshold density ',neigh%pdplnc
   Write(messages(3),'(a,1p,e12.4)') 'allocated job run time (s) ',tmr%job
   Write(messages(4),'(a,1p,e12.4)') 'allocated job close time (s) ',tmr%clear_screen
@@ -3357,7 +3347,7 @@ Contains
 
 ! report replay history
 
-  If (.not.lsim) Then
+  If (.not.flow%simulation) Then
      If (lfce) Then
         Write(messages(1),'(a)') '*** HISTORF will be replayed with full force recalculation ***'
         Write(messages(2),'(a)') '*** There is no actual dynamics/integration!!!             ***'
@@ -3373,15 +3363,15 @@ Contains
         End If
      End If
 
-     If (keyres /= 0) Then
-        keyres=0 ! Force clean restart
+     If (flow%restart_key /= 0) Then
+        flow%restart_key=0 ! Force clean restart
         Call info('clean start enforced',.true.)
      End If
   End If
 
 !!! RESORT TO DEFAULTS IF NEED BE !!!
 
-  If      (nstrun == 0) Then !!! DRY RUN
+  If      (flow%run_steps == 0) Then !!! DRY RUN
      ltemp = .true. ! zero is ok
      lpres = .true. ! zero is ok
 
@@ -3391,7 +3381,7 @@ Contains
        Write(message,'(a,1p,e12.4)') 'default simulation timestep (ps) ',thermo%tstep
         Call info(message,.true.)
      End If
-  Else If (.not.l_str) Then !!! NO STRICT
+  Else If (.not.flow%strict) Then !!! NO STRICT
      If (.not.ltemp) Then ! Simulation temperature
         ltemp=.true.
         thermo%temp=300.0_wp
@@ -3443,7 +3433,7 @@ Contains
 !!! ERROR CHECKS !!!
 ! Temperature
 
-  If ((.not.ltemp) .or. (nstrun > 0 .and. thermo%temp < 1.0_wp)) Call error(380)
+  If ((.not.ltemp) .or. (flow%run_steps > 0 .and. thermo%temp < 1.0_wp)) Call error(380)
 
 ! Timestep
 
@@ -3619,9 +3609,9 @@ Contains
 End Subroutine read_control
 
 Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
-  l_str,lsim,l_n_e,l_n_r,lzdn,l_n_v,l_ind,nstfce,ttm,cshell,stats, &
+    l_n_e,l_n_r,lzdn,l_n_v,l_ind,nstfce,ttm,cshell,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,files,comm)
+    zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,files,flow,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3640,7 +3630,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( ttm_type ), Intent( InOut ) :: ttm
   Logical,           Intent( InOut ) :: l_n_e
-  Logical,           Intent(   Out ) :: l_str,lsim,l_n_r,lzdn,l_n_v,l_ind
+  Logical,           Intent(   Out ) :: l_n_r,lzdn,l_n_v,l_ind
   Integer,           Intent( In    ) :: max_rigid,imcon
   Integer,           Intent( InOut ) :: imc_n
   Integer,           Intent(   Out ) :: mxgana, &
@@ -3669,6 +3659,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   Type( ewald_type ), Intent( InOut ) :: ewld
   Type( kim_type), Intent( InOut ) :: kim_data
   Type( file_type ), Intent( InOut ) :: files(:)
+  Type( flow_type ), Intent( InOut ) :: flow
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
@@ -3690,11 +3681,11 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
 ! strict flag
 
-  l_str = .true.
+  flow%strict = .true.
 
 ! replay history option (real dynamics = no replay)
 
-  lsim = .true. ! don't replay history
+  flow%simulation = .true. ! don't replay history
 
 ! slab option default
 
@@ -3887,7 +3878,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
      Else If (word(1:6) == 'replay') Then
 
-        lsim = .false.
+        flow%simulation = .false.
 
 ! read number of timesteps
 
@@ -4023,7 +4014,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
         Else If (word(1:3) == 'str' ) Then
 
-           l_str=.false.
+           flow%strict=.false.
 
         End If
 
@@ -4592,7 +4583,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
            If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r) Then
               vdws%cutoff=0.0_wp
               met%rcut=0.0_wp
-              If (.not.l_str) Then
+              If (.not.flow%strict) Then
                  If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
                     neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
                  Else
@@ -4613,7 +4604,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
 ! Reset neigh%cutoff to something sensible if sensible is an option
 
-           If ( ((.not.lrcut) .or. (.not.l_str)) .and. &
+           If ( ((.not.lrcut) .or. (.not.flow%strict)) .and. &
                 (lrvdw .or. lrmet .or. lter .or. kim_data%active) ) Then
               lrcut=.true.
               If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
@@ -4632,7 +4623,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
              kim_data%active) Then
               vdws%cutoff=0.0_wp
               met%rcut=0.0_wp
-              If (.not.l_str) Then
+              If (.not.flow%strict) Then
                  lrcut=.true.
                  If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
                     neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
@@ -4699,7 +4690,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 ! expanding and not running the small system prepare to exit gracefully
 
   devel%l_trm = (l_exp .and. nstrun == 0)
-  If (((.not.lsim) .or. devel%l_trm) .and. lrpad) neigh%padding=0.0_wp
+  If (((.not.flow%simulation) .or. devel%l_trm) .and. lrpad) neigh%padding=0.0_wp
 
   rdf%l_errors_block = rdf%l_errors_block .and. rdf%l_collect
   rdf%l_errors_jack = rdf%l_errors_jack .and. rdf%l_collect

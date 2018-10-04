@@ -3,17 +3,17 @@
 
 ! Scale t=0 reference positions
 
-If (nstep > 0) Call xscale(config,thermo%tstep,thermo,stat,neigh,rigid,domain,comm)
+If (flow%step > 0) Call xscale(config,thermo%tstep,thermo,stat,neigh,rigid,domain,comm)
 
 ! Check VNL conditioning
 
-Call vnl_check(l_str,width,neigh,stat,domain,config,ewld%bspline,kim_data,comm)
+Call vnl_check(flow%strict,width,neigh,stat,domain,config,ewld%bspline,kim_data,comm)
 
 If (neigh%update) Then
 
   ! Relocate atoms to new domains and restore bonding description
 
-  Call relocate_particles(dvar,neigh%cutoff_extended,lbook, &
+  Call relocate_particles(dvar,neigh%cutoff_extended,flow%book, &
     msd_data%l_msd,megatm,flow,cshell,cons,pmf,stat,ewld,thermo,green, &
     bond,angle,dihedral,inversion,tether,neigh,sites,minim,mpoles, &
     rigid,domain,config,comm)
@@ -22,7 +22,7 @@ If (neigh%update) Then
 
   Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,config,ewld,kim_data,comm) ! inducing in here only
 
-  ! Re-tag RBs when called again after the very first time
+  ! Re-tag RBs when called again after the very first flow%time
   ! when it's done in rigid_bodies_setup <- build_book_intra
 
   If (rigid%on) Then

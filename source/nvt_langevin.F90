@@ -28,7 +28,7 @@ Module nvt_langevin
 
 Contains
 
-  Subroutine nvt_l0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,engke, &
+  Subroutine nvt_l0_vv(stage,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,engke, &
       cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -50,7 +50,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -131,7 +131,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
     rstep = 1.0_wp/tstep
 
   ! first pass of velocity verlet algorithm
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
        Do i=1,config%natms
@@ -338,7 +338,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nvt_l0_vv
 
-  Subroutine nvt_l1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,strknf, &
+  Subroutine nvt_l1_vv(stage,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,strknf, &
       strknt,engke,engrot,strcom,vircom,cshell,cons,pmf,stat,thermo,rigid, &
       domain,tmr,config,seed,comm)
 
@@ -362,7 +362,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -522,7 +522,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -1172,7 +1172,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nvt_l1_vv
 
-  Subroutine nvt_l2_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,engke, &
+  Subroutine nvt_l2_vv(stage,lvar,mndis,mxdis,mxstp,tstep,nstep,strkin,engke, &
     ttm,cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1195,7 +1195,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Type( ttm_type ), Intent(InOut ) :: ttm
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -1289,7 +1289,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
     lrand = ((thermo%chi_ep>zero_plus .or. ttm%gvar==2) .and. ttm%l_epcp)
 
   ! first pass of velocity verlet algorithm
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
        Do i=1,config%natms
