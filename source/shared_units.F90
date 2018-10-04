@@ -59,10 +59,10 @@ Module shared_units
   Type( domains_type ), Intent( In    ) :: domain
   Integer, Intent(   Out ) :: lishp(:),lashp(1:domain%neighbours)
   Type( comms_type ), Intent( InOut ) :: comm
-  Real( Kind = wp ), Intent( InOut ),Dimension(*) :: q0,q1,q2,q3,vxx,vyy,&
-                                                      vzz,oxx,oyy,ozz
+  Real( Kind = wp ), Intent( InOut ),Dimension(:) :: q0,q1,q2,q3,vxx,vyy,&
+    vzz,oxx,oyy,ozz
 
-      Logical, Intent( InOut ) :: oldjob
+  Logical, Intent( InOut ) :: oldjob
 
   Logical :: safe,ok
   Integer :: fail,i,j,k,l,m,n_k,n_nt,k0,l_me,l_out,l_in,jdnode,kdnode
