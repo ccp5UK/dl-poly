@@ -206,12 +206,11 @@ program dl_poly
   ! general flags
 
   Logical           :: l_ind,l_str,l_top,           &
-    l_exp,lecx,lfcap,      &
+    l_exp,lfcap,      &
     leql,lsim,    &
-    lpana, &
     lbook,lexcl
 
-  Integer           :: isw,levcfg,nstfce,              &
+  Integer           :: isw,levcfg,              &
     nx,ny,nz,                           &
     keyres,nstrun,nsteql,               &
     nstbpo,    &
@@ -357,7 +356,7 @@ program dl_poly
   ! (setup and domains)
 
   Call set_bounds (levcfg,l_str,lsim,l_n_e,l_n_v,l_ind, &
-    dvar,nstfce,width,sites,ttms,ios,core_shells,cons,pmfs,stats, &
+    dvar,width,sites,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
     rigid,electro,domain,config,ewld,kim_data,files,comm)
@@ -423,10 +422,10 @@ program dl_poly
 
   Call read_control                                    &
     (levcfg,l_str,lsim,l_n_e,l_n_v,        &
-    nstfce,width,     &
-    l_exp,lecx,lfcap,l_top,          &
+    width,     &
+    l_exp,lfcap,l_top,          &
     leql,               &
-    lfce,lpana,           &
+    lfce, &
     nx,ny,nz,impa,                            &
     keyres,                   &
     nstrun,nsteql,      &
@@ -439,7 +438,7 @@ program dl_poly
 
   ! READ SIMULATION FORCE FIELD
 
-  Call read_field(l_str,l_top,l_n_v,neigh%cutoff,width,lecx,lbook,lexcl,atmfre, &
+  Call read_field(l_str,l_top,l_n_v,neigh%cutoff,width,lbook,lexcl,atmfre, &
     atmfrz,megatm,megfrz,core_shells,pmfs,cons,thermo,met,bond,angle,dihedral, &
     inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
     ext_field,rigid,electro,config,kim_data,files,comm)
@@ -544,7 +543,7 @@ program dl_poly
        ! CHARMM core-shell screened electrostatic induction interactions
     End If
     If (lexcl) Then
-      Call build_excl_intra(lecx,core_shells,cons,bond,angle,dihedral, &
+      Call build_excl_intra(electro%lecx,core_shells,cons,bond,angle,dihedral, &
         inversion,neigh,rigid,config,comm)
     End If
   Else
@@ -760,7 +759,7 @@ program dl_poly
     stats,thermo,green,sites,comm)
 
   ! Final anlysis
-  Call analysis_result(lpana,nstep,neigh%cutoff,stats%sumval(2),thermo, &
+  Call analysis_result(nstep,neigh%cutoff,thermo, &
     bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
 
   10 Continue

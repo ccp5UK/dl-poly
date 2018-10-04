@@ -42,6 +42,8 @@ Module electrostatic
     Integer( Kind = wi ), Public :: ewald_exclusion_grid
 
     Logical,           Public :: newjob_intra = .true. , damp
+    Logical, Public :: lecx
+    Integer, Public :: nstfce
     Real( Kind = wp ), Public :: aa     = 0.0_wp , &
       bb     = 0.0_wp , &
       rfld0  = 0.0_wp , &

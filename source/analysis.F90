@@ -25,18 +25,15 @@ Module analysis
 Contains
 
   !> Calculate and print final analysis
-  Subroutine analysis_result(lpana, &
-    nstep,rcut,temp,thermo, &
+  Subroutine analysis_result( &
+    nstep,rcut,thermo, &
     bond,angle,dihedral,inversion,stats, &
     green,zdensity,neigh,sites,rdf,config,comm)
 
-    Logical, Intent( In    ) :: lpana
     !> Number of simulation steps
     Integer( Kind = wi ), Intent( In    ) :: nstep
     !> Cut off
     Real( Kind = wp ), Intent( In    ) :: rcut
-    !> Temperature
-    Real( Kind = wp ), Intent( In    ) :: temp
     !> Ensemble key
     Type( thermostat_type ), Intent( In    ) :: thermo
     !> Bonds data
@@ -67,6 +64,9 @@ Contains
     !> Average volume
     Real( Kind = wp ) :: avvol
     Integer( Kind = wi ) :: i
+    Real( Kind = wp ) :: temp
+
+    temp = stats%sumval(2)
 
     ! If still running in the pure equilibration regime - NO AVERAGES
     If (stats%numacc == 0) Then
@@ -98,7 +98,7 @@ Contains
       Call calculate_errors_jackknife(temp,rcut,nstep,neigh,sites,rdf,config,comm)
     End If
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. .not.(rdf%l_errors_block .or. rdf%l_errors_jack)) Then
-      Call rdf_compute(lpana,rcut,temp,sites,rdf,config,comm)
+      Call rdf_compute(stats%lpana,rcut,temp,sites,rdf,config,comm)
     End IF
     If (rdf%n_configs_usr > 0) Call usr_compute(rdf,config,comm)
 
@@ -113,7 +113,7 @@ Contains
     End If
 
     ! Calculate and print PDFs
-    If (lpana) Then
+    If (stats%lpana) Then
       If (bond%bin_pdf > 0 .and. bond%n_frames > 0) Then
         Call bonds_compute(temp,sites%unique_atom,bond,config,comm)
       End If

@@ -27,7 +27,7 @@
 ! intramolecular PDF analysis for every entry in HISTORF
 ! enforce printing and collection if the calculation exists
 
-  lpana=(config%mxgana > 0)
+  stats%lpana=(config%mxgana > 0)
   nstbnd = 1
   nstang = 1
   nstdih = 1
@@ -119,7 +119,7 @@
                atmfrz,degrot,degtra,flow,cshell,cons,pmf,bond,angle,dihedral, &
                inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
               If (lexcl) Then
-                Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
+                Call build_excl_intra(electro%lecx,cshell,cons,bond,angle,dihedral, &
                   inversion,neigh,rigid,config,comm)
               End If
            End If

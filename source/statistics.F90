@@ -38,6 +38,7 @@ Module statistics
   Integer( Kind = wi )           :: mxnstk,mxstak,intsta
   Logical                        :: statis_file_open = .false.
   Logical                        :: newjob = .true.
+  Logical                        :: lpana
 
   Real( Kind = wp )              :: consv = 0.0_wp,shlke = 0.0_wp,engke = 0.0_wp,&
                                     engrot = 0.0_wp,engcpe = 0.0_wp,engsrp = 0.0_wp,&
