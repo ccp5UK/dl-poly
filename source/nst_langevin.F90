@@ -33,7 +33,7 @@ Module nst_langevin
 
 Contains
 
-  Subroutine nst_l0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep,degfre,stress, &
+  Subroutine nst_l0_vv(stage,lvar,mndis,mxdis,mxstp,tstep,nstep,degfre,stress, &
       consv,strkin,engke,cshell,cons,pmf,stat,thermo,sites,vdws,domain,tmr,config,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -53,7 +53,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -201,7 +201,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -506,7 +506,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nst_l0_vv
 
-  Subroutine nst_l1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nst_l1_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,   &
              degfre,degrot,stress,      &
              strkin,strknf,strknt,engke,engrot, &
@@ -533,7 +533,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -754,7 +754,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! Globalise Langevin random forces for shared RBs
 

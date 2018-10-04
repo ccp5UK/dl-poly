@@ -27,7 +27,7 @@ Use core_shell, Only : core_shell_type
 
 Contains
 
-  Subroutine nvt_a0_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep, &
+  Subroutine nvt_a0_vv(stage,lvar,mndis,mxdis,mxstp,tstep,nstep, &
       strkin,engke,cshell,cons,pmf,stat,thermo,sites,domain,   &
       tmr,config,seed,comm)
 
@@ -48,7 +48,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -147,7 +147,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -401,7 +401,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   End Subroutine nvt_a0_vv
 
-  Subroutine nvt_a1_vv(isw,lvar,mndis,mxdis,mxstp,tstep,nstep, &
+  Subroutine nvt_a1_vv(stage,lvar,mndis,mxdis,mxstp,tstep,nstep, &
       strkin,strknf,strknt,engke,engrot,strcom,vircom, &
       cshell,cons,pmf,stat,thermo,sites,rigid,domain,  &
       tmr,config,seed,comm)
@@ -424,7 +424,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -585,7 +585,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 

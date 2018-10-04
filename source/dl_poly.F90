@@ -205,17 +205,11 @@ program dl_poly
 
   ! general flags
 
-  Logical           :: l_ind,l_str,l_top,           &
-    l_exp,lfcap,      &
-    leql,lsim,    &
-    lbook,lexcl
+  Logical           :: l_ind,           &
+    l_exp
 
-  Integer           :: isw,levcfg,              &
+  Integer           :: levcfg,              &
     nx,ny,nz,                           &
-    keyres,nstrun,nsteql,               &
-    nstbpo,    &
-    nstbnd,nstang,nstdih,nstinv,        &
-    ndump,nstep,                 &
     atmfre,atmfrz,megatm,megfrz
 
   ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
@@ -224,8 +218,7 @@ program dl_poly
 
   ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
 
-  Real( Kind = wp ) :: time,tmst,      &
-    dvar,                       &
+    Real(Kind=wp) :: dvar,                       &
     fmax,                           &
     width
 
@@ -355,11 +348,11 @@ program dl_poly
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
-  Call set_bounds (levcfg,l_str,lsim,l_n_e,l_n_v,l_ind, &
+  Call set_bounds (levcfg,l_n_e,l_n_v,l_ind, &
     dvar,width,sites,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
-    rigid,electro,domain,config,ewld,kim_data,files,comm)
+    rigid,electro,domain,config,ewld,kim_data,files,flow,comm)
 
   Call info('',.true.)
   Call info("*** pre-scanning stage (set_bounds) DONE ***",.true.)
@@ -421,36 +414,33 @@ program dl_poly
   ! READ SIMULATION CONTROL PARAMETERS
 
   Call read_control                                    &
-    (levcfg,l_str,lsim,l_n_e,l_n_v,        &
+    (levcfg,l_n_e,l_n_v,        &
     width,     &
-    l_exp,lfcap,l_top,          &
-    leql,               &
-    lfce, &
+    l_exp,          &
+    lfce,           &
     nx,ny,nz,impa,                            &
-    keyres,                   &
-    nstrun,nsteql,      &
-    fmax,nstbpo,             &
-    nstbnd,nstang,nstdih,nstinv,  &
+    fmax,             &
     ttms,dfcts,          &
-    ndump,rigid,rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
+    rigid, &
+    rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
     met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
-    minim,mpoles,electro,ewld,seed,traj,files,tmr,config,comm)
+    minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,comm)
 
   ! READ SIMULATION FORCE FIELD
 
-  Call read_field(l_str,l_top,l_n_v,neigh%cutoff,width,lbook,lexcl,atmfre, &
+  Call read_field(l_n_v,neigh%cutoff,width,atmfre, &
     atmfrz,megatm,megfrz,core_shells,pmfs,cons,thermo,met,bond,angle,dihedral, &
     inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
-    ext_field,rigid,electro,config,kim_data,files,comm)
+    ext_field,rigid,electro,config,kim_data,files,flow,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
-    Call rdf%init_block(nstrun,sites%ntype_atom)
+    Call rdf%init_block(flow%run_steps,sites%ntype_atom)
   End If
 
   ! CHECK MD CONFIGURATION
 
-  Call check_config(config,levcfg,l_str,electro%key,keyres,megatm,thermo,sites,comm)
+  Call check_config(config,levcfg,electro%key,megatm,thermo,sites,flow,comm)
 
   Call info('',.true.)
   Call info("*** all reading and connectivity checks DONE ***",.true.)
@@ -487,9 +477,9 @@ program dl_poly
     Call info("*** Generating a zero timestep HISTORY frame of the MD system ***",.true.)
 
     Call traj%init(key=0,freq=1,start=0)
-    nstep  = 0                            ! no steps done
-    time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(keyres,megatm,nstep,thermo%tstep,time,ios,stats%rsd,netcdf,config,traj,files,comm)
+    flow%step  = 0                            ! no steps done
+    flow%time   = 0.0_wp                       ! time is not relevant
+    Call trajectory_write(flow%restart_key,megatm,flow%step,thermo%tstep,flow%time,ios,stats%rsd,netcdf,config,traj,files,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -498,7 +488,7 @@ program dl_poly
   ! Expand current system if opted for
 
   If (l_exp) Then
-    Call system_expand(l_str,neigh%cutoff,nx,ny,nz,megatm,ios,core_shells, &
+    Call system_expand(flow%strict,neigh%cutoff,nx,ny,nz,megatm,ios,core_shells, &
       cons,bond,angle,dihedral,inversion,sites,netcdf,rigid,config,files,comm)
   End If
 
@@ -512,7 +502,7 @@ program dl_poly
 
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
-  Call system_init(levcfg,neigh%cutoff,keyres,megatm,time,tmst,nstep, &
+  Call system_init(levcfg,neigh%cutoff,flow%restart_key,megatm,flow%time,flow%start_time,flow%step, &
     core_shells,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
     zdensity,sites,vdws,rdf,config,files,comm)
 
@@ -528,8 +518,8 @@ program dl_poly
   ! For any intra-like interaction, construct book keeping arrays and
   ! exclusion arrays for overlapped two-body inter-like interactions
 
-  If (lbook) Then
-    Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre,atmfrz, &
+  If (flow%book) Then
+    Call build_book_intra(flow%strict,flow%print_topology,flow%simulation,dvar,megatm,megfrz,atmfre,atmfrz, &
       degrot,degtra,flow,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
       neigh,sites,mpoles,rigid,domain,config,comm)
     If (mpoles%max_mpoles > 0) Then
@@ -542,7 +532,7 @@ program dl_poly
       End If
        ! CHARMM core-shell screened electrostatic induction interactions
     End If
-    If (lexcl) Then
+    If (flow%exclusions) Then
       Call build_excl_intra(electro%lecx,core_shells,cons,bond,angle,dihedral, &
         inversion,neigh,rigid,config,comm)
     End If
@@ -552,7 +542,7 @@ program dl_poly
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
-    If (lsim) Then
+    If (flow%simulation) Then
       Call core_shells%deallocate_core_shell_tmp_arrays()
 
       Call cons%deallocate_constraints_temps()
@@ -577,7 +567,7 @@ program dl_poly
   ! SET initial system temperature
 
   Call set_temperature               &
-    (levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra,degrot,degfre,degshl, &
+    (levcfg,flow%restart_key,flow%step,flow%run_steps,atmfre,atmfrz,degtra,degrot,degfre,degshl, &
     stats%engrot,sites%dof_site,core_shells,stats,cons,pmfs,thermo,minim, &
     rigid,domain,config,seed,comm)
 
@@ -590,7 +580,7 @@ program dl_poly
 
   If (ttms%l_ttm) Then
     Call ttm_table_read(ttms,comm)
-    Call ttm_system_init(nstep,nsteql,keyres,'DUMP_E',time,thermo%temp,domain,ttms,comm)
+    Call ttm_system_init(flow%step,flow%equil_steps,flow%restart_key,'DUMP_E',flow%time,thermo%temp,domain,ttms,comm)
   End If
 
   ! Frozen atoms option
@@ -599,7 +589,7 @@ program dl_poly
 
   ! Cap forces in equilibration mode
 
-  If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,config,comm)
+  If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(fmax,thermo%temp,config,comm)
 
   ! PLUMED initialisation or information message
 
@@ -664,7 +654,7 @@ program dl_poly
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  If (lsim) Then
+  If (flow%simulation) Then
     Call w_md_vv(config,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
       netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr)
@@ -726,23 +716,23 @@ program dl_poly
 
   If (ttms%l_ttm) Then
     Call ttm_ion_temperature (ttms,thermo,domain,config,comm)
-    Call printElecLatticeStatsToFile('PEAK_E', time, thermo%temp, nstep, ttms%ttmstats,ttms,comm)
-    Call peakProfilerElec('LATS_E', nstep, ttms%ttmtraj,ttms,comm)
-    Call printLatticeStatsToFile(ttms%tempion, 'PEAK_I', time, nstep, ttms%ttmstats,ttms,comm)
-    Call peakProfiler(ttms%tempion, 'LATS_I', nstep, ttms%ttmtraj,ttms,comm)
+    Call printElecLatticeStatsToFile('PEAK_E', flow%time, thermo%temp, flow%step, ttms%ttmstats,ttms,comm)
+    Call peakProfilerElec('LATS_E', flow%step, ttms%ttmtraj,ttms,comm)
+    Call printLatticeStatsToFile(ttms%tempion, 'PEAK_I', flow%time, flow%step, ttms%ttmstats,ttms,comm)
+    Call peakProfiler(ttms%tempion, 'LATS_I', flow%step, ttms%ttmtraj,ttms,comm)
   End If
 
   ! Save restart data for real simulations only (final)
 
-  If (lsim .and. (.not.devel%l_tor)) Then
-    Call system_revive(neigh%cutoff,megatm,nstep,time,sites,ios,tmst,stats, &
+  If (flow%simulation .and. (.not.devel%l_tor)) Then
+    Call system_revive(neigh%cutoff,megatm,flow%step,flow%time,sites,ios,flow%start_time,stats, &
       devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
       files,comm)
-    If (ttms%l_ttm) Call ttm_system_revive ('DUMP_E',nstep,time,1,nstrun,ttms,comm)
+    If (ttms%l_ttm) Call ttm_system_revive ('DUMP_E',flow%step,flow%time,1,flow%run_steps,ttms,comm)
   End If
 
   ! Produce summary of simulation
-  If (neigh%unconditional_update .and. nstep > 0) Then
+  If (neigh%unconditional_update .and. flow%step > 0) Then
      If (.not.neigh%update) Then ! Include the final skip in skipping statistics
         stats%neighskip(3)=stats%neighskip(2)*stats%neighskip(3)
         stats%neighskip(2)=stats%neighskip(2)+1.0_wp
@@ -754,12 +744,12 @@ program dl_poly
 
   Call statistics_result                                        &
     (config,minim%minimise,msd_data%l_msd, &
-    nstrun,core_shells%keyshl,cons%megcon,pmfs%megpmf,              &
-    nstep,time,tmst,config%mxatdm,neigh%unconditional_update,&
+    flow%run_steps,core_shells%keyshl,cons%megcon,pmfs%megpmf,              &
+    flow%step,flow%time,flow%start_time,config%mxatdm,neigh%unconditional_update,&
     stats,thermo,green,sites,comm)
 
   ! Final anlysis
-  Call analysis_result(nstep,neigh%cutoff,thermo, &
+  Call analysis_result(flow%step,neigh%cutoff,thermo, &
     bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
 
   10 Continue
@@ -878,8 +868,8 @@ Contains
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(isw,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
-    Integer, Intent( In    ) :: isw ! used for vv stage control
+  Subroutine w_integrate_vv(stage,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
+    Integer, Intent( In    ) :: stage ! used for vv stage control
     Type( ttm_type ), Intent( InOut ) :: ttm
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -1021,8 +1011,8 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
 
     Real(Kind=wp) :: tsths
-    Real( Kind = wp ) :: tmsh        ! tmst replacement
-    Integer( Kind = wi )           :: nstpe,nstph ! nstep replacements
+    Real( Kind = wp ) :: tmsh        ! flow%start_time replacement
+    Integer( Kind = wi )           :: nstpe,nstph ! flow%step replacements
     Integer           :: exout       ! exit indicator for reading
     Logical :: l_out
     Character(Len=10) :: c_out
@@ -1071,8 +1061,8 @@ Contains
     Type( timer_type ), Intent( InOut ) :: tmr
 
     Real(Kind=wp) :: tsths
-    Real( Kind = wp ) :: tmsh        ! tmst replacement
-    Integer           :: nstpe,nstph ! nstep replacements
+    Real( Kind = wp ) :: tmsh        ! flow%start_time replacement
+    Integer           :: nstpe,nstph ! flow%step replacements
     Integer           :: exout       ! exit indicator for reading
     Logical :: l_out
     Character(Len=10) :: c_out

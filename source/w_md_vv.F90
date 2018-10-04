@@ -30,7 +30,7 @@
       End If
 
       If (thermo%l_langevin) Then
-        Call langevin_forces(nstep,thermo%temp,thermo%tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
+        Call langevin_forces(flow%step,thermo%temp,thermo%tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
         If (rigid%share) Then
           Call update_shared_units(config,rigid%list_shared,rigid%map_shared,&
               thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
@@ -50,12 +50,12 @@
 
 ! START OF MOLECULAR DYNAMICS CALCULATIONS
 
-  Do While ( (nstep < nstrun .or. (nstep == nstrun .and. flow%newjob)) .and. &
+  Do While ( (flow%step < flow%run_steps .or. (flow%step == flow%run_steps .and. flow%newjob)) .and. &
              (tmr%job-tmr%elapsed) > tmr%clear_screen )
 
 ! Apply impact
 
-     Call w_impact_option(levcfg,nstep,nsteql,rigid,cshell,stat,impa,config,comm)
+     Call w_impact_option(levcfg,flow%step,flow%equil_steps,rigid,cshell,stat,impa,config,comm)
 
 ! Write HISTORY, DEFECTS, MSDTMP & DISPDAT if needed immediately after restart
 ! levcfg == 2 avoids application twice when forces are calculated at (re)start
@@ -64,31 +64,31 @@
        If (levcfg == 2) Then
           flow%newjob = .false.
 
-           If (keyres /= 1) Then
+           If (flow%restart_key /= 1) Then
              Call w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj,files)
            End If
 
-           If (nstep == 0 .and. nstep == nstrun) Go To 1000
+           If (flow%step == 0 .and. flow%step == flow%run_steps) Go To 1000
         End If
      End If
 
-! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
+! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (levcfg=2)
 
-     If (nstep >= 0 .and. nstep < nstrun .and. levcfg == 2) Then
+     If (flow%step >= 0 .and. flow%step < flow%run_steps .and. levcfg == 2) Then
 
 ! Increase step counter
 
-        nstep=nstep+1
+        flow%step=flow%step+1
 
 ! zero Kelvin structure optimisation
 
-        If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_zero) == 0) Then
+        If (thermo%l_zero .and. flow%step <= flow%equil_steps .and. Mod(flow%step-flow%equil_steps,thermo%freq_zero) == 0) Then
           Call zero_k_optimise(stat,rigid,config,comm)
         End If
 
-! Switch on electron-phonon coupling only after time offset
+! Switch on electron-phonon coupling only after flow%time offset
 
-        ttm%l_epcp = (time >= ttm%ttmoffset)
+        ttm%l_epcp = (flow%time >= ttm%ttmoffset)
 
 ! Integrate equations of motion - velocity verlet first stage
 
@@ -99,7 +99,7 @@
         Call w_refresh_mappings(flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
           dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
 
-      End If ! DO THAT ONLY IF 0<=nstep<nstrun AND FORCES ARE PRESENT (levcfg=2)
+      End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (levcfg=2)
 
 ! Evaluate forces
 
@@ -109,21 +109,21 @@
 
 ! Calculate physical quantities, collect statistics and report at t=0
 
-    If (nstep == 0) Then
+    If (flow%step == 0) Then
       Call w_statistics_report(cnfig%mxatdm,cshell,cons,pmf,stat,msd_data,zdensity, &
         sites,rdf,domain,flow,files)
     End If
 
-! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (flow%newjob=.false.)
+! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
-     If (nstep > 0 .and. nstep <= nstrun .and. (.not.flow%newjob)) Then
+     If (flow%step > 0 .and. flow%step <= flow%run_steps .and. (.not.flow%newjob)) Then
 
 ! Evolve electronic temperature for two-temperature model
 
        If (ttm%l_ttm) Then
          Call ttm_ion_temperature(ttm,thermo,domain,config,comm)
-         Call ttm_thermal_diffusion(thermo%tstep,time,nstep,nsteql,nstbpo,ndump, &
-            nstrun,ttm,thermo,domain,comm)
+          Call ttm_thermal_diffusion(thermo%tstep,flow%time,flow%step,flow%equil_steps,flow%freq_output,flow%freq_restart, &
+            flow%run_steps,ttm,thermo,domain,comm)
         End If
 
 ! Integrate equations of motion - velocity verlet second stage
@@ -134,9 +134,9 @@
 
         Call w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain,seed)
 
-! Update total time of simulation
+! Update total flow%time of simulation
 
-        time = time + thermo%tstep
+        flow%time = flow%time + thermo%tstep
 
 ! Calculate physical quantities, collect statistics and report regularly
 
@@ -149,21 +149,21 @@
 
 ! Save restart data in event of system crash
 
-        If (Mod(nstep,ndump) == 0 .and. nstep /= nstrun .and. (.not.devel%l_tor)) Then
-          Call system_revive(neigh%cutoff,megatm,nstep,time,sites,io,tmst, &
+        If (Mod(flow%step,flow%freq_restart) == 0 .and. flow%step /= flow%run_steps .and. (.not.devel%l_tor)) Then
+          Call system_revive(neigh%cutoff,megatm,flow%step,flow%time,sites,io,flow%start_time, &
             stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf, &
             netcdf,config,files,comm)
         End If
 
-     End If ! DO THAT ONLY IF 0<nstep<=nstrun AND THIS IS AN OLD JOB (flow%newjob=.false.)
+     End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
-1000 Continue ! Escape forces evaluation at t=0 when nstep=nstrun=0 and flow%newjob=.false.
+1000 Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
 
 ! Refresh output
 
      Call w_refresh_output()
 
-! Complete time check
+! Complete flow%time check
 
      Call gtime(tmr%elapsed)
 

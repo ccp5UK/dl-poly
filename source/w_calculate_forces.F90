@@ -4,7 +4,7 @@
 ! set shells on top of their cores preventatively
 
      If ( (cshell%megshl > 0 .and. cshell%keyshl == SHELL_RELAXED) .and. &
-          (keyres == 0 .and. nstep == 0 .and. nsteql > 0) ) Then
+          (flow%restart_key == 0 .and. flow%step == 0 .and. flow%equil_steps > 0) ) Then
         Call core_shell_on_top(cshell,config,comm)
 
 ! Refresh mappings
@@ -31,8 +31,8 @@
 
      If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
        l_n_v .and. rdf%max_rdf == 0) .or. kim_data%active) Then
-       Call two_body_forces(thermo%ensemble,lbook,megfrz, &
-         leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
+       Call two_body_forces(thermo%ensemble,flow%book,megfrz, &
+         flow%equilibration,flow%equil_steps,flow%step,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
          mpoles,electro,domain,tmr,kim_data,config,comm)
      End If
 
@@ -59,29 +59,35 @@
 ! Calculate bond forces
 
      If (bond%total > 0) Then
-        ltmp = (bond%bin_pdf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstbnd) == 0)
+        ltmp = (bond%bin_pdf > 0 .and. &
+          ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
+          Mod(flow%step,flow%freq_bond) == 0)
 
-        isw = 1 + Merge(1,0,ltmp)
-        Call bonds_forces(isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff, &
+        flow%isw = 1 + Merge(1,0,ltmp)
+        Call bonds_forces(flow%isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff, &
           stat%engcpe,stat%vircpe,bond,mpoles,electro,config,comm)
      End If
 
 ! Calculate valence angle forces
 
      If (angle%total > 0) Then
-        ltmp = (angle%bin_adf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstang) == 0)
+        ltmp = (angle%bin_adf > 0 .and. &
+          ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
+          Mod(flow%step,flow%freq_angle) == 0)
 
-        isw = 1 + Merge(1,0,ltmp)
-        Call angles_forces(isw,stat%engang,stat%virang,stat%stress,angle,config,comm)
+        flow%isw = 1 + Merge(1,0,ltmp)
+        Call angles_forces(flow%isw,stat%engang,stat%virang,stat%stress,angle,config,comm)
      End If
 
 ! Calculate dihedral forces
 
      If (dihedral%total > 0) Then
-        ltmp = (dihedral%bin_adf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstdih) == 0)
+        ltmp = (dihedral%bin_adf > 0 .and. &
+          ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) &
+          .and. Mod(flow%step,flow%freq_dihedral) == 0)
 
-        isw = 1 + Merge(1,0,ltmp)
-        Call dihedrals_forces(isw,stat%engdih,stat%virdih,stat%stress, &
+        flow%isw = 1 + Merge(1,0,ltmp)
+        Call dihedrals_forces(flow%isw,stat%engdih,stat%virdih,stat%stress, &
            neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp, &
            stat%virsrp,dihedral,vdws,mpoles,electro,config,comm)
      End If
@@ -89,17 +95,19 @@
 ! Calculate inversion forces
 
      If (inversion%total > 0) Then
-        ltmp = (inversion%bin_adf > 0 .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,nstinv) == 0)
+        ltmp = (inversion%bin_adf > 0 .and. &
+          ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
+          Mod(flow%step,flow%freq_inversion) == 0)
 
-        isw = 1 + Merge(1,0,ltmp)
-        Call inversions_forces(isw,stat%enginv,stat%virinv,stat%stress,inversion,config,comm)
+        flow%isw = 1 + Merge(1,0,ltmp)
+        Call inversions_forces(flow%isw,stat%enginv,stat%virinv,stat%stress,inversion,config,comm)
      End If
      call stop_timer(tmr%t_bonded)
 
 ! Apply external field
 
      If (ext_field%key /= FIELD_NULL) Then
-       Call external_field_apply(time,leql,nsteql,nstep,cshell,stat,rdf, &
+       Call external_field_apply(flow%time,flow%equilibration,flow%equil_steps,flow%step,cshell,stat,rdf, &
          ext_field,rigid,domain,config,comm)
      End If
 
@@ -109,17 +117,17 @@
         stat%stpcfg =stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
                  stat%engshl + stat%engtet + stat%engfld +                   &
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
-        Call plumed_apply(config,nstrun,nstep,stat,plume,comm)
+        Call plumed_apply(config,flow%run_steps,flow%step,stat,plume,comm)
      End If
 ! Apply pseudo thermostat - force cycle (0)
 
      If (thermo%l_stochastic_boundaries) Then
-       Call stochastic_boundary_vv(0,thermo%tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,config,seed,comm)
+       Call stochastic_boundary_vv(0,thermo%tstep,flow%step,sites%dof_site,cshell,stat,thermo,rigid,domain,config,seed,comm)
      End If
 
 ! Cap forces in equilibration mode
 
-     If (nstep <= nsteql .and. lfcap) Call cap_forces(fmax,thermo%temp,config,comm)
+     If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(fmax,thermo%temp,config,comm)
 
 ! Frozen atoms option
 
@@ -127,26 +135,26 @@
 
 ! Minimisation option and Relaxed shell model optimisation
 
-     If (lsim .and. (minim%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
+     If (flow%simulation .and. (minim%minimise .or. cshell%keyshl == SHELL_RELAXED)) Then
         stat%stpcfg = stat%engcpe + stat%engsrp + stat%engter + stat%engtbp + stat%engfbp + &
                  stat%engshl + stat%engtet + stat%engfld +                   &
                  stat%engbnd + stat%engang + stat%engdih + stat%enginv
 
         If (cshell%keyshl == SHELL_RELAXED) Then
-          Call core_shell_relax(l_str,rdf%l_collect, &
+          Call core_shell_relax(flow%strict,rdf%l_collect, &
             stat%stpcfg,cshell,stat,domain,config,files,comm)
         End If
 
         If (.not.cshell%relaxed) Go To 200 ! Shells relaxation takes priority over minimisation
 
-        If (minim%minimise .and. nstep >= 0 .and. nstep <= nstrun .and. nstep <= nsteql) Then
-          If      (minim%freq == 0 .and. nstep == 0) Then
-            Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
+        If (minim%minimise .and. flow%step >= 0 .and. flow%step <= flow%run_steps .and. flow%step <= flow%equil_steps) Then
+          If      (minim%freq == 0 .and. flow%step == 0) Then
+            Call minimise_relax(flow%strict .or. cshell%keyshl == SHELL_RELAXED, &
               rdf%l_collect,megatm,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
               netcdf,minim,rigid,domain,config,files,comm)
-          Else If (minim%freq >  0 .and. nstep >  0) Then
-            If (Mod(nstep-nsteql,minim%freq) == 0) Then
-              Call minimise_relax(l_str .or. cshell%keyshl == SHELL_RELAXED, &
+          Else If (minim%freq >  0 .and. flow%step >  0) Then
+            If (Mod(flow%step-flow%equil_steps,minim%freq) == 0) Then
+              Call minimise_relax(flow%strict .or. cshell%keyshl == SHELL_RELAXED, &
                 rdf%l_collect,megatm,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
                 netcdf,minim,rigid,domain,config,files,comm)
             End If
@@ -169,7 +177,8 @@
      If (flow%newjob) Then
         If (rigid%total > 0) Then
            If (thermo%l_langevin) Then
-             Call langevin_forces(nstep,thermo%temp,thermo%tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
+              Call langevin_forces(flow%step,thermo%temp,thermo%tstep,thermo%chi, &
+                thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
               If (rigid%share) Then
                 Call update_shared_units(config,rigid%list_shared, &
                   rigid%map_shared,thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)

@@ -28,10 +28,10 @@
 ! enforce printing and collection if the calculation exists
 
   stats%lpana=(config%mxgana > 0)
-  nstbnd = 1
-  nstang = 1
-  nstdih = 1
-  nstinv = 1
+  flow%freq_bond = 1
+  flow%freq_angle = 1
+  flow%freq_dihedral = 1
+  flow%freq_inversion = 1
 
 ! rdf%rdf and z-density detection for every entry in HISTORF
 ! enforce printing and collection if the calculation exists
@@ -51,7 +51,7 @@
   End If
   stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
-  nstpe = nstep
+  nstpe = flow%step
   nstph = 0 ! HISTORF trajectory points counter
   Do
      Call allocate_statistics_connect(cnfig%mxatdm,stat)
@@ -60,14 +60,14 @@
 
 ! Make a move - Read a frame
 
-     Call read_history(l_str,files(FILE_HISTORF)%filename,megatm,levcfg,dvar, &
-       nstep,thermo%tstep,time,exout,io,traj,sites,domain,config,files,comm)
+     Call read_history(flow%strict,files(FILE_HISTORF)%filename,megatm,levcfg,dvar, &
+       flow%step,thermo%tstep,flow%time,exout,io,traj,sites,domain,config,files,comm)
 
      If (traj%restart) Then
         traj%restart = .false.
 
-        tmst=time
-        tmsh=0.0_wp ! tmst substitute
+        flow%start_time=flow%time
+        tmsh=0.0_wp ! flow%start_time substitute
      End If
 
      If (exout == 0) Then
@@ -84,7 +84,7 @@
 
 ! CHECK MD CONFIGURATION
 
-           Call check_config(config,levcfg,l_str,electro%key,keyres,megatm,thermo,sites,comm)
+           Call check_config(config,levcfg,electro%key,megatm,thermo,sites,flow,comm)
 
 ! First frame positions (for estimates of MSD when levcfg==0)
 
@@ -114,11 +114,11 @@
 ! For any intra-like interaction, construct book keeping arrays and
 ! exclusion arrays for overlapped two-body inter-like interactions
 
-           If (lbook) Then
-             Call build_book_intra(l_str,l_top,lsim,dvar,megatm,megfrz,atmfre, &
+           If (flow%book) Then
+             Call build_book_intra(flow%strict,flow%print_topology,flow%simulation,dvar,megatm,megfrz,atmfre, &
                atmfrz,degrot,degtra,flow,cshell,cons,pmf,bond,angle,dihedral, &
                inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
-              If (lexcl) Then
+              If (flow%exclusions) Then
                 Call build_excl_intra(electro%lecx,cshell,cons,bond,angle,dihedral, &
                   inversion,neigh,rigid,config,comm)
               End If
@@ -133,11 +133,13 @@
 ! Evaluate kinetics if available
 
            If (levcfg > 0 .and. levcfg < 3) Then
-              If (thermo%l_zero .and. nstep <= nsteql .and. Mod(nstep+1-nsteql,thermo%freq_zero) == 0) Then
+              If (thermo%l_zero .and. &
+                flow%step <= flow%equil_steps .and. &
+                Mod(flow%step+1-flow%equil_steps,thermo%freq_zero) == 0) Then
                 Call zero_k_optimise(stat,rigid,config,comm)
               End If
 
-              If (thermo%l_zero .and. nstep <= nsteql) Then
+              If (thermo%l_zero .and. flow%step <= flow%equil_steps) Then
                 Call zero_k_optimise(stat,rigid,config,comm)
               End If
 
@@ -176,24 +178,24 @@
 
 ! Calculate physical quantities and collect statistics,
 ! accumulate z-density if needed
-! (nstep->nstph,tstep->tsths,tmst->tmsh)
+! (flow%step->nstph,tstep->tsths,flow%start_time->tmsh)
 
-           tsths=Max(thermo%tstep ,(time-tmsh) / Real(Merge( nstph-1, 1, nstph > 2), wp))
+           tsths=Max(thermo%tstep ,(flow%time-tmsh) / Real(Merge( nstph-1, 1, nstph > 2), wp))
 
 ! Collect VAF if kinetics is available
 
-           Call vaf_collect(config,sites%mxatyp,leql,nsteql,nstph-1,time,green,comm)
+           Call vaf_collect(config,sites%mxatyp,flow%equilibration,flow%equil_steps,nstph-1,flow%time,green,comm)
 
            Call statistics_collect        &
-           (config,lsim,leql,nsteql,msd_data%l_msd, &
-           keyres,      &
+           (config,flow%simulation,flow%equilibration,flow%equil_steps,msd_data%l_msd, &
+           flow%restart_key,      &
            degfre,degshl,degrot,          &
-           nstph,tsths,time,tmsh,         &
+           nstph,tsths,flow%time,tmsh,         &
            cnfig%mxatdm,rdf%max_grid,stat,thermo,&
            zdensity,sites,files,comm)
 
 ! line-printer output
-! Update cpu time
+! Update cpu flow%time
 
            Call gtime(tmr%elapsed)
            If (flow%new_page()) Then
@@ -208,8 +210,8 @@
              Call info(messages,5,.true.)
            End If
 
-           Write(messages(1),'(i13,1p,9e12.4)')nstep,stat%stpval(1:9)
-           Write(messages(2),'(f13.5,1p,9e12.4)')time,stat%stpval(10:18)
+           Write(messages(1),'(i13,1p,9e12.4)')flow%step,stat%stpval(1:9)
+           Write(messages(2),'(f13.5,1p,9e12.4)')flow%time,stat%stpval(10:18)
            Write(messages(3),'(0p,f13.3,1p,9e12.4)') tmr%elapsed,stat%stpval(19:27)
            Write(messages(4),'(a)')''
            Call info(messages,4,.true.)
@@ -226,28 +228,28 @@
 
 ! Write HISTORY, DEFECTS, MSDTMP, DISPDAT & VAFDAT_atom-types
 
-           If (traj%ltraj) Call trajectory_write(keyres,megatm,nstep,thermo%tstep,time, &
+           If (traj%ltraj) Call trajectory_write(flow%restart_key,megatm,flow%step,thermo%tstep,flow%time, &
              io,stat%rsd,netcdf,config,traj,files,comm)
            If (dfcts(1)%ldef)Then
-             Call defects_write(keyres,thermo%ensemble,nstep,thermo%tstep,time,io,cshell, &
+             Call defects_write(flow%restart_key,thermo%ensemble,flow%step,thermo%tstep,flow%time,io,cshell, &
                dfcts(1),neigh,sites,netcdf,domain,config,files,comm)
              If (dfcts(2)%ldef)Then
-               Call defects_write(keyres,thermo%ensemble,nstep,thermo%tstep,time,io,cshell, &
+               Call defects_write(flow%restart_key,thermo%ensemble,flow%step,thermo%tstep,flow%time,io,cshell, &
                  dfcts(2),neigh,sites,netcdf,domain,config,files,comm)
              End If
            End If
            If (msd_data%l_msd) Then
-             Call msd_write(config,keyres,megatm,nstep,thermo%tstep,time,stat%stpval, &
+             Call msd_write(config,flow%restart_key,megatm,flow%step,thermo%tstep,flow%time,stat%stpval, &
                sites%dof_site,io,msd_data,files,comm)
            End If
-           If (rsdc%lrsd) Call rsd_write(keyres,nstep,thermo%tstep,io,rsdc,time,cshell,stat%rsd,config,comm)
-           If (green%samp > 0) Call vaf_write & ! (nstep->nstph,tstep->tsths,tmst->tmsh)
-           (config,keyres,nstph,tsths,green,sites,comm)
+           If (rsdc%lrsd) Call rsd_write(flow%restart_key,flow%step,thermo%tstep,io,rsdc,flow%time,cshell,stat%rsd,config,comm)
+           If (green%samp > 0) Call vaf_write & ! (flow%step->nstph,tstep->tsths,flow%start_time->tmsh)
+           (config,flow%restart_key,nstph,tsths,green,sites,comm)
 
 ! Save restart data in event of system crash
 
-            If (Mod(nstph,ndump) == 0 .and. nstph /= nstrun .and. (.not.devel%l_tor)) Then
-              Call system_revive(neigh%cutoff,megatm,nstep,time,sites,io,tmst, &
+            If (Mod(nstph,flow%freq_restart) == 0 .and. nstph /= flow%run_steps .and. (.not.devel%l_tor)) Then
+              Call system_revive(neigh%cutoff,megatm,flow%step,flow%time,sites,io,flow%start_time, &
                 stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity, &
                 rdf,netcdf,config,files,comm)
             End IF
@@ -309,7 +311,7 @@
      End Do
      config%cell=stat%clin
 
-     Call set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
+     Call set_temperature(levcfg,flow%restart_key,flow%step,flow%run_steps,atmfre,atmfrz,degtra, &
        degrot,degfre,degshl,stat%engrot,sites%dof_site,cshell,stat,cons,pmf, &
        thermo,minim,rigid,domain,config,seed,comm)
 
@@ -319,14 +321,14 @@
 ! Save restart data because of next action (and disallow the same in dl_poly)
 
   If (.not. devel%l_tor) Then
-    Call system_revive(neigh%cutoff,megatm,nstep,time,sites,io,tmst,stat, &
+    Call system_revive(neigh%cutoff,megatm,flow%step,flow%time,sites,io,flow%start_time,stat, &
       devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf, &
       config,files,comm)
   End If
 
 ! step counter is data counter now, so statistics_result is triggered
 
-  nstep=nstph
+  flow%step=nstph
   thermo%tstep=tsths
 
 

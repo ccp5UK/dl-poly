@@ -1,5 +1,5 @@
 Module flow
-  Use kinds, Only : wi
+  Use kinds, Only : wi,wp
   Implicit None
 
   Private
@@ -19,6 +19,60 @@ Module flow
 
     !> Check if first call of md_vv or calculate_forces
     Logical, Public :: newjob = .true.
+
+    !> Strict mode
+    Logical, Public :: strict
+    !> Topology printing switch
+    Logical, Public :: print_topology
+
+    !> Force capping switch
+    Logical, Public :: force_cap
+
+    !> Equilibration state flag
+    Logical, Public :: equilibration
+
+    !> Full simulation (_i.e._ not replay) flag
+    Logical, Public :: simulation
+
+    !> Book keeping flag
+    Logical, Public :: book
+
+    !> Excluded interactions flag
+    Logical, Public :: exclusions
+
+    !> Some kind of switch
+    Integer(Kind=wi), Public :: isw
+
+    !> Restart key
+    Integer(Kind=wi), Public :: restart_key
+
+    !> Current simulation step
+    Integer(kind=wi), Public :: step
+    !> Current simulation time (step * timestep)
+    Real(Kind=wp), Public :: time
+    !> Starting time, non-zero if job is restarted
+    Real(Kind=wp), Public :: start_time
+
+
+    !> Number of production steps
+    Integer(Kind=wi), Public :: run_steps
+    !> Number of equilibration steps
+    Integer(Kind=wi), Public :: equil_steps
+
+    !> Data printing interval (in steps)
+    Integer(Kind=wi), Public :: freq_output
+
+    !> Bond distribution calculation period (in steps)
+    Integer(Kind=wi), Public :: freq_bond
+    !> Angle distribution calculation period (in steps)
+    Integer(Kind=wi), Public :: freq_angle
+    !> Dihedral distribution calculation period (in steps)
+    Integer(Kind=wi), Public :: freq_dihedral
+    !> Inversion distribution calculation period (in steps)
+    Integer(Kind=wi), Public :: freq_inversion
+
+    !> Restart files creation period (in steps
+    Integer(Kind=wi), Public :: freq_restart
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed

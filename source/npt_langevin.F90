@@ -30,7 +30,7 @@ Module npt_langevin
 
 Contains
 
-  Subroutine npt_l0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_l0_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,          &
              degfre,virtot,                     &
              consv,                             &
@@ -54,7 +54,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -177,7 +177,7 @@ Call pmf%allocate_work()
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -472,7 +472,7 @@ Call pmf%deallocate_work()
     End If
   End Subroutine npt_l0_vv
 
-  Subroutine npt_l1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_l1_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              nstep,          &
              degfre,degrot,virtot,              &
              consv,                             &
@@ -498,7 +498,7 @@ Call pmf%deallocate_work()
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -695,7 +695,7 @@ Call pmf%allocate_work()
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! Globalise Langevin random forces for shared RBs
 

@@ -28,7 +28,7 @@ Module npt_berendsen
 
 Contains
 
-  Subroutine npt_b0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_b0_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              virtot,                            &
              strkin,engke,                      &
              cshell,cons,pmf,stat,thermo,sites, &
@@ -48,7 +48,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -157,7 +157,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -343,7 +343,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   End Subroutine npt_b0_vv
 
-  Subroutine npt_b1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_b1_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              virtot,                            &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,                     &
@@ -365,7 +365,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -546,7 +546,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 

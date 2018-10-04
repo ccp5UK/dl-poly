@@ -30,7 +30,7 @@ Module nst_berendsen
 
 Contains
 
-  Subroutine nst_b0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nst_b0_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
       stress,                    &
       strkin,engke,                      &
       cshell,cons,pmf,stat,thermo,sites,&
@@ -53,7 +53,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -180,7 +180,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
     ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
       ! store initial values
 
@@ -381,7 +381,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nst_b0_vv
 
-  Subroutine nst_b1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nst_b1_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
       stress,                    &
       strkin,strknf,strknt,engke,engrot, &
       strcom,vircom,                     &
@@ -406,7 +406,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -607,7 +607,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
     ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 

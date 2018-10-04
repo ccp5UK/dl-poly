@@ -9,12 +9,12 @@
 
 ! Apply pseudo thermostat - velocity cycle (1)
         If (thermo%l_stochastic_boundaries) Then
-          Call stochastic_boundary_vv(1,thermo%tstep,nstep,sites%dof_site,cshell,stat,thermo,rigid,domain,config,seed,comm)
+          Call stochastic_boundary_vv(1,thermo%tstep,flow%step,sites%dof_site,cshell,stat,thermo,rigid,domain,config,seed,comm)
         End If
 
 ! Apply temperature regaussing
 
-        If (thermo%l_tgaus .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_tgaus) == 0) Then
+        If (thermo%l_tgaus .and. flow%step <= flow%equil_steps .and. Mod(flow%step-flow%equil_steps,thermo%freq_tgaus) == 0) Then
            thermo%chi_t = 0.0_wp
            thermo%chi_p = 0.0_wp
            thermo%eta  = 0.0_wp
@@ -59,7 +59,7 @@
 
 ! Apply temperature scaling
 
-        If (thermo%l_tscale .and. nstep <= nsteql .and. Mod(nstep-nsteql,thermo%freq_tscale) == 0) Then
+        If (thermo%l_tscale .and. flow%step <= flow%equil_steps .and. Mod(flow%step-flow%equil_steps,thermo%freq_tscale) == 0) Then
            thermo%chi_t = 0.0_wp
            thermo%chi_p = 0.0_wp
            thermo%eta  = 0.0_wp

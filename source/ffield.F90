@@ -64,6 +64,7 @@ Module ffield
   Use pmf, Only : pmf_type
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
   Use filename, Only : file_type,FILE_FIELD
+  Use flow, Only : flow_type
 
   Implicit None
 
@@ -76,13 +77,12 @@ Module ffield
 Contains
 
 Subroutine read_field                      &
-           (l_str,l_top,l_n_v,             &
+           (l_n_v,             &
            rcut,width, &
-  lbook,lexcl,               &
            atmfre,atmfrz,megatm,megfrz,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,sites,vdws, &
-           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,config,kim_data,files,comm)
+           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,config,kim_data,files,flow,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -106,10 +106,8 @@ Subroutine read_field                      &
 ! SETUP MODULES
 
 
-  Logical,           Intent( In    ) :: l_str,l_top,l_n_v
+  Logical,           Intent( In    ) :: l_n_v
   Real( Kind = wp ), Intent( In    ) :: rcut,width
-
-  Logical,           Intent(   Out ) :: lbook,lexcl
   Integer,           Intent(   Out ) :: atmfre,atmfrz,megatm,megfrz
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( pmf_type ), Intent( InOut ) :: pmf
@@ -134,6 +132,7 @@ Subroutine read_field                      &
   Type( kim_type ), Intent( InOut ) :: kim_data
   Type( configuration_type ), Intent( InOut ) :: config
   Type( file_type ), Intent( InOut ) :: files(:)
+  Type( flow_type ), Intent( InOut ) :: flow
   Type( comms_type), Intent( InOut ) :: comm
 
   Logical                :: safe,lunits,lmols,atmchk,                        &
@@ -263,11 +262,11 @@ Subroutine read_field                      &
 ! Default for existence of intra-like interactions (including
 ! shells and tethers)
 
-  lbook = .false.
+  flow%book = .false.
 
 ! Default flag for existence of excluded intra-interaction
 
-  lexcl = .false.
+  flow%exclusions = .false.
 
 ! default shell model - none
 
@@ -289,7 +288,7 @@ Subroutine read_field                      &
   End If
   Call info(' ',.true.)
   Call info('system specification',.true.)
-  If (.not.l_top) Then
+  If (.not.flow%print_topology) Then
     Call info('detailed topology opted out',.true.)
   End If
 
@@ -550,8 +549,8 @@ Subroutine read_field                      &
                  If (.not.l_shl) Call error(477)
                  l_shl=.false.
 
-                 lbook=.true.
-                 lexcl=.true.
+                 flow%book=.true.
+                 flow%exclusions=.true.
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -560,7 +559,7 @@ Subroutine read_field                      &
 
                  Write(message,'(a,5x,i10)') 'number of core-shell units', ntmp
                  Call info(message,.true.)
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Call info('core-shell details:',.true.)
                    Write(message,'(8x,a4,5x,a5,5x,a5,5x,a10)') &
                      'unit','index','index','parameters'
@@ -598,7 +597,7 @@ Subroutine read_field                      &
 
 ! test for frozen core-shell unit and print unit
 
-                    If (l_top) Then
+                    If (flow%print_topology) Then
                       If (sites%freeze_site(isite1)*sites%freeze_site(isite2) /= 0) Then
                         Write(message,'(2x,3i10,2f15.6,1x,a8)') &
                           ishls,cshell%lstshl(1,nshels),cshell%lstshl(2,nshels), &
@@ -671,8 +670,8 @@ Subroutine read_field                      &
                  l_con=.false.
                  cons%m_con=1
 
-                 lbook=.true.
-                 lexcl=.true.
+                 flow%book=.true.
+                 flow%exclusions=.true.
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -681,7 +680,7 @@ Subroutine read_field                      &
 
                  Write(message,'(a,5x,i10)') 'number of bond constraints', ntmp
                  Call info(message,.true.)
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Call info('constraint bond details:',.true.)
                    Write(message,'(7x,a5,5x,a5,5x,a5,5x,a10)') &
                      'unit','index','index','bondlength'
@@ -740,7 +739,7 @@ Subroutine read_field                      &
 
 ! test for frozen atoms and print unit
 
-                    If (l_top) Then
+                    If (flow%print_topology) Then
                       If (sites%freeze_site(isite1)*sites%freeze_site(isite2) /= 0) Then
                         Write(message,'(2x,3i10,f15.6,1x,a8)') &
                           icnst,cons%lstcon(1,nconst),cons%lstcon(2,nconst), &
@@ -791,7 +790,7 @@ Subroutine read_field                      &
 
               Else If (word(1:3) == 'pmf') Then
 
-                 lbook=.true.
+                 flow%book=.true.
 
                  If (lpmf) Call error(484)
                  lpmf=.true.               ! Only one PMF type per
@@ -883,7 +882,7 @@ Subroutine read_field                      &
 
 ! test for frozen atoms and print units
 
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Write(message,'(8x,a4,5x,a5,8x,a6)') &
                      'unit','index','weight'
                    Call info(message,.true.)
@@ -971,8 +970,8 @@ Subroutine read_field                      &
                  l_rgd=.false.
                  rigid%on=.true.
 
-                 lbook=.true.
-                 lexcl=.true.
+                 flow%book=.true.
+                 flow%exclusions=.true.
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units' .or. word(1:3) == 'bod') Call get_word(record,word)
@@ -981,7 +980,7 @@ Subroutine read_field                      &
 
                  Write(message,'(a,9x,i10)') 'number of rigid bodies', ntmp
                  Call info(message,.true.)
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Call info('rigid body details:',.true.)
                    Write(message,'(8x,a4,6x,a4,12x,a7)') &
                      'unit','size','indices'
@@ -1046,7 +1045,7 @@ Subroutine read_field                      &
 
 ! print RB unit
 
-                    If (comm%idnode == 0 .and. l_top) Then
+                    If (comm%idnode == 0 .and. flow%print_topology) Then
                       rwidth = lrgd+1
                       Write(rfmt,'(a,i0,a)') '(26x,',rwidth,'i10)'
 
@@ -1109,7 +1108,7 @@ Subroutine read_field                      &
                  If (.not.l_tet) Call error(240)
                  l_tet=.false.
 
-                 lbook=.true.
+                 flow%book=.true.
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -1118,7 +1117,7 @@ Subroutine read_field                      &
 
                  Write(message,'(a,7x,i10)') 'number of tethered sites', ntmp
                  Call info(message,.true.)
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Call info('tethered site details:',.true.)
                    Write(message,'(8x,a4,5x,a3,6x,a4,5x,a10)') &
                      'unit','key','site','parameters'
@@ -1172,7 +1171,7 @@ Subroutine read_field                      &
 
 ! test for frozen atom and print unit
 
-                    If (l_top) Then
+                    If (flow%print_topology) Then
                        If (sites%freeze_site(isite1) /= 0) Then
                          Write(rfmt,'(a,i0,a)') '(2x,i10,a8,i10,2x,',tether%mxpteth,'f15.6,2x,a8)'
                          Write(message,rfmt) iteth,keyword,tether%lsttet(nteth),tether%prmtet(1:tether%mxpteth,nteth),'*frozen*'
@@ -1204,7 +1203,7 @@ Subroutine read_field                      &
                        js(1)=tether%lsttet(j)
 
                        If (js(1) == is(1)) Then
-                          If (l_str .and. l_top) Call warning(410,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (flow%strict .and. flow%print_topology) Call warning(410,Real(i,wp),Real(j,wp),0.0_wp)
                           If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
@@ -1217,7 +1216,7 @@ Subroutine read_field                      &
                  If (.not.l_bnd) Call error(36)
                  l_bnd=.false.
 
-                 lbook=.true.
+                 flow%book=.true.
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -1226,7 +1225,7 @@ Subroutine read_field                      &
 
                  Write(message,'(a,i10)') 'number of chemical bonds ',ntmp
                  Call info(message,.true.)
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Call info('chemical bond details:',.true.)
                    Write(message,'(8x,a4,5x,a3,5x,a5,5x,a5,5x,a10)') &
                      'unit','key','index','index','parameters'
@@ -1249,7 +1248,7 @@ Subroutine read_field                      &
                     Call lower_case(word)
                     keyword=word(1:4)
 
-                    If (keyword(1:1) /= '-') lexcl=.true.
+                    If (keyword(1:1) /= '-') flow%exclusions=.true.
 
                     If      (keyword == 'tab' ) Then
                        bond%key(nbonds)=20
@@ -1332,7 +1331,7 @@ Subroutine read_field                      &
 
 ! test for frozen atoms and print unit
 
-                       If (l_top) Then
+                       If (flow%print_topology) Then
                           If (sites%freeze_site(isite1)*sites%freeze_site(isite2) /= 0) Then
                             Write(rfmt,'(a,i0,a)') '(2x,i10,a8,2i10,',bond%max_param,'f15.6,2x,a8)'
                             Write(message,rfmt) ibond,keyword,bond%lst(1,nbonds), &
@@ -1397,7 +1396,7 @@ Subroutine read_field                      &
                           bond%ltp(nbonds)=ntpbnd ! Re-point from zero to type
                        End If
 
-                       If (l_top) Then
+                       If (flow%print_topology) Then
                           If (sites%freeze_site(isite1)*sites%freeze_site(isite2) /= 0) Then
                             Write(message,'(2x,i10,a8,2i10,2x,a9,2x,a8)') &
                               ibond,keyword,bond%lst(1,nbonds),bond%lst(2,nbonds), &
@@ -1435,7 +1434,7 @@ Subroutine read_field                      &
                        js(2)=Max(bond%lst(1,j),bond%lst(2,j))
 
                        If (js(1) == is(1) .and. js(2) == is(2)) Then
-                          If (l_str .and. l_top) Call warning(420,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (flow%strict .and. flow%print_topology) Call warning(420,Real(i,wp),Real(j,wp),0.0_wp)
                           If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
@@ -1448,7 +1447,7 @@ Subroutine read_field                      &
                  If (.not.l_ang) Call error(210)
                  l_ang=.false.
 
-                 lbook=.true.
+                 flow%book=.true.
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -1457,7 +1456,7 @@ Subroutine read_field                      &
 
                  Write(message,'(a,i10)') 'number of bond angles ',ntmp
                  Call info(message,.true.)
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Write(messages(1),'(a)') 'bond angle details:'
                    Write(messages(2),'(8x,a4,5x,a3,3(5x,a5),8x,a7,8x,a5)') &
                      'unit','key','index','index','index','f-const','angle'
@@ -1480,7 +1479,7 @@ Subroutine read_field                      &
                     Call lower_case(word)
                     keyword=word(1:4)
 
-                    If (keyword(1:1) /= '-') lexcl=.true.
+                    If (keyword(1:1) /= '-') flow%exclusions=.true.
 
                     If      (keyword == 'tab' ) Then
                        angle%key(nangle)=20
@@ -1581,7 +1580,7 @@ Subroutine read_field                      &
 
 ! test for frozen atoms and print unit
 
-                       If (l_top) Then
+                       If (flow%print_topology) Then
                          If (sites%freeze_site(isite1)*sites%freeze_site(isite2)*sites%freeze_site(isite3) /= 0) Then
                            write(rfmt,'(a,i0,a)') '(2x,i10,a8,3i10,',angle%max_param,'f15.6,2x,a8)'
                            write(message,rfmt) iang,keyword,angle%lst(1:3,nangle),angle%param(1:angle%max_param,nangle),'*frozen*'
@@ -1646,7 +1645,7 @@ Subroutine read_field                      &
 
 ! test for frozen atoms and print unit
 
-                       If (l_top) Then
+                       If (flow%print_topology) Then
                           If (sites%freeze_site(isite1)*sites%freeze_site(isite2)*sites%freeze_site(isite3) /= 0) Then
                             Write(message,'(2x,i10,a8,3i10,2x,a9,2x,a8)') &
                               iang,keyword,angle%lst(1:3,nangle),'tabulated','*frozen*'
@@ -1684,7 +1683,7 @@ Subroutine read_field                      &
 
                        If (js(1) == is(1) .and. js(2) == is(2) .and. &
                            js(3) == is(3)) Then
-                          If (l_str .and. l_top) Call warning(430,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (flow%strict .and. flow%print_topology) Call warning(430,Real(i,wp),Real(j,wp),0.0_wp)
                           If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
@@ -1697,8 +1696,8 @@ Subroutine read_field                      &
                  If (.not.l_dih) Call error(220)
                  l_dih=.false.
 
-                 lbook=.true.
-                 lexcl=.true.
+                 flow%book=.true.
+                 flow%exclusions=.true.
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -1708,7 +1707,7 @@ Subroutine read_field                      &
                  Write(message,'(a,i10)') 'number of dihedral angles ',ntmp
                  Call info(message,.true.)
 
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Write(messages(1),'(a)') 'dihedral angle details:'
                    Write(messages(2),'(8x,a4,5x,a3,4(5x,a5),8x,a7,10x,a5,11x,a4,7x,a8,8x,a7)') &
                      'unit','key','index','index','index','index','f-const', &
@@ -1808,7 +1807,7 @@ Subroutine read_field                      &
 
 ! test for frozen atoms and print unit
 
-                       If (l_top) Then
+                       If (flow%print_topology) Then
                           If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
                               sites%freeze_site(isite3)*sites%freeze_site(isite4) /= 0) Then
                             Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',dihedral%max_param,'f15.6,2x,a8)'
@@ -1892,7 +1891,7 @@ Subroutine read_field                      &
 
 ! test for frozen atoms and print unit
 
-                       If (l_top) Then
+                       If (flow%print_topology) Then
                           If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
                               sites%freeze_site(isite3)*sites%freeze_site(isite4) /= 0) Then
                             Write(message,'(2x,i10,a8,4i10,2x,a9,2x,a8)') &
@@ -1940,7 +1939,7 @@ Subroutine read_field                      &
                             js(3) == is(3) .and. js(4) == is(4)) .or. &
                            (js(1) == is(4) .and. js(2) == is(3) .and. &
                             js(3) == is(2) .and. js(4) == is(1))) Then
-                          If (l_str .and. l_top) Call warning(440,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (flow%strict .and. flow%print_topology) Call warning(440,Real(i,wp),Real(j,wp),0.0_wp)
 !                          If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
@@ -1953,8 +1952,8 @@ Subroutine read_field                      &
                  If (.not.l_inv) Call error(230)
                  l_inv=.false.
 
-                 lbook=.true.
-                 lexcl=.true.
+                 flow%book=.true.
+                 flow%exclusions=.true.
 
                  Call get_word(record,word)
                  If (word(1:5) == 'units') Call get_word(record,word)
@@ -1963,7 +1962,7 @@ Subroutine read_field                      &
 
                  Write(message,'(a,i10)') 'number of inversion angles ',ntmp
                  Call info(message,.true.)
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Write(messages(1),'(a)') 'inversion angle details:'
                    Write(messages(2),'(8x,a4,5x,a3,4(5x,a5),7x,a7,8x,a5,8x,a6)') &
                     'unit','key','index','index','index','index','f-const', &
@@ -2048,7 +2047,7 @@ Subroutine read_field                      &
 
 ! test for frozen atoms and print unit
 
-                       If (comm%idnode == 0 .and. l_top) Then
+                       If (comm%idnode == 0 .and. flow%print_topology) Then
                           If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
                               sites%freeze_site(isite3)*sites%freeze_site(isite4) /= 0) Then
                             Write(rfmt,'(a,i0,a)') '(2x,i10,a8,4i10,',inversion%max_param,'f15.6,2x,a8)'
@@ -2141,7 +2140,7 @@ Subroutine read_field                      &
 
 ! test for frozen atoms and print unit
 
-                       If (comm%idnode == 0 .and. l_top) Then
+                       If (comm%idnode == 0 .and. flow%print_topology) Then
                           If (sites%freeze_site(isite1)*sites%freeze_site(isite2)* &
                               sites%freeze_site(isite3)*sites%freeze_site(isite4) /= 0) Then
                             Write(message,'(2x,i10,a8,4i10,2x,a9,2x,a8)') &
@@ -2189,7 +2188,7 @@ Subroutine read_field                      &
 
                        If (js(1) == is(1) .and. js(2) == is(2) .and. &
                            js(3) == is(3) .and. js(4) == is(4)) Then
-                          If (l_str .and. l_top) Call warning(450,Real(i,wp),Real(j,wp),0.0_wp)
+                          If (flow%strict .and. flow%print_topology) Call warning(450,Real(i,wp),Real(j,wp),0.0_wp)
                           If (is(0) == js(0)) Call error(620)
                        End If
                     End Do
@@ -2844,7 +2843,7 @@ Subroutine read_field                      &
 ! Process MPOLES
 
         If (mpoles%max_mpoles > 0) Then
-          Call read_mpoles(l_top,config%sumchg,cshell,sites,mpoles,comm)
+          Call read_mpoles(flow%print_topology,config%sumchg,cshell,sites,mpoles,comm)
         End If
 
 ! check charmming shells (cshell%megshl) globalisation
@@ -3034,7 +3033,7 @@ Subroutine read_field                      &
 
         If (electro%key /= ELECTROSTATIC_NULL .and. Abs(config%sumchg) <= zero_plus) Then
            If (comm%idnode == 0) Call warning(4,config%sumchg,0.0_wp,0.0_wp)
-           If (l_str) Then
+           If (flow%strict) Then
               electro%key=ELECTROSTATIC_NULL
               Call info('Electrostatics switched off!!!',.true.)
            End If
@@ -3326,7 +3325,7 @@ Subroutine read_field                      &
 
         Write(message,'(a,i10)') 'number of specified rdf look up pairs ',rdf%n_pairs
         Call info(message,.true.)
-        If (l_top) Then
+        If (flow%print_topology) Then
           write(message,'(8x,a4,2(2x,a6))') 'pair','atom 1','atom 2'
           Call info(message,.true.)
         End If
@@ -3346,7 +3345,7 @@ Subroutine read_field                      &
            Call get_word(record,word)
            atom2=word(1:8)
 
-           If (l_top) Then
+           If (flow%print_topology) Then
              Write(message,"(2x,i10,2a8)") itprdf,atom1,atom2
              Call info(message,.true.)
            End If
@@ -3384,7 +3383,7 @@ Subroutine read_field                      &
 
         Write(message,'(a,i10)') 'number of specified vdw potentials ',vdws%n_vdw
         Call info(message,.true.)
-        If (l_top) Then
+        If (flow%print_topology) Then
           Write(message,'(8x,a4,5x,a6,2x,a6,5x,a3,7x,a10)') &
             'pair','atom 1','atom 2','key','parameters'
           Call info(message,.true.)
@@ -3458,13 +3457,13 @@ Subroutine read_field                      &
               If (thermo%key_dpd > 0) Then ! make sure thermo%gamdpd is read and reported for DPD
                  Call get_word(record,word)
                  parpot(1)=word_2_real(word)
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Write(message,'(2x,i10,5x,2a8,8x,f20.6,1x,a9)') &
                      itpvdw,atom1,atom2,parpot(1),'tabulated'
                    Call info(message,.true.)
                  End If
               Else
-                 If (l_top) Then
+                 If (flow%print_topology) Then
                    Write(message,'(2x,i10,5x,2a8,1x,a9)') &
                      itpvdw,atom1,atom2,'tabulated'
                    Call info(message,.true.)
@@ -3476,7 +3475,7 @@ Subroutine read_field                      &
                  Call get_word(record,word)
                  parpot(i)=word_2_real(word)
               End Do
-              If (l_top) Then
+              If (flow%print_topology) Then
                 Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',itmp,'f15.6)'
                 Write(message,rfmt) itpvdw,atom1,atom2,keyword,parpot(1:itmp)
                 Call info(message,.true.)
@@ -3618,7 +3617,7 @@ Subroutine read_field                      &
                     If (vdws%mixing == MIX_NULL) Then
                       Call info('vdw/dpd cross terms mixing (for undefined mixed potentials) may be required',.true.)
 
-                       If (thermo%gamdpd(0) > zero_plus .and. (.not.l_str)) Then
+                       If (thermo%gamdpd(0) > zero_plus .and. (.not.flow%strict)) Then
                           vdws%mixing = MIX_LORENTZ_BERTHELOT
                           Write(messages(1),'(a)') &
                             'type of mixing defaulted - Lorentz–Berthelot :: e_ij=(e_i*e_j)^(1/2) ; s_ij=(s_i+s_j)/2'
@@ -3636,7 +3635,7 @@ Subroutine read_field                      &
 
               If (vdws%mixing /= MIX_NULL) Then
 
-                If (l_top .or. thermo%key_dpd > 0) Then
+                If (flow%print_topology .or. thermo%key_dpd > 0) Then
                   If (thermo%key_dpd > 0) Then
                     Call info('vdw potential mixing under testing...',.true.)
                   Else
@@ -3669,7 +3668,7 @@ Subroutine read_field                      &
                                 If (vdws%list(ksite) > vdws%n_vdw) Then
                                   If (thermo%key_dpd > 0) Then
                                     If (thermo%gamdpd(0) <= zero_plus) Then
-                                      If (l_str) Then
+                                      If (flow%strict) Then
                                         ldpd_safe = .false. ! test for non-definable interactions
                                         Call warning('the interaction between bead types: ' &
                                           //sites%unique_atom(i)//' & '//sites%unique_atom(j) &
@@ -3703,7 +3702,7 @@ Subroutine read_field                      &
 
                  If (nsite > 0) Then
 
-                   If (l_top .or. thermo%key_dpd > 0) Then
+                   If (flow%print_topology .or. thermo%key_dpd > 0) Then
                      If (thermo%key_dpd > 0) Then
                        Call info('vdw potential mixing underway...',.true.)
                      Else
@@ -3910,7 +3909,7 @@ Subroutine read_field                      &
                                 vdws%param(3,vdws%n_vdw)=del(0)
                              End If
 
-                             If (l_top) Then
+                             If (flow%print_topology) Then
                                If (thermo%key_dpd > 0) Then
                                  Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',vdws%max_param+1,'f20.6)'
                                  Write(message,rfmt) vdws%n_vdw,sites%unique_atom(i), &
@@ -3927,7 +3926,7 @@ Subroutine read_field                      &
                        End Do
                     End Do
                   Else
-                    If (l_top) Then
+                    If (flow%print_topology) Then
                       Call info('vdw potential mixing unsuccessful or abandoned',.true.)
                     End If
                   End If
@@ -3974,7 +3973,7 @@ Subroutine read_field                      &
 
         Write(message,'(a,i10)') 'number of specified metal potentials ',met%n_potentials
         Call info(message,.true.)
-        If (l_top) Then
+        If (flow%print_topology) Then
           Write(message,'(8x,a4,5x,a6,2x,a6,5x,a3,5x,a10)') &
             'pair','atom 1','atom 2','key','parameters'
           Call info(message,.true.)
@@ -4051,7 +4050,7 @@ Subroutine read_field                      &
               Call get_word(record,word)
               parpot(9)=word_2_real(word)
 
-              If (l_top) Then
+              If (flow%print_topology) Then
                 Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',met%max_param,'f15.6)'
                 Write(message,rfmt) itpmet,atom1,atom2,keyword,parpot(1:met%max_param)
                 Call info(message,.true.)
@@ -4140,7 +4139,7 @@ Subroutine read_field                      &
            If (.not.met%l_direct) Then
              Call met%init_table(sites%mxatyp)
               If (met%tab > 0) Then ! keypot == 0
-                 Call metal_table_read(l_top,met,sites,comm)
+                 Call metal_table_read(flow%print_topology,met,sites,comm)
               Else ! If (met%tab == 0) Then
                  Call metal_generate(sites%ntype_atom,met)
               End If
@@ -4157,7 +4156,7 @@ Subroutine read_field                      &
 
         Write(message,'(a,i10)') 'number of specified tersoff potentials ',tersoffs%n_potential
         Call info(message,.true.)
-        If (l_top) Then
+        If (flow%print_topology) Then
           Write(message,'(6x,a6,5x,a5,7x,a3,5x,a10)') &
             'number','atom','key','parameters'
           Call info(message,.true.)
@@ -4226,7 +4225,7 @@ Subroutine read_field                      &
               Call get_word(record,word)
               parpot(11)=word_2_real(word)      ! h_i
 
-              If (l_top) Then
+              If (flow%print_topology) Then
                 Write(messages(1),'(2x,i10,5x,a8,3x,a4,1x,5(1p,e13.4))') &
                   itpter,atom0,keyword,parpot(1: 5)
                 Write(messages(2),'(33x,6(1p,e13.4))') parpot(6:11)
@@ -4262,7 +4261,7 @@ Subroutine read_field                      &
               Call get_word(record,word)
               parpot(16)=word_2_real(word)      ! beta_i
 
-              If (l_top) Then
+              If (flow%print_topology) Then
                 Write(messages(1),'(2x,i10,5x,a8,3x,a4,1x,5(1p,e13.4))') &
                   itpter,atom0,keyword,parpot(1:5)
                 Write(messages(2),'(33x,6(1p,e13.4))') parpot(6:11)
@@ -4326,7 +4325,7 @@ Subroutine read_field                      &
 
           Write(message,'(a,i10)') 'number of tersoff cross terms ', (tersoffs%n_potential*(tersoffs%n_potential+1))/2
           Call info(message,.true.)
-          If (l_top) Then
+          If (flow%print_topology) Then
             Write(message,'(8x,a4,5x,a6,2x,a6,5x,a10)') &
               'pair','atom 1','atom 2','paramters'
             Call info(message,.true.)
@@ -4368,7 +4367,7 @@ Subroutine read_field                      &
               tersoffs%param2(keyter,1)=parpot(1)
               tersoffs%param2(keyter,2)=parpot(2)
 
-              If (l_top) Then
+              If (flow%print_topology) Then
                 Write(message,'(2x,i10,5x,2a8,1x,2f15.6)') &
                   icross,atom1,atom2,parpot(1:2)
                 Call info(message,.true.)
@@ -4385,7 +4384,7 @@ Subroutine read_field                      &
 
         Write(message,'(a,i10)') 'number of specified three-body potentials ',threebody%ntptbp
         Call info(message,.true.)
-        If (l_top) Then
+        If (flow%print_topology) Then
           Write(message,'(5x,a7,5x,a6,2(2x,a6),5x,a3,5x,a10)') &
             'triplet','atom 1','atom 2','atom 3','key','parameters'
           Call info(message,.true.)
@@ -4451,7 +4450,7 @@ Subroutine read_field                      &
            Call get_word(record,word)
            parpot(5)=word_2_real(word)
 
-           If (l_top) Then
+           If (flow%print_topology) Then
              Write(rfmt,'(a,i0,a)') '(2x,i10,5x,3a8,3x,a4,1x,',threebody%mxptbp,'f15.6)'
              Write(message,rfmt) itptbp,atom1,atom0,atom2,keyword,parpot(1:threebody%mxptbp)
              Call info(message,.true.)
@@ -4524,7 +4523,7 @@ Subroutine read_field                      &
 
         Write(message,'(a,i10)') 'number of specified four-body potentials ',fourbody%n_potential
         Call info(message,.true.)
-        If (l_top) Then
+        If (flow%print_topology) Then
           Write(message,'(5x,a7,5x,a6,3(2x,a6),5x,a3,5x,a10)') &
             'quartet','atom 1','atom 2','atom 3','atom 4','key','parameters'
           Call info(message,.true.)
@@ -4583,7 +4582,7 @@ Subroutine read_field                      &
            Call get_word(record,word)
            parpot(3)=word_2_real(word)
 
-           If (l_top) Then
+           If (flow%print_topology) Then
              Write(rfmt,'(a,i0,a)') '(2x,i10,3x,4a8,3x,a4,2x,',fourbody%max_param,'f15.6)'
              Write(message,rfmt) itpfbp,atom0,atom1,atom2,atom3,keyword,parpot(1:fourbody%max_param)
              Call info(message,.true.)
@@ -4725,7 +4724,7 @@ Subroutine read_field                      &
 
         Write(message,'(2a)') 'external field key ',keyword
         Call info(message,.true.)
-        If (l_top) Then
+        If (flow%print_topology) Then
           Write(messages(1),'(2x,a)') 'parameters'
           Write(rfmt,'(a,i0,a)') '(2x,',ext_field%max_param,'f15.6)'
           Write(messages(2),rfmt) ext_field%param(1:ext_field%max_param)
@@ -4798,7 +4797,7 @@ Subroutine read_field                      &
 ! check and resolve any conflicting 14 dihedral specifications
 
         Call dihedrals_14_check &
-           (l_str,l_top,angle,dihedral,sites,comm)
+           (flow%strict,flow%print_topology,angle,dihedral,sites,comm)
 
 ! test for existence/appliance of any two-body or tersoff or KIM model defined interactions!!!
 

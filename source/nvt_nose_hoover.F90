@@ -25,7 +25,7 @@ Module nvt_nose_hoover
 
 Contains
 
-  Subroutine nvt_h0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nvt_h0_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              consv,                             &
              strkin,engke,cshell,               &
              cons,pmf,stat,thermo,domain,tmr,config,comm)
@@ -44,7 +44,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
 
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
@@ -136,7 +136,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -282,7 +282,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   End Subroutine nvt_h0_vv
 
   Subroutine nvt_h1_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+             (stage,lvar,mndis,mxdis,mxstp,tstep, &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,cshell,cons,pmf,stat,&
@@ -303,7 +303,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -452,7 +452,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 

@@ -31,7 +31,7 @@ Module nst_nose_hoover
 
 Contains
 
-  Subroutine nst_h0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nst_h0_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              degfre,stress,             &
              consv,                             &
              strkin,engke,                      &
@@ -62,7 +62,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
 
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
@@ -218,7 +218,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -499,7 +499,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   End Subroutine nst_h0_vv
 
-  Subroutine nst_h1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine nst_h1_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              degfre,degrot,stress,      &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
@@ -532,7 +532,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ), Intent( InOut ) :: tstep
@@ -751,7 +751,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 

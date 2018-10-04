@@ -25,7 +25,7 @@ Module nvt_berendsen
 Contains
 
   Subroutine nvt_b0_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+             (stage,lvar,mndis,mxdis,mxstp,tstep, &
              strkin,engke,cshell,               &
              cons,pmf,stat,thermo,domain,tmr,config,comm)
 
@@ -40,7 +40,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
 
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
@@ -127,7 +127,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -257,7 +257,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   End Subroutine nvt_b0_vv
 
   Subroutine nvt_b1_vv                          &
-             (isw,lvar,mndis,mxdis,mxstp,tstep, &
+             (stage,lvar,mndis,mxdis,mxstp,tstep, &
              strkin,strknf,strknt,engke,engrot, &
              strcom,vircom,cshell,cons,pmf,stat,&
              thermo,rigid,domain,tmr,config,comm)
@@ -274,7 +274,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( In    ) :: isw
+    Integer,           Intent( In    ) :: stage
 
     Logical,           Intent( In    ) :: lvar
     Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp
@@ -428,7 +428,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -920,7 +920,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   End Subroutine nvt_b1_vv
 
-  Subroutine nvt_b0_scl(isw,tstep,vxx,vyy,vzz,strkin,engke,thermo,config,comm)
+  Subroutine nvt_b0_scl(stage,tstep,vxx,vyy,vzz,strkin,engke,thermo,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -932,7 +932,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: isw
+    Integer,                                  Intent( In    ) :: stage
     Real( Kind = wp ),                        Intent( In    ) :: tstep
     Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ),      Intent(   Out ) :: strkin
@@ -953,7 +953,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
     thermo%chi_t=Sqrt(1.0_wp+tstep/thermo%tau_t*(thermo%sigma/engke-1.0_wp))
 
-    If (isw == 0) Return
+    If (stage == 0) Return
 
   ! thermostat velocities
 
@@ -973,7 +973,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   End Subroutine nvt_b0_scl
 
   Subroutine nvt_b1_scl &
-             (isw,tstep,vxx,vyy,vzz,         &
+             (stage,tstep,vxx,vyy,vzz,         &
              strkin,strknf,strknt,engke,engrot,thermo,rigid,config,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -986,7 +986,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,                                  Intent( In    ) :: isw
+    Integer,                                  Intent( In    ) :: stage
     Real( Kind = wp ),                        Intent( In    ) :: tstep
     Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ),      Intent(   Out ) :: strkin,strknf,strknt
@@ -1015,7 +1015,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
     thermo%chi_t=Sqrt(1.0_wp+tstep/thermo%tau_t*(thermo%sigma/(engke+engrot)-1.0_wp))
 
-    If (isw == 0) Return
+    If (stage == 0) Return
 
   ! thermostat velocities
 

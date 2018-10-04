@@ -29,7 +29,7 @@ Module npt_mtk
 
 Contains
 
-  Subroutine npt_m0_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_m0_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              degfre,virtot,                     &
              consv,                             &
              strkin,engke,                      &
@@ -52,7 +52,7 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -166,7 +166,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
@@ -420,7 +420,7 @@ Call pmf%deallocate_work()
     End If
   End Subroutine npt_m0_vv
 
-  Subroutine npt_m1_vv(isw,lvar,mndis,mxdis,mxstp,tstep, &
+  Subroutine npt_m1_vv(stage,lvar,mndis,mxdis,mxstp,tstep, &
              degfre,degrot,virtot,              &
              consv,                             &
              strkin,strknf,strknt,engke,engrot, &
@@ -445,7 +445,7 @@ Call pmf%deallocate_work()
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: isw
+    Integer,            Intent( In    ) :: stage
     Logical,            Intent( In    ) :: lvar
     Real( Kind = wp ),  Intent( In    ) :: mndis,mxdis,mxstp
     Real( Kind = wp ),  Intent( InOut ) :: tstep
@@ -627,7 +627,7 @@ Call pmf%allocate_work()
 
   ! first pass of velocity verlet algorithm
 
-    If (isw == 0) Then
+    If (stage == 0) Then
 
   ! store initial values
 
