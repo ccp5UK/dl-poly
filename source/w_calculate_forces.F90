@@ -31,7 +31,7 @@
 
      If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
        l_n_v .and. rdf%max_rdf == 0) .or. kim_data%active) Then
-       Call two_body_forces(thermo%ensemble,nstfce,lbook,megfrz, &
+       Call two_body_forces(thermo%ensemble,lbook,megfrz, &
          leql,nsteql,nstep,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
          mpoles,electro,domain,tmr,kim_data,config,comm)
      End If

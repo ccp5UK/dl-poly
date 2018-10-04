@@ -39,7 +39,7 @@ Module two_body
 Contains
 
   Subroutine two_body_forces(ensemble,    &
-           nstfce,lbook,megfrz, &
+    lbook,megfrz, &
            leql,nsteql,nstep,         &
            cshell,stats,ewld,devel,met,pois,neigh,sites,vdws,rdf,mpoles,electro, &
            domain,tmr,kim_data,config,comm)
@@ -68,7 +68,6 @@ Contains
 
   Logical,                                  Intent( In    ) :: lbook,leql
   Integer,                                  Intent( In    ) :: ensemble,        &
-                                                               nstfce, &
                                                                megfrz, &
                                                                nsteql,nstep
   Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -121,7 +120,7 @@ Contains
 ! frozen-frozen evaluations in constant volume ensembles only.
 
   If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) Then
-    Call ewld%check(ensemble,megfrz,nsteql,nstfce,nstep,config%mxatms)
+    Call ewld%check(ensemble,megfrz,nsteql,electro%nstfce,nstep,config%mxatms)
   End If
 
 ! initialise energy and virial accumulators

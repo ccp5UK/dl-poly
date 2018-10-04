@@ -48,7 +48,7 @@
 ! intramolecular PDF analysis for every entry in HISTORF
 ! enforce printing and collection if the calculation exists
 
-  lpana=(config%mxgana > 0)
+  stats%lpana=(config%mxgana > 0)
   nstbnd = 1
   nstang = 1
   nstdih = 1
@@ -142,7 +142,7 @@
                atmfrz,degrot,degtra,flow,cshell,cons,pmf,bond,angle,dihedral, &
                inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
              If (lexcl) Then
-               Call build_excl_intra(lecx,cshell,cons,bond,angle,dihedral, &
+               Call build_excl_intra(electro%lecx,cshell,cons,bond,angle,dihedral, &
                  inversion,neigh,rigid,config,comm)
              End If
            End If
@@ -151,7 +151,7 @@
 ! Make sure RDFs are complete (lbook=.false. - no exclusion lists)
 
            If (rdf%l_collect) Then
-             Call two_body_forces(thermo%ensemble,nstfce,.false.,megfrz, &
+             Call two_body_forces(thermo%ensemble,.false.,megfrz, &
                leql,nsteql,nstph,cshell,stat,ewld,devel,met,pois,neigh,sites, &
                vdws,rdf,mpoles,electro,domain,tmr,kim_data,config,comm)
            End If

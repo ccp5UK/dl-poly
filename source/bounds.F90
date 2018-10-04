@@ -53,7 +53,7 @@ Module bounds
 Contains
 
   Subroutine set_bounds(levcfg,l_str,lsim,l_n_e,l_n_v,l_ind, &
-    dvar,nstfce,      &
+    dvar,      &
     width,site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
     msd_data,met,pois,bond,angle,dihedral,     &
     inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
@@ -73,7 +73,7 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent(   Out ) :: l_str,lsim,l_n_e,l_n_v,l_ind
-  Integer,           Intent(   Out ) :: levcfg,nstfce
+  Integer,           Intent(   Out ) :: levcfg
   Real( Kind = wp ), Intent(   Out ) :: dvar
   Real( Kind = wp ), Intent(   Out ) :: width
   Type( site_type), Intent( InOut ) :: site
@@ -146,7 +146,7 @@ Contains
 ! scan CONTROL file data
 
   Call scan_control(rcter,rigid%max_rigid,config%imcon,config%imc_n,config%cell, &
-    xhi,yhi,zhi,config%mxgana,l_str,lsim,l_n_e,l_n_r,lzdn,l_n_v,l_ind,nstfce, &
+    xhi,yhi,zhi,config%mxgana,l_str,lsim,l_n_e,l_n_r,lzdn,l_n_v,l_ind,electro%nstfce, &
     ttm,cshell,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral, &
     inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data, &
     files,comm)

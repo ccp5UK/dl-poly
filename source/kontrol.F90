@@ -86,10 +86,10 @@ Contains
 
   Subroutine read_control                                &
     (levcfg,l_str,lsim,l_n_e,l_n_v,        &
-    nstfce,width,     &
-    l_exp,lecx,lfcap,l_top,          &
+    width,     &
+    l_exp,lfcap,l_top,          &
     leql,               &
-    lfce,lpana,           &
+    lfce,           &
     nx,ny,nz,impa,                            &
     keyres,                   &
     nstrun,nsteql,      &
@@ -121,14 +121,11 @@ Contains
   Type( ttm_type ), Intent( InOut ) :: ttm
   Logical,                Intent( In    ) :: l_str,lsim,l_n_e,l_n_v
   Integer,                Intent( In    ) :: levcfg
-  Integer,                Intent( InOut ) :: nstfce
   Real( Kind = wp ),      Intent( In    ) :: width
 
-  Logical,                Intent(   Out ) :: l_exp,lecx,            &
+  Logical,                Intent(   Out ) :: l_exp,        &
     lfcap,l_top,           &
-    leql,lfce,   &
-    lpana
-
+    leql,lfce
 
   Integer,                Intent(   Out ) :: nx,ny,nz,             &
     keyres,nstrun,        &
@@ -329,7 +326,7 @@ Contains
 ! default value for accounting extended coulombic exclusion
 ! (not accounted)
 
-  lecx = .false.
+  electro%lecx = .false.
 
 ! default switch for force capping and cap value
 
@@ -448,7 +445,7 @@ Contains
   nstang = 0 ; grdang = 0
   nstdih = 0 ; grddih = 0
   nstinv = 0 ; grdinv = 0
-  lpana  = .false.
+  stats%lpana  = .false.
 
 ! default switch for calculation of rdfs, default number of steps
 ! when to be collected and default switch for printing them
@@ -1177,7 +1174,7 @@ Contains
            If (mpoles%max_mpoles == 0 .or. cshell%mxshl == 0) Then
 !              mpoles%key=POLARISATION_DEFAULT ! done in scan_control
            Else
-              lecx = .true. ! enable extended coulombic exclusion
+             electro%lecx = .true. ! enable extended coulombic exclusion
               Call info('Extended Coulombic eXclusion activated for CHARMM polarisation',.true.)
            End If
         End If
@@ -1823,15 +1820,15 @@ Contains
 
 ! Print infrequent k-space SPME evaluation
 
-           If      (nstfce == 0) Then
-              Call warning(370,Real(nstfce,wp),1.0_wp,0.0_wp)
-              nstfce=1
-           Else If (nstfce > 10) Then
-              Call warning(370,Real(nstfce,wp),4.0_wp,0.0_wp)
-              nstfce=4
+           If      (electro%nstfce == 0) Then
+             Call warning(370,Real(electro%nstfce,wp),1.0_wp,0.0_wp)
+             electro%nstfce=1
+           Else If (electro%nstfce > 10) Then
+             Call warning(370,Real(electro%nstfce,wp),4.0_wp,0.0_wp)
+             electro%nstfce=4
            End If
-           If (nstfce >= 1) Then
-              Write(message,'(a,1p,i5)') 'k-space evaluation interval (steps)',nstfce
+           If (electro%nstfce >= 1) Then
+             Write(message,'(a,1p,i5)') 'k-space evaluation interval (steps)',electro%nstfce
               Call info(message,.true.)
            End If
 
@@ -1990,7 +1987,7 @@ Contains
 
      Else If (word(1:5) == 'exclu') Then
 
-        lecx = .true.
+        electro%lecx = .true.
         Call info('Extended Coulombic eXclusion opted for',.true.)
 
 ! read force capping option
@@ -2653,7 +2650,7 @@ Contains
         Call get_word(record,word)
 
         If      (word(1:3) == 'ana' ) Then
-           lpana = .true.
+          stats%lpana = .true.
         Else If (word(1:3) == 'rdf' ) Then
            rdf%l_print = .true.
         Else If (word(1:4) == 'zden') Then
@@ -3062,7 +3059,7 @@ Contains
 ! report for extended coulombic exclusion if needed
 
   If (electro%key /= ELECTROSTATIC_NULL) Then
-     If (lecx) Then
+    If (electro%lecx) Then
         Call info('Extended Coulombic eXclusion : YES',.true.)
      Else
         Call info('Extended Coulombic eXclusion : NO',.true.)
@@ -3147,7 +3144,7 @@ Contains
 
 ! report intramolecular analysis options
 
-  If (lpana .or. config%mxgana > 0) Then
+  If (stats%lpana .or. config%mxgana > 0) Then
     If (config%mxgana == 0) Then
         Call info('no intramolecular distribution collection requested',.true.)
      Else
@@ -3241,7 +3238,7 @@ Contains
         End If
      End If
 
-     If (lpana) Then
+     If (stats%lpana) Then
         Call info('probability distribution analysis printing requested',.true.)
      Else
         Call info('no probability distribution analysis printing requested',.true.)
@@ -3270,9 +3267,9 @@ Contains
      If (rdf%l_print) Then
         Call info('rdf printing requested',.true.)
      Else
-        If (lpana) Then
+        If (stats%lpana) Then
            Call info('rdf printing triggered due to a PDA printing request',.true.)
-           rdf%l_print=lpana
+           rdf%l_print=stats%lpana
         Else
            Call info('no rdf printing requested',.true.)
         End If

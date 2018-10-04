@@ -78,7 +78,7 @@ Contains
 Subroutine read_field                      &
            (l_str,l_top,l_n_v,             &
            rcut,width, &
-           lecx,lbook,lexcl,               &
+  lbook,lexcl,               &
            atmfre,atmfrz,megatm,megfrz,    &
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,sites,vdws, &
@@ -108,7 +108,6 @@ Subroutine read_field                      &
 
   Logical,           Intent( In    ) :: l_str,l_top,l_n_v
   Real( Kind = wp ), Intent( In    ) :: rcut,width
-  Logical,           Intent( InOut ) :: lecx
 
   Logical,           Intent(   Out ) :: lbook,lexcl
   Integer,           Intent(   Out ) :: atmfre,atmfrz,megatm,megfrz
@@ -2838,8 +2837,8 @@ Subroutine read_field                      &
                  Call error(476)
               End If
            End If
-        Else If (lecx) Then ! previously selected option for accounting for
-           lecx = .false.   ! extended coulombic exclusion is abandoned
+         Else If (electro%lecx) Then ! previously selected option for accounting for
+           electro%lecx = .false.   ! extended coulombic exclusion is abandoned
         End If
 
 ! Process MPOLES
@@ -3140,7 +3139,7 @@ Subroutine read_field                      &
 
 ! core-shell up the 1 and 4 members
 
-                    If (lecx) Then ! dihedral%l_core_shell=.false. is the default in dihedrals
+                    If (electro%lecx) Then ! dihedral%l_core_shell=.false. is the default in dihedrals
                        If (dihedral%lst(1,ndihed) == ia) Then
                           dihedral%l_core_shell=.true.
                           dihedral%lst(5,ndihed)=ja
