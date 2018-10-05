@@ -33,11 +33,10 @@ Module build_book
 Contains
 
 Subroutine build_book_intra             &
-           (l_str,l_top,lsim,dvar,      &
-           megatm,megfrz,atmfre,atmfrz, &
-           degrot,degtra,flow,        &
-           cshell,cons,pmf,bond,angle,dihedral,  &
-           inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
+  (l_str,l_top,lsim,      &
+  flow,        &
+  cshell,cons,pmf,bond,angle,dihedral,  &
+  inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -52,10 +51,6 @@ Subroutine build_book_intra             &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Logical,           Intent( In    ) :: l_str,l_top,lsim
-  Real(Kind = wp),   Intent( In    ) :: dvar
-  Integer,           Intent( In    ) :: megatm,atmfre,atmfrz
-  Integer,           Intent( InOut ) :: megfrz
-  Integer(Kind=li),  Intent( InOut ) :: degrot,degtra
   Type( flow_type ), Intent(InOut) :: flow
   Type( constraints_type), Intent(Inout) :: cons
   Type( pmf_type), Intent(Inout) :: pmf
@@ -1622,7 +1617,7 @@ Subroutine build_book_intra             &
      End Do
 
      Write(message,'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
-        Nint((dvar*tmp-1.0_wp)*100.0_wp+0.5_wp)
+        Nint((config%dvar*tmp-1.0_wp)*100.0_wp+0.5_wp)
      Call warning(message,.true.)
   End If
 
@@ -1653,10 +1648,11 @@ Subroutine build_book_intra             &
 ! Set RB particulars and quaternions
 
      If (rigid%on) Then
-       Call rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,neigh%cutoff,sites,rigid,config,comm)
+       Call rigid_bodies_setup(l_str,l_top,config%megatm,config%megfrz,config%degtra,config%degrot,&
+         neigh%cutoff,sites,rigid,config,comm)
      End If
 
-     Call report_topology(megatm,megfrz,atmfre,atmfrz, &
+     Call report_topology(config%megatm,config%megfrz,config%atmfre,config%atmfrz, &
            cshell,cons,pmf,bond,angle,dihedral,inversion,tether,sites,rigid,comm)
 
 ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed

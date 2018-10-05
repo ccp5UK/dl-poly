@@ -85,12 +85,9 @@ Module kontrol
 Contains
 
   Subroutine read_control                                &
-    (levcfg,l_n_e,l_n_v,        &
-    width,     &
-    l_exp,          &
+    (l_n_e,l_n_v,        &
     lfce, &
-    nx,ny,nz,impa,                            &
-    fmax,             &
+    impa,                            &
     ttm,dfcts,          &
     rigid, &
     rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
@@ -114,19 +111,10 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( ttm_type ), Intent( InOut ) :: ttm
-  Logical,                Intent( In    ) :: l_n_e,l_n_v
-  Integer,                Intent( In    ) :: levcfg
-  Real( Kind = wp ),      Intent( In    ) :: width
-
-  Logical,                Intent(   Out ) :: l_exp,lfce
-
-
-  Integer,                Intent(   Out ) :: nx,ny,nz
-
-  Real( Kind = wp ),      Intent(   Out ) :: fmax
-
-  Type( rigid_bodies_type ), Intent ( InOut ) :: rigid
+    Type( ttm_type ), Intent( InOut ) :: ttm
+    Logical,                Intent( In    ) :: l_n_e,l_n_v
+    Logical,                Intent(   Out ) :: lfce
+    Type( rigid_bodies_type ), Intent ( InOut ) :: rigid
   Type( rsd_type ), Intent ( InOut ) :: rsdc
   Type( pmf_type ), Intent (   InOut )   :: pmf
   Type( core_shell_type ), Intent (   InOut  )   :: cshell
@@ -188,10 +176,10 @@ Contains
 
 ! default expansion option
 
-  l_exp = .false.
-  nx    = 1
-  ny    = 1
-  nz    = 1
+  config%l_exp = .false.
+  config%nx    = 1
+  config%ny    = 1
+  config%nz    = 1
 
 ! defaults for direct evaluation, force-shifting of VDW interactions
 ! and type of mixing for undefined cross interaction of certain type
@@ -253,7 +241,7 @@ Contains
 
 ! switch for pseudo thermostat (not applied), type of scaling
 ! (default 0 where 0 - Langevin+direct, 1 - Langevin, 2 - gauss, 3 - direct )
-! and minimum width of the thermostatted boundaries in Angs
+! and minimum config%width of the thermostatted boundaries in Angs
 ! minimum temperature of the thermostat
 
   thermo%l_stochastic_boundaries   = .false.
@@ -321,7 +309,7 @@ Contains
 ! default switch for force capping and cap value
 
   flow%force_cap = .false.
-  fmax  = 1000.0_wp
+  config%fmax  = 1000.0_wp
 
 ! default switch for printing topology
 
@@ -584,7 +572,7 @@ Contains
         devel%zorg = word_2_real(word)
 
         Call get_word(record,word)
-        devel%lvcforg = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
+        devel%lvcforg = Min( Int(Abs(word_2_real(word,0.0_wp))) , config%levcfg)
 
         Write(messages(1),'(a)') '%%%'
         Write(messages(2),'(a,3f10.3,a)') '%%% vector(x,y,x) ', devel%xorg, devel%yorg, devel%zorg, ' %%%'
@@ -596,7 +584,7 @@ Contains
         Call info('%%% config level and new cell vectors to rescale to (read in a CONFIG-like manner): %%%',.true.)
 
         Call get_word(record,word)
-        devel%lvcfscl = Min( Int(Abs(word_2_real(word,0.0_wp))) , levcfg)
+        devel%lvcfscl = Min( Int(Abs(word_2_real(word,0.0_wp))) , config%levcfg)
 
         itmp=0
         Do i=1,3
@@ -752,14 +740,14 @@ Contains
 
      Else If (word(1:5) == 'nfold') Then
 
-        l_exp = .true.
+        config%l_exp = .true.
         Call get_word(record,word)
-        nx = Max(1,Nint(Abs(word_2_real(word))))
+        config%nx = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
-        ny = Max(1,Nint(Abs(word_2_real(word))))
+        config%ny = Max(1,Nint(Abs(word_2_real(word))))
         Call get_word(record,word)
-        nz = Max(1,Nint(Abs(word_2_real(word))))
-        Write(message,'(a,9x,3i5)') 'system expansion opted',nx,ny,nz
+        config%nz = Max(1,Nint(Abs(word_2_real(word))))
+        Write(message,'(a,9x,3i5)') 'system expansion opted',config%nx,config%ny,config%nz
         Call info(message,.true.)
 
 ! read impact option
@@ -990,7 +978,7 @@ Contains
 ! thermo%width_pseudo = 2 Angs by default
 
         tmp = Abs(word_2_real(word))
-        If (width/4.0_wp > thermo%width_pseudo) Then
+        If (config%width/4.0_wp > thermo%width_pseudo) Then
            thermo%l_stochastic_boundaries = .true.
            If (comm%idnode == 0) Then
               Call info('pseudo thermostat attached to MD cell boundary',.true.)
@@ -1006,13 +994,13 @@ Contains
               Write(message,'(a,1p,e12.4)') 'thermostat thickness (Angs) ',tmp
            End If
 
-           If (width/4.0_wp > tmp .and. tmp >= thermo%width_pseudo) Then
+           If (config%width/4.0_wp > tmp .and. tmp >= thermo%width_pseudo) Then
               thermo%width_pseudo = tmp
            Else
               Call info('thermostat thickness insufficient - reset to 2 Angs',.true.)
            End If
         Else
-           Call warning(280,thermo%width_pseudo,width,0.0_wp)
+           Call warning(280,thermo%width_pseudo,config%width,0.0_wp)
            Call error(530)
         End If
 
@@ -1990,9 +1978,9 @@ Contains
         If (word(1:5) == 'force') Call get_word(record,word)
 
         tmp = Abs(word_2_real(word))
-        If (tmp > zero_plus) fmax=tmp
+        If (tmp > zero_plus) config%fmax=tmp
         Write(messages(1),'(a)') 'force capping on (during equilibration)'
-        Write(messages(2),'(a,1p,e12.4)') 'force capping limit (kT/Angs)',fmax
+        Write(messages(2),'(a,1p,e12.4)') 'force capping limit (kT/Angs)',config%fmax
         Call info(messages,2,.true.)
 
 ! read 'no vdw', 'no elec', 'no ind' and 'no vafav' options
@@ -2974,7 +2962,7 @@ Contains
 
   If (flow%restart_key == 0) Then
      Call info('clean start requested',.true.)
-  Else If (levcfg == 0) Then
+  Else If (config%levcfg == 0) Then
      Call warning(200,0.0_wp,0.0_wp,0.0_wp)
      flow%restart_key=0
   End If

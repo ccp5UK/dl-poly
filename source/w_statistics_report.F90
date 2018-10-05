@@ -8,21 +8,21 @@ stat%strtot = stat%strcon + stat%strpmf + stat%stress + stat%strkin + stat%strco
 ! Get core-shell kinetic energy for adiabatic shell model
 
 If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC) Then
-  Call core_shell_kinetic(config,stat%shlke,cshell,domain,comm)
+  Call core_shell_kinetic(cnfig,stat%shlke,cshell,domain,comm)
 End If
 
 ! Calculate physical quantities and collect statistics
 
 Call statistics_collect           &
-  (config,flow%simulation,flow%equilibration,flow%equil_steps,msd_data%l_msd, &
+  (cnfig,flow%simulation,flow%equilibration,flow%equil_steps,msd_data%l_msd, &
   flow%restart_key,      &
-  degfre,degshl,degrot,          &
+  cnfig%degfre,cnfig%degshl,cnfig%degrot,          &
   flow%step,thermo%tstep,flow%time,flow%start_time,         &
-  mxatdm_,rdf%max_grid,stat,thermo,zdensity,sites,files,comm)
+  config%mxatdm,rdf%max_grid,stat,thermo,zdensity,sites,files,comm)
 
 ! VV forces evaluation report for 0th or weird restart
 
-If (levcfg == 1) Then
+If (cnfig%levcfg == 1) Then
   Call info('forces evaluated at (re)start for VV integration...',.true.)
   Call info('',.true.)
 End If
@@ -129,7 +129,7 @@ End If
 
 ! Calculate green-kubo properties
 
-If (green%samp > 0) Call vaf_collect(config,sites%mxatyp,flow%equilibration,flow%equil_steps,flow%step,flow%time,green,comm)
+If (green%samp > 0) Call vaf_collect(cnfig,sites%mxatyp,flow%equilibration,flow%equil_steps,flow%step,flow%time,green,comm)
 
 
 !!!!!!!!!!!!!!!!!  W_STATISTICS_REPORT INCLUSION  !!!!!!!!!!!!!!!!!!!!!!

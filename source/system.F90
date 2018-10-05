@@ -58,7 +58,7 @@ Module system
   Public :: system_expand
   Contains
 
-  Subroutine system_init(levcfg,rcut,keyres,megatm,time,tmst,nstep, &
+  Subroutine system_init(rcut,keyres,time,tmst,nstep, &
     cshell,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
     zdensity,sites,vdws,rdf,config,files,comm)
 
@@ -73,8 +73,7 @@ Module system
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,           Intent( InOut ) :: levcfg,keyres
-    Integer,           Intent( In    ) :: megatm
+    Integer,           Intent( InOut ) :: keyres
     Real( Kind = wp ), Intent( In    ) :: rcut
 
     Integer,           Intent(   Out ) :: nstep
@@ -218,7 +217,7 @@ Module system
      Call gcheck(comm,l_tmp,"enforce")
      If (.not.l_tmp) Call error(519)
 
-! Check REVOLD restart compatibility: rcut,rdf%rbin,megatm
+! Check REVOLD restart compatibility: rcut,rdf%rbin,config%megatm
 
      xyz(1:3)=0.0_wp
      If (comm%idnode == 0) Then
@@ -232,7 +231,7 @@ Module system
      End If
      Call gbcast(comm,xyz,0)
      If (Abs(xyz(1)-rcut) > 1.0e-6_wp .or. Abs(xyz(2)-rdf%rbin) > 1.0e-6_wp .or. &
-         Nint(xyz(3)) /= megatm) Call error(519)
+         Nint(xyz(3)) /= config%megatm) Call error(519)
 
 ! read the rest of the accumulator data from dump file
 
@@ -499,7 +498,7 @@ Module system
 
      i_tmp=0
 
-     Do k=1,megatm
+     Do k=1,config%megatm
         xyz=0.0_wp
 
         If (comm%idnode == 0) Then
@@ -551,7 +550,7 @@ Module system
        i_tmp=0
 
        Do j=1,green%samp
-         Do k=1,megatm
+         Do k=1,config%megatm
             xyz=0.0_wp
 
             If (comm%idnode == 0) Then
@@ -600,7 +599,7 @@ Module system
 
 ! force force and stats%stress recalculation when 'restart' is not on
 
-     levcfg=1
+     config%levcfg=1
 
   End If
 
@@ -641,17 +640,17 @@ Module system
 
 End Subroutine system_init
 
-Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
+Subroutine system_expand(l_str,rcut,io,cshell,cons,bond,angle, &
     dihedral,inversion,sites,netcdf,rigid,config,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! dl_poly_4 utility to expand the MD system by a nx*ny*nz volumetric
+! dl_poly_4 utility to expand the MD system by a config%nx*config%ny*config%nz volumetric
 ! replication of its contents along the MD cell lattice vectors,
 ! creating a new matching pair of topology-interaction (FIELD) and
 ! crystallographic (CONFIG) files, preserving FIELD's template intact
 !
-! supported image conditions: 1,2,3, 6(nz==1)
+! supported image conditions: 1,2,3, 6(config%nz==1)
 !
 ! copyright - daresbury laboratory
 ! author    - i.t.todorov march 2016
@@ -662,9 +661,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
   Type( io_type ), Intent( InOut ) :: io
   Logical,           Intent( In    ) :: l_str
-  Integer,           Intent( In    ) :: nx,ny,megatm
   Real( Kind = wp ), Intent( In    ) :: rcut
-  Integer,           Intent( InOut ) :: nz
   Type( core_shell_type ), Intent( In ) :: cshell
   Type( constraints_type ), Intent( In    ) :: cons
   Type( bonds_type ), Intent( In    ) :: bond
@@ -726,10 +723,10 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
   Character ( len = 256 )  :: message,messages(5)
 
   fail=0
-  Allocate (f1(1:nx),f2(1:nx),f3(1:nx),                      Stat=fail(1))
-  Allocate (f4(1:ny),f5(1:ny),f6(1:ny),                      Stat=fail(2))
-  Allocate (f7(1:nz),f8(1:nz),f9(1:nz),                      Stat=fail(3))
-  Allocate (i_xyz(1:nx,1:ny,1:nz),                           Stat=fail(4))
+  Allocate (f1(1:config%nx),f2(1:config%nx),f3(1:config%nx),                      Stat=fail(1))
+  Allocate (f4(1:config%ny),f5(1:config%ny),f6(1:config%ny),                      Stat=fail(2))
+  Allocate (f7(1:config%nz),f8(1:config%nz),f9(1:config%nz),                      Stat=fail(3))
+  Allocate (i_xyz(1:config%nx,1:config%ny,1:config%nz),                           Stat=fail(4))
   Allocate (xm(1:10*config%mxatms),ym(1:10*config%mxatms),zm(1:10*config%mxatms), Stat=fail(5))
 
   If (Any(fail > 0)) Then
@@ -747,26 +744,26 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
   Call gtime(t)
   Write(message,'(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
   Call info(message,.true.)
-  Write(messages(1),'(a)') '*** Expanding the MD system by a nx*ny*nz volumetric replication        ***'
+  Write(messages(1),'(a)') '*** Expanding the MD system by a config%nx*config%ny*config%nz volumetric replication        ***'
   Write(messages(2),'(a)') '*** of its contents along the MD config%cell lattice vectors, creating         ***'
   Write(messages(3),'(a)') '*** a new matching pair of topology-interaction (FIELD) and             ***'
   Write(messages(4),'(a)') "*** crystallographic (CONFIG) files, preserving FIELD's template intact ***"
-  Write(messages(5),'(a,3i5)') '*** Replication dimensions (nx,ny,nz):', nx,ny,nz
+  Write(messages(5),'(a,3i5)') '*** Replication dimensions (config%nx,config%ny,config%nz):', config%nx,config%ny,config%nz
   Call info(messages,5,.true.)
 
 ! Holt or change execution if imcon is unsupported
 
   If (config%imcon == 0) Call error(570)
-  If (config%imcon == 6 .and. nz > 1) Then
-     nz=1
+  If (config%imcon == 6 .and. config%nz > 1) Then
+     config%nz=1
      Call warning(350,0.0_wp,0.0_wp,0.0_wp)
-     Write(message,'(a,3i5)') '*** Replication dimensions (nx,ny,nz):', nx,ny,nz
+     Write(message,'(a,3i5)') '*** Replication dimensions (config%nx,config%ny,config%nz):', config%nx,config%ny,config%nz
      Call info(message)
   End If
 
 ! Create names for the expanded CONFIG and FIELD
 
-  record= ' ' ; Write(record,'(3(a1,i0))') '_',nx,'_',ny,'_',nz
+  record= ' ' ; Write(record,'(3(a1,i0))') '_',config%nx,'_',config%ny,'_',config%nz
   fcfg=' '
   fcfg=Trim(files(FILE_CONFIG)%filename) // record(1:Len_Trim(record))
   ffld=' '
@@ -778,16 +775,16 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
   If (io_write == IO_WRITE_SORTED_NETCDF) fcfg=fcfg(1:Len_Trim(fcfg)) // '.nc'
 
-  fx=Real(nx,wp)
-  fy=Real(ny,wp)
-  fz=Real(nz,wp)
+  fx=Real(config%nx,wp)
+  fy=Real(config%ny,wp)
+  fz=Real(config%nz,wp)
 
-  nall=nx*ny*nz
+  nall=config%nx*config%ny*config%nz
 
 ! Define cell vector displacement in z direction
 
-  Do iz=1,nz
-     z=Real(2*iz-nz-1,wp)
+  Do iz=1,config%nz
+     z=Real(2*iz-config%nz-1,wp)
      f7(iz)=config%cell(7)*z/2.0_wp
      f8(iz)=config%cell(8)*z/2.0_wp
      f9(iz)=config%cell(9)*z/2.0_wp
@@ -795,8 +792,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
 ! Define cell vector displacement in y direction
 
-  Do iy=1,ny
-     y=Real(2*iy-ny-1,wp)
+  Do iy=1,config%ny
+     y=Real(2*iy-config%ny-1,wp)
      f4(iy)=config%cell(4)*y/2.0_wp
      f5(iy)=config%cell(5)*y/2.0_wp
      f6(iy)=config%cell(6)*y/2.0_wp
@@ -804,8 +801,8 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
 ! Define cell vector displacement in x direction
 
-  Do ix=1,nx
-     x=Real(2*ix-nx-1,wp)
+  Do ix=1,config%nx
+     x=Real(2*ix-config%nx-1,wp)
      f1(ix)=config%cell(1)*x/2.0_wp
      f2(ix)=config%cell(2)*x/2.0_wp
      f3(ix)=config%cell(3)*x/2.0_wp
@@ -813,10 +810,10 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
 ! Define hypercube counter
 
-  Do iz=1,nz
-     Do iy=1,ny
-        Do ix=1,nx
-           i_xyz(ix,iy,iz)=(ix-1)+nx*((iy-1)+ny*(iz-1))
+  Do iz=1,config%nz
+     Do iy=1,config%ny
+        Do ix=1,config%nx
+           i_xyz(ix,iy,iz)=(ix-1)+config%nx*((iy-1)+config%ny*(iz-1))
         End Do
      End Do
   End Do
@@ -847,7 +844,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
         Call io_init(io, recsz )
         Call io_delete(io, fcfg(1:Len_Trim(fcfg) ),comm )
         If (io_write == IO_WRITE_SORTED_NETCDF) Then
-          Call io_nc_create( netcdf, comm_self, fcfg(1:Len_Trim(fcfg)), config%cfgname, megatm*nall )
+          Call io_nc_create( netcdf, comm_self, fcfg(1:Len_Trim(fcfg)), config%cfgname, config%megatm*nall )
         End If
         Call io_open(io, io_write, comm_self, fcfg(1:Len_Trim(fcfg)), mode_wronly + mode_create, fh )
 
@@ -872,7 +869,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
         Write(record2, Fmt='(a72,a1)') config%cfgname(1:72),lf
         Call io_write_record(io, fh, Int(0,offset_kind), record2 )
 
-        Write(record2, Fmt='(3i10,a42,a1)') 0,config%imcon,nall*megatm,Repeat(' ',42),lf
+        Write(record2, Fmt='(3i10,a42,a1)') 0,config%imcon,nall*config%megatm,Repeat(' ',42),lf
         Call io_write_record(io, fh, Int(1,offset_kind), record2 )
 
         Write(record2, Fmt='(3f20.10,a12,a1)') fx*config%cell(1),fx*config%cell(2),fx*config%cell(3),Repeat(' ',12),lf
@@ -916,7 +913,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
         Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a72,a1)',         Rec=Int(1,li)) &
           config%cfgname(1:72),lf
         Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3i10,a42,a1)',    Rec=Int(2,li)) &
-          0,config%imcon,nall*megatm,Repeat(' ',42),lf
+          0,config%imcon,nall*config%megatm,Repeat(' ',42),lf
         Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(3,li)) &
           fx*config%cell(1),fx*config%cell(2),fx*config%cell(3),Repeat(' ',12),lf
         Write(Unit=files(FILE_CONFIG)%unit_no, Fmt='(3f20.12,a12,a1)', Rec=Int(4,li)) &
@@ -1523,9 +1520,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
 ! Do particle replication by vector displacements in cyclic (z,y,x) directions
 
-              Do iz=1,nz
-                 Do iy=1,ny
-                    Do ix=1,nx
+              Do iz=1,config%nz
+                 Do iy=1,config%ny
+                    Do ix=1,config%nx
 
                        x=xm(m)+f1(ix)+f4(iy)+f7(iz)
                        y=ym(m)+f2(ix)+f5(iy)+f8(iz)
@@ -1597,9 +1594,9 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
                  idm=0 ! Initialise node number
                  Call gsum(comm,idm)
 
-                 Do iz=1,nz
-                    Do iy=1,ny
-                       Do ix=1,nx
+                 Do iz=1,config%nz
+                    Do iy=1,config%ny
+                       Do ix=1,config%nx
                           rec   = offset + Int(2,li)*(Int(i_xyz(ix,iy,iz),li)*Int(setspc,li) + Int(m,li)) - Int(2,li)
 
                           If (comm%idnode == 0) Then
@@ -1695,7 +1692,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
   x=0.5_wp*Min(fx*celprp(7),fy*celprp(8),fz*celprp(9))
 
   Write(messages(1),'(3a)') '*** ', fcfg(1:Len_Trim(fcfg)), ' expansion completed !'
-  Write(messages(2),'(a,i10,a)') '*** Size: ', nall*megatm, ' particles'
+  Write(messages(2),'(a,i10,a)') '*** Size: ', nall*config%megatm, ' particles'
   Write(messages(3),'(a,f10.2,a)') '*** Maximum radius of cutoff: ', x, ' Angstroms'
   Call info(messages,3,.true.)
 
@@ -1838,7 +1835,7 @@ Subroutine system_expand(l_str,rcut,nx,ny,nz,megatm,io,cshell,cons,bond,angle, &
 
 End Subroutine system_expand
 
-Subroutine system_revive(rcut,megatm,nstep,time,sites,io,tmst,stats,devel, &
+Subroutine system_revive(rcut,nstep,time,sites,io,tmst,stats,devel, &
   green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
   files,comm)
 
@@ -1855,7 +1852,7 @@ Subroutine system_revive(rcut,megatm,nstep,time,sites,io,tmst,stats,devel, &
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( io_type ), Intent( InOut ) :: io
-  Integer,           Intent( In    ) :: megatm,nstep
+  Integer,           Intent( In    ) :: nstep
   Real( Kind = wp ), Intent( In    ) :: rcut,time,tmst
   Type( site_type ), Intent( InOut ) :: sites
   Type( stats_type ), Intent( InOut ) :: stats
@@ -2023,7 +2020,7 @@ Subroutine system_revive(rcut,megatm,nstep,time,sites,io,tmst,stats,devel, &
 
 ! Write REVCON
   levcfg = 2      ! define level of information in REVCON
-  Call write_config(config,files(FILE_REVCON),levcfg,megatm,nstep,thermo%tstep,io,time,netcdf,comm)
+  Call write_config(config,files(FILE_REVCON),levcfg,nstep,thermo%tstep,io,time,netcdf,comm)
 
 ! node 0 handles I/O
 
@@ -2034,7 +2031,7 @@ Subroutine system_revive(rcut,megatm,nstep,time,sites,io,tmst,stats,devel, &
      If (devel%l_rout) Then
         Open(Newunit=files(FILE_REVIVE)%unit_no, File=files(FILE_REVIVE)%filename, Form='formatted', Status='replace')
 
-        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') rcut,rdf%rbin,Real(megatm,wp)
+        Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') rcut,rdf%rbin,Real(config%megatm,wp)
         Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') &
           Real(nstep,wp),thermo%tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
         Write(Unit=files(FILE_REVIVE)%unit_no, Fmt=forma, Advance='No') thermo%eta
@@ -2083,7 +2080,7 @@ Subroutine system_revive(rcut,megatm,nstep,time,sites,io,tmst,stats,devel, &
      Else
         Open(Newunit=files(FILE_REVIVE)%unit_no, File=files(FILE_REVIVE)%filename, Form='unformatted', Status='replace')
 
-        Write(Unit=files(FILE_REVIVE)%unit_no) rcut,rdf%rbin,Real(megatm,wp)
+        Write(Unit=files(FILE_REVIVE)%unit_no) rcut,rdf%rbin,Real(config%megatm,wp)
         Write(Unit=files(FILE_REVIVE)%unit_no) &
           Real(nstep,wp),thermo%tstep,time,tmst,Real(stats%numacc,wp),thermo%chi_t,thermo%chi_p,thermo%cint
         Write(Unit=files(FILE_REVIVE)%unit_no) thermo%eta

@@ -470,7 +470,7 @@ Contains
    End Subroutine getvom_rgd
 
 
-  Subroutine cap_forces(fmax,temp,config,comm)
+   Subroutine cap_forces(temp,config,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -483,12 +483,12 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-    Real( Kind = wp ), Intent( In    ) :: fmax,temp
-    Type(comms_type),  Intent( InOut ) :: comm
-    Type( configuration_type ),  Intent( InOut ) :: config
+     Real( Kind = wp ), Intent( In    ) :: temp
+     Type(comms_type),  Intent( InOut ) :: comm
+     Type( configuration_type ),  Intent( InOut ) :: config
 
-    Integer           :: i
-    Real( Kind = wp ) :: fmax2,fmod,scale,fcom(1:3)
+     Integer           :: i
+     Real( Kind = wp ) :: fmax2,fmod,scale,fcom(1:3)
 
     If (config%newjob_meg) Then
       config%newjob_meg = .false.
@@ -505,7 +505,7 @@ Contains
 
 ! maximum force permitted
 
-    fmax2 = (boltz*temp*fmax)**2
+    fmax2 = (boltz*temp*config%fmax)**2
 
 ! cap forces and conserve linear momentum
 ! for non-frozen&non-massless particles

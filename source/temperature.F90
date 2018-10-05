@@ -25,9 +25,9 @@ Module temperature
 
 Contains
 
-  Subroutine set_temperature(levcfg,keyres,nstep,nstrun,atmfre,atmfrz,degtra, &
-      degrot,degfre,degshl,engrot,dof_site,cshell,stat,cons,pmf,thermo,minim, &
-      rigid,domain,config,seed,comm)
+  Subroutine set_temperature(keyres,nstep,nstrun, &
+    engrot,dof_site,cshell,stat,cons,pmf,thermo,minim, &
+    rigid,domain,config,seed,comm)
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !
@@ -38,11 +38,8 @@ Contains
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer,            Intent( In    ) :: nstep,nstrun, &
-                                           atmfre,atmfrz
-    Integer,            Intent( InOut ) :: keyres,levcfg
-    Integer(Kind=li),   Intent( InOut ) :: degtra,degrot
-    Integer(Kind=li),   Intent(   Out ) :: degfre,degshl
+    Integer,            Intent( In    ) :: nstep,nstrun
+    Integer,            Intent( InOut ) :: keyres
     Real( Kind = wp ),  Intent(   Out ) :: engrot
     Real( Kind = wp ), Dimension(:), Intent( In    ) :: dof_site
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -78,17 +75,17 @@ Contains
   ! or re-initialise if all are frozen (does no harm)
 
     If (rigid%total == 0) Then
-       degtra=Int(0,li)
-       degrot=Int(0,li)
+       config%degtra=Int(0,li)
+       config%degrot=Int(0,li)
     End If
 
   ! Degrees Of Freedom (DoF) - all free particles
 
-    meg=Int(3,li)*Int(atmfre,li)
+    meg=Int(3,li)*Int(config%atmfre,li)
 
   ! lost to frozen free atoms
 
-    frz=Int(3,li)*Int(atmfrz,li)
+    frz=Int(3,li)*Int(config%atmfrz,li)
 
   ! 3 lost for fixing COM translation
 
@@ -106,7 +103,7 @@ Contains
 
   ! lost to shells
 
-    degshl=Int(3,li)*Int(cshell%megshl,li)
+    config%degshl=Int(3,li)*Int(cshell%megshl,li)
 
   ! lost to constrained atoms and PMF constraints
 
@@ -114,7 +111,7 @@ Contains
 
   ! TOTAL DoF
 
-    degfre = meg - com - non - frz - degshl - con + degrot + degtra
+    config%degfre = meg - com - non - frz - config%degshl - con + config%degrot + config%degtra
 
   ! Report DoF
 
@@ -123,11 +120,11 @@ Contains
     Write(messages(3),'(2x,a,i12)') 'centre of mass        ',-com
     Write(messages(4),'(2x,a,i12)') 'non-periodicity       ',-non
     Write(messages(5),'(2x,a,i12)') 'frozen free particles ',-frz
-    Write(messages(6),'(2x,a,i12)') 'shell-pseudo          ',-degshl
+    Write(messages(6),'(2x,a,i12)') 'shell-pseudo          ',-config%degshl
     Write(messages(7),'(2x,a,i12)') 'constrained           ',-con
-    Write(messages(8),'(2x,a,i12)') 'RB translational      ',degtra
-    Write(messages(9),'(2x,a,i12)') 'RB rotational         ',degrot
-    Write(messages(10),'(2x,a,i12)') 'total (real)          ',degfre
+    Write(messages(8),'(2x,a,i12)') 'RB translational      ',config%degtra
+    Write(messages(9),'(2x,a,i12)') 'RB rotational         ',config%degrot
+    Write(messages(10),'(2x,a,i12)') 'total (real)          ',config%degfre
     Call info(messages,10,.true.)
 
   ! Check DoF distribution
@@ -138,29 +135,29 @@ Contains
           tmp=tmp+dof_site(config%lsite(i))
     End Do
     Call gsum(comm,tmp)
-    If (Nint(tmp,li)-non-com /= degfre) Call error(360)
+    If (Nint(tmp,li)-non-com /= config%degfre) Call error(360)
 
-  ! warn for much restrain on the system [ degfre <= (com+non+frz+con) ]
+  ! warn for much restrain on the system [ config%degfre <= (com+non+frz+con) ]
   ! and catch an over-restrained system
 
-    If (degfre <= Int(com+non+frz+con,li)) &
-       Call warning(210,Real(degfre,wp),Real((com+non+frz+con),wp),0.0_wp)
-    If (degfre < Int(1,li)) Call error(350)
+    If (config%degfre <= Int(com+non+frz+con,li)) &
+       Call warning(210,Real(config%degfre,wp),Real((com+non+frz+con),wp),0.0_wp)
+    If (config%degfre < Int(1,li)) Call error(350)
 
   ! desired kinetic energy
 
-    thermo%sigma=0.5_wp*Real(degfre,wp)*boltz*thermo%temp
+    thermo%sigma=0.5_wp*Real(config%degfre,wp)*boltz*thermo%temp
 
   ! avoid user defined 0K field to break up anything
 
     If (rigid%total > 0) Then
-       engf=getknf(config%vxx,config%vyy,config%vzz,config,comm)/Real(Max(1_li,degfre),wp)
-       engt=getknt(rigid,comm)/Real(Max(1_li,degtra),wp)
+       engf=getknf(config%vxx,config%vyy,config%vzz,config,comm)/Real(Max(1_li,config%degfre),wp)
+       engt=getknt(rigid,comm)/Real(Max(1_li,config%degtra),wp)
 
-       engr=getknr(rigid,comm)/Real(Max(1_li,degrot),wp)
+       engr=getknr(rigid,comm)/Real(Max(1_li,config%degrot),wp)
        engk=engf+engt
     Else
-       engk=getkin(config,config%vxx,config%vyy,config%vzz,comm)/Real(Max(1_li,degfre),wp)
+       engk=getkin(config,config%vxx,config%vyy,config%vzz,comm)/Real(Max(1_li,config%degfre),wp)
     End If
     If (thermo%sigma > 1.0e-6_wp .and. engk < 1.0e-6_wp .and. (keyres /= 0 .and. nstrun /= 0)) Then
        Call warning('0K velocity field detected in CONFIG with a restart at non 0K temperature in CONTROL',.true.)
@@ -505,9 +502,9 @@ Contains
 
     End If
 
-  ! levcfg must be equalised to ONE (velocities now exist)
+  ! config%levcfg must be equalised to ONE (velocities now exist)
 
-    levcfg=1
+    config%levcfg=1
 
   ! scale velocities for keyres=0 and keyres=2
 
@@ -531,7 +528,7 @@ Contains
 
        If (cshell%megshl > 0 .and. cshell%keyshl == SHELL_ADIABATIC .and. no_min_0) Then
           Do
-             Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,config,comm)
+             Call scale_temperature(thermo%sigma,config%degtra,config%degrot,config%degfre,rigid,config,comm)
              Call core_shell_quench(config,safe,thermo%temp,cshell,domain,comm)
              If (cons%megcon > 0) Then
                Call constraints_quench(cons,stat,domain,config,comm)
@@ -545,7 +542,7 @@ Contains
              If (safe) Exit
           End Do
        Else
-          Call scale_temperature(thermo%sigma,degtra,degrot,degfre,rigid,config,comm)
+          Call scale_temperature(thermo%sigma,config%degtra,config%degrot,config%degfre,rigid,config,comm)
        End If
 
     End If

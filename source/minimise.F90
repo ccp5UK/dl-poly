@@ -609,7 +609,7 @@ Contains
         Call minfile%init('CFGMIN')
         levcfg = 0      ! define level of information in file
 
-        Call write_config(config,minfile,levcfg,megatm,i-1,minim%eng_min/engunit, &
+        Call write_config(config,minfile,levcfg,i-1,minim%eng_min/engunit, &
           io,minim%eng_0/engunit,netcdf,comm)
      End If
 

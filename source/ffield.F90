@@ -78,8 +78,7 @@ Contains
 
 Subroutine read_field                      &
            (l_n_v,             &
-           rcut,width, &
-           atmfre,atmfrz,megatm,megfrz,    &
+  rcut,&
            cshell,pmf,cons,  &
            thermo,met,bond,angle,dihedral,inversion,tether,threebody,sites,vdws, &
            tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,config,kim_data,files,flow,comm)
@@ -107,8 +106,7 @@ Subroutine read_field                      &
 
 
   Logical,           Intent( In    ) :: l_n_v
-  Real( Kind = wp ), Intent( In    ) :: rcut,width
-  Integer,           Intent(   Out ) :: atmfre,atmfrz,megatm,megfrz
+  Real( Kind = wp ), Intent( In    ) :: rcut
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( pmf_type ), Intent( InOut ) :: pmf
   Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -242,8 +240,8 @@ Subroutine read_field                      &
 ! tethers, bonds, angles, dihedrals and inversions in the system.
 ! Some are used as switches for various force calculations.
 
-  megatm = 0
-  megfrz = 0
+  config%megatm = 0
+  config%megfrz = 0
 
   cshell%megshl = 0
 
@@ -805,7 +803,7 @@ Subroutine read_field                      &
                  Write(message,'(a,5x,f15.6)') 'bondlength:', pmf%prmpmf
                  Call info(message,.true.)
 
-                 If (pmf%prmpmf > width/2.0_wp) Call error(480)
+                 If (pmf%prmpmf > config%width/2.0_wp) Call error(480)
 
                  Do ipmf=1,2
                     word(1:1)='#'
@@ -2201,8 +2199,8 @@ Subroutine read_field                      &
 ! running totals of number of atoms and frozen atoms, and general types of
 ! intra-like interactions in system
 
-                 megatm=megatm+sites%num_mols(itmols)*sites%num_site(itmols)
-                 megfrz=megfrz+sites%num_mols(itmols)*sites%num_freeze(itmols)
+                 config%megatm=config%megatm+sites%num_mols(itmols)*sites%num_site(itmols)
+                 config%megfrz=config%megfrz+sites%num_mols(itmols)*sites%num_freeze(itmols)
 
                  cshell%megshl=cshell%megshl+sites%num_mols(itmols)*cshell%numshl(itmols)
 
@@ -2819,8 +2817,8 @@ Subroutine read_field                      &
 ! Initialise number of free (of RB structures)
 ! and free frozen atoms/particles
 
-        atmfre=megatm
-        atmfrz=megfrz
+        config%atmfre=config%megatm
+        config%atmfrz=config%megfrz
 
 ! test shells masses and define model
 
@@ -3249,10 +3247,10 @@ Subroutine read_field                      &
               End Do
            End If
 
-! Index RBs' sites (sites%free_site=1), correct atmfre & atmfrz
+! Index RBs' sites (sites%free_site=1), correct config%atmfre & config%atmfrz
 ! and test for unfrozen weightless members of a RB unit type
 ! (partly frozen RB but with unfrozen members being weightless)
-! and correct sites%freeze_site,sites%dof_site,rigid%weightless,frzrgd,megfrz,rigid%total if needed
+! and correct sites%freeze_site,sites%dof_site,rigid%weightless,frzrgd,config%megfrz,rigid%total if needed
 
            nsite =0
            nrigid=0
@@ -3305,10 +3303,10 @@ Subroutine read_field                      &
                  End Do
               End Do
 
-              atmfre=atmfre-ntmp  *sites%num_mols(itmols)
-              atmfrz=atmfrz-ntab  *sites%num_mols(itmols)
+              config%atmfre=config%atmfre-ntmp  *sites%num_mols(itmols)
+              config%atmfrz=config%atmfrz-ntab  *sites%num_mols(itmols)
 
-              megfrz=megfrz+ifrz  *sites%num_mols(itmols)
+              config%megfrz=config%megfrz+ifrz  *sites%num_mols(itmols)
 
               rigid%total=rigid%total-frzrgd*sites%num_mols(itmols)
 

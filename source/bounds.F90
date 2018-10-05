@@ -53,9 +53,8 @@ Module bounds
 
 Contains
 
-  Subroutine set_bounds(levcfg,l_n_e,l_n_v,l_ind, &
-    dvar,      &
-    width,site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
+  Subroutine set_bounds(l_n_e,l_n_v, &
+    site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
     msd_data,met,pois,bond,angle,dihedral,     &
     inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
     mpoles,ext_field,rigid,electro,domain,config,ewld,kim_data,files,flow,comm)
@@ -73,10 +72,7 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Logical,           Intent(   Out ) :: l_n_e,l_n_v,l_ind
-  Integer,           Intent(   Out ) :: levcfg
-  Real( Kind = wp ), Intent(   Out ) :: dvar
-  Real( Kind = wp ), Intent(   Out ) :: width
+    Logical,           Intent(   Out ) :: l_n_e,l_n_v
   Type( site_type), Intent( InOut ) :: site
   Type( ttm_type ), Intent( InOut ) :: ttm
   Type( io_type ), Intent( InOut ) :: io
@@ -132,13 +128,13 @@ Contains
     lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
     vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,comm)
 
-! Get imc_r & set dvar
+! Get imc_r & set config%dvar
 
-  Call scan_control_pre(config%imc_n,dvar,files,comm)
+  Call scan_control_pre(config%imc_n,config%dvar,files,comm)
 
 ! scan CONFIG file data
 
-  Call scan_config(config,megatm,config%imc_n,dvar,levcfg,xhi,yhi,zhi,io,domain,files,comm)
+  Call scan_config(config,megatm,config%imc_n,config%dvar,config%levcfg,xhi,yhi,zhi,io,domain,files,comm)
 
 ! halt execution for unsupported image conditions in DD
 ! checks for some inherited from DL_POLY_2 are though kept
@@ -148,7 +144,7 @@ Contains
 ! scan CONTROL file data
 
   Call scan_control(rcter,rigid%max_rigid,config%imcon,config%imc_n,config%cell, &
-    xhi,yhi,zhi,config%mxgana,l_n_e,l_n_r,lzdn,l_n_v,l_ind,electro%nstfce, &
+    xhi,yhi,zhi,config%mxgana,l_n_e,l_n_r,lzdn,l_n_v,config%l_ind,electro%nstfce, &
     ttm,cshell,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral, &
     inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data, &
     files,flow,comm)
@@ -203,10 +199,10 @@ Contains
   End If
 
 ! calculate dimensional properties of simulation cell
-! (for use in link-cells) and ttm%volume and define min cell width
+! (for use in link-cells) and ttm%volume and define min cell config%width
 
   Call dcell(config%cell,celprp)
-  width=Min(celprp(7),celprp(8),celprp(9))
+  config%width=Min(celprp(7),celprp(8),celprp(9))
 
   config%volm = celprp(10)
 
@@ -215,24 +211,24 @@ Contains
 ! check value of cutoff and reset if necessary
 
   If (config%imcon > 0) Then
-     If (config%imcon == 4) width=rt3*config%cell(1)/2.0_wp
-     If (config%imcon == 5) width=config%cell(1)
-     If (config%imcon == 6) width=Min(celprp(7),celprp(8))
+     If (config%imcon == 4) config%width=rt3*config%cell(1)/2.0_wp
+     If (config%imcon == 5) config%width=config%cell(1)
+     If (config%imcon == 6) config%width=Min(celprp(7),celprp(8))
 
-! halt program if potential cutoff exceeds the minimum half-cell width
+! halt program if potential cutoff exceeds the minimum half-cell config%width
 
-     If (neigh%cutoff > width/2.0_wp) Then
-        Call warning(3,neigh%cutoff,width/2.0_wp,0.0_wp)
+     If (neigh%cutoff > config%width/2.0_wp) Then
+        Call warning(3,neigh%cutoff,config%width/2.0_wp,0.0_wp)
         Call error(95)
      End If
   End If
 
 
-! dvar function
+! config%dvar function
 
-  fdvar = dvar**1.7_wp
+  fdvar = config%dvar**1.7_wp
 
-! dvar push of dihedral%max_legend and neigh%max_exclude ranges as the usual suspects
+! config%dvar push of dihedral%max_legend and neigh%max_exclude ranges as the usual suspects
 
   dihedral%max_legend = Nint(fdvar * Real(dihedral%max_legend,wp))
   neigh%max_exclude = Nint(fdvar * Real(neigh%max_exclude,wp))
@@ -402,7 +398,7 @@ Contains
 ! RDFs particulars for USR (umbrella sampling restraints)
 
   If (l_usr) Then
-     rdf%cutoff_usr   = 0.45_wp*width
+     rdf%cutoff_usr   = 0.45_wp*config%width
      rdf%max_grid_usr = Nint(rdf%cutoff_usr/rdf%rbin)      ! allows for up to ~75% system ttm%volume shrinkage
      rdf%cutoff_usr   = Real(rdf%max_grid_usr,wp)*rdf%rbin ! round up and beautify for Andrey Brukhno's sake
   Else
@@ -533,7 +529,7 @@ Contains
 
 
 ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
-! Dependences: MD cell widths (explicit) and machine resources (implicit)
+! Dependences: MD cell config%widths (explicit) and machine resources (implicit)
 
   Call map_domains(config%imc_n,celprp(7),celprp(8),celprp(9),domain,comm)
 
@@ -572,7 +568,7 @@ Contains
 
 10 Continue ! possible neigh%cutoff redefinition...
 
-! Define link-cell cutoff (minimum width)
+! Define link-cell cutoff (minimum config%width)
 
   neigh%cutoff_extended = neigh%cutoff + neigh%padding
 
@@ -624,7 +620,7 @@ Contains
         Go To 10
      Else
         If (cut < neigh%cutoff) Then
-           Write(message,'(a)') 'neigh%cutoff <= Min(domain width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
+           Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
            Call warning(message,.true.)
            Call error(307)
         Else ! neigh%padding is defined & in 'no strict' mode
@@ -634,7 +630,7 @@ Contains
               If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
               Go To 10
            Else
-              Write(message,'(a)') 'neigh%cutoff <= Min(domain width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
+              Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
               Call warning(message,.true.)
               Call error(307)
            End If
@@ -647,7 +643,7 @@ Contains
            ! 2b link-cells are needed
            If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then
               ! catch & handle exception
-              neigh%padding = 0.95_wp * (0.5_wp*width - neigh%cutoff - 1.0e-6_wp)
+              neigh%padding = 0.95_wp * (0.5_wp*config%width - neigh%cutoff - 1.0e-6_wp)
               ! round up
               neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
            End If
@@ -769,7 +765,7 @@ Contains
 
 ! decide on MXATMS while reading CONFIG and scan particle density
 
-  Call read_config(config,megatm,levcfg,l_ind,flow%strict,neigh%cutoff,dvar,xhi,yhi, &
+  Call read_config(config,megatm,config%levcfg,config%l_ind,flow%strict,neigh%cutoff,config%dvar,xhi,yhi, &
     zhi,dens0,dens,io,domain,files,comm)
 
 ! Create f(fdvar,dens0,dens)

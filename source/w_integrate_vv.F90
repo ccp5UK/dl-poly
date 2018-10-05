@@ -7,7 +7,7 @@
 
       If (thermo%key_dpd > 0 .and. thermo%key_dpd*stage == 0) Then
         Call dpd_thermostat(stage,flow%strict,neigh%cutoff,flow%step,thermo%tstep,stat,thermo, &
-          neigh,rigid,domain,config,seed,comm)
+          neigh,rigid,domain,cnfig,seed,comm)
       End If
 
 ! Integrate equations of motion - velocity verlet
@@ -21,7 +21,7 @@
             Call nve_0_vv                   &
          (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          stat%strkin,stat%engke,thermo,               &
-         cshell,cons,pmf,stat,domain,tmr,config,comm)
+         cshell,cons,pmf,stat,domain,tmr,cnfig,comm)
 
          Else If (thermo%ensemble == ENS_NVT_EVANS) Then
 
@@ -31,7 +31,7 @@
          (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          thermo%chi_t,                              &
          stat%strkin,stat%engke,thermo,               &
-         cshell,cons,pmf,stat,domain,tmr,config,comm)
+         cshell,cons,pmf,stat,domain,tmr,cnfig,comm)
 
          Else If (thermo%ensemble == ENS_NVT_LANGEVIN) Then
 
@@ -41,7 +41,7 @@
          (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          flow%step,                    &
          stat%strkin,stat%engke,                      &
-         cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
+         cshell,cons,pmf,stat,thermo,domain,tmr,cnfig,seed,comm)
 
          Else If (thermo%ensemble == ENS_NVT_ANDERSON) Then
 
@@ -51,7 +51,7 @@
          (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          flow%step,       &
          stat%strkin,stat%engke,                      &
-         cshell,cons,pmf,stat,thermo,sites,domain,tmr,config,seed,comm)
+         cshell,cons,pmf,stat,thermo,sites,domain,tmr,cnfig,seed,comm)
 
          Else If (thermo%ensemble == ENS_NVT_BERENDSEN) Then
 
@@ -60,7 +60,7 @@
             Call nvt_b0_vv                  &
          (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          stat%strkin,stat%engke,                      &
-         cshell,cons,pmf,stat,thermo,domain,tmr,config,comm)
+         cshell,cons,pmf,stat,thermo,domain,tmr,cnfig,comm)
 
          Else If (thermo%ensemble == ENS_NVT_NOSE_HOOVER) Then
 
@@ -70,7 +70,7 @@
          (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          stat%consv,                             &
          stat%strkin,stat%engke,                      &
-         cshell,cons,pmf,stat,thermo,domain,tmr,config,comm)
+         cshell,cons,pmf,stat,thermo,domain,tmr,cnfig,comm)
 
          Else If (thermo%ensemble == ENS_NVT_GENTLE) Then
 
@@ -78,10 +78,10 @@
 
             Call nvt_g0_vv                  &
          (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-         flow%step,degfre,                 &
+         flow%step,cnfig%degfre,                 &
          stat%consv,                             &
          stat%strkin,stat%engke,                      &
-         cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
+         cshell,cons,pmf,stat,thermo,domain,tmr,cnfig,seed,comm)
 
          Else If (thermo%ensemble == ENS_NVT_LANGEVIN_INHOMO) Then
 
@@ -92,7 +92,7 @@
          (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          flow%step,  &
               stat%strkin,stat%engke,                      &
-              ttm,cshell,cons,pmf,stat,thermo,domain,tmr,config,seed,comm)
+              ttm,cshell,cons,pmf,stat,thermo,domain,tmr,cnfig,seed,comm)
 
          Else If (thermo%ensemble == ENS_NPT_LANGEVIN) Then
 
@@ -101,11 +101,11 @@
             Call npt_l0_vv                  &
          (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
          flow%step,          &
-         degfre,stat%virtot,                     &
+         cnfig%degfre,stat%virtot,                     &
          stat%consv,                             &
          stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,domain,&
-           tmr,config,seed,comm)
+           tmr,cnfig,seed,comm)
 
            Else If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
 
@@ -116,7 +116,7 @@
            stat%virtot,                            &
            stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,domain, &
-           tmr,config,comm)
+           tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
@@ -124,11 +124,11 @@
 
               Call npt_h0_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           degfre,stat%virtot,                     &
+           cnfig%degfre,stat%virtot,                     &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,rigid,&
-           domain,tmr,config,comm)
+           domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_MTK) Then
 
@@ -136,11 +136,11 @@
 
               Call npt_m0_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           degfre,stat%virtot,                     &
+           cnfig%degfre,stat%virtot,                     &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,domain,&
-           tmr,config,comm)
+           tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) Then
 
@@ -149,11 +149,11 @@
               Call nst_l0_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            flow%step,   &
-           degfre,stat%stress,             &
+           cnfig%degfre,stat%stress,             &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,domain,&
-           tmr,config,seed,comm)
+           tmr,cnfig,seed,comm)
 
            Else If (thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -164,7 +164,7 @@
            stat%stress,                    &
            stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,domain,&
-           tmr,config,comm)
+           tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
@@ -172,11 +172,11 @@
 
               Call nst_h0_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           degfre,stat%stress,             &
+           cnfig%degfre,stat%stress,             &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,rigid,&
-           domain,tmr,config,comm)
+           domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
@@ -184,11 +184,11 @@
 
               Call nst_m0_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           degfre,stat%stress,             &
+           cnfig%degfre,stat%stress,             &
            stat%consv,                             &
            stat%strkin,stat%engke,                      &
            cshell,cons,pmf,stat,thermo,sites,vdws,domain,&
-           tmr,config,comm)
+           tmr,cnfig,comm)
 
            Else
 
@@ -206,7 +206,7 @@
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,thermo,cshell,cons,pmf,&
-           stat,rigid,domain,tmr,config,comm)
+           stat,rigid,domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NVT_EVANS) Then
 
@@ -217,7 +217,7 @@
            thermo%chi_t,                              &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,thermo,cshell,cons,pmf,&
-           stat,rigid,domain,tmr,config,comm)
+           stat,rigid,domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NVT_LANGEVIN) Then
 
@@ -228,7 +228,7 @@
            flow%step,                    &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
-           stat,thermo,rigid,domain,tmr,config,seed,comm)
+           stat,thermo,rigid,domain,tmr,cnfig,seed,comm)
 
            Else If (thermo%ensemble == ENS_NVT_ANDERSON) Then
 
@@ -239,7 +239,7 @@
            flow%step,       &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
-           stat,thermo,sites,rigid,domain,tmr,config,seed,comm)
+           stat,thermo,sites,rigid,domain,tmr,cnfig,seed,comm)
 
            Else If (thermo%ensemble == ENS_NVT_BERENDSEN) Then
 
@@ -249,7 +249,7 @@
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
-           stat,thermo,rigid,domain,tmr,config,comm)
+           stat,thermo,rigid,domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NVT_NOSE_HOOVER) Then
 
@@ -260,7 +260,7 @@
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
-           stat,thermo,rigid,domain,tmr,config,comm)
+           stat,thermo,rigid,domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NVT_GENTLE) Then
 
@@ -268,11 +268,11 @@
 
               Call nvt_g1_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           flow%step,degfre,                 &
+           flow%step,cnfig%degfre,                 &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,cshell,cons,pmf,&
-           stat,thermo,rigid,domain,tmr,config,seed,comm)
+           stat,thermo,rigid,domain,tmr,cnfig,seed,comm)
 
            Else If (thermo%ensemble == ENS_NPT_LANGEVIN) Then
 
@@ -281,12 +281,12 @@
               Call npt_l1_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            flow%step,          &
-           degfre,degrot,stat%virtot,              &
+           cnfig%degfre,cnfig%degrot,stat%virtot,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,                     &
            cshell,cons,pmf,stat,thermo,sites,vdws,&
-           rigid,domain,tmr,config,seed,comm)
+           rigid,domain,tmr,cnfig,seed,comm)
 
            Else If (thermo%ensemble == ENS_NPT_BERENDSEN) Then
 
@@ -298,7 +298,7 @@
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,                     &
            cshell,cons,pmf,stat,thermo,sites,vdws,&
-           rigid,domain,tmr,config,comm)
+           rigid,domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER) Then
 
@@ -306,12 +306,12 @@
 
               Call npt_h1_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           degfre,degrot,stat%virtot,              &
+           cnfig%degfre,cnfig%degrot,stat%virtot,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,                     &
            cshell,cons,pmf,stat,thermo,sites,vdws,&
-           rigid,domain,tmr,config,comm)
+           rigid,domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_MTK) Then
 
@@ -319,12 +319,12 @@
 
               Call npt_m1_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           degfre,degrot,stat%virtot,              &
+           cnfig%degfre,cnfig%degrot,stat%virtot,              &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,                     &
            cshell,cons,pmf,stat,thermo,sites,vdws,&
-           rigid,domain,tmr,config,comm)
+           rigid,domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_LANGEVIN_ANISO) Then
 
@@ -333,12 +333,12 @@
               Call nst_l1_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
            flow%step,   &
-           degfre,degrot,stat%stress,      &
+           cnfig%degfre,cnfig%degrot,stat%stress,      &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%consv,                             &
            stat%strcom,stat%vircom,                     &
            cshell,cons,pmf,stat,thermo,sites,vdws,&
-           rigid,domain,tmr,config,seed,comm)
+           rigid,domain,tmr,cnfig,seed,comm)
 
            Else If (thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -350,7 +350,7 @@
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,                     &
            cshell,cons,pmf,stat,thermo,sites,vdws,&
-           rigid,domain,tmr,config,comm)
+           rigid,domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_NOSE_HOOVER_ANISO) Then
 
@@ -358,12 +358,12 @@
 
               Call nst_h1_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           degfre,degrot,stat%stress,      &
+           cnfig%degfre,cnfig%degrot,stat%stress,      &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,                     &
            cshell,cons,pmf,stat,thermo,sites,vdws,&
-           rigid,domain,tmr,config,comm)
+           rigid,domain,tmr,cnfig,comm)
 
            Else If (thermo%ensemble == ENS_NPT_MTK_ANISO) Then
 
@@ -371,12 +371,12 @@
 
               Call nst_m1_vv                  &
            (stage,thermo%lvar,thermo%mndis,thermo%mxdis,thermo%mxstp,thermo%tstep, &
-           degfre,degrot,stat%stress,      &
+           cnfig%degfre,cnfig%degrot,stat%stress,      &
            stat%consv,                             &
            stat%strkin,stat%strknf,stat%strknt,stat%engke,stat%engrot, &
            stat%strcom,stat%vircom,                     &
            cshell,cons,pmf,stat,thermo,sites,vdws,&
-           rigid,domain,tmr,config,comm)
+           rigid,domain,tmr,cnfig,comm)
 
            Else
 
@@ -393,7 +393,7 @@
 
         If (thermo%key_dpd > 0 .and. thermo%key_dpd*stage == 2) Then
           Call dpd_thermostat(stage,flow%strict,neigh%cutoff,flow%step,thermo%tstep,stat,thermo, &
-            neigh,rigid,domain,config,seed,comm)
+            neigh,rigid,domain,cnfig,seed,comm)
         End If
 
 
