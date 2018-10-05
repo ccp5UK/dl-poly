@@ -104,6 +104,15 @@ Type configuration_type
   Integer( Kind = wi ),Public    :: mxtana,mxgana,mxbfss,mxbuff
   Integer( Kind = wi ),Public    :: mxlshp,mxatms,mxatdm
 
+  ! general flags
+  Logical           :: l_ind,l_exp
+  Integer           :: levcfg,nx,ny,nz,&
+    atmfre,atmfrz,megatm,megfrz
+  ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
+  Integer(Kind=li)  :: degfre,degshl,degtra,degrot
+  ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
+  Real(Kind=wp) :: dvar,fmax,width
+
 Contains
   Private
   Procedure, Public :: chvom
@@ -340,7 +349,7 @@ End Subroutine chvom
 
   End Subroutine allocate_config_arrays
 
-  Subroutine check_config(config,levcfg,electro_key,megatm,thermo,sites,flow,comm)
+  Subroutine check_config(config,electro_key,thermo,sites,flow,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -354,9 +363,9 @@ End Subroutine chvom
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Integer, Intent( In    ) :: levcfg,electro_key,megatm
-  Type( configuration_type ), Intent( InOut ) :: config
-  Type( thermostat_type ), Intent( In    ) :: thermo
+    Integer, Intent( In    ) :: electro_key
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type( thermostat_type ), Intent( In    ) :: thermo
   Type( site_type ), Intent( In    ) :: sites
   Type( flow_type ), Intent( In    ) :: flow
   Type( comms_type ), Intent( InOut ) :: comm
@@ -439,7 +448,7 @@ End Subroutine chvom
 
 ! Check on validity of config file contents
 
-  If (flow%restart_key > 0 .and. levcfg < 1) Call error(85)
+  If (flow%restart_key > 0 .and. config%levcfg < 1) Call error(85)
 
   If (flow%strict) iwrk(1:config%natms) = 0 ! initialise
 
@@ -528,7 +537,7 @@ End Subroutine chvom
 ! Check CONFIG indices eligibility
 
   If (flow%strict) Then
-     Call all_inds_present( iwrk, indatm, megatm, safe )
+     Call all_inds_present( iwrk, indatm, config%megatm, safe )
      Call gcheck(comm,safe)
      If (.not.safe) Call error(28)
 
@@ -2374,7 +2383,7 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
 
 End Subroutine scan_config
 
-Subroutine scale_config(config,megatm,io,devel,netcdf,comm)
+Subroutine scale_config(config,io,devel,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2387,7 +2396,6 @@ Subroutine scale_config(config,megatm,io,devel,netcdf,comm)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( io_type ), Intent( InOut ) :: io
-  Integer, Intent( In    ) :: megatm
   Type( configuration_type ), Intent( InOut ) :: config
   Character ( Len = 6 ) :: name
   Integer               :: i,step
@@ -2430,13 +2438,13 @@ Subroutine scale_config(config,megatm,io,devel,netcdf,comm)
   time   = 0.0_wp   ! time is not relevant
 
   rcell = config%cell ; config%cell = devel%cels
-  Call write_config(config,cfgscl,devel%lvcfscl,megatm,step,tstep,io,time,netcdf,comm)
+  Call write_config(config,cfgscl,devel%lvcfscl,step,tstep,io,time,netcdf,comm)
   config%cell = rcell
 
 End Subroutine scale_config
 
 
-Subroutine write_config(config,cfile,levcfg,megatm,step,tstep,io,time,netcdf,comm)
+Subroutine write_config(config,cfile,levcfg,step,tstep,io,time,netcdf,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -2449,7 +2457,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,step,tstep,io,time,netcdf,com
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( io_type ), Intent( InOut ) :: io
   Type( file_type ), Intent( InOut ) :: cfile
-  Integer,              Intent( In    ) :: levcfg,megatm,step
+  Integer,              Intent( In    ) :: levcfg,step
   Real( Kind = wp ),    Intent( In    ) :: tstep,time
   Type( netcdf_param ), Intent( In    ) :: netcdf
   Type( configuration_type ), Intent( InOut ) :: config
@@ -2540,7 +2548,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,step,tstep,io,time,netcdf,com
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,step,tstep,time,lf
+        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,config%megatm,step,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -2656,7 +2664,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,step,tstep,io,time,netcdf,com
            chbat(k,jj) = record(k:k)
         End Do
 
-        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,step,tstep,time,lf
+        Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,config%megatm,step,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
            chbat(k,jj) = record(k:k)
@@ -2827,7 +2835,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,step,tstep,io,time,netcdf,com
          Call io_init(io, recsz )
         Call io_delete(io, fname,comm ) ! Sort existence issues
         If (io_write == IO_WRITE_SORTED_NETCDF) Then
-          Call io_nc_create( netcdf, comm_self, fname, config%cfgname, megatm )
+          Call io_nc_create( netcdf, comm_self, fname, config%cfgname, config%megatm )
         End If
         Call io_open(io, io_write, comm_self, fname, mode_wronly + mode_create, fh )
 
@@ -2841,7 +2849,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,step,tstep,io,time,netcdf,com
            Call io_write_record(io, fh, Int(jj,offset_kind), record )
            jj=jj+1
 
-           Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,megatm,step,tstep,time,lf
+           Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,config%megatm,step,tstep,time,lf
            Call io_write_record(io, fh, Int(jj,offset_kind), record )
            jj=jj+1
 
@@ -2959,7 +2967,7 @@ Subroutine write_config(config,cfile,levcfg,megatm,step,tstep,io,time,netcdf,com
         rec=rec+Int(1,li)
         Write(Unit=cfile%unit_no, Fmt='(a72,a1)',            Rec=rec) config%cfgname(1:72),lf
         rec=rec+Int(1,li)
-        Write(Unit=cfile%unit_no, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,config%imcon,megatm,step,tstep,time,lf
+        Write(Unit=cfile%unit_no, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,config%imcon,config%megatm,step,tstep,time,lf
 
 ! Write optional cell information (if present)
 
@@ -3295,7 +3303,7 @@ Subroutine getcom_parts(config,com,comm)
 
   End Subroutine freeze_atoms
 
-  Subroutine origin_config(config,megatm,io,devel,netcdf,comm)
+  Subroutine origin_config(config,io,devel,netcdf,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -3309,7 +3317,6 @@ Subroutine getcom_parts(config,com,comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( io_type ), Intent( InOut ) :: io
-    Integer,            Intent( In    ) :: megatm
     Type( configuration_type ), Intent( InOut ) :: config
     Type( development_type ), Intent( In    ) :: devel
     Type( netcdf_param ), Intent( In    ) :: netcdf
@@ -3338,7 +3345,7 @@ Subroutine getcom_parts(config,com,comm)
     tstep  = 0.0_wp   ! no step exists
     time   = 0.0_wp   ! time is not relevant
 
-    Call write_config(config,cfgorg,devel%lvcforg,megatm,step,tstep,io,time,netcdf,comm)
+    Call write_config(config,cfgorg,devel%lvcforg,step,tstep,io,time,netcdf,comm)
 
   End Subroutine origin_config
 End Module configuration

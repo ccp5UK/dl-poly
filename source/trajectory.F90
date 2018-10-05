@@ -789,8 +789,8 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
 
 End Subroutine read_history
 
-Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config, &
-    traj,files,comm)
+Subroutine trajectory_write(keyres,nstep,tstep,time,io,rsd,netcdf,config, &
+  traj,files,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -805,7 +805,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Integer,           Intent( In    ) :: keyres,megatm,nstep
+  Integer,           Intent( In    ) :: keyres,nstep
   Real( Kind = wp ), Intent( In    ) :: tstep,time
   Real( Kind = wp ), Intent( In    ) :: rsd(:)
   Type( io_type ), Intent( InOut ) :: io
@@ -890,7 +890,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
                 Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
               Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(a72,a1)',       Rec=Int(1,li)) config%cfgname(1:72),lf
               Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) &
-              traj%file_key(),config%imcon,megatm,traj%frm_write,traj%rec_write,lf
+              traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
               Close(Unit=files(FILE_HISTORY)%unit_no)
            End If
            traj%rec_write=Int(2,li)
@@ -898,7 +898,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
         Else
            If (comm%idnode == 0) Then
               Call io_set_parameters(io, user_comm = comm_self )
-              Call io_nc_create( netcdf, comm_self, traj%fname, config%cfgname, megatm )
+              Call io_nc_create( netcdf, comm_self, traj%fname, config%cfgname, config%megatm )
            End If
         End If
 
@@ -1118,7 +1118,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
         Call io_init(io, traj%recsz_write )
         Call io_open(io, io_write, comm_self, traj%fname, mode_wronly, fh )
 
-        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),&
+        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,config%megatm,traj%file_key(),&
          config%imcon,tstep,time,lf
         jj=jj+1
         Do k=1,traj%recsz_write
@@ -1201,9 +1201,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
 ! Update and save offset pointer
 
-     traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
+     traj%rec_write=traj%rec_write+Int(4,li)+Int(config%megatm,li)*Int(traj%record_size,li)
      If (comm%idnode == 0) Then
-        Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),config%imcon,megatm,traj%frm_write,&
+        Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),config%imcon,config%megatm,traj%frm_write,&
            traj%rec_write,lf
         Call io_write_record(io, fh, Int(1,offset_kind), record(1:traj%recsz_write) )
      End If
@@ -1233,7 +1233,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
 ! Accumulate header
 
-        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),&
+        Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,config%megatm,traj%file_key(),&
           config%imcon,tstep,time,lf
         jj=jj+1
         Do k=1,traj%recsz_write
@@ -1358,7 +1358,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 ! Update main header
 
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) &
-        traj%file_key(),config%imcon,megatm,traj%frm_write,traj%rec_write,lf
+        traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
 
         Close(Unit=files(FILE_HISTORY)%unit_no)
 
@@ -1386,7 +1386,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
 ! Save offset pointer
 
-        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(config%megatm,li)*Int(traj%record_size,li)
 
      End If
 
@@ -1422,7 +1422,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
 ! Write header and cell information
 
-          Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,megatm,traj%file_key(),&
+          Write(record(1:traj%recsz_write), Fmt='(a8,2i10,2i2,2f20.6,a1)') 'timestep',nstep,config%megatm,traj%file_key(),&
            config%imcon,tstep,time,lf
            Call io_write_record(io, fh, jj_io, record(1:traj%recsz_write) )
            jj_io=jj_io + Int(1,offset_kind)
@@ -1509,9 +1509,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 ! Update and save offset pointer
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(config%megatm,li)*Int(traj%record_size,li)
         If (comm%idnode == 0) Then
-           Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),config%imcon,megatm,traj%frm_write,&
+           Write(record(1:traj%recsz_write), Fmt='(3i10,2i21,a1)') traj%file_key(),config%imcon,config%megatm,traj%frm_write,&
               traj%rec_write,lf
            Call io_write_record(io, fh, Int(1,offset_kind), record(1:traj%recsz_write) )
         End If
@@ -1540,7 +1540,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
         traj%rec_write=traj%rec_write+Int(1,li)
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(a8,2i10,2i2,2f20.6,a1)', Rec=traj%rec_write) &
-          'timestep',nstep,megatm,traj%file_key(),config%imcon,tstep,time,lf
+          'timestep',nstep,config%megatm,traj%file_key(),config%imcon,tstep,time,lf
 
         Do i = 0, 2
            traj%rec_write=traj%rec_write+Int(1,li)
@@ -1631,9 +1631,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
 ! Update main header
 
-        traj%rec_write=traj%rec_write+Int(megatm,li)*Int(traj%record_size,li)
+        traj%rec_write=traj%rec_write+Int(config%megatm,li)*Int(traj%record_size,li)
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) &
-          traj%file_key(),config%imcon,megatm,traj%frm_write,traj%rec_write,lf
+          traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
 
         Close(Unit=files(FILE_HISTORY)%unit_no)
 
@@ -1661,7 +1661,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
 ! Save offset pointer
 
-        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)*Int(traj%record_size,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(config%megatm,li)*Int(traj%record_size,li)
 
      End If
 
@@ -1725,7 +1725,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
                 Form='formatted', Access='direct', Status='replace', Recl=traj%recsz_write)
               Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(a34,a1)',      Rec=Int(1,li)) config%cfgname(1:34),lf
               Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) &
-                traj%file_key(),config%imcon,megatm,traj%frm_write,traj%rec_write,lf
+                traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
               Close(Unit=files(FILE_HISTORY)%unit_no)
            End If
            traj%rec_write=Int(2,li)
@@ -1733,7 +1733,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
         Else
            If (comm%idnode == 0) Then
               Call io_set_parameters(io, user_comm = comm_self )
-              Call io_nc_create( netcdf, comm_self, traj%fname, config%cfgname, megatm )
+              Call io_nc_create( netcdf, comm_self, traj%fname, config%cfgname, config%megatm )
            End If
         End If
 
@@ -1787,7 +1787,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
                     traj%rec_write=traj%rec_write+Int(1,li)
 
                     word=' '
-                    i = 3 + megatm ! total number of lines to read
+                    i = 3 + config%megatm ! total number of lines to read
                     Write(word,'( "(", i0, "( / ) )" )') i-1
                     Read(Unit=files(FILE_HISTORY)%unit_no, Fmt=word, End=120)
                     traj%rec_write=traj%rec_write+Int(i,li)
@@ -2045,9 +2045,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 ! Update and save offset pointer
 
      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(config%megatm,li)
         If (comm%idnode == 0) Then
-           Write(record(1:traj%recsz_write), Fmt='(2i2,3i10,a1)') traj%file_key(),config%imcon,megatm,traj%frm_write,&
+           Write(record(1:traj%recsz_write), Fmt='(2i2,3i10,a1)') traj%file_key(),config%imcon,config%megatm,traj%frm_write,&
              traj%rec_write,lf
            Call io_write_record(io, fh, Int(1,offset_kind), record(1:traj%recsz_write) )
         End If
@@ -2120,9 +2120,9 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
 ! Update main header
 
-        traj%rec_write=traj%rec_write+Int(megatm,li)
+        traj%rec_write=traj%rec_write+Int(config%megatm,li)
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) &
-          traj%file_key(),config%imcon,megatm,traj%frm_write,traj%rec_write,lf
+          traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
 
         Close(Unit=files(FILE_HISTORY)%unit_no)
 
@@ -2142,7 +2142,7 @@ Subroutine trajectory_write(keyres,megatm,nstep,tstep,time,io,rsd,netcdf,config,
 
 ! Save offset pointer
 
-        traj%rec_write=traj%rec_write+Int(4,li)+Int(megatm,li)
+        traj%rec_write=traj%rec_write+Int(4,li)+Int(config%megatm,li)
 
      End If
 

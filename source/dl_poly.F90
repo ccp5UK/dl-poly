@@ -203,25 +203,6 @@ program dl_poly
   Use flow, Only : flow_type
   Implicit None
 
-  ! general flags
-
-  Logical           :: l_ind,           &
-    l_exp
-
-  Integer           :: levcfg,              &
-    nx,ny,nz,                           &
-    atmfre,atmfrz,megatm,megfrz
-
-  ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
-
-  Integer(Kind=li)  :: degfre,degshl,degtra,degrot
-
-  ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
-
-    Real(Kind=wp) :: dvar,                       &
-    fmax,                           &
-    width
-
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(thermostat_type) :: thermo
   Type(ewald_type) :: ewld
@@ -348,8 +329,8 @@ program dl_poly
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
-  Call set_bounds (levcfg,l_n_e,l_n_v,l_ind, &
-    dvar,width,sites,ttms,ios,core_shells,cons,pmfs,stats, &
+  Call set_bounds (l_n_e,l_n_v, &
+    sites,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
     rigid,electro,domain,config,ewld,kim_data,files,flow,comm)
@@ -409,17 +390,14 @@ program dl_poly
   Call ttm_table_scan(config%mxbuff,ttms,comm)
 
   ! Setup KIM
-  Call kim_setup(kim_data,config%mxatms,config%mxatdm,megatm,neigh%max_list,domain%mxbfxp,comm%mxnode)
+  Call kim_setup(kim_data,config%mxatms,config%mxatdm,config%megatm,neigh%max_list,domain%mxbfxp,comm%mxnode)
 
   ! READ SIMULATION CONTROL PARAMETERS
 
   Call read_control                                    &
-    (levcfg,l_n_e,l_n_v,        &
-    width,     &
-    l_exp,          &
+    (l_n_e,l_n_v,        &
     lfce,           &
-    nx,ny,nz,impa,                            &
-    fmax,             &
+    impa,                            &
     ttms,dfcts,          &
     rigid, &
     rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
@@ -428,8 +406,8 @@ program dl_poly
 
   ! READ SIMULATION FORCE FIELD
 
-  Call read_field(l_n_v,neigh%cutoff,width,atmfre, &
-    atmfrz,megatm,megfrz,core_shells,pmfs,cons,thermo,met,bond,angle,dihedral, &
+  Call read_field(l_n_v,neigh%cutoff,&
+    core_shells,pmfs,cons,thermo,met,bond,angle,dihedral, &
     inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
     ext_field,rigid,electro,config,kim_data,files,flow,comm)
 
@@ -440,7 +418,7 @@ program dl_poly
 
   ! CHECK MD CONFIGURATION
 
-  Call check_config(config,levcfg,electro%key,megatm,thermo,sites,flow,comm)
+  Call check_config(config,electro%key,thermo,sites,flow,comm)
 
   Call info('',.true.)
   Call info("*** all reading and connectivity checks DONE ***",.true.)
@@ -452,7 +430,7 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Translating the MD system along a vector (CONFIG to CFGORG) ***",.true.)
 
-    Call origin_config(config,megatm,ios,devel,netcdf,comm)
+    Call origin_config(config,ios,devel,netcdf,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -464,7 +442,7 @@ program dl_poly
     Call info('',.true.)
     Call info("*** Rescaling the MD system lattice (CONFIG to CFGSCL) ***",.true.)
 
-    Call scale_config(config,megatm,ios,devel,netcdf,comm)
+    Call scale_config(config,ios,devel,netcdf,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -479,7 +457,7 @@ program dl_poly
     Call traj%init(key=0,freq=1,start=0)
     flow%step  = 0                            ! no steps done
     flow%time   = 0.0_wp                       ! time is not relevant
-    Call trajectory_write(flow%restart_key,megatm,flow%step,thermo%tstep,flow%time,ios,stats%rsd,netcdf,config,traj,files,comm)
+    Call trajectory_write(flow%restart_key,flow%step,thermo%tstep,flow%time,ios,stats%rsd,netcdf,config,traj,files,comm)
 
     Call info("*** ALL DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
@@ -487,8 +465,8 @@ program dl_poly
 
   ! Expand current system if opted for
 
-  If (l_exp) Then
-    Call system_expand(flow%strict,neigh%cutoff,nx,ny,nz,megatm,ios,core_shells, &
+  If (config%l_exp) Then
+    Call system_expand(flow%strict,neigh%cutoff,ios,core_shells, &
       cons,bond,angle,dihedral,inversion,sites,netcdf,rigid,config,files,comm)
   End If
 
@@ -502,7 +480,7 @@ program dl_poly
 
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
-  Call system_init(levcfg,neigh%cutoff,flow%restart_key,megatm,flow%time,flow%start_time,flow%step, &
+  Call system_init(neigh%cutoff,flow%restart_key,flow%time,flow%start_time,flow%step, &
     core_shells,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
     zdensity,sites,vdws,rdf,config,files,comm)
 
@@ -519,8 +497,8 @@ program dl_poly
   ! exclusion arrays for overlapped two-body inter-like interactions
 
   If (flow%book) Then
-    Call build_book_intra(flow%strict,flow%print_topology,flow%simulation,dvar,megatm,megfrz,atmfre,atmfrz, &
-      degrot,degtra,flow,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
+    Call build_book_intra(flow%strict,flow%print_topology,flow%simulation, &
+      flow,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
       neigh,sites,mpoles,rigid,domain,config,comm)
     If (mpoles%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
@@ -530,14 +508,14 @@ program dl_poly
         Call build_chrm_intra(neigh%max_exclude,core_shells,cons,bond,angle, &
           dihedral,inversion,mpoles,rigid,config,comm)
       End If
-       ! CHARMM core-shell screened electrostatic induction interactions
+      ! CHARMM core-shell screened electrostatic induction interactions
     End If
     If (flow%exclusions) Then
       Call build_excl_intra(electro%lecx,core_shells,cons,bond,angle,dihedral, &
         inversion,neigh,rigid,config,comm)
     End If
   Else
-    Call report_topology(megatm,megfrz,atmfre,atmfrz,core_shells,cons, &
+    Call report_topology(config%megatm,config%megfrz,config%atmfre,config%atmfrz,core_shells,cons, &
       pmfs,bond,angle,dihedral,inversion,tether,sites,rigid,comm)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
@@ -567,7 +545,7 @@ program dl_poly
   ! SET initial system temperature
 
   Call set_temperature               &
-    (levcfg,flow%restart_key,flow%step,flow%run_steps,atmfre,atmfrz,degtra,degrot,degfre,degshl, &
+    (flow%restart_key,flow%step,flow%run_steps, &
     stats%engrot,sites%dof_site,core_shells,stats,cons,pmfs,thermo,minim, &
     rigid,domain,config,seed,comm)
 
@@ -589,23 +567,23 @@ program dl_poly
 
   ! Cap forces in equilibration mode
 
-  If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(fmax,thermo%temp,config,comm)
+  If (flow%step <= flow%equil_steps .and. flow%force_cap) Call cap_forces(thermo%temp,config,comm)
 
   ! PLUMED initialisation or information message
 
-  If (plume%l_plumed) Call plumed_init(megatm,thermo%tstep,thermo%temp,plume,comm)
+  If (plume%l_plumed) Call plumed_init(config%megatm,thermo%tstep,thermo%temp,plume,comm)
 
   ! Print out sample of initial configuration on node zero
 
   Call info('',.true.)
   Call info('sample of starting configuration on node zero:',.true.)
-  If (levcfg <= 1) Then
+  If (config%levcfg <= 1) Then
     Write(message,'(7x,a1,7x,a4,2(8x,a4),3(7x,a5))') &
       'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)'
     Call info(message,.true.)
   End If
 
-  If (levcfg == 2) Then
+  If (config%levcfg == 2) Then
     Write(message,'(7x,a1,7x,a4,2(8x,a4),6(7x,a5))') &
       'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)', &
       'fx(i)', 'fy(i)', 'fz(i)'
@@ -615,12 +593,12 @@ program dl_poly
   j=(config%natms+19)/20
   If (j > 0) Then
     Do i=1,config%natms,j
-      If (levcfg <= 1) Then
+      If (config%levcfg <= 1) Then
         Write(message,'(i8,1p,6e12.4)') &
           config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),config%vzz(i)
       End If
 
-      If (levcfg == 2) Then
+      If (config%levcfg == 2) Then
         Write(message,"(i8,1p,9e12.4)") &
         config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,&
         config%vxx(i),config%vyy(i),config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,&
@@ -695,12 +673,12 @@ program dl_poly
   j=(config%natms+19)/20
   If (j > 0) Then
     Do i=1,config%natms,j
-      If (levcfg <= 1) Then
+      If (config%levcfg <= 1) Then
         Write(message,'(i8,1p,6e12.4)') &
           config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),config%vzz(i)
       End If
 
-      If (levcfg == 2) Then
+      If (config%levcfg == 2) Then
         Write(message,"(i8,1p,9e12.4)") &
         config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),&
         config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,config%parts(i)%fzz
@@ -725,7 +703,7 @@ program dl_poly
   ! Save restart data for real simulations only (final)
 
   If (flow%simulation .and. (.not.devel%l_tor)) Then
-    Call system_revive(neigh%cutoff,megatm,flow%step,flow%time,sites,ios,flow%start_time,stats, &
+    Call system_revive(neigh%cutoff,flow%step,flow%time,sites,ios,flow%start_time,stats, &
       devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf,netcdf,config, &
       files,comm)
     If (ttms%l_ttm) Call ttm_system_revive ('DUMP_E',flow%step,flow%time,1,flow%run_steps,ttms,comm)
@@ -846,8 +824,9 @@ Contains
     Include 'w_calculate_forces.F90'
   End Subroutine w_calculate_forces
 
-  Subroutine w_refresh_mappings(flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
+  Subroutine w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
     dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data)
+    Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( flow_type ), Intent( InOut ) :: flow
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -868,8 +847,9 @@ Contains
     Include 'w_refresh_mappings.F90'
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(stage,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
+  Subroutine w_integrate_vv(stage,cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr)
     Integer, Intent( In    ) :: stage ! used for vv stage control
+    Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( ttm_type ), Intent( InOut ) :: ttm
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
@@ -885,7 +865,8 @@ Contains
     Include 'w_integrate_vv.F90'
   End Subroutine w_integrate_vv
 
-  Subroutine w_kinetic_options(cshell,cons,pmf,stat,sites,ext_field,domain,seed)
+  Subroutine w_kinetic_options(cnfig,cshell,cons,pmf,stat,sites,ext_field,domain,seed)
+    Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -900,9 +881,9 @@ Contains
     Include 'w_kinetic_options.F90'
   End Subroutine w_kinetic_options
 
-  Subroutine w_statistics_report(mxatdm_,cshell,cons,pmf,stat,msd_data,zdensity, &
+  Subroutine w_statistics_report(cnfig,cshell,cons,pmf,stat,msd_data,zdensity, &
       sites,rdf,domain,flow,files)
-    Integer( Kind = wi ), Intent ( In ) :: mxatdm_
+    Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( constraints_type ), Intent( InOut ) :: cons
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -917,7 +898,8 @@ Contains
     Include 'w_statistics_report.F90'
   End Subroutine w_statistics_report
 
-  Subroutine w_write_options(io,rsdc,cshell,stat,sites,netcdf,domain,traj,files)
+  Subroutine w_write_options(cnfig,io,rsdc,cshell,stat,sites,netcdf,domain,traj,files)
+    Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
     Type( core_shell_type ), Intent( InOut ) :: cshell

@@ -38,7 +38,7 @@ Module rigid_bodies
     Logical, Public :: on = .false.
 
     !> Number of types of rigid body
-    Integer( Kind = wi ), Public :: n_types
+    Integer( Kind = wi ), Public :: n_types = 0
     Integer( Kind = wi ), Public :: n_types_book
 
     !> Total number of rigid bodies
