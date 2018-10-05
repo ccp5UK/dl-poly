@@ -3100,9 +3100,9 @@ Subroutine getcom_arrays(txx,tyy,tzz,config,com,comm)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: txx,tyy,tzz
+  Real( Kind = wp ), Dimension( : ), Intent( In    ) :: txx,tyy,tzz
   Type(configuration_type),            Intent( InOut ) :: config
-  Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
+  Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: com
   Type(comms_type),                    Intent( InOut ) :: comm
 
   Integer                 :: i
