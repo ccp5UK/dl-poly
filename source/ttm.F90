@@ -12,7 +12,7 @@ Module ttm
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp
-  Use setup
+  Use constants
   Use configuration,   Only : configuration_type
   Use domains,         Only : domains_type,idcube
   Use comms,           Only : wp_mpi,comms_type,gsum,gmin,gmax,gcheck,gsync, &

@@ -13,7 +13,7 @@ Module three_body
   Use kinds, Only : wp, wi
 
   Use comms,   Only : comms_type,gsum,gcheck
-  Use setup
+  Use constants
   Use domains, Only : domains_type
   Use configuration,  Only : configuration_type
   Use particle,        Only : corePart

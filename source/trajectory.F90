@@ -5,7 +5,7 @@ Module trajectory
                             mode_rdonly, comm_self
   Use domains,       Only : domains_type
   Use site, Only : site_type
-  Use setup
+  Use constants
   Use parse,         Only : tabs_2_blanks, get_line, get_word, &
                             strip_blanks, word_2_real
   Use configuration, Only : configuration_type

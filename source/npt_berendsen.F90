@@ -4,7 +4,7 @@ Module npt_berendsen
   Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use domains,         Only : domains_type
-  Use setup
+  Use constants
   Use site, Only : site_type
   Use kinetics,        Only : getvom
   Use constraints,     Only : constraints_type,apply_rattle,&

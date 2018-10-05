@@ -1,7 +1,7 @@
 Module two_body
   Use kinds, Only : wp
   Use comms,   Only : comms_type,gsum
-  Use setup
+  Use constants
   Use site, Only : site_type
   Use configuration,  Only : configuration_type
   Use particle,       Only : corePart

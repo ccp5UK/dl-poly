@@ -1,7 +1,7 @@
 Module ffield
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type
-  Use setup
+  Use constants
   Use kim,   Only : kim_type,kim_cutoff
 
 ! SITE MODULE

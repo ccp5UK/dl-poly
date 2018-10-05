@@ -1,4 +1,4 @@
-Module setup
+Module constants
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -33,8 +33,8 @@ Module setup
 
 ! Version particulars
 
-  Character( Len =  8), Parameter :: DLP_VERSION = " 4.09   "
-  Character( Len = 14), Parameter :: DLP_RELEASE = " february 2016"
+  Character( Len =  8), Parameter :: DLP_VERSION = " 4.10alpha"
+  Character( Len = 14), Parameter :: DLP_RELEASE = "  october 2018"
 
 ! FIXED PARAMETERS
 ! standard pi related values
@@ -126,4 +126,4 @@ Module setup
   Real( Kind = wp ), Parameter :: half_plus = Nearest(0.5_wp,+1.0_wp)
   !> Nearest number to 0.5, less than 0.5, in working precision
   Real( Kind = wp ), Parameter :: half_minus = Nearest(0.5_wp,-1.0_wp)
-End Module setup
+End Module constants

@@ -10,7 +10,7 @@ Module defects
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,             Only : wp,li, wi
-  Use setup,             Only : ndefdt,nrefdt,half_minus,zero_plus
+  Use constants,             Only : ndefdt,nrefdt,half_minus,zero_plus
   Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
                                 DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
                                 gsend,grecv,gwait,girecv,gscatter,gscatterv, &

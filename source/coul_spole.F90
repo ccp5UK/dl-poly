@@ -3,7 +3,7 @@ Module coul_spole
   Use comms,           Only : comms_type
   Use configuration,   Only : configuration_type     
   Use particle,         Only : corePart
-  Use setup,           Only : r4pie0,zero_plus,sqrpi
+  Use constants,           Only : r4pie0,zero_plus,sqrpi
   Use errors_warnings, Only : error
   Use numerics,        Only : erfcgen
   Use neighbours,      Only : neighbours_type

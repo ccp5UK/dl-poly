@@ -11,7 +11,7 @@ Module minimise
 
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type,gsum,gmax
-  Use setup,           Only : engunit,zero_plus
+  Use constants,           Only : engunit,zero_plus
   Use configuration,   Only : configuration_type, &
                               write_config,getcom
   Use particle,        Only : corePart

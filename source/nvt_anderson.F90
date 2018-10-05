@@ -2,7 +2,7 @@ Module nvt_anderson
   Use kinds,         Only : wp
   Use comms,         Only : comms_type,gsum,gmax
   Use domains,       Only : domains_type
-  Use setup,         Only : boltz,zero_plus
+  Use constants,         Only : boltz,zero_plus
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use particle,      Only : corePart

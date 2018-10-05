@@ -16,7 +16,7 @@ Module constraints
   Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
-  Use setup,           Only : zero_plus
+  Use constants,           Only : zero_plus
   Use errors_warnings, Only : error,warning,info
   Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_POSITIONS
   Use numerics,        Only : images,local_index

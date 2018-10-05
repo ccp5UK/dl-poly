@@ -17,7 +17,7 @@ Module control
   Use poisson,    Only : poisson_type
   Use msd,        Only : msd_type
   Use plumed,   Only : plumed_type
-  Use setup,       Only : pi,zero_plus,prsunt,tenunt
+  Use constants,       Only : pi,zero_plus,prsunt,tenunt
   Use parse,       Only : get_line,get_word,lower_case,word_2_real,strip_blanks
   Use kim,         Only : kim_type
   Use greenkubo,   Only : greenkubo_type

@@ -3,7 +3,7 @@ Module ewald_mpole
   Use comms, Only : comms_type, gcheck, gsum
   Use configuration, Only : configuration_type
   Use particle, Only : corePart
-  Use setup, Only :  r4pie0, sqrpi, zero_plus,twopi
+  Use constants, Only :  r4pie0, sqrpi, zero_plus,twopi
   Use ewald,        Only : ewald_type,spl_cexp,bspcoe,bspgen_mpoles,dtpbsp,exchange_grid
   Use numerics, Only : invert,dcell,erfcgen
   Use mpoles_container, Only : ewald_deriv,explicit_ewald_real_loops,&

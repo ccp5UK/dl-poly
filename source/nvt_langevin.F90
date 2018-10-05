@@ -1,7 +1,7 @@
 Module nvt_langevin
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gmax
-  Use setup,           Only : zero_plus
+  Use constants,           Only : zero_plus
   Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use domains,         Only : domains_type

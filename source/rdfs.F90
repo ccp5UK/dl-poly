@@ -15,7 +15,7 @@ Module rdfs
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use comms,  Only : comms_type,gsum
-  Use setup,  Only : fourpi,boltz,delr_max,nrdfdt,npdfdt,npdgdt, &
+  Use constants,  Only : fourpi,boltz,delr_max,nrdfdt,npdfdt,npdgdt, &
                      engunit,zero_plus
   Use site, Only : site_type
   Use parse

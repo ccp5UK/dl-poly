@@ -3,7 +3,7 @@ Module deport_data
   Use comms,            Only : comms_type,gcheck,wp_mpi, Deport_tag, &
                                Export_tag, MetLdExp_tag, ExpMplRM_tag, &
                                PassUnit_tag,gsend,gwait,girecv,gmax,gsum
-  Use setup
+  Use constants
   Use domains, Only : domains_type
   Use configuration, Only : configuration_type, site_type
   Use flow, Only : flow_type

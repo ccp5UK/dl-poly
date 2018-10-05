@@ -4,7 +4,7 @@ Module system
   Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi,gsync, &
                     gsend,grecv,offset_kind,mode_wronly,comm_self,mode_create, &
                     gtime,gsum,gcheck
-  Use setup
+  Use constants
   Use site, Only : site_type
   Use configuration,      Only : configuration_type,write_config
   Use particle,   Only : corePart

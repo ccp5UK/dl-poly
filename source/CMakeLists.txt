@@ -65,7 +65,7 @@ ewald_mpole.F90
 inversions.F90
 metal.F90
 poisson.F90
-setup.F90
+constants.F90
 parse.F90
 development.F90
 domains.F90

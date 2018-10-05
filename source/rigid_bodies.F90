@@ -10,7 +10,7 @@ Module rigid_bodies
 
   Use kinds,           Only : wp,wi,li
   Use comms,           Only : comms_type,gsum,gmin,gmax,gsync,gcheck
-  Use setup,           Only : zero_plus
+  Use constants,           Only : zero_plus
   Use site, Only : site_type
   Use neighbours,      Only : neighbours_type
   Use configuration,   Only : configuration_type,getcom

@@ -1,7 +1,7 @@
 Module bounds
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type
-  Use setup
+  Use constants
   Use domains,         Only : domains_type,map_domains
   Use configuration,   Only : configuration_type
   Use neighbours,      Only : neighbours_type

@@ -1,7 +1,7 @@
 Module npt_nose_hoover
   Use kinds, Only : wp, li
   Use comms,       Only : comms_type,gmax
-  Use setup
+  Use constants
   Use site, Only : site_type
   Use configuration,      Only : configuration_type,getcom
   Use particle,    Only : corePart

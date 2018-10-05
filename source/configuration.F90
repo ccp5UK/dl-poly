@@ -17,7 +17,7 @@ Module configuration
                     offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
   Use site, Only : site_type
 
-  Use setup,   Only : half_minus,zero_plus
+  Use constants,   Only : half_minus,zero_plus
   Use parse,   Only : tabs_2_blanks, &
                              strip_blanks, get_word, word_2_real,get_line
   Use domains, Only : domains_type

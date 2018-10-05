@@ -1,7 +1,7 @@
 !> Module for run time analysis
 Module analysis
   Use kinds,         Only : wp,wi
-  Use setup,         Only : zero_plus
+  Use constants,         Only : zero_plus
   Use configuration, Only : configuration_type
   Use site, Only : site_type
   Use statistics,    Only : stats_type

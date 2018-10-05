@@ -12,7 +12,7 @@ Module plumed
 
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type
-  Use setup,  Only : boltz,  DLP_VERSION
+  Use constants,  Only : boltz,  DLP_VERSION
   Use configuration, Only : configuration_type
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type

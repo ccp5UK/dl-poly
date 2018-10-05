@@ -14,7 +14,7 @@ Module greenkubo
   Use kinds, Only : wp,wi
 
   Use comms,     Only : comms_type,gsum,gcheck
-  Use setup,     Only : zero_plus,nvafdt
+  Use constants,     Only : zero_plus,nvafdt
   Use configuration,    Only : configuration_type
   Use site, Only : site_type
 

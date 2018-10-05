@@ -12,7 +12,7 @@ Module pmf
 
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gcheck,gsum,gsync
-  Use setup
+  Use constants
   Use configuration,   Only : configuration_type
   Use errors_warnings, Only : error,warning,info
   Use numerics,        Only : images,local_index,dcell

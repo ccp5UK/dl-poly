@@ -1,7 +1,7 @@
 Module nst_berendsen
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gmax
-  Use setup,           Only : zero_plus
+  Use constants,           Only : zero_plus
   Use site, Only : site_type
   Use configuration,   Only : configuration_type
   Use particle,        Only : corePart

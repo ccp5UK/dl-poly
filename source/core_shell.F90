@@ -14,7 +14,7 @@ Module core_shell
   Use comms,           Only : comms_type,gsync,gsum,gcheck,gmax
   Use configuration,   Only : configuration_type,freeze_atoms
   Use particle,        Only : corePart
-  Use setup,           Only : boltz,engunit,zero_plus
+  Use constants,           Only : boltz,engunit,zero_plus
   Use parse,           Only : strip_blanks,lower_case
   Use shared_units,    Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
   Use numerics,        Only : local_index,images

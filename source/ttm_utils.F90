@@ -12,7 +12,7 @@ Module ttm_utils
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use setup
+  Use constants
   Use ttm, Only : ttm_type,eltemp_min,eltemp_mean,eltemp_sum,eltemp_max
 
   Use comms, Only : comms_type,Grid1_tag,Grid2_tag,gsum,gmax,gmin

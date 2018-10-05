@@ -43,7 +43,7 @@ program dl_poly
 
   Use kinds, Only : wp,li,wi
   Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gmax,gsum 
-  Use setup, Only : DLP_RELEASE,DLP_VERSION
+  Use constants, Only : DLP_RELEASE,DLP_VERSION
 
   ! PARSE MODULE
 

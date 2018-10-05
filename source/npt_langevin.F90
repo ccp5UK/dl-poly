@@ -3,7 +3,7 @@ Module npt_langevin
   Use comms,         Only : comms_type,gmax
   Use domains,       Only : domains_type
   Use site, Only : site_type
-  Use setup
+  Use constants
   Use configuration, Only : configuration_type
   Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stre_s
