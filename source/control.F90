@@ -1,4 +1,4 @@
-Module kontrol
+Module control
   Use kinds, only : wi,wp,sp,dp
   Use comms,      Only : comms_type,gcheck
   Use timer,      Only : timer_type
@@ -5411,4 +5411,4 @@ Subroutine scan_control_output(files,comm)
 
 End Subroutine scan_control_output
 
-End Module kontrol
+End Module control

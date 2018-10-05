@@ -94,7 +94,7 @@ Module drivers
 
   Use site, Only : site_type
   Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms,allocate_config_arrays
-  Use kontrol, Only : read_control,scan_control_output,scan_control_io
+  Use control, Only : read_control,scan_control_output,scan_control_io
 
   ! VNL module
 

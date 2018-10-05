@@ -20,7 +20,7 @@ Module bounds
   Use mpole,           Only : mpole_type,POLARISATION_CHARMM
   Use ttm,             Only : ttm_type
   Use numerics,        Only : dcell
-  Use Kontrol,         Only : scan_control, scan_control_pre
+  Use control,         Only : scan_control, scan_control_pre
   Use configuration,   Only : scan_config,read_config
   Use ffield,          Only : scan_field
   Use errors_warnings, Only : error,warning,info

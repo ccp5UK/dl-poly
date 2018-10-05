@@ -5,7 +5,7 @@ build_book.F90
 build_chrm.F90
 build_excl.F90
 build_tplg.F90
-kontrol.F90
+control.F90
 trajectory.F90
 temperature.F90
 bounds.F90
