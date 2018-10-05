@@ -77,8 +77,8 @@ else()
 endif()
 
 
-find_package(PkgConfig REQUIRED)
 if(WITH_KIM)
+  find_package(PkgConfig REQUIRED)
   pkg_check_modules(KIM REQUIRED libkim-api-v2>=2.0.0)
   include_directories(${KIM_INCLUDE_DIRS})
   link_directories(${KIM_LIBRARY_DIRS})
@@ -107,10 +107,15 @@ endif()
 ######################
 
 ###documentation
-if (DOCS)
+if (DOCS_DOXYGEN)
    message(STATUS "Build Doxygen API Documentation")
   set(doc_dir doc)
   find_package(Doxygen REQUIRED)
+endif()
+  
+if (DOCS_FORD)
+  message(STATUS "Build Doxygen API Documentation")
+  set(doc_dir doc)
   find_package(Ford REQUIRED)
 endif()
 ######################
@@ -121,18 +126,20 @@ set(EXECUTABLE_OUTPUT_PATH ${PROJECT_BINARY_DIR}/${CMAKE_INSTALL_BINDIR})
 add_subdirectory(source)
   configure_file(${CMAKE_SOURCE_DIR}/cmake/modulefile.cmake modulefile)
 
-if(DOCS)
+if(DOCS_DOXYGEN)
   configure_file(${CMAKE_SOURCE_DIR}/cmake/Doxyfile.cmake Doxyfile)
-  add_custom_target(docs
+  add_custom_target(doxygen
     ${DOXYGEN_EXECUTABLE} ${PROJECT_BINARY_DIR}/Doxyfile)
   install(CODE "execute_process(COMMAND ${CMAKE_BUILD_TOOL} docs)")
   install(DIRECTORY ${CMAKE_BINARY_DIR}/doc/html/ DESTINATION ${CMAKE_INSTALL_DOCDIR})
+endif(DOCS_DOXYGEN)
 
+if(DOCS_FORD)
   configure_file(${CMAKE_SOURCE_DIR}/cmake/dlpoly.md.cmake dlpoly.md)
   add_custom_target(ford
     ${FORD_EXECUTABLE} ${PROJECT_BINARY_DIR}/dlpoly.md)
 
-endif(DOCS)
+endif(DOCS_FORD)
 
 if (WITH_COVERAGE)
   include(CodeCoverage)

@@ -127,6 +127,23 @@ make -j10
 make install
 ```
 
+## building with DOXYGEN API Documentation 
+
+```sh
+mkdir build-mpi
+cd build mpi
+cmake -DDOCS_DOXYGEN=On ..
+make doxygen
+```
+
+## building with FORD API Documentation 
+
+```sh
+mkdir build-mpi
+cd build mpi
+cmake -DDOCS_FORD=On ..
+make ford
+```
 
 # FAQ
 

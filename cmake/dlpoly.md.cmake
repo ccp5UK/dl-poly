@@ -12,6 +12,7 @@ source:true
 search: false
 coloured_edges:true
 exclude_dir: ../source/CUDA
+      ../source/tildapre
 exclude: ewald_spme_mfie~d_d.f90
       ewald_spme_mforc~s.f90
       ewald_spme_mfie~d.f90
@@ -33,6 +34,13 @@ exclude: ewald_spme_mfie~d_d.f90
       netcdf_modul~.F90
       plumed_module_pre.F90
       plumed_modul~.F90
+      ../source/SERIAL/ewald_spme_mfie~d.F90
+      ../source/SERIAL/ewald_spme_dfie~d.F90
+      ../source/SERIAL/ewald_spme_mforc~s.F90
+      ../source/SERIAL/mpi_api.F90
+      ../source/SERIAL/ewald_spme_forc~s.F90
+      ../source/SERIAL/ewald_spme_mfie~d_d.F90
+
 project_url: file://@CMAKE_BINARY_DIR@/docs
 license: stfc
 print_creation_date: true
