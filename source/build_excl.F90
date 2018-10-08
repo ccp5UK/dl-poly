@@ -3,7 +3,7 @@ Module build_excl
 
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gcheck,gmax
-  Use setup
+  Use constants
 
 ! CONFIG MODULE
 

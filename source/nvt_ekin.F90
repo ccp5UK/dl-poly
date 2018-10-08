@@ -1,7 +1,7 @@
 Module nvt_ekin
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gmax,gsum
-  Use setup,           Only : zero_plus
+  Use constants,           Only : zero_plus
   Use configuration,   Only : configuration_type
   Use domains,         Only : domains_type
   Use kinetics,        Only : kinstress,kinstresf,kinstrest

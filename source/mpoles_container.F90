@@ -1,7 +1,7 @@
 Module mpoles_container
   Use kinds,           Only : wp,wi
   Use comms,           Only : comms_type
-  Use setup,           Only : sqrpi
+  Use constants,           Only : sqrpi
   Use configuration,   Only : configuration_type
   Use mpole,           Only : mpole_type
   Use ewald,           Only : dtpbsp

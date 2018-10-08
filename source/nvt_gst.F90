@@ -1,7 +1,7 @@
 Module nvt_gst
   Use kinds, Only : wp, li
   Use comms,       Only : comms_type,gmax
-  Use setup,           Only : zero_plus,boltz
+  Use constants,           Only : zero_plus,boltz
   Use configuration,      Only : configuration_type
   Use particle,    Only : corePart
   Use domains,     Only : domains_type

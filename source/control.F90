@@ -1,4 +1,4 @@
-Module kontrol
+Module control
   Use kinds, only : wi,wp,sp,dp
   Use comms,      Only : comms_type,gcheck
   Use timer,      Only : timer_type
@@ -17,7 +17,7 @@ Module kontrol
   Use poisson,    Only : poisson_type
   Use msd,        Only : msd_type
   Use plumed,   Only : plumed_type
-  Use setup,       Only : pi,zero_plus,prsunt,tenunt
+  Use constants,       Only : pi,zero_plus,prsunt,tenunt
   Use parse,       Only : get_line,get_word,lower_case,word_2_real,strip_blanks
   Use kim,         Only : kim_type
   Use greenkubo,   Only : greenkubo_type
@@ -5411,4 +5411,4 @@ Subroutine scan_control_output(files,comm)
 
 End Subroutine scan_control_output
 
-End Module kontrol
+End Module control

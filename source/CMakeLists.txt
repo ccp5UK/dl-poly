@@ -5,23 +5,20 @@ build_book.F90
 build_chrm.F90
 build_excl.F90
 build_tplg.F90
-defects.F90
-kontrol.F90
+control.F90
 trajectory.F90
 temperature.F90
-rsds.F90
 bounds.F90
 system.F90
 tersoff.F90
 three_body.F90
-two_body.F90
-deport_data.F90
-tethers.F90
-halo.F90
 ffield.F90
-)
-
-set(dlpoly_CORE_SRCS
+tethers.F90
+deport_data.F90
+halo.F90
+defects.F90
+rsds.F90
+two_body.F90
 flow.F90
 filename.F90
 timer.F90
@@ -68,7 +65,7 @@ ewald_mpole.F90
 inversions.F90
 metal.F90
 poisson.F90
-setup.F90
+constants.F90
 parse.F90
 development.F90
 domains.F90
@@ -82,15 +79,8 @@ thermostat.F90
 analysis.F90
 electrostatic.F90
 kim.F90
-)
-if(BUILDER)
-  set_property(SOURCE development.F90 APPEND PROPERTY
-    COMPILE_DEFINITIONS "BUILDER='${BUILDER}'")
-endif()
-set_property(SOURCE development.F90 APPEND PROPERTY
-  COMPILE_DEFINITIONS "HOST='${HOST}'")
-
-set(dlpoly_THERMO_SRCS
+plumed.F90
+netcdf.F90
         nve.F90
         nvt_anderson.F90
         nvt_berendsen.F90
@@ -106,16 +96,19 @@ set(dlpoly_THERMO_SRCS
         npt_nose_hoover.F90
         npt_langevin.F90
         npt_mtk.F90
-        )
-
-set(netcdf_SRCS netcdf.F90)
-set(plumed_SRCS plumed.F90)
+)
+if(BUILDER)
+  set_property(SOURCE development.F90 APPEND PROPERTY
+    COMPILE_DEFINITIONS "BUILDER='${BUILDER}'")
+endif()
+set_property(SOURCE development.F90 APPEND PROPERTY
+  COMPILE_DEFINITIONS "HOST='${HOST}'")
 
 if( NOT WITH_MPI)
   set(dlpoly_SERIAL_SRCS ${src_dir}/SERIAL/mpi_api.F90)
 endif()
 
-add_library(dlpoly ${dlpoly_SRCS})
+add_library(dlpoly ${dlpoly_SRCS} ${dlpoly_SERIAL_SRCS})
 if( NOT WITH_MPI)
   set_target_properties(dlpoly PROPERTIES
      COMPILE_DEFINITIONS "SERIAL"
@@ -123,40 +116,26 @@ if( NOT WITH_MPI)
      )
 endif()
 
-add_library(dlpolycore ${dlpoly_CORE_SRCS} ${dlpoly_SERIAL_SRCS} ${netcdf_SRCS})
-if( NOT WITH_MPI)
-  set_target_properties(dlpolycore PROPERTIES
-     COMPILE_DEFINITIONS "SERIAL"
-     INCLUDE_DIR ${src_dir}/SERIAL
-     )
-endif()
 if(WITH_NETCDF)
-  set_target_properties(dlpolycore PROPERTIES
+  set_target_properties(dlpoly PROPERTIES
     COMPILE_DEFINITIONS "NETCDF"
     )
 endif()
-add_library(dlpolythermo  ${dlpoly_THERMO_SRCS})
-if(WITH_KIM)
-  set_target_properties(dlpolycore PROPERTIES
-    COMPILE_DEFINITIONS "KIM"
+if(WITH_PLUMED)
+  set_target_properties(dlpoly PROPERTIES
+    COMPILE_DEFINITIONS "PLUMED"
     )
 endif()
-add_library(dlpolyplumed  ${plumed_SRCS})
-if(WITH_PLUMED)
-  set_target_properties(dlpolyplumed PROPERTIES
-    COMPILE_DEFINITIONS "PLUMED"
+
+if(WITH_KIM)
+  set_target_properties(dlpoly PROPERTIES
+    COMPILE_DEFINITIONS "KIM"
     )
 endif()
 ## sets the linking
 link_directories (${LIBRARY_OUTPUT_PATH})
-target_link_libraries(dlpolythermo dlpolycore)
-target_link_libraries(dlpolyplumed dlpolycore)
-target_link_libraries(dlpoly dlpolycore dlpolyplumed)
 add_executable(${target_name} dl_poly.F90)
 set_target_properties(${target_name} PROPERTIES LINK_FLAGS "${OMP_LINK_FLAGS} ${MIC_LINK_FLAGS}")
-target_link_libraries(${target_name} dlpoly dlpolycore dlpolythermo dlpolyplumed ${LIBS})
+target_link_libraries(${target_name} dlpoly ${LIBS})
 install(TARGETS ${target_name} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 INSTALL_SUBLIB(dlpoly)
-INSTALL_SUBLIB(dlpolycore)
-INSTALL_SUBLIB(dlpolythermo)
-INSTALL_SUBLIB(dlpolyplumed)

@@ -12,7 +12,7 @@ Module ewald
   Use kinds,           Only : wp,wi
   Use comms,           Only : ExchgGrid_tag,comms_type,wp_mpi,gsend,gwait, &
                               girecv
-  Use setup,           Only : twopi
+  Use constants,           Only : twopi
   Use configuration,   Only : configuration_type
   Use particle,           Only : corePart
   Use domains,         Only : domains_type

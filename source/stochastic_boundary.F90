@@ -12,7 +12,7 @@ Module stochastic_boundary
   Use core_shell,  Only : core_shell_type,SHELL_ADIABATIC 
   Use particle, Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat
-  Use setup, Only : zero_plus,boltz
+  Use constants, Only : zero_plus,boltz
 
   Implicit None
   Private

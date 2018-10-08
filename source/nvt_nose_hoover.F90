@@ -1,7 +1,7 @@
 Module nvt_nose_hoover
   Use kinds, Only : wp
   Use comms,       Only : comms_type,gmax
-  Use setup,           Only : zero_plus
+  Use constants,           Only : zero_plus
   Use domains,     Only : domains_type
   Use configuration,      Only : configuration_type
   Use particle,        Only : corePart

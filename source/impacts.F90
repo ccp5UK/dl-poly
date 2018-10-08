@@ -1,6 +1,6 @@
 Module impacts
   Use kinds, Only : wp
-  Use setup,        Only : eu_ev
+  Use constants,        Only : eu_ev
   Use comms,               Only : comms_type,gcheck
   Use configuration,       Only : configuration_type
   Use rigid_bodies, Only : rigid_bodies_type

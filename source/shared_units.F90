@@ -4,7 +4,7 @@ Module shared_units
   Use particle, Only: corePart
   Use comms, Only : comms_type,PassUnit_tag,wp_mpi,UpdShUnit_tag,&
                     gcheck,gsync,gsend,gwait,girecv
-  Use setup
+  Use constants
   Use domains,      Only : domains_type
   Use configuration,       Only : configuration_type
   Use numerics, Only : local_index,shellsort

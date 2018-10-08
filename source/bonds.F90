@@ -12,7 +12,7 @@ Module bonds
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp,wi
-  Use setup,           Only : fourpi,boltz,delr_max,npdfdt,npdgdt, &
+  Use constants,           Only : fourpi,boltz,delr_max,npdfdt,npdgdt, &
                               engunit,zero_plus,r4pie0,ntable,delr_max, &
                               zero_plus,engunit
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast

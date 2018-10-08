@@ -13,7 +13,7 @@ Module dihedrals
 
   Use kinds, only : wp,wi
   Use comms, Only : comms_type,gcheck,gsum,gsync,gbcast
-  Use setup,  Only : pi,twopi,boltz,delth_max,npdfdt,npdgdt, &
+  Use constants,  Only : pi,twopi,boltz,delth_max,npdfdt,npdgdt, &
     engunit,zero_plus, &
                             rtwopi,r4pie0,    &
     ntable

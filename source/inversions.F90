@@ -12,7 +12,7 @@ Module inversions
 
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum,gsync,gcheck,gbcast
-  Use setup, Only : pi,boltz,delth_max,npdfdt,npdgdt, &
+  Use constants, Only : pi,boltz,delth_max,npdfdt,npdgdt, &
                     engunit,zero_plus,ntable
   Use site, Only : site_type
   Use configuration,     Only : configuration_type

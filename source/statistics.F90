@@ -11,7 +11,7 @@ Module statistics
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,wi,li
-  Use setup, Only : zero_plus,&
+  Use constants, Only : zero_plus,&
     prsunt,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
     eu_kjpm,pi
 

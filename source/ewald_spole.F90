@@ -1,7 +1,7 @@
 Module ewald_spole
   Use kinds,           Only : wp
   Use comms,           Only : comms_type, gcheck, gsum
-  Use setup,           Only : r4pie0,sqrpi,twopi,zero_plus
+  Use constants,           Only : r4pie0,sqrpi,twopi,zero_plus
   Use configuration,   Only : configuration_type
   Use particle,        Only : corePart
   Use numerics,        Only : erfcgen, invert, dcell

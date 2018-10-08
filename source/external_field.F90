@@ -11,7 +11,7 @@ Module external_field
 
   Use kinds, Only : wp,wi
   Use comms,   Only : comms_type,gcheck,gsum
-  Use setup,   Only : twopi
+  Use constants,   Only : twopi
   Use configuration,  Only : configuration_type
   Use particle, Only : corePart
   Use kinetics, Only : getcom_mol

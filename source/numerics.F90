@@ -1,9 +1,9 @@
 Module numerics
   Use kinds, Only : wp,wi,li
   Use errors_warnings, Only : error
-  Use setup, Only : zero_plus
+  Use constants, Only : zero_plus
   Use comms, Only : comms_type
-  Use setup, Only : rt3,zero_plus, sqrpi,rt2,half_minus! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
+  Use constants, Only : rt3,zero_plus, sqrpi,rt2,half_minus! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
   Use particle, Only: corePart
 
   Implicit None
