@@ -114,7 +114,7 @@ if (DOCS_DOXYGEN)
 endif()
   
 if (DOCS_FORD)
-  message(STATUS "Build Doxygen API Documentation")
+  message(STATUS "Build FORD API Documentation")
   set(doc_dir doc)
   find_package(Ford REQUIRED)
 endif()
