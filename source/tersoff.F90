@@ -12,7 +12,7 @@ Module tersoff
 
   Use kinds, Only : wp,wi
   Use comms,   Only : comms_type,gsum
-  Use constants
+  Use constants, Only : zero_plus, pi
   Use domains, Only : domains_type
   Use configuration,  Only : configuration_type
   Use particle,       Only : corePart

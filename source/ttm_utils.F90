@@ -11,8 +11,9 @@ Module ttm_utils
 ! contrib   - m.a.seaton february 2017
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Use constants
+  
+  Use kinds, Only : wp
+  Use constants, Only : zero_plus 
   Use ttm, Only : ttm_type,eltemp_min,eltemp_mean,eltemp_sum,eltemp_max
 
   Use comms, Only : comms_type,Grid1_tag,Grid2_tag,gsum,gmax,gmin

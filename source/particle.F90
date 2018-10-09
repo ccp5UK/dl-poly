@@ -1,6 +1,6 @@
 Module particle
 
-  Use kinds
+  Use kinds, Only : wp
 
   Type, Public :: corePart
     Real( Kind = wp ) :: xxx,yyy,zzz

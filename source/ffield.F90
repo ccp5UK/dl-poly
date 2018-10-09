@@ -1,7 +1,7 @@
 Module ffield
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type
-  Use constants
+  Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz, zero_plus, pi, r4pie0, prsunt, ntable
   Use kim,   Only : kim_type,kim_cutoff
 
 ! SITE MODULE

@@ -15,7 +15,7 @@ Module vdw
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use particle, Only : corePart
-  Use mm3lrc
+  Use mm3lrc, Only : intRadMM3, intRaddMM3
   Use zbl_pots,         Only : ab, intRadZBL, intdRadZBL, &
                            zbl,zbls,zblb
 

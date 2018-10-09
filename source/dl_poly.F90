@@ -42,12 +42,12 @@ program dl_poly
   ! SETUP MODULES
 
   Use kinds, Only : wp,li,wi
-  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gmax,gsum 
+  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gmax,gsum, gbcast 
   Use constants, Only : DLP_RELEASE,DLP_VERSION
 
   ! PARSE MODULE
 
-  Use parse 
+  Use parse, Only :   
 
   ! DEVELOPMENT MODULE
 
@@ -126,14 +126,10 @@ program dl_poly
 
   Use msd, Only : msd_type,msd_write
 
-  ! LANGEVIN MODULE
-
-  Use langevin
-
   ! TWO-TEMPERATURE MODEL MODULES
 
   Use drivers, Only : w_md_vv, w_replay_historf,w_replay_history
-  Use errors_warnings, Only : init_error_system,info
+  Use errors_warnings, Only : init_error_system,info, warning
 
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces

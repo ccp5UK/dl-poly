@@ -11,7 +11,7 @@ Module metal
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,wi
-  Use constants
+  Use constants, Only :  zero_plus, twopi, fourpi, engunit, ntable, sqrpi 
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use particle, Only : corePart

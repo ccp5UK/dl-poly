@@ -1,11 +1,10 @@
 Module build_book
   Use kinds,         Only : wp, li
   Use comms,  Only : comms_type,gcheck,gmax
-  Use constants
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use particle,      Only : corePart
-  Use core_shell
+  Use core_shell,    Only : core_shell_type 
   Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_setup,rigid_bodies_tags, &
                            rigid_bodies_coms,rigid_bodies_widths
   Use tethers, Only : tethers_type
