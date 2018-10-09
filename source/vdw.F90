@@ -17,7 +17,8 @@ Module vdw
   Use particle, Only : corePart
   Use mm3lrc
   Use zbl_pots,         Only : ab, intRadZBL, intdRadZBL, &
-                           zbl,zbls,zblb
+                           zbl,zbls,zblb,mlj,mbuck, mlj126, &
+                           intRadMDF,intdRadMDF
 
   Use site, Only : site_type
   Use parse, Only : get_line,get_word,word_2_real
@@ -66,6 +67,10 @@ Module vdw
   Integer( Kind = wi ), Parameter, Public :: VDW_ZBL_SWITCH_MORSE = 16
   !> ZBL swithched with Buckingham: $u=f(r)\mathrm{zbl}(r)+(1-f(r))*\mathrm{buckingham}(r)$
   Integer( Kind = wi ), Parameter, Public :: VDW_ZBL_SWITCH_BUCKINGHAM = 17
+  Integer( Kind = wi ), Parameter, Public :: VDW_LJ_MDF = 18
+  Integer( Kind = wi ), Parameter, Public :: VDW_BUCKINGHAM_MDF = 19
+  Integer( Kind = wi ), Parameter, Public :: VDW_126_MDF = 20
+
 
 
   ! Mixing rule parameters
@@ -220,6 +225,7 @@ Contains
 ! contrib   - a.m.elena september 2017 (rydberg)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
 ! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena may 2018 (mdf)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -472,6 +478,38 @@ Contains
 
               eadd = (vdws%cutoff**2+2*r0*vdws%cutoff+2*r0**2)*t*r0-c/(3.0_wp*vdws%cutoff**3)
               padd = (vdws%cutoff**3+3*r0*vdws%cutoff**2+6*r0**2*vdws%cutoff+6*r0**3)*t -2.0_wp*c/(vdws%cutoff**3)
+              
+              
+           Else If (keypot == VDW_LJ_MDF) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+               a = vdws%param(1,k)
+               b = vdws%param(2,k)
+               c = vdws%param(3,k)
+               eadd = intRadMDF("mlj",a,b,0.0_wp,c,vdws%cutoff,1e-12_wp)
+               padd = intdRadMDF("mlj",a,b,0.0_wp,c,vdws%cutoff,1e-12_wp)
+
+           Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+
+! Buckingham tappered with MDF:: u=f(r)Buck(r)
+
+               a = vdws%param(1,k)
+               b = vdws%param(2,k)
+               c = vdws%param(3,k)
+               r0 = vdws%param(3,k)
+               eadd = intRadMDF("mbuc",a,b,c,r0,vdws%cutoff,1e-12_wp)
+               padd = intdRadMDF("mbuc",a,b,c,r0,vdws%cutoff,1e-12_wp)
+
+           Else If (keypot == VDW_126_MDF) Then
+
+! LJ tappered with MDF:: u=f(r)LJ12-6(r)
+
+               a = vdws%param(1,k)
+               b = vdws%param(2,k)
+               c = vdws%param(3,k)
+               eadd = intRadMDF("m126",a,b,0.0_wp,c,vdws%cutoff,1e-12_wp)
+               padd = intdRadMDF("m126",a,b,0.0_wp,c,vdws%cutoff,1e-12_wp)
 
            End If
 
@@ -525,6 +563,8 @@ Subroutine vdw_direct_fs_generate(vdws)
 ! contrib   - a.m.elena september 2017 (ryd)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
 ! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena april 2018 (mlj/mbuc)
+! contrib   - a.m.elena may 2018 (m126)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( vdw_type ), Intent( InOut ) :: vdws
@@ -533,7 +573,8 @@ Subroutine vdw_direct_fs_generate(vdws)
   Real( Kind = wp ) :: r0,r0rn,r0rm,r_6,sor6,   &
                        rho,a,b,c,d,e0,kk,nr,mr, &
                        sig,eps,t1,t2,t3,z,dz,   &
-                       z1,z2,rm,ic,k
+                       z1,z2,rm,ic,k,ri
+
 
 ! allocate arrays for force-shifted corrections
 
@@ -790,6 +831,40 @@ Subroutine vdw_direct_fs_generate(vdws)
         a = (z1**0.23_wp+z2**0.23_wp)/(ab*0.88534_wp)
         kk = z1*z2*r4pie0
         Call zblb(vdws%cutoff,kk,a,rm,ic,e0,r0,k,z,dz)
+        vdws%afs(ivdw) = dz/vdws%cutoff
+        vdws%bfs(ivdw) = -z-dz
+        
+      Else If (keypot == VDW_LJ_MDF) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+        eps=vdws%param(1,ivdw)
+        sig=vdws%param(2,ivdw)
+        ri=vdws%param(3,ivdw)
+
+        Call mlj(vdws%cutoff,eps,sig,ri,vdws%cutoff,z,dz)
+        vdws%afs(ivdw) = dz/vdws%cutoff
+        vdws%bfs(ivdw) = -z-dz
+
+     Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+
+! Buckingham tappered with MDF:: u=f(r)Buck(r)
+        a  =vdws%param(1,ivdw)
+        rho=vdws%param(2,ivdw)
+        c  =vdws%param(3,ivdw)
+        ri  =vdws%param(4,ivdw)
+        Call mbuck(vdws%cutoff,A,rho,c,ri,vdws%cutoff,z,dz)
+
+        vdws%afs(ivdw) = dz/vdws%cutoff
+        vdws%bfs(ivdw) = -z-dz
+
+     Else If (keypot == VDW_126_MDF) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+         a = vdws%param(1,ivdw)
+         b = vdws%param(2,ivdw)
+        ri = vdws%param(3,ivdw)
+        Call mlj126(vdws%cutoff,A,B,ri,vdws%cutoff,z,dz)
         vdws%afs(ivdw) = dz/vdws%cutoff
         vdws%bfs(ivdw) = -z-dz
 
@@ -1174,6 +1249,8 @@ Subroutine vdw_generate(vdws)
 ! contrib   - a.m.elena september 2017 (rydberg)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
 ! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena april 2018 (mlj/mbuc)
+! contrib   - a.m.elena may 2018 (m126)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( vdw_type ), Intent( InOut ) :: vdws
@@ -1182,7 +1259,7 @@ Subroutine vdw_generate(vdws)
   Real( Kind = wp ) :: dlrpot,r,r0,r0rn,r0rm,r_6,sor6,  &
                        rho,a,b,c,d,e0,kk,nr,mr,rc,sig,eps, &
                        alpha,beta,t1,t2,t3,t,z1,z2,dphi,phi, &
-                       rm,k
+                       rm,k,ri
 
 ! allocate arrays for tabulating
 
@@ -1735,6 +1812,104 @@ Subroutine vdw_generate(vdws)
            vdws%sigeps(1,ivdw)=0.0_wp
            vdws%sigeps(2,ivdw)=0.0_wp
         End If
+        
+     Else If (keypot == VDW_LJ_MDF) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+        eps=vdws%param(1,ivdw)
+        sig=vdws%param(2,ivdw)
+        ri=vdws%param(3,ivdw)
+
+        Do i=1,vdws%max_grid
+           r=Real(i,wp)*dlrpot
+
+           Call mlj(r,eps,sig,ri,vdws%cutoff,phi,dphi)
+           vdws%tab_potential(i,ivdw)=phi
+           vdws%tab_force(i,ivdw)=dphi
+        End Do
+        vdws%tab_potential(0,ivdw)=Huge(vdws%tab_potential(1,ivdw))
+        vdws%tab_force(0,ivdw)=Huge(vdws%tab_force(1,ivdw))
+
+        If (.not.vdws%l_force_shift) Then
+           vdws%sigeps(1,ivdw)=sig
+           vdws%sigeps(2,ivdw)=eps
+        End If
+
+     Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+
+! Buckingham tappered with MDF:: u=f(r)Buck(r)
+
+        a  =vdws%param(1,ivdw)
+        rho=vdws%param(2,ivdw)
+        c  =vdws%param(3,ivdw)
+        ri  =vdws%param(4,ivdw)
+
+        If (Abs(rho) <= zero_plus) Then
+           If (Abs(a) <= zero_plus) Then
+              rho=1.0_wp
+           Else
+              Call error(467)
+           End If
+        End If
+
+! Sigma-epsilon initialisation
+
+        If (.not.vdws%l_force_shift) Then
+           vdws%sigeps(1,ivdw)=-1.0_wp
+           vdws%sigeps(2,ivdw)= 0.0_wp
+        End If
+
+        Do i=1,vdws%max_grid
+           r=Real(i,wp)*dlrpot
+
+           Call mbuck(r,A,rho,c,ri,vdws%cutoff,phi,dphi)
+
+           vdws%tab_potential(i,ivdw)=phi
+           vdws%tab_force(i,ivdw)=dphi
+
+! Sigma-epsilon search
+
+           If ((.not.vdws%l_force_shift) .and. i > 20) Then ! Assumes some safety against numeric black holes!!!
+              If (Sign(1.0_wp,vdws%sigeps(1,ivdw)) < 0.0_wp) Then ! find sigma
+                 If (Nint(Sign(1.0_wp,vdws%tab_potential(i-1,ivdw))) == -Nint(Sign(1.0_wp,vdws%tab_potential(i,ivdw)))) &
+                    vdws%sigeps(1,ivdw)=(Real(i,wp)-0.5_wp)*dlrpot
+              Else                                           ! find epsilon
+                 If ( (vdws%tab_potential(i-2,ivdw) >= vdws%tab_potential(i-1,ivdw) .and.  &
+                       vdws%tab_potential(i-1,ivdw) <= vdws%tab_potential(i  ,ivdw)) .and. &
+                      (vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i-1,ivdw) .or.   &
+                       vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i  ,ivdw) .or.   &
+                       vdws%tab_potential(i-1,ivdw) /= vdws%tab_potential(i  ,ivdw)) )     &
+                    vdws%sigeps(2,ivdw)=-vdws%tab_potential(i-1,ivdw)
+              End If
+           End If
+        End Do
+        vdws%tab_potential(0,ivdw)=Huge(vdws%tab_potential(1,ivdw))
+        vdws%tab_force(0,ivdw)=Huge(vdws%tab_force(1,ivdw))
+
+     Else If (keypot == VDW_126_MDF) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+         a = vdws%param(1,ivdw)
+         b = vdws%param(2,ivdw)
+        ri = vdws%param(3,ivdw)
+
+        Do i=1,vdws%max_grid
+           r=Real(i,wp)*dlrpot
+
+           Call mlj126(r,A,B,ri,vdws%cutoff,phi,dphi)
+           vdws%tab_potential(i,ivdw)=phi
+           vdws%tab_force(i,ivdw)=dphi
+        End Do
+        vdws%tab_potential(0,ivdw)=Huge(vdws%tab_potential(1,ivdw))
+        vdws%tab_force(0,ivdw)=Huge(vdws%tab_force(1,ivdw))
+
+        If (.not.vdws%l_force_shift) Then
+           vdws%sigeps(1,ivdw)=sig
+           vdws%sigeps(2,ivdw)=eps
+        End If
+
 
      Else
 
@@ -1798,6 +1973,8 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
 ! contrib   - a.m.elena september 2017 (rydberg)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
 ! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena april 2018 (mlj/mbuc)
+! contrib   - a.m.elena may 2018 (m126)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1812,14 +1989,14 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
 
   Integer           :: mm,idi,ai,aj,jatm,key,k,l,ityp,n,m
   Real( Kind = wp ) :: rrr,ppp,gamma,eng,                 &
-                       rsq,r_rrr,r_rsq,r_rvdw,r_rrv,rscl, &
-                       r0,r0rn,r0rm,r_6,sor6,             &
-                       rho,a,b,c,d,e0,kk,                 &
-                       nr,mr,rc,sig,eps,alpha,beta,       &
-                       fix,fiy,fiz,fx,fy,fz,              &
-                       gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3,t,  &
-                       strs1,strs2,strs3,strs5,strs6,     &
-                       strs9,z1,z2,rm
+    rsq,r_rrr,r_rsq,r_rvdw,r_rrv,rscl, &
+    r0,r0rn,r0rm,r_6,sor6,             &
+    rho,a,b,c,d,e0,kk,                 &
+    nr,mr,rc,sig,eps,alpha,beta,       &
+    fix,fiy,fiz,fx,fy,fz,              &
+    gk,gk1,gk2,vk,vk1,vk2,t1,t2,t3,t,  &
+    strs1,strs2,strs3,strs5,strs6,     &
+    strs9,z1,z2,rm,ri
 
 ! define grid resolution for potential arrays and interpolation spacing
 
@@ -1966,7 +2143,8 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
               a  =vdws%param(1,k)
               rho=vdws%param(2,k)
               c  =vdws%param(3,k)
-
+              ! since this involves any constants shall not be tested here, probably read_field is where any sanity checks should
+              ! happen and to the GP for the rest - ame
               If (Abs(rho) <= zero_plus) Then
                  If (Abs(a) <= zero_plus) Then
                     rho=1.0_wp
@@ -2288,6 +2466,71 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
                  eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
                  gamma = gamma - vdws%afs(k)*r_rrr
               End If
+              
+          Else If (ityp == VDW_LJ_MDF) Then
+
+! LJ tappered with MDF:: u=f(r)LJ(r)
+
+              eps=vdws%param(1,k)
+              sig=vdws%param(2,k)
+              ri=vdws%param(3,k)
+              !rc=vdws%cutoff
+
+              Call mlj(rrr,eps,sig,ri,vdws%cutoff,t1,gamma)
+
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+              eng = t1
+              gamma = gamma*r_rsq
+
+              If (vdws%l_force_shift) Then ! force-shifting
+                 If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+                 gamma = gamma - vdws%afs(k)*r_rrr
+              End If
+
+           Else If (ityp == VDW_BUCKINGHAM_MDF) Then
+
+! Buckingham tappered with MDF:: u=f(r)Buck(r)
+              a   = vdws%param(1,k)
+              rho = vdws%param(2,k)
+              c   = vdws%param(3,k)
+              ri  = vdws%param(4,k)
+
+              Call mbuck(rrr,a,rho,c,ri,vdws%cutoff,t1,gamma)
+
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+              eng = t1
+              gamma = gamma*r_rsq
+
+              ! by construction is zero outside vdws%cutoff so no shifting
+              If (vdws%l_force_shift) Then ! force-shifting
+                 If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+                 gamma = gamma - vdws%afs(k)*r_rrr
+              End If
+
+           Else If (ityp == VDW_126_MDF) Then
+
+! LJ tappered with MDF:: u=f(r)LJ12-6(r)
+
+               a = vdws%param(1,k)
+               b = vdws%param(2,k)
+              ri = vdws%param(3,k)
+              !rc=vdws%cutoff
+
+              Call mlj126(rrr,a,b,ri,vdws%cutoff,t1,gamma)
+
+              If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+              eng = t1
+              gamma = gamma*r_rsq
+
+              ! by construction is zero outside vdws%cutoff so no shifting
+              If (vdws%l_force_shift) Then ! force-shifting
+                 If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
+                 eng   = eng + vdws%afs(k)*rrr + vdws%bfs(k)
+                 gamma = gamma - vdws%afs(k)*r_rrr
+              End If
+
 
            Else If (Abs(vdws%tab_potential(0,k)) > zero_plus) Then ! potential read from TABLE - (ityp == VDW_TAB)
 
