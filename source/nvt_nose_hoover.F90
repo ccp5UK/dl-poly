@@ -11,11 +11,9 @@ Module nvt_nose_hoover
   Use pmf,         Only : pmf_tags,pmf_type
   Use numerics,        Only : images
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type
-  Use core_shell, Only : core_shell_type
+  Use thermostat, Only : thermostat_type,  adjust_timestep
   Use statistics, Only : stats_type
-  use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep
+  Use timer, Only : timer_type
   Use core_shell, Only : core_shell_type
   Implicit None
 

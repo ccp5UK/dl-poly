@@ -17,8 +17,7 @@ Module external_field
   Use kinetics, Only : getcom_mol
   Use rigid_bodies, Only : rigid_bodies_type
   Use errors_warnings, Only : error
-  use numerics, Only : local_index,images
-  Use rdfs, Only : rdf_type,usr_compute,usr_collect
+  Use numerics, Only : local_index,images
   Use shared_units, Only : update_shared_units
   Use statistics, Only : stats_type
   Use core_shell, Only : core_shell_type,SHELL_ADIABATIC

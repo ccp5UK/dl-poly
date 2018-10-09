@@ -12,11 +12,10 @@ Module npt_nose_hoover
   Use nvt_nose_hoover, Only : nvt_h0_scl,nvt_h1_scl 
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type, adjust_timestep
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep
   Use vdw, Only : vdw_type
   Use numerics, Only : images
   Implicit None

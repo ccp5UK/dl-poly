@@ -15,9 +15,8 @@ Module rigid_bodies
   Use neighbours,      Only : neighbours_type
   Use configuration,   Only : configuration_type,getcom
   Use statistics,      Only : stats_type
-  Use numerics,        Only : images, jacobi, invert
+  Use numerics,        Only : images, jacobi, invert, local_index,pbcshift
   Use shared_units,    Only : update_shared_units
-  Use numerics,        Only : images,local_index,pbcshift
   Use errors_warnings, Only : info, error, warning
   Use thermostat,      Only : thermostat_type, &
                               ENS_NPT_BERENDSEN, ENS_NPT_BERENDSEN_ANISO, &

@@ -17,7 +17,7 @@ Module tersoff
   Use configuration,  Only : configuration_type
   Use particle,       Only : corePart
   Use errors_warnings, Only : error,warning
-  use numerics, Only : dcell, invert
+  Use numerics, Only : dcell, invert
   Use statistics, Only : stats_type
   Use neighbours, Only : neighbours_type
   Implicit None

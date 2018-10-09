@@ -14,7 +14,6 @@ Module constraints
   Use comms,           Only : comms_type,gsum,gcheck,gsync
   Use particle,        Only : corePart
   Use configuration,   Only : configuration_type
-  Use particle,        Only : corePart
   Use pmf, Only : pmf_shake_vv,pmf_rattle,pmf_type
   Use constants,           Only : zero_plus
   Use errors_warnings, Only : error,warning,info

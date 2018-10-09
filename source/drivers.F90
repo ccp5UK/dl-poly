@@ -1,27 +1,17 @@
 Module drivers
-  use kinds, Only : wp,wi
+  Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum,gtime,gmin,gmax,gcheck
-  use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr
-  Use configuration, Only : configuration_type
+  Use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr, cap_forces
   Use particle, Only : corePart
-  Use rigid_bodies, Only : rigid_bodies_type,getrotmat
   Use constants, Only : boltz,zero_plus
-  Use angles, Only : angles_type
-  Use dihedrals, Only : dihedrals_type
-  Use inversions, Only : inversions_type
-  Use core_shell,  Only : core_shell_type,SHELL_ADIABATIC 
 
   Use impacts, Only : impact_type, impact
-  Use errors_warnings, Only : error,warning,info
-  Use shared_units, Only : update_shared_units,update_shared_units_int
-  Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3
-  Use statistics, Only : stats_type
-  Use domains, Only : domains_type
+  Use shared_units, Only : update_shared_units,update_shared_units_int, SHARED_UNIT_UPDATE_FORCES
+  Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3, seed_type
   Use parse, Only : strip_blanks,lower_case
-  Use kinetics, Only : cap_forces
   Use langevin, Only : langevin_forces
   
-  Use errors_warnings, Only : init_error_system,info
+  Use errors_warnings, Only : error,warning, init_error_system,info 
 
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
@@ -35,14 +25,14 @@ Module drivers
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
   Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
   Use rsds, Only : rsd_write,rsd_type
-  Use trajectory, Only : trajectory_write,read_history
-  use system, Only : system_revive,system_expand,system_init
+  Use trajectory, Only : trajectory_type, trajectory_write,read_history
+  Use system, Only : system_revive,system_expand,system_init
   Use build_excl, Only : build_excl_intra 
   Use build_book, Only : build_book_intra
   Use ffield, Only : read_field,report_topology
   Use bounds, Only : set_bounds
   Use build_tplg, Only : build_tplg_intra
-  use build_chrm, Only : build_chrm_intra
+  Use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type, &
     ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
     ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
@@ -69,11 +59,8 @@ Module drivers
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type, constraints_quench
-  Use shared_units, Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD,ELECTROSTATIC_NULL
   Use stochastic_boundary, Only : stochastic_boundary_vv
-  Use numerics, Only : seed_type
-  Use trajectory, Only : trajectory_type
   Use io, Only : io_type
   Use ttm, Only : ttm_type, ttm_system_init,ttm_system_revive,ttm_table_scan,&
     ttm_table_read,allocate_ttm_arrays
@@ -113,8 +100,8 @@ Module drivers
   Use pmf, only : pmf_type,pmf_quench
 
   Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_str_ss, &
-    rigid_bodies_str__s,xscale,rigid_bodies_tags, &
-    rigid_bodies_coms
+                           rigid_bodies_str__s,xscale,rigid_bodies_tags, &
+                           rigid_bodies_coms, getrotmat
 
   Use tethers, Only : tethers_type, tethers_forces
 
@@ -1563,7 +1550,8 @@ End If
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,flow,cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)          
+        Call w_integrate_vv(1,flow,cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr, &
+            neigh,electro,comm)          
 
 ! Apply kinetic options
 

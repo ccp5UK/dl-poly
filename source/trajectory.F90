@@ -8,7 +8,7 @@ Module trajectory
   Use constants
   Use parse,         Only : tabs_2_blanks, get_line, get_word, &
                             strip_blanks, word_2_real
-  Use configuration, Only : configuration_type
+  Use configuration, Only : configuration_type, read_config_parallel
   Use netcdf_wrap,   Only : netcdf_param
   Use io,            Only : io_set_parameters,io_type,             &
                             io_get_parameters,             &
@@ -39,7 +39,6 @@ Module trajectory
                             IO_READ_MASTER,                &
                             IO_SUBSET_POSITIONS
   Use numerics,        Only : dcell, invert, shellsort2
-  Use configuration,   Only : read_config_parallel
   Use errors_warnings, Only : error,warning,info
   Use particle,        Only : corePart
   Use filename, Only : file_type,FILE_CONFIG,FILE_HISTORY

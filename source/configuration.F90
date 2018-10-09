@@ -57,7 +57,7 @@ Module configuration
                             IO_SUBSET_FORCES
 
   Use errors_warnings, Only : error,warning,info
-  use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
+  Use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
   Use thermostat, Only : thermostat_type,CONSTRAINT_NONE
   Use electrostatic, Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
   Use filename, Only : file_type,FILE_CONFIG

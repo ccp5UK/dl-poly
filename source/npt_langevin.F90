@@ -16,11 +16,10 @@ Module npt_langevin
   Use pmf,             Only : pmf_tags,pmf_type
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h0_scl,npt_h1_scl
   Use langevin,        Only : langevin_forces
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type, adjust_timestep
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep
   Use vdw, Only : vdw_type
   Implicit None
 
