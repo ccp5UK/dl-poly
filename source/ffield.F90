@@ -36,7 +36,8 @@ Module ffield
                   VDW_BORN_HUGGINS_MEYER, VDW_HYDROGEN_BOND,VDW_N_M_SHIFT, &
                   VDW_MORSE,VDW_WCA,VDW_DPD,VDW_AMOEBA,VDW_LENNARD_JONES_COHESIVE, &
                   VDW_MORSE_12,VDW_RYDBERG,VDW_ZBL,VDW_ZBL_SWITCH_MORSE, &
-                  VDW_ZBL_SWITCH_BUCKINGHAM,vdw_generate,vdw_table_read
+                  VDW_ZBL_SWITCH_BUCKINGHAM,VDW_LJ_MDF,VDW_BUCKINGHAM_MDF,&
+                  VDW_126_MDF,vdw_table_read,vdw_generate
   Use metal, Only : metal_type,metal_generate_erf,metal_table_read,metal_generate
   Use tersoff, Only : tersoff_type,tersoff_generate
   Use four_body, Only : four_body_type
@@ -96,6 +97,9 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 ! contrib   - a.m.elena september 2017 (ryd)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
 ! contrib   - a.m.elena december 2017 (blb)
+! contrib   - a.m.elena december 2017 (zblb)
+! contrib   - a.m.elena april 2018 (mlj/mbuc)
+! contrib   - a.m.elena may 2018 (m126)
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3442,6 +3446,12 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
               keypot=VDW_ZBL_SWITCH_MORSE
            Else If (keyword == 'zblb') Then
               keypot=VDW_ZBL_SWITCH_BUCKINGHAM
+           Else If (keyword == 'mlj') Then
+               keypot=VDW_LJ_MDF
+            Else If (keyword == 'mbuc') Then
+               keypot=VDW_BUCKINGHAM_MDF
+            Else If (keyword == 'm126') Then
+               keypot=VDW_126_MDF
            Else
               Call info(keyword,.true.)
               Call error(452)
@@ -3505,6 +3515,10 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
               Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
                  parpot(1)=parpot(1)/engunit
                  parpot(5)=parpot(5)*engunit
+              Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+                 parpot(3)=parpot(3)*engunit
+              Else If (keypot == VDW_126_MDF) Then
+                 parpot(2)=parpot(2)*engunit  
               End If
            End If
 
@@ -3571,6 +3585,10 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                  thermo%gamdpd(keyvdw)=Abs(parpot(8))
               Else If (keypot == VDW_ZBL_SWITCH_BUCKINGHAM) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(8))
+              Else If (keypot == VDW_LJ_MDF) Then
+                 thermo%gamdpd(keyvdw)=Abs(parpot(4))
+              Else If (keypot == VDW_BUCKINGHAM_MDF) Then
+                 thermo%gamdpd(keyvdw)=Abs(parpot(5))
               End If
               If (thermo%gamdpd(0) > zero_plus) thermo%gamdpd(keyvdw)=thermo%gamdpd(0) ! override
            End If
@@ -3738,11 +3756,14 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                                 eps(2)=vdws%param(2,ja)**2/(4.0_wp*vdws%param(1,ja))
                                 sig(2)=(vdws%param(1,ja)/vdws%param(2,ja))**(1.0_wp/6.0_wp)
                              Else If (keypot == VDW_LENNARD_JONES  .or. keypot == VDW_DPD .or. &
-                                      keypot == VDW_AMOEBA .or. keypot == VDW_LENNARD_JONES_COHESIVE) Then ! LJ, DPD, 14-7, LJC
+                                      keypot == VDW_AMOEBA .or. keypot == VDW_LENNARD_JONES_COHESIVE .or. &
+                                      keypot == VDW_LJ_MDF .or. keypot == VDW_126_MDF) Then ! LJ, DPD, 14-7, LJC,MLJ,M126
                                 If (keypot == VDW_LENNARD_JONES) keyword='lj  '
                                 If (keypot == VDW_DPD) keyword='dpd '
                                 If (keypot == VDW_AMOEBA) keyword='14-7'
                                 If (keypot == VDW_LENNARD_JONES_COHESIVE) keyword='ljc '
+                                If (keypot == VDW_LJ_MDF) keyword='mlj '
+                                If (keypot == VDW_126_MDF) keyword='m126'
 
                                 eps(1)=vdws%param(1,ia)
                                 sig(1)=vdws%param(2,ia)
