@@ -250,7 +250,7 @@ program dl_poly
   ! Local Variables
 
   Integer(Kind=wi) :: i,j
-  Logical :: l_n_e,l_n_v,lfce
+  Logical :: lfce
   Character( Len = 256 ) :: message,messages(5)
   Character( Len = 66 )  :: banner(13)
   Character( Len = 1024 ) :: control_filename
@@ -329,7 +329,7 @@ program dl_poly
   ! DETERMINE ARRAYS' BOUNDS LIMITS & DOMAIN DECOMPOSITIONING
   ! (setup and domains)
 
-  Call set_bounds (l_n_e,l_n_v, &
+  Call set_bounds ( &
     sites,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
     tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
@@ -394,22 +394,16 @@ program dl_poly
 
   ! READ SIMULATION CONTROL PARAMETERS
 
-  Call read_control                                    &
-    (l_n_e,l_n_v,        &
-    lfce,           &
-    impa,                            &
-    ttms,dfcts,          &
-    rigid, &
-    rsdsc,core_shells,cons,pmfs,stats,thermo,green,devel,plume,msd_data, &
-    met,pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf, &
-    minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,comm)
+  Call read_control(lfce,impa,ttms,dfcts,rigid,rsdsc,core_shells,cons,pmfs, &
+    stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral, &
+    inversion,zdensity,neigh,vdws,tersoffs,rdf, minim,mpoles,electro,ewld, &
+    seed,traj,files,tmr,config,flow,comm)
 
   ! READ SIMULATION FORCE FIELD
 
-  Call read_field(l_n_v,neigh%cutoff,&
-    core_shells,pmfs,cons,thermo,met,bond,angle,dihedral, &
-    inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
-    ext_field,rigid,electro,config,kim_data,files,flow,comm)
+  Call read_field(neigh%cutoff,core_shells,pmfs,cons,thermo,met,bond,angle, &
+    dihedral,inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf, &
+    mpoles,ext_field,rigid,electro,config,kim_data,files,flow,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -633,23 +627,23 @@ program dl_poly
 
 
   If (flow%simulation) Then
-    Call w_md_vv(l_n_v,config,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
-      pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
-      netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,&
-      minim,impa,green,ewld,electro,dfcts,&
-      msd_data,tersoffs,tether,threebody,vdws,devel,met,comm)      
-      
+    Call w_md_vv(config,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo, &
+      plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
+      netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,minim, &
+      impa,green,ewld,electro,dfcts,msd_data,tersoffs,tether,threebody,vdws, &
+      devel,met,comm)
   Else
     If (lfce) Then
-      Call w_replay_historf(l_n_v,config,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,plume,&
-        msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
-        fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
-        kim_data,files,dfcts,tmr,tether,threebody,pois,green,ewld,devel,met,comm)         
+      Call w_replay_historf(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
+        thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh, &
+        sites,vdws,tersoffs,fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid, &
+        electro,domain,seed,traj,kim_data,files,dfcts,tmr,tether,threebody, &
+        pois,green,ewld,devel,met,comm)
     Else
-      Call w_replay_history(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo,msd_data,&
-        met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
-        netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,dfcts,files,&
-        tmr,tether,green,ewld,devel,threebody,comm)            
+      Call w_replay_history(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
+        thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh, &
+        sites,vdws,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
+        seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,threebody,comm)
     End If
   End If
 

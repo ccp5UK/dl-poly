@@ -219,12 +219,11 @@ Contains
   End Subroutine w_impact_option
   
   
-    Subroutine w_calculate_forces(l_n_v,cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+    Subroutine w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
     inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
     minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,&
     green,devel,ewld,met,seed,thermo,comm)
     
-    Logical, Intent ( In ) :: l_n_v
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
     Type( flow_type ), Intent( InOut ) :: flow
@@ -302,7 +301,7 @@ Contains
 ! Calculate pair-like forces (metal,vdws,electrostatic) and add lrc
 
      If (.not.(met%max_metal == 0 .and. electro%key == ELECTROSTATIC_NULL .and. &
-       l_n_v .and. rdf%max_rdf == 0) .or. kim_data%active) Then
+       vdws%no_vdw .and. rdf%max_rdf == 0) .or. kim_data%active) Then
        Call two_body_forces(thermo%ensemble,flow%book,cnfig%megfrz, &
          flow%equilibration,flow%equil_steps,flow%step,cshell,stat,ewld,devel,met,pois,neigh,sites,vdws,rdf, &
          mpoles,electro,domain,tmr,kim_data,cnfig,comm)
@@ -1378,13 +1377,12 @@ End If
     
   End Subroutine w_refresh_output
 
-  Subroutine w_md_vv(l_n_v,cnfig,ttm,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
+  Subroutine w_md_vv(cnfig,ttm,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
     pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
     netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,&
     minim,impa,green,ewld,electro,dfcts,&
     msd_data,tersoffs,tether,threebody,vdws,devel,met,comm)
     
-    Logical, Intent(In) :: l_n_v
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( ttm_type ), Intent( InOut ) :: ttm
     Type( io_type ), Intent( InOut ) :: io
@@ -1538,7 +1536,7 @@ End If
 
 ! Evaluate forces
 
-      Call w_calculate_forces(l_n_v,cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
+      Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
        inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
        minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)
        
@@ -2035,12 +2033,11 @@ End If
     
   End Subroutine w_replay_history
 
-  Subroutine w_replay_historf(l_n_v,cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
+  Subroutine w_replay_historf(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
       msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
       kim_data,files,dfcts,tmr,tether,threebody,pois,green,ewld,devel,met,comm)
     
-        Logical, Intent( In ) :: l_n_v
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
     Type( rsd_type ), Intent( Inout ) :: rsdc
@@ -2222,7 +2219,7 @@ End If
 
 ! Evaluate forces, flow%newjob must always be true for vircom evaluation
 
-           Call w_calculate_forces(l_n_v,cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
+           Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
              inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
              netcdf,minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,&
              green,devel,ewld,met,seed,thermo,comm)

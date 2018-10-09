@@ -85,7 +85,7 @@ Module control
 Contains
 
   Subroutine read_control                                &
-    (l_n_e,l_n_v,        &
+    (        &
     lfce, &
     impa,                            &
     ttm,dfcts,          &
@@ -112,7 +112,6 @@ Contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( ttm_type ), Intent( InOut ) :: ttm
-    Logical,                Intent( In    ) :: l_n_e,l_n_v
     Logical,                Intent(   Out ) :: lfce
     Type( rigid_bodies_type ), Intent ( InOut ) :: rigid
   Type( rsd_type ), Intent ( InOut ) :: rsdc
@@ -3027,7 +3026,7 @@ Contains
 
 ! report electrostatics
 
-  If (l_n_e) Then
+  If (electro%no_elec) Then
      electro%key=ELECTROSTATIC_NULL
      Call info('Electrostatics switched off!!!',.true.)
   Else If (electro%key == ELECTROSTATIC_NULL) Then
@@ -3062,13 +3061,13 @@ Contains
 
 ! report vdw
 
-  If (l_n_v) Then
+  If (vdws%no_vdw) Then
     Call info('vdw potential terms switched off',.true.)
   End If
 
 ! report if vdws%cutoff is reset (measures taken in scan_config)
 
-  If ((.not.l_n_v) .and. Abs(vdws%cutoff-rvdw1) > 1.0e-6_wp) Then
+  If ((.not.vdws%no_vdw) .and. Abs(vdws%cutoff-rvdw1) > 1.0e-6_wp) Then
     Write(message,'(a,1p,e12.4)') 'vdw cutoff reset to (Angs) ',vdws%cutoff
     Call info(message,.true.)
   End If
@@ -3597,9 +3596,9 @@ Contains
 End Subroutine read_control
 
 Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
-    l_n_e,l_n_r,lzdn,l_n_v,l_ind,nstfce,ttm,cshell,stats, &
-    thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data,files,flow,comm)
+    l_n_r,lzdn,l_ind,nstfce,ttm,cshell,stats,thermo,green,devel,msd_data,met, &
+    pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles, &
+    electro,ewld,kim_data,files,flow,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -3617,12 +3616,10 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( ttm_type ), Intent( InOut ) :: ttm
-  Logical,           Intent( InOut ) :: l_n_e
-  Logical,           Intent(   Out ) :: l_n_r,lzdn,l_n_v,l_ind
+  Logical,           Intent(   Out ) :: l_n_r,lzdn,l_ind
   Integer,           Intent( In    ) :: max_rigid,imcon
   Integer,           Intent( InOut ) :: imc_n
-  Integer,           Intent(   Out ) :: mxgana, &
-                                        nstfce
+  Integer,           Intent(   Out ) :: mxgana,nstfce
   Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
   Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
   Type( core_shell_type ), Intent (   In  )   :: cshell
@@ -3692,13 +3689,13 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 ! cutoff and padding, and binsize defaults
 
   lelec = .false.
-! l_n_e is now first determined in scan_field l_n_e = (.false.)
+! electro%no_elec is now first determined in scan_field electro%no_elec = (.false.)
 
   rdf%l_collect  = (rdf%max_rdf > 0)
   l_n_r = .not.rdf%l_collect
 
   lvdw  = (vdws%max_vdw > 0)
-  l_n_v = .false.
+  vdws%no_vdw = .false.
   lrvdw = .false. ! Even though it vdws%cutoff may have been read from TABLE
 
   lmet  = (met%max_metal > 0)
@@ -3989,11 +3986,11 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
         If (word(1:3) == 'vdw') Then
 
-           l_n_v = .true.
+           vdws%no_vdw = .true.
 
         Else If (word(1:4) == 'elec') Then
 
-           l_n_e = .true.
+           electro%no_elec = .true.
 
         Else If (word(1:3) == 'ind' ) Then
 
@@ -4296,14 +4293,14 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 ! Sort electrostatics
 
   If (lelec) Then
-     If (l_n_e) lelec = .not.l_n_e
+     If (electro%no_elec) lelec = .not.electro%no_elec
   Else
-     l_n_e = .true.
+     electro%no_elec = .true.
   End If
 
 ! reinitialise multipolar electrostatics indicators
 
-  If (l_n_e) Then
+  If (electro%no_elec) Then
      mpoles%max_mpoles = 0
      mpoles%max_order = 0
      mpoles%key = POLARISATION_DEFAULT
@@ -4317,9 +4314,9 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
         vdws%cutoff = Min(vdws%cutoff,Max(neigh%cutoff,rcut_def))
      End If
 
-     If (l_n_v) lvdw = .not.l_n_v
+     If (vdws%no_vdw) lvdw = .not.vdws%no_vdw
   Else
-     l_n_v = .true.
+     vdws%no_vdw = .true.
   End If
 
 ! Sort neigh%cutoff as the maximum of all valid cutoffs
@@ -4568,7 +4565,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
 ! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
 
-           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r) Then
+           If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. l_n_r) Then
               vdws%cutoff=0.0_wp
               met%rcut=0.0_wp
               If (.not.flow%strict) Then
@@ -4607,7 +4604,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 ! Reset vdws%cutoff and met%rcut when only tersoff potentials are opted for and
 ! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
 
-           If (lter .and. l_n_e .and. l_n_v .and. l_n_m .and. l_n_r .and. &
+           If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. l_n_r .and. &
              kim_data%active) Then
               vdws%cutoff=0.0_wp
               met%rcut=0.0_wp

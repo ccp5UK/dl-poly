@@ -53,11 +53,10 @@ Module bounds
 
 Contains
 
-  Subroutine set_bounds(l_n_e,l_n_v, &
-    site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel,      &
-    msd_data,met,pois,bond,angle,dihedral,     &
-    inversion,tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf, &
-    mpoles,ext_field,rigid,electro,domain,config,ewld,kim_data,files,flow,comm)
+  Subroutine set_bounds(site,ttm,io,cshell,cons,pmf,stats,thermo,green,devel, &
+    msd_data,met,pois,bond,angle,dihedral,inversion,tether,threebody,zdensity, &
+    neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,domain, &
+    config,ewld,kim_data,files,flow,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -72,7 +71,6 @@ Contains
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Logical,           Intent(   Out ) :: l_n_e,l_n_v
   Type( site_type), Intent( InOut ) :: site
   Type( ttm_type ), Intent( InOut ) :: ttm
   Type( io_type ), Intent( InOut ) :: io
@@ -123,10 +121,10 @@ Contains
 
 ! scan the FIELD file data
 
-  Call scan_field(l_n_e,megatm,site,neigh%max_exclude,mtshl, &
+  Call scan_field(megatm,site,neigh%max_exclude,mtshl, &
     mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
     lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
-    vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,comm)
+    vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,electro,comm)
 
 ! Get imc_r & set config%dvar
 
@@ -144,7 +142,7 @@ Contains
 ! scan CONTROL file data
 
   Call scan_control(rcter,rigid%max_rigid,config%imcon,config%imc_n,config%cell, &
-    xhi,yhi,zhi,config%mxgana,l_n_e,l_n_r,lzdn,l_n_v,config%l_ind,electro%nstfce, &
+    xhi,yhi,zhi,config%mxgana,l_n_r,lzdn,config%l_ind,electro%nstfce, &
     ttm,cshell,stats,thermo,green,devel,msd_data,met,pois,bond,angle,dihedral, &
     inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles,electro,ewld,kim_data, &
     files,flow,comm)
@@ -430,11 +428,11 @@ Contains
 
 ! maximum number of grid points for electrostatics
 
-  electro%ewald_exclusion_grid = Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4),l_n_e)
+  electro%ewald_exclusion_grid = Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4),electro%no_elec)
 
 ! maximum number of grid points for vdw interactions - overwritten
 
-  vdws%max_grid = Merge(-1,Max(1004,Nint(vdws%cutoff/delr_max)+4),l_n_v)
+  vdws%max_grid = Merge(-1,Max(1004,Nint(vdws%cutoff/delr_max)+4),vdws%no_vdw)
 
 ! maximum number of grid points for metal interactions
 
@@ -638,7 +636,7 @@ Contains
      End If
   Else ! push/reset the limits in 'no strict' mode
      If (.not.flow%strict) Then
-        If (.not.(met%max_metal == 0 .and. l_n_e .and. l_n_v .and. &
+        If (.not.(met%max_metal == 0 .and. electro%no_elec .and. vdws%no_vdw .and. &
           rdf%max_rdf == 0 .and. kim_data%active)) Then
            ! 2b link-cells are needed
            If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then
