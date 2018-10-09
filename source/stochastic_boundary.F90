@@ -1,7 +1,7 @@
 Module stochastic_boundary
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gsum
-  use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr
+  Use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr
   Use configuration, Only : configuration_type
   Use errors_warnings, Only : error,warning,info
   Use shared_units, Only : update_shared_units,update_shared_units_int

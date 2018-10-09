@@ -11,7 +11,7 @@ Module temperature
   Use core_shell,      Only : core_shell_type,core_shell_quench,SHELL_ADIABATIC
   Use kinetics,        Only : getvom,getkin,getknf,getknt,getknr
   Use numerics,        Only : seed_type,invert,uni,local_index,box_mueller_saru3
-  use shared_units,    Only : update_shared_units,update_shared_units_int
+  Use shared_units,    Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,warning,info
   Use thermostat,      Only : thermostat_type
   Use statistics, Only : stats_type

@@ -12,7 +12,6 @@ Module poisson
   Use parallel_fft,    Only : adjust_kmax
   Use neighbours,      Only : neighbours_type
   Use electrostatic,   Only : electrostatic_type
-  Use ewald,           Only : ewald_type
   Implicit None
 
   Private

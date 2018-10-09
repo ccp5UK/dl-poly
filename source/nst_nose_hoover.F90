@@ -15,11 +15,10 @@ Module nst_nose_hoover
   Use numerics,        Only : dcell, mat_mul,images
   Use nvt_nose_hoover, Only : nvt_h0_scl, nvt_h1_scl
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep, &
+  Use thermostat, Only : thermostat_type, adjust_timestep, &
                          CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
                          CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
   Use vdw, Only : vdw_type

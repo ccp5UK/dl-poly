@@ -14,10 +14,9 @@ Module npt_berendsen
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type, adjust_timestep
   Use core_shell, Only : core_shell_type
   Use timer, Only: timer_type
-  Use thermostat, Only : adjust_timestep
   Use vdw, Only : vdw_type
   Use numerics, Only : images
   Implicit None

@@ -17,7 +17,6 @@ Module rdfs
   Use comms,  Only : comms_type,gsum
   Use constants,  Only : fourpi,boltz,delr_max,nrdfdt,npdfdt,npdgdt, &
                      engunit,zero_plus
-  Use site, Only : site_type
   Use parse
   Use io
   Use errors_warnings, Only : error,info

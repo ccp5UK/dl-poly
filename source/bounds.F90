@@ -3,7 +3,7 @@ Module bounds
   Use comms,           Only : comms_type
   Use constants
   Use domains,         Only : domains_type,map_domains
-  Use configuration,   Only : configuration_type
+  Use configuration,   Only : configuration_type, scan_config,read_config
   Use neighbours,      Only : neighbours_type
   Use msd,             Only : msd_type
   Use rdfs,            Only : rdf_type
@@ -21,7 +21,6 @@ Module bounds
   Use ttm,             Only : ttm_type
   Use numerics,        Only : dcell
   Use control,         Only : scan_control, scan_control_pre
-  Use configuration,   Only : scan_config,read_config
   Use ffield,          Only : scan_field
   Use errors_warnings, Only : error,warning,info
   Use parallel_fft,    Only : adjust_kmax

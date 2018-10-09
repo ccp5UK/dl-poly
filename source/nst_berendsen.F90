@@ -14,13 +14,12 @@ Module nst_berendsen
   Use numerics,        Only : dcell,images,mat_mul
   Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type, &
+  Use thermostat, Only : thermostat_type, adjust_timestep, &
                          CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
                          CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep
   Use vdw, Only : vdw_type
   Implicit None
 

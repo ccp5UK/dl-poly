@@ -17,13 +17,12 @@ Module nst_langevin
   Use numerics,        Only : dcell, mat_mul,box_mueller_saru6,images,seed_type
   Use langevin,        Only : langevin_forces
   Use nst_nose_hoover, Only : nst_h0_scl,nst_h1_scl
-  Use thermostat, Only : thermostat_type, &
+  Use thermostat, Only : thermostat_type, adjust_timestep, &
                          CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
                          CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep
   Use vdw, Only : vdw_type
   Implicit None
 

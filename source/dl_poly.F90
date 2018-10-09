@@ -149,14 +149,14 @@ program dl_poly
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
   Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
   Use rsds, Only : rsd_write,rsd_type  
-  Use trajectory, Only : trajectory_write,read_history
-  use system, Only : system_revive,system_expand,system_init
+  Use trajectory, Only : trajectory_write,read_history, trajectory_type
+  Use system, Only : system_revive,system_expand,system_init
   Use build_excl, Only : build_excl_intra 
   Use build_book, Only : build_book_intra
   Use ffield, Only : read_field,report_topology
   Use bounds, Only : set_bounds
   Use build_tplg, Only : build_tplg_intra
-  use build_chrm, Only : build_chrm_intra
+  Use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type, &
     ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
     ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
@@ -187,7 +187,6 @@ program dl_poly
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD,ELECTROSTATIC_NULL
   Use stochastic_boundary, Only : stochastic_boundary_vv
   Use numerics, Only : seed_type
-  Use trajectory, Only : trajectory_type
   Use io, Only : io_type
   Use ttm, Only : ttm_type, ttm_system_init,ttm_system_revive,ttm_table_scan,&
     ttm_table_read,allocate_ttm_arrays

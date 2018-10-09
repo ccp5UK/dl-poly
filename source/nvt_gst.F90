@@ -12,7 +12,6 @@ Module nvt_gst
   Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use numerics, Only : seed_type,images,box_mueller_saru2
   Use errors_warnings, Only : error,info
-  Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only :  timer_type
   Use thermostat, Only : adjust_timestep,thermostat_type

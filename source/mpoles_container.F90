@@ -4,11 +4,10 @@ Module mpoles_container
   Use constants,           Only : sqrpi
   Use configuration,   Only : configuration_type
   Use mpole,           Only : mpole_type
-  Use ewald,           Only : dtpbsp
+  Use ewald,           Only : dtpbsp, ewald_type
   Use errors_warnings, Only : error
   Use numerics,        Only : images_s, local_index
   Use particle,        Only : corePart
-  Use ewald,           Only : ewald_type
 
   Implicit None
 
