@@ -30,6 +30,9 @@ Module electrostatic
   Type, Public :: electrostatic_type
     Private
 
+    !> No electrostatics switch
+    Logical, Public :: no_elec
+
     !> Electrostatic potential key
     Integer( Kind = wi ), Public :: key = ELECTROSTATIC_NULL
 

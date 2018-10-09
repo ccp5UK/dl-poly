@@ -76,12 +76,9 @@ Module ffield
 
 Contains
 
-Subroutine read_field                      &
-           (l_n_v,             &
-  rcut,&
-           cshell,pmf,cons,  &
-           thermo,met,bond,angle,dihedral,inversion,tether,threebody,sites,vdws, &
-           tersoffs,fourbody,rdf,mpoles,ext_field,rigid,electro,config,kim_data,files,flow,comm)
+Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
+    inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
+    ext_field,rigid,electro,config,kim_data,files,flow,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -105,7 +102,6 @@ Subroutine read_field                      &
 ! SETUP MODULES
 
 
-  Logical,           Intent( In    ) :: l_n_v
   Real( Kind = wp ), Intent( In    ) :: rcut
   Type( constraints_type ), Intent( InOut ) :: cons
   Type( pmf_type ), Intent( InOut ) :: pmf
@@ -3951,7 +3947,7 @@ Subroutine read_field                      &
 
 ! generate vdw force arrays
 
-           If (.not.l_n_v) Then
+           If (.not.vdws%no_vdw) Then
               If ((.not. vdws%l_direct) .or. vdws%l_tab) Call vdw_generate(vdws)
               If (vdws%l_tab) Call vdw_table_read(vdws,sites,comm)
               If (vdws%l_direct .and. (Any(vdws%ltp(1:vdws%n_vdw) /= VDW_NULL) &
@@ -4790,7 +4786,7 @@ Subroutine read_field                      &
 ! Precautions: if vdw are cancelled, nullify vdws%n_vdw as
 ! it is a switch for vdw_lrc and vdw_forces
 
-        If (l_n_v) vdws%n_vdw = 0
+        If (vdws%no_vdw) vdws%n_vdw = 0
 
 ! check and resolve any conflicting 14 dihedral specifications
 
@@ -5047,10 +5043,10 @@ Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
   Call info(banner,18,.true.)
 End Subroutine report_topology
 
-Subroutine scan_field(l_n_e,megatm,site,max_exclude,mtshl, &
+Subroutine scan_field(megatm,site,max_exclude,mtshl, &
   mtcons,l_usr,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv,rcter,rctbp,rcfbp, &
   lext,cshell,cons,pmf,met,bond,angle,dihedral,inversion,tether,threebody, &
-  vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,comm)
+  vdws,tersoffs,fourbody,rdf,mpoles,rigid,kim_data,files,electro,comm)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -5089,6 +5085,7 @@ Subroutine scan_field(l_n_e,megatm,site,max_exclude,mtshl, &
   Type( rigid_bodies_type ), Intent( InOut ) :: rigid
   Type( kim_type ), Intent( InOut ) :: kim_data
   Type( file_type ), Intent( InOut ) :: files(:)
+  Type( electrostatic_type ), Intent( InOut ) :: electro
   Type( comms_type ), Intent( InOut ) :: comm
   Integer( Kind = wi ), Intent(   Out ) :: max_exclude,mtshl
 ! Max number of different atom types
@@ -5105,7 +5102,7 @@ Subroutine scan_field(l_n_e,megatm,site,max_exclude,mtshl, &
   Character( Len = 40  ) :: word
   Character( Len = 8   ) :: name
 
-  Logical           :: l_n_e,check,safe,l_usr,lext
+  Logical           :: check,safe,l_usr,lext
   Integer           :: itmols,nummols,numsit,mxnmst,ksite,nrept,        &
     megatm,i,j,k,        &
     numshl,ishls,                 &
@@ -5123,7 +5120,7 @@ Subroutine scan_field(l_n_e,megatm,site,max_exclude,mtshl, &
     mxt(1:9),mxf(1:9)
   Real( Kind = wp ) :: rct,tmp,tmp1,tmp2
 
-  l_n_e=.true.  ! no electrostatics opted
+  electro%no_elec=.true.  ! no electrostatics opted
   mpoles%max_order=0      ! default of maximum order of poles (charges)
   mpoles%max_mpoles=0      ! default maximum number of independent poles values
   ! it initialises to 0 if no MULT directive exists in FIELD
@@ -5256,7 +5253,7 @@ Subroutine scan_field(l_n_e,megatm,site,max_exclude,mtshl, &
         Call get_word(record,word) ; Call lower_case(word)
         If (word(1:5) == 'order') Call get_word(record,word)
 
-        l_n_e=.false. ! abandon assumptions
+        electro%no_elec=.false. ! abandon assumptions
 
         mpoles%max_order = Min(Max(0,Nint(word_2_real(word))),4)
 
@@ -5315,7 +5312,7 @@ Subroutine scan_field(l_n_e,megatm,site,max_exclude,mtshl, &
 
                     Call get_word(record,word)
                     Call get_word(record,word)
-                    l_n_e=(l_n_e.and.(Abs(word_2_real(word)) < 1.0e-5_wp))
+                    electro%no_elec=(electro%no_elec.and.(Abs(word_2_real(word)) < 1.0e-5_wp))
                     Call get_word(record,word)
                     nrept=Nint(word_2_real(word))
                     If (nrept == 0) nrept=1
