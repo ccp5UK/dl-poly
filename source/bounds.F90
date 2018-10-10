@@ -818,7 +818,7 @@ Contains
 
 ! Get reasonable - all particles in one link-cell
 
-  tol   = Real(config%megatm,wp) / (Real(ilx*ily*ilz,wp) * Real(comm%mxnode,wp))
+  tol   = Real(megatm,wp) / (Real(ilx*ily*ilz,wp) * Real(comm%mxnode,wp))
   fdens = Min(fdens,tol)
 
 ! density variation affects the link-cell arrays' dimension
