@@ -105,20 +105,19 @@ Contains
     Integer           :: fail,ilx,ily,ilz,i,ii,j
     Real( Kind = wp ) :: cut,test,tol,celprp(1:10)
 
-    Real( Kind = wp ), Allocatable :: x(:),y(:),z(:),r(:)
+    Real( Kind = wp ), Dimension(config%natms) :: x,y,z,r
 
     Character( Len = 256 ) :: message
     If (.not.neigh%unconditional_update) Return
 
     ! Checks
     fail = 0
-    Allocate (x(1:config%mxatdm),y(1:config%mxatdm),z(1:config%mxatdm),r(1:config%mxatdm), Stat = fail)
     If (fail > 0) Then
       Write(message,'(a)') 'vnl_check allocation failure'
       Call error(0,message)
     End If
 
-    Do i=1,config%nlast
+    Do i=1,config%natms
       x(i) = config%parts(i)%xxx - neigh%xbg(i)
       y(i) = config%parts(i)%yyy - neigh%ybg(i)
       z(i) = config%parts(i)%zzz - neigh%zbg(i)
@@ -134,7 +133,6 @@ Contains
 
     tol = Merge(Maxval(r(1:config%natms)), 0.0_wp, config%natms>0)
 
-    Deallocate (x,y,z,r, Stat = fail)
     If (fail > 0) Then
       Write(message,'(a)') 'vnl_check deallocation failure'
       Call error(0,message)
