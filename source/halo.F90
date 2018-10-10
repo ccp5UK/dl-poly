@@ -1,8 +1,11 @@
 Module halo
 
+  Use kinds, Only : wp
+  Use constants, Only : zero_plus
+  Use numerics,        Only : dcell, invert, shellsort2
   Use comms,  Only : comms_type,gcheck
   Use deport_data, Only : export_atomic_positions, export_atomic_data
-  Use configuration
+  Use configuration, Only : configuration_type
   Use domains, Only : domains_type
   Use site, Only : site_type
   Use mpole, Only : mpole_type

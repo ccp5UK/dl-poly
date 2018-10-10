@@ -1,7 +1,6 @@
 Module nvt_berendsen
   Use kinds, Only : wp
   Use comms,       Only : comms_type,gmax
-  Use constants
   Use configuration,      Only : configuration_type
   Use particle,    Only : corePart
   Use domains,     Only : domains_type

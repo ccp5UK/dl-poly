@@ -12,7 +12,7 @@ Module ttm
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp
-  Use constants
+  Use constants,       Only : boltz, tenunt, eu_ev, sqrpi, rt2, ntable, pi, zero_plus
   Use configuration,   Only : configuration_type
   Use domains,         Only : domains_type,idcube
   Use comms,           Only : wp_mpi,comms_type,gsum,gmin,gmax,gcheck,gsync, &

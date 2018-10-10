@@ -3,8 +3,6 @@ Module build_chrm
 
   Use kinds, only : wp,wi
   Use comms,  Only : comms_type,gcheck,gmax,gsum
-  Use constants
-
 
   Use configuration, Only : configuration_type
 

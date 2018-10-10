@@ -3,7 +3,7 @@ Module mpole
   Use constants, Only : sqrpi,r4pie0,zero_plus,nmpldt
   Use site, Only : site_type
   Use core_shell, Only : core_shell_type
-  Use parse
+  Use parse,      Only : word_2_real, get_line, get_word, lower_case, strip_blanks 
   Use comms, Only : comms_type
   Use numerics, Only : factorial
   Use errors_warnings, Only : error,warning,info

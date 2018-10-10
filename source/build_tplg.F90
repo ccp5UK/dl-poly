@@ -3,7 +3,6 @@ Module build_tplg
 
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gcheck,gmax
-  Use constants
 
   ! CONFIG MODULE
 

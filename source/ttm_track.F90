@@ -13,7 +13,7 @@ Module ttm_track
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use constants
+  Use constants, Only : zero_plus, boltz 
   Use ttm, Only : ttm_type,&
     eltemp_min, eltemp_max,eltemp_maxKe,eltemp_minKe,eltemp_mean,ttm_system_revive,&
     boundaryHalo,boundaryCond,depoinit
