@@ -56,7 +56,7 @@ Module ffield
 
 ! PARSE MODULE
 
-  Use parse
+  Use parse, Only : word_2_real, get_word, get_line, lower_case, strip_blanks, gcheck
 
   Use numerics, Only : factorial, shellsort
   Use errors_warnings, Only : error,warning,info

@@ -11,7 +11,7 @@ Module dihedrals
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp,wi
+  Use kinds, Only : wp,wi
   Use comms, Only : comms_type,gcheck,gsum,gsync,gbcast
   Use constants,  Only : pi,twopi,boltz,delth_max,npdfdt,npdgdt, &
     engunit,zero_plus, &

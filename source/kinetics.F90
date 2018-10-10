@@ -22,7 +22,7 @@ Module kinetics
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
+  Use kinds, Only : wp
   Use comms, Only : comms_type, gsum
   Use constants,  Only : zero_plus,boltz
   Use configuration, Only : configuration_type,getcom_mol
