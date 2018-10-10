@@ -107,7 +107,7 @@ Contains
   Type( flow_type ), Intent( InOut ) :: flow
   Type( comms_type ), Intent( InOut ) :: comm
 
-  Logical           :: l_usr,l_n_r,lzdn,lext
+  Logical           :: l_usr,l_n_r,lzdn,lext,lrpad0
   Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
     mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
@@ -117,6 +117,9 @@ Contains
     xhi,yhi,zhi
   Integer( Kind = wi ) :: mxgrid
   Character( Len = 256 ) :: message
+  Character( Len = 256 ) :: messages(3)
+
+  lrpad0 = .false.
 
 ! scan the FIELD file data
 
@@ -535,6 +538,8 @@ Contains
     domain%nx,domain%ny,domain%nz
   Call info(message,.true.)
 
+  5 Continue
+
   If (neigh%padding > zero_plus) Then
 
 ! define cut
@@ -560,7 +565,10 @@ Contains
        'pure cutoff driven limit on largest balanced decomposition:', qlx*qly*qlz , &
        ' nodes/domains (', qlx,',',qly,',',qlz,')'
      Call info(message,.true.)
-
+  Else
+    If (flow%reset_padding) Then
+      lrpad0=.true.
+    End If
   End If
 
 10 Continue ! possible neigh%cutoff redefinition...
@@ -609,65 +617,79 @@ Contains
   cut=Min(domain%nx_recip*celprp(7),domain%ny_recip*celprp(8),domain%nz_recip*celprp(9))-1.0e-6_wp ! domain size
 
   If (ilx*ily*ilz == 0) Then
-     If (devel%l_trm) Then ! we are prepared to exit gracefully(-:
-        neigh%cutoff = cut   ! - neigh%padding (was zeroed in scan_control)
-        Write(message,'(a)') &
-          "real space cutoff reset has occurred, early run termination is due"
+    If (devel%l_trm) Then ! we are prepared to exit gracefully(-:
+      neigh%cutoff = cut   ! - neigh%padding (was zeroed in scan_control)
+      Write(message,'(a)') &
+        "real space cutoff reset has occurred, early run termination is due"
+      Call warning(message,.true.)
+      Go To 10
+    Else
+      If (cut < neigh%cutoff) Then
+        Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
         Call warning(message,.true.)
-        Go To 10
-     Else
-        If (cut < neigh%cutoff) Then
-           Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
-           Call warning(message,.true.)
-           Call error(307)
-        Else ! neigh%padding is defined & in 'no strict' mode
-           If (neigh%padding > zero_plus .and. (.not.flow%strict)) Then ! Re-set neigh%padding with some slack
-              neigh%padding = Min( 0.95_wp * (cut - neigh%cutoff) , test * neigh%cutoff)
-              neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
-              If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
-              Go To 10
-           Else
-              Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
-              Call warning(message,.true.)
-              Call error(307)
-           End If
-        End If
-     End If
-  Else ! push/reset the limits in 'no strict' mode
-     If (.not.flow%strict) Then
-        If (.not.(met%max_metal == 0 .and. electro%no_elec .and. vdws%no_vdw .and. &
-          rdf%max_rdf == 0 .and. kim_data%active)) Then
-           ! 2b link-cells are needed
-           If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then
-              ! catch & handle exception
-              neigh%padding = 0.95_wp * (0.5_wp*config%width - neigh%cutoff - 1.0e-6_wp)
-              ! round up
-              neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
-           End If
-
-           If (neigh%padding <= zero_plus) Then ! When neigh%padding is undefined give it some value
-              If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
-                 neigh%padding = test * neigh%cutoff
-                 neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
-                 If (neigh%padding > tol) Go To 10
-              Else ! not so good non-exception
-                 neigh%padding = Min( 0.95_wp * ( Min ( domain%nx_recip * celprp(7) / Real(ilx,wp) , &
-                                               domain%ny_recip * celprp(8) / Real(ily,wp) , &
-                                               domain%nz_recip * celprp(9) / Real(ilz,wp) ) &
-                                         - neigh%cutoff - 1.0e-6_wp ) , test * neigh%cutoff )
-              neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up
-              End If
-           End If
-
-           If (neigh%padding > zero_plus) Then
-              If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
-           End If
+        Call error(307)
+      Else ! neigh%padding is defined & in 'no strict' mode
+        If (neigh%padding > zero_plus .and. (.not.flow%strict)) Then ! Re-set neigh%padding with some slack
+          neigh%padding = Min( 0.95_wp * (cut - neigh%cutoff) , test * neigh%cutoff)
+          neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
+          If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
+          Go To 10
         Else
-           If (neigh%padding >= zero_plus) neigh%padding = 0.0_wp ! Don't bother
+          Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
+          Call warning(message,.true.)
+          Call error(307)
         End If
+      End If
+    End If
+  Else ! push/reset the limits in 'no strict' mode
+    If (.not.(met%max_metal == 0 .and. electro%no_elec .and. vdws%no_vdw .and. &
+      rdf%max_rdf == 0 .and. kim_data%active)) Then
+      ! 2b link-cells are needed
+      If (comm%mxnode == 1 .and. Min(ilx,ily,ilz) < 2) Then
+        ! catch & handle exception
+        neigh%padding = 0.95_wp * (0.5_wp*config%width - neigh%cutoff - 1.0e-6_wp)
+        ! round up
+        neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
+      End If
 
-        neigh%cutoff_extended = neigh%cutoff + neigh%padding ! recalculate neigh%cutoff_extended respectively
-     End If
+      If (neigh%padding <= zero_plus) Then ! When neigh%padding is undefined give it some value
+        If (Int(Real(Min(ilx,ily,ilz),wp)/(1.0_wp+test)) >= 2) Then ! good non-exception
+          neigh%padding = test * neigh%cutoff
+          neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp
+          If (neigh%padding > tol) Go To 10
+        Else ! not so good non-exception
+          neigh%padding = Min( 0.95_wp * ( Min ( domain%nx_recip * celprp(7) / Real(ilx,wp) , &
+            domain%ny_recip * celprp(8) / Real(ily,wp) , &
+            domain%nz_recip * celprp(9) / Real(ilz,wp) ) &
+            - neigh%cutoff - 1.0e-6_wp ) , test * neigh%cutoff )
+          neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up
+        End If
+      End If
+
+      If (neigh%padding > zero_plus) Then
+        If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
+      End If
+    Else
+      If (neigh%padding >= zero_plus) neigh%padding = 0.0_wp ! Don't bother
+    End If
+
+    If (flow%strict) Then
+      If (lrpad0) Then ! forget about it
+        neigh%padding = 0.0_wp
+      Else ! less hopeful for undefined neigh%padding
+        neigh%padding = 0.95_wp * neigh%padding
+        neigh%padding = Real( Int( 100.0_wp * neigh%padding ) , wp ) / 100.0_wp ! round up
+        If (neigh%padding > zero_plus) Then
+          If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
+        End If
+      End If
+    Else ! 'no strict
+      If (lrpad0) Then ! forget about it
+        neigh%padding = 0.0_wp
+      End If
+    End If
+
+    neigh%cutoff_extended = neigh%cutoff + neigh%padding ! recalculate neigh%cutoff_extended respectively
   End If
 
   ! Ensure padding is large enough for KIM model
@@ -748,14 +770,33 @@ Contains
 ! Hard luck, giving up
 
     If (qlx*qly*qlz == 0) Then
-      Write(message,'(a,i6,a,3(i0,a))') &
-        'SPME driven limit on largest possible decomposition:',  &
-        (ewld%fft_dim_a/ewld%bspline1)*(ewld%fft_dim_b/ewld%bspline1)*(ewld%fft_dim_c/ewld%bspline1) ,           &
-        ' nodes/domains (', ewld%fft_dim_a/ewld%bspline1,',',ewld%fft_dim_b/ewld%bspline1,',',ewld%fft_dim_c/ewld%bspline1,')'
-      Call info(message)
+      If (lrpad0 .eqv. flow%reset_padding .and. neigh%padding > zero_plus) Then ! defaulted padding must be removed
+        neigh%padding = 0.0_wp
+        lrpad0 = .true.
+        Go To 5
+      Else
+        test = Min( Real(ewld%fft_dim_a1,wp)/Real(domain%nx,wp), &
+          Real(ewld%fft_dim_b1,wp)/Real(domain%ny,wp), &
+          Real(ewld%fft_dim_c1,wp)/Real(domain%nz,wp) ) / Real(ewld%bspline,wp)
+        tol  = Min( Real(ewld%fft_dim_a,wp)/Real(domain%nx,wp), &
+          Real(ewld%fft_dim_b,wp)/Real(domain%ny,wp), &
+          Real(ewld%fft_dim_c,wp)/Real(domain%nz,wp) ) / Real(ewld%bspline1,wp)
+
+
+        Write(messages(1),'(a,i6,a,3(i0,a))') &
+          'SPME driven limit on largest possible decomposition:',  &
+          (ewld%fft_dim_a/ewld%bspline1)*(ewld%fft_dim_b/ewld%bspline1)*(ewld%fft_dim_c/ewld%bspline1) ,           &
+          ' nodes/domains (', ewld%fft_dim_a/ewld%bspline1,',',ewld%fft_dim_b/ewld%bspline1,',',ewld%fft_dim_c/ewld%bspline1,')'
+        Write(messages(2),'(a,f6.2,a)') &
+          'SPME suggested factor to decrease currently specified cutoff (with padding) by: ', &
+          1.0_wp/test, ' for currently speccified Ewald precision & domain decomposition'
+        Write(messages(3),'(a,f6.2,a)') &
+          'SPME suggested factor to increase current Ewald precision by: ',                   &
+          (1.0_wp-tol)*100.0_wp, ' for currently specified cutoff (with padding) & domain decomposition'
+        Call info(messages,3,.true.)
+      End If
       Call error(308)
     End If
-
   End If
 
 
@@ -774,6 +815,11 @@ Contains
   Else
      fdens = fdvar * (0.35_wp*dens0 + 0.65_wp*dens)
   End If
+
+! Get reasonable - all particles in one link-cell
+
+  tol   = Real(config%megatm,wp) / (Real(ilx*ily*ilz,wp) * Real(comm%mxnode,wp))
+  fdens = Min(fdens,tol)
 
 ! density variation affects the link-cell arrays' dimension
 ! more than domains(+halo) arrays' dimensions, in case of
@@ -802,12 +848,12 @@ Contains
 ! set dimension of working coordinate arrays
 
   config%mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
-  If (comm%mxnode == 1 .or. (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6)) Then
-    config%mxatms = Nint(Min(Real(config%mxatms,wp),Real(27.00_wp,wp)*Real(megatm,wp)))
-!  Else If (Min(ilx,ily,ilz) == 1) Then
-!    config%mxatms = Nint(Min(Real(config%mxatms,wp),Real(20.25_wp,wp)*Real(megatm,wp)))
-  Else
-    config%mxatms = Nint(Min(Real(config%mxatms,wp),Real(13.50_wp,wp)*Real(megatm,wp)))
+  If (comm%mxnode == 1 .or. config%imcon == 0) Then ! ilx >= 2 && ily >= 2 && ilz >= 2
+    config%mxatms = Nint(Min(Real(config%mxatms,wp),9.0_wp*fdvar*Real(megatm,wp)))
+  Else If (config%imcon == 6 .or. config%imc_n == 6)   Then ! comm%mxnode >= 4 .or. (ilx >= 2 && ily >= 2)
+    config%mxatms = Nint(Min(Real(config%mxatms,wp),6.0_wp*fdvar*Real(megatm,wp)))
+  Else If (ilx*ily*ilz < 2) Then ! comm%mxnode >= 8
+    config%mxatms = Nint(Min(Real(config%mxatms,wp),6.0_wp*fdvar*Real(megatm,wp)))
   End If
 
 ! maximum number of particles per domain (no halo)

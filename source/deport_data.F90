@@ -185,7 +185,7 @@ Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,
 
 ! Initialise counters for length of sending and receiving buffers
 ! buffer(1) and buffer(iblock+1) contain the actual number of
-! particles to get transfered, imove and jmove are the lengths of
+! particles to get transferred, imove and jmove are the lengths of
 ! the buffers
 
   imove=1

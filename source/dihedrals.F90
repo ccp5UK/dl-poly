@@ -1915,7 +1915,14 @@ Subroutine dihedrals_table_read(dihd_name,dihedral,sites,comm)
         rrr=0.0_wp
         Read(Unit=ntable, Fmt=*, End=100, Err=100) rrr,bufp0,bufv0
 
-        If (Abs(rrr) > zero_plus) Then ! no zero element data => extrapolate to zero
+        If (rrr+180.0_wp > zero_plus) Then ! no zero element data => extrapolate to zero
+           If (Abs((rrr+180.0_wp-delpot)/delpot) > 1.0e-8_wp) Then
+              safe=.false.
+               Write(message,'(2(a,e15.7))') 'TABDIH stated  angular increment : ', &
+                 delpot, ' TABDIH read-in angular increment : ', rrr
+               Call info(message,.true.)
+           End If
+
            bufpot(1) = bufp0
            bufvir(1) = bufv0
            rrr0      = rrr
