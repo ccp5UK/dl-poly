@@ -861,6 +861,11 @@ Subroutine system_expand(l_str,rcut,io,cshell,cons,bond,angle, &
      Write(message,'(2a)') '*** Expanding CONFIG in file ',fcfg(1:Len_Trim(fcfg))
      Call info(message,.true.)
 
+     ! check if we expand a cube since not all time we end up with a cube back
+     If ((config%imcon == 1) .and. ((config%nx /= config%ny) .or. (config%nx /= config%nz) .or. (config%ny /= config%nz ))) Then
+       config%imcon = 3
+     End If
+
      If      (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
               io_write == IO_WRITE_UNSORTED_DIRECT .or. &
               io_write == IO_WRITE_SORTED_MPIIO    .or. &
