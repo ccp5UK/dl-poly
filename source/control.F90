@@ -2584,6 +2584,22 @@ Contains
         rdf%l_collect = .true.
 
         Call get_word(record,word)
+        If (word(1:6) == 'errors') Then
+! read if we're doing rdf error analysis
+          Call get_word(record,word)
+          If(word(1:4) == 'jack') Then
+            rdf%l_errors_jack = .TRUE.
+            Call get_word(record,word)
+            itmp = Nint(word_2_real(word, 1.0_wp))
+            If(itmp > 1) rdf%num_blocks = itmp
+          Else
+            rdf%l_errors_block = .TRUE.
+            Call get_word(record,word)
+            itmp = Nint(word_2_real(word, 1.0_wp))
+            If(itmp > 1) rdf%num_blocks = itmp
+          End If
+        End If
+
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
         If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
@@ -3230,6 +3246,8 @@ Contains
   flow%freq_inversion=Max(1,flow%freq_inversion)
 
 ! report rdf
+  rdf%l_errors_block = rdf%l_errors_block .and. rdf%l_collect
+  rdf%l_errors_jack = rdf%l_errors_jack .and. rdf%l_collect
 
   If (rdf%l_collect .or. rdf%l_print) Then
      If (rdf%l_collect) Then
@@ -4252,14 +4270,6 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
         carry=.false.
 
-     Else If (word(1:6) == 'errors') Then
-       Call lower_case(record)
-       Call get_word(record,word)
-       If(word(1:4) == 'jack') Then
-          rdf%l_errors_jack = .TRUE.
-       Else
-          rdf%l_errors_block = .TRUE.
-       End If
      End If
 
   End Do
@@ -4677,8 +4687,6 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   devel%l_trm = (l_exp .and. nstrun == 0)
   If (((.not.flow%simulation) .or. devel%l_trm) .and. lrpad) neigh%padding=0.0_wp
 
-  rdf%l_errors_block = rdf%l_errors_block .and. rdf%l_collect
-  rdf%l_errors_jack = rdf%l_errors_jack .and. rdf%l_collect
   Return
 
 ! CONTROL file does not exist
