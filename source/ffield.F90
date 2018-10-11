@@ -459,84 +459,86 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 ! reference point
 
                  ksite=0
-                 Do isite=1,sites%num_site(itmols)
-                    If (ksite < sites%num_site(itmols)) Then
+                 Do
+                   If (ksite >= sites%num_site(itmols)) Then
+                     Exit
+                   End If
 
 ! read atom name, mass, charge, repeat, freeze option
 
-                       word(1:1)='#'
-                       Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                          Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
-                          If (.not.safe) Go To 2000
-                          Call get_word(record,word)
-                       End Do
+                   word(1:1)='#'
+                   Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                      Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
+                      If (.not.safe) Go To 2000
+                      Call get_word(record,word)
+                   End Do
 
-                       atom1=word(1:8)
+                   atom1=word(1:8)
 
-                       Call get_word(record,word)
-                       weight=Abs(word_2_real(word))
+                   Call get_word(record,word)
+                   weight=Abs(word_2_real(word))
 
-                       Call get_word(record,word)
-                       charge=word_2_real(word)
+                   Call get_word(record,word)
+                   charge=word_2_real(word)
 
-                       Call get_word(record,word)
-                       nrept=Nint(word_2_real(word))
-                       If (nrept == 0) nrept=1
+                   Call get_word(record,word)
+                   nrept=Nint(word_2_real(word))
+                   If (nrept == 0) nrept=1
 
 ! sum absolute charges
 
-                       config%sumchg=config%sumchg+Abs(charge)
+                   config%sumchg=config%sumchg+Abs(charge)
 
-                       Call get_word(record,word)
-                       ifrz=Nint(word_2_real(word))
-                       If (ifrz /= 0) ifrz=1
+                   Call get_word(record,word)
+                   ifrz=Nint(word_2_real(word))
+                   If (ifrz /= 0) ifrz=1
 
-                       sites%num_freeze(itmols)=sites%num_freeze(itmols)+ifrz*nrept
+                   sites%num_freeze(itmols)=sites%num_freeze(itmols)+ifrz*nrept
 
-                       Write(message,'(2x,i10,4x,a8,2f15.6,2i10)') &
-                         ksite+1,atom1,weight,charge,nrept,ifrz
-                       Call info(message,.true.)
+                   Write(message,'(2x,i10,4x,a8,2f15.6,2i10)') &
+                     ksite+1,atom1,weight,charge,nrept,ifrz
+                   Call info(message,.true.)
 
-                       Do irept=1,nrept
-                          ksite=ksite+1
-                          If (ksite > sites%num_site(itmols)) Call error(21)
+                   Do irept=1,nrept
+                      ksite=ksite+1
+                      If (ksite > sites%num_site(itmols)) Call error(21)
 
-                          nsite=nsite+1
-                          If (nsite > sites%max_site) Call error(20)
+                      nsite=nsite+1
+                      If (nsite > sites%max_site) Call error(20)
 
-                          sites%site_name(nsite)=atom1
-                          sites%weight_site(nsite)=weight
-                          sites%charge_site(nsite)=charge
-                          sites%freeze_site(nsite)=ifrz
-                          If (sites%weight_site(nsite) > 1.0e-6_wp) sites%dof_site(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
-                       End Do
+                      sites%site_name(nsite)=atom1
+                      sites%weight_site(nsite)=weight
+                      sites%charge_site(nsite)=charge
+                      sites%freeze_site(nsite)=ifrz
+                      If (sites%weight_site(nsite) > 1.0e-6_wp) sites%dof_site(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
+                   End Do
 
 ! establish list of unique atom types
 
-                       atmchk=.true.
-                       Do jsite=1,sites%ntype_atom
-                          If (atom1 == sites%unique_atom(jsite)) Then
-                             atmchk=.false.
+                  atmchk=.true.
+                  Do jsite=1,sites%ntype_atom
+                     If (atom1 == sites%unique_atom(jsite)) Then
+                        atmchk=.false.
 
-                             Do irept=nsite,nsite-nrept+1,-1
-                                sites%type_site(irept)=jsite
-                             End Do
-                          End If
-                       End Do
+                        Do irept=nsite,nsite-nrept+1,-1
+                           sites%type_site(irept)=jsite
+                        End Do
+                     End If
+                  End Do
 
-                       If (atmchk) Then
-                          sites%ntype_atom=sites%ntype_atom+1
-                          If (sites%ntype_atom > sites%mxatyp) Call error(14)
+                  If (atmchk) Then
+                     sites%ntype_atom=sites%ntype_atom+1
+                     If (sites%ntype_atom > sites%mxatyp) Call error(14)
 
-                          sites%unique_atom(sites%ntype_atom)=atom1
+                     sites%unique_atom(sites%ntype_atom)=atom1
 
-                          Do irept=nsite,nsite-nrept+1,-1
-                             sites%type_site(irept)=sites%ntype_atom
-                          End Do
-                       End If
+                     Do irept=nsite,nsite-nrept+1,-1
+                        sites%type_site(irept)=sites%ntype_atom
+                     End Do
+                  End If
 
-                    End If
-                 End Do
+               End If
+            End Do
 
 ! read interaction/field units
 
