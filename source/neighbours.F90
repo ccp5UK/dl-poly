@@ -105,11 +105,12 @@ Contains
     Integer           :: fail,ilx,ily,ilz,i,ii,j
     Real( Kind = wp ) :: cut,test,tol,celprp(1:10)
 
-    Real( Kind = wp ), Dimension(config%natms) :: x,y,z,r
+    Real( Kind = wp ), Dimension(:),Allocatable :: x,y,z,r
 
     Character( Len = 256 ) :: message
     If (.not.neigh%unconditional_update) Return
 
+    Allocate(x(config%natms),y(config%natms),z(config%natms),r(config%natms),Stat=fail)
     ! Checks
     fail = 0
     If (fail > 0) Then
@@ -207,7 +208,7 @@ Contains
     If (kim_data%padding_neighbours_required) Then
       If (neigh%padding < kim_data%influence_distance) Then
         neigh%padding = kim_data%influence_distance
-          neigh%cutoff_extended = neigh%cutoff + neigh%padding
+        neigh%cutoff_extended = neigh%cutoff + neigh%padding
       End If
     End If
 
@@ -225,6 +226,11 @@ Contains
       stat%neighskip(1) = 0.0_wp              ! Reset here, checkpoit set by vnl_set_check in set_halo_particles
     Else            ! Enjoy telephoning
       stat%neighskip(1) = stat%neighskip(1) + 1.0_wp ! Increment, telephony done for xxx,yyy,zzz in set_halo_positions
+    End If
+    Deallocate(x,y,z,r,Stat=fail)
+    If (fail > 0) Then
+      Write(message,'(a)') 'vnl_check deallocation failure'
+      Call error(0,message)
     End If
   End Subroutine vnl_check
 

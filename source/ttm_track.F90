@@ -343,7 +343,7 @@ Contains
     Call MPI_ISEND (ttm%ttmvom(ijk1,4), 1, ttm%tmpmsgz, domain%map(5), Grid4_tag, comm%comm, req(7), comm%ierr)
     Call MPI_IRECV (buf4(ijk2)    , 1, ttm%tmpmsgz, domain%map(6), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
-    ijk2 = 1 + (ttm%ntcell(1)+2) * (ttm%ntcell(2)+2) * (ttm%ntcell (3)+1)
+    ijk2 = 1 + (ttm%ntcell(1)+2) * (ttm%ntcell(2)+2) * (ttm%ntcell(3)+1)
     ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ntcell(2)+2)
     Call MPI_ISEND (ttm%ttmvom(ijk2,1), 1, ttm%tmpmsgz, domain%map(6), Grid1_tag, comm%comm, req(1), comm%ierr)
     Call MPI_IRECV (buf1(ijk1)    , 1, ttm%tmpmsgz, domain%map(5), Grid1_tag, comm%comm, req(2), comm%ierr)
@@ -499,8 +499,8 @@ Contains
     Call MPI_IRECV (ttm%ttmvom(ijk2,4), 1, ttm%tmpmsgz, domain%map(5), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
   Else
-  ! serial version: automatically corrects voxel to be within range for
-  ! boundary halo/VNL-drifted particles
+    ! serial version: automatically corrects voxel to be within range for
+    ! boundary halo/VNL-drifted particles
     Do i=1,config%natms
       ia = Modulo (Floor((config%parts(i)%xxx+ttm%zerocell(1))/ttm%delx), ttm%ntsys(1)) + 1
       ja = Modulo (Floor((config%parts(i)%yyy+ttm%zerocell(2))/ttm%dely), ttm%ntsys(2)) + 1
@@ -575,7 +575,7 @@ Contains
     Call MPI_ISEND (nat(2*ijk1-1) , 1, ttm%nummsgz, domain%map(5), Grid4_tag, comm%comm, req(7), comm%ierr)
     Call MPI_IRECV (buf5(2*ijk2-1), 1, ttm%nummsgz, domain%map(6), Grid4_tag, comm%comm, req(8), comm%ierr)
     Call MPI_WAITALL (8, req, stat, comm%ierr)
-    ijk2 = 1 + (ttm%ntcell(1)+2) * (ttm%ntcell(2)+2) * (ttm%ntcell (3)+1)
+    ijk2 = 1 + (ttm%ntcell(1)+2) * (ttm%ntcell(2)+2) * (ttm%ntcell(3)+1)
     ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ntcell(2)+2)
     Call MPI_ISEND (ttm%tempion(ijk2) , 1, ttm%tmpmsgz, domain%map(6), Grid1_tag, comm%comm, req(1), comm%ierr)
     Call MPI_IRECV (buf1(ijk1)    , 1, ttm%tmpmsgz, domain%map(5), Grid1_tag, comm%comm, req(2), comm%ierr)

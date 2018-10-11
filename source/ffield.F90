@@ -93,6 +93,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 ! contrib   - a.v.brukhno & i.t.todorov march 2014 (itramolecular TPs & PDFs)
 ! contrib   - a.m.elena september 2016 (ljc)
 ! contrib   - a.m.elena february 2017
+! contrib   - v.sokhan sokhan 2017
 ! contrib   - a.m.elena august 2017 (mstw)
 ! contrib   - a.m.elena september 2017 (ryd)
 ! contrib   - a.m.elena october 2017 (zbl/zbls)
@@ -389,30 +390,30 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 
 ! initialise frozen constraints & RBs counters
 
-           frzcon=0
-           frzrgd=0
+          frzcon=0
+          frzrgd=0
 
 ! expectation values for once off definitions of bonded quantities
 ! PMFs make an exception (as defined once and only once per system)
 
-           l_shl=.true. ; l_con=.true. ; l_rgd=.true. ; l_tet=.true.
-           l_bnd=.true. ; l_ang=.true. ; l_dih=.true. ; l_inv=.true.
+          l_shl=.true. ; l_con=.true. ; l_rgd=.true. ; l_tet=.true.
+          l_bnd=.true. ; l_ang=.true. ; l_dih=.true. ; l_inv=.true.
 
-           Write(message,'(a,9x,i10)') 'molecular species type', itmols
-           Call info(message,.true.)
+          Write(message,'(a,9x,i10)') 'molecular species type', itmols
+          Call info(message,.true.)
 
 ! name of molecular species
 
-           word(1:1)='#'
-           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
-              If (.not.safe) Go To 2000
-              Call get_word(record,word)
-           End Do
-           Call strip_blanks(record)
-           sites%mol_name(itmols)=word(1:Len_Trim(word)+1)//record
+          word(1:1)='#'
+          Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+            Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
+            If (.not.safe) Go To 2000
+            Call get_word(record,word)
+          End Do
+          Call strip_blanks(record)
+          sites%mol_name(itmols)=word(1:Len_Trim(word)+1)//record
 
-           Write(message,'(a,13x,a40)') 'name of species:', sites%mol_name(itmols)
+          Write(message,'(a,13x,a40)') 'name of species:', sites%mol_name(itmols)
 
 ! stop processing if energy unit has not been specified
 
@@ -422,26 +423,26 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 
            Do
 
-              word(1:1)='#'
+             word(1:1)='#'
               Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                 Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
+                Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
                  If (.not.safe) Go To 2000
                  Call lower_case(record)
                  Call get_word(record,word)
-              End Do
+               End Do
 
 ! number of molecules of this type
 
               If (word(1:6) == 'nummol') Then
 
-                 Call get_word(record,word)
+                Call get_word(record,word)
                  sites%num_mols(itmols)=Nint(word_2_real(word))
 
                  Write(message,'(a,10x,i10)') 'number of molecules  ', sites%num_mols(itmols)
 
 ! read in atomic details
 
-              Else If (word(1:5) == 'atoms') Then
+               Else If (word(1:5) == 'atoms') Then
 
                  Call get_word(record,word)
                  sites%num_site(itmols)=Nint(word_2_real(word))
@@ -451,7 +452,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 
                  Write(messages(1),'(a)') 'atomic characteristics:'
                  Write(messages(2),'(8x,a4,4x,a4,13x,a4,9x,a6,6x,a6,6x,a6)') &
-                  'site','name','mass','charge','repeat','freeze'
+                   'site','name','mass','charge','repeat','freeze'
                  Call info(messages,2,.true.)
 
 ! for every molecule of this type get site and atom description
@@ -459,18 +460,15 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 ! reference point
 
                  ksite=0
-                 Do
-                   If (ksite >= sites%num_site(itmols)) Then
-                     Exit
-                   End If
+                 Do While (ksite < sites%num_site(itmols)) 
 
 ! read atom name, mass, charge, repeat, freeze option
 
                    word(1:1)='#'
                    Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                      Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
-                      If (.not.safe) Go To 2000
-                      Call get_word(record,word)
+                     Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
+                     If (.not.safe) Go To 2000
+                     Call get_word(record,word)
                    End Do
 
                    atom1=word(1:8)
@@ -500,50 +498,50 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                    Call info(message,.true.)
 
                    Do irept=1,nrept
-                      ksite=ksite+1
-                      If (ksite > sites%num_site(itmols)) Call error(21)
+                     ksite=ksite+1
+                     If (ksite > sites%num_site(itmols)) Call error(21)
 
-                      nsite=nsite+1
-                      If (nsite > sites%max_site) Call error(20)
+                     nsite=nsite+1
+                     If (nsite > sites%max_site) Call error(20)
 
-                      sites%site_name(nsite)=atom1
-                      sites%weight_site(nsite)=weight
-                      sites%charge_site(nsite)=charge
-                      sites%freeze_site(nsite)=ifrz
-                      If (sites%weight_site(nsite) > 1.0e-6_wp) sites%dof_site(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
+                     sites%site_name(nsite)=atom1
+                     sites%weight_site(nsite)=weight
+                     sites%charge_site(nsite)=charge
+                     sites%freeze_site(nsite)=ifrz
+                     If (sites%weight_site(nsite) > 1.0e-6_wp) sites%dof_site(nsite)=3.0_wp*Real(Abs(1-ifrz),wp)
                    End Do
 
 ! establish list of unique atom types
 
-                  atmchk=.true.
-                  Do jsite=1,sites%ntype_atom
+                   atmchk=.true.
+                   Do jsite=1,sites%ntype_atom
                      If (atom1 == sites%unique_atom(jsite)) Then
-                        atmchk=.false.
+                       atmchk=.false.
 
-                        Do irept=nsite,nsite-nrept+1,-1
-                           sites%type_site(irept)=jsite
-                        End Do
+                       Do irept=nsite,nsite-nrept+1,-1
+                         sites%type_site(irept)=jsite
+                       End Do
                      End If
-                  End Do
+                   End Do
 
-                  If (atmchk) Then
+                   If (atmchk) Then
                      sites%ntype_atom=sites%ntype_atom+1
                      If (sites%ntype_atom > sites%mxatyp) Call error(14)
 
                      sites%unique_atom(sites%ntype_atom)=atom1
 
                      Do irept=nsite,nsite-nrept+1,-1
-                        sites%type_site(irept)=sites%ntype_atom
+                       sites%type_site(irept)=sites%ntype_atom
                      End Do
-                  End If
+                   End If
 
-               End Do
+                 End Do
 
 ! read interaction/field units
 
 ! read core - shell spring parameters
 
-              Else If (word(1:5) == 'shell') Then
+               Else If (word(1:5) == 'shell') Then
 
                  If (.not.l_shl) Call error(477)
                  l_shl=.false.
@@ -566,15 +564,15 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                  End If
 
                  Do ishls=1,cshell%numshl(itmols)
-                    nshels=nshels+1
-                    If (nshels > cshell%mxtshl) Call error(57)
+                   nshels=nshels+1
+                   If (nshels > cshell%mxtshl) Call error(57)
 
-                    word(1:1)='#'
-                    Do While (word(1:1) == '#' .or. word(1:1) == ' ')
-                       Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
-                       If (.not.safe) Go To 2000
-                       Call get_word(record,word)
-                    End Do
+                   word(1:1)='#'
+                   Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                     Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
+                     If (.not.safe) Go To 2000
+                     Call get_word(record,word)
+                   End Do
 
 ! read core & shell atom indices
 
