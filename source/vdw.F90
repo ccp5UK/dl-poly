@@ -2081,7 +2081,7 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
               a=vdws%param(1,k)
               b=vdws%param(2,k)
 
-              r_6=rrr**(-6)
+              r_6=r_rsq**3
 
               If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng   = r_6*(a*r_6-b)
@@ -2100,7 +2100,7 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
               eps=vdws%param(1,k)
               sig=vdws%param(2,k)
 
-              sor6=(sig*r_rrr)**6
+              sor6=(sig**2*r_rsq)**3
 
               If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng   = 4.0_wp*eps*sor6*(sor6-1.0_wp)
@@ -2155,7 +2155,7 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
 
               b=rrr/rho
               t1=a*Exp(-b)
-              t2=-c*r_rrr**6
+              t2=-c*r_rsq**3
 
               If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng   = t1+t2
@@ -2178,8 +2178,9 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
               d  =vdws%param(5,k)
 
               t1=a*Exp(b*(sig-rrr))
-              t2=-c*r_rrr**6
-              t3=-d*r_rrr**8
+              t2=-c*r_rsq**3
+              t3=-d*r_rsq**4
+
 
               If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng   = t1+t2+t3
@@ -2198,8 +2199,8 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
               a=vdws%param(1,k)
               b=vdws%param(2,k)
 
-              t1= a*r_rrr**12
-              t2=-b*r_rrr**10
+              t1= a*r_rsq**6
+              t2=-b*r_rsq**5
 
               If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng   = t1+t2
@@ -2335,7 +2336,7 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
               sig=vdws%param(2,k)
               c  =vdws%param(3,k)
 
-              sor6=(sig*r_rrr)**6
+              sor6=(sig**2*r_rsq)**3
 
               If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng   = 4.0_wp*eps*sor6*(sor6-c)
@@ -2357,7 +2358,8 @@ Subroutine vdw_forces(iatm,xxt,yyt,zzt,rrt,engvdw,virvdw,stress,neigh,vdws,confi
               c=vdws%param(4,k)
 
               t1=Exp(-kk*(rrr-r0))
-              sor6 = c*r_rrr**12
+              sor6 = c*r_rsq**6
+
               If (jatm <= config%natms .or. idi < config%ltg(jatm)) &
               eng   = e0*t1*(t1-2.0_wp)+sor6
               gamma = -2.0_wp*e0*kk*t1*(1.0_wp-t1)*r_rrr-12.0_wp*sor6*r_rrr

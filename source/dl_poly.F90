@@ -32,7 +32,8 @@ program dl_poly
   !
   ! copyright - daresbury laboratory
   ! authors   - i.t.todorov & w.smith march 2016
-  ! contrib   - i.j.bush, h.a.boateng, a.m.elena, a.b.g.chalk
+  ! contrib   - i.j.bush, h.a.boateng, m.a.seaton, a.m.elena,
+  !             s.l.daraszewicz, g.khara, a.brukhno, a.b.g.chalk
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -381,7 +382,7 @@ program dl_poly
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
-  Call allocate_ttm_arrays(ttms,domain,config,neigh%padding,comm)
+  Call allocate_ttm_arrays(ttms,domain,config,comm)
   Call ttm_table_scan(config%mxbuff,ttms,comm)
 
   ! Setup KIM

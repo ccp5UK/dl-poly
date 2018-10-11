@@ -273,6 +273,7 @@ Subroutine rdf_compute(lpana,rcut,temp,sites,rdf,config,comm)
      Do ib=ia,sites%ntype_atom
 
 ! number of the interaction by its rdf%rdf key
+     If (ia == ib .and. sites%num_type(ia) < 2) Cycle
 
         kk=rdf%list(ib*(ib-1)/2+ia)
 
@@ -374,7 +375,8 @@ Subroutine rdf_compute(lpana,rcut,temp,sites,rdf,config,comm)
 
      Do ia=1,sites%ntype_atom
         Do ib=ia,sites%ntype_atom
-
+        
+        If (ia == ib .and. sites%num_type(ia) < 2) Cycle
 ! number of the interaction by its rdf%rdf key
 
            kk=rdf%list(ib*(ib-1)/2+ia)
@@ -538,6 +540,8 @@ Subroutine calculate_block(temp,rcut,neigh,sites,config,rdf)
   pdfzero = 1.0e-9_wp
   Do ia=1,sites%ntype_atom
      Do ib=ia,sites%ntype_atom
+
+       If (ia == ib .and. sites%num_type(ia) < 2) Cycle
 ! number of the interaction by its rdf%rdf key
         kk=rdf%list(ib*(ib-1)/2+ia)
 ! only for valid interactions specified for a look up
@@ -581,23 +585,24 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, config, co
   Real( kind = wp)                                     :: i_nr_blocks, s
 
   Integer, Intent(In) :: num_steps
-  Integer             :: nr_blocks, i, j,k ,l, ierr, ierr2, ierr3, a, b, ia, ib, kk
+  Integer             :: nr_blocks, i, j,k ,l, ierr(2), a, b, ia, ib, kk
 
   Character ( Len = 256 )  :: messages(2)
 
   test1 = 0.0_wp
   rdf%block_number = 1
+  ierr = 0
 
-  If(comm%mxnode > 1 .and. .not. rdf%tmp_rdf_sync) Then
+  If(comm%mxnode > 1 .and. (.not. rdf%tmp_rdf_sync)) Then
      Do i=1, num_blocks+1
         Call gsum(comm,rdf%tmp_rdf(:,:,i))
      End Do
      rdf%tmp_rdf_sync = .TRUE.
   End If
 
-  Allocate(averages(sites%ntype_atom,sites%ntype_atom, rdf%max_grid), stat = ierr2)
-  Allocate(errors(sites%ntype_atom,sites%ntype_atom, rdf%max_grid), stat = ierr3)
-  If(ierr > 0 .or. ierr2 > 0 .or. ierr3 > 0) Then
+  Allocate(averages(sites%ntype_atom,sites%ntype_atom, rdf%max_grid), stat = ierr(1))
+  Allocate(errors(sites%ntype_atom,sites%ntype_atom, rdf%max_grid), stat = ierr(2))
+  If(Any(ierr>0)) Then
      Call error(1084)
   End If
   averages = 0.0_wp
@@ -649,6 +654,7 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, config, co
      delr = rcut/Real(rdf%max_grid,wp)
      Do j =1, sites%ntype_atom
         Do k = j, sites%ntype_atom
+          If (j == k .and. sites%num_type(j) < 2) Cycle
            kk=rdf%list(k*(k-1)/2+j)
            If (kk > 0 .and. kk <= rdf%n_pairs) Then
               Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',sites%unique_atom(j),sites%unique_atom(k)
@@ -663,7 +669,12 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, config, co
      End Do
      Close(Unit=nrdfdt)
   End If
-  Deallocate(averages, errors)
+  Deallocate(averages,stat=ierr(1))
+  Deallocate(errors,stat=ierr(2))
+
+  If (Any(ierr>0)) Then
+    Call error(1084)
+  End If
 End Subroutine calculate_errors
 
 Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,config,comm)
@@ -680,24 +691,25 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,config
   Real(Kind = wp)                                      :: i_nr_blocks, delr, s
 
   Integer, Intent(in) :: num_steps
-  Integer             :: nr_blocks, i, j,k ,l, ierr, ierr2, ierr3, a, b, kk
+  Integer             :: nr_blocks, i, j,k ,l, ierr(2), a, b, kk
 
   Character( Len = 256 ) :: messages(2)
 
   test1 = 0.0_wp
   rdf%block_number = 1
+  ierr = 0 
   If(comm%mxnode > 1 .and. .not. rdf%tmp_rdf_sync) Then
      Do i=1, num_blocks+1
         Call gsum(comm,rdf%tmp_rdf(:,:,i))
      End Do
-     rdf%tmp_rdf_sync = .TRUE.
+     rdf%tmp_rdf_sync = .True.
   End If
 
-  Allocate(averages(sites%ntype_atom,sites%ntype_atom, rdf%max_grid), stat = ierr2)
-  Allocate(errors(sites%ntype_atom,sites%ntype_atom, rdf%max_grid), stat = ierr3)
-  if(ierr > 0 .or. ierr2 > 0 .or. ierr3 > 0) then
+  Allocate(averages(sites%ntype_atom,sites%ntype_atom, rdf%max_grid), stat = ierr(1))
+  Allocate(errors(sites%ntype_atom,sites%ntype_atom, rdf%max_grid), stat = ierr(2))
+  If( Any(ierr > 0)) Then
      Call error(1084)
-  end if
+  End If
   averages = 0.0_wp
   errors = 0.0_wp
   rdf%block_averages =0.0_wp
@@ -772,6 +784,7 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,config
      delr = rcut/Real(rdf%max_grid,wp)
      Do j =1, sites%ntype_atom
         Do k = j, sites%ntype_atom
+           If (j == k .and. sites%num_type(j) < 2) Cycle
            kk=rdf%list(k*(k-1)/2+j)
            If (kk > 0 .and. kk <= rdf%n_pairs) Then
               Write(messages(1),'(2x,a,2(1x,a8))') 'g(r): ',sites%unique_atom(j),sites%unique_atom(k)
@@ -785,6 +798,12 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,config
         End Do
      End Do
      Close(Unit=nrdfdt)
+  End If
+  Deallocate(averages,stat=ierr(1))
+  Deallocate(errors,stat=ierr(2))
+
+  If (Any(ierr>0)) Then
+    Call error(1084)
   End If
 End Subroutine calculate_errors_jackknife
 

@@ -84,11 +84,10 @@ Module ttm
 
   Contains
 
-    Subroutine allocate_ttm_arrays(ttm,domain,config,padding,comm)
+    Subroutine allocate_ttm_arrays(ttm,domain,config,comm)
     Type ( ttm_type ), Intent ( InOut ) :: ttm
     Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ), Intent( InOut ) :: config
-    Real(Kind=wp), Intent(In) :: padding
     Type(comms_type), Intent(In) :: comm
 
     Real ( Kind = wp ) :: start, finish, test(3)
