@@ -323,9 +323,7 @@ Contains
         ttm%ttmvom(ijk,4) = ttm%ttmvom(ijk,4) + tmp
       End If
     End Do
-  End If
 
-  If (comm%mxnode>1) Then
     Allocate (buf1(1:ttm%numcell), buf2(1:ttm%numcell), buf3(1:ttm%numcell), buf4(1:ttm%numcell), Stat=fail)
     If (fail>0) Call error(1085)
     ! Sum up config%cell momenta and atomic masses in boundaries for ionic temperature corrections
