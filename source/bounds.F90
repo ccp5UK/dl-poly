@@ -43,7 +43,7 @@ Module bounds
   Use io, Only : io_type
   Use filename, Only : file_type
   Use site, Only : site_type
-  Use flow, Only : flow_type
+  Use flow_control, Only : flow_type
   Implicit None
 
   Private

@@ -11,7 +11,7 @@ Module vdw
 
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type,gsum,gbcast
-  Use constants
+  Use constants, Only : twopi, zero_plus, ntable, r4pie0, engunit, prsunt, delr_max
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use particle, Only : corePart

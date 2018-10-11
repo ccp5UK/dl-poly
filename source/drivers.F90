@@ -69,7 +69,7 @@ Module drivers
   Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS,&
                        FILE_HISTORF,FILE_HISTORY
-  Use flow, Only : flow_type
+  Use flow_control, Only : flow_type
   Use development, Only : development_type,scan_development,build_info
 
   ! IO & DOMAINS MODULES

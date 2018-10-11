@@ -12,7 +12,7 @@ Module development
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp
+  Use kinds, Only : wp
 #ifdef OLDMPI
   Use comms, Only : mpi_ver,mpi_subver, comms_type,gcheck, gtime, gsync
 #else

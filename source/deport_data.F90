@@ -6,7 +6,7 @@ Module deport_data
   Use constants,        Only : half_plus, half_minus 
   Use domains, Only : domains_type
   Use configuration, Only : configuration_type, site_type
-  Use flow, Only : flow_type
+  Use flow_control, Only : flow_type
   Use rigid_bodies, Only : rigid_bodies_type
   Use tethers,      Only : tethers_type
   Use bonds,        Only : bonds_type

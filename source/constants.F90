@@ -26,7 +26,7 @@ Module constants
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, only : wp,si
+  Use kinds, Only : wp,si
 
   Implicit None
 

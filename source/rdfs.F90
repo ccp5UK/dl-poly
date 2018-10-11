@@ -24,8 +24,6 @@ Module rdfs
 
   Private
 
-  !> Total number of blocks?
-  Integer( Kind = wi ), Parameter :: num_blocks = 25
 
   !> Type containing RDF and USR RDF data
   Type, Public :: rdf_type
@@ -34,7 +32,10 @@ Module rdfs
     !> RDF collection flag
     Logical, Public :: l_collect
     !> RDF recording flag
+
     Logical, Public :: l_print
+    !> Total number of blocks?
+    Integer( Kind = wi ), Public :: num_blocks = 25
 
     !> RDF collection frequency (in steps)
     Integer( Kind = wi ), Public :: freq
@@ -118,7 +119,7 @@ Contains
     Integer :: temp1, temp2
     Integer, Dimension(1:2) :: fail
 
-    T%block_size = nstrun/(num_blocks-1)
+    T%block_size = nstrun/(T%num_blocks-1)
     if(T%block_size < 2) then
       T%block_size = 2
     endif
@@ -126,8 +127,8 @@ Contains
     temp1 = T%max_rdf + 16-Mod(T%max_rdf,16)
     temp2 = T%max_grid + 16-Mod(T%max_grid,16)
 
-    Allocate(T%block_averages(1:ntype_atom,1:ntype_atom,1:T%max_grid,1:num_blocks+1), Stat = fail(1))
-    Allocate(T%tmp_rdf( 1:temp2,1:temp1, 1:num_blocks+1 ), Stat = fail(2))
+    Allocate(T%block_averages(1:ntype_atom,1:ntype_atom,1:T%max_grid,1:T%num_blocks+1), Stat = fail(1))
+    Allocate(T%tmp_rdf( 1:temp2,1:temp1, 1:T%num_blocks+1 ), Stat = fail(2))
 
     If (Any(fail > 0)) Call error(1016)
     T%block_averages = 0.0_wp
@@ -609,7 +610,7 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, config, co
   errors = 0.0_wp
 
 !Compute the rdf for each of the blocks
-  Do nr_blocks=1, num_blocks+1
+  Do nr_blocks=1, rdf%num_blocks+1
      Call calculate_block(temp, rcut,neigh,sites,config,rdf)
   End Do
   rdf%block_number = nr_blocks
@@ -699,7 +700,7 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,config
   rdf%block_number = 1
   ierr = 0 
   If(comm%mxnode > 1 .and. .not. rdf%tmp_rdf_sync) Then
-     Do i=1, num_blocks+1
+    Do i=1, rdf%num_blocks+1
         Call gsum(comm,rdf%tmp_rdf(:,:,i))
      End Do
      rdf%tmp_rdf_sync = .True.
@@ -715,7 +716,7 @@ Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,config
   rdf%block_averages =0.0_wp
 
 !Compute the rdf%rdf for each of the blocks
-  Do nr_blocks=1,num_blocks+1
+  Do nr_blocks=1,rdf%num_blocks+1
      Call calculate_block(temp, rcut,neigh,sites,config,rdf)
   End Do
   rdf%block_number = nr_blocks
