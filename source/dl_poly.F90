@@ -381,7 +381,7 @@ program dl_poly
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
-  Call allocate_ttm_arrays(ttms,domain,config,comm)
+  Call allocate_ttm_arrays(ttms,domain,config,neigh%padding,comm)
   Call ttm_table_scan(config%mxbuff,ttms,comm)
 
   ! Setup KIM

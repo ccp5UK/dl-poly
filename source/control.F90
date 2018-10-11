@@ -3534,13 +3534,13 @@ Contains
   Case (1)
   ! hyperbolic tangent electronic specific heat: multiplier will be converted
   ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(671)
+    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
     ttm%sh_A = ttm%sh_A*ttm%cellrho
     ttm%sh_B = ttm%sh_B*1.0e-4_wp
   Case (2)
   ! linear electronic specific heat to Fermi temperature: maximum
   ! value will be converted from kB/atom to kB/A^3
-    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(671)
+    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
     ttm%Cemax = ttm%Cemax*ttm%cellrho
   Case (4)
   ! constant electronic specific heat: will convert from kB/atom to kB/A^3
@@ -3548,31 +3548,31 @@ Contains
   Case (5)
   ! hyperbolic tangent electronic specific heat: multiplier will be converted
   ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(671)
+    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
     ttm%sh_B = ttm%sh_B*1.0e-4_wp
   Case (6)
   ! linear electronic specific heat to Fermi temperature: maximum
   ! value will be converted from kB/atom to kB/A^3
-    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(671)
+    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
   End Select
 
   Select Case (ttm%KeType)
   ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
   ! to kB ps^-1 A^-1
   Case (1,2)
-    If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(672)
+    If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
     ttm%Ka0 = ttm%Ka0*ttm%JKms_to_kBAps
   End Select
 
   Select Case (ttm%DeType)
   Case (1)
   ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(673)
+    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
     ttm%Diff0 = ttm%Diff0*1.0e8_wp
   Case (2)
   ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
   ! and ttm%Diff0 scaled with system temperature
-    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(673)
+    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
     ttm%Diff0 = ttm%Diff0*thermo%temp*1.0e8_wp
   End Select
 

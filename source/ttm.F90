@@ -84,13 +84,14 @@ Module ttm
 
   Contains
 
-    Subroutine allocate_ttm_arrays(ttm,domain,config,comm)
+    Subroutine allocate_ttm_arrays(ttm,domain,config,padding,comm)
     Type ( ttm_type ), Intent ( InOut ) :: ttm
     Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ), Intent( InOut ) :: config
+    Real(Kind=wp), Intent(In) :: padding
     Type(comms_type), Intent(In) :: comm
 
-    Real ( Kind = wp ) :: start, finish
+    Real ( Kind = wp ) :: start, finish, test(3)
     Integer, Dimension ( 1:7 ) :: fail
     Integer :: i,numbc,numbcmap
     Integer :: basicslice,oneslicex,oneslicey,oneslicez
@@ -816,7 +817,7 @@ Module ttm
 
   If (comm%idnode == 0) Inquire(File=dumpfile, Exist=l_tmp)
   Call gcheck(comm,l_tmp)
-  If ((.not. l_tmp) .and. keyres==ttm%keyres0) Call error(684)
+  If ((.not. l_tmp) .and. keyres==ttm%keyres0) Call error(694)
 
 ! if restarting simulation, read restart file
 
@@ -833,7 +834,7 @@ Module ttm
     Call get_word(record,word) ; ttm%depostart=word_2_real(word,0.0_wp)
     Call get_word(record,word) ; ttm%depoend=word_2_real(word,0.0_wp)
     ! check size of electronic temperature grid matches with size given in CONTROL file
-    If (nxx/=ttm%eltsys(1) .or. nyy/=ttm%eltsys(2) .or. nzz/=ttm%eltsys(3)) Call error(685)
+    If (nxx/=ttm%eltsys(1) .or. nyy/=ttm%eltsys(2) .or. nzz/=ttm%eltsys(3)) Call error(695)
     ! check restart file is at same timestep as restart
     ! (can proceed if not, but need to warn user)
     If (nstp/=nstep .or. Abs(tme-time)>zero_plus) Call warning(520,0.0_wp,0.0_wp,0.0_wp)
@@ -901,7 +902,7 @@ Module ttm
 100 Continue
 
   Write(message,"(a)") dumpfile, ' data mishmash detected'
-  Call error(686,message,.true.)
+  Call error(696,message,.true.)
   Return
 
 End Subroutine ttm_system_init
@@ -1213,7 +1214,7 @@ Subroutine ttm_table_read(ttm,comm)
   If (comm%idnode == 0) Then
     Close(Unit=ntable)
   End If
-  Call error(682,master_only=.true.)
+  Call error(692,master_only=.true.)
 
 End Subroutine ttm_table_read
 
@@ -1293,7 +1294,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
       safe = (ttm%kel>0)
       Call gcheck(comm,safe)
       If (.not. safe) Then
-        Call error(675)
+        Call error(685)
       Else
         Allocate (ttm%ketable(1:ttm%kel,2), Stat=fail)
         If (fail > 0) Then
@@ -1344,7 +1345,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
       safe = (ttm%cel>0)
       Call gcheck(comm,safe)
       If (.not. safe) Then
-        Call error(677)
+        Call error(687)
       Else
         Allocate (ttm%cetable(1:ttm%cel,2), Stat=fail)
         If (fail > 0) Then
@@ -1395,7 +1396,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
       safe = (ttm%del>0)
       Call gcheck(comm,safe)
       If (.not. safe) Then
-        Call error(679)
+        Call error(689)
       Else
         Allocate (ttm%detable(1:ttm%del,2), Stat=fail)
         If (fail > 0) Then
@@ -1446,7 +1447,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
       safe = (ttm%gel>0)
       Call gcheck(comm,safe)
       If (.not. safe) Then
-        Call error(681)
+        Call error(691)
       Else
         Allocate (ttm%gtable(1:ttm%gel,2), Stat=fail) ! [GK] array length corrected
         If (fail > 0) Then
@@ -1473,26 +1474,26 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
 100 Continue
 
   If (comm%idnode == 0) Close(Unit=ntable)
-  Call error(674)
+  Call error(684)
 
 ! end of Ce.dat file error exit
 
 200 Continue
 
   If (comm%idnode == 0) Close(Unit=ntable)
-  Call error(676)
+  Call error(686)
 
 ! end of g.dat file error exit
 
 300 Continue
 
   If (comm%idnode == 0) Close(Unit=ntable)
-  Call error(678)
+  Call error(688)
 
 400 Continue
 
   If (comm%idnode == 0) Close(Unit=ntable)
-  Call error(680)
+  Call error(690)
 
 End Subroutine ttm_table_scan
 
