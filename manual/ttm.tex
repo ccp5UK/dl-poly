@@ -18,17 +18,17 @@ that incorporates these electronic excitations.
 The model is based on the traditional two-temperature model 
 (TTM)~\cite{lifshits-60a}. This model splits the nuclei and electrons 
 into two separate but interacting subsystems, each evolving according 
-to a modified version of Fourier's heat equation. This continuum 
-implementation is unable to track individual atomistic trajectories, thus 
-information on superheating, recrystallisation, and pressure waves is lost. 
-These limitations were overcome by Duffy and 
-Rutherford~\cite{duffy-07a, duffy-09a}, by replacing 
-the continuum representation of the lattice with an MD cell (the details of 
-which will be described in this report). This model, known as the 
-two-temperature molecular dynamics (2T-MD) model, has been successfully 
-used to model high energy cascades in iron~\cite{zarkadoula-14a}, ultrafast 
-laser irradiation of gold nanofilms~\cite{daraszewicz-13a}, and swift heavy ion 
-irradiation of silicon~\cite{khara-16a}. 
+to a modified version of Fourier's heat equation. The continuum 
+implementation of the nuclei (assumed to be in a lattice) in this form of 
+the model is unable to track individual atomistic trajectories, thus information 
+on superheating, recrystallisation, and pressure waves is lost. These limitations 
+were overcome by Duffy and Rutherford~\cite{duffy-07a, duffy-09a}, by replacing 
+the continuum representation of the nuclei with an MD cell (the details of 
+which will be described in this chapter). This hybrid continuum-atomistic model, 
+a combination of TTM and MD known as the two-temperature molecular 
+dynamics (2T-MD) model, has been successfully used to model high energy 
+cascades in iron~\cite{zarkadoula-14a}, ultrafast laser irradiation of gold 
+nanofilms~\cite{daraszewicz-13a}, and swift heavy ion irradiation of silicon~\cite{khara-16a}. 
 
 \section{Methodology}
 
@@ -37,23 +37,23 @@ irradiation of silicon~\cite{khara-16a}.
 The electronic temperature is treated as a continuum system, and evolves 
 according to Fourier's law of heat conduction:
 \begin{equation} \label{eq:electronic_system}
-C_e(T_e) \frac{\partial T_e}{\partial t} - \nabla . [\kappa_e \nabla T_e ] = -G_{ep}(T_e - T_i) + G_s T^{\prime}_i + A(r,t),
+C_e(T_e) \frac{\partial T_e}{\partial t} - \nabla . [\kappa_e \nabla T_e ] = -G_{ep}(T_e - T_a) + G_s T^{\prime}_a + A(r,t),
 \end{equation}
 where $C_e(T_e)$ is the electronic volumetric heat capacity (equal to the 
 product of specific heat capacity and density), $\kappa_e$ is the 
 electronic thermal conductivity, $G_{ep}(T_e)$ the electron-phonon 
 coupling, $G_s$ the electronic stopping term (which is significant for 
-lattice temperatures $T^{\prime}_i$ greater than a velocity cutoff, as defined later), 
-and $A(r,t)$ the temporal and spatial dependent source term. This equation 
-describes how energy evolves in the electronic system as follows: energy 
-is dumped into the electronic system via the source term (for swift heavy 
+atomistic/ionic temperatures $T^{\prime}_a$ greater than a velocity cutoff, 
+as defined later), and $A(r,t)$ the temporal and spatial dependent source term. 
+This equation describes how energy evolves in the electronic system as follows: 
+energy is dumped into the electronic system via the source term (for swift heavy 
 ions and laser excitation), $A(r,t)$, the electronic volume-specific heat 
 determines the electronic temperature ($T_e$) rise due to this deposition, 
 the thermal conductivity describes how energy dissipates throughout the 
 electronic subsystem, and the electron-phonon coupling determines 
 energy transfer from the electrons to the MD cell (and is proportional to 
-the temperature difference between $T_e$ and the lattice temperature, 
-$T_i$). Equation~\ref{eq:electronic_system} can be equated to the 
+the temperature difference between $T_e$ and the atomistic temperature, 
+$T_a$). Equation~(\ref{eq:electronic_system}) can be equated to the 
 more general heat diffusion equation\index{Two-Temperature Model!Heat diffusion},
 \begin{equation} \label{eq:heatdiffusion}
 \frac{\partial T}{\partial t} - \alpha \nabla^2 T = \frac{\dot{q}}{C},
@@ -66,28 +66,24 @@ temperature $T_{i}^{n}$ (at time step $n$ and grid point $i$), the
 forward-in-time implementation can be Taylor-expanded and 
 rearranged to:
 \begin{equation}
-\bigg(\frac{\partial T}{\partial t}\bigg)_i = \frac{T_{i+1}^n - T_{i}^n}{\Delta t} - \frac{\Delta t}{2}\bigg(\frac{\partial^2 T}{\partial t^2}\bigg)_i  - \frac{\Delta t^2}{6}\bigg(\frac{\partial^3 T}{\partial t^3}\bigg)_i - \dots \approx \frac{T_{i+1}^n - T_{i}^n}{\Delta t} ,
+\bigg(\frac{\partial T}{\partial t}\bigg)_i = \frac{T_{i}^{n+1} - T_{i}^{n}}{\Delta t} - \frac{\Delta t}{2}\bigg(\frac{\partial^2 T}{\partial t^2}\bigg)_i  - \frac{\Delta t^2}{6}\bigg(\frac{\partial^3 T}{\partial t^3}\bigg)_i - \dots \approx \frac{T_{i}^{n+1} - T_{i}^{n}}{\Delta t} ,
 \end{equation}
 for equally-spaced timesteps $\Delta t$, and leads to a truncation 
 error $O(\Delta t)$. The one-dimensional space-centred integration 
 is
 \begin{align}
-\bigg(\frac{\partial T}{\partial x}\bigg)_n &= \frac{T_{i+1}^{n} - T_{i-1}^{n}}{\Delta x} - \frac{\Delta x^2}{6}\bigg(\frac{\partial^3 T}{\partial x^3}\bigg)_i - ... \approx \frac{T_{i}^{n+1} - T_{i}^{n-1}}{\Delta x} 
+\bigg(\frac{\partial T}{\partial x}\bigg)_n &= \frac{T_{i+1}^{n} - T_{i-1}^{n}}{\Delta x} - \frac{\Delta x^2}{6}\bigg(\frac{\partial^3 T}{\partial x^3}\bigg)_i - ... \approx \frac{T_{i+1}^{n} - T_{i-1}^{n}}{\Delta x} 
 \end{align}
 for equally spaced grid lengths $\Delta x$, and leads to a truncation 
 error of $O(\Delta x^2)$. The second derivative can be calculated 
 as follows:
-\begin{align}
-\bigg(\frac{\partial^2 T}{\partial x^2}\bigg)_n &=& \bigg[ \frac{\partial}{\partial x} \frac{\partial T}{\partial x}\bigg]_n = \lim\limits_{\Delta x \to 0} \left(\frac{\text{forward difference - backwards difference}}{\Delta x}\right) \\
-                                                                      &\approx& \frac{\frac{T_{i+1}^{n} - T_{i}^n}{\Delta x} - \frac{T_{i}^{n} - T_{i-1}^{n}}{\Delta x} }{\Delta x} = \frac{T_{i+1}^{n} - 2T_{i}^n + T_{i-1}^{n}}{\Delta x^2}
-\end{align}
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=0.5\textwidth]{finitediff}
-	\caption{One-dimensional finite-difference schematic. The algorithm is constrained to forward-in-time movement, but varies in both spatial directions. The dark vertical lines at the edge of the schematic are boundary nodes.}
-	\label{fig:1DFD}
-\end{figure}
-Inserting these numerical solutions into Equation \ref{eq:heatdiffusion}, 
+\begin{eqnarray}
+\bigg(\frac{\partial^2 T}{\partial x^2}\bigg)_n &=& \bigg[ \frac{\partial}{\partial x} \frac{\partial T}{\partial x}\bigg]_n \nonumber \\ 
+                                                                      &=& \lim\limits_{\Delta x \to 0} \left(\frac{\text{forward difference - backwards difference}}{\Delta x}\right) \nonumber \\
+                                                                      &\approx& \frac{\frac{T_{i+1}^{n} - T_{i}^n}{\Delta x} - \frac{T_{i}^{n} - T_{i-1}^{n}}{\Delta x} }{\Delta x} \nonumber \\
+                                                                      &=& \frac{T_{i+1}^{n} - 2T_{i}^n + T_{i-1}^{n}}{\Delta x^2}
+\end{eqnarray}
+Inserting these numerical solutions into Equation (\ref{eq:heatdiffusion}), 
 the one-dimensional heat diffusion equation can be expressed via a 
 finite-difference scheme
 \index{Two-Temperature Model!Explicit finite-difference scheme} as
@@ -101,9 +97,17 @@ T_{i}^{n+1}  = T_{i}^n + \Delta t \bigg[  \alpha \left(\frac{T_{i+1}^{n} - 2T_{i
 which is also known as the one-dimensional explicit finite-difference 
 solution to Fourier's law of heat conduction. This scheme is illustrated 
 in Figure~\ref{fig:1DFD}: it is explicit as the temperature at time $n+1$ 
-{\em explicitly} depends on the temperature at time $n$. The 
-forward-in-time, space-centred nature of the algorithm is evident in 
-Figure~\ref{fig:1DFD}. The timestep and lattice spacing, $\Delta t$ 
+{\em explicitly} depends on the temperature at time $n$, and is evidently  
+forward-in-time and space-centred. 
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[width=0.5\textwidth]{finitediff}
+	\caption{One-dimensional finite-difference schematic (boundary nodes indicated by dark vertical lines)}
+	\label{fig:1DFD}
+\end{figure}
+
+The timestep and lattice spacing, $\Delta t$ 
 and $\Delta x$ respectively, must be chosen carefully to ensure the 
 stability of this algorithm, and this is provided by defining the Fourier 
 mesh number, $F$, as
@@ -117,21 +121,23 @@ the algorithm becomes unstable and oscillates wildly.
 
 In three-dimensions, if $\Delta x = \Delta y = \Delta z$, the 
 finite-difference solution becomes
-\begin{align}
-T_{i,j,k}^{n+1}  &=& T_{i,j,k}^n + \Delta t \bigg[  \alpha \left(\frac{T_{i+1,j,k}^n + T_{i-1,j,k}^{n} + T_{i,j+1,k}^n + T_{i,j-1,k}^{n} + T_{i,j,k+1}^n + T_{i-1,j,k-1}^{n} - 6T_{i,j,k}^n}{\Delta x^2}\right) + \frac{\dot{q}}{C}  \bigg], \\
-T_{i,j,k}^{n+1}  &=& T_{i,j,k}^n + F [T_{i+1,j,k}^n + T_{i-1,j,k}^{n} + T_{i,j+1,k}^n + T_{i,j-1,k}^{n} + T_{i,j,k+1}^n + T_{i-1,j,k-1}^{n} - 6T_{i,j,k}^n] +  \Delta t  \frac{\dot{q}}{C} \label{eq:finite_solver_1},
-\end{align}
+\begin{eqnarray}
+T_{i,j,k}^{n+1}  &=& T_{i,j,k}^n + \Delta t \bigg[  \alpha \left(\frac{T_{i+1,j,k}^n + T_{i-1,j,k}^{n} + T_{i,j+1,k}^n + T_{i,j-1,k}^{n} + T_{i,j,k+1}^n + T_{i-1,j,k-1}^{n} - 6T_{i,j,k}^n}{\Delta x^2}\right) + \frac{\dot{q}}{C}  \bigg] \nonumber \\
+                        &=& T_{i,j,k}^n + F [T_{i+1,j,k}^n + T_{i-1,j,k}^{n} + T_{i,j+1,k}^n + T_{i,j-1,k}^{n} + T_{i,j,k+1}^n + T_{i-1,j,k-1}^{n} - 6T_{i,j,k}^n] +  \Delta t  \frac{\dot{q}}{C} \label{eq:finite_solver_1},
+\end{eqnarray}
 with a new stability criteria of $0 < F < \frac{1}{6}$. Thus, the size 
 of the timestep must satisfy $\Delta t < \frac{\Delta x^2}{6 \alpha}$. 
-Equation \ref{eq:finite_solver_1} applies under the assumption that 
+Equation (\ref{eq:finite_solver_1}) applies under the assumption that 
 the thermal diffusivity $\alpha$ is a constant value, i.e. 
 $\nabla . [\alpha \nabla T ] = \alpha \nabla^2 T$, but the more general 
 (and hence more complicated) case, where $\alpha$ can vary 
 spatially, takes the form
-\begin{multline}
-T_{i,j,k}^{n+1}  =  \frac{\Delta t}{\Delta x^2}  \frac{\kappa \big[ \frac{1}{2} (T^n_{i+1,j,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i+1,j,k} - T^n_{i,j,k}) + \\ 
-\frac{\Delta t}{\Delta x^2}  \frac{\kappa \big[ \frac{1}{2} (T^n_{i-1,j,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i-1,j,k} - T^n_{i,j,k})  + \dots + \Delta t \frac{\dot{q^n_{i,j,k}}}{C^n_{i,j,k}}.
-\end{multline}
+\begin{eqnarray}
+T_{i,j,k}^{n+1}  &=& \frac{\Delta t}{\Delta x^2} \left( \frac{\kappa \big[ \frac{1}{2} (T^n_{i+1,j,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i+1,j,k} - T^n_{i,j,k}) +  \frac{\kappa \big[ \frac{1}{2} (T^n_{i-1,j,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i-1,j,k} - T^n_{i,j,k}) \right) \nonumber \\
+                        &+& \frac{\Delta t}{\Delta y^2} \left( \frac{\kappa \big[ \frac{1}{2} (T^n_{i,j+1,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i,j+1,k} - T^n_{i,j,k}) +  \frac{\kappa \big[ \frac{1}{2} (T^n_{i,j-1,k} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i,j-1,k} - T^n_{i,j,k}) \right) \nonumber \\
+                        &+& \frac{\Delta t}{\Delta z^2} \left( \frac{\kappa \big[ \frac{1}{2} (T^n_{i,j,k+1} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i,j,k+1} - T^n_{i,j,k}) + \frac{\kappa \big[ \frac{1}{2} (T^n_{i,j,k-1} + T^n_{i,j,k})  \big]}{C(T^n_{i,j,k})} (T^n_{i,j,k-1} - T^n_{i,j,k}) \right) \nonumber \\
+                        &+& \Delta t \frac{\dot{q^n_{i,j,k}}}{C^n_{i,j,k}} \label{eq:finite_solver_2}.
+\end{eqnarray}
 Here the electronic thermal conductivity has an explicit spatial 
 dependence. To simplify this relationship, $\kappa$ can be assumed 
 to be constant locally, and is taken to be the average value between 
@@ -153,19 +159,20 @@ simulation in all three dimensions. These are:
 	\item {\em Neumann Boundary Conditions}: Also known as 
 	zero-flux boundary conditions, the temperature of the edge 
 	cell is taken to be the value of its corresponding neighbour, 
-	thus $\frac{dT}{dt} = 0$ in this region.
+	thus $\frac{dT}{dx} = 0$ in this region.
 	
 	\item {\em Robin Boundary Conditions}: Also known as 
 	partial or variable flux boundary conditions, the temperature 
 	of the edge cell is taken to be a fixed proportion of the 
 	neighbouring cell's temperature. Thus 
-	$\frac{dT}{dt} = -k (T-T_0)$, where $k$ is the fraction of 
+	$\frac{dT}{dx} = -k (T-T_0)$, where $k$ is the fraction of
 	the neighbouring temperature that is 'targeted'.
 \end{itemize}
 
-The electronic energy contained in a CET voxel can be calculated 
-by integrating the volumetric heat capacity between a datum temperature 
-(e.g. system temperature) and the local electronic temperature, i.e.
+The electronic energy contained in a voxel representing an electronic 
+temperature grid point can be calculated by integrating the volumetric 
+heat capacity between a datum temperature (e.g. system temperature) 
+and the local electronic temperature, i.e.
 \begin{equation}
 E_{e}^{j} = \int_{T_{0}}^{T_{e}^{j}} C_{e} dT.
 \end{equation}
@@ -174,22 +181,25 @@ local electronic temperature to a new value, such that the integral of
 volumetric heat capacity between the original and new temperatures 
 gives the required energy. 
 
-The ionic temperatures $T_i$ and $T_i^{\prime}$ can be calculated 
+The atomic temperatures $T_a$ and $T_a^{\prime}$ can be calculated 
 from kinetic energies of atoms in each voxel, i.e. for cell $j$:
 \begin{align}
-T_{i}^{j}          &= \frac{\sum_{i \in \vec{x}_j} m_i v_i^2}{3 k_B N} \\
-T_{i}^{\prime} &= \frac{\sum_{i \in \vec{x}_j, |v_i | > v_{cut}} m_i v_i^2}{3 k_B N^{\prime}}
+T_{a}^{j}          &= \frac{\sum_{p \in \vec{x}^j} m_p v_p^2}{3 k_B N} \\
+T_{a}^{\prime j} &= \frac{\sum_{p \in \vec{x}^j, |v_p | > v_{cut}} m_p v_p^2}{3 k_B N^{\prime}}
 \end{align}
 where $v_{cut}$ is the cut-off velocity beyond which electronic stopping 
 is significant, $N$ is the total number of atoms in the voxel and $N^{\prime}$ 
 is the number of atoms in the voxel with velocities greater than $v_{cut}$. 
-To account for centre-of-mass drift, the atomic velocities $\vek{v}_i$ 
+To account for centre-of-mass drift, the atomic velocities $\vek{v}_p$ 
 should be corrected by the voxel's velocity, calculated by 
-$\vek{v}^j_{com} = \frac{\sum_{i \in \vec{x}_j} m_i \vek{v}_i}{\sum_{i \in \vec{x}_j} m_i}$.
-If there are too few (or no) atoms in the voxel, it is considered to be 
-inactive as no definable ionic temperatures can be calculated: the 
-corresponding electronic temperature and source terms can be 
-omitted in Equation \ref{eq:finite_solver_1}. 
+$\vek{v}^j_{com} = \frac{\sum_{p \in \vec{x}^j} m_p \vek{v}_p}{\sum_{p \in \vec{x}^j} m_p}$.
+
+If there are too few (or no) atoms in a voxel, it is considered to be 
+\emph{inactive} as no definable ionic temperatures can be calculated. 
+Equation (\ref{eq:finite_solver_2}) does not have to be applied to 
+inactive voxels (setting electronic temperatures to the datum value $T_0$
+and source terms to zero), while temperature gradient terms involving 
+inactive voxels in the same equation can be omitted for their neighbours. 
 
 \subsection*{MD system}
 
@@ -200,30 +210,30 @@ which describes the movement of particles in a viscous medium.
 This viscous medium will represent the electronic subsystem, and the 
 modified equation of motion takes the form
 \begin{equation} \label{eq:modifiedlang}
-{d \vek{v}_{i}(t) \over d t} = {{\vek{f}_{i}(t)+\vek{R}_{i}(t)} \over
-m_{i}} - \chi_{i} \; \vek{v}_{i}(t),
+{d \vek{v}_{p}(t) \over d t} = {{\vek{f}_{p}(t)+\vek{R}_{p}(t)} \over
+m_{p}} - \chi_{p} \; \vek{v}_{p}(t),
 \end{equation}
-where $m_i$ and $\vec{v}_i$ are the mass and velocity of atom $i$ 
-at time $t$, $\vek{f}_{i}$ is the deterministic force on atom $i$ due 
-to the interatomic potential, $\vek{R}_{i}(t)$ is a stochastic force with 
-random magnitude and orientation and $m_{i} \chi_{i} \vek{v}_{i}(t)$ 
+where $m_p$ and $\vec{v}_p$ are the mass and velocity of atom $p$ 
+at time $t$, $\vek{f}_{p}$ is the deterministic force on atom $p$ due 
+to the interatomic potential, $\vek{R}_{p}(t)$ is a stochastic force with 
+random magnitude and orientation and $m_{p} \chi_{p} \vek{v}_{p}(t)$ 
 is the frictional force due to the electrons. These last two terms in 
 Equation (\ref{eq:modifiedlang}) are the Langevin modifications to 
 Newton's second law, which allow energy to be lost and gained by 
 the MD system. 
 
-The stochastic force $\vek{R}_{i}(t)$ returns energy from the 
+The stochastic force $\vek{R}_{p}(t)$ returns energy from the 
 electrons to the ions and is formulated as 
-$\vek{R}_{i}(t) = \sqrt{\Gamma} \vec{A}_{i}(t)$, where $\vec{A}_{i}(t)$ 
+$\vek{R}_{p}(t) = \sqrt{\Gamma} \vec{A}_{p}(t)$, where $\vec{A}_{p}(t)$ 
 is a three-dimensional vector with components randomly distributed 
 in $[-1,1]$, and $\Gamma$ is the stochastic friction coefficient. 
-$\vek{R}_{i}(t)$ must satisfy two important time-averaged conditions:
+$\vek{R}_{p}(t)$ must satisfy two important time-averaged conditions:
 \begin{eqnarray}
-\langle \vek{R}_{i}(t) \rangle &=& 0, \\
-\langle \vek{R}_{i}(t) \cdot \vek{F}_{j}(t^{\prime}) \rangle &\propto& \delta_{ij} \delta (t-t^{\prime}) \label{eq:flucdissip}
+\langle \vek{R}_{p}(t) \rangle &=& 0, \\
+\langle \vek{R}_{p}(t) \cdot \vek{R}_{q}(t^{\prime}) \rangle &\propto& \delta_{pq} \delta (t-t^{\prime}) \label{eq:flucdissip}
 \end{eqnarray}
 The first condition states that over a significant period of time, 
-$\vek{R}_{i}(t)$ must not behave as a net source or sink. Equation 
+$\vek{R}_{p}(t)$ must not behave as a net source or sink. Equation 
 (\ref{eq:flucdissip}) is known as the fluctuation-dissipation theorem, 
 which describes how the drag felt by a particle as it moves through 
 a viscous medium can give rise to Brownian motion. In the standard 
@@ -233,7 +243,7 @@ allows for each atom to be thermostatted to the electronic temperature
 of the corresponding continuum electronic cell. This leads to the 
 stochastic friction term\index{Two-Temperature Model!electron-phonon coupling}
 \begin{equation}
-\Gamma = \frac{6 m_{i} \chi_{ep}^j k_B T_e^j}{\Delta t},
+\Gamma = \frac{6 m_{p} \chi_{ep}^j k_B T_e^j}{\Delta t},
 \end{equation}
 where $\chi_{ep}^j$ is the electron-phonon friction of the $j^{th}$ 
 electronic finite-element cell, $T_e^j$ is the electronic temperature 
@@ -250,15 +260,15 @@ $N$ is the number of atoms in the cell.
 The friction term in Equation (\ref{eq:modifiedlang}) is made up of two 
 forms of energy loss: the previous discussed electron-phonon friction, 
 and electronic stopping, which is inelastic electron scattering of ballistic 
-atoms. The total electron friction coefficient $\chi_i$ is given by
+atoms. The total electron friction coefficient $\chi_p$ for atom $p$ is given by
 \begin{equation}
-\chi_{i} = \left\{ \begin{array} {l@{\quad:\quad}l}
-\chi_{ep} + \chi_{es} & | v_i | > v_{cut} \\
-\chi_{ep} & | v_i | \le v_{cut}
+\chi_{p} = \left\{ \begin{array} {l@{\quad:\quad}l}
+\chi_{ep} + \chi_{es} & | v_p | > v_{cut} \\
+\chi_{ep} & | v_p | \le v_{cut}
 \end{array} \right. ,
 \end{equation}
-where $\chi_{es}$ is the electronic stopping friction, $\vek{v}_{i}$ is 
-the velocity of atom $i$, and $v_{cut}$ is the cut-off velocity for which 
+where $\chi_{es}$ is the electronic stopping friction, $\vek{v}_{p}$ is 
+the velocity of atom $p$, and $v_{cut}$ is the cut-off velocity for which 
 electronic stopping becomes significant. The electronic stopping 
 friction term can be calculated in a similar fashion to the electron-phonon 
 term:\index{Two-Temperature Model!electronic stopping}
@@ -266,7 +276,7 @@ term:\index{Two-Temperature Model!electronic stopping}
 \chi_{es} = \frac{G_{s} \Delta V}{3 k_B N^{\prime}}
 \end{equation}
 where $N^{\prime}$ is the number of atoms in the cell with velocities 
-greater than $v_{cut}$.
+greater than $v_{cut}$. Note that this term is set to zero when $N^{\prime} = 0$.
 
 From Equations (\ref{eq:modifiedlang}), (\ref{eq:chiep}) and (\ref{eq:chies}), 
 the differences between the contributions from electron-phonon coupling 
@@ -283,11 +293,11 @@ loss mechanism for the lattice.
 	\label{fig:heatbath}
 \end{figure*}
 Figure \ref{fig:heatbath} illustrates these processes for swift heavy ion 
-simulations, and highlights how the MD cell is now indirectly thermostatted 
-to a heat bath. The lattice will reach local equilibrium with the electrons, 
-which are thermostatted to the heat bath, thus eventually driving both 
+simulations, and highlights how the MD cell is now thermostatted
+to a heat bath. The lattice will reach local equilibrium with the electron gas,
+which is thermostatted to the heat bath, thus eventually driving both
 subsystems to the chosen ambient temperature. Energy can only be 
-removed from the system via the electrons; this is justified due to how 
+removed from the system via the electron gas; this is justified due to how
 slow lattice heat diffusion is in comparison to electronic heat diffusion.
 
 It is possible to use the inhomogeneous Langevin thermostat (Equation 
@@ -299,7 +309,7 @@ coefficient $\Gamma$ is modified to use the system temperature $T_0$
 instead of a local electronic temperature and to take advantage of the 
 enhanced friction coefficient when electronic stopping applies, i.e.
 \begin{equation}
-\Gamma = \frac{6 m_{i} \chi_{i} k_B T_0}{\Delta t}.
+\Gamma = \frac{6 m_{p} \chi_{p} k_B T_0}{\Delta t}.
 \end{equation}
 
 \section{Simulation setup}
@@ -313,7 +323,7 @@ temperature (CET) voxels. Energy can thus be exchanged between the
 voxels and subsequently passed to or from the atoms within each respective 
 CIT. The volume of each CIT voxel must contain a sufficient number of atoms 
 so that thermal fluctuations of ions are negligible and an ionic temperature 
-can be defined: a good general choice is a cube of length 10 \AA in each 
+can be defined: a good general choice is a cube of length 10 \AA~in each 
 direction. There is more flexibility in choosing the number of CET voxels, 
 as long as an integer number of these overlap with the CIT grid: to simplify 
 the connections between the CET and CIT grids, equal-sized voxels for both 
@@ -326,7 +336,7 @@ systems will be assumed from here on.
 	{
 		\includegraphics[width=0.3\textwidth]{cascades}
 	}
-	\caption{Schematic of cascade simulation setup. The electronic temperature cells extend over the ionic (MD) simulation cell to simulate electronic energy dissipation. The boundary conditions of the $T_e$ part are set to converge towards 300K to represent conduction into the bulk.}
+	\caption{Schematic of cascade simulation setup}
 	\label{fig:cascades}
 \end{figure*}
 High-energy cascades require no initial energy deposition into the 
@@ -335,10 +345,11 @@ initialised with a very high velocity. The electronic temperature
 (CET) voxels extend further than the ionic temperature (CIT) 
 voxels in all directions, with open (Dirichlet) or semi-open 
 (Robin) boundary conditions in all dimensions to represent thermal 
-electronic conduction into the bulk. (Figure~\ref{fig:cascades} gives 
-a schematic of this simulation setup.) Stochastic boundary 
-conditions can be applied in the ionic system to dampen the shock 
-wave generated by the displacement spike.
+electronic conduction into the bulk, allowing the electronic temperature to
+converge towards the initial system temperature $T_0$. 
+(Figure~\ref{fig:cascades} gives an example schematic of this simulation 
+setup.) Stochastic boundary conditions can be applied in the ionic system to 
+dampen the shock wave generated by the displacement spike.
 
 \subsection*{Swift heavy ions}\index{Two-Temperature Model!swift heavy ions}
 
@@ -388,12 +399,18 @@ and penetration depth from the laser.) The size of the electronic temperature (C
 grid is set to the same size as the ionic temperature (CIT) grid, with zero-flux 
 (Neumann) boundary conditions in all directions. This setup (shown in Figure~\ref{fig:laser}) 
 represents a homogeneous laser excitation with the simulated part as a 
-small section of a larger photoexcited sample.
+small section of a larger photoexcited sample. 
+
+It is possible in such simulations for voxels to become empty due to displacement 
+of atoms from the laser source. These voxels are omitted from electronic heat diffusion 
+calculations, setting their electronic temperatures to the background value $T_0$ and 
+their source terms to zero. Their associated spatial gradients in Equation (\ref{eq:finite_solver_2}) 
+are also omitted for neighbouring voxels.
 
 \section{Implementation}
 
-The two-temperature (TTM, 2T-MD) model has been implemented in \D
-to take advantage of the domain decomposition scheme used by the code,
+TTM with MD (2T-MD) has been implemented in \D to take advantage 
+of the domain decomposition scheme used by the code,
 by dividing up the coarse-grained ionic (CIT) and electronic (CET) 
 temperature voxels as evenly as possible among the processors based on 
 location. This avoids the need for each processor to hold copies of the 
@@ -432,7 +449,7 @@ near-perfect parallel scaling to thousands of processors.
 \subsection*{Functionality and directives}
 
 All directives in the CONTROL file beginning with {\bf ttm} will switch on 
-the two-temperature model (TTM, 2T-MD) as described above. If no other 
+the two-temperature model (2T-MD) as described above. If no other 
 information is provided, \D will use default values for certain required 
 properties, but some information {\em must} be provided: if this information 
 is unavailable, \D will terminate. The list of TTM directives is given as part of 
@@ -440,11 +457,11 @@ Section \ref{control_options}: more details about these directives are given
 below.
 
 The inhomogeneous Langevin thermostat can be activated using the 
-directive {\bf ensemble~nvt~ttm} or {\bf ensemble~nvt~inhomo} in the 
+directive {\bf ensemble~nvt~ttm} or {\bf \mbox{ensemble}~nvt~inhomo} in the 
 CONTROL file, specifying the electron-phonon friction term ($\chi_{ep}$, 
 in ps$^{-1}$), electronic stopping friction term ($\chi_{es}$, in ps$^{-1}$) 
 and the cutoff atomic velocity for electronic stopping ($v_{cut}$, in 
-\AA~ps$^{-1}$). This thermostat is required for TTM (2T-MD) calculations 
+\AA~ps$^{-1}$). This thermostat is required for 2T-MD calculations 
 but can also be used independently: this CONTROL file directive therefore 
 does not automatically switch on the two-temperature model, but the 
 thermostat will be selected automatically if TTM is otherwise switched on. 
@@ -478,9 +495,9 @@ The volumetric heat capacity $C_e$\index{Two-Temperature Model!heat capacity}
 can be obtained for TTM calculations in four different forms with their 
 corresponding CONTROL file directives: 
 \begin{itemize}
-\item A temperature-independent constant value, $C_e = C_0 \rho$ ({\bf ttm ceconst});
-\item A linear function of temperature up to a maximum at the Fermi temperature $T_{f}$, $C_e (T) = C_0 \rho \max \left(T/T_{f}, 1\right)$ ({\bf ttm celin});
-\item A hyperbolic tangent function of temperature, $C_e (T) = A \rho \tanh \left(10^{-4} B T\right)$ ({\bf ttm cetanh});
+\item A temperature-independent constant value ({\bf ttm ceconst})\begin{equation*}C_e = C_0 \rho\end{equation*}
+\item A linear function of temperature up to a maximum at the Fermi temperature $T_{f}$ ({\bf ttm celin}) \begin{equation*}C_e (T) = C_0 \rho \max \left(T/T_{f}, 1\right)\end{equation*}
+\item A hyperbolic tangent function of temperature ({\bf ttm cetanh}) \begin{equation*}C_e (T) = A \rho \tanh \left(10^{-4} B T\right)\end{equation*}
 \item A tabulated function of temperature supplied in a Ce.dat file  ({\bf ttm cetab}).
 \end{itemize}
 Note that the values given for the first three options are specific heat 
@@ -508,9 +525,9 @@ a thermal conductivity\index{Two-Temperature Model!thermal conductivity}
 needs to be supplied: no default value is provided by \D. 
 Four options are available with their corresponding CONTROL file directives:
 \begin{itemize}
-\item An infinitely large value, $K_e = \infty$ ({\bf ttm keinf});
-\item A temperature-independent constant value, $K_e = K_0$ ({\bf ttm keconst});
-\item A Drude-model (linear) function of temperature, $K_e (T) = K_0 \frac{T}{T_0}$ ({\bf ttm kedrude});
+\item An infinitely large value ({\bf ttm keinf}) \begin{equation*}K_e = \infty\end{equation*}
+\item A temperature-independent constant value  ({\bf ttm keconst}) \begin{equation*}K_e = K_0\end{equation*}
+\item A Drude-model (linear) function of temperature ({\bf ttm kedrude}) \begin{equation*}K_e (T) = K_0 \frac{T}{T_0}\end{equation*}
 \item A tabulated function of temperature supplied in a Ke.dat file ({\bf ttm ketab}).
 \end{itemize}
 All values (constants or tabulated) are supplied in W~m$^{-1}$~K$^{-1}$. 
@@ -526,8 +543,8 @@ a thermal diffusivity\index{Two-Temperature Model!thermal diffusivity}
 needs to be supplied: no default value is provided by \D. 
 Three options are available with their corresponding CONTROL file directives:
 \begin{itemize}
-\item A temperature-independent constant value, $D_e = D_0$ ({\bf ttm~deconst} or {\bf ttm~diff});
-\item A reciprocal function of temperature up to the Fermi temperature $T_{f}$, $D_e (T) = D_0 \frac{T_0}{\min \left(T, T_{f}\right)}$ ({\bf ttm~derecip});
+\item A temperature-independent constant value ({\bf ttm~deconst} or {\bf ttm~diff}) \begin{equation*}D_e = D_0\end{equation*}
+\item A reciprocal function of temperature up to the Fermi temperature $T_{f}$ ({\bf ttm~derecip}) \begin{equation*}D_e (T) = D_0 \frac{T_0}{\min \left(T, T_{f}\right)}\end{equation*}
 \item A tabulated function of temperature supplied in a De.dat file ({\bf ttm~detab}).
 \end{itemize}
 All values (constant and tabulated) are supplied in m$^2$~s$^{-1}$ and 
@@ -646,7 +663,7 @@ The following modules, both modified and added, incorporate the
 two-temperature molecular dynamics model in \D:
 \begin{itemize}
 	\item  {\sc dl\_poly.f90}: modified to initialise {\sc ttm\_module.f90};
-	\item  {\sc read\_control.f90}: modified to include the additional control directives required to activate and parameterise TTM;
+	\item  {\sc read\_control.f90}: modified to include the additional control directives required to activate and parameterise 2T-MD;
 	\item  {\sc ttm\_module.f90}: deal with initial array allocation, locations of electronic temperature voxel boundaries etc.;
 	\item  {\sc ttm\_track\_module.f90}: deal with initial energy deposition to the electronic temperature grid;
 	\item  {\sc ttm\_utils.f90}: contains functions to calculate properties for heat diffusion calculations, boundary conditions etc.;
@@ -659,5 +676,5 @@ two-temperature molecular dynamics model in \D:
 	\item  {\sc w\_integrate\_lfv.f90} and {\sc w\_integrate\_vv.f90}: modified to call the new inhomogeneous Langevin thermostat ({\sc nvt\_l2\_lfv.f90} and {\sc nvt\_l2\_vv.f90});
 	\item  {\sc nvt\_l2\_lfv.f90} and {\sc nvt\_l2\_vv.f90}: new inhomogeneous Langevin thermostat (both leap-frog and velocity Verlet variants);
 	\item {\sc langevin\_forces.f90}: modified to allow scaling of Langevin random forces by local electronic temperature instead of system temperature;
-    \item  {\sc ttm\_system\_revive.f90}: writes file with electronic temperatures (DUMP\_E) to allow the system with TTM to be restarted. 
+    \item  {\sc ttm\_system\_revive.f90}: writes file with electronic temperatures (DUMP\_E) to allow the MD system with TTM to be restarted. 
 \end{itemize}
