@@ -1,4 +1,4 @@
-Module flow
+Module flow_control
   Use kinds, Only : wi,wp
   Implicit None
 
@@ -93,4 +93,4 @@ Contains
     T%lines = T%lines + 1
   End Subroutine flow_type_line_printed
 
-End Module flow
+End Module flow_control

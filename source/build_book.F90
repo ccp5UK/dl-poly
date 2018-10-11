@@ -21,7 +21,7 @@ Module build_book
   Use neighbours, Only : neighbours_type
   Use domains, Only : domains_type
   Use errors_warnings, Only : error,warning,info
-  Use flow, Only : flow_type
+  Use flow_control, Only : flow_type
   Implicit None
 
   Private

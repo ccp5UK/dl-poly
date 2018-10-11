@@ -70,7 +70,7 @@ Module control
   Use filename, Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
                        FILE_STATS,FILE_HISTORY,FILE_HISTORF,FILE_REVIVE,FILE_REVCON, &
                        FILE_REVOLD
-  Use flow, Only : flow_type
+  Use flow_control, Only : flow_type
   Use rigid_bodies, Only : rigid_bodies_type
   Implicit None
 

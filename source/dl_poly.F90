@@ -190,7 +190,7 @@ program dl_poly
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS
-  Use flow, Only : flow_type
+  Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
   
   Implicit None
