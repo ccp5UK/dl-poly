@@ -108,7 +108,7 @@ Contains
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical           :: l_usr,l_n_r,lzdn,lext,lrpad0
-  Integer           :: megatm,ilx,ily,ilz,qlx,qly,qlz, &
+  Integer           :: megatm,i,ilx,ily,ilz,qlx,qly,qlz, &
     mtshl,mtcons,mtrgd,mtteth,mtbond,mtangl,mtdihd,mtinv
   Real( Kind = wp ) :: ats,celprp(1:10),cut,    &
     dens0,dens,fdens,fdvar,  &
@@ -941,22 +941,46 @@ Contains
      End If
   End If
 
-! two-temperature model: determine number of CITs
-! in x- and y-directions based on number in z-direction
-! and system size
+  If (ttm%l_ttm) Then
+    ! two-temperature model: determine number of CITs
+    ! in x- and y-directions based on number in z-direction
+    ! and system size
+    ttm%delz     = config%cell(9)/Real(ttm%ntsys(3),wp)
+    ttm%ntsys(1) = Nint(config%cell(1)/ttm%delz)
+    ttm%ntsys(2) = Nint(config%cell(5)/ttm%delz)
+    ttm%delx     = config%cell(1)/Real(ttm%ntsys(1),wp)
+    ttm%dely     = config%cell(5)/Real(ttm%ntsys(2),wp)
+    ttm%volume   = ttm%delx*ttm%dely*ttm%delz
+    ttm%rvolume  = 1.0_wp/ttm%volume
 
-  ttm%delz     = config%cell(9)/Real(ttm%ntsys(3),wp)
-  ttm%ntsys(1) = Nint(config%cell(1)/ttm%delz)
-  ttm%ntsys(2) = Nint(config%cell(5)/ttm%delz)
-  ttm%delx     = config%cell(1)/Real(ttm%ntsys(1),wp)
-  ttm%dely     = config%cell(5)/Real(ttm%ntsys(2),wp)
-  ttm%volume   = ttm%delx*ttm%dely*ttm%delz
-  ttm%rvolume  = 1.0_wp/ttm%volume
+    ! Check number of electronic temperature cells is greater than/
+    ! equal to number of ionic temperature cells
+    If (Any(ttm%eltsys<ttm%ntsys)) Call error(670)
 
-! Check number of electronic temperature cells is greater than/
-! equal to number of ionic temperature cells
-
-  If (Any(ttm%eltsys<ttm%ntsys)) Call error(670)
+    ! Check rpad does not go too far for determining ionic temperatures
+    tol=Min(ttm%delx,ttm%dely,ttm%delz)
+    Do i=1,domain%nx-1
+      test=Real(i,wp)*config%cell(1)*domain%nx_real
+      test=test-ttm%delx*Floor(test/ttm%delx)
+      If (test>zero_plus) tol=Min(tol,test)
+    End Do
+    Do i=1,domain%ny-1
+      test=Real(i,wp)*config%cell(5)*domain%ny_real
+      test=test-ttm%dely*Floor(test/ttm%dely)
+      If (test>zero_plus) tol=Min(tol,test)
+    End Do
+    Do i=1,domain%nz-1
+      test=Real(i,wp)*config%cell(9)*domain%nz_real
+      test=test-ttm%delz*Floor(test/ttm%delz)
+      If (test>zero_plus) tol=Min(tol,test)
+    End Do
+    If (neigh%padding>tol) Then
+      Write(message,'(2(a,e12.4))') 'cutoff padding ',neigh%padding, &
+        ' (Angs) too large for ttm temperature grid calculations maximum useable value of rpad (Angs): ',tol
+      Call info(message,.true.)
+      Call error (680)
+    End If
+  End If
 
 ! If ttm%redistribute option selected, check for sufficient electronic temperature
 ! cells to redistribute energy when ionic tmeperature cells are switched off:

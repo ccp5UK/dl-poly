@@ -756,6 +756,13 @@ program dl_poly
     Write(banner(3),fmt1) '****     https://doi.org/10.1063/1.4905952                    ****'
     Call info(banner,3,.true.)
   End If
+  If (ttms%l_ttm) Then
+    Write(banner(1),fmt1) '****   - E. Zarkadoula, S.L. Daraszewicz, D.M. Duffy,         ****'
+    Write(banner(2),fmt1) '****     M.A. Seaton, I.T. Todorov, K. Nordlund, M.T. Dove &  ****'
+    Write(banner(3),fmt1) '****     K. Trachenko                                         ****'
+    Write(banner(4),fmt1) '****     J. Phys.: Condens. Matter, 24, 085401 (2014),        ****'
+    Call info(banner,4,.true.)
+  End If
   Call info(Repeat("*",66),.true.)
 
   ! Get just the one number to compare against

@@ -249,7 +249,7 @@ Contains
 
     Character( Len = 47 ) :: aux
     Character( Len = 66 ) :: message
-    Integer               :: i,l
+    Integer               :: i
 
     Call info('',.true.)
     Call info(Repeat("*",66),.true.)
