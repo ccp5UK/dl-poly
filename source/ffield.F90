@@ -65,7 +65,7 @@ Module ffield
   Use pmf, Only : pmf_type
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
   Use filename, Only : file_type,FILE_FIELD
-  Use flow, Only : flow_type
+  Use flow_control, Only : flow_type
 
   Implicit None
 
