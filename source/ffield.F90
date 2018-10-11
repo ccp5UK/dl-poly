@@ -537,8 +537,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                      End Do
                   End If
 
-               End If
-            End Do
+               End Do
 
 ! read interaction/field units
 
