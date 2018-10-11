@@ -595,10 +595,10 @@ Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, config, co
   ierr = 0
 
   If(comm%mxnode > 1 .and. (.not. rdf%tmp_rdf_sync)) Then
-     Do i=1, num_blocks+1
-        Call gsum(comm,rdf%tmp_rdf(:,:,i))
-     End Do
-     rdf%tmp_rdf_sync = .TRUE.
+    Do i=1, rdf%num_blocks+1
+      Call gsum(comm,rdf%tmp_rdf(:,:,i))
+    End Do
+    rdf%tmp_rdf_sync = .True.
   End If
 
   Allocate(averages(sites%ntype_atom,sites%ntype_atom, rdf%max_grid), stat = ierr(1))
