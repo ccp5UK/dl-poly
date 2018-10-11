@@ -560,17 +560,17 @@ Contains
     ! Check rpad does not go too far for determining ionic temperatures
     tol=Min(ttm%delx,ttm%dely,ttm%delz)
     Do i=1,domain%nx-1
-      test=Real(i,wp)*config%cell(1)*domain%nx_real
+      test=Real(i,wp)*config%cell(1)*domain%nx_recip
       test=test-ttm%delx*Floor(test/ttm%delx)
       If (test>zero_plus) tol=Min(tol,test)
     End Do
     Do i=1,domain%ny-1
-      test=Real(i,wp)*config%cell(5)*domain%ny_real
+      test=Real(i,wp)*config%cell(5)*domain%ny_recip
       test=test-ttm%dely*Floor(test/ttm%dely)
       If (test>zero_plus) tol=Min(tol,test)
     End Do
     Do i=1,domain%nz-1
-      test=Real(i,wp)*config%cell(9)*domain%nz_real
+      test=Real(i,wp)*config%cell(9)*domain%nz_recip
       test=test-ttm%delz*Floor(test/ttm%delz)
       If (test>zero_plus) tol=Min(tol,test)
     End Do
