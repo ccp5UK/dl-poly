@@ -118,14 +118,14 @@ Module vdw
     !> VdW parameters
     Real( Kind = wp ), Allocatable, Public :: param(:,:)
     !> VdW cut off
-    Real( Kind = wp ), Public :: cutoff
+    Real( Kind = wp ), Public :: cutoff = 0.0_wp
 
     Real( Kind = wp ), Allocatable, Public :: sigeps(:,:)
 
     !> Energy long range correction
-    Real( Kind = wp ), Public :: elrc
+    Real( Kind = wp ), Public :: elrc = 0.0_wp
     !> Virial long range correction
-    Real( Kind = wp ), Public :: vlrc
+    Real( Kind = wp ), Public :: vlrc = 0.0_wp
 
     ! Possible tabulated calculation arrays
     !> Tabulated potential
