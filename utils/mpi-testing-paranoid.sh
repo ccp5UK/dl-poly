@@ -7,6 +7,6 @@ mkdir build-mpi-testing-paranoid
 pushd build-mpi-testing-paranoid
 FFLAGS="-g -frecord-gcc-switches -O0 -std=f2008 -pedantic -fbacktrace -fcheck=all -finit-integer=2147483648 -finit-real=snan -finit-logical=true -finit-character=42 -finit-derived -ffpe-trap=invalid,zero,overflow" cmake ../ -DBUILD_TESTING=ON -DWITH_PLUMED=Off -DBUILDER="Gitlab Worker"
 make -j10
-make test
+ctest --timeout 200
 
 
