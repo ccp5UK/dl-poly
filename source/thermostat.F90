@@ -43,7 +43,7 @@ Module thermostat
     Real( Kind = wp ), Public :: soft
 
     !> Langevin switch
-    Logical, Public :: l_langevin
+    Logical, Public :: l_langevin = .false.
 
     !> Gentle Stochastic dynamics (Langevin) thermostat friction
     Real( Kind = wp ), Public :: gama
