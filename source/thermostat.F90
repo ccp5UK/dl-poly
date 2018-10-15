@@ -75,7 +75,7 @@ Module thermostat
     !> - 0 no DPD
     !> - 1 first order splitting
     !> - 2 second order splitting
-    Integer, Public :: key_dpd
+    Integer, Public :: key_dpd = 0
     !> DPD drag?
     Real( Kind = wp ), Allocatable, Public :: gamdpd(:)
     Real( Kind = wp ), Allocatable, Public :: sigdpd(:)
