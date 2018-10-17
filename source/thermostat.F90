@@ -7,6 +7,14 @@ Module thermostat
 
   Private
 
+  ! DPD keys
+  !> No DPD
+  Integer(Kind=wi), Parameter, Public :: DPD_NULL = 0
+  !> First order splitting
+  Integer(Kind=wi), Parameter, Public :: DPD_FIRST_ORDER = 1
+  !> Second order splitting
+  Integer(Kind=wi), Parameter, Public :: DPD_SECOND_ORDER = 2
+
   !> Type containing thermostat and barostat variables
   Type, Public :: thermostat_type
     Private
@@ -71,11 +79,7 @@ Module thermostat
     Real( Kind = wp ), Public :: eta(1:9)
 
     !> DPD switch
-    !>
-    !> - 0 no DPD
-    !> - 1 first order splitting
-    !> - 2 second order splitting
-    Integer, Public :: key_dpd = 0
+    Integer, Public :: key_dpd = DPD_NULL
     !> DPD drag?
     Real( Kind = wp ), Allocatable, Public :: gamdpd(:)
     Real( Kind = wp ), Allocatable, Public :: sigdpd(:)
