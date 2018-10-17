@@ -14,11 +14,10 @@ Module npt_mtk
   Use nvt_nose_hoover, Only : nvt_h0_scl, nvt_h1_scl 
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h1_scl 
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type, adjust_timestep, VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep
   Use vdw, Only : vdw_type
   Use numerics, Only : images
   Implicit None
@@ -166,7 +165,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -627,7 +626,7 @@ Call pmf%allocate_work()
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 

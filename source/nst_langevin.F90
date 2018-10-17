@@ -19,7 +19,8 @@ Module nst_langevin
   Use nst_nose_hoover, Only : nst_h0_scl,nst_h1_scl
   Use thermostat, Only : thermostat_type, adjust_timestep, &
                          CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
-                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
+                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC, &
+                         VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
@@ -200,7 +201,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -753,7 +754,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! Globalise Langevin random forces for shared RBs
 

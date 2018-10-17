@@ -13,7 +13,7 @@ Module nvt_berendsen
   Use errors_warnings, Only : error,info
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : thermostat_type,adjust_timestep
+  Use thermostat, Only : thermostat_type,adjust_timestep,VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Implicit None
 
@@ -126,7 +126,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -427,7 +427,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -952,7 +952,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
     thermo%chi_t=Sqrt(1.0_wp+tstep/thermo%tau_t*(thermo%sigma/engke-1.0_wp))
 
-    If (stage == 0) Return
+    If (stage == VV_FIRST_STAGE) Return
 
   ! thermostat velocities
 
@@ -1014,7 +1014,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
     thermo%chi_t=Sqrt(1.0_wp+tstep/thermo%tau_t*(thermo%sigma/(engke+engrot)-1.0_wp))
 
-    If (stage == 0) Return
+    If (stage == VV_FIRST_STAGE) Return
 
   ! thermostat velocities
 

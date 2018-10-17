@@ -7,6 +7,12 @@ Module thermostat
 
   Private
 
+  ! VV stage keys
+  !> First stage
+  Integer(Kind=wi), Parameter, Public :: VV_FIRST_STAGE = 0
+  !> Second stage
+  Integer(Kind=wi), Parameter, Public :: VV_SECOND_STAGE = 1
+
   ! DPD keys
   !> No DPD
   Integer(Kind=wi), Parameter, Public :: DPD_NULL = 0

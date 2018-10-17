@@ -13,7 +13,7 @@ Module npt_berendsen
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type, adjust_timestep
+  Use thermostat, Only : thermostat_type, adjust_timestep, VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Use timer, Only: timer_type
   Use vdw, Only : vdw_type
@@ -155,7 +155,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -544,7 +544,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 

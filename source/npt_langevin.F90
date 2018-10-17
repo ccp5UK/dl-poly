@@ -16,7 +16,7 @@ Module npt_langevin
   Use pmf,             Only : pmf_tags,pmf_type
   Use npt_nose_hoover, Only : npt_h0_scl,npt_h0_scl,npt_h1_scl
   Use langevin,        Only : langevin_forces
-  Use thermostat, Only : thermostat_type, adjust_timestep
+  Use thermostat, Only : thermostat_type, adjust_timestep, VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
@@ -176,7 +176,7 @@ Call pmf%allocate_work()
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -694,7 +694,7 @@ Call pmf%allocate_work()
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! Globalise Langevin random forces for shared RBs
 

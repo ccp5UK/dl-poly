@@ -14,7 +14,7 @@ Module nvt_gst
   Use errors_warnings, Only : error,info
   Use statistics, Only : stats_type
   Use timer, Only :  timer_type
-  Use thermostat, Only : adjust_timestep,thermostat_type
+  Use thermostat, Only : adjust_timestep,thermostat_type,VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Implicit None
 
@@ -136,7 +136,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -463,7 +463,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 

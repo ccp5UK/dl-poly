@@ -20,7 +20,8 @@ Module nst_nose_hoover
   Use timer, Only : timer_type
   Use thermostat, Only : thermostat_type, adjust_timestep, &
                          CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
-                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
+                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC, &
+                         VV_FIRST_STAGE
   Use vdw, Only : vdw_type
   Implicit None
 
@@ -217,7 +218,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -750,7 +751,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 

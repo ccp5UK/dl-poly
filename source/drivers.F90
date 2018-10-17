@@ -40,7 +40,8 @@ Module drivers
     ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
     ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
     ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO, &
-    DPD_NULL, DPD_SECOND_ORDER
+    DPD_NULL, DPD_SECOND_ORDER, &
+    VV_FIRST_STAGE,VV_SECOND_STAGE
   Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
   Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
   Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
@@ -146,16 +147,13 @@ Module drivers
 
   Use msd, Only : msd_type,msd_write
 
-  
-  
-  
-  
   Implicit None
   Private
+
   Public :: w_impact_option
   Public :: w_md_vv
   Public :: w_replay_historf, w_replay_history
-  
+
 Contains
 
   Subroutine w_impact_option(levcfg,nstep,nsteql,rigid,cshell,stats,impa,config,comm)
@@ -585,13 +583,12 @@ End If
 ! One-off application for first order splitting and symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
 
-      If (thermo%key_dpd /= DPD_NULL .and. stage == 0) Then
+      If (thermo%key_dpd /= DPD_NULL .and. stage == VV_FIRST_STAGE) Then
         Call dpd_thermostat(stage,flow%strict,neigh%cutoff,flow%step,thermo%tstep,stat,thermo, &
           neigh,rigid,domain,cnfig,seed,comm)
       End If
 
 ! Integrate equations of motion - velocity verlet
-! first (stage == 0) or second (stage == 1) stage
 
       If (.not. rigid%on) Then
          If (thermo%ensemble == ENS_NVE) Then
@@ -971,7 +968,7 @@ End If
 ! Symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
 
-        If (thermo%key_dpd == DPD_SECOND_ORDER .and. stage == 1) Then
+        If (thermo%key_dpd == DPD_SECOND_ORDER .and. stage == VV_SECOND_STAGE) Then
           Call dpd_thermostat(stage,flow%strict,neigh%cutoff,flow%step,thermo%tstep,stat,thermo, &
             neigh,rigid,domain,cnfig,seed,comm)
         End If
@@ -1513,7 +1510,8 @@ End If
 
 ! Integrate equations of motion - velocity verlet first stage
 
-        Call w_integrate_vv(0,flow,cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)
+        Call w_integrate_vv(VV_FIRST_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
+          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)
 
 ! Refresh mappings
 
@@ -1549,8 +1547,8 @@ End If
 
 ! Integrate equations of motion - velocity verlet second stage
 
-        Call w_integrate_vv(1,flow,cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr, &
-            neigh,electro,comm)          
+        Call w_integrate_vv(VV_SECOND_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
+          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)
 
 ! Apply kinetic options
 
