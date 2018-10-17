@@ -1157,14 +1157,6 @@ Contains
            End If
         End If
 
-! read integration flavour
-
-     Else If (word(1:8) == 'integrat') Then
-
-        Call get_word(record,word)
-        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
-        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
-
 ! read ensemble
 
      Else If (word(1:8) == 'ensemble') Then
@@ -4019,14 +4011,6 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
            flow%strict=.false.
 
         End If
-
-! read integration flavour
-
-     Else If (word(1:8) == 'integrat') Then
-
-        Call get_word(record,word)
-        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
-        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
 
 ! read analysis (intramolecular distribution calculation) option
 
