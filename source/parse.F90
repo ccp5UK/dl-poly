@@ -108,7 +108,7 @@ Contains
 
     Character( Len = * ), Intent( InOut ) :: record
 
-    record = Trim(Adjustl(record))
+    record = Adjustl(record)
 
   End Subroutine strip_blanks
 
