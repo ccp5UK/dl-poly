@@ -16,7 +16,7 @@ Module nvt_langevin
   Use langevin,        Only : langevin_forces
   Use shared_units,    Only : update_shared_units
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type,adjust_timestep
+  Use thermostat, Only : thermostat_type,adjust_timestep,VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
@@ -131,7 +131,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
     rstep = 1.0_wp/tstep
 
   ! first pass of velocity verlet algorithm
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
        Do i=1,config%natms
@@ -522,7 +522,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -1289,7 +1289,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
     lrand = ((thermo%chi_ep>zero_plus .or. ttm%gvar==2) .and. ttm%l_epcp)
 
   ! first pass of velocity verlet algorithm
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
        Do i=1,config%natms

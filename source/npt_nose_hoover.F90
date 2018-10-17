@@ -12,7 +12,7 @@ Module npt_nose_hoover
   Use nvt_nose_hoover, Only : nvt_h0_scl,nvt_h1_scl 
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use errors_warnings, Only : error,info
-  Use thermostat, Only : thermostat_type, adjust_timestep
+  Use thermostat, Only : thermostat_type, adjust_timestep, VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
@@ -174,7 +174,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -651,7 +651,7 @@ If ( adjust_timestep(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,config%natms,conf
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 

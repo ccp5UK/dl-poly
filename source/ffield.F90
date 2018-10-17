@@ -60,7 +60,7 @@ Module ffield
 
   Use numerics, Only : factorial, shellsort
   Use errors_warnings, Only : error,warning,info
-  Use thermostat, Only : thermostat_type,ENS_NVE
+  Use thermostat, Only : thermostat_type,ENS_NVE,DPD_NULL
   Use constraints, Only : constraints_type
   Use pmf, Only : pmf_type
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
@@ -3457,7 +3457,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
            End If
 
            If (keypot == VDW_TAB) Then
-              If (thermo%key_dpd > 0) Then ! make sure thermo%gamdpd is read and reported for DPD
+              If (thermo%key_dpd /= DPD_NULL) Then ! make sure thermo%gamdpd is read and reported for DPD
                  Call get_word(record,word)
                  parpot(1)=word_2_real(word)
                  If (flow%print_topology) Then
@@ -3473,7 +3473,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                  End If
               End If
            Else
-              itmp=Merge(vdws%max_param+1,vdws%max_param,thermo%key_dpd > 0)
+              itmp=Merge(vdws%max_param+1,vdws%max_param,thermo%key_dpd /= DPD_NULL)
               Do i=1,itmp ! make sure thermo%gamdpd is read and reported for DPD
                  Call get_word(record,word)
                  parpot(i)=word_2_real(word)
@@ -3547,7 +3547,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
               vdws%param(i,itpvdw)=parpot(i)
            End Do
 
-           If (thermo%key_dpd > 0) Then ! store possible specification of DPD's gamma_ij
+           If (thermo%key_dpd /= DPD_NULL) Then ! store possible specification of DPD's gamma_ij
               If      (keypot ==  VDW_TAB) Then
                  thermo%gamdpd(keyvdw)=Abs(parpot(1))
               Else If (keypot ==  VDW_12_6) Then
@@ -3613,9 +3613,9 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                  vdws%ltp(i) = VDW_NULL
               End Do
 
-              If (thermo%key_dpd > 0) Then
+              If (thermo%key_dpd /= DPD_NULL) Then
                  If (All(thermo%gamdpd(1:vdws%max_vdw) <= zero_plus)) Then ! So thermo%gamdpd(0) <= zero_plus too
-                    thermo%key_dpd = 0
+                    thermo%key_dpd = DPD_NULL
                     Call info( &
                       'Ensemble NVT dpd defaulting to NVE (Microcanonical) ' &
                       //'due to all drag coefficients equal to zero',.true.)
@@ -3646,8 +3646,8 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 
               If (vdws%mixing /= MIX_NULL) Then
 
-                If (flow%print_topology .or. thermo%key_dpd > 0) Then
-                  If (thermo%key_dpd > 0) Then
+                If (flow%print_topology .or. thermo%key_dpd /= DPD_NULL) Then
+                  If (thermo%key_dpd /= DPD_NULL) Then
                     Call info('vdw potential mixing under testing...',.true.)
                   Else
                     Call info('dpd potential mixing under testing...',.true.)
@@ -3677,7 +3677,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                                 End If
                              Else
                                 If (vdws%list(ksite) > vdws%n_vdw) Then
-                                  If (thermo%key_dpd > 0) Then
+                                  If (thermo%key_dpd /= DPD_NULL) Then
                                     If (thermo%gamdpd(0) <= zero_plus) Then
                                       If (flow%strict) Then
                                         ldpd_safe = .false. ! test for non-definable interactions
@@ -3713,8 +3713,8 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 
                  If (nsite > 0) Then
 
-                   If (flow%print_topology .or. thermo%key_dpd > 0) Then
-                     If (thermo%key_dpd > 0) Then
+                   If (flow%print_topology .or. thermo%key_dpd /= DPD_NULL) Then
+                     If (thermo%key_dpd /= DPD_NULL) Then
                        Call info('vdw potential mixing underway...',.true.)
                      Else
                        Call info('dpd potential mixing underway...',.true.)
@@ -3792,7 +3792,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*(del(1)+del(2))
 
-                                If (thermo%key_dpd > 0) &
+                                If (thermo%key_dpd /= DPD_NULL) &
                                 thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite)*thermo%gamdpd(jsite))
 
                              Else If (vdws%mixing == MIX_FENDER_HASLEY) Then
@@ -3806,7 +3806,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*(del(1)+del(2))
 
-                              If (thermo%key_dpd > 0) Then
+                              If (thermo%key_dpd /= DPD_NULL) Then
                                 If (thermo%gamdpd(isite)+thermo%gamdpd(jsite) > zero_plus) &
                                   thermo%gamdpd(ksite) = &
                                   2.0_wp*thermo%gamdpd(isite)*thermo%gamdpd(jsite) / &
@@ -3824,7 +3824,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                                 If (Any(del > zero_plus)) &
                                 del(0) = Sqrt(del(1)*del(2))
 
-                                If (thermo%key_dpd > 0) &
+                                If (thermo%key_dpd /= DPD_NULL) &
                                 thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite)*thermo%gamdpd(jsite))
 
                              Else If (vdws%mixing == MIX_HALGREN) Then
@@ -3838,7 +3838,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                                 If (Any(del > zero_plus)) &
                                 del(0) = (del(1)**3+del(2)**3) / (del(1)**2+del(2)**2)
 
-                              If (thermo%key_dpd > 0) Then
+                              If (thermo%key_dpd /= DPD_NULL) Then
                                 If (thermo%gamdpd(isite) >= zero_plus .and. thermo%gamdpd(jsite) >= zero_plus) Then
                                   If (Sqrt(thermo%gamdpd(isite))+Sqrt(thermo%gamdpd(jsite)) > zero_plus) Then
                                     thermo%gamdpd(ksite) = &
@@ -3861,7 +3861,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                                 If (Any(del > zero_plus)) &
                                 del(0) = (0.5_wp*(del(1)**6+del(2)**6))**(1.0_wp/6.0_wp)
 
-                                If (thermo%key_dpd > 0) &
+                                If (thermo%key_dpd /= DPD_NULL) &
                                 thermo%gamdpd(ksite) = Sqrt(thermo%gamdpd(isite)*thermo%gamdpd(jsite)) * ((sig(1)*sig(2))**3) / tmp
 
                              Else If (vdws%mixing == MIX_TANG_TOENNIES) Then
@@ -3879,7 +3879,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*sig(0)*(del(1)/sig(1) + del(2)/sig(2))
 
-                                If (thermo%key_dpd > 0) &
+                                If (thermo%key_dpd /= DPD_NULL) &
                                 thermo%gamdpd(ksite) = 0.5_wp*eps(0)*(thermo%gamdpd(isite)/eps(1) + thermo%gamdpd(jsite)/eps(2))
 
                              Else If (vdws%mixing == MIX_FUNCTIONAL) Then
@@ -3903,7 +3903,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                                 If (Any(del > zero_plus)) &
                                 del(0) = 0.5_wp*sig(0)*(del(1)/sig(1) + del(2)/sig(2))
 
-                                If (thermo%key_dpd > 0) &
+                                If (thermo%key_dpd /= DPD_NULL) &
                                 thermo%gamdpd(ksite) = 0.5_wp*eps(0)*(thermo%gamdpd(isite)/eps(1) + thermo%gamdpd(jsite)/eps(2))
 
                              End If
@@ -3924,7 +3924,7 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
                              End If
 
                              If (flow%print_topology) Then
-                               If (thermo%key_dpd > 0) Then
+                               If (thermo%key_dpd /= DPD_NULL) Then
                                  Write(rfmt,'(a,i0,a)') '(2x,i10,5x,2a8,3x,a4,1x,',vdws%max_param+1,'f20.6)'
                                  Write(message,rfmt) vdws%n_vdw,sites%unique_atom(i), &
                                    sites%unique_atom(j),keyword,parpot(1:vdws%max_param+1)
@@ -3949,9 +3949,9 @@ Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
 
            End If
 
-           If (thermo%key_dpd > 0) Then
+           If (thermo%key_dpd /= DPD_NULL) Then
              If      (All(thermo%gamdpd(1:vdws%max_vdw) <= zero_plus)) Then
-               thermo%key_dpd = 0
+               thermo%key_dpd = DPD_NULL
 
                Call info('Ensemble NVT dpd defaulting to NVE (Microcanonical)' &
                  //'due to all drag coefficients equal to zero',.true.)

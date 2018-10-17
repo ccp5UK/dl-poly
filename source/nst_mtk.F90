@@ -19,7 +19,8 @@ Module nst_mtk
   Use timer, Only : timer_type
   Use thermostat, Only : adjust_timestep,thermostat_type, &
                          CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
-                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
+                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC, &
+                         VV_FIRST_STAGE
   Use vdw, Only : vdw_type
   Use errors_warnings, Only : error,info
   Implicit None
@@ -203,7 +204,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -720,7 +721,7 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 

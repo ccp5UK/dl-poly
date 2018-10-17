@@ -52,7 +52,8 @@ Module control
                          ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
                          ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO, &
                          CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
-                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC
+                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC, &
+                         DPD_NULL,DPD_FIRST_ORDER,DPD_SECOND_ORDER
   Use statistics, Only : stats_type
   USe z_density, Only : z_density_type
   Use constraints, Only : constraints_type
@@ -1298,10 +1299,10 @@ Contains
 
 ! thermo%key_dpd determined in scan_control
 
-              If      (thermo%key_dpd == 1) Then
+              If      (thermo%key_dpd == DPD_FIRST_ORDER) Then
                  thermo%ensemble = ENS_NVE ! equivalence to doing NVE with some extra fiddling before VV(0)
                  Call info("Ensemble type : Shardlow's first order splitting (S1)",.true.)
-              Else If (thermo%key_dpd == 2) Then
+              Else If (thermo%key_dpd == DPD_SECOND_ORDER) Then
                  thermo%ensemble = ENS_NVE ! equivalence to doing NVE with some extra fiddling before VV(0) and after VV(1)
                  Call info("Ensemble type : Shardlow's second order splitting (S2)",.true.)
               Else
@@ -3093,7 +3094,7 @@ Contains
 
   If (thermo%lvar) Then
 
-     If (thermo%key_dpd > 0) Then
+     If (thermo%key_dpd /= DPD_NULL) Then
        thermo%lvar=.false.
         Call warning('variable timestep unavalable in DPD themostats',.true.)
         Write(message,'(a,1p,e12.4)') 'fixed simulation timestep (ps) ',thermo%tstep
@@ -3870,9 +3871,9 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
            Call get_word(record,word)
            If (word(1:3) == 'dpd') Then
               If      (word(1:5) == 'dpds1') Then
-                 thermo%key_dpd = 1
+                 thermo%key_dpd = DPD_FIRST_ORDER
               Else If (word(1:5) == 'dpds2') Then
-                 thermo%key_dpd = 2
+                 thermo%key_dpd = DPD_SECOND_ORDER
               End If
            End If
         End If

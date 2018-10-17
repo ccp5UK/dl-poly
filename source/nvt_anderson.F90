@@ -17,7 +17,7 @@ Module nvt_anderson
   Use core_shell, Only : core_shell_type,SHELL_ADIABATIC
 Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep,thermostat_type
+  Use thermostat, Only : adjust_timestep,thermostat_type,VV_FIRST_STAGE
 Use core_shell, Only : core_shell_type
   Implicit None
 
@@ -147,7 +147,7 @@ Contains
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 
@@ -585,7 +585,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
   ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
   ! store initial values
 

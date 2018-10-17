@@ -14,7 +14,7 @@ Module nve
   Use errors_warnings, Only : error,info
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
-  Use thermostat, Only : adjust_timestep,thermostat_type
+  Use thermostat, Only : adjust_timestep,thermostat_type,VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Implicit none
 
@@ -117,7 +117,7 @@ Contains
 
     ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
       ! store initial values
 
@@ -394,7 +394,7 @@ Contains
 
     ! first pass of velocity verlet algorithm
 
-    If (stage == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
 
       ! store initial values
 

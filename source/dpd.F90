@@ -20,7 +20,8 @@ Module dpd
   Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_FORCES
   Use errors_warnings, Only : error, warning
   Use numerics,        Only : seed_type,box_mueller_saru2
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type,DPD_FIRST_ORDER,DPD_SECOND_ORDER, &
+                         VV_FIRST_STAGE,VV_SECOND_STAGE
   Use statistics, Only : stats_type
   Use neighbours, Only : neighbours_type
   Implicit None
@@ -31,16 +32,15 @@ Module dpd
 
 Contains
 
-  Subroutine dpd_thermostat(isw,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,domain,config,seed,comm)
+  Subroutine dpd_thermostat(stage,l_str,rcut,nstep,tstep,stats,thermo,neigh,rigid,domain,config,seed,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine applying DPD thermostat in a Shardlow's VV manner
     ! using the verlet neighbour neigh%list
     !
-    ! isw=isw(VV) : by stages 0 for VV1 and 1 for VV2
-    ! thermo%key_dpd = 1 for first order splitting
-    ! thermo%key_dpd = 2 for second order splitting
+    ! thermo%key_dpd = DPD_FIRST_ORDER for first order splitting
+    ! thermo%key_dpd = DPD_SECOND_ORDER for second order splitting
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov march 2016
@@ -48,7 +48,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Logical,           Intent( In    ) :: l_str
-    Integer,           Intent( In    ) :: isw,nstep
+    Integer,           Intent( In    ) :: stage,nstep
     Real( Kind = wp ), Intent( In    ) :: rcut,tstep
     Type( stats_type ), Intent( InOut ) :: stats
     Type( thermostat_type ), Intent( In    ) :: thermo
@@ -71,7 +71,8 @@ Contains
     Character ( len = 256 ) :: message
 
 
-    If (thermo%key_dpd /= 1 .or. thermo%key_dpd /= 2 .or. thermo%key_dpd*isw == 1) Return
+    If (Any(thermo%key_dpd /= [DPD_FIRST_ORDER,DPD_SECOND_ORDER]) .or. &
+      (thermo%key_dpd == DPD_FIRST_ORDER .and. stage == VV_SECOND_STAGE)) Return
 
     fail=0
     Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat = fail(1))
@@ -83,13 +84,13 @@ Contains
 
     ! set tstep and nstep wrt to order of splitting
 
-    If (thermo%key_dpd == 1) Then
+    If (thermo%key_dpd == DPD_FIRST_ORDER) Then
       nst_p = nstep
       tst_p = tstep
     Else
-      If (isw == 0) Then
+      If (stage == VV_FIRST_STAGE) Then
         nst_p = nstep
-      Else ! If (isw == 1) Then
+      Else ! If (stage == VV_SECOND_STAGE) Then
         nst_p = -nstep
       End If
       tst_p = 0.5_wp*tstep
@@ -102,7 +103,7 @@ Contains
 
     ! initialise DPD virial and stress contributions
 
-    If (isw == 0) Then
+    If (stage == VV_FIRST_STAGE) Then
       stats%virdpd = 0.0_wp
       stats%strdpd = 0.0_wp
     End If
