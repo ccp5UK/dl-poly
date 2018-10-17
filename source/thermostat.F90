@@ -43,7 +43,7 @@ Module thermostat
     Real( Kind = wp ), Public :: soft
 
     !> Langevin switch
-    Logical, Public :: l_langevin
+    Logical, Public :: l_langevin = .false.
 
     !> Gentle Stochastic dynamics (Langevin) thermostat friction
     Real( Kind = wp ), Public :: gama
@@ -75,7 +75,7 @@ Module thermostat
     !> - 0 no DPD
     !> - 1 first order splitting
     !> - 2 second order splitting
-    Integer, Public :: key_dpd
+    Integer, Public :: key_dpd = 0
     !> DPD drag?
     Real( Kind = wp ), Allocatable, Public :: gamdpd(:)
     Real( Kind = wp ), Allocatable, Public :: sigdpd(:)

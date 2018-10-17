@@ -951,16 +951,18 @@ Subroutine angles_forces(isw,engang,virang,stress,angle,config,comm)
            gr    =angle%param(3,kk)
            rm    =angle%param(4,kk)
            dr1   =rab-rm
-           rho1  =Exp(-0.5_wp*gr*dr1)
+           rho1  =Exp(gr*dr1)+1.0_wp
            dr2   =rbc-rm
-           rho2  =Exp(-0.5_wp*gr*dr2)
-           rho   =rho1*rho2
 
-           pterm=k*(Cos(2.0_wp*dtheta)-1.0_wp)*rho
-           gamma=-k*2.0_wp*Sin(2.0_wp*dtheta)/sint
-           gamsa=-0.5_wp*gr*pterm
-           gamsc=gamsa
-           vterm=-gamsa*(rab+rbc)
+           rho2  =Exp(gr*dr2)+1.0_wp
+           rho   =1.0_wp*Sqrt(rho1*rho2)
+
+           pterm=-k*rho*(Cos(2.0_wp*dtheta)-1.0_wp)
+           gamma= 2.0_wp*k*rho*Sin(2.0_wp*dtheta)*rsint
+           gamsa=-0.5_wp*gr*pterm*(1.0_wp-1.0_wp/rho1)
+           gamsc=-0.5_wp*gr*pterm*(1.0_wp-1.0_wp/rho2)
+           vterm=-(gamsa*rab+gamsc*rbc)
+
 
         Else If (keya == 20) Then
 

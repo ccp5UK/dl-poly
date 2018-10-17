@@ -45,11 +45,11 @@ TEST 21 - TIP4P water: RBs with a Massless Charged Site (29,052 particles)
 TEST 22 - Ionic Liquid Dimethylimidazolium Chloride as RBs (44,352 ions)
 TEST 23 - Calcite Nano-Particles (600) in TIP3P Water (6,904 molecules, 23,712 ions)
 TEST 24 - Iron/Carbon Alloy with EEAM (metal) Potentials (36,803 particles)
-TEST 25 - Iron/Chromium Alloy with 2BEAM (metal) Ptentials (32,000 particles)
+TEST 25 - Iron/Chromium Alloy with 2BEAM (metal) Potentials (32,000 particles)
 TEST 28 - Butane in CCl4 Solution with Umbrella Sampling via PLUMED
-TEST 29 - ttm 1
-TEST 30 - ttm 2
-TEST 31 - ttm 3
+TEST 29 - Iron with tabulated EAM (metal) Potential (54,000 atoms), Two-Temperature Model, Cascade
+TEST 30 - Silicon with original Tersoff (T3) Potential (200,000 atoms), Two-Temperature Model, Swift heavy ion irradiation
+TEST 31 - Tungsten with extended Finnis-Sinclair Potential (722,672 atoms), Two-Temperature Model, laser-induced relaxation of thin film
 TEST 32 - Sodium Chloride (27,000 ions), NVE ensemble
 TEST 33 - Sodium Chloride (27,000 ions), NVT ensemble, Evans thermostat
 TEST 34 - Sodium Chloride (27,000 ions), NVT ensemble, Langevin thermostat

@@ -93,7 +93,7 @@ Module comms
     Integer               :: comm
     Integer               :: idnode = 0
     Integer               :: mxnode = 1
-    Logical               :: l_fast
+    Logical               :: l_fast = .false.
     Integer               :: ou
     Integer               :: part_type
     Integer               :: part_array_type

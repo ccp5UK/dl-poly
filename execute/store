@@ -6,6 +6,8 @@ cp -vpLH MPOLES    ../data/TEST$1
 cp -vpLH TAB*      ../data/TEST$1
 cp -vpLH REFERENCE ../data/TEST$1
 cp -vpLH HISTORY   ../data/TEST$1
+cp -vpLH Ce.dat    ../data/TEST$1
+cp -vpLH g.dat     ../data/TEST$1
 mv -v     OUTPUT   ../data/TEST$1
 mv -v     STATIS   ../data/TEST$1
 mv -v     REV*     ../data/TEST$1
@@ -16,4 +18,7 @@ mv -v     *DAT*    ../data/TEST$1
 mv -v     *PMF     ../data/TEST$1
 mv -v     *TAB     ../data/TEST$1
 mv -v     MSDTMP   ../data/TEST$1
+mv -v     DUMP_E   ../data/TEST$1
+mv -v     LATS_*   ../data/TEST$1
+mv -v     PEAK_*   ../data/TEST$1
 chmod -R a-w       ../data/TEST$1

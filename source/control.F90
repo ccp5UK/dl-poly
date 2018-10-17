@@ -645,7 +645,7 @@ Contains
            vdws%l_direct = .true.
            Call info('vdw direct option on',.true.)
 
-        Else If (word1(1:6) == 'mixing') Then
+        Else If (word1(1:3) == 'mix') Then
 
 ! mixing type keywords
 
@@ -899,6 +899,7 @@ Contains
         Else
            flow%restart_key = 1
            Call info('restart requested (continuing an old simulation)',.true.)
+           Call warning('timestep from REVOLD overides specification in CONTROL',.true.)
         End If
 
 ! read timestep options
@@ -3551,13 +3552,13 @@ Contains
   Case (1)
   ! hyperbolic tangent electronic specific heat: multiplier will be converted
   ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(671)
+    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
     ttm%sh_A = ttm%sh_A*ttm%cellrho
     ttm%sh_B = ttm%sh_B*1.0e-4_wp
   Case (2)
   ! linear electronic specific heat to Fermi temperature: maximum
   ! value will be converted from kB/atom to kB/A^3
-    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(671)
+    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
     ttm%Cemax = ttm%Cemax*ttm%cellrho
   Case (4)
   ! constant electronic specific heat: will convert from kB/atom to kB/A^3
@@ -3565,31 +3566,31 @@ Contains
   Case (5)
   ! hyperbolic tangent electronic specific heat: multiplier will be converted
   ! from kB/atom to kB/A^3, temperature term (K^-1) is now scaled by 10^-4
-    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(671)
+    If (Abs(ttm%sh_A) <= zero_plus .or. Abs(ttm%sh_B) <= zero_plus) Call error(681)
     ttm%sh_B = ttm%sh_B*1.0e-4_wp
   Case (6)
   ! linear electronic specific heat to Fermi temperature: maximum
   ! value will be converted from kB/atom to kB/A^3
-    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(671)
+    If (Abs(ttm%Tfermi) <= zero_plus .or. Abs(ttm%Cemax) <= zero_plus) Call error(681)
   End Select
 
   Select Case (ttm%KeType)
   ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
   ! to kB ps^-1 A^-1
   Case (1,2)
-    If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(672)
+    If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
     ttm%Ka0 = ttm%Ka0*ttm%JKms_to_kBAps
   End Select
 
   Select Case (ttm%DeType)
   Case (1)
   ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(673)
+    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
     ttm%Diff0 = ttm%Diff0*1.0e8_wp
   Case (2)
   ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
   ! and ttm%Diff0 scaled with system temperature
-    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(673)
+    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
     ttm%Diff0 = ttm%Diff0*thermo%temp*1.0e8_wp
   End Select
 
@@ -3666,7 +3667,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   Type( comms_type ), Intent( InOut ) :: comm
 
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
-                            lrcut,lrpad,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
+                            lrcut,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
   Character( Len = 200 ) :: record
   Character( Len = 40  ) :: word,word1,word2,akey
   Integer                :: i,itmp,nstrun,bspline_local
@@ -3725,7 +3726,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   lrcut = .false.
   neigh%cutoff  = 0.0_wp
 
-  lrpad = .false.
+  flow%reset_padding = .false.
   neigh%padding  = 0.0_wp
 
   rdf%rbin  = rbin_def
@@ -3834,10 +3835,9 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
      Else If (word(1:3) == 'pad' .or. word(1:4) == 'rpad') Then
 
-        lrpad = .true.
+        flow%reset_padding = .true.
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         neigh%padding = Max(neigh%padding,Abs(word_2_real(word)))
-        lrpad = (neigh%padding > zero_plus) ! if zero or nothing is entered
 
 ! read vdw cutoff
 
@@ -3935,10 +3935,9 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
      Else If (word(1:4) == 'delr') Then
 
-        lrpad = .true.
+        flow%reset_padding = .true.
         Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
         neigh%padding = Max(neigh%padding,0.25_wp*Abs(word_2_real(word)))
-        lrpad = (neigh%padding > zero_plus) ! if zero or nothing is entered
 
 ! read DL_POLY_2/Classic multiple timestep option (compatibility)
 ! as DL_POLY_4 infrequent k-space SPME evaluation option
@@ -4289,6 +4288,8 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
      If (la_bnd) Then
         If (bond%bin_pdf == 0) bond%bin_pdf = -1
         bond%rcut=Max(bond%rcut,rcbnd_def)
+        Call warning('bond PDF analisys cutoff check: bond%rcut=Max(bond%rcut,rcbnd_def)',.true.)
+        Call warning(40,bond%rcut,0.0_wp,0.0_wp)
      End If
      If (la_ang .and. angle%bin_adf == 0) angle%bin_adf = -1
      If (la_dih .and. dihedral%bin_adf == 0) dihedral%bin_adf = -1
@@ -4322,6 +4323,10 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
      If (.not.lrvdw) Then
         lrvdw = (vdws%cutoff > 1.0e-6_wp)
         vdws%cutoff = Min(vdws%cutoff,Max(neigh%cutoff,rcut_def))
+        Call warning( &
+          'short-ranged interaction cutoff check: vdws%cutoff = Min(vdws%cutoff,Max(neigh%cutoff,rcut_def))', &
+          .true.)
+        Call warning(40,vdws%cutoff,0.0_wp,0.0_wp)
      End If
 
      If (vdws%no_vdw) lvdw = .not.vdws%no_vdw
@@ -4331,8 +4336,12 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
 ! Sort neigh%cutoff as the maximum of all valid cutoffs
 
-  neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff, &
-    2.0_wp*Max(rcter,bond%rcut)+1.0e-6_wp)
+  neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, &
+    2.0_wp*rcter+1.0e-6_wp)
+  Call warning( &
+    'DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+    .true.)
+  Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
   ! If KIM model requires
   If (kim_data%padding_neighbours_required) Then
     If (neigh%cutoff < kim_data%influence_distance) Then
@@ -4546,6 +4555,8 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
            If (lrcut .or. lrvdw) Then
               lrmet=.true.
               met%rcut=Max(neigh%cutoff,vdws%cutoff)
+              Call warning('metal interaction cutoff check: met%rcut=Max(neigh%cutoff,vdws%cutoff)',.true.)
+              Call warning(40,met%rcut,0.0_wp,0.0_wp)
            Else
               Call error(382)
            End If
@@ -4571,6 +4582,9 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
                                         celprp(8)*Real(ewld%bspline,wp)/Real(ewld%fft_dim_b1,wp),  &
                                         celprp(9)*Real(ewld%bspline,wp)/Real(ewld%fft_dim_c1,wp)), &
                                     itmp == 0) )
+              Call warning('DD cutoff check: rcut compliance with Ewald summation' // &
+                'parameters (SPME/DaFT grid sizes) and MD cell widths',.true.)
+              Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
            End If
 
 ! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
@@ -4603,11 +4617,19 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
                 (lrvdw .or. lrmet .or. lter .or. kim_data%active) ) Then
               lrcut=.true.
               If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-                 neigh%cutoff=Max(vdws%cutoff,met%rcut,kim_data%cutoff, &
-                   2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                neigh%cutoff=Max(vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, &
+                  2.0_wp*rcter+1.0e-6_wp)
+                Call warning('DD cutoff check: neigh%cutoff = Max(vdws%cutoff,'// &
+                  'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+                  .true.)
+                Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
               Else
                  neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut, &
-                   kim_data%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                   kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp)
+                Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,'// &
+                  'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+                  .true.)
+                Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
               End If
            End If
 
@@ -4621,9 +4643,15 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
               If (.not.flow%strict) Then
                  lrcut=.true.
                  If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-                    neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
+                   neigh%cutoff=Max(bond%rcut,2.0_wp*rcter+1.0e-6_wp)
+                   Call warning('DD cutoff check: neigh%cutoff = Max('// &
+                     'bond%rcut,2.0_wp*rcter+1.0e-6_wp',.true.)
+                   Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
                  Else
-                    neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+                    neigh%cutoff=Max(neigh%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp)
+                   Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff'// &
+                     'bond%rcut,2.0_wp*rcter+1.0e-6_wp',.true.)
+                   Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
                  End If
               End If
            End If
@@ -4663,15 +4691,27 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 ! they are defined by EAM since met%rcut can be /= neigh%cutoff in such
 ! instances, this can break the NLAST check in metal_ld_set_halo
 
-        If (lmet) met%rcut = neigh%cutoff
+        If (lmet) Then
+          met%rcut = neigh%cutoff
+          Call warning('metal interactions cutoff check: met%rcut = neigh%cutoff',.true.)
+          Call warning(40,met%rcut,0.0_wp,0.0_wp)
+        End If
 
 ! Sort vdws%cutoff=neigh%cutoff if VDW interactions are in play
 
-        If (lvdw .and. vdws%cutoff > neigh%cutoff) vdws%cutoff = neigh%cutoff
+        If (lvdw .and. vdws%cutoff > neigh%cutoff) Then
+          vdws%cutoff = neigh%cutoff
+          Call warning('short-ranged interactions cutoff check: vdws%cutoff = neigh%cutoff',.true.)
+          Call warning(40,vdws%cutoff,0.0_wp,0.0_wp)
+        End If
 
 ! Sort rbin as now neigh%cutoff is already pinned down
 
-        If (rdf%rbin < 1.0e-05_wp .or. rdf%rbin > neigh%cutoff/4.0_wp) rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)
+        If (rdf%rbin < 1.0e-05_wp .or. rdf%rbin > neigh%cutoff/4.0_wp) Then
+          rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)
+          Call warning('bin size cutoff check: rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)',.true.)
+          Call warning(40,rdf%rbin,0.0_wp,0.0_wp)
+        End If
 
         carry=.false.
 
@@ -4685,7 +4725,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 ! expanding and not running the small system prepare to exit gracefully
 
   devel%l_trm = (l_exp .and. nstrun == 0)
-  If (((.not.flow%simulation) .or. devel%l_trm) .and. lrpad) neigh%padding=0.0_wp
+  If (((.not.flow%simulation) .or. devel%l_trm) .and. flow%reset_padding) neigh%padding=0.0_wp
 
   Return
 

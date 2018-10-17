@@ -862,7 +862,7 @@ Subroutine bonds_forces(isw,engbnd,virbnd,stress,rcut,engcpe,vircpe,bond, &
               t1 = vk  + (vk1 - vk)*ppp
               t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-              gamma = (t1 + (t2-t1)*ppp*0.5_wp)/rab
+              gamma = (t1 + (t2-t1)*ppp*0.5_wp)/rab2
            Else ! bond breaking
               safe(3)=.false.
               omega=0.0_wp

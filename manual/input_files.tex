@@ -80,7 +80,7 @@ TITLE RECORD: DL_POLY_4 SAFE ORDER OF CONTROL DIRECTIVES
 # I/O REDIRECT
 io output  my-dl_poly-run
 io config  CONFIG-CDS-generated
-io field   FILED-dl_field.out
+io field   FIELD-dl_field.out
 io history new-trajectory
 io revive  REVIVE-2ps-run
 io revold  REVIVE-1ps-run
@@ -385,9 +385,9 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \> {\bf ensemble nst mtk} $f_{1}~f_{2}$         \> select N$\sigma$T ensemble\index{ensemble!Martyna-Tuckerman-Klein N$\sigma$T}, type Martyna-Tuckerman-Klein with \\
 \>                                              \> $f_{1},~f_{2}$ as the thermostat\index{thermostat} and barostat\index{barostat} relaxation times in ps \\
 \>                                              \> \\
-\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf area} \> select NP$_{n}$AT ensemble, type $Q$ (i.e. {\em lang}, {\em ber}, \\
-\>                                              \> {\em hoover} or {\em mtk}), with $f_{1},~f_{2}$ as the thermostat\index{thermostat} \\
-\>                                              \> and barostat\index{barostat} relaxation times in ps \\
+\> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf area} \> select NP$_{n}$AT ensemble, type $Q$ (i.e. {\em lang}, {\em ber}, {\em hoover} or {\em mtk}), \\
+\>                                              \> with $f_{1},~f_{2}$ as the thermostat\index{thermostat} and barostat\index{barostat} relaxation \\
+\>                                              \> times in ps (for {\em lang} barostat friction in ps$^{-1}$) \\
 \>                                              \> \\
 \> {\bf ensemble nst} $Q~f_{1} f_{2}$ {\bf tens}ion $\gamma$ \> select NP$_{n}\gamma$T ensemble, type $Q$ (i.e. {\em lang}, {\em ber}, \\
 \>                                              \> {\em hoover} or {\em mtk}), with $f_{1},~f_{2}$ as the thermostat\index{thermostat} \\
@@ -846,7 +846,7 @@ X\=XXXXXXXXXXXXXXXXXXXX\=XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\=\kill
 \>                                              \> defined by explicit potential forms, i.e. it will not work for \\
 \>                                              \> systems using tabulated potentials (TABLE) \\
 \>                                              \> \\
-\> {\bf vdw mix}  {\em rule}                    \> apply the mixing {\em rule} to all specified analytical, \\
+\> {\bf vdw mix}ing  {\em rule}                 \> apply the mixing {\em rule} to all specified analytical, \\
 \>                                              \> single-species van der Waals potential interactions \\
 \>                                              \> to generate cross-species interactions when: \\
 \>                                              \> \phantom{x} (i)~~~the latter has not already been specified; \\
@@ -2427,7 +2427,7 @@ atomic indices appearing under the {\bf shell} directive above.
 \vskip 1ex
 \begin{tabular}{|l|l|c|c|c|c|c|}
 \hline
-key & potential type & \multicolumn{4}{c|}{Variables (1-4)} & functional form\dag \\
+key & potential type & \multicolumn{4}{c|}{Variables (1-4,5-6)} & functional form\dag \\
 \hline
            &                     &     &              &            &            & \\
 {\bf tab}  & Tabulation, see      &     &              &            &            & tabulated potential \\
@@ -2472,11 +2472,11 @@ $U(\theta) = A~[1+\cos(m~\theta-\delta)]$ \\
 $U(\theta) = A~(\theta-\theta_{0})~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o})$ \\
 {\bf -msb} &                     &     &              &            &            & \\
            &                     &     &              &            &            & \\
-{\bf stst} & Compass \cite{sun-98a} & $A$ & $r_{ij}^{o}$ & $r_{jk}^{o}$ &        &
+{\bf stst} & Compass \cite{sun-98a} & $A$ & $r_{ij}^{o}$ & $r_{jk}^{o}$ &       &
 $U(\theta) = A~(r_{ij} - r_{ij}^{o})~(r_{ik} - r_{ik}^{o})$ \\
 {\bf -sts} & stretch-stretch     &     &              &            &            & \\
            &                     &     &              &            &            & \\
-{\bf stbe} & Compass \cite{sun-98a} & $A$ & $\theta_{0}$ & $r_{ij}^{o}$ &        &
+{\bf stbe} & Compass \cite{sun-98a} & $A$ & $\theta_{0}$ & $r_{ij}^{o}$ &       &
 $U(\theta) = A~(\theta-\theta_{0})~(r_{ij} - r_{ij}^{o})$ \\
 {\bf -stb} & stretch-bend        &     &              &            &            & \\
            &                     &     &              &            &            & \\
@@ -2752,7 +2752,7 @@ $U(r) = \frac{E_{o}}{(n-m)} \left[ m \left( \frac{r_{o}}{r} \right)^{n}
 {\bf buck} & Buckingham                & $A$        & $\rho$   & $C$      &                               &
 $U(r) = A~\exp \left( -\frac{r}{\rho} \right) - \frac{C}{r^{6}}$ \\
            &                           &            &          &          &                               & \\
-{\bf bhm}  & Born-Huggins              & $A$        & $B$      & $\sigma$ & $C$                           &                   
+{\bf bhm}  & Born-Huggins              & $A$        & $B$      & $\sigma$ & $C$                           &
 $U(r)=A~\exp[B(\sigma-r)]-\frac{C}{r^{6}}-\frac{D}{r^{8}}$\\
            & -Meyer                    & $D$        &          &          &                               & \\
            &                           &            &          &          &                               & \\
@@ -2823,6 +2823,15 @@ key & potential type & \multicolumn{4}{c|}{Variables (1-4)}& functional form \\
   $U(r) = f\left(r\right)U_{ZBL}\left(r\right)+\left(1-f\left(r\right)\right)U_{buckingham}\left(r\right)$ \\
            & with Buckingham           &        $A$    &  $\rho$        &     $C$   &             & \\
            &                           &               &                &           &             & \\
+{\bf mlj}   & Lennard-Jones tapered with MDF      & $\epsilon$ & $\sigma$ &    $r_i$      &                               &
+  $U(r) = 4 \epsilon \left[ \left( \frac{\sigma}{r} \right)^{12} - \left( \frac{\sigma}{r}\right)^{6} \right]f(r)$ \\
+           &                           &            &          &          &                               & \\
+{\bf mbuc} & Buckingham tapered with MDF               & $A$        & $\rho$   & $C$      &   $r_i$                          &
+  $U(r) = \left[A~\exp \left( -\frac{r}{\rho} \right) - \frac{C}{r^{6}}\right]f(r)$ \\
+           &                           &            &          &          &                               & \\
+{\bf m126}   & 12-6 Lennard-Jones tapered with MDF      & $A$ & $B$ &    $r_i$      &                               &
+  $U(r) = \left( \frac{A}{r^{12}} - \frac{B}{r^{6}} \right)f(r)$ \\
+           &                           &            &          &          &                               & \\
 \hline
 \end{tabular}
 \vskip 1ex

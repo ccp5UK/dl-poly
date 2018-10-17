@@ -5,3 +5,5 @@ cp -vpLH ../data/TEST$1/FIELD     .
 cp -vpLH ../data/TEST$1/MPOLES    .
 cp -vpLH ../data/TEST$1/TAB*      .
 cp -vpLH ../data/TEST$1/REFERENCE .
+cp -vpLH ../data/TEST$1/Ce.dat    .
+cp -vpLH ../data/TEST$1/g.dat     .

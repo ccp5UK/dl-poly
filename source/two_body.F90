@@ -592,7 +592,7 @@ Contains
      buffer(18) = vircpe_fr
      buffer(19) = vircpe_dt
 
-     Call gsum(comm,buffer(0:17))
+     Call gsum(comm,buffer(0:19))
 
      tmp       = buffer( 0)
      engkim    = buffer( 1)

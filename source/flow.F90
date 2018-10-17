@@ -73,6 +73,9 @@ Module flow_control
 
     !> Restart files creation period (in steps
     Integer(Kind=wi), Public :: freq_restart
+
+    !> Reset padding flag
+    Logical, Public :: reset_padding
   Contains
     Procedure, Public :: new_page => flow_type_new_page
     Procedure, Public :: line_printed => flow_type_line_printed

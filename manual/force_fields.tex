@@ -73,12 +73,13 @@ indicate the atoms involved in the interaction.
 There is normally a very large number of these and they are
 therefore specified globally according to the atom {\em types}
 involved rather than indices.  In \D it is assumed that the "pure"
-two-body terms arise from van der Waals\index{potential!van der
-Waals} interactions (regarded as short-ranged) and electrostatic
-interactions (coulombic, also regarded as
-long-ranged)\index{potential!electrostatics}.  Long-ranged forces
-require special techniques to evaluate accurately (see Section~\ref{coulomb}).
-The metal\index{potential!metal} terms are
+two-body terms arise from short-ranged interactions such as van der
+Waals\index{potential!van der Waals} interactions (or alternatively
+DPD soft interactions, coarse-grained interactions, hard-wall
+nuclear interactions) and electrostatic interactions (coulombic,
+also regarded as long-ranged)\index{potential!electrostatics}.
+Long-ranged forces require special techniques to evaluate accurately
+(see Section~\ref{coulomb}).  The metal\index{potential!metal} terms are
 many-body interactions which are functionally presented in an expansion of
 many two-body contributions augmented by a function of the local density,
 which again is derived from the two-body spatial distribution
@@ -1199,7 +1200,32 @@ U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac
        \end{array}
        \right.
   \end{equation*}
- 
+\item Lennard-Jones tapered with Mei-Davenport-Fernando taper (MDF), \cite{Raiteri2010}: ({\bf mlj})
+  \begin{equation}
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{LJ}\left(r_{ij}\right)
+  \end{equation}
+
+  where 
+
+    \begin{equation}                                                                                                                    
+    f(r)=                                                                                                                    
+     \begin{cases}                                                                                                                     
+       1 & r<r_i\\                                                                                                                     
+   \frac{\left(r_c-r\right)^3\left(10r_i^2-5r_cr_i-15rr_i+r_c^2+3rr_c+6r^2\right)}{\left(r_c-r_i\right)^5} & r_i \leq r \leq r_c \\    
+       0 & r>r_c\\                                                                                                                     
+     \end{cases}                                                                                                                       
+   \end{equation}  
+  $r_c$ is set to $r_{vdw}$ and controled by {\bf rvdw}
+\item Buckingham tapered with MDF: ({\bf mbuc})
+  \begin{equation}
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{Buckingham}\left(r_{ij}\right)
+  \end{equation}
+  see {\bf mlj} for more details
+\item 12-6 Lennard-Jones tapered with Mei-Davenport-Fernando taper (MDF): ({\bf m126})
+  \begin{equation}
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{12-6}\left(r_{ij}\right)
+  \end{equation}
+  see {\bf mlj} for more details
 \item Tabulation:  ({\bf tab}).  The potential is defined
 numerically only.
 \end{enumerate}
@@ -2981,7 +3007,7 @@ exact nature of the problem.
 CHARMM postulates a scaled intra-molecular self-induction between 1-2
 and 1-3 intra-molecular neighbours.  Thus cross core-shell coulombic
 interactions within {\em conventional} bonded interactions are not fully
-excluded (dipole-dipole only, no charge−dipole).  They are scaled
+excluded (dipole-dipole only, no charge-dipole).  They are scaled
 (see below) for all possible 1-2 (chemical bonds or constraints) and
 1-2-3 (chemical bond angles) qualifying neighbours.  For example, let
 1-2-3-4 define a torsion angle, then all 1-2-3 and 2-3-4 core-shell
@@ -2998,7 +3024,7 @@ only members 1 and 2 being polarisable (having a core and a shell).  So,
 the only CHARMM scaled intra-molecular coulombic interactions for this
 scenario will be the four pairs $1_{core}$-$2_{core}$, $1_{core}$-$2_{shell}$,
 $1_{shell}$-$2_{core}$ and $1_{shell}$-$2_{shell}$ (dipole-dipole
-interactions only, the charge−dipole interactions are not considered!).
+interactions only, the charge-dipole interactions are not considered!).
 In the case when members 1 and 3 are frozen or in a RB configuration
 then the pair $1_{core}$-$2_{core}$ will be disregarded from that list.
 

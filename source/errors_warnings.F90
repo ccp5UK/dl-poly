@@ -76,7 +76,7 @@ Module errors_warnings
      Else If (kode ==   3) Then
 
         Write(ounit,'(/,1x,3(a,f7.3),a,/)') &
-        '*** warning - system cutoff(+padding) is: ', a, ' , minimum half-config%cell width is: ', b, ' !!! ***'
+        '*** warning - DD cutoff(+padding) is: ', a, ' Angstroms while minimum half-cell width is: ', b, ' Angstroms !!! ***'
 
      Else If (kode ==   4) Then
 
@@ -87,7 +87,7 @@ Module errors_warnings
      Else If (kode ==   5) Then
 
         Write(ounit,'(/,1x,a,f12.4,a,/)') &
-        '*** warning - non-zero total system charge: ', a, ' !!! ***'
+        '*** warning - non-zero total system charge: ', a, ' positrons !!! ***'
 
      Else If (kode ==   6) Then
 
@@ -104,14 +104,14 @@ Module errors_warnings
 
      Else If (kode ==   7) Then
 
-        Write(ounit,'(/,1x,a,f12.6,a,/,1x,a,/)')                    &
-        '*** warning - system cutoff is ', a, ' Angstroms !!! ***', &
+        Write(ounit,'(/,1x,a,f7.3,a,/,1x,a,/)')                &
+        '*** warning - DD cutoff is ', a, ' Angstroms !!! ***', &
         '*** Fennell damping is not recommended for cutoffs shorther than 10-12 Angstroms !!! ***'
 
      Else If (kode ==   8) Then
 
-        Write(ounit,'(/,1x,a,2(f8.3,a),/)') &
-        '*** warning - : detected maximum rigid body width: ', a, ' but system cutoff ', b, ' !!! ***'
+        Write(ounit,'(/,1x,a,2(f7.3,a),/)') &
+        '*** warning - : detected maximum rigid body width: ', a, ' Angstroms while the DD cutoff is ', b, ' Angstroms !!! ***'
 
      Else If (kode ==  10) Then
 
@@ -162,25 +162,24 @@ Module errors_warnings
 
      Else If (kode ==  40) Then
 
-        Write(ounit,'(2(/,1x,a),f12.6,a,/)') &
-        '*** warning - radial cutoff reset ***', '*** new potential cutoff radius ', a, ' !!! ***'
+        Write(ounit,'(/,1x,a,f7.3,a,/)') '*** warning - tentative cutoff reset to ', a, ' Angstroms !!! ***'
 
      Else If (kode ==  50) Then
 
-        Write(ounit,'(2(/,1x,a),f12.6,a,/)') &
-        '*** warning - short-range cutoff reset ***', '*** new cutoff radius (vdws%cutoff) ', a, ' !!! ***'
+        Write(ounit,'(2(/,1x,a),f7.3,a,/)') &
+        '*** warning - short-range interactions cutoff reset ***', '*** new cutoff radius (rvdw) ', a, ' Angstroms !!! ***'
 
      Else If (kode ==  60) Then
 
-        Write(ounit,'(/,1x,a,f12.6,a,/)') '*** warning - total system charge ', a,' !!! ***'
+        Write(ounit,'(/,1x,a,f7.3,a,/)') '*** warning - total system charge ', a,' positrons !!! ***'
 
      Else If (kode ==  70) Then
 
-        Write(ounit,'(/,1x,a,f12.6,a,/)') '*** warning - switching length reset to ', a,' !!! ***'
+        Write(ounit,'(/,1x,a,f7.3,a,/)') '*** warning - switching length reset to ', a,' Angstroms !!! ***'
 
      Else If (kode ==  80) Then
 
-        Write(ounit,'(/,1x,a,f12.6,a,/)') '*** warning - requested thermostat unavailable !!! ***'
+        Write(ounit,'(/,1x,a,/)') '*** warning - requested thermostat unavailable !!! ***'
 
      Else If (kode ==  90) Then
 
@@ -243,7 +242,7 @@ Module errors_warnings
 
         Write(ounit,'(/,1x,2a,2(f8.5,a),/,1x,a,/)')                &
         '*** warning - control distances for variable timestep: ', &
-        'Dmin = ', a, ' (Angs) and Dmax = ', b, ' (Angs) !!! ***',     &
+        'Dmin = ', a, ' and Dmax = ', b, ' (Angstroms) !!! ***',   &
         '*** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
 
      Else If (kode == 150) Then
@@ -328,9 +327,9 @@ Module errors_warnings
 
      Else If (kode == 280) Then
 
-        Write(ounit,'(/,1x,a,/,1x,2(a,f8.5),a,/)')                              &
-        '*** warning - pseudo thermostat cannot be applied for system !!! ***', &
-        '*** minimum thermostat wall thickness ', a, ' minimum MD config%cell width ', b, ' !!! ***'
+        Write(ounit,'(/,1x,a,/,1x,2(a,f9.3),a,/)')                                               &
+        '*** warning - pseudo thermostat cannot be applied for this model system since !!! ***', &
+        '*** specified thermostat wall thickness ', a, ' > 1/4 minimum MD cell width ', b, ' (Angstroms) !!! ***'
 
      Else If (kode == 290) Then
 
@@ -489,10 +488,9 @@ Module errors_warnings
 
      Else If (kode == 310) Then
 
-        Write(ounit,'(/,2(1x,a,/),1x,a,2(f6.2,a),/)') &
-     '*** warning - control distance for defect look-up MUST be in the interval', &
-     '[Min(0.3,neigh%cutoff/3);Min(1.2,neigh%cutoff/2)] Angs !!! ***', &
-     '*** defects distance condition will default from ', a, ' to ', b, ' Angs !!! ***'
+        Write(ounit,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                                          &
+     '*** warning - control distance for defect look-up MUST be in the interval [Min(0.3,rcut/3);Min(1.2,rcut/2)] !!! ***', &
+     '*** defects distance condition will default from ', a, ' to ', b, ' (Angstroms) !!! ***'
 
      Else If (kode == 320) Then
 
@@ -606,23 +604,23 @@ Module errors_warnings
 
      Else If (kode == 470) Then
 
-        Write(ounit,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                  &
-        '*** warning - control distance for diplacement qualification MUST be >= 0.25 Angs !!! ***', &
-        '*** displacements distance condition will default from ', a, ' to ', b, ' Angs !!! ***'
+        Write(ounit,'(/,1x,a,/,1x,a,2(f5.2,a),/)')                                                        &
+        '*** warning - control distance for diplacement qualification MUST be >= 0.25 Angstroms !!! ***', &
+        '*** displacements distance condition will default from ', a, ' to ', b, ' Angstroms !!! ***'
 
      Else If (kode == 480) Then
 
-        Write(ounit,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
+        Write(ounit,'(/,1x,a,/)') &
         '*** warning - "metal direct" option disabled as incompatible with EAM potentials (TABEAM) !!! ***'
 
      Else If (kode == 490) Then
 
-        Write(ounit,'(/,1x,a,/,1x,a,2(f6.2,a),/)') &
+        Write(ounit,'(/,1x,a,/)') &
         '*** warning - "metal sqrtrho" option disabled as incompatible with FS type potentials (analytic forms) !!! ***'
 
      Else If (kode == 500) Then
 
-        Write(ounit,'(/,1x,a,/,1x,a,/)') &
+        Write(ounit,'(2(/,1x,a,/))') &
         '*** warning - insufficient electronic temperature cells to allow energy redistribution from inactive cells !!! ***', &
         '*** option switched off - electronic temperature conservation no longer guaranteed !!! ***'
 
@@ -1797,68 +1795,72 @@ Subroutine info_sl(message,master_only)
 
         Write(ounit,'(/,1x,a)') 'error - insufficient electronic temperature config%cells for TTM heat diffusion'
 
-     Else If (kode ==  671) Then
-
-        Write(ounit,'(/,1x,a)') 'error - electronic specific heat not fully specified'
-
-     Else If (kode ==  672) Then
-
-        Write(ounit,'(/,1x,a)') 'error - thermal conductivity of metal not specified'
-
-     Else If (kode ==  673) Then
-
-        Write(ounit,'(/,1x,a)') 'error - thermal diffusivity of non-metal not specified'
-
-     Else If (kode ==  674) Then
-
-        Write(ounit,'(/,1x,a)') 'error - cannot find or open thermal conductivity table file (Ke.dat)'
-
-     Else If (kode ==  675) Then
-
-        Write(ounit,'(/,1x,a)') 'error - no data found in thermal conductivity table file (Ke.dat)'
-
-     Else If (kode ==  676) Then
-
-        Write(ounit,'(/,1x,a)') 'error - cannot find or open volumetric heat capacity table file (Ce.dat)'
-
-     Else If (kode ==  677) Then
-
-        Write(ounit,'(/,1x,a)') 'error - no data found in volumetric heat capacity table file (Ce.dat)'
-
-     Else If (kode ==  678) Then
-
-        Write(ounit,'(/,1x,a)') 'error - cannot find or open thermal diffusivity table file (De.dat)'
-
-     Else If (kode ==  679) Then
-
-        Write(ounit,'(/,1x,a)') 'error - no data found in thermal diffusivity table file (De.dat)'
-
      Else If (kode ==  680) Then
 
-        Write(ounit,'(/,1x,a)') 'error - cannot find or open coupling constant table file (g.dat)'
+        Write(ounit,'(/,1x,a)') 'error - rpad too large for calculation of ionic temperatures'
 
      Else If (kode ==  681) Then
 
-        Write(ounit,'(/,1x,a)') 'error - no data found in coupling constant table file (g.dat)'
+        Write(ounit,'(/,1x,a)') 'error - electronic specific heat not fully specified'
 
      Else If (kode ==  682) Then
 
-        Write(ounit,'(/,1x,a)') 'error - end of file encountered in table file (Ke.dat, Ce.dat, De.dat or g.dat)'
+        Write(ounit,'(/,1x,a)') 'error - thermal conductivity of metal not specified'
 
      Else If (kode ==  683) Then
 
-        Write(ounit,'(/,1x,a)') 'error - negative electronic temperature: instability in electronic heat diffusion equation'
+        Write(ounit,'(/,1x,a)') 'error - thermal diffusivity of non-metal not specified'
 
      Else If (kode ==  684) Then
 
-        Write(ounit,'(/,1x,a)') 'error - electronic temperature restart file (DUMP_E) does not exist'
+        Write(ounit,'(/,1x,a)') 'error - cannot find or open thermal conductivity table file (Ke.dat)'
 
      Else If (kode ==  685) Then
+
+        Write(ounit,'(/,1x,a)') 'error - no data found in thermal conductivity table file (Ke.dat)'
+
+     Else If (kode ==  686) Then
+
+        Write(ounit,'(/,1x,a)') 'error - cannot find or open volumetric heat capacity table file (Ce.dat)'
+
+     Else If (kode ==  687) Then
+
+        Write(ounit,'(/,1x,a)') 'error - no data found in volumetric heat capacity table file (Ce.dat)'
+
+     Else If (kode ==  688) Then
+
+        Write(ounit,'(/,1x,a)') 'error - cannot find or open thermal diffusivity table file (De.dat)'
+
+     Else If (kode ==  689) Then
+
+        Write(ounit,'(/,1x,a)') 'error - no data found in thermal diffusivity table file (De.dat)'
+
+     Else If (kode ==  690) Then
+
+        Write(ounit,'(/,1x,a)') 'error - cannot find or open coupling constant table file (g.dat)'
+
+     Else If (kode ==  691) Then
+
+        Write(ounit,'(/,1x,a)') 'error - no data found in coupling constant table file (g.dat)'
+
+     Else If (kode ==  692) Then
+
+        Write(ounit,'(/,1x,a)') 'error - end of file encountered in table file (Ke.dat, Ce.dat, De.dat or g.dat)'
+
+     Else If (kode ==  693) Then
+
+        Write(ounit,'(/,1x,a)') 'error - negative electronic temperature: instability in electronic heat diffusion equation'
+
+     Else If (kode ==  694) Then
+
+        Write(ounit,'(/,1x,a)') 'error - electronic temperature restart file (DUMP_E) does not exist'
+
+     Else If (kode ==  695) Then
 
         Write(ounit,'(/,1x,a)') &
         'error - mismatch in electronic temperature lattice sizes between restart (DUMP_E) and CONTROL files'
 
-     Else If (kode ==  686) Then
+     Else If (kode ==  696) Then
 
         Write(ounit,'(/,1x,a)') 'error - cannot read electronic temperature restart (DUMP_E) file'
 

@@ -32,7 +32,8 @@ program dl_poly
   !
   ! copyright - daresbury laboratory
   ! authors   - i.t.todorov & w.smith march 2016
-  ! contrib   - i.j.bush, h.a.boateng, a.m.elena, a.b.g.chalk
+  ! contrib   - i.j.bush, h.a.boateng, m.a.seaton, a.m.elena,
+  !             s.l.daraszewicz, g.khara, a.brukhno, a.b.g.chalk
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -42,12 +43,12 @@ program dl_poly
   ! SETUP MODULES
 
   Use kinds, Only : wp,li,wi
-  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gmax,gsum, gbcast 
+  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gmax,gsum, gbcast
   Use constants, Only : DLP_RELEASE,DLP_VERSION
 
   ! PARSE MODULE
 
-  Use parse, Only :   
+  Use parse, Only :
 
   ! DEVELOPMENT MODULE
 
@@ -144,10 +145,10 @@ program dl_poly
   Use halo, Only : refresh_halo_positions,set_halo_particles
   Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
   Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
-  Use rsds, Only : rsd_write,rsd_type  
+  Use rsds, Only : rsd_write,rsd_type
   Use trajectory, Only : trajectory_write,read_history, trajectory_type
   Use system, Only : system_revive,system_expand,system_init
-  Use build_excl, Only : build_excl_intra 
+  Use build_excl, Only : build_excl_intra
   Use build_book, Only : build_book_intra
   Use ffield, Only : read_field,report_topology
   Use bounds, Only : set_bounds
@@ -174,7 +175,7 @@ program dl_poly
   Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
   Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
   Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
-  Use nve, Only : nve_0_vv, nve_1_vv 
+  Use nve, Only : nve_0_vv, nve_1_vv
   Use timer, Only  : timer_type, time_elapsed,timer_report,start_timer,stop_timer
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
@@ -192,7 +193,7 @@ program dl_poly
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
-  
+
   Implicit None
 
 ! all your simulation variables
@@ -241,7 +242,7 @@ program dl_poly
   Type( ttm_type) :: ttms
   Type( rsd_type ), Target :: rsdsc
   Type( file_type ), Allocatable :: files(:)
-  
+
   ! Local Variables
 
   Integer(Kind=wi) :: i,j
@@ -251,8 +252,8 @@ program dl_poly
   Character( Len = 1024 ) :: control_filename
 
   Character( Len = * ), Parameter :: fmt1 = '(a)', &
-                                     fmt2 = '(a25,a8,a4,a14,a15)', &
-                                     fmt3 = '(a,i10,a)'
+    fmt2 = '(a25,a8,a4,a14,a15)', &
+    fmt3 = '(a,i10,a)'
 
   ! SET UP COMMUNICATIONS & CLOCKING
 
@@ -277,22 +278,19 @@ program dl_poly
   End If
 
   Call scan_development(devel,files,comm)
+  ! Open output file, or direct output unit to stderr
+  If (.not.devel%l_scr) Then
+    Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
+  Else
+    files(FILE_OUTPUT)%unit_no = error_unit
+  End If
+  dlp_world(0)%ou=files(FILE_OUTPUT)%unit_no
+  Call init_error_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
 
   ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
 
   Call scan_control_output(files,comm)
 
-  If (dlp_world(0)%idnode == 0) Then
-    ! Open output file, or direct output unit to stderr
-    If (.not.devel%l_scr) Then
-      Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
-    Else
-      files(FILE_OUTPUT)%unit_no = error_unit
-    End If
-  End If
-  Call gbcast(dlp_world(0),files(FILE_OUTPUT)%unit_no,0)
-  dlp_world(0)%ou=files(FILE_OUTPUT)%unit_no
-  Call init_error_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
 
   Write(banner(1),fmt1)  Repeat("*",66)
   Write(banner(2),fmt1)  "*************  stfc/ccp5  program  library  package  ** D ********"
@@ -589,9 +587,9 @@ program dl_poly
 
       If (config%levcfg == 2) Then
         Write(message,"(i8,1p,9e12.4)") &
-        config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,&
-        config%vxx(i),config%vyy(i),config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,&
-        config%parts(i)%fzz
+          config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,&
+          config%vxx(i),config%vyy(i),config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,&
+          config%parts(i)%fzz
       End If
       Call info(message,.true.)
     End Do
@@ -673,15 +671,15 @@ program dl_poly
 
       If (config%levcfg == 2) Then
         Write(message,"(i8,1p,9e12.4)") &
-        config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),&
-        config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,config%parts(i)%fzz
+          config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),&
+          config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,config%parts(i)%fzz
       End If
       Call info(message,.true.)
     End Do
   End If
   Call info('',.true.)
 
-  ! Two-temperature model simulations: calculate final 
+  ! Two-temperature model simulations: calculate final
   ! ionic temperatures and print statistics to files
   ! (final)
 
@@ -704,13 +702,13 @@ program dl_poly
 
   ! Produce summary of simulation
   If (neigh%unconditional_update .and. flow%step > 0) Then
-     If (.not.neigh%update) Then ! Include the final skip in skipping statistics
-        stats%neighskip(3)=stats%neighskip(2)*stats%neighskip(3)
-        stats%neighskip(2)=stats%neighskip(2)+1.0_wp
-        stats%neighskip(3)=stats%neighskip(3)/stats%neighskip(2)+stats%neighskip(1)/stats%neighskip(2)
-        stats%neighskip(4)=Min(stats%neighskip(1),stats%neighskip(4))
-        stats%neighskip(5)=Max(stats%neighskip(1),stats%neighskip(5))
-     End If
+    If (.not.neigh%update) Then ! Include the final skip in skipping statistics
+      stats%neighskip(3)=stats%neighskip(2)*stats%neighskip(3)
+      stats%neighskip(2)=stats%neighskip(2)+1.0_wp
+      stats%neighskip(3)=stats%neighskip(3)/stats%neighskip(2)+stats%neighskip(1)/stats%neighskip(2)
+      stats%neighskip(4)=Min(stats%neighskip(1),stats%neighskip(4))
+      stats%neighskip(5)=Max(stats%neighskip(1),stats%neighskip(5))
+    End If
   End If
 
   Call statistics_result                                        &
@@ -723,7 +721,7 @@ program dl_poly
   Call analysis_result(flow%step,neigh%cutoff,thermo, &
     bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
 
-  10 Continue
+10 Continue
 
   ! PLUMED finalisation
 
@@ -756,6 +754,13 @@ program dl_poly
     Write(banner(3),fmt1) '****     https://doi.org/10.1063/1.4905952                    ****'
     Call info(banner,3,.true.)
   End If
+  If (ttms%l_ttm) Then
+    Write(banner(1),fmt1) '****   - E. Zarkadoula, S.L. Daraszewicz, D.M. Duffy,         ****'
+    Write(banner(2),fmt1) '****     M.A. Seaton, I.T. Todorov, K. Nordlund, M.T. Dove &  ****'
+    Write(banner(3),fmt1) '****     K. Trachenko                                         ****'
+    Write(banner(4),fmt1) '****     J. Phys.: Condens. Matter, 24, 085401 (2014),        ****'
+    Call info(banner,4,.true.)
+  End If
   Call info(Repeat("*",66),.true.)
 
   ! Get just the one number to compare against
@@ -768,7 +773,7 @@ program dl_poly
 
   ! Close output channel
 
-  If (dlp_world(0)%idnode == 0 .and. (.not.devel%l_scr)) Close(unit=files(FILE_OUTPUT)%unit_no)
+  If (.not.devel%l_scr) Close(unit=files(FILE_OUTPUT)%unit_no)
 
   ! Terminate job
 

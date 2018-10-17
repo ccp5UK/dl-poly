@@ -1512,7 +1512,7 @@ Subroutine read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his, &
               Write(forma,'( "(", i0, "/)" )') n_jj
               Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
            End Do
-           n_ii=Mod(n_sk,n_jj)-1_li
+           n_ii=Mod(n_sk,n_jj)-n_ii+1_li
            If (n_ii > 0_li) Then
               forma=' '
               Write(forma,'( "(", i0, "/)" )') n_ii

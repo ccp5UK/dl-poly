@@ -465,7 +465,7 @@ Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
                  Call gcheck(comm,safe)
                  If (.not.safe) Go To 300 !Call error(25)
 
-! Briadcaste all atoms
+! Broadcast all atoms
 
                     Call gbcast(comm,chbuf,0)
                     Call gbcast(comm,iwrk,0)

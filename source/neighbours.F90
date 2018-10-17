@@ -7,7 +7,7 @@
 Module neighbours
   Use kinds, Only : wp,wi,li
   Use comms,   Only : comms_type,gcheck,gmax,gsum
-  Use constants,   Only : half_plus
+  Use constants,   Only : half_plus,half_minus
   Use domains,       Only : domains_type
   Use configuration,  Only : configuration_type
   Use core_shell,    Only : core_shell_type
@@ -103,70 +103,51 @@ Contains
 
     Logical           :: safe
     Integer           :: fail,ilx,ily,ilz,i,ii,j
-    Real( Kind = wp ) :: cut,test,tol,celprp(1:10),xx(1),yy(1),zz(1)
+    Real( Kind = wp ) :: cut,test,tol,celprp(1:10)
 
-    Real( Kind = wp ), Allocatable :: x(:),y(:),z(:),r(:)
+    Real( Kind = wp ), Dimension(:),Allocatable :: x,y,z,r
 
     Character( Len = 256 ) :: message
     If (.not.neigh%unconditional_update) Return
 
+    Allocate(x(config%natms),y(config%natms),z(config%natms),r(config%natms),Stat=fail)
     ! Checks
     fail = 0
-    Allocate (x(1:config%mxatms),y(1:config%mxatms),z(1:config%mxatms),r(1:config%mxatms), Stat = fail)
     If (fail > 0) Then
       Write(message,'(a)') 'vnl_check allocation failure'
       Call error(0,message)
     End If
 
-    Do i=1,config%nlast
+    Do i=1,config%natms
       x(i) = config%parts(i)%xxx - neigh%xbg(i)
       y(i) = config%parts(i)%yyy - neigh%ybg(i)
       z(i) = config%parts(i)%zzz - neigh%zbg(i)
     End Do
 
-    Call images(config%imcon,config%cell,config%nlast,x,y,z)
+    Call images(config%imcon,config%cell,config%natms,x,y,z)
 
-    If (config%nlast > 0) r(1:config%nlast) = Sqrt(x(1:config%nlast)**2 + y(1:config%nlast)**2 + z(1:config%nlast)**2)
+    If (config%natms > 0) Then
+      r(1:config%natms) = Sqrt(x(1:config%natms)**2 + y(1:config%natms)**2 + z(1:config%natms)**2)
+    End If
 
-    safe=.true.
-    Q:Do i=1,config%natms
-      If (r(i) > 0.5_wp*neigh%padding) Then
-        Do ii=1,neigh%list(-2,i)
-          j=neigh%list(ii,i) ! may be in the halo!!!
-          If (r(j) > 0.5_wp*neigh%padding) Then
-            xx(1)=x(i)-x(j)
-            yy(1)=y(i)-y(j)
-            zz(1)=z(i)-z(j)
-            cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
-            If (cut > neigh%padding) Then
-              xx(1)=config%parts(i)%xxx-config%parts(j)%xxx
-              yy(1)=config%parts(i)%yyy-config%parts(j)%yyy
-              zz(1)=config%parts(i)%zzz-config%parts(j)%zzz
-              cut=Sqrt((xx(1))**2+yy(1)**2+zz(1)**2)
-              If (cut > neigh%cutoff_extended) Then
-                safe=.false. ! strong violation
-                Exit Q
-              End If
-            End If
-          End If
-        End Do
-      End If
-    End Do Q
+    ! search for violations: local domain then global
 
-    Deallocate (x,y,z,r, Stat = fail)
+    tol = Merge(Maxval(r(1:config%natms)), 0.0_wp, config%natms>0)
+
     If (fail > 0) Then
       Write(message,'(a)') 'vnl_check deallocation failure'
       Call error(0,message)
     End If
 
-    Call gcheck(comm,safe,"enforce")
-    neigh%update=.not.safe
+    Call gmax(comm,tol)
+    ! decide on update if unsafe
+    neigh%update = (tol >= half_minus*neigh%padding)
 
     ! Get the dimensional properties of the MD config%cell
-    Call dcell(config%cell,celprp) ! cut=neigh%cutoff_extended+1.0e-6_wp in link_cell_pairs
+    Call dcell(config%cell,celprp)
     width=Min(celprp(7),celprp(8),celprp(9))
 
-    ! define cut
+    ! define cut as in link_cell_pairs
     cut=neigh%cutoff_extended+1.0e-6_wp
 
     ! calculate link config%cell dimensions per node
@@ -227,7 +208,7 @@ Contains
     If (kim_data%padding_neighbours_required) Then
       If (neigh%padding < kim_data%influence_distance) Then
         neigh%padding = kim_data%influence_distance
-          neigh%cutoff_extended = neigh%cutoff + neigh%padding
+        neigh%cutoff_extended = neigh%cutoff + neigh%padding
       End If
     End If
 
@@ -245,6 +226,11 @@ Contains
       stat%neighskip(1) = 0.0_wp              ! Reset here, checkpoit set by vnl_set_check in set_halo_particles
     Else            ! Enjoy telephoning
       stat%neighskip(1) = stat%neighskip(1) + 1.0_wp ! Increment, telephony done for xxx,yyy,zzz in set_halo_positions
+    End If
+    Deallocate(x,y,z,r,Stat=fail)
+    If (fail > 0) Then
+      Write(message,'(a)') 'vnl_check deallocation failure'
+      Call error(0,message)
     End If
   End Subroutine vnl_check
 
