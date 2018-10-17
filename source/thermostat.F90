@@ -207,7 +207,7 @@ Contains
 
     Integer :: fail
 
-    If (thermo%key_dpd == 0) Return
+    If (thermo%key_dpd == DPD_NULL) Return
 
     fail = 0
 

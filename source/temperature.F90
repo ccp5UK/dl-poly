@@ -13,7 +13,7 @@ Module temperature
   Use numerics,        Only : seed_type,invert,uni,local_index,box_mueller_saru3
   Use shared_units,    Only : update_shared_units,update_shared_units_int
   Use errors_warnings, Only : error,warning,info
-  Use thermostat,      Only : thermostat_type
+  Use thermostat,      Only : thermostat_type,DPD_NULL
   Use statistics, Only : stats_type
   Use minimise, Only : minimise_type
   Use domains, Only : domains_type
@@ -89,7 +89,7 @@ Contains
 
   ! 3 lost for fixing COM translation
 
-    If (config%l_vom .and. thermo%key_dpd == 0) Then
+    If (config%l_vom .and. thermo%key_dpd == DPD_NULL) Then
        com=Int(3,li)
     Else
        com=Int(0,li)

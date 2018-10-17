@@ -20,7 +20,7 @@ Module dpd
   Use shared_units,    Only : update_shared_units,SHARED_UNIT_UPDATE_FORCES
   Use errors_warnings, Only : error, warning
   Use numerics,        Only : seed_type,box_mueller_saru2
-  Use thermostat, Only : thermostat_type
+  Use thermostat, Only : thermostat_type,DPD_FIRST_ORDER,DPD_SECOND_ORDER
   Use statistics, Only : stats_type
   Use neighbours, Only : neighbours_type
   Implicit None
@@ -39,8 +39,8 @@ Contains
     ! using the verlet neighbour neigh%list
     !
     ! isw=isw(VV) : by stages 0 for VV1 and 1 for VV2
-    ! thermo%key_dpd = 1 for first order splitting
-    ! thermo%key_dpd = 2 for second order splitting
+    ! thermo%key_dpd = DPD_FIRST_ORDER for first order splitting
+    ! thermo%key_dpd = DPD_SECOND_ORDER for second order splitting
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov march 2016
@@ -71,7 +71,8 @@ Contains
     Character ( len = 256 ) :: message
 
 
-    If (thermo%key_dpd /= 1 .or. thermo%key_dpd /= 2 .or. thermo%key_dpd*isw == 1) Return
+    If (Any(thermo%key_dpd /= [DPD_FIRST_ORDER,DPD_SECOND_ORDER]) .or. &
+      (thermo%key_dpd == DPD_FIRST_ORDER .and. isw == 1)) Return
 
     fail=0
     Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat = fail(1))
@@ -83,7 +84,7 @@ Contains
 
     ! set tstep and nstep wrt to order of splitting
 
-    If (thermo%key_dpd == 1) Then
+    If (thermo%key_dpd == DPD_FIRST_ORDER) Then
       nst_p = nstep
       tst_p = tstep
     Else

@@ -39,7 +39,8 @@ Module drivers
     ENS_NVT_GENTLE, ENS_NVT_LANGEVIN_INHOMO, &
     ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
     ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
-    ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
+    ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO, &
+    DPD_NULL, DPD_SECOND_ORDER
   Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
   Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
   Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
@@ -584,7 +585,7 @@ End If
 ! One-off application for first order splitting and symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
 
-      If (thermo%key_dpd > 0 .and. thermo%key_dpd*stage == 0) Then
+      If (thermo%key_dpd /= DPD_NULL .and. stage == 0) Then
         Call dpd_thermostat(stage,flow%strict,neigh%cutoff,flow%step,thermo%tstep,stat,thermo, &
           neigh,rigid,domain,cnfig,seed,comm)
       End If
@@ -970,7 +971,7 @@ End If
 ! Symmetric application for second order splitting
 ! Velocity field change + generation of DPD virial & stat%stress due to random and drag forces
 
-        If (thermo%key_dpd > 0 .and. thermo%key_dpd*stage == 2) Then
+        If (thermo%key_dpd == DPD_SECOND_ORDER .and. stage == 1) Then
           Call dpd_thermostat(stage,flow%strict,neigh%cutoff,flow%step,thermo%tstep,stat,thermo, &
             neigh,rigid,domain,cnfig,seed,comm)
         End If
