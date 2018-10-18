@@ -51,6 +51,7 @@ Module system
   Use thermostat, Only : thermostat_type
   Use filename, Only : file_type,FILE_REVOLD,FILE_REVIVE,FILE_CONFIG, &
                        FILE_REVCON,FILE_FIELD
+  Use flow_control, Only : RESTART_KEY_NOSCALE, RESTART_KEY_OLD
   Implicit None
   Private
   Public :: system_revive
@@ -119,7 +120,7 @@ Module system
   keyio=0
 
 50 Continue
-  If (keyres /= 1 .or. comm%idnode /= 0) Then
+  If (keyres /= RESTART_KEY_OLD .or. comm%idnode /= 0) Then
 
 ! initialise step and time related accumulators
 
@@ -208,7 +209,7 @@ Module system
 
 ! restart simulation and continue
 
-  If (keyres == 1) Then
+  If (keyres == RESTART_KEY_OLD) Then
 
 ! If REVOLD doesn't exist then abort (mishmashed REVOLD is handled separately)
 
@@ -347,7 +348,7 @@ Module system
            Call warning(190,0.0_wp,0.0_wp,0.0_wp)
            Close(Unit=files(FILE_REVOLD)%unit_no)
         End If
-        keyres=3
+        keyres = RESTART_KEY_NOSCALE
         Go To 50
      End If
 
@@ -492,7 +493,7 @@ Module system
      stats%zto(i)=0.0_wp
   End Do
 
-  If (keyres == 1) Then
+  If (keyres == RESTART_KEY_OLD) Then
 
 ! Error accumulator: keyio is still zero otherwise we cannot get here
 
@@ -539,7 +540,7 @@ Module system
            Call warning(190,0.0_wp,0.0_wp,0.0_wp)
            Close(Unit=files(FILE_REVOLD)%unit_no)
         End If
-        keyres=3
+        keyres = RESTART_KEY_NOSCALE
         Go To 50
      End If
 
@@ -587,7 +588,7 @@ Module system
              Call warning(190,0.0_wp,0.0_wp,0.0_wp)
              Close(Unit=files(FILE_REVOLD)%unit_no)
           End If
-          keyres=3
+          keyres = RESTART_KEY_NOSCALE
           Go To 50
        End If
 

@@ -17,6 +17,7 @@ Module greenkubo
   Use constants,     Only : zero_plus,nvafdt
   Use configuration,    Only : configuration_type
   Use site, Only : site_type
+  Use flow_control, Only : RESTART_KEY_OLD
 
   Use errors_warnings, Only : error,info
   Implicit None
@@ -324,12 +325,12 @@ Contains
     If (green%newjob) Then
       green%newjob = .false.
 
-      ! If the keyres=1, is VAFDAT old (does it exist) and
+      ! If the keyres = RESTART_KEY_OLD, is VAFDAT old (does it exist) and
       ! how many frames and records are in there
 
       Do i=1,sites%mxatyp
         lexist=.true.
-        If (keyres == 1) Then
+        If (keyres == RESTART_KEY_OLD) Then
           If (comm%idnode == 0) Inquire(File='VAFDAT_'//sites%unique_atom(i), Exist=lexist)
           Call gcheck(comm,lexist)
         Else

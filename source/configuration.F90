@@ -61,7 +61,7 @@ Module configuration
   Use thermostat, Only : thermostat_type,CONSTRAINT_NONE
   Use electrostatic, Only : ELECTROSTATIC_NULL,ELECTROSTATIC_EWALD
   Use filename, Only : file_type,FILE_CONFIG
-  Use flow_control, Only : flow_type
+  Use flow_control, Only : flow_type, RESTART_KEY_CLEAN
   Implicit None
 
 Type configuration_type
@@ -448,7 +448,7 @@ End Subroutine chvom
 
 ! Check on validity of config file contents
 
-  If (flow%restart_key > 0 .and. config%levcfg < 1) Call error(85)
+  If (flow%restart_key /= RESTART_KEY_CLEAN .and. config%levcfg < 1) Call error(85)
 
   If (flow%strict) iwrk(1:config%natms) = 0 ! initialise
 

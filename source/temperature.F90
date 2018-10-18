@@ -17,6 +17,7 @@ Module temperature
   Use statistics, Only : stats_type
   Use minimise, Only : minimise_type
   Use domains, Only : domains_type
+  Use flow_control, Only : RESTART_KEY_CLEAN,RESTART_KEY_SCALE
   Implicit None
 
   Private
@@ -159,14 +160,14 @@ Contains
     Else
        engk=getkin(config,config%vxx,config%vyy,config%vzz,comm)/Real(Max(1_li,config%degfre),wp)
     End If
-    If (thermo%sigma > 1.0e-6_wp .and. engk < 1.0e-6_wp .and. (keyres /= 0 .and. nstrun /= 0)) Then
+    If (thermo%sigma > 1.0e-6_wp .and. engk < 1.0e-6_wp .and. (keyres /= RESTART_KEY_CLEAN .and. nstrun /= 0)) Then
        Call warning('0K velocity field detected in CONFIG with a restart at non 0K temperature in CONTROL',.true.)
        Call info('*** clean start enforced ***',.true.)
 
-       keyres = 0
+       keyres = RESTART_KEY_CLEAN
     End If
 
-    If (keyres == 0) Then
+    If (keyres == RESTART_KEY_CLEAN) Then
 
        Allocate (qn(1:config%mxatms),tpn(0:comm%mxnode-1),    Stat=fail(1))
        Allocate (qs(0:2,1:cshell%mxshl),tps(0:comm%mxnode-1), Stat=fail(2))
@@ -506,14 +507,14 @@ Contains
 
     config%levcfg=1
 
-  ! scale velocities for keyres=0 and keyres=2
+  ! scale velocities for keyres = RESTART_KEY_CLEAN and keyres = RESTART_KEY_SCALE
 
-    If (keyres == 0 .or. keyres == 2) Then
+    If (keyres == RESTART_KEY_CLEAN .or. keyres == RESTART_KEY_SCALE) Then
 
   ! Detect pure molecular statics only == CGM minimisation at zero timestep
   ! and no rescaling
 
-       no_min_0 = .not.(minim%minimise .and. minim%freq == 0 .and. nstep == 0 .and. nstrun == 0 .and. keyres == 2)
+       no_min_0 = .not.(minim%minimise .and. minim%freq == 0 .and. nstep == 0 .and. nstrun == 0 .and. keyres == RESTART_KEY_SCALE)
 
   ! quench constraints & PMFs
 

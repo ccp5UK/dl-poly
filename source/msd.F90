@@ -36,6 +36,7 @@ Module msd
     IO_WRITE_SORTED_NETCDF,        &
     IO_WRITE_SORTED_MASTER
   Use filename, Only : file_type, FILE_HISTORY
+  Use flow_control, Only : RESTART_KEY_OLD
   Use errors_warnings, Only : error
   Implicit None
 
@@ -126,11 +127,11 @@ Contains
 
       msd_data%fname = 'MSDTMP'
 
-! If keyres=1, is MSDTMP old (does it exist) and
+! If keyres = RESTART_KEY_OLD, is MSDTMP old (does it exist) and
 ! how many frames and records are in there
 
       lexist=.true.
-      If (keyres == 1) Then
+      If (keyres == RESTART_KEY_OLD) Then
         If (comm%idnode == 0) Inquire(File=msd_data%fname, Exist=lexist)
         Call gcheck(comm,lexist,"enforce")
       Else

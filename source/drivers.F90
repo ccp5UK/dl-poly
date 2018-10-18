@@ -10,7 +10,7 @@ Module drivers
   Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3, seed_type
   Use parse, Only : strip_blanks,lower_case
   Use langevin, Only : langevin_forces
-  
+
   Use errors_warnings, Only : error,warning, init_error_system,info 
 
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
@@ -71,7 +71,7 @@ Module drivers
   Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS,&
                        FILE_HISTORF,FILE_HISTORY
-  Use flow_control, Only : flow_type
+  Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN
   Use development, Only : development_type,scan_development,build_info
 
   ! IO & DOMAINS MODULES
@@ -261,7 +261,7 @@ Contains
 ! set shells on top of their cores preventatively
 
      If ( (cshell%megshl > 0 .and. cshell%keyshl == SHELL_RELAXED) .and. &
-          (flow%restart_key == 0 .and. flow%step == 0 .and. flow%equil_steps > 0) ) Then
+          (flow%restart_key == RESTART_KEY_CLEAN .and. flow%step == 0 .and. flow%equil_steps > 0) ) Then
         Call core_shell_on_top(cshell,cnfig,comm)
 
 ! Refresh mappings
@@ -1481,7 +1481,7 @@ End If
        If (cnfig%levcfg == 2) Then
           flow%newjob = .false.
 
-           If (flow%restart_key /= 1) Then
+           If (flow%restart_key /= RESTART_KEY_OLD) Then
              Call w_write_options(cnfig,io,rsdc,cshell,stat,sites,netcdf,domain,traj,files,dfcts,&
              flow,thermo,msd_data,green,neigh,comm)
            End If

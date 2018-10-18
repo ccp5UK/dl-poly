@@ -42,6 +42,7 @@ Module trajectory
   Use errors_warnings, Only : error,warning,info
   Use particle,        Only : corePart
   Use filename, Only : file_type,FILE_CONFIG,FILE_HISTORY
+  Use flow_control, Only : RESTART_KEY_OLD
   Implicit None
 
   Private
@@ -867,11 +868,11 @@ Subroutine trajectory_write(keyres,nstep,tstep,time,io,rsd,netcdf,config, &
         traj%fname = Trim(files(FILE_HISTORY)%filename) // '.nc'
      End If
 
-! If keyres=1, is HISTORY old (does it exist) and
+! If keyres = RESTART_KEY_OLD, is HISTORY old (does it exist) and
 ! how many frames and records are in there
 
      lexist=.true.
-     If (keyres == 1) Then
+     If (keyres == RESTART_KEY_OLD) Then
         If (comm%idnode == 0) Inquire(File=traj%fname, Exist=lexist)
         Call gcheck(comm,lexist,"enforce")
      Else
@@ -1702,11 +1703,11 @@ Subroutine trajectory_write(keyres,nstep,tstep,time,io,rsd,netcdf,config, &
         traj%fname = Trim(files(FILE_HISTORY)%filename) // '.nc'
      End If
 
-! If keyres=1, is HISTORY old (does it exist) and
+! If keyres = RESTART_KEY_OLD, is HISTORY old (does it exist) and
 ! how many frames and records are in there
 
      lexist=.true.
-     If (keyres == 1) Then
+     If (keyres == RESTART_KEY_OLD) Then
         If (comm%idnode == 0) Inquire(File=traj%fname, Exist=lexist)
         Call gcheck(comm,lexist,"enforce")
      Else
