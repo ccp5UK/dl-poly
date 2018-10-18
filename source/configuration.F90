@@ -63,107 +63,111 @@ Module configuration
   Use filename, Only : file_type,FILE_CONFIG
   Use flow_control, Only : flow_type, RESTART_KEY_CLEAN
   Implicit None
-
-Type configuration_type
-  Character( Len = 72 )       :: cfgname = ' ' , &
-                                 sysname = ' '
-
-  Integer                     :: imcon =-1 , &
-                                 imc_n =-1 , &
-                                 natms = 0 , &
-                                 nlast = 0 , &
-                                 nfree = 0
-
-  Real( Kind = wp )           :: cell(1:9) = 0.0_wp , &
-                                 volm      = 0.0_wp , &
-                                 sumchg    = 0.0_wp
-
-
-  Character( Len = 8 ), Allocatable       :: atmnam(:)
-
-  Integer,              Allocatable       :: lsite(:),ltype(:)
-  Integer,              Allocatable       :: lfrzn(:),lfree(:)
-  Integer,              Allocatable       :: lsi(:),lsa(:),ltg(:)
-  Integer,              Allocatable       :: ixyz(:)
-  Integer,              Allocatable       :: lstfre(:)
-
-  Real( Kind = wp ),    Allocatable       :: weight(:)!,chge(:)
-!  Real( Kind = wp ),    Allocatable, Save :: xxx(:),yyy(:),zzz(:)
-  Real( Kind = wp ),    Allocatable       :: vxx(:),vyy(:),vzz(:)
-!  Real( Kind = wp ),    Allocatable, Save :: fxx(:),fyy(:),fzz(:)
-
-  Type(corePart),       Allocatable       :: parts(:)
-  Logical :: newjob_check_config = .true.
-  Logical :: newjob_totmas = .true.
-  Logical :: newjob_totmas_r = .true.
-  Logical :: newjob_meg = .true.
-  Real( Kind = wp ) :: totmas
-  Real( Kind = wp ) :: totmas_r
-  Real( Kind = wp ) :: meg
-  Logical, Public :: l_vom=.true.,lvom=.true. ! this is confusing and needless complicated
-  Integer( Kind = wi ),Public    :: mxtana,mxgana,mxbfss,mxbuff
-  Integer( Kind = wi ),Public    :: mxlshp,mxatms,mxatdm
-
-  ! general flags
-  Logical           :: l_ind,l_exp
-  Integer           :: levcfg,nx,ny,nz,&
-    atmfre,atmfrz,megatm,megfrz
-  ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
-  Integer(Kind=li)  :: degfre,degshl,degtra,degrot
-  ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
-  Real(Kind=wp) :: dvar,fmax,width
-
-Contains
   Private
-  Procedure, Public :: chvom
-End Type configuration_type
 
-Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
-Public :: check_config
-Public :: read_config_parallel
-Public :: scan_config
+  Type, Public ::  configuration_type
+    Character( Len = 72 )       :: cfgname = ' ' , &
+      sysname = ' '
 
-Interface reallocate
-  Module Procedure reallocate_chr_v
-  Module Procedure reallocate_int_v
-  Module Procedure reallocate_rwp_v
-  Module Procedure reallocate_corePart_v
-End Interface
-Interface getcom
-  Module Procedure getcom_parts
-  Module Procedure getcom_arrays
-End Interface getcom
+    Integer                     :: imcon =-1 , &
+      imc_n =-1 , &
+      natms = 0 , &
+      nlast = 0 , &
+      nfree = 0
 
-Private :: reallocate_chr_v, reallocate_int_v, reallocate_rwp_v
+    Real( Kind = wp )           :: cell(1:9) = 0.0_wp , &
+      volm      = 0.0_wp , &
+      sumchg    = 0.0_wp
+
+
+    Character( Len = 8 ), Allocatable       :: atmnam(:)
+
+    Integer,              Allocatable       :: lsite(:),ltype(:)
+    Integer,              Allocatable       :: lfrzn(:),lfree(:)
+    Integer,              Allocatable       :: lsi(:),lsa(:),ltg(:)
+    Integer,              Allocatable       :: ixyz(:)
+    Integer,              Allocatable       :: lstfre(:)
+
+    Real( Kind = wp ),    Allocatable       :: weight(:)!,chge(:)
+    !  Real( Kind = wp ),    Allocatable, Save :: xxx(:),yyy(:),zzz(:)
+    Real( Kind = wp ),    Allocatable       :: vxx(:),vyy(:),vzz(:)
+    !  Real( Kind = wp ),    Allocatable, Save :: fxx(:),fyy(:),fzz(:)
+
+    Type(corePart),       Allocatable       :: parts(:)
+    Logical :: newjob_check_config = .true.
+    Logical :: newjob_totmas = .true.
+    Logical :: newjob_totmas_r = .true.
+    Logical :: newjob_meg = .true.
+    Real( Kind = wp ) :: totmas
+    Real( Kind = wp ) :: totmas_r
+    Real( Kind = wp ) :: meg
+    Logical, Public :: l_vom=.true.,lvom=.true. ! this is confusing and needless complicated
+    Integer( Kind = wi ),Public    :: mxtana,mxgana,mxbfss,mxbuff
+    Integer( Kind = wi ),Public    :: mxlshp,mxatms,mxatdm
+
+    ! general flags
+    Logical           :: l_ind,l_exp
+    Integer           :: levcfg,nx,ny,nz,&
+      atmfre,atmfrz,megatm,megfrz
+    ! Degrees of freedom must be in long integers so we do 2.1x10^9 particles
+    Integer(Kind=li)  :: degfre,degshl,degtra,degrot
+    ! vdws%elrc,vdws%vlrc - vdw energy and virial are scalars and in vdw
+    Real(Kind=wp) :: dvar,fmax,width
+
+  Contains
+    Private
+    Procedure, Public :: chvom
+  End Type configuration_type
+
+  Interface reallocate
+    Module Procedure reallocate_chr_v
+    Module Procedure reallocate_int_v
+    Module Procedure reallocate_rwp_v
+    Module Procedure reallocate_corePart_v
+  End Interface
+  Interface getcom
+    Module Procedure getcom_parts
+    Module Procedure getcom_arrays
+  End Interface getcom
+
+  Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
+  Public :: check_config
+  Public :: read_config,read_config_parallel
+  Public :: scan_config
+  Public :: scale_config
+  Public :: origin_config
+  Public :: write_config
+  Public :: freeze_atoms
+  Public :: getcom,getcom_mol
 
 Contains
-Pure Subroutine chvom(T,flag)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to change behaviour for COM momentum removal
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov july 2013
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Pure Subroutine chvom(T,flag)
+
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to change behaviour for COM momentum removal
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov july 2013
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Class(configuration_type), Intent( InOut ) :: T
-  Logical, Intent( In ),Optional :: flag
+    Logical, Intent( In ),Optional :: flag
 
 
-  Logical :: lflag
+    Logical :: lflag
 
-  lflag=T%l_vom
-  If (present(flag)) lflag=flag
+    lflag=T%l_vom
+    If (present(flag)) lflag=flag
 
-  If (lflag) Then
-    T%lvom=.true.  ! Remove COM momentum
-  Else
-    T%lvom=.false. ! Don't
-  End If
+    If (lflag) Then
+      T%lvom=.true.  ! Remove COM momentum
+    Else
+      T%lvom=.false. ! Don't
+    End If
 
-End Subroutine chvom
-
+  End Subroutine chvom
 
   Subroutine  reallocate_corePart_v( delta, a, stat )
     Integer,                           Intent( In    ) :: delta
