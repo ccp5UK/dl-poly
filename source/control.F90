@@ -1158,13 +1158,11 @@ Contains
            End If
         End If
 
-! read integration flavour
+! legacy integration warning
 
-     Else If (word(1:8) == 'integrat') Then
+     Else If (word(1:10) == 'integrator') Then
+       Call warning('The integrator keyword has been removed, using velocity Verlet integration',.true.)
 
-        Call get_word(record,word)
-        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
-        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
 
 ! read ensemble
 
@@ -4020,14 +4018,6 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
            flow%strict=.false.
 
         End If
-
-! read integration flavour
-
-     Else If (word(1:8) == 'integrat') Then
-
-        Call get_word(record,word)
-        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
-        If (word(1:4) == 'type' .or. word(1:6) == 'verlet') Call get_word(record,word)
 
 ! read analysis (intramolecular distribution calculation) option
 
