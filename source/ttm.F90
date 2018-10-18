@@ -21,6 +21,7 @@ Module ttm
                               strip_blanks, word_2_real
   Use errors_warnings, Only : error,warning,info
   Use filename, Only : UNIT_TYPE
+  Use flow_control, Only : RESTART_KEY_OLD, RESTART_KEY_CLEAN
 #ifdef SERIAL
   Use mpi_api
 #else
@@ -60,7 +61,8 @@ Module ttm
 
 ! DEBUG (TODO)
     Real ( Kind = wp ) :: epstart
-    Integer :: keyres0,nstepcpl = 0
+    Integer :: keyres0 = RESTART_KEY_CLEAN
+    Integer :: nstepcpl = 0
 
     Integer :: cel,gel,del,kel
     Integer :: acell,acell_old,amin
@@ -337,7 +339,7 @@ Module ttm
 
     End If
 
-    ttm%keyres0 = 1
+    ttm%keyres0 = RESTART_KEY_OLD
 
   End Subroutine allocate_ttm_arrays
 

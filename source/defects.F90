@@ -54,6 +54,7 @@ Module defects
   Use neighbours,        Only : neighbours_type,defects_link_cells
   Use core_shell,        Only : core_shell_type
   Use filename, Only : file_type,FILE_CONFIG
+  Use flow_control, Only : RESTART_KEY_OLD
 
   Implicit None
 
@@ -2248,11 +2249,11 @@ Subroutine defects_write(keyres,ensemble,nstep,tstep,time,io,cshell,dfcts,neigh,
      cut=dfcts%rdef+0.15_wp
      Call defects_reference_set_halo(cut,dfcts,domain,config,comm)
 
-! If the keyres=1, is DEFECTS old (does it exist) and
+! If the keyres = RESTART_KEY_OLD, is DEFECTS old (does it exist) and
 ! how many frames and records are in there
 
      lexist=.true.
-     If (keyres == 1) Then
+     If (keyres == RESTART_KEY_OLD) Then
         If (comm%idnode == 0) Inquire(File=trim(dfcts%deffile), Exist=lexist)
         Call gcheck(comm,lexist,"enforce")
      Else

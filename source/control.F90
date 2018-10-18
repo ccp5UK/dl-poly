@@ -71,7 +71,8 @@ Module control
   Use filename, Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
                        FILE_STATS,FILE_HISTORY,FILE_HISTORF,FILE_REVIVE,FILE_REVCON, &
                        FILE_REVOLD
-  Use flow_control, Only : flow_type
+  Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN, &
+                           RESTART_KEY_NOSCALE,RESTART_KEY_SCALE
   Use rigid_bodies, Only : rigid_bodies_type
   Implicit None
 
@@ -214,7 +215,7 @@ Contains
 
 ! default restart key (general)
 
-  flow%restart_key = 0
+  flow%restart_key = RESTART_KEY_CLEAN
 
 ! timestep switch and default value
 
@@ -892,13 +893,13 @@ Contains
         Call get_word(record,word)
 
         If (word(1:7) == 'noscale' .or. word(1:7) == 'unscale') Then
-           flow%restart_key = 3
+           flow%restart_key = RESTART_KEY_NOSCALE
            Call info('unscaled restart requested (starting a new simulation)',.true.)
         Else If (word(1:5) == 'scale') Then
-           flow%restart_key = 2
+           flow%restart_key = RESTART_KEY_SCALE
            Call info('scaled restart requested (starting a new simulation)',.true.)
         Else
-           flow%restart_key = 1
+           flow%restart_key = RESTART_KEY_OLD
            Call info('restart requested (continuing an old simulation)',.true.)
            Call warning('timestep from REVOLD overides specification in CONTROL',.true.)
         End If
@@ -2975,11 +2976,11 @@ Contains
 !!! REPORTS !!!
 ! report restart
 
-  If (flow%restart_key == 0) Then
+  If (flow%restart_key == RESTART_KEY_CLEAN) Then
      Call info('clean start requested',.true.)
   Else If (config%levcfg == 0) Then
      Call warning(200,0.0_wp,0.0_wp,0.0_wp)
-     flow%restart_key=0
+     flow%restart_key = RESTART_KEY_CLEAN
   End If
 
 ! report default ensemble if none is specified:
@@ -3368,8 +3369,8 @@ Contains
         End If
      End If
 
-     If (flow%restart_key /= 0) Then
-        flow%restart_key=0 ! Force clean restart
+     If (flow%restart_key /= RESTART_KEY_CLEAN) Then
+        flow%restart_key = RESTART_KEY_CLEAN ! Force clean restart
         Call info('clean start enforced',.true.)
      End If
   End If

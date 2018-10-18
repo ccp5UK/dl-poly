@@ -4,6 +4,16 @@ Module flow_control
 
   Private
 
+  ! Simulation restart keys
+  !> Clean start (New simulation?)
+  Integer(Kind=wi), Parameter, Public :: RESTART_KEY_CLEAN = 0
+  !> Continue an old simulation
+  Integer(Kind=wi), Parameter, Public :: RESTART_KEY_OLD = 1
+  !> Scaled restart
+  Integer(Kind=wi), Parameter, Public :: RESTART_KEY_SCALE = 2
+  !> Unscaled restart
+  Integer(Kind=wi), Parameter, Public :: RESTART_KEY_NOSCALE = 3
+
   !> Type containing program flow data
   Type, Public :: flow_type
     Private

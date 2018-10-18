@@ -29,6 +29,7 @@ Module statistics
   Use thermostat, Only : thermostat_type,CONSTRAINT_NONE,CONSTRAINT_SURFACE_TENSION, &
     CONSTRAINT_SEMI_ORTHORHOMBIC
   Use filename, Only : file_type, FILE_STATS
+  Use flow_control, Only : RESTART_KEY_OLD
 
   Implicit None
   Type, Public :: stats_type
@@ -252,10 +253,10 @@ Contains
     If (stats%newjob .and. comm%idnode == 0) Then
       stats%newjob = .false.
 
-! If the keyres=1 is the file old (does it exist)?
+! If the keyres = RESTART_KEY_OLD is the file old (does it exist)?
 
       l_tmp=.false.
-      If (keyres == 1) Inquire(File=files(FILE_STATS)%filename, Exist=l_tmp)
+      If (keyres == RESTART_KEY_OLD) Inquire(File=files(FILE_STATS)%filename, Exist=l_tmp)
 
       If (.not.l_tmp) Then
         Open(Newunit=files(FILE_STATS)%unit_no, File=files(FILE_STATS)%filename, Status='replace')
