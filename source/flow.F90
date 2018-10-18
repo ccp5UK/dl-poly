@@ -40,9 +40,6 @@ Module flow_control
     !> Excluded interactions flag
     Logical, Public :: exclusions
 
-    !> Some kind of switch
-    Integer(Kind=wi), Public :: isw
-
     !> Restart key
     Integer(Kind=wi), Public :: restart_key
 
