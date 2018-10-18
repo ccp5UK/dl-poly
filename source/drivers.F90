@@ -250,10 +250,9 @@ Contains
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type(comms_type)    ,   Intent( InOut ) :: comm
 
-
-
     Logical :: ltmp
     Integer :: i
+    Integer(Kind=wi) :: switch
 
   !!!!!!!!!!!!!!!!!!  W_CALCULATE_FORCES INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
@@ -320,8 +319,8 @@ Contains
           ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
           Mod(flow%step,flow%freq_bond) == 0)
 
-        flow%isw = 1 + Merge(1,0,ltmp)
-        Call bonds_forces(flow%isw,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff, &
+        switch = 1 + Merge(1,0,ltmp)
+        Call bonds_forces(switch,stat%engbnd,stat%virbnd,stat%stress,neigh%cutoff, &
           stat%engcpe,stat%vircpe,bond,mpoles,electro,cnfig,comm)
      End If
 
@@ -332,8 +331,8 @@ Contains
           ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
           Mod(flow%step,flow%freq_angle) == 0)
 
-        flow%isw = 1 + Merge(1,0,ltmp)
-        Call angles_forces(flow%isw,stat%engang,stat%virang,stat%stress,angle,cnfig,comm)
+        switch = 1 + Merge(1,0,ltmp)
+        Call angles_forces(switch,stat%engang,stat%virang,stat%stress,angle,cnfig,comm)
      End If
 
 ! Calculate dihedral forces
@@ -343,8 +342,8 @@ Contains
           ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) &
           .and. Mod(flow%step,flow%freq_dihedral) == 0)
 
-        flow%isw = 1 + Merge(1,0,ltmp)
-        Call dihedrals_forces(flow%isw,stat%engdih,stat%virdih,stat%stress, &
+        switch = 1 + Merge(1,0,ltmp)
+        Call dihedrals_forces(switch,stat%engdih,stat%virdih,stat%stress, &
            neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp, &
            stat%virsrp,dihedral,vdws,mpoles,electro,cnfig,comm)
      End If
@@ -356,8 +355,8 @@ Contains
           ((.not.flow%equilibration) .or. flow%step >= flow%equil_steps) .and. &
           Mod(flow%step,flow%freq_inversion) == 0)
 
-        flow%isw = 1 + Merge(1,0,ltmp)
-        Call inversions_forces(flow%isw,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
+        switch = 1 + Merge(1,0,ltmp)
+        Call inversions_forces(switch,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
      End If
      call stop_timer(tmr%t_bonded)
 
@@ -1656,6 +1655,7 @@ End If
     
     Character( Len = 256 ) :: messages(6)
     Integer :: i
+    Integer(Kind=wi) :: switch
 
     !!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORY INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 ! Report work
@@ -1816,23 +1816,23 @@ End If
 ! Calculate bond forces
 
            If (bond%total > 0 .and. bond%bin_pdf > 0) Then
-              flow%isw = 0
-              Call bonds_forces(flow%isw,stat%engbnd,stat%virbnd,stat%stress, &
+              switch = 0
+              Call bonds_forces(switch,stat%engbnd,stat%virbnd,stat%stress, &
               neigh%cutoff,stat%engcpe,stat%vircpe,bond,mpoles,electro,cnfig,comm)
            End If
 
 ! Calculate valence angle forces
 
            If (angle%total > 0 .and. angle%bin_adf > 0) Then
-              flow%isw = 0
-              Call angles_forces(flow%isw,stat%engang,stat%virang,stat%stress,angle,cnfig,comm)
+              switch = 0
+              Call angles_forces(switch,stat%engang,stat%virang,stat%stress,angle,cnfig,comm)
            End If
 
 ! Calculate dihedral forces
 
            If (dihedral%total > 0 .and. dihedral%bin_adf > 0) Then
-              flow%isw = 0
-              Call dihedrals_forces(flow%isw,stat%engdih,stat%virdih,stat%stress, &
+              switch = 0
+              Call dihedrals_forces(switch,stat%engdih,stat%virdih,stat%stress, &
                 neigh%cutoff,stat%engcpe,stat%vircpe,stat%engsrp,stat%virsrp, &
                 dihedral,vdws,mpoles,electro,cnfig,comm)
            End If
@@ -1840,8 +1840,8 @@ End If
 ! Calculate inversion forces
 
            If (inversion%total > 0 .and. inversion%bin_adf > 0) Then
-              flow%isw = 0
-              Call inversions_forces(flow%isw,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
+              switch = 0
+              Call inversions_forces(switch,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
            End If
 
 ! Calculate kinetic stress and energy if available
