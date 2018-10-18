@@ -1157,6 +1157,12 @@ Contains
            End If
         End If
 
+! legacy integration warning
+
+     Else If (word(1:10) == 'integrator') Then
+       Call warning('The integrator keyword has been removed, using velocity Verlet integration',.true.)
+
+
 ! read ensemble
 
      Else If (word(1:8) == 'ensemble') Then
