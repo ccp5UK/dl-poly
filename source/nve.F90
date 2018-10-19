@@ -7,7 +7,7 @@ Module nve
   Use domains,       Only : domains_type
   Use kinetics,      Only : getknr,kinstresf,kinstrest,kinstress
   Use constraints,   Only : constraints_tags,constraints_type, &
-                            apply_shake, apply_rattle
+    apply_shake, apply_rattle
   Use rigid_bodies,  Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use pmf,           Only : pmf_tags,pmf_type
   Use numerics, Only : images
@@ -121,7 +121,7 @@ Contains
 
       ! store initial values
 
-       Do i=1,config%natms
+      Do i=1,config%natms
         xxt(i) = config%parts(i)%xxx
         yyt(i) = config%parts(i)%yyy
         zzt(i) = config%parts(i)%zzz
@@ -133,38 +133,38 @@ Contains
         fxt(i) = config%parts(i)%fxx
         fyt(i) = config%parts(i)%fyy
         fzt(i) = config%parts(i)%fzz
-       End Do
+      End Do
 
       100  Continue
 
-        ! constraint virial and stress tensor
+      ! constraint virial and stress tensor
 
-       If (cons%megcon > 0) Then
-          stat%vircon=0.0_wp
-          stat%strcon=0.0_wp
-       End If
+      If (cons%megcon > 0) Then
+        stat%vircon=0.0_wp
+        stat%strcon=0.0_wp
+      End If
 
-  ! PMF virial and stress tensor
+      ! PMF virial and stress tensor
 
-       If (pmf%megpmf > 0) Then
-          stat%virpmf=0.0_wp
-          stat%strpmf=0.0_wp
-       End If
+      If (pmf%megpmf > 0) Then
+        stat%virpmf=0.0_wp
+        stat%strpmf=0.0_wp
+      End If
 
-        ! update velocity and position
+      ! update velocity and position
 
-       Do i=1,config%natms
-          If (config%weight(i) > 1.0e-6_wp) Then
-             tmp=hstep/config%weight(i)
-             config%vxx(i)=vxt(i)+tmp*fxt(i)
-             config%vyy(i)=vyt(i)+tmp*fyt(i)
-             config%vzz(i)=vzt(i)+tmp*fzt(i)
+      Do i=1,config%natms
+        If (config%weight(i) > 1.0e-6_wp) Then
+          tmp=hstep/config%weight(i)
+          config%vxx(i)=vxt(i)+tmp*fxt(i)
+          config%vyy(i)=vyt(i)+tmp*fyt(i)
+          config%vzz(i)=vzt(i)+tmp*fzt(i)
 
-             config%parts(i)%xxx=xxt(i)+tstep*config%vxx(i)
-             config%parts(i)%yyy=yyt(i)+tstep*config%vyy(i)
-             config%parts(i)%zzz=zzt(i)+tstep*config%vzz(i)
-          End If
-       End Do
+          config%parts(i)%xxx=xxt(i)+tstep*config%vxx(i)
+          config%parts(i)%yyy=yyt(i)+tstep*config%vyy(i)
+          config%parts(i)%zzz=zzt(i)+tstep*config%vzz(i)
+        End If
+      End Do
 
       ! SHAKE procedures
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
@@ -176,9 +176,9 @@ Contains
 
       If (lvar) Then
         If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%parts,&
-           xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
-           Call info(message,.true.)
-           Go To 100
+          xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
+          Call info(message,.true.)
+          Go To 100
         End If
       End If
 
@@ -188,14 +188,14 @@ Contains
 
       ! update velocity
 
-       Do i=1,config%natms
-         If (config%weight(i) > 1.0e-6_wp) Then
-           tmp=hstep/config%weight(i)
-           config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
-           config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
-           config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
-         End If
-       End Do
+      Do i=1,config%natms
+        If (config%weight(i) > 1.0e-6_wp) Then
+          tmp=hstep/config%weight(i)
+          config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
+          config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
+          config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
+        End If
+      End Do
 
       ! RATTLE procedures
       ! apply velocity corrections to bond and PMF constraints
@@ -294,7 +294,7 @@ Contains
       Allocate (lstitr(1:config%mxatms),                                  Stat=fail( 1))
       Call cons%allocate_work(config%mxatms)
       Call pmf%allocate_work()
-     Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
+      Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
     Allocate (ggx(1:rigid%max_list*rigid%max_rigid), &
       ggy(1:rigid%max_list*rigid%max_rigid), &
@@ -410,7 +410,7 @@ Contains
         fxt(i) = config%parts(i)%fxx
         fyt(i) = config%parts(i)%fyy
         fzt(i) = config%parts(i)%fzz
-       End Do
+      End Do
 
       Do irgd=1,rigid%n_types
         q0t(irgd)=rigid%q0(irgd)
@@ -432,22 +432,22 @@ Contains
       End Do
 
       100  Continue
-      
-        ! constraint virial and stress tensor
 
-       If (cons%megcon > 0) Then
-          stat%vircon=0.0_wp
-          stat%strcon=0.0_wp
-       End If
+      ! constraint virial and stress tensor
 
-  ! PMF virial and stress tensor
+      If (cons%megcon > 0) Then
+        stat%vircon=0.0_wp
+        stat%strcon=0.0_wp
+      End If
 
-       If (pmf%megpmf > 0) Then
-          stat%virpmf=0.0_wp
-          stat%strpmf=0.0_wp
-       End If
+      ! PMF virial and stress tensor
 
-     ! update velocity and position of FPs
+      If (pmf%megpmf > 0) Then
+        stat%virpmf=0.0_wp
+        stat%strpmf=0.0_wp
+      End If
+
+      ! update velocity and position of FPs
 
       Do j=1,config%nfree
         i=config%lstfre(j)
@@ -637,8 +637,8 @@ Contains
 
       If (lvar) Then
         If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%parts,&
-           xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
-           Call info(message,.true.)
+          xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
+          Call info(message,.true.)
 
 
           ! restore initial conditions

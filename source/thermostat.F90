@@ -129,12 +129,12 @@ Module thermostat
     Real( Kind = wp ), Allocatable, Public :: dens0(:)
     Integer,   Public :: ntp,stp,rtp
     Real( Kind = wp ), Public :: rcell(1:9),sx,sy,sz,chit_sb = 0.0_wp
-! q. index arrays and tp. sum arrays
+    ! q. index arrays and tp. sum arrays
 
     Integer, Allocatable, Public   :: qn(:),tpn(:)
     Integer, Allocatable, Public   :: qs(:,:),tps(:)
     Integer, Allocatable, Public   :: qr(:),tpr(:)
-    
+
     Real( Kind = wp ), Public              :: fpl(1:9) = 0.0_wp
     Real( Kind = wp ), Public, Allocatable :: fxl(:),fyl(:),fzl(:)
 
@@ -208,7 +208,7 @@ Module thermostat
 Contains
 
   Subroutine allocate_dpd_arrays(thermo,max_vdw)
-    Class( thermostat_type ) :: thermo
+  Class( thermostat_type ) :: thermo
     Integer( Kind = wi ), Intent( In    ) :: max_vdw
 
     Integer :: fail
@@ -258,160 +258,160 @@ Contains
   End Subroutine cleanup
 
   Logical Function adjust_timestep_1(tstep,hstep,rstep,mndis,mxdis,mxstp,natms,parts,&
-    xxt,yyt,zzt,legshl,message,t,comm)
-        ! update maximum distance a particle has travelled
-        Real( Kind = wp ), Intent( InOut ) :: tstep
-        Real( Kind = wp ), Intent(   Out ) :: hstep,rstep
-        Type( corePart ),  Intent( In    ) :: parts(1:)
-        Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp,&
-                    xxt(1:),yyt(1:),zzt(1:)
-        Integer,           Intent( In    ) :: legshl(0:,1:),natms          
-        Character( Len = *), Intent(   Out ) :: message
-        Real( Kind =  wp ), Intent( InOut) :: t
-        Type( comms_type), Intent( InOut ) :: comm
+      xxt,yyt,zzt,legshl,message,t,comm)
+    ! update maximum distance a particle has travelled
+    Real( Kind = wp ), Intent( InOut ) :: tstep
+    Real( Kind = wp ), Intent(   Out ) :: hstep,rstep
+    Type( corePart ),  Intent( In    ) :: parts(1:)
+    Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp,&
+      xxt(1:),yyt(1:),zzt(1:)
+    Integer,           Intent( In    ) :: legshl(0:,1:),natms          
+    Character( Len = *), Intent(   Out ) :: message
+    Real( Kind =  wp ), Intent( InOut) :: t
+    Type( comms_type), Intent( InOut ) :: comm
 
-        Real( Kind = wp ) :: mxdr
-        Logical :: lv_up 
-        Logical :: lv_dn
-        Integer :: i
+    Real( Kind = wp ) :: mxdr
+    Logical :: lv_up 
+    Logical :: lv_dn
+    Integer :: i
 
 
 
-        adjust_timestep_1 = .False.
-        lv_up = .False.
-        lv_dn = .False.
-        mxdr = 0.0_wp
-        t=0.0_wp
-        
-        Do i=1,natms
-          If (legshl(0,i) >= 0) &
-            mxdr=Max(mxdr,(parts(i)%xxx-xxt(i))**2 + (parts(i)%yyy-yyt(i))**2 + (parts(i)%zzz-zzt(i))**2)
-        End Do
-        mxdr=Sqrt(mxdr)
-        Call gmax(comm,mxdr)
+    adjust_timestep_1 = .False.
+    lv_up = .False.
+    lv_dn = .False.
+    mxdr = 0.0_wp
+    t=0.0_wp
 
-        If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
+    Do i=1,natms
+      If (legshl(0,i) >= 0) &
+        mxdr=Max(mxdr,(parts(i)%xxx-xxt(i))**2 + (parts(i)%yyy-yyt(i))**2 + (parts(i)%zzz-zzt(i))**2)
+    End Do
+    mxdr=Sqrt(mxdr)
+    Call gmax(comm,mxdr)
 
-          ! scale tstep and derivatives
+    If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
-          If (mxdr > mxdis) Then
-            lv_up = .true.
-            If (lv_dn) Then
-              t = Sqrt(4.0_wp/3.0_wp)
-              tstep = 0.75_wp*tstep
-              hstep = 0.50_wp*tstep
-            Else
-              t = Sqrt(2.0_wp)
-              tstep = hstep
-              hstep = 0.50_wp*tstep
-            End If
-            Write(message,"( &
-              & 'timestep decreased, new timestep is:',3x,1p,e12.4)") tstep
-          End If
-          If (mxdr < mndis) Then
-            lv_dn = .true.
-            If (lv_up) Then
-              t = Sqrt(2.0_wp/3.0_wp)
-              tstep = 1.50_wp*tstep
-              hstep = 0.50_wp*tstep
-            Else
-              t = Sqrt(0.5_wp)
-              hstep = tstep
-              tstep = 2.00_wp*tstep
-            End If
-            If (tstep > mxstp) Then
-              t = t*Sqrt(tstep/mxstp)
-              tstep = mxstp
-              hstep = 0.50_wp*tstep
-            End If
-            Write(message,"( &
-              & 'timestep increased, new timestep is:',3x,1p,e12.4)") tstep
-          End If
-          rstep = 1.0_wp/tstep
+      ! scale tstep and derivatives
 
-          ! restart vv1
-
-          adjust_timestep_1 = .True.
+      If (mxdr > mxdis) Then
+        lv_up = .true.
+        If (lv_dn) Then
+          t = Sqrt(4.0_wp/3.0_wp)
+          tstep = 0.75_wp*tstep
+          hstep = 0.50_wp*tstep
+        Else
+          t = Sqrt(2.0_wp)
+          tstep = hstep
+          hstep = 0.50_wp*tstep
         End If
-    End Function adjust_timestep_1
+        Write(message,"( &
+          & 'timestep decreased, new timestep is:',3x,1p,e12.4)") tstep
+      End If
+      If (mxdr < mndis) Then
+        lv_dn = .true.
+        If (lv_up) Then
+          t = Sqrt(2.0_wp/3.0_wp)
+          tstep = 1.50_wp*tstep
+          hstep = 0.50_wp*tstep
+        Else
+          t = Sqrt(0.5_wp)
+          hstep = tstep
+          tstep = 2.00_wp*tstep
+        End If
+        If (tstep > mxstp) Then
+          t = t*Sqrt(tstep/mxstp)
+          tstep = mxstp
+          hstep = 0.50_wp*tstep
+        End If
+        Write(message,"( &
+          & 'timestep increased, new timestep is:',3x,1p,e12.4)") tstep
+      End If
+      rstep = 1.0_wp/tstep
+
+      ! restart vv1
+
+      adjust_timestep_1 = .True.
+    End If
+  End Function adjust_timestep_1
   Logical Function adjust_timestep_2(tstep,hstep,rstep,qstep,mndis,mxdis,mxstp,natms,parts,&
-    xxt,yyt,zzt,legshl,message,t,comm)
-        ! update maximum distance a particle has travelled
-        Real( Kind = wp ), Intent( InOut ) :: tstep
-        Real( Kind = wp ), Intent(   Out ) :: hstep,rstep,qstep
-        Type( corePart ),  Intent( In    ) :: parts(1:)
-        Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp,&
-                    xxt(1:),yyt(1:),zzt(1:)
-        Integer,           Intent( In    ) :: legshl(0:,1:),natms          
-        Character( Len = *), Intent(   Out ) :: message
-        Real( Kind =  wp ), Intent( InOut) :: t
-        Type( comms_type), Intent( InOut ) :: comm
+      xxt,yyt,zzt,legshl,message,t,comm)
+    ! update maximum distance a particle has travelled
+    Real( Kind = wp ), Intent( InOut ) :: tstep
+    Real( Kind = wp ), Intent(   Out ) :: hstep,rstep,qstep
+    Type( corePart ),  Intent( In    ) :: parts(1:)
+    Real( Kind = wp ), Intent( In    ) :: mndis,mxdis,mxstp,&
+      xxt(1:),yyt(1:),zzt(1:)
+    Integer,           Intent( In    ) :: legshl(0:,1:),natms          
+    Character( Len = *), Intent(   Out ) :: message
+    Real( Kind =  wp ), Intent( InOut) :: t
+    Type( comms_type), Intent( InOut ) :: comm
 
-        Real( Kind = wp ) :: mxdr
-        Logical :: lv_up 
-        Logical :: lv_dn
-        Integer :: i
+    Real( Kind = wp ) :: mxdr
+    Logical :: lv_up 
+    Logical :: lv_dn
+    Integer :: i
 
 
 
-        adjust_timestep_2 = .False.
-        lv_up = .False.
-        lv_dn = .False.
-        mxdr = 0.0_wp
-        
-        Do i=1,natms
-          If (legshl(0,i) >= 0) &
-            mxdr=Max(mxdr,(parts(i)%xxx-xxt(i))**2 + (parts(i)%yyy-yyt(i))**2 + (parts(i)%zzz-zzt(i))**2)
-        End Do
-        mxdr=Sqrt(mxdr)
-        Call gmax(comm,mxdr)
+    adjust_timestep_2 = .False.
+    lv_up = .False.
+    lv_dn = .False.
+    mxdr = 0.0_wp
 
-        If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
+    Do i=1,natms
+      If (legshl(0,i) >= 0) &
+        mxdr=Max(mxdr,(parts(i)%xxx-xxt(i))**2 + (parts(i)%yyy-yyt(i))**2 + (parts(i)%zzz-zzt(i))**2)
+    End Do
+    mxdr=Sqrt(mxdr)
+    Call gmax(comm,mxdr)
 
-          ! scale tstep and derivatives
-             If (mxdr > mxdis) Then
-                lv_up = .true.
-                If (lv_dn) Then
-                   t = Sqrt(4.0_wp/3.0_wp)
-                   tstep = 0.75_wp*tstep
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                Else
-                   t = Sqrt(2.0_wp)
-                   tstep = hstep
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                End If
-                Write(message,'(a,1p,e12.4)') &
-                  'timestep decreased, new timestep is: ', tstep
-             End If
-             If (mxdr < mndis) Then
-                lv_dn = .true.
-                If (lv_up) Then
-                   t = Sqrt(2.0_wp/3.0_wp)
-                   tstep = 1.50_wp*tstep
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                Else
-                   t = Sqrt(0.5_wp)
-                   qstep = hstep
-                   hstep = tstep
-                   tstep = 2.00_wp*tstep
-                End If
-                If (tstep > mxstp) Then
-                   t = t*Sqrt(tstep/mxstp)
-                   tstep = mxstp
-                   hstep = 0.50_wp*tstep
-                   qstep = 0.50_wp*hstep
-                End If
-                Write(message,'(a,1p,e12.4)') &
-                  'timestep increased, new timestep is: ', tstep
-             End If
-             rstep = 1.0_wp/tstep
+    If ((mxdr < mndis .or. mxdr > mxdis) .and. tstep < mxstp) Then
 
-          ! restart vv1
-
-          adjust_timestep_2 = .True.
+      ! scale tstep and derivatives
+      If (mxdr > mxdis) Then
+        lv_up = .true.
+        If (lv_dn) Then
+          t = Sqrt(4.0_wp/3.0_wp)
+          tstep = 0.75_wp*tstep
+          hstep = 0.50_wp*tstep
+          qstep = 0.50_wp*hstep
+        Else
+          t = Sqrt(2.0_wp)
+          tstep = hstep
+          hstep = 0.50_wp*tstep
+          qstep = 0.50_wp*hstep
         End If
-    End Function adjust_timestep_2
+        Write(message,'(a,1p,e12.4)') &
+          'timestep decreased, new timestep is: ', tstep
+      End If
+      If (mxdr < mndis) Then
+        lv_dn = .true.
+        If (lv_up) Then
+          t = Sqrt(2.0_wp/3.0_wp)
+          tstep = 1.50_wp*tstep
+          hstep = 0.50_wp*tstep
+          qstep = 0.50_wp*hstep
+        Else
+          t = Sqrt(0.5_wp)
+          qstep = hstep
+          hstep = tstep
+          tstep = 2.00_wp*tstep
+        End If
+        If (tstep > mxstp) Then
+          t = t*Sqrt(tstep/mxstp)
+          tstep = mxstp
+          hstep = 0.50_wp*tstep
+          qstep = 0.50_wp*hstep
+        End If
+        Write(message,'(a,1p,e12.4)') &
+          'timestep increased, new timestep is: ', tstep
+      End If
+      rstep = 1.0_wp/tstep
+
+      ! restart vv1
+
+      adjust_timestep_2 = .True.
+    End If
+  End Function adjust_timestep_2
 End Module thermostat

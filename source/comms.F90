@@ -30,7 +30,7 @@ Module comms
 
 
   Integer, Public :: mpi_ver     = -1, &
-                     mpi_subver  = -1
+    mpi_subver  = -1
 
   Character( Len = MPI_MAX_PROCESSOR_NAME ),         Public :: proc_name   = "*"
 #ifndef OLDMPI
@@ -40,51 +40,51 @@ Module comms
   ! Message tags
 
   Integer, Parameter, Public :: Deport_tag    = 1100, &
-                                Export_tag    = 1111, &
-                                Revive_tag    = 1122, &
-                                PassUnit_tag  = 1133, &
-                                UpdShUnit_tag = 1144, &
-                                SysExpand_tag = 1155, &
-                                WriteConf_tag = 1166, &
-                                Traject_tag   = 1177, &
-                                Spread_tag    = 1188, &
-                                DpdVExp_tag   = 1199, &
-                                MetLdExp_tag  = 2200, &
-                                ExpMplRM_tag  = 2211, &
-                                ExchgGrid_tag = 2222, &
-                                DefRWrite_tag = 2233, &
-                                DefExport_tag = 2244, &
-                                DefWrite_tag  = 2255, &
-                                RsdWrite_tag  = 2266, &
-                                MsdWrite_tag  = 2277, &
-                                Grid1_tag     = 3300, &
-                                Grid2_tag     = 3311, &
-                                Grid3_tag     = 3322, &
-                                Grid4_tag     = 3333
+    Export_tag    = 1111, &
+    Revive_tag    = 1122, &
+    PassUnit_tag  = 1133, &
+    UpdShUnit_tag = 1144, &
+    SysExpand_tag = 1155, &
+    WriteConf_tag = 1166, &
+    Traject_tag   = 1177, &
+    Spread_tag    = 1188, &
+    DpdVExp_tag   = 1199, &
+    MetLdExp_tag  = 2200, &
+    ExpMplRM_tag  = 2211, &
+    ExchgGrid_tag = 2222, &
+    DefRWrite_tag = 2233, &
+    DefExport_tag = 2244, &
+    DefWrite_tag  = 2255, &
+    RsdWrite_tag  = 2266, &
+    MsdWrite_tag  = 2277, &
+    Grid1_tag     = 3300, &
+    Grid2_tag     = 3311, &
+    Grid3_tag     = 3322, &
+    Grid4_tag     = 3333
 
   ! MPI operations
   Integer, Parameter, Public :: op_sum = MPI_SUM, &
-                                op_max = MPI_MAX, &
-                                op_min = MPI_MIN, &
-                                op_prod = MPI_PROD, &
-                                op_land = MPI_LAND, &
-                                op_band = MPI_BAND, &
-                                op_lor = MPI_LOR, &
-                                op_bor = MPI_BOR, &
-                                op_lxor = MPI_LXOR, &
-                                op_bxor = MPI_BXOR, &
-                                op_maxloc = MPI_MAXLOC, &
-                                op_minloc = MPI_MINLOC
+    op_max = MPI_MAX, &
+    op_min = MPI_MIN, &
+    op_prod = MPI_PROD, &
+    op_land = MPI_LAND, &
+    op_band = MPI_BAND, &
+    op_lor = MPI_LOR, &
+    op_bor = MPI_BOR, &
+    op_lxor = MPI_LXOR, &
+    op_bxor = MPI_BXOR, &
+    op_maxloc = MPI_MAXLOC, &
+    op_minloc = MPI_MINLOC
 
   Integer, Parameter, Public :: offset_kind = MPI_OFFSET_KIND, &
-                                status_size = MPI_STATUS_SIZE, &
-                                address_kind = MPI_ADDRESS_KIND,&
-                                comm_self = MPI_COMM_SELF, &
-                                comm_null = MPI_COMM_NULL
+    status_size = MPI_STATUS_SIZE, &
+    address_kind = MPI_ADDRESS_KIND,&
+    comm_self = MPI_COMM_SELF, &
+    comm_null = MPI_COMM_NULL
 
   Integer, Parameter, Public :: mode_wronly = MPI_MODE_WRONLY, &
-                                mode_rdonly = MPI_MODE_RDONLY, &
-                                mode_create = MPI_MODE_CREATE
+    mode_rdonly = MPI_MODE_RDONLY, &
+    mode_create = MPI_MODE_CREATE
 
   Type, Public :: comms_type
     Integer               :: ierr
@@ -104,9 +104,9 @@ Module comms
   End Type
 
   Public :: init_comms, exit_comms, abort_comms, &
-            gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
-            gscatter, gscatterv, gscatter_columns, gallgather, galltoall, &
-            galltoallv, gallreduce,mtime
+    gsync, gwait, gcheck, gsum, gmax, gtime, gsend, grecv, girecv, &
+    gscatter, gscatterv, gscatter_columns, gallgather, galltoall, &
+    galltoallv, gallreduce,mtime
 
   Interface gcheck
     Module Procedure gcheck_vector
@@ -291,7 +291,7 @@ Contains
     lb = 0
     Call MPI_TYPE_CREATE_RESIZED(comm%part_type, lb, extent, comm%part_array_type, comm%ierr)
     Call MPI_TYPE_COMMIT(comm%part_array_type, comm%ierr)
-  
+
     Call MPI_GET_ADDRESS(part_temp%xxx,displacements(1),comm%ierr)
     Call MPI_GET_ADDRESS(part_temp%yyy,displacements(2),comm%ierr)
     Call MPI_GET_ADDRESS(part_temp%zzz,displacements(3),comm%ierr)
@@ -1278,7 +1278,7 @@ Contains
     Integer :: n_s
 
     n_s = Size(vec, Dim = 1)
-  
+
     Call MPI_SEND(vec(:), n_s, comm%part_array_type, dest, tag, comm%comm, comm%ierr)
   End Subroutine gsend_particle_vector
 
@@ -1422,7 +1422,7 @@ Contains
     End Do
 
     Call MPI_RECV(arr(:,:,:),Product(n_s(1:3)), &
-                  wp_mpi,source,tag,comm%comm,comm%status,comm%ierr)
+      wp_mpi,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_real_array3
 
   Subroutine grecv_logical_scalar(comm,s,source,tag)
@@ -1516,7 +1516,7 @@ Contains
     Type( comms_type ),  Intent( InOut ) :: comm
     Type( corePart ),    Intent( InOut ) :: s
     Integer,             Intent( In    ) :: source,tag
-   
+
     Call MPI_RECV(s,1,comm%part_type,source,tag,comm%comm,comm%status,comm%ierr)
   End Subroutine grecv_particle_scalar
   Subroutine grecv_particle_vector(comm,vec,source,tag)
@@ -1531,7 +1531,7 @@ Contains
     Type( comms_type ),  Intent( InOut ) :: comm
     Type( corePart ),    Intent( InOut ) :: vec(:)
     Integer,             Intent( In    ) :: source,tag
-    
+
     Integer :: n_s
     n_s = Size(vec, Dim=1)
     Call MPI_RECV(vec(:),n_s,comm%part_array_type,source,tag,comm%comm,comm%status,comm%ierr)
@@ -1634,7 +1634,7 @@ Contains
     End Do
 
     Call MPI_IRECV(arr(:,:,:),Product(n_s(1:3)), &
-                  wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
+      wp_mpi,source,tag,comm%comm,comm%request,comm%ierr)
   End Subroutine girecv_real_array3
 
   Subroutine girecv_logical_scalar(comm,s,source,tag)
@@ -1733,7 +1733,7 @@ Contains
     Integer,            Intent( In    ) :: root
 
     Call MPI_SCATTER(sendbuf(:),1,MPI_INTEGER, &
-                     recv,1,MPI_INTEGER,root,comm%comm,comm%ierr)
+      recv,1,MPI_INTEGER,root,comm%comm,comm%ierr)
   End Subroutine gscatter_integer_to_scalar
 
   Subroutine gscatter_integer_to_vector(comm,sendbuf,scount,recvbuf,root)
@@ -1757,7 +1757,7 @@ Contains
     r_s = Size(recvbuf, Dim = 1)
 
     Call MPI_SCATTER(sendbuf(:),scount,MPI_INTEGER, &
-                     recvbuf(:),r_s,MPI_INTEGER,root,comm%comm,comm%ierr)
+      recvbuf(:),r_s,MPI_INTEGER,root,comm%comm,comm%ierr)
   End Subroutine gscatter_integer_to_vector
 
   Subroutine gscatter_real_to_scalar(comm,sendbuf,recv,root)
@@ -1776,7 +1776,7 @@ Contains
     Integer,            Intent( In    ) :: root
 
     Call MPI_SCATTER(sendbuf(:),1,wp_mpi, &
-                     recv,1,wp_mpi,root,comm%comm,comm%ierr)
+      recv,1,wp_mpi,root,comm%comm,comm%ierr)
   End Subroutine gscatter_real_to_scalar
 
   Subroutine gscatter_real_to_vector(comm,sendbuf,scount,recvbuf,root)
@@ -1800,7 +1800,7 @@ Contains
     r_s = Size(recvbuf, Dim = 1)
 
     Call MPI_SCATTER(sendbuf(:),scount,wp_mpi, &
-                     recvbuf(:),r_s,wp_mpi,root,comm%comm,comm%ierr)
+      recvbuf(:),r_s,wp_mpi,root,comm%comm,comm%ierr)
   End Subroutine gscatter_real_to_vector
 
   Subroutine gscatterv_integer(comm,sendbuf,scounts,disps,recvbuf,root)
@@ -1826,8 +1826,8 @@ Contains
     r_s = Size(recvbuf, Dim = 1)
 
     Call MPI_SCATTERV(sendbuf(:),scounts(:),disps(:),MPI_INTEGER, &
-                      recvbuf(:),r_s,MPI_INTEGER, &
-                      root,comm%comm,comm%ierr)
+      recvbuf(:),r_s,MPI_INTEGER, &
+      root,comm%comm,comm%ierr)
   End Subroutine gscatterv_integer
 
   Subroutine gscatterv_real(comm,sendbuf,scounts,disps,recvbuf,root)
@@ -1853,8 +1853,8 @@ Contains
     r_s = Size(recvbuf, Dim = 1)
 
     Call MPI_SCATTERV(sendbuf(:),scounts(:),disps(:),wp_mpi, &
-                      recvbuf(:),r_s,wp_mpi, &
-                      root,comm%comm,comm%ierr)
+      recvbuf(:),r_s,wp_mpi, &
+      root,comm%comm,comm%ierr)
   End Subroutine gscatterv_real
 
   Subroutine gscatterv_character(comm,sendbuf,scounts,disps,recvbuf,root)
@@ -1882,8 +1882,8 @@ Contains
     r_str = Len(recvbuf(1))
 
     Call MPI_SCATTERV(sendbuf(:),scounts(:)*s_str,disps(:)*s_str,MPI_CHARACTER, &
-                      recvbuf(:),r_s*r_str,MPI_CHARACTER, &
-                      root,comm%comm,comm%ierr)
+      recvbuf(:),r_s*r_str,MPI_CHARACTER, &
+      root,comm%comm,comm%ierr)
   End Subroutine gscatterv_character
 
   Subroutine gscatter_columns_real(comm,sendbuf,scounts,disps,recvbuf,root)
@@ -1912,10 +1912,10 @@ Contains
     ! This implimentation relies on arrays being column major as defined in the
     ! Fortran standard
     Call MPI_SCATTERV(sendbuf(:,:), &
-                      scounts(:)*s_c,disps(:)*s_c,wp_mpi, &
-                      recvbuf(:,:), &
-                      r_s*r_c,wp_mpi, &
-                      root,comm%comm,comm%ierr)
+      scounts(:)*s_c,disps(:)*s_c,wp_mpi, &
+      recvbuf(:,:), &
+      r_s*r_c,wp_mpi, &
+      root,comm%comm,comm%ierr)
   End Subroutine gscatter_columns_real
 
   Subroutine gallgather_integer_vector_to_vector(comm,sendbuf,recvbuf,rcount)
@@ -1938,8 +1938,8 @@ Contains
     Integer :: s_s
 
     Call MPI_ALLGATHER(sendbuf(:),s_s,MPI_INTEGER, &
-                       recvbuf(:),rcount,MPI_INTEGER, &
-                       comm%comm,comm%ierr)
+      recvbuf(:),rcount,MPI_INTEGER, &
+      comm%comm,comm%ierr)
   End Subroutine gallgather_integer_vector_to_vector
 
   Subroutine gallgather_integer_scalar_to_vector(comm,s,recvbuf)
@@ -1959,8 +1959,8 @@ Contains
     Integer,            Intent(   Out ) :: recvbuf(:)
 
     Call MPI_ALLGATHER(s,1,MPI_INTEGER, &
-                       recvbuf(:),1,MPI_INTEGER, &
-                       comm%comm,comm%ierr)
+      recvbuf(:),1,MPI_INTEGER, &
+      comm%comm,comm%ierr)
   End Subroutine gallgather_integer_scalar_to_vector
 
   Subroutine galltoall_integer(comm,sendbuf,scount,recvbuf)
@@ -1980,12 +1980,12 @@ Contains
     Integer,            Intent(   Out ) :: recvbuf(:)
 
     Call MPI_ALLTOALL(sendbuf(:),scount,MPI_INTEGER, &
-                      recvbuf(:),scount,MPI_INTEGER, &
-                      comm%comm,comm%ierr)
+      recvbuf(:),scount,MPI_INTEGER, &
+      comm%comm,comm%ierr)
   End Subroutine galltoall_integer
 
   Subroutine galltoallv_integer(comm,sendbuf,scounts,sdisps, &
-                                recvbuf,rcounts,rdisps)
+      recvbuf,rcounts,rdisps)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 all processes send and receive different amounts of data from
@@ -2007,8 +2007,8 @@ Contains
     Integer,            Intent( In    ) :: rdisps(:)
 
     Call MPI_ALLTOALLV(sendbuf(:),scounts(:),sdisps(:),MPI_INTEGER, &
-                       recvbuf(:),rcounts(:),rdisps(:),MPI_INTEGER, &
-                       comm%comm,comm%ierr)
+      recvbuf(:),rcounts(:),rdisps(:),MPI_INTEGER, &
+      comm%comm,comm%ierr)
   End Subroutine galltoallv_integer
 
   Subroutine gallreduce_logical_scalar(comm,send,recv,op)
@@ -2028,7 +2028,7 @@ Contains
     Integer,            Intent( In    ) :: op
 
     Call MPI_ALLREDUCE(send,recv,1,MPI_LOGICAL,op, &
-                       comm%comm,comm%ierr)
+      comm%comm,comm%ierr)
   End Subroutine gallreduce_logical_scalar
 
   Subroutine gallreduce_logical_vector(comm,sendbuf,recvbuf,op)
@@ -2052,6 +2052,6 @@ Contains
     n_s = size(sendbuf(:), Dim = 1)
 
     Call MPI_ALLREDUCE(sendbuf(:),recvbuf(:),n_s,MPI_LOGICAL,op, &
-                       comm%comm,comm%ierr)
+      comm%comm,comm%ierr)
   End Subroutine gallreduce_logical_vector
 End Module comms

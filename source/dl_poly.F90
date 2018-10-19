@@ -196,7 +196,7 @@ program dl_poly
 
   Implicit None
 
-! all your simulation variables
+  ! all your simulation variables
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(thermostat_type) :: thermo
   Type(ewald_type) :: ewld
@@ -721,7 +721,7 @@ program dl_poly
   Call analysis_result(flow%step,neigh%cutoff,thermo, &
     bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
 
-10 Continue
+  10 Continue
 
   ! PLUMED finalisation
 

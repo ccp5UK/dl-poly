@@ -140,20 +140,20 @@ Contains
     j=1
 
     Do While (Abs(s-sold)*h/3.0_wp > prec)
-       sold = s
+      sold = s
 
-       Do i = (j-1)*n, j*n, 2
+      Do i = (j-1)*n, j*n, 2
 
-          x = is + i*h
-          Call zbl(x,kk,a,f0,df0)
-          Call zbl(x+h,kk,a,f1,df0)
-          Call zbl(x+2.0_wp*h,kk,a,f2,df0)
-          s = s  +             x*x * f0 + &
-                   4.0_wp*(x+h)**2 * f1 + &
-                   (x+2.0_wp*h)**2 * f2
-       End Do
+        x = is + i*h
+        Call zbl(x,kk,a,f0,df0)
+        Call zbl(x+h,kk,a,f1,df0)
+        Call zbl(x+2.0_wp*h,kk,a,f2,df0)
+        s = s  +             x*x * f0 + &
+          4.0_wp*(x+h)**2 * f1 + &
+          (x+2.0_wp*h)**2 * f2
+      End Do
 
-       j=j+1
+      j=j+1
     End Do
     intRadZBL=s*h/3.0_wp   
   End Function intRadZBL
@@ -174,25 +174,25 @@ Contains
     j=1
 
     Do While (Abs(s-sold)*h/3.0_wp > prec)
-       sold = s
+      sold = s
 
-       Do i = (j-1)*n, j*n, 2
+      Do i = (j-1)*n, j*n, 2
 
-          x = is + i*h
-          Call zbl(x,kk,a,f0,df0)
-          Call zbl(x+h,kk,a,f0,df1)
-          Call zbl(x+2.0_wp*h,kk,a,f0,df2)
-          s = s  +             x*x * df0 + &
-                   4.0_wp*(x+h)**2 * df1 + &
-                   (x+2.0_wp*h)**2 * df2
-       End Do
+        x = is + i*h
+        Call zbl(x,kk,a,f0,df0)
+        Call zbl(x+h,kk,a,f0,df1)
+        Call zbl(x+2.0_wp*h,kk,a,f0,df2)
+        s = s  +             x*x * df0 + &
+          4.0_wp*(x+h)**2 * df1 + &
+          (x+2.0_wp*h)**2 * df2
+      End Do
 
-       j=j+1
+      j=j+1
     End Do
     intdRadZBL=s*h/3.0_wp
   End Function intdRadZBL
-  
-  
+
+
   Pure Subroutine LJ(r,eps,sig,e,v)
     Real(wp), Intent( In    ) :: r,eps,sig
     Real(wp), Intent(   Out ) :: e,v

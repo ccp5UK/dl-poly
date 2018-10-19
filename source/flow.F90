@@ -91,14 +91,14 @@ Module flow_control
 Contains
 
   Pure Function flow_type_new_page(T) result(new_page)
-    Class(flow_type), Intent(In) :: T
+  Class(flow_type), Intent(In) :: T
     Logical :: new_page
 
     new_page = Mod(T%lines,T%npage) == 0
   End Function flow_type_new_page
 
   Subroutine flow_type_line_printed(T)
-    Class(flow_type), Intent(InOut) :: T
+  Class(flow_type), Intent(InOut) :: T
 
     T%lines = T%lines + 1
   End Subroutine flow_type_line_printed

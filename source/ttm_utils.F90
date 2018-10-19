@@ -1,17 +1,17 @@
 Module ttm_utils
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module for utility functions for the two-temperature model
-! (ttm)
-!
-! copyright - daresbury laboratory
-! authors   - s.l.daraszewicz & m.a.seaton july 2012
-! contrib   - g.khara may 2016
-! contrib   - m.a.seaton february 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 module for utility functions for the two-temperature model
+  ! (ttm)
+  !
+  ! copyright - daresbury laboratory
+  ! authors   - s.l.daraszewicz & m.a.seaton july 2012
+  ! contrib   - g.khara may 2016
+  ! contrib   - m.a.seaton february 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
   Use kinds, Only : wp
   Use constants, Only : zero_plus 
   Use ttm, Only : ttm_type,eltemp_min,eltemp_mean,eltemp_sum,eltemp_max
@@ -33,7 +33,7 @@ Module ttm_utils
     printLatticeStatsToFile,redistribute_Te
 Contains
 
-! indeed this is not a joke... 
+  ! indeed this is not a joke... 
   Function Kep(T,ttm)
 
     ! Calcuate interpolated thermal conductivity from tabulated values: given as kB/A^3
@@ -66,10 +66,10 @@ Contains
 
   Function Ce(T,ttm)
 
-! Temperature-dependent specific heat capacity (different for metals and insulators)
-! given as kB/A^3: conversions from kB/atom carried out for cases 0, 1 and 2, allowing
-! for changes in number of atoms per voxel (ttm%cellrho) if dynamic cell density option
-! selected
+    ! Temperature-dependent specific heat capacity (different for metals and insulators)
+    ! given as kB/A^3: conversions from kB/atom carried out for cases 0, 1 and 2, allowing
+    ! for changes in number of atoms per voxel (ttm%cellrho) if dynamic cell density option
+    ! selected
 
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Real ( Kind = wp ), Intent ( In ) :: T
@@ -78,53 +78,53 @@ Contains
     Ce = 1.0_wp
 
     Select Case (ttm%CeType)
-     Case (0)
+    Case (0)
       ! Case 0: constant specific heat capacity (given as kB/A^3)
       Ce = ttm%Ce0
-     Case (1)
+    Case (1)
       ! Case 1: hyperbolic tangent specific heat capacity (given as kB/A^3) -
       !         Ce = ttm%sh_A*Tanh(T*ttm%sh_B*1.0e-4) [kB/atom]
       Ce = ttm%sh_A*Tanh(T*ttm%sh_B)
-     Case (2)
+    Case (2)
       ! Case 2: linear specific heat capacity to maximum value at/beyond ttm%Tfermi
       !         (given as kB/A^3)
       Ce = Min(T/ttm%Tfermi,1.0_wp)*ttm%Cemax
-     Case (4)
+    Case (4)
       ! Case 4: constant specific heat capacity (converted as kB/A^3)
       Ce = ttm%Ce0*ttm%cellrho
-     Case (5)
+    Case (5)
       ! Case 5: hyperbolic tangent specific heat capacity (converted to kB/A^3) -
       !         Ce = ttm%sh_A*Tanh(T*ttm%sh_B*1.0e-4) [kB/atom]
       Ce = ttm%sh_A*ttm%cellrho*Tanh(T*ttm%sh_B)
     Case (6)
-     ! Case 6: linear specific heat capacity to maximum value at/beyond ttm%Tfermi
-     !         (converted to kB/A^3)
-     Ce = Min(T/ttm%Tfermi,1.0_wp)*ttm%Cemax*ttm%cellrho
-     Case (3,7)
+      ! Case 6: linear specific heat capacity to maximum value at/beyond ttm%Tfermi
+      !         (converted to kB/A^3)
+      Ce = Min(T/ttm%Tfermi,1.0_wp)*ttm%Cemax*ttm%cellrho
+    Case (3,7)
       ! Case 3: interpolated specific heat capacity from table (given as kB/A^3)
-     Call interpolate(ttm%cel, ttm%cetable, T, Ce)
-     Case Default
-    ! Default case: constant specific heat capacity of 1 kB/atom (convert to kB/A^3)
-    Ce = ttm%cellrho
+      Call interpolate(ttm%cel, ttm%cetable, T, Ce)
+    Case Default
+      ! Default case: constant specific heat capacity of 1 kB/atom (convert to kB/A^3)
+      Ce = ttm%cellrho
     End Select
 
   End Function Ce
 
   Function Ke(T,ttm)
 
-! Temperature-dependent lattice thermal conductivity: given as kB/(ps A)
+    ! Temperature-dependent lattice thermal conductivity: given as kB/(ps A)
 
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Real ( Kind = wp ) :: Ke
     Real ( Kind = wp ), Intent ( In ) :: T    
 
     Select Case(ttm%KeType)
-     Case (3)
+    Case (3)
       ! Case 3: thermal conductivity interpolated from table
       Ke = Kep(T,ttm)
-     Case Default
-    ! Case 1: constant thermal conductivity
-    Ke = ttm%Ka0
+    Case Default
+      ! Case 1: constant thermal conductivity
+      Ke = ttm%Ka0
     End Select
 
   End Function Ke
@@ -132,21 +132,21 @@ Contains
 
   Function KeD(Te, temp,ttm)
 
-! Temperature-dependent Drude-like lattice thermal conductivity: given as kB/(ps A)
-! (ttm%Ka0 = thermal conductivity at system temperature)
-  
+    ! Temperature-dependent Drude-like lattice thermal conductivity: given as kB/(ps A)
+    ! (ttm%Ka0 = thermal conductivity at system temperature)
+
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Real ( Kind = wp ), Intent ( In ) :: Te, temp
     Real ( Kind = wp )                :: KeD
 
     KeD = ttm%Ka0 * Ce(Te,ttm) / Ce(temp,ttm)
-    
+
   End Function KeD
-  
+
   Function alp(Te,ttm)
 
-! Thermal diffusivity: given as A^2/ps
-! (different cases for metals and insulators)
+    ! Thermal diffusivity: given as A^2/ps
+    ! (different cases for metals and insulators)
 
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Real ( Kind = wp ), Intent ( In ) :: Te
@@ -154,19 +154,19 @@ Contains
 
     Select Case (ttm%DeType)
     Case (0)
-    ! Case 0: metal system - ratio of conductivity/heat capacity
+      ! Case 0: metal system - ratio of conductivity/heat capacity
       alp = Ke(Te,ttm) / Ce(Te,ttm)
     Case (1)
-    ! Case 1: non-metal system - constant value (given as A^2/ps)
+      ! Case 1: non-metal system - constant value (given as A^2/ps)
       alp = ttm%Diff0
     Case (2)
-    ! Case 2: non-metal system - reciprocal function of temperature
-    !         up to Fermi temperature, ttm%Diff0 previously scaled with
-    !         system temperature (given as A^2/ps)
+      ! Case 2: non-metal system - reciprocal function of temperature
+      !         up to Fermi temperature, ttm%Diff0 previously scaled with
+      !         system temperature (given as A^2/ps)
       alp = ttm%Diff0/Min(Te,ttm%Tfermi)
     Case (3)
-    ! Case 3: non-metal system - thermal diffusivity interpolated 
-    !         from table (given as A^2/ps)
+      ! Case 3: non-metal system - thermal diffusivity interpolated 
+      !         from table (given as A^2/ps)
       Call interpolate(ttm%del, ttm%detable, Te, alp)
     Case Default
       alp = 0.0_wp
@@ -176,9 +176,9 @@ Contains
 
   Subroutine calcchies(chi,ttm,comm)
 
-! Calculate electron-phonon coupling friction term (chi:
-! for homogeneously coupled system: uses mean electronic temperature
-! and interpolates from tabulated values given in g.dat file
+    ! Calculate electron-phonon coupling friction term (chi:
+    ! for homogeneously coupled system: uses mean electronic temperature
+    ! and interpolates from tabulated values given in g.dat file
 
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Real ( Kind = wp ), Intent (   Out ) :: chi
@@ -196,7 +196,7 @@ Contains
 
   Subroutine peakProfiler(lat, peakfile, nstep, freq,ttm,comm)
 
-! prints a slice across y (centred in xz-plane) of a lattice to a file
+    ! prints a slice across y (centred in xz-plane) of a lattice to a file
 
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Real ( Kind = wp ), Dimension (ttm%numcell), Intent( In ) :: lat
@@ -236,10 +236,10 @@ Contains
     End If
 
   End Subroutine peakProfiler
- 
+
   Subroutine peakProfilerElec(peakfile, nstep, freq, ttm,comm)
 
-! prints a slice across y (centred in xz-plane) of the electronic temperature lattice to a file
+    ! prints a slice across y (centred in xz-plane) of the electronic temperature lattice to a file
 
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Real ( Kind = wp ), Dimension (ttm%eltsys(2)) :: laty
@@ -293,7 +293,7 @@ Contains
 
   Subroutine printLatticeStatsToFile(lat, latfile, time, nstep, freq, ttm,comm)
 
-! prints lattice statistics (minimum, maximum, sum) to file
+    ! prints lattice statistics (minimum, maximum, sum) to file
 
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Real ( Kind = wp ), Dimension(ttm%numcell), Intent ( In ) :: lat
@@ -350,8 +350,8 @@ Contains
 
   Subroutine printElecLatticeStatsToFile(latfile, time, temp0, nstep, freq, ttm,comm)
 
-! prints electronic temperature lattice statistics (minimum, maximum, sum) 
-! and energy (E = integral of Ce(Te,ttm)*Te between temp0 and Te) to file
+    ! prints electronic temperature lattice statistics (minimum, maximum, sum) 
+    ! and energy (E = integral of Ce(Te,ttm)*Te between temp0 and Te) to file
 
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Integer, Intent( In ) :: nstep,freq
@@ -430,18 +430,18 @@ Contains
                       totalcell = totalcell + tmp
                       Select Case (ttm%CeType)
                       Case (0,4)
-                      ! constant specific heat capacity
+                        ! constant specific heat capacity
                         tmp = tmp*Ce0a*(eltmp-temp0)
                       Case (1,5)
-                      ! hyperbolic tangent specific heat capacity
+                        ! hyperbolic tangent specific heat capacity
                         tmp = tmp*sh_Aa*Log(Cosh(ttm%sh_B*eltmp)/Cosh(ttm%sh_B*temp0))/ttm%sh_B
                       Case (2,6)
-                      ! linear specific heat capacity to Fermi temperature
+                        ! linear specific heat capacity to Fermi temperature
                         tmp = tmp*Cemaxa*(0.5_wp*((Min(ttm%Tfermi,eltmp))**2-temp0*temp0)/ttm%Tfermi+Max(eltmp-ttm%Tfermi,0.0_wp))
                       Case Default
-                      ! tabulated ttm%volumetric heat capacity or more complex 
-                      ! functions: integrate using trapezium rule
-                      ! with final interval of <=1 kelvin
+                        ! tabulated ttm%volumetric heat capacity or more complex 
+                        ! functions: integrate using trapezium rule
+                        ! with final interval of <=1 kelvin
                         numint = Floor(tmp*(eltmp-temp0))
                         tmp = 0.0_wp
                         sgnplus = Sign(1.0_wp,Real(numint,Kind=wp))
@@ -477,13 +477,13 @@ Contains
 
       End If
     End If
-      
+
   End Subroutine printElecLatticeStatsToFile
-  
-  
+
+
   Subroutine interpolate(tabsize, tab, x0, resp)
 
-! Interpolation helper subroutine
+    ! Interpolation helper subroutine
 
     Integer,                                      Intent( In )  :: tabsize
     Real( Kind = wp ), Dimension (1:tabsize,1:2), Intent( In )  :: tab
@@ -499,10 +499,10 @@ Contains
 
     resp = 0.0_wp
 
-! if input is within range, find nearest entry in table
-! below this value by means of bisection - calculate
-! output by linear interpolation between this entry
-! and the next
+    ! if input is within range, find nearest entry in table
+    ! below this value by means of bisection - calculate
+    ! output by linear interpolation between this entry
+    ! and the next
 
     If ((x0>tab(1,1)) .and. (x0<tab(tabsize,1))) Then
       i=1
@@ -521,19 +521,19 @@ Contains
       End Do
       resp = tab(k,2)+(x0-tab(k,1))*(tab(k+1,2)-tab(k,2))/(tab(k+1,1)-tab(k,1))
 
-! if input is over maximum value, set output to value at maximum
+      ! if input is over maximum value, set output to value at maximum
 
     Else If (x0>=tab(tabsize,1)) Then
 
       resp = tab(tabsize,2)
 
-! If input is under minimum value, set output to value at minimum
+      ! If input is under minimum value, set output to value at minimum
 
     Else If (x0<=tab(1,1)) Then
 
       resp = tab(1,2)
 
-! If input is completely unusable, terminate with error
+      ! If input is completely unusable, terminate with error
 
     Else
 
@@ -545,7 +545,7 @@ Contains
 
   Subroutine redistribute_Te(temp0,ttm,domain,comm)
 
-! Redistribute electronic energy when electronic temperature voxels are closed
+    ! Redistribute electronic energy when electronic temperature voxels are closed
 
     Type( ttm_type ), Intent( InOut ) :: ttm   
     Real( Kind = wp ), Intent ( In ) :: temp0
@@ -553,7 +553,7 @@ Contains
     Type( comms_type), Intent ( In ) :: comm
 
     Integer :: i, j, k, ii, jj, kk, ijk, ijk1, ijk2, ijkpx, ijkmx, ijkpy, ijkmy, &
-               ijkpz, ijkmz, n, numint, ierr
+      ijkpz, ijkmz, n, numint, ierr
     Real( Kind = wp ) :: energy_per_cell, U_e, start_Te, end_Te, increase, oldCe, newCe
     Real( Kind = wp ) :: energy_diff, act_sur_cells, sgnplus, Ce0a, sh_Aa, Cemaxa
 
@@ -581,25 +581,25 @@ Contains
           ijkpz = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ntcell(2)+2) * (k + 1))
           ijkmz = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ntcell(2)+2) * (k - 1))
           If (ttm%act_ele_cell(ijk,0,0,0)<=zero_plus .and. ttm%old_ele_cell(ijk,0,0,0)>zero_plus) Then
-        ! Calculate amount of energy left in the config%cell 
-        ! (Ue = integral of Ce(Te,ttm)d(Te) between temp0 and Te)
+            ! Calculate amount of energy left in the config%cell 
+            ! (Ue = integral of Ce(Te,ttm)d(Te) between temp0 and Te)
             U_e = 0.0_wp
             end_Te = ttm%eltemp(ijk,0,0,0)
             Select Case (ttm%CeType)
             Case (0,4)
-            ! constant specific heat capacity
+              ! constant specific heat capacity
               U_e = Ce0a*(end_Te-temp0)
             Case (1,5)
-            ! hyperbolic tangent specific heat capacity
+              ! hyperbolic tangent specific heat capacity
               U_e = sh_Aa*Log(Cosh(ttm%sh_B*end_Te)/Cosh(ttm%sh_B*temp0))/ttm%sh_B
             Case (2,6)
-            ! linear specific heat capacity to Fermi temperature
+              ! linear specific heat capacity to Fermi temperature
               increase = Min(ttm%Tfermi,end_Te)
               U_e = Cemaxa*(0.5_wp*(increase*increase-temp0*temp0)/ttm%Tfermi+Max(end_Te-ttm%Tfermi,0.0_wp))
             Case Default
-            ! tabulated ttm%volumetric heat capacity or more complex 
-            ! functions: integrate using trapezium rule
-            ! with final interval of <=1 kelvin
+              ! tabulated ttm%volumetric heat capacity or more complex 
+              ! functions: integrate using trapezium rule
+              ! with final interval of <=1 kelvin
               numint = Floor(end_Te - temp0)
               sgnplus = Sign (1.0_wp, Real(numint, Kind=wp))
               Do n = 1,Abs(numint)
@@ -609,7 +609,7 @@ Contains
             End Select
             ! Check how many config%cells are connected to the now turned-off config%cell
             act_sur_cells = ttm%act_ele_cell(ijkmx,0,0,0) + ttm%act_ele_cell(ijkpx,0,0,0) + ttm%act_ele_cell(ijkmy,0,0,0) + &
-                            ttm%act_ele_cell(ijkpy,0,0,0) + ttm%act_ele_cell(ijkmz,0,0,0) + ttm%act_ele_cell(ijkpz,0,0,0)
+              ttm%act_ele_cell(ijkpy,0,0,0) + ttm%act_ele_cell(ijkmz,0,0,0) + ttm%act_ele_cell(ijkpz,0,0,0)
             ! Calculate energy redistribution to each config%cell and assign to config%cells
             If (act_sur_cells>zero_plus) energy_per_cell = U_e / act_sur_cells
             If (ttm%act_ele_cell(ijkmx,0,0,0)>zero_plus) energydist (ijkmx,0,0,0) = energydist (ijkmx,0,0,0) + energy_per_cell
@@ -698,7 +698,7 @@ Contains
       energydist = energydist + buffer
       Deallocate (buffer)
     Else
-    ! -x/+x direction
+      ! -x/+x direction
       Do k = 1, ttm%ntcell(3)
         Do j = 1, ttm%ntcell(2)
           ijk1 = 1 + (ttm%ntcell(1)+2) * (j + (ttm%ntcell(2)+2) * k)
@@ -709,7 +709,7 @@ Contains
           energydist (ijk2,1,0,0) = energydist (ijk1,0,0,0)
         End Do
       End Do
-    ! -y/+y direction
+      ! -y/+y direction
       Do k = 1, ttm%ntcell(3)
         Do i = 0, ttm%ntcell(1)+1
           ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ntcell(2)+2) * k
@@ -720,7 +720,7 @@ Contains
           energydist (ijk2,0,1,0) = energydist (ijk1,0,0,0)
         End Do
       End Do
-    ! -z/+z direction
+      ! -z/+z direction
       Do j = 0, ttm%ntcell(2)+1
         Do i = 0, ttm%ntcell(1)+1
           ijk1 = 1 + i + (ttm%ntcell(1)+2) * j
@@ -740,7 +740,7 @@ Contains
 
     Select Case (ttm%CeType)
     Case (0,4)
-    ! constant specific heat capacity
+      ! constant specific heat capacity
       Do kk = -1, 1
         Do jj = -1, 1
           Do ii = -1, 1
@@ -757,7 +757,7 @@ Contains
         End Do
       End Do
     Case (1,5)
-    ! hyperbolic tangent specific heat capacity
+      ! hyperbolic tangent specific heat capacity
       Do kk = -1, 1
         Do jj = -1, 1
           Do ii = -1, 1
@@ -776,7 +776,7 @@ Contains
         End Do
       End Do
     Case (2,6)
-    ! linear specific heat capacity to Fermi temperature
+      ! linear specific heat capacity to Fermi temperature
       Do kk = -1, 1
         Do jj = -1, 1
           Do ii = -1, 1
@@ -799,10 +799,10 @@ Contains
         End Do
       End Do
     Case Default
-    ! tabulated ttm%volumetric heat capacity or more complex
-    ! function: find new temperature iteratively by
-    ! gradual integration (1 kelvin at a time)
-    ! and interpolate within last kelvin
+      ! tabulated ttm%volumetric heat capacity or more complex
+      ! function: find new temperature iteratively by
+      ! gradual integration (1 kelvin at a time)
+      ! and interpolate within last kelvin
       Do kk = -1, 1
         Do jj = -1, 1
           Do ii = -1, 1

@@ -1,14 +1,14 @@
 Module coul_mpole
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module declaring configuration variables and arrays for
-! multipoles
-!
-! copyright - daresbury laboratory
-! author    - h.a.boateng & i.t.todorov january 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 module declaring configuration variables and arrays for
+  ! multipoles
+  !
+  ! copyright - daresbury laboratory
+  ! author    - h.a.boateng & i.t.todorov january 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
   Use comms,  Only : comms_type
@@ -17,14 +17,14 @@ Module coul_mpole
   Use particle,  Only : corePart
   Use mpole, Only : mpole_type
   Use mpoles_container, Only : coul_deriv, ewald_deriv, &
-                               explicit_fscp_rfp_loops, explicit_ewald_real_loops, &
-                               explicit_ewald_real_loops
+    explicit_fscp_rfp_loops, explicit_ewald_real_loops, &
+    explicit_ewald_real_loops
   Use numerics,         Only : erfcgen, images_s
   Use neighbours,       Only : neighbours_type
   Use electrostatic, Only : electrostatic_type, &
-                            ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
-                            ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
-                            ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
+    ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
+    ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
+    ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
   Use errors_warnings, Only : error
 
   Implicit None
@@ -32,7 +32,7 @@ Module coul_mpole
   Private
 
   Public :: intra_mcoul, coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, coul_dddp_mforces, &
-            coul_chrm_forces, d_ene_trq_mpoles
+    coul_chrm_forces, d_ene_trq_mpoles
 
 Contains
 
@@ -83,25 +83,25 @@ Contains
     If (electro%newjob_m) Then
       electro%newjob_m= .false.
 
-    ! Check for damped force-shifted coulombic and reaction field interactions
-    ! and set force and potential shifting parameters dependingly
+      ! Check for damped force-shifted coulombic and reaction field interactions
+      ! and set force and potential shifting parameters dependingly
 
-    electro% damp_m=.false.
-    If (electro%alpha > zero_plus) Then
-      electro%damp_m=.true.
+      electro% damp_m=.false.
+      If (electro%alpha > zero_plus) Then
+        electro%damp_m=.true.
 
-      exp1= Exp(-(electro%alpha*rcut)**2)
-      tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rcut)
+        exp1= Exp(-(electro%alpha*rcut)**2)
+        tt  = 1.0_wp/(1.0_wp+pp*electro%alpha*rcut)
 
-      erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
-      fer = (erc + 2.0_wp*(electro%alpha/sqrpi)*exp1)/rcut**2
+        erc = tt*(aa1+tt*(aa2+tt*(aa3+tt*(aa4+tt*aa5))))*exp1/rcut
+        fer = (erc + 2.0_wp*(electro%alpha/sqrpi)*exp1)/rcut**2
 
-      electro%aa_m  = fer*rcut
-      electro%bb_m  = -(erc + electro%aa*rcut)
-    Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
-      electro%aa_m =  1.0_wp/rcut**2
-      electro%bb_m = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
-    End If
+        electro%aa_m  = fer*rcut
+        electro%bb_m  = -(erc + electro%aa*rcut)
+      Else If (electro%key == ELECTROSTATIC_COULOMB_FORCE_SHIFT) Then
+        electro%aa_m =  1.0_wp/rcut**2
+        electro%bb_m = -2.0_wp/rcut ! = -(1.0_wp/rcut+aa*rcut)
+      End If
 
       ! set reaction field terms for RFC
 
@@ -413,26 +413,26 @@ Contains
   Subroutine coul_fscp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
       mpoles,electro,config,comm)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-  ! in a periodic system using multipoles assuming a force shifted
-  ! coulomb potential kernel
-  !
-  ! U is proportional to ( 1/r + aa*r  + bb ) such that dU(neigh%cutoff)/dr = 0
-  ! therefore aa = 1/(neigh%cutoff)**2 and U(neigh%cutoff) = 0 therefore bb = -2/(neigh%cutoff)
-  !
-  ! Note: FS potential can be generalised (R1) by using a damping function
-  ! as used for damping the real space coulombic interaction in the
-  ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
-  !
-  ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
-  !
-  ! copyright - daresbury laboratory
-  ! author    - h.a.boateng february 2016
-  ! amended   - i.t.todorov february 2016
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    ! in a periodic system using multipoles assuming a force shifted
+    ! coulomb potential kernel
+    !
+    ! U is proportional to ( 1/r + aa*r  + bb ) such that dU(neigh%cutoff)/dr = 0
+    ! therefore aa = 1/(neigh%cutoff)**2 and U(neigh%cutoff) = 0 therefore bb = -2/(neigh%cutoff)
+    !
+    ! Note: FS potential can be generalised (R1) by using a damping function
+    ! as used for damping the real space coulombic interaction in the
+    ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
+    !
+    ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - h.a.boateng february 2016
+    ! amended   - i.t.todorov february 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
     Type( neighbours_type ), Intent( In    ) :: neigh
@@ -446,13 +446,13 @@ Contains
 
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
-                         k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
+      k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
 
     Real( Kind = wp ) :: scl,rrr,alphan,engmpl,fix,fiy,fiz,fx,fy,fz, &
-                         strs1,strs2,strs3,strs5,strs6,strs9,        &
-                         ppp,vk0,vk1,vk2,t1,t2,kx,ky,kz,             &
-                         txyz,erfcr,tix,tiy,tiz,tjx,tjy,             &
-                         tjz,tmp,tmpi,tmpj,sx,sy,sz
+      strs1,strs2,strs3,strs5,strs6,strs9,        &
+      ppp,vk0,vk1,vk2,t1,t2,kx,ky,kz,             &
+      txyz,erfcr,tix,tiy,tiz,tjx,tjy,             &
+      tjz,tmp,tmpi,tmpj,sx,sy,sz
 
 
     Real( Kind = wp ) :: d1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
@@ -466,54 +466,54 @@ Contains
     If (electro%newjob_mfscp) Then
       electro%newjob_mfscp = .false.
 
-       If (electro%alpha > zero_plus) Then
-         electro%damp_mfscp = .true.
-       Else
-         electro%damp_mfscp = .false.
-       End If
+      If (electro%alpha > zero_plus) Then
+        electro%damp_mfscp = .true.
+      Else
+        electro%damp_mfscp = .false.
+      End If
 
-       If (electro%damp_mfscp) Then
+      If (electro%damp_mfscp) Then
 
-         ! interpolation interval
+        ! interpolation interval
 
-         electro%drewd_mfscp = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
+        electro%drewd_mfscp = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
-         ! reciprocal of interpolation interval
+        ! reciprocal of interpolation interval
 
-         electro%rdrewd_mfscp = 1.0_wp/electro%drewd_mfscp
+        electro%rdrewd_mfscp = 1.0_wp/electro%drewd_mfscp
 
-          fail=0
-          Allocate (electro%erc_mfscp(0:electro%ewald_exclusion_grid),electro%fer_mfscp(0:electro%ewald_exclusion_grid), Stat=fail)
-          If (fail > 0) Then
-            Write(message,'(a)') 'coul_fscp_mforces allocation failure'
-            Call error(0,message)
-           End If
+        fail=0
+        Allocate (electro%erc_mfscp(0:electro%ewald_exclusion_grid),electro%fer_mfscp(0:electro%ewald_exclusion_grid), Stat=fail)
+        If (fail > 0) Then
+          Write(message,'(a)') 'coul_fscp_mforces allocation failure'
+          Call error(0,message)
+        End If
 
-           ! generate error function complement tables for ewald sum
+        ! generate error function complement tables for ewald sum
 
-           Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mfscp,electro%fer_mfscp)
+        Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mfscp,electro%fer_mfscp)
 
-          ! set force and potential shifting parameters (screened terms)
+        ! set force and potential shifting parameters (screened terms)
 
-          electro%aa_mfscp =   electro%fer_mfscp(electro%ewald_exclusion_grid-4)*neigh%cutoff
-          electro%bb_mfscp = -(electro%erc_mfscp(electro%ewald_exclusion_grid-4)+electro%aa_mfscp*neigh%cutoff)
+        electro%aa_mfscp =   electro%fer_mfscp(electro%ewald_exclusion_grid-4)*neigh%cutoff
+        electro%bb_mfscp = -(electro%erc_mfscp(electro%ewald_exclusion_grid-4)+electro%aa_mfscp*neigh%cutoff)
 
-        Else
+      Else
 
-          ! set force and potential shifting parameters (screened terms)
+        ! set force and potential shifting parameters (screened terms)
 
-          electro%aa_mfscp =  1.0_wp/neigh%cutoff**2
-          electro%bb_mfscp = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
+        electro%aa_mfscp =  1.0_wp/neigh%cutoff**2
+        electro%bb_mfscp = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
 
-       End If
+      End If
     End If
 
-  ! initialise potential energy and virial
+    ! initialise potential energy and virial
 
     engcpe=0.0_wp
     vircpe=0.0_wp
 
-  ! initialise stress tensor accumulators
+    ! initialise stress tensor accumulators
 
     strs1=0.0_wp
     strs2=0.0_wp
@@ -522,455 +522,455 @@ Contains
     strs6=0.0_wp
     strs9=0.0_wp
 
-  ! global identity of iatm
+    ! global identity of iatm
 
     idi=config%ltg(iatm)
 
-  ! get the multipoles for site i
+    ! get the multipoles for site i
 
     imp=mpoles%global_frame(:,iatm)
 
-  ! ignore interaction if the charge is zero
+    ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
 
-  ! get the components for site i infinitesimal rotations
+      ! get the components for site i infinitesimal rotations
 
-       impx=mpoles%rotation_x(:,iatm)
-       impy=mpoles%rotation_y(:,iatm)
-       impz=mpoles%rotation_z(:,iatm)
+      impx=mpoles%rotation_x(:,iatm)
+      impy=mpoles%rotation_y(:,iatm)
+      impz=mpoles%rotation_z(:,iatm)
 
-  ! multipole scaler
+      ! multipole scaler
 
-       scl=r4pie0/electro%eps
+      scl=r4pie0/electro%eps
 
-  ! scale imp multipoles
+      ! scale imp multipoles
 
-       imp=imp*scl
+      imp=imp*scl
 
-  ! load forces
+      ! load forces
 
-       fix=config%parts(iatm)%fxx
-       fiy=config%parts(iatm)%fyy
-       fiz=config%parts(iatm)%fzz
+      fix=config%parts(iatm)%fxx
+      fiy=config%parts(iatm)%fyy
+      fiz=config%parts(iatm)%fzz
 
-  ! initialize torques for atom i (temporary)
+      ! initialize torques for atom i (temporary)
 
-       tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
+      tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
 
-  ! start of primary loop for forces evaluation
+      ! start of primary loop for forces evaluation
 
-       Do m=1,neigh%list(0,iatm)
+      Do m=1,neigh%list(0,iatm)
 
-  ! atomic index
+        ! atomic index
 
-          jatm=neigh%list(m,iatm)
+        jatm=neigh%list(m,iatm)
 
-  ! get the multipoles for site j
+        ! get the multipoles for site j
 
-          jmp=mpoles%global_frame(:,jatm)
+        jmp=mpoles%global_frame(:,jatm)
 
-  ! interatomic distance
+        ! interatomic distance
 
-          rrr = rrt(m)
+        rrr = rrt(m)
 
-  ! truncation of potential
+        ! truncation of potential
 
-          If (Maxval(Abs(jmp)) > zero_plus .and. rrr < neigh%cutoff) Then
+        If (Maxval(Abs(jmp)) > zero_plus .and. rrr < neigh%cutoff) Then
 
-  ! get the components for site j infinitesimal rotations
+          ! get the components for site j infinitesimal rotations
 
-             jmpx=mpoles%rotation_x(:,jatm)
-             jmpy=mpoles%rotation_y(:,jatm)
-             jmpz=mpoles%rotation_z(:,jatm)
+          jmpx=mpoles%rotation_x(:,jatm)
+          jmpy=mpoles%rotation_y(:,jatm)
+          jmpz=mpoles%rotation_z(:,jatm)
 
-  ! compute derivatives of kernel
+          ! compute derivatives of kernel
 
-             If (electro%damp_mfscp) Then
+          If (electro%damp_mfscp) Then
 
-  ! compute derivatives of 'r'
+            ! compute derivatives of 'r'
 
-                Call coul_deriv(-1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
+            Call coul_deriv(-1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
 
-  ! scale the derivatives of 'r'
+            ! scale the derivatives of 'r'
 
-                a1 = electro%aa_mfscp*a1
+            a1 = electro%aa_mfscp*a1
 
-                ! get the value of the ewald real space kernel using 3pt interpolation
+            ! get the value of the ewald real space kernel using 3pt interpolation
 
-                k   = Int(rrr*electro%rdrewd_mfscp)
-                ppp = rrr*electro%rdrewd_mfscp - Real(k,wp)
+            k   = Int(rrr*electro%rdrewd_mfscp)
+            ppp = rrr*electro%rdrewd_mfscp - Real(k,wp)
 
-                vk0 = electro%erc_mfscp(k)
-                vk1 = electro%erc_mfscp(k+1)
-                vk2 = electro%erc_mfscp(k+2)
+            vk0 = electro%erc_mfscp(k)
+            vk1 = electro%erc_mfscp(k+1)
+            vk2 = electro%erc_mfscp(k+2)
 
-                t1 = vk0 + (vk1 - vk0)*ppp
-                t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+            t1 = vk0 + (vk1 - vk0)*ppp
+            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-                erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
+            erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
 
-  ! compute derivatives of the ewald real space kernel
+            ! compute derivatives of the ewald real space kernel
 
-                Call ewald_deriv(-2,2*mpoles%max_order+1,1,erfcr,electro%alpha*xxt(m), &
-                  electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpoles%max_order,d1)
+            Call ewald_deriv(-2,2*mpoles%max_order+1,1,erfcr,electro%alpha*xxt(m), &
+              electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpoles%max_order,d1)
 
-  ! scale the derivatives into the right form
+            ! scale the derivatives into the right form
 
-                d1 = 2.0_wp*electro%alpha*d1/sqrpi
+            d1 = 2.0_wp*electro%alpha*d1/sqrpi
 
-  ! calculate forces
+            ! calculate forces
 
-                engmpl = 0.0_wp
-                fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
-                tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
+            engmpl = 0.0_wp
+            fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
+            tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-                If (mpoles%max_order < 5) Then
+            If (mpoles%max_order < 5) Then
 
-                   kz = 1.0_wp
-                   Do k3=0,mpoles%max_order
+              kz = 1.0_wp
+              Do k3=0,mpoles%max_order
 
-                      ky = kz
-                      Do k2=0,mpoles%max_order-k3
+                ky = kz
+                Do k2=0,mpoles%max_order-k3
 
-                         kx = ky
-                         Do k1=0,mpoles%max_order-k3-k2
+                  kx = ky
+                  Do k1=0,mpoles%max_order-k3-k2
 
-                            jj = mpoles%map(k1,k2,k3)
+                    jj = mpoles%map(k1,k2,k3)
 
-                            If (Abs(jmp(jj)) > zero_plus) Then
-                              Call explicit_fscp_rfp_loops &
-                               (2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,a1,               &
-                               imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-                               kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                               engmpl,fx,fy,fz,mpoles)
-                           End If
+                    If (Abs(jmp(jj)) > zero_plus) Then
+                      Call explicit_fscp_rfp_loops &
+                        (2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,a1,               &
+                        imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                        kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                        engmpl,fx,fy,fz,mpoles)
+                    End If
 
-                            kx = -kx
+                    kx = -kx
 
-                         End Do
+                  End Do
 
-                         ky = -ky
+                  ky = -ky
 
+                End Do
+
+                kz = -kz
+
+              End Do
+
+            Else
+
+              kz = 1.0_wp
+              Do k3=0,mpoles%max_order
+
+                ky = kz
+                Do k2=0,mpoles%max_order-k3
+
+                  kx = ky
+                  Do k1=0,mpoles%max_order-k3-k2
+
+                    jj = mpoles%map(k1,k2,k3)
+
+                    If (Abs(jmp(jj)) > zero_plus) Then
+
+                      txyz=kx*jmp(jj)
+
+                      sz = 1.0_wp
+                      Do s3=0,mpoles%max_order
+                        ks3=k3+s3; ks31=ks3+1
+
+                        sy = sz
+                        Do s2=0,mpoles%max_order-s3
+                          ks2=k2+s2; ks21=ks2+1
+
+                          sx = sy
+                          Do s1=0,mpoles%max_order-s3-s2
+                            ks1=k1+s1; ks11=ks1+1
+
+                            n      = ks1+ks2+ks3
+                            alphan = electro%alpha**n
+
+                            ii     = mpoles%map(s1,s2,s3)
+
+                            tmp    = alphan*d1(ks1,ks2,ks3) + a1(ks1,ks2,ks3)
+
+                            tmpi   = txyz       * tmp
+                            tmpj   = sx*imp(ii) * tmp
+
+                            t2     = txyz*imp(ii)
+                            t1     = alphan*t2
+
+                            ! energy
+
+                            engmpl = engmpl + t1*d1(ks1,ks2,ks3) + t2*a1(ks1,ks2,ks3)
+
+                            ! force
+                            t1     = t1*electro%alpha
+
+                            fx     = fx     - t1*d1(ks11,ks2,ks3) + t2*a1(ks11,ks2,ks3)
+                            fy     = fy     - t1*d1(ks1,ks21,ks3) + t2*a1(ks1,ks21,ks3)
+                            fz     = fz     - t1*d1(ks1,ks2,ks31) + t2*a1(ks1,ks2,ks31)
+
+                            ! torque on iatm
+
+                            tix    = tix    + impx(ii)*tmpi
+                            tiy    = tiy    + impy(ii)*tmpi
+                            tiz    = tiz    + impz(ii)*tmpi
+
+                            ! torque on jatm
+
+                            tjx    = tjx    + jmpx(jj)*tmpj
+                            tjy    = tjy    + jmpy(jj)*tmpj
+                            tjz    = tjz    + jmpz(jj)*tmpj
+
+                            sx = -sx
+                          End Do
+
+                          sy = -sy
+                        End Do
+
+                        sz = -sz
                       End Do
 
-                      kz = -kz
+                    End If
 
-                   End Do
+                    kx = -kx
 
-                Else
+                  End Do
 
-                   kz = 1.0_wp
-                   Do k3=0,mpoles%max_order
+                  ky = -ky
 
-                      ky = kz
-                      Do k2=0,mpoles%max_order-k3
+                End Do
 
-                         kx = ky
-                         Do k1=0,mpoles%max_order-k3-k2
+                kz = -kz
 
-                            jj = mpoles%map(k1,k2,k3)
+              End Do
 
-                            If (Abs(jmp(jj)) > zero_plus) Then
+            End If
 
-                               txyz=kx*jmp(jj)
+          Else
 
-                               sz = 1.0_wp
-                               Do s3=0,mpoles%max_order
-                                  ks3=k3+s3; ks31=ks3+1
+            ! compute derivatives of '1/r'
 
-                                  sy = sz
-                                  Do s2=0,mpoles%max_order-s3
-                                  ks2=k2+s2; ks21=ks2+1
+            Call coul_deriv( 1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,d1)
 
-                                     sx = sy
-                                     Do s1=0,mpoles%max_order-s3-s2
-                                        ks1=k1+s1; ks11=ks1+1
+            ! compute derivatives of 'r'
 
-                                        n      = ks1+ks2+ks3
-                                        alphan = electro%alpha**n
+            Call coul_deriv(-1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
 
-                                        ii     = mpoles%map(s1,s2,s3)
+            ! scale the derivatives of 'r' and add to d1
 
-                                        tmp    = alphan*d1(ks1,ks2,ks3) + a1(ks1,ks2,ks3)
+            d1 = d1 + a1/neigh%cutoff**2
 
-                                        tmpi   = txyz       * tmp
-                                        tmpj   = sx*imp(ii) * tmp
+            ! calculate potential forces
 
-                                        t2     = txyz*imp(ii)
-                                        t1     = alphan*t2
+            engmpl = 0.0_wp
+            fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
+            tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-  ! energy
+            If (mpoles%max_order < 5) Then
 
-                                        engmpl = engmpl + t1*d1(ks1,ks2,ks3) + t2*a1(ks1,ks2,ks3)
+              kz = 1.0_wp
+              Do k3=0,mpoles%max_order
 
-  ! force
-                                        t1     = t1*electro%alpha
+                ky = kz
+                Do k2=0,mpoles%max_order-k3
 
-                                        fx     = fx     - t1*d1(ks11,ks2,ks3) + t2*a1(ks11,ks2,ks3)
-                                        fy     = fy     - t1*d1(ks1,ks21,ks3) + t2*a1(ks1,ks21,ks3)
-                                        fz     = fz     - t1*d1(ks1,ks2,ks31) + t2*a1(ks1,ks2,ks31)
+                  kx = ky
+                  Do k1=0,mpoles%max_order-k3-k2
 
-  ! torque on iatm
+                    jj = mpoles%map(k1,k2,k3)
 
-                                        tix    = tix    + impx(ii)*tmpi
-                                        tiy    = tiy    + impy(ii)*tmpi
-                                        tiz    = tiz    + impz(ii)*tmpi
+                    If (Abs(jmp(jj)) > zero_plus)  Then
+                      Call explicit_ewald_real_loops &
+                        (-2,2*mpoles%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
+                        imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                        kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                        engmpl,fx,fy,fz,mpoles)
+                    End If
 
-  ! torque on jatm
+                    kx = -kx
 
-                                        tjx    = tjx    + jmpx(jj)*tmpj
-                                        tjy    = tjy    + jmpy(jj)*tmpj
-                                        tjz    = tjz    + jmpz(jj)*tmpj
+                  End Do
 
-                                        sx = -sx
-                                     End Do
+                  ky = -ky
 
-                                     sy = -sy
-                                  End Do
+                End Do
 
-                                  sz = -sz
-                               End Do
+                kz = -kz
 
-                            End If
+              End Do
 
-                            kx = -kx
+            Else
 
-                         End Do
+              kz = 1.0_wp
+              Do k3=0,mpoles%max_order
 
-                         ky = -ky
+                ky = kz
+                Do k2=0,mpoles%max_order-k3
 
+                  kx = ky
+                  Do k1=0,mpoles%max_order-k3-k2
+
+                    jj=mpoles%map(k1,k2,k3)
+
+                    If (Abs(jmp(jj)) > zero_plus) Then
+
+                      txyz=kx*jmp(jj)
+
+                      sz = 1.0_wp
+                      Do s3=0,mpoles%max_order
+                        ks3=k3+s3; ks31=ks3+1
+
+                        sy = sz
+                        Do s2=0,mpoles%max_order-s3
+                          ks2=k2+s2; ks21=ks2+1
+
+                          sx = sy
+                          Do s1=0,mpoles%max_order-s3-s2
+                            ks1=k1+s1; ks11=ks1+1
+
+                            n    = ks1+ks2+ks3
+
+                            ii   = mpoles%map(s1,s2,s3)
+
+                            tmp  = d1(ks1,ks2,ks3)
+
+                            tmpi = txyz       * tmp
+                            tmpj = sx*imp(ii) * tmp
+
+                            t1   = txyz*imp(ii)
+
+                            ! energy
+
+                            engmpl = engmpl + t1*tmp
+
+                            ! force
+
+                            fx     = fx     - t1*d1(ks11,ks2,ks3)
+                            fy     = fy     - t1*d1(ks1,ks21,ks3)
+                            fz     = fz     - t1*d1(ks1,ks2,ks31)
+
+                            ! torque on iatm
+
+                            tix    = tix    + impx(ii)*tmpi
+                            tiy    = tiy    + impy(ii)*tmpi
+                            tiz    = tiz    + impz(ii)*tmpi
+
+                            ! torque on jatm
+
+                            tjx    = tjx    + jmpx(jj)*tmpj
+                            tjy    = tjy    + jmpy(jj)*tmpj
+                            tjz    = tjz    + jmpz(jj)*tmpj
+
+                            sx = -sx
+                          End Do
+
+                          sy = -sy
+                        End Do
+
+                        sz = -sz
                       End Do
 
-                      kz = -kz
+                    End If
 
-                   End Do
+                    kx = -kx
 
-                End If
+                  End Do
 
-             Else
+                  ky = -ky
 
-  ! compute derivatives of '1/r'
+                End Do
 
-                Call coul_deriv( 1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,d1)
+                kz = -kz
 
-  ! compute derivatives of 'r'
+              End Do
 
-                Call coul_deriv(-1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
-
-  ! scale the derivatives of 'r' and add to d1
-
-                d1 = d1 + a1/neigh%cutoff**2
-
-  ! calculate potential forces
-
-                engmpl = 0.0_wp
-                fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
-                tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
-
-                If (mpoles%max_order < 5) Then
-
-                   kz = 1.0_wp
-                   Do k3=0,mpoles%max_order
-
-                      ky = kz
-                      Do k2=0,mpoles%max_order-k3
-
-                         kx = ky
-                         Do k1=0,mpoles%max_order-k3-k2
-
-                            jj = mpoles%map(k1,k2,k3)
-
-                            If (Abs(jmp(jj)) > zero_plus)  Then
-                              Call explicit_ewald_real_loops &
-                               (-2,2*mpoles%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
-                               imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-                               kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                               engmpl,fx,fy,fz,mpoles)
-                           End If
-
-                            kx = -kx
-
-                         End Do
-
-                         ky = -ky
-
-                      End Do
-
-                      kz = -kz
-
-                   End Do
-
-                Else
-
-                   kz = 1.0_wp
-                   Do k3=0,mpoles%max_order
-
-                      ky = kz
-                      Do k2=0,mpoles%max_order-k3
-
-                         kx = ky
-                         Do k1=0,mpoles%max_order-k3-k2
-
-                            jj=mpoles%map(k1,k2,k3)
-
-                            If (Abs(jmp(jj)) > zero_plus) Then
-
-                               txyz=kx*jmp(jj)
-
-                               sz = 1.0_wp
-                               Do s3=0,mpoles%max_order
-                                  ks3=k3+s3; ks31=ks3+1
-
-                                  sy = sz
-                                  Do s2=0,mpoles%max_order-s3
-                                  ks2=k2+s2; ks21=ks2+1
-
-                                     sx = sy
-                                     Do s1=0,mpoles%max_order-s3-s2
-                                        ks1=k1+s1; ks11=ks1+1
-
-                                        n    = ks1+ks2+ks3
-
-                                        ii   = mpoles%map(s1,s2,s3)
-
-                                        tmp  = d1(ks1,ks2,ks3)
-
-                                        tmpi = txyz       * tmp
-                                        tmpj = sx*imp(ii) * tmp
-
-                                        t1   = txyz*imp(ii)
-
-  ! energy
-
-                                        engmpl = engmpl + t1*tmp
-
-  ! force
-
-                                        fx     = fx     - t1*d1(ks11,ks2,ks3)
-                                        fy     = fy     - t1*d1(ks1,ks21,ks3)
-                                        fz     = fz     - t1*d1(ks1,ks2,ks31)
-
-  ! torque on iatm
-
-                                        tix    = tix    + impx(ii)*tmpi
-                                        tiy    = tiy    + impy(ii)*tmpi
-                                        tiz    = tiz    + impz(ii)*tmpi
-
-  ! torque on jatm
-
-                                        tjx    = tjx    + jmpx(jj)*tmpj
-                                        tjy    = tjy    + jmpy(jj)*tmpj
-                                        tjz    = tjz    + jmpz(jj)*tmpj
-
-                                        sx = -sx
-                                     End Do
-
-                                     sy = -sy
-                                  End Do
-
-                                  sz = -sz
-                               End Do
-
-                            End If
-
-                            kx = -kx
-
-                         End Do
-
-                         ky = -ky
-
-                      End Do
-
-                      kz = -kz
-
-                   End Do
-
-                End If
-
-             End If
-
-  ! shift potential
-
-             tmp     = electro%aa_mfscp*rrr + electro%bb_mfscp
-             engmpl  = engmpl + tmp*imp(1)*jmp(1)
-
-  ! shift torque
-
-             tmpi    = tmp*jmp(1)
-             tix     = tix    + impx(1)*tmpi
-             tiy     = tiy    + impy(1)*tmpi
-             tiz     = tiz    + impz(1)*tmpi
-
-             tmpj    = tmp*imp(1)
-             tjx     = tjx    + jmpx(1)*tmpj
-             tjy     = tjy    + jmpy(1)*tmpj
-             tjz     = tjz    + jmpz(1)*tmpj
-
-             fix=fix+fx
-             fiy=fiy+fy
-             fiz=fiz+fz
-
-             If (jatm <= config%natms) Then
-
-                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
-                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
-                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
-
-                mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
-                mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
-                mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
-
-             End If
-
-             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
-
-  ! accumulate potential energy
-
-                engcpe = engcpe + engmpl
-
-  ! calculate virial
-
-                vircpe = vircpe - (fx*xxt(m) + fy*yyt(m) + fz*zzt(m))
-
-  ! calculate stress tensor
-
-                strs1 = strs1 + xxt(m)*fx
-                strs2 = strs2 + xxt(m)*fy
-                strs3 = strs3 + xxt(m)*fz
-                strs5 = strs5 + yyt(m)*fy
-                strs6 = strs6 + yyt(m)*fz
-                strs9 = strs9 + zzt(m)*fz
-
-             End If
+            End If
 
           End If
 
-       End Do
+          ! shift potential
 
-  ! load back forces
+          tmp     = electro%aa_mfscp*rrr + electro%bb_mfscp
+          engmpl  = engmpl + tmp*imp(1)*jmp(1)
 
-       config%parts(iatm)%fxx=fix
-       config%parts(iatm)%fyy=fiy
-       config%parts(iatm)%fzz=fiz
+          ! shift torque
 
-  ! and torques due to multipoles
+          tmpi    = tmp*jmp(1)
+          tix     = tix    + impx(1)*tmpi
+          tiy     = tiy    + impy(1)*tmpi
+          tiz     = tiz    + impz(1)*tmpi
 
-       mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
-       mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
-       mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
+          tmpj    = tmp*imp(1)
+          tjx     = tjx    + jmpx(1)*tmpj
+          tjy     = tjy    + jmpy(1)*tmpj
+          tjz     = tjz    + jmpz(1)*tmpj
 
-  ! complete stress tensor
+          fix=fix+fx
+          fiy=fiy+fy
+          fiz=fiz+fz
 
-       stress(1) = stress(1) + strs1
-       stress(2) = stress(2) + strs2
-       stress(3) = stress(3) + strs3
-       stress(4) = stress(4) + strs2
-       stress(5) = stress(5) + strs5
-       stress(6) = stress(6) + strs6
-       stress(7) = stress(7) + strs3
-       stress(8) = stress(8) + strs6
-       stress(9) = stress(9) + strs9
+          If (jatm <= config%natms) Then
+
+            config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+            config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+            config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
+
+            mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
+            mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
+            mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
+
+          End If
+
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+
+            ! accumulate potential energy
+
+            engcpe = engcpe + engmpl
+
+            ! calculate virial
+
+            vircpe = vircpe - (fx*xxt(m) + fy*yyt(m) + fz*zzt(m))
+
+            ! calculate stress tensor
+
+            strs1 = strs1 + xxt(m)*fx
+            strs2 = strs2 + xxt(m)*fy
+            strs3 = strs3 + xxt(m)*fz
+            strs5 = strs5 + yyt(m)*fy
+            strs6 = strs6 + yyt(m)*fz
+            strs9 = strs9 + zzt(m)*fz
+
+          End If
+
+        End If
+
+      End Do
+
+      ! load back forces
+
+      config%parts(iatm)%fxx=fix
+      config%parts(iatm)%fyy=fiy
+      config%parts(iatm)%fzz=fiz
+
+      ! and torques due to multipoles
+
+      mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
+      mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
+      mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
+
+      ! complete stress tensor
+
+      stress(1) = stress(1) + strs1
+      stress(2) = stress(2) + strs2
+      stress(3) = stress(3) + strs3
+      stress(4) = stress(4) + strs2
+      stress(5) = stress(5) + strs5
+      stress(6) = stress(6) + strs6
+      stress(7) = stress(7) + strs3
+      stress(8) = stress(8) + strs6
+      stress(9) = stress(9) + strs9
 
     End If
 
@@ -979,24 +979,24 @@ Contains
   Subroutine coul_rfp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
       mpoles,electro,config,comm)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-  ! in a periodic system using multipoles assuming a reaction field
-  ! potential (corrected for the existence of a dipole moment outside neigh%cutoff)
-  !
-  ! Note: RF potential can be generalised (R1) by using a damping function
-  ! as used for damping the real space coulombic interaction in the
-  ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
-  !
-  ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
-  ! R2: M Neumann, J Chem Phys, 82 (12), 5663, (1985)
-  !
-  ! copyright - daresbury laboratory
-  ! author    - h.a.boateng february 2016
-  ! amended   - i.t.todorov february 2016
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    ! in a periodic system using multipoles assuming a reaction field
+    ! potential (corrected for the existence of a dipole moment outside neigh%cutoff)
+    !
+    ! Note: RF potential can be generalised (R1) by using a damping function
+    ! as used for damping the real space coulombic interaction in the
+    ! standard Ewald summation.  This generalisation applies when electro%alpha > 0.
+    !
+    ! R1: C.J. Fennell and J.D. Gezelter J. Chem. Phys. 124, 234104 (2006)
+    ! R2: M Neumann, J Chem Phys, 82 (12), 5663, (1985)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - h.a.boateng february 2016
+    ! amended   - i.t.todorov february 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
     Type( neighbours_type ), Intent( In    ) :: neigh
@@ -1009,13 +1009,13 @@ Contains
     Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
-                         k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
+      k,ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
 
     Real( Kind = wp ) :: scl,rrr,alphan,engmpl,fix,fiy,fiz,fx,fy,fz, &
-                         strs1,strs2,strs3,strs5,strs6,strs9,        &
-                         ppp,vk0,vk1,vk2,t1,t2,kx,ky,kz,             &
-                         txyz,erfcr,tmp,tmpi,tmpj,tix,tiy,tiz,       &
-                         tjx,tjy,tjz,sx,sy,sz
+      strs1,strs2,strs3,strs5,strs6,strs9,        &
+      ppp,vk0,vk1,vk2,t1,t2,kx,ky,kz,             &
+      txyz,erfcr,tmp,tmpi,tmpj,tix,tiy,tiz,       &
+      tjx,tjy,tjz,sx,sy,sz
 
 
     Real( Kind = wp ) :: d1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
@@ -1040,50 +1040,50 @@ Contains
       electro%b0_mrfp    = 2.0_wp*(electro%eps - 1.0_wp)/(2.0_wp*electro%eps + 1.0_wp)
       electro%rfld0_mrfp = electro%b0_mrfp/neigh%cutoff**3
       electro%rfld1_mrfp = (1.0_wp + 0.5_wp*electro%b0_mrfp)/neigh%cutoff
-       electro%rfld2_mrfp = 0.5_wp*electro%rfld0_mrfp
+      electro%rfld2_mrfp = 0.5_wp*electro%rfld0_mrfp
 
-       If (electro%damp_mrfp) Then
+      If (electro%damp_mrfp) Then
 
-         ! interpolation interval
+        ! interpolation interval
 
-         electro%drewd_mrfp = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
+        electro%drewd_mrfp = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
 
-         ! reciprocal of interpolation interval
+        ! reciprocal of interpolation interval
 
-         electro%rdrewd_mrfp = 1.0_wp/electro%drewd_mrfp
+        electro%rdrewd_mrfp = 1.0_wp/electro%drewd_mrfp
 
-         fail=0
-         Allocate (electro%erc_mrfp(0:electro%ewald_exclusion_grid),electro%fer_mrfp(0:electro%ewald_exclusion_grid), Stat=fail)
-         If (fail > 0) Then
-           Write(message,'(a)') 'coul_rfp_mforces allocation failure'
-           Call error(0,message)
-         End If
+        fail=0
+        Allocate (electro%erc_mrfp(0:electro%ewald_exclusion_grid),electro%fer_mrfp(0:electro%ewald_exclusion_grid), Stat=fail)
+        If (fail > 0) Then
+          Write(message,'(a)') 'coul_rfp_mforces allocation failure'
+          Call error(0,message)
+        End If
 
-         ! generate error function complement tables for ewald sum
+        ! generate error function complement tables for ewald sum
 
-         Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mrfp,electro%fer_mrfp)
+        Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mrfp,electro%fer_mrfp)
 
-  ! set force and potential shifting parameters (screened terms)
+        ! set force and potential shifting parameters (screened terms)
 
-          electro%aa_mrfp =   electro%fer_mrfp(electro%ewald_exclusion_grid-4)*neigh%cutoff
-          electro%bb_mrfp = -(electro%erc_mrfp(electro%ewald_exclusion_grid-4)+electro%aa_mrfp*neigh%cutoff)
+        electro%aa_mrfp =   electro%fer_mrfp(electro%ewald_exclusion_grid-4)*neigh%cutoff
+        electro%bb_mrfp = -(electro%erc_mrfp(electro%ewald_exclusion_grid-4)+electro%aa_mrfp*neigh%cutoff)
 
-       Else
+      Else
 
-  ! set force and potential shifting parameters (screened terms)
+        ! set force and potential shifting parameters (screened terms)
 
-          electro%aa_mrfp =  1.0_wp/neigh%cutoff**2
-          electro%bb_mrfp = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
+        electro%aa_mrfp =  1.0_wp/neigh%cutoff**2
+        electro%bb_mrfp = -2.0_wp/neigh%cutoff ! = -(1.0_wp/neigh%cutoff+aa*neigh%cutoff)
 
-       End If
+      End If
     End If
 
-  ! initialise potential energy and virial
+    ! initialise potential energy and virial
 
     engcpe=0.0_wp
     vircpe=0.0_wp
 
-  ! initialise stress tensor accumulators
+    ! initialise stress tensor accumulators
 
     strs1=0.0_wp
     strs2=0.0_wp
@@ -1092,496 +1092,496 @@ Contains
     strs6=0.0_wp
     strs9=0.0_wp
 
-  ! global identity of iatm
+    ! global identity of iatm
 
     idi=config%ltg(iatm)
 
-  ! get the multipoles for site i
+    ! get the multipoles for site i
 
     imp=mpoles%global_frame(:,iatm)
 
-  ! ignore interaction if the charge is zero
+    ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
 
-  ! get the components for site i infinitesimal rotations
+      ! get the components for site i infinitesimal rotations
 
-       impx=mpoles%rotation_x(:,iatm)
-       impy=mpoles%rotation_y(:,iatm)
-       impz=mpoles%rotation_z(:,iatm)
+      impx=mpoles%rotation_x(:,iatm)
+      impy=mpoles%rotation_y(:,iatm)
+      impz=mpoles%rotation_z(:,iatm)
 
-  ! multipole scaler
+      ! multipole scaler
 
-       scl=r4pie0/electro%eps
+      scl=r4pie0/electro%eps
 
-  ! scale imp multipoles
+      ! scale imp multipoles
 
-       imp=imp*scl
+      imp=imp*scl
 
-  ! load forces
+      ! load forces
 
-       fix=config%parts(iatm)%fxx
-       fiy=config%parts(iatm)%fyy
-       fiz=config%parts(iatm)%fzz
+      fix=config%parts(iatm)%fxx
+      fiy=config%parts(iatm)%fyy
+      fiz=config%parts(iatm)%fzz
 
-  ! initialize torques for atom i (temporary)
+      ! initialize torques for atom i (temporary)
 
-       tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
+      tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
 
-       Do m=1,neigh%list(0,iatm)
+      Do m=1,neigh%list(0,iatm)
 
-  ! atomic index
+        ! atomic index
 
-          jatm=neigh%list(m,iatm)
+        jatm=neigh%list(m,iatm)
 
-  ! get the multipoles for site j
+        ! get the multipoles for site j
 
-          jmp=mpoles%global_frame(:,jatm)
+        jmp=mpoles%global_frame(:,jatm)
 
-  ! interatomic distance
+        ! interatomic distance
 
-          rrr = rrt(m)
+        rrr = rrt(m)
 
-  ! truncation of potential
+        ! truncation of potential
 
-          If (Maxval(Abs(jmp)) > zero_plus .and. rrr < neigh%cutoff) Then
+        If (Maxval(Abs(jmp)) > zero_plus .and. rrr < neigh%cutoff) Then
 
-  ! get the components for site j infinitesimal rotations
+          ! get the components for site j infinitesimal rotations
 
-             jmpx=mpoles%rotation_x(:,jatm)
-             jmpy=mpoles%rotation_y(:,jatm)
-             jmpz=mpoles%rotation_z(:,jatm)
+          jmpx=mpoles%rotation_x(:,jatm)
+          jmpy=mpoles%rotation_y(:,jatm)
+          jmpz=mpoles%rotation_z(:,jatm)
 
-  ! compute derivatives of kernel
+          ! compute derivatives of kernel
 
-             If (electro%damp_mrfp) Then
+          If (electro%damp_mrfp) Then
 
-  ! compute derivatives of 'r^2'
+            ! compute derivatives of 'r^2'
 
-                Call coul_deriv(-2,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
+            Call coul_deriv(-2,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
 
-  ! scale the derivatives of 'r^2'
+            ! scale the derivatives of 'r^2'
 
-                a1 = electro%rfld2_mrfp*a1
+            a1 = electro%rfld2_mrfp*a1
 
-  ! compute derivatives of 'r'
+            ! compute derivatives of 'r'
 
-                Call coul_deriv(-1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,d1)
+            Call coul_deriv(-1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,d1)
 
-  ! scale the derivatives of 'r' and add to a1
+            ! scale the derivatives of 'r' and add to a1
 
-                a1 = a1 + electro%aa_mrfp*d1
+            a1 = a1 + electro%aa_mrfp*d1
 
-  ! get the value of the ewald real space kernel using 3pt interpolation
+            ! get the value of the ewald real space kernel using 3pt interpolation
 
-                k   = Int(rrr*electro%rdrewd_mrfp)
-                ppp = rrr*electro%rdrewd_mrfp - Real(k,wp)
+            k   = Int(rrr*electro%rdrewd_mrfp)
+            ppp = rrr*electro%rdrewd_mrfp - Real(k,wp)
 
-                vk0 = electro%erc_mrfp(k)
-                vk1 = electro%erc_mrfp(k+1)
-                vk2 = electro%erc_mrfp(k+2)
+            vk0 = electro%erc_mrfp(k)
+            vk1 = electro%erc_mrfp(k+1)
+            vk2 = electro%erc_mrfp(k+2)
 
-                t1 = vk0 + (vk1 - vk0)*ppp
-                t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
+            t1 = vk0 + (vk1 - vk0)*ppp
+            t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
 
-                erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
+            erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
 
-  ! compute derivatives of the ewald real space kernel
+            ! compute derivatives of the ewald real space kernel
 
-                Call ewald_deriv(-2,2*mpoles%max_order+1,1,erfcr,electro%alpha*xxt(m), &
-                  electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpoles%max_order,d1)
+            Call ewald_deriv(-2,2*mpoles%max_order+1,1,erfcr,electro%alpha*xxt(m), &
+              electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpoles%max_order,d1)
 
-  ! scale the derivatives into the right form
+            ! scale the derivatives into the right form
 
-                d1 = 2.0_wp*electro%alpha*d1/sqrpi
+            d1 = 2.0_wp*electro%alpha*d1/sqrpi
 
-  ! calculate forces
+            ! calculate forces
 
-                engmpl = 0.0_wp
-                fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
-                tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
+            engmpl = 0.0_wp
+            fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
+            tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-                If (mpoles%max_order < 5) Then
+            If (mpoles%max_order < 5) Then
 
-                   kz = 1.0_wp
-                   Do k3=0,mpoles%max_order
+              kz = 1.0_wp
+              Do k3=0,mpoles%max_order
 
-                      ky = kz
-                      Do k2=0,mpoles%max_order-k3
+                ky = kz
+                Do k2=0,mpoles%max_order-k3
 
-                         kx = ky
-                         Do k1=0,mpoles%max_order-k3-k2
+                  kx = ky
+                  Do k1=0,mpoles%max_order-k3-k2
 
-                            jj = mpoles%map(k1,k2,k3)
+                    jj = mpoles%map(k1,k2,k3)
 
-                            If (Abs(jmp(jj)) > zero_plus) Then
-                              Call explicit_fscp_rfp_loops &
-                               (2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,a1,               &
-                               imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-                               kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                               engmpl,fx,fy,fz,mpoles)
-                           End If
+                    If (Abs(jmp(jj)) > zero_plus) Then
+                      Call explicit_fscp_rfp_loops &
+                        (2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,a1,               &
+                        imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                        kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                        engmpl,fx,fy,fz,mpoles)
+                    End If
 
-                            kx = -kx
+                    kx = -kx
 
-                         End Do
+                  End Do
 
-                         ky = -ky
+                  ky = -ky
 
+                End Do
+
+                kz = -kz
+
+              End Do
+
+            Else
+
+              kz = 1.0_wp
+              Do k3=0,mpoles%max_order
+
+                ky = kz
+                Do k2=0,mpoles%max_order-k3
+
+                  kx = ky
+                  Do k1=0,mpoles%max_order-k3-k2
+
+                    jj = mpoles%map(k1,k2,k3)
+
+                    If (Abs(jmp(jj)) > zero_plus) Then
+
+                      txyz=kx*jmp(jj)
+
+                      sz = 1.0_wp
+                      Do s3=0,mpoles%max_order
+                        ks3=k3+s3; ks31=ks3+1
+
+                        sy = sz
+                        Do s2=0,mpoles%max_order-s3
+                          ks2=k2+s2; ks21=ks2+1
+
+                          sx = sy
+                          Do s1=0,mpoles%max_order-s3-s2
+                            ks1=k1+s1; ks11=ks1+1
+
+                            n      = ks1+ks2+ks3
+                            alphan = electro%alpha**n
+
+                            ii     = mpoles%map(s1,s2,s3)
+
+                            tmp    = alphan*d1(ks1,ks2,ks3) + a1(ks1,ks2,ks3)
+
+                            tmpi   = txyz       * tmp
+                            tmpj   = sx*imp(ii) * tmp
+
+                            t2     = txyz*imp(ii)
+                            t1     = alphan*t2
+
+                            ! energy
+
+                            engmpl = engmpl + t1*d1(ks1,ks2,ks3) + t2*a1(ks1,ks2,ks3)
+
+                            ! force
+                            t1     = t1*electro%alpha
+
+                            fx     = fx     - t1*d1(ks11,ks2,ks3) + t2*a1(ks11,ks2,ks3)
+                            fy     = fy     - t1*d1(ks1,ks21,ks3) + t2*a1(ks1,ks21,ks3)
+                            fz     = fz     - t1*d1(ks1,ks2,ks31) + t2*a1(ks1,ks2,ks31)
+
+                            ! torque on iatm
+
+                            tix    = tix    + impx(ii)*tmpi
+                            tiy    = tiy    + impy(ii)*tmpi
+                            tiz    = tiz    + impz(ii)*tmpi
+
+                            ! torque on jatm
+
+                            tjx    = tjx    + jmpx(jj)*tmpj
+                            tjy    = tjy    + jmpy(jj)*tmpj
+                            tjz    = tjz    + jmpz(jj)*tmpj
+
+                            sx = -sx
+                          End Do
+
+                          sy = -sy
+                        End Do
+
+                        sz = -sz
                       End Do
 
-                      kz = -kz
+                    End If
 
-                   End Do
+                    kx = -kx
 
-                Else
+                  End Do
 
-                   kz = 1.0_wp
-                   Do k3=0,mpoles%max_order
+                  ky = -ky
 
-                      ky = kz
-                      Do k2=0,mpoles%max_order-k3
+                End Do
 
-                         kx = ky
-                         Do k1=0,mpoles%max_order-k3-k2
+                kz = -kz
 
-                            jj = mpoles%map(k1,k2,k3)
+              End Do
 
-                            If (Abs(jmp(jj)) > zero_plus) Then
+            End If
 
-                               txyz=kx*jmp(jj)
+            ! shift potential
 
-                               sz = 1.0_wp
-                               Do s3=0,mpoles%max_order
-                                  ks3=k3+s3; ks31=ks3+1
+            tmp    = electro%bb_mrfp-0.5_wp*electro%b0_mrfp/neigh%cutoff
+            engmpl = engmpl + tmp*imp(1)*jmp(1)
 
-                                  sy = sz
-                                  Do s2=0,mpoles%max_order-s3
-                                  ks2=k2+s2; ks21=ks2+1
+            ! shift torque
 
-                                     sx = sy
-                                     Do s1=0,mpoles%max_order-s3-s2
-                                        ks1=k1+s1; ks11=ks1+1
+            tmpi   = tmp*jmp(1)
+            tix    = tix    + impx(1)*tmpi
+            tiy    = tiy    + impy(1)*tmpi
+            tiz    = tiz    + impz(1)*tmpi
 
-                                        n      = ks1+ks2+ks3
-                                        alphan = electro%alpha**n
+            tmpj   = tmp*imp(1)
+            tjx    = tjx    + jmpx(1)*tmpj
+            tjy    = tjy    + jmpy(1)*tmpj
+            tjz    = tjz    + jmpz(1)*tmpj
 
-                                        ii     = mpoles%map(s1,s2,s3)
+          Else
 
-                                        tmp    = alphan*d1(ks1,ks2,ks3) + a1(ks1,ks2,ks3)
+            ! compute derivatives of '1/r'
 
-                                        tmpi   = txyz       * tmp
-                                        tmpj   = sx*imp(ii) * tmp
+            Call coul_deriv( 1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,d1)
 
-                                        t2     = txyz*imp(ii)
-                                        t1     = alphan*t2
+            ! compute derivatives of 'r^2'
 
-  ! energy
+            Call coul_deriv(-2,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
 
-                                        engmpl = engmpl + t1*d1(ks1,ks2,ks3) + t2*a1(ks1,ks2,ks3)
+            ! scale the derivatives of 'r' and add to d1
 
-  ! force
-                                        t1     = t1*electro%alpha
+            d1 = d1 + electro%rfld2_mrfp*a1
 
-                                        fx     = fx     - t1*d1(ks11,ks2,ks3) + t2*a1(ks11,ks2,ks3)
-                                        fy     = fy     - t1*d1(ks1,ks21,ks3) + t2*a1(ks1,ks21,ks3)
-                                        fz     = fz     - t1*d1(ks1,ks2,ks31) + t2*a1(ks1,ks2,ks31)
+            ! calculate potential forces
 
-  ! torque on iatm
+            engmpl = 0.0_wp
+            fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
+            tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-                                        tix    = tix    + impx(ii)*tmpi
-                                        tiy    = tiy    + impy(ii)*tmpi
-                                        tiz    = tiz    + impz(ii)*tmpi
+            If (mpoles%max_order < 5) Then
 
-  ! torque on jatm
+              kz = 1.0_wp
+              Do k3=0,mpoles%max_order
 
-                                        tjx    = tjx    + jmpx(jj)*tmpj
-                                        tjy    = tjy    + jmpy(jj)*tmpj
-                                        tjz    = tjz    + jmpz(jj)*tmpj
+                ky = kz
+                Do k2=0,mpoles%max_order-k3
 
-                                        sx = -sx
-                                     End Do
+                  kx = ky
+                  Do k1=0,mpoles%max_order-k3-k2
 
-                                     sy = -sy
-                                  End Do
+                    jj = mpoles%map(k1,k2,k3)
 
-                                  sz = -sz
-                               End Do
+                    If (Abs(jmp(jj)) > zero_plus) Then
+                      Call explicit_ewald_real_loops &
+                        (-2,2*mpoles%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
+                        imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                        kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                        engmpl,fx,fy,fz,mpoles)
+                    End If
 
-                            End If
+                    kx = -kx
 
-                            kx = -kx
+                  End Do
 
-                         End Do
+                  ky = -ky
 
-                         ky = -ky
+                End Do
 
+                kz = -kz
+
+              End Do
+
+            Else
+
+              kz = 1.0_wp
+              Do k3=0,mpoles%max_order
+
+                ky = kz
+                Do k2=0,mpoles%max_order-k3
+
+                  kx = ky
+                  Do k1=0,mpoles%max_order-k3-k2
+
+                    jj = mpoles%map(k1,k2,k3)
+
+                    If (Abs(jmp(jj)) > zero_plus) Then
+
+                      txyz=kx*jmp(jj)
+
+                      sz = 1.0_wp
+                      Do s3=0,mpoles%max_order
+                        ks3=k3+s3; ks31=ks3+1
+
+                        sy = sz
+                        Do s2=0,mpoles%max_order-s3
+                          ks2=k2+s2; ks21=ks2+1
+
+                          sx = sy
+                          Do s1=0,mpoles%max_order-s3-s2
+                            ks1=k1+s1; ks11=ks1+1
+
+                            n    = ks1+ks2+ks3
+
+                            ii   = mpoles%map(s1,s2,s3)
+
+                            tmp  = d1(ks1,ks2,ks3)
+
+                            tmpi = txyz       * tmp
+                            tmpj = sx*imp(ii) * tmp
+
+                            t1   = txyz*imp(ii)
+
+                            ! energy
+
+                            engmpl = engmpl + t1*tmp
+
+                            ! force
+
+                            fx     = fx     - t1*d1(ks11,ks2,ks3)
+                            fy     = fy     - t1*d1(ks1,ks21,ks3)
+                            fz     = fz     - t1*d1(ks1,ks2,ks31)
+
+                            ! torque on iatm
+
+                            tix    = tix    + impx(ii)*tmpi
+                            tiy    = tiy    + impy(ii)*tmpi
+                            tiz    = tiz    + impz(ii)*tmpi
+
+                            ! torque on jatm
+
+                            tjx    = tjx    + jmpx(jj)*tmpj
+                            tjy    = tjy    + jmpy(jj)*tmpj
+                            tjz    = tjz    + jmpz(jj)*tmpj
+
+                            sx = -sx
+                          End Do
+
+                          sy = -sy
+                        End Do
+
+                        sz = -sz
                       End Do
 
-                      kz = -kz
+                    End If
 
-                   End Do
+                    kx = -kx
 
-                End If
+                  End Do
 
-  ! shift potential
+                  ky = -ky
 
-                tmp    = electro%bb_mrfp-0.5_wp*electro%b0_mrfp/neigh%cutoff
-                engmpl = engmpl + tmp*imp(1)*jmp(1)
+                End Do
 
-  ! shift torque
+                kz = -kz
 
-                tmpi   = tmp*jmp(1)
-                tix    = tix    + impx(1)*tmpi
-                tiy    = tiy    + impy(1)*tmpi
-                tiz    = tiz    + impz(1)*tmpi
+              End Do
 
-                tmpj   = tmp*imp(1)
-                tjx    = tjx    + jmpx(1)*tmpj
-                tjy    = tjy    + jmpy(1)*tmpj
-                tjz    = tjz    + jmpz(1)*tmpj
+            End If
 
-             Else
+            ! shift potential
 
-  ! compute derivatives of '1/r'
+            engmpl = engmpl - electro%rfld1_mrfp*imp(1)*jmp(1)
 
-                Call coul_deriv( 1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,d1)
+            ! shift torque
 
-  ! compute derivatives of 'r^2'
+            tmpi   = -electro%rfld1_mrfp*jmp(1)
+            tix    = tix    + impx(1)*tmpi
+            tiy    = tiy    + impy(1)*tmpi
+            tiz    = tiz    + impz(1)*tmpi
 
-                Call coul_deriv(-2,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrr,a1)
-
-  ! scale the derivatives of 'r' and add to d1
-
-                d1 = d1 + electro%rfld2_mrfp*a1
-
-  ! calculate potential forces
-
-                engmpl = 0.0_wp
-                fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
-                tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
-
-                If (mpoles%max_order < 5) Then
-
-                   kz = 1.0_wp
-                   Do k3=0,mpoles%max_order
-
-                      ky = kz
-                      Do k2=0,mpoles%max_order-k3
-
-                         kx = ky
-                         Do k1=0,mpoles%max_order-k3-k2
-
-                            jj = mpoles%map(k1,k2,k3)
-
-                            If (Abs(jmp(jj)) > zero_plus) Then
-                              Call explicit_ewald_real_loops &
-                               (-2,2*mpoles%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
-                               imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-                               kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                               engmpl,fx,fy,fz,mpoles)
-                           End If
-
-                            kx = -kx
-
-                         End Do
-
-                         ky = -ky
-
-                      End Do
-
-                      kz = -kz
-
-                   End Do
-
-                Else
-
-                   kz = 1.0_wp
-                   Do k3=0,mpoles%max_order
-
-                      ky = kz
-                      Do k2=0,mpoles%max_order-k3
-
-                         kx = ky
-                         Do k1=0,mpoles%max_order-k3-k2
-
-                            jj = mpoles%map(k1,k2,k3)
-
-                            If (Abs(jmp(jj)) > zero_plus) Then
-
-                               txyz=kx*jmp(jj)
-
-                               sz = 1.0_wp
-                               Do s3=0,mpoles%max_order
-                                  ks3=k3+s3; ks31=ks3+1
-
-                                  sy = sz
-                                  Do s2=0,mpoles%max_order-s3
-                                  ks2=k2+s2; ks21=ks2+1
-
-                                     sx = sy
-                                     Do s1=0,mpoles%max_order-s3-s2
-                                        ks1=k1+s1; ks11=ks1+1
-
-                                        n    = ks1+ks2+ks3
-
-                                        ii   = mpoles%map(s1,s2,s3)
-
-                                        tmp  = d1(ks1,ks2,ks3)
-
-                                        tmpi = txyz       * tmp
-                                        tmpj = sx*imp(ii) * tmp
-
-                                        t1   = txyz*imp(ii)
-
-  ! energy
-
-                                        engmpl = engmpl + t1*tmp
-
-  ! force
-
-                                        fx     = fx     - t1*d1(ks11,ks2,ks3)
-                                        fy     = fy     - t1*d1(ks1,ks21,ks3)
-                                        fz     = fz     - t1*d1(ks1,ks2,ks31)
-
-  ! torque on iatm
-
-                                        tix    = tix    + impx(ii)*tmpi
-                                        tiy    = tiy    + impy(ii)*tmpi
-                                        tiz    = tiz    + impz(ii)*tmpi
-
-  ! torque on jatm
-
-                                        tjx    = tjx    + jmpx(jj)*tmpj
-                                        tjy    = tjy    + jmpy(jj)*tmpj
-                                        tjz    = tjz    + jmpz(jj)*tmpj
-
-                                        sx = -sx
-                                     End Do
-
-                                     sy = -sy
-                                  End Do
-
-                                  sz = -sz
-                               End Do
-
-                            End If
-
-                            kx = -kx
-
-                         End Do
-
-                         ky = -ky
-
-                      End Do
-
-                      kz = -kz
-
-                   End Do
-
-                End If
-
-  ! shift potential
-
-                engmpl = engmpl - electro%rfld1_mrfp*imp(1)*jmp(1)
-
-  ! shift torque
-
-                tmpi   = -electro%rfld1_mrfp*jmp(1)
-                tix    = tix    + impx(1)*tmpi
-                tiy    = tiy    + impy(1)*tmpi
-                tiz    = tiz    + impz(1)*tmpi
-
-                tmpj   = -electro%rfld1_mrfp*imp(1)
-                tjx    = tjx    + jmpx(1)*tmpj
-                tjy    = tjy    + jmpy(1)*tmpj
-                tjz    = tjz    + jmpz(1)*tmpj
-
-             End If
-
-             fix=fix+fx
-             fiy=fiy+fy
-             fiz=fiz+fz
-
-             If (jatm <= config%natms) Then
-
-                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
-                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
-                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
-
-                mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
-                mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
-                mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
-
-             End If
-
-             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
-
-  ! accumulate potential energy
-
-                engcpe = engcpe + engmpl
-
-  ! calculate virial
-
-                vircpe = vircpe - (fx*xxt(m) + fy*yyt(m) + fz*zzt(m))
-
-  ! calculate stress tensor
-
-                strs1 = strs1 + xxt(m)*fx
-                strs2 = strs2 + xxt(m)*fy
-                strs3 = strs3 + xxt(m)*fz
-                strs5 = strs5 + yyt(m)*fy
-                strs6 = strs6 + yyt(m)*fz
-                strs9 = strs9 + zzt(m)*fz
-
-             End If
+            tmpj   = -electro%rfld1_mrfp*imp(1)
+            tjx    = tjx    + jmpx(1)*tmpj
+            tjy    = tjy    + jmpy(1)*tmpj
+            tjz    = tjz    + jmpz(1)*tmpj
 
           End If
 
-       End Do
+          fix=fix+fx
+          fiy=fiy+fy
+          fiz=fiz+fz
 
-  ! load back forces
+          If (jatm <= config%natms) Then
 
-       config%parts(iatm)%fxx=fix
-       config%parts(iatm)%fyy=fiy
-       config%parts(iatm)%fzz=fiz
+            config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+            config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+            config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
-  ! and torques due to multipoles
+            mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
+            mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
+            mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
 
-       mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
-       mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
-       mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
+          End If
 
-  ! complete stress tensor
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
-       stress(1) = stress(1) + strs1
-       stress(2) = stress(2) + strs2
-       stress(3) = stress(3) + strs3
-       stress(4) = stress(4) + strs2
-       stress(5) = stress(5) + strs5
-       stress(6) = stress(6) + strs6
-       stress(7) = stress(7) + strs3
-       stress(8) = stress(8) + strs6
-       stress(9) = stress(9) + strs9
+            ! accumulate potential energy
+
+            engcpe = engcpe + engmpl
+
+            ! calculate virial
+
+            vircpe = vircpe - (fx*xxt(m) + fy*yyt(m) + fz*zzt(m))
+
+            ! calculate stress tensor
+
+            strs1 = strs1 + xxt(m)*fx
+            strs2 = strs2 + xxt(m)*fy
+            strs3 = strs3 + xxt(m)*fz
+            strs5 = strs5 + yyt(m)*fy
+            strs6 = strs6 + yyt(m)*fz
+            strs9 = strs9 + zzt(m)*fz
+
+          End If
+
+        End If
+
+      End Do
+
+      ! load back forces
+
+      config%parts(iatm)%fxx=fix
+      config%parts(iatm)%fyy=fiy
+      config%parts(iatm)%fzz=fiz
+
+      ! and torques due to multipoles
+
+      mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
+      mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
+      mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
+
+      ! complete stress tensor
+
+      stress(1) = stress(1) + strs1
+      stress(2) = stress(2) + strs2
+      stress(3) = stress(3) + strs3
+      stress(4) = stress(4) + strs2
+      stress(5) = stress(5) + strs5
+      stress(6) = stress(6) + strs6
+      stress(7) = stress(7) + strs3
+      stress(8) = stress(8) + strs6
+      stress(9) = stress(9) + strs9
 
     End If
 
   End Subroutine coul_rfp_mforces
 
   Subroutine coul_cp_mforces &
-             (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
+      (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-  ! in a periodic system using multipoles with 1/r kernel with no
-  ! truncation or damping
-  !
-  ! copyright - daresbury laboratory
-  ! author    - h.a.boateng february 2016
-  ! amended   - i.t.todorov february 2016
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    ! in a periodic system using multipoles with 1/r kernel with no
+    ! truncation or damping
+    !
+    ! copyright - daresbury laboratory
+    ! author    - h.a.boateng february 2016
+    ! amended   - i.t.todorov february 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: eps
@@ -1593,24 +1593,24 @@ Contains
     Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: idi,jatm,k1,k2,k3,s1,s2,s3,m, &
-                         ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
+      ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
 
     Real( Kind = wp ) :: scl,engmpl,fix,fiy,fiz,fx,fy,fz,     &
-                         strs1,strs2,strs3,strs5,strs6,strs9, &
-                         t1,kx,ky,kz,txyz,tix,tiy,tiz,tjx,    &
-                         tjy,tjz,tmp,tmpi,tmpj,sx,sy,sz
+      strs1,strs2,strs3,strs5,strs6,strs9, &
+      t1,kx,ky,kz,txyz,tix,tiy,tiz,tjx,    &
+      tjy,tjz,tmp,tmpi,tmpj,sx,sy,sz
 
     Real( Kind = wp ) :: d1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
     Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
 
-  ! initialise potential energy and virial
+    ! initialise potential energy and virial
 
     engcpe=0.0_wp
     vircpe=0.0_wp
 
-  ! initialise stress tensor accumulators
+    ! initialise stress tensor accumulators
 
     strs1=0.0_wp
     strs2=0.0_wp
@@ -1619,275 +1619,275 @@ Contains
     strs6=0.0_wp
     strs9=0.0_wp
 
-  ! global identity of iatm
+    ! global identity of iatm
 
     idi=config%ltg(iatm)
 
-  ! get the multipoles for site i
+    ! get the multipoles for site i
 
     imp=mpoles%global_frame(:,iatm)
 
-  ! ignore interaction if the charge is zero
+    ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
 
-  ! get the components for site i infinitesimal rotations
+      ! get the components for site i infinitesimal rotations
 
-       impx=mpoles%rotation_x(:,iatm)
-       impy=mpoles%rotation_y(:,iatm)
-       impz=mpoles%rotation_z(:,iatm)
+      impx=mpoles%rotation_x(:,iatm)
+      impy=mpoles%rotation_y(:,iatm)
+      impz=mpoles%rotation_z(:,iatm)
 
-  ! multipole scaler
+      ! multipole scaler
 
-       scl=r4pie0/eps
+      scl=r4pie0/eps
 
-  ! scale imp multipoles
+      ! scale imp multipoles
 
-       imp=imp*scl
+      imp=imp*scl
 
-  ! load forces
+      ! load forces
 
-       fix=config%parts(iatm)%fxx
-       fiy=config%parts(iatm)%fyy
-       fiz=config%parts(iatm)%fzz
+      fix=config%parts(iatm)%fxx
+      fiy=config%parts(iatm)%fyy
+      fiz=config%parts(iatm)%fzz
 
-  ! initialize torques for atom i (temporary)
+      ! initialize torques for atom i (temporary)
 
-       tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
+      tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
 
-  ! start of primary loop for forces evaluation
+      ! start of primary loop for forces evaluation
 
-       Do m=1,neigh%list(0,iatm)
+      Do m=1,neigh%list(0,iatm)
 
-  ! atomic index
+        ! atomic index
 
-          jatm=neigh%list(m,iatm)
+        jatm=neigh%list(m,iatm)
 
-  ! get the multipoles for site j
+        ! get the multipoles for site j
 
-          jmp=mpoles%global_frame(:,jatm)
+        jmp=mpoles%global_frame(:,jatm)
 
-  ! truncation of potential - rrt(m) is the interatomic distance
+        ! truncation of potential - rrt(m) is the interatomic distance
 
-          If (Maxval(Abs(jmp)) > zero_plus .and. rrt(m) < neigh%cutoff) Then
+        If (Maxval(Abs(jmp)) > zero_plus .and. rrt(m) < neigh%cutoff) Then
 
-  ! get the components for site j infinitesimal rotations
+          ! get the components for site j infinitesimal rotations
 
-             jmpx=mpoles%rotation_x(:,jatm)
-             jmpy=mpoles%rotation_y(:,jatm)
-             jmpz=mpoles%rotation_z(:,jatm)
+          jmpx=mpoles%rotation_x(:,jatm)
+          jmpy=mpoles%rotation_y(:,jatm)
+          jmpz=mpoles%rotation_z(:,jatm)
 
-  ! compute derivatives of kernel
+          ! compute derivatives of kernel
 
-             Call coul_deriv(1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrt(m),d1)
+          Call coul_deriv(1,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrt(m),d1)
 
-  ! calculate forces
+          ! calculate forces
 
-             engmpl = 0.0_wp
-             fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
-             tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
+          engmpl = 0.0_wp
+          fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
+          tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-             If (mpoles%max_order < 5) Then
+          If (mpoles%max_order < 5) Then
 
-                kz = 1.0_wp
-                Do k3=0,mpoles%max_order
+            kz = 1.0_wp
+            Do k3=0,mpoles%max_order
 
-                   ky = kz
-                   Do k2=0,mpoles%max_order-k3
+              ky = kz
+              Do k2=0,mpoles%max_order-k3
 
-                      kx = ky
-                      Do k1=0,mpoles%max_order-k3-k2
+                kx = ky
+                Do k1=0,mpoles%max_order-k3-k2
 
-                         jj = mpoles%map(k1,k2,k3)
+                  jj = mpoles%map(k1,k2,k3)
 
-                         If (Abs(jmp(jj)) > zero_plus) Then
-                           Call explicit_ewald_real_loops &
-                             (-2,2*mpoles%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
-                             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-                             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                             engmpl,fx,fy,fz,mpoles)
-                         End If
+                  If (Abs(jmp(jj)) > zero_plus) Then
+                    Call explicit_ewald_real_loops &
+                      (-2,2*mpoles%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
+                      imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                      kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                      engmpl,fx,fy,fz,mpoles)
+                  End If
 
-                         kx = -kx
-
-                      End Do
-
-                      ky = -ky
-
-                   End Do
-
-                   kz = -kz
+                  kx = -kx
 
                 End Do
 
-             Else
+                ky = -ky
 
-                kz = 1.0_wp
-                Do k3=0,mpoles%max_order
+              End Do
 
-                   ky = kz
-                   Do k2=0,mpoles%max_order-k3
+              kz = -kz
 
-                      kx = ky
-                      Do k1=0,mpoles%max_order-k3-k2
+            End Do
 
-                         jj = mpoles%map(k1,k2,k3)
+          Else
 
-                         If (Abs(jmp(jj)) > zero_plus) Then
+            kz = 1.0_wp
+            Do k3=0,mpoles%max_order
 
-                            txyz=kx*jmp(jj)
+              ky = kz
+              Do k2=0,mpoles%max_order-k3
 
-                            sz = 1.0_wp
-                            Do s3=0,mpoles%max_order
-                               ks3=k3+s3; ks31=ks3+1
+                kx = ky
+                Do k1=0,mpoles%max_order-k3-k2
 
-                               sy = sz
-                               Do s2=0,mpoles%max_order-s3
-                                  ks2=k2+s2; ks21=ks2+1
+                  jj = mpoles%map(k1,k2,k3)
 
-                                  sx = sy
-                                  Do s1=0,mpoles%max_order-s3-s2
-                                     ks1=k1+s1; ks11=ks1+1
+                  If (Abs(jmp(jj)) > zero_plus) Then
 
-                                     ii   = mpoles%map(s1,s2,s3)
+                    txyz=kx*jmp(jj)
 
-                                     tmp  = d1(ks1,ks2,ks3)
+                    sz = 1.0_wp
+                    Do s3=0,mpoles%max_order
+                      ks3=k3+s3; ks31=ks3+1
 
-                                     tmpi = txyz       * tmp
-                                     tmpj = sx*imp(ii) * tmp
+                      sy = sz
+                      Do s2=0,mpoles%max_order-s3
+                        ks2=k2+s2; ks21=ks2+1
 
-                                     t1   = txyz*imp(ii)
+                        sx = sy
+                        Do s1=0,mpoles%max_order-s3-s2
+                          ks1=k1+s1; ks11=ks1+1
 
-  ! energy
+                          ii   = mpoles%map(s1,s2,s3)
 
-                                     engmpl = engmpl + t1*tmp
+                          tmp  = d1(ks1,ks2,ks3)
 
-  ! force
+                          tmpi = txyz       * tmp
+                          tmpj = sx*imp(ii) * tmp
 
-                                     fx     = fx     - t1*d1(ks11,ks2,ks3)
-                                     fy     = fy     - t1*d1(ks1,ks21,ks3)
-                                     fz     = fz     - t1*d1(ks1,ks2,ks31)
+                          t1   = txyz*imp(ii)
 
-  ! torque on iatm
+                          ! energy
 
-                                     tix    = tix    + impx(ii)*tmpi
-                                     tiy    = tiy    + impy(ii)*tmpi
-                                     tiz    = tiz    + impz(ii)*tmpi
+                          engmpl = engmpl + t1*tmp
 
-  ! torque on jatm
+                          ! force
 
-                                     tjx    = tjx    + jmpx(jj)*tmpj
-                                     tjy    = tjy    + jmpy(jj)*tmpj
-                                     tjz    = tjz    + jmpz(jj)*tmpj
+                          fx     = fx     - t1*d1(ks11,ks2,ks3)
+                          fy     = fy     - t1*d1(ks1,ks21,ks3)
+                          fz     = fz     - t1*d1(ks1,ks2,ks31)
 
-                                     sx = -sx
-                                  End Do
+                          ! torque on iatm
 
-                                  sy = -sy
-                               End Do
+                          tix    = tix    + impx(ii)*tmpi
+                          tiy    = tiy    + impy(ii)*tmpi
+                          tiz    = tiz    + impz(ii)*tmpi
 
-                               sz = -sz
-                            End Do
+                          ! torque on jatm
 
-                         End If
+                          tjx    = tjx    + jmpx(jj)*tmpj
+                          tjy    = tjy    + jmpy(jj)*tmpj
+                          tjz    = tjz    + jmpz(jj)*tmpj
 
-                         kx = -kx
+                          sx = -sx
+                        End Do
 
+                        sy = -sy
                       End Do
 
-                      ky = -ky
+                      sz = -sz
+                    End Do
 
-                   End Do
+                  End If
 
-                   kz = -kz
+                  kx = -kx
 
                 End Do
 
-             End If
+                ky = -ky
 
-             fix=fix+fx
-             fiy=fiy+fy
-             fiz=fiz+fz
+              End Do
 
-             If (jatm <= config%natms) Then
+              kz = -kz
 
-                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
-                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
-                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
-
-                mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
-                mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
-                mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
-
-             End If
-
-             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
-
-  ! accumulate potential energy
-
-                engcpe = engcpe + engmpl
-
-  ! calculate stress tensor
-
-                strs1 = strs1 + xxt(m)*fx
-                strs2 = strs2 + xxt(m)*fy
-                strs3 = strs3 + xxt(m)*fz
-                strs5 = strs5 + yyt(m)*fy
-                strs6 = strs6 + yyt(m)*fz
-                strs9 = strs9 + zzt(m)*fz
-
-             End If
+            End Do
 
           End If
 
-       End Do
+          fix=fix+fx
+          fiy=fiy+fy
+          fiz=fiz+fz
 
-  ! load back forces
+          If (jatm <= config%natms) Then
 
-       config%parts(iatm)%fxx=fix
-       config%parts(iatm)%fyy=fiy
-       config%parts(iatm)%fzz=fiz
+            config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+            config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+            config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
-  ! and torques due to multipoles
+            mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
+            mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
+            mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
 
-       mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
-       mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
-       mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
+          End If
 
-  ! virial
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
-       vircpe = -engcpe
+            ! accumulate potential energy
 
-  ! complete stress tensor
+            engcpe = engcpe + engmpl
 
-       stress(1) = stress(1) + strs1
-       stress(2) = stress(2) + strs2
-       stress(3) = stress(3) + strs3
-       stress(4) = stress(4) + strs2
-       stress(5) = stress(5) + strs5
-       stress(6) = stress(6) + strs6
-       stress(7) = stress(7) + strs3
-       stress(8) = stress(8) + strs6
-       stress(9) = stress(9) + strs9
+            ! calculate stress tensor
+
+            strs1 = strs1 + xxt(m)*fx
+            strs2 = strs2 + xxt(m)*fy
+            strs3 = strs3 + xxt(m)*fz
+            strs5 = strs5 + yyt(m)*fy
+            strs6 = strs6 + yyt(m)*fz
+            strs9 = strs9 + zzt(m)*fz
+
+          End If
+
+        End If
+
+      End Do
+
+      ! load back forces
+
+      config%parts(iatm)%fxx=fix
+      config%parts(iatm)%fyy=fiy
+      config%parts(iatm)%fzz=fiz
+
+      ! and torques due to multipoles
+
+      mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
+      mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
+      mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
+
+      ! virial
+
+      vircpe = -engcpe
+
+      ! complete stress tensor
+
+      stress(1) = stress(1) + strs1
+      stress(2) = stress(2) + strs2
+      stress(3) = stress(3) + strs3
+      stress(4) = stress(4) + strs2
+      stress(5) = stress(5) + strs5
+      stress(6) = stress(6) + strs6
+      stress(7) = stress(7) + strs3
+      stress(8) = stress(8) + strs6
+      stress(9) = stress(9) + strs9
 
     End If
 
   End Subroutine coul_cp_mforces
 
   Subroutine coul_dddp_mforces &
-             (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
+      (iatm,eps,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh,mpoles,config)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-  ! in a periodic system using multipoles with 1/r kernel assuming a
-  ! distance dependent dielectric 'constant'
-  !
-  ! copyright - daresbury laboratory
-  ! author    - h.a.boateng february 2016
-  ! amended   - i.t.todorov february 2016
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    ! in a periodic system using multipoles with 1/r kernel assuming a
+    ! distance dependent dielectric 'constant'
+    !
+    ! copyright - daresbury laboratory
+    ! author    - h.a.boateng february 2016
+    ! amended   - i.t.todorov february 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: eps
@@ -1899,24 +1899,24 @@ Contains
     Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: idi,jatm,k1,k2,k3,s1,s2,s3,m, &
-                         ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
+      ks1,ks2,ks3,ks11,ks21,ks31,ii,jj
 
     Real( Kind = wp ) :: scl,engmpl,fix,fiy,fiz,fx,fy,fz,     &
-                         strs1,strs2,strs3,strs5,strs6,strs9, &
-                         t1,kx,ky,kz,txyz,tix,tiy,tiz,tjx,    &
-                         tjy,tjz,tmp,tmpi,tmpj,sx,sy,sz
+      strs1,strs2,strs3,strs5,strs6,strs9, &
+      t1,kx,ky,kz,txyz,tix,tiy,tiz,tjx,    &
+      tjy,tjz,tmp,tmpi,tmpj,sx,sy,sz
 
     Real( Kind = wp ) :: d1(-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1,-2:2*mpoles%max_order+1)
     Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
 
-  ! initialise potential energy and virial
+    ! initialise potential energy and virial
 
     engcpe=0.0_wp
     vircpe=0.0_wp
 
-  ! initialise stress tensor accumulators
+    ! initialise stress tensor accumulators
 
     strs1=0.0_wp
     strs2=0.0_wp
@@ -1925,256 +1925,256 @@ Contains
     strs6=0.0_wp
     strs9=0.0_wp
 
-  ! global identity of iatm
+    ! global identity of iatm
 
     idi=config%ltg(iatm)
 
-  ! get the multipoles for site i
+    ! get the multipoles for site i
 
     imp=mpoles%global_frame(:,iatm)
 
-  ! ignore interaction if the charge is zero
+    ! ignore interaction if the charge is zero
 
     If (Maxval(Abs(imp)) > zero_plus) Then
 
-  ! get the components for site i infinitesimal rotations
+      ! get the components for site i infinitesimal rotations
 
-       impx=mpoles%rotation_x(:,iatm)
-       impy=mpoles%rotation_y(:,iatm)
-       impz=mpoles%rotation_z(:,iatm)
+      impx=mpoles%rotation_x(:,iatm)
+      impy=mpoles%rotation_y(:,iatm)
+      impz=mpoles%rotation_z(:,iatm)
 
-  ! multipole scaler
+      ! multipole scaler
 
-       scl=r4pie0/eps
+      scl=r4pie0/eps
 
-  ! scale imp multipoles
+      ! scale imp multipoles
 
-       imp=imp*scl
+      imp=imp*scl
 
-  ! load forces
+      ! load forces
 
-       fix=config%parts(iatm)%fxx
-       fiy=config%parts(iatm)%fyy
-       fiz=config%parts(iatm)%fzz
+      fix=config%parts(iatm)%fxx
+      fiy=config%parts(iatm)%fyy
+      fiz=config%parts(iatm)%fzz
 
-  ! initialize torques for atom i (temporary)
+      ! initialize torques for atom i (temporary)
 
-       tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
+      tix = 0.0_wp ; tiy = 0.0_wp ; tiz = 0.0_wp
 
-  ! start of primary loop for forces evaluation
+      ! start of primary loop for forces evaluation
 
-       Do m=1,neigh%list(0,iatm)
+      Do m=1,neigh%list(0,iatm)
 
-  ! atomic index
+        ! atomic index
 
-          jatm=neigh%list(m,iatm)
+        jatm=neigh%list(m,iatm)
 
-  ! get the multipoles for site j
+        ! get the multipoles for site j
 
-          jmp=mpoles%global_frame(:,jatm)
+        jmp=mpoles%global_frame(:,jatm)
 
-  ! truncation of potential - rrt(m) is the interatomic distance
+        ! truncation of potential - rrt(m) is the interatomic distance
 
-          If (Maxval(Abs(jmp)) > zero_plus .and. rrt(m) < neigh%cutoff) Then
+        If (Maxval(Abs(jmp)) > zero_plus .and. rrt(m) < neigh%cutoff) Then
 
-  ! get the components for site j infinitesimal rotations
+          ! get the components for site j infinitesimal rotations
 
-             jmpx=mpoles%rotation_x(:,jatm)
-             jmpy=mpoles%rotation_y(:,jatm)
-             jmpz=mpoles%rotation_z(:,jatm)
+          jmpx=mpoles%rotation_x(:,jatm)
+          jmpy=mpoles%rotation_y(:,jatm)
+          jmpz=mpoles%rotation_z(:,jatm)
 
-  ! compute derivatives of kernel
+          ! compute derivatives of kernel
 
-             Call coul_deriv(2,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrt(m),d1)
+          Call coul_deriv(2,2*mpoles%max_order+1,xxt(m),yyt(m),zzt(m),rrt(m),d1)
 
-  ! calculate forces
+          ! calculate forces
 
-             engmpl = 0.0_wp
-             fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
-             tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
+          engmpl = 0.0_wp
+          fx  = 0.0_wp ; fy  = 0.0_wp ; fz  = 0.0_wp
+          tjx = 0.0_wp ; tjy = 0.0_wp ; tjz = 0.0_wp
 
-             If (mpoles%max_order < 5) Then
+          If (mpoles%max_order < 5) Then
 
-                kz = 1.0_wp
-                Do k3=0,mpoles%max_order
+            kz = 1.0_wp
+            Do k3=0,mpoles%max_order
 
-                   ky = kz
-                   Do k2=0,mpoles%max_order-k3
+              ky = kz
+              Do k2=0,mpoles%max_order-k3
 
-                      kx = ky
-                      Do k1=0,mpoles%max_order-k3-k2
+                kx = ky
+                Do k1=0,mpoles%max_order-k3-k2
 
-                         jj = mpoles%map(k1,k2,k3)
+                  jj = mpoles%map(k1,k2,k3)
 
-                         If (Abs(jmp(jj)) > zero_plus) Then
-                           Call explicit_ewald_real_loops &
-                             (-2,2*mpoles%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
-                             imp,       impx,    impy,    impz,    tix,tiy,tiz, &
-                             kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
-                             engmpl,fx,fy,fz,mpoles)
-                         End If
+                  If (Abs(jmp(jj)) > zero_plus) Then
+                    Call explicit_ewald_real_loops &
+                      (-2,2*mpoles%max_order+1, k1,k2,k3, 1.0_wp, d1,              &
+                      imp,       impx,    impy,    impz,    tix,tiy,tiz, &
+                      kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
+                      engmpl,fx,fy,fz,mpoles)
+                  End If
 
-                         kx = -kx
-
-                      End Do
-
-                      ky = -ky
-
-                   End Do
-
-                   kz = -kz
+                  kx = -kx
 
                 End Do
 
-             Else
+                ky = -ky
 
-                kz = 1.0_wp
-                Do k3=0,mpoles%max_order
+              End Do
 
-                   ky = kz
-                   Do k2=0,mpoles%max_order-k3
+              kz = -kz
 
-                      kx = ky
-                      Do k1=0,mpoles%max_order-k3-k2
+            End Do
 
-                         jj = mpoles%map(k1,k2,k3)
+          Else
 
-                         If (Abs(jmp(jj)) > zero_plus) Then
+            kz = 1.0_wp
+            Do k3=0,mpoles%max_order
 
-                            txyz=kx*jmp(jj)
+              ky = kz
+              Do k2=0,mpoles%max_order-k3
 
-                            sz = 1.0_wp
-                            Do s3=0,mpoles%max_order
-                               ks3=k3+s3; ks31=ks3+1
+                kx = ky
+                Do k1=0,mpoles%max_order-k3-k2
 
-                               sy = sz
-                               Do s2=0,mpoles%max_order-s3
-                                  ks2=k2+s2; ks21=ks2+1
+                  jj = mpoles%map(k1,k2,k3)
 
-                                  sx = sy
-                                  Do s1=0,mpoles%max_order-s3-s2
-                                     ks1=k1+s1; ks11=ks1+1
+                  If (Abs(jmp(jj)) > zero_plus) Then
 
-                                     ii   = mpoles%map(s1,s2,s3)
+                    txyz=kx*jmp(jj)
 
-                                     tmp  = d1(ks1,ks2,ks3)
+                    sz = 1.0_wp
+                    Do s3=0,mpoles%max_order
+                      ks3=k3+s3; ks31=ks3+1
 
-                                     tmpi = txyz       * tmp
-                                     tmpj = sx*imp(ii) * tmp
+                      sy = sz
+                      Do s2=0,mpoles%max_order-s3
+                        ks2=k2+s2; ks21=ks2+1
 
-                                     t1   = txyz*imp(ii)
+                        sx = sy
+                        Do s1=0,mpoles%max_order-s3-s2
+                          ks1=k1+s1; ks11=ks1+1
 
-  ! energy
+                          ii   = mpoles%map(s1,s2,s3)
 
-                                     engmpl = engmpl  + t1*tmp
+                          tmp  = d1(ks1,ks2,ks3)
 
-  ! force
+                          tmpi = txyz       * tmp
+                          tmpj = sx*imp(ii) * tmp
 
-                                     fx     = fx     - t1*d1(ks11,ks2,ks3)
-                                     fy     = fy     - t1*d1(ks1,ks21,ks3)
-                                     fz     = fz     - t1*d1(ks1,ks2,ks31)
+                          t1   = txyz*imp(ii)
 
-  ! torque on iatm
+                          ! energy
 
-                                     tix    = tix    + impx(ii)*tmpi
-                                     tiy    = tiy    + impy(ii)*tmpi
-                                     tiz    = tiz    + impz(ii)*tmpi
+                          engmpl = engmpl  + t1*tmp
 
-  ! torque on jatm
+                          ! force
 
-                                     tjx    = tjx    + jmpx(jj)*tmpj
-                                     tjy    = tjy    + jmpy(jj)*tmpj
-                                     tjz    = tjz    + jmpz(jj)*tmpj
+                          fx     = fx     - t1*d1(ks11,ks2,ks3)
+                          fy     = fy     - t1*d1(ks1,ks21,ks3)
+                          fz     = fz     - t1*d1(ks1,ks2,ks31)
 
-                                     sx = -sx
-                                  End Do
+                          ! torque on iatm
 
-                                  sy = -sy
-                               End Do
+                          tix    = tix    + impx(ii)*tmpi
+                          tiy    = tiy    + impy(ii)*tmpi
+                          tiz    = tiz    + impz(ii)*tmpi
 
-                               sz = -sz
-                            End Do
+                          ! torque on jatm
 
-                         End If
+                          tjx    = tjx    + jmpx(jj)*tmpj
+                          tjy    = tjy    + jmpy(jj)*tmpj
+                          tjz    = tjz    + jmpz(jj)*tmpj
 
-                         kx = -kx
+                          sx = -sx
+                        End Do
 
+                        sy = -sy
                       End Do
 
-                      ky = -ky
+                      sz = -sz
+                    End Do
 
-                   End Do
+                  End If
 
-                   kz = -kz
+                  kx = -kx
 
                 End Do
 
-             End If
+                ky = -ky
 
-             fix=fix+fx
-             fiy=fiy+fy
-             fiz=fiz+fz
+              End Do
 
-             If (jatm <= config%natms) Then
+              kz = -kz
 
-                config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
-                config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
-                config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
-
-                mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
-                mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
-                mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
-
-             End If
-
-             If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
-
-  ! accumulate potential energy
-
-                engcpe = engcpe + engmpl
-
-  ! calculate stress tensor
-
-                strs1 = strs1 + xxt(m)*fx
-                strs2 = strs2 + xxt(m)*fy
-                strs3 = strs3 + xxt(m)*fz
-                strs5 = strs5 + yyt(m)*fy
-                strs6 = strs6 + yyt(m)*fz
-                strs9 = strs9 + zzt(m)*fz
-
-             End If
+            End Do
 
           End If
 
-       End Do
+          fix=fix+fx
+          fiy=fiy+fy
+          fiz=fiz+fz
 
-  ! load back forces
+          If (jatm <= config%natms) Then
 
-       config%parts(iatm)%fxx=fix
-       config%parts(iatm)%fyy=fiy
-       config%parts(iatm)%fzz=fiz
+            config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+            config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+            config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
-  ! and torques due to multipoles
+            mpoles%torque_x(jatm)=mpoles%torque_x(jatm)+tjx
+            mpoles%torque_y(jatm)=mpoles%torque_y(jatm)+tjy
+            mpoles%torque_z(jatm)=mpoles%torque_z(jatm)+tjz
 
-       mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
-       mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
-       mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
+          End If
 
-  ! virial
+          If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
-       vircpe = -engcpe
+            ! accumulate potential energy
 
-  ! complete stress tensor
+            engcpe = engcpe + engmpl
 
-       stress(1) = stress(1) + strs1
-       stress(2) = stress(2) + strs2
-       stress(3) = stress(3) + strs3
-       stress(4) = stress(4) + strs2
-       stress(5) = stress(5) + strs5
-       stress(6) = stress(6) + strs6
-       stress(7) = stress(7) + strs3
-       stress(8) = stress(8) + strs6
-       stress(9) = stress(9) + strs9
+            ! calculate stress tensor
+
+            strs1 = strs1 + xxt(m)*fx
+            strs2 = strs2 + xxt(m)*fy
+            strs3 = strs3 + xxt(m)*fz
+            strs5 = strs5 + yyt(m)*fy
+            strs6 = strs6 + yyt(m)*fz
+            strs9 = strs9 + zzt(m)*fz
+
+          End If
+
+        End If
+
+      End Do
+
+      ! load back forces
+
+      config%parts(iatm)%fxx=fix
+      config%parts(iatm)%fyy=fiy
+      config%parts(iatm)%fzz=fiz
+
+      ! and torques due to multipoles
+
+      mpoles%torque_x(iatm)=mpoles%torque_x(iatm)+scl*tix
+      mpoles%torque_y(iatm)=mpoles%torque_y(iatm)+scl*tiy
+      mpoles%torque_z(iatm)=mpoles%torque_z(iatm)+scl*tiz
+
+      ! virial
+
+      vircpe = -engcpe
+
+      ! complete stress tensor
+
+      stress(1) = stress(1) + strs1
+      stress(2) = stress(2) + strs2
+      stress(3) = stress(3) + strs3
+      stress(4) = stress(4) + strs2
+      stress(5) = stress(5) + strs5
+      stress(6) = stress(6) + strs6
+      stress(7) = stress(7) + strs3
+      stress(8) = stress(8) + strs6
+      stress(9) = stress(9) + strs9
 
     End If
 
@@ -2182,22 +2182,22 @@ Contains
 
   Subroutine coul_chrm_forces(iatm,eps,xxt,yyt,zzt,rrt,engcpe_ch,vircpe_ch,stress,neigh,mpoles,config)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-  ! for CHARMM model intra-core-shell interactions
-  !
-  ! S(r)=1-(1+u/2).exp(-u) ; u=u(r)=r_ij.(a_i+a_j)/(p_i.p_j)^(1/6)
-  !
-  ! S'(r)=(1+u).u'.exp(-u)/2 ; |r|'=r/|r|
-  !
-  ! Uchrm(r_ij) =  S(r_ij)*U(r_ij) ; F(r_ij) = -U'(r_ij)
-  ! Fchrm(r_ij) = -Uchrm'(r_ij) = S(r_ij)*F(r_ij) - S'(r_ij)*U(r_ij)
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov february 2017
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    ! for CHARMM model intra-core-shell interactions
+    !
+    ! S(r)=1-(1+u/2).exp(-u) ; u=u(r)=r_ij.(a_i+a_j)/(p_i.p_j)^(1/6)
+    !
+    ! S'(r)=(1+u).u'.exp(-u)/2 ; |r|'=r/|r|
+    !
+    ! Uchrm(r_ij) =  S(r_ij)*U(r_ij) ; F(r_ij) = -U'(r_ij)
+    ! Fchrm(r_ij) = -Uchrm'(r_ij) = S(r_ij)*F(r_ij) - S'(r_ij)*U(r_ij)
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2017
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer,                                  Intent( In    ) :: iatm
     Real( Kind = wp ),                        Intent( In    ) :: eps
@@ -2211,16 +2211,16 @@ Contains
     Integer           :: limit,idi,jatm,m
 
     Real( Kind = wp ) :: chgea,chgprd,rrr,r_r,coul,fcoul,tmp, &
-                         plra,plrprd,dmpa,dmpsum,u,scr,spr,   &
-                         fix,fiy,fiz,fx,fy,fz,                &
-                         strs1,strs2,strs3,strs5,strs6,strs9
+      plra,plrprd,dmpa,dmpsum,u,scr,spr,   &
+      fix,fiy,fiz,fx,fy,fz,                &
+      strs1,strs2,strs3,strs5,strs6,strs9
 
-  ! initialise potential energy and virial
+    ! initialise potential energy and virial
 
     engcpe_ch=0.0_wp
     vircpe_ch=0.0_wp
 
-  ! initialise stress tensor accumulators
+    ! initialise stress tensor accumulators
 
     strs1=0.0_wp
     strs2=0.0_wp
@@ -2229,102 +2229,102 @@ Contains
     strs6=0.0_wp
     strs9=0.0_wp
 
-  ! global identity of iatm
+    ! global identity of iatm
 
     idi=config%ltg(iatm)
 
-  ! charge, inverse polarisability and dumping
+    ! charge, inverse polarisability and dumping
 
     chgea = config%parts(iatm)%chge
     plra  = mpoles%polarisation_atom(iatm)
     dmpa  = mpoles%dump_atom(iatm)
 
-  ! scale main charge
+    ! scale main charge
 
     chgea = chgea*r4pie0/eps
 
-  ! load forces
+    ! load forces
 
     fix=config%parts(iatm)%fxx
     fiy=config%parts(iatm)%fyy
     fiz=config%parts(iatm)%fzz
 
-  ! start of primary loop for forces evaluation
+    ! start of primary loop for forces evaluation
 
-  ! Get neigh%list limit
+    ! Get neigh%list limit
 
     limit=neigh%list(-3,iatm)-neigh%list(0,iatm)
 
     Do m=1,limit
 
-  ! interatomic distance and derivatives
+      ! interatomic distance and derivatives
 
-       rrr=rrt(m)
-       r_r=1.0_wp/rrr
+      rrr=rrt(m)
+      r_r=1.0_wp/rrr
 
-  ! atomic index, charge & inverse polarisability products
-  ! and total inter-atomic summed dumping
+      ! atomic index, charge & inverse polarisability products
+      ! and total inter-atomic summed dumping
 
-       jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
-       chgprd=chgea*config%parts(jatm)%chge
-       plrprd=plra*mpoles%polarisation_atom(jatm)
-       dmpsum=dmpa+mpoles%dump_atom(jatm)
+      jatm=neigh%list(neigh%list(0,iatm)+m,iatm)
+      chgprd=chgea*config%parts(jatm)%chge
+      plrprd=plra*mpoles%polarisation_atom(jatm)
+      dmpsum=dmpa+mpoles%dump_atom(jatm)
 
-       u = (dmpsum*plrprd**6) * rrr         ! dimensionless
+      u = (dmpsum*plrprd**6) * rrr         ! dimensionless
 
-       tmp = Exp(-u)
-       scr = 1.0_wp-(1.0_wp+0.5_wp*u) * tmp ! S(r)
-       spr = (1.0_wp+u) * tmp * u           ! S'(r).r
+      tmp = Exp(-u)
+      scr = 1.0_wp-(1.0_wp+0.5_wp*u) * tmp ! S(r)
+      spr = (1.0_wp+u) * tmp * u           ! S'(r).r
 
-  ! calculate forces
+      ! calculate forces
 
-       coul  = scr*chgprd*r_r
-       tmp   = (scr-spr)*chgprd             ! used later for the virial
-       fcoul = tmp*r_r**3
+      coul  = scr*chgprd*r_r
+      tmp   = (scr-spr)*chgprd             ! used later for the virial
+      fcoul = tmp*r_r**3
 
-       fx = fcoul*xxt(m)
-       fy = fcoul*yyt(m)
-       fz = fcoul*zzt(m)
+      fx = fcoul*xxt(m)
+      fy = fcoul*yyt(m)
+      fz = fcoul*zzt(m)
 
-       fix=fix+fx
-       fiy=fiy+fy
-       fiz=fiz+fz
+      fix=fix+fx
+      fiy=fiy+fy
+      fiz=fiz+fz
 
-       If (jatm <= config%natms) Then
+      If (jatm <= config%natms) Then
 
-          config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
-          config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
-          config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
+        config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+        config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+        config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
-       End If
+      End If
 
-       If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+      If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
-  ! calculate potential energy and virial
+        ! calculate potential energy and virial
 
-          engcpe_ch = engcpe_ch + coul
-          vircpe_ch = vircpe_ch - tmp*r_r
+        engcpe_ch = engcpe_ch + coul
+        vircpe_ch = vircpe_ch - tmp*r_r
 
-  ! calculate stress tensor
+        ! calculate stress tensor
 
-          strs1 = strs1 + xxt(m)*fx
-          strs2 = strs2 + xxt(m)*fy
-          strs3 = strs3 + xxt(m)*fz
-          strs5 = strs5 + yyt(m)*fy
-          strs6 = strs6 + yyt(m)*fz
-          strs9 = strs9 + zzt(m)*fz
+        strs1 = strs1 + xxt(m)*fx
+        strs2 = strs2 + xxt(m)*fy
+        strs3 = strs3 + xxt(m)*fz
+        strs5 = strs5 + yyt(m)*fy
+        strs6 = strs6 + yyt(m)*fz
+        strs9 = strs9 + zzt(m)*fz
 
-       End If
+      End If
 
     End Do
 
-  ! load back forces
+    ! load back forces
 
     config%parts(iatm)%fxx=fix
     config%parts(iatm)%fyy=fiy
     config%parts(iatm)%fzz=fiz
 
-  ! complete stress tensor
+    ! complete stress tensor
 
     stress(1) = stress(1) + strs1
     stress(2) = stress(2) + strs2
@@ -2341,19 +2341,19 @@ Contains
 
   Subroutine d_ene_trq_mpoles(vircpe_dt,stress,mpoles,config)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for calculating the change in energy produced by
-  ! an infinitesimal rotation of multipoles
-  !
-  ! Reference : Sagui, Pedersen, Darden, J. Chem. Phys. 120, 73 (2004)
-  !             doi: 10.1063/1.1630791
-  !
-  ! copyright - daresbury laboratory
-  ! author    - h.a.boateng april 2015
-  ! amended   - i.t.todorov february 2016
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for calculating the change in energy produced by
+    ! an infinitesimal rotation of multipoles
+    !
+    ! Reference : Sagui, Pedersen, Darden, J. Chem. Phys. 120, 73 (2004)
+    !             doi: 10.1063/1.1630791
+    !
+    ! copyright - daresbury laboratory
+    ! author    - h.a.boateng april 2015
+    ! amended   - i.t.todorov february 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
     Real( Kind = wp ),                   Intent(   Out ) :: vircpe_dt
@@ -2364,18 +2364,18 @@ Contains
     Integer           :: idi,j,iatm,jatm
 
     Real( Kind = wp ) :: rsq,rrr,p1(1:3),p2(1:3),u(1:3),v(1:3),w(1:3),magp1,magp2, &
-                         p2u(1:3),p1perp2(1:3),p2perp1(1:3),magp1perp2,magp2perp1, &
-                         tx,ty,tz,dedv,dedw,stx(1:2),sty(1:2),stz(1:2),            &
-                         dux_dx,dux_dy,dux_dz,duy_dy,duy_dz,duz_dz,rmag,rmag3,     &
-                         fx,fy,fz,fix,fiy,fiz,dedux,deduy,deduz,                   &
-                         tmptx,tmpty,tmptz,xdf,ydf,zdf,                            &
-                         strs1,strs2,strs3,strs4,strs5,strs6,strs7,strs8,strs9
+      p2u(1:3),p1perp2(1:3),p2perp1(1:3),magp1perp2,magp2perp1, &
+      tx,ty,tz,dedv,dedw,stx(1:2),sty(1:2),stz(1:2),            &
+      dux_dx,dux_dy,dux_dz,duy_dy,duy_dz,duz_dz,rmag,rmag3,     &
+      fx,fy,fz,fix,fiy,fiz,dedux,deduy,deduz,                   &
+      tmptx,tmpty,tmptz,xdf,ydf,zdf,                            &
+      strs1,strs2,strs3,strs4,strs5,strs6,strs7,strs8,strs9
 
-  ! initialise virial
+    ! initialise virial
 
     vircpe_dt=0.0_wp
 
-  ! initialise stress tensor accumulators
+    ! initialise stress tensor accumulators
 
     strs1=0.0_wp
     strs2=0.0_wp
@@ -2389,177 +2389,177 @@ Contains
 
     Do iatm = 1, config%natms
 
-  ! load forces
+      ! load forces
 
-       fix=config%parts(iatm)%fxx
-       fiy=config%parts(iatm)%fyy
-       fiz=config%parts(iatm)%fzz
+      fix=config%parts(iatm)%fxx
+      fiy=config%parts(iatm)%fyy
+      fiz=config%parts(iatm)%fzz
 
-  ! global identity of iatm
+      ! global identity of iatm
 
-       idi=config%ltg(iatm)
+      idi=config%ltg(iatm)
 
-       If (mpoles%rotation(iatm)%flag == 1) Then
+      If (mpoles%rotation(iatm)%flag == 1) Then
 
-  ! p1 and p2 define the local frame
+        ! p1 and p2 define the local frame
 
-          p1 = mpoles%rotation(iatm)%p1
-          p2 = mpoles%rotation(iatm)%p2
+        p1 = mpoles%rotation(iatm)%p1
+        p2 = mpoles%rotation(iatm)%p2
 
-          magp1 = Sqrt(p1(1)*p1(1)+p1(2)*p1(2)+p1(3)*p1(3))
-          magp2 = Sqrt(p2(1)*p2(1)+p2(2)*p2(2)+p2(3)*p2(3))
+        magp1 = Sqrt(p1(1)*p1(1)+p1(2)*p1(2)+p1(3)*p1(3))
+        magp2 = Sqrt(p2(1)*p2(1)+p2(2)*p2(2)+p2(3)*p2(3))
 
-          p2u = p2/magp2
+        p2u = p2/magp2
 
-  ! standard basis for coordinate system
+        ! standard basis for coordinate system
 
-          u(1)  = mpoles%rotation(iatm)%mtrxa(1)
-          u(2)  = mpoles%rotation(iatm)%mtrxa(4)
-          u(3)  = mpoles%rotation(iatm)%mtrxa(7)
+        u(1)  = mpoles%rotation(iatm)%mtrxa(1)
+        u(2)  = mpoles%rotation(iatm)%mtrxa(4)
+        u(3)  = mpoles%rotation(iatm)%mtrxa(7)
 
-          v(1)  = mpoles%rotation(iatm)%mtrxa(2)
-          v(2)  = mpoles%rotation(iatm)%mtrxa(5)
-          v(3)  = mpoles%rotation(iatm)%mtrxa(8)
+        v(1)  = mpoles%rotation(iatm)%mtrxa(2)
+        v(2)  = mpoles%rotation(iatm)%mtrxa(5)
+        v(3)  = mpoles%rotation(iatm)%mtrxa(8)
 
-          w(1)  = mpoles%rotation(iatm)%mtrxa(3)
-          w(2)  = mpoles%rotation(iatm)%mtrxa(6)
-          w(3)  = mpoles%rotation(iatm)%mtrxa(9)
+        w(1)  = mpoles%rotation(iatm)%mtrxa(3)
+        w(2)  = mpoles%rotation(iatm)%mtrxa(6)
+        w(3)  = mpoles%rotation(iatm)%mtrxa(9)
 
-  ! change in energy (E) due to infinitesimal rotation (torque => \tau) dE_{\omega} = -\tau * d\omega
-  ! we omit the negative here and introduce it in the final force computation, i.e., because force is
-  ! the negative of the change in energy with respect to energy, we'll add the magnitude of the force
-  ! computed instead of subtracting the magnitude
+        ! change in energy (E) due to infinitesimal rotation (torque => \tau) dE_{\omega} = -\tau * d\omega
+        ! we omit the negative here and introduce it in the final force computation, i.e., because force is
+        ! the negative of the change in energy with respect to energy, we'll add the magnitude of the force
+        ! computed instead of subtracting the magnitude
 
-          tmptx = mpoles%torque_x(iatm)
-          tmpty = mpoles%torque_y(iatm)
-          tmptz = mpoles%torque_z(iatm)
+        tmptx = mpoles%torque_x(iatm)
+        tmpty = mpoles%torque_y(iatm)
+        tmptz = mpoles%torque_z(iatm)
 
-          tx = tmptx*u(1) + tmpty*u(2) + tmptz*u(3)
-          ty = (tmptx*p2(1) + tmpty*p2(2) + tmptz*p2(3)) / magp2
-          tz = tmptx*w(1) + tmpty*w(2) + tmptz*w(3)
+        tx = tmptx*u(1) + tmpty*u(2) + tmptz*u(3)
+        ty = (tmptx*p2(1) + tmpty*p2(2) + tmptz*p2(3)) / magp2
+        tz = tmptx*w(1) + tmpty*w(2) + tmptz*w(3)
 
-  ! component of p2 perpendicular to p1
+        ! component of p2 perpendicular to p1
 
-          p2perp1    = p2 - (u(1)*p2(1) + u(2)*p2(2) + u(3)*p2(3))*u
-          magp2perp1 = Sqrt(p2perp1(1)*p2perp1(1)+p2perp1(2)*p2perp1(2)+p2perp1(3)*p2perp1(3))
+        p2perp1    = p2 - (u(1)*p2(1) + u(2)*p2(2) + u(3)*p2(3))*u
+        magp2perp1 = Sqrt(p2perp1(1)*p2perp1(1)+p2perp1(2)*p2perp1(2)+p2perp1(3)*p2perp1(3))
 
-  ! component of p1 perpendicular to p2
+        ! component of p1 perpendicular to p2
 
-          p1perp2    = p1 - (p2u(1)*p1(1) + p2u(2)*p1(2) + p2u(3)*p1(3))*p2u
-          magp1perp2 = Sqrt(p1perp2(1)*p1perp2(1)+p1perp2(2)*p1perp2(2)+p1perp2(3)*p1perp2(3))
+        p1perp2    = p1 - (p2u(1)*p1(1) + p2u(2)*p1(2) + p2u(3)*p1(3))*p2u
+        magp1perp2 = Sqrt(p1perp2(1)*p1perp2(1)+p1perp2(2)*p1perp2(2)+p1perp2(3)*p1perp2(3))
 
-  ! For p1
+        ! For p1
 
-  ! dedu = 0.0 since movement du along the u axis does not rotate the frame
+        ! dedu = 0.0 since movement du along the u axis does not rotate the frame
 
-          dedv   = tz/magp1
-          dedw   =-ty/magp1perp2
+        dedv   = tz/magp1
+        dedw   =-ty/magp1perp2
 
-          stx(1) = dedv*v(1) + dedw*w(1)
-          sty(1) = dedv*v(2) + dedw*w(2)
-          stz(1) = dedv*v(3) + dedw*w(3)
+        stx(1) = dedv*v(1) + dedw*w(1)
+        sty(1) = dedv*v(2) + dedw*w(2)
+        stz(1) = dedv*v(3) + dedw*w(3)
 
-  ! for p2
+        ! for p2
 
-          dedw   = tx/magp2perp1
+        dedw   = tx/magp2perp1
 
-          stx(2) = dedw*w(1)
-          sty(2) = dedw*w(2)
-          stz(2) = dedw*w(3)
+        stx(2) = dedw*w(1)
+        sty(2) = dedw*w(2)
+        stz(2) = dedw*w(3)
 
-  ! now compute forces and virial
+        ! now compute forces and virial
 
-          fx = 0.0_wp ; fy = 0.0_wp ; fz = 0.0_wp
+        fx = 0.0_wp ; fy = 0.0_wp ; fz = 0.0_wp
 
-          Do j = 1, 2
+        Do j = 1, 2
 
-             jatm = mpoles%rotation(iatm)%mbnd(j)
+          jatm = mpoles%rotation(iatm)%mbnd(j)
 
-             If (jatm > 0) Then
-                xdf = config%parts(jatm)%xxx - config%parts(iatm)%xxx
-                ydf = config%parts(jatm)%yyy - config%parts(iatm)%yyy
-                zdf = config%parts(jatm)%zzz - config%parts(iatm)%zzz
+          If (jatm > 0) Then
+            xdf = config%parts(jatm)%xxx - config%parts(iatm)%xxx
+            ydf = config%parts(jatm)%yyy - config%parts(iatm)%yyy
+            zdf = config%parts(jatm)%zzz - config%parts(iatm)%zzz
 
-                Call images_s(config%imcon,config%cell,xdf,ydf,zdf)
+            Call images_s(config%imcon,config%cell,xdf,ydf,zdf)
 
-                rsq   = xdf*xdf + ydf*ydf + zdf*zdf
-                rrr   = sqrt(rsq)
-                rmag  = 1.0_wp/rrr
-                rmag3 = 1.0_wp/(rsq*rrr)
+            rsq   = xdf*xdf + ydf*ydf + zdf*zdf
+            rrr   = sqrt(rsq)
+            rmag  = 1.0_wp/rrr
+            rmag3 = 1.0_wp/(rsq*rrr)
 
-                dux_dx = rmag - xdf * xdf * rmag3
-                dux_dy =      - xdf * ydf * rmag3       ! duy_dx = dux_dy
-                dux_dz =      - xdf * zdf * rmag3       ! duz_dx = dux_dz
-                duy_dy = rmag - ydf * ydf * rmag3
-                duy_dz =      - ydf * zdf * rmag3       ! duz_dy = duy_dz
-                duz_dz = rmag - zdf * zdf * rmag3
+            dux_dx = rmag - xdf * xdf * rmag3
+            dux_dy =      - xdf * ydf * rmag3       ! duy_dx = dux_dy
+            dux_dz =      - xdf * zdf * rmag3       ! duz_dx = dux_dz
+            duy_dy = rmag - ydf * ydf * rmag3
+            duy_dz =      - ydf * zdf * rmag3       ! duz_dy = duy_dz
+            duz_dz = rmag - zdf * zdf * rmag3
 
-                dedux  = stx(j)
-                deduy  = sty(j)
-                deduz  = stz(j)
+            dedux  = stx(j)
+            deduy  = sty(j)
+            deduz  = stz(j)
 
-  ! Now to find the forces (derivatives of energy with respect to cartesian positions),
-  ! i.e. fx=dedx, fy=dedy, fz=dedz
+            ! Now to find the forces (derivatives of energy with respect to cartesian positions),
+            ! i.e. fx=dedx, fy=dedy, fz=dedz
 
-                fx = dedux * dux_dx + deduy * dux_dy + deduz * dux_dz
-                fy = dedux * dux_dy + deduy * duy_dy + deduz * duy_dz
-                fz = dedux * dux_dz + deduy * duy_dz + deduz * duz_dz
+            fx = dedux * dux_dx + deduy * dux_dy + deduz * dux_dz
+            fy = dedux * dux_dy + deduy * duy_dy + deduz * duy_dz
+            fz = dedux * dux_dz + deduy * duy_dz + deduz * duz_dz
 
-                fix = fix + fx
-                fiy = fiy + fy
-                fiz = fiz + fz
+            fix = fix + fx
+            fiy = fiy + fy
+            fiz = fiz + fz
 
-                If (jatm <= config%natms) Then
+            If (jatm <= config%natms) Then
 
-                   config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
-                   config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
-                   config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
+              config%parts(jatm)%fxx=config%parts(jatm)%fxx-fx
+              config%parts(jatm)%fyy=config%parts(jatm)%fyy-fy
+              config%parts(jatm)%fzz=config%parts(jatm)%fzz-fz
 
-                End If
+            End If
 
-                If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
+            If (jatm <= config%natms .or. idi < config%ltg(jatm)) Then
 
-  ! calculate virial
+              ! calculate virial
 
-                   vircpe_dt = vircpe_dt - (fx*xdf + fy*ydf + fz*zdf)
+              vircpe_dt = vircpe_dt - (fx*xdf + fy*ydf + fz*zdf)
 
-  ! calculate stress tensor
+              ! calculate stress tensor
 
-                   strs1 = strs1 + xdf*fx
-                   strs2 = strs2 + xdf*fy
-                   strs3 = strs3 + xdf*fz
-                   strs4 = strs4 + ydf*fx
-                   strs5 = strs5 + ydf*fy
-                   strs6 = strs6 + ydf*fz
-                   strs7 = strs7 + zdf*fx
-                   strs8 = strs8 + zdf*fy
-                   strs9 = strs9 + zdf*fz
+              strs1 = strs1 + xdf*fx
+              strs2 = strs2 + xdf*fy
+              strs3 = strs3 + xdf*fz
+              strs4 = strs4 + ydf*fx
+              strs5 = strs5 + ydf*fy
+              strs6 = strs6 + ydf*fz
+              strs7 = strs7 + zdf*fx
+              strs8 = strs8 + zdf*fy
+              strs9 = strs9 + zdf*fz
 
-                End If
+            End If
 
-             End If
+          End If
 
-          End Do
+        End Do
 
-  ! load back forces
+        ! load back forces
 
-          config%parts(iatm)%fxx=fix
-          config%parts(iatm)%fyy=fiy
-          config%parts(iatm)%fzz=fiz
+        config%parts(iatm)%fxx=fix
+        config%parts(iatm)%fyy=fiy
+        config%parts(iatm)%fzz=fiz
 
-       End If
+      End If
 
-  ! complete stress tensor (and symmetrise)
+      ! complete stress tensor (and symmetrise)
 
-       stress(1) = stress(1) + strs1
-       stress(2) = stress(2) + 0.5_wp * (strs2 + strs4)
-       stress(3) = stress(3) + 0.5_wp * (strs3 + strs7)
-       stress(4) = stress(4) + 0.5_wp * (strs2 + strs4)
-       stress(5) = stress(5) + strs5
-       stress(6) = stress(6) + 0.5_wp * (strs6 + strs8)
-       stress(7) = stress(7) + 0.5_wp * (strs3 + strs7)
-       stress(8) = stress(8) + 0.5_wp * (strs6 + strs8)
-       stress(9) = stress(9) + strs9
+      stress(1) = stress(1) + strs1
+      stress(2) = stress(2) + 0.5_wp * (strs2 + strs4)
+      stress(3) = stress(3) + 0.5_wp * (strs3 + strs7)
+      stress(4) = stress(4) + 0.5_wp * (strs2 + strs4)
+      stress(5) = stress(5) + strs5
+      stress(6) = stress(6) + 0.5_wp * (strs6 + strs8)
+      stress(7) = stress(7) + 0.5_wp * (strs3 + strs7)
+      stress(8) = stress(8) + 0.5_wp * (strs6 + strs8)
+      stress(9) = stress(9) + strs9
 
     End Do
 

@@ -72,7 +72,7 @@ Contains
 
   !> Initialise the linked config%cell list
   Subroutine init_list(neigh,mxatdm)
-    Class( neighbours_type ) :: neigh
+  Class( neighbours_type ) :: neigh
     Integer( Kind = wi ), Intent( In    ) :: mxatdm
 
     Allocate (neigh%list(-3:neigh%max_list,1:mxatdm))
@@ -1091,7 +1091,7 @@ Contains
             cnt(1)=cnt(1)+1.0_wp ! sum up all pairs (neigh%cutoff_extended=neigh%cutoff+neigh%padding)
 
             det=Sqrt((config%parts(i)%xxx-config%parts(j)%xxx)**2+(config%parts(i)%yyy-config%parts(j)%yyy)**2&
-               +     (config%parts(i)%zzz-config%parts(j)%zzz)**2)
+              +     (config%parts(i)%zzz-config%parts(j)%zzz)**2)
 
             If (det < devel%r_dis) Then
               safe=.false.

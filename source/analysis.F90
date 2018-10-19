@@ -11,7 +11,7 @@ Module analysis
   Use inversions,    Only : inversions_type,inversions_compute
   Use greenkubo,     Only : greenkubo_type,vaf_compute
   Use rdfs,          Only : rdf_type,rdf_compute,usr_compute,calculate_errors, &
-                            calculate_errors_jackknife
+    calculate_errors_jackknife
   Use z_density,     Only : z_density_type,z_density_compute
   Use neighbours,    Only : neighbours_type
   Use comms,         Only : comms_type
@@ -26,9 +26,9 @@ Contains
 
   !> Calculate and print final analysis
   Subroutine analysis_result( &
-    nstep,rcut,thermo, &
-    bond,angle,dihedral,inversion,stats, &
-    green,zdensity,neigh,sites,rdf,config,comm)
+      nstep,rcut,thermo, &
+      bond,angle,dihedral,inversion,stats, &
+      green,zdensity,neigh,sites,rdf,config,comm)
 
     !> Number of simulation steps
     Integer( Kind = wi ), Intent( In    ) :: nstep

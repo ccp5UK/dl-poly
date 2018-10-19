@@ -15,9 +15,9 @@ Module nst_berendsen
   Use nvt_berendsen,   Only : nvt_b0_scl,nvt_b1_scl
   Use errors_warnings, Only : error,info
   Use thermostat, Only : thermostat_type, adjust_timestep, &
-                         CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
-                         CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC, &
-                         VV_FIRST_STAGE
+    CONSTRAINT_NONE, CONSTRAINT_SURFACE_AREA, &
+    CONSTRAINT_SURFACE_TENSION, CONSTRAINT_SEMI_ORTHORHOMBIC, &
+    VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
   Use statistics, Only : stats_type
   Use timer, Only : timer_type
@@ -101,7 +101,7 @@ Contains
       Allocate (lstitr(1:config%mxatms),                                  Stat=fail(1))
       Call cons%allocate_work(config%mxatms)
       Call pmf%allocate_work()
-Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
+      Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
     Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms),            Stat=fail(7))
     Allocate (vxt(1:config%mxatms),vyt(1:config%mxatms),vzt(1:config%mxatms),            Stat=fail(8))
@@ -184,19 +184,19 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
       ! store initial values
 
-       Do i=1,config%natms
-          xxt(i) = config%parts(i)%xxx
-          yyt(i) = config%parts(i)%yyy
-          zzt(i) = config%parts(i)%zzz
+      Do i=1,config%natms
+        xxt(i) = config%parts(i)%xxx
+        yyt(i) = config%parts(i)%yyy
+        zzt(i) = config%parts(i)%zzz
 
-          vxt(i) = config%vxx(i)
-          vyt(i) = config%vyy(i)
-          vzt(i) = config%vzz(i)
+        vxt(i) = config%vxx(i)
+        vyt(i) = config%vyy(i)
+        vzt(i) = config%vzz(i)
 
-          fxt(i) = config%parts(i)%fxx
-          fyt(i) = config%parts(i)%fyy
-          fzt(i) = config%parts(i)%fzz
-       End Do
+        fxt(i) = config%parts(i)%fxx
+        fyt(i) = config%parts(i)%fyy
+        fzt(i) = config%parts(i)%fzz
+      End Do
 
       ! store temporary config%cell parameters
 
@@ -277,9 +277,9 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
       ! check timestep for variable timestep
 
       If (lvar) Then
-If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%parts,&
- xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
-            Call info(message,.true.)
+        If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%parts,&
+          xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
+          Call info(message,.true.)
 
 
           ! restore initial conditions
@@ -327,14 +327,14 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
       ! update velocity
 
-       Do i=1,config%natms
-          If (config%weight(i) > 1.0e-6_wp) Then
-             tmp=hstep/config%weight(i)
-             config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
-             config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
-             config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
-          End If
-       End Do
+      Do i=1,config%natms
+        If (config%weight(i) > 1.0e-6_wp) Then
+          tmp=hstep/config%weight(i)
+          config%vxx(i)=config%vxx(i)+tmp*config%parts(i)%fxx
+          config%vyy(i)=config%vyy(i)+tmp*config%parts(i)%fyy
+          config%vzz(i)=config%vzz(i)+tmp*config%parts(i)%fzz
+        End If
+      End Do
 
       ! RATTLE procedures
       ! apply velocity corrections to bond and PMF constraints
@@ -369,7 +369,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
       Deallocate (lstitr,           Stat=fail(1))
       Call cons%deallocate_work()
       Call pmf%deallocate_work()
-Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
+      Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     End If
     Deallocate (xxt,yyt,zzt,         Stat=fail(7))
     Deallocate (vxt,vyt,vzt,         Stat=fail(8))
@@ -470,7 +470,7 @@ Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
       Allocate (lstitr(1:config%mxatms),                                  Stat=fail( 1))
       Call cons%allocate_work(config%mxatms)
       Call pmf%allocate_work()
-Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
+      Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),         Stat=fail(6))
     End If
     Allocate (ggx(1:rigid%max_list*rigid%max_rigid), &
       ggy(1:rigid%max_list*rigid%max_rigid), &
@@ -609,21 +609,21 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
 
     If (stage == VV_FIRST_STAGE) Then
 
-  ! store initial values
+      ! store initial values
 
-       Do i=1,matms
-          xxt(i) = config%parts(i)%xxx
-          yyt(i) = config%parts(i)%yyy
-          zzt(i) = config%parts(i)%zzz
+      Do i=1,matms
+        xxt(i) = config%parts(i)%xxx
+        yyt(i) = config%parts(i)%yyy
+        zzt(i) = config%parts(i)%zzz
 
-          vxt(i) = config%vxx(i)
-          vyt(i) = config%vyy(i)
-          vzt(i) = config%vzz(i)
+        vxt(i) = config%vxx(i)
+        vyt(i) = config%vyy(i)
+        vzt(i) = config%vzz(i)
 
-          fxt(i) = config%parts(i)%fxx
-          fyt(i) = config%parts(i)%fyy
-          fzt(i) = config%parts(i)%fzz
-       End Do
+        fxt(i) = config%parts(i)%fxx
+        fyt(i) = config%parts(i)%fyy
+        fzt(i) = config%parts(i)%fzz
+      End Do
 
       Do irgd=1,rigid%n_types
         q0t(irgd)=rigid%q0(irgd)
@@ -949,9 +949,9 @@ Allocate (oxt(1:config%mxatms),oyt(1:config%mxatms),ozt(1:config%mxatms),       
       ! check timestep for variable timestep
 
       If (lvar) Then
-If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%parts,&
- xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
-            Call info(message,.true.)
+        If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%parts,&
+          xxt,yyt,zzt,cshell%legshl,message,mxdr,comm)) Then 
+          Call info(message,.true.)
 
 
           ! restore initial conditions
@@ -983,12 +983,12 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
 
       ! adjust long range corrections and number density
 
-       tmp=(thermo%volm0/config%volm)
-       vdws%elrc=thermo%elrc0*tmp
-       vdws%vlrc=thermo%virlrc0*tmp
-       Do i=1,sites%ntype_atom
-          sites%dens(i)=thermo%dens0(i)*tmp
-       End Do
+      tmp=(thermo%volm0/config%volm)
+      vdws%elrc=thermo%elrc0*tmp
+      vdws%vlrc=thermo%virlrc0*tmp
+      Do i=1,sites%ntype_atom
+        sites%dens(i)=thermo%dens0(i)*tmp
+      End Do
 
       ! get thermo%h_z for orthorhombic constraints
 
@@ -1218,7 +1218,7 @@ If ( adjust_timestep(tstep,hstep,rstep,mndis,mxdis,mxstp,config%natms,config%par
       Deallocate (lstitr,            Stat=fail( 1))
       Call cons%deallocate_work()
       Call pmf%deallocate_work()
-Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
+      Deallocate (oxt,oyt,ozt,       Stat=fail( 6))
     End If
     Deallocate (ggx,ggy,ggz,          Stat=fail( 7))
     Deallocate (xxt,yyt,zzt,          Stat=fail( 8))

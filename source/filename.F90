@@ -55,7 +55,7 @@ Contains
 
   !> Initialise a file
   Subroutine file_type_init(T, filename)
-    Class(file_type) :: T
+  Class(file_type) :: T
     Character(Len=*), Intent(In) :: filename
 
     T%filename = Trim(filename)
