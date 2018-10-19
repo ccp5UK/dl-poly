@@ -45,7 +45,7 @@ Module system
     IO_WRITE_SORTED_MPIIO,    &
     IO_WRITE_SORTED_DIRECT,   &
     IO_WRITE_SORTED_NETCDF,   &
-    IO_WRITE_SORTED_MASTER
+    IO_WRITE_SORTED_MASTER, recsz
   Use errors_warnings, Only : error, info, warning
   Use numerics, Only : dcell, images
   Use thermostat, Only : thermostat_type
@@ -102,14 +102,14 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Character( Len = 40 ) :: forma  = ' '
+    Character( Len = 40 ) :: forma
 
     Logical               :: l_tmp
     Integer               :: i,j,k,l,keyio,i_tmp,gidx
     Real( Kind = wp )     :: dnstep,dtstep,dnumacc,dncfrdf,dmxgusr,drusr,dncfusr,dncfzdn, &
       dncfbnd,dncfang,dncfdih,dncfinv,r_mxnode,xyz(0:6),dvafstep(1:green%samp)
 
-
+    forma = ' '
     ! Define format for REVOLD reading in ASCII
 
     If (devel%l_rin) Then
@@ -681,10 +681,8 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Integer, Parameter     :: recsz = 73 ! default record size
 
-    Logical                :: safex,safey,safez,safer,safel,safem,safe,safeg, &
-      lmpldt=.false.
+    Logical                :: safex,safey,safez,safer,safel,safem,safe,safeg,lmpldt
 
     Character( Len = 200 ) :: record,record1
     Character( Len = 40  ) :: word,fcfg,ffld,fmpl
@@ -727,6 +725,7 @@ Contains
     Integer :: ierr
 
     Character ( len = 256 )  :: message,messages(5)
+    lmpldt=.false.
 
     fail=0
     Allocate (f1(1:config%nx),f2(1:config%nx),f3(1:config%nx),                      Stat=fail(1))

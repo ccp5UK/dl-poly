@@ -884,7 +884,7 @@ Contains
     Type( comms_type ),                       Intent( InOut ) :: comm
     Type( configuration_type ),               Intent( InOut ) :: config
 
-    Logical           :: safe = .true.
+    Logical           :: safe 
     Integer           :: fail,limit,i,j,k,l,k0
     Real( Kind = wp ) :: rhosqr,rdr,rrr,ppp,fk0,fk1,fk2,t1,t2
 
@@ -895,6 +895,7 @@ Contains
     ! check on mixing metal types done in read_field
 
     ! initialise energy and virial accumulators
+    safe = .true.
 
     engden=0.0_wp
     virden=0.0_wp

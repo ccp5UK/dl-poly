@@ -1116,7 +1116,7 @@ Contains
     Type( configuration_type ),                       Intent( InOut ) :: config
 
 
-    Logical              :: llspl=.true.
+    Logical              :: llspl
     Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt, &
       jjtjjb,counter, k1,k2,k3,s1,s2,s3,ks1,ks2,ks3, mm,nn
 
@@ -1157,6 +1157,8 @@ Contains
 
     Integer              :: j_local, k_local, l_local
     Character( Len = 256 ) :: message
+
+    llspl=.true.
 
 
     fail=0

@@ -43,6 +43,7 @@ Module io
 
   Implicit None
 
+  Integer, Parameter, Public     :: recsz = 73 ! default record size
   ! MPI-I/O representation
   Character( Len = 6 ), Parameter :: datarep = 'native'
   ! Public interface
@@ -139,7 +140,7 @@ Module io
   End Type file_data
   Type, Public :: io_type
     ! The record size
-    Integer:: rec_size = 73
+    Integer:: rec_size = recsz
 
     ! The record length for FORTRAN write
     Character( Len = 6 ):: forma    = '73a'

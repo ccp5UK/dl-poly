@@ -251,7 +251,7 @@ Contains
     Type( configuration_type ),               Intent( InOut ) :: config
 
 
-    Logical              :: llspl=.true.
+    Logical              :: llspl
     Integer              :: fail(1:4), i,j,k,l, jj,kk,ll, jjb,jjt, kkb,kkt, llb,llt
 
     Real( Kind = wp )    :: det,rcell(1:9),celprp(1:10),ralph,rvolm,scale,   &
@@ -291,6 +291,7 @@ Contains
     ! message for error
     Character ( Len = 256 ) :: message
 
+    llspl=.true.
 
     fail=0
     If (electro%newjob_sspme) Then

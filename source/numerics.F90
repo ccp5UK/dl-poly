@@ -19,6 +19,7 @@ Module numerics
 
     !> state variables for uni random number generator. In long run one wants to move to a better random number generaot
     Logical :: newjob = .true.
+    Logical :: newjob_bm = .true.
     Integer :: ir,jr
     Real( Kind = wp ) :: c,cd,cm,u(1:97)
   Contains
@@ -750,13 +751,12 @@ Contains
     Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2
     Type(comms_type), Intent( In )  :: comm
 
-    Logical           :: newjob = .true.
     Real( Kind = wp ) :: ran0,ran1,ran2
 
     ! make sure uni is initialised
 
-    If (newjob) Then
-      newjob = .false.
+    If (seed%newjob_bm) Then
+      seed%newjob_bm = .false.
       ran0=uni(seed,comm)
     End If
 
