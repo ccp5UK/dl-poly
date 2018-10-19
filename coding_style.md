@@ -32,6 +32,8 @@ style before submitting code for inclusion consideration.
 -   Do not use **Common** blocks and **Block Data**, use **Modules**
     with public data if constant or a user defined type to group data which
     changes during runtime.
+-   Do not use **go to** statements
+-   Do not use **format** statements
 -   File extension shall be .F90 for any new written code.
 -   Indent code blocks by two space characters. Do not use
     tabs as they are not part of the Fortran standard.
