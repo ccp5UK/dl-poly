@@ -11,7 +11,7 @@ Module nst_langevin
   Use constraints,     Only : apply_rattle,apply_shake,&
     constraints_tags, constraints_type
   Use pmf,             Only : pmf_tags,pmf_type
-  Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stre_s
+  Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use errors_warnings, Only : error,info
   Use shared_units,    Only : update_shared_units
   Use numerics,        Only : dcell, mat_mul,box_mueller_saru6,images,seed_type
@@ -1310,7 +1310,7 @@ Contains
 
       ! Get RB COM stress and virial
 
-      Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,config,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
+      Call rigid_bodies_stress(strcom,ggx,ggy,ggz,config,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
       vircom=-(strcom(1)+strcom(5)+strcom(9))
 
       ! update velocity of RBs

@@ -101,8 +101,8 @@ Module drivers
 
   Use pmf, only : pmf_type,pmf_quench
 
-  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_str_ss, &
-    rigid_bodies_str__s,xscale,rigid_bodies_tags, &
+  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_stress, &
+    xscale,rigid_bodies_tags, &
     rigid_bodies_coms, getrotmat
 
   Use tethers, Only : tethers_type, tethers_forces
@@ -439,9 +439,9 @@ Contains
             Call update_shared_units(cnfig,rigid%list_shared, &
               rigid%map_shared,thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
           End If
-          Call rigid_bodies_str__s(stat%strcom,cnfig,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
+          Call rigid_bodies_stress(stat%strcom,cnfig,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
         Else
-          Call rigid_bodies_str_ss(stat%strcom,rigid,cnfig,comm)
+          Call rigid_bodies_stress(stat%strcom,rigid,cnfig,comm)
         End If
         stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
       End If
@@ -1451,9 +1451,9 @@ Contains
             Call update_shared_units(cnfig,rigid%list_shared,rigid%map_shared,&
               thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
           End If
-          Call rigid_bodies_str__s(stat%strcom,cnfig,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
+          Call rigid_bodies_stress(stat%strcom,cnfig,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
         Else
-          Call rigid_bodies_str_ss(stat%strcom,rigid,cnfig,comm)
+          Call rigid_bodies_stress(stat%strcom,rigid,cnfig,comm)
         End If
 
         stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
@@ -1857,7 +1857,7 @@ Contains
 
               stat%engrot=getknr(rigid,comm)
               If (cnfig%levcfg == 2) Then
-                Call rigid_bodies_str_ss(stat%strcom,rigid,cnfig,comm)
+                Call rigid_bodies_stress(stat%strcom,rigid,cnfig,comm)
                 stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
               End If
             Else
@@ -2236,7 +2236,7 @@ Contains
               stat%strkin=stat%strknf+stat%strknt
 
               stat%engrot=getknr(rigid,comm)
-              Call rigid_bodies_str_ss(stat%strcom,rigid,cnfig,comm)
+              Call rigid_bodies_stress(stat%strcom,rigid,cnfig,comm)
               stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
             Else
               Call kinstress(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strkin,cnfig,comm)
