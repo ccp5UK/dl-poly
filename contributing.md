@@ -9,7 +9,7 @@ and avoid many headaches.
 
 In brief the rules for contribution are as follows,
 
- * Follow the branch, fix, merge model
+ * Follow the branch, fix, merge model, from your own fork
  * An issue must be created for every piece of work (bug, feature, *etc.*)
  * Merge requests will not be accepted without a review
  * New features must have a test
@@ -50,16 +50,16 @@ The reviewer/s have the following responsibilities,
 
 ## Using the git for development
 
-The Gitlab instance hosts a _master_ repository, which we will refer to as
-_project_. Contributors will work on their own personal copies of the
-repository by creating _forks_. This allows us to keep _project_ clean (one
-commit per merge request, all commits passing tests) while users may work on
+The Gitlab instance hosts a _devel_ repository, which we will refer to as
+_devel_. Contributors will work on their own personal copies of the
+repository by creating _forks_. This allows us to keep _devel_ clean (one
+commit per merge request, if possible, all commits passing tests) while users may work on
 their own _fork_, creating commits and changing the code as they see fit.
 
-The _project_ repository may be cloned as follows,
+The _devel_ repository may be cloned as follows,
 
 ```sh
-git clone ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git dl-poly-project
+git clone ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git dl-poly-devel
 ```
 (use ssh rather than https due to self signed key issues)
 
@@ -109,9 +109,9 @@ $ git commit -m "<commit message>"
 $ git push
 ```
 
-#### Step 3a: Merge your branch into project
+#### Step 3a: Merge your branch into devel
 
-On the web interface navigate to _project_ and create a merge request for your
+On the web interface navigate to _devel_ and create a merge request for your
 branch on your _fork_. Add any relevant labels or milestones and assign a
 reviewer. Compare the code and if you are happy click Submit Merge Request.
 
@@ -130,33 +130,33 @@ push your branch to your _fork_ the merge request will be automatically updated
 to use the latest commit. Reply to the discussions to indicate when and how
 they have been addressed.
 
-If your branch has become out of sync with _project_ then conflicts may arise.
+If your branch has become out of sync with _devel_ then conflicts may arise.
 Sometimes these cannot be automatically resolved and you will need to resolve
 them by hand. Gitlab provides instructions for this, or you can follow this
 routine,
 
 ```sh
-# add project as a remote if you have not already
-$ git remote add project ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
-# get the changes to project since you started working on your issue
-$ git fetch project
-# merge these changes into your branch (assuming you want to merge into the master branch on project)
-$ git merge project/master
+# add devel as a remote if you have not already
+$ git remote add devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
+# get the changes to devel since you started working on your issue
+$ git fetch devel
+# merge these changes into your branch (assuming you want to merge into the master branch on devel)
+$ git merge devel/master
 # resolve any conflicts
 # push to your fork
 $ git push
 ```
 
 Alternatively you may use rebase which will replay the changes you made in your
-branch on top of _project/master_
+branch on top of _devel/master_ however be sure you understand the differences between merge and rebase
 
 ```sh
-# add project as a remote if you have not already
-$ git remote add project ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
-# get the changes to project since you started working on your issue
-$ git fetch project
-# merge these changes into your branch (assuming you want to merge into the master branch on project)
-$ git rebase project/master
+# add devel as a remote if you have not already
+$ git remote add devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
+# get the changes to devel since you started working on your issue
+$ git fetch devel
+# merge these changes into your branch (assuming you want to merge into the master branch on devel)
+$ git rebase devel/master
 # resolve any conflicts
 # push to your fork
 $ git push
@@ -166,16 +166,16 @@ $ git push
 
 #### Keeping your fork in sync with project
 
-By adding two remotes, one for _project_ and one for your _fork_ it is possible
-to keep your _fork_ in sync with _project_. This will greatly simplify merge
+By adding two remotes, one for _devel_ and one for your _fork_ it is possible
+to keep your _fork_ in sync with _devel_. This will greatly simplify merge
 requests.
 
 ```sh
 # clone your fork
 $ git clone ssh://gitlab@ccforge.dl.ac.uk:1980/username/dl-poly.git dl-poly-fork
 pushd dl-poly-fork
-# add a remote for project
-$ git remote add project ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
+# add a remote for devel
+$ git remote add devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git
 ```
 
 These commands need to be done only once. `git remote -v` shall show you
@@ -185,19 +185,19 @@ the origin and project fetch and push links
 $ git remote -v
 origin  ssh://gitlab@ccforge.dl.ac.uk:1980/username/dl-poly.git (fetch)
 origin  ssh://gitlab@ccforge.dl.ac.uk:1980/username/dl-poly.git (push)
-project ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git (fetch)
-project ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git (push)
+devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git (fetch)
+devel ssh://gitlab@ccforge.dl.ac.uk:1980/dl-poly/dl-poly.git (push)
 ```
 
-When you need to sync your _fork_ with _project_, do the following,
+When you need to sync your _fork_ with _devel_, do the following,
 
 ```sh
-# get the latest commits from project
-$ git fetch project
+# get the latest commits from devel
+$ git fetch devel
 # ensure you are in the master branch of your fork
 $ git checkout master
-# merge your master branch into the master branch of project
-$ git merge project/master
+# merge your master branch into the master branch of devel
+$ git merge devel/master
 # push these changes back to the remote of your fork (origin)
 $ git push
 ```
@@ -209,7 +209,7 @@ projects.
 
 When working on an issue you may use multiple commits. When you are ready to
 create a merge request, you should squash your changes into one commit in order
-to keep _project_ clean. This is most easily achieved with an interactive
+to keep _devel_ clean. This is most easily achieved with an interactive
 rebase.
 
 Assuming you have made five commits,
@@ -223,6 +223,7 @@ $ git rebase -i HEAD~5
 # 'rewrite history'
 $ git push origin branchname --force
 ```
+using force is a powerful and dangerous option. use it only if you know 150% nobody else touched that branch.
 
 #### Cleaning stale branches
 

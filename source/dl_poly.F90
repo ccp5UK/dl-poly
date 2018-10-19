@@ -253,7 +253,7 @@ program dl_poly
   Integer(Kind=wi) :: i,j
   Logical :: lfce
   Character( Len = 256 ) :: message,messages(5)
-  Character( Len = 66 )  :: banner(13)
+  Character( Len = 66 )  :: banner(14)
   Character( Len = 1024 ) :: control_filename
 
   Character( Len = * ), Parameter :: fmt1 = '(a)', &
@@ -309,7 +309,8 @@ program dl_poly
   Write(banner(10),fmt1) "*************  i.j.bush, h.a.boateng, r.davidchak,   *************"
   Write(banner(11),fmt1) "*************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
   Write(banner(12),fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
-  Write(banner(13),fmt1) "******************************************************************"
+  Write(banner(13),fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti        *************"
+  Write(banner(14),fmt1) "******************************************************************"
   Call info(banner,13,.true.)
 
   Call build_info(devel)
