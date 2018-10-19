@@ -7,6 +7,11 @@ Module zbl_pots
   ! author    - a.m.elena october 2017
   ! contrib   - a.m.elena december 2017
   ! contrib   - a.m.elena may 2018 (mdf)
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

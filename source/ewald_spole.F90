@@ -31,6 +31,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - w.smith august 1998
     ! amended   - i.t.todorov april 2015
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -229,6 +234,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov & w.smith & i.j.bush february 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1143,6 +1153,11 @@ Contains
       !
       ! copyright - daresbury laboratory
       ! author    - w.smith & i.t.todorov june 2014
+      ! refactoring:
+      !           - a.m.elena march-october 2018
+      !           - j.madge march-october 2018
+      !           - a.b.g.chalk march-october 2018
+      !           - i.scivetti march-october 2018
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1314,6 +1329,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov february 2015
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1512,6 +1532,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov december 2015
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

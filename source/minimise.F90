@@ -6,6 +6,11 @@ Module minimise
   !
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov august 2014
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -141,6 +146,11 @@ Contains
     ! contrib   - a.m.elena february 2017
     ! contrib   - i.t.todorov february 2017
     ! contrib   - i.scivetti april 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -667,6 +677,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov january 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

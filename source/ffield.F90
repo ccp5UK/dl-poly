@@ -101,6 +101,11 @@ Contains
     ! contrib   - a.m.elena december 2017 (zblb)
     ! contrib   - a.m.elena april 2018 (mlj/mbuc)
     ! contrib   - a.m.elena may 2018 (m126)
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -4867,6 +4872,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov july 2012
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -5080,6 +5090,11 @@ Contains
     ! contrib   - a.m.elena february 2017
     ! contrib   - i.t.todorov may 2017
     ! contrib   - v.sokhan may 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

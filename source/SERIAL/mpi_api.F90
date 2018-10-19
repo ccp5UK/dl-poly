@@ -12,6 +12,11 @@ Module mpi_api
   ! author    - i.t.todorov june 2010
   ! contrib   - a.m.elena march 2016
   ! contrib   - m.a.seaton june 2017
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

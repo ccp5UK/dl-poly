@@ -1,3 +1,8 @@
+!> Thermostat data module
+!>
+!> Copyright - Daresbury Laboratory
+!>
+!> Author - J. Madge May 2018
 Module thermostat
   Use kinds, Only : wp,wi
   Use comms, Only : gmax,comms_type

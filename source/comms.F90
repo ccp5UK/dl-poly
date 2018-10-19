@@ -7,6 +7,11 @@ Module comms
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov february 2015
   ! contrib   - a.m.elena march 2016
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -235,6 +240,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov may 2004
     ! contrib   - a.m.elena march 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -336,6 +346,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov may 2004
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Type(comms_type), Intent (InOut) :: comm
@@ -358,6 +373,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov november 2008
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -375,6 +395,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov june 2013
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -396,6 +421,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - j.madge april 2018
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -416,6 +446,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov june 2013
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

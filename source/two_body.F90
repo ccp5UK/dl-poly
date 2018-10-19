@@ -61,6 +61,11 @@ Contains
     ! contrib   - h.a.boateng february 2016
     ! contrib   - p.s.petkov february 2015
     ! contrib   - a.b.g.chalk january 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

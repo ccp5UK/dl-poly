@@ -1,3 +1,9 @@
+!> Routine timer module, provides procedures for calculating real time spent in
+!> various program units
+!>
+!> Copyright - Daresbury Laboratory
+!>
+!> Author - A. M. Elena May 2018
 Module timer
   Use kinds, Only : wp
   Use comms, Only : comms_type,gtime,mtime,gmin,gmax,gsum

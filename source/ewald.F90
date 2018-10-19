@@ -6,6 +6,11 @@ Module ewald
   !
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov february 2015
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -249,6 +254,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.j.bush & i.t.todorov june 2014
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -371,6 +381,11 @@ Contains
       !
       ! copyright - daresbury laboratory
       ! author    - i.j.bush & i.t.todorov june 2014
+      ! refactoring:
+      !           - a.m.elena march-october 2018
+      !           - j.madge march-october 2018
+      !           - a.b.g.chalk march-october 2018
+      !           - i.scivetti march-october 2018
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -452,6 +467,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - w.smith july 1998
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -519,6 +539,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - w.smith july 1998
     ! amended   - i.t.todorov april 2015
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -669,6 +694,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - h.a.boateng february 2016
     ! amended   - i.t.todorov april 2015
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -871,6 +901,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - h.a.boateng april 2014
     ! amended   - i.t.todorov march 2015
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -961,6 +996,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - w.smith october 1998
     ! amended   - i.t.todorov october 2006
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

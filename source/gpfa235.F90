@@ -8,6 +8,11 @@ Module gpfa235
   ! copyright - daresbury laboratory
   ! author    - i.j.bush august 2010
   ! amended   - i.t.todorov september 2010
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -2526,6 +2531,11 @@ Subroutine gpfa_wrap( a, trigs, stride, jump, n, n_ffts, direction, start )
   ! copyright - daresbury laboratory
   ! author    - i.j.bush march 1999
   ! amended   - i.t.todorov november 2009
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

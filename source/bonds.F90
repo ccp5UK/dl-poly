@@ -8,6 +8,11 @@ Module bonds
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov march 2014
   ! contrib   - a.v.brukhno april 2014 (itramolecular TPs & PDFs)
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -179,6 +184,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - a.v.brukhno & i.t.todorov march 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -505,6 +515,11 @@ Contains
     ! author    - w.smith july 1992
     ! amended   - i.t.todorov september 2016
     ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -985,6 +1000,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - a.v.brukhno & i.t.todorov january 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

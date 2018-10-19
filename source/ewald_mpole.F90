@@ -34,6 +34,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - h.a.boateng & i.t.todorov february 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -391,6 +396,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - h.a.boateng february 2014
     ! amended   - i.t.todorov february 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1088,6 +1098,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - h.a.boateng february 2016
     ! amended   - i.t.todorov march 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1916,6 +1931,11 @@ Contains
       ! copyright - daresbury laboratory
       ! author    - w.smith & i.t.todorov february 2016
       ! amended   - h.a.boateng may 2014
+      ! refactoring:
+      !           - a.m.elena march-october 2018
+      !           - j.madge march-october 2018
+      !           - a.b.g.chalk march-october 2018
+      !           - i.scivetti march-october 2018
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -2214,6 +2234,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - h.a.boateng february 2016
     ! amended   - i.t.todorov february 2015
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -4178,6 +4203,11 @@ Contains
       ! copyright - daresbury laboratory
       ! author    - w.smith & i.t.todorov february 2016
       ! amended   - h.a.boateng may 2014
+      ! refactoring:
+      !           - a.m.elena march-october 2018
+      !           - j.madge march-october 2018
+      !           - a.b.g.chalk march-october 2018
+      !           - i.scivetti march-october 2018
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -4450,6 +4480,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - h.a.boateng june 2016
     ! amended   - i.t.todorov february 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -4822,6 +4857,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - h.a.boateng june 2016
     ! amended   - i.t.todorov march 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -5483,6 +5523,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov & h.a.boateng february 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

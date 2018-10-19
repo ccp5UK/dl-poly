@@ -6,6 +6,11 @@ Module msd
   !
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov march 2008
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp,li,wi
@@ -73,6 +78,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov february 2016
     ! contrib   - i.j.bush
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

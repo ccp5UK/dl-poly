@@ -8,6 +8,11 @@ Module dihedrals
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov march 2014
   ! contrib   - a.v.brukhno march 2014 (itramolecular TPs & PDFs)
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -184,6 +189,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - w.smith march 1999
     ! amended   - i.t.todorov september 2014
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -323,6 +333,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - a.v.brukhno & i.t.todorov march 2016
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -665,6 +680,11 @@ Contains
     ! author    - w.smith march 1992
     ! amended   - i.t.todorov march 2016
     ! contrib   - a.v.brukhno & i.t.todorov april 2014 (itramolecular TPs & PDFs)
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1745,6 +1765,11 @@ Contains
     ! copyright - daresbury laboratory
     ! author    - a.v.brukhno & i.t.todorov january 2017
     ! contrib   - a.v.brukhno, february 2018
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -2097,6 +2122,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! amended   - i.t.todorov january 2015
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

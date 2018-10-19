@@ -9,6 +9,11 @@ Module ttm_track
   ! authors   - s.l.daraszewicz & m.a.seaton july 2012
   ! contrib   - g.khara may 2016
   ! contrib   - m.a.seaton february 2017
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -261,6 +266,11 @@ Contains
     ! author    - s.l.darazewicz & m.a.seaton july 2012
     ! contrib   - g.khara may 2016
     ! contrib   - m.a.seaton september 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     Type( ttm_type ), Intent( InOut ) :: ttm
@@ -838,6 +848,11 @@ Contains
     ! author    - s.l.darazewicz & m.a.seaton july 2012
     ! contrib -   g.khara may 2016
     ! contrib -   g.khara, s.t.murphy & m.a.seaton september 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
