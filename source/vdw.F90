@@ -20,11 +20,9 @@ Module vdw
   Use site, Only : site_type
   Use configuration, Only : configuration_type
   Use particle, Only : corePart
-  Use mm3lrc, Only : intRadMM3, intRaddMM3
-  Use zbl_pots,         Only : ab, intRadZBL, intdRadZBL, &
+  Use potentials,         Only : ab, intRadZBL, intdRadZBL, &
     zbl,zbls,zblb,mlj,mbuck, mlj126, &
-    intRadMDF,intdRadMDF
-
+    intRadMDF,intdRadMDF,intRadMM3,intRaddMM3
   Use site, Only : site_type
   Use parse, Only : get_line,get_word,word_2_real
   Use neighbours, Only : neighbours_type
@@ -165,7 +163,7 @@ Module vdw
 Contains
 
   Subroutine allocate_vdw_arrays(T)
-  Class( vdw_type ) :: T
+    Class( vdw_type ) :: T
 
     Integer, Dimension( 1:4 ) :: fail
 
@@ -186,7 +184,7 @@ Contains
   End Subroutine allocate_vdw_arrays
 
   Subroutine allocate_vdw_table_arrays(T)
-  Class( vdw_type ) :: T
+    Class( vdw_type ) :: T
 
     Integer, Dimension( 1:2 ) :: fail
 
@@ -202,7 +200,7 @@ Contains
   End Subroutine allocate_vdw_table_arrays
 
   Subroutine allocate_vdw_direct_fs_arrays(T)
-  Class( vdw_type ) :: T
+    Class( vdw_type ) :: T
 
     Integer :: fail
 
@@ -378,7 +376,7 @@ Contains
                 e0*t*t/(4.0_wp*kk*kk*kk)*((kk*vdws%cutoff+1)**2 + kk*kk*vdws%cutoff*vdws%cutoff)
               padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*vdws%cutoff**3 + &
                 3*kk**2*vdws%cutoff**2 +6*kk*vdws%cutoff + 6) + &
-                e0*t*t/(4.0_wp*kk*kk*kk)* & 
+                e0*t*t/(4.0_wp*kk*kk*kk)* &
                 (4.0_wp*kk**3*vdws%cutoff**3 + 6*kk**2*vdws%cutoff**2 + 6*kk*vdws%cutoff + 3)
             End If
 
@@ -422,11 +420,11 @@ Contains
               s9 = c/(9.0_wp*vdws%cutoff**9)
 
               eadd = -2.0_wp*e0*t/(kk*kk*kk)*((kk*vdws%cutoff+1)**2 + 1) + &
-                e0*t*t/(4.0_wp*kk*kk*kk)*((kk*vdws%cutoff+1)**2 + & 
+                e0*t*t/(4.0_wp*kk*kk*kk)*((kk*vdws%cutoff+1)**2 + &
                 kk*kk*vdws%cutoff*vdws%cutoff) + s9
-              padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*vdws%cutoff**3 + & 
-                3*kk**2*vdws%cutoff**2 + 6*kk*vdws%cutoff + 6) + & 
-                e0*t*t/(4.0_wp*kk*kk*kk)* (4.0_wp*kk**3*vdws%cutoff**3 + & 
+              padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*vdws%cutoff**3 + &
+                3*kk**2*vdws%cutoff**2 + 6*kk*vdws%cutoff + 6) + &
+                e0*t*t/(4.0_wp*kk*kk*kk)* (4.0_wp*kk**3*vdws%cutoff**3 + &
                 6*kk**2*vdws%cutoff**2 + 6*kk*vdws%cutoff + 3) + 12.0_wp*s9
             End If
 
@@ -441,7 +439,7 @@ Contains
 
             eadd = (b*c*vdws%cutoff**3+(3*b*c**2+a*c)*vdws%cutoff**2+(6*b*c**3+2*a*c**2)*vdws%cutoff&
               +6*b*c**4+2*a*c**3)*t
-            padd = (b*vdws%cutoff**4+(3*b*c+a)*vdws%cutoff**3+(9*b*c**2+3*a*c)*vdws%cutoff**2+& 
+            padd = (b*vdws%cutoff**4+(3*b*c+a)*vdws%cutoff**3+(9*b*c**2+3*a*c)*vdws%cutoff**2+&
               (18*b*c**3+6*a*c**2)*vdws%cutoff+18*b*c**4+6*a*c**3)*t
 
           Else If (keypot == VDW_ZBL) Then
@@ -472,7 +470,7 @@ Contains
                 e0*t*t/(4.0_wp*kk*kk*kk)*((kk*vdws%cutoff+1)**2 + kk*kk*vdws%cutoff*vdws%cutoff)
               padd = -2.0_wp*e0*t/(kk*kk*kk)*(kk**3*vdws%cutoff**3 + &
                 3*kk**2*vdws%cutoff**2 +6*kk*vdws%cutoff + 6) + &
-                e0*t*t/(4.0_wp*kk*kk*kk)* & 
+                e0*t*t/(4.0_wp*kk*kk*kk)* &
                 (4.0_wp*kk**3*vdws%cutoff**3 + 6*kk**2*vdws%cutoff**2 + 6*kk*vdws%cutoff + 3)
             End If
 
@@ -541,7 +539,7 @@ Contains
 
     End If
 
-    10 Continue
+10  Continue
 
     Write(messages(1),'(a)') 'long-range correction for:'
     Write(messages(2),'(2x,a,e15.6)') 'vdw energy ',vdws%elrc/engunit
@@ -1248,7 +1246,7 @@ Contains
 
     ! end of file error exit
 
-    100 Continue
+100 Continue
 
     If (comm%idnode == 0) Close(Unit=ntable)
     Call error(24)
@@ -1737,7 +1735,7 @@ Contains
           r=Real(i,wp)*dlrpot
 
           kk = r/c
-          t1=Exp(-kk)           
+          t1=Exp(-kk)
 
           vdws%tab_potential(i,ivdw) = (a+b*r)*t1
           vdws%tab_force(i,ivdw) = t1*kk*(a-b*c+b*r)

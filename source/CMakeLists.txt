@@ -31,10 +31,9 @@ shared_units.F90
 numerics.F90
 impacts.F90
 errors_warnings.F90
-zbl_pots.F90
+potentials.F90
 rdfs.F90
 kinds.F90
-mm3lrc.F90
 vdw.F90
 minimise.F90
 dihedrals.F90
