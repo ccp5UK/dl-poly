@@ -96,7 +96,7 @@ Contains
 
     Real( Kind = wp ) :: factor_nz
 
-    Logical           :: safe = .true., l_do_rdf
+    Logical           :: safe, l_do_rdf
     Integer           :: fail,i,j,k,limit
     Real( Kind = wp ) :: engcpe_rc,vircpe_rc,engcpe_rl,vircpe_rl, &
       engcpe_ch,vircpe_ch,engcpe_ex,vircpe_ex, &
@@ -109,6 +109,8 @@ Contains
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
     Character( Len = 256 ) :: message
+
+    safe = .True. 
     fail=0
     Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat=fail)
     If (fail > 0) Then

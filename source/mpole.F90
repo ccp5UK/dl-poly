@@ -334,7 +334,7 @@ Contains
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Logical                :: safe,l_rsh,l_ord=.false.
+    Logical                :: safe,l_rsh,l_ord
 
     Character( Len = 200 ) :: record,record1,record2
     Character( Len = 40  ) :: word
@@ -350,6 +350,9 @@ Contains
     Real( Kind = wp )      :: charge,scl,polarity,dumping
 
     Character( Len = 256 ) :: message,messages(3)
+
+    safe = .True.
+    l_ord = .False.
 
     ! open MPOLES data file
 

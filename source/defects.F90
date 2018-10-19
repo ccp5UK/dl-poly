@@ -437,9 +437,7 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( comms_type ),   Intent( InOut ) :: comm
 
-    Logical                :: l_ind = .true.  , &
-      l_str = .false. , &
-      lexist,fast,safe,loop,match
+    Logical                :: l_ind, l_str, lexist,fast,safe,loop,match
     Character( Len = 200 ) :: record
     Character( Len = 40  ) :: word,fname
     Integer                :: fail(1:2),megref,i,j,lvcfgr,imconr, &
@@ -449,7 +447,7 @@ Contains
 
     ! Some parameters and variables needed by io interfaces
 
-    Integer                           :: recsz = 73 ! default record size
+    Integer                           :: recsz ! default record size
     Integer                           :: fh, io_read
     Integer( Kind = offset_kind ) :: top_skip
 
@@ -457,6 +455,10 @@ Contains
     Integer,              Dimension( : ), Allocatable :: iwrk
     Real( Kind = wp ),    Dimension( : ), Allocatable :: axx,ayy,azz
     Character( Len = 256 ) :: message
+
+    l_ind = .True.
+    l_str = .False.
+    recsz = 73
 
 
     5 Continue

@@ -20,6 +20,8 @@ Module timer
     Real( Kind = wp) :: t_rattle(4) = 0.0_wp
     Real( Kind = wp) :: t_bonded(4) = 0.0_wp
   End Type
+  Character( Len = 12), Parameter  :: routine(6) = ['short range',' long range','  link cell','      shake','     rattle',&
+    '     bonded']
 
   Public :: start_timer
   Public :: stop_timer
@@ -56,8 +58,6 @@ Contains
     Character( Len = 72 ) :: message(10)
 
     Real( Kind = wp ) :: buffer(6),mins(6),maxs(6),avg(6)
-    Character( Len = 12) :: routine(6) = ['short range',' long range','  link cell','      shake','     rattle',&
-      '     bonded']
     Integer :: i
 
     Write(message(1),'(5a12,a6,a2)') "| Routine   ","| Calls     ","|   Min [s] ","|   Max [s] ","|    Avg [s]","| [%] ","|"
@@ -70,13 +70,13 @@ Contains
       buffer(5) = tmr%t_rattle(3)
       buffer(6) = tmr%t_bonded(3)
       Select Case(i)
-      Case(1)
+       Case(1)
         Call gmin(comm,buffer(1:6))
         mins=buffer
-      Case(2)
+       Case(2)
         Call gmax(comm,buffer(1:6))
         maxs=buffer
-      Case(3)
+       Case(3)
         Call gsum(comm,buffer(1:6))
         avg=buffer
       End Select
@@ -90,7 +90,7 @@ Contains
     Do i =1,6
       write(message(i+1),'(1x,a11,i12,es12.5,es12.5,es12.5,f6.2)')routine(i),Int(buffer(i)),mins(i),maxs(i),avg(i)/comm%mxnode,&
         avg(i)/comm%mxnode/tmr%elapsed*100.0_wp
-    End Do 
+    End Do
     write(message(8),'(1x,a11,36x,es12.5,f6.2)')"Other",tmr%elapsed-sum(avg(1:6)/comm%mxnode),&
       100.0_wp-sum(avg(1:6)/comm%mxnode)/tmr%elapsed*100.0_wp
     Call info(message,8,.true.)

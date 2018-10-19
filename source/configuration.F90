@@ -59,7 +59,7 @@ Module configuration
     IO_WRITE_SORTED_NETCDF,    &
     IO_WRITE_SORTED_MASTER,    &
     IO_SUBSET_POSITIONS,       &
-    IO_SUBSET_FORCES
+    IO_SUBSET_FORCES,recsz
 
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
@@ -162,7 +162,7 @@ Contains
     !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Class(configuration_type), Intent( InOut ) :: T
+    Class(configuration_type), Intent( InOut ) :: T
     Logical, Intent( In ),Optional :: flag
 
 
@@ -200,7 +200,7 @@ Contains
 
     tmp( 1:size_crs ) = a( 1:size_crs )
 
-    Deallocate( a , Stat = stat ) 
+    Deallocate( a , Stat = stat )
     Call move_alloc( tmp, a )
 
   End Subroutine
@@ -225,10 +225,10 @@ Contains
     Allocate ( tmp( 1:size_new ), Stat = stat )
     If ( stat /= 0 ) Return
 
-    tmp( 1:size_crs )  = a( 1:size_crs ) 
+    tmp( 1:size_crs )  = a( 1:size_crs )
 
     Deallocate ( a, Stat = stat )
-    Call move_alloc( tmp, a ) 
+    Call move_alloc( tmp, a )
 
   End Subroutine reallocate_chr_v
 
@@ -739,7 +739,7 @@ Contains
 
       Return
 
-      100 Continue
+100   Continue
       If (fail > 0) Then
         Write(message,'(a)') 'all_inds_present allocation/deallocation failure'
         Call error(0,message)
@@ -786,10 +786,7 @@ Contains
 
     Character( Len = 200 ) :: record
     Character( Len = 40  ) :: word,fname
-    Logical                :: safe  = .true.  , &
-      l_his = .false. , &
-      l_xtr = .false. , &
-      fast
+    Logical                :: safe, l_his, l_xtr, fast
     Integer                :: fail(1:4),i,j,idm,max_fail,min_fail, &
       icell,ncells,                        &
       indatm,nattot,totatm,                &
@@ -803,7 +800,6 @@ Contains
 
     ! Some parameters and variables needed by io interfaces
 
-    Integer                           :: recsz = 73 ! default record size
     Integer                           :: fh, io_read
     Integer( Kind = offset_kind ) :: top_skip
 
@@ -817,6 +813,10 @@ Contains
 
     Character( Len = 256) :: message
     Character( Len = 256) :: messages(3)
+
+    safe  = .true.
+    l_his = .false.
+    l_xtr = .false.
     ! image conditions not compliant with DD and link-cell
 
     If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
@@ -922,7 +922,7 @@ Contains
           safe = .true.
           If (j < 0) Go To 10
         End Do
-        10      Continue
+10      Continue
         fast = (fast .and. i == recsz)
 
         ! Read configuration level and image condition (RECORD2)
@@ -937,7 +937,7 @@ Contains
           safe = .true.
           If (j < 0) Go To 20
         End Do
-        20      Continue
+20      Continue
         fast = (fast .and. i == recsz)
 
         ! Read particles total value
@@ -1047,10 +1047,10 @@ Contains
           End If
           Go To 40
 
-          30         Continue
+30        Continue
           safe=.false. ! catch error
 
-          40         Continue
+40        Continue
         End If
 
         ! Circulate configuration data to all nodes when transmission arrays are filled up
@@ -1397,14 +1397,14 @@ Contains
 
     ! error exit for CONFIG file read
 
-    50 Continue
+50  Continue
     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
     Call error(55)
 
   End Subroutine read_config
 
   Subroutine read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his, &
-      l_xtr,fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
+    l_xtr,fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1752,12 +1752,12 @@ Contains
             count = [ 3, to_read, 1 ]
 
             Select Case( levcfg )
-            Case( 0, 3 )
+             Case( 0, 3 )
               Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
-            Case( 1 )
+             Case( 1 )
               Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
               Call io_get_var(io, 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
-            Case( 2 )
+             Case( 2 )
               Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
               Call io_get_var(io, 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
               Call io_get_var(io, 'forces'     , fh, start, count, cxx_read, cyy_read, czz_read )
@@ -1936,7 +1936,7 @@ Contains
 
           If (.not.safe) Then
             Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', config%mxatms
-            Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', & 
+            Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', &
               max_fail, ' & ', min_fail
             Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
               Ceiling((dvar*(Real(max_fail,wp)/Real(config%mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
@@ -2053,12 +2053,12 @@ Contains
 
     ! error exit for CONFIG file read
 
-    100 Continue
+100 Continue
     Call error(55)
   End Subroutine read_config_parallel
 
   Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
-      io,domain,files,comm)
+    io,domain,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2088,20 +2088,22 @@ Contains
 
     Character( Len = 200 ) :: record
     Character( Len = 40  ) :: word,fname
-    Logical                :: safe  = .true.  , &
-      l_ind = .false. , &
-      strict = .false. , &
-      l_his = .false. , &
-      l_xtr = .true.  , &
-      fast
+    Logical                :: safe, l_ind, strict, l_his, l_xtr, fast
     Integer                :: totatm,i,j
     Real( Kind = wp )      :: xxx,yyy,zzz,buffer(1:4),cell_vecs(1:3,1:3)
 
     ! Some parameters and variables needed by io interfaces
 
-    Integer                           :: recsz = 73 ! default record size
+    Integer                           :: recsz  ! default record size
     Integer                           :: fh, io_read
     Integer( Kind = offset_kind ) :: top_skip
+
+    safe  = .True.
+    l_ind = .False.
+    strict = .False.
+    l_his = .False.
+    l_xtr = .True.
+    recsz = 73
 
 
     ! Get type of I/O for reading
@@ -2160,7 +2162,7 @@ Contains
           safe = .true.
           If (j < 0) Go To 10
         End Do
-        10      Continue
+10      Continue
         fast = (fast .and. i == recsz)
 
         ! Read configuration level and image condition (RECORD2)
@@ -2175,7 +2177,7 @@ Contains
           safe = .true.
           If (j < 0) Go To 20
         End Do
-        20      Continue
+20      Continue
         fast = (fast .and. i == recsz)
 
         ! Read particles total value
@@ -2341,12 +2343,12 @@ Contains
             zhi=Max(zhi,Abs(zzz))
           End Do
 
-          30         Continue ! catch error
+30        Continue ! catch error
           safe = .false.
 
         End If
 
-        40      Continue ! catch EoF
+40      Continue ! catch EoF
 
         Call gsync(comm)
         Call gcheck(comm,safe,"enforce")
@@ -2416,7 +2418,7 @@ Contains
 
     ! error exit for CONFIG file read
 
-    50 Continue
+50  Continue
     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
     Call error(55)
 
@@ -2511,8 +2513,6 @@ Contains
     Type( netcdf_param ), Intent( In    ) :: netcdf
     Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ),   Intent( InOut ) :: comm
-
-    Integer, Parameter :: recsz    =   73 ! default record size
 
     Logical               :: ready
     Character( Len = 40 ) :: fname
@@ -2974,13 +2974,13 @@ Contains
 
       If ( ierr /= 0 ) Then
         Select Case( ierr )
-        Case( IO_BASE_COMM_NOT_SET )
+         Case( IO_BASE_COMM_NOT_SET )
           Call error( 1050 )
-        Case( IO_ALLOCATION_ERROR )
+         Case( IO_ALLOCATION_ERROR )
           Call error( 1053 )
-        Case( IO_UNKNOWN_WRITE_OPTION )
+         Case( IO_UNKNOWN_WRITE_OPTION )
           Call error( 1056 )
-        Case( IO_UNKNOWN_WRITE_LEVEL )
+         Case( IO_UNKNOWN_WRITE_LEVEL )
           Call error( 1059 )
         End Select
       End If

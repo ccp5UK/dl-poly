@@ -543,11 +543,12 @@ Contains
     Logical,              Intent( In    ), Optional :: report
 
     Character( Len = 40 ) :: forma
-    Logical               :: l_report = .true.
+    Logical               :: l_report
     Integer               :: word_end,slash_position
     Real( Kind = wp )     :: denominator
     Character( Len = 256 ) :: message
 
+    l_report = .true. 
     If (Present(report)) l_report = report
 
     denominator = 1.0_wp
