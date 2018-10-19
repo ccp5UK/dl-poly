@@ -110,6 +110,11 @@ Contains
     ! contrib   - a.m.elena september 2015
     ! contrib   - a.m.elena february 2017
     ! contrib   - g.khara & m.a.seaton march 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -3632,6 +3637,11 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   ! contrib   - a.m.elena february 2017
   ! contrib   - m.a.seaton march 2017 (TTM)
   ! contrib   - a.b.g.chalk march 2017
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( ttm_type ), Intent( InOut ) :: ttm
@@ -4744,6 +4754,11 @@ Subroutine scan_control_pre(imc_n,dvar,files,comm)
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov february 2014
   ! contrib   - a.m.elena february 2017
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -4841,6 +4856,11 @@ Subroutine scan_control_io(io,netcdf,files,comm)
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov february 2014
   ! amended   - i.j.bush october 2010
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -5362,6 +5382,11 @@ Subroutine scan_control_output(files,comm)
   !
   ! copyright - daresbury laboratory
   ! author    - a.m.elena february 2017
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

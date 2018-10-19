@@ -8,6 +8,11 @@ Module netcdf_wrap
   ! copyright - daresbury laboratory
   ! author    - i.j.bush april 2011
   ! amended   - i.t.todorov aplril 2011
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

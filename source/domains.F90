@@ -8,6 +8,11 @@ Module domains
   ! copyright - daresbury laboratory
   ! author    - i.t.todorov march 2016
   ! contrib   - i.j.bush august 2010
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -61,6 +66,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov & i.j.bush september 2010
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -254,6 +264,11 @@ Contains
       !
       ! copyright - daresbury laboratory
       ! author    - i.j.bush august 2010
+      ! refactoring:
+      !           - a.m.elena march-october 2018
+      !           - j.madge march-october 2018
+      !           - a.b.g.chalk march-october 2018
+      !           - i.scivetti march-october 2018
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -275,6 +290,11 @@ Contains
       !
       ! copyright - daresbury laboratory
       ! author    - i.j.bush august 2010
+      ! refactoring:
+      !           - a.m.elena march-october 2018
+      !           - j.madge march-october 2018
+      !           - a.b.g.chalk march-october 2018
+      !           - i.scivetti march-october 2018
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -327,6 +347,11 @@ Contains
     !
     ! copyright - daresbury laboratory
     ! author    - i.t.todorov august 2006
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

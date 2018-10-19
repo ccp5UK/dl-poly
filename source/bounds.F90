@@ -67,6 +67,11 @@ Contains
     ! contrib   - i.j.bush february 2014
     ! contrib   - m.a.seaton june 2014 (VAF)
     ! contrib   - m.a.seaton march 2017 (TTM)
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

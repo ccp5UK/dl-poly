@@ -34,6 +34,11 @@ program dl_poly
   ! authors   - i.t.todorov & w.smith march 2016
   ! contrib   - i.j.bush, h.a.boateng, m.a.seaton, a.m.elena,
   !             s.l.daraszewicz, g.khara, a.brukhno, a.b.g.chalk
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -614,11 +619,6 @@ program dl_poly
 
   If (devel%l_fast) Call gsync(comm,devel%l_fast)
 
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-
   If (flow%simulation) Then
     Call w_md_vv(config,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo, &
       plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
@@ -642,10 +642,6 @@ program dl_poly
 
   !Close the statis file if we used it.
   If (stats%statis_file_open) Close(Unit=files(FILE_STATS)%unit_no)
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 
   ! Report termination of the MD simulation
 

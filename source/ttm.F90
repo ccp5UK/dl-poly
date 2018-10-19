@@ -8,6 +8,11 @@ Module ttm
   ! authors   - s.l.daraszewicz & m.a.seaton may 2012
   ! contrib   - g.khara may 2016
   ! contrib   - m.a.seaton september 2017
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -796,6 +801,11 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp,domain,ttm,com
   !
   ! copyright - daresbury laboratory
   ! authors   - s.l.daraszewicz & m.a.seaton september 2017
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -918,6 +928,11 @@ Subroutine ttm_system_revive    &
   !
   ! copyright - daresbury laboratory
   ! authors   - s.l.daraszewicz & m.a.seaton september 2015
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1015,6 +1030,11 @@ Subroutine ttm_table_read(ttm,comm)
   ! author    - m.a.seaton may 2012
   ! contrib   - g.khara may 2016
   ! contrib   - m.a.seaton february 2017
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( ttm_type ), Intent( InOut )   :: ttm 
@@ -1230,6 +1250,11 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
   ! copyright - daresbury laboratory
   ! author    - m.a.seaton may 2012
   ! contrib   - g.khara    may 2016
+  ! refactoring:
+  !           - a.m.elena march-october 2018
+  !           - j.madge march-october 2018
+  !           - a.b.g.chalk march-october 2018
+  !           - i.scivetti march-october 2018
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 

@@ -1,13 +1,17 @@
+!> Core particle type module
+!>
+!> Copyright - Daresbury Laboratory
+!>
+!> Author A.B.G Chalk July 2018
 Module particle
-
-  Use kinds, Only : wp
+  Use kinds, Only : wp,wi
+  Implicit None
+  Private
 
   Type, Public :: corePart
     Real( Kind = wp ) :: xxx,yyy,zzz
     Real( Kind = wp ) :: fxx,fyy,fzz
     Real( Kind = wp ) :: chge
-    Integer           :: pad1, pad2
+    Integer( Kind = wi ) :: pad1, pad2
   End Type
-
-
 End Module particle
