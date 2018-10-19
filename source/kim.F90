@@ -76,11 +76,11 @@ Module kim
     !>
     !> `list(n,part)` is the number of the `n`th neighbour of particle `part`
     Integer(Kind=c_int), Allocatable :: neigh_list(:,:)
-    Contains
-      Private
+  Contains
+    Private
 
-      Procedure :: init => kim_neighbour_list_type_init
-      Final :: kim_neighbour_list_type_cleanup
+    Procedure :: init => kim_neighbour_list_type_init
+    Final :: kim_neighbour_list_type_cleanup
   End Type kim_neighbour_list_type
 
   !> Neighbour list type which the KIM api will pass to the routine
@@ -119,12 +119,12 @@ Module kim
     !> ids of first and last atoms to send respectively in each direction
     Integer(Kind=wi) :: first(6), last(6)
 
-    Contains
-      Private
+  Contains
+    Private
 
-      Procedure :: init => kim_comms_type_init
-      Procedure, Public :: set => kim_comms_type_set
-      Final :: kim_comms_type_cleanup
+    Procedure :: init => kim_comms_type_init
+    Procedure, Public :: set => kim_comms_type_set
+    Final :: kim_comms_type_cleanup
   End Type kim_comms_type
 
   !> Type containing KIM data
@@ -858,7 +858,7 @@ Contains
 
   !> Initialise the KIM neighbour list type
   Subroutine kim_neighbour_list_type_init(T,max_atoms,max_list)
-    Class(kim_neighbour_list_type) :: T
+  Class(kim_neighbour_list_type) :: T
     !> Extent of particle arrays. When the padding hint is true this is the
     !> maximum number of atoms on a node excluding the halo. When the hint is
     !> false this is the maximum number of atoms on a node including the halo.
@@ -901,7 +901,7 @@ Contains
 
   !> Initialise the KIM comms type
   Subroutine kim_comms_type_init(T,buffer_size,mxnode)
-    Class(kim_comms_type) :: T
+  Class(kim_comms_type) :: T
     !> Size of the buffer to allocate
     Integer(Kind=wi), Intent(In) :: buffer_size
     !> Number of nodes
@@ -916,7 +916,7 @@ Contains
 
   !> Set the ids of atoms to be sent in kim_share_halo_forces
   Subroutine kim_comms_type_set(T,direction,n_recv,first,last)
-    Class(kim_comms_type) :: T
+  Class(kim_comms_type) :: T
     !> The direction in which data is being sent and received
     Integer(Kind=wi), Intent(In) :: direction
     !> Number of atoms to receive in each direction
@@ -940,7 +940,7 @@ Contains
 
   !> Allocate memory for the KIM type
   Subroutine kim_type_init(T,mxatms)
-    Class(kim_type) :: T
+  Class(kim_type) :: T
     !> Extent of particle arrays including halo particles (coordinates, forces, etc.)
     Integer(Kind=wi), Intent(In) :: mxatms
 

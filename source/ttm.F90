@@ -1,24 +1,24 @@
 Module ttm
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module for defining arrays and initial parameters for 
-! two-temperature model(ttm)
-!
-! copyright - daresbury laboratory
-! authors   - s.l.daraszewicz & m.a.seaton may 2012
-! contrib   - g.khara may 2016
-! contrib   - m.a.seaton september 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 module for defining arrays and initial parameters for 
+  ! two-temperature model(ttm)
+  !
+  ! copyright - daresbury laboratory
+  ! authors   - s.l.daraszewicz & m.a.seaton may 2012
+  ! contrib   - g.khara may 2016
+  ! contrib   - m.a.seaton september 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp
   Use constants,       Only : boltz, tenunt, eu_ev, sqrpi, rt2, ntable, pi, zero_plus
   Use configuration,   Only : configuration_type
   Use domains,         Only : domains_type,idcube
   Use comms,           Only : wp_mpi,comms_type,gsum,gmin,gmax,gcheck,gsync, &
-                              grid1_tag,grid2_tag
+    grid1_tag,grid2_tag
   Use parse,           Only : tabs_2_blanks, get_line, get_word, &
-                              strip_blanks, word_2_real
+    strip_blanks, word_2_real
   Use errors_warnings, Only : error,warning,info
   Use filename, Only : UNIT_TYPE
   Use flow_control, Only : RESTART_KEY_OLD, RESTART_KEY_CLEAN
@@ -59,7 +59,7 @@ Module ttm
     Real ( Kind = wp ) :: Cemax,Tfermi,Diff0
     Real ( Kind = wp ) :: dEdX,sig,sigmax,tdepo,tcdepo
 
-! DEBUG (TODO)
+    ! DEBUG (TODO)
     Real ( Kind = wp ) :: epstart
     Integer :: keyres0 = RESTART_KEY_CLEAN
     Integer :: nstepcpl = 0
@@ -78,15 +78,15 @@ Module ttm
     Logical :: trackInit = .false.
   End Type ttm_type
 
-    Public :: allocate_ttm_arrays , deallocate_ttm_arrays
-    Public :: eltemp_min, eltemp_max,&
-      eltemp_maxKe,eltemp_minKe,eltemp_mean,eltemp_sum
-    Public :: ttm_system_init,ttm_system_revive,ttm_table_read,&
-      ttm_table_scan,boundaryHalo,boundaryCond,depoinit
+  Public :: allocate_ttm_arrays , deallocate_ttm_arrays
+  Public :: eltemp_min, eltemp_max,&
+    eltemp_maxKe,eltemp_minKe,eltemp_mean,eltemp_sum
+  Public :: ttm_system_init,ttm_system_revive,ttm_table_read,&
+    ttm_table_scan,boundaryHalo,boundaryCond,depoinit
 
-  Contains
+Contains
 
-    Subroutine allocate_ttm_arrays(ttm,domain,config,comm)
+  Subroutine allocate_ttm_arrays(ttm,domain,config,comm)
     Type ( ttm_type ), Intent ( InOut ) :: ttm
     Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ), Intent( InOut ) :: config
@@ -106,8 +106,8 @@ Module ttm
     ttm%depostart = 0.0_wp
     ttm%depoend = 0.0_wp
 
-! Setup constants based on fundamental values (found in
-! setup.f90)
+    ! Setup constants based on fundamental values (found in
+    ! setup.f90)
 
     ttm%JKms_to_kBAps = 10.0_wp/(boltz*tenunt)    ! convert W m^-1 K^-1 to kB A^-1 ps^-1
     ttm%Jm3K_to_kBA3  = 1.0e-7_wp/(boltz*tenunt)  ! convert J m^-3 K^-1 to kB A^-3
@@ -117,8 +117,8 @@ Module ttm
 
     If (ttm%l_ttm) Then
 
-! Determine number of ion temperature ttm%cells for domain and
-! offsets for ion temperature determination
+      ! Determine number of ion temperature ttm%cells for domain and
+      ! offsets for ion temperature determination
 
       start = config%cell(1)*Real(domain%idx,wp)*domain%nx_recip
       finish = config%cell(1)*Real(domain%idx+1,wp)*domain%nx_recip
@@ -140,21 +140,21 @@ Module ttm
 
       ttm%numcell = (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)*(ttm%ntcell(3)+2)
 
-! Determine mid-values for ion and electronic temperature grid
+      ! Determine mid-values for ion and electronic temperature grid
 
       ttm%midI(:) = INT((ttm%ntsys(:)+1)/2)
       ttm%midE(:) = INT((ttm%eltsys(:)+1)/2)
 
-! Determine number of multiple ion temperature grids for electronic
-! temperature grids
+      ! Determine number of multiple ion temperature grids for electronic
+      ! temperature grids
 
       ttm%eltcell(1) = Ceiling(Real(ttm%eltsys(1)-ttm%ntsys(1), Kind=wp)/Real(2*ttm%ntsys(1), Kind=wp))
       ttm%eltcell(2) = Ceiling(Real(ttm%eltsys(2)-ttm%ntsys(2), Kind=wp)/Real(2*ttm%ntsys(2), Kind=wp))
       ttm%eltcell(3) = Ceiling(Real(ttm%eltsys(3)-ttm%ntsys(3), Kind=wp)/Real(2*ttm%ntsys(3), Kind=wp))
 
-! Determine positions of boundaries for electronic temperature grids
+      ! Determine positions of boundaries for electronic temperature grids
 
-!   -x boundary
+      !   -x boundary
       numbc = -(ttm%eltsys(1)-ttm%ntsys(1))/2
       numbc = MOD(numbc+ttm%ntsys(1)*(ttm%eltcell(1)+1),ttm%ntsys(1)) + 1
       ttm%zeroE(1) = numbc - 1
@@ -174,7 +174,7 @@ Module ttm
         ttm%ttmbcmap(1) = -1
       End If
 
-!   +x boundary
+      !   +x boundary
       numbc = (ttm%eltsys(1)-ttm%ntsys(1))/2
       numbc = MOD(numbc+ttm%ntsys(1)*(ttm%eltcell(1)+1)-1,ttm%ntsys(1)) + 1
       numbcmap = -(ttm%eltsys(1)-ttm%ntsys(1))/2
@@ -192,8 +192,8 @@ Module ttm
         ttm%ttmbc(2) = 0
         ttm%ttmbcmap(2) = -1
       End If
-    
-!   -y boundary
+
+      !   -y boundary
       numbc = -(ttm%eltsys(2)-ttm%ntsys(2))/2
       numbc = MOD(numbc+ttm%ntsys(2)*(ttm%eltcell(2)+1),ttm%ntsys(2)) + 1
       ttm%zeroE(2) = numbc - 1
@@ -213,7 +213,7 @@ Module ttm
         ttm%ttmbcmap(3) = -1
       End If
 
-!   +y boundary
+      !   +y boundary
       numbc = (ttm%eltsys(2)-ttm%ntsys(2))/2
       numbc = MOD(numbc+ttm%ntsys(2)*(ttm%eltcell(2)+1)-1,ttm%ntsys(2)) + 1
       numbcmap = -(ttm%eltsys(2)-ttm%ntsys(2))/2
@@ -232,7 +232,7 @@ Module ttm
         ttm%ttmbcmap(4) = -1
       End If
 
-!   -z boundary
+      !   -z boundary
       numbc = -(ttm%eltsys(3)-ttm%ntsys(3))/2
       numbc = MOD(numbc+ttm%ntsys(3)*(ttm%eltcell(3)+1),ttm%ntsys(3)) + 1
       ttm%zeroE(3) = numbc - 1
@@ -252,7 +252,7 @@ Module ttm
         ttm%ttmbcmap(5) = -1
       End If
 
-!   +z boundary
+      !   +z boundary
       numbc = (ttm%eltsys(3)-ttm%ntsys(3))/2
       numbc = MOD(numbc+ttm%ntsys(3)*(ttm%eltcell(3)+1)-1,ttm%ntsys(3)) + 1
       numbcmap = -(ttm%eltsys(3)-ttm%ntsys(3))/2
@@ -271,7 +271,7 @@ Module ttm
         ttm%ttmbcmap(6) = -1
       End If
 
-! Derived MPI datatypes for communication of temperatures (MPI 2.x+)
+      ! Derived MPI datatypes for communication of temperatures (MPI 2.x+)
 
       If (comm%mxnode>1) Then
         Call MPI_TYPE_GET_EXTENT (wp_mpi, lb1, dbleth, ierr)
@@ -305,7 +305,7 @@ Module ttm
         ttm%nummsgx = 0; ttm%nummsgy = 0; ttm%nummsgz = 0
       End If
 
-! Array allocation and initialization
+      ! Array allocation and initialization
 
       Allocate (ttm%eltemp(1:ttm%numcell,-ttm%eltcell(1):ttm%eltcell(1),-ttm%eltcell(2):ttm%eltcell(2),&
         -ttm%eltcell(3):ttm%eltcell(3))    , Stat = fail(1))
@@ -315,7 +315,7 @@ Module ttm
       Allocate (ttm%eltemp_adj(1:ttm%numcell,-ttm%eltcell(1):ttm%eltcell(1),&
         -ttm%eltcell(2):ttm%eltcell(2),-ttm%eltcell(3):ttm%eltcell(3)), Stat = fail(4))
       Allocate (ttm%act_ele_cell(1:ttm%numcell,-1:1,-1:1,-1:1), &
-      ttm%old_ele_cell(1:ttm%numcell,-1:1,-1:1,-1:1)            , Stat = fail(5))
+        ttm%old_ele_cell(1:ttm%numcell,-1:1,-1:1,-1:1)            , Stat = fail(5))
       Allocate (ttm%adjust(1:ttm%numcell,-1:1,-1:1,-1:1)                                                          , Stat = fail(6))
 
       If (Any(fail > 0)) Call error(1083)
@@ -363,7 +363,7 @@ Module ttm
 
   Subroutine eltemp_sum (eltempsum,ttm,comm)
 
-! Find sum of electronic temperatures over all active CET voxels
+    ! Find sum of electronic temperatures over all active CET voxels
 
     Type ( ttm_type ), Intent ( InOut ) :: ttm
     Real ( Kind = wp ), Intent (   Out ) :: eltempsum
@@ -434,7 +434,7 @@ Module ttm
 
   Subroutine eltemp_mean (eltempav,ttm,comm)
 
-! Find mean electronic temperature over all active CET voxels
+    ! Find mean electronic temperature over all active CET voxels
 
     Type ( ttm_type ), Intent ( InOut ) :: ttm
     Real ( Kind = wp ), Intent ( Out ) :: eltempav
@@ -512,12 +512,12 @@ Module ttm
 
   Subroutine eltemp_maxKe (temp, eltempmax, ttm,comm)
 
-! Find maximum temperature for calculating tabulated
-! thermal conductivities (ionic or system) over all 
-! active CET voxels (note that system temperature 
-! applies over all CET voxels that do not overlap
-! CIT voxels)
-   
+    ! Find maximum temperature for calculating tabulated
+    ! thermal conductivities (ionic or system) over all 
+    ! active CET voxels (note that system temperature 
+    ! applies over all CET voxels that do not overlap
+    ! CIT voxels)
+
     Type ( ttm_type ), Intent ( InOut ) :: ttm
     Real ( Kind = wp ), Intent ( In )  :: temp
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
@@ -544,8 +544,8 @@ Module ttm
 
   Subroutine eltemp_max (eltempmax,ttm,comm)
 
-! Find maximum electronic temperature over all
-! active CET ttm%cells
+    ! Find maximum electronic temperature over all
+    ! active CET ttm%cells
     Type ( ttm_type ), Intent ( InOut ) :: ttm
     Real ( Kind = wp ), Intent ( Out ) :: eltempmax
     Type( comms_type ), Intent ( InOut )  :: comm
@@ -614,11 +614,11 @@ Module ttm
 
   Subroutine eltemp_minKe (temp, eltempmin, ttm,comm)
 
-! Find minimum temperature for calculating tabulated
-! thermal conductivities (ionic or system) over all 
-! active CET voxels (note that system temperature
-! applies over all CET voxels that do not overlap
-! CIT voxels)
+    ! Find minimum temperature for calculating tabulated
+    ! thermal conductivities (ionic or system) over all 
+    ! active CET voxels (note that system temperature
+    ! applies over all CET voxels that do not overlap
+    ! CIT voxels)
     Type( ttm_type ), Intent( InOut ) :: ttm
     Type( comms_type ), Intent ( InOut )  :: comm
     Real ( Kind = wp ), Intent ( In )  :: temp
@@ -646,8 +646,8 @@ Module ttm
 
   Subroutine eltemp_min (eltempmin,ttm,comm)
 
-! Find minimum electronic temperature over all
-! active CET ttm%cells
+    ! Find minimum electronic temperature over all
+    ! active CET ttm%cells
 
     Type( ttm_type ), Intent( InOut ) :: ttm
     Real( Kind = wp ), Intent ( Out ) :: eltempmin
@@ -713,11 +713,11 @@ Module ttm
     Call gmin (comm,eltempmin)
 
   End Subroutine eltemp_min
-  
+
   Subroutine depoinit(time,ttm,comm)
 
-! determine initial energy deposition to electronic system,
-! both temporally and spatially
+    ! determine initial energy deposition to electronic system,
+    ! both temporally and spatially
     Type( ttm_type ), Intent( inOut ) :: ttm
     Real ( Kind = wp ), Intent( In ) :: time
     Type( comms_type), Intent( InOut ) :: comm
@@ -737,16 +737,16 @@ Module ttm
     ttm%lat_B(:,:,:) = 0.0_wp ! temporal deposition of ttm%lat_U (eV)
     ttm%lat_I(:,:,:) = 0.0_wp ! sum of temporal deposition of ttm%lat_B (eV)
 
-! spatial distribution of track
+    ! spatial distribution of track
 
     Select Case (ttm%sdepoType)
     Case (1)
-    ! Gaussian spatial deposition
+      ! Gaussian spatial deposition
       Call gaussianTrack(ttm%lat_U,ttm,comm)
-     Case (2)
+    Case (2)
       ! Constant (flat) spatial deposition
       Call uniformDist(ttm%lat_U,ttm)
-     Case (3)
+    Case (3)
       ! xy-flat, z-exp spatial deposition
       Call uniformDistZexp(ttm%lat_U,ttm)
     End Select
@@ -754,53 +754,53 @@ Module ttm
     ttm%trackInit = .true.                           ! switch on flag indicating track initialisation is in progress
     If (ttm%depostart<=zero_plus) ttm%depostart = time   ! time (ps) when deposition starts, i.e. current time
 
-! temporal deposition of track: calculate time ttm%normalisation factor
+    ! temporal deposition of track: calculate time ttm%normalisation factor
 
     Select Case (ttm%tdepoType)
-!   type=1: gauss(t)
-    Case (1)
+    !   type=1: gauss(t)
+  Case (1)
     ! Gaussian temporal deposition
-      ttm%norm = 1.0_wp/(sqrpi*rt2*ttm%tdepo)
-      ttm%depoend = ttm%depostart+2.0_wp*ttm%tcdepo*ttm%tdepo
-    Case (2)
+    ttm%norm = 1.0_wp/(sqrpi*rt2*ttm%tdepo)
+    ttm%depoend = ttm%depostart+2.0_wp*ttm%tcdepo*ttm%tdepo
+  Case (2)
     ! decaying exponential temporal deposition
-      ttm%norm = 1.0_wp/(1.0_wp-Exp(-ttm%tcdepo))
-      ttm%depoend = ttm%depostart+2.0_wp*ttm%tcdepo*ttm%tdepo
-    Case (3)
+    ttm%norm = 1.0_wp/(1.0_wp-Exp(-ttm%tcdepo))
+    ttm%depoend = ttm%depostart+2.0_wp*ttm%tcdepo*ttm%tdepo
+  Case (3)
     ! delta temporal deposition
-      ttm%norm = 1.0_wp
-      ttm%depoend = ttm%depostart
-    Case (4)
+    ttm%norm = 1.0_wp
+    ttm%depoend = ttm%depostart
+  Case (4)
     ! pulse temporal deposition
-      ttm%norm = 1.0_wp/ttm%tdepo
-      ttm%depoend = ttm%depostart+ttm%tdepo
-    End Select
+    ttm%norm = 1.0_wp/ttm%tdepo
+    ttm%depoend = ttm%depostart+ttm%tdepo
+  End Select
 
-    ! report start of energy deposition
+  ! report start of energy deposition
 
-    Write(number, '(f14.5)') ttm%depostart
-    Write(message,"(6x,a,a,a)") &
-      'electronic energy deposition starting at time = ',Trim(Adjustl(number)),' ps'
-    Call info(message,.true.)
-    Write(message,"(1x,130('-'))")
-    Call info(message,.true.)
+  Write(number, '(f14.5)') ttm%depostart
+  Write(message,"(6x,a,a,a)") &
+    'electronic energy deposition starting at time = ',Trim(Adjustl(number)),' ps'
+  Call info(message,.true.)
+  Write(message,"(1x,130('-'))")
+  Call info(message,.true.)
 
-  End Subroutine depoinit
+End Subroutine depoinit
 
-  Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp,domain,ttm,comm)
+Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp,domain,ttm,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for writing electronic temperature restart files
-! at job termination or selected intervals in simulation
-!
-! copyright - daresbury laboratory
-! authors   - s.l.daraszewicz & m.a.seaton september 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for writing electronic temperature restart files
+  ! at job termination or selected intervals in simulation
+  !
+  ! copyright - daresbury laboratory
+  ! authors   - s.l.daraszewicz & m.a.seaton september 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( ttm_type ), Intent( InOut )   :: ttm 
-    Integer,             Intent ( In ) :: keyres,nstep,nsteql
+  Type( ttm_type ), Intent( InOut )   :: ttm 
+  Integer,             Intent ( In ) :: keyres,nstep,nsteql
   Real ( Kind = wp ),  Intent ( In ) :: temp,time
   Character (Len = *), Intent ( In ) :: dumpfile
   Type( domains_type ), Intent( In    ) :: domain
@@ -814,13 +814,13 @@ Module ttm
   Integer(Kind=UNIT_TYPE) :: iounit = 225
   Character( Len = 256 ) :: message
 
-! check existence of readable restart file (DUMP_E)
+  ! check existence of readable restart file (DUMP_E)
 
   If (comm%idnode == 0) Inquire(File=dumpfile, Exist=l_tmp)
   Call gcheck(comm,l_tmp)
   If ((.not. l_tmp) .and. keyres==ttm%keyres0) Call error(694)
 
-! if restarting simulation, read restart file
+  ! if restarting simulation, read restart file
 
   If (l_tmp .and. keyres==ttm%keyres0) Then
 
@@ -879,9 +879,9 @@ Module ttm
     Write(message,'(a)') 'electronic temperatures read from DUMP_E file for two-temperature model'
     Call info(message,.true.)
     Write(message,'(1x,"minimum temperature (K) = ",ES11.4,&
-               &/,1x,"maximum temperature (K) = ",ES11.4,&
-               &/,1x,"sum of temperatures (K) = ",ES11.4)') &
-               lat_min, lat_max, lat_sum
+      &/,1x,"maximum temperature (K) = ",ES11.4,&
+      &/,1x,"sum of temperatures (K) = ",ES11.4)') &
+      lat_min, lat_max, lat_sum
     Call info(message,.true.)
     If (comm%idnode==0) Then
       Close (iounit)
@@ -889,8 +889,8 @@ Module ttm
 
   Else
 
-! if not restarting simulation, set electronic temperature grid
-! to system temperature
+    ! if not restarting simulation, set electronic temperature grid
+    ! to system temperature
 
     ttm%eltemp = temp
 
@@ -898,9 +898,9 @@ Module ttm
 
   Return
 
-! Abttm%normal exit from electronic temperature dump file read
+  ! Abttm%normal exit from electronic temperature dump file read
 
-100 Continue
+  100 Continue
 
   Write(message,"(a)") dumpfile, ' data mishmash detected'
   Call error(696,message,.true.)
@@ -909,17 +909,17 @@ Module ttm
 End Subroutine ttm_system_init
 
 Subroutine ttm_system_revive    &
-  (dumpfile,nstep,time,freq,nstrun,ttm,comm)
+    (dumpfile,nstep,time,freq,nstrun,ttm,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for writing electronic temperature restart files
-! at job termination or selected intervals in simulation
-!
-! copyright - daresbury laboratory
-! authors   - s.l.daraszewicz & m.a.seaton september 2015
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for writing electronic temperature restart files
+  ! at job termination or selected intervals in simulation
+  !
+  ! copyright - daresbury laboratory
+  ! authors   - s.l.daraszewicz & m.a.seaton september 2015
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Type( ttm_type ), Intent( InOut )   :: ttm 
   Character (Len = *), Intent ( In ) :: dumpfile
@@ -1006,17 +1006,17 @@ End Subroutine ttm_system_revive
 
 Subroutine ttm_table_read(ttm,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for reading specific heat capacity and coupling
-! constant table files
-!
-! copyright - daresbury laboratory
-! author    - m.a.seaton may 2012
-! contrib   - g.khara may 2016
-! contrib   - m.a.seaton february 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for reading specific heat capacity and coupling
+  ! constant table files
+  !
+  ! copyright - daresbury laboratory
+  ! author    - m.a.seaton may 2012
+  ! contrib   - g.khara may 2016
+  ! contrib   - m.a.seaton february 2017
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Type( ttm_type ), Intent( InOut )   :: ttm 
   Logical                :: safe
   Character( Len = 200 ) :: record
@@ -1026,7 +1026,7 @@ Subroutine ttm_table_read(ttm,comm)
   Type( comms_type ), Intent( InOut ) :: comm
   Character( Len = 256 ) :: message
 
-! read thermal conductivity data
+  ! read thermal conductivity data
 
   If (ttm%KeType == 3) Then
 
@@ -1058,19 +1058,19 @@ Subroutine ttm_table_read(ttm,comm)
     Write(message,'(a)') 'thermal conductivity table read from Ke.dat file for two-temperature model'
     Call info(message,.true.)
     Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
-               &/,1x,"maximum temperature            (K) = ",ES12.4,&
-               &/,1x,"minimum t.c. value   (W m^-1 K^-1) = ",ES12.4,&
-               &/,1x,"maximum t.c. value   (W m^-1 K^-1) = ",ES12.4)') &
-               Minval(ttm%ketable(:,1)),Maxval(ttm%ketable(:,1)),Minval(ttm%ketable(:,2)),Maxval(ttm%ketable(:,2))
+      &/,1x,"maximum temperature            (K) = ",ES12.4,&
+      &/,1x,"minimum t.c. value   (W m^-1 K^-1) = ",ES12.4,&
+      &/,1x,"maximum t.c. value   (W m^-1 K^-1) = ",ES12.4)') &
+      Minval(ttm%ketable(:,1)),Maxval(ttm%ketable(:,1)),Minval(ttm%ketable(:,2)),Maxval(ttm%ketable(:,2))
     Call info(message,.true.)
 
-! convert thermal conductivity values from W m^-1 K^-1 to kB A^-1 ps^-1
+    ! convert thermal conductivity values from W m^-1 K^-1 to kB A^-1 ps^-1
 
     ttm%ketable(1:ttm%kel,2) = ttm%ketable(1:ttm%kel,2)*ttm%JKms_to_kBAps
 
   End If
 
-! read volumetric heat capacity data
+  ! read volumetric heat capacity data
 
   If (ttm%CeType == 3 .or. ttm%CeType == 7) Then
 
@@ -1110,13 +1110,13 @@ Subroutine ttm_table_read(ttm,comm)
     Write(message,'(1x,"maximum v.h.c. value (J m^-3 K^-1) = ",ES12.4)') Maxval(ttm%cetable(:,2))
     Call info(message,.true.)
 
-! convert volumetric heat capacity values from J m^-3 K^-1 to kB A^-3
+    ! convert volumetric heat capacity values from J m^-3 K^-1 to kB A^-3
 
     ttm%cetable(1:ttm%cel,2) = ttm%cetable(1:ttm%cel,2)*ttm%Jm3K_to_kBA3
 
   End If
 
-! read thermal diffusivity data
+  ! read thermal diffusivity data
 
   If (ttm%DeType == 3) Then
 
@@ -1148,19 +1148,19 @@ Subroutine ttm_table_read(ttm,comm)
     Write(message,'(a)') 'thermal diffusivity table read from De.dat file for two-temperature model'
     Call info(message,.true.)
     Write(message,'(1x,"minimum temperature            (K) = ",ES12.4,&
-               &/,1x,"maximum temperature            (K) = ",ES12.4,&
-               &/,1x,"minimum diffusivity value  (m^2/s) = ",ES12.4,&
-               &/,1x,"maximum diffusivity value  (m^2/s) = ",ES12.4)') &
-               Minval(ttm%detable(:,1)),Maxval(ttm%detable(:,1)),Minval(ttm%detable(:,2)),Maxval(ttm%detable(:,2))
+      &/,1x,"maximum temperature            (K) = ",ES12.4,&
+      &/,1x,"minimum diffusivity value  (m^2/s) = ",ES12.4,&
+      &/,1x,"maximum diffusivity value  (m^2/s) = ",ES12.4)') &
+      Minval(ttm%detable(:,1)),Maxval(ttm%detable(:,1)),Minval(ttm%detable(:,2)),Maxval(ttm%detable(:,2))
     Call info(message,.true.)
 
-! convert thermal diffusivity values from m^2 s^-1 to A^2 ps^-1
+    ! convert thermal diffusivity values from m^2 s^-1 to A^2 ps^-1
 
     ttm%detable(1:ttm%del,2) = ttm%detable(1:ttm%del,2)*1e8_wp
 
   End If
 
-! read coupling constant data
+  ! read coupling constant data
 
   If (ttm%gvar>0) Then
 
@@ -1200,7 +1200,7 @@ Subroutine ttm_table_read(ttm,comm)
     Write(message,'(1x,"maximum e-p value    (W m^-3 K^-1) = ",ES12.4)') Maxval(ttm%gtable(:,2))
     Call info(message,.true.)
 
-! convert electron-phonon coupling values from W m^-3 K^-1 to ps^-1
+    ! convert electron-phonon coupling values from W m^-3 K^-1 to ps^-1
 
     ttm%gtable(1:ttm%gel,2) = ttm%gtable(1:ttm%gel,2)*ttm%epc_to_chi
 
@@ -1208,9 +1208,9 @@ Subroutine ttm_table_read(ttm,comm)
 
   Return
 
-! end of file error exit
+  ! end of file error exit
 
-100 Continue
+  100 Continue
 
   If (comm%idnode == 0) Then
     Close(Unit=ntable)
@@ -1221,17 +1221,17 @@ End Subroutine ttm_table_read
 
 Subroutine ttm_table_scan(mxbuff,ttm,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for scanning specific heat capacity,
-! thermal conductivity and electron-phonon coupling
-! constant table files to determine numbers of data points
-!
-! copyright - daresbury laboratory
-! author    - m.a.seaton may 2012
-! contrib   - g.khara    may 2016
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 subroutine for scanning specific heat capacity,
+  ! thermal conductivity and electron-phonon coupling
+  ! constant table files to determine numbers of data points
+  !
+  ! copyright - daresbury laboratory
+  ! author    - m.a.seaton may 2012
+  ! contrib   - g.khara    may 2016
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
   Type( ttm_type ), Intent( InOut )   :: ttm 
@@ -1252,11 +1252,11 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
     fail=0
     Allocate (buffer(1:mxbuff), Stat=fail)
     If (fail > 0) Then
-       Write(message,'(a)') 'ttm_table_scan allocation failure'
-       Call error(0,message)
+      Write(message,'(a)') 'ttm_table_scan allocation failure'
+      Call error(0,message)
     End If
 
-! check existence of thermal conductivity table file
+    ! check existence of thermal conductivity table file
 
     If (ttm%KeType == 3) Then
 
@@ -1269,7 +1269,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
         If (comm%idnode == 0) Open(Unit=ntable, File='Ke.dat', Status='old')
       End If
 
-! determine number of lines of data to read
+      ! determine number of lines of data to read
 
       ttm%kel = 0
       Do While(.true.)
@@ -1286,11 +1286,11 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
         End If
 
       End Do
-5  Continue
+      5  Continue
 
       If (comm%idnode == 0) Close(Unit=ntable)
 
-! check number of data lines and allocate array
+      ! check number of data lines and allocate array
 
       safe = (ttm%kel>0)
       Call gcheck(comm,safe)
@@ -1307,7 +1307,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
 
     End If
 
-! check existence of specific heat capacity table file
+    ! check existence of specific heat capacity table file
 
     If (ttm%CeType == 3) Then
 
@@ -1320,7 +1320,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
         If (comm%idnode == 0) Open(Unit=ntable, File='Ce.dat', Status='old')
       End If
 
-! determine number of lines of data to read
+      ! determine number of lines of data to read
 
       ttm%cel = 0
       Do While(.true.)
@@ -1337,11 +1337,11 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
         End If
 
       End Do
-10  Continue
+      10  Continue
 
       If (comm%idnode == 0) Close(Unit=ntable)
 
-! check number of data lines and allocate array
+      ! check number of data lines and allocate array
 
       safe = (ttm%cel>0)
       Call gcheck(comm,safe)
@@ -1358,7 +1358,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
 
     End If
 
-! check existence of thermal diffusivity table file
+    ! check existence of thermal diffusivity table file
 
     If (ttm%DeType == 3) Then
 
@@ -1371,7 +1371,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
         If (comm%idnode == 0) Open(Unit=ntable, File='De.dat', Status='old')
       End If
 
-! determine number of lines of data to read
+      ! determine number of lines of data to read
 
       ttm%del= 0
       Do While(.true.)
@@ -1388,11 +1388,11 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
         End If
 
       End Do
-15  Continue
+      15  Continue
 
       If (comm%idnode == 0) Close(Unit=ntable)
 
-! check number of data lines and allocate array
+      ! check number of data lines and allocate array
 
       safe = (ttm%del>0)
       Call gcheck(comm,safe)
@@ -1409,7 +1409,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
 
     End If
 
-! check existence of coupling constant table file
+    ! check existence of coupling constant table file
 
     If (ttm%gvar>0) Then
 
@@ -1422,7 +1422,7 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
         If (comm%idnode == 0) Open(Unit=ntable, File='g.dat', Status='old')
       End If
 
-! determine number of lines of data to read
+      ! determine number of lines of data to read
 
       ttm%gel = 0
       Do While(.true.)
@@ -1439,11 +1439,11 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
         End If
 
       End Do
-20  Continue
+      20  Continue
 
       If (comm%idnode == 0) Close(Unit=ntable)
 
-! check number of data lines and allocate array
+      ! check number of data lines and allocate array
 
       safe = (ttm%gel>0)
       Call gcheck(comm,safe)
@@ -1462,36 +1462,36 @@ Subroutine ttm_table_scan(mxbuff,ttm,comm)
 
     Deallocate (buffer, Stat=fail)
     If (fail > 0) Then
-       Write(message,'(a)') 'ttm_table_scan deallocation failure'
-       Call error(0,message)
+      Write(message,'(a)') 'ttm_table_scan deallocation failure'
+      Call error(0,message)
     End If
 
   End If
 
   Return
 
-! end of Ke.dat file error exit
+  ! end of Ke.dat file error exit
 
-100 Continue
+  100 Continue
 
   If (comm%idnode == 0) Close(Unit=ntable)
   Call error(684)
 
-! end of Ce.dat file error exit
+  ! end of Ce.dat file error exit
 
-200 Continue
+  200 Continue
 
   If (comm%idnode == 0) Close(Unit=ntable)
   Call error(686)
 
-! end of g.dat file error exit
+  ! end of g.dat file error exit
 
-300 Continue
+  300 Continue
 
   If (comm%idnode == 0) Close(Unit=ntable)
   Call error(688)
 
-400 Continue
+  400 Continue
 
   If (comm%idnode == 0) Close(Unit=ntable)
   Call error(690)
@@ -1645,7 +1645,7 @@ End Subroutine boundaryHalo
 
 Subroutine boundaryCond (key, temp,ttm,comm)
 
-! appends halo regions of entire electronic temperature lattice with appropriate boundary conditions
+  ! appends halo regions of entire electronic temperature lattice with appropriate boundary conditions
 
 
   Type( ttm_type ), Intent( InOut )   :: ttm 
@@ -1659,555 +1659,555 @@ Subroutine boundaryCond (key, temp,ttm,comm)
 
 
   Select Case (key)
-! Periodic boundary conditions
-  Case (1)
-    If (ttm%ttmbcmap(1)>=0 .or. ttm%ttmbcmap(2)>=0) Then
-      If (comm%mxnode>1) Then
-        Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-          Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-            If (ttm%ttmbcmap(1)>=0) Then
-              ijk1 = 1 + ttm%ttmbc(1) + (ttm%ntcell(1)+2) * (1 + (ttm%ntcell(2)+2))
-              ijk2 = 1 + (ttm%ttmbc(1) - 1) + (ttm%ntcell(1)+2) * (1 + (ttm%ntcell(2)+2))
-              ii = -ttm%eltcell(1)
-              Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgx, ttm%ttmbcmap(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-              Call MPI_IRECV (ttm%eltemp(ijk2,-ii,jj,kk), 1, ttm%tmpmsgx, ttm%ttmbcmap(1), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
-            End If
-            If (ttm%ttmbcmap(2)>=0) Then
-              ijk1 = 1 + ttm%ttmbc(2) + (ttm%ntcell(1)+2) * (1 + (ttm%ntcell(2)+2))
-              ijk2 = 1 + (ttm%ttmbc(2) + 1) + (ttm%ntcell(1)+2) * (1 + (ttm%ntcell(2)+2))
-              ii = ttm%eltcell(1)
-              Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgx, ttm%ttmbcmap(2), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-              Call MPI_IRECV (ttm%eltemp(ijk2,-ii,jj,kk), 1, ttm%tmpmsgx, ttm%ttmbcmap(2), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
-            End If
-            Call MPI_WAITALL (4, req, stat, ierr)
-          End Do
-        End Do
-      Else
-        Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-          Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-            Do k = 1, ttm%ntcell(3)
-              Do j = 1, ttm%ntcell(2)
-                ijk1 = 1 + ttm%ttmbc(1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-                ijk2 = 1 + (ttm%ttmbc(2) + 1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-                ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = ttm%eltemp(ijk1,-ttm%eltcell(1),jj,kk)
-                ijk1 = 1 + ttm%ttmbc(2) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-                ijk2 = 1 + (ttm%ttmbc(1) - 1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-                ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = ttm%eltemp(ijk1,ttm%eltcell(1),jj,kk)
-              End Do
-            End Do
-          End Do
-        End Do
-      End If
-    End If
-
-    If (ttm%ttmbcmap(3)>=0 .or. ttm%ttmbcmap(4)>=0) Then
-      If (comm%mxnode>1) Then
-        Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-          Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-            If (ttm%ttmbcmap(3)>=0) Then
-              ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) + (ttm%ntcell(2)+2))
-              ijk2 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) - 1 + (ttm%ntcell(2)+2))
-              jj = -ttm%eltcell(2)
-              Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgy, ttm%ttmbcmap(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-              Call MPI_IRECV (ttm%eltemp(ijk2,ii,-jj,kk), 1, ttm%tmpmsgy, ttm%ttmbcmap(3), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
-            End If
-            If (ttm%ttmbcmap(4)>=0) Then
-              ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + (ttm%ntcell(2)+2))
-              ijk2 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + 1 + (ttm%ntcell(2)+2))
-              jj = ttm%eltcell(2)
-              Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgy, ttm%ttmbcmap(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-              Call MPI_IRECV (ttm%eltemp(ijk2,ii,-jj,kk), 1, ttm%tmpmsgy, ttm%ttmbcmap(4), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
-            End If
-            Call MPI_WAITALL (4, req, stat, ierr)
-          End Do
-        End Do
-      Else
-        Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-          Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-            Do k = 1, ttm%ntcell(3)
-              Do i = 0, ttm%ntcell(1)+1
-                ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) + k * (ttm%ntcell(2)+2))
-                ijk2 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + 1 + k * (ttm%ntcell(2)+2))
-                ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = ttm%eltemp(ijk1,ii,-ttm%eltcell(2),kk)
-                ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + k * (ttm%ntcell(2)+2))
-                ijk2 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) - 1 + k * (ttm%ntcell(2)+2))
-                ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = ttm%eltemp(ijk1,ii,ttm%eltcell(2),kk)
-              End Do
-            End Do
-          End Do
-        End Do
-      End If
-    End If
-
-    If (ttm%ttmbcmap(5)>=0 .or. ttm%ttmbcmap(6)>=0) Then
-      If (comm%mxnode>1) Then
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-            If (ttm%ttmbcmap(5)>=0) Then
-              ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(5) * (ttm%ntcell(2)+2))
-              ijk2 = 1 + (ttm%ntcell(1)+2) * ((ttm%ttmbc(5) - 1) * (ttm%ntcell(2)+2))
-              kk = -ttm%eltcell(3)
-              Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgz, ttm%ttmbcmap(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
-              Call MPI_IRECV (ttm%eltemp(ijk2,ii,jj,-kk), 1, ttm%tmpmsgz, ttm%ttmbcmap(5), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
-            End If
-            If (ttm%ttmbcmap(6)>=0) Then
-              ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(6) * (ttm%ntcell(2)+2))
-              ijk2 = 1 + (ttm%ntcell(1)+2) * ((ttm%ttmbc(6) + 1) * (ttm%ntcell(2)+2))
-              kk = ttm%eltcell(3)
-              Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgz, ttm%ttmbcmap(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
-              Call MPI_IRECV (ttm%eltemp(ijk2,ii,jj,-kk), 1, ttm%tmpmsgz, ttm%ttmbcmap(6), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
-            End If
-            Call MPI_WAITALL (4, req, stat, ierr)
-          End Do
-        End Do
-      Else
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-            Do j = 0, ttm%ntcell(2)+1
-              Do i = 0, ttm%ntcell(1)+1
-                ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(5) * (ttm%ntcell(2)+2))
-                ijk2 = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ttmbc(6) + 1) * (ttm%ntcell(2)+2))
-                ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))
-                ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(6) * (ttm%ntcell(2)+2))
-                ijk2 = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ttmbc(5) - 1) * (ttm%ntcell(2)+2))
-                ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))
-              End Do
-            End Do
-          End Do
-        End Do
-      End If
-
-    End If
-
-! Infinite sink/source (Dirichlet) boundary conditions
-  Case (2)
-    If (ttm%ttmbcmap(1)>=0) Then
+  ! Periodic boundary conditions
+Case (1)
+  If (ttm%ttmbcmap(1)>=0 .or. ttm%ttmbcmap(2)>=0) Then
+    If (comm%mxnode>1) Then
       Do kk = -ttm%eltcell(3), ttm%eltcell(3)
         Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do k = 1, ttm%ntcell(3)
-            Do j = 1, ttm%ntcell(2)
-              ijk2 = 1 + (ttm%ttmbc(1)-1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = temp
-            End Do
-          End Do
+          If (ttm%ttmbcmap(1)>=0) Then
+            ijk1 = 1 + ttm%ttmbc(1) + (ttm%ntcell(1)+2) * (1 + (ttm%ntcell(2)+2))
+            ijk2 = 1 + (ttm%ttmbc(1) - 1) + (ttm%ntcell(1)+2) * (1 + (ttm%ntcell(2)+2))
+            ii = -ttm%eltcell(1)
+            Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgx, ttm%ttmbcmap(1), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+            Call MPI_IRECV (ttm%eltemp(ijk2,-ii,jj,kk), 1, ttm%tmpmsgx, ttm%ttmbcmap(1), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+          End If
+          If (ttm%ttmbcmap(2)>=0) Then
+            ijk1 = 1 + ttm%ttmbc(2) + (ttm%ntcell(1)+2) * (1 + (ttm%ntcell(2)+2))
+            ijk2 = 1 + (ttm%ttmbc(2) + 1) + (ttm%ntcell(1)+2) * (1 + (ttm%ntcell(2)+2))
+            ii = ttm%eltcell(1)
+            Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgx, ttm%ttmbcmap(2), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+            Call MPI_IRECV (ttm%eltemp(ijk2,-ii,jj,kk), 1, ttm%tmpmsgx, ttm%ttmbcmap(2), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
+          End If
+          Call MPI_WAITALL (4, req, stat, ierr)
         End Do
       End Do
-    End If
-
-    If (ttm%ttmbcmap(2)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do k = 1, ttm%ntcell(3)
-            Do j = 1, ttm%ntcell(2)
-              ijk2 = 1 + (ttm%ttmbc(2)+1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = temp
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(3)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do k = 1, ttm%ntcell(3)
-            Do i = 0, ttm%ntcell(1)+1
-              ijk2 = 1 + i + (ttm%ntcell(1)+2) * ((ttm%ttmbc(3)-1) + k * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = temp
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(4)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do k = 1, ttm%ntcell(3)
-            Do i = 0, ttm%ntcell(1)+1
-              ijk2 = 1 + i + (ttm%ntcell(1)+2) * ((ttm%ttmbc(4)+1) + k * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = temp
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(5)>=0) Then
-      Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do j = 0, ttm%ntcell(2)+1
-            Do i = 0, ttm%ntcell(1)+1
-              ijk2 = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ttmbc(5)-1) * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = temp
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(6)>=0) Then
-      Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do j = 0, ttm%ntcell(2)+1
-            Do i = 0, ttm%ntcell(1)+1
-              ijk2 = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ttmbc(6)+1) * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = temp
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-! 'Confined' (von Neumann) boundary conditions
-  Case (3)
-    If (ttm%ttmbcmap(1)>=0) Then
+    Else
       Do kk = -ttm%eltcell(3), ttm%eltcell(3)
         Do jj = -ttm%eltcell(2), ttm%eltcell(2)
           Do k = 1, ttm%ntcell(3)
             Do j = 1, ttm%ntcell(2)
               ijk1 = 1 + ttm%ttmbc(1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - 1
-              ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = ttm%eltemp(ijk1,-ttm%eltcell(1),jj,kk)
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(2)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do k = 1, ttm%ntcell(3)
-            Do j = 1, ttm%ntcell(2)
+              ijk2 = 1 + (ttm%ttmbc(2) + 1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+              ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = ttm%eltemp(ijk1,-ttm%eltcell(1),jj,kk)
               ijk1 = 1 + ttm%ttmbc(2) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + 1
-              ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = ttm%eltemp(ijk1,ttm%eltcell(1),jj,kk)
+              ijk2 = 1 + (ttm%ttmbc(1) - 1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+              ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = ttm%eltemp(ijk1,ttm%eltcell(1),jj,kk)
             End Do
           End Do
         End Do
       End Do
     End If
+  End If
 
-    If (ttm%ttmbcmap(3)>=0) Then
+  If (ttm%ttmbcmap(3)>=0 .or. ttm%ttmbcmap(4)>=0) Then
+    If (comm%mxnode>1) Then
+      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+          If (ttm%ttmbcmap(3)>=0) Then
+            ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) + (ttm%ntcell(2)+2))
+            ijk2 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) - 1 + (ttm%ntcell(2)+2))
+            jj = -ttm%eltcell(2)
+            Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgy, ttm%ttmbcmap(3), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+            Call MPI_IRECV (ttm%eltemp(ijk2,ii,-jj,kk), 1, ttm%tmpmsgy, ttm%ttmbcmap(3), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+          End If
+          If (ttm%ttmbcmap(4)>=0) Then
+            ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + (ttm%ntcell(2)+2))
+            ijk2 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + 1 + (ttm%ntcell(2)+2))
+            jj = ttm%eltcell(2)
+            Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgy, ttm%ttmbcmap(4), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+            Call MPI_IRECV (ttm%eltemp(ijk2,ii,-jj,kk), 1, ttm%tmpmsgy, ttm%ttmbcmap(4), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
+          End If
+          Call MPI_WAITALL (4, req, stat, ierr)
+        End Do
+      End Do
+    Else
       Do kk = -ttm%eltcell(3), ttm%eltcell(3)
         Do ii = -ttm%eltcell(1), ttm%eltcell(1)
           Do k = 1, ttm%ntcell(3)
             Do i = 0, ttm%ntcell(1)+1
               ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - (ttm%ntcell(1)+2)
-              ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = ttm%eltemp(ijk1,ii,-ttm%eltcell(2),kk)
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(4)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do k = 1, ttm%ntcell(3)
-            Do i = 0, ttm%ntcell(1)+1
+              ijk2 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + 1 + k * (ttm%ntcell(2)+2))
+              ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = ttm%eltemp(ijk1,ii,-ttm%eltcell(2),kk)
               ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + (ttm%ntcell(1)+2)
-              ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = ttm%eltemp(ijk1,ii,ttm%eltcell(2),kk)
+              ijk2 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) - 1 + k * (ttm%ntcell(2)+2))
+              ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = ttm%eltemp(ijk1,ii,ttm%eltcell(2),kk)
             End Do
           End Do
         End Do
       End Do
     End If
+  End If
 
-    If (ttm%ttmbcmap(5)>=0) Then
+  If (ttm%ttmbcmap(5)>=0 .or. ttm%ttmbcmap(6)>=0) Then
+    If (comm%mxnode>1) Then
+      Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+          If (ttm%ttmbcmap(5)>=0) Then
+            ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(5) * (ttm%ntcell(2)+2))
+            ijk2 = 1 + (ttm%ntcell(1)+2) * ((ttm%ttmbc(5) - 1) * (ttm%ntcell(2)+2))
+            kk = -ttm%eltcell(3)
+            Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgz, ttm%ttmbcmap(5), Grid1_tag, MPI_COMM_WORLD, req(1), ierr)
+            Call MPI_IRECV (ttm%eltemp(ijk2,ii,jj,-kk), 1, ttm%tmpmsgz, ttm%ttmbcmap(5), Grid2_tag, MPI_COMM_WORLD, req(2), ierr)
+          End If
+          If (ttm%ttmbcmap(6)>=0) Then
+            ijk1 = 1 + (ttm%ntcell(1)+2) * (ttm%ttmbc(6) * (ttm%ntcell(2)+2))
+            ijk2 = 1 + (ttm%ntcell(1)+2) * ((ttm%ttmbc(6) + 1) * (ttm%ntcell(2)+2))
+            kk = ttm%eltcell(3)
+            Call MPI_ISEND (ttm%eltemp(ijk1,ii,jj,kk) , 1, ttm%tmpmsgz, ttm%ttmbcmap(6), Grid2_tag, MPI_COMM_WORLD, req(3), ierr)
+            Call MPI_IRECV (ttm%eltemp(ijk2,ii,jj,-kk), 1, ttm%tmpmsgz, ttm%ttmbcmap(6), Grid1_tag, MPI_COMM_WORLD, req(4), ierr)
+          End If
+          Call MPI_WAITALL (4, req, stat, ierr)
+        End Do
+      End Do
+    Else
       Do jj = -ttm%eltcell(2), ttm%eltcell(2)
         Do ii = -ttm%eltcell(1), ttm%eltcell(1)
           Do j = 0, ttm%ntcell(2)+1
             Do i = 0, ttm%ntcell(1)+1
               ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(5) * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
-              ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(6)>=0) Then
-      Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do j = 0, ttm%ntcell(2)+1
-            Do i = 0, ttm%ntcell(1)+1
+              ijk2 = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ttmbc(6) + 1) * (ttm%ntcell(2)+2))
+              ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))
               ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(6) * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
-              ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))
+              ijk2 = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ttmbc(5) - 1) * (ttm%ntcell(2)+2))
+              ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))
             End Do
           End Do
         End Do
       End Do
     End If
 
-! Mixed case: Infinite sink/source (Dirichlet) boundaries in x/y-directions
-!             'Confined' (von Neumann) boundary in z-direction
-  Case (4)
-    If (ttm%ttmbcmap(1)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do k = 1, ttm%ntcell(3)
-            Do j = 1, ttm%ntcell(2)
-              ijk2 = 1 + (ttm%ttmbc(1)-1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = temp
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
+  End If
 
-    If (ttm%ttmbcmap(2)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do k = 1, ttm%ntcell(3)
-            Do j = 1, ttm%ntcell(2)
-              ijk2 = 1 + (ttm%ttmbc(2)+1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = temp
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(3)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do k = 1, ttm%ntcell(3)
-            Do i = 0, ttm%ntcell(1)+1
-              ijk2 = 1 + i + (ttm%ntcell(1)+2) * ((ttm%ttmbc(3)-1) + k * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = temp
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(4)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do k = 1, ttm%ntcell(3)
-            Do i = 0, ttm%ntcell(1)+1
-              ijk2 = 1 + i + (ttm%ntcell(1)+2) * ((ttm%ttmbc(4)+1) + k * (ttm%ntcell(2)+2))
-              ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = temp
-            End Do
-          End Do
-        End Do
-      End Do
-    End If
-
-    If (ttm%ttmbcmap(5)>=0) Then
+  ! Infinite sink/source (Dirichlet) boundary conditions
+Case (2)
+  If (ttm%ttmbcmap(1)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
       Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do j = 0, ttm%ntcell(2)+1
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(5) * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
-              ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))
-            End Do
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk2 = 1 + (ttm%ttmbc(1)-1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = temp
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(6)>=0) Then
+  If (ttm%ttmbcmap(2)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
       Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do j = 0, ttm%ntcell(2)+1
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(6) * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
-              ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))
-            End Do
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk2 = 1 + (ttm%ttmbc(2)+1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = temp
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-! Robin boundary conditions
-  Case (5)
-    If (ttm%ttmbcmap(1)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do k = 1, ttm%ntcell(3)
-            Do j = 1, ttm%ntcell(2)
-              ijk1 = 1 + ttm%ttmbc(1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - 1
-              ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = ttm%fluxout*(ttm%eltemp(ijk1,-ttm%eltcell(1),jj,kk)-temp) + temp
-            End Do
+  If (ttm%ttmbcmap(3)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk2 = 1 + i + (ttm%ntcell(1)+2) * ((ttm%ttmbc(3)-1) + k * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = temp
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(2)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do k = 1, ttm%ntcell(3)
-            Do j = 1, ttm%ntcell(2)
-              ijk1 = 1 + ttm%ttmbc(2) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + 1
-              ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = ttm%fluxout*(ttm%eltemp(ijk1,ttm%eltcell(1),jj,kk)-temp) + temp
-            End Do
+  If (ttm%ttmbcmap(4)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk2 = 1 + i + (ttm%ntcell(1)+2) * ((ttm%ttmbc(4)+1) + k * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = temp
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(3)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do k = 1, ttm%ntcell(3)
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - (ttm%ntcell(1)+2)
-              ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = ttm%fluxout*(ttm%eltemp(ijk1,ii,-ttm%eltcell(2),kk)-temp) + temp
-            End Do
+  If (ttm%ttmbcmap(5)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk2 = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ttmbc(5)-1) * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = temp
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(4)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do k = 1, ttm%ntcell(3)
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + (ttm%ntcell(1)+2)
-              ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = ttm%fluxout*(ttm%eltemp(ijk1,ii,ttm%eltcell(2),kk)-temp) + temp
-            End Do
+  If (ttm%ttmbcmap(6)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk2 = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ttmbc(6)+1) * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = temp
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(5)>=0) Then
+  ! 'Confined' (von Neumann) boundary conditions
+Case (3)
+  If (ttm%ttmbcmap(1)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
       Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do j = 0, ttm%ntcell(2)+1
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(5) * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
-              ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%fluxout*(ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))-temp) + temp
-            End Do
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk1 = 1 + ttm%ttmbc(1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - 1
+            ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = ttm%eltemp(ijk1,-ttm%eltcell(1),jj,kk)
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(6)>=0) Then
+  If (ttm%ttmbcmap(2)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
       Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do j = 0, ttm%ntcell(2)+1
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(6) * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
-              ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%fluxout*(ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))-temp) + temp
-            End Do
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk1 = 1 + ttm%ttmbc(2) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + 1
+            ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = ttm%eltemp(ijk1,ttm%eltcell(1),jj,kk)
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-! Mixed case: Robin boundaries in x/y-directions
-!             'Confined' (von Neumann) boundary in z-direction
-  Case (6)
-    If (ttm%ttmbcmap(1)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do k = 1, ttm%ntcell(3)
-            Do j = 1, ttm%ntcell(2)
-              ijk1 = 1 + ttm%ttmbc(1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - 1
-              ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = ttm%fluxout*(ttm%eltemp(ijk1,-ttm%eltcell(1),jj,kk)-temp) + temp
-            End Do
+  If (ttm%ttmbcmap(3)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - (ttm%ntcell(1)+2)
+            ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = ttm%eltemp(ijk1,ii,-ttm%eltcell(2),kk)
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(2)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-          Do k = 1, ttm%ntcell(3)
-            Do j = 1, ttm%ntcell(2)
-              ijk1 = 1 + ttm%ttmbc(2) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + 1
-              ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = ttm%fluxout*(ttm%eltemp(ijk1,ttm%eltcell(1),jj,kk)-temp) + temp
-            End Do
+  If (ttm%ttmbcmap(4)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + (ttm%ntcell(1)+2)
+            ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = ttm%eltemp(ijk1,ii,ttm%eltcell(2),kk)
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(3)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do k = 1, ttm%ntcell(3)
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - (ttm%ntcell(1)+2)
-              ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = ttm%fluxout*(ttm%eltemp(ijk1,ii,-ttm%eltcell(2),kk)-temp) + temp
-            End Do
+  If (ttm%ttmbcmap(5)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(5) * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
+            ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(4)>=0) Then
-      Do kk = -ttm%eltcell(3), ttm%eltcell(3)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do k = 1, ttm%ntcell(3)
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + k * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + (ttm%ntcell(1)+2)
-              ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = ttm%fluxout*(ttm%eltemp(ijk1,ii,ttm%eltcell(2),kk)-temp) + temp
-            End Do
+  If (ttm%ttmbcmap(6)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(6) * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
+            ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(5)>=0) Then
+  ! Mixed case: Infinite sink/source (Dirichlet) boundaries in x/y-directions
+  !             'Confined' (von Neumann) boundary in z-direction
+Case (4)
+  If (ttm%ttmbcmap(1)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
       Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do j = 0, ttm%ntcell(2)+1
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(5) * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 - (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
-              ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))
-            End Do
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk2 = 1 + (ttm%ttmbc(1)-1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = temp
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-    If (ttm%ttmbcmap(6)>=0) Then
+  If (ttm%ttmbcmap(2)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
       Do jj = -ttm%eltcell(2), ttm%eltcell(2)
-        Do ii = -ttm%eltcell(1), ttm%eltcell(1)
-          Do j = 0, ttm%ntcell(2)+1
-            Do i = 0, ttm%ntcell(1)+1
-              ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(6) * (ttm%ntcell(2)+2))
-              ijk2 = ijk1 + (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
-              ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))
-            End Do
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk2 = 1 + (ttm%ttmbc(2)+1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = temp
           End Do
         End Do
       End Do
-    End If
+    End Do
+  End If
 
-  End Select
+  If (ttm%ttmbcmap(3)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk2 = 1 + i + (ttm%ntcell(1)+2) * ((ttm%ttmbc(3)-1) + k * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(4)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk2 = 1 + i + (ttm%ntcell(1)+2) * ((ttm%ttmbc(4)+1) + k * (ttm%ntcell(2)+2))
+            ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(5)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(5) * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
+            ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(6)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(6) * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
+            ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  ! Robin boundary conditions
+Case (5)
+  If (ttm%ttmbcmap(1)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk1 = 1 + ttm%ttmbc(1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - 1
+            ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = ttm%fluxout*(ttm%eltemp(ijk1,-ttm%eltcell(1),jj,kk)-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(2)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk1 = 1 + ttm%ttmbc(2) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + 1
+            ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = ttm%fluxout*(ttm%eltemp(ijk1,ttm%eltcell(1),jj,kk)-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(3)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - (ttm%ntcell(1)+2)
+            ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = ttm%fluxout*(ttm%eltemp(ijk1,ii,-ttm%eltcell(2),kk)-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(4)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + (ttm%ntcell(1)+2)
+            ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = ttm%fluxout*(ttm%eltemp(ijk1,ii,ttm%eltcell(2),kk)-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(5)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(5) * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
+            ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%fluxout*(ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(6)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(6) * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
+            ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%fluxout*(ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  ! Mixed case: Robin boundaries in x/y-directions
+  !             'Confined' (von Neumann) boundary in z-direction
+Case (6)
+  If (ttm%ttmbcmap(1)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk1 = 1 + ttm%ttmbc(1) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - 1
+            ttm%eltemp(ijk2,-ttm%eltcell(1),jj,kk) = ttm%fluxout*(ttm%eltemp(ijk1,-ttm%eltcell(1),jj,kk)-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(2)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+        Do k = 1, ttm%ntcell(3)
+          Do j = 1, ttm%ntcell(2)
+            ijk1 = 1 + ttm%ttmbc(2) + (ttm%ntcell(1)+2) * (j + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + 1
+            ttm%eltemp(ijk2,ttm%eltcell(1),jj,kk) = ttm%fluxout*(ttm%eltemp(ijk1,ttm%eltcell(1),jj,kk)-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(3)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(3) + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - (ttm%ntcell(1)+2)
+            ttm%eltemp(ijk2,ii,-ttm%eltcell(2),kk) = ttm%fluxout*(ttm%eltemp(ijk1,ii,-ttm%eltcell(2),kk)-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(4)>=0) Then
+    Do kk = -ttm%eltcell(3), ttm%eltcell(3)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do k = 1, ttm%ntcell(3)
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (ttm%ttmbc(4) + k * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + (ttm%ntcell(1)+2)
+            ttm%eltemp(ijk2,ii,ttm%eltcell(2),kk) = ttm%fluxout*(ttm%eltemp(ijk1,ii,ttm%eltcell(2),kk)-temp) + temp
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(5)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(5) * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 - (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
+            ttm%eltemp(ijk2,ii,jj,-ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,-ttm%eltcell(3))
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+  If (ttm%ttmbcmap(6)>=0) Then
+    Do jj = -ttm%eltcell(2), ttm%eltcell(2)
+      Do ii = -ttm%eltcell(1), ttm%eltcell(1)
+        Do j = 0, ttm%ntcell(2)+1
+          Do i = 0, ttm%ntcell(1)+1
+            ijk1 = 1 + i + (ttm%ntcell(1)+2) * (j + ttm%ttmbc(6) * (ttm%ntcell(2)+2))
+            ijk2 = ijk1 + (ttm%ntcell(1)+2)*(ttm%ntcell(2)+2)
+            ttm%eltemp(ijk2,ii,jj,ttm%eltcell(3)) = ttm%eltemp(ijk1,ii,jj,ttm%eltcell(3))
+          End Do
+        End Do
+      End Do
+    End Do
+  End If
+
+End Select
 
 End Subroutine boundaryCond
 
 Subroutine uniformDist(lat_in,ttm)
 
-! implement constant (homogeneous) spatial deposition
+  ! implement constant (homogeneous) spatial deposition
 
   Type( ttm_type ), Intent( InOut )   :: ttm 
   Real( Kind = wp ), Intent ( Inout ), Dimension(0:ttm%ntcell(1)+1,0:ttm%ntcell(2)+1,0:ttm%ntcell(3)+1) :: lat_in
@@ -2232,9 +2232,9 @@ End Subroutine uniformDist
 
 Subroutine uniformDistZexp(lat_in,ttm)
 
-! implement constant (homogeneous) spatial deposition
-! in x and y-directions, exponential decay of fluence
-! in z-direction (only with laser)
+  ! implement constant (homogeneous) spatial deposition
+  ! in x and y-directions, exponential decay of fluence
+  ! in z-direction (only with laser)
 
   Type( ttm_type ), Intent( InOut )   :: ttm 
   Real( Kind = wp ), Intent ( Inout ), Dimension(0:ttm%ntcell(1)+1,0:ttm%ntcell(2)+1,0:ttm%ntcell(3)+1) :: lat_in
@@ -2264,7 +2264,7 @@ End Subroutine uniformDistZexp
 
 Subroutine gaussianTrack(lat_in, ttm,comm)
 
-! implement gaussian spatial deposition
+  ! implement gaussian spatial deposition
 
   Type( ttm_type ), Intent( InOut )   :: ttm 
   Real ( Kind = wp ), Intent ( Inout ), Dimension(0:ttm%ntcell(1)+1,0:ttm%ntcell(2)+1,0:ttm%ntcell(3)+1) :: lat_in
@@ -2288,7 +2288,7 @@ Subroutine gaussianTrack(lat_in, ttm,comm)
   sig2y = 2.0_wp*sigcelly*sigcelly
   sigmamx = ttm%sigmax*sigcellx
   sigmamy = ttm%sigmax*sigcelly
-  
+
   ! if cutoff larger than ionic temperature grid,
   ! warn of deposition errors
 
@@ -2323,7 +2323,7 @@ Subroutine gaussianTrack(lat_in, ttm,comm)
       iim2 = -(ii-0.5_wp)*(ii-0.5_wp)/sig2x
       If (Abs(ii)<=sgmx .and. Abs(jj)<=sgmy) Then
         lat_in(i,j,1:ttm%ntcell(3)) = 0.2_wp*normdEdX/(2.0_wp*pi*sigcellx*sigcelly)*&
-                                  (Exp(ii2+jj2)+Exp(iim2+jj2)+Exp(iim2+jj2)+Exp(ii2+jjp2)+Exp(ii2+jjm2))
+          (Exp(ii2+jj2)+Exp(iim2+jj2)+Exp(iim2+jj2)+Exp(ii2+jjp2)+Exp(ii2+jjm2))
       End If
     End Do
   End Do

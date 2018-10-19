@@ -1,17 +1,17 @@
 Module dpd
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module declaring global DPD variables and arrays
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov march 2016
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 module declaring global DPD variables and arrays
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov march 2016
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,wi
   Use comms,        Only : comms_type,gsum,gcheck,gmax,DpdVExp_tag,wp_mpi, &
-                           gsend,gwait,girecv
+    gsend,gwait,girecv
   Use configuration,       Only : configuration_type
   Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type
@@ -21,7 +21,7 @@ Module dpd
   Use errors_warnings, Only : error, warning
   Use numerics,        Only : seed_type,box_mueller_saru2
   Use thermostat, Only : thermostat_type,DPD_FIRST_ORDER,DPD_SECOND_ORDER, &
-                         VV_FIRST_STAGE,VV_SECOND_STAGE
+    VV_FIRST_STAGE,VV_SECOND_STAGE
   Use statistics, Only : stats_type
   Use neighbours, Only : neighbours_type
   Implicit None
@@ -207,7 +207,7 @@ Contains
 
           tmp    =  thermo%gamdpd(key) * (scrn**2)
           dgamma = -tmp * ( xxt(k)*(config%vxx(i)-config%vxx(j)) + &
-                    yyt(k)*(config%vyy(i)-config%vyy(j)) + zzt(k)*(config%vzz(i)-config%vzz(j)) )
+            yyt(k)*(config%vyy(i)-config%vyy(j)) + zzt(k)*(config%vzz(i)-config%vzz(j)) )
 
           gamma=rgamma+dgamma
 
@@ -387,7 +387,7 @@ Contains
           tmp    =  thermo%gamdpd(key) * (scrn**2)
           scl    =  tmp / (1.0_wp+tmp*tst_p)
           dgamma = -tmp * ( xxt(k)*(config%vxx(i)-config%vxx(j)) + &
-                    yyt(k)*(config%vyy(i)-config%vyy(j)) + zzt(k)*(config%vzz(i)-config%vzz(j)) )
+            yyt(k)*(config%vyy(i)-config%vyy(j)) + zzt(k)*(config%vzz(i)-config%vzz(j)) )
 
           gamma=rgamma + scl*(dgamma-rgamma)
 

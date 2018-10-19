@@ -1,14 +1,14 @@
 Module plumed
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module declaring global PLUMED variables and arrays
-!
-! copyright - daresbury laboratory
-! author    - a.m.elena september 2015
-! contrib   - i.t.todorov march 2016
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 module declaring global PLUMED variables and arrays
+  !
+  ! copyright - daresbury laboratory
+  ! author    - a.m.elena september 2015
+  ! contrib   - i.t.todorov march 2016
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,wi
   Use comms,  Only : comms_type
@@ -42,8 +42,8 @@ Module plumed
     Real( Kind = wp ) :: virial(1:9)
 
     Integer( Kind = wi ) :: version    = 0, &
-                            stop       = 0, &
-                            has_plumed = 0
+      stop       = 0, &
+      has_plumed = 0
   End Type plumed_type
 
   ! PLUMED parameters
@@ -75,25 +75,25 @@ Contains
     Call plumed_f_installed(plume%has_plumed)
 
     If (plume%has_plumed > 0) Then
-       Call plumed_f_gcreate()
-       Call plumed_f_gcmd("getApiVersion"//sn,plume%version)
-       Call plumed_f_gcmd("setRealPrecision"//sn,plume%prec)
-       Call plumed_f_gcmd("setMDEnergyUnits"//sn,plumed_energyUnits)
-       Call plumed_f_gcmd("setMDLengthUnits"//sn,plumed_lengthUnits)
-       Call plumed_f_gcmd("setMDTimeUnits"//sn,plumed_timeUnits)
-       Call plumed_f_gcmd("setMPIFComm"//sn,comm%comm)
-! Ideally would change file names here into names that can be controlled by user
-! from control
-       Call plumed_f_gcmd("setPlumedDat"//sn,Trim(plume%input)//sn)
-       Call plumed_f_gcmd("setLogFile"//sn,Trim(plume%logfile)//sn)
-       Call plumed_f_gcmd("setNatoms"//sn,megatm)
-! The name should be updated when there are new releases of dlpoly
-       Call plumed_f_gcmd("setMDEngine"//sn,"DL_POLY "//DLP_VERSION//sn)
-       Call plumed_f_gcmd("setTimestep"//sn,tstep)
-       Call plumed_f_gcmd("setKbT"//sn,temp*boltz)
-       Call plumed_f_gcmd("init"//sn,0)
+      Call plumed_f_gcreate()
+      Call plumed_f_gcmd("getApiVersion"//sn,plume%version)
+      Call plumed_f_gcmd("setRealPrecision"//sn,plume%prec)
+      Call plumed_f_gcmd("setMDEnergyUnits"//sn,plumed_energyUnits)
+      Call plumed_f_gcmd("setMDLengthUnits"//sn,plumed_lengthUnits)
+      Call plumed_f_gcmd("setMDTimeUnits"//sn,plumed_timeUnits)
+      Call plumed_f_gcmd("setMPIFComm"//sn,comm%comm)
+      ! Ideally would change file names here into names that can be controlled by user
+      ! from control
+      Call plumed_f_gcmd("setPlumedDat"//sn,Trim(plume%input)//sn)
+      Call plumed_f_gcmd("setLogFile"//sn,Trim(plume%logfile)//sn)
+      Call plumed_f_gcmd("setNatoms"//sn,megatm)
+      ! The name should be updated when there are new releases of dlpoly
+      Call plumed_f_gcmd("setMDEngine"//sn,"DL_POLY "//DLP_VERSION//sn)
+      Call plumed_f_gcmd("setTimestep"//sn,tstep)
+      Call plumed_f_gcmd("setKbT"//sn,temp*boltz)
+      Call plumed_f_gcmd("init"//sn,0)
     Else
-       Call error(0,'internal PLUMED library failure',.true.)
+      Call error(0,'internal PLUMED library failure',.true.)
     End If
 #endif
 
@@ -156,7 +156,7 @@ Contains
     Integer :: fail(1:2), i
     Allocate(tx(1:config%mxatms),ty(1:config%mxatms),tz(1:config%mxatms),tchge(1:config%mxatms),stat=fail(1))
     Allocate(tfx(1:config%mxatms),tfy(1:config%mxatms),tfz(1:config%mxatms),stat=fail(2))
-!    If(Any(fail)) Call error(0)
+    !    If(Any(fail)) Call error(0)
     Do i = 1,config%mxatms
       tx(i) = config%parts(i)%xxx
       ty(i) = config%parts(i)%yyy
@@ -188,9 +188,9 @@ Contains
     Call plumed_f_gcmd("calc"//sn )
 
     If (plume%stop /= 0) Then
-       Write(message,'(a,i0)') 'DL_POLY was stopped cleanly by PLUMED at step: ',nstep
-       Call warning(message,.true.)
-       nstrun=nstep
+      Write(message,'(a,i0)') 'DL_POLY was stopped cleanly by PLUMED at step: ',nstep
+      Call warning(message,.true.)
+      nstrun=nstep
     End If
     Do i=1,config%mxatms
       config%parts(i)%xxx=tx(i)

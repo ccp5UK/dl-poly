@@ -1,13 +1,13 @@
 Module msd
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module declaring msd routines variables
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov march 2008
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 module declaring msd routines variables
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov march 2008
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp,li,wi
   Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync,gbcast, &
     gsend,grecv,offset_kind,comm_self,mode_wronly
@@ -65,16 +65,16 @@ Contains
 
   Subroutine msd_write(config,keyres,megatm,nstep,tstep,time,stpval,dof_site,io,msd_data,files,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for writing MSDTMP file at selected intervals
-! in simulation
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov february 2016
-! contrib   - i.j.bush
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for writing MSDTMP file at selected intervals
+    ! in simulation
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2016
+    ! contrib   - i.j.bush
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( io_type ), Intent( InOut ) :: io
     Integer,           Intent( In    ) :: keyres,megatm,nstep
@@ -94,7 +94,7 @@ Contains
     Integer                :: fail(1:2),i,jj,k,jdnode,jatms
     Real( Kind = wp )      :: buffer(1:2),tmp
 
-! Some parameters and variables needed by io interfaces
+    ! Some parameters and variables needed by io interfaces
 
     Integer                       :: fh, io_write, batsz
     Integer( Kind = offset_kind ) :: rec_mpi_io
@@ -110,25 +110,25 @@ Contains
 
     If (.not.(nstep >= msd_data%start .and. Mod(nstep-msd_data%start,msd_data%freq) == 0)) Return
 
-! Get write buffer size and line feed character
+    ! Get write buffer size and line feed character
 
     Call io_get_parameters(io, user_method_write      = io_write )
     Call io_get_parameters(io, user_buffer_size_write = batsz    )
     Call io_get_parameters(io, user_line_feed         = lf       )
 
-! netCDF not implemented for MSDTMP.  Switch to DEFAULT temporarily.
+    ! netCDF not implemented for MSDTMP.  Switch to DEFAULT temporarily.
 
     If (io_write == IO_WRITE_SORTED_NETCDF) io_write = IO_WRITE_SORTED_MPIIO
 
     If (msd_data%newjob) Then
       msd_data%newjob = .false.
 
-! name convention
+      ! name convention
 
       msd_data%fname = 'MSDTMP'
 
-! If keyres = RESTART_KEY_OLD, is MSDTMP old (does it exist) and
-! how many frames and records are in there
+      ! If keyres = RESTART_KEY_OLD, is MSDTMP old (does it exist) and
+      ! how many frames and records are in there
 
       lexist=.true.
       If (keyres == RESTART_KEY_OLD) Then
@@ -138,9 +138,9 @@ Contains
         lexist=.false.
       End If
 
-! Generate file is non-existent
+      ! Generate file is non-existent
 
-10    Continue
+      10    Continue
       If (.not.lexist) Then
 
         If (comm%idnode == 0) Then
@@ -153,7 +153,7 @@ Contains
         msd_data%rec=Int(2,li)
         msd_data%frm=Int(0,li)
 
-! Get some sense of it
+        ! Get some sense of it
 
       Else
 
@@ -166,7 +166,7 @@ Contains
 
             record=' '
 
-! Assume new style of MSDTMP with bookkeeping.
+            ! Assume new style of MSDTMP with bookkeeping.
 
             If (msd_data%fast) Then
 
@@ -194,7 +194,7 @@ Contains
                 Go To 20
               End If
 
-! TOUGH, it needs scanning through
+              ! TOUGH, it needs scanning through
 
             Else
 
@@ -215,7 +215,7 @@ Contains
 
           End Do
 
-20        Continue
+          20        Continue
           Close(Unit=files(FILE_HISTORY)%unit_no)
 
         End If
@@ -241,7 +241,7 @@ Contains
       End If
     End If
 
-! Get offsets and define batch
+    ! Get offsets and define batch
 
     fail=0
     If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
@@ -254,29 +254,29 @@ Contains
         Call error(0,message)
       End If
 
-    chbat=' '
-    n_atm=0 ; n_atm(comm%idnode+1)=config%natms
-    Call gsum(comm,n_atm)
-    n_atm(0)=Sum(n_atm(0:comm%idnode))
-  End If
+      chbat=' '
+      n_atm=0 ; n_atm(comm%idnode+1)=config%natms
+      Call gsum(comm,n_atm)
+      n_atm(0)=Sum(n_atm(0:comm%idnode))
+    End If
 
-! Notes:
-! the MPI-I/O records are numbered from 0 (not 1)
-! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
-!   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = offset_kind)
+    ! Notes:
+    ! the MPI-I/O records are numbered from 0 (not 1)
+    ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
+    !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
+    !   both declared as: Integer(Kind = offset_kind)
 
-! Update frame
+    ! Update frame
 
     msd_data%frm=msd_data%frm+Int(1,li)
 
-! UNSORTED MPI-I/O or Parallel Direct Access FORTRAN
+    ! UNSORTED MPI-I/O or Parallel Direct Access FORTRAN
 
     If      (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
       io_write == IO_WRITE_UNSORTED_DIRECT) Then
 
-! Write header information, where just one node is needed
-! Start of file
+      ! Write header information, where just one node is needed
+      ! Start of file
 
       rec_mpi_io=Int(msd_data%rec,offset_kind)
       If (comm%idnode == 0) Then
@@ -287,7 +287,7 @@ Contains
 
         Write(record, Fmt='(a8,2i10,2f12.6,a1)') 'timestep',nstep,megatm,tstep,time,lf
 
-! Dump header information
+        ! Dump header information
 
         Call io_write_record(io, fh, rec_mpi_io, record )
 
@@ -296,7 +296,7 @@ Contains
 
       End If
 
-! Start of file
+      ! Start of file
 
       msd_data%rec=msd_data%rec+Int(1,li)
       rec_mpi_io=Int(msd_data%rec,offset_kind)+Int(n_atm(0),offset_kind)
@@ -306,7 +306,7 @@ Contains
       Call io_init(io, recsz )
       Call io_open(io, io_write, comm%comm, msd_data%fname, mode_wronly, fh )
 
-    Do i=1,config%natms
+      Do i=1,config%natms
         k=2*i
 
         If (Abs(dof_site(config%lsite(i))) > zero_plus) tmp=config%weight(i)*stpval(27+k)/(boltz*3.0_wp)
@@ -317,7 +317,7 @@ Contains
           chbat(k,jj) = record(k:k)
         End Do
 
-! Dump batch and update start of file
+        ! Dump batch and update start of file
 
         If (jj >= batsz .or. i == config%natms) Then
           Call io_write_batch(io, fh, rec_mpi_io, jj, chbat )
@@ -326,7 +326,7 @@ Contains
         End If
       End Do
 
-! Update and save offset pointer
+      ! Update and save offset pointer
 
       msd_data%rec=msd_data%rec+Int(megatm,li)
       If (comm%idnode == 0) Then
@@ -337,7 +337,7 @@ Contains
       Call io_close(io, fh )
       Call io_finalize(io)
 
-! UNSORTED Serial Direct Access FORTRAN
+      ! UNSORTED Serial Direct Access FORTRAN
 
     Else If (io_write == IO_WRITE_UNSORTED_MASTER) Then
 
@@ -347,7 +347,7 @@ Contains
         Call error(0,message)
       End If
 
-! node 0 handles I/O
+      ! node 0 handles I/O
 
       If (comm%idnode == 0) Then
 
@@ -392,7 +392,7 @@ Contains
               chbat(k,jj) = record(k:k)
             End Do
 
-! Dump batch and update start of file
+            ! Dump batch and update start of file
 
             If (jj >= batsz .or. i == jatms) Then
               Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(53a)', Rec=msd_data%rec+Int(1,li)) (chbat(:,k), k=1,jj)
@@ -402,7 +402,7 @@ Contains
           End Do
         End Do
 
-! Update main header
+        ! Update main header
 
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2,li)) megatm,msd_data%frm,msd_data%rec,lf
 
@@ -430,7 +430,7 @@ Contains
           Call gsend(comm,eee(1:config%natms),0,MsdWrite_tag)
         End If
 
-! Save offset pointer
+        ! Save offset pointer
 
         msd_data%rec=msd_data%rec+Int(megatm+1,li)
 
@@ -442,7 +442,7 @@ Contains
         Call error(0,message)
       End If
 
-! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
+      ! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
 
     Else If (io_write == IO_WRITE_SORTED_MPIIO  .or. &
       io_write == IO_WRITE_SORTED_DIRECT) Then
@@ -455,7 +455,7 @@ Contains
         Call io_init(io, recsz )
         Call io_open(io, io_write, comm_self, msd_data%fname, mode_wronly, fh )
 
-! Write header information
+        ! Write header information
 
         Write(record, Fmt='(a8,2i10,2f12.6,a1)') 'timestep',nstep,megatm,tstep,time,lf
         Call io_write_record(io, fh, rec_mpi_io, record )
@@ -466,11 +466,11 @@ Contains
       End If
       Call gsync(comm)
 
-! Start of file
+      ! Start of file
 
       rec_mpi_io=Int(msd_data%rec,offset_kind)+Int(1,li)
 
-! Write the rest
+      ! Write the rest
 
       Call io_set_parameters(io, user_comm = comm%comm )
       Call io_init(io, recsz )
@@ -482,7 +482,7 @@ Contains
         Call error(0,message)
       End If
 
-    Do i=1,config%natms
+      Do i=1,config%natms
         k=2*i
 
         ddd(i)=Sqrt(stpval(27+k-1))
@@ -492,25 +492,25 @@ Contains
       End Do
 
       Call io_write_sorted_file(io, fh, 0, IO_MSDTMP, rec_mpi_io, config%natms, &
-          config%ltg, config%atmnam, ddd, eee, (/ 0.0_wp /),                       &
-          (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
-          (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
-          (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),  ierr )
+        config%ltg, config%atmnam, ddd, eee, (/ 0.0_wp /),                       &
+        (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
+        (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),                &
+        (/ 0.0_wp /),  (/ 0.0_wp /),  (/ 0.0_wp /),  ierr )
 
       If ( ierr /= 0 ) Then
         Select Case( ierr )
-         Case( IO_BASE_COMM_NOT_SET )
+        Case( IO_BASE_COMM_NOT_SET )
           Call error( 1050 )
-         Case( IO_ALLOCATION_ERROR )
+        Case( IO_ALLOCATION_ERROR )
           Call error( 1053 )
-         Case( IO_UNKNOWN_WRITE_OPTION )
+        Case( IO_UNKNOWN_WRITE_OPTION )
           Call error( 1056 )
-         Case( IO_UNKNOWN_WRITE_LEVEL )
+        Case( IO_UNKNOWN_WRITE_LEVEL )
           Call error( 1059 )
         End Select
       End If
 
-! Update and save offset pointer
+      ! Update and save offset pointer
 
       msd_data%rec=msd_data%rec+Int(1,li)+Int(megatm,li)
       If (comm%idnode == 0) Then
@@ -527,7 +527,7 @@ Contains
         Call error(0,message)
       End If
 
-! SORTED Serial Direct Access FORTRAN
+      ! SORTED Serial Direct Access FORTRAN
 
     Else If (io_write == IO_WRITE_SORTED_MASTER) Then
 
@@ -537,7 +537,7 @@ Contains
         Call error(0,message)
       End If
 
-! node 0 handles I/O
+      ! node 0 handles I/O
 
       If (comm%idnode == 0) Then
 
@@ -580,7 +580,7 @@ Contains
           End Do
         End Do
 
-! Update and save offset pointer
+        ! Update and save offset pointer
 
         msd_data%rec=msd_data%rec+Int(megatm,li)
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2,li)) megatm,msd_data%frm,msd_data%rec,lf

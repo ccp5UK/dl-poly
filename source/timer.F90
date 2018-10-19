@@ -20,7 +20,7 @@ Module timer
   Public :: time_elapsed
   Public :: timer_report
 
-  Contains
+Contains
 
   Subroutine start_timer(t)
     Real( kind = wp ), Intent(   Out ) :: t(4)
@@ -64,29 +64,29 @@ Module timer
       buffer(5) = tmr%t_rattle(3)
       buffer(6) = tmr%t_bonded(3)
       Select Case(i)
-         Case(1)
-           Call gmin(comm,buffer(1:6))
-           mins=buffer
-         Case(2)
-           Call gmax(comm,buffer(1:6))
-           maxs=buffer
-         Case(3)
-           Call gsum(comm,buffer(1:6))
-           avg=buffer
-       End Select
-     Enddo
-      buffer(1) = tmr%t_shortrange(4)
-      buffer(2) = tmr%t_longrange(4)
-      buffer(3) = tmr%t_linkcell(4)
-      buffer(4) = tmr%t_shake(4)
-      buffer(5) = tmr%t_rattle(4)
-      buffer(6) = tmr%t_bonded(4)
-     Do i =1,6
-        write(message(i+1),'(1x,a11,i12,es12.5,es12.5,es12.5,f6.2)')routine(i),Int(buffer(i)),mins(i),maxs(i),avg(i)/comm%mxnode,&
-          avg(i)/comm%mxnode/tmr%elapsed*100.0_wp
-     End Do 
-     write(message(8),'(1x,a11,36x,es12.5,f6.2)')"Other",tmr%elapsed-sum(avg(1:6)/comm%mxnode),&
-          100.0_wp-sum(avg(1:6)/comm%mxnode)/tmr%elapsed*100.0_wp
+      Case(1)
+        Call gmin(comm,buffer(1:6))
+        mins=buffer
+      Case(2)
+        Call gmax(comm,buffer(1:6))
+        maxs=buffer
+      Case(3)
+        Call gsum(comm,buffer(1:6))
+        avg=buffer
+      End Select
+    Enddo
+    buffer(1) = tmr%t_shortrange(4)
+    buffer(2) = tmr%t_longrange(4)
+    buffer(3) = tmr%t_linkcell(4)
+    buffer(4) = tmr%t_shake(4)
+    buffer(5) = tmr%t_rattle(4)
+    buffer(6) = tmr%t_bonded(4)
+    Do i =1,6
+      write(message(i+1),'(1x,a11,i12,es12.5,es12.5,es12.5,f6.2)')routine(i),Int(buffer(i)),mins(i),maxs(i),avg(i)/comm%mxnode,&
+        avg(i)/comm%mxnode/tmr%elapsed*100.0_wp
+    End Do 
+    write(message(8),'(1x,a11,36x,es12.5,f6.2)')"Other",tmr%elapsed-sum(avg(1:6)/comm%mxnode),&
+      100.0_wp-sum(avg(1:6)/comm%mxnode)/tmr%elapsed*100.0_wp
     Call info(message,8,.true.)
 
   End Subroutine timer_report

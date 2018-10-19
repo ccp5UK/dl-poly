@@ -1,13 +1,13 @@
 Module site
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module declaring global atomic site variables and arrays
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov july 2008
-! contrib   - m.a.seaton june 2014
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 module declaring global atomic site variables and arrays
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov july 2008
+  ! contrib   - m.a.seaton june 2014
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,wi
   Use errors_warnings, Only : error
@@ -78,7 +78,7 @@ Contains
 
   !> Allocate and initialise site_type arrays
   Subroutine allocate_site_arrays(T,mxtmls,mxatyp)
-    Class( site_type ) :: T
+  Class( site_type ) :: T
     Integer( Kind = wi ), Intent( In    ) :: mxtmls,mxatyp
     Integer, Dimension(1:6) :: fail
 

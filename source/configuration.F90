@@ -1,60 +1,60 @@
 Module configuration
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 module declaring global configuration variables and arrays
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov january 2017
-! contrib   - i.j.bush march 2010
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  !
+  ! dl_poly_4 module declaring global configuration variables and arrays
+  !
+  ! copyright - daresbury laboratory
+  ! author    - i.t.todorov january 2017
+  ! contrib   - i.j.bush march 2010
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,li,wi
   Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
-                    gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
-                    gallgather,galltoall,galltoallv,gallreduce,op_land, &
-                    offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
+    gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
+    gallgather,galltoall,galltoallv,gallreduce,op_land, &
+    offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly
   Use site, Only : site_type
 
   Use constants,   Only : half_minus,zero_plus
   Use parse,   Only : tabs_2_blanks, &
-                             strip_blanks, get_word, word_2_real,get_line
+    strip_blanks, get_word, word_2_real,get_line
   Use domains, Only : domains_type
   Use development, Only : development_type
   Use particle, Only : corePart
 
   Use netcdf_wrap, Only : netcdf_param
   Use io,     Only : io_type,io_set_parameters,         &
-                            io_get_parameters,         &
-                            io_init, io_nc_create,     &
-                            io_open, io_write_record,  &
-                            io_write_batch,            &
-                            io_nc_put_var,             &
-                            io_write_sorted_file,      &
-                            io_delete,                 &
-                            io_close, io_finalize,     &
-                            io_read_batch,             &
-                            io_nc_get_dim,             &
-                            io_get_var,                &
-                            io_nc_get_var,             &
-                            io_nc_get_att,             &
-                            IO_READ_MASTER,            &
-                            IO_READ_NETCDF,            &
-                            IO_RESTART,                &
-                            IO_BASE_COMM_NOT_SET,      &
-                            IO_ALLOCATION_ERROR,       &
-                            IO_UNKNOWN_WRITE_OPTION,   &
-                            IO_UNKNOWN_WRITE_LEVEL,    &
-                            IO_WRITE_UNSORTED_MPIIO,   &
-                            IO_WRITE_UNSORTED_DIRECT,  &
-                            IO_WRITE_UNSORTED_MASTER,  &
-                            IO_WRITE_SORTED_MPIIO,     &
-                            IO_WRITE_SORTED_DIRECT,    &
-                            IO_WRITE_SORTED_NETCDF,    &
-                            IO_WRITE_SORTED_MASTER,    &
-                            IO_SUBSET_POSITIONS,       &
-                            IO_SUBSET_FORCES
+    io_get_parameters,         &
+    io_init, io_nc_create,     &
+    io_open, io_write_record,  &
+    io_write_batch,            &
+    io_nc_put_var,             &
+    io_write_sorted_file,      &
+    io_delete,                 &
+    io_close, io_finalize,     &
+    io_read_batch,             &
+    io_nc_get_dim,             &
+    io_get_var,                &
+    io_nc_get_var,             &
+    io_nc_get_att,             &
+    IO_READ_MASTER,            &
+    IO_READ_NETCDF,            &
+    IO_RESTART,                &
+    IO_BASE_COMM_NOT_SET,      &
+    IO_ALLOCATION_ERROR,       &
+    IO_UNKNOWN_WRITE_OPTION,   &
+    IO_UNKNOWN_WRITE_LEVEL,    &
+    IO_WRITE_UNSORTED_MPIIO,   &
+    IO_WRITE_UNSORTED_DIRECT,  &
+    IO_WRITE_UNSORTED_MASTER,  &
+    IO_WRITE_SORTED_MPIIO,     &
+    IO_WRITE_SORTED_DIRECT,    &
+    IO_WRITE_SORTED_NETCDF,    &
+    IO_WRITE_SORTED_MASTER,    &
+    IO_SUBSET_POSITIONS,       &
+    IO_SUBSET_FORCES
 
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : shellsort2,invert,dcell,images,shellsort,pbcshift
@@ -177,7 +177,7 @@ Contains
     Integer :: size_old, size_new, size_crs
 
     Type( corePart ), Allocatable :: tmp(:)
- 
+
     stat = 0
     If( delta == 0 ) Return
 
@@ -219,7 +219,7 @@ Contains
 
     Deallocate ( a, Stat = stat )
     Call move_alloc( tmp, a ) 
-    
+
   End Subroutine reallocate_chr_v
 
   Subroutine reallocate_int_v( delta, a, stat )
@@ -336,7 +336,7 @@ Contains
 
     config%weight = 0.0_wp
 
-! Resize the arrays in allocate_config_arrays_read
+    ! Resize the arrays in allocate_config_arrays_read
 
     stat = 0
 
@@ -355,626 +355,626 @@ Contains
 
   Subroutine check_config(config,electro_key,thermo,sites,flow,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for reporting and checking the configuration data
-! in CONFIG for: (i) unsuitable simulation options in CONTROL and
-! (ii) connectivity to FIELD; before connecting the crystallographic
-! data (positions+) to the topology (sites+), i.e. CONFIG to FIELD
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov january 2015
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for reporting and checking the configuration data
+    ! in CONFIG for: (i) unsuitable simulation options in CONTROL and
+    ! (ii) connectivity to FIELD; before connecting the crystallographic
+    ! data (positions+) to the topology (sites+), i.e. CONFIG to FIELD
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov january 2015
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Integer, Intent( In    ) :: electro_key
     Type( configuration_type ), Intent( InOut ) :: config
     Type( thermostat_type ), Intent( In    ) :: thermo
-  Type( site_type ), Intent( In    ) :: sites
-  Type( flow_type ), Intent( In    ) :: flow
-  Type( comms_type ), Intent( InOut ) :: comm
+    Type( site_type ), Intent( In    ) :: sites
+    Type( flow_type ), Intent( In    ) :: flow
+    Type( comms_type ), Intent( InOut ) :: comm
 
-  Logical           :: safe
-  Integer           :: fail,k,l,m, &
-                       indatm,totatm,mol_sit,loc_ind
-  Real( Kind = wp ) :: rcell(1:9),det
+    Logical           :: safe
+    Integer           :: fail,k,l,m, &
+      indatm,totatm,mol_sit,loc_ind
+    Real( Kind = wp ) :: rcell(1:9),det
 
-  Integer, Allocatable :: iwrk(:)
-  Character( Len = 256 ) :: message
+    Integer, Allocatable :: iwrk(:)
+    Character( Len = 256 ) :: message
 
-  fail=0
-  If (flow%strict) Then
-     Allocate (iwrk(1:config%mxatms), Stat=fail)
-     If (fail > 0) Then
+    fail=0
+    If (flow%strict) Then
+      Allocate (iwrk(1:config%mxatms), Stat=fail)
+      If (fail > 0) Then
         Write(message,'(a)') 'check_config allocation failure'
         Call error(0,message)
+      End If
     End If
-  End If
 
 
-  If (config%newjob_check_config) Then
-     Write(message,"('configuration file name: ',10x,a)") config%cfgname
-     Call info(message,.true.)
-     Write(message,"('selected image convention',6x,i10)") config%imcon
-     Call info(message,.true.)
-  End If
+    If (config%newjob_check_config) Then
+      Write(message,"('configuration file name: ',10x,a)") config%cfgname
+      Call info(message,.true.)
+      Write(message,"('selected image convention',6x,i10)") config%imcon
+      Call info(message,.true.)
+    End If
 
-! Check things for non-periodic systems
+    ! Check things for non-periodic systems
 
-  If (config%imcon == 0 .or. config%imcon == 6) Then
-     If (electro_key == ELECTROSTATIC_EWALD) Then
+    If (config%imcon == 0 .or. config%imcon == 6) Then
+      If (electro_key == ELECTROSTATIC_EWALD) Then
         Call warning(220,0.0_wp,0.0_wp,0.0_wp)
-     Else If (electro_key /= ELECTROSTATIC_NULL) Then
+      Else If (electro_key /= ELECTROSTATIC_NULL) Then
         Call warning(30,0.0_wp,0.0_wp,0.0_wp)
-     End If
+      End If
 
-     Call warning(260,0.0_wp,0.0_wp,0.0_wp)
+      Call warning(260,0.0_wp,0.0_wp,0.0_wp)
 
-     If (thermo%variable_cell) Call error(390)
-  End If
+      If (thermo%variable_cell) Call error(390)
+    End If
 
-! Check image conditions for nst ensembles
+    ! Check image conditions for nst ensembles
 
-  If (thermo%anisotropic_pressure) Then
-     If (thermo%iso == CONSTRAINT_NONE) Then
+    If (thermo%anisotropic_pressure) Then
+      If (thermo%iso == CONSTRAINT_NONE) Then
         If (config%imcon == 1 .or. config%imcon == 2) Then
-           Call warning(110,Real(config%imcon,wp),3.0_wp,0.0_wp)
-           config%imcon = 3
+          Call warning(110,Real(config%imcon,wp),3.0_wp,0.0_wp)
+          config%imcon = 3
         End If
-     Else ! thermo%iso > 0
+      Else ! thermo%iso > 0
         If (config%imcon == 1) Then
-           Call warning(110,Real(config%imcon,wp),3.0_wp,0.0_wp)
-           config%imcon = 2
+          Call warning(110,Real(config%imcon,wp),3.0_wp,0.0_wp)
+          config%imcon = 2
         End If
-     End If
-  End If
+      End If
+    End If
 
-! Check image condition for pseudo
+    ! Check image condition for pseudo
 
-  If (thermo%l_stochastic_boundaries .and. (config%imcon == 0 .or. config%imcon == 6)) Call error(540)
+    If (thermo%l_stochastic_boundaries .and. (config%imcon == 0 .or. config%imcon == 6)) Call error(540)
 
-  Call invert(config%cell,rcell,det)
+    Call invert(config%cell,rcell,det)
 
-! Specify molecular dynamics simulation cell
+    ! Specify molecular dynamics simulation cell
 
-  If (config%newjob_check_config) Then
-     Write(message,"('simulation cell vectors')")
-     Call Info(message,.true.)
-     Write(message,"(3f20.10)") config%cell(1:3)
-     Call Info(message,.true.)
-     Write(message,"(3f20.10)") config%cell(4:6)
-     Call Info(message,.true.)
-     Write(message,"(3f20.10)") config%cell(7:9)
-     Call Info(message,.true.)
-     Write(message,"('system volume     ',2x,1p,g22.12)") det
-     Call Info(message,.true.)
-  End If
+    If (config%newjob_check_config) Then
+      Write(message,"('simulation cell vectors')")
+      Call Info(message,.true.)
+      Write(message,"(3f20.10)") config%cell(1:3)
+      Call Info(message,.true.)
+      Write(message,"(3f20.10)") config%cell(4:6)
+      Call Info(message,.true.)
+      Write(message,"(3f20.10)") config%cell(7:9)
+      Call Info(message,.true.)
+      Write(message,"('system volume     ',2x,1p,g22.12)") det
+      Call Info(message,.true.)
+    End If
 
-! Check on validity of config file contents
+    ! Check on validity of config file contents
 
-  If (flow%restart_key /= RESTART_KEY_CLEAN .and. config%levcfg < 1) Call error(85)
+    If (flow%restart_key /= RESTART_KEY_CLEAN .and. config%levcfg < 1) Call error(85)
 
-  If (flow%strict) iwrk(1:config%natms) = 0 ! initialise
+    If (flow%strict) iwrk(1:config%natms) = 0 ! initialise
 
-! Safe flag
+    ! Safe flag
 
-  safe=.true.
+    safe=.true.
 
-! Global atom counter
+    ! Global atom counter
 
-  totatm=0
+    totatm=0
 
-! Local atom counter
+    ! Local atom counter
 
-  indatm=1
+    indatm=1
 
-! Site counter for molecules
+    ! Site counter for molecules
 
-  mol_sit=0
+    mol_sit=0
 
-! Check atom names and assign atomic characteristics
-! Connecting FIELD to CONFIG on local basis
+    ! Check atom names and assign atomic characteristics
+    ! Connecting FIELD to CONFIG on local basis
 
-  Do k=1,sites%ntype_mol
+    Do k=1,sites%ntype_mol
 
-     Do l=1,sites%num_mols(k)
+      Do l=1,sites%num_mols(k)
 
         Do m=1,sites%num_site(k)
 
-! Increase global atom counter
+          ! Increase global atom counter
 
-           totatm=totatm+1
+          totatm=totatm+1
 
-! If a local atom has a global index totatm
+          ! If a local atom has a global index totatm
 
-           If (config%lsa(indatm) == totatm) Then
+          If (config%lsa(indatm) == totatm) Then
 
-! Get the local index. mol_sit+m is the global site
+            ! Get the local index. mol_sit+m is the global site
 
-              loc_ind=config%lsi(indatm)
+            loc_ind=config%lsi(indatm)
 
-! Second check: Do particle identities and their order from the topology
-! (FIELD) match the one found in the crystallographic data (CONFIG)?
-! Check for unidentified atoms in CONFIG by their existence in FIELD
+            ! Second check: Do particle identities and their order from the topology
+            ! (FIELD) match the one found in the crystallographic data (CONFIG)?
+            ! Check for unidentified atoms in CONFIG by their existence in FIELD
 
-              If (config%atmnam(loc_ind) /= sites%site_name(mol_sit+m)) Then
-                 Write(message,"( 'unidentified atom label :',a8,': atom number ',i5)") config%atmnam(loc_ind),loc_ind
-                 Call info(message)
-                 safe=.false.
-              End If
+            If (config%atmnam(loc_ind) /= sites%site_name(mol_sit+m)) Then
+              Write(message,"( 'unidentified atom label :',a8,': atom number ',i5)") config%atmnam(loc_ind),loc_ind
+              Call info(message)
+              safe=.false.
+            End If
 
-! Assign global sites, type, weight, charge & frozen status to localised atoms
+            ! Assign global sites, type, weight, charge & frozen status to localised atoms
 
-              config%lsite(loc_ind)=mol_sit+m
-              config%ltype(loc_ind)=sites%type_site(mol_sit+m)
-              config%weight(loc_ind)=sites%weight_site(mol_sit+m)
-              config%parts(loc_ind)%chge=sites%charge_site(mol_sit+m)
-              config%lfrzn(loc_ind)=sites%freeze_site(mol_sit+m)
-              config%lfree(loc_ind)=sites%free_site(mol_sit+m)
+            config%lsite(loc_ind)=mol_sit+m
+            config%ltype(loc_ind)=sites%type_site(mol_sit+m)
+            config%weight(loc_ind)=sites%weight_site(mol_sit+m)
+            config%parts(loc_ind)%chge=sites%charge_site(mol_sit+m)
+            config%lfrzn(loc_ind)=sites%freeze_site(mol_sit+m)
+            config%lfree(loc_ind)=sites%free_site(mol_sit+m)
 
-! Print global indices for a later check on ordering (mixed indexing)
+            ! Print global indices for a later check on ordering (mixed indexing)
 
-              If (flow%strict) iwrk(indatm) = totatm ! Populate
+            If (flow%strict) iwrk(indatm) = totatm ! Populate
 
-! Increase local atom counter
+            ! Increase local atom counter
 
-              indatm=indatm+1
+            indatm=indatm+1
 
-           End If
+          End If
 
         End Do
 
-     End Do
+      End Do
 
-! Increase site counter per molecule
+      ! Increase site counter per molecule
 
-     mol_sit=mol_sit+sites%num_site(k)
+      mol_sit=mol_sit+sites%num_site(k)
 
-  End Do
-  indatm=indatm-1 ! Correct presence number
+    End Do
+    indatm=indatm-1 ! Correct presence number
 
-! Global check on successful connection between CONFIG and FIELD
+    ! Global check on successful connection between CONFIG and FIELD
 
-  Call gcheck(comm,safe)
-  If (.not.safe) Call error(25)
+    Call gcheck(comm,safe)
+    If (.not.safe) Call error(25)
 
-! Check CONFIG indices eligibility
+    ! Check CONFIG indices eligibility
 
-  If (flow%strict) Then
-     Call all_inds_present( iwrk, indatm, config%megatm, safe )
-     Call gcheck(comm,safe)
-     If (.not.safe) Call error(28)
+    If (flow%strict) Then
+      Call all_inds_present( iwrk, indatm, config%megatm, safe )
+      Call gcheck(comm,safe)
+      If (.not.safe) Call error(28)
 
-     Deallocate (iwrk, Stat=fail)
-     If (fail > 0) Then
+      Deallocate (iwrk, Stat=fail)
+      If (fail > 0) Then
         Write(message,'(a)') 'check_config deallocation failure'
         Call error(0,message)
-     End If
-  End If
+      End If
+    End If
 
-! For subsequent checks
+    ! For subsequent checks
 
-  If (config%newjob_check_config) config%newjob_check_config=.false.
+    If (config%newjob_check_config) config%newjob_check_config=.false.
 
-Contains
+  Contains
 
-  Subroutine all_inds_present( ind, n_loc, n, all_present )
+    Subroutine all_inds_present( ind, n_loc, n, all_present )
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to check if the array IND which is distributed
-! accross the communicator contains all indices from 1 to N once,
-! and only once. N_LOC is the number of indices local to this processor
-!
-! copyright - daresbury laboratory
-! author    - i.j.bush march 2009
-! adapted   - i.t.todorov june 2010
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !
+      ! dl_poly_4 routine to check if the array IND which is distributed
+      ! accross the communicator contains all indices from 1 to N once,
+      ! and only once. N_LOC is the number of indices local to this processor
+      !
+      ! copyright - daresbury laboratory
+      ! author    - i.j.bush march 2009
+      ! adapted   - i.t.todorov june 2010
+      !
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer, Dimension( : ), Intent( In    ) :: ind
-    Integer                , Intent( In    ) :: n_loc
-    Integer                , Intent( In    ) :: n
-    Logical                , Intent(   Out ) :: all_present
+      Integer, Dimension( : ), Intent( In    ) :: ind
+      Integer                , Intent( In    ) :: n_loc
+      Integer                , Intent( In    ) :: n
+      Logical                , Intent(   Out ) :: all_present
 
-    Integer, Dimension( : ), Allocatable :: all_n_loc
-    Integer, Dimension( : ), Allocatable :: loc_start
-    Integer, Dimension( : ), Allocatable :: local_ind
-    Integer, Dimension( : ), Allocatable :: to_send
-    Integer, Dimension( : ), Allocatable :: to_recv
-    Integer, Dimension( : ), Allocatable :: displs_send
-    Integer, Dimension( : ), Allocatable :: displs_recv
-    Integer, Dimension( : ), Allocatable :: reorg_ind
+      Integer, Dimension( : ), Allocatable :: all_n_loc
+      Integer, Dimension( : ), Allocatable :: loc_start
+      Integer, Dimension( : ), Allocatable :: local_ind
+      Integer, Dimension( : ), Allocatable :: to_send
+      Integer, Dimension( : ), Allocatable :: to_recv
+      Integer, Dimension( : ), Allocatable :: displs_send
+      Integer, Dimension( : ), Allocatable :: displs_recv
+      Integer, Dimension( : ), Allocatable :: reorg_ind
 
-    Integer :: me, nproc
-    Integer :: where_send
-    Integer :: i,fail
+      Integer :: me, nproc
+      Integer :: where_send
+      Integer :: i,fail
 
-    Logical :: loc_present
+      Logical :: loc_present
 
-    me    = comm%idnode
-    nproc = comm%mxnode
+      me    = comm%idnode
+      nproc = comm%mxnode
 
-    ! Ever the optimist !
-    all_present = .true.
+      ! Ever the optimist !
+      all_present = .true.
 
-    ! If the number on each proc do not add up to N there is no
-    ! way things can be correct. will need all the local totals so
-    ! gather and sum locally rather than just a global sum as
-    ! saves a comm.
-    Allocate ( all_n_loc( 0:nproc - 1 ), Stat = fail )
-    If ( fail /= 0 ) Go To 100
+      ! If the number on each proc do not add up to N there is no
+      ! way things can be correct. will need all the local totals so
+      ! gather and sum locally rather than just a global sum as
+      ! saves a comm.
+      Allocate ( all_n_loc( 0:nproc - 1 ), Stat = fail )
+      If ( fail /= 0 ) Go To 100
 
-    ! No check on mpi error as all is pointless because
-    ! of the way mpi error handlers are usually dealt with
-!
-!    all_n_loc = 0
-!    all_n_loc( comm%idnode ) = n_loc
-!    Call gsum( all_n_loc( 0:nrpocs - 1 ) )
-!
-    Call gallgather(comm,n_loc,all_n_loc(:))
-    all_present = ( Sum( all_n_loc ) == n )
-    If ( .not. all_present ) Return
+      ! No check on mpi error as all is pointless because
+      ! of the way mpi error handlers are usually dealt with
+      !
+      !    all_n_loc = 0
+      !    all_n_loc( comm%idnode ) = n_loc
+      !    Call gsum( all_n_loc( 0:nrpocs - 1 ) )
+      !
+      Call gallgather(comm,n_loc,all_n_loc(:))
+      all_present = ( Sum( all_n_loc ) == n )
+      If ( .not. all_present ) Return
 
-    ! Work out the first index on each proc
-    Allocate ( loc_start( 0:nproc - 1 ), Stat = fail )
-    If ( fail /= 0 ) Go To 100
+      ! Work out the first index on each proc
+      Allocate ( loc_start( 0:nproc - 1 ), Stat = fail )
+      If ( fail /= 0 ) Go To 100
 
-    loc_start( 0 ) = 1
-    Do i = 1, nproc - 1
-       loc_start( i ) = loc_start( i - 1 ) + all_n_loc( i - 1 )
-    End Do
+      loc_start( 0 ) = 1
+      Do i = 1, nproc - 1
+        loc_start( i ) = loc_start( i - 1 ) + all_n_loc( i - 1 )
+      End Do
 
-    ! Array to work with local indices
-    Allocate ( local_ind( 1:n_loc ), Stat = fail )
-    If ( fail /= 0 ) Go To 100
+      ! Array to work with local indices
+      Allocate ( local_ind( 1:n_loc ), Stat = fail )
+      If ( fail /= 0 ) Go To 100
 
-    local_ind = ind( 1:n_loc )
+      local_ind = ind( 1:n_loc )
 
-    ! Sort the local data
-    Call shellsort( n_loc, local_ind )
+      ! Sort the local data
+      Call shellsort( n_loc, local_ind )
 
-    ! Work out how much data to send to each processor
-    Allocate ( to_send( 0:nproc - 1 ), Stat = fail )
-    If ( fail /= 0 ) Go To 100
+      ! Work out how much data to send to each processor
+      Allocate ( to_send( 0:nproc - 1 ), Stat = fail )
+      If ( fail /= 0 ) Go To 100
 
-    to_send = 0
-    where_send = 0
-    Do i = 1, n_loc
-       Do While ( local_ind( i ) > loc_start( where_send ) + all_n_loc( where_send ) - 1 )
+      to_send = 0
+      where_send = 0
+      Do i = 1, n_loc
+        Do While ( local_ind( i ) > loc_start( where_send ) + all_n_loc( where_send ) - 1 )
           where_send = where_send + 1
-       End Do
-       to_send( where_send ) = to_send( where_send ) + 1
-    End Do
+        End Do
+        to_send( where_send ) = to_send( where_send ) + 1
+      End Do
 
-    ! How much node i sends to me is how much I recv
-    Allocate ( to_recv( 0:nproc - 1 ), Stat = fail )
-    If ( fail /= 0 ) Go To 100
+      ! How much node i sends to me is how much I recv
+      Allocate ( to_recv( 0:nproc - 1 ), Stat = fail )
+      If ( fail /= 0 ) Go To 100
 
-    Call galltoall(comm,to_send(:),1,to_recv(:))
+      Call galltoall(comm,to_send(:),1,to_recv(:))
 
-    ! Work out the displacements in the sending and receiving arrays
-    Allocate ( displs_send( 0:nproc - 1 ), Stat = fail )
-    If ( fail /= 0 ) Go To 100
+      ! Work out the displacements in the sending and receiving arrays
+      Allocate ( displs_send( 0:nproc - 1 ), Stat = fail )
+      If ( fail /= 0 ) Go To 100
 
-    Allocate ( displs_recv( 0:nproc - 1 ), Stat = fail )
-    If ( fail /= 0 ) Go To 100
+      Allocate ( displs_recv( 0:nproc - 1 ), Stat = fail )
+      If ( fail /= 0 ) Go To 100
 
-    displs_send( 0 ) = 0
-    Do i = 1, nproc - 1
-       displs_send( i ) = displs_send( i - 1 ) + to_send( i - 1 )
-    End Do
+      displs_send( 0 ) = 0
+      Do i = 1, nproc - 1
+        displs_send( i ) = displs_send( i - 1 ) + to_send( i - 1 )
+      End Do
 
-    displs_recv( 0 ) = 0
-    Do i = 1, nproc - 1
-       displs_recv( i ) = displs_recv( i - 1 ) + to_recv( i - 1 )
-    End Do
+      displs_recv( 0 ) = 0
+      Do i = 1, nproc - 1
+        displs_recv( i ) = displs_recv( i - 1 ) + to_recv( i - 1 )
+      End Do
 
-    ! Put the index on the proc that should own it
-    Allocate ( reorg_ind( 1:n_loc ), Stat = fail )
-    If ( fail /= 0 ) Go To 100
+      ! Put the index on the proc that should own it
+      Allocate ( reorg_ind( 1:n_loc ), Stat = fail )
+      If ( fail /= 0 ) Go To 100
 
-    Call galltoallv(comm,local_ind(:),to_send(:),displs_send(:), &
-                    reorg_ind(:),to_recv(:),displs_recv(:))
+      Call galltoallv(comm,local_ind(:),to_send(:),displs_send(:), &
+        reorg_ind(:),to_recv(:),displs_recv(:))
 
-    ! Sort the reorganized data
-    Call shellsort( n_loc, reorg_ind )
+      ! Sort the reorganized data
+      Call shellsort( n_loc, reorg_ind )
 
-    ! Check it starts and ends at the right place for any owned particle
-    ! i.e. some domaines my not own any (domain on vacuum)
-    If ( n_loc > 0 ) &
-       all_present = ( reorg_ind( 1     ) == loc_start( me ) .and. &
-                       reorg_ind( n_loc ) == loc_start( me ) + n_loc - 1 )
+      ! Check it starts and ends at the right place for any owned particle
+      ! i.e. some domaines my not own any (domain on vacuum)
+      If ( n_loc > 0 ) &
+        all_present = ( reorg_ind( 1     ) == loc_start( me ) .and. &
+        reorg_ind( n_loc ) == loc_start( me ) + n_loc - 1 )
 
-    If ( all_present ) Then
-       ! Check it contains all the numbers in between
-       Do i = 2, n_loc
+      If ( all_present ) Then
+        ! Check it contains all the numbers in between
+        Do i = 2, n_loc
           all_present = ( reorg_ind( i ) - reorg_ind( i - 1 ) == 1 )
           If ( .not. all_present ) Then
-             Exit
+            Exit
           End If
-       End Do
-    End If
+        End Do
+      End If
 
-    ! Is everybody happy?
-    loc_present = all_present
-    Call gallreduce(comm,loc_present,all_present,op_land)
+      ! Is everybody happy?
+      loc_present = all_present
+      Call gallreduce(comm,loc_present,all_present,op_land)
 
-    Deallocate ( reorg_ind   , Stat = fail )
-    If ( fail /= 0 ) Go To 100
-    Deallocate ( displs_recv , Stat = fail )
-    If ( fail /= 0 ) Go To 100
-    Deallocate ( displs_send , Stat = fail )
-    If ( fail /= 0 ) Go To 100
-    Deallocate ( to_recv     , Stat = fail )
-    If ( fail /= 0 ) Go To 100
-    Deallocate ( to_send     , Stat = fail )
-    If ( fail /= 0 ) Go To 100
-    Deallocate ( local_ind   , Stat = fail )
-    If ( fail /= 0 ) Go To 100
-    Deallocate ( loc_start   , Stat = fail )
-    If ( fail /= 0 ) Go To 100
-    Deallocate ( all_n_loc   , Stat = fail )
-    If ( fail /= 0 ) Go To 100
+      Deallocate ( reorg_ind   , Stat = fail )
+      If ( fail /= 0 ) Go To 100
+      Deallocate ( displs_recv , Stat = fail )
+      If ( fail /= 0 ) Go To 100
+      Deallocate ( displs_send , Stat = fail )
+      If ( fail /= 0 ) Go To 100
+      Deallocate ( to_recv     , Stat = fail )
+      If ( fail /= 0 ) Go To 100
+      Deallocate ( to_send     , Stat = fail )
+      If ( fail /= 0 ) Go To 100
+      Deallocate ( local_ind   , Stat = fail )
+      If ( fail /= 0 ) Go To 100
+      Deallocate ( loc_start   , Stat = fail )
+      If ( fail /= 0 ) Go To 100
+      Deallocate ( all_n_loc   , Stat = fail )
+      If ( fail /= 0 ) Go To 100
 
-    Return
+      Return
 
-100 Continue
-    If (fail > 0) Then
-       Write(message,'(a)') 'all_inds_present allocation/deallocation failure'
-       Call error(0,message)
-    End If
+      100 Continue
+      If (fail > 0) Then
+        Write(message,'(a)') 'all_inds_present allocation/deallocation failure'
+        Call error(0,message)
+      End If
 
-  End Subroutine all_inds_present
+    End Subroutine all_inds_present
 
-End Subroutine check_config
-
-
+  End Subroutine check_config
 
 
-Subroutine read_config(config,megatm,levcfg,l_ind,strict,rcut,dvar,xhi,yhi,zhi,dens0,dens,io,domain,files,comm)
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for reading CONFIG and getting the average
-! particle density
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
-! contrib   - a.m.elena february 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Type( io_type ), Intent( InOut ) :: io
-  Integer,           Intent( In    ) :: megatm,levcfg
-  Logical,           Intent( In    ) :: l_ind,strict
-  Real( Kind = wp ), Intent( In    ) :: rcut,dvar
-  Real( Kind = wp ), Intent( InOut ) :: xhi,yhi,zhi
-  Real( Kind = wp ), Intent(   Out ) :: dens0,dens
-  Type( configuration_type ), Intent( InOut ) :: config
-  Type( domains_type ), Intent( In    ) :: domain
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( comms_type), Intent( InOut ) :: comm
+  Subroutine read_config(config,megatm,levcfg,l_ind,strict,rcut,dvar,xhi,yhi,zhi,dens0,dens,io,domain,files,comm)
 
-  Real( Kind = wp ) :: cut
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for reading CONFIG and getting the average
+    ! particle density
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2015
+    ! contrib   - a.m.elena february 2017
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word,fname
-  Logical                :: safe  = .true.  , &
-                            l_his = .false. , &
-                            l_xtr = .false. , &
-                            fast
-  Integer                :: fail(1:4),i,j,idm,max_fail,min_fail, &
-                            icell,ncells,                        &
-                            indatm,nattot,totatm,                &
-                            ipx,ipy,ipz,nlx,nly,nlz,             &
-                            ix,iy,iz,jx,jy,jz
-  Real( Kind = wp )      :: celprp(1:10),rcell(1:9),celh(1:9),det, &
-                            volm,vcell,                            &
-                            sxx,syy,szz,xdc,ydc,zdc,               &
-                            pda_max,pda_min,pda_ave,               &
-                            pda_dom_max,pda_dom_min
 
-! Some parameters and variables needed by io interfaces
+    Type( io_type ), Intent( InOut ) :: io
+    Integer,           Intent( In    ) :: megatm,levcfg
+    Logical,           Intent( In    ) :: l_ind,strict
+    Real( Kind = wp ), Intent( In    ) :: rcut,dvar
+    Real( Kind = wp ), Intent( InOut ) :: xhi,yhi,zhi
+    Real( Kind = wp ), Intent(   Out ) :: dens0,dens
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type( domains_type ), Intent( In    ) :: domain
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( comms_type), Intent( InOut ) :: comm
 
-  Integer                           :: recsz = 73 ! default record size
-  Integer                           :: fh, io_read
-  Integer( Kind = offset_kind ) :: top_skip
+    Real( Kind = wp ) :: cut
 
-  Real( Kind = wp ),    Dimension( : ), Allocatable :: pda
+    Character( Len = 200 ) :: record
+    Character( Len = 40  ) :: word,fname
+    Logical                :: safe  = .true.  , &
+      l_his = .false. , &
+      l_xtr = .false. , &
+      fast
+    Integer                :: fail(1:4),i,j,idm,max_fail,min_fail, &
+      icell,ncells,                        &
+      indatm,nattot,totatm,                &
+      ipx,ipy,ipz,nlx,nly,nlz,             &
+      ix,iy,iz,jx,jy,jz
+    Real( Kind = wp )      :: celprp(1:10),rcell(1:9),celh(1:9),det, &
+      volm,vcell,                            &
+      sxx,syy,szz,xdc,ydc,zdc,               &
+      pda_max,pda_min,pda_ave,               &
+      pda_dom_max,pda_dom_min
 
-  Character( Len = 8 ), Dimension( : ), Allocatable :: chbuf
-  Integer,              Dimension( : ), Allocatable :: iwrk
-  Real( Kind = wp ),    Dimension( : ), Allocatable :: axx,ayy,azz, &
-                                                       bxx,byy,bzz, &
-                                                       cxx,cyy,czz
+    ! Some parameters and variables needed by io interfaces
 
-  Character( Len = 256) :: message
-  Character( Len = 256) :: messages(3)
-! image conditions not compliant with DD and link-cell
+    Integer                           :: recsz = 73 ! default record size
+    Integer                           :: fh, io_read
+    Integer( Kind = offset_kind ) :: top_skip
 
-  If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
+    Real( Kind = wp ),    Dimension( : ), Allocatable :: pda
 
-! Real space cutoff shortened by 50% but not < 1 Angstrom
-!(or ==rcut_def in scan_control)
+    Character( Len = 8 ), Dimension( : ), Allocatable :: chbuf
+    Integer,              Dimension( : ), Allocatable :: iwrk
+    Real( Kind = wp ),    Dimension( : ), Allocatable :: axx,ayy,azz, &
+      bxx,byy,bzz, &
+      cxx,cyy,czz
 
-  cut=Max(0.5_wp*rcut,1.0_wp)+1.0e-6_wp
+    Character( Len = 256) :: message
+    Character( Len = 256) :: messages(3)
+    ! image conditions not compliant with DD and link-cell
 
-! Get the dimensional properties of the MD cell
+    If (config%imcon == 4 .or. config%imcon == 5 .or. config%imcon == 7) Call error(300)
 
-  Call dcell(config%cell,celprp)
-  volm = celprp(10)
+    ! Real space cutoff shortened by 50% but not < 1 Angstrom
+    !(or ==rcut_def in scan_control)
 
-! Calculate the number of link-cells per domain in every direction
+    cut=Max(0.5_wp*rcut,1.0_wp)+1.0e-6_wp
 
-  nlx=Int(celprp(7)/(cut*domain%nx_real))
-  nly=Int(celprp(8)/(cut*domain%ny_real))
-  nlz=Int(celprp(9)/(cut*domain%nz_real))
+    ! Get the dimensional properties of the MD cell
 
-  ncells=nlx*nly*nlz
+    Call dcell(config%cell,celprp)
+    volm = celprp(10)
 
-! Check for link cell algorithm violations
+    ! Calculate the number of link-cells per domain in every direction
 
-  If (ncells == 0) Call error(307)
+    nlx=Int(celprp(7)/(cut*domain%nx_real))
+    nly=Int(celprp(8)/(cut*domain%ny_real))
+    nlz=Int(celprp(9)/(cut*domain%nz_real))
 
-! Amend volume of density cell if cluster, slab or bulk slab
-! cell dimensional properties overwritten but not needed anyway
+    ncells=nlx*nly*nlz
 
-  If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
-     celh=config%cell
+    ! Check for link cell algorithm violations
 
-     If (config%imcon == 0) Then
+    If (ncells == 0) Call error(307)
+
+    ! Amend volume of density cell if cluster, slab or bulk slab
+    ! cell dimensional properties overwritten but not needed anyway
+
+    If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
+      celh=config%cell
+
+      If (config%imcon == 0) Then
         celh(1) = Max(1.0_wp,xhi)
         celh(5) = Max(1.0_wp,yhi)
         celh(9) = Max(1.0_wp,zhi)
-     Else If (config%imcon == 6) Then
+      Else If (config%imcon == 6) Then
         celh(9) = Max(1.0_wp,zhi)
-     End If
+      End If
 
-     Call dcell(celh,celprp)
-     volm = celprp(10)
-  End If
+      Call dcell(celh,celprp)
+      volm = celprp(10)
+    End If
 
-  vcell = volm / (Real(ncells,wp) * Real(comm%mxnode,wp))
+    vcell = volm / (Real(ncells,wp) * Real(comm%mxnode,wp))
 
-! Approximate density and mxatms
+    ! Approximate density and mxatms
 
-  dens = Real(megatm,wp) / volm
-  config%mxatms = Max(1 , Nint( (dvar**1.7_wp) * dens*vcell * Real((nlx+3)*(nly+3)*(nlz+3),wp)))
+    dens = Real(megatm,wp) / volm
+    config%mxatms = Max(1 , Nint( (dvar**1.7_wp) * dens*vcell * Real((nlx+3)*(nly+3)*(nlz+3),wp)))
 
-! Allocate necessary arrays to read CONFIG
+    ! Allocate necessary arrays to read CONFIG
 
-  Call allocate_config_arrays_read(config,config%mxatms)
+    Call allocate_config_arrays_read(config,config%mxatms)
 
-! Get type of I/O for reading
+    ! Get type of I/O for reading
 
-  Call io_get_parameters(io, user_method_read = io_read )
+    Call io_get_parameters(io, user_method_read = io_read )
 
-! Define filename ASCII or netCDF
+    ! Define filename ASCII or netCDF
 
-  If (io_read /= IO_READ_NETCDF) Then
-     fname=files(FILE_CONFIG)%filename
-  Else
-     fname=Trim(files(FILE_CONFIG)%filename) // '.nc'
-  End If
+    If (io_read /= IO_READ_NETCDF) Then
+      fname=files(FILE_CONFIG)%filename
+    Else
+      fname=Trim(files(FILE_CONFIG)%filename) // '.nc'
+    End If
 
-! Define/Detect the FAST reading status
+    ! Define/Detect the FAST reading status
 
-  If      (io_read == IO_READ_MASTER) Then
+    If      (io_read == IO_READ_MASTER) Then
 
-     fast = .false.
+      fast = .false.
 
-  Else If (io_read == IO_READ_NETCDF) Then
+    Else If (io_read == IO_READ_NETCDF) Then
 
-     fast = .true.
+      fast = .true.
 
-  Else
+    Else
 
-! Check if the system input file is a new style CONFIG:
-! (i)  all lines are 72 ASCII characters long with
-!      a UNIX carriage return as end of line;
-! (ii) LINE2 has the particles total value
-!      after values of levcfg and imcon.
-! No fall back if users have mangled with further lines
+      ! Check if the system input file is a new style CONFIG:
+      ! (i)  all lines are 72 ASCII characters long with
+      !      a UNIX carriage return as end of line;
+      ! (ii) LINE2 has the particles total value
+      !      after values of levcfg and imcon.
+      ! No fall back if users have mangled with further lines
 
-     fast = .true.
-     If (comm%idnode == 0) Then
+      fast = .true.
+      If (comm%idnode == 0) Then
 
-! Open CONFIG
+        ! Open CONFIG
 
         Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
-! Read the CONFIG file header (TITLE record)
+        ! Read the CONFIG file header (TITLE record)
 
         i = 0 ! position counter
         j = 0 ! IOStat return
         record = ' '
         Do
-           i = i + 1
-           safe = .false.
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
-           safe = .true.
-           If (j < 0) Go To 10
+          i = i + 1
+          safe = .false.
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
+          safe = .true.
+          If (j < 0) Go To 10
         End Do
-10      Continue
+        10      Continue
         fast = (fast .and. i == recsz)
 
-! Read configuration level and image condition (RECORD2)
+        ! Read configuration level and image condition (RECORD2)
 
         i = 0 ! position counter
         j = 0 ! IOStat return
         record = ' '
         Do
-           i = i + 1
-           safe = .false.
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
-           safe = .true.
-           If (j < 0) Go To 20
+          i = i + 1
+          safe = .false.
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
+          safe = .true.
+          If (j < 0) Go To 20
         End Do
-20      Continue
+        20      Continue
         fast = (fast .and. i == recsz)
 
-! Read particles total value
+        ! Read particles total value
 
         Call get_word(record,word) ; Call get_word(record,word)
         Call get_word(record,word) ; i=Nint(word_2_real(word,0.0_wp,strict))
         fast = (fast .and. i == megatm)
 
-     End If
-        Call gsync(comm)
-        Call gcheck(comm,safe,"enforce")
-        Call gcheck(comm,fast,"enforce")
+      End If
+      Call gsync(comm)
+      Call gcheck(comm,safe,"enforce")
+      Call gcheck(comm,fast,"enforce")
 
-     If (.not.safe) Go To 50
+      If (.not.safe) Go To 50
 
-! Close CONFIG
+      ! Close CONFIG
 
-     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
 
-  End If
+    End If
 
-  fail = 0
+    fail = 0
 
-! If MASTER read
+    ! If MASTER read
 
-  If (io_read == IO_READ_MASTER) Then
+    If (io_read == IO_READ_MASTER) Then
 
-     Call invert(config%cell,rcell,det)
+      Call invert(config%cell,rcell,det)
 
-! Open CONFIG and skip the header
+      ! Open CONFIG and skip the header
 
-     If (comm%idnode == 0) Then
+      If (comm%idnode == 0) Then
         Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
         Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)    ! CONFIG file header (TITLE record)
         Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)    ! configuration level and image condition
 
         If (config%imcon /= 0) Then
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! cell vectors (not defined for imcon=0) but cell
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! is modified in set_bounds for imcon 0 and 6!!!
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! cell vectors (not defined for imcon=0) but cell
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*) ! is modified in set_bounds for imcon 0 and 6!!!
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
         End If
-     End If
+      End If
 
-     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
-     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
-     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
-     Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(4))
-     If (Any(fail > 0)) Then
+      Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
+      Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
+      Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
+      Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(4))
+      If (Any(fail > 0)) Then
         Write(message,'(a)') 'read_config allocation failure'
         Call error(0,message)
-     End If
+      End If
 
-! Initialise domain localised atom counter (configuration)
-! and dispatched atom counter
+      ! Initialise domain localised atom counter (configuration)
+      ! and dispatched atom counter
 
-     config%natms =0
-     indatm=0
-     Do nattot=1,megatm
+      config%natms =0
+      indatm=0
+      Do nattot=1,megatm
         indatm=indatm+1
 
-! Initialise transmission arrays
+        ! Initialise transmission arrays
 
         chbuf(indatm)=' '
         iwrk(indatm)=0
@@ -984,1223 +984,1223 @@ Subroutine read_config(config,megatm,levcfg,l_ind,strict,rcut,dvar,xhi,yhi,zhi,d
         azz(indatm)=0.0_wp
 
         If (levcfg > 0) Then
-           bxx(indatm)=0.0_wp
-           byy(indatm)=0.0_wp
-           bzz(indatm)=0.0_wp
+          bxx(indatm)=0.0_wp
+          byy(indatm)=0.0_wp
+          bzz(indatm)=0.0_wp
 
-           If (levcfg > 1) Then
-              cxx(indatm)=0.0_wp
-              cyy(indatm)=0.0_wp
-              czz(indatm)=0.0_wp
-           End If
+          If (levcfg > 1) Then
+            cxx(indatm)=0.0_wp
+            cyy(indatm)=0.0_wp
+            czz(indatm)=0.0_wp
+          End If
         End If
 
-! Read in transmission arrays
+        ! Read in transmission arrays
 
         If (comm%idnode == 0 .and. safe) Then
-           record=' '
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a)', End=30) record
-           Call tabs_2_blanks(record) ; Call strip_blanks(record)
-           Call get_word(record,word) ; chbuf(indatm)=word(1:8)
-           If (l_ind) Then
-              Call get_word(record,word)
-              iwrk(indatm)=Nint(word_2_real(word,0.0_wp,strict))
-              If (iwrk(indatm) /= 0) Then
-                 iwrk(indatm)=Abs(iwrk(indatm))
-              Else
-                 iwrk(indatm)=nattot
-              End If
-           Else
+          record=' '
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a)', End=30) record
+          Call tabs_2_blanks(record) ; Call strip_blanks(record)
+          Call get_word(record,word) ; chbuf(indatm)=word(1:8)
+          If (l_ind) Then
+            Call get_word(record,word)
+            iwrk(indatm)=Nint(word_2_real(word,0.0_wp,strict))
+            If (iwrk(indatm) /= 0) Then
+              iwrk(indatm)=Abs(iwrk(indatm))
+            Else
               iwrk(indatm)=nattot
-           End If
+            End If
+          Else
+            iwrk(indatm)=nattot
+          End If
 
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) axx(indatm),ayy(indatm),azz(indatm)
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) axx(indatm),ayy(indatm),azz(indatm)
 
-           If (levcfg > 0) Then
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) bxx(indatm),byy(indatm),bzz(indatm)
-              If (levcfg > 1) Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
-           End If
-           Go To 40
+          If (levcfg > 0) Then
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) bxx(indatm),byy(indatm),bzz(indatm)
+            If (levcfg > 1) Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) cxx(indatm),cyy(indatm),czz(indatm)
+          End If
+          Go To 40
 
-30         Continue
-           safe=.false. ! catch error
+          30         Continue
+          safe=.false. ! catch error
 
-40         Continue
+          40         Continue
         End If
 
-! Circulate configuration data to all nodes when transmission arrays are filled up
+        ! Circulate configuration data to all nodes when transmission arrays are filled up
 
         If (indatm == config%mxatms .or. nattot == megatm) Then
 
-! Check if batch was read fine
+          ! Check if batch was read fine
 
-           Call gcheck(comm,safe)
-           If (.not.safe) Go To 50
+          Call gcheck(comm,safe)
+          If (.not.safe) Go To 50
 
-! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
-!
-!           Call pbcshift(imcon,cell,indatm,axx,ayy,azz)
+          ! Ensure all atoms are in prescribed simulation cell (DD bound) and broadcast them
+          !
+          !           Call pbcshift(imcon,cell,indatm,axx,ayy,azz)
 
-              Call gbcast(comm,chbuf,0)
-              Call gbcast(comm,iwrk,0)
+          Call gbcast(comm,chbuf,0)
+          Call gbcast(comm,iwrk,0)
 
-              Call gbcast(comm,axx,0)
-              Call gbcast(comm,ayy,0)
-              Call gbcast(comm,azz,0)
+          Call gbcast(comm,axx,0)
+          Call gbcast(comm,ayy,0)
+          Call gbcast(comm,azz,0)
 
 
-              If (levcfg > 0) Then
+          If (levcfg > 0) Then
 
-                Call gbcast(comm,bxx,0)
-                Call gbcast(comm,byy,0)
-                Call gbcast(comm,bzz,0)
+            Call gbcast(comm,bxx,0)
+            Call gbcast(comm,byy,0)
+            Call gbcast(comm,bzz,0)
 
-                 If (levcfg > 1) Then
+            If (levcfg > 1) Then
 
-                   Call gbcast(comm,cxx,0)
-                   Call gbcast(comm,cyy,0)
-                   Call gbcast(comm,czz,0)
-                 End If
+              Call gbcast(comm,cxx,0)
+              Call gbcast(comm,cyy,0)
+              Call gbcast(comm,czz,0)
+            End If
+          End If
+
+          ! Assign atoms to correct domains
+
+          Do i=1,indatm
+            sxx=rcell(1)*axx(i)+rcell(4)*ayy(i)+rcell(7)*azz(i)
+            syy=rcell(2)*axx(i)+rcell(5)*ayy(i)+rcell(8)*azz(i)
+            szz=rcell(3)*axx(i)+rcell(6)*ayy(i)+rcell(9)*azz(i)
+
+            ! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
+
+            sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
+            syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
+            szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
+
+            ! fold back coordinates
+
+            axx(i)=config%cell(1)*sxx+config%cell(4)*syy+config%cell(7)*szz
+            ayy(i)=config%cell(2)*sxx+config%cell(5)*syy+config%cell(8)*szz
+            azz(i)=config%cell(3)*sxx+config%cell(6)*syy+config%cell(9)*szz
+
+            ! assign domain coordinates (call for errors)
+
+            ipx=Int((sxx+0.5_wp)*domain%nx_real)
+            ipy=Int((syy+0.5_wp)*domain%ny_real)
+            ipz=Int((szz+0.5_wp)*domain%nz_real)
+
+            idm=ipx+domain%nx*(ipy+domain%ny*ipz)
+            If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
+              Call error(513)
+            Else If (idm == comm%idnode)                 Then
+              config%natms=config%natms+1
+
+              If (config%natms < config%mxatms) Then
+                config%atmnam(config%natms)=chbuf(i)
+                config%ltg(config%natms)=iwrk(i)
+
+                config%parts(config%natms)%xxx=axx(i)
+                config%parts(config%natms)%yyy=ayy(i)
+                config%parts(config%natms)%zzz=azz(i)
+
+                If (levcfg > 0) Then
+                  config%vxx(config%natms)=bxx(i)
+                  config%vyy(config%natms)=byy(i)
+                  config%vzz(config%natms)=bzz(i)
+                Else
+                  config%vxx(config%natms)=0.0_wp
+                  config%vyy(config%natms)=0.0_wp
+                  config%vzz(config%natms)=0.0_wp
+                End If
+
+                If (levcfg > 1) Then
+                  config%parts(config%natms)%fxx=cxx(i)
+                  config%parts(config%natms)%fyy=cyy(i)
+                  config%parts(config%natms)%fzz=czz(i)
+                Else
+                  config%parts(config%natms)%fxx=0.0_wp
+                  config%parts(config%natms)%fyy=0.0_wp
+                  config%parts(config%natms)%fzz=0.0_wp
+                End If
+              Else
+                safe=.false.
               End If
+            End If
+          End Do
 
-! Assign atoms to correct domains
+          ! Check if all is dispatched fine
 
-           Do i=1,indatm
-              sxx=rcell(1)*axx(i)+rcell(4)*ayy(i)+rcell(7)*azz(i)
-              syy=rcell(2)*axx(i)+rcell(5)*ayy(i)+rcell(8)*azz(i)
-              szz=rcell(3)*axx(i)+rcell(6)*ayy(i)+rcell(9)*azz(i)
+          max_fail=config%natms
+          min_fail=config%natms
+          Call gcheck(comm,safe)
+          Call gmax(comm,max_fail)
+          Call gmin(comm,min_fail)
 
-! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
+          If (.not.safe) Then
+            Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', config%mxatms
+            Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', &
+              max_fail, ' & ', min_fail
+            Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
+              Ceiling((dvar*(Real(max_fail,wp)/Real(config%mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+            Call info(messages,3,.true.)
+            Call error(45)
+          End If
 
-              sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
-              syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
-              szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
+          ! Nullify dispatch counter
 
-! fold back coordinates
-
-              axx(i)=config%cell(1)*sxx+config%cell(4)*syy+config%cell(7)*szz
-              ayy(i)=config%cell(2)*sxx+config%cell(5)*syy+config%cell(8)*szz
-              azz(i)=config%cell(3)*sxx+config%cell(6)*syy+config%cell(9)*szz
-
-! assign domain coordinates (call for errors)
-
-              ipx=Int((sxx+0.5_wp)*domain%nx_real)
-              ipy=Int((syy+0.5_wp)*domain%ny_real)
-              ipz=Int((szz+0.5_wp)*domain%nz_real)
-
-              idm=ipx+domain%nx*(ipy+domain%ny*ipz)
-              If      (idm < 0 .or. idm > (comm%mxnode-1)) Then
-                 Call error(513)
-               Else If (idm == comm%idnode)                 Then
-                 config%natms=config%natms+1
-
-                 If (config%natms < config%mxatms) Then
-                    config%atmnam(config%natms)=chbuf(i)
-                    config%ltg(config%natms)=iwrk(i)
-
-                    config%parts(config%natms)%xxx=axx(i)
-                    config%parts(config%natms)%yyy=ayy(i)
-                    config%parts(config%natms)%zzz=azz(i)
-
-                    If (levcfg > 0) Then
-                       config%vxx(config%natms)=bxx(i)
-                       config%vyy(config%natms)=byy(i)
-                       config%vzz(config%natms)=bzz(i)
-                    Else
-                       config%vxx(config%natms)=0.0_wp
-                       config%vyy(config%natms)=0.0_wp
-                       config%vzz(config%natms)=0.0_wp
-                    End If
-
-                    If (levcfg > 1) Then
-                       config%parts(config%natms)%fxx=cxx(i)
-                       config%parts(config%natms)%fyy=cyy(i)
-                       config%parts(config%natms)%fzz=czz(i)
-                    Else
-                       config%parts(config%natms)%fxx=0.0_wp
-                       config%parts(config%natms)%fyy=0.0_wp
-                       config%parts(config%natms)%fzz=0.0_wp
-                    End If
-                 Else
-                    safe=.false.
-                 End If
-              End If
-           End Do
-
-! Check if all is dispatched fine
-
-           max_fail=config%natms
-           min_fail=config%natms
-              Call gcheck(comm,safe)
-              Call gmax(comm,max_fail)
-              Call gmin(comm,min_fail)
-
-           If (.not.safe) Then
-             Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', config%mxatms
-              Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', &
-                 max_fail, ' & ', min_fail
-              Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
-                Ceiling((dvar*(Real(max_fail,wp)/Real(config%mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
-              Call info(messages,3,.true.)
-              Call error(45)
-           End If
-
-! Nullify dispatch counter
-
-           indatm=0
+          indatm=0
 
         End If
-     End Do
+      End Do
 
-! Close CONFIG
+      ! Close CONFIG
 
-     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
-     Call gsync(comm)
+      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      Call gsync(comm)
 
-     Deallocate (chbuf,iwrk,  Stat=fail(1))
-     Deallocate (axx,ayy,azz, Stat=fail(2))
-     Deallocate (bxx,byy,bzz, Stat=fail(3))
-     Deallocate (cxx,cyy,czz, Stat=fail(4))
-     If (Any(fail > 0)) Then
+      Deallocate (chbuf,iwrk,  Stat=fail(1))
+      Deallocate (axx,ayy,azz, Stat=fail(2))
+      Deallocate (bxx,byy,bzz, Stat=fail(3))
+      Deallocate (cxx,cyy,czz, Stat=fail(4))
+      If (Any(fail > 0)) Then
         Write(message,'(a)') 'read_config deallocation failure'
         Call error(0,message)
-     End If
+      End If
 
-! If PROPER read
+      ! If PROPER read
 
-  Else
+    Else
 
-! Open CONFIG
+      ! Open CONFIG
 
-     If (fast) Then
+      If (fast) Then
         Call io_set_parameters(io, user_comm = comm%comm )
-         Call io_init(io, recsz )
+        Call io_init(io, recsz )
         Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
-     Else
+      Else
         Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
-     End If
+      End If
 
-! top_skip is header size
+      ! top_skip is header size
 
-     If (io_read /= IO_READ_NETCDF) Then
+      If (io_read /= IO_READ_NETCDF) Then
         If (config%imcon == 0) Then
-           top_skip = Int(2,offset_kind)
+          top_skip = Int(2,offset_kind)
         Else
-           top_skip = Int(5,offset_kind)
+          top_skip = Int(5,offset_kind)
         End If
-     Else
+      Else
         top_skip = Int(1,offset_kind) ! This is now the frame = 1
-     End If
+      End If
 
-     Call read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his,l_xtr, &
-       fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
+      Call read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his,l_xtr, &
+        fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
-! Close CONFIG
+      ! Close CONFIG
 
-     If (fast) Then
+      If (fast) Then
         Call io_close(io, fh )
         Call io_finalize(io)
-     Else
+      Else
         Close(Unit=files(FILE_CONFIG)%unit_no)
-     End If
+      End If
 
-  End If
+    End If
 
-! To prevent users from the danger of changing the order of calls
-! in dl_poly set 'nlast' to the innocent 'natms'
+    ! To prevent users from the danger of changing the order of calls
+    ! in dl_poly set 'nlast' to the innocent 'natms'
 
-  config%nlast=config%natms
+    config%nlast=config%natms
 
-! Check if the number of atoms in the system (MD cell) derived by
-! topology description (FIELD) match the crystallographic (CONFIG) one?
+    ! Check if the number of atoms in the system (MD cell) derived by
+    ! topology description (FIELD) match the crystallographic (CONFIG) one?
 
-  totatm=config%natms
-  Call gsum(comm,totatm)
-  If (totatm /= megatm) Call error(58)
+    totatm=config%natms
+    Call gsum(comm,totatm)
+    If (totatm /= megatm) Call error(58)
 
-! Record global atom indices for local sorting (configuration)
+    ! Record global atom indices for local sorting (configuration)
 
-  Do i=1,config%natms
-     config%lsi(i)=i
-     config%lsa(i)=config%ltg(i)
-  End Do
-  Call shellsort2(config%natms,config%lsi,config%lsa)
+    Do i=1,config%natms
+      config%lsi(i)=i
+      config%lsa(i)=config%ltg(i)
+    End Do
+    Call shellsort2(config%natms,config%lsi,config%lsa)
 
-  If (io_read /= IO_READ_MASTER) Then
+    If (io_read /= IO_READ_MASTER) Then
 
-! This section is not strictly necessary.  However, the new read in method
-! means the atoms are not necessarily in the same order in memory as the
-! older, slower, method would put them.  This bit makes sure that the order
-! is so that 'ltg' is strictly monotonically increasing.  This captures the
-! common case where CONFIG has the 'ltg' values all in order (or not
-! specified), but there is no easy way for the general case of arbitrary
-! ordering of the 'ltg' values in CONFIG.  Of course, this makes no
-! difference to the science and to restarts.  However, for initial runs it
-! means the initial velocities will not be the same as the old method for
-! the arbitrary ordering case.
+      ! This section is not strictly necessary.  However, the new read in method
+      ! means the atoms are not necessarily in the same order in memory as the
+      ! older, slower, method would put them.  This bit makes sure that the order
+      ! is so that 'ltg' is strictly monotonically increasing.  This captures the
+      ! common case where CONFIG has the 'ltg' values all in order (or not
+      ! specified), but there is no easy way for the general case of arbitrary
+      ! ordering of the 'ltg' values in CONFIG.  Of course, this makes no
+      ! difference to the science and to restarts.  However, for initial runs it
+      ! means the initial velocities will not be the same as the old method for
+      ! the arbitrary ordering case.
 
-     config%atmnam( 1:config%natms ) = config%atmnam( config%lsi( 1:config%natms ) )
-     config%ltg( 1:config%natms ) = config%ltg( config%lsi( 1:config%natms ) )
+      config%atmnam( 1:config%natms ) = config%atmnam( config%lsi( 1:config%natms ) )
+      config%ltg( 1:config%natms ) = config%ltg( config%lsi( 1:config%natms ) )
 
-     config%parts(1:config%natms)%xxx = config%parts( config%lsi( 1:config%natms ) )%xxx
-     config%parts(1:config%natms)%yyy = config%parts( config%lsi( 1:config%natms ) )%yyy
-     config%parts(1:config%natms)%zzz = config%parts( config%lsi( 1:config%natms ) )%zzz
+      config%parts(1:config%natms)%xxx = config%parts( config%lsi( 1:config%natms ) )%xxx
+      config%parts(1:config%natms)%yyy = config%parts( config%lsi( 1:config%natms ) )%yyy
+      config%parts(1:config%natms)%zzz = config%parts( config%lsi( 1:config%natms ) )%zzz
 
-     If (levcfg > 0) Then
+      If (levcfg > 0) Then
         config%vxx( 1:config%natms ) = config%vxx( config%lsi( 1:config%natms ) )
         config%vyy( 1:config%natms ) = config%vyy( config%lsi( 1:config%natms ) )
         config%vzz( 1:config%natms ) = config%vzz( config%lsi( 1:config%natms ) )
 
         If (levcfg > 1) Then
-           config%parts( 1:config%natms )%fxx = config%parts( config%lsi( 1:config%natms ) )%fxx
-           config%parts( 1:config%natms )%fyy = config%parts( config%lsi( 1:config%natms ) )%fyy
-           config%parts( 1:config%natms )%fzz = config%parts( config%lsi( 1:config%natms ) )%fzz
+          config%parts( 1:config%natms )%fxx = config%parts( config%lsi( 1:config%natms ) )%fxx
+          config%parts( 1:config%natms )%fyy = config%parts( config%lsi( 1:config%natms ) )%fyy
+          config%parts( 1:config%natms )%fzz = config%parts( config%lsi( 1:config%natms ) )%fzz
         End If
-     End If
-     Do i=1,config%natms
+      End If
+      Do i=1,config%natms
         config%lsi(i)=i
         config%lsa(i)=config%ltg(i)
-     End Do
+      End Do
 
-  End If
+    End If
 
-! READ CONFIG END
+    ! READ CONFIG END
 
-! PARTICLE DENSITY START
-! Allocate and initialise particle density array
+    ! PARTICLE DENSITY START
+    ! Allocate and initialise particle density array
 
-  Allocate (pda(1:ncells), Stat=fail(1))
-  If (fail(1) > 0) Then
-     Write(message,'(a)') 'read_config allocation failure'
-     Call error(0,message)
-  End If
-  pda=0.0_wp
+    Allocate (pda(1:ncells), Stat=fail(1))
+    If (fail(1) > 0) Then
+      Write(message,'(a)') 'read_config allocation failure'
+      Call error(0,message)
+    End If
+    pda=0.0_wp
 
-! Get the total number of link-cells in MD cell per direction
+    ! Get the total number of link-cells in MD cell per direction
 
-  xdc=Real(nlx*domain%nx,wp)
-  ydc=Real(nly*domain%ny,wp)
-  zdc=Real(nlz*domain%nz,wp)
+    xdc=Real(nlx*domain%nx,wp)
+    ydc=Real(nly*domain%ny,wp)
+    zdc=Real(nlz*domain%nz,wp)
 
-! Shifts from global to local link-cell space:
-! (0,0,0) left-most link-cell on the domain (halo)
-! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
-! link-cell on the domain (halo)
+    ! Shifts from global to local link-cell space:
+    ! (0,0,0) left-most link-cell on the domain (halo)
+    ! (nlx+2*nlp-1,nly+2*nlp-1,nly+2*nlp-1) right-most
+    ! link-cell on the domain (halo)
 
-  jx=1-nlx*domain%idx
-  jy=1-nly*domain%idy
-  jz=1-nlz*domain%idz
+    jx=1-nlx*domain%idx
+    jy=1-nly*domain%idy
+    jz=1-nlz*domain%idz
 
-! Get the inverse cell matrix
+    ! Get the inverse cell matrix
 
-  Call invert(config%cell,rcell,celprp(10))
+    Call invert(config%cell,rcell,celprp(10))
 
-  Do i=1,config%natms
-     sxx=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*config%parts(i)%zzz
-     syy=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*config%parts(i)%zzz
-     szz=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*config%parts(i)%zzz
+    Do i=1,config%natms
+      sxx=rcell(1)*config%parts(i)%xxx+rcell(4)*config%parts(i)%yyy+rcell(7)*config%parts(i)%zzz
+      syy=rcell(2)*config%parts(i)%xxx+rcell(5)*config%parts(i)%yyy+rcell(8)*config%parts(i)%zzz
+      szz=rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+rcell(9)*config%parts(i)%zzz
 
-! Get cell coordinates accordingly
+      ! Get cell coordinates accordingly
 
-     ix = Int(xdc*(sxx+0.5_wp)) + jx
-     iy = Int(ydc*(syy+0.5_wp)) + jy
-     iz = Int(zdc*(szz+0.5_wp)) + jz
+      ix = Int(xdc*(sxx+0.5_wp)) + jx
+      iy = Int(ydc*(syy+0.5_wp)) + jy
+      iz = Int(zdc*(szz+0.5_wp)) + jz
 
-! Put all particles in bounded link-cell space: lower and upper
-! bounds as 1 <= i_coordinate <= nl_coordinate
+      ! Put all particles in bounded link-cell space: lower and upper
+      ! bounds as 1 <= i_coordinate <= nl_coordinate
 
-     ix = Max( Min( ix , nlx) , 1)
-     iy = Max( Min( iy , nly) , 1)
-     iz = Max( Min( iz , nlz) , 1)
+      ix = Max( Min( ix , nlx) , 1)
+      iy = Max( Min( iy , nly) , 1)
+      iz = Max( Min( iz , nlz) , 1)
 
-! Hypercube function transformation (counting starts from one
-! rather than zero /map_domains/
+      ! Hypercube function transformation (counting starts from one
+      ! rather than zero /map_domains/
 
-     icell=1+(ix-1)+nlx*((iy-1)+nly*(iz-1))
+      icell=1+(ix-1)+nlx*((iy-1)+nly*(iz-1))
 
-     pda(icell)=pda(icell)+1.0_wp
-  End Do
+      pda(icell)=pda(icell)+1.0_wp
+    End Do
 
-  pda_max=  0.0_wp
-  pda_min=100.0_wp
-  pda_ave=  0.0_wp
-  Do icell=1,ncells
-     pda_max=Max(pda(icell),pda_max)
-     pda_min=Min(pda(icell),pda_min)
-     pda_ave=pda_ave+pda(icell)
-  End Do
-  pda_ave=pda_ave/Real(ncells,wp)
+    pda_max=  0.0_wp
+    pda_min=100.0_wp
+    pda_ave=  0.0_wp
+    Do icell=1,ncells
+      pda_max=Max(pda(icell),pda_max)
+      pda_min=Min(pda(icell),pda_min)
+      pda_ave=pda_ave+pda(icell)
+    End Do
+    pda_ave=pda_ave/Real(ncells,wp)
 
-  pda_dom_max=pda_ave
-  pda_dom_min=pda_ave
-     Call gmax(comm,pda_dom_max)
-     Call gmin(comm,pda_dom_min)
+    pda_dom_max=pda_ave
+    pda_dom_min=pda_ave
+    Call gmax(comm,pda_dom_max)
+    Call gmin(comm,pda_dom_min)
 
-     Call gmax(comm,pda_max)
-     Call gmin(comm,pda_min)
+    Call gmax(comm,pda_max)
+    Call gmin(comm,pda_min)
 
-     Call gsum(comm,pda_ave)
-     pda_ave=pda_ave/Real(comm%mxnode,wp)
+    Call gsum(comm,pda_ave)
+    pda_ave=pda_ave/Real(comm%mxnode,wp)
 
-! Approximation for maximum global density by
-! the inter-domain imbalance of domain density
+    ! Approximation for maximum global density by
+    ! the inter-domain imbalance of domain density
 
-  dens0=pda_max/vcell
-  If (comm%mxnode > 1) Then
-     If (Nint(pda_dom_min) == 0) Then
+    dens0=pda_max/vcell
+    If (comm%mxnode > 1) Then
+      If (Nint(pda_dom_min) == 0) Then
         dens = dens0 ! domain(s) matched on vacuum (take no risk)
-     Else If (1.15_wp*pda_dom_min > pda_dom_max) Then
+      Else If (1.15_wp*pda_dom_min > pda_dom_max) Then
         dens = pda_ave/vcell
-     Else If (1.25_wp*pda_dom_min > pda_dom_max) Then
+      Else If (1.25_wp*pda_dom_min > pda_dom_max) Then
         dens = pda_dom_max/vcell
-     Else
+      Else
         dens = dens0 ! too big an imbalance (take no risk)
-     End If
-  Else
-     dens = 1.25_wp*pda_ave/vcell ! allow 25% imbalance
-  End If
+      End If
+    Else
+      dens = 1.25_wp*pda_ave/vcell ! allow 25% imbalance
+    End If
 
-  Deallocate (pda, Stat=fail(1))
-  If (fail(1) > 0) Then
-     Write(message,'(a)') 'read_config deallocation failure'
-     Call error(0,message)
-  End If
+    Deallocate (pda, Stat=fail(1))
+    If (fail(1) > 0) Then
+      Write(message,'(a)') 'read_config deallocation failure'
+      Call error(0,message)
+    End If
 
-! PARTICLE DENSITY END
+    ! PARTICLE DENSITY END
 
-  Return
+    Return
 
-! error exit for CONFIG file read
+    ! error exit for CONFIG file read
 
-50 Continue
-  If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
-  Call error(55)
+    50 Continue
+    If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+    Call error(55)
 
-End Subroutine read_config
+  End Subroutine read_config
 
-Subroutine read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his, &
-    l_xtr,fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
+  Subroutine read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his, &
+      l_xtr,fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
-!
-! copyright - daresbury laboratory
-! author    - i.j.bush & i.t.todorov march 2016
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for reading in the CONFIG data file in parallel
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.j.bush & i.t.todorov march 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-  Type( io_type ), Intent( InOut ) :: io
-  Logical,                           Intent( In    ) :: l_ind,strict,l_his,fast,l_xtr
-  Integer,                           Intent( In    ) :: levcfg,megatm,fh
-  Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
-  Real( Kind = wp ),                 Intent( In    ) :: dvar
-  Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
-  Type( configuration_type ), Intent( InOut ) :: config
-  Type( domains_type ), Intent( In    ) :: domain
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( comms_type ),                Intent( InOut ) :: comm
+    Type( io_type ), Intent( InOut ) :: io
+    Logical,                           Intent( In    ) :: l_ind,strict,l_his,fast,l_xtr
+    Integer,                           Intent( In    ) :: levcfg,megatm,fh
+    Integer( Kind = offset_kind ), Intent( In    ) :: top_skip
+    Real( Kind = wp ),                 Intent( In    ) :: dvar
+    Real( Kind = wp ),                 Intent(   Out ) :: xhi,yhi,zhi
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type( domains_type ), Intent( In    ) :: domain
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( comms_type ),                Intent( InOut ) :: comm
 
-  Logical                :: safe,do_read
-  Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word,forma
-  Integer                :: fail(1:8),i,j,k,max_fail,min_fail, &
-                            idm,ipx,ipy,ipz,indatm,            &
-                            n_read_procs_use,per_read_proc,    &
-                            my_read_proc_num,ats_per_proc,     &
-                            recs_per_at,recs_per_proc,         &
-                            wp_vals_per_at,n_loc,              &
-                            to_read,which_read_proc,this_base_proc
-  Integer( Kind = li )   :: n_sk,n_ii,n_jj
-  Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz
+    Logical                :: safe,do_read
+    Character( Len = 200 ) :: record
+    Character( Len = 40  ) :: word,forma
+    Integer                :: fail(1:8),i,j,k,max_fail,min_fail, &
+      idm,ipx,ipy,ipz,indatm,            &
+      n_read_procs_use,per_read_proc,    &
+      my_read_proc_num,ats_per_proc,     &
+      recs_per_at,recs_per_proc,         &
+      wp_vals_per_at,n_loc,              &
+      to_read,which_read_proc,this_base_proc
+    Integer( Kind = li )   :: n_sk,n_ii,n_jj
+    Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz
 
-! Some parameters and variables needed by io interfaces
+    ! Some parameters and variables needed by io interfaces
 
-  Integer                           :: io_read
-  Integer                           :: recsz, batsz
-  Integer( Kind = offset_kind ) :: rec_mpi_io, n_skip
-  Integer                           :: this_rec_buff, recs_to_read
-  Integer                           :: n_ats_in_file
+    Integer                           :: io_read
+    Integer                           :: recsz, batsz
+    Integer( Kind = offset_kind ) :: rec_mpi_io, n_skip
+    Integer                           :: this_rec_buff, recs_to_read
+    Integer                           :: n_ats_in_file
 
-! netCDF
+    ! netCDF
 
-  Integer :: frame, start(1:3), count(1:3)
+    Integer :: frame, start(1:3), count(1:3)
 
-  Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
-  Integer,              Dimension( : ),    Allocatable :: iwrk
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx_read,ayy_read,azz_read, &
-                                                          bxx_read,byy_read,bzz_read, &
-                                                          cxx_read,cyy_read,czz_read
+    Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
+    Integer,              Dimension( : ),    Allocatable :: iwrk
+    Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx_read,ayy_read,azz_read, &
+      bxx_read,byy_read,bzz_read, &
+      cxx_read,cyy_read,czz_read
 
-  Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf_read,chbuf_scat
-  Integer,              Dimension( : ),    Allocatable :: iwrk_read,iwrk_scat
+    Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf_read,chbuf_scat
+    Integer,              Dimension( : ),    Allocatable :: iwrk_read,iwrk_scat
 
-  Integer,              Dimension( : ),    Allocatable :: first_at,orig_first_at
-  Integer,              Dimension( : ),    Allocatable :: n_held,where_buff
-  Integer,              Dimension( : ),    Allocatable :: owner_read
+    Integer,              Dimension( : ),    Allocatable :: first_at,orig_first_at
+    Integer,              Dimension( : ),    Allocatable :: n_held,where_buff
+    Integer,              Dimension( : ),    Allocatable :: owner_read
 
-  Real( Kind = wp ),    Dimension( :, : ), Allocatable :: scatter_buffer_read
-  Real( Kind = wp ),    Dimension( :, : ), Allocatable :: scatter_buffer
+    Real( Kind = wp ),    Dimension( :, : ), Allocatable :: scatter_buffer_read
+    Real( Kind = wp ),    Dimension( :, : ), Allocatable :: scatter_buffer
 
-  Character( Len = 1 ), Dimension( :, : ), Allocatable :: rec_buff
-  Integer :: ierr
+    Character( Len = 1 ), Dimension( :, : ), Allocatable :: rec_buff
+    Integer :: ierr
 
-  Character( Len =  256 )  ::  message
-  Character( Len =  256 )  ::  messages(3)
+    Character( Len =  256 )  ::  message
+    Character( Len =  256 )  ::  messages(3)
 
-! Get reading method, total number of I/O heads and buffer size
+    ! Get reading method, total number of I/O heads and buffer size
 
-  Call io_get_parameters(io, user_method_read      = io_read          )
-  Call io_get_parameters(io, user_n_io_procs_read  = n_read_procs_use )
-  Call io_get_parameters(io, user_buffer_size_read = batsz            )
+    Call io_get_parameters(io, user_method_read      = io_read          )
+    Call io_get_parameters(io, user_n_io_procs_read  = n_read_procs_use )
+    Call io_get_parameters(io, user_buffer_size_read = batsz            )
 
-  fail = 0 ! fail initialisation
+    fail = 0 ! fail initialisation
 
-  If (levcfg /= 3) Then
-     wp_vals_per_at = 3 * (1+levcfg) ! Scatter buffer sizes
-     recs_per_at    = 2 + levcfg     ! Scatter buffer sizes
-  Else
-     wp_vals_per_at = 3 ! Scatter buffer sizes
-     recs_per_at    = 1 ! Scatter buffer sizes
-  End If
+    If (levcfg /= 3) Then
+      wp_vals_per_at = 3 * (1+levcfg) ! Scatter buffer sizes
+      recs_per_at    = 2 + levcfg     ! Scatter buffer sizes
+    Else
+      wp_vals_per_at = 3 ! Scatter buffer sizes
+      recs_per_at    = 1 ! Scatter buffer sizes
+    End If
 
-! Note: make 'first_at' and 'orig_first_at' 1 element bigger than strictly
-! required to make checking at the end of reading much easier and clearer
+    ! Note: make 'first_at' and 'orig_first_at' 1 element bigger than strictly
+    ! required to make checking at the end of reading much easier and clearer
 
-  Allocate (first_at(0:n_read_procs_use),orig_first_at(0:n_read_procs_use), Stat=fail(1))
-  Allocate (chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
-  Allocate (scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
-  If (Any(fail(1:3) > 0)) Then
-     Write(message,'(a)') 'read_config_parallel allocation failure 1'
-     Call error(0,message)
-  End If
+    Allocate (first_at(0:n_read_procs_use),orig_first_at(0:n_read_procs_use), Stat=fail(1))
+    Allocate (chbuf(1:batsz),iwrk(1:batsz),                                   Stat=fail(2))
+    Allocate (scatter_buffer(1:wp_vals_per_at,1:batsz),                       Stat=fail(3))
+    If (Any(fail(1:3) > 0)) Then
+      Write(message,'(a)') 'read_config_parallel allocation failure 1'
+      Call error(0,message)
+    End If
 
-! define basic quantities for the parallel ASCII reading
+    ! define basic quantities for the parallel ASCII reading
 
-  per_read_proc = comm%mxnode / n_read_procs_use
-  do_read = (Mod( comm%idnode, per_read_proc ) == 0 .and. comm%idnode < per_read_proc * n_read_procs_use)
-  my_read_proc_num = comm%idnode / per_read_proc
+    per_read_proc = comm%mxnode / n_read_procs_use
+    do_read = (Mod( comm%idnode, per_read_proc ) == 0 .and. comm%idnode < per_read_proc * n_read_procs_use)
+    my_read_proc_num = comm%idnode / per_read_proc
 
-! Note 'first_at' and 'orig_first_at' have one more element
-! in the array than strictly required - makes it easier to
-! check that reading by the last I/O processor has finished
+    ! Note 'first_at' and 'orig_first_at' have one more element
+    ! in the array than strictly required - makes it easier to
+    ! check that reading by the last I/O processor has finished
 
-  ats_per_proc = megatm / n_read_procs_use
-  Do i=0,n_read_procs_use
-     first_at(i) = i*ats_per_proc + Min(i,megatm-ats_per_proc*n_read_procs_use)
-  End Do
-  orig_first_at = first_at
-  ats_per_proc = Max(1,ats_per_proc) ! Fix it if 0
-  recs_per_proc = ats_per_proc * recs_per_at
+    ats_per_proc = megatm / n_read_procs_use
+    Do i=0,n_read_procs_use
+      first_at(i) = i*ats_per_proc + Min(i,megatm-ats_per_proc*n_read_procs_use)
+    End Do
+    orig_first_at = first_at
+    ats_per_proc = Max(1,ats_per_proc) ! Fix it if 0
+    recs_per_proc = ats_per_proc * recs_per_at
 
-! Catch the case where the first atom belonging to
-! a read processor does not actually exists - i.e.
-! I/O procs count > megatm, and limit reading by do_read
+    ! Catch the case where the first atom belonging to
+    ! a read processor does not actually exists - i.e.
+    ! I/O procs count > megatm, and limit reading by do_read
 
-  If (my_read_proc_num < n_read_procs_use) &
-     do_read = (do_read .and. first_at(my_read_proc_num) < megatm)
+    If (my_read_proc_num < n_read_procs_use) &
+      do_read = (do_read .and. first_at(my_read_proc_num) < megatm)
 
-! Skip to the point of reading
+    ! Skip to the point of reading
 
-  If (do_read) Then
+    If (do_read) Then
 
-     n_skip = Int(recs_per_at,offset_kind) * Int(first_at(my_read_proc_num),offset_kind) + &
-              top_skip-Int(1,offset_kind)
-     If (.not.fast) Then
+      n_skip = Int(recs_per_at,offset_kind) * Int(first_at(my_read_proc_num),offset_kind) + &
+        top_skip-Int(1,offset_kind)
+      If (.not.fast) Then
         n_sk=Int(n_skip,li)
         n_jj=73*batsz ! Assuming average max line length of 73
         If (n_sk > n_jj) Then
-           Do n_ii=1_li,n_sk/n_jj
-              forma=' '
-              Write(forma,'( "(", i0, "/)" )') n_jj
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
-           End Do
-           n_ii=Mod(n_sk,n_jj)-n_ii+1_li
-           If (n_ii > 0_li) Then
-              forma=' '
-              Write(forma,'( "(", i0, "/)" )') n_ii
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
-           End If
+          Do n_ii=1_li,n_sk/n_jj
+            forma=' '
+            Write(forma,'( "(", i0, "/)" )') n_jj
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+          End Do
+          n_ii=Mod(n_sk,n_jj)-n_ii+1_li
+          If (n_ii > 0_li) Then
+            forma=' '
+            Write(forma,'( "(", i0, "/)" )') n_ii
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+          End If
         Else
-           forma=' '
-           Write(forma,'( "(", i0, "/)" )') n_sk
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+          forma=' '
+          Write(forma,'( "(", i0, "/)" )') n_sk
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
         End If
 
         recsz=200
         forma=' '
         Write(forma,'( "(", i0, "a1)" )') recsz
-     Else
+      Else
         rec_mpi_io = n_skip + Int(1,offset_kind)
         recsz=73
         If (levcfg == 3) recsz = 35
-     End If
+      End If
 
-! Allocate record buffer, reading buffers, scatter buffers and indexing arrays
+      ! Allocate record buffer, reading buffers, scatter buffers and indexing arrays
 
-     If (io_read /= IO_READ_NETCDF) Then
+      If (io_read /= IO_READ_NETCDF) Then
         Allocate (rec_buff(1:recsz,1:batsz),                                  Stat=fail(1))
-     Else
+      Else
         Allocate (rec_buff(1:Len( chbuf_read ),1:batsz),                      Stat=fail(1))
-     End If
-     Allocate (chbuf_read(1:batsz),iwrk_read(1:batsz),                        Stat=fail(2))
-     Allocate (axx_read(1:batsz),ayy_read(1:batsz),azz_read(1:batsz),         Stat=fail(3))
-     Allocate (bxx_read(1:batsz),byy_read(1:batsz),bzz_read(1:batsz),         Stat=fail(4))
-     Allocate (cxx_read(1:batsz),cyy_read(1:batsz),czz_read(1:batsz),         Stat=fail(5))
-     Allocate (scatter_buffer_read(1:wp_vals_per_at,1:batsz),                 Stat=fail(6))
-     Allocate (chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(7))
-     Allocate (n_held(0:comm%mxnode-1),where_buff(0:comm%mxnode-1),owner_read(1:batsz), Stat=fail(8))
-     If (Any(fail(1:8) > 0)) Then
+      End If
+      Allocate (chbuf_read(1:batsz),iwrk_read(1:batsz),                        Stat=fail(2))
+      Allocate (axx_read(1:batsz),ayy_read(1:batsz),azz_read(1:batsz),         Stat=fail(3))
+      Allocate (bxx_read(1:batsz),byy_read(1:batsz),bzz_read(1:batsz),         Stat=fail(4))
+      Allocate (cxx_read(1:batsz),cyy_read(1:batsz),czz_read(1:batsz),         Stat=fail(5))
+      Allocate (scatter_buffer_read(1:wp_vals_per_at,1:batsz),                 Stat=fail(6))
+      Allocate (chbuf_scat(1:batsz),iwrk_scat(1:batsz),                        Stat=fail(7))
+      Allocate (n_held(0:comm%mxnode-1),where_buff(0:comm%mxnode-1),owner_read(1:batsz), Stat=fail(8))
+      If (Any(fail(1:8) > 0)) Then
         Write(message,'(a)') 'read_config_parallel allocation failure 2'
         Call error(0,message)
-     End If
+      End If
 
-  Else
+    Else
 
-! It is Illegal to pass unallocated allocatable arrays to routines.
-! Therefore for arrays that are used by the mpi_scatterv calls
-! below allocate them to zero size if they are not used on this core
+      ! It is Illegal to pass unallocated allocatable arrays to routines.
+      ! Therefore for arrays that are used by the mpi_scatterv calls
+      ! below allocate them to zero size if they are not used on this core
 
-     Allocate (scatter_buffer_read(1:0,1:0),   Stat=fail(1))
-     Allocate (chbuf_scat(1:0),iwrk_scat(1:0), Stat=fail(2))
-     Allocate (n_held(0:-1),where_buff(0:-1),  Stat=fail(3))
-     If (Any(fail(1:3) > 0)) Then
+      Allocate (scatter_buffer_read(1:0,1:0),   Stat=fail(1))
+      Allocate (chbuf_scat(1:0),iwrk_scat(1:0), Stat=fail(2))
+      Allocate (n_held(0:-1),where_buff(0:-1),  Stat=fail(3))
+      If (Any(fail(1:3) > 0)) Then
         Write(message,'(a)') 'read_config_parallel allocation failure 3'
         Call error(0,message)
-     End If
+      End If
 
-  End If
+    End If
 
-! Initialise extreme box dimensions
+    ! Initialise extreme box dimensions
 
-  xhi = 0.0_wp
-  yhi = 0.0_wp
-  zhi = 0.0_wp
+    xhi = 0.0_wp
+    yhi = 0.0_wp
+    zhi = 0.0_wp
 
-  If (.not.l_xtr) Call invert(config%cell,rcell,det)
+    If (.not.l_xtr) Call invert(config%cell,rcell,det)
 
-! Initialise domain localised atom counter (configuration),
-! dispatched atom counter and safe dispatch flag
+    ! Initialise domain localised atom counter (configuration),
+    ! dispatched atom counter and safe dispatch flag
 
-  config%natms =0
-  indatm=0
-  safe  =.true.
+    config%natms =0
+    indatm=0
+    safe  =.true.
 
-  Do k=1,megatm
+    Do k=1,megatm
 
-! Read in transmission arrays
+      ! Read in transmission arrays
 
-     Readers_only: If (do_read .and. indatm == 0) Then
+      Readers_only: If (do_read .and. indatm == 0) Then
         to_read = Min(batsz,orig_first_at(my_read_proc_num+1)-first_at(my_read_proc_num))
 
         No_netCDF: If (io_read /= IO_READ_NETCDF) Then
 
-           this_rec_buff = 0
-           recs_to_read  = 0
-           Do i=1,to_read
-              If (this_rec_buff == 0) Then
-                 recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at )
-                 If (.not.fast) Then
-                    Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
-                 Else
-                     Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
-                    rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
-                 End If
+          this_rec_buff = 0
+          recs_to_read  = 0
+          Do i=1,to_read
+            If (this_rec_buff == 0) Then
+              recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at )
+              If (.not.fast) Then
+                Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
+              Else
+                Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
               End If
+            End If
 
-! Atom details
+            ! Atom details
+
+            this_rec_buff = this_rec_buff + 1
+            Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
+              record( j:j ) = rec_buff( j, this_rec_buff )
+            End Do
+            Call strip_blanks(record)
+
+            Call get_word(record,word) ; chbuf_read(i)=word(1:8)
+            If (l_ind) Then
+              Call get_word(record,word)
+              iwrk_read(i)=Nint(word_2_real(word,0.0_wp,strict))
+              If (iwrk_read(i) /= 0) Then
+                iwrk_read(i)=Abs(iwrk_read(i))
+              Else
+                iwrk_read(i)=first_at(my_read_proc_num)+i
+              End If
+            Else
+              iwrk_read(i)=first_at(my_read_proc_num)+i
+            End If
+
+            If (levcfg == 3) Read(record, Fmt=*, End=100) axx_read(i),ayy_read(i),azz_read(i)
+
+            If (this_rec_buff == recs_to_read) Then
+              this_rec_buff = 0
+              recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 1 )
+              If (.not.fast) Then
+                Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
+              Else
+                Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
+              End If
+            End If
+
+            If (levcfg /= 3) Then
+
+              ! Positions
 
               this_rec_buff = this_rec_buff + 1
               Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
-                 record( j:j ) = rec_buff( j, this_rec_buff )
+                record( j:j ) = rec_buff( j, this_rec_buff )
               End Do
-              Call strip_blanks(record)
-
-              Call get_word(record,word) ; chbuf_read(i)=word(1:8)
-              If (l_ind) Then
-                 Call get_word(record,word)
-                 iwrk_read(i)=Nint(word_2_real(word,0.0_wp,strict))
-                 If (iwrk_read(i) /= 0) Then
-                    iwrk_read(i)=Abs(iwrk_read(i))
-                 Else
-                    iwrk_read(i)=first_at(my_read_proc_num)+i
-                 End If
-              Else
-                 iwrk_read(i)=first_at(my_read_proc_num)+i
-              End If
-
-              If (levcfg == 3) Read(record, Fmt=*, End=100) axx_read(i),ayy_read(i),azz_read(i)
-
+              Read(record, Fmt=*, End=100) axx_read(i),ayy_read(i),azz_read(i)
               If (this_rec_buff == recs_to_read) Then
-                 this_rec_buff = 0
-                 recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 1 )
-                 If (.not.fast) Then
+                this_rec_buff = 0
+                If (levcfg > 0) Then
+                  recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 2 )
+                  If (.not.fast) Then
                     Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
-                 Else
-                     Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                  Else
+                    Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
                     rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
-                 End If
+                  End If
+                End If
               End If
 
-              If (levcfg /= 3) Then
+              ! Velocities
 
-! Positions
+              If (levcfg > 0) Then
+                this_rec_buff = this_rec_buff + 1
+                Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
+                  record( j:j ) = rec_buff( j, this_rec_buff )
+                End Do
+                Read(record, Fmt=*, End=100) bxx_read(i),byy_read(i),bzz_read(i)
+                If (this_rec_buff == recs_to_read) Then
+                  this_rec_buff = 0
+                  If (levcfg > 1) Then
+                    recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 3 )
+                    If (.not.fast) Then
+                      Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
+                    Else
+                      Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
+                      rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
+                    End If
+                  End If
+                End If
 
-                 this_rec_buff = this_rec_buff + 1
-                 Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
+                ! Forces
+
+                If (levcfg > 1) Then
+                  this_rec_buff = this_rec_buff + 1
+                  Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
                     record( j:j ) = rec_buff( j, this_rec_buff )
-                 End Do
-                 Read(record, Fmt=*, End=100) axx_read(i),ayy_read(i),azz_read(i)
-                 If (this_rec_buff == recs_to_read) Then
+                  End Do
+                  Read(record, Fmt=*, End=100) cxx_read(i),cyy_read(i),czz_read(i)
+                  If (this_rec_buff == recs_to_read) Then
                     this_rec_buff = 0
-                    If (levcfg > 0) Then
-                       recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 2 )
-                       If (.not.fast) Then
-                          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
-                       Else
-                           Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
-                          rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
-                       End If
-                    End If
-                 End If
-
-! Velocities
-
-                 If (levcfg > 0) Then
-                    this_rec_buff = this_rec_buff + 1
-                    Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
-                       record( j:j ) = rec_buff( j, this_rec_buff )
-                    End Do
-                    Read(record, Fmt=*, End=100) bxx_read(i),byy_read(i),bzz_read(i)
-                    If (this_rec_buff == recs_to_read) Then
-                       this_rec_buff = 0
-                       If (levcfg > 1) Then
-                          recs_to_read = Min( Size( rec_buff, Dim = 2 ), ( to_read - i + 1 ) * recs_per_at - 3 )
-                          If (.not.fast) Then
-                             Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma) rec_buff( :, 1:recs_to_read )
-                          Else
-                              Call io_read_batch(io, fh, rec_mpi_io, recs_to_read, rec_buff, ierr )
-                             rec_mpi_io = rec_mpi_io + Int(recs_to_read,offset_kind)
-                          End If
-                       End If
-                    End If
-
-! Forces
-
-                    If (levcfg > 1) Then
-                       this_rec_buff = this_rec_buff + 1
-                       Do j = 1, Min( Len( record ), Size( rec_buff, Dim = 1 ) )
-                          record( j:j ) = rec_buff( j, this_rec_buff )
-                       End Do
-                       Read(record, Fmt=*, End=100) cxx_read(i),cyy_read(i),czz_read(i)
-                       If (this_rec_buff == recs_to_read) Then
-                          this_rec_buff = 0
-                       End If
-                    End If
-                 End If
-
+                  End If
+                End If
               End If
-           End Do
+
+            End If
+          End Do
 
         Else
 
-           If (to_read /= 0) Then
-              frame = Int(top_skip,Kind(frame))
+          If (to_read /= 0) Then
+            frame = Int(top_skip,Kind(frame))
 
-               Call io_nc_get_var(io, 'atomnames', fh, rec_buff, [ first_at( my_read_proc_num ) + 1, frame ], [ 8, to_read, 1 ] )
-              Do i = 1, to_read
-                 Do j = 1, Min( Len( chbuf_read ), Size( rec_buff, Dim = 1 ) )
-                    chbuf_read( i )( j:j ) = rec_buff( j, i )
-                 End Do
+            Call io_nc_get_var(io, 'atomnames', fh, rec_buff, [ first_at( my_read_proc_num ) + 1, frame ], [ 8, to_read, 1 ] )
+            Do i = 1, to_read
+              Do j = 1, Min( Len( chbuf_read ), Size( rec_buff, Dim = 1 ) )
+                chbuf_read( i )( j:j ) = rec_buff( j, i )
               End Do
-              If (l_ind) Then
-                  Call io_nc_get_var(io, 'indices', fh, iwrk_read , [ first_at( my_read_proc_num ) + 1, frame ], [ to_read, 1 ] )
-              End If
+            End Do
+            If (l_ind) Then
+              Call io_nc_get_var(io, 'indices', fh, iwrk_read , [ first_at( my_read_proc_num ) + 1, frame ], [ to_read, 1 ] )
+            End If
 
-              start = [ 1, first_at( my_read_proc_num ) + 1, frame ]
-              count = [ 3, to_read, 1 ]
+            start = [ 1, first_at( my_read_proc_num ) + 1, frame ]
+            count = [ 3, to_read, 1 ]
 
-              Select Case( levcfg )
-              Case( 0, 3 )
-                 Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
-              Case( 1 )
-                 Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
-                 Call io_get_var(io, 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
-              Case( 2 )
-                 Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
-                 Call io_get_var(io, 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
-                 Call io_get_var(io, 'forces'     , fh, start, count, cxx_read, cyy_read, czz_read )
-              End Select
-           End If
+            Select Case( levcfg )
+            Case( 0, 3 )
+              Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+            Case( 1 )
+              Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+              Call io_get_var(io, 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
+            Case( 2 )
+              Call io_get_var(io, 'coordinates', fh, start, count, axx_read, ayy_read, azz_read )
+              Call io_get_var(io, 'velocities' , fh, start, count, bxx_read, byy_read, bzz_read )
+              Call io_get_var(io, 'forces'     , fh, start, count, cxx_read, cyy_read, czz_read )
+            End Select
+          End If
 
         End If No_netCDF
 
         If (.not.l_xtr) Then
 
-! Ensure all atoms are in prescribed simulation cell (DD bound)
-!
-           n_held=0
-           Do i=1,to_read
-              sxx=rcell(1)*axx_read(i)+rcell(4)*ayy_read(i)+rcell(7)*azz_read(i)
-              syy=rcell(2)*axx_read(i)+rcell(5)*ayy_read(i)+rcell(8)*azz_read(i)
-              szz=rcell(3)*axx_read(i)+rcell(6)*ayy_read(i)+rcell(9)*azz_read(i)
+          ! Ensure all atoms are in prescribed simulation cell (DD bound)
+          !
+          n_held=0
+          Do i=1,to_read
+            sxx=rcell(1)*axx_read(i)+rcell(4)*ayy_read(i)+rcell(7)*azz_read(i)
+            syy=rcell(2)*axx_read(i)+rcell(5)*ayy_read(i)+rcell(8)*azz_read(i)
+            szz=rcell(3)*axx_read(i)+rcell(6)*ayy_read(i)+rcell(9)*azz_read(i)
 
-! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
+            ! sxx,syy,szz are in [-0.5,0.5) interval as values as 0.4(9) may pose a problem
 
-              sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
-              syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
-              szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
+            sxx=sxx-Anint(sxx) ; If (sxx >= half_minus) sxx=-sxx
+            syy=syy-Anint(syy) ; If (syy >= half_minus) syy=-syy
+            szz=szz-Anint(szz) ; If (szz >= half_minus) szz=-szz
 
-! fold back coordinates
+            ! fold back coordinates
 
-              axx_read(i)=config%cell(1)*sxx+config%cell(4)*syy+config%cell(7)*szz
-              ayy_read(i)=config%cell(2)*sxx+config%cell(5)*syy+config%cell(8)*szz
-              azz_read(i)=config%cell(3)*sxx+config%cell(6)*syy+config%cell(9)*szz
+            axx_read(i)=config%cell(1)*sxx+config%cell(4)*syy+config%cell(7)*szz
+            ayy_read(i)=config%cell(2)*sxx+config%cell(5)*syy+config%cell(8)*szz
+            azz_read(i)=config%cell(3)*sxx+config%cell(6)*syy+config%cell(9)*szz
 
-! assign domain coordinates (call for errors)
+            ! assign domain coordinates (call for errors)
 
-              ipx=Int((sxx+0.5_wp)*domain%nx_real)
-              ipy=Int((syy+0.5_wp)*domain%ny_real)
-              ipz=Int((szz+0.5_wp)*domain%nz_real)
+            ipx=Int((sxx+0.5_wp)*domain%nx_real)
+            ipy=Int((syy+0.5_wp)*domain%ny_real)
+            ipz=Int((szz+0.5_wp)*domain%nz_real)
 
-              idm=ipx+domain%nx*(ipy+domain%ny*ipz)
-              If (idm < 0 .or. idm > (comm%mxnode-1)) Call error(513)
-              owner_read(i) = idm
-              n_held(idm) = n_held(idm)+1
-           End Do
+            idm=ipx+domain%nx*(ipy+domain%ny*ipz)
+            If (idm < 0 .or. idm > (comm%mxnode-1)) Call error(513)
+            owner_read(i) = idm
+            n_held(idm) = n_held(idm)+1
+          End Do
 
-           where_buff(0)=0
-           Do i=1,comm%mxnode-1
-              where_buff(i) = where_buff(i-1) + n_held(i-1)
-           End Do
+          where_buff(0)=0
+          Do i=1,comm%mxnode-1
+            where_buff(i) = where_buff(i-1) + n_held(i-1)
+          End Do
 
-           Do i=1,to_read
-              idm = where_buff(owner_read(i))
-              idm = idm+1
-              where_buff(owner_read(i)) = idm
+          Do i=1,to_read
+            idm = where_buff(owner_read(i))
+            idm = idm+1
+            where_buff(owner_read(i)) = idm
 
-              chbuf_scat(idm) = chbuf_read(i)
-              iwrk_scat(idm)  = iwrk_read(i)
+            chbuf_scat(idm) = chbuf_read(i)
+            iwrk_scat(idm)  = iwrk_read(i)
 
-              scatter_buffer_read(1,idm) = axx_read(i)
-              scatter_buffer_read(2,idm) = ayy_read(i)
-              scatter_buffer_read(3,idm) = azz_read(i)
+            scatter_buffer_read(1,idm) = axx_read(i)
+            scatter_buffer_read(2,idm) = ayy_read(i)
+            scatter_buffer_read(3,idm) = azz_read(i)
 
-              If (levcfg /= 3) Then
-                 If (levcfg > 0) Then
-                    scatter_buffer_read(4,idm) = bxx_read(i)
-                    scatter_buffer_read(5,idm) = byy_read(i)
-                    scatter_buffer_read(6,idm) = bzz_read(i)
+            If (levcfg /= 3) Then
+              If (levcfg > 0) Then
+                scatter_buffer_read(4,idm) = bxx_read(i)
+                scatter_buffer_read(5,idm) = byy_read(i)
+                scatter_buffer_read(6,idm) = bzz_read(i)
 
-                    If (levcfg > 1) Then
-                       scatter_buffer_read(7,idm) = cxx_read(i)
-                       scatter_buffer_read(8,idm) = cyy_read(i)
-                       scatter_buffer_read(9,idm) = czz_read(i)
-                    End If
-                 End If
+                If (levcfg > 1) Then
+                  scatter_buffer_read(7,idm) = cxx_read(i)
+                  scatter_buffer_read(8,idm) = cyy_read(i)
+                  scatter_buffer_read(9,idm) = czz_read(i)
+                End If
               End If
-           End Do
+            End If
+          End Do
 
-! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
+          ! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
 
         Else
 
-! Get extremes
+          ! Get extremes
 
-           xhi = Max( xhi, Maxval( Abs( axx_read( 1:to_read ) ) ) )
-           yhi = Max( yhi, Maxval( Abs( ayy_read( 1:to_read ) ) ) )
-           zhi = Max( zhi, Maxval( Abs( azz_read( 1:to_read ) ) ) )
+          xhi = Max( xhi, Maxval( Abs( axx_read( 1:to_read ) ) ) )
+          yhi = Max( yhi, Maxval( Abs( ayy_read( 1:to_read ) ) ) )
+          zhi = Max( zhi, Maxval( Abs( azz_read( 1:to_read ) ) ) )
 
         End If
-     End If Readers_only
+      End If Readers_only
 
-! Increase buffer counter and update first_at for
-! the readers that have something left to read
+      ! Increase buffer counter and update first_at for
+      ! the readers that have something left to read
 
-     indatm = indatm+1
-     If (do_read) Then
+      indatm = indatm+1
+      If (do_read) Then
         If (first_at(my_read_proc_num) < first_at(my_read_proc_num+1)) &
-             first_at(my_read_proc_num) = first_at(my_read_proc_num)+1
-     End If
+          first_at(my_read_proc_num) = first_at(my_read_proc_num)+1
+      End If
 
-! Circulate configuration data to all nodes when transmission arrays are filled up
-! Check against megatm since at low processors counts (i.e. 1) batsz can be > megatm
+      ! Circulate configuration data to all nodes when transmission arrays are filled up
+      ! Check against megatm since at low processors counts (i.e. 1) batsz can be > megatm
 
-     Reorganize_buffer: If (indatm == batsz .or. (indatm > 0 .and. k == megatm)) Then
+      Reorganize_buffer: If (indatm == batsz .or. (indatm > 0 .and. k == megatm)) Then
 
         Extent_2: If (.not.l_xtr) Then
 
-           Do which_read_proc = 0 , n_read_procs_use-1
-              If (orig_first_at(which_read_proc) >= megatm) Exit ! for non-reading readers
+          Do which_read_proc = 0 , n_read_procs_use-1
+            If (orig_first_at(which_read_proc) >= megatm) Exit ! for non-reading readers
 
-              this_base_proc = which_read_proc * per_read_proc
-              If (comm%idnode == this_base_proc) Then
-                 where_buff(0) = 0
-                 Do i=1,comm%mxnode-1
-                    where_buff(i) = where_buff(i-1) + n_held(i-1)
-                 End Do
-              End If
-
-              Call gscatter(comm,n_held(:),n_loc,this_base_proc)
-
-              Call gscatterv(comm,chbuf_scat(:),n_held(:),where_buff(:), &
-                            chbuf(1:n_loc),this_base_proc)
-              Call gscatterv(comm,iwrk_scat(:),n_held(:),where_buff(:), &
-                            iwrk(1:n_loc),this_base_proc)
-              Call gscatter_columns(comm,scatter_buffer_read(:,:),n_held(:), &
-                                    where_buff(:), &
-                                    scatter_buffer(1:wp_vals_per_at,1:n_loc), &
-                                    this_base_proc)
-
-! Assign atoms to correct domains
-
-              Do i=1,n_loc
-                 config%natms=config%natms+1
-
-! Check safety by the upper bound of: atmnam,ltg,xxx,yyy,zzz &
-! possibly vxx,vyy,vzz & possibly fxx,fyy,fzz as guided by xxx
-
-                 If (config%natms <= config%mxatms) Then
-                    config%atmnam(config%natms)=chbuf(i)
-                    config%ltg(config%natms)=iwrk(i)
-
-                    config%parts(config%natms)%xxx=scatter_buffer(1,i)
-                    config%parts(config%natms)%yyy=scatter_buffer(2,i)
-                    config%parts(config%natms)%zzz=scatter_buffer(3,i)
-
-                    If (levcfg /=3 ) Then
-                       If (levcfg > 0) Then
-                          config%vxx(config%natms)=scatter_buffer(4,i)
-                          config%vyy(config%natms)=scatter_buffer(5,i)
-                          config%vzz(config%natms)=scatter_buffer(6,i)
-                       Else
-                          config%vxx(config%natms)=0.0_wp
-                          config%vyy(config%natms)=0.0_wp
-                          config%vzz(config%natms)=0.0_wp
-                       End If
-
-                       If (levcfg > 1) Then
-                          config%parts(config%natms)%fxx=scatter_buffer(7,i)
-                          config%parts(config%natms)%fyy=scatter_buffer(8,i)
-                          config%parts(config%natms)%fzz=scatter_buffer(9,i)
-                       Else
-                          config%parts(config%natms)%fxx=0.0_wp
-                          config%parts(config%natms)%fyy=0.0_wp
-                          config%parts(config%natms)%fzz=0.0_wp
-                       End If
-                    End If
-                  Else
-                    safe=.false.
-                 End If
+            this_base_proc = which_read_proc * per_read_proc
+            If (comm%idnode == this_base_proc) Then
+              where_buff(0) = 0
+              Do i=1,comm%mxnode-1
+                where_buff(i) = where_buff(i-1) + n_held(i-1)
               End Do
-           End Do
+            End If
 
-! Check if all is dispatched fine
+            Call gscatter(comm,n_held(:),n_loc,this_base_proc)
 
-           max_fail=config%natms
-           min_fail=config%natms
-              Call gcheck(comm,safe)
-              Call gmax(comm,max_fail)
-              Call gmin(comm,min_fail)
+            Call gscatterv(comm,chbuf_scat(:),n_held(:),where_buff(:), &
+              chbuf(1:n_loc),this_base_proc)
+            Call gscatterv(comm,iwrk_scat(:),n_held(:),where_buff(:), &
+              iwrk(1:n_loc),this_base_proc)
+            Call gscatter_columns(comm,scatter_buffer_read(:,:),n_held(:), &
+              where_buff(:), &
+              scatter_buffer(1:wp_vals_per_at,1:n_loc), &
+              this_base_proc)
 
-           If (.not.safe) Then
-             Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', config%mxatms
-              Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', & 
-                 max_fail, ' & ', min_fail
-              Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
-                Ceiling((dvar*(Real(max_fail,wp)/Real(config%mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
-              Call info(messages,3,.true.)
-              Call error(45)
-           End If
+            ! Assign atoms to correct domains
+
+            Do i=1,n_loc
+              config%natms=config%natms+1
+
+              ! Check safety by the upper bound of: atmnam,ltg,xxx,yyy,zzz &
+              ! possibly vxx,vyy,vzz & possibly fxx,fyy,fzz as guided by xxx
+
+              If (config%natms <= config%mxatms) Then
+                config%atmnam(config%natms)=chbuf(i)
+                config%ltg(config%natms)=iwrk(i)
+
+                config%parts(config%natms)%xxx=scatter_buffer(1,i)
+                config%parts(config%natms)%yyy=scatter_buffer(2,i)
+                config%parts(config%natms)%zzz=scatter_buffer(3,i)
+
+                If (levcfg /=3 ) Then
+                  If (levcfg > 0) Then
+                    config%vxx(config%natms)=scatter_buffer(4,i)
+                    config%vyy(config%natms)=scatter_buffer(5,i)
+                    config%vzz(config%natms)=scatter_buffer(6,i)
+                  Else
+                    config%vxx(config%natms)=0.0_wp
+                    config%vyy(config%natms)=0.0_wp
+                    config%vzz(config%natms)=0.0_wp
+                  End If
+
+                  If (levcfg > 1) Then
+                    config%parts(config%natms)%fxx=scatter_buffer(7,i)
+                    config%parts(config%natms)%fyy=scatter_buffer(8,i)
+                    config%parts(config%natms)%fzz=scatter_buffer(9,i)
+                  Else
+                    config%parts(config%natms)%fxx=0.0_wp
+                    config%parts(config%natms)%fyy=0.0_wp
+                    config%parts(config%natms)%fzz=0.0_wp
+                  End If
+                End If
+              Else
+                safe=.false.
+              End If
+            End Do
+          End Do
+
+          ! Check if all is dispatched fine
+
+          max_fail=config%natms
+          min_fail=config%natms
+          Call gcheck(comm,safe)
+          Call gmax(comm,max_fail)
+          Call gmin(comm,min_fail)
+
+          If (.not.safe) Then
+            Write(messages(1),'(a,i0)') 'next error due to maximum number of atoms per domain set to : ', config%mxatms
+            Write(messages(2),'(2(a,i0))') 'but maximum & minumum numbers of atoms per domain asked for : ', & 
+              max_fail, ' & ', min_fail
+            Write(messages(3),'(a,i0)') 'estimated densvar value for passing this stage safely is : ', &
+              Ceiling((dvar*(Real(max_fail,wp)/Real(config%mxatms,wp))**(1.0_wp/1.7_wp)-1.0_wp)*100.0_wp)
+            Call info(messages,3,.true.)
+            Call error(45)
+          End If
 
         End If Extent_2
 
-! Nullify dispatch counter
+        ! Nullify dispatch counter
 
         indatm=0
 
-     End If Reorganize_buffer
+      End If Reorganize_buffer
 
-  End Do
+    End Do
 
-! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
+    ! If only detecting box dimensions for imcon == 0 or 6 or imc_n == 6
 
-  If (l_xtr) Then
-     Call gmax(comm,xhi)
-     Call gmax(comm,yhi)
-     Call gmax(comm,zhi)
-  End If
+    If (l_xtr) Then
+      Call gmax(comm,xhi)
+      Call gmax(comm,yhi)
+      Call gmax(comm,zhi)
+    End If
 
-  If (l_his) Then
+    If (l_his) Then
 
-! Skip to the EoFrame of HISTORY when not fast
+      ! Skip to the EoFrame of HISTORY when not fast
 
-     If (do_read .and. (.not.fast)) Then
+      If (do_read .and. (.not.fast)) Then
         n_skip = Int(recs_per_at,offset_kind) * Int(megatm-first_at(my_read_proc_num),offset_kind)
 
         n_sk=Int(n_skip,li)
         n_jj=73*batsz ! Assuming average max line length of 73
         If (n_sk > n_jj) Then
-           Do n_ii=1_li,n_sk/n_jj
-              forma=' '
-              Write(forma,'( "(", i0, "/)" )') n_jj
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
-           End Do
-           n_ii=Mod(Int(n_skip,li),n_jj)
-           If (n_ii > 0_li) Then
-              forma=' '
-              Write(forma,'( "(", i0, "/)" )') n_ii
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
-           End If
+          Do n_ii=1_li,n_sk/n_jj
+            forma=' '
+            Write(forma,'( "(", i0, "/)" )') n_jj
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+          End Do
+          n_ii=Mod(Int(n_skip,li),n_jj)
+          If (n_ii > 0_li) Then
+            forma=' '
+            Write(forma,'( "(", i0, "/)" )') n_ii
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+          End If
         Else
-           forma=' '
-           Write(forma,'( "(", i0, "/)" )') n_sk
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
+          forma=' '
+          Write(forma,'( "(", i0, "/)" )') n_sk
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, End=100)
         End If
-     End If
+      End If
 
-  Else
+    Else
 
-     If (do_read) Then
+      If (do_read) Then
 
         If ( io_read /= IO_READ_NETCDF) Then
 
-! The last reader to check for EoFile in CONFIG
-! and if none is hit to call error to abort
+          ! The last reader to check for EoFile in CONFIG
+          ! and if none is hit to call error to abort
 
-           If (first_at(my_read_proc_num) == megatm) Then
-              recs_to_read = 1
-              If (.not.fast) Then
-                 Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, Iostat=ierr) rec_buff( :, 1:recs_to_read )
-              Else
-                  Call io_read_batch(io, fh, rec_mpi_io, 1, rec_buff, ierr )
-              End If
-              safe = (ierr /= 0)
-           End If
+          If (first_at(my_read_proc_num) == megatm) Then
+            recs_to_read = 1
+            If (.not.fast) Then
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=forma, Iostat=ierr) rec_buff( :, 1:recs_to_read )
+            Else
+              Call io_read_batch(io, fh, rec_mpi_io, 1, rec_buff, ierr )
+            End If
+            safe = (ierr /= 0)
+          End If
 
         Else
 
-! As netCDF files have no real concept of line numbers,
-! instead check the arrays are the correct size
+          ! As netCDF files have no real concept of line numbers,
+          ! instead check the arrays are the correct size
 
-           Call io_nc_get_dim(io, 'atom', fh, n_ats_in_file )
-           safe = n_ats_in_file == megatm
+          Call io_nc_get_dim(io, 'atom', fh, n_ats_in_file )
+          safe = n_ats_in_file == megatm
 
         End If
 
-     End If
-     Call gcheck(comm,safe)
-     If (.not.safe) Call error(58)
+      End If
+      Call gcheck(comm,safe)
+      If (.not.safe) Call error(58)
 
-  End If
+    End If
 
-  If (do_read) Then
-     Deallocate (rec_buff,                   Stat=fail(1))
-     Deallocate (chbuf_read,iwrk_read,       Stat=fail(2))
-     Deallocate (axx_read,ayy_read,azz_read, Stat=fail(3))
-     Deallocate (bxx_read,byy_read,bzz_read, Stat=fail(4))
-     Deallocate (cxx_read,cyy_read,czz_read, Stat=fail(5))
-     Deallocate (owner_read,                 Stat=fail(6))
-     If (Any(fail(1:6) > 0)) Then
+    If (do_read) Then
+      Deallocate (rec_buff,                   Stat=fail(1))
+      Deallocate (chbuf_read,iwrk_read,       Stat=fail(2))
+      Deallocate (axx_read,ayy_read,azz_read, Stat=fail(3))
+      Deallocate (bxx_read,byy_read,bzz_read, Stat=fail(4))
+      Deallocate (cxx_read,cyy_read,czz_read, Stat=fail(5))
+      Deallocate (owner_read,                 Stat=fail(6))
+      If (Any(fail(1:6) > 0)) Then
         Write(message,'(a)') 'read_config_parallel deallocation failure 2'
         Call error(0,message)
-     End If
-  End If
+      End If
+    End If
 
-  Deallocate (first_at,orig_first_at, Stat=fail(1))
-  Deallocate (n_held,where_buff,      Stat=fail(2))
-  Deallocate (chbuf,chbuf_scat,       Stat=fail(3))
-  Deallocate (iwrk,iwrk_scat,         Stat=fail(4))
-  Deallocate (scatter_buffer_read,    Stat=fail(5))
-  Deallocate (scatter_buffer,         Stat=fail(6))
-  If (Any(fail(1:6) > 0)) Then
-     Write(message,'(a)') 'read_config_parallel deallocation failure 1'
-     Call error(0,message)
-  End If
+    Deallocate (first_at,orig_first_at, Stat=fail(1))
+    Deallocate (n_held,where_buff,      Stat=fail(2))
+    Deallocate (chbuf,chbuf_scat,       Stat=fail(3))
+    Deallocate (iwrk,iwrk_scat,         Stat=fail(4))
+    Deallocate (scatter_buffer_read,    Stat=fail(5))
+    Deallocate (scatter_buffer,         Stat=fail(6))
+    If (Any(fail(1:6) > 0)) Then
+      Write(message,'(a)') 'read_config_parallel deallocation failure 1'
+      Call error(0,message)
+    End If
 
-  Return
+    Return
 
-! error exit for CONFIG file read
+    ! error exit for CONFIG file read
 
-100 Continue
-  Call error(55)
-End Subroutine read_config_parallel
+    100 Continue
+    Call error(55)
+  End Subroutine read_config_parallel
 
-Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
-  io,domain,files,comm)
+  Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
+      io,domain,files,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for raw scanning the contents of configuration file
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov february 2014
-! contrib   - i.j.bush april 2010
-! contrib   - a.m.elena february 2017
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for raw scanning the contents of configuration file
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2014
+    ! contrib   - i.j.bush april 2010
+    ! contrib   - a.m.elena february 2017
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( io_type ), Intent( InOut ) :: io
-  Integer,              Intent( In    ) :: megatm,imc_n
-  Real( Kind = wp ),    Intent( In    ) :: dvar
-  Integer,              Intent(   Out ) :: levcfg
-  Real( Kind = wp ),    Intent(   Out ) :: xhi,yhi,zhi
-  Type( configuration_type ), Intent( InOut ) :: config
-  Type( domains_type ), Intent( In    ) :: domain
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( comms_type ),   Intent( InOut ) :: comm
+    Type( io_type ), Intent( InOut ) :: io
+    Integer,              Intent( In    ) :: megatm,imc_n
+    Real( Kind = wp ),    Intent( In    ) :: dvar
+    Integer,              Intent(   Out ) :: levcfg
+    Real( Kind = wp ),    Intent(   Out ) :: xhi,yhi,zhi
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type( domains_type ), Intent( In    ) :: domain
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( comms_type ),   Intent( InOut ) :: comm
 
-  Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word,fname
-  Logical                :: safe  = .true.  , &
-                            l_ind = .false. , &
-                            strict = .false. , &
-                            l_his = .false. , &
-                            l_xtr = .true.  , &
-                            fast
-  Integer                :: totatm,i,j
-  Real( Kind = wp )      :: xxx,yyy,zzz,buffer(1:4),cell_vecs(1:3,1:3)
+    Character( Len = 200 ) :: record
+    Character( Len = 40  ) :: word,fname
+    Logical                :: safe  = .true.  , &
+      l_ind = .false. , &
+      strict = .false. , &
+      l_his = .false. , &
+      l_xtr = .true.  , &
+      fast
+    Integer                :: totatm,i,j
+    Real( Kind = wp )      :: xxx,yyy,zzz,buffer(1:4),cell_vecs(1:3,1:3)
 
-! Some parameters and variables needed by io interfaces
+    ! Some parameters and variables needed by io interfaces
 
-  Integer                           :: recsz = 73 ! default record size
-  Integer                           :: fh, io_read
-  Integer( Kind = offset_kind ) :: top_skip
+    Integer                           :: recsz = 73 ! default record size
+    Integer                           :: fh, io_read
+    Integer( Kind = offset_kind ) :: top_skip
 
 
-! Get type of I/O for reading
+    ! Get type of I/O for reading
 
-  Call io_get_parameters(io, user_method_read = io_read )
+    Call io_get_parameters(io, user_method_read = io_read )
 
-! Define filename ASCII or netCDF
+    ! Define filename ASCII or netCDF
 
-  If (io_read /= IO_READ_NETCDF) Then
-     fname=files(FILE_CONFIG)%filename
-  Else
-     fname=files(FILE_CONFIG)%filename//'nc'
-  End If
+    If (io_read /= IO_READ_NETCDF) Then
+      fname=files(FILE_CONFIG)%filename
+    Else
+      fname=files(FILE_CONFIG)%filename//'nc'
+    End If
 
-! Check if we have a CONFIG
+    ! Check if we have a CONFIG
 
-  If (comm%idnode == 0) Inquire(File=fname, Exist=safe)
-  Call gcheck(comm,safe)
-  If (.not.safe) Call error(124)
+    If (comm%idnode == 0) Inquire(File=fname, Exist=safe)
+    Call gcheck(comm,safe)
+    If (.not.safe) Call error(124)
 
-! Define/Detect the FAST reading status
+    ! Define/Detect the FAST reading status
 
-  If      (io_read == IO_READ_MASTER) Then
+    If      (io_read == IO_READ_MASTER) Then
 
-     fast = .false.
+      fast = .false.
 
-  Else If (io_read == IO_READ_NETCDF) Then
+    Else If (io_read == IO_READ_NETCDF) Then
 
-     fast = .true.
+      fast = .true.
 
-  Else
+    Else
 
-! Check if the system input file is a new style CONFIG:
-! (i)  all lines are 72 ASCII characters long with
-!      a UNIX carriage return as end of line;
-! (ii) LINE2 has the particles total value
-!      after values of levcfg and imcon.
-! No fall back if users have mangled with further lines
+      ! Check if the system input file is a new style CONFIG:
+      ! (i)  all lines are 72 ASCII characters long with
+      !      a UNIX carriage return as end of line;
+      ! (ii) LINE2 has the particles total value
+      !      after values of levcfg and imcon.
+      ! No fall back if users have mangled with further lines
 
-     fast = .true.
-     If (comm%idnode == 0) Then
+      fast = .true.
+      If (comm%idnode == 0) Then
 
-! Open CONFIG
+        ! Open CONFIG
 
         Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
-! Read the CONFIG file header (TITLE record)
+        ! Read the CONFIG file header (TITLE record)
 
         i = 0 ! position counter
         j = 0 ! IOStat return
         record = ' '
         Do
-           i = i + 1
-           safe = .false.
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
-           safe = .true.
-           If (j < 0) Go To 10
+          i = i + 1
+          safe = .false.
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=10) record(i:i)
+          safe = .true.
+          If (j < 0) Go To 10
         End Do
-10      Continue
+        10      Continue
         fast = (fast .and. i == recsz)
 
-! Read configuration level and image condition (RECORD2)
+        ! Read configuration level and image condition (RECORD2)
 
         i = 0 ! position counter
         j = 0 ! IOStat return
         record = ' '
         Do
-           i = i + 1
-           safe = .false.
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
-           safe = .true.
-           If (j < 0) Go To 20
+          i = i + 1
+          safe = .false.
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt='(a1)', Advance='No', IOStat=j, End=20) record(i:i)
+          safe = .true.
+          If (j < 0) Go To 20
         End Do
-20      Continue
+        20      Continue
         fast = (fast .and. i == recsz)
 
-! Read particles total value
+        ! Read particles total value
 
         Call get_word(record,word) ; Call get_word(record,word)
         Call get_word(record,word) ; i=Nint(word_2_real(word,0.0_wp,strict))
         fast = (fast .and. i == megatm)
 
-     End If
+      End If
 
-        Call gsync(comm)
-        Call gcheck(comm,safe,"enforce")
-        Call gcheck(comm,fast,"enforce")
+      Call gsync(comm)
+      Call gcheck(comm,safe,"enforce")
+      Call gcheck(comm,fast,"enforce")
 
-     If (.not.safe) Go To 50
+      If (.not.safe) Go To 50
 
-! Close CONFIG
+      ! Close CONFIG
 
-     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
 
-  End If
+    End If
 
-!!! SCAN HEADER
+    !!! SCAN HEADER
 
-  If (io_read /= IO_READ_NETCDF) Then ! ASCII read
+    If (io_read /= IO_READ_NETCDF) Then ! ASCII read
 
-! Open CONFIG
+      ! Open CONFIG
 
-     If (comm%idnode == 0) Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+      If (comm%idnode == 0) Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
-! Read TITLE record (file header)
+      ! Read TITLE record (file header)
 
-     Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
-     If (.not.safe) Go To 50
+      Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
+      If (.not.safe) Go To 50
 
-     Call strip_blanks(record)
-     config%cfgname=record
+      Call strip_blanks(record)
+      config%cfgname=record
 
-! Read configuration level and image condition
+      ! Read configuration level and image condition
 
-     Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
-     If (.not.safe) Go To 50
+      Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
+      If (.not.safe) Go To 50
 
-     Call get_word(record,word)
-     levcfg=Nint(word_2_real(word))
+      Call get_word(record,word)
+      levcfg=Nint(word_2_real(word))
 
-! halt execution if configuration level is unsupported
+      ! halt execution if configuration level is unsupported
 
-     If (levcfg < 0 .or. levcfg > 2) Call error(517)
+      If (levcfg < 0 .or. levcfg > 2) Call error(517)
 
-     Call get_word(record,word)
-     config%imcon=Nint(word_2_real(word))
+      Call get_word(record,word)
+      config%imcon=Nint(word_2_real(word))
 
-! halt execution if image conventions is unsupported
+      ! halt execution if image conventions is unsupported
 
-     If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
+      If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
 
-! specify MD cell (not defined for imcon=0)
+      ! specify MD cell (not defined for imcon=0)
 
-     If (config%imcon /= 0) Then
+      If (config%imcon /= 0) Then
         Call get_line(safe,files(FILE_CONFIG)%unit_no,record,comm)
         If (.not.safe) Go To 50
         Call get_word(record,word)
@@ -2227,966 +2227,966 @@ Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
         config%cell(8)=word_2_real(word)
         Call get_word(record,word)
         config%cell(9)=word_2_real(word)
-     End If
+      End If
 
-! Close CONFIG
+      ! Close CONFIG
 
-     If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
-     Call gsync(comm)
+      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      Call gsync(comm)
 
-  Else ! netCDF read
+    Else ! netCDF read
 
-! Open CONFIG
+      ! Open CONFIG
 
-     Call io_set_parameters(io, user_comm = comm%comm )
-     Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
+      Call io_set_parameters(io, user_comm = comm%comm )
+      Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
 
-     i=1 ! For config there is only one frame
+      i=1 ! For config there is only one frame
 
       Call io_nc_get_att(io, 'title'          , fh, config%cfgname )
 
       Call io_nc_get_var(io, 'datalevel'      , fh, levcfg, i, 1  )
-     If (levcfg < 0 .or. levcfg > 2) Call error(517)
+      If (levcfg < 0 .or. levcfg > 2) Call error(517)
 
       Call io_nc_get_var(io, 'imageconvention', fh,  config%imcon, i, 1  )
-     If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
+      If (config%imcon < 0 .or. config%imcon > 7) Call error(514)
 
       Call io_nc_get_var(io, 'cell'           , fh, cell_vecs, [ 1, 1, i ], [ 3, 3, 1 ] )
-     config%cell = Reshape( cell_vecs, [ Size( config%cell ) ] )
+      config%cell = Reshape( cell_vecs, [ Size( config%cell ) ] )
 
-! Close CONFIG
+      ! Close CONFIG
 
-     Call io_close(io, fh )
+      Call io_close(io, fh )
 
-  End If
+    End If
 
-! ELABORATE SCAN
+    ! ELABORATE SCAN
 
-  totatm = 0
-  xhi = 0.0_wp
-  yhi = 0.0_wp
-  zhi = 0.0_wp
+    totatm = 0
+    xhi = 0.0_wp
+    yhi = 0.0_wp
+    zhi = 0.0_wp
 
-  If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
+    If (config%imcon == 0 .or. config%imcon == 6 .or. config%imc_n == 6) Then
 
-! If MASTER read
+      ! If MASTER read
 
-     If (io_read == IO_READ_MASTER) Then
+      If (io_read == IO_READ_MASTER) Then
 
         If (comm%idnode == 0) Then
 
-! Open CONFIG
+          ! Open CONFIG
 
-           Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+          Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
 
-! Skip the header (we know exists from the basic scan)
+          ! Skip the header (we know exists from the basic scan)
 
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
-           Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
-           If (config%imcon /= 0) Then
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
-           End If
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+          Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+          If (config%imcon /= 0) Then
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*)
+          End If
 
-! Find the extreme dimensions for the system
+          ! Find the extreme dimensions for the system
 
-           Do
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=40)
-              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) xxx,yyy,zzz
+          Do
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=40)
+            Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30) xxx,yyy,zzz
 
-              If (levcfg > 0) Then
-                 Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30)
-                 If (levcfg > 1) Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30)
-              End If
+            If (levcfg > 0) Then
+              Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30)
+              If (levcfg > 1) Read(Unit=files(FILE_CONFIG)%unit_no, Fmt=*, End=30)
+            End If
 
-              totatm=totatm+1
-              xhi=Max(xhi,Abs(xxx))
-              yhi=Max(yhi,Abs(yyy))
-              zhi=Max(zhi,Abs(zzz))
-           End Do
+            totatm=totatm+1
+            xhi=Max(xhi,Abs(xxx))
+            yhi=Max(yhi,Abs(yyy))
+            zhi=Max(zhi,Abs(zzz))
+          End Do
 
-30         Continue ! catch error
-           safe = .false.
+          30         Continue ! catch error
+          safe = .false.
 
         End If
 
-40      Continue ! catch EoF
+        40      Continue ! catch EoF
 
         Call gsync(comm)
         Call gcheck(comm,safe,"enforce")
 
         If (.not.safe) Go To 50
 
-! Close CONFIG
+        ! Close CONFIG
 
         If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
 
 
-           buffer(1)=xhi
-           buffer(2)=yhi
-           buffer(3)=zhi
-           buffer(4)=Real(totatm,wp)
-           Call gsum(comm,buffer)
-           xhi=buffer(1)
-           yhi=buffer(2)
-           zhi=buffer(3)
-           totatm=Nint(buffer(4))
-           If (totatm /= megatm) Call error(58)
+        buffer(1)=xhi
+        buffer(2)=yhi
+        buffer(3)=zhi
+        buffer(4)=Real(totatm,wp)
+        Call gsum(comm,buffer)
+        xhi=buffer(1)
+        yhi=buffer(2)
+        zhi=buffer(3)
+        totatm=Nint(buffer(4))
+        If (totatm /= megatm) Call error(58)
 
 
-! If PROPER read
+        ! If PROPER read
 
-     Else
+      Else
 
-! Open CONFIG
+        ! Open CONFIG
 
         If (fast) Then
-           Call io_set_parameters(io, user_comm = comm%comm )
-            Call io_init(io, recsz )
-           Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
+          Call io_set_parameters(io, user_comm = comm%comm )
+          Call io_init(io, recsz )
+          Call io_open(io, io_read, comm%comm, fname, mode_rdonly, fh )
         Else
-           Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
+          Open(Newunit=files(FILE_CONFIG)%unit_no, File=files(FILE_CONFIG)%filename)
         End If
 
-! top_skip is header size
+        ! top_skip is header size
 
         If (io_read /= IO_READ_NETCDF) Then
-           If (config%imcon == 0) Then
-              top_skip = Int(2,offset_kind)
-           Else
-              top_skip = Int(5,offset_kind)
-           End If
+          If (config%imcon == 0) Then
+            top_skip = Int(2,offset_kind)
+          Else
+            top_skip = Int(5,offset_kind)
+          End If
         Else
-           top_skip = Int(1,offset_kind) ! This is now the frame = 1
+          top_skip = Int(1,offset_kind) ! This is now the frame = 1
         End If
 
         Call read_config_parallel(config,levcfg,dvar,l_ind,strict,megatm,l_his,l_xtr, &
           fast,fh,top_skip,xhi,yhi,zhi,io,domain,files,comm)
 
-! Close CONFIG
+        ! Close CONFIG
 
         If (fast) Then
-           Call io_close(io, fh )
-           Call io_finalize(io)
+          Call io_close(io, fh )
+          Call io_finalize(io)
         Else
-           Close(Unit=files(FILE_CONFIG)%unit_no)
+          Close(Unit=files(FILE_CONFIG)%unit_no)
         End If
 
-     End If
+      End If
 
-  End If
+    End If
 
-  Return
+    Return
 
-! error exit for CONFIG file read
+    ! error exit for CONFIG file read
 
-50 Continue
-  If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
-  Call error(55)
+    50 Continue
+    If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+    Call error(55)
 
-End Subroutine scan_config
+  End Subroutine scan_config
 
-Subroutine scale_config(config,io,devel,netcdf,comm)
+  Subroutine scale_config(config,io,devel,netcdf,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for rescaling the crystallographic information
-! from CONFIG to new lattice parameters and saving it in CFGSCL
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for rescaling the crystallographic information
+    ! from CONFIG to new lattice parameters and saving it in CFGSCL
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2015
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( io_type ), Intent( InOut ) :: io
-  Type( configuration_type ), Intent( InOut ) :: config
-  Character ( Len = 6 ) :: name
-  Integer               :: i,step
-  Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
-  Type( development_type ), Intent( In    ) :: devel
-  Type( netcdf_param ), Intent( In    ) :: netcdf
-  Type( comms_type ), Intent( InOut ) :: comm
+    Type( io_type ), Intent( InOut ) :: io
+    Type( configuration_type ), Intent( InOut ) :: config
+    Character ( Len = 6 ) :: name
+    Integer               :: i,step
+    Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
+    Type( development_type ), Intent( In    ) :: devel
+    Type( netcdf_param ), Intent( In    ) :: netcdf
+    Type( comms_type ), Intent( InOut ) :: comm
 
-  Type( file_type ) :: cfgscl
+    Type( file_type ) :: cfgscl
 
-! Get the inverse cell matrix
+    ! Get the inverse cell matrix
 
-  Call invert(config%cell,rcell,det)
+    Call invert(config%cell,rcell,det)
 
-! Rescale
+    ! Rescale
 
-  Do i=1,config%natms
-     uuu=config%parts(i)%xxx
-     vvv=config%parts(i)%yyy
-     www=config%parts(i)%zzz
+    Do i=1,config%natms
+      uuu=config%parts(i)%xxx
+      vvv=config%parts(i)%yyy
+      www=config%parts(i)%zzz
 
-     config%parts(i)%xxx=rcell(1)*uuu+rcell(4)*vvv+rcell(7)*www
-     config%parts(i)%yyy=rcell(2)*uuu+rcell(5)*vvv+rcell(8)*www
-     config%parts(i)%zzz=rcell(3)*uuu+rcell(6)*vvv+rcell(9)*www
+      config%parts(i)%xxx=rcell(1)*uuu+rcell(4)*vvv+rcell(7)*www
+      config%parts(i)%yyy=rcell(2)*uuu+rcell(5)*vvv+rcell(8)*www
+      config%parts(i)%zzz=rcell(3)*uuu+rcell(6)*vvv+rcell(9)*www
 
-     uuu=config%parts(i)%xxx
-     vvv=config%parts(i)%yyy
-     www=config%parts(i)%zzz
+      uuu=config%parts(i)%xxx
+      vvv=config%parts(i)%yyy
+      www=config%parts(i)%zzz
 
-     config%parts(i)%xxx=devel%cels(1)*uuu+devel%cels(4)*vvv+devel%cels(7)*www
-     config%parts(i)%yyy=devel%cels(2)*uuu+devel%cels(5)*vvv+devel%cels(8)*www
-     config%parts(i)%zzz=devel%cels(3)*uuu+devel%cels(6)*vvv+devel%cels(9)*www
-  End Do
+      config%parts(i)%xxx=devel%cels(1)*uuu+devel%cels(4)*vvv+devel%cels(7)*www
+      config%parts(i)%yyy=devel%cels(2)*uuu+devel%cels(5)*vvv+devel%cels(8)*www
+      config%parts(i)%zzz=devel%cels(3)*uuu+devel%cels(6)*vvv+devel%cels(9)*www
+    End Do
 
-! Write REVCON
+    ! Write REVCON
 
-  Call cfgscl%init('CFGSCL')
-  step  = 0        ! no steps done
-  tstep  = 0.0_wp   ! no step exists
-  time   = 0.0_wp   ! time is not relevant
+    Call cfgscl%init('CFGSCL')
+    step  = 0        ! no steps done
+    tstep  = 0.0_wp   ! no step exists
+    time   = 0.0_wp   ! time is not relevant
 
-  rcell = config%cell ; config%cell = devel%cels
-  Call write_config(config,cfgscl,devel%lvcfscl,step,tstep,io,time,netcdf,comm)
-  config%cell = rcell
+    rcell = config%cell ; config%cell = devel%cels
+    Call write_config(config,cfgscl,devel%lvcfscl,step,tstep,io,time,netcdf,comm)
+    config%cell = rcell
 
-End Subroutine scale_config
+  End Subroutine scale_config
 
 
-Subroutine write_config(config,cfile,levcfg,step,tstep,io,time,netcdf,comm)
+  Subroutine write_config(config,cfile,levcfg,step,tstep,io,time,netcdf,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 subroutine for writing configuration file
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov february 2015
-! contrib   - i.j.bush
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Type( io_type ), Intent( InOut ) :: io
-  Type( file_type ), Intent( InOut ) :: cfile
-  Integer,              Intent( In    ) :: levcfg,step
-  Real( Kind = wp ),    Intent( In    ) :: tstep,time
-  Type( netcdf_param ), Intent( In    ) :: netcdf
-  Type( configuration_type ), Intent( InOut ) :: config
-  Type( comms_type ),   Intent( InOut ) :: comm
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for writing configuration file
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2015
+    ! contrib   - i.j.bush
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type( io_type ), Intent( InOut ) :: io
+    Type( file_type ), Intent( InOut ) :: cfile
+    Integer,              Intent( In    ) :: levcfg,step
+    Real( Kind = wp ),    Intent( In    ) :: tstep,time
+    Type( netcdf_param ), Intent( In    ) :: netcdf
+    Type( configuration_type ), Intent( InOut ) :: config
+    Type( comms_type ),   Intent( InOut ) :: comm
 
-  Integer, Parameter :: recsz    =   73 ! default record size
+    Integer, Parameter :: recsz    =   73 ! default record size
 
-  Logical               :: ready
-  Character( Len = 40 ) :: fname
-  Integer(Kind=li)      :: rec,rec1     ! record line
+    Logical               :: ready
+    Character( Len = 40 ) :: fname
+    Integer(Kind=li)      :: rec,rec1     ! record line
 
-  Integer               :: fail(1:4),i,k,jj,jdnode,jatms
+    Integer               :: fail(1:4),i,k,jj,jdnode,jatms
 
-  Real( Kind = wp )     :: celprp(1:10),cell_vecs(1:3,1:3)
-  Real( Kind = wp )     :: lengths(1:3), angles(1:3)
+    Real( Kind = wp )     :: celprp(1:10),cell_vecs(1:3,1:3)
+    Real( Kind = wp )     :: lengths(1:3), angles(1:3)
 
-! Some parameters and variables needed by io interfaces
+    ! Some parameters and variables needed by io interfaces
 
-  Integer                           :: fh
-  Integer                           :: io_write,batsz
-  Integer( Kind = offset_kind ) :: rec_mpi_io
-  Character( Len = recsz )          :: record
-  Character                         :: lf
+    Integer                           :: fh
+    Integer                           :: io_write,batsz
+    Integer( Kind = offset_kind ) :: rec_mpi_io
+    Character( Len = recsz )          :: record
+    Character                         :: lf
 
-  Character( Len = 1 ), Dimension( :, : ), Allocatable :: chbat
-  Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
-  Integer,              Dimension( : ),    Allocatable :: iwrk,n_atm
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
-  Real( Kind = wp ),    Dimension( : ),    Allocatable :: cxx,cyy,czz
+    Character( Len = 1 ), Dimension( :, : ), Allocatable :: chbat
+    Character( Len = 8 ), Dimension( : ),    Allocatable :: chbuf
+    Integer,              Dimension( : ),    Allocatable :: iwrk,n_atm
+    Real( Kind = wp ),    Dimension( : ),    Allocatable :: axx,ayy,azz
+    Real( Kind = wp ),    Dimension( : ),    Allocatable :: bxx,byy,bzz
+    Real( Kind = wp ),    Dimension( : ),    Allocatable :: cxx,cyy,czz
 
-  Integer :: ierr
-  Character ( Len = 256 )  ::  message
+    Integer :: ierr
+    Character ( Len = 256 )  ::  message
 
-! Get write method buffer size and line feed character
+    ! Get write method buffer size and line feed character
 
-  Call io_get_parameters(io, user_method_write      = io_write )
-  Call io_get_parameters(io, user_buffer_size_write = batsz    )
-  Call io_get_parameters(io, user_line_feed         = lf       )
+    Call io_get_parameters(io, user_method_write      = io_write )
+    Call io_get_parameters(io, user_buffer_size_write = batsz    )
+    Call io_get_parameters(io, user_line_feed         = lf       )
 
-! Get offsets and define batch
+    ! Get offsets and define batch
 
-  fail=0
-  If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
+    fail=0
+    If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
       io_write == IO_WRITE_UNSORTED_MASTER) Then
-     Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
-     Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
-     If (Any(fail > 0)) Then
+      Allocate (n_atm(0:comm%mxnode),        Stat=fail(1))
+      Allocate (chbat(1:recsz,1:batsz), Stat=fail(2))
+      If (Any(fail > 0)) Then
         Write(message,'(a)') 'write_config allocation failure 0'
         Call error(0,message)
-     End If
+      End If
 
-     chbat=' '
-     n_atm=0 ; n_atm(comm%idnode+1)=config%natms
-     Call gsum(comm,n_atm)
-     n_atm(0)=Sum(n_atm(0:comm%idnode))
-  End If
+      chbat=' '
+      n_atm=0 ; n_atm(comm%idnode+1)=config%natms
+      Call gsum(comm,n_atm)
+      n_atm(0)=Sum(n_atm(0:comm%idnode))
+    End If
 
-! Notes:
-! the MPI-I/O records are numbered from 0 (not 1)
-! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
-!   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
-!   both declared as: Integer(Kind = offset_kind)
+    ! Notes:
+    ! the MPI-I/O records are numbered from 0 (not 1)
+    ! - the displacement (disp_mpi_io) in the MPI_FILE_SET_VIEW call, and
+    !   the record number (rec_mpi_io) in the MPI_WRITE_FILE_AT calls are
+    !   both declared as: Integer(Kind = offset_kind)
 
-! UNSORTED MPI-I/O or Parallel Direct Access FORTRAN
+    ! UNSORTED MPI-I/O or Parallel Direct Access FORTRAN
 
-  If      (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
-           io_write == IO_WRITE_UNSORTED_DIRECT) Then
+    If      (io_write == IO_WRITE_UNSORTED_MPIIO .or. &
+      io_write == IO_WRITE_UNSORTED_DIRECT) Then
 
-! Write header only at start, where just one node is needed
-! Start of file
+      ! Write header only at start, where just one node is needed
+      ! Start of file
 
-     rec_mpi_io=Int(1-1,offset_kind)
-     jj=0
-     If (comm%idnode == 0) Then
+      rec_mpi_io=Int(1-1,offset_kind)
+      jj=0
+      If (comm%idnode == 0) Then
 
         Call io_set_parameters(io,user_comm=comm_self)
         Call io_init(io,recsz)
         Call io_delete(io,cfile%filename,comm) ! Sort existence issues
         Call io_open(io,io_write,comm_self,cfile%filename,mode_wronly+mode_create,fh)
 
-! Accumulate header
+        ! Accumulate header
 
         Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
         jj=jj+1
         Do k=1,recsz
-           chbat(k,jj) = record(k:k)
+          chbat(k,jj) = record(k:k)
         End Do
 
         Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,config%megatm,step,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
-           chbat(k,jj) = record(k:k)
+          chbat(k,jj) = record(k:k)
         End Do
 
-! Accumulate header - optional cell information (if present)
+        ! Accumulate header - optional cell information (if present)
 
         If (config%imcon > 0) Then
-           Do i = 0, 2
-              Write(record, Fmt='(3f20.10,a12,a1)') &
-                   config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
-              jj=jj+1
-              Do k=1,recsz
-                 chbat(k,jj) = record(k:k)
-              End Do
-           End Do
+          Do i = 0, 2
+            Write(record, Fmt='(3f20.10,a12,a1)') &
+              config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+            jj=jj+1
+            Do k=1,recsz
+              chbat(k,jj) = record(k:k)
+            End Do
+          End Do
         End If
 
-! Dump header
+        ! Dump header
 
         Call io_write_batch(io, fh, rec_mpi_io, jj, chbat )
 
         Call io_close(io, fh )
         Call io_finalize(io)
 
-     Else
+      Else
 
         jj=jj+2
         If (config%imcon > 0) jj=jj+3
 
-     End If
-     Call gsync(comm)
+      End If
+      Call gsync(comm)
 
-     Call io_set_parameters(io,user_comm=comm%comm)
-     Call io_init(io,recsz)
-     Call io_delete(io,cfile%filename,comm)
-     Call io_open(io,io_write,comm%comm,cfile%filename,mode_wronly,fh)
+      Call io_set_parameters(io,user_comm=comm%comm)
+      Call io_init(io,recsz)
+      Call io_delete(io,cfile%filename,comm)
+      Call io_open(io,io_write,comm%comm,cfile%filename,mode_wronly,fh)
 
-! Start of file (updated)
+      ! Start of file (updated)
 
-     rec_mpi_io=Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(levcfg+2,offset_kind)
-     jj=0
-     Do i=1,config%natms
+      rec_mpi_io=Int(jj,offset_kind)+Int(n_atm(0),offset_kind)*Int(levcfg+2,offset_kind)
+      jj=0
+      Do i=1,config%natms
         Write(record, Fmt='(a8,i10,a54,a1)') config%atmnam(i),config%ltg(i),Repeat(' ',54),lf
         jj=jj+1
         Do k=1,recsz
-           chbat(k,jj) = record(k:k)
+          chbat(k,jj) = record(k:k)
         End Do
 
         Write(record, Fmt='(3g20.10,a12,a1)') config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,Repeat(' ',12),lf
         jj=jj+1
         Do k=1,recsz
-           chbat(k,jj) = record(k:k)
+          chbat(k,jj) = record(k:k)
         End Do
 
         If (levcfg > 0) Then
-           Write(record, Fmt='(3g20.10,a12,a1)') config%vxx(i),config%vyy(i),config%vzz(i),Repeat(' ',12),lf
-           jj=jj+1
-           Do k=1,recsz
-              chbat(k,jj) = record(k:k)
-           End Do
+          Write(record, Fmt='(3g20.10,a12,a1)') config%vxx(i),config%vyy(i),config%vzz(i),Repeat(' ',12),lf
+          jj=jj+1
+          Do k=1,recsz
+            chbat(k,jj) = record(k:k)
+          End Do
 
-           If (levcfg > 1) Then
-              Write(record, Fmt='(3g20.10,a12,a1)') config%parts(i)%fxx,config%parts(i)%fyy,config%parts(i)%fzz,Repeat(' ',12),lf
-              jj=jj+1
-              Do k=1,recsz
-                 chbat(k,jj) = record(k:k)
-              End Do
-           End If
+          If (levcfg > 1) Then
+            Write(record, Fmt='(3g20.10,a12,a1)') config%parts(i)%fxx,config%parts(i)%fyy,config%parts(i)%fzz,Repeat(' ',12),lf
+            jj=jj+1
+            Do k=1,recsz
+              chbat(k,jj) = record(k:k)
+            End Do
+          End If
         End If
 
-! Dump batch and update start of file
+        ! Dump batch and update start of file
 
         If (jj + levcfg + 2 >= batsz .or. i == config%natms) Then
-           Call io_write_batch(io, fh, rec_mpi_io, jj, chbat )
-           rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
-           jj=0
+          Call io_write_batch(io, fh, rec_mpi_io, jj, chbat )
+          rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
+          jj=0
         End If
-     End Do
+      End Do
 
-     Call io_close(io, fh )
-     Call io_finalize(io)
+      Call io_close(io, fh )
+      Call io_finalize(io)
 
-! UNSORTED Serial Direct Access FORTRAN
+      ! UNSORTED Serial Direct Access FORTRAN
 
-  Else If (io_write == IO_WRITE_UNSORTED_MASTER) Then
+    Else If (io_write == IO_WRITE_UNSORTED_MASTER) Then
 
-     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
-     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
-     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
-     Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(4))
-     If (Any(fail > 0)) Then
+      Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
+      Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
+      Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
+      Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(4))
+      If (Any(fail > 0)) Then
         Write(message,'(a)') 'write_config allocation failure'
         Call error(0,message)
-     End If
+      End If
 
-! node 0 handles I/O
-! Start of file
+      ! node 0 handles I/O
+      ! Start of file
 
-     rec=Int(0,li)
-     jj=0
-     If (comm%idnode == 0) Then
+      rec=Int(0,li)
+      jj=0
+      If (comm%idnode == 0) Then
 
-! Write configuration data to new configuration file
+        ! Write configuration data to new configuration file
 
         Open(Newunit=cfile%unit_no, File=cfile%filename, Form='formatted', Access='direct', Recl=recsz, Status='replace')
 
-! Accumulate header
+        ! Accumulate header
 
         Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
         jj=jj+1
         Do k=1,recsz
-           chbat(k,jj) = record(k:k)
+          chbat(k,jj) = record(k:k)
         End Do
 
         Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,config%megatm,step,tstep,time,lf
         jj=jj+1
         Do k=1,recsz
-           chbat(k,jj) = record(k:k)
+          chbat(k,jj) = record(k:k)
         End Do
 
-! Accumulate header - optional cell information (if present)
+        ! Accumulate header - optional cell information (if present)
 
         If (config%imcon > 0) Then
-           Do i = 0, 2
-              Write(record, Fmt='(3f20.10,a12,a1)') &
-                   config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
-              jj=jj+1
-              Do k=1,recsz
-                 chbat(k,jj) = record(k:k)
-              End Do
-           End Do
+          Do i = 0, 2
+            Write(record, Fmt='(3f20.10,a12,a1)') &
+              config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+            jj=jj+1
+            Do k=1,recsz
+              chbat(k,jj) = record(k:k)
+            End Do
+          End Do
         End If
 
-! Dump header and update start of file
+        ! Dump header and update start of file
 
         Write(Unit=cfile%unit_no, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
         rec=Int(jj,li)
         jj=0
 
         Do i=1,config%natms
-           iwrk(i)=config%ltg(i)
-           chbuf(i)=config%atmnam(i)
+          iwrk(i)=config%ltg(i)
+          chbuf(i)=config%atmnam(i)
 
-           axx(i)=config%parts(i)%xxx
-           ayy(i)=config%parts(i)%yyy
-           azz(i)=config%parts(i)%zzz
+          axx(i)=config%parts(i)%xxx
+          ayy(i)=config%parts(i)%yyy
+          azz(i)=config%parts(i)%zzz
 
-           If (levcfg > 0) Then
-              bxx(i)=config%vxx(i)
-              byy(i)=config%vyy(i)
-              bzz(i)=config%vzz(i)
+          If (levcfg > 0) Then
+            bxx(i)=config%vxx(i)
+            byy(i)=config%vyy(i)
+            bzz(i)=config%vzz(i)
 
-              If (levcfg > 1) Then
-                 cxx(i)=config%parts(i)%fxx
-                 cyy(i)=config%parts(i)%fyy
-                 czz(i)=config%parts(i)%fzz
-              End If
-           End If
+            If (levcfg > 1) Then
+              cxx(i)=config%parts(i)%fxx
+              cyy(i)=config%parts(i)%fyy
+              czz(i)=config%parts(i)%fzz
+            End If
+          End If
         End Do
 
         jatms=config%natms
         ready=.true.
         Do jdnode=0,comm%mxnode-1
-           If (jdnode > 0) Then
-              Call gsend(comm,ready,jdnode,WriteConf_tag)
+          If (jdnode > 0) Then
+            Call gsend(comm,ready,jdnode,WriteConf_tag)
 
-              Call grecv(comm,jatms,jdnode,WriteConf_tag)
-              If (jatms > 0) Then
-                 Call grecv(comm,chbuf(1:jatms),jdnode,WriteConf_tag)
-                 Call grecv(comm,iwrk(1:jatms),jdnode,WriteConf_tag)
+            Call grecv(comm,jatms,jdnode,WriteConf_tag)
+            If (jatms > 0) Then
+              Call grecv(comm,chbuf(1:jatms),jdnode,WriteConf_tag)
+              Call grecv(comm,iwrk(1:jatms),jdnode,WriteConf_tag)
 
-                 Call grecv(comm,axx(1:jatms),jdnode,WriteConf_tag)
-                 Call grecv(comm,ayy(1:jatms),jdnode,WriteConf_tag)
-                 Call grecv(comm,azz(1:jatms),jdnode,WriteConf_tag)
-
-                 If (levcfg > 0) Then
-                    Call grecv(comm,bxx(1:jatms),jdnode,WriteConf_tag)
-                    Call grecv(comm,byy(1:jatms),jdnode,WriteConf_tag)
-                    Call grecv(comm,bzz(1:jatms),jdnode,WriteConf_tag)
-
-                    If (levcfg > 1) Then
-                       Call grecv(comm,cxx(1:jatms),jdnode,WriteConf_tag)
-                       Call grecv(comm,cyy(1:jatms),jdnode,WriteConf_tag)
-                       Call grecv(comm,czz(1:jatms),jdnode,WriteConf_tag)
-                    End If
-                 End If
-              End If
-           End If
-
-           jj=0
-           Do i=1,jatms
-              Write(record, Fmt='(a8,i10,a54,a1)') config%atmnam(i),iwrk(i),Repeat(' ',54),lf
-              jj=jj+1
-              Do k=1,recsz
-                 chbat(k,jj) = record(k:k)
-              End Do
-
-              Write(record, Fmt='(3g20.10,a12,a1)') axx(i),ayy(i),azz(i),Repeat(' ',12),lf
-              jj=jj+1
-              Do k=1,recsz
-                 chbat(k,jj) = record(k:k)
-              End Do
+              Call grecv(comm,axx(1:jatms),jdnode,WriteConf_tag)
+              Call grecv(comm,ayy(1:jatms),jdnode,WriteConf_tag)
+              Call grecv(comm,azz(1:jatms),jdnode,WriteConf_tag)
 
               If (levcfg > 0) Then
-                 Write(record, Fmt='(3g20.10,a12,a1)') bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
-                 jj=jj+1
-                 Do k=1,recsz
-                    chbat(k,jj) = record(k:k)
-                 End Do
+                Call grecv(comm,bxx(1:jatms),jdnode,WriteConf_tag)
+                Call grecv(comm,byy(1:jatms),jdnode,WriteConf_tag)
+                Call grecv(comm,bzz(1:jatms),jdnode,WriteConf_tag)
 
-                 If (levcfg > 1) Then
-                    Write(record, Fmt='(3g20.10,a12,a1)') cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
-                    jj=jj+1
-                    Do k=1,recsz
-                       chbat(k,jj) = record(k:k)
-                    End Do
-                 End If
+                If (levcfg > 1) Then
+                  Call grecv(comm,cxx(1:jatms),jdnode,WriteConf_tag)
+                  Call grecv(comm,cyy(1:jatms),jdnode,WriteConf_tag)
+                  Call grecv(comm,czz(1:jatms),jdnode,WriteConf_tag)
+                End If
               End If
+            End If
+          End If
 
-! Dump batch and update start of file
+          jj=0
+          Do i=1,jatms
+            Write(record, Fmt='(a8,i10,a54,a1)') config%atmnam(i),iwrk(i),Repeat(' ',54),lf
+            jj=jj+1
+            Do k=1,recsz
+              chbat(k,jj) = record(k:k)
+            End Do
 
-              If (jj + levcfg + 2 >= batsz .or. i == jatms) Then
-                 Write(Unit=cfile%unit_no, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
-                 rec=rec+Int(jj,li)
-                 jj=0
+            Write(record, Fmt='(3g20.10,a12,a1)') axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+            jj=jj+1
+            Do k=1,recsz
+              chbat(k,jj) = record(k:k)
+            End Do
+
+            If (levcfg > 0) Then
+              Write(record, Fmt='(3g20.10,a12,a1)') bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
+              jj=jj+1
+              Do k=1,recsz
+                chbat(k,jj) = record(k:k)
+              End Do
+
+              If (levcfg > 1) Then
+                Write(record, Fmt='(3g20.10,a12,a1)') cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
+                jj=jj+1
+                Do k=1,recsz
+                  chbat(k,jj) = record(k:k)
+                End Do
               End If
-           End Do
+            End If
+
+            ! Dump batch and update start of file
+
+            If (jj + levcfg + 2 >= batsz .or. i == jatms) Then
+              Write(Unit=cfile%unit_no, Fmt='(73a)', Rec=rec+Int(1,li)) (chbat(:,k), k=1,jj)
+              rec=rec+Int(jj,li)
+              jj=0
+            End If
+          End Do
         End Do
 
         Close(Unit=cfile%unit_no)
 
-     Else
+      Else
 
         Call grecv(comm,ready,0,WriteConf_tag)
 
         Call gsend(comm,config%natms,0,WriteConf_tag)
         If (config%natms > 0) Then
-           Call gsend(comm,config%atmnam(1:config%natms),0,WriteConf_tag)
-           Call gsend(comm,config%ltg(1:config%natms),0,WriteConf_tag)
+          Call gsend(comm,config%atmnam(1:config%natms),0,WriteConf_tag)
+          Call gsend(comm,config%ltg(1:config%natms),0,WriteConf_tag)
 
-           Call gsend(comm, config%parts(1:config%natms), 0, WriteConf_tag)
-           If (levcfg > 0) Then
-              Call gsend(comm,config%vxx(1:config%natms),0,WriteConf_tag)
-              Call gsend(comm,config%vyy(1:config%natms),0,WriteConf_tag)
-              Call gsend(comm,config%vzz(1:config%natms),0,WriteConf_tag)
+          Call gsend(comm, config%parts(1:config%natms), 0, WriteConf_tag)
+          If (levcfg > 0) Then
+            Call gsend(comm,config%vxx(1:config%natms),0,WriteConf_tag)
+            Call gsend(comm,config%vyy(1:config%natms),0,WriteConf_tag)
+            Call gsend(comm,config%vzz(1:config%natms),0,WriteConf_tag)
 
-           End If
+          End If
         End If
 
-     End If
+      End If
 
-     Deallocate (chbuf,iwrk,  Stat=fail(1))
-     Deallocate (axx,ayy,azz, Stat=fail(2))
-     Deallocate (bxx,byy,bzz, Stat=fail(3))
-     Deallocate (cxx,cyy,czz, Stat=fail(4))
-     If (Any(fail > 0)) Then
+      Deallocate (chbuf,iwrk,  Stat=fail(1))
+      Deallocate (axx,ayy,azz, Stat=fail(2))
+      Deallocate (bxx,byy,bzz, Stat=fail(3))
+      Deallocate (cxx,cyy,czz, Stat=fail(4))
+      If (Any(fail > 0)) Then
         Write(message,'(a)') 'write_config deallocation failure'
         Call error(0,message)
-     End If
+      End If
 
-! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
+      ! SORTED MPI-I/O or Parallel Direct Access FORTRAN or netCDF
 
-  Else If (io_write == IO_WRITE_SORTED_MPIIO  .or. &
-           io_write == IO_WRITE_SORTED_DIRECT .or. &
-           io_write == IO_WRITE_SORTED_NETCDF) Then
+    Else If (io_write == IO_WRITE_SORTED_MPIIO  .or. &
+      io_write == IO_WRITE_SORTED_DIRECT .or. &
+      io_write == IO_WRITE_SORTED_NETCDF) Then
 
-! name convention
+      ! name convention
 
-     If (io_write /= IO_WRITE_SORTED_NETCDF) Then
+      If (io_write /= IO_WRITE_SORTED_NETCDF) Then
         fname = cfile%filename
-     Else
+      Else
         fname = Trim(cfile%filename) // '.nc'
-     End If
+      End If
 
-! Write header only at start, where just one node is needed
-! Start of file
+      ! Write header only at start, where just one node is needed
+      ! Start of file
 
-     rec_mpi_io=Int(1-1,offset_kind)
-     jj=0
-     If (comm%idnode == 0) Then
+      rec_mpi_io=Int(1-1,offset_kind)
+      jj=0
+      If (comm%idnode == 0) Then
 
         Call io_set_parameters(io, user_comm = comm_self )
-         Call io_init(io, recsz )
+        Call io_init(io, recsz )
         Call io_delete(io, fname,comm ) ! Sort existence issues
         If (io_write == IO_WRITE_SORTED_NETCDF) Then
           Call io_nc_create( netcdf, comm_self, fname, config%cfgname, config%megatm )
         End If
         Call io_open(io, io_write, comm_self, fname, mode_wronly + mode_create, fh )
 
-! Non netCDF
+        ! Non netCDF
 
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
 
-! Write header
+          ! Write header
 
-           Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
-           Call io_write_record(io, fh, Int(jj,offset_kind), record )
-           jj=jj+1
+          Write(record, Fmt='(a72,a1)') config%cfgname(1:72),lf
+          Call io_write_record(io, fh, Int(jj,offset_kind), record )
+          jj=jj+1
 
-           Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,config%megatm,step,tstep,time,lf
-           Call io_write_record(io, fh, Int(jj,offset_kind), record )
-           jj=jj+1
+          Write(record, Fmt='(4i10,1p,2e16.7,a1)') levcfg,config%imcon,config%megatm,step,tstep,time,lf
+          Call io_write_record(io, fh, Int(jj,offset_kind), record )
+          jj=jj+1
 
-! Write optional cell information (if present)
+          ! Write optional cell information (if present)
 
-           If (config%imcon > 0) Then
-              Do i = 0, 2
-                 Write( record, '( 3f20.10, a12, a1 )' ) &
-                      config%cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
-                 Call io_write_record(io, fh, Int(jj,offset_kind), record )
-                 jj=jj+1
-              End Do
-           End If
+          If (config%imcon > 0) Then
+            Do i = 0, 2
+              Write( record, '( 3f20.10, a12, a1 )' ) &
+                config%cell( 1 + i * 3: 3 + i * 3 ), Repeat( ' ', 12 ), lf
+              Call io_write_record(io, fh, Int(jj,offset_kind), record )
+              jj=jj+1
+            End Do
+          End If
 
         Else ! netCDF write
 
-           jj=1 ! For config there is only one frame
+          jj=1 ! For config there is only one frame
 
-           Call io_nc_put_var(io, 'time'           , fh,   time, jj, 1 )
-           Call io_nc_put_var(io, 'step'           , fh,  step, jj, 1 )
-           Call io_nc_put_var(io, 'datalevel'      , fh, levcfg, jj, 1 )
-           Call io_nc_put_var(io, 'imageconvention', fh,  config%imcon, jj, 1 )
-           Call io_nc_put_var(io, 'timestep'       , fh,  tstep, jj, 1 )
+          Call io_nc_put_var(io, 'time'           , fh,   time, jj, 1 )
+          Call io_nc_put_var(io, 'step'           , fh,  step, jj, 1 )
+          Call io_nc_put_var(io, 'datalevel'      , fh, levcfg, jj, 1 )
+          Call io_nc_put_var(io, 'imageconvention', fh,  config%imcon, jj, 1 )
+          Call io_nc_put_var(io, 'timestep'       , fh,  tstep, jj, 1 )
 
-           If (config%imcon > 0) Then
-              Call dcell(config%cell,celprp) ! get cell properties
+          If (config%imcon > 0) Then
+            Call dcell(config%cell,celprp) ! get cell properties
 
-              cell_vecs = Reshape( config%cell, [ 3, 3 ] )
+            cell_vecs = Reshape( config%cell, [ 3, 3 ] )
 
-              lengths( 1 ) = celprp( 1 )
-              lengths( 2 ) = celprp( 2 )
-              lengths( 3 ) = celprp( 3 )
+            lengths( 1 ) = celprp( 1 )
+            lengths( 2 ) = celprp( 2 )
+            lengths( 3 ) = celprp( 3 )
 
-              angles ( 1 ) = Acos( celprp( 5 ) )
-              angles ( 2 ) = Acos( celprp( 6 ) )
-              angles ( 3 ) = Acos( celprp( 4 ) )
-              angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
+            angles ( 1 ) = Acos( celprp( 5 ) )
+            angles ( 2 ) = Acos( celprp( 6 ) )
+            angles ( 3 ) = Acos( celprp( 4 ) )
+            angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
 
-! Print
+            ! Print
 
-              Call io_nc_put_var(io, 'cell'        , fh, cell_vecs, [ 1, 1, jj ], [ 3, 3, 1 ] )
-              Call io_nc_put_var(io, 'cell_lengths', fh, lengths  , [    1, jj ], [    3, 1 ] )
-              Call io_nc_put_var(io, 'cell_angles' , fh, angles   , [    1, jj ], [    3, 1 ] )
-           End If
+            Call io_nc_put_var(io, 'cell'        , fh, cell_vecs, [ 1, 1, jj ], [ 3, 3, 1 ] )
+            Call io_nc_put_var(io, 'cell_lengths', fh, lengths  , [    1, jj ], [    3, 1 ] )
+            Call io_nc_put_var(io, 'cell_angles' , fh, angles   , [    1, jj ], [    3, 1 ] )
+          End If
 
         End If
 
         Call io_close(io, fh )
         Call io_finalize(io)
 
-     Else
+      Else
 
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
-           jj=jj+2
-           If (config%imcon > 0) jj=jj+3
+          jj=jj+2
+          If (config%imcon > 0) jj=jj+3
         Else
-           jj=1
+          jj=1
         End If
 
-     End If
-     Call gsync(comm)
+      End If
+      Call gsync(comm)
 
-! Write the rest
+      ! Write the rest
 
-     Call io_set_parameters(io, user_comm = comm%comm )
+      Call io_set_parameters(io, user_comm = comm%comm )
       Call io_init(io, recsz )
-     Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh )
+      Call io_open(io, io_write, comm%comm, fname, mode_wronly, fh )
 
-     rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
+      rec_mpi_io=rec_mpi_io+Int(jj,offset_kind)
       Call io_write_sorted_file(io, fh, levcfg, IO_RESTART, rec_mpi_io, config%natms,      &
-          config%ltg, config%atmnam, [ 0.0_wp ], [ 0.0_wp ], config%parts, &
-          config%vxx, config%vyy, config%vzz,IO_SUBSET_POSITIONS+IO_SUBSET_FORCES, ierr )
+        config%ltg, config%atmnam, [ 0.0_wp ], [ 0.0_wp ], config%parts, &
+        config%vxx, config%vyy, config%vzz,IO_SUBSET_POSITIONS+IO_SUBSET_FORCES, ierr )
 
-     If ( ierr /= 0 ) Then
+      If ( ierr /= 0 ) Then
         Select Case( ierr )
         Case( IO_BASE_COMM_NOT_SET )
-           Call error( 1050 )
+          Call error( 1050 )
         Case( IO_ALLOCATION_ERROR )
-           Call error( 1053 )
+          Call error( 1053 )
         Case( IO_UNKNOWN_WRITE_OPTION )
-           Call error( 1056 )
+          Call error( 1056 )
         Case( IO_UNKNOWN_WRITE_LEVEL )
-           Call error( 1059 )
+          Call error( 1059 )
         End Select
-     End If
+      End If
 
-     Call io_close(io, fh )
-     Call io_finalize(io)
+      Call io_close(io, fh )
+      Call io_finalize(io)
 
-! SORTED Serial Direct Access FORTRAN
+      ! SORTED Serial Direct Access FORTRAN
 
-  Else If (io_write == IO_WRITE_SORTED_MASTER) Then
+    Else If (io_write == IO_WRITE_SORTED_MASTER) Then
 
-     Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
-     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
-     Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
-     Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(4))
-     If (Any(fail > 0)) Then
+      Allocate (chbuf(1:config%mxatms),iwrk(1:config%mxatms),            Stat=fail(1))
+      Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
+      Allocate (bxx(1:config%mxatms),byy(1:config%mxatms),bzz(1:config%mxatms), Stat=fail(3))
+      Allocate (cxx(1:config%mxatms),cyy(1:config%mxatms),czz(1:config%mxatms), Stat=fail(4))
+      If (Any(fail > 0)) Then
         Write(message,'(a)') 'write_config allocation failure'
         Call error(0,message)
-     End If
+      End If
 
-! node 0 handles I/O
-! Start of file
+      ! node 0 handles I/O
+      ! Start of file
 
-     rec=Int(0,li)
-     If (comm%idnode == 0) Then
+      rec=Int(0,li)
+      If (comm%idnode == 0) Then
 
-! Write configuration data to new configuration file
+        ! Write configuration data to new configuration file
 
         Open(Newunit=cfile%unit_no, File=cfile%filename, Form='formatted', Access='direct', Recl=recsz, Status='replace')
 
-! Write header
+        ! Write header
 
         rec=rec+Int(1,li)
         Write(Unit=cfile%unit_no, Fmt='(a72,a1)',            Rec=rec) config%cfgname(1:72),lf
         rec=rec+Int(1,li)
         Write(Unit=cfile%unit_no, Fmt='(4i10,1p,2e16.7,a1)', Rec=rec) levcfg,config%imcon,config%megatm,step,tstep,time,lf
 
-! Write optional cell information (if present)
+        ! Write optional cell information (if present)
 
         If (config%imcon > 0) Then
-           Do i = 0, 2
-              rec=rec+Int(1,li)
-              Write(Unit=cfile%unit_no, Fmt='(3f20.10,a12,a1)', Rec=rec) &
-                config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
-           End Do
+          Do i = 0, 2
+            rec=rec+Int(1,li)
+            Write(Unit=cfile%unit_no, Fmt='(3f20.10,a12,a1)', Rec=rec) &
+              config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 ), Repeat( ' ', 12 ), lf
+          End Do
         End If
 
         Do i=1,config%natms
-           iwrk(i)=config%ltg(i)
-           chbuf(i)=config%atmnam(i)
+          iwrk(i)=config%ltg(i)
+          chbuf(i)=config%atmnam(i)
 
-           axx(i)=config%parts(i)%xxx
-           ayy(i)=config%parts(i)%yyy
-           azz(i)=config%parts(i)%zzz
+          axx(i)=config%parts(i)%xxx
+          ayy(i)=config%parts(i)%yyy
+          azz(i)=config%parts(i)%zzz
 
-           If (levcfg > 0) Then
-              bxx(i)=config%vxx(i)
-              byy(i)=config%vyy(i)
-              bzz(i)=config%vzz(i)
+          If (levcfg > 0) Then
+            bxx(i)=config%vxx(i)
+            byy(i)=config%vyy(i)
+            bzz(i)=config%vzz(i)
 
-              If (levcfg > 1) Then
-                 cxx(i)=config%parts(i)%fxx
-                 cyy(i)=config%parts(i)%fyy
-                 czz(i)=config%parts(i)%fzz
-              End If
-           End If
+            If (levcfg > 1) Then
+              cxx(i)=config%parts(i)%fxx
+              cyy(i)=config%parts(i)%fyy
+              czz(i)=config%parts(i)%fzz
+            End If
+          End If
         End Do
 
         jatms=config%natms
         ready=.true.
         Do jdnode=0,comm%mxnode-1
-           If (jdnode > 0) Then
-              Call gsend(comm,ready,jdnode,WriteConf_tag)
+          If (jdnode > 0) Then
+            Call gsend(comm,ready,jdnode,WriteConf_tag)
 
-              Call grecv(comm,jatms,jdnode,WriteConf_tag)
-              If (jatms > 0) Then
-                 Call gsend(comm,chbuf(1:jatms),jdnode,WriteConf_tag)
-                 Call grecv(comm,iwrk(1:jatms),jdnode,WriteConf_tag)
+            Call grecv(comm,jatms,jdnode,WriteConf_tag)
+            If (jatms > 0) Then
+              Call gsend(comm,chbuf(1:jatms),jdnode,WriteConf_tag)
+              Call grecv(comm,iwrk(1:jatms),jdnode,WriteConf_tag)
 
-                 Call grecv(comm,axx(1:jatms),jdnode,WriteConf_tag)
-                 Call grecv(comm,ayy(1:jatms),jdnode,WriteConf_tag)
-                 Call grecv(comm,azz(1:jatms),jdnode,WriteConf_tag)
-
-                 If (levcfg > 0) Then
-                    Call grecv(comm,bxx(1:jatms),jdnode,WriteConf_tag)
-                    Call grecv(comm,byy(1:jatms),jdnode,WriteConf_tag)
-                    Call grecv(comm,bzz(1:jatms),jdnode,WriteConf_tag)
-
-                    If (levcfg > 1) Then
-                       Call grecv(comm,cxx(1:jatms),jdnode,WriteConf_tag)
-                       Call grecv(comm,cyy(1:jatms),jdnode,WriteConf_tag)
-                       Call grecv(comm,czz(1:jatms),jdnode,WriteConf_tag)
-                    End If
-                 End If
-              End If
-           End If
-
-           Do i=1,jatms
-              rec1=rec+Int(iwrk(i)-1,li)*Int(levcfg+2)+Int(1,li)
-              Write(Unit=cfile%unit_no, Fmt='(a8,i10,a54,a1)',     Rec=rec1) chbuf(i),iwrk(i),Repeat(' ',54),lf
-              rec1=rec1+Int(1,li)
-              Write(Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)',    Rec=rec1) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+              Call grecv(comm,axx(1:jatms),jdnode,WriteConf_tag)
+              Call grecv(comm,ayy(1:jatms),jdnode,WriteConf_tag)
+              Call grecv(comm,azz(1:jatms),jdnode,WriteConf_tag)
 
               If (levcfg > 0) Then
-                 rec1=rec1+Int(1,li)
-                 Write(Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)', Rec=rec1) bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
+                Call grecv(comm,bxx(1:jatms),jdnode,WriteConf_tag)
+                Call grecv(comm,byy(1:jatms),jdnode,WriteConf_tag)
+                Call grecv(comm,bzz(1:jatms),jdnode,WriteConf_tag)
 
-                 If (levcfg > 1) Then
-                    rec1=rec1+Int(1,li)
-                    Write(Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)', Rec=rec1) cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
-                 End If
+                If (levcfg > 1) Then
+                  Call grecv(comm,cxx(1:jatms),jdnode,WriteConf_tag)
+                  Call grecv(comm,cyy(1:jatms),jdnode,WriteConf_tag)
+                  Call grecv(comm,czz(1:jatms),jdnode,WriteConf_tag)
+                End If
               End If
-           End Do
+            End If
+          End If
+
+          Do i=1,jatms
+            rec1=rec+Int(iwrk(i)-1,li)*Int(levcfg+2)+Int(1,li)
+            Write(Unit=cfile%unit_no, Fmt='(a8,i10,a54,a1)',     Rec=rec1) chbuf(i),iwrk(i),Repeat(' ',54),lf
+            rec1=rec1+Int(1,li)
+            Write(Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)',    Rec=rec1) axx(i),ayy(i),azz(i),Repeat(' ',12),lf
+
+            If (levcfg > 0) Then
+              rec1=rec1+Int(1,li)
+              Write(Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)', Rec=rec1) bxx(i),byy(i),bzz(i),Repeat(' ',12),lf
+
+              If (levcfg > 1) Then
+                rec1=rec1+Int(1,li)
+                Write(Unit=cfile%unit_no, Fmt='(3g20.10,a12,a1)', Rec=rec1) cxx(i),cyy(i),czz(i),Repeat(' ',12),lf
+              End If
+            End If
+          End Do
         End Do
 
         Close(Unit=cfile%unit_no)
 
-     Else
+      Else
 
         Call grecv(comm,ready,0,WriteConf_tag)
 
         Call gsend(comm,config%natms,0,WriteConf_tag)
         If (config%natms > 0) Then
-           Call gsend(comm,config%atmnam(1:config%natms),0,WriteConf_tag)
-           Call gsend(comm,config%ltg(1:config%natms),0,WriteConf_tag)
+          Call gsend(comm,config%atmnam(1:config%natms),0,WriteConf_tag)
+          Call gsend(comm,config%ltg(1:config%natms),0,WriteConf_tag)
 
-           Call gsend(comm,config%parts(1:config%natms),0,WriteConf_tag)
+          Call gsend(comm,config%parts(1:config%natms),0,WriteConf_tag)
 
-           If (levcfg > 0) Then
-              Call gsend(comm,config%vxx(1:config%natms),0,WriteConf_tag)
-              Call gsend(comm,config%vyy(1:config%natms),0,WriteConf_tag)
-              Call gsend(comm,config%vzz(1:config%natms),0,WriteConf_tag)
+          If (levcfg > 0) Then
+            Call gsend(comm,config%vxx(1:config%natms),0,WriteConf_tag)
+            Call gsend(comm,config%vyy(1:config%natms),0,WriteConf_tag)
+            Call gsend(comm,config%vzz(1:config%natms),0,WriteConf_tag)
 
-           End If
+          End If
         End If
 
-     End If
+      End If
 
-     Deallocate (chbuf,iwrk,  Stat=fail(1))
-     Deallocate (axx,ayy,azz, Stat=fail(2))
-     Deallocate (bxx,byy,bzz, Stat=fail(3))
-     Deallocate (cxx,cyy,czz, Stat=fail(4))
-     If (Any(fail > 0)) Then
+      Deallocate (chbuf,iwrk,  Stat=fail(1))
+      Deallocate (axx,ayy,azz, Stat=fail(2))
+      Deallocate (bxx,byy,bzz, Stat=fail(3))
+      Deallocate (cxx,cyy,czz, Stat=fail(4))
+      If (Any(fail > 0)) Then
         Write(message,'(a)') 'write_config deallocation failure'
         Call error(0,message)
-     End If
+      End If
 
-  End If
+    End If
 
-  If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
+    If (io_write == IO_WRITE_UNSORTED_MPIIO  .or. &
       io_write == IO_WRITE_UNSORTED_DIRECT .or. &
       io_write == IO_WRITE_UNSORTED_MASTER) Then
-     Deallocate (n_atm, Stat=fail(1))
-     Deallocate (chbat, Stat=fail(2))
-     If (Any(fail > 0)) Then
+      Deallocate (n_atm, Stat=fail(1))
+      Deallocate (chbat, Stat=fail(2))
+      If (Any(fail > 0)) Then
         Write(message,'(a)') 'write_config deallocation failure 0'
         Call error(0,message)
-     End If
-  End If
+      End If
+    End If
 
-  Call gsync(comm)
+    Call gsync(comm)
 
-End Subroutine write_config
+  End Subroutine write_config
 
-Subroutine getcom_arrays(txx,tyy,tzz,config,com,comm)
+  Subroutine getcom_arrays(txx,tyy,tzz,config,com,comm)
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to calculate system centre of mass position
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to calculate system centre of mass position
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov october 2012
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Real( Kind = wp ), Dimension( : ), Intent( In    ) :: txx,tyy,tzz
-  Type(configuration_type),            Intent( InOut ) :: config
-  Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: com
-  Type(comms_type),                    Intent( InOut ) :: comm
+    Real( Kind = wp ), Dimension( : ), Intent( In    ) :: txx,tyy,tzz
+    Type(configuration_type),            Intent( InOut ) :: config
+    Real( Kind = wp ), Dimension( : ), Intent(   Out ) :: com
+    Type(comms_type),                    Intent( InOut ) :: comm
 
-  Integer                 :: i
+    Integer                 :: i
 
-  ! total system mass
+    ! total system mass
 
     If (config%newjob_totmas) Then
-       config%newjob_totmas = .false.
+      config%newjob_totmas = .false.
 
-       config%totmas = 0.0_wp
-       Do i=1,config%natms
-          If (config%lfrzn(i) == 0) config%totmas = config%totmas + config%weight(i)
-       End Do
+      config%totmas = 0.0_wp
+      Do i=1,config%natms
+        If (config%lfrzn(i) == 0) config%totmas = config%totmas + config%weight(i)
+      End Do
 
-       Call gsum(comm,config%totmas)
+      Call gsum(comm,config%totmas)
     End If
 
     com = 0.0_wp
 
     Do i=1,config%natms
-       If (config%lfrzn(i) == 0) Then
-          com(1) = com(1) + config%weight(i)*txx(i)
-          com(2) = com(2) + config%weight(i)*tyy(i)
-          com(3) = com(3) + config%weight(i)*tzz(i)
-       End If
+      If (config%lfrzn(i) == 0) Then
+        com(1) = com(1) + config%weight(i)*txx(i)
+        com(2) = com(2) + config%weight(i)*tyy(i)
+        com(3) = com(3) + config%weight(i)*tzz(i)
+      End If
     End Do
 
     Call gsum(comm,com)
     If (config%totmas >= zero_plus) com = com/config%totmas
 
 
-End Subroutine getcom_arrays
+  End Subroutine getcom_arrays
 
 
-Subroutine getcom_parts(config,com,comm)
+  Subroutine getcom_parts(config,com,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to calculate system centre of mass position
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov october 2012
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to calculate system centre of mass position
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov october 2012
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Type( configuration_type ),          Intent( InOut    ) :: config
+    Type( configuration_type ),          Intent( InOut    ) :: config
     Real( Kind = wp ), Dimension( 1:3 ), Intent(   Out ) :: com
     Type(comms_type), Intent ( InOut )                   :: comm
 
     Integer                 :: i
 
-! total system mass
+    ! total system mass
 
     If (config%newjob_totmas) Then
-       config%newjob_totmas = .false.
+      config%newjob_totmas = .false.
 
-       config%totmas = 0.0_wp
-       Do i=1,config%natms
-          If (config%lfrzn(i) == 0) config%totmas = config%totmas + config%weight(i)
-       End Do
+      config%totmas = 0.0_wp
+      Do i=1,config%natms
+        If (config%lfrzn(i) == 0) config%totmas = config%totmas + config%weight(i)
+      End Do
 
-       Call gsum(comm,config%totmas)
+      Call gsum(comm,config%totmas)
     End If
 
     com = 0.0_wp
 
     Do i=1,config%natms
-       If (config%lfrzn(i) == 0) Then
-          com(1) = com(1) + config%weight(i)*config%parts(i)%xxx
-          com(2) = com(2) + config%weight(i)*config%parts(i)%yyy
-          com(3) = com(3) + config%weight(i)*config%parts(i)%zzz
-       End If
+      If (config%lfrzn(i) == 0) Then
+        com(1) = com(1) + config%weight(i)*config%parts(i)%xxx
+        com(2) = com(2) + config%weight(i)*config%parts(i)%yyy
+        com(3) = com(3) + config%weight(i)*config%parts(i)%zzz
+      End If
     End Do
 
     Call gsum(comm,com)
@@ -3196,17 +3196,17 @@ Subroutine getcom_parts(config,com,comm)
 
   Subroutine getcom_mol(config,istart,ifinish,cmm,comm)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to calculate a molecule's mass and COM
-!
-! istart  - the global index of the first atom of the molecule
-! ifinish - the global index of the last atom of the molecule
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov november 2016
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to calculate a molecule's mass and COM
+    !
+    ! istart  - the global index of the first atom of the molecule
+    ! ifinish - the global index of the last atom of the molecule
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov november 2016
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
     Integer,           Intent( In    ) :: istart,ifinish
@@ -3226,25 +3226,25 @@ Subroutine getcom_parts(config,com,comm)
     Allocate (mol(1:(ifinish-istart+1),0:3), Stat = fail)
     If (fail > 0) Then
       Write(message,'(/,1x,a,i0)') 'getcom_mol allocation failure'
-       Call error(0,message)
+      Call error(0,message)
     End If
 
-! Initialise
+    ! Initialise
 
     mass = 0.0_wp
     cmm  = 0.0_wp
 
     mol = 0.0_wp
     Do i=1,config%natms
-       j=config%ltg(i)
-       If (j >= istart .and. j <= ifinish) Then
-          k=j-istart+1
+      j=config%ltg(i)
+      If (j >= istart .and. j <= ifinish) Then
+        k=j-istart+1
 
-          mol(k,0) = config%weight(i)
-          mol(k,1) = config%parts(i)%xxx
-          mol(k,2) = config%parts(i)%yyy
-          mol(k,3) = config%parts(i)%zzz
-       End If
+        mol(k,0) = config%weight(i)
+        mol(k,1) = config%parts(i)%xxx
+        mol(k,2) = config%parts(i)%yyy
+        mol(k,3) = config%parts(i)%zzz
+      End If
     End Do
 
     Call gsum(comm,mol)
@@ -3265,11 +3265,11 @@ Subroutine getcom_parts(config,com,comm)
     mol(:,3) = mol(:,3)+r(3)
 
     Do i=1,k
-       mass   = mass   + mol(i,0)
-       cmm(0) = cmm(0) + mol(i,0)*Real(1-config%lfrzn(i),wp)
-       cmm(1) = cmm(1) + mol(i,0)*mol(i,1)
-       cmm(2) = cmm(2) + mol(i,0)*mol(i,2)
-       cmm(3) = cmm(3) + mol(i,0)*mol(i,3)
+      mass   = mass   + mol(i,0)
+      cmm(0) = cmm(0) + mol(i,0)*Real(1-config%lfrzn(i),wp)
+      cmm(1) = cmm(1) + mol(i,0)*mol(i,1)
+      cmm(2) = cmm(2) + mol(i,0)*mol(i,2)
+      cmm(3) = cmm(3) + mol(i,0)*mol(i,3)
     End Do
 
     If (cmm(0) >= zero_plus) cmm(1:3) = cmm(1:3) / mass
@@ -3277,8 +3277,8 @@ Subroutine getcom_parts(config,com,comm)
     fail = 0
     Deallocate (mol, Stat = fail)
     If (fail > 0) Then
-       Write(message,'(a)') 'getcom_mol deallocation failure'
-       Call error(0,message)
+      Write(message,'(a)') 'getcom_mol deallocation failure'
+      Call error(0,message)
     End If
 
   End Subroutine getcom_mol
@@ -3286,14 +3286,14 @@ Subroutine getcom_parts(config,com,comm)
 
   Subroutine freeze_atoms(config)
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!
-! dl_poly_4 routine to quench forces and velocities on 'frozen' atoms
-!
-! copyright - daresbury laboratory
-! author    - i.t.todorov july 2004
-!
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 routine to quench forces and velocities on 'frozen' atoms
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov july 2004
+    !
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( configuration_type ), Intent( InOut ) :: config
     Integer :: i
@@ -3334,9 +3334,9 @@ Subroutine getcom_parts(config,com,comm)
 
     Do i=1,config%natms
       config%parts(i)%xxx=config%parts(i)%xxx+devel%xorg
-       config%parts(i)%yyy=config%parts(i)%yyy+devel%yorg
-       config%parts(i)%zzz=config%parts(i)%zzz+devel%zorg
-     End Do
+      config%parts(i)%yyy=config%parts(i)%yyy+devel%yorg
+      config%parts(i)%zzz=config%parts(i)%zzz+devel%zorg
+    End Do
 
     ! Restore periodic boundaries
 

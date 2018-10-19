@@ -114,17 +114,17 @@ Module electrostatic
     Integer,           Public :: context
     Logical,           Public :: newjob_fspme= .true.
     Real( Kind = wp ), Public :: kmaxa_lr,kmaxb_lr,kmaxc_lr
-!> multipole electrostatics 
+    !> multipole electrostatics 
     Logical,           Public :: newjob_mpoles = .true.
     Real( Kind = wp ), Public :: drewd_mpoles,rdrewd_mpoles
     Real( Kind = wp ), Dimension( : ), Allocatable, Public :: erc_mpoles,fer_mpoles
-!> mpoles
+    !> mpoles
 
     Logical,           Public :: newjob_mpolesd = .true.
     Real( Kind = wp ), Public :: drewd_mpolesd,rdrewd_mpolesd,alp2,co1,co2,co3,co4,co5,exclcoef, &
       twzz,twtwz,fozz
     Real( Kind = wp ), Dimension( : ), Allocatable, Public :: erc_mpolesd,fer_mpolesd
-!> mpoles 2
+    !> mpoles 2
     Logical,           Public :: newjob_fmpoles = .true.
     Integer,           Public :: ixb_mf,iyb_mf,izb_mf, ixt_mf,iyt_mf,izt_mf
     Real( Kind = wp ), Public :: ixbm1_r_mf,iybm1_r_mf,izbm1_r_mf, &
@@ -169,7 +169,7 @@ Module electrostatic
       qt2_local_mfd, &
       qt3_local_mfd
     Complex( Kind = wp ), Dimension( :,:,: ),   Allocatable, Public :: pfft_work_mfd
-!> exluded mforces
+    !> exluded mforces
     Logical,           Public :: newjob_emf = .true.
     Real( Kind = wp ), Public :: alp2_emf,co1_emf,co2_emf,co3_emf,co4_emf,co5_emf,co6_emf
 

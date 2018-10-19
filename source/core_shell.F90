@@ -76,8 +76,8 @@ Module core_shell
 Contains
 
   Subroutine allocate_core_shell_arrays(T,mxatdm,mxtmls,mxlshp,neighbours)
-   Class( core_shell_type ) :: T
-     Integer, Intent(In) :: mxatdm,mxtmls,mxlshp,neighbours
+  Class( core_shell_type ) :: T
+    Integer, Intent(In) :: mxatdm,mxtmls,mxlshp,neighbours
 
     Integer, Dimension( 1:6 ) :: fail
 
@@ -104,7 +104,7 @@ Contains
   End Subroutine allocate_core_shell_arrays
 
   Subroutine deallocate_core_shell_tmp_arrays(T)
-   Class( core_shell_type ) :: T
+  Class( core_shell_type ) :: T
 
     Integer :: fail(2)
 
@@ -366,7 +366,7 @@ Contains
 
     If (cshell%lshmv_shl) Then
       Call update_shared_units(config,cshell%lishp_shl,cshell%lashp_shl,config%vxx,&
-                               config%vyy,config%vzz,domain,comm)
+        config%vyy,config%vzz,domain,comm)
     End If
 
     ! initialise energy
@@ -729,10 +729,10 @@ Contains
         fxt(jshl)=config%parts(ib)%fxx
         fyt(jshl)=config%parts(ib)%fyy
         fzt(jshl)=config%parts(ib)%fzz
-     End If
-     lstopt(1,i)=ia
-     lstopt(2,i)=ib
-  End Do
+      End If
+      lstopt(1,i)=ia
+      lstopt(2,i)=ib
+    End Do
 
     ! Current configuration energy
 
@@ -899,10 +899,10 @@ Contains
 
     ! Move shells accordingly to their new positions
 
-   Do i=1,cshell%ntshl
-     ia=lstopt(1,i)
-     ib=lstopt(2,i)
-     If (ia > 0 .and. (ib > 0 .and. ib <= config%natms)) Then
+    Do i=1,cshell%ntshl
+      ia=lstopt(1,i)
+      ib=lstopt(2,i)
+      If (ia > 0 .and. (ib > 0 .and. ib <= config%natms)) Then
         config%parts(ib)%xxx=config%parts(ib)%xxx+cshell%stride*fxt(ia)
         config%parts(ib)%yyy=config%parts(ib)%yyy+cshell%stride*fyt(ia)
         config%parts(ib)%zzz=config%parts(ib)%zzz+cshell%stride*fzt(ia)
@@ -993,23 +993,23 @@ Contains
       Do i=1,cshell%ntshl
         ib=lstopt(2,i)
         If (ib > 0) Then
-           lst_sh(ib)=1
-           cshell%fff(0)=cshell%fff(0)-1.0_wp
-           cshell%fff(1)=cshell%fff(1)+config%parts(ib)%fxx ; config%parts(ib)%fxx=0.0_wp 
-           config%vxx(ib)=0.0_wp
-           cshell%fff(2)=cshell%fff(2)+config%parts(ib)%fyy ; config%parts(ib)%fyy=0.0_wp 
-           config%vyy(ib)=0.0_wp
-           cshell%fff(3)=cshell%fff(3)+config%parts(ib)%fzz ; config%parts(ib)%fzz=0.0_wp 
-           config%vzz(ib)=0.0_wp
+          lst_sh(ib)=1
+          cshell%fff(0)=cshell%fff(0)-1.0_wp
+          cshell%fff(1)=cshell%fff(1)+config%parts(ib)%fxx ; config%parts(ib)%fxx=0.0_wp 
+          config%vxx(ib)=0.0_wp
+          cshell%fff(2)=cshell%fff(2)+config%parts(ib)%fyy ; config%parts(ib)%fyy=0.0_wp 
+          config%vyy(ib)=0.0_wp
+          cshell%fff(3)=cshell%fff(3)+config%parts(ib)%fzz ; config%parts(ib)%fzz=0.0_wp 
+          config%vzz(ib)=0.0_wp
         End If
       End Do
       Call gsum(comm,cshell%fff)
       cshell%fff(1:3)=cshell%fff(1:3)/cshell%fff(0)
       Do i=1,config%natms
         If (lst_sh(i) == 0) Then
-           config%parts(i)%fxx=config%parts(i)%fxx+cshell%fff(1)
-           config%parts(i)%fyy=config%parts(i)%fyy+cshell%fff(2)
-           config%parts(i)%fzz=config%parts(i)%fzz+cshell%fff(3)
+          config%parts(i)%fxx=config%parts(i)%fxx+cshell%fff(1)
+          config%parts(i)%fyy=config%parts(i)%fyy+cshell%fff(2)
+          config%parts(i)%fzz=config%parts(i)%fzz+cshell%fff(3)
         End If
       End Do
 

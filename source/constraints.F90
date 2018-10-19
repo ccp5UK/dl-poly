@@ -64,14 +64,14 @@ Module constraints
 
 Contains
 
-Subroutine allocate_work(T,n)
- Class(constraints_type) :: T
-   Integer, Intent( In ) :: n
-   Integer :: fail(2)
-  Character(Len=100) :: message
+  Subroutine allocate_work(T,n)
+  Class(constraints_type) :: T
+    Integer, Intent( In ) :: n
+    Integer :: fail(2)
+    Character(Len=100) :: message
 
-   If (T%megcon > 0) Then
-     Allocate (T%lstopt(0:2,1:T%mxcons),T%listot(1:n),          Stat=fail( 1)) 
+    If (T%megcon > 0) Then
+      Allocate (T%lstopt(0:2,1:T%mxcons),T%listot(1:n),          Stat=fail( 1)) 
       Allocate (T%dxx(1:T%mxcons),T%dyy(1:T%mxcons),T%dzz(1:T%mxcons),      Stat=fail( 2))
 
     End If
@@ -324,7 +324,7 @@ Subroutine allocate_work(T,n)
           ! calculate constraint force parameter - gamma
 
           gamma = cons%dxx(k)*(config%vxx(i)-config%vxx(j)) + cons%dyy(k)*&
-                 (config%vyy(i)-config%vyy(j)) + cons%dzz(k)*(config%vzz(i)-config%vzz(j))
+            (config%vyy(i)-config%vyy(j)) + cons%dzz(k)*(config%vzz(i)-config%vzz(j))
 
           esig=Max(esig,0.5_wp*Abs(gamma))
 
@@ -656,7 +656,7 @@ Subroutine allocate_work(T,n)
           ! calculate constraint force parameter - gamma
 
           gamma = cons%dxx(k)*(config%vxx(i)-config%vxx(j)) + cons%dyy(k)&
-                  *(config%vyy(i)-config%vyy(j)) + cons%dzz(k)*(config%vzz(i)-config%vzz(j))
+            *(config%vyy(i)-config%vyy(j)) + cons%dzz(k)*(config%vzz(i)-config%vzz(j))
 
           esig=Max(esig,0.5_wp*tstep*Abs(gamma))
 
@@ -927,20 +927,20 @@ Subroutine allocate_work(T,n)
 
             ! apply position corrections if non-frozen
 
-              If (i <= config%natms .and. config%lfrzn(i) == 0) Then
-                 dli = 1.0_wp/Real(cons%listot(i),wp)
-                 config%parts(i)%xxx=config%parts(i)%xxx+xxt(i)*dli
-                 config%parts(i)%yyy=config%parts(i)%yyy+yyt(i)*dli
-                 config%parts(i)%zzz=config%parts(i)%zzz+zzt(i)*dli
-              End If
+            If (i <= config%natms .and. config%lfrzn(i) == 0) Then
+              dli = 1.0_wp/Real(cons%listot(i),wp)
+              config%parts(i)%xxx=config%parts(i)%xxx+xxt(i)*dli
+              config%parts(i)%yyy=config%parts(i)%yyy+yyt(i)*dli
+              config%parts(i)%zzz=config%parts(i)%zzz+zzt(i)*dli
+            End If
 
-              If (j <= config%natms .and. config%lfrzn(j) == 0) Then
-                 dlj = 1.0_wp/Real(cons%listot(j),wp)
-                 config%parts(j)%xxx=config%parts(j)%xxx+xxt(j)*dlj
-                 config%parts(j)%yyy=config%parts(j)%yyy+yyt(j)*dlj
-                 config%parts(j)%zzz=config%parts(j)%zzz+zzt(j)*dlj
-              End If
-           End If
+            If (j <= config%natms .and. config%lfrzn(j) == 0) Then
+              dlj = 1.0_wp/Real(cons%listot(j),wp)
+              config%parts(j)%xxx=config%parts(j)%xxx+xxt(j)*dlj
+              config%parts(j)%yyy=config%parts(j)%yyy+yyt(j)*dlj
+              config%parts(j)%zzz=config%parts(j)%zzz+zzt(j)*dlj
+            End If
+          End If
         End Do
 
       End If
