@@ -137,3 +137,5 @@ testing-mpi-intel-paranoid:
     - intel
   script:
     - sh utils/intel-testing-paranoid.sh
+  except:
+    - devel
