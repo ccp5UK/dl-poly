@@ -84,6 +84,10 @@ Module defects
     Integer(Kind =  wi)   , Allocatable :: lri(:) ,lra(:) ,indr(:)
     Real( Kind = wp )     , Allocatable :: xr(:)  ,yr(:)  ,zr(:)
     Character( Len = 8 )  , Allocatable :: namr(:)
+  Contains 
+    Private
+    Procedure, Public :: init => allocate_defects_arrays
+    Final :: deallocate_defects_arrays 
   End Type
 
   Public :: defects_write
@@ -94,9 +98,9 @@ Contains
   !> allocate_defects_arrays
   Subroutine allocate_defects_arrays(dfcts,mxatms)
 
-    Type(defects_type) , Intent( InOut )   :: dfcts
+    Class(defects_type) , Intent( InOut )   :: dfcts
     Integer( Kind = wi ), Intent (In ) :: mxatms
-    Integer(Kind =  wi), Dimension( 1:3 )  :: fail
+    Integer( Kind =  wi )  :: fail(3)
 
     fail = 0
     Allocate (dfcts%namr(1:mxatms)                                 , Stat = fail(1))
@@ -119,9 +123,8 @@ Contains
 
   !> deallocate_defects_arrays
   Subroutine deallocate_defects_arrays(dfcts)
-
-    Integer(Kind =  wi), Dimension( 1:3 )  :: fail
     Type(defects_type) , Intent( InOut )   :: dfcts
+    Integer(Kind =  wi)  :: fail(3)
 
     fail = 0
     Deallocate (dfcts%namr                     , Stat = fail(1))
@@ -2277,7 +2280,7 @@ Contains
       dfcts%rdefsq=dfcts%rdef**2
 
       ! Build lattice sites list from REFERENCE
-      Call allocate_defects_arrays(dfcts,config%mxatms)
+      Call dfcts%init(config%mxatms)
       Call defects_reference_read(nstep,io,dfcts,sites,netcdf,domain,config,files,comm)
 
       ! Assume that the MD cell will not change much in size and shape from
