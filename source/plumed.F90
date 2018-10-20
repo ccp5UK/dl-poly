@@ -102,15 +102,14 @@ Contains
     End If
 #endif
 
-    Call plumed_print_about(plume,comm)
+    Call plumed_print_about(plume)
 
   End Subroutine plumed_init
 
-  Subroutine plumed_print_about(plume,comm)
+  Subroutine plumed_print_about(plume)
     Type(plumed_type), Intent( In    ) :: plume
-    Type(comms_type),  Intent( InOut ) :: comm
 #ifdef PLUMED
-    Character( Len = 256 ) :: message,messages(9),banner(15)
+    Character( Len = 256 ) :: messages(9),banner(15)
 
     Write(banner(1),'(a)')  ""
     Write(banner(2),'(a)')  "***_____________________________________ "
