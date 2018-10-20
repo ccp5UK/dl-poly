@@ -101,8 +101,7 @@ Contains
     Type( comms_type ), Intent ( InOut ) :: comm
 
 
-    Logical           :: safe
-    Integer           :: fail,ilx,ily,ilz,i,ii,j
+    Integer           :: fail,ilx,ily,ilz,i
     Real( Kind = wp ) :: cut,test,tol,celprp(1:10)
 
     Real( Kind = wp ), Dimension(:),Allocatable :: x,y,z,r
@@ -240,9 +239,8 @@ Contains
   !> Copyright - Daresbury Laboratory
   !>
   !> Author    - I.T.Todorov january 2017
-  Subroutine vnl_set_check(neigh,config,comm)
+  Subroutine vnl_set_check(neigh,config)
     Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type ( comms_type ), Intent( InOut ) :: comm
     Type( configuration_type ),    Intent( InOut ) :: config
 
     Integer :: fail,i

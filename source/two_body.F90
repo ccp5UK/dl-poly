@@ -282,10 +282,10 @@ Contains
 
           If (mpoles%max_order <= 2) Then
             Call ewald_real_mforces_d(i,xxt,yyt,zzt,rrt,engacc, &
-              viracc,stats%stress,ewld,neigh,mpoles,electro,config,comm)
+              viracc,stats%stress,ewld,neigh,mpoles,electro,config)
           Else
             Call ewald_real_mforces(i,xxt,yyt,zzt,rrt,engacc, &
-              viracc,stats%stress,neigh,mpoles,electro,domain,config,comm)
+              viracc,stats%stress,neigh,mpoles,electro,config)
           End If
 
           engcpe_rl=engcpe_rl+engacc
@@ -313,7 +313,7 @@ Contains
 
           ! force-shifted coulomb potentials
 
-          Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config,comm)
+          Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -322,7 +322,7 @@ Contains
 
           ! reaction field potential
 
-          Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config,comm)
+          Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -335,7 +335,7 @@ Contains
 
           ! calculate coulombic forces, Ewald sum - real space contribution
 
-          Call ewald_real_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config,comm)
+          Call ewald_real_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -362,7 +362,7 @@ Contains
 
           ! force-shifted coulomb potentials
 
-          Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config,comm)
+          Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -371,7 +371,7 @@ Contains
 
           ! reaction field potential
 
-          Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config,comm)
+          Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -446,7 +446,7 @@ Contains
                   stats%stress,neigh,mpoles,electro,config)
               Else
                 Call ewald_excl_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc, &
-                  stats%stress,neigh,mpoles,electro,domain,config)
+                  stats%stress,neigh,mpoles,electro,config)
               End If
             Else
               Call ewald_excl_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
@@ -540,7 +540,7 @@ Contains
           If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald
             If (mpoles%max_mpoles > 0) Then
               Call ewald_frzn_mforces(engcpe_fr,vircpe_fr,stats%stress,ewld, &
-                neigh,mpoles,electro,domain,config,comm)
+                neigh,mpoles,electro,config,comm)
             Else
               Call ewald_frzn_forces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,electro,config,comm)
             End If

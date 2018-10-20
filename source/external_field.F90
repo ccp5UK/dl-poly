@@ -146,7 +146,7 @@ Contains
     Logical           :: safe,l1,l2
     Integer           :: i,j,ia,ib,ic,id,fail(1:2), &
       irgd,jrgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: gamma,rrr,rz,zdif,vxt,vyt,vzt,tmp,rtmp(1:2), &
+    Real( Kind = wp ) :: gamma,rrr,rz,zdif,vxt,tmp,rtmp(1:2), &
       x(1:1),y(1:1),z(1:1),cmm(0:3),cm2(0:3)
 
     Integer,           Allocatable :: lstopt(:,:)

@@ -31,7 +31,7 @@ Contains
       consv,                             &
       strkin,engke,                      &
       cshell,cons,pmf,stat,thermo,sites, &
-      vdws,rigid,domain,tmr,config,comm)
+    vdws,domain,tmr,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -76,19 +76,17 @@ Contains
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:9),iter,i
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: chit0,cint0,chip0
     Real( Kind = wp )       :: vzero
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: vir,str(1:9),mxdr,tmp, &
       scale,vom(1:3),com(1:3)
 
 
@@ -241,7 +239,7 @@ Contains
 
         Call npt_h0_scl &
           (0,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm,vir,virtot, &
-          config%vxx,config%vyy,config%vzz,engke,stat,config,thermo)
+          config%vxx,config%vyy,config%vzz,engke,config,thermo)
 
         ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
@@ -381,7 +379,7 @@ Contains
 
       Call npt_h0_scl &
         (0,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm,vir,virtot, &
-        config%vxx,config%vyy,config%vzz,engke,stat,config,thermo)
+        config%vxx,config%vyy,config%vzz,engke,config,thermo)
 
       ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
@@ -499,13 +497,12 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:14),matms,iter,i,j,i1,i2, &
       irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: chit0,cint0,chip0
     Real( Kind = wp )       :: czero(1:9),vzero
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: vir,str(1:9),mxdr,tmp, &
       scale,vom(1:3),com(1:3)
     Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
       opx,opy,opz,fmx,fmy,fmz,       &
@@ -744,7 +741,7 @@ Contains
 
         Call npt_h1_scl &
           (0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm,vir,virtot,vircom, &
-          config%vxx,config%vyy,config%vzz,engke,stat,rigid,config,thermo)
+          config%vxx,config%vyy,config%vzz,engke,rigid,config,thermo)
 
         ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
@@ -1254,7 +1251,7 @@ Contains
 
       Call npt_h1_scl &
         (0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm,vir,virtot,vircom, &
-        config%vxx,config%vyy,config%vzz,engke,stat,rigid,config,thermo)
+        config%vxx,config%vyy,config%vzz,engke,rigid,config,thermo)
 
       ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
@@ -1345,7 +1342,7 @@ Contains
 
   Subroutine npt_h0_scl &
       (sw,tstep,degfre,pmass,chit,volm,vir,virtot, &
-      vxx,vyy,vzz,engke,stat,config,thermo)
+    vxx,vyy,vzz,engke,config,thermo)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1373,7 +1370,6 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,vir,virtot
     Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
     Real( Kind = wp ), Intent( InOut ) :: engke
-    Type( stats_type ), Intent( InOut ) :: stat
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( configuration_type ), Intent( InOut ) :: config
 
@@ -1438,7 +1434,7 @@ Contains
 
   Subroutine npt_h1_scl &
       (sw,tstep,degfre,degrot,pmass,chit,volm,vir,virtot,vircom, &
-      vxx,vyy,vzz,engke,stat,rigid,config,thermo)
+    vxx,vyy,vzz,engke,rigid,config,thermo)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1467,7 +1463,6 @@ Contains
     Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,vir,virtot,vircom
     Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
     Real( Kind = wp ), Intent( InOut ) :: engke
-    Type( stats_type), Intent( InOut ) :: stat
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( configuration_type ), Intent( InOut ) :: config

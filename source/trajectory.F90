@@ -74,7 +74,7 @@ Module trajectory
     Character( Len = 1),  Allocatable :: buffer(:,:)
     Logical :: newjob_write = .true. , &
       fast_write   = .true.
-    Character( Len = 40 ) :: fname
+    Character( Len = 1024 ) :: fname
     Integer          :: recsz_write  = 73 ! default record size
     Integer(Kind=li) :: rec_write    = 0_li , &
       frm_write    = 0_li

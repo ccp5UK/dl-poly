@@ -1683,8 +1683,8 @@ Contains
 
     Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap
     Integer           :: fail,iadd,limit,iblock,            &
-      i,j,k,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
-      jdnode,kdnode,imove,jmove,kmove,itmp
+      i,j,jxyz,kxyz,ix,iy,iz,kx,ky,kz, &
+      jdnode,kdnode,imove,jmove,itmp
     Real( Kind = wp ) :: uuu,vvv,www,xadd,yadd,zadd
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
@@ -2466,9 +2466,9 @@ Contains
     Do i=1,config%natms
       mpoles%flg(i)=0
       If (mpoles%max_order < 3) Then
-        Call rotate_mpoles_d(i,mpoles,config,comm)
+        Call rotate_mpoles_d(i,mpoles,config)
       Else
-        Call rotate_mpoles(i,mpoles,config,comm)
+        Call rotate_mpoles(i,mpoles,config)
       End If
     End Do
 
@@ -2812,22 +2812,22 @@ Contains
 
         If (tether%total > 0) Call compress_book_intra &
           (tether%mxteth,tether%ntteth,Ubound(tether%listtet,Dim=1),&
-          tether%listtet,tether%mxftet,tether%legtet,cons,config,comm)
+          tether%listtet,tether%legtet,config,comm)
         If (bond%total > 0) Then
           Call compress_book_intra(bond%max_bonds,bond%n_types, &
-            Ubound(bond%list,Dim=1),bond%list,bond%max_legend,bond%legend,cons,config,comm)
+            Ubound(bond%list,Dim=1),bond%list,bond%legend,config,comm)
         End If
         If (angle%total > 0) Then
           Call compress_book_intra(angle%max_angles,angle%n_types, &
-            Ubound(angle%list,Dim=1),angle%list,angle%max_legend,angle%legend,cons,config,comm)
+            Ubound(angle%list,Dim=1),angle%list,angle%legend,config,comm)
         End If
         If (dihedral%total > 0) Then
           Call compress_book_intra(dihedral%max_angles,dihedral%n_types, &
-            Ubound(dihedral%list,Dim=1),dihedral%list,dihedral%max_legend,dihedral%legend,cons,config,comm)
+            Ubound(dihedral%list,Dim=1),dihedral%list,dihedral%legend,config,comm)
         End If
         If (inversion%total > 0) Then
           Call compress_book_intra(inversion%max_angles,inversion%n_types, &
-            Ubound(inversion%list,Dim=1),inversion%list,inversion%max_legend,inversion%legend,cons,config,comm)
+            Ubound(inversion%list,Dim=1),inversion%list,inversion%legend,config,comm)
         End If
 
       End If

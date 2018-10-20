@@ -5308,7 +5308,7 @@ Contains
 
   End Subroutine explicit_spme_loop_s
 
-  Subroutine rotate_mpoles(iatm,mpoles,config,comm)
+  Subroutine rotate_mpoles(iatm,mpoles,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -5331,7 +5331,6 @@ Contains
     Integer, Intent( In    )  :: iatm
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( configuration_type ),   Intent( InOut ) :: config
-    Type( comms_type ), Intent( In    ) :: comm
 
     ! Local variables
 
@@ -6037,7 +6036,7 @@ Contains
 
   End Subroutine infinitesimal_rotation
 
-  Subroutine rotate_mpoles_d(iatm,mpoles,config,comm)
+  Subroutine rotate_mpoles_d(iatm,mpoles,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -6060,7 +6059,6 @@ Contains
     Integer, Intent( In    )  :: iatm
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( configuration_type ), Intent( InOut ) :: config
-    Type( comms_type ), Intent( In    ) :: comm
 
     ! Local variables
 

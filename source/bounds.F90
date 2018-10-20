@@ -140,7 +140,7 @@ Contains
 
     ! scan CONFIG file data
 
-    Call scan_config(config,megatm,config%imc_n,config%dvar,config%levcfg,xhi,yhi,zhi,io,domain,files,comm)
+    Call scan_config(config,megatm,config%dvar,config%levcfg,xhi,yhi,zhi,io,domain,files,comm)
 
     ! halt execution for unsupported image conditions in DD
     ! checks for some inherited from DL_POLY_2 are though kept

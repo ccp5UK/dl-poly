@@ -252,7 +252,7 @@ program dl_poly
 
   Integer(Kind=wi) :: i,j
   Logical :: lfce
-  Character( Len = 256 ) :: message,messages(5)
+  Character( Len = 256 ) :: message
   Character( Len = 66 )  :: banner(14)
   Character( Len = 1024 ) :: control_filename
 
@@ -311,9 +311,9 @@ program dl_poly
   Write(banner(12),fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
   Write(banner(13),fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti        *************"
   Write(banner(14),fmt1) "******************************************************************"
-  Call info(banner,13,.true.)
+  Call info(banner,14,.true.)
 
-  Call build_info(devel)
+  Call build_info()
 
   Call info('',.true.)
   Write(banner(1),fmt1) Repeat("*",66)
@@ -395,7 +395,7 @@ program dl_poly
 
   Call read_control(lfce,impa,ttms,dfcts,rigid,rsdsc,core_shells,cons,pmfs, &
     stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral, &
-    inversion,zdensity,neigh,vdws,tersoffs,rdf, minim,mpoles,electro,ewld, &
+    inversion,zdensity,neigh,vdws,rdf, minim,mpoles,electro,ewld, &
     seed,traj,files,tmr,config,flow,comm)
 
   ! READ SIMULATION FORCE FIELD
@@ -474,7 +474,7 @@ program dl_poly
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
   Call system_init(neigh%cutoff,flow%restart_key,flow%time,flow%start_time,flow%step, &
-    core_shells,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
+    stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
     zdensity,sites,vdws,rdf,config,files,comm)
 
   ! SET domain borders and link-config%cells as default for new jobs
@@ -492,7 +492,7 @@ program dl_poly
   If (flow%book) Then
     Call build_book_intra(flow%strict,flow%print_topology,flow%simulation, &
       flow,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
-      neigh,sites,mpoles,rigid,domain,config,comm)
+      neigh,sites,rigid,domain,config,comm)
     If (mpoles%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
         mpoles,config,comm)
@@ -509,7 +509,7 @@ program dl_poly
     End If
   Else
     Call report_topology(config%megatm,config%megfrz,config%atmfre,config%atmfrz,core_shells,cons, &
-      pmfs,bond,angle,dihedral,inversion,tether,sites,rigid,comm)
+      pmfs,bond,angle,dihedral,inversion,tether,sites,rigid)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -637,7 +637,7 @@ program dl_poly
       Call w_replay_history(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
         thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh, &
         sites,vdws,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
-        seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,threebody,comm)
+        seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,comm)
     End If
   End If
 
@@ -712,11 +712,11 @@ program dl_poly
     (config,minim%minimise,msd_data%l_msd, &
     flow%run_steps,core_shells%keyshl,cons%megcon,pmfs%megpmf,              &
     flow%step,flow%time,flow%start_time,config%mxatdm,neigh%unconditional_update,&
-    stats,thermo,green,sites,comm)
+    stats,thermo,sites,comm)
 
   ! Final anlysis
-  Call analysis_result(flow%step,neigh%cutoff,thermo, &
-    bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
+  Call analysis_result(neigh%cutoff,thermo, &
+    bond,angle,dihedral,inversion,stats,green,zdensity,sites,rdf,config,comm)
 
   10 Continue
 

@@ -60,7 +60,7 @@ Module system
 Contains
 
   Subroutine system_init(rcut,keyres,time,tmst,nstep, &
-      cshell,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
+    stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
       zdensity,sites,vdws,rdf,config,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -85,7 +85,6 @@ Contains
     Integer,           Intent(   Out ) :: nstep
     Real( Kind = wp ), Intent(   Out ) :: time,tmst
     Type( stats_type ), Intent( InOut ) :: stats
-    Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( development_type ), Intent( In    ) :: devel
     Type( greenkubo_type ), Intent( InOut ) :: green
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1886,8 +1885,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical               :: ready
-    Character( Len = 42 )  :: name
-    Character( Len = 40 ) :: forma  = ' '
+    Character( Len = 40 ) :: forma
 
     Integer               :: fail(1:3),i,j,l,levcfg,jdnode,jatms,nsum
     Real( Kind = wp )     :: r_mxnode
@@ -1897,6 +1895,7 @@ Contains
     Real( Kind = wp ), Dimension( : ), Allocatable :: bxx,byy,bzz
     Character ( Len = 256 )  :: message 
 
+    forma  = ' '
     fail=0
     Allocate (iwrk(1:config%mxatms),                            Stat=fail(1))
     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))

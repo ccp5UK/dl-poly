@@ -486,7 +486,7 @@ Contains
       Else                ! Use data from CONFIG
         Call warning(320,0.0_wp,0.0_wp,0.0_wp)
         If (io_read /= IO_READ_NETCDF) Then
-          fname=files(FILE_CONFIG)%filename
+          fname=Trim(files(FILE_CONFIG)%filename)
         Else
           fname=Trim(files(FILE_CONFIG)%filename)//'.nc'
         End If
@@ -998,7 +998,7 @@ Contains
       wp_vals_per_at,n_loc,           &
       to_read,which_read_proc,this_base_proc
     Integer( Kind = li )   :: n_sk,n_ii,n_jj
-    Real( Kind = wp )      :: rcell(1:9),det,sxx,syy,szz
+    Real( Kind = wp )      :: det,sxx,syy,szz
 
     ! Some parameters and variables needed by io interfaces
 

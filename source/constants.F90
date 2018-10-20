@@ -38,7 +38,7 @@ Module constants
 
   ! Version particulars
 
-  Character( Len =  8), Parameter :: DLP_VERSION = " 4.10alpha"
+  Character( Len =  8), Parameter :: DLP_VERSION = "4.10alph"
   Character( Len = 14), Parameter :: DLP_RELEASE = "  october 2018"
 
   ! FIXED PARAMETERS

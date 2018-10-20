@@ -35,7 +35,7 @@ Contains
       (l_str,l_top,lsim,      &
       flow,        &
       cshell,cons,pmf,bond,angle,dihedral,  &
-      inversion,tether,neigh,sites,mpoles,rigid,domain,config,comm)
+    inversion,tether,neigh,sites,rigid,domain,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -66,7 +66,6 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( neighbours_type ), Intent( InOut ) :: neigh
-    Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type), Intent( InOut ) :: comm
@@ -1657,7 +1656,7 @@ Contains
       End If
 
       Call report_topology(config%megatm,config%megfrz,config%atmfre,config%atmfrz, &
-        cshell,cons,pmf,bond,angle,dihedral,inversion,tether,sites,rigid,comm)
+        cshell,cons,pmf,bond,angle,dihedral,inversion,tether,sites,rigid)
 
       ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -1677,7 +1676,7 @@ Contains
       ! Tag RBs, find their COMs and check their widths to neigh%cutoff (system cutoff)
 
       Call rigid_bodies_tags(config,rigid,comm)
-      Call rigid_bodies_coms(config,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+      Call rigid_bodies_coms(config,rigid%xxx,rigid%yyy,rigid%zzz,rigid)
       Call rigid_bodies_widths(neigh%cutoff,rigid,config,comm)
 
     End If
@@ -1708,7 +1707,7 @@ Contains
 
   End Subroutine build_book_intra
 
-  Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,mxf_u,leg_u, cons,config,comm)
+  Subroutine compress_book_intra(mx_u,nt_u,b_u,list_u,leg_u,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1728,9 +1727,8 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Integer, Intent( In    )          :: mxf_u,mx_u,b_u
+    Integer, Intent( In    )          :: mx_u,b_u
     Integer, Intent( InOut )          :: nt_u,list_u(0:b_u,1:mx_u),leg_u(0:,1:)
-    Type( constraints_type), Intent( InOut) :: cons
     Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type), Intent( InOut) :: comm
 

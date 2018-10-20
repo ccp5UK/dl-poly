@@ -98,7 +98,7 @@ Contains
     Type( configuration_type ),     Intent( InOut ) :: config
     Type(comms_type), Intent( InOut ) :: comm
 
-    Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
+    Logical           :: safe
 
     Integer           :: fail(1:2),                      &
       i,j,k, ii,jj,kk,jk, ia,ib,ic,   &

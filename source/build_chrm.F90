@@ -68,7 +68,7 @@ Contains
 
     Logical :: safe
     Integer :: fail,i,j,k,l,kk,                  &
-      ia,ib,ic,id,ia0,ib0,ic0,id0,      &
+      ia,ib,ia0,ib0,      &
       ibig,ja,jb,jc,jd,ja0,jb0,jc0,jd0, &
       ka,kb,kc,kd,ka0,kb0,kc0,kd0
 
