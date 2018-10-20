@@ -111,7 +111,7 @@ Module drivers
   Use angles, Only : angles_type,allocate_angles_arrays,angles_forces
   Use dihedrals, Only : dihedrals_type,allocate_dihedrals_arrays,dihedrals_forces
   Use inversions, Only : inversions_type,allocate_inversions_arrays,inversions_forces
-  Use three_body, Only : threebody_type, allocate_three_body_arrays, three_body_forces
+  Use three_body, Only : threebody_type, three_body_forces
 
   Use mpole, Only : mpole_type,POLARISATION_CHARMM
 
