@@ -421,7 +421,7 @@ Contains
   End Subroutine intra_mcoul
 
   Subroutine coul_fscp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
-      mpoles,electro,config,comm)
+    mpoles,electro,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -456,7 +456,6 @@ Contains
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut    ) :: electro
-    Type( comms_type ),                       Intent( In    ) :: comm
     Type( configuration_type ),               Intent( InOut ) :: config
 
 
@@ -992,7 +991,7 @@ Contains
   End Subroutine coul_fscp_mforces
 
   Subroutine coul_rfp_mforces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
-      mpoles,electro,config,comm)
+    mpoles,electro,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1025,7 +1024,6 @@ Contains
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( comms_type ),                       Intent( In    ) :: comm
     Type( configuration_type ),               Intent( InOut ) :: config
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &

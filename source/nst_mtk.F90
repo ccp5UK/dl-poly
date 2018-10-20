@@ -80,12 +80,11 @@ Contains
     Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:9),iter,i
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: chit0,cint0,chpzr,eta0(1:9)
     Real( Kind = wp )       :: cell0(1:9),vzero,celprp(1:10)
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: vir,str(1:9),mxdr,tmp, &
       vom(1:3),aaa(1:9),bbb(1:9)
 
     ! uni is the diagonal unit matrix
@@ -535,13 +534,12 @@ Contains
     Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:14),matms,iter,i,j,i1,i2, &
       irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: chit0,cint0,chpzr,eta0(1:9)
     Real( Kind = wp )       :: cell0(1:9),vzero,celprp(1:10)
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: vir,str(1:9),mxdr,tmp, &
       vom(1:3),aaa(1:9),bbb(1:9)
     Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
       opx,opy,opz,fmx,fmy,fmz,       &
@@ -811,7 +809,7 @@ Contains
 
         Call nst_h1_scl(1,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
           thermo%h_z,str,stress,strcom,         &
-          config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
+          config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
         ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -1340,7 +1338,7 @@ Contains
 
       Call nst_h1_scl(1,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
         thermo%h_z,str,stress,strcom,         &
-        config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
+        config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 

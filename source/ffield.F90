@@ -4864,7 +4864,7 @@ Contains
   End Subroutine read_field
 
   Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
-      angle,dihedral,inversion,tether,sites,rigid,comm)
+    angle,dihedral,inversion,tether,sites,rigid)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -4891,7 +4891,6 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type(comms_type), Intent( InOut ) :: comm
 
     Integer :: itmols,nsite,                &
       isite1,isite2,isite3,isite4, &
@@ -4908,7 +4907,7 @@ Contains
 
     Character( Len = 4) :: frzpmf
 
-    Character( Len = : ),Allocatable  :: fmt1,fmt2,fmt3
+    Character( Len = 20 )  :: fmt1,fmt2,fmt3
     Character( Len = 256) :: banner(18)
 
     nshels = 0
@@ -6009,13 +6008,14 @@ Contains
 
     If (bond%max_bonds > 0) bond%max_legend=(mxb*(mxb+1))+1
     mxf(6)=bond%max_legend
-
+    !> this may end up in forced conversion not all squares are divisible by 2...
     If (angle%max_angles > 0) angle%max_legend=(mxb+1)**2/2+1
     mxf(7)=angle%max_legend
 
     If (dihedral%max_angles > 0) dihedral%max_legend=((mxb-1)*mxb*(mxb+1))/2+2*mxb+1
     mxf(8)=dihedral%max_legend
 
+    !> this more than sure results in a converted integer... division by 4 is not a nice thing
     If (inversion%max_angles  > 0) inversion%max_legend=(mxb*(mxb+1))/4+1
     mxf(9)=inversion%max_legend
 

@@ -1400,7 +1400,7 @@ Contains
       (config,minim,lmsd, &
       nstrun,keyshl,megcon,megpmf,              &
       nstep,time,tmst, &
-      mxatdm,neigh_uncond_update,stats,thermo,green,sites,comm)
+      mxatdm,neigh_uncond_update,stats,thermo,sites,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1426,13 +1426,12 @@ Contains
     Type( configuration_type ), Intent( InOut ) :: config
     Type( stats_type ), Intent( InOut ) :: stats
     Type( thermostat_type ), Intent( In    ) :: thermo
-    Type( greenkubo_type ), Intent( In    ) :: green
     Type( site_type ), Intent( In    ) :: sites
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: check
     Integer           :: i,iadd
-    Real( Kind = wp ) :: avvol,dc,srmsd,timelp,tmp,h_z,tx,ty,temp
+    Real( Kind = wp ) :: avvol,dc,srmsd,timelp,tmp,h_z,tx,ty
     Character( Len = 256 ) :: message
     Character( Len = 256 ), Dimension(5) :: messages
     Integer :: mxnstk

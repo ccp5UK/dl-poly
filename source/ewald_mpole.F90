@@ -24,7 +24,7 @@ Module ewald_mpole
 Contains
 
   Subroutine ewald_real_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress, &
-      neigh,mpoles,electro,domain,config,comm)
+    neigh,mpoles,electro,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -49,8 +49,6 @@ Contains
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut    ) :: electro
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( comms_type ),                       Intent( In    ) :: comm
     Type( configuration_type ),               Intent( InOut ) :: config
 
 
@@ -385,7 +383,7 @@ Contains
   End Subroutine ewald_real_mforces
 
   Subroutine ewald_real_mforces_d(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl, &
-      stress,ewld,neigh,mpoles,electro,config,comm)
+    stress,ewld,neigh,mpoles,electro,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -412,7 +410,6 @@ Contains
     Type( ewald_type ),                               Intent( InOut ) :: ewld
     Type( mpole_type ),                               Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut    ) :: electro
-    Type( comms_type ),                               Intent( In    ) :: comm
     Type( configuration_type ),                       Intent( InOut ) :: config
 
 
@@ -1454,7 +1451,7 @@ Contains
 
     ! construct B-splines for atoms
 
-    Call bspgen_mpoles(config%nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld,comm)
+    Call bspgen_mpoles(config%nlast,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -2498,7 +2495,7 @@ Contains
 
     ! construct B-splines for atoms
 
-    Call bspgen_mpoles(config%nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld,comm)
+    Call bspgen_mpoles(config%nlast,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -4469,7 +4466,7 @@ Contains
   End Subroutine ewald_spme_mforces_d
 
   Subroutine ewald_excl_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
-      neigh,mpoles,electro,domain,config)
+      neigh,mpoles,electro,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -4497,7 +4494,6 @@ Contains
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ),                       Intent( InOut ) :: config
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
@@ -5509,7 +5505,7 @@ Contains
   End Subroutine ewald_excl_mforces_d
 
   Subroutine ewald_frzn_mforces(engcpe_fr,vircpe_fr,stress,ewld,neigh,mpoles, &
-      electro,domain,config,comm)
+    electro,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -5539,7 +5535,6 @@ Contains
     Type( neighbours_type ),               Intent( In    ) :: neigh
     Type( mpole_type ),                    Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
-    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ),                    Intent( InOut ) :: comm
     Type( configuration_type ),                       Intent( InOut ) :: config
 

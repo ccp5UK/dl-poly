@@ -73,10 +73,10 @@ Contains
     Type( comms_type ), Intent( InOut) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
+    Logical                 :: safe
     Integer                 :: fail(1:9),i
     Real( Kind = wp )       :: hstep,rstep
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,vom(1:3), &
+    Real( Kind = wp )       :: tmp,vom(1:3), &
       t0,t1,t2,scr,scl,scv,scr1,scl1,scv1
 
 
@@ -393,11 +393,11 @@ Contains
     Type( comms_type ), Intent( InOut) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
+    Logical                 :: safe
     Integer                 :: fail(1:14),matms,i,j,i1,i2, &
       irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,rstep
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,vom(1:3), &
+    Real( Kind = wp )       :: mxdr,tmp,vom(1:3), &
       t0,t1,t2,scr,scl,scv,scr1,scl1,scv1
     Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
       opx,opy,opz,fmx,fmy,fmz,       &
@@ -1228,10 +1228,10 @@ Contains
     Type( comms_type ), Intent( InOut) :: comm
 
 
-    Logical                 :: safe,lcol,lfst,lrand,lvel
+    Logical                 :: safe,lrand,lvel
     Integer                 :: fail(1:9),i,ia,ja,ka,ijk
     Real( Kind = wp )       :: hstep,rstep,chi
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp,vom(1:3), &
+    Real( Kind = wp )       :: tmp,vom(1:3), &
       t0,t1,t2,scr1,scl1,scv1,                 &
       t0a,t1a,t2a,t0b,t1b,t2b,scr1a,scl1a,     &
       scv1a,scr1b,scl1b,scv1b,velsq,eltempmax

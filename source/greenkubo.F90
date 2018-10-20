@@ -235,7 +235,7 @@ Contains
 
   End Subroutine vaf_collect
 
-  Subroutine vaf_compute(tstep,num_type_nf,mxatyp,green,comm)
+  Subroutine vaf_compute(tstep,num_type_nf,mxatyp,green)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -257,7 +257,6 @@ Contains
     Real( Kind = wp ), Dimension(:), Intent( In    ) :: num_type_nf
     Integer( Kind = wi ), Intent ( In ) :: mxatyp
     Type( greenkubo_type), Intent( In    ) :: green
-    Type( comms_type ), Intent( InOut ) :: comm
 
     Integer           :: i
     Real( Kind = wp ) :: factor,gvaf,ovaf,time0,timei,numt

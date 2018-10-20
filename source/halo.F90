@@ -247,7 +247,7 @@ Contains
 
     ! Set VNL checkpoint
 
-    Call vnl_set_check(neigh,config,comm)
+    Call vnl_set_check(neigh,config)
 
     ! Record global atom indices for local+halo sorting
     ! and sort multiple entries

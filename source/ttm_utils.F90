@@ -495,7 +495,7 @@ Contains
     Real( Kind = wp ),                            Intent( In )  :: x0
     Real( Kind = wp ),                            Intent( Out ) :: resp
 
-    Integer :: i,j,k, ierr
+    Integer :: i,j,k
 
     If (tabsize == 1) Then
       resp = tab(1,2)

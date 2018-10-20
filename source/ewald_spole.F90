@@ -19,7 +19,7 @@ Module ewald_spole
 Contains
 
   Subroutine ewald_real_forces(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress, &
-      neigh,electro,config,comm)
+    neigh,electro,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -45,7 +45,6 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( comms_type),                        Intent( In    ) :: comm
     Type( configuration_type ),               Intent( InOut ) :: config
 
 
@@ -495,7 +494,7 @@ Contains
 
     ! construct B-splines for atoms
 
-    Call bspgen(config,config%nlast,txx,tyy,tzz,bspx,bspy,bspz,bsdx,bsdy,bsdz,ewld,comm)
+    Call bspgen(config%nlast,txx,tyy,tzz,bspx,bspy,bspz,bsdx,bsdy,bsdz,ewld)
 
     Deallocate (txx,tyy,tzz, Stat = fail(1))
     If (fail(1) > 0) Then
@@ -1129,7 +1128,7 @@ Contains
 
     ! calculate atomic forces
 
-    Call spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz, electro%qqc_local, &
+    Call spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz,  &
       electro%ixb,electro%ixt, electro%iyb,electro%iyt, electro%izb,electro%izt)
 
     Deallocate (ixx,iyy,izz,it, Stat = fail(1))
@@ -1142,7 +1141,7 @@ Contains
 
   Contains
 
-    Subroutine spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz, qqc_local, ixb,ixt, iyb,iyt, izb,izt)
+    Subroutine spme_forces(rcell,scale, ixx,iyy,izz, bspx,bspy,bspz, bsdx,bsdy,bsdz, ixb,ixt, iyb,iyt, izb,izt)
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
@@ -1167,8 +1166,7 @@ Contains
         ixb,ixt, iyb,iyt, izb,izt
       Real( Kind = wp ), Intent( In    ) :: scale,rcell(1:9),                   &
         bsdx(1:ewld%bspline,1:config%mxatms),bsdy(1:ewld%bspline,1:config%mxatms),bsdz(1:ewld%bspline,1:config%mxatms), &
-        bspx(1:ewld%bspline,1:config%mxatms),bspy(1:ewld%bspline,1:config%mxatms),bspz(1:ewld%bspline,1:config%mxatms), &
-        qqc_local( ixb:ixt, iyb:iyt, izb:izt )
+        bspx(1:ewld%bspline,1:config%mxatms),bspy(1:ewld%bspline,1:config%mxatms),bspz(1:ewld%bspline,1:config%mxatms)
 
       Integer           :: delspl, ixdb,ixdt,iydb,iydt,izdb,izdt, fail, i,j,k,l, jj,kk,ll
       Real( Kind = wp ) :: tmp,facx,facy,facz,fff(0:3),fx,fy,fz,fix,fiy,fiz,qsum, &

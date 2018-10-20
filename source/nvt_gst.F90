@@ -70,11 +70,10 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:9),i
     Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: chitdr,cintdr
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp
+    Real( Kind = wp )       :: mxdr,tmp
 
 
     Logical,           Allocatable :: lstitr(:)
@@ -337,12 +336,11 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:14),matms,i,j,i1,i2, &
       irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,rstep
     Real( Kind = wp )       :: chitdr,cintdr
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp
+    Real( Kind = wp )       :: mxdr,tmp
     Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
       opx,opy,opz,fmx,fmy,fmz,       &
       tqx,tqy,tqz,trx,try,trz,       &

@@ -81,12 +81,11 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:9),iter,i
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: eta0(1:9),engke0
     Real( Kind = wp )       :: cell0(1:9),vzero,celprp(1:10)
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),str1(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: vir,str(1:9),str1(1:9),tmp, &
       scale,vom(1:3),aaa(1:9),bbb(1:9)
 
     ! uni1 is the diagonal unit matrix
@@ -569,13 +568,12 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:14),matms,iter,i,j,i1,i2, &
       irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: eta0(1:9),engke0,engrot0,engknf,engknt
     Real( Kind = wp )       :: cell0(1:9),vzero,celprp(1:10)
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),str1(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: vir,str(1:9),str1(1:9),mxdr,tmp, &
       scale,vom(1:3),aaa(1:9),bbb(1:9)
     Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
       opx,opy,opz,fmx,fmy,fmz,       &
@@ -869,7 +867,7 @@ Contains
         str1=str+thermo%fpl
         Call nst_h1_scl(1,hstep,degfre,degrot,thermo%pmass,thermo%tai,config%volm,  &
           thermo%h_z,str1,stress,strcom,        &
-          config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
+          config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
         ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -1517,7 +1515,7 @@ Contains
       Call nst_h1_scl &
         (1,hstep,degfre,degrot,thermo%pmass,thermo%tai,config%volm,  &
         thermo%h_z,str1,stress,strcom,        &
-        config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
+        config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
       ! integrate and apply Langevin thermostat - 1/4 step
 

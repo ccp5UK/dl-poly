@@ -879,7 +879,7 @@ Contains
     ! Define filename ASCII or netCDF
 
     If (io_read /= IO_READ_NETCDF) Then
-      fname=files(FILE_CONFIG)%filename
+      fname=Trim(files(FILE_CONFIG)%filename)
     Else
       fname=Trim(files(FILE_CONFIG)%filename) // '.nc'
     End If
@@ -2057,7 +2057,7 @@ Contains
     Call error(55)
   End Subroutine read_config_parallel
 
-  Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
+  Subroutine scan_config(config,megatm,dvar,levcfg,xhi,yhi,zhi, &
     io,domain,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2077,7 +2077,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( io_type ), Intent( InOut ) :: io
-    Integer,              Intent( In    ) :: megatm,imc_n
+    Integer,              Intent( In    ) :: megatm
     Real( Kind = wp ),    Intent( In    ) :: dvar
     Integer,              Intent(   Out ) :: levcfg
     Real( Kind = wp ),    Intent(   Out ) :: xhi,yhi,zhi
@@ -2113,9 +2113,9 @@ Contains
     ! Define filename ASCII or netCDF
 
     If (io_read /= IO_READ_NETCDF) Then
-      fname=files(FILE_CONFIG)%filename
+      fname=Trim(files(FILE_CONFIG)%filename)
     Else
-      fname=files(FILE_CONFIG)%filename//'nc'
+      fname=Trim(files(FILE_CONFIG)%filename)//'nc'
     End If
 
     ! Check if we have a CONFIG
@@ -2214,7 +2214,7 @@ Contains
       If (.not.safe) Go To 50
 
       Call strip_blanks(record)
-      config%cfgname=record
+      config%cfgname=Trim(record)
 
       ! Read configuration level and image condition
 
@@ -2443,7 +2443,6 @@ Contains
 
     Type( io_type ), Intent( InOut ) :: io
     Type( configuration_type ), Intent( InOut ) :: config
-    Character ( Len = 6 ) :: name
     Integer               :: i,step
     Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
     Type( development_type ), Intent( In    ) :: devel
@@ -2515,7 +2514,7 @@ Contains
     Type( comms_type ),   Intent( InOut ) :: comm
 
     Logical               :: ready
-    Character( Len = 40 ) :: fname
+    Character( Len = 1024 ) :: fname
     Integer(Kind=li)      :: rec,rec1     ! record line
 
     Integer               :: fail(1:4),i,k,jj,jdnode,jatms

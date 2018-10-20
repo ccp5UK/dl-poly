@@ -86,15 +86,10 @@ Module control
 
 Contains
 
-  Subroutine read_control                                &
-      (        &
-      lfce, &
-      impa,                            &
-      ttm,dfcts,          &
-      rigid, &
-      rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
-      pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs, &
-      rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,comm)
+  Subroutine read_control( lfce,impa,ttm,dfcts,rigid, &
+    rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
+    pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws, &
+    rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -141,7 +136,6 @@ Contains
     Type( z_density_type ), Intent( InOut ) :: zdensity
     Type( neighbours_type ), Intent( InOut    ) :: neigh
     Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( tersoff_type ), Intent( In    )  :: tersoffs
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( minimise_type ), Intent( InOut ) :: minim
     Type( mpole_type ), Intent( InOut ) :: mpoles
@@ -3679,7 +3673,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
     lrcut,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
   Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word,word1,word2,akey
+  Character( Len = 40  ) :: word,word1,akey
   Integer                :: i,itmp,nstrun,bspline_local
   Real( Kind = wp )      :: celprp(1:10),cut,eps0,fac,tol,tol1
 

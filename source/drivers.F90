@@ -406,12 +406,12 @@ Contains
       If (minim%minimise .and. flow%step >= 0 .and. flow%step <= flow%run_steps .and. flow%step <= flow%equil_steps) Then
         If      (minim%freq == 0 .and. flow%step == 0) Then
           Call minimise_relax(flow%strict .or. cshell%keyshl == SHELL_RELAXED, &
-            rdf%l_collect,cnfig%megatm,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
+            rdf%l_collect,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
             netcdf,minim,rigid,domain,cnfig,files,comm)
         Else If (minim%freq >  0 .and. flow%step >  0) Then
           If (Mod(flow%step-flow%equil_steps,minim%freq) == 0) Then
             Call minimise_relax(flow%strict .or. cshell%keyshl == SHELL_RELAXED, &
-              rdf%l_collect,cnfig%megatm,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
+              rdf%l_collect,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
               netcdf,minim,rigid,domain,cnfig,files,comm)
           End If
         End If
@@ -532,7 +532,7 @@ Contains
 
       If (rigid%on) Then
         Call rigid_bodies_tags(cnfig,rigid,comm)
-        Call rigid_bodies_coms(cnfig,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+        Call rigid_bodies_coms(cnfig,rigid%xxx,rigid%yyy,rigid%zzz,rigid)
       End If
 
     Else
@@ -553,7 +553,7 @@ Contains
 
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(stage,flow, cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)
+  Subroutine w_integrate_vv(stage,flow, cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
     Integer, Intent( In    ) :: stage ! used for vv stage control
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( ttm_type ), Intent( InOut ) :: ttm
@@ -568,7 +568,6 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
     Type( timer_type ), Intent( InOut ) :: tmr
-    Type(electrostatic_type), Intent( InOut ) :: electro
     Type(neighbours_type), Intent(InOut) :: neigh
     Type( flow_type),Intent( InOut ) :: flow
 
@@ -703,7 +702,7 @@ Contains
           cnfig%degfre,stat%virtot,                     &
           stat%consv,                             &
           stat%strkin,stat%engke,                      &
-          cshell,cons,pmf,stat,thermo,sites,vdws,rigid,&
+          cshell,cons,pmf,stat,thermo,sites,vdws,&
           domain,tmr,cnfig,comm)
 
       Else If (thermo%ensemble == ENS_NPT_MTK) Then
@@ -751,7 +750,7 @@ Contains
           cnfig%degfre,stat%stress,             &
           stat%consv,                             &
           stat%strkin,stat%engke,                      &
-          cshell,cons,pmf,stat,thermo,sites,vdws,rigid,&
+          cshell,cons,pmf,stat,thermo,sites,vdws,&
           domain,tmr,cnfig,comm)
 
       Else If (thermo%ensemble == ENS_NPT_MTK_ANISO) Then
@@ -1510,7 +1509,7 @@ Contains
         ! Integrate equations of motion - velocity verlet first stage
 
         Call w_integrate_vv(VV_FIRST_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
-          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)
+          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
 
         ! Refresh mappings
 
@@ -1547,7 +1546,7 @@ Contains
         ! Integrate equations of motion - velocity verlet second stage
 
         Call w_integrate_vv(VV_SECOND_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
-          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)
+          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
 
         ! Apply kinetic options
 
@@ -1603,7 +1602,7 @@ Contains
   Subroutine w_replay_history(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,msd_data, &
       met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
       netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,dfcts,files,&
-      tmr,tether,green,ewld,devel,threebody,comm)
+    tmr,tether,green,ewld,devel,comm)
 
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
@@ -1643,7 +1642,6 @@ Contains
     Type( greenkubo_type), Intent( InOut ) :: green
     Type( ewald_type), Intent( InOut ) :: ewld
     Type( development_type), Intent( InOut ) :: devel
-    Type( threebody_type ), Intent( InOut ) :: threebody
     Type( comms_type ), Intent( InOut ) :: comm
 
     Real(Kind=wp) :: tsths
@@ -1797,7 +1795,7 @@ Contains
           If (flow%book) Then
             Call build_book_intra(flow%strict,flow%print_topology,flow%simulation,&
               flow,cshell,cons,pmf,bond,angle,dihedral, &
-              inversion,tether,neigh,sites,mpoles,rigid,domain,cnfig,comm)
+              inversion,tether,neigh,sites,rigid,domain,cnfig,comm)
             If (flow%exclusions) Then
               Call build_excl_intra(electro%lecx,cshell,cons,bond,angle,dihedral, &
                 inversion,neigh,rigid,cnfig,comm)
@@ -2078,7 +2076,7 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORF INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-    Character( Len = 256 ) :: message,messages(5)
+    Character( Len = 256 ) :: messages(5)
 
     Integer :: i
     ! Report work
@@ -2087,7 +2085,7 @@ Contains
     Write(messages(2),'(a)') '*** HISTORF will be replayed in full (with no dynamics)!!!     ***'
     Write(messages(3),'(a)') '*** Large particle displacements between frames within HISTROF ***'
     Write(messages(4),'(a)') '*** w.r.t. CONFIG at start may lead failures in parallel!!!    ***'
-    Call info(messages,3,.true.)
+    Call info(messages,4,.true.)
 
     ! defect detection for every entry in HISTORF
 
@@ -2197,7 +2195,7 @@ Contains
           If (flow%book) Then
             Call build_book_intra(flow%strict,flow%print_topology,flow%simulation,&
               flow,cshell,cons,pmf,bond,angle,dihedral, &
-              inversion,tether,neigh,sites,mpoles,rigid,domain,cnfig,comm)
+              inversion,tether,neigh,sites,rigid,domain,cnfig,comm)
             If (flow%exclusions) Then
               Call build_excl_intra(electro%lecx,cshell,cons,bond,angle,dihedral, &
                 inversion,neigh,rigid,cnfig,comm)

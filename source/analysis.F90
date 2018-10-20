@@ -26,12 +26,10 @@ Contains
 
   !> Calculate and print final analysis
   Subroutine analysis_result( &
-      nstep,rcut,thermo, &
-      bond,angle,dihedral,inversion,stats, &
-      green,zdensity,neigh,sites,rdf,config,comm)
+    rcut,thermo, &
+    bond,angle,dihedral,inversion,stats, &
+    green,zdensity,sites,rdf,config,comm)
 
-    !> Number of simulation steps
-    Integer( Kind = wi ), Intent( In    ) :: nstep
     !> Cut off
     Real( Kind = wp ), Intent( In    ) :: rcut
     !> Ensemble key
@@ -50,8 +48,6 @@ Contains
     Type( greenkubo_type ), Intent( In    ) :: green
     !> Z density data
     Type( z_density_type ), Intent( InOut ) :: zdensity
-    !> Neighbours data
-    Type( neighbours_type ), Intent( In    ) :: neigh
     !> Site data
     Type( site_type ), Intent( InOut ) :: sites
     !> RDF data
@@ -92,10 +88,10 @@ Contains
     ! Calculate and print radial distribution functions
     ! If block average errors, output that, else if jackknife errors output those, else just RDF.
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. rdf%l_errors_block) Then
-      Call calculate_errors(temp,rcut,nstep,neigh,sites,rdf,config,comm)
+      Call calculate_errors(temp,rcut,sites,rdf,config,comm)
     End If
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. rdf%l_errors_jack .and. .not. rdf%l_errors_block) Then
-      Call calculate_errors_jackknife(temp,rcut,nstep,neigh,sites,rdf,config,comm)
+      Call calculate_errors_jackknife(temp,rcut,sites,rdf,config,comm)
     End If
     If (rdf%l_collect .and. rdf%l_print .and. rdf%n_configs > 0 .and. .not.(rdf%l_errors_block .or. rdf%l_errors_jack)) Then
       Call rdf_compute(stats%lpana,rcut,temp,sites,rdf,config,comm)
@@ -109,7 +105,7 @@ Contains
 
     ! calculate and print velocity autocorrelation function
     If (green%samp > 0 .and. green%l_print .and. green%vafcount > zero_plus) Then
-      Call vaf_compute(thermo%tstep,sites%num_type_nf,sites%mxatyp,green,comm)
+      Call vaf_compute(thermo%tstep,sites%num_type_nf,sites%mxatyp,green)
     End If
 
     ! Calculate and print PDFs

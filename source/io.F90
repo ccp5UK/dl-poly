@@ -4816,10 +4816,7 @@ Contains
     Character( Len = 1 ), Dimension( :, : ), Intent(   Out ) :: buffer
     Integer                                , Intent(   Out ) :: error
 
-    Integer( Kind = MPI_OFFSET_KIND ) :: disp
-
     Integer :: file_handle
-    Integer :: etype, filetype
     Integer :: count
     Integer :: i, ierr
 

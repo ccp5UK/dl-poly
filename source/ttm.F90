@@ -97,7 +97,7 @@ Contains
     Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type), Intent(In) :: comm
 
-    Real ( Kind = wp ) :: start, finish, test(3)
+    Real ( Kind = wp ) :: start, finish
     Integer, Dimension ( 1:7 ) :: fail
     Integer :: i,numbc,numbcmap
     Integer :: basicslice,oneslicex,oneslicey,oneslicez
