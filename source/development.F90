@@ -158,7 +158,7 @@ Contains
 
       End Do
     End If
-    If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
   End Subroutine scan_development
 

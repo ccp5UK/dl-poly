@@ -350,7 +350,7 @@ Contains
       If (keyio /= 0) Then
         If (comm%idnode == 0) Then
           Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-          Close(Unit=files(FILE_REVOLD)%unit_no)
+          Call files(FILE_REVOLD)%close()
         End If
         keyres = RESTART_KEY_NOSCALE
         Go To 50
@@ -542,7 +542,7 @@ Contains
       If (i_tmp /= 0) Then
         If (comm%idnode == 0) Then
           Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-          Close(Unit=files(FILE_REVOLD)%unit_no)
+          Call files(FILE_REVOLD)%close()
         End If
         keyres = RESTART_KEY_NOSCALE
         Go To 50
@@ -590,7 +590,7 @@ Contains
         If (i_tmp /= 0) Then
           If (comm%idnode == 0) Then
             Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-            Close(Unit=files(FILE_REVOLD)%unit_no)
+            Call files(FILE_REVOLD)%close()
           End If
           keyres = RESTART_KEY_NOSCALE
           Go To 50
@@ -598,7 +598,7 @@ Contains
 
       End If
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_REVOLD)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_REVOLD)%close()
 
     Else
 
@@ -856,7 +856,7 @@ Contains
         io_write == IO_WRITE_SORTED_MASTER ) Then
 
         Open(Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Status='replace')
-        Close(Unit=files(FILE_CONFIG)%unit_no)
+        Call files(FILE_CONFIG)%close()
         Open(Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Form='formatted', Access='direct', Recl=recsz)
       End If
 
@@ -1690,7 +1690,7 @@ Contains
     Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
       io_write == IO_WRITE_SORTED_MASTER) Then
 
-      Close(Unit=files(FILE_CONFIG)%unit_no)
+      Call files(FILE_CONFIG)%close()
 
     End If
 
@@ -1753,8 +1753,8 @@ Contains
           Call gtime(t)
 
           Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
-          Close(Unit=files(FILE_FIELD)%unit_no)
-          Close(Unit=files(FILE_CONFIG)%unit_no)
+          Call files(FILE_FIELD)%close()
+          Call files(FILE_CONFIG)%close()
           Write(message,'(3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done !'
           Call info(message,.true.)
           Exit
@@ -1809,7 +1809,7 @@ Contains
 
             Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
             Close(Unit=nmpldt)
-            Close(Unit=files(FILE_CONFIG)%unit_no)
+            Call files(FILE_CONFIG)%close()
             Write(message,'(3a)') '*** ', fmpl(1:Len_Trim(fmpl)), ' expansion done !'
             Call info(message,.true.)
             Exit
@@ -2268,7 +2268,7 @@ Contains
     End If
 
     Call gsync(comm)
-    If (comm%idnode == 0) Close(Unit=files(FILE_REVIVE)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_REVIVE)%close()
 
     r_mxnode=1.0_wp/Real(comm%mxnode,wp)
 

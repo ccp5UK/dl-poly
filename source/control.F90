@@ -2949,35 +2949,35 @@ Contains
 
     ! no finish record in CONTROL file
 
-    If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
     Call error(17)
 
     ! unexpected end of file
 
     1000 Continue
 
-    If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
-    Call error(53)
+         If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
+         Call error(53)
 
-    ! safe termination of reading CONTROL
+         ! safe termination of reading CONTROL
 
-    2000 Continue
-    If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
+2000 Continue
+     If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
-    !!! FIXES !!!
-    ! fix on step-dependent options
+     !!! FIXES !!!
+     ! fix on step-dependent options
 
-    If (minim%freq  == 0) minim%freq  = flow%equil_steps+1
-    If (thermo%freq_zero == 0) thermo%freq_zero = flow%equil_steps+1
-    If (thermo%freq_tgaus == 0) thermo%freq_tgaus = flow%equil_steps+1
-    If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps+1
+     If (minim%freq  == 0) minim%freq  = flow%equil_steps+1
+     If (thermo%freq_zero == 0) thermo%freq_zero = flow%equil_steps+1
+     If (thermo%freq_tgaus == 0) thermo%freq_tgaus = flow%equil_steps+1
+     If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps+1
 
-    !!! REPORTS !!!
-    ! report restart
+     !!! REPORTS !!!
+     ! report restart
 
-    If (flow%restart_key == RESTART_KEY_CLEAN) Then
-      Call info('clean start requested',.true.)
-    Else If (config%levcfg == 0) Then
+     If (flow%restart_key == RESTART_KEY_CLEAN) Then
+       Call info('clean start requested',.true.)
+     Else If (config%levcfg == 0) Then
       Call warning(200,0.0_wp,0.0_wp,0.0_wp)
       flow%restart_key = RESTART_KEY_CLEAN
     End If
@@ -4715,7 +4715,7 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
 
   End Do
 
-  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
+  If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
   ! When not having dynamics or prepared to terminate
   ! expanding and not running the small system prepare to exit gracefully
@@ -4824,7 +4824,7 @@ Subroutine scan_control_pre(imc_n,dvar,files,comm)
 
   End Do
 
-  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
+  If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
   Return
 
@@ -5262,7 +5262,7 @@ Subroutine scan_control_io(io,netcdf,files,comm)
     End If
   End Do
 
-  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
+  If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
   !!! IO DEFAULTS
 
@@ -5463,7 +5463,7 @@ Subroutine scan_control_output(files,comm)
 
   End Do
 
-  If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
+  If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
 End Subroutine scan_control_output
 

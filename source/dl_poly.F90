@@ -642,7 +642,7 @@ program dl_poly
   End If
 
   !Close the statis file if we used it.
-  If (stats%statis_file_open) Close(Unit=files(FILE_STATS)%unit_no)
+  If (stats%statis_file_open) Call files(FILE_STATS)%close()
 
   ! Report termination of the MD simulation
 
@@ -770,7 +770,7 @@ program dl_poly
 
   ! Close output channel
 
-  If (.not.devel%l_scr) Close(unit=files(FILE_OUTPUT)%unit_no)
+  If (.not.devel%l_scr) Call files(FILE_OUTPUT)%close()
 
   ! Terminate job
 

@@ -20,6 +20,7 @@ Module filename
   Contains
     Procedure, Public :: init => file_type_init
     Procedure, Public :: rename => file_type_init
+    Procedure, Public :: close => close_file
   End Type file_type
 
   ! Core file location keys
@@ -53,7 +54,7 @@ Contains
 
   !> Initialise a file
   Subroutine file_type_init(T, filename)
-  Class(file_type) :: T
+    Class(file_type) :: T
     Character(Len=*), Intent(In) :: filename
 
     T%filename = Trim(filename)
@@ -91,4 +92,17 @@ Contains
       Call filenames(file_no)%init(default_names(file_no))
     End Do
   End Subroutine default_filenames
+
+  !> close a unit and restore it default value 
+  Subroutine close_file(T)
+    Class(file_type) :: T
+    Logical :: is_open
+
+    Inquire(T%unit_no,opened=is_open)
+    If (is_open) Then
+      Close(T%unit_no)
+      T%unit_no = -2
+    End If
+  End Subroutine close_file
+
 End Module filename
