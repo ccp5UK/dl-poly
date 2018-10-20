@@ -3,14 +3,12 @@
 !> Copyright - Daresbury Laboratory
 !
 !> Author - J. Madge September 2018
+!> contrib - a.m.elena October 2018 - use standard integer for units
 Module filename
-  Use kinds, only : wi,si
+  Use kinds, only : wi
   Implicit None
 
   Private
-
-  !> File unit number integer kind
-  Integer, Parameter, Public :: UNIT_TYPE = si
 
   !> File data
   Type, Public :: file_type
@@ -18,7 +16,7 @@ Module filename
     !> Filename
     Character(Len=1024), Public :: filename
     !> Fortran unit number, set with newunit=T%unit_no
-    Integer(Kind = UNIT_TYPE), Public :: unit_no = -2
+    Integer, Public :: unit_no = -2
   Contains
     Procedure, Public :: init => file_type_init
     Procedure, Public :: rename => file_type_init
@@ -26,25 +24,25 @@ Module filename
 
   ! Core file location keys
   !> CONTROL file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_CONTROL = 1
+  Integer, Parameter, Public :: FILE_CONTROL = 1
   !> OUTPUT file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_OUTPUT = 2
+  Integer, Parameter, Public :: FILE_OUTPUT = 2
   !> CONFIG file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_CONFIG = 3
+  Integer, Parameter, Public :: FILE_CONFIG = 3
   !> FIELD file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_FIELD = 4
+  Integer, Parameter, Public :: FILE_FIELD = 4
   !> STATS file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_STATS = 5
+  Integer, Parameter, Public :: FILE_STATS = 5
   !> HISTORY file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_HISTORY = 6
+  Integer, Parameter, Public :: FILE_HISTORY = 6
   !> HISTORF file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_HISTORF = 7
+  Integer, Parameter, Public :: FILE_HISTORF = 7
   !> REVIVE file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_REVIVE = 8
+  Integer, Parameter, Public :: FILE_REVIVE = 8
   !> REVOLD file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_REVOLD = 9
+  Integer, Parameter, Public :: FILE_REVOLD = 9
   !> REVCON file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_REVCON = 10
+  Integer, Parameter, Public :: FILE_REVCON = 10
 
   !> Size of filename array
   Integer(Kind=wi), Parameter :: FILENAME_SIZE = 10

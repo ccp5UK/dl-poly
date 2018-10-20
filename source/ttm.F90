@@ -25,7 +25,6 @@ Module ttm
   Use parse,           Only : tabs_2_blanks, get_line, get_word, &
     strip_blanks, word_2_real
   Use errors_warnings, Only : error,warning,info
-  Use filename, Only : UNIT_TYPE
   Use flow_control, Only : RESTART_KEY_OLD, RESTART_KEY_CLEAN
 #ifdef SERIAL
   Use mpi_api
@@ -821,7 +820,7 @@ Subroutine ttm_system_init(nstep,nsteql,keyres,dumpfile,time,temp,domain,ttm,com
   Logical                :: safe,l_tmp = .true.
   Integer                :: nxx,nyy,nzz,nstp,i,ix,iy,iz,ii,jj,kk,ijk,ipos(3)
   Real ( Kind = wp )     :: eltmp,tme,lat_sum,lat_max,lat_min
-  Integer(Kind=UNIT_TYPE) :: iounit = 225
+  Integer :: iounit = 225
   Character( Len = 256 ) :: message
 
   ! check existence of readable restart file (DUMP_E)
