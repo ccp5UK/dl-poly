@@ -1,6 +1,18 @@
+!> Module controlling errors and warnings
+!>
+!> Copyright - Daresbury Laboratory
+!
+!> Author - a.m.elena March 2018
+!> refactoring:
+!>           - a.m.elena march-october 2018
+!>           - j.madge march-october 2018
+!>           - a.b.g.chalk march-october 2018
+!>           - i.scivetti march-october 2018
+!> contrib - a.m.elena October 2018 - use standard integer for units
+
 Module errors_warnings
   Use, intrinsic :: iso_fortran_env, only : error_unit,input_unit,output_unit
-  Use kinds, Only : wp,si
+  Use kinds, Only : wp
   Use comms, Only : comms_type,abort_comms
   Use constants, Only : ntable,nrefdt,ndefdt,nrdfdt,nzdndt,nrsddt
   Use filename, Only : FILE_CONTROL, FILE_CONFIG, FILE_FIELD, &
@@ -34,7 +46,7 @@ Contains
 
   Subroutine init_error_system(nrite,comm)
 
-    Integer(Kind=si), Intent( In ) :: nrite
+    Integer, Intent( In ) :: nrite
     Type( comms_type), Intent( In ) :: comm
     eworld%comm=comm%comm
     eworld%idnode=comm%idnode
@@ -87,7 +99,7 @@ Contains
 
         Write(ounit,'(/,2(1x,a,/))')                             &
           '*** warning - system with uncharged particles !!! ***', &
-        '*** "no elec" or/and "no strict" directives in CONTROL may speed up simulation !!! ***'
+          '*** "no elec" or/and "no strict" directives in CONTROL may speed up simulation !!! ***'
 
       Else If (kode ==   5) Then
 
@@ -103,15 +115,15 @@ Contains
           '*** warning - maximum length of linked config%cell neigh%list: ', ia,          &
           ' + 1 is less than maximum length of particle exclusion neigh%list: ',   &
           ib, ' !!! ***',                                                    &
-        '*** this may be due to using too short a cutoff in CONTROL ',     &
+          '*** this may be due to using too short a cutoff in CONTROL ',     &
           'and/or a badly defined intramolecular topology in FIELD !!! ***', &
-        '*** further potential problems may be expected !!! ***'
+          '*** further potential problems may be expected !!! ***'
 
       Else If (kode ==   7) Then
 
         Write(ounit,'(/,1x,a,f7.3,a,/,1x,a,/)')                &
           '*** warning - DD cutoff is ', a, ' Angstroms !!! ***', &
-        '*** Fennell damping is not recommended for cutoffs shorther than 10-12 Angstroms !!! ***'
+          '*** Fennell damping is not recommended for cutoffs shorther than 10-12 Angstroms !!! ***'
 
       Else If (kode ==   8) Then
 
@@ -195,19 +207,19 @@ Contains
         If      (ic == 0) Then
           Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                             &
             '*** warning - allocating more link-config%cells ', ia,' than initially envisaged ', ib,' , in linkcell_pairs !!! ***',&
-          '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
+            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else If (ic == 1) Then
           Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                               &
             '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in three_body_forces !!! ***', &
-          '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
+            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else If (ic == 2) Then
           Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                              &
             '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in four_body_forces !!! ***', &
-          '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
+            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else If (ic == 3) Then
           Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                            &
             '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in tersoff_forces !!! ***', &
-          '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
+            '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else
           Write(ounit,'(/,1x,a,/)') &
             '*** unspecified warning encountered !!! ***'
@@ -217,7 +229,7 @@ Contains
 
         Write(ounit,'(2(/,1x,a),/)')                                                               &
           '*** warning - primary link config%cell algorithm has a link config%cell dimension that is < 3 !!! ***', &
-        '*** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
+          '*** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
 
       Else If (kode == 110) Then
 
@@ -241,14 +253,14 @@ Contains
 
         Write(ounit,'(/,1x,a,/,1x,a,/)')                                                  &
           '*** warning - incorrect ensemble specified for two-temperature model !!! ***', &
-        '*** replacing ensemble with NVT inhomogeneous Langevin !!! ***'
+          '*** replacing ensemble with NVT inhomogeneous Langevin !!! ***'
 
       Else If (kode == 140) Then
 
         Write(ounit,'(/,1x,2a,2(f8.5,a),/,1x,a,/)')                &
           '*** warning - control distances for variable timestep: ', &
           'Dmin = ', a, ' and Dmax = ', b, ' (Angstroms) !!! ***',   &
-        '*** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
+          '*** do not comply with safty condition: Dmax > 2.5 Dmin > 0 !!! ***'
 
       Else If (kode == 150) Then
 
@@ -270,13 +282,13 @@ Contains
 
         Write(ounit,'(2(/,1x,a),/)')                                                 &
           '*** warning - REVOLD format mishmash detected (restart requested) !!! ***', &
-        '*** restart is abandoned and clean start is assumed !!! ***'
+          '*** restart is abandoned and clean start is assumed !!! ***'
 
       Else If (kode == 200) Then
 
         Write(ounit,'(2(/,1x,a),/)')                            &
           '*** warning - CONFIG contains positions only !!! ***', &
-        '*** clean start is assumed !!! ***'
+          '*** clean start is assumed !!! ***'
 
       Else If (kode == 210) Then
 
@@ -285,8 +297,8 @@ Contains
 
         Write(ounit,'(3(/,1x,a),2(i0,a),/)')                                  &
           '*** warning - system under great constraint !!! ***',                &
-        '*** total degrees of freedom <=  total number of particles !!! ***', &
-        '*** ', ia, ' <= ', ib, ' !!! ***'
+          '*** total degrees of freedom <=  total number of particles !!! ***', &
+          '*** ', ia, ' <= ', ib, ' !!! ***'
 
       Else If (kode == 220) Then
 
@@ -299,7 +311,7 @@ Contains
 
         Write(ounit,'(/,1x,a,i0,a,/,1x,a,/)')                              &
           '*** warning - PMF unit ', ia, ' config%weight is detected zero !!! ***', &
-        '*** member config%weights defaulted to atom type masses (or units) !!! ***'
+          '*** member config%weights defaulted to atom type masses (or units) !!! ***'
 
       Else If (kode == 240) Then
 
@@ -320,7 +332,7 @@ Contains
 
         Write(ounit,'(2(/,1x,a),/)')                                                         &
           '*** warning - system volume in non-periodic systems is the MD config%cell volume !!! ***', &
-        '*** system pressure is calculated with respect to this volume !!! ***'
+          '*** system pressure is calculated with respect to this volume !!! ***'
 
       Else If (kode == 270) Then
 
@@ -334,7 +346,7 @@ Contains
 
         Write(ounit,'(/,1x,a,/,1x,2(a,f9.3),a,/)')                                               &
           '*** warning - pseudo thermostat cannot be applied for this model system since !!! ***', &
-        '*** specified thermostat wall thickness ', a, ' > 1/4 minimum MD cell width ', b, ' (Angstroms) !!! ***'
+          '*** specified thermostat wall thickness ', a, ' > 1/4 minimum MD cell width ', b, ' (Angstroms) !!! ***'
 
       Else If (kode == 290) Then
 
@@ -495,7 +507,7 @@ Contains
 
         Write(ounit,'(/,1x,a,/,1x,a,2(f6.2,a),/)')                                                                          &
           '*** warning - control distance for defect look-up MUST be in the interval [Min(0.3,rcut/3);Min(1.2,rcut/2)] !!! ***', &
-        '*** defects distance condition will default from ', a, ' to ', b, ' (Angstroms) !!! ***'
+          '*** defects distance condition will default from ', a, ' to ', b, ' (Angstroms) !!! ***'
 
       Else If (kode == 320) Then
 
@@ -506,15 +518,15 @@ Contains
 
         Write(ounit,'(/,1x,a,/,1x,a,2(f10.6,a),/)')                                                      &
           '*** warning - iteration cycles length limit for conjugate gradient minimisers exceded !!! ***', &
-        '*** specified convergence tolerance: ', a, ' , needed one for a pass: ', b, ' !!! ***'
+          '*** specified convergence tolerance: ', a, ' , needed one for a pass: ', b, ' !!! ***'
 
       Else If (kode == 340) Then
 
         Write(ounit,'(3(/,1x,a),2(f7.4,a),/,1x,a,f7.4,a,/)')                             &
           '*** warning - inconsistent binsize for spatial distribution functions !!! ***', &
-        '*** 1.0E-5 (Angstroms) <= binsize <= neigh%cutoff/4 (Angstroms) !!! ***',               &
-        '*** 1.0E-5 (Angstroms) <= ', a, ' <= ', b, ' (Angstroms) !!! ***',              &
-        '*** binsize defaults to ', c, ' (Angstroms) !!! ***'
+          '*** 1.0E-5 (Angstroms) <= binsize <= neigh%cutoff/4 (Angstroms) !!! ***',               &
+          '*** 1.0E-5 (Angstroms) <= ', a, ' <= ', b, ' (Angstroms) !!! ***',              &
+          '*** binsize defaults to ', c, ' (Angstroms) !!! ***'
 
       Else If (kode == 350) Then
 
@@ -525,9 +537,9 @@ Contains
 
         Write(ounit,'(/,1x,a,2(f12.7,a),3(/,1x,a),/)')                              &
           '*** warning - minimisation tolerance ', a, ' defaults to ', b, ' !!! ***', &
-        '*** force   : 1.0    <= tolerance <= 1000.00, default = 50.00 !!! ***',    &
-        '*** energy  : 0.0    <  tolerance <=    0.01, default = 0.005 !!! ***',    &
-        '*** distance: 1.0e-6 <= tolerance <=    0.10, default = 0.005 !!! ***'
+          '*** force   : 1.0    <= tolerance <= 1000.00, default = 50.00 !!! ***',    &
+          '*** energy  : 0.0    <  tolerance <=    0.01, default = 0.005 !!! ***',    &
+          '*** distance: 1.0e-6 <= tolerance <=    0.10, default = 0.005 !!! ***'
 
       Else If (kode == 370) Then
 
@@ -536,8 +548,8 @@ Contains
 
         Write(ounit,'(/,1x,a,2(i0,a),2(/,1x,a),/)')                                        &
           '*** warning - k-space evaluation interval ', ia, ' defaults to ', ib, ' !!! ***', &
-        '*** the interval must be a positive integer beteen 1 and 10 !!! ***',             &
-        '*** values > 10 default to 4, no value or 0 defaults to 1 !!! ***'
+          '*** the interval must be a positive integer beteen 1 and 10 !!! ***',             &
+          '*** values > 10 default to 4, no value or 0 defaults to 1 !!! ***'
 
       Else If (kode == 380) Then
 
@@ -611,7 +623,7 @@ Contains
 
         Write(ounit,'(/,1x,a,/,1x,a,2(f5.2,a),/)')                                                        &
           '*** warning - control distance for diplacement qualification MUST be >= 0.25 Angstroms !!! ***', &
-        '*** displacements distance condition will default from ', a, ' to ', b, ' Angstroms !!! ***'
+          '*** displacements distance condition will default from ', a, ' to ', b, ' Angstroms !!! ***'
 
       Else If (kode == 480) Then
 
@@ -627,7 +639,7 @@ Contains
 
         Write(ounit,'(2(/,1x,a,/))') &
           '*** warning - insufficient electronic temperature cells to allow energy redistribution from inactive cells !!! ***', &
-        '*** option switched off - electronic temperature conservation no longer guaranteed !!! ***'
+          '*** option switched off - electronic temperature conservation no longer guaranteed !!! ***'
 
       Else If (kode == 510) Then
 
@@ -648,7 +660,7 @@ Contains
 
         Write(ounit,'(/,1x,a,f6.2,a,/,1x,a,/)') &
           '*** warning - possible time energy deposition discrepancy of at least ',a,'% !!! ***', &
-        '*** discrepancy may be due to inactive config%cells !!! ***'
+          '*** discrepancy may be due to inactive config%cells !!! ***'
 
       Else If (kode == 535) Then
 
@@ -676,7 +688,7 @@ Contains
     Character( Len=* ), Intent( In ) :: message
     Logical, Optional, Intent( In ) :: master_only
 
-    Logical :: zeroOnly 
+    Logical :: zeroOnly
 
     zeroOnly=.false.
     If (Present(master_only)) zeroOnly=master_only
@@ -684,10 +696,10 @@ Contains
     If (zeroOnly) Then
       Write(ounit,'(a,1x,i0,a)')"*** warning - "//Trim(message)//", node: ",eworld%idnode, " !!! ***"
     Else
-      If (eworld%idnode == 0 ) Then 
+      If (eworld%idnode == 0 ) Then
         Write(ounit,'(a)')"*** warning - "//Trim(message)//" !!! ***"
       End If
-    End If   
+    End If
 
   End Subroutine  warning_general
 
@@ -697,13 +709,13 @@ Contains
     Logical, Optional, Intent( In ) :: master_only
 
     Logical :: zeroOnly
-    Integer :: i 
+    Integer :: i
 
     zeroOnly=.false.
     If (Present(master_only)) zeroOnly=master_only
 
     If (zeroOnly) Then
-      If (eworld%idnode == 0 ) Then 
+      If (eworld%idnode == 0 ) Then
         Do i=1,n
           Write(ounit,'(a)')Trim(message(i))
         End Do
@@ -712,25 +724,25 @@ Contains
       Do i=1,n
         Write(ounit,'(a,1x,i0)')Trim(message(i))//", node: ",eworld%idnode
       End Do
-    End If   
+    End If
   End Subroutine info_ml
 
   Subroutine info_sl(message,master_only)
     Character( Len=* ), Intent( In ) :: message
     Logical, Optional, Intent( In ) :: master_only
 
-    Logical :: zeroOnly 
+    Logical :: zeroOnly
 
     zeroOnly=.false.
     If (Present(master_only)) zeroOnly=master_only
 
     If (zeroOnly) Then
-      If (eworld%idnode == 0 ) Then 
+      If (eworld%idnode == 0 ) Then
         Write(ounit,'(a)')Trim(message)
       End If
     Else
       Write(ounit,'(a,1x,i0)')Trim(message)//", node: ",eworld%idnode
-    End If   
+    End If
 
   End Subroutine info_sl
 
@@ -756,13 +768,13 @@ Contains
     Character( Len=* ), Optional, Intent( In ) :: message
     Logical, Optional, Intent( In ) :: master_only
 
-    Logical :: zeroOnly 
+    Logical :: zeroOnly
 
     zeroOnly=.false.
     If (Present(master_only)) zeroOnly=master_only
 
     If (zeroOnly) Then
-      If (eworld%idnode == 0 ) Then 
+      If (eworld%idnode == 0 ) Then
         If ( Present(message) ) Then
           Write(ounit,'(a)')Trim(message)
         End If
@@ -771,7 +783,7 @@ Contains
       If ( Present(message) ) Then
         Write(ounit,'(a,1x,i0)')Trim(message)//", node: ",eworld%idnode
       End If
-    End If 
+    End If
 
     If (eworld%idnode == 0) Then
 
@@ -2184,10 +2196,10 @@ Contains
 
       End If
 
-      ! close all I/O channels
-      Call close_all_units()
-
     End If
+
+    ! close all I/O channels
+    Call close_unit(ounit)
 
     ! abort comms
 
@@ -2196,18 +2208,16 @@ Contains
   End Subroutine error
 
   !> Close all open file units
-  Subroutine close_all_units()
-    Integer(Kind = 2) :: i
+  Subroutine close_unit(i)
+    Integer, Intent( InOut ) :: i
     Integer :: ierr
     Logical :: is_open,has_name
 
-    Do i=-Huge(i),Huge(i)-1
-      Inquire(i,opened=is_open,named=has_name,iostat=ierr)
+    Inquire(i,opened=is_open,named=has_name,iostat=ierr)
 
-      If (is_open .and. has_name .and. ierr==0 .and. All(i/=[-1,ERROR_UNIT,INPUT_UNIT,OUTPUT_UNIT])) Then
-        Close(i)
-      End If
-    End Do
-  End Subroutine close_all_units
+    If (is_open .and. has_name .and. ierr==0 .and. All(i/=[-1,ERROR_UNIT,INPUT_UNIT,OUTPUT_UNIT])) Then
+      Close(i)
+    End If
+  End Subroutine close_unit
 
 End Module errors_warnings

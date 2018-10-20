@@ -31,7 +31,7 @@ Module constants
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp,si
+  Use kinds, Only : wp
 
   Implicit None
 
@@ -90,40 +90,40 @@ Module constants
 
   ! tabulated potential file channel
 
-  Integer(Kind=si), Parameter :: ntable = 13
+  Integer, Parameter :: ntable = 13
 
   ! reference file input channel
 
-  Integer(Kind=si), Parameter :: nrefdt = 14
+  Integer, Parameter :: nrefdt = 14
 
   ! defect file output channel
 
-  Integer(Kind=si), Parameter :: ndefdt = 24
+  Integer, Parameter :: ndefdt = 24
 
   ! rdf%rdf file channel number
 
-  Integer(Kind=si), Parameter :: nrdfdt = 25
+  Integer, Parameter :: nrdfdt = 25
 
   ! z-density file channel number
 
-  Integer(Kind=si), Parameter :: nzdndt = 26
+  Integer, Parameter :: nzdndt = 26
 
   ! displacements file channel number
 
-  Integer(Kind=si), Parameter :: nrsddt = 27
+  Integer, Parameter :: nrsddt = 27
 
   ! intramolecular PDF file channels numbers
 
-  Integer(Kind=si), Parameter :: npdfdt = 28, &
+  Integer, Parameter :: npdfdt = 28, &
     npdgdt = 29
 
   ! vaf file channel number
 
-  Integer(Kind=si), Parameter :: nvafdt = 30
+  Integer, Parameter :: nvafdt = 30
 
   ! multipoles file channel number
 
-  Integer(Kind=si), Parameter :: nmpldt = 31
+  Integer, Parameter :: nmpldt = 31
 
   !> +0.0 in working precision
   Real( Kind = wp ), Parameter :: zero_plus = Tiny(1.0_wp)
