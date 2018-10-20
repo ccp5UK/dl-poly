@@ -5397,7 +5397,7 @@ Subroutine scan_control_output(files,comm)
   If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
   Call gcheck(comm,safe,"enforce")
   If (.not.safe) Then
-    Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
+    !Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
     Call error(126)
   Else
     If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
@@ -5407,7 +5407,7 @@ Subroutine scan_control_output(files,comm)
 
   Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
   If (.not.safe) Then
-    Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
+    !Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
     Call error(17)
   End If
 
