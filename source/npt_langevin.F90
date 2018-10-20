@@ -6,7 +6,7 @@ Module npt_langevin
   Use constants, Only :  boltz, pi
   Use configuration, Only : configuration_type
   Use particle,     Only : corePart
-  Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stre_s
+  Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use kinetics,      Only : getvom,getknf,getknt,getknr,getkin, &
     kinstress,kinstresf,kinstrest
   Use shared_units,    Only : update_shared_units
@@ -1236,7 +1236,7 @@ Contains
 
       ! Get RB COM stress and virial
 
-      Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,config,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
+      Call rigid_bodies_stress(strcom,ggx,ggy,ggz,config,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
       vircom=-(strcom(1)+strcom(5)+strcom(9))
 
       ! update velocity of RBs

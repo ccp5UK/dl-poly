@@ -86,8 +86,8 @@ program dl_poly
 
   Use pmf, only : pmf_type,pmf_quench
 
-  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_str_ss, &
-    rigid_bodies_str__s,xscale,rigid_bodies_tags, &
+  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench, &
+    xscale,rigid_bodies_tags, &
     rigid_bodies_coms
 
   Use tethers, Only : tethers_type, tethers_forces

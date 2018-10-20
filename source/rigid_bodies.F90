@@ -10,7 +10,7 @@ Module rigid_bodies
   !           - j.madge march-october 2018
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
-  !
+  ! ammend - a.m.elena october 2018 - create interface for rigid_bodies_stress
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp,wi,li
@@ -140,8 +140,8 @@ Module rigid_bodies
     Final :: cleanup
   End Type rigid_bodies_type
 
-  Public :: rigid_bodies_stress, rigid_bodies_stre_s, rigid_bodies_str_ss, &
-    rigid_bodies_str__s, getrotmat, q_setup, rigid_bodies_split_torque, &
+  Public :: rigid_bodies_stress, &
+    getrotmat, q_setup, rigid_bodies_split_torque, &
     rigid_bodies_move, rigid_bodies_quench, no_squish, xscale, &
     rigid_bodies_tags, rigid_bodies_coms, rigid_bodies_setup, &
     rigid_bodies_widths
@@ -150,10 +150,18 @@ Module rigid_bodies
     Module Procedure rigid_bodies_coms_arrays
     Module Procedure rigid_bodies_coms_parts
   End Interface rigid_bodies_coms
+
+  Interface rigid_bodies_stress
+    Module Procedure rigid_bodies_stresss
+    Module Procedure rigid_bodies_str_ss
+    Module Procedure rigid_bodies_str__s
+    Module Procedure rigid_bodies_stre_s
+  End Interface rigid_bodies_stress 
+
 Contains
 
   Subroutine allocate_rigid_bodies_arrays(T,mxlshp,mxtmls,mxatdm,neighbours)
-  Class( rigid_bodies_type) :: T
+    Class( rigid_bodies_type) :: T
     Integer( Kind = wi ), Intent( In    ) :: mxlshp, mxtmls,mxatdm,neighbours
 
     Integer, Dimension(1:15) :: fail
@@ -2105,7 +2113,7 @@ Contains
     End If
   End Subroutine rigid_bodies_split_torque
 
-  Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,config,comm)
+  Subroutine rigid_bodies_stresss(strcom,ggx,ggy,ggz,rigid,config,comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 routine to calculate RB contributions to the atomic stress
@@ -2177,7 +2185,7 @@ Contains
     strcom(6)=0.5_wp*(strcom(6)+strcom(8))
     strcom(8)=strcom(6)
 
-  End subroutine rigid_bodies_stress
+  End subroutine rigid_bodies_stresss
 
   Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,config,rigid,comm,fxl,fyl,fzl)
 
@@ -2276,6 +2284,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Character(Len=*), Parameter  :: sub="rigid_bodies_str_ss"
     Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( configuration_type ),   Intent( InOut ) :: config
@@ -2291,7 +2300,7 @@ Contains
       gyy(1:rigid%max_list*rigid%max_rigid), &
       gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_stress allocation failure'
+      Write(message,'(a)') Trim(sub)//' allocation failure'
       Call error(0,message)
     End If
 
@@ -2370,7 +2379,7 @@ Contains
     fail = 0
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_stress deallocation failure'
+      Write(message,'(a)') Trim(sub)//" deallocation failure"
       Call error(0,message)
     End If
 
@@ -2393,6 +2402,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Character(Len=*), Parameter :: sub = "rigid_bodies_str__s"
     Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
     Type( configuration_type ),   Intent( In    ) :: config
     Real( Kind = wp ),  Intent( In    ) :: fxl(:),fyl(:),fzl(:)
@@ -2411,7 +2421,7 @@ Contains
       gyy(1:rigid%max_list*rigid%max_rigid), &
       gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_stress allocation failure'
+      Write(message,'(a)') Trim(sub)//' allocation failure'
       Call error(0,message)
     End If
 
@@ -2493,7 +2503,7 @@ Contains
     fail = 0
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_stress deallocation failure'
+      Write(message,'(a)') Trim(sub)//' deallocation failure'
       Call error(0,message)
     End If
   End subroutine rigid_bodies_str__s
