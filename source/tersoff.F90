@@ -34,7 +34,7 @@ Module tersoff
     Private
 
     !> Number of Tersoff potentials
-    Integer( Kind = wi ), Public :: n_potential
+    Integer( Kind = wi ), Public :: n_potential = 0
     !> Type of potential
     !>
     !> - 1 Tersoff
