@@ -86,17 +86,18 @@ Module inversions
   Contains
     Private
 
+    Procedure, Public :: init => allocate_inversions_arrays
+    Procedure, Public :: init_pot => allocate_invr_pot_arrays
+    Procedure, Public :: init_dst => allocate_invr_dst_arrays
     Final :: cleanup
   End Type inversions_type
 
-  Public :: allocate_inversions_arrays , &
-    allocate_invr_pot_arrays , allocate_invr_dst_arrays, &
-    inversions_compute, inversions_forces, inversions_table_read
+  Public :: inversions_compute, inversions_forces, inversions_table_read
 
 Contains
 
   Subroutine allocate_inversions_arrays(inversion,mxatdm,mxtmls)
-    Type( inversions_type ), Intent( InOut ) :: inversion
+    Class( inversions_type ), Intent( InOut ) :: inversion
     Integer( kind = wi ), Intent( In ) :: mxatdm,mxtmls
 
     Integer, Dimension( 1:8 ) :: fail
@@ -133,7 +134,7 @@ Contains
   End Subroutine allocate_inversions_arrays
 
   Subroutine allocate_invr_pot_arrays(inversion)
-    Type( inversions_type ), Intent( InOut ) :: inversion
+    Class( inversions_type ), Intent( InOut ) :: inversion
 
     Integer :: fail(1:2)
 
@@ -150,7 +151,7 @@ Contains
   End Subroutine allocate_invr_pot_arrays
 
   Subroutine allocate_invr_dst_arrays(inversion)
-    Type( inversions_type ), Intent( InOut ) :: inversion
+    Class( inversions_type ), Intent( InOut ) :: inversion
 
     Integer :: fail
 
@@ -1341,7 +1342,7 @@ Contains
       Write(message,'(a)') 'error - inversions_table_read allocation failure'
       Call error(0,message)
     End If
-    Call allocate_invr_pot_arrays(inversion)
+    Call inversion%init_pot()
 
     read_type=0 ! initialise read_type
     Do rtinv=1,inversion%ltp(0)

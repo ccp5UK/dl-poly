@@ -82,7 +82,7 @@ Module drivers
   ! SITE & CONFIG MODULES
 
   Use site, Only : site_type
-  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms,allocate_config_arrays
+  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
   Use control, Only : read_control,scan_control_output,scan_control_io
 
   ! VNL module
@@ -107,10 +107,10 @@ Module drivers
 
   Use tethers, Only : tethers_type, tethers_forces
 
-  Use bonds, Only : bonds_type,allocate_bonds_arrays,bonds_forces
+  Use bonds, Only : bonds_type,bonds_forces
   Use angles, Only : angles_type,allocate_angles_arrays,angles_forces
-  Use dihedrals, Only : dihedrals_type,allocate_dihedrals_arrays,dihedrals_forces
-  Use inversions, Only : inversions_type,allocate_inversions_arrays,inversions_forces
+  Use dihedrals, Only : dihedrals_type,dihedrals_forces
+  Use inversions, Only : inversions_type,inversions_forces
   Use three_body, Only : threebody_type, three_body_forces
 
   Use mpole, Only : mpole_type,POLARISATION_CHARMM
@@ -135,13 +135,10 @@ Module drivers
   ! STATISTICS MODULES
 
   Use rdfs, Only : rdf_type
-  Use z_density, Only : z_density_type,allocate_z_density_arrays
-  Use statistics, Only : stats_type,allocate_statistics_arrays,&
-    statistics_result,statistics_collect,deallocate_statistics_connect, &
-    allocate_statistics_connect,statistics_connect_set, &
-    statistics_connect_frames
-  Use greenkubo, Only : greenkubo_type,allocate_greenkubo_arrays,vaf_compute, &
-    vaf_collect,vaf_write
+  Use z_density, Only : z_density_type
+  Use statistics, Only : stats_type,statistics_result,statistics_collect, &
+    statistics_connect_set,statistics_connect_frames
+  Use greenkubo, Only : greenkubo_type,vaf_compute,vaf_collect,vaf_write
 
   ! MSD MODULE
 
@@ -1730,7 +1727,7 @@ Contains
     nstpe = flow%step
     nstph = 0 ! trajectory points counter
     Do
-      Call allocate_statistics_connect(cnfig%mxatdm,stat)
+      Call stat%init_connect(cnfig%mxatdm)
       10   Continue
       If (nstph > nstpe) Then
         Call statistics_connect_set(cnfig,neigh%cutoff_extended,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
@@ -1782,7 +1779,7 @@ Contains
           ! get xto/xin/msdtmp arrays sorted
 
           Call statistics_connect_frames(cnfig,cnfig%megatm,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
-          Call deallocate_statistics_connect(stat)
+          Call stat%clean_connect()
 
           ! SET domain borders and link-cells as default for new jobs
           ! exchange atomic data and positions in border regions
@@ -1998,7 +1995,7 @@ Contains
         thermo,minim,rigid,domain,cnfig,seed,comm)
 
     End If
-    Call deallocate_statistics_connect(stat)
+    Call stat%clean_connect()
 
     ! Save restart data because of next action (and disallow the same in dl_poly)
 
@@ -2132,7 +2129,7 @@ Contains
     nstpe = flow%step
     nstph = 0 ! HISTORF trajectory points counter
     Do
-      Call allocate_statistics_connect(cnfig%mxatdm,stat)
+      Call stat%init_connect(cnfig%mxatdm)
       10   Continue
       If (nstph > nstpe) Call statistics_connect_set(cnfig,neigh%cutoff_extended,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
 
@@ -2182,7 +2179,7 @@ Contains
           ! get xto/xin/msdtmp arrays sorted
 
           Call statistics_connect_frames(cnfig,cnfig%megatm,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
-          Call deallocate_statistics_connect(stat)
+          Call stat%clean_connect()
 
           ! SET domain borders and link-cells as default for new jobs
           ! exchange atomic data and positions in border regions
@@ -2396,7 +2393,7 @@ Contains
         thermo,minim,rigid,domain,cnfig,seed,comm)
 
     End If
-    Call deallocate_statistics_connect(stat)
+    Call stat%clean_connect()
 
     ! Save restart data because of next action (and disallow the same in dl_poly)
 

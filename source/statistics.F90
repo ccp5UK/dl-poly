@@ -131,16 +131,20 @@ Module statistics
     Real( Kind = wp ), Allocatable :: stpval0(:),stpvl00(:),sumval0(:),ssqval0(:)
     Real( Kind = wp ), Allocatable :: zumval0(:),ravval0(:),stkval0(:,:)
 
-  End Type
+  Contains
+    Private
 
-  Public :: allocate_statistics_arrays, allocate_statistics_connect, &
-    deallocate_statistics_connect
+    Procedure, Public :: init => allocate_statistics_arrays
+    Procedure, Public :: init_connect => allocate_statistics_connect
+    Procedure, Public :: clean_connect => deallocate_statistics_connect
+    Final :: cleanup
+  End Type
 
 Contains
 
-  Subroutine allocate_statistics_arrays(mxatdm,stats)
+  Subroutine allocate_statistics_arrays(stats,mxatdm)
+    Class( stats_type ), Intent( InOut ) ::  stats
     Integer, Intent( In ) ::           mxatdm
-    Type( stats_type ), Intent( InOut ) ::  stats
 
     Integer, Dimension( 1:4 ) :: fail
     Integer ::  mxnstk ,mxstak
@@ -164,9 +168,9 @@ Contains
 
   End Subroutine allocate_statistics_arrays
 
-  Subroutine allocate_statistics_connect(mxatdm,stats)
+  Subroutine allocate_statistics_connect(stats,mxatdm)
+    Class( stats_type ), Intent( InOut ) ::  stats
     Integer, Intent( InOut ) ::           mxatdm
-    Type( stats_type ), Intent( InOut ) ::  stats
 
     Integer, Dimension( 1:6 ) :: fail
     Integer :: mxstak
@@ -187,7 +191,7 @@ Contains
   End Subroutine allocate_statistics_connect
 
   Subroutine deallocate_statistics_connect(stats)
-    Type( stats_type ), Intent( InOut ) ::  stats
+    Class( stats_type ), Intent( InOut ) ::  stats
 
     Integer, Dimension( 1:6 ) :: fail
 
@@ -203,6 +207,119 @@ Contains
     If (Any(fail > 0)) Call error(1061)
 
   End Subroutine deallocate_statistics_connect
+
+  Subroutine cleanup(stats)
+    Type( stats_type ), Intent(InOut) :: stats
+
+    If (Allocated(stats%xin)) Then
+      Deallocate(stats%xin)
+    End If
+    If (Allocated(stats%yin)) Then
+      Deallocate(stats%yin)
+    End If
+    If (Allocated(stats%zin)) Then
+      Deallocate(stats%zin)
+    End If
+
+    If (Allocated(stats%xto)) Then
+      Deallocate(stats%xto)
+    End If
+    If (Allocated(stats%yto)) Then
+      Deallocate(stats%yto)
+    End If
+    If (Allocated(stats%zto)) Then
+      Deallocate(stats%zto)
+    End If
+    If (Allocated(stats%rsd)) Then
+      Deallocate(stats%rsd)
+    End If
+
+    If (Allocated(stats%stpval)) Then
+      Deallocate(stats%stpval)
+    End If
+    If (Allocated(stats%stpvl0)) Then
+      Deallocate(stats%stpvl0)
+    End If
+    If (Allocated(stats%sumval)) Then
+      Deallocate(stats%sumval)
+    End If
+    If (Allocated(stats%ssqval)) Then
+      Deallocate(stats%ssqval)
+    End If
+
+    If (Allocated(stats%zumval)) Then
+      Deallocate(stats%zumval)
+    End If
+    If (Allocated(stats%ravval)) Then
+      Deallocate(stats%ravval)
+    End If
+    If (Allocated(stats%stkval)) Then
+      Deallocate(stats%stkval)
+    End If
+
+    If (Allocated(stats%found)) Then
+      Deallocate(stats%found)
+    End If
+    If (Allocated(stats%found0)) Then
+      Deallocate(stats%found0)
+    End If
+
+    If (Allocated(stats%lsi0)) Then
+      Deallocate(stats%lsi0)
+    End If
+    If (Allocated(stats%lsa0)) Then
+      Deallocate(stats%lsa0)
+    End If
+    If (Allocated(stats%lsa00)) Then
+      Deallocate(stats%lsa00)
+    End If
+    If (Allocated(stats%ltg0)) Then
+      Deallocate(stats%ltg0)
+    End If
+
+    If (Allocated(stats%xin0)) Then
+      Deallocate(stats%xin0)
+    End If
+    If (Allocated(stats%yin0)) Then
+      Deallocate(stats%yin0)
+    End If
+    If (Allocated(stats%zin0)) Then
+      Deallocate(stats%zin0)
+    End If
+
+    If (Allocated(stats%xto0)) Then
+      Deallocate(stats%xto0)
+    End If
+    If (Allocated(stats%yto0)) Then
+      Deallocate(stats%yto0)
+    End If
+    If (Allocated(stats%zto0)) Then
+      Deallocate(stats%zto0)
+    End If
+
+    If (Allocated(stats%stpval0)) Then
+      Deallocate(stats%stpval0)
+    End If
+    If (Allocated(stats%stpvl00)) Then
+      Deallocate(stats%stpvl00)
+    End If
+    If (Allocated(stats%sumval0)) Then
+      Deallocate(stats%sumval0)
+    End If
+    If (Allocated(stats%ssqval0)) Then
+      Deallocate(stats%ssqval0)
+    End If
+
+    If (Allocated(stats%zumval0)) Then
+      Deallocate(stats%zumval0)
+    End If
+    If (Allocated(stats%ravval0)) Then
+      Deallocate(stats%ravval0)
+    End If
+    If (Allocated(stats%stkval0)) Then
+      Deallocate(stats%stkval0)
+    End If
+  End Subroutine cleanup
 
   Subroutine statistics_collect(config,lsim,leql,nsteql,lmsd,keyres,degfre,degshl, &
       degrot,nstep,tstep,time,tmst,mxatdm,max_grid_rdf,stats,thermo,zdensity, &

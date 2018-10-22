@@ -67,7 +67,7 @@ program dl_poly
   ! SITE & CONFIG MODULES
 
   Use site, Only : site_type
-  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms,allocate_config_arrays
+  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
   Use control, Only : read_control,scan_control_output,scan_control_io
 
   ! VNL module
@@ -92,10 +92,10 @@ program dl_poly
 
   Use tethers, Only : tethers_type, tethers_forces
 
-  Use bonds, Only : bonds_type,allocate_bonds_arrays,bonds_forces
-  Use angles, Only : angles_type,allocate_angles_arrays,angles_forces
-  Use dihedrals, Only : dihedrals_type,allocate_dihedrals_arrays,dihedrals_forces
-  Use inversions, Only : inversions_type,allocate_inversions_arrays,inversions_forces
+  Use bonds, Only : bonds_type,bonds_forces
+  Use angles, Only : angles_type,angles_forces
+  Use dihedrals, Only : dihedrals_type,dihedrals_forces
+  Use inversions, Only : inversions_type,inversions_forces
   Use three_body, Only : threebody_type, three_body_forces
 
   Use mpole, Only : mpole_type,POLARISATION_CHARMM
@@ -120,13 +120,10 @@ program dl_poly
   ! STATISTICS MODULES
 
   Use rdfs, Only : rdf_type
-  Use z_density, Only : z_density_type,allocate_z_density_arrays
-  Use statistics, Only : stats_type,allocate_statistics_arrays,&
-    statistics_result,statistics_collect,deallocate_statistics_connect, &
-    allocate_statistics_connect,statistics_connect_set, &
-    statistics_connect_frames
-  Use greenkubo, Only : greenkubo_type,allocate_greenkubo_arrays,vaf_compute, &
-    vaf_collect,vaf_write
+  Use z_density, Only : z_density_type
+  Use statistics, Only : stats_type,statistics_result,statistics_collect, &
+    statistics_connect_set,statistics_connect_frames
+  Use greenkubo, Only : greenkubo_type,vaf_compute,vaf_collect,vaf_write
 
   ! MSD MODULE
 
@@ -341,7 +338,7 @@ program dl_poly
   ! ALLOCATE SITE & CONFIG
 
   Call sites%init(sites%mxtmls,sites%mxatyp)
-  Call allocate_config_arrays(config)
+  Call config%init()
   Call neigh%init_list(config%mxatdm)
 
   ! ALLOCATE DPD ARRAYS
@@ -359,10 +356,10 @@ program dl_poly
 
   Call tether%init(sites%mxtmls,config%mxatdm)
 
-  Call allocate_bonds_arrays(bond,config%mxatdm,sites%mxtmls)
-  Call allocate_angles_arrays(angle,config%mxatdm,sites%mxtmls)
-  Call allocate_dihedrals_arrays(dihedral,config%mxatdm,sites%mxtmls)
-  Call allocate_inversions_arrays(inversion,config%mxatms,sites%mxtmls)
+  Call bond%init(config%mxatdm,sites%mxtmls)
+  Call angle%init(config%mxatdm,sites%mxtmls)
+  Call dihedral%init(config%mxatdm,sites%mxtmls)
+  Call inversion%init(config%mxatms,sites%mxtmls)
 
   Call mpoles%init(sites%max_site,neigh%max_exclude,config%mxatdm,ewld%bspline,config%mxatms)
 
@@ -379,9 +376,9 @@ program dl_poly
   ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
 
   Call rdf%init()
-  Call allocate_z_density_arrays(zdensity,rdf%max_grid,sites%mxatyp)
-  Call allocate_statistics_arrays(config%mxatms,stats)
-  Call allocate_greenkubo_arrays(green,config%mxatms,sites%mxatyp)
+  Call zdensity%init(rdf%max_grid,sites%mxatyp)
+  Call stats%init(config%mxatms)
+  Call green%init(config%mxatms,sites%mxatyp)
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
