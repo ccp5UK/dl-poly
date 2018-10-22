@@ -55,15 +55,16 @@ Module greenkubo
     !    Real( Kind = wp ), Allocatable :: gkpot(:),tcond(:),tctime(:)
   Contains
     Private
+    Procedure, Public :: init => allocate_greenkubo_arrays
     Final :: cleanup
   End Type greenkubo_type
 
-  Public :: allocate_greenkubo_arrays,vaf_compute,vaf_collect,vaf_write
+  Public :: vaf_compute,vaf_collect,vaf_write
 
 Contains
 
   Subroutine allocate_greenkubo_arrays(green,mxatms,mxatyp)
-    Type( greenkubo_Type ), Intent( InOut ) :: green
+    Class( greenkubo_Type ), Intent( InOut ) :: green
     Integer, Intent( In ) :: mxatms,mxatyp
 
     Integer :: i

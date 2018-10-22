@@ -23,11 +23,10 @@ Module ffield
 
   Use tethers, Only : tethers_type
 
-  Use bonds, Only : bonds_type,bonds_table_read,allocate_bond_dst_arrays
-  Use angles, Only : angles_type,angles_table_read,allocate_angl_dst_arrays
-  Use dihedrals, Only : dihedrals_type,dihedrals_table_read,allocate_dihd_dst_arrays, &
-    dihedrals_14_check
-  Use inversions, Only : inversions_type,inversions_table_read,allocate_invr_dst_arrays
+  Use bonds, Only : bonds_type,bonds_table_read
+  Use angles, Only : angles_type,angles_table_read
+  Use dihedrals, Only : dihedrals_type,dihedrals_table_read,dihedrals_14_check
+  Use inversions, Only : inversions_type,inversions_table_read
   Use three_body, Only : threebody_type
   Use vdw, Only : vdw_type,vdw_table_read,vdw_generate,vdw_direct_fs_generate, &
     MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
@@ -2518,22 +2517,22 @@ Contains
 
           If (bond%bin_pdf > 0) Then
             ntpbnd = 0 ! for bonds
-            Call allocate_bond_dst_arrays(bond) ! as it depends on bond%ldf(0)
+            Call bond%init_dst() ! as it depends on bond%ldf(0)
             !             bond%typ = 0 ! initialised in bonds_module
           End If
           If (angle%bin_adf > 0) Then
             ntpang = 0 ! for angles
-            Call allocate_angl_dst_arrays(angle) ! as it depends on angle%ldf(0)
+            Call angle%init_dst() ! as it depends on angle%ldf(0)
             !             angle%typ = 0 ! initialised in angles_module
           End If
           If (dihedral%bin_adf > 0) Then
             ntpdih = 0 ! for dihedrals
-            Call allocate_dihd_dst_arrays(dihedral) ! as it depends on dihedral%ldf(0)
+            Call dihedral%init_dst() ! as it depends on dihedral%ldf(0)
             !             dihedral%typ = 0 ! initialised in dihedrals
           End If
           If (inversion%bin_adf > 0) Then
             ntpinv = 0 ! for inversions
-            Call allocate_invr_dst_arrays(inversion) ! as it depends on inversion%ldf(0)
+            Call inversion%init_dst() ! as it depends on inversion%ldf(0)
             !             inversion%typ = 0 ! initialised in inversions
           End If
 
