@@ -14,7 +14,7 @@ Module two_body
   Use poisson, Only : poisson_type,poisson_forces,poisson_excl_forces,poisson_frzn_forces
   Use vdw,     Only : vdw_type,vdw_forces
   Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
-  Use kim,     Only : kim_type,kim_compute
+  Use kim,     Only : kim_type,kim_energy_and_forces
   Use rdfs,    Only : rdf_type,rdf_collect,rdf_excl_collect,rdf_frzn_collect, &
     rdf_increase_block_number
   Use errors_warnings, Only : error
@@ -177,11 +177,12 @@ Contains
       Call link_cell_pairs(vdws%cutoff,met%rcut,lbook,megfrz,cshell,devel, &
         neigh,mpoles,domain,tmr,config,comm)
     End If
-    ! Calculate all contributions from KIM
 
+    ! Calculate all contributions from KIM
     If (kim_data%active) Then
-      Call kim_compute(kim_data,config%natms,config%nlast,config%parts,neigh%list,domain%map, &
-        config%lsite,config%lsi,config%lsa,config%ltg,sites%site_name,engkim,virkim,stats%stress,comm)
+      Call kim_energy_and_forces(kim_data,config%natms,config%nlast,config%parts, &
+        neigh%list,domain%map,config%lsite,config%lsi,config%lsa,config%ltg, &
+        sites%site_name,engkim,virkim,stats%stress,comm)
     End If
 
     If (met%n_potentials > 0) Then
