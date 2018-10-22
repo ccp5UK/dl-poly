@@ -82,7 +82,7 @@ Module drivers
   ! SITE & CONFIG MODULES
 
   Use site, Only : site_type
-  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms,allocate_config_arrays
+  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
   Use control, Only : read_control,scan_control_output,scan_control_io
 
   ! VNL module
@@ -101,17 +101,17 @@ Module drivers
 
   Use pmf, only : pmf_type,pmf_quench
 
-  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_str_ss, &
-    rigid_bodies_str__s,xscale,rigid_bodies_tags, &
+  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_stress, &
+    xscale,rigid_bodies_tags, &
     rigid_bodies_coms, getrotmat
 
   Use tethers, Only : tethers_type, tethers_forces
 
-  Use bonds, Only : bonds_type,allocate_bonds_arrays,bonds_forces
+  Use bonds, Only : bonds_type,bonds_forces
   Use angles, Only : angles_type,allocate_angles_arrays,angles_forces
-  Use dihedrals, Only : dihedrals_type,allocate_dihedrals_arrays,dihedrals_forces
-  Use inversions, Only : inversions_type,allocate_inversions_arrays,inversions_forces
-  Use three_body, Only : threebody_type, allocate_three_body_arrays, three_body_forces
+  Use dihedrals, Only : dihedrals_type,dihedrals_forces
+  Use inversions, Only : inversions_type,inversions_forces
+  Use three_body, Only : threebody_type, three_body_forces
 
   Use mpole, Only : mpole_type,POLARISATION_CHARMM
 
@@ -135,13 +135,10 @@ Module drivers
   ! STATISTICS MODULES
 
   Use rdfs, Only : rdf_type
-  Use z_density, Only : z_density_type,allocate_z_density_arrays
-  Use statistics, Only : stats_type,allocate_statistics_arrays,&
-    statistics_result,statistics_collect,deallocate_statistics_connect, &
-    allocate_statistics_connect,statistics_connect_set, &
-    statistics_connect_frames
-  Use greenkubo, Only : greenkubo_type,allocate_greenkubo_arrays,vaf_compute, &
-    vaf_collect,vaf_write
+  Use z_density, Only : z_density_type
+  Use statistics, Only : stats_type,statistics_result,statistics_collect, &
+    statistics_connect_set,statistics_connect_frames
+  Use greenkubo, Only : greenkubo_type,vaf_compute,vaf_collect,vaf_write
 
   ! MSD MODULE
 
@@ -406,12 +403,12 @@ Contains
       If (minim%minimise .and. flow%step >= 0 .and. flow%step <= flow%run_steps .and. flow%step <= flow%equil_steps) Then
         If      (minim%freq == 0 .and. flow%step == 0) Then
           Call minimise_relax(flow%strict .or. cshell%keyshl == SHELL_RELAXED, &
-            rdf%l_collect,cnfig%megatm,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
+            rdf%l_collect,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
             netcdf,minim,rigid,domain,cnfig,files,comm)
         Else If (minim%freq >  0 .and. flow%step >  0) Then
           If (Mod(flow%step-flow%equil_steps,minim%freq) == 0) Then
             Call minimise_relax(flow%strict .or. cshell%keyshl == SHELL_RELAXED, &
-              rdf%l_collect,cnfig%megatm,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
+              rdf%l_collect,thermo%tstep,stat%stpcfg,io,stat,pmf,cons, &
               netcdf,minim,rigid,domain,cnfig,files,comm)
           End If
         End If
@@ -439,9 +436,9 @@ Contains
             Call update_shared_units(cnfig,rigid%list_shared, &
               rigid%map_shared,thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
           End If
-          Call rigid_bodies_str__s(stat%strcom,cnfig,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
+          Call rigid_bodies_stress(stat%strcom,cnfig,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
         Else
-          Call rigid_bodies_str_ss(stat%strcom,rigid,cnfig,comm)
+          Call rigid_bodies_stress(stat%strcom,rigid,cnfig,comm)
         End If
         stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
       End If
@@ -532,7 +529,7 @@ Contains
 
       If (rigid%on) Then
         Call rigid_bodies_tags(cnfig,rigid,comm)
-        Call rigid_bodies_coms(cnfig,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+        Call rigid_bodies_coms(cnfig,rigid%xxx,rigid%yyy,rigid%zzz,rigid)
       End If
 
     Else
@@ -553,7 +550,7 @@ Contains
 
   End Subroutine w_refresh_mappings
 
-  Subroutine w_integrate_vv(stage,flow, cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)
+  Subroutine w_integrate_vv(stage,flow, cnfig,ttm,cshell,cons,pmf,stat,thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
     Integer, Intent( In    ) :: stage ! used for vv stage control
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( ttm_type ), Intent( InOut ) :: ttm
@@ -568,7 +565,6 @@ Contains
     Type( domains_type ), Intent( In    ) :: domain
     Type( seed_type ), Intent( InOut ) :: seed
     Type( timer_type ), Intent( InOut ) :: tmr
-    Type(electrostatic_type), Intent( InOut ) :: electro
     Type(neighbours_type), Intent(InOut) :: neigh
     Type( flow_type),Intent( InOut ) :: flow
 
@@ -703,7 +699,7 @@ Contains
           cnfig%degfre,stat%virtot,                     &
           stat%consv,                             &
           stat%strkin,stat%engke,                      &
-          cshell,cons,pmf,stat,thermo,sites,vdws,rigid,&
+          cshell,cons,pmf,stat,thermo,sites,vdws,&
           domain,tmr,cnfig,comm)
 
       Else If (thermo%ensemble == ENS_NPT_MTK) Then
@@ -751,7 +747,7 @@ Contains
           cnfig%degfre,stat%stress,             &
           stat%consv,                             &
           stat%strkin,stat%engke,                      &
-          cshell,cons,pmf,stat,thermo,sites,vdws,rigid,&
+          cshell,cons,pmf,stat,thermo,sites,vdws,&
           domain,tmr,cnfig,comm)
 
       Else If (thermo%ensemble == ENS_NPT_MTK_ANISO) Then
@@ -1347,7 +1343,7 @@ Contains
           Call strip_blanks(c_out)
           Call lower_case(c_out)
           If (l_out .and. c_out(1:6) == 'append') Then
-            Close(unit=files(FILE_OUTPUT)%unit_no)
+            Call files(FILE_OUTPUT)%close()
             Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Position='append')
           End If
         End If
@@ -1451,9 +1447,9 @@ Contains
             Call update_shared_units(cnfig,rigid%list_shared,rigid%map_shared,&
               thermo%fxl,thermo%fyl,thermo%fzl,domain,comm)
           End If
-          Call rigid_bodies_str__s(stat%strcom,cnfig,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
+          Call rigid_bodies_stress(stat%strcom,cnfig,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
         Else
-          Call rigid_bodies_str_ss(stat%strcom,rigid,cnfig,comm)
+          Call rigid_bodies_stress(stat%strcom,rigid,cnfig,comm)
         End If
 
         stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
@@ -1510,7 +1506,7 @@ Contains
         ! Integrate equations of motion - velocity verlet first stage
 
         Call w_integrate_vv(VV_FIRST_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
-          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)
+          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
 
         ! Refresh mappings
 
@@ -1547,7 +1543,7 @@ Contains
         ! Integrate equations of motion - velocity verlet second stage
 
         Call w_integrate_vv(VV_SECOND_STAGE,flow,cnfig,ttm,cshell,cons,pmf,stat, &
-          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,electro,comm)
+          thermo,sites,vdws,rigid,domain,seed,tmr,neigh,comm)
 
         ! Apply kinetic options
 
@@ -1603,7 +1599,7 @@ Contains
   Subroutine w_replay_history(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,msd_data, &
       met,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,rdf, &
       netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj,kim_data,dfcts,files,&
-      tmr,tether,green,ewld,devel,threebody,comm)
+    tmr,tether,green,ewld,devel,comm)
 
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
@@ -1643,7 +1639,6 @@ Contains
     Type( greenkubo_type), Intent( InOut ) :: green
     Type( ewald_type), Intent( InOut ) :: ewld
     Type( development_type), Intent( InOut ) :: devel
-    Type( threebody_type ), Intent( InOut ) :: threebody
     Type( comms_type ), Intent( InOut ) :: comm
 
     Real(Kind=wp) :: tsths
@@ -1732,7 +1727,7 @@ Contains
     nstpe = flow%step
     nstph = 0 ! trajectory points counter
     Do
-      Call allocate_statistics_connect(cnfig%mxatdm,stat)
+      Call stat%init_connect(cnfig%mxatdm)
       10   Continue
       If (nstph > nstpe) Then
         Call statistics_connect_set(cnfig,neigh%cutoff_extended,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
@@ -1784,7 +1779,7 @@ Contains
           ! get xto/xin/msdtmp arrays sorted
 
           Call statistics_connect_frames(cnfig,cnfig%megatm,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
-          Call deallocate_statistics_connect(stat)
+          Call stat%clean_connect()
 
           ! SET domain borders and link-cells as default for new jobs
           ! exchange atomic data and positions in border regions
@@ -1797,7 +1792,7 @@ Contains
           If (flow%book) Then
             Call build_book_intra(flow%strict,flow%print_topology,flow%simulation,&
               flow,cshell,cons,pmf,bond,angle,dihedral, &
-              inversion,tether,neigh,sites,mpoles,rigid,domain,cnfig,comm)
+              inversion,tether,neigh,sites,rigid,domain,cnfig,comm)
             If (flow%exclusions) Then
               Call build_excl_intra(electro%lecx,cshell,cons,bond,angle,dihedral, &
                 inversion,neigh,rigid,cnfig,comm)
@@ -1857,7 +1852,7 @@ Contains
 
               stat%engrot=getknr(rigid,comm)
               If (cnfig%levcfg == 2) Then
-                Call rigid_bodies_str_ss(stat%strcom,rigid,cnfig,comm)
+                Call rigid_bodies_stress(stat%strcom,rigid,cnfig,comm)
                 stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
               End If
             Else
@@ -1951,7 +1946,7 @@ Contains
               Call strip_blanks(c_out)
               Call lower_case(c_out)
               If (l_out .and. c_out(1:6) == 'append') Then
-                Close(unit=files(FILE_OUTPUT)%unit_no)
+                Call files(FILE_OUTPUT)%close()
                 Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Position='append')
               End If
             End If
@@ -2000,7 +1995,7 @@ Contains
         thermo,minim,rigid,domain,cnfig,seed,comm)
 
     End If
-    Call deallocate_statistics_connect(stat)
+    Call stat%clean_connect()
 
     ! Save restart data because of next action (and disallow the same in dl_poly)
 
@@ -2078,7 +2073,7 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!  W_REPLAY HISTORF INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
 
-    Character( Len = 256 ) :: message,messages(5)
+    Character( Len = 256 ) :: messages(5)
 
     Integer :: i
     ! Report work
@@ -2087,7 +2082,7 @@ Contains
     Write(messages(2),'(a)') '*** HISTORF will be replayed in full (with no dynamics)!!!     ***'
     Write(messages(3),'(a)') '*** Large particle displacements between frames within HISTROF ***'
     Write(messages(4),'(a)') '*** w.r.t. CONFIG at start may lead failures in parallel!!!    ***'
-    Call info(messages,3,.true.)
+    Call info(messages,4,.true.)
 
     ! defect detection for every entry in HISTORF
 
@@ -2134,7 +2129,7 @@ Contains
     nstpe = flow%step
     nstph = 0 ! HISTORF trajectory points counter
     Do
-      Call allocate_statistics_connect(cnfig%mxatdm,stat)
+      Call stat%init_connect(cnfig%mxatdm)
       10   Continue
       If (nstph > nstpe) Call statistics_connect_set(cnfig,neigh%cutoff_extended,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
 
@@ -2184,7 +2179,7 @@ Contains
           ! get xto/xin/msdtmp arrays sorted
 
           Call statistics_connect_frames(cnfig,cnfig%megatm,cnfig%mxatdm,msd_data%l_msd,stat,domain,comm)
-          Call deallocate_statistics_connect(stat)
+          Call stat%clean_connect()
 
           ! SET domain borders and link-cells as default for new jobs
           ! exchange atomic data and positions in border regions
@@ -2197,7 +2192,7 @@ Contains
           If (flow%book) Then
             Call build_book_intra(flow%strict,flow%print_topology,flow%simulation,&
               flow,cshell,cons,pmf,bond,angle,dihedral, &
-              inversion,tether,neigh,sites,mpoles,rigid,domain,cnfig,comm)
+              inversion,tether,neigh,sites,rigid,domain,cnfig,comm)
             If (flow%exclusions) Then
               Call build_excl_intra(electro%lecx,cshell,cons,bond,angle,dihedral, &
                 inversion,neigh,rigid,cnfig,comm)
@@ -2236,7 +2231,7 @@ Contains
               stat%strkin=stat%strknf+stat%strknt
 
               stat%engrot=getknr(rigid,comm)
-              Call rigid_bodies_str_ss(stat%strcom,rigid,cnfig,comm)
+              Call rigid_bodies_stress(stat%strcom,rigid,cnfig,comm)
               stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
             Else
               Call kinstress(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strkin,cnfig,comm)
@@ -2349,7 +2344,7 @@ Contains
               Call strip_blanks(c_out)
               Call lower_case(c_out)
               If (l_out .and. c_out(1:6) == 'append') Then
-                Close(unit=files(FILE_OUTPUT)%unit_no)
+                Call files(FILE_OUTPUT)%close()
                 Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Position='append')
               End If
             End If
@@ -2398,7 +2393,7 @@ Contains
         thermo,minim,rigid,domain,cnfig,seed,comm)
 
     End If
-    Call deallocate_statistics_connect(stat)
+    Call stat%clean_connect()
 
     ! Save restart data because of next action (and disallow the same in dl_poly)
 

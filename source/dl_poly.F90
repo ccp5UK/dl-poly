@@ -67,7 +67,7 @@ program dl_poly
   ! SITE & CONFIG MODULES
 
   Use site, Only : site_type
-  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms,allocate_config_arrays
+  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
   Use control, Only : read_control,scan_control_output,scan_control_io
 
   ! VNL module
@@ -86,17 +86,17 @@ program dl_poly
 
   Use pmf, only : pmf_type,pmf_quench
 
-  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_str_ss, &
-    rigid_bodies_str__s,xscale,rigid_bodies_tags, &
+  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench, &
+    xscale,rigid_bodies_tags, &
     rigid_bodies_coms
 
   Use tethers, Only : tethers_type, tethers_forces
 
-  Use bonds, Only : bonds_type,allocate_bonds_arrays,bonds_forces
-  Use angles, Only : angles_type,allocate_angles_arrays,angles_forces
-  Use dihedrals, Only : dihedrals_type,allocate_dihedrals_arrays,dihedrals_forces
-  Use inversions, Only : inversions_type,allocate_inversions_arrays,inversions_forces
-  Use three_body, Only : threebody_type, allocate_three_body_arrays, three_body_forces
+  Use bonds, Only : bonds_type,bonds_forces
+  Use angles, Only : angles_type,angles_forces
+  Use dihedrals, Only : dihedrals_type,dihedrals_forces
+  Use inversions, Only : inversions_type,inversions_forces
+  Use three_body, Only : threebody_type, three_body_forces
 
   Use mpole, Only : mpole_type,POLARISATION_CHARMM
 
@@ -120,13 +120,10 @@ program dl_poly
   ! STATISTICS MODULES
 
   Use rdfs, Only : rdf_type
-  Use z_density, Only : z_density_type,allocate_z_density_arrays
-  Use statistics, Only : stats_type,allocate_statistics_arrays,&
-    statistics_result,statistics_collect,deallocate_statistics_connect, &
-    allocate_statistics_connect,statistics_connect_set, &
-    statistics_connect_frames
-  Use greenkubo, Only : greenkubo_type,allocate_greenkubo_arrays,vaf_compute, &
-    vaf_collect,vaf_write
+  Use z_density, Only : z_density_type
+  Use statistics, Only : stats_type,statistics_result,statistics_collect, &
+    statistics_connect_set,statistics_connect_frames
+  Use greenkubo, Only : greenkubo_type,vaf_compute,vaf_collect,vaf_write
 
   ! MSD MODULE
 
@@ -252,7 +249,7 @@ program dl_poly
 
   Integer(Kind=wi) :: i,j
   Logical :: lfce
-  Character( Len = 256 ) :: message,messages(5)
+  Character( Len = 256 ) :: message
   Character( Len = 66 )  :: banner(14)
   Character( Len = 1024 ) :: control_filename
 
@@ -311,9 +308,9 @@ program dl_poly
   Write(banner(12),fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
   Write(banner(13),fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti        *************"
   Write(banner(14),fmt1) "******************************************************************"
-  Call info(banner,13,.true.)
+  Call info(banner,14,.true.)
 
-  Call build_info(devel)
+  Call build_info()
 
   Call info('',.true.)
   Write(banner(1),fmt1) Repeat("*",66)
@@ -341,7 +338,7 @@ program dl_poly
   ! ALLOCATE SITE & CONFIG
 
   Call sites%init(sites%mxtmls,sites%mxatyp)
-  Call allocate_config_arrays(config)
+  Call config%init()
   Call neigh%init_list(config%mxatdm)
 
   ! ALLOCATE DPD ARRAYS
@@ -359,10 +356,10 @@ program dl_poly
 
   Call tether%init(sites%mxtmls,config%mxatdm)
 
-  Call allocate_bonds_arrays(bond,config%mxatdm,sites%mxtmls)
-  Call allocate_angles_arrays(angle,config%mxatdm,sites%mxtmls)
-  Call allocate_dihedrals_arrays(dihedral,config%mxatdm,sites%mxtmls)
-  Call allocate_inversions_arrays(inversion,config%mxatms,sites%mxtmls)
+  Call bond%init(config%mxatdm,sites%mxtmls)
+  Call angle%init(config%mxatdm,sites%mxtmls)
+  Call dihedral%init(config%mxatdm,sites%mxtmls)
+  Call inversion%init(config%mxatms,sites%mxtmls)
 
   Call mpoles%init(sites%max_site,neigh%max_exclude,config%mxatdm,ewld%bspline,config%mxatms)
 
@@ -371,7 +368,7 @@ program dl_poly
   Call vdws%init()
   Call met%init(config%mxatms,sites%mxatyp)
   Call tersoffs%init(sites%max_site)
-  Call allocate_three_body_arrays(sites%max_site,threebody)
+  Call threebody%init(sites%max_site)
   Call fourbody%init(sites%max_site)
 
   Call ext_field%init()
@@ -379,9 +376,9 @@ program dl_poly
   ! ALLOCATE RDF, Z-DENSITY, STATISTICS & GREEN-KUBO ARRAYS
 
   Call rdf%init()
-  Call allocate_z_density_arrays(zdensity,rdf%max_grid,sites%mxatyp)
-  Call allocate_statistics_arrays(config%mxatms,stats)
-  Call allocate_greenkubo_arrays(green,config%mxatms,sites%mxatyp)
+  Call zdensity%init(rdf%max_grid,sites%mxatyp)
+  Call stats%init(config%mxatms)
+  Call green%init(config%mxatms,sites%mxatyp)
 
   ! ALLOCATE TWO-TEMPERATURE MODEL ARRAYS
 
@@ -395,7 +392,7 @@ program dl_poly
 
   Call read_control(lfce,impa,ttms,dfcts,rigid,rsdsc,core_shells,cons,pmfs, &
     stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral, &
-    inversion,zdensity,neigh,vdws,tersoffs,rdf, minim,mpoles,electro,ewld, &
+    inversion,zdensity,neigh,vdws,rdf, minim,mpoles,electro,ewld, &
     seed,traj,files,tmr,config,flow,comm)
 
   ! READ SIMULATION FORCE FIELD
@@ -474,7 +471,7 @@ program dl_poly
   ! READ REVOLD (thermodynamic and structural data from restart file)
 
   Call system_init(neigh%cutoff,flow%restart_key,flow%time,flow%start_time,flow%step, &
-    core_shells,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
+    stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
     zdensity,sites,vdws,rdf,config,files,comm)
 
   ! SET domain borders and link-config%cells as default for new jobs
@@ -492,7 +489,7 @@ program dl_poly
   If (flow%book) Then
     Call build_book_intra(flow%strict,flow%print_topology,flow%simulation, &
       flow,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
-      neigh,sites,mpoles,rigid,domain,config,comm)
+      neigh,sites,rigid,domain,config,comm)
     If (mpoles%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
         mpoles,config,comm)
@@ -509,7 +506,7 @@ program dl_poly
     End If
   Else
     Call report_topology(config%megatm,config%megfrz,config%atmfre,config%atmfrz,core_shells,cons, &
-      pmfs,bond,angle,dihedral,inversion,tether,sites,rigid,comm)
+      pmfs,bond,angle,dihedral,inversion,tether,sites,rigid)
 
     ! DEALLOCATE INTER-LIKE SITE INTERACTION ARRAYS if no longer needed
 
@@ -637,12 +634,12 @@ program dl_poly
       Call w_replay_history(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
         thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh, &
         sites,vdws,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
-        seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,threebody,comm)
+        seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,comm)
     End If
   End If
 
   !Close the statis file if we used it.
-  If (stats%statis_file_open) Close(Unit=files(FILE_STATS)%unit_no)
+  If (stats%statis_file_open) Call files(FILE_STATS)%close()
 
   ! Report termination of the MD simulation
 
@@ -712,11 +709,11 @@ program dl_poly
     (config,minim%minimise,msd_data%l_msd, &
     flow%run_steps,core_shells%keyshl,cons%megcon,pmfs%megpmf,              &
     flow%step,flow%time,flow%start_time,config%mxatdm,neigh%unconditional_update,&
-    stats,thermo,green,sites,comm)
+    stats,thermo,sites,comm)
 
   ! Final anlysis
-  Call analysis_result(flow%step,neigh%cutoff,thermo, &
-    bond,angle,dihedral,inversion,stats,green,zdensity,neigh,sites,rdf,config,comm)
+  Call analysis_result(neigh%cutoff,thermo, &
+    bond,angle,dihedral,inversion,stats,green,zdensity,sites,rdf,config,comm)
 
   10 Continue
 
@@ -770,7 +767,7 @@ program dl_poly
 
   ! Close output channel
 
-  If (.not.devel%l_scr) Close(unit=files(FILE_OUTPUT)%unit_no)
+  If (.not.devel%l_scr) Call files(FILE_OUTPUT)%close()
 
   ! Terminate job
 

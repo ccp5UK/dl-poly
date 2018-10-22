@@ -14,7 +14,7 @@ Module two_body
   Use poisson, Only : poisson_type,poisson_forces,poisson_excl_forces,poisson_frzn_forces
   Use vdw,     Only : vdw_type,vdw_forces
   Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
-  Use kim,     Only : kim_type,kim_compute
+  Use kim,     Only : kim_type,kim_energy_and_forces
   Use rdfs,    Only : rdf_type,rdf_collect,rdf_excl_collect,rdf_frzn_collect, &
     rdf_increase_block_number
   Use errors_warnings, Only : error
@@ -177,11 +177,12 @@ Contains
       Call link_cell_pairs(vdws%cutoff,met%rcut,lbook,megfrz,cshell,devel, &
         neigh,mpoles,domain,tmr,config,comm)
     End If
-    ! Calculate all contributions from KIM
 
+    ! Calculate all contributions from KIM
     If (kim_data%active) Then
-      Call kim_compute(kim_data,config%natms,config%nlast,config%parts,neigh%list,domain%map, &
-        config%lsite,config%lsi,config%lsa,config%ltg,sites%site_name,engkim,virkim,stats%stress,comm)
+      Call kim_energy_and_forces(kim_data,config%natms,config%nlast,config%parts, &
+        neigh%list,domain%map,config%lsite,config%lsi,config%lsa,config%ltg, &
+        sites%site_name,engkim,virkim,stats%stress,comm)
     End If
 
     If (met%n_potentials > 0) Then
@@ -282,10 +283,10 @@ Contains
 
           If (mpoles%max_order <= 2) Then
             Call ewald_real_mforces_d(i,xxt,yyt,zzt,rrt,engacc, &
-              viracc,stats%stress,ewld,neigh,mpoles,electro,config,comm)
+              viracc,stats%stress,ewld,neigh,mpoles,electro,config)
           Else
             Call ewald_real_mforces(i,xxt,yyt,zzt,rrt,engacc, &
-              viracc,stats%stress,neigh,mpoles,electro,domain,config,comm)
+              viracc,stats%stress,neigh,mpoles,electro,config)
           End If
 
           engcpe_rl=engcpe_rl+engacc
@@ -313,7 +314,7 @@ Contains
 
           ! force-shifted coulomb potentials
 
-          Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config,comm)
+          Call coul_fscp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -322,7 +323,7 @@ Contains
 
           ! reaction field potential
 
-          Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config,comm)
+          Call coul_rfp_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,mpoles,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -335,7 +336,7 @@ Contains
 
           ! calculate coulombic forces, Ewald sum - real space contribution
 
-          Call ewald_real_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config,comm)
+          Call ewald_real_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -362,7 +363,7 @@ Contains
 
           ! force-shifted coulomb potentials
 
-          Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config,comm)
+          Call coul_fscp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -371,7 +372,7 @@ Contains
 
           ! reaction field potential
 
-          Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config,comm)
+          Call coul_rfp_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -446,7 +447,7 @@ Contains
                   stats%stress,neigh,mpoles,electro,config)
               Else
                 Call ewald_excl_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc, &
-                  stats%stress,neigh,mpoles,electro,domain,config)
+                  stats%stress,neigh,mpoles,electro,config)
               End If
             Else
               Call ewald_excl_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
@@ -540,7 +541,7 @@ Contains
           If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald
             If (mpoles%max_mpoles > 0) Then
               Call ewald_frzn_mforces(engcpe_fr,vircpe_fr,stats%stress,ewld, &
-                neigh,mpoles,electro,domain,config,comm)
+                neigh,mpoles,electro,config,comm)
             Else
               Call ewald_frzn_forces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,electro,config,comm)
             End If

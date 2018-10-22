@@ -36,7 +36,7 @@ Contains
       consv,                             &
       strkin,engke,                      &
       cshell,cons,pmf,stat,thermo,sites, &
-      vdws,rigid,domain,tmr,config,comm)
+    vdws,domain,tmr,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -87,14 +87,12 @@ Contains
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( site_type ), Intent( InOut ) :: sites
     Type( vdw_type ), Intent( InOut ) :: vdws
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:9),iter,i
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: chit0,cint0,chpzr,eta0(1:9)
@@ -565,7 +563,6 @@ Contains
     Type( configuration_type ),   Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut) :: comm
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:14),matms,iter,i,j,i1,i2, &
       irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,qstep,rstep
@@ -845,7 +842,7 @@ Contains
 
         Call nst_h1_scl(0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
           thermo%h_z,str,stress,strcom,         &
-          config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
+          config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
         ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -1385,7 +1382,7 @@ Contains
 
       Call nst_h1_scl(0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
         thermo%h_z,str,stress,strcom,         &
-        config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
+        config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -1667,7 +1664,7 @@ Contains
 
   Subroutine nst_h1_scl(sw,tstep,degfre,degrot,pmass,chit,volm,  &
       h_z,strcon,stress,strcom,        &
-      vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,domain,config,comm)
+      vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1709,7 +1706,6 @@ Contains
     Real( Kind = wp ), Intent(   Out ) :: engke
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut) :: comm
 

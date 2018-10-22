@@ -42,7 +42,7 @@ Contains
     Real(wp), intent(   Out ) :: phi,dphi
 
     Integer :: i
-    Real(wp) :: x,t1,t2,ir
+    Real(wp) :: x,t1,ir
 
     phi = 0.0_wp
     dphi = 0.0_wp

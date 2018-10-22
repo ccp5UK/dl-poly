@@ -10,7 +10,7 @@ Module rigid_bodies
   !           - j.madge march-october 2018
   !           - a.b.g.chalk march-october 2018
   !           - i.scivetti march-october 2018
-  !
+  ! ammend - a.m.elena october 2018 - create interface for rigid_bodies_stress
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds,           Only : wp,wi,li
@@ -140,8 +140,8 @@ Module rigid_bodies
     Final :: cleanup
   End Type rigid_bodies_type
 
-  Public :: rigid_bodies_stress, rigid_bodies_stre_s, rigid_bodies_str_ss, &
-    rigid_bodies_str__s, getrotmat, q_setup, rigid_bodies_split_torque, &
+  Public :: rigid_bodies_stress, &
+    getrotmat, q_setup, rigid_bodies_split_torque, &
     rigid_bodies_move, rigid_bodies_quench, no_squish, xscale, &
     rigid_bodies_tags, rigid_bodies_coms, rigid_bodies_setup, &
     rigid_bodies_widths
@@ -150,10 +150,18 @@ Module rigid_bodies
     Module Procedure rigid_bodies_coms_arrays
     Module Procedure rigid_bodies_coms_parts
   End Interface rigid_bodies_coms
+
+  Interface rigid_bodies_stress
+    Module Procedure rigid_bodies_stresss
+    Module Procedure rigid_bodies_str_ss
+    Module Procedure rigid_bodies_str__s
+    Module Procedure rigid_bodies_stre_s
+  End Interface rigid_bodies_stress 
+
 Contains
 
   Subroutine allocate_rigid_bodies_arrays(T,mxlshp,mxtmls,mxatdm,neighbours)
-  Class( rigid_bodies_type) :: T
+    Class( rigid_bodies_type) :: T
     Integer( Kind = wi ), Intent( In    ) :: mxlshp, mxtmls,mxatdm,neighbours
 
     Integer, Dimension(1:15) :: fail
@@ -321,7 +329,7 @@ Contains
     End If
   End Subroutine cleanup
 
-  Subroutine rigid_bodies_coms_arrays(config,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,rigid,comm)
+  Subroutine rigid_bodies_coms_arrays(config,xxx,yyy,zzz,rgdxxx,rgdyyy,rgdzzz,rigid)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -347,7 +355,6 @@ Contains
     Real( Kind = wp ),  Intent(   Out ) :: rgdxxx(1:rigid%max_rigid), &
       rgdyyy(1:rigid%max_rigid), &
       rgdzzz(1:rigid%max_rigid)
-    Type( comms_type ), Intent( In    ) :: comm
 
     Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp ) :: tmp
@@ -422,7 +429,7 @@ Contains
 
 
 
-  Subroutine rigid_bodies_coms_parts(config,rgdxxx,rgdyyy,rgdzzz,rigid,comm)
+  Subroutine rigid_bodies_coms_parts(config,rgdxxx,rgdyyy,rgdzzz,rigid)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -444,7 +451,6 @@ Contains
     Type( configuration_type ) ,  Intent( In    ) :: config
     Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Real( Kind = wp ),  Intent(   Out ), Dimension(1:rigid%max_rigid) :: rgdxxx,rgdyyy,rgdzzz
-    Type( comms_type ), Intent( In    ) :: comm
 
     Integer           :: fail,irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp ) :: tmp
@@ -808,205 +814,6 @@ Contains
     End If
   End Subroutine rigid_bodies_quench
 
-  Subroutine rigid_bodies_q_ench(qr,rigid,domain,config,comm)
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine to convert atomic velocities to RB COM and
-    ! angular velocity
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2015
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Type( rigid_bodies_type ), Intent( InOut ) :: rigid
-    Integer,            Intent( In    ) :: qr(1:rigid%max_rigid)
-    Type( domains_type ), Intent( In    ) :: domain
-    Type( configuration_type ),   Intent( InOut ) :: config
-    Type( comms_type ), Intent( InOut ) :: comm
-
-    Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
-    Real( Kind = wp ) :: weight,rot(1:9),wxx,wyy,wzz,x(1:1),y(1:1),z(1:1),tmp
-
-    Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
-    Character ( Len = 256 )        :: message
-
-
-    fail = 0
-    Allocate (gxx(1:rigid%max_list*rigid%max_rigid), &
-      gyy(1:rigid%max_list*rigid%max_rigid), &
-      gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
-    If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_q_ench allocation failure'
-      Call error(0,message)
-    End If
-
-    ! Halo velocity field across onto neighbouring domains
-
-    If (rigid%share) Then
-      Call update_shared_units(config,rigid%list_shared, &
-        rigid%map_shared,config%vxx,config%vyy,config%vzz,domain,comm)
-    End If
-
-    ! translate atomic velocities to COM velocity & angular velocity
-    ! frozen velocities and massless sites weights are assumed zero!!!
-
-    krgd=0
-    Do irgd=1,rigid%n_types
-      If (qr(irgd) == 1) Then
-        rgdtyp=rigid%list(0,irgd)
-
-        rigid%vxx(irgd)=0.0_wp ; rigid%vyy(irgd)=0.0_wp ; rigid%vzz(irgd)=0.0_wp
-
-        ! For all good RBs
-
-        lrgd=rigid%list(-1,irgd)
-        If (rigid%frozen(0,rgdtyp) < lrgd) Then ! Not that it matters
-          Do jrgd=1,lrgd
-            krgd=krgd+1
-
-            ! local index and mass of particle/site
-
-            i=rigid%index_local(jrgd,irgd)
-            weight=rigid%weight(jrgd,rgdtyp)
-
-            ! COM distances
-
-            gxx(krgd)=config%parts(i)%xxx-rigid%xxx(irgd)
-            gyy(krgd)=config%parts(i)%yyy-rigid%yyy(irgd)
-            gzz(krgd)=config%parts(i)%zzz-rigid%zzz(irgd)
-
-            ! If the RB has a frozen particle then no net COM momentum
-
-            If (rigid%frozen(0,rgdtyp) == 0) Then
-              rigid%vxx(irgd)=rigid%vxx(irgd)+weight*config%vxx(i)
-              rigid%vyy(irgd)=rigid%vyy(irgd)+weight*config%vyy(i)
-              rigid%vzz(irgd)=rigid%vzz(irgd)+weight*config%vzz(i)
-            End If
-          End Do
-
-          ! COM velocity
-          ! If the RB has a frozen particle then no net COM momentum
-
-          If (rigid%frozen(0,rgdtyp) == 0) Then
-            tmp=1.0_wp/rigid%weight(0,rgdtyp)
-            rigid%vxx(irgd)=rigid%vxx(irgd)*tmp
-            rigid%vyy(irgd)=rigid%vyy(irgd)*tmp
-            rigid%vzz(irgd)=rigid%vzz(irgd)*tmp
-          End If
-        End If
-      End If
-    End Do
-
-    ! minimum image convention for bond vectors
-
-    Call images(config%imcon,config%cell,krgd,gxx,gyy,gzz)
-
-    ! Get RBs' angular momenta
-
-    krgd=0
-    Do irgd=1,rigid%n_types
-      If (qr(irgd) == 1) Then
-        rgdtyp=rigid%list(0,irgd)
-
-        rigid%oxx(irgd)=0.0_wp ; rigid%oyy(irgd)=0.0_wp; rigid%ozz(irgd)=0.0_wp
-
-        ! For all good RBs
-
-        lrgd=rigid%list(-1,irgd)
-        If (rigid%frozen(0,rgdtyp) < lrgd) Then ! Not that it matters
-
-          ! new rotational matrix
-
-          Call getrotmat(rigid%q0(irgd),rigid%q1(irgd),rigid%q2(irgd),rigid%q3(irgd),rot)
-
-          ! angular momentum accumulators
-
-          wxx=0.0_wp
-          wyy=0.0_wp
-          wzz=0.0_wp
-
-          Do jrgd=1,lrgd
-            krgd=krgd+1
-
-            ! local index and mass of particle/site - assumption must hold here
-
-            i=rigid%index_local(jrgd,irgd)
-            weight=rigid%weight(jrgd,rgdtyp)
-
-            wxx=wxx+weight*(gyy(krgd)*config%vzz(i)-gzz(krgd)*config%vyy(i))
-            wyy=wyy+weight*(gzz(krgd)*config%vxx(i)-gxx(krgd)*config%vzz(i))
-            wzz=wzz+weight*(gxx(krgd)*config%vyy(i)-gyy(krgd)*config%vxx(i))
-          End Do
-
-          ! If the RB has 2+ frozen particles (ill=1) the net angular momentum
-          ! must align along the axis of rotation keeping its magnitude
-
-          If (rigid%frozen(0,rgdtyp) > 1) Then
-            i1=rigid%index_local(rigid%index_global(1,rgdtyp),irgd)
-            i2=rigid%index_local(rigid%index_global(2,rgdtyp),irgd)
-
-            x(1)=config%parts(i1)%xxx-config%parts(i2)%xxx
-            y(1)=config%parts(i1)%yyy-config%parts(i2)%yyy
-            z(1)=config%parts(i1)%zzz-config%parts(i2)%zzz
-
-            Call images(config%imcon,config%cell,1,x,y,z)
-
-            tmp=Sign( Sqrt((wxx**2+wyy**2+wzz**2)/(x(1)**2+y(1)**2+z(1)**2)) , &
-              Nearest((x(1)*wxx+y(1)*wyy+z(1)*wzz),-1.0_wp) )
-
-            wxx=x(1)*tmp
-            wyy=y(1)*tmp
-            wzz=z(1)*tmp
-          End If
-
-          ! angular velocity in body fixed frame
-
-          rigid%oxx(irgd)=(rot(1)*wxx+rot(4)*wyy+rot(7)*wzz)*rigid%rix(2,rgdtyp)
-          rigid%oyy(irgd)=(rot(2)*wxx+rot(5)*wyy+rot(8)*wzz)*rigid%riy(2,rgdtyp)
-          rigid%ozz(irgd)=(rot(3)*wxx+rot(6)*wyy+rot(9)*wzz)*rigid%riz(2,rgdtyp)
-
-          Do jrgd=1,lrgd
-            If (rigid%frozen(jrgd,rgdtyp) == 0) Then ! Apply restrictions
-              i=rigid%index_local(jrgd,irgd) ! local index of particle/site
-
-              If (i <= config%natms) Then
-
-                ! site velocity in body frame
-
-                x(1)=rigid%x(jrgd,rgdtyp)
-                y(1)=rigid%y(jrgd,rgdtyp)
-                z(1)=rigid%z(jrgd,rgdtyp)
-
-                wxx=rigid%oyy(irgd)*z(1)-rigid%ozz(irgd)*y(1)
-                wyy=rigid%ozz(irgd)*x(1)-rigid%oxx(irgd)*z(1)
-                wzz=rigid%oxx(irgd)*y(1)-rigid%oyy(irgd)*x(1)
-
-                ! new atomic velocities in lab frame
-
-                config%vxx(i)=rot(1)*wxx+rot(2)*wyy+rot(3)*wzz+rigid%vxx(irgd)
-                config%vyy(i)=rot(4)*wxx+rot(5)*wyy+rot(6)*wzz+rigid%vyy(irgd)
-                config%vzz(i)=rot(7)*wxx+rot(8)*wyy+rot(9)*wzz+rigid%vzz(irgd)
-
-              End If
-            End If
-          End Do
-        End If
-      End If
-    End Do
-
-    Deallocate (gxx,gyy,gzz, Stat = fail)
-    If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_q_ench deallocation failure'
-      Call error(0,message)
-    End If
-  End Subroutine rigid_bodies_q_ench
-
   Subroutine rigid_bodies_setup(l_str,l_top,megatm,megfrz,degtra,degrot,rcut,sites,rigid,config,comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1065,7 +872,7 @@ Contains
     ! Tag RBs, find their COMs and check their widths to rcut (system cutoff)
 
     Call rigid_bodies_tags(config,rigid,comm)
-    Call rigid_bodies_coms(config,rigid%xxx,rigid%yyy,rigid%zzz,rigid,comm)
+    Call rigid_bodies_coms(config,rigid%xxx,rigid%yyy,rigid%zzz,rigid)
     Call rigid_bodies_widths(rcut,rigid,config,comm)
 
     ! Find as many as possible different groups of RB units on this domain
@@ -1847,7 +1654,7 @@ Contains
 
   End Subroutine rigid_bodies_setup
 
-  Subroutine rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,config,comm)
+  Subroutine rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,config)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for resolving RBs' torques into equivalent atomic
@@ -1869,7 +1676,6 @@ Contains
       uxx(:),uyy(:),uzz(:)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( configuration_type ),   Intent( InOut ) :: config
-    Type( comms_type ), Intent( In    ) :: comm
 
     Integer           :: fail,i,i1,i2,irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp ) :: fmx,fmy,fmz,x(1:1),y(1:1),z(1:1),tqx,tqy,tqz,torque,tmp,qqq
@@ -2105,7 +1911,7 @@ Contains
     End If
   End Subroutine rigid_bodies_split_torque
 
-  Subroutine rigid_bodies_stress(strcom,ggx,ggy,ggz,rigid,config,comm)
+  Subroutine rigid_bodies_stresss(strcom,ggx,ggy,ggz,rigid,config,comm)
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 routine to calculate RB contributions to the atomic stress
@@ -2177,7 +1983,7 @@ Contains
     strcom(6)=0.5_wp*(strcom(6)+strcom(8))
     strcom(8)=strcom(6)
 
-  End subroutine rigid_bodies_stress
+  End subroutine rigid_bodies_stresss
 
   Subroutine rigid_bodies_stre_s(strcom,ggx,ggy,ggz,config,rigid,comm,fxl,fyl,fzl)
 
@@ -2276,6 +2082,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Character(Len=*), Parameter  :: sub="rigid_bodies_str_ss"
     Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( configuration_type ),   Intent( InOut ) :: config
@@ -2291,7 +2098,7 @@ Contains
       gyy(1:rigid%max_list*rigid%max_rigid), &
       gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_stress allocation failure'
+      Write(message,'(a)') Trim(sub)//' allocation failure'
       Call error(0,message)
     End If
 
@@ -2370,7 +2177,7 @@ Contains
     fail = 0
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_stress deallocation failure'
+      Write(message,'(a)') Trim(sub)//" deallocation failure"
       Call error(0,message)
     End If
 
@@ -2393,6 +2200,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+    Character(Len=*), Parameter :: sub = "rigid_bodies_str__s"
     Real( Kind = wp ),  Intent(   Out ) :: strcom(1:9)
     Type( configuration_type ),   Intent( In    ) :: config
     Real( Kind = wp ),  Intent( In    ) :: fxl(:),fyl(:),fzl(:)
@@ -2400,7 +2208,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Integer :: fail,i,irgd,jrgd,krgd,lrgd,rgdtyp
-    Real :: tmp_fx, tmp_fy, tmp_fz
+    Real( Kind = wp ) :: tmp_fx, tmp_fy, tmp_fz
 
     Real( Kind = wp ), Allocatable :: gxx(:),gyy(:),gzz(:)
     Character ( Len = 256 )  :: message
@@ -2411,7 +2219,7 @@ Contains
       gyy(1:rigid%max_list*rigid%max_rigid), &
       gzz(1:rigid%max_list*rigid%max_rigid), Stat = fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_stress allocation failure'
+      Write(message,'(a)') Trim(sub)//' allocation failure'
       Call error(0,message)
     End If
 
@@ -2493,7 +2301,7 @@ Contains
     fail = 0
     Deallocate (gxx,gyy,gzz, Stat = fail)
     If (fail > 0) Then
-      Write(message,'(a)') 'rigid_bodies_stress deallocation failure'
+      Write(message,'(a)') Trim(sub)//' deallocation failure'
       Call error(0,message)
     End If
   End subroutine rigid_bodies_str__s
@@ -2991,7 +2799,7 @@ Contains
         Call update_shared_units(config,rigid%list_shared, &
           rigid%map_shared,stats%xin,stats%yin,stats%zin,domain,comm)
       End If
-      Call rigid_bodies_coms(config,stats%xin,stats%yin,stats%zin,rgdxin,rgdyin,rgdzin,rigid,comm)
+      Call rigid_bodies_coms(config,stats%xin,stats%yin,stats%zin,rgdxin,rgdyin,rgdzin,rigid)
 
       If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -3268,7 +3076,7 @@ Contains
 
       If (.not.neigh%update) Then
 
-        Call rigid_bodies_coms(config,neigh%xbg,neigh%ybg,neigh%zbg,rgdxin,rgdyin,rgdzin,rigid,comm)
+        Call rigid_bodies_coms(config,neigh%xbg,neigh%ybg,neigh%zbg,rgdxin,rgdyin,rgdzin,rigid)
 
         If (thermo%ensemble == ENS_NPT_BERENDSEN .or. thermo%ensemble == ENS_NPT_BERENDSEN_ANISO) Then
 
@@ -3981,85 +3789,4 @@ Contains
 
   End Subroutine no_squish
 
-  subroutine q_update                                       &
-      (tstep,oxp,oyp,ozp,oxq,oyq,ozq,mxquat,quattol, &
-      q0,q1,q2,q3,safe)
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine to update the quaternions in LFV scope
-    !
-    ! copyright - daresbury laboratory
-    ! author    - t.forester october 1993
-    ! adapted   - i.t.todorov october 2010
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Integer,           Intent( In    ) :: mxquat
-    Real( Kind = wp ), Intent( In    ) :: tstep,oxp,oyp,ozp,oxq,oyq,ozq,quattol
-    Real( Kind = wp ), Intent( InOut ) :: q0,q1,q2,q3
-    Logical,           Intent( InOut ) :: safe
-
-    Integer           :: itq
-    Real( Kind = wp ) :: eps,rnorm,qn0,qn1,qn2,qn3, &
-      qn0a,qn1a,qn2a,qn3a,qn0b,qn1b,qn2b,qn3b
-
-    ! first estimate of new quaternions (laboratory frame)
-
-    qn0=q0+(-q1*oxp - q2*oyp - q3*ozp)*tstep*0.5_wp
-    qn1=q1+( q0*oxp - q3*oyp + q2*ozp)*tstep*0.5_wp
-    qn2=q2+( q3*oxp + q0*oyp - q1*ozp)*tstep*0.5_wp
-    qn3=q3+(-q2*oxp + q1*oyp + q0*ozp)*tstep*0.5_wp
-
-    ! first iteration of new quaternions (lab fixed)
-
-    qn0b=0.0_wp ; qn1b=0.0_wp ; qn2b=0.0_wp ; qn3b=0.0_wp
-
-    itq=0 ; eps=2.0_wp*quattol
-    Do While (itq < mxquat .and. eps > quattol)
-      qn0a=0.5_wp*(-q1 *oxp - q2 *oyp - q3 *ozp) + &
-        0.5_wp*(-qn1*oxq - qn2*oyq - qn3*ozq)
-      qn1a=0.5_wp*( q0 *oxp - q3 *oyp + q2 *ozp) + &
-        0.5_wp*( qn0*oxq - qn3*oyq + qn2*ozq)
-      qn2a=0.5_wp*( q3 *oxp + q0 *oyp - q1 *ozp) + &
-        0.5_wp*( qn3*oxq + qn0*oyq - qn1*ozq)
-      qn3a=0.5_wp*(-q2 *oxp + q1 *oyp + q0 *ozp) + &
-        0.5_wp*(-qn2*oxq + qn1*oyq + qn0*ozq)
-
-      qn0=q0+0.5_wp*qn0a*tstep
-      qn1=q1+0.5_wp*qn1a*tstep
-      qn2=q2+0.5_wp*qn2a*tstep
-      qn3=q3+0.5_wp*qn3a*tstep
-
-      rnorm=1.0_wp/Sqrt(qn0**2+qn1**2+qn2**2+qn3**2)
-
-      qn0=qn0*rnorm
-      qn1=qn1*rnorm
-      qn2=qn2*rnorm
-      qn3=qn3*rnorm
-
-      ! convergence test
-
-      eps=Sqrt(((qn0a-qn0b)**2+(qn1a-qn1b)**2+(qn2a-qn2b)**2+(qn3a-qn3b)**2)*tstep**2)
-
-      qn0b=qn0a
-      qn1b=qn1a
-      qn2b=qn2a
-      qn3b=qn3a
-
-      itq=itq+1
-    End Do
-
-    ! store new quaternions
-
-    q0=qn0
-    q1=qn1
-    q2=qn2
-    q3=qn3
-
-    ! Check safety
-
-    If (itq == mxquat) safe=.false.
-
-  End Subroutine q_update
 End module rigid_bodies

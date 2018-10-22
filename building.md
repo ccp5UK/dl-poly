@@ -88,16 +88,16 @@ FFLAGS="-fpp -O3 -xHost -fimf-domain-exclusion=15"
 * If you plan to run the binary on a different type of a machine than you build it, check the manual of your compiler
 for the flags matching the _running machine_
 
-## Debugging, or when things go merdre
+## Debugging, or when things go unexpected
 * gfortran
 
 ```sh
-FFLAGS="-g -O0 -std=f2008 -pedantic -fbacktrace -fcheck=all -finit-integer=2147483648 -finit-real=nan -finit-logical=true -finit-character=35 -ffpe-trap=invalid,zero,overflow -fdump-core"
+FFLAGS="-g -frecord-gcc-switches -O0 -std=f2008 -pedantic -fbacktrace -fcheck=all -finit-integer=2147483647 -finit-real=snan -finit-logical=true -finit-character=42 -finit-derived -ffpe-trap=invalid,zero,overflow -fdump-core -fstack-protector-all -Wall -pipe"
 ```
 * Intel
 
 ```sh
-FFLAGS="-g -O0 -stand f08 -traceback -C -fp-stack-check -ftrapuv"
+FFLAGS="-g -O0 -stand f08 -traceback -C -fp-stack-check -ftrapuv -qopt-report=5 -init=snan -init=arrays"
 ```
 
 ## Building with NETCDF support

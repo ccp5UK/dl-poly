@@ -533,17 +533,15 @@ Contains
 
   End Subroutine rdf_compute
 
-  Subroutine calculate_block(temp,rcut,neigh,sites,config,rdf)
+  Subroutine calculate_block(temp,rcut,sites,config,rdf)
     Real( Kind = wp ), Intent(in)            :: temp, rcut
-    Type( neighbours_type), Intent( In    ) :: neigh
     Type( site_type ), Intent( In    ) :: sites
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type( configuration_type ), Intent( InOut ) :: config
 
-    Real( Kind = wp ), Dimension( 1:neigh%max_list ) :: rrt, xxt, yyt, zzt
     Real( Kind = wp )                        :: kT2engo, delr, rdlr, dgrid, pdfzero, factor1, rrr,dvol,gofr,gofr1
 
-    Integer :: i, loopend, j, ia, ib, ngrid, kk, k, limit, jj
+    Integer :: i, ia, ib, ngrid, kk 
     Logical :: zero
 
     kT2engo = boltz*temp/engunit
@@ -587,10 +585,9 @@ Contains
 
   End Subroutine calculate_block
 
-  Subroutine calculate_errors(temp, rcut, num_steps, neigh, sites, rdf, config, comm)
+  Subroutine calculate_errors(temp, rcut, sites, rdf, config, comm)
 
     Real( Kind = wp ), Intent( In )                      :: temp, rcut
-    Type( neighbours_type ), Intent( In    ) :: neigh
     Type( site_type ), Intent( In    ) :: sites
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type(comms_type), Intent( InOut )                    :: comm
@@ -598,10 +595,9 @@ Contains
 
     Real( Kind = wp )                                    :: test1, delr
     Real( kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
-    Real( kind = wp)                                     :: i_nr_blocks, s
+    Real( kind = wp)                                     :: i_nr_blocks
 
-    Integer, Intent(In) :: num_steps
-    Integer             :: nr_blocks, i, j,k ,l, ierr(2), a, b, ia, ib, kk
+    Integer             :: nr_blocks, i, j,k ,l, ierr(2),  kk
 
     Character ( Len = 256 )  :: messages(2)
 
@@ -626,7 +622,7 @@ Contains
 
     !Compute the rdf for each of the blocks
     Do nr_blocks=1, rdf%num_blocks+1
-      Call calculate_block(temp, rcut,neigh,sites,config,rdf)
+      Call calculate_block(temp, rcut,sites,config,rdf)
     End Do
     rdf%block_number = nr_blocks
 
@@ -693,10 +689,9 @@ Contains
     End If
   End Subroutine calculate_errors
 
-  Subroutine calculate_errors_jackknife(temp,rcut,num_steps,neigh,sites,rdf,config,comm)
+  Subroutine calculate_errors_jackknife(temp,rcut,sites,rdf,config,comm)
 
     Real( Kind = wp ), Intent(In)                        :: temp, rcut
-    Type( neighbours_type ), Intent( In    ) :: neigh
     Type( site_type ), Intent( In    ) :: sites
     Type( rdf_type ), Intent( InOut ) :: rdf
     Type(comms_type), Intent( InOut )                    :: comm
@@ -704,10 +699,9 @@ Contains
 
     Real( Kind = wp )                                    :: test1
     Real( Kind = wp ), Dimension( :, : , :), Allocatable :: averages, errors
-    Real(Kind = wp)                                      :: i_nr_blocks, delr, s
+    Real(Kind = wp)                                      :: i_nr_blocks, delr
 
-    Integer, Intent(in) :: num_steps
-    Integer             :: nr_blocks, i, j,k ,l, ierr(2), a, b, kk
+    Integer             :: nr_blocks, i, j,k ,l, ierr(2), kk
 
     Character( Len = 256 ) :: messages(2)
 
@@ -732,7 +726,7 @@ Contains
 
     !Compute the rdf%rdf for each of the blocks
     Do nr_blocks=1,rdf%num_blocks+1
-      Call calculate_block(temp, rcut,neigh,sites,config,rdf)
+      Call calculate_block(temp, rcut,sites,config,rdf)
     End Do
     rdf%block_number = nr_blocks
     i_nr_blocks = 1.0_wp / Real(nr_blocks, wp)

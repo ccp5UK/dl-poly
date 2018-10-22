@@ -64,23 +64,13 @@ build-intel:
   script:
     - sh utils/build-intel.sh
 
-build-old-hpc:
-  stage: build
-  tags: 
-    - gcc
-  script:
-    - sh utils/build-old.sh
-  only:
-    - master
-
-
 build-manual:
   stage: build
   script:
     - cd manual
     - ./makedoc MANUAL_USR
   only: 
-    - master
+    - devel
       
 build-win32-serial:
   stage: build
@@ -137,3 +127,5 @@ testing-mpi-intel-paranoid:
     - intel
   script:
     - sh utils/intel-testing-paranoid.sh
+  except:
+    - devel

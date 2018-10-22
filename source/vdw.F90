@@ -158,7 +158,7 @@ Module vdw
     Final :: cleanup
   End Type vdw_type
 
-  Public :: vdw_forces,vdw_generate,vdw_table_read,vdw_lrc
+  Public :: vdw_forces,vdw_generate,vdw_table_read,vdw_lrc,vdw_direct_fs_generate
 
 Contains
 
@@ -245,7 +245,7 @@ Contains
     Integer           :: fail,i,j,k,ivdw,keypot,n,m
     Real( Kind = wp ) :: a,b,c,d,e0,nr,mr,r0,r,eps,sig, &
       eadd,padd,denprd,plrc,t,kk,s9, &
-      z1,z2,rm,al
+      z1,z2
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: numfrz
     Character( Len = 256 ) :: message,messages(3)

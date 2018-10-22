@@ -74,7 +74,7 @@ Module trajectory
     Character( Len = 1),  Allocatable :: buffer(:,:)
     Logical :: newjob_write = .true. , &
       fast_write   = .true.
-    Character( Len = 40 ) :: fname
+    Character( Len = 1024 ) :: fname
     Integer          :: recsz_write  = 73 ! default record size
     Integer(Kind=li) :: rec_write    = 0_li , &
       frm_write    = 0_li
@@ -86,7 +86,7 @@ Module trajectory
     !> Return the number used in trajectory files corresponding to the level of
     !> detail, as these do not necessarily need to be identical
     Procedure, Public :: file_key => trajectory_file_key
-    Final :: cleanup 
+    Final :: cleanup
   End Type trajectory_type
 
   ! Trajectory detail level keys
@@ -114,7 +114,7 @@ Contains
 
   !> Initialise a trajectory type
   Subroutine init_trajectory_type(T,key,freq,start)
-  Class(trajectory_type) :: T
+    Class(trajectory_type) :: T
     Integer( Kind = wi ), Intent( In ) :: key
     Integer( Kind = wi ), Intent( In ) :: freq
     Integer( Kind = wi ), Intent( In ) :: start
@@ -139,7 +139,7 @@ Contains
   End Subroutine init_trajectory_type
 
   Function trajectory_file_key(T) Result(key)
-  Class(trajectory_type) :: T
+    Class(trajectory_type) :: T
     Integer( Kind = wi ) :: key
 
     If (T%key == TRAJ_KEY_COORD) Then
@@ -154,7 +154,7 @@ Contains
   End Function trajectory_file_key
 
   Subroutine read_history(l_str,fname,megatm,levcfg,dvar,nstep,tstep,time,exout, &
-      io,traj,sites,domain,config,files,comm)
+    io,traj,sites,domain,config,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -281,7 +281,7 @@ Contains
           End If
 
           If (traj%io_read == IO_READ_MPIIO) Then
-            Close(Unit=files(FILE_CONFIG)%unit_no)
+            Call files(FILE_CONFIG)%close()
 
             Call io_set_parameters(io, user_comm = comm%comm )
             Call io_init(io, traj%recsz_read )
@@ -456,10 +456,10 @@ Contains
               End If
               Go To 40
 
-              30               Continue
+30            Continue
               safe=.false. ! catch error
 
-              40               Continue
+40            Continue
             End If
 
             ! Circulate configuration data to all nodes when transmission arrays are filled up
@@ -717,7 +717,7 @@ Contains
 
     ! Normal exit from HISTORY file read
 
-    200 Continue
+200 Continue
 
     ! To prevent users from the danger of changing the order of calls
     ! in dl_poly set 'nlast' to the innocent 'natms'
@@ -745,7 +745,7 @@ Contains
     Call info('HISTORY end of file reached',.true.)
 
     If (traj%io_read == IO_READ_MASTER) Then
-      If (config%imcon == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (config%imcon == 0) Call files(FILE_CONFIG)%close()
       Deallocate (chbuf,       Stat=fail(1))
       Deallocate (iwrk,        Stat=fail(2))
       Deallocate (axx,ayy,azz, Stat=fail(3))
@@ -764,12 +764,12 @@ Contains
 
     ! Abnormal exit from HISTORY file read
 
-    300 Continue
+300 Continue
 
     Call info('HISTORY data mishmash detected',.true.)
     exout = -1 ! It's an indicator of the end of reading.
     If (traj%io_read == IO_READ_MASTER) Then
-      If (config%imcon == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (config%imcon == 0) Call files(FILE_CONFIG)%close()
       Deallocate (chbuf,       Stat=fail(1))
       Deallocate (iwrk,        Stat=fail(2))
       Deallocate (axx,ayy,azz, Stat=fail(3))
@@ -788,14 +788,14 @@ Contains
 
     ! HISTORY not found
 
-    400 Continue
+400 Continue
 
     Call error(585)
 
   End Subroutine read_history
 
   Subroutine trajectory_write(keyres,nstep,tstep,time,io,rsd,netcdf,config, &
-      traj,files,comm)
+    traj,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -891,7 +891,7 @@ Contains
 
       ! Generate file is non-existent
 
-      10   Continue
+10    Continue
       If (.not.lexist) Then
 
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
@@ -901,7 +901,7 @@ Contains
             Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(a72,a1)',       Rec=Int(1,li)) config%cfgname(1:72),lf
             Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) &
               traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
-            Close(Unit=files(FILE_HISTORY)%unit_no)
+            Call files(FILE_HISTORY)%close()
           End If
           traj%rec_write=Int(2,li)
           traj%frm_write=Int(0,li)
@@ -977,8 +977,8 @@ Contains
 
             End Do
 
-            20            Continue
-            Close(Unit=files(FILE_HISTORY)%unit_no)
+20          Continue
+            Call files(FILE_HISTORY)%close()
 
           End If
 
@@ -1042,16 +1042,16 @@ Contains
           Call gcheck(comm,safe)
           If (.not.safe) Then
             Select Case( Selected_real_kind( io_p, io_r ) )
-            Case( Kind( 1.0 ) )
+             Case( Kind( 1.0 ) )
               Write(message,'(a)') 'Precision requested: Single'
-            Case( Kind( 1.0d0 ) )
+             Case( Kind( 1.0d0 ) )
               Write(message,'(a)') 'Precision requested: Double'
             End Select
             Call info(message,.true.)
             Select Case( Selected_real_kind( file_p, file_r ) )
-            Case( Kind( 1.0 ) )
+             Case( Kind( 1.0 ) )
               Write(message,'(a)') "Precision in file: Single"
-            Case( Kind( 1.0d0 ) )
+             Case( Kind( 1.0d0 ) )
               Write(message,'(a)') "Precision in file: Double"
             End Select
             Call info(message,.true.)
@@ -1370,7 +1370,7 @@ Contains
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) &
           traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
 
-        Close(Unit=files(FILE_HISTORY)%unit_no)
+        Call files(FILE_HISTORY)%close()
 
       Else
 
@@ -1505,13 +1505,13 @@ Contains
 
       If ( ierr /= 0 ) Then
         Select Case( ierr )
-        Case( IO_BASE_COMM_NOT_SET )
+         Case( IO_BASE_COMM_NOT_SET )
           Call error( 1050 )
-        Case( IO_ALLOCATION_ERROR )
+         Case( IO_ALLOCATION_ERROR )
           Call error( 1053 )
-        Case( IO_UNKNOWN_WRITE_OPTION )
+         Case( IO_UNKNOWN_WRITE_OPTION )
           Call error( 1056 )
-        Case( IO_UNKNOWN_WRITE_LEVEL )
+         Case( IO_UNKNOWN_WRITE_LEVEL )
           Call error( 1059 )
         End Select
       End If
@@ -1645,7 +1645,7 @@ Contains
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(3i10,2i21,a1)', Rec=Int(2,li)) &
           traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
 
-        Close(Unit=files(FILE_HISTORY)%unit_no)
+        Call files(FILE_HISTORY)%close()
 
       Else
 
@@ -1700,7 +1700,7 @@ Contains
 
     Return
 
-    100 Continue
+100 Continue
 
     If (traj%newjob_write) Then
       traj%newjob_write = .false.
@@ -1726,7 +1726,7 @@ Contains
 
       ! Generate file is non-existent
 
-      110  Continue
+110   Continue
       If (.not.lexist) Then
 
         If (io_write /= IO_WRITE_SORTED_NETCDF) Then
@@ -1736,7 +1736,7 @@ Contains
             Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(a34,a1)',      Rec=Int(1,li)) config%cfgname(1:34),lf
             Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) &
               traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
-            Close(Unit=files(FILE_HISTORY)%unit_no)
+            Call files(FILE_HISTORY)%close()
           End If
           traj%rec_write=Int(2,li)
           traj%frm_write=Int(0,li)
@@ -1807,8 +1807,8 @@ Contains
 
             End Do
 
-            120         Continue
-            Close(Unit=files(FILE_HISTORY)%unit_no)
+120         Continue
+            Call files(FILE_HISTORY)%close()
 
           End If
 
@@ -1872,16 +1872,16 @@ Contains
           Call gcheck(comm,safe)
           If (.not.safe) Then
             Select Case( Selected_real_kind( io_p, io_r ) )
-            Case( Kind( 1.0 ) )
+             Case( Kind( 1.0 ) )
               Write(message,'(a)') 'Precision requested: Single'
-            Case( Kind( 1.0d0 ) )
+             Case( Kind( 1.0d0 ) )
               Write(message,'(a)') 'Precision requested: Double'
             End Select
             Call info(message,.true.)
             Select Case( Selected_real_kind( file_p, file_r ) )
-            Case( Kind( 1.0 ) )
+             Case( Kind( 1.0 ) )
               Write(message,'(a)') "Precision in file: Single"
-            Case( Kind( 1.0d0 ) )
+             Case( Kind( 1.0d0 ) )
               Write(message,'(a)') "Precision in file: Double"
             End Select
             Call info(message,.true.)
@@ -2041,13 +2041,13 @@ Contains
 
       If ( ierr /= 0 ) Then
         Select Case( ierr )
-        Case( IO_BASE_COMM_NOT_SET )
+         Case( IO_BASE_COMM_NOT_SET )
           Call error( 1050 )
-        Case( IO_ALLOCATION_ERROR )
+         Case( IO_ALLOCATION_ERROR )
           Call error( 1053 )
-        Case( IO_UNKNOWN_WRITE_OPTION )
+         Case( IO_UNKNOWN_WRITE_OPTION )
           Call error( 1056 )
-        Case( IO_UNKNOWN_WRITE_LEVEL )
+         Case( IO_UNKNOWN_WRITE_LEVEL )
           Call error( 1059 )
         End Select
       End If
@@ -2134,7 +2134,7 @@ Contains
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(2i2,3i10,a1)', Rec=Int(2,li)) &
           traj%file_key(),config%imcon,config%megatm,traj%frm_write,traj%rec_write,lf
 
-        Close(Unit=files(FILE_HISTORY)%unit_no)
+        Call files(FILE_HISTORY)%close()
 
       Else
 

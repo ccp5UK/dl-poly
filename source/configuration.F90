@@ -122,6 +122,8 @@ Module configuration
   Contains
     Private
     Procedure, Public :: chvom
+    Procedure, Public :: init => allocate_config_arrays
+    Procedure, Public :: init_read => allocate_config_arrays_read
   End Type configuration_type
 
   Interface reallocate
@@ -135,7 +137,7 @@ Module configuration
     Module Procedure getcom_arrays
   End Interface getcom
 
-  Public :: reallocate, allocate_config_arrays_read, allocate_config_arrays
+  Public :: reallocate
   Public :: check_config
   Public :: read_config,read_config_parallel
   Public :: scan_config
@@ -290,27 +292,24 @@ Contains
 
   End Subroutine reallocate_rwp_v
 
-
-  Subroutine allocate_config_arrays_read( config, isize )
-
-    Type(configuration_type), Intent(InOut) :: config
-    Integer, Intent( In    ) :: isize
+  Subroutine allocate_config_arrays_read(config)
+    Class(configuration_type), Intent(InOut) :: config
 
     Integer :: fail(1:4), i
 
     fail = 0
 
-    Allocate (config%atmnam(1:isize),                                      Stat = fail(1))
-    Allocate (config%lsi(1:isize),config%lsa(1:isize),config%ltg(1:isize), Stat = fail(2))
-    Allocate (config%parts(1:isize),                                       Stat = fail(3))
-    Allocate (config%vxx(1:isize),config%vyy(1:isize),config%vzz(1:isize), Stat = fail(4))
+    Allocate (config%atmnam(1:config%mxatms), Stat=fail(1))
+    Allocate (config%lsi(1:config%mxatms),config%lsa(1:config%mxatms),config%ltg(1:config%mxatms), Stat=fail(2))
+    Allocate (config%parts(1:config%mxatms), Stat=fail(3))
+    Allocate (config%vxx(1:config%mxatms),config%vyy(1:config%mxatms),config%vzz(1:config%mxatms), Stat=fail(4))
     If (Any(fail > 0)) Call error(1025)
 
     config%atmnam = ' '
     config%lsi = 0 ; config%lsa = 0 ; config%ltg = 0
 
     config%vxx = 0.0_wp ; config%vyy = 0.0_wp ; config%vzz = 0.0_wp
-    Do i=1,isize
+    Do i=1,config%mxatms
       config%parts(i)%xxx=0.0_wp
       config%parts(i)%yyy=0.0_wp
       config%parts(i)%zzz=0.0_wp
@@ -319,12 +318,10 @@ Contains
       config%parts(i)%fzz=0.0_wp
       config%parts(i)%chge=0.0_wp
     End Do
-
   End Subroutine allocate_config_arrays_read
 
-  Subroutine allocate_config_arrays( config )
-
-    Type(configuration_type), Intent(InOut) :: config
+  Subroutine allocate_config_arrays(config)
+    Class(configuration_type), Intent(InOut) :: config
 
     Integer           :: fail(1:5),stat(1:13)
 
@@ -360,7 +357,6 @@ Contains
     Call reallocate( config%mxatms - Size( config%vzz    ), config%vzz,    stat( 8) )
 
     If ( Any(stat /= 0 )) Call error(1025)
-
   End Subroutine allocate_config_arrays
 
   Subroutine check_config(config,electro_key,thermo,sites,flow,comm)
@@ -870,7 +866,7 @@ Contains
 
     ! Allocate necessary arrays to read CONFIG
 
-    Call allocate_config_arrays_read(config,config%mxatms)
+    Call config%init_read()
 
     ! Get type of I/O for reading
 
@@ -879,7 +875,7 @@ Contains
     ! Define filename ASCII or netCDF
 
     If (io_read /= IO_READ_NETCDF) Then
-      fname=files(FILE_CONFIG)%filename
+      fname=Trim(files(FILE_CONFIG)%filename)
     Else
       fname=Trim(files(FILE_CONFIG)%filename) // '.nc'
     End If
@@ -955,7 +951,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
 
     End If
 
@@ -1179,7 +1175,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
       Call gsync(comm)
 
       Deallocate (chbuf,iwrk,  Stat=fail(1))
@@ -1226,7 +1222,7 @@ Contains
         Call io_close(io, fh )
         Call io_finalize(io)
       Else
-        Close(Unit=files(FILE_CONFIG)%unit_no)
+        Call files(FILE_CONFIG)%close()
       End If
 
     End If
@@ -1398,7 +1394,7 @@ Contains
     ! error exit for CONFIG file read
 
 50  Continue
-    If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
     Call error(55)
 
   End Subroutine read_config
@@ -2057,7 +2053,7 @@ Contains
     Call error(55)
   End Subroutine read_config_parallel
 
-  Subroutine scan_config(config,megatm,imc_n,dvar,levcfg,xhi,yhi,zhi, &
+  Subroutine scan_config(config,megatm,dvar,levcfg,xhi,yhi,zhi, &
     io,domain,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -2077,7 +2073,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( io_type ), Intent( InOut ) :: io
-    Integer,              Intent( In    ) :: megatm,imc_n
+    Integer,              Intent( In    ) :: megatm
     Real( Kind = wp ),    Intent( In    ) :: dvar
     Integer,              Intent(   Out ) :: levcfg
     Real( Kind = wp ),    Intent(   Out ) :: xhi,yhi,zhi
@@ -2113,9 +2109,9 @@ Contains
     ! Define filename ASCII or netCDF
 
     If (io_read /= IO_READ_NETCDF) Then
-      fname=files(FILE_CONFIG)%filename
+      fname=Trim(files(FILE_CONFIG)%filename)
     Else
-      fname=files(FILE_CONFIG)%filename//'nc'
+      fname=Trim(files(FILE_CONFIG)%filename)//'nc'
     End If
 
     ! Check if we have a CONFIG
@@ -2196,7 +2192,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
 
     End If
 
@@ -2214,7 +2210,7 @@ Contains
       If (.not.safe) Go To 50
 
       Call strip_blanks(record)
-      config%cfgname=record
+      config%cfgname=Trim(record)
 
       ! Read configuration level and image condition
 
@@ -2268,7 +2264,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
       Call gsync(comm)
 
     Else ! netCDF read
@@ -2357,7 +2353,7 @@ Contains
 
         ! Close CONFIG
 
-        If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+        If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
 
 
         buffer(1)=xhi
@@ -2407,7 +2403,7 @@ Contains
           Call io_close(io, fh )
           Call io_finalize(io)
         Else
-          Close(Unit=files(FILE_CONFIG)%unit_no)
+          Call files(FILE_CONFIG)%close()
         End If
 
       End If
@@ -2419,7 +2415,7 @@ Contains
     ! error exit for CONFIG file read
 
 50  Continue
-    If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
     Call error(55)
 
   End Subroutine scan_config
@@ -2443,7 +2439,6 @@ Contains
 
     Type( io_type ), Intent( InOut ) :: io
     Type( configuration_type ), Intent( InOut ) :: config
-    Character ( Len = 6 ) :: name
     Integer               :: i,step
     Real( Kind = wp )     :: rcell(1:9),det,uuu,vvv,www,tstep,time
     Type( development_type ), Intent( In    ) :: devel
@@ -2515,7 +2510,7 @@ Contains
     Type( comms_type ),   Intent( InOut ) :: comm
 
     Logical               :: ready
-    Character( Len = 40 ) :: fname
+    Character( Len = 1024 ) :: fname
     Integer(Kind=li)      :: rec,rec1     ! record line
 
     Integer               :: fail(1:4),i,k,jj,jdnode,jatms
@@ -2828,7 +2823,7 @@ Contains
           End Do
         End Do
 
-        Close(Unit=cfile%unit_no)
+        Call cfile%close()
 
       Else
 
@@ -3096,7 +3091,7 @@ Contains
           End Do
         End Do
 
-        Close(Unit=cfile%unit_no)
+        Call cfile%close()
 
       Else
 

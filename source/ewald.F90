@@ -530,7 +530,7 @@ Contains
 
   End Subroutine bspcoe
 
-  Subroutine bspgen(config,nospl,txx,tyy,tzz,bspx,bspy,bspz,bsdx,bsdy,bsdz,ewld,comm)
+  Subroutine bspgen(nospl,txx,tyy,tzz,bspx,bspy,bspz,bsdx,bsdy,bsdz,ewld)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -549,12 +549,10 @@ Contains
 
     Type( ewald_type ), Intent( In    ) :: ewld
     Integer, Intent( In    ) :: nospl
-    Type( configuration_type ),               Intent( In    ) :: config
     Real( Kind = wp ), Dimension( : ), Intent( In    ) :: txx,tyy,tzz
 
     Real( Kind = wp ), Dimension( : , : ), Intent(   Out ) :: &
       bsdx,bsdy,bsdz,bspx,bspy,bspz
-    Type( comms_type ),                       Intent( In    ) :: comm
 
     Integer           :: fail,i,j,k
     Real( Kind = wp ) :: aaa,bbb,ccc, rix0,riy0,riz0, jm1_r,k_r,km1_rr
@@ -683,8 +681,8 @@ Contains
 
   End Subroutine bspgen
 
-  Subroutine bspgen_mpoles(nospl,xxx,yyy,zzz,bspx,bspy,bspz, &
-      bsddx,bsddy,bsddz,n_choose_k,config,ewld,comm)
+  Subroutine bspgen_mpoles(nospl,bspx,bspy,bspz, &
+    bsddx,bsddy,bsddz,n_choose_k,config,ewld)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -704,13 +702,11 @@ Contains
 
     Type( ewald_type ), Intent( In    ) :: ewld
     Integer,                                                      Intent( In    ) :: nospl
-    Real( Kind = wp ), Dimension( : ),                     Intent( In    ) :: xxx,yyy,zzz
 
     Real( Kind = wp ), Dimension( : , : ),           Intent(   Out ) :: bspx,bspy,bspz
     Real( Kind = wp ), Dimension( 0:, 1: , 1:), Intent(   Out ) :: bsddx,bsddy,bsddz
     Real( Kind = wp ), Dimension(1:,1:) :: n_choose_k
     Type( configuration_type ),                                   Intent( InOut ) :: config
-    Type( comms_type),                                            Intent( In    ) :: comm
 
     Integer           :: fail,i,j,k,m,n,p,r,s
     Real( Kind = wp ) :: aaa,bbb,ccc, rix0,riy0,riz0, jm1_r,k_r,km1_rr

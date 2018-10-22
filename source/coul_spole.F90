@@ -145,7 +145,7 @@ Contains
   End Subroutine intra_coul
 
   Subroutine coul_fscp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
-      electro,config,comm)
+    electro,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -178,7 +178,6 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( comms_type ),                       Intent( In    ) :: comm
     Type( configuration_type ),               Intent( InOut ) :: config
 
 
@@ -391,7 +390,7 @@ Contains
   End Subroutine coul_fscp_forces
 
   Subroutine coul_rfp_forces(iatm,xxt,yyt,zzt,rrt,engcpe,vircpe,stress,neigh, &
-      electro,config,comm)
+    electro,config)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -423,7 +422,6 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( comms_type ),                       Intent( In    ) :: comm
     Type( configuration_type ),               Intent( InOut ) :: config
 
 

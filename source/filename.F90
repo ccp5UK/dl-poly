@@ -3,14 +3,12 @@
 !> Copyright - Daresbury Laboratory
 !
 !> Author - J. Madge September 2018
+!> contrib - a.m.elena October 2018 - use standard integer for units
 Module filename
-  Use kinds, only : wi,si
+  Use kinds, only : wi
   Implicit None
 
   Private
-
-  !> File unit number integer kind
-  Integer, Parameter, Public :: UNIT_TYPE = si
 
   !> File data
   Type, Public :: file_type
@@ -18,33 +16,34 @@ Module filename
     !> Filename
     Character(Len=1024), Public :: filename
     !> Fortran unit number, set with newunit=T%unit_no
-    Integer(Kind = UNIT_TYPE), Public :: unit_no = -2
+    Integer, Public :: unit_no = -2
   Contains
     Procedure, Public :: init => file_type_init
     Procedure, Public :: rename => file_type_init
+    Procedure, Public :: close => close_file
   End Type file_type
 
   ! Core file location keys
   !> CONTROL file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_CONTROL = 1
+  Integer, Parameter, Public :: FILE_CONTROL = 1
   !> OUTPUT file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_OUTPUT = 2
+  Integer, Parameter, Public :: FILE_OUTPUT = 2
   !> CONFIG file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_CONFIG = 3
+  Integer, Parameter, Public :: FILE_CONFIG = 3
   !> FIELD file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_FIELD = 4
+  Integer, Parameter, Public :: FILE_FIELD = 4
   !> STATS file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_STATS = 5
+  Integer, Parameter, Public :: FILE_STATS = 5
   !> HISTORY file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_HISTORY = 6
+  Integer, Parameter, Public :: FILE_HISTORY = 6
   !> HISTORF file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_HISTORF = 7
+  Integer, Parameter, Public :: FILE_HISTORF = 7
   !> REVIVE file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_REVIVE = 8
+  Integer, Parameter, Public :: FILE_REVIVE = 8
   !> REVOLD file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_REVOLD = 9
+  Integer, Parameter, Public :: FILE_REVOLD = 9
   !> REVCON file
-  Integer(Kind=UNIT_TYPE), Parameter, Public :: FILE_REVCON = 10
+  Integer, Parameter, Public :: FILE_REVCON = 10
 
   !> Size of filename array
   Integer(Kind=wi), Parameter :: FILENAME_SIZE = 10
@@ -55,7 +54,7 @@ Contains
 
   !> Initialise a file
   Subroutine file_type_init(T, filename)
-  Class(file_type) :: T
+    Class(file_type) :: T
     Character(Len=*), Intent(In) :: filename
 
     T%filename = Trim(filename)
@@ -93,4 +92,17 @@ Contains
       Call filenames(file_no)%init(default_names(file_no))
     End Do
   End Subroutine default_filenames
+
+  !> close a unit and restore it default value 
+  Subroutine close_file(T)
+    Class(file_type) :: T
+    Logical :: is_open
+
+    Inquire(T%unit_no,opened=is_open)
+    If (is_open) Then
+      Close(T%unit_no)
+      T%unit_no = -2
+    End If
+  End Subroutine close_file
+
 End Module filename

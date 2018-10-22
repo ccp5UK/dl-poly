@@ -158,70 +158,9 @@ Contains
 
       End Do
     End If
-    If (comm%idnode == 0) Close(Unit=files(FILE_CONTROL)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
   End Subroutine scan_development
-
-  Subroutine start_devel_time(name,devel,comm)
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 development subroutine for starting timing
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.j.bush november 2009
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Character( Len = * ), Intent( In    ) :: name
-    Type( development_type ), Intent( InOut ) :: devel
-    Type( comms_type ), Intent( InOut ) :: comm
-
-    If (devel%l_tim) Then
-      Call gsync(comm)
-      Call gtime(devel%t_zero)
-    End If
-
-  End Subroutine start_devel_time
-
-  Subroutine end_devel_time(name,devel,comm)
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 development subroutine for ending timing
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.j.bush november 2009
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Character( Len = * ), Intent( In    ) :: name
-    Type( development_type ), Intent( InOut ) :: devel
-    Type( comms_type ), Intent( InOut ) :: comm
-
-    Real( Kind = wp ) :: t
-    Character( Len = 256 ) :: message
-
-    If (devel%l_tim) Then
-      Call gsync(comm)
-      Call gtime(t)
-
-      Write(message,'(2(a,3x),f0.3)') 'DEVEL TIME: Time in', name, t-devel%t_zero
-      Call info(message,.true.)
-
-    End If
-
-  End Subroutine end_devel_time
 
 #ifdef HOST
 #define __HOSTNAME__ HOST
@@ -249,7 +188,7 @@ Contains
 #define __VERSION__ 'XYZ'
 #endif
 
-  Subroutine build_info(devel)
+  Subroutine build_info()
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -265,7 +204,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( development_type ), Intent( In    ) :: devel
 
     Character( Len =  8 ) :: date
     Character( Len = 10 ) :: time

@@ -991,7 +991,7 @@ Contains
     Integer, Intent( In    )                           :: root
     Type(comms_type), Intent (InOut)                   :: comm
 
-    Integer                                            :: n_l,n_u,n_s,fail
+    Integer                                            :: n_l,n_u,n_s
 
     If (comm%mxnode == 1) Return
     n_l = Lbound(vec, Dim = 1)
@@ -1055,7 +1055,7 @@ Contains
     Integer, Intent( In    )                           :: root
     Type(comms_type), Intent (InOut)                   :: comm
 
-    Integer                                            :: n_l,n_u,n_s,fail
+    Integer                                            :: n_l,n_u,n_s
 
     If (comm%mxnode == 1) Return
     n_l = Lbound(vec, Dim = 1)
@@ -1099,7 +1099,7 @@ Contains
     Integer, Intent( In    )                           :: root
     Type(comms_type), Intent (InOut)                   :: comm
 
-    Integer                                            :: n_l,n_u,n_s,fail
+    Integer                                            :: n_l,n_u,n_s
 
     If (comm%mxnode == 1) Return
     n_l = Lbound(vec, Dim = 1)
@@ -1273,7 +1273,7 @@ Contains
     Logical,            Intent( In    ) :: vec(:)
     Integer,            Intent( In    ) :: dest,tag
 
-    Integer :: n_l,n_u,n_s
+    Integer :: n_s
 
     n_s = Size(vec, Dim = 1)
 

@@ -158,7 +158,7 @@ Contains
             Form='formatted', Access='direct', Status='replace', Recl=recsz)
           Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(a52,a1)',      Rec=Int(1,li)) config%cfgname(1:52),lf
           Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2,li)) megatm,msd_data%frm,msd_data%rec,lf
-          Close(Unit=files(FILE_HISTORY)%unit_no)
+          Call files(FILE_HISTORY)%close()
         End If
         msd_data%rec=Int(2,li)
         msd_data%frm=Int(0,li)
@@ -226,7 +226,7 @@ Contains
           End Do
 
           20        Continue
-          Close(Unit=files(FILE_HISTORY)%unit_no)
+                    Call files(FILE_HISTORY)%close()
 
         End If
 
@@ -416,7 +416,7 @@ Contains
 
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2,li)) megatm,msd_data%frm,msd_data%rec,lf
 
-        Close(Unit=files(FILE_HISTORY)%unit_no)
+        Call files(FILE_HISTORY)%close()
 
       Else
 
@@ -595,7 +595,7 @@ Contains
         msd_data%rec=msd_data%rec+Int(megatm,li)
         Write(Unit=files(FILE_HISTORY)%unit_no, Fmt='(i10,2i21,a1)', Rec=Int(2,li)) megatm,msd_data%frm,msd_data%rec,lf
 
-        Close(Unit=files(FILE_HISTORY)%unit_no)
+        Call files(FILE_HISTORY)%close()
 
       Else
 

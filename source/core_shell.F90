@@ -969,14 +969,14 @@ Contains
           Call strip_blanks(c_out)
           Call lower_case(c_out)
           If (l_out .and. c_out(1:6) == 'append') Then
-            Close(unit=files(FILE_OUTPUT)%unit_no)
+            Call files(FILE_OUTPUT)%close()
             Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Position='append')
           End If
         End If
       End If
     End If
 
-    100 Continue
+100 Continue
 
     If (cshell%relaxed) Then
 

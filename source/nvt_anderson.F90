@@ -72,12 +72,11 @@ Contains
     Type( comms_type ), Intent( InOut) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:11),i,j,k,ntp,  &
       stp,i1,i2, &
       matms
     Real( Kind = wp )       :: hstep,rstep
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: mxdr,tmp, &
       scale,tkin,vom(1:3)
 
 
@@ -456,12 +455,11 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:17),i,j,k,ntp,  &
       stp,i1,i2, &
       matms,rtp,irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,rstep
-    Real( Kind = wp )       :: xt,yt,zt,vir,str(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: mxdr,tmp, &
       scale,tkin,vom(1:3)
     Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
       opx,opy,opz,fmx,fmy,fmz,       &

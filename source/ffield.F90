@@ -23,21 +23,20 @@ Module ffield
 
   Use tethers, Only : tethers_type
 
-  Use bonds, Only : bonds_type,bonds_table_read,allocate_bond_dst_arrays
-  Use angles, Only : angles_type,angles_table_read,allocate_angl_dst_arrays
-  Use dihedrals, Only : dihedrals_type,dihedrals_table_read,allocate_dihd_dst_arrays, &
-    dihedrals_14_check
-  Use inversions, Only : inversions_type,inversions_table_read,allocate_invr_dst_arrays
+  Use bonds, Only : bonds_type,bonds_table_read
+  Use angles, Only : angles_type,angles_table_read
+  Use dihedrals, Only : dihedrals_type,dihedrals_table_read,dihedrals_14_check
+  Use inversions, Only : inversions_type,inversions_table_read
   Use three_body, Only : threebody_type
-  Use vdw, Only : vdw_type,MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
+  Use vdw, Only : vdw_type,vdw_table_read,vdw_generate,vdw_direct_fs_generate, &
+    MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
     MIX_HALGREN,MIX_HOGERVORST,MIX_WALDMAN_HAGLER,MIX_TANG_TOENNIES, &
     MIX_FUNCTIONAL, &
     VDW_NULL,VDW_TAB,VDW_12_6,VDW_LENNARD_JONES,VDW_N_M,VDW_BUCKINGHAM, &
     VDW_BORN_HUGGINS_MEYER, VDW_HYDROGEN_BOND,VDW_N_M_SHIFT, &
     VDW_MORSE,VDW_WCA,VDW_DPD,VDW_AMOEBA,VDW_LENNARD_JONES_COHESIVE, &
     VDW_MORSE_12,VDW_RYDBERG,VDW_ZBL,VDW_ZBL_SWITCH_MORSE, &
-    VDW_ZBL_SWITCH_BUCKINGHAM,VDW_LJ_MDF,VDW_BUCKINGHAM_MDF,&
-    VDW_126_MDF,vdw_table_read,vdw_generate
+    VDW_ZBL_SWITCH_BUCKINGHAM,VDW_LJ_MDF,VDW_BUCKINGHAM_MDF,VDW_126_MDF
   Use metal, Only : metal_type,metal_generate_erf,metal_table_read,metal_generate
   Use tersoff, Only : tersoff_type,tersoff_generate
   Use four_body, Only : four_body_type
@@ -2518,22 +2517,22 @@ Contains
 
           If (bond%bin_pdf > 0) Then
             ntpbnd = 0 ! for bonds
-            Call allocate_bond_dst_arrays(bond) ! as it depends on bond%ldf(0)
+            Call bond%init_dst() ! as it depends on bond%ldf(0)
             !             bond%typ = 0 ! initialised in bonds_module
           End If
           If (angle%bin_adf > 0) Then
             ntpang = 0 ! for angles
-            Call allocate_angl_dst_arrays(angle) ! as it depends on angle%ldf(0)
+            Call angle%init_dst() ! as it depends on angle%ldf(0)
             !             angle%typ = 0 ! initialised in angles_module
           End If
           If (dihedral%bin_adf > 0) Then
             ntpdih = 0 ! for dihedrals
-            Call allocate_dihd_dst_arrays(dihedral) ! as it depends on dihedral%ldf(0)
+            Call dihedral%init_dst() ! as it depends on dihedral%ldf(0)
             !             dihedral%typ = 0 ! initialised in dihedrals
           End If
           If (inversion%bin_adf > 0) Then
             ntpinv = 0 ! for inversions
-            Call allocate_invr_dst_arrays(inversion) ! as it depends on inversion%ldf(0)
+            Call inversion%init_dst() ! as it depends on inversion%ldf(0)
             !             inversion%typ = 0 ! initialised in inversions
           End If
 
@@ -3977,7 +3976,7 @@ Contains
             If (vdws%l_tab) Call vdw_table_read(vdws,sites,comm)
             If (vdws%l_direct .and. (Any(vdws%ltp(1:vdws%n_vdw) /= VDW_NULL) &
               .or. Any(vdws%ltp(1:vdws%n_vdw) /= VDW_TAB))) Then
-              Call vdws%init_direct()
+              Call vdw_direct_fs_generate(vdws)
             End If
           End If
 
@@ -4803,7 +4802,7 @@ Contains
 
       Else If (word(1:5) == 'close') Then
 
-        If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+        If (comm%idnode == 0) Call files(FILE_FIELD)%close()
 
         ! Precautions: (vdws,met) may have led to rdf scanning (rdf%max_rdf > 0), see set_bounds
 
@@ -4865,20 +4864,20 @@ Contains
 
     ! uncontrolled error exit from field file processing
 
-    If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_FIELD)%close()
     Call error(16)
 
     ! end of field file error exit
 
     2000 Continue
 
-    If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+         If (comm%idnode == 0) Call files(FILE_FIELD)%close()
     Call error(52)
 
   End Subroutine read_field
 
   Subroutine report_topology(megatm,megfrz,atmfre,atmfrz,cshell,cons,pmf,bond, &
-      angle,dihedral,inversion,tether,sites,rigid,comm)
+    angle,dihedral,inversion,tether,sites,rigid)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -4905,7 +4904,6 @@ Contains
     Type( site_type ), Intent( InOut ) :: sites
     Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Type( core_shell_type ), Intent( InOut ) :: cshell
-    Type(comms_type), Intent( InOut ) :: comm
 
     Integer :: itmols,nsite,                &
       isite1,isite2,isite3,isite4, &
@@ -4922,7 +4920,7 @@ Contains
 
     Character( Len = 4) :: frzpmf
 
-    Character( Len = : ),Allocatable  :: fmt1,fmt2,fmt3
+    Character( Len = 20 )  :: fmt1,fmt2,fmt3
     Character( Len = 256) :: banner(18)
 
     nshels = 0
@@ -6001,7 +5999,7 @@ Contains
     End Do
 
     10 Continue
-    If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+       If (comm%idnode == 0) Call files(FILE_FIELD)%close()
 
     ! Define legend arrays lengths.  If length > 0 then
     ! length=Max(length)+1 for the violation excess element
@@ -6023,13 +6021,14 @@ Contains
 
     If (bond%max_bonds > 0) bond%max_legend=(mxb*(mxb+1))+1
     mxf(6)=bond%max_legend
-
+    !> this may end up in forced conversion not all squares are divisible by 2...
     If (angle%max_angles > 0) angle%max_legend=(mxb+1)**2/2+1
     mxf(7)=angle%max_legend
 
     If (dihedral%max_angles > 0) dihedral%max_legend=((mxb-1)*mxb*(mxb+1))/2+2*mxb+1
     mxf(8)=dihedral%max_legend
 
+    !> this more than sure results in a converted integer... division by 4 is not a nice thing
     If (inversion%max_angles  > 0) inversion%max_legend=(mxb*(mxb+1))/4+1
     mxf(9)=inversion%max_legend
 
@@ -6048,7 +6047,7 @@ Contains
     Return
 
     30 Continue
-    If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+       If (comm%idnode == 0) Call files(FILE_FIELD)%close()
     Call error(52)
     Return
 

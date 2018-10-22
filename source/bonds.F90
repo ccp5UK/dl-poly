@@ -95,17 +95,18 @@ Module bonds
   Contains
     Private
 
+    Procedure, Public :: init => allocate_bonds_arrays
+    Procedure, Public :: init_pot => allocate_bond_pot_arrays
+    Procedure, Public :: init_dst => allocate_bond_dst_arrays
     Final :: cleanup
   End Type bonds_type
 
-  Public :: allocate_bonds_arrays , &
-    allocate_bond_pot_arrays , allocate_bond_dst_arrays, &
-    bonds_compute, bonds_forces, bonds_table_read
+  Public :: bonds_compute, bonds_forces, bonds_table_read
 
 Contains
 
   Subroutine allocate_bonds_arrays(bond,mxatdm,mxtmls)
-    Type( bonds_type ), Intent( InOut ) :: bond
+    Class( bonds_type ), Intent( InOut ) :: bond
     Integer, Intent( In ) :: mxatdm,mxtmls
 
     Integer, Dimension( 1:8 ) :: fail
@@ -142,7 +143,7 @@ Contains
   End Subroutine allocate_bonds_arrays
 
   Subroutine allocate_bond_pot_arrays(bond)
-    Type( bonds_type ), Intent( InOut ) :: bond
+    Class( bonds_type ), Intent( InOut ) :: bond
 
     Integer :: fail(1:2)
 
@@ -159,7 +160,7 @@ Contains
   End Subroutine allocate_bond_pot_arrays
 
   Subroutine allocate_bond_dst_arrays(bond)
-    Type( bonds_type ), Intent( InOut ) :: bond
+    Class( bonds_type ), Intent( InOut ) :: bond
 
     Integer :: fail
 
@@ -1094,7 +1095,7 @@ Contains
       Write(message,'(a)') 'error - bonds_table_read allocation failure'
       Call error(0,message)
     End If
-    Call allocate_bond_pot_arrays(bond)
+    Call bond%init_pot()
 
     read_type=0 ! initialise read_type
     Do rtbnd=1,bond%ltp(0)

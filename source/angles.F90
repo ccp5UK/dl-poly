@@ -87,17 +87,18 @@ Module angles
   Contains
     Private
 
+    Procedure, Public :: init => allocate_angles_arrays
+    Procedure, Public :: init_dst => allocate_angl_dst_arrays
+    Procedure, Public :: init_pot => allocate_angl_pot_arrays
     Final :: cleanup
   End Type angles_type
 
-  Public :: allocate_angles_arrays , &
-    allocate_angl_pot_arrays , allocate_angl_dst_arrays, angles_compute, &
-    angles_forces, angles_table_read
+  Public :: angles_compute, angles_forces, angles_table_read
 
 Contains
 
   Subroutine allocate_angles_arrays(angle,mxatdm,mxtmls)
-    Type( angles_type ), Intent( InOut ) :: angle
+    Class( angles_type ), Intent( InOut ) :: angle
     Integer( Kind =wi ), Intent( In ) :: mxatdm,mxtmls
 
     Integer, Dimension(8) :: fail
@@ -134,7 +135,7 @@ Contains
   End Subroutine allocate_angles_arrays
 
   Subroutine allocate_angl_pot_arrays(angle)
-    Type( angles_type ), Intent( InOut ) :: angle
+    Class( angles_type ), Intent( InOut ) :: angle
 
     Integer :: fail(2)
 
@@ -151,7 +152,7 @@ Contains
   End Subroutine allocate_angl_pot_arrays
 
   Subroutine allocate_angl_dst_arrays(angle)
-    Type( angles_type ), Intent( InOut ) :: angle
+    Class( angles_type ), Intent( InOut ) :: angle
 
     Integer :: fail
 
@@ -1219,7 +1220,7 @@ Contains
       Write(message,'(a)') 'error - angles_table_read allocation failure'
       Call error(0,message)
     End If
-    Call allocate_angl_pot_arrays(angle)
+    Call angle%init_pot()
 
     read_type=0 ! initialise read_type
     Do rtang=1,angle%ltp(0)

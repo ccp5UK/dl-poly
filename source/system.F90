@@ -60,7 +60,7 @@ Module system
 Contains
 
   Subroutine system_init(rcut,keyres,time,tmst,nstep, &
-      cshell,stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
+    stats,devel,green,thermo,met,bond,angle,dihedral,inversion, &
       zdensity,sites,vdws,rdf,config,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -85,7 +85,6 @@ Contains
     Integer,           Intent(   Out ) :: nstep
     Real( Kind = wp ), Intent(   Out ) :: time,tmst
     Type( stats_type ), Intent( InOut ) :: stats
-    Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( development_type ), Intent( In    ) :: devel
     Type( greenkubo_type ), Intent( InOut ) :: green
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -351,7 +350,7 @@ Contains
       If (keyio /= 0) Then
         If (comm%idnode == 0) Then
           Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-          Close(Unit=files(FILE_REVOLD)%unit_no)
+          Call files(FILE_REVOLD)%close()
         End If
         keyres = RESTART_KEY_NOSCALE
         Go To 50
@@ -543,7 +542,7 @@ Contains
       If (i_tmp /= 0) Then
         If (comm%idnode == 0) Then
           Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-          Close(Unit=files(FILE_REVOLD)%unit_no)
+          Call files(FILE_REVOLD)%close()
         End If
         keyres = RESTART_KEY_NOSCALE
         Go To 50
@@ -591,7 +590,7 @@ Contains
         If (i_tmp /= 0) Then
           If (comm%idnode == 0) Then
             Call warning(190,0.0_wp,0.0_wp,0.0_wp)
-            Close(Unit=files(FILE_REVOLD)%unit_no)
+            Call files(FILE_REVOLD)%close()
           End If
           keyres = RESTART_KEY_NOSCALE
           Go To 50
@@ -599,7 +598,7 @@ Contains
 
       End If
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_REVOLD)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_REVOLD)%close()
 
     Else
 
@@ -857,7 +856,7 @@ Contains
         io_write == IO_WRITE_SORTED_MASTER ) Then
 
         Open(Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Status='replace')
-        Close(Unit=files(FILE_CONFIG)%unit_no)
+        Call files(FILE_CONFIG)%close()
         Open(Newunit=files(FILE_CONFIG)%unit_no, File=fcfg(1:Len_Trim(fcfg)), Form='formatted', Access='direct', Recl=recsz)
       End If
 
@@ -1691,7 +1690,7 @@ Contains
     Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
       io_write == IO_WRITE_SORTED_MASTER) Then
 
-      Close(Unit=files(FILE_CONFIG)%unit_no)
+      Call files(FILE_CONFIG)%close()
 
     End If
 
@@ -1754,8 +1753,8 @@ Contains
           Call gtime(t)
 
           Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
-          Close(Unit=files(FILE_FIELD)%unit_no)
-          Close(Unit=files(FILE_CONFIG)%unit_no)
+          Call files(FILE_FIELD)%close()
+          Call files(FILE_CONFIG)%close()
           Write(message,'(3a)') '*** ', ffld(1:Len_Trim(ffld)), ' expansion done !'
           Call info(message,.true.)
           Exit
@@ -1810,7 +1809,7 @@ Contains
 
             Write(Unit=files(FILE_CONFIG)%unit_no,Fmt='(a)') record1(1:Len_Trim(record1))
             Close(Unit=nmpldt)
-            Close(Unit=files(FILE_CONFIG)%unit_no)
+            Call files(FILE_CONFIG)%close()
             Write(message,'(3a)') '*** ', fmpl(1:Len_Trim(fmpl)), ' expansion done !'
             Call info(message,.true.)
             Exit
@@ -1886,8 +1885,7 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical               :: ready
-    Character( Len = 42 )  :: name
-    Character( Len = 40 ) :: forma  = ' '
+    Character( Len = 40 ) :: forma
 
     Integer               :: fail(1:3),i,j,l,levcfg,jdnode,jatms,nsum
     Real( Kind = wp )     :: r_mxnode
@@ -1897,6 +1895,7 @@ Contains
     Real( Kind = wp ), Dimension( : ), Allocatable :: bxx,byy,bzz
     Character ( Len = 256 )  :: message 
 
+    forma  = ' '
     fail=0
     Allocate (iwrk(1:config%mxatms),                            Stat=fail(1))
     Allocate (axx(1:config%mxatms),ayy(1:config%mxatms),azz(1:config%mxatms), Stat=fail(2))
@@ -2269,7 +2268,7 @@ Contains
     End If
 
     Call gsync(comm)
-    If (comm%idnode == 0) Close(Unit=files(FILE_REVIVE)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_REVIVE)%close()
 
     r_mxnode=1.0_wp/Real(comm%mxnode,wp)
 

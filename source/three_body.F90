@@ -38,34 +38,55 @@ Module three_body
     Logical,              Allocatable  :: lfrtbp(:)
     Integer( Kind = wi ), Allocatable  :: lsttbp(:),ltptbp(:)
     Real( Kind = wp ),    Allocatable  :: prmtbp(:,:),rcttbp(:)
+  Contains
+    Private
+    Procedure, Public :: init => allocate_three_body_arrays
+    Final ::  deallocate_three_body_arrays
   End Type
 
-  Public :: allocate_three_body_arrays, three_body_forces
+  Public ::  three_body_forces
 
 Contains
 
-  Subroutine allocate_three_body_arrays(max_site,threebody)
+  Subroutine allocate_three_body_arrays(T,max_site)
+    Class(threebody_type) , Intent( InOut )   :: T
     Integer( Kind = wi ), Intent( In    ) :: max_site
-    Type(threebody_type) , Intent( InOut )   :: threebody
 
-    Integer, Dimension( 1:5 ) :: fail
+    Integer :: fail(5)
 
     fail=0
 
-    Allocate (threebody%lfrtbp(1:Merge(max_site,0,threebody%mxtbp > 0)), Stat = fail(1))
-    Allocate (threebody%lsttbp(1:threebody%mxtbp),                     Stat = fail(2))
-    Allocate (threebody%ltptbp(1:threebody%mxtbp),                     Stat = fail(3))
-    Allocate (threebody%prmtbp(1:threebody%mxptbp,1:threebody%mxtbp),  Stat = fail(4))
-    Allocate (threebody%rcttbp(1:threebody%mxtbp),                     Stat = fail(5))
+    Allocate (T%lfrtbp(1:Merge(max_site,0,T%mxtbp > 0)), Stat = fail(1))
+    Allocate (T%lsttbp(1:T%mxtbp),                     Stat = fail(2))
+    Allocate (T%ltptbp(1:T%mxtbp),                     Stat = fail(3))
+    Allocate (T%prmtbp(1:T%mxptbp,1:T%mxtbp),  Stat = fail(4))
+    Allocate (T%rcttbp(1:T%mxtbp),                     Stat = fail(5))
 
     If (Any(fail > 0)) Call error(1024)
 
-    threebody%lfrtbp = .false.
-    threebody%lsttbp = 0
-    threebody%ltptbp = 0
-    threebody%prmtbp = 0.0_wp
-    threebody%rcttbp = 0.0_wp
+    T%lfrtbp = .false.
+    T%lsttbp = 0
+    T%ltptbp = 0
+    T%prmtbp = 0.0_wp
+    T%rcttbp = 0.0_wp
   End Subroutine allocate_three_body_arrays
+
+  Subroutine deallocate_three_body_arrays(T)
+    Type( threebody_type ), Intent( InOut ) :: T
+
+    Integer :: fail(5)
+
+    fail = 0 
+
+    Deallocate (T%lfrtbp, Stat = fail(1))
+    Deallocate (T%lsttbp,                     Stat = fail(2))
+    Deallocate (T%ltptbp,                     Stat = fail(3))
+    Deallocate (T%prmtbp,  Stat = fail(4))
+    Deallocate (T%rcttbp,                     Stat = fail(5))
+
+    If (Any(fail > 0)) Call error(1024)
+
+  end subroutine deallocate_three_body_arrays
 
   Subroutine three_body_forces(stats,threebody,neigh,domain,config,comm)
 
@@ -98,7 +119,7 @@ Contains
     Type( configuration_type ),     Intent( InOut ) :: config
     Type(comms_type), Intent( InOut ) :: comm
 
-    Logical           :: safe,lx0,lx1,ly0,ly1,lz0,lz1
+    Logical           :: safe
 
     Integer           :: fail(1:2),                      &
       i,j,k, ii,jj,kk,jk, ia,ib,ic,   &

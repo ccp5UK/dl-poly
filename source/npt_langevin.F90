@@ -6,7 +6,7 @@ Module npt_langevin
   Use constants, Only :  boltz, pi
   Use configuration, Only : configuration_type
   Use particle,     Only : corePart
-  Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stre_s
+  Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use kinetics,      Only : getvom,getknf,getknt,getknr,getkin, &
     kinstress,kinstresf,kinstrest
   Use shared_units,    Only : update_shared_units
@@ -80,12 +80,11 @@ Contains
     Type(seed_type), Intent(InOut) :: seed
     Type( comms_type ), Intent( InOut ) :: comm
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:9),iter,i
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: chip0,engke0
     Real( Kind = wp )       :: vzero
-    Real( Kind = wp )       :: xt,yt,zt,vir,vir1,str(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: vir,vir1,str(1:9),tmp, &
       scale,vom(1:3)
 
 
@@ -244,7 +243,7 @@ Contains
         vir1=vir-3.0_wp*thermo%fpl(1)
         Call npt_h0_scl &
           (1,hstep,degfre,thermo%pmass,thermo%tai,config%volm,vir1,virtot, &
-          config%vxx,config%vyy,config%vzz,engke,stat,config,thermo)
+          config%vxx,config%vyy,config%vzz,engke,config,thermo)
 
         ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -417,7 +416,7 @@ Contains
       vir1=vir-3.0_wp*thermo%fpl(1)
       Call npt_h0_scl &
         (1,hstep,degfre,thermo%pmass,thermo%tai,config%volm,vir1,virtot, &
-        config%vxx,config%vyy,config%vzz,engke,stat,config,thermo)
+        config%vxx,config%vyy,config%vzz,engke,config,thermo)
 
       ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -533,13 +532,12 @@ Contains
     Type( comms_type ), Intent( InOut ) :: comm
 
 
-    Logical                 :: safe,lcol,lfst
     Integer                 :: fail(1:14),matms,iter,i,j,i1,i2, &
       irgd,jrgd,krgd,lrgd,rgdtyp
     Real( Kind = wp )       :: hstep,qstep,rstep
     Real( Kind = wp )       :: chip0,engke0,engrot0,engknf,engknt
     Real( Kind = wp )       :: czero(1:9),vzero
-    Real( Kind = wp )       :: xt,yt,zt,vir,vir1,str(1:9),mxdr,tmp, &
+    Real( Kind = wp )       :: vir,vir1,str(1:9),mxdr,tmp, &
       scale,vom(1:3)
     Real( Kind = wp )       :: x(1:1),y(1:1),z(1:1),rot(1:9), &
       opx,opy,opz,fmx,fmy,fmz,       &
@@ -809,7 +807,7 @@ Contains
         vir1=vir-3.0_wp*thermo%fpl(1)
         Call npt_h1_scl &
           (1,hstep,degfre,degrot,thermo%pmass,thermo%tai,config%volm,vir1,virtot,vircom, &
-          config%vxx,config%vyy,config%vzz,engke,stat,rigid,config,thermo)
+          config%vxx,config%vyy,config%vzz,engke,rigid,config,thermo)
 
         ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -1236,7 +1234,7 @@ Contains
 
       ! Get RB COM stress and virial
 
-      Call rigid_bodies_stre_s(strcom,ggx,ggy,ggz,config,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
+      Call rigid_bodies_stress(strcom,ggx,ggy,ggz,config,rigid,comm,thermo%fxl,thermo%fyl,thermo%fzl)
       vircom=-(strcom(1)+strcom(5)+strcom(9))
 
       ! update velocity of RBs
@@ -1442,7 +1440,7 @@ Contains
       vir1=vir-3.0_wp*thermo%fpl(1)
       Call npt_h1_scl &
         (1,hstep,degfre,degrot,thermo%pmass,thermo%tai,config%volm,vir1,virtot,vircom, &
-        config%vxx,config%vyy,config%vzz,engke,stat,rigid,config,thermo)
+        config%vxx,config%vyy,config%vzz,engke,rigid,config,thermo)
 
       ! integrate and apply Langevin thermostat - 1/4 step
 

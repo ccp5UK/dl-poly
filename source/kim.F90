@@ -18,12 +18,12 @@ Module kim
   Use kim_simulator_headers_module, Only : &
     kim_model_create, &
     kim_model_destroy, &
-    kim_model_compute, &
-    kim_model_compute_arguments_create, &
-    kim_model_compute_arguments_destroy, &
+    kim_compute, &
+    kim_compute_arguments_create, &
+    kim_compute_arguments_destroy, &
     kim_compute_arguments_handle_type, &
-    kim_compute_arguments_set_argument_pointer, &
-    kim_compute_arguments_set_callback_pointer, &
+    kim_set_argument_pointer, &
+    kim_set_callback_pointer, &
     kim_compute_argument_name_coordinates, &
     kim_compute_argument_name_number_of_particles, &
     kim_compute_argument_name_partial_energy, &
@@ -33,13 +33,13 @@ Module kim
     kim_compute_argument_name_particle_species_codes, &
     kim_compute_callback_name_get_neighbor_list, &
     kim_language_name_fortran, &
-    kim_model_get_species_support_and_code, &
-    kim_model_get_influence_distance, &
-    kim_model_get_number_of_neighbor_lists, &
-    kim_model_get_neighbor_list_values, &
+    kim_get_species_support_and_code, &
+    kim_get_influence_distance, &
+    kim_get_number_of_neighbor_lists, &
+    kim_get_neighbor_list_values, &
     kim_model_handle_type, &
     kim_numbering_one_based, &
-    kim_species_name_from_string, &
+    kim_from_string, &
     kim_species_name_type, &
     kim_length_unit_a, kim_energy_unit_amu_a2_per_ps2, kim_charge_unit_e, &
     kim_temperature_unit_k, kim_time_unit_ps
@@ -197,7 +197,7 @@ Module kim
   End Type kim_type
 
   Public :: kim_setup, kim_cutoff
-  Public :: kim_compute
+  Public :: kim_energy_and_forces
   Public :: get_neigh
 
 Contains
@@ -290,21 +290,21 @@ Contains
     End If
 
     ! Create compute_arguments object
-    Call kim_model_compute_arguments_create(kim_data%model_handle, &
+    Call kim_compute_arguments_create(kim_data%model_handle, &
       kim_data%compute_arguments_handle,kerror)
     If (kerror /= 0) Then
-      Call kim_error('kim_model_compute_arguments_create', __LINE__)
+      Call kim_error('kim_compute_arguments_create', __LINE__)
     End If
 
     ! Set number of particles
     kim_data%n_particles = megatm
 
     ! Get influence distance
-    Call kim_model_get_influence_distance(kim_data%model_handle, &
+    Call kim_get_influence_distance(kim_data%model_handle, &
       kim_data%influence_distance)
 
     ! Get number of neighbour lists
-    Call kim_model_get_number_of_neighbor_lists(kim_data%model_handle, &
+    Call kim_get_number_of_neighbor_lists(kim_data%model_handle, &
       kim_data%n_lists)
 
     ! Allocate neighbour list, neighbour list pointer
@@ -315,7 +315,7 @@ Contains
 
     ! Get neighbour list cutoffs and hints
     Allocate(cutoffs(kim_data%n_lists))
-    Call kim_model_get_neighbor_list_values(kim_data%model_handle, &
+    Call kim_get_neighbor_list_values(kim_data%model_handle, &
       cutoffs, kim_data%hints_padding, kerror)
     Do list_index = 1, kim_data%n_lists
       kim_data%neigh(list_index)%cutoff = cutoffs(list_index)
@@ -337,12 +337,12 @@ Contains
     End Do
 
     If (kerror /= 0) Then
-      Call kim_error('kim_model_get_neighbor_list_values', __LINE__)
+      Call kim_error('kim_get_neighbor_list_values', __LINE__)
     End If
 
     ! Allocate KIM pointers
     ! Number of particles
-    Call kim_compute_arguments_set_argument_pointer( &
+    Call kim_set_argument_pointer( &
       kim_data%compute_arguments_handle, &
       kim_compute_argument_name_number_of_particles, &
       kim_data%n_particles, kerror)
@@ -351,7 +351,7 @@ Contains
     End If
 
     ! Species codes
-    Call kim_compute_arguments_set_argument_pointer( &
+    Call kim_set_argument_pointer( &
       kim_data%compute_arguments_handle, &
       kim_compute_argument_name_particle_species_codes, &
       kim_data%species_code, kerror)
@@ -360,7 +360,7 @@ Contains
     End If
 
     ! Contributing status
-    Call kim_compute_arguments_set_argument_pointer( &
+    Call kim_set_argument_pointer( &
       kim_data%compute_arguments_handle, &
       kim_compute_argument_name_particle_contributing, &
       kim_data%contributing, kerror)
@@ -369,7 +369,7 @@ Contains
     End If
 
     ! Coordinates
-    Call kim_compute_arguments_set_argument_pointer( &
+    Call kim_set_argument_pointer( &
       kim_data%compute_arguments_handle, &
       kim_compute_argument_name_coordinates, &
       kim_data%coords, kerror)
@@ -378,7 +378,7 @@ Contains
     End If
 
     ! Energy
-    Call kim_compute_arguments_set_argument_pointer( &
+    Call kim_set_argument_pointer( &
       kim_data%compute_arguments_handle, &
       kim_compute_argument_name_partial_energy, &
       kim_data%energy, kerror)
@@ -387,7 +387,7 @@ Contains
     End If
 
     ! Forces
-    Call kim_compute_arguments_set_argument_pointer( &
+    Call kim_set_argument_pointer( &
       kim_data%compute_arguments_handle, &
       kim_compute_argument_name_partial_forces, &
       kim_data%forces, kerror)
@@ -396,7 +396,7 @@ Contains
     End If
 
     ! Virials
-    Call kim_compute_arguments_set_argument_pointer( &
+    Call kim_set_argument_pointer( &
       kim_data%compute_arguments_handle, &
       kim_compute_argument_name_partial_virial, &
       kim_data%virial, kerror)
@@ -407,12 +407,12 @@ Contains
     End If
 
     ! Set KIM pointer to neighbour list routine and type
-    Call kim_compute_arguments_set_callback_pointer( &
+    Call kim_set_callback_pointer( &
       kim_data%compute_arguments_handle, &
       kim_compute_callback_name_get_neighbor_list, kim_language_name_fortran, &
       C_funloc(get_neigh), C_loc(kim_data%neigh_pointer), kerror)
     If (kerror /= 0) Then
-      Call kim_error('kim_compute_arguments_set_callback_pointer', __LINE__)
+      Call kim_error('kim_set_callback_pointer', __LINE__)
     End If
 #endif
   End Subroutine kim_setup
@@ -456,11 +456,11 @@ Contains
     End If
 
     ! Get number of neighbour lists
-    Call kim_model_get_number_of_neighbor_lists(model_handle, n_lists)
+    Call kim_get_number_of_neighbor_lists(model_handle, n_lists)
 
     ! Get neighbour list cutoffs and record maximum
     Allocate(cutoffs(n_lists), hints_padding(n_lists))
-    Call kim_model_get_neighbor_list_values(model_handle, &
+    Call kim_get_neighbor_list_values(model_handle, &
       cutoffs, hints_padding, kerror)
     kim_data%cutoff = Real(maxval(cutoffs), wp)
 
@@ -479,8 +479,8 @@ Contains
   End Subroutine kim_cutoff
 
   !> Compute KIM energy and forces
-  Subroutine kim_compute(kim_data,natms,nlast,parts,neigh_list,map,lsite, &
-      lsi,lsa,ltg,site_name,energy_kim,virial_kim,stress,comm)
+  Subroutine kim_energy_and_forces(kim_data,natms,nlast,parts,neigh_list,map, &
+      lsite,lsi,lsa,ltg,site_name,energy_kim,virial_kim,stress,comm)
     !> KIM data type
     Type(kim_type), Target, Intent(InOut) :: kim_data
     !> Number of particles in this domain (excluding the halo)
@@ -531,11 +531,11 @@ Contains
 
     ! Enter species information
     Do atom = 1, nlast
-      Call kim_species_name_from_string(Trim(site_name(lsite(atom))), &
+      Call kim_from_string(Trim(site_name(lsite(atom))), &
         kim_data%species_name(atom))
 
       ! Check model supports the requested species
-      Call kim_model_get_species_support_and_code(kim_data%model_handle, &
+      Call kim_get_species_support_and_code(kim_data%model_handle, &
         kim_data%species_name(atom),species_is_supported, &
         kim_data%species_code(atom),kerror)
 
@@ -554,7 +554,7 @@ Contains
     End Do
 
     ! Call KIM API to compute energy and forces
-    Call kim_model_compute(kim_data%model_handle, &
+    Call kim_compute(kim_data%model_handle, &
       kim_data%compute_arguments_handle, kerror)
     If (kerror /= 0) Then
       Call kim_error('kim_model_compute returned an error', __LINE__)
@@ -588,7 +588,7 @@ Contains
     energy_kim = 0.0_wp
     virial_kim = 0.0_wp
 #endif
-  End Subroutine kim_compute
+  End Subroutine kim_energy_and_forces
 
   !> Prepare the KIM neighbour list used to compute energy and forces
   Subroutine kim_neighbour_list(kim_data,list_index,nlast,natms,list)
@@ -983,7 +983,7 @@ Contains
       Deallocate(T%neigh_pointer)
     End If
 
-    Call kim_model_compute_arguments_destroy(T%model_handle, &
+    Call kim_compute_arguments_destroy(T%model_handle, &
       T%compute_arguments_handle, kerror)
 
     Call kim_model_destroy(T%model_handle)

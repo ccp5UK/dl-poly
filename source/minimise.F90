@@ -128,7 +128,7 @@ Contains
     End If
   End Subroutine deallocate_minimise_arrays
 
-  Subroutine minimise_relax(l_str,rdf_collect,megatm,tstep,stpcfg,io,stats, &
+  Subroutine minimise_relax(l_str,rdf_collect,tstep,stpcfg,io,stats, &
       pmf,cons,netcdf,minim,rigid,domain,config,files,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -157,7 +157,6 @@ Contains
     Type( io_type ), Intent( InOut ) :: io
     Logical,           Intent( In    ) :: l_str
     Logical,           Intent( InOut ) :: rdf_collect
-    Integer,           Intent( In    ) :: megatm
     Real( Kind = wp ), Intent( In    ) :: tstep,stpcfg
     Type( stats_type ), Intent(InOut) :: stats
     Type( pmf_type ), Intent( InOut ) :: pmf
@@ -171,7 +170,6 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
 
     Integer                    :: fail(1:8),i,j,levcfg
-    Character( Len = 6 )       :: name
     Type( file_type ) :: minfile
 
     ! OUTPUT existence
@@ -347,7 +345,7 @@ Contains
         Call update_shared_units(config,rigid%list_shared, &
           rigid%map_shared,gxx,gyy,gzz,domain,comm)
       End If
-      Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,config,comm)
+      Call rigid_bodies_split_torque(gxx,gyy,gzz,txx,tyy,tzz,uxx,uyy,uzz,rigid,config)
     End If
 
     ! Initialise/get minim%eng_tol & verify relaxed condition
@@ -562,14 +560,14 @@ Contains
           Call strip_blanks(c_out)
           Call lower_case(c_out)
           If (l_out .and. c_out(1:6) == 'append') Then
-            Close(unit=files(FILE_OUTPUT)%unit_no)
+            Call files(FILE_OUTPUT)%close()
             Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Position='append')
           End If
         End If
       End If
     End If
 
-    100 Continue
+100 Continue
 
     minim%transport=(.not.minim%relaxed) ! Transportation flag
     If (minim%relaxed) Then

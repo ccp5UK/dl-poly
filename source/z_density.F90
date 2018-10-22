@@ -44,15 +44,16 @@ Module z_density
   Contains
     Private
 
+    Procedure, Public :: init => allocate_z_density_arrays
     Final :: cleanup
   End Type z_density_type
 
-  Public :: allocate_z_density_arrays, z_density_collect, z_density_compute
+  Public ::  z_density_collect, z_density_compute
 
 Contains
 
   Subroutine allocate_z_density_arrays(zdensity,max_grid_rdf,mxatyp)
-    Type( z_density_type ), Intent( InOut ) :: zdensity
+    Class( z_density_type ), Intent( InOut ) :: zdensity
     Integer( Kind = wi ), Intent( In    ) :: max_grid_rdf
     Integer( Kind = wi ), Intent( In    ) :: mxatyp
 

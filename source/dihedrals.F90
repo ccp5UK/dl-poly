@@ -97,18 +97,19 @@ Module dihedrals
   Contains
     Private
 
+    Procedure, Public :: init => allocate_dihedrals_arrays
+    Procedure, Public :: init_dst => allocate_dihd_dst_arrays
+    Procedure, Public :: init_pot => allocate_dihd_pot_arrays
     Final :: cleanup
   End Type dihedrals_type
 
 
-  Public :: allocate_dihedrals_arrays, allocate_dihd_pot_arrays, &
-    allocate_dihd_dst_arrays, dihedrals_compute, dihedrals_table_read, &
-    dihedrals_14_check, dihedrals_forces
+  Public :: dihedrals_compute, dihedrals_table_read, dihedrals_14_check, dihedrals_forces
 
 Contains
 
   Subroutine allocate_dihedrals_arrays(dihedral,mxatdm,mxtmls)
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    Class( dihedrals_type ), Intent( InOut ) :: dihedral
     Integer, Intent( In ) :: mxatdm,mxtmls
 
     Integer, Dimension( 1:8 ) :: fail
@@ -146,7 +147,7 @@ Contains
   End Subroutine allocate_dihedrals_arrays
 
   Subroutine allocate_dihd_pot_arrays(dihedral)
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    Class( dihedrals_type ), Intent( InOut ) :: dihedral
 
     Integer :: fail(1:2)
 
@@ -163,7 +164,7 @@ Contains
   End Subroutine allocate_dihd_pot_arrays
 
   Subroutine allocate_dihd_dst_arrays(dihedral)
-    Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    Class( dihedrals_type ), Intent( InOut ) :: dihedral
 
     Integer :: fail
 
@@ -1860,7 +1861,7 @@ Contains
       Write(message,'(a)') 'error - dihedrals_table_read allocation failure'
       Call error(0,message)
     End If
-    Call allocate_dihd_pot_arrays(dihedral)
+    Call dihedral%init_pot()
 
     read_type=0 ! initialise read_type
     Do rtdih=1,dihedral%ltp(0)
