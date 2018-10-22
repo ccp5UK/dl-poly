@@ -29,15 +29,15 @@ Module ffield
     dihedrals_14_check
   Use inversions, Only : inversions_type,inversions_table_read,allocate_invr_dst_arrays
   Use three_body, Only : threebody_type
-  Use vdw, Only : vdw_type,MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
+  Use vdw, Only : vdw_type,vdw_table_read,vdw_generate,vdw_direct_fs_generate, &
+    MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
     MIX_HALGREN,MIX_HOGERVORST,MIX_WALDMAN_HAGLER,MIX_TANG_TOENNIES, &
     MIX_FUNCTIONAL, &
     VDW_NULL,VDW_TAB,VDW_12_6,VDW_LENNARD_JONES,VDW_N_M,VDW_BUCKINGHAM, &
     VDW_BORN_HUGGINS_MEYER, VDW_HYDROGEN_BOND,VDW_N_M_SHIFT, &
     VDW_MORSE,VDW_WCA,VDW_DPD,VDW_AMOEBA,VDW_LENNARD_JONES_COHESIVE, &
     VDW_MORSE_12,VDW_RYDBERG,VDW_ZBL,VDW_ZBL_SWITCH_MORSE, &
-    VDW_ZBL_SWITCH_BUCKINGHAM,VDW_LJ_MDF,VDW_BUCKINGHAM_MDF,&
-    VDW_126_MDF,vdw_table_read,vdw_generate
+    VDW_ZBL_SWITCH_BUCKINGHAM,VDW_LJ_MDF,VDW_BUCKINGHAM_MDF,VDW_126_MDF
   Use metal, Only : metal_type,metal_generate_erf,metal_table_read,metal_generate
   Use tersoff, Only : tersoff_type,tersoff_generate
   Use four_body, Only : four_body_type
@@ -3977,7 +3977,7 @@ Contains
             If (vdws%l_tab) Call vdw_table_read(vdws,sites,comm)
             If (vdws%l_direct .and. (Any(vdws%ltp(1:vdws%n_vdw) /= VDW_NULL) &
               .or. Any(vdws%ltp(1:vdws%n_vdw) /= VDW_TAB))) Then
-              Call vdws%init_direct()
+              Call vdw_direct_fs_generate(vdws)
             End If
           End If
 

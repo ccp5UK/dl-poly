@@ -158,7 +158,7 @@ Module vdw
     Final :: cleanup
   End Type vdw_type
 
-  Public :: vdw_forces,vdw_generate,vdw_table_read,vdw_lrc
+  Public :: vdw_forces,vdw_generate,vdw_table_read,vdw_lrc,vdw_direct_fs_generate
 
 Contains
 
