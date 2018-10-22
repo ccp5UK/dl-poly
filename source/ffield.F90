@@ -1,7 +1,7 @@
 Module ffield
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type
-  Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz, zero_plus, pi, r4pie0, prsunt, ntable
+  Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz, zero_plus, pi, r4pie0, prsunt, ntable, VA_to_dl, tesla_to_dl
   Use kim,   Only : kim_type,kim_cutoff
 
   ! SITE MODULE
@@ -4752,12 +4752,22 @@ Contains
 
         ! convert to internal units
 
-        If (Any([FIELD_ELECTRIC,FIELD_GRAVITATIONAL,FIELD_MAGNETIC,FIELD_ELECTRIC_OSCILLATING] == ext_field%key)) Then
+        If (Any([FIELD_ELECTRIC] == ext_field%key)) Then
           If (.not.lunits) Call error(6)
-
+        ! Convert units: input values for electrical field are only in units of V/A
+            ext_field%conv_fact=engunit*VA_to_dl
           Do i=1,3
-            ext_field%param(i) = ext_field%param(i)*engunit
+             ext_field%param(i) = ext_field%param(i)*engunit/ext_field%conv_fact
           End Do
+
+        Else If (Any([FIELD_MAGNETIC] == ext_field%key)) Then
+        ! Convert units: input values for electrical field are only in units of Tesla
+          ext_field%conv_fact=engunit*tesla_to_dl
+          Do i=1,3
+            ext_field%param(i) = ext_field%param(i)*engunit/ext_field%conv_fact
+          End Do
+        Else If (Any([FIELD_GRAVITATIONAL,FIELD_ELECTRIC_OSCILLATING] == ext_field%key)) Then
+
         Else If (Any([FIELD_SHEAR_OSCILLATING,FIELD_SPHERE,FIELD_WALL] == ext_field%key)) Then
           If (.not.lunits) Call error(6)
 
