@@ -4789,7 +4789,7 @@ Contains
 
       Else If (word(1:5) == 'close') Then
 
-        If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+        If (comm%idnode == 0) Call files(FILE_FIELD)%close()
 
         ! Precautions: (vdws,met) may have led to rdf scanning (rdf%max_rdf > 0), see set_bounds
 
@@ -4851,14 +4851,14 @@ Contains
 
     ! uncontrolled error exit from field file processing
 
-    If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_FIELD)%close()
     Call error(16)
 
     ! end of field file error exit
 
     2000 Continue
 
-    If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+         If (comm%idnode == 0) Call files(FILE_FIELD)%close()
     Call error(52)
 
   End Subroutine read_field
@@ -5986,7 +5986,7 @@ Contains
     End Do
 
     10 Continue
-    If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+       If (comm%idnode == 0) Call files(FILE_FIELD)%close()
 
     ! Define legend arrays lengths.  If length > 0 then
     ! length=Max(length)+1 for the violation excess element
@@ -6034,7 +6034,7 @@ Contains
     Return
 
     30 Continue
-    If (comm%idnode == 0) Close(Unit=files(FILE_FIELD)%unit_no)
+       If (comm%idnode == 0) Call files(FILE_FIELD)%close()
     Call error(52)
     Return
 

@@ -955,7 +955,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
 
     End If
 
@@ -1179,7 +1179,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
       Call gsync(comm)
 
       Deallocate (chbuf,iwrk,  Stat=fail(1))
@@ -1226,7 +1226,7 @@ Contains
         Call io_close(io, fh )
         Call io_finalize(io)
       Else
-        Close(Unit=files(FILE_CONFIG)%unit_no)
+        Call files(FILE_CONFIG)%close()
       End If
 
     End If
@@ -1398,7 +1398,7 @@ Contains
     ! error exit for CONFIG file read
 
 50  Continue
-    If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
     Call error(55)
 
   End Subroutine read_config
@@ -2196,7 +2196,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
 
     End If
 
@@ -2268,7 +2268,7 @@ Contains
 
       ! Close CONFIG
 
-      If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+      If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
       Call gsync(comm)
 
     Else ! netCDF read
@@ -2357,7 +2357,7 @@ Contains
 
         ! Close CONFIG
 
-        If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+        If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
 
 
         buffer(1)=xhi
@@ -2407,7 +2407,7 @@ Contains
           Call io_close(io, fh )
           Call io_finalize(io)
         Else
-          Close(Unit=files(FILE_CONFIG)%unit_no)
+          Call files(FILE_CONFIG)%close()
         End If
 
       End If
@@ -2419,7 +2419,7 @@ Contains
     ! error exit for CONFIG file read
 
 50  Continue
-    If (comm%idnode == 0) Close(Unit=files(FILE_CONFIG)%unit_no)
+    If (comm%idnode == 0) Call files(FILE_CONFIG)%close()
     Call error(55)
 
   End Subroutine scan_config
@@ -2827,7 +2827,7 @@ Contains
           End Do
         End Do
 
-        Close(Unit=cfile%unit_no)
+        Call cfile%close()
 
       Else
 
@@ -3095,7 +3095,7 @@ Contains
           End Do
         End Do
 
-        Close(Unit=cfile%unit_no)
+        Call cfile%close()
 
       Else
 
