@@ -4752,7 +4752,7 @@ Contains
 
         ! convert to internal units
 
-        If (Any([FIELD_ELECTRIC] == ext_field%key)) Then
+        If (Any([FIELD_ELECTRIC,FIELD_ELECTRIC_OSCILLATING ] == ext_field%key)) Then
           If (.not.lunits) Call error(6)
         ! Convert units: input values for electrical field are only in units of V/A
             ext_field%conv_fact=engunit*VA_to_dl
@@ -4766,15 +4766,19 @@ Contains
           Do i=1,3
             ext_field%param(i) = ext_field%param(i)*engunit/ext_field%conv_fact
           End Do
-        Else If (Any([FIELD_GRAVITATIONAL,FIELD_ELECTRIC_OSCILLATING] == ext_field%key)) Then
+        Else If (Any([FIELD_GRAVITATIONAL] == ext_field%key)) Then
+          Do i=1,3
+            ext_field%param(i) = ext_field%param(i)*engunit
+          End Do
 
         Else If (Any([FIELD_SHEAR_OSCILLATING,FIELD_SPHERE,FIELD_WALL] == ext_field%key)) Then
           If (.not.lunits) Call error(6)
-
           ext_field%param(1) = ext_field%param(1)*engunit
+
         Else If (ext_field%key == FIELD_WALL_PISTON) Then
           ext_field%param(3) = ext_field%param(3)/prsunt ! piston pressure specified in k-atm
           ext_field%param(3) = ext_field%param(3)*config%cell(5)*config%cell(9) ! convert to force
+ 
         Else If (Any([FIELD_ZRES,FIELD_ZRES_MINUS,FIELD_ZRES_PLUS] == ext_field%key)) Then
           If (.not.lunits) Call error(6)
 
