@@ -109,8 +109,8 @@ Contains
         ib = Nint(b)
 
         Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,a,/,1x,a)')                    &
-          '*** warning - maximum length of linked config%cell neigh%list: ', ia,          &
-          ' + 1 is less than maximum length of particle exclusion neigh%list: ',   &
+          '*** warning - maximum length of linked cell list: ', ia,          &
+          ' + 1 is less than maximum length of particle exclusion list: ',   &
           ib, ' !!! ***',                                                    &
           '*** this may be due to using too short a cutoff in CONTROL ',     &
           'and/or a badly defined intramolecular topology in FIELD !!! ***', &
@@ -203,7 +203,7 @@ Contains
 
         If      (ic == 0) Then
           Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                             &
-            '*** warning - allocating more link-config%cells ', ia,' than initially envisaged ', ib,' , in linkcell_pairs !!! ***',&
+            '*** warning - allocating more link-cells ', ia,' than initially envisaged ', ib,' , in linkcell_pairs !!! ***',&
             '*** System volume has expanded beyond what was safely presumed as physically sensible !!! ***'
         Else If (ic == 1) Then
           Write(ounit,'(/,1x,a,2(i0,a),/,1x,a,/)')                                                                               &
@@ -225,7 +225,7 @@ Contains
       Else If (kode == 100) Then
 
         Write(ounit,'(2(/,1x,a),/)')                                                               &
-          '*** warning - primary link config%cell algorithm has a link config%cell dimension that is < 3 !!! ***', &
+          '*** warning - primary link cell algorithm has a link cell dimension that is < 3 !!! ***', &
           '*** DL_POLY_4 RUNNING IN LOW EFFICIENCY MODE !!! ***'
 
       Else If (kode == 110) Then
@@ -657,7 +657,7 @@ Contains
 
         Write(ounit,'(/,1x,a,f6.2,a,/,1x,a,/)') &
           '*** warning - possible time energy deposition discrepancy of at least ',a,'% !!! ***', &
-          '*** discrepancy may be due to inactive config%cells !!! ***'
+          '*** discrepancy may be due to inactive cells !!! ***'
 
       Else If (kode == 535) Then
 
@@ -1052,7 +1052,7 @@ Contains
 
       Else If (kode ==   69) Then
 
-        Write(ounit,'(/,1x,a)') 'error - too many link config%cells required'
+        Write(ounit,'(/,1x,a)') 'error - too many link cells required'
 
       Else If (kode ==   70) Then
 
@@ -1140,7 +1140,7 @@ Contains
 
       Else If (kode ==   95) Then
 
-        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff (or neigh%cutoff+neigh%padding) > minimum of all half-config%cell widths'
+        Write(ounit,'(/,1x,a)') 'error - neigh%cutoff (or neigh%cutoff+neigh%padding) > minimum of all half-cell widths'
 
       Else If (kode ==   96) Then
 
@@ -1180,7 +1180,7 @@ Contains
 
       Else If (kode ==  106) Then
 
-        Write(ounit,'(/,1x,a)') 'error - neighbour neigh%list array too small in link_config%cell_pairs'
+        Write(ounit,'(/,1x,a)') 'error - neighbour list array too small in link_cell_pairs'
 
       Else If (kode ==  107) Then
 
@@ -1353,19 +1353,19 @@ Contains
 
       Else If (kode ==  300) Then
 
-        Write(ounit,'(/,1x,a)') 'error - incorrect boundary condition for link-config%cell algorithms'
+        Write(ounit,'(/,1x,a)') 'error - incorrect boundary condition for link-cell algorithms'
 
       Else If (kode ==  305) Then
 
-        Write(ounit,'(/,1x,a)') 'error - too few link config%cells per dimension for many-body and tersoff forces subroutines'
+        Write(ounit,'(/,1x,a)') 'error - too few link cells per dimension for many-body and tersoff forces subroutines'
 
       Else If (kode ==  307) Then
 
-        Write(ounit,'(/,1x,a)') 'error - link config%cell algorithm violation'
+        Write(ounit,'(/,1x,a)') 'error - link cell algorithm violation'
 
       Else If (kode ==  308) Then
 
-        Write(ounit,'(/,1x,a)') 'error - link config%cell algorithm in contention with SPME sum precision'
+        Write(ounit,'(/,1x,a)') 'error - link cell algorithm in contention with SPME sum precision'
 
       Else If (kode ==  321) Then
 
@@ -1409,7 +1409,7 @@ Contains
 
       Else If (kode ==  410) Then
 
-        Write(ounit,'(/,1x,a)') 'error - config%cell not consistent with image convention'
+        Write(ounit,'(/,1x,a)') 'error - cell not consistent with image convention'
 
       Else If (kode ==  414) Then
 
@@ -1549,7 +1549,7 @@ Contains
 
       Else If (kode ==  480) Then
 
-        Write(ounit,'(/,1x,a)') 'error - PMF length > minimum of all half-config%cell widths'
+        Write(ounit,'(/,1x,a)') 'error - PMF length > minimum of all half-cell widths'
 
       Else If (kode ==  484) Then
 
@@ -1569,7 +1569,7 @@ Contains
 
       Else If (kode ==  492) Then
 
-        Write(ounit,'(/,1x,a)') 'error - a diameter of a PMF unit > minimum of all half config%cell widths'
+        Write(ounit,'(/,1x,a)') 'error - a diameter of a PMF unit > minimum of all half cell widths'
 
       Else If (kode ==  494) Then
 
@@ -1670,12 +1670,12 @@ Contains
       Else If (kode ==  530) Then
 
         Write(ounit,'(/,2(1x,a,/))') 'error - pseudo thermostat thickness MUST comply with', &
-          '2 Angs <= thickness < a quarter of the minimum MD config%cell width'
+          '2 Angs <= thickness < a quarter of the minimum MD cell width'
 
       Else If (kode ==  540) Then
 
         Write(ounit,'(/,2(1x,a,/))') 'error - pseudo thermostat can ONLY be used in bulk simulations', &
-          'i.e. config%imcon MUST be 1, 2 or 3'
+          'i.e. imcon MUST be 1, 2 or 3'
 
       Else If (kode ==  551) Then
 
@@ -1683,7 +1683,7 @@ Contains
 
       Else If (kode ==  552) Then
 
-        Write(ounit,'(/,1x,a)') 'error - REFERENCE MUST contain config%cell parameters !!!'
+        Write(ounit,'(/,1x,a)') 'error - REFERENCE MUST contain cell parameters !!!'
 
       Else If (kode ==  553) Then
 
@@ -1812,7 +1812,7 @@ Contains
 
       Else If (kode ==  670) Then
 
-        Write(ounit,'(/,1x,a)') 'error - insufficient electronic temperature config%cells for TTM heat diffusion'
+        Write(ounit,'(/,1x,a)') 'error - insufficient electronic temperature cells for TTM heat diffusion'
 
       Else If (kode ==  680) Then
 

@@ -98,7 +98,7 @@ Contains
     End Select
 
     ! if (still) depositing energy, add to electronic temperature
-    ! grid (active config%cells only) and ttm%adjust electronic temperatures 
+    ! grid (active cells only) and ttm%adjust electronic temperatures 
     ! accordingly
 
     If (deposit) Then
@@ -336,7 +336,7 @@ Contains
 
       Allocate (buf1(1:ttm%numcell), buf2(1:ttm%numcell), buf3(1:ttm%numcell), buf4(1:ttm%numcell), Stat=fail)
       If (fail>0) Call error(1085)
-      ! Sum up config%cell momenta and atomic masses in boundaries for ionic temperature corrections
+      ! Sum up cell momenta and atomic masses in boundaries for ionic temperature corrections
       ! -z/+z directions
       buf1 = 0.0_wp
       buf2 = 0.0_wp
@@ -678,11 +678,11 @@ Contains
       Do ja = 1, ttm%ntcell(2)
         Do ia = 1, ttm%ntcell(1)
           ijk = 1 + ia + (ttm%ntcell(1)+2) * (ja + (ttm%ntcell(2)+2) * ka)
-          ! calculate ionic temperature for all config%cells with at least
+          ! calculate ionic temperature for all cells with at least
           ! minimum number of particles (1 during deposition, ttm%amin 
-          ! at all other times), calculating dynamic config%cell density
-          ! (if required) from active config%cells, removing centre of mass
-          ! motion and determining any inactive ionic temperature config%cells
+          ! at all other times), calculating dynamic cell density
+          ! (if required) from active cells, removing centre of mass
+          ! motion and determining any inactive ionic temperature cells
           If (nat(2*ijk-1)>natmin .and. nat(2*ijk-1)>1) Then
             ttm%tempion(ijk) = ttm%tempion(ijk)/(3.0_wp*boltz*Real(nat(2*ijk-1),Kind=wp))
             ttm%acell = ttm%acell + 1
@@ -963,8 +963,8 @@ Contains
       Write(messages(2),'(4x,a,3x,a,5x,a)') 'optimal/ps','actual/ps','diff/md'
       Write(messages(3),'(2x,2es12.4,2x,i10)') opttstep, tstep/Real(redtstepmx,Kind=wp),redtstepmx
       If (ttm%ttmdyndens) Then
-        Write(messages(4),'(a)') 'active ion temperature config%cells:'
-        Write(messages(5),'(4x,a,2x,a)') 'atom dens.','no. of active config%cells'
+        Write(messages(4),'(a)') 'active ion temperature cells:'
+        Write(messages(5),'(4x,a,2x,a)') 'atom dens.','no. of active cells'
         Write(messages(6),'(2x,es12.4,11x,i10)') ttm%cellrho,ttm%acell
         Call info(messages,6,.true.)
       Else
@@ -1039,7 +1039,7 @@ Contains
       Case (1)
         ! constant thermal conductivity or non-metal case 
         If (ttm%redistribute) Then
-          ! system with config%cell deactivation/energy redistribution
+          ! system with cell deactivation/energy redistribution
           Do kk=-ttm%eltcell(3),ttm%eltcell(3)
             Do jj=-ttm%eltcell(2),ttm%eltcell(2)
               Do ii=-ttm%eltcell(1),ttm%eltcell(1)
@@ -1074,7 +1074,7 @@ Contains
                     End Do
                   End Do
                 Else
-                  ! standard thermal diffusion calculation applies for electronic config%cells away from ionic config%cells
+                  ! standard thermal diffusion calculation applies for electronic cells away from ionic cells
                   Do k=1,ttm%ntcell(3)
                     Do j=1,ttm%ntcell(2)
                       Do i=1,ttm%ntcell(1)
@@ -1123,7 +1123,7 @@ Contains
       Case (2)
         ! Drude-type thermal conductivity case
         If (ttm%redistribute) Then
-          ! system with config%cell deactivation/energy redistribution
+          ! system with cell deactivation/energy redistribution
           Do kk=-ttm%eltcell(3),ttm%eltcell(3)
             Do jj=-ttm%eltcell(2),ttm%eltcell(2)
               Do ii=-ttm%eltcell(1),ttm%eltcell(1)
@@ -1166,7 +1166,7 @@ Contains
                     End Do
                   End Do
                 Else
-                  ! standard thermal diffusion calculation applies for electronic config%cells away from ionic config%cells
+                  ! standard thermal diffusion calculation applies for electronic cells away from ionic cells
                   Do k=1,ttm%ntcell(3)
                     Do j=1,ttm%ntcell(2)
                       Do i=1,ttm%ntcell(1)
@@ -1234,7 +1234,7 @@ Contains
       Case (3)
         ! tabulated thermal conductivity: uses local ionic or system temperature to calculate value
         If (ttm%redistribute) Then
-          ! system with config%cell deactivation/energy redistribution
+          ! system with cell deactivation/energy redistribution
           Do kk=-ttm%eltcell(3),ttm%eltcell(3)
             Do jj=-ttm%eltcell(2),ttm%eltcell(2)
               Do ii=-ttm%eltcell(1),ttm%eltcell(1)
@@ -1271,13 +1271,13 @@ Contains
                     End Do
                   End Do
                 Else
-                  ! standard thermal diffusion calculation applies for electronic config%cells away from ionic config%cells
+                  ! standard thermal diffusion calculation applies for electronic cells away from ionic cells
                   Do k=1,ttm%ntcell(3)
                     Do j=1,ttm%ntcell(2)
                       Do i=1,ttm%ntcell(1)
                         ijk = 1 + i + (ttm%ntcell(1)+2) * (j + (ttm%ntcell(2)+2) * k)
                         ! note that temperature for thermal conductivity is always system
-                        ! temperature for electronic config%cells away from ionic config%cells
+                        ! temperature for electronic cells away from ionic cells
                         alploc = Ke(temp,ttm)/Ce(ttm%eltemp(ijk,ii,jj,kk),ttm)
                         eltemp1(ijk,ii,jj,kk) = ttm%eltemp(ijk,ii,jj,kk)+&
                           fomAx*alploc*(ttm%eltemp(ijk-1,ii,jj,kk)-ttm%eltemp(ijk,ii,jj,kk))+&

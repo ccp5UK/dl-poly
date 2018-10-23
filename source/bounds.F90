@@ -671,7 +671,7 @@ Contains
 
     ! print link cell algorithm and check for violations or...
 
-    Write(message,'(a,3i6)') "link-config%cell decomposition 1 (x,y,z): ",ilx,ily,ilz
+    Write(message,'(a,3i6)') "link-cell decomposition 1 (x,y,z): ",ilx,ily,ilz
     Call info(message,.true.)
 
     tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance

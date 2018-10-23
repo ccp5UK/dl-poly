@@ -25,14 +25,14 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
-    ! dl_poly_4 subroutine to scale the config%velocities of particles from
+    ! dl_poly_4 subroutine to scale the velocities of particles from
     ! boundary thermostat layer to the target temperature
     !
-    ! config%velocity config%verlet config%version
+    ! velocity verlet version
     !
     ! Note: (1) This algorithm breaks true ensembles!!!
     ! Additionally, for Langevin temperature control (thermo%key_pseudo=1):
-    !       (2) Random forces do not contribute to the stress and config%virial
+    !       (2) Random forces do not contribute to the stress and virial
     !           of the thermo%system (but are picked up in the pressure).
     !       (3) Random forces do not apply to frozen and massless particles
     !           as well as to shells.
@@ -342,7 +342,7 @@ Contains
 
         Allocate (xxt(1:config%mxatms),yyt(1:config%mxatms),zzt(1:config%mxatms), Stat=fail(1))
         If (fail(1) > 0) Then
-          Write(message,'(a,i0)') 'pseudo (config%velocities) allocation failure'
+          Write(message,'(a,i0)') 'pseudo (velocities) allocation failure'
           Call error(0,message)
         End If
 
@@ -526,7 +526,7 @@ Contains
 
         Deallocate (xxt,yyt,zzt, Stat=fail(1))
         If (fail(1) > 0) Then
-          Write(message,'(a)') 'pseudo (config%velocities) deallocation failure'
+          Write(message,'(a)') 'pseudo (velocities) deallocation failure'
           Call error(0,message)
         End If
 
