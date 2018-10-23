@@ -1,10 +1,8 @@
 Module nvt_nose_hoover
   Use kinds, Only : wp
-  Use comms,       Only : comms_type,gmax
-  Use constants,           Only : zero_plus
+  Use comms,       Only : comms_type
   Use domains,     Only : domains_type
   Use configuration,      Only : configuration_type
-  Use particle,        Only : corePart
   Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use kinetics,     Only : kinstress,kinstresf,kinstrest,getkin,getknf,getknt,getknr
   Use constraints, Only : constraints_type,constraints_tags,apply_rattle,apply_shake

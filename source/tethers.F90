@@ -18,9 +18,8 @@ Module tethers
   Use kinds, Only : wp, wi
   Use comms,      Only : comms_type,gsum,gcheck
   Use configuration,     Only : configuration_type
-  Use particle,   Only : corePart
   Use statistics, Only : stats_type
-  Use errors_warnings, Only : error, warning
+  Use errors_warnings, Only : error
   Use numerics, Only : images,local_index
   Implicit None
 

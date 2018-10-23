@@ -14,9 +14,6 @@ Module errors_warnings
   Use, intrinsic :: iso_fortran_env, only : error_unit,input_unit,output_unit
   Use kinds, Only : wp
   Use comms, Only : comms_type,abort_comms
-  Use constants, Only : ntable,nrefdt,ndefdt,nrdfdt,nzdndt,nrsddt
-  Use filename, Only : FILE_CONTROL, FILE_CONFIG, FILE_FIELD, &
-    FILE_STATS, FILE_HISTORY, FILE_REVIVE
 
   Implicit None
 

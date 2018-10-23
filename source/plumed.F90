@@ -21,7 +21,6 @@ Module plumed
   Use configuration, Only : configuration_type
   Use errors_warnings, Only : error,warning,info
   Use statistics, Only : stats_type
-  Use particle, Only : corePart
 
   Implicit None
 

@@ -2,7 +2,7 @@ Module shared_units
 
   Use kinds, Only : wp
   Use particle, Only: corePart
-  Use comms, Only : comms_type,PassUnit_tag,wp_mpi,UpdShUnit_tag,&
+  Use comms, Only : comms_type,PassUnit_tag,UpdShUnit_tag,&
     gcheck,gsync,gsend,gwait,girecv
   Use domains,      Only : domains_type
   Use configuration,       Only : configuration_type

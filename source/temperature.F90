@@ -2,9 +2,7 @@ Module temperature
   Use kinds,           Only : wp, li
   Use comms,           Only : comms_type,gsum
   Use constants,           Only : boltz,zero_plus
-  Use site, Only : site_type
   Use configuration,   Only : configuration_type,getcom
-  Use particle,        Only : corePart
   Use rigid_bodies,    Only : rigid_bodies_type,getrotmat,rigid_bodies_quench
   Use constraints,     Only : constraints_type, constraints_quench
   Use pmf,             Only : pmf_quench, pmf_type

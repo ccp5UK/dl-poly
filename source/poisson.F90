@@ -1,11 +1,10 @@
 Module poisson
   Use kinds,           Only : wp,wi
-  Use comms,           Only : gsum,comms_type,wp_mpi,ExchgGrid_tag,gsend, &
+  Use comms,           Only : gsum,comms_type,ExchgGrid_tag,gsend, &
     gwait,girecv,gtime
   Use domains,         Only : domains_type
   Use constants,           Only : fourpi,r4pie0,half_minus,zero_plus
   Use configuration,   Only : configuration_type
-  Use particle,        Only : corePart
   Use ewald,           Only : ewald_type
   Use errors_warnings, Only : error,info
   Use numerics,        Only : dcell,invert

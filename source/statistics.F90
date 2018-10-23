@@ -20,15 +20,12 @@ Module statistics
     prsunt,tenunt,boltz,engunit,eu_ev,eu_kcpm,&
     eu_kjpm,pi
 
-  Use comms,   Only : comms_type,gsum,Spread_tag,wp_mpi,gtime,gmax,gsend, &
+  Use comms,   Only : comms_type,gsum,Spread_tag,gtime,gmax,gsend, &
     gwait,girecv,gcheck
   Use site, Only : site_type
   Use configuration,  Only : configuration_type
-  Use particle,   Only : corePart
   Use domains,    Only : domains_type
   Use z_density,   Only : z_density_type,z_density_collect
-  Use msd,         Only : msd_type
-  Use greenkubo,   Only : greenkubo_type
   Use errors_warnings, Only : error,warning,info
   Use numerics,    Only : dcell,invert,shellsort,shellsort2,pbcshfrc,pbcshfrl
   Use thermostat, Only : thermostat_type,CONSTRAINT_NONE,CONSTRAINT_SURFACE_TENSION, &

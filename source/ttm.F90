@@ -22,8 +22,7 @@ Module ttm
   Use domains,         Only : domains_type,idcube
   Use comms,           Only : wp_mpi,comms_type,gsum,gmin,gmax,gcheck,gsync, &
     grid1_tag,grid2_tag
-  Use parse,           Only : tabs_2_blanks, get_line, get_word, &
-    strip_blanks, word_2_real
+  Use parse,           Only : get_line, get_word, word_2_real
   Use errors_warnings, Only : error,warning,info
   Use flow_control, Only : RESTART_KEY_OLD, RESTART_KEY_CLEAN
 #ifdef SERIAL

@@ -1,10 +1,9 @@
 Module nst_mtk
   Use kinds,              Only : wp, li
-  Use comms,              Only : comms_type,gmax
+  Use comms,              Only : comms_type
   Use constants,          Only : boltz  
   Use site, Only : site_type
   Use configuration,      Only : configuration_type
-  Use particle,           Only : corePart
   Use domains,            Only : domains_type
   Use kinetics,           Only : getvom,kinstress,kinstresf,kinstrest
   Use constraints,        Only : apply_rattle,apply_shake,&

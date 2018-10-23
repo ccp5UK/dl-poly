@@ -1,11 +1,10 @@
 Module nvt_anderson
   Use kinds,         Only : wp
-  Use comms,         Only : comms_type,gsum,gmax
+  Use comms,         Only : comms_type,gsum
   Use domains,       Only : domains_type
   Use constants,         Only : boltz,zero_plus
   Use site, Only : site_type
   Use configuration, Only : configuration_type
-  Use particle,      Only : corePart
   Use kinetics,      Only : getvom,getknr,kinstress,kinstresf,kinstrest
   Use constraints,   Only : constraints_tags,apply_shake, &
     apply_rattle,constraints_type

@@ -1,11 +1,10 @@
 Module npt_mtk
   Use kinds,         Only : wp, li
-  Use comms,         Only : comms_type,gmax
+  Use comms,         Only : comms_type
   Use constants,     Only : boltz 
   Use domains,       Only : domains_type
   Use site, Only : site_type
   Use configuration, Only : configuration_type
-  Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use kinetics,      Only : getvom,kinstress,kinstresf,kinstrest
   Use constraints,   Only : apply_shake, apply_rattle, &

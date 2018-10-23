@@ -18,7 +18,6 @@ Module core_shell
   Use kinds,           Only : wp
   Use comms,           Only : comms_type,gsync,gsum,gcheck,gmax
   Use configuration,   Only : configuration_type,freeze_atoms
-  Use particle,        Only : corePart
   Use constants,           Only : boltz,engunit,zero_plus
   Use parse,           Only : strip_blanks,lower_case
   Use shared_units,    Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES

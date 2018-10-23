@@ -28,7 +28,6 @@ Module rigid_bodies
     ENS_NPT_LANGEVIN, ENS_NPT_LANGEVIN_ANISO, &
     ENS_NPT_NOSE_HOOVER, ENS_NPT_NOSE_HOOVER_ANISO, &
     ENS_NPT_MTK, ENS_NPT_MTK_ANISO
-  Use particle,        Only : corePart
   Use domains,         Only : domains_type
   Implicit None
 

@@ -16,7 +16,7 @@ Module configuration
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp,li,wi
-  Use comms, Only : comms_type,wp_mpi,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
+  Use comms, Only : comms_type,gbcast,WriteConf_tag,gcheck,gsync,gsum,&
     gmax,gmin,gsend,grecv,gscatter,gscatterv,gscatter_columns, &
     gallgather,galltoall,galltoallv,gallreduce,op_land, &
     offset_kind,comm_self,mode_create,mode_rdonly,mode_wronly

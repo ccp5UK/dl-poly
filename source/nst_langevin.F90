@@ -1,10 +1,9 @@
 Module nst_langevin
   Use kinds,           Only : wp, li
-  Use comms,           Only : comms_type,gmax
+  Use comms,           Only : comms_type
   Use constants,       Only : boltz, pi         
   Use site, Only : site_type
   Use configuration,   Only : configuration_type
-  Use particle,        Only : corePart
   Use domains,         Only : domains_type
   Use kinetics,        Only : getvom,getkin,getknt,getknr,getknf, &
     kinstress,kinstresf,kinstrest

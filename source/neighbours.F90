@@ -17,7 +17,6 @@ Module neighbours
   Use numerics, Only : dcell,images,invert,match
   Use timer,  Only : timer_type,start_timer,stop_timer
   Use statistics, Only : stats_type
-  Use particle, Only : corePart
   Use kim, Only : kim_type
   Implicit None
 

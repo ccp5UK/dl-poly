@@ -1,6 +1,6 @@
 Module mpole
   Use kinds, Only : wp,wi
-  Use constants, Only : sqrpi,r4pie0,zero_plus,nmpldt
+  Use constants, Only : zero_plus,nmpldt
   Use site, Only : site_type
   Use core_shell, Only : core_shell_type
   Use parse,      Only : word_2_real, get_line, get_word, lower_case, strip_blanks 

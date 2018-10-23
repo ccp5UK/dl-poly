@@ -16,10 +16,8 @@ Module coul_mpole
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp
-  Use comms,  Only : comms_type
   Use constants, Only :r4pie0,zero_plus,sqrpi
   Use configuration, Only : configuration_type
-  Use particle,  Only : corePart
   Use mpole, Only : mpole_type
   Use mpoles_container, Only : coul_deriv, ewald_deriv, &
     explicit_fscp_rfp_loops, explicit_ewald_real_loops, &
@@ -29,7 +27,7 @@ Module coul_mpole
   Use electrostatic, Only : electrostatic_type, &
     ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
     ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
-    ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
+    ELECTROSTATIC_COULOMB_REACTION_FIELD
   Use errors_warnings, Only : error
 
   Implicit None

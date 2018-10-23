@@ -1,11 +1,10 @@
 Module npt_langevin
   Use kinds,         Only : wp, li
-  Use comms,         Only : comms_type,gmax
+  Use comms,         Only : comms_type
   Use domains,       Only : domains_type
   Use site, Only : site_type
   Use constants, Only :  boltz, pi
   Use configuration, Only : configuration_type
-  Use particle,     Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat,no_squish,rigid_bodies_stress
   Use kinetics,      Only : getvom,getknf,getknt,getknr,getkin, &
     kinstress,kinstresf,kinstrest

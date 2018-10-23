@@ -47,13 +47,10 @@ program dl_poly
 
   ! SETUP MODULES
 
-  Use kinds, Only : wp,li,wi
-  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gmax,gsum, gbcast
+  Use kinds, Only : wp,wi
+  Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
   Use constants, Only : DLP_RELEASE,DLP_VERSION
 
-  ! PARSE MODULE
-
-  Use parse, Only :
 
   ! DEVELOPMENT MODULE
 
@@ -72,70 +69,53 @@ program dl_poly
 
   ! VNL module
 
-  Use neighbours, Only : neighbours_type,vnl_check
-
-  ! DPD module
-
-  Use dpd, Only : dpd_thermostat
+  Use neighbours, Only : neighbours_type
 
   ! INTERACTION MODULES
 
-  Use core_shell, Only : core_shell_type,core_shell_relax,SHELL_RELAXED,SHELL_ADIABATIC,&
-    core_shell_kinetic,core_shell_quench,core_shell_on_top,&
-    core_shell_forces
+  Use core_shell, Only : core_shell_type
 
-  Use pmf, only : pmf_type,pmf_quench
+  Use pmf, only : pmf_type
 
-  Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench, &
-    xscale,rigid_bodies_tags, &
-    rigid_bodies_coms
+  Use rigid_bodies, Only : rigid_bodies_type
+  Use minimise, Only : minimise_type
 
-  Use tethers, Only : tethers_type, tethers_forces
+  Use tethers, Only : tethers_type
 
-  Use bonds, Only : bonds_type,bonds_forces
-  Use angles, Only : angles_type,angles_forces
-  Use dihedrals, Only : dihedrals_type,dihedrals_forces
-  Use inversions, Only : inversions_type,inversions_forces
-  Use three_body, Only : threebody_type, three_body_forces
+  Use bonds, Only : bonds_type
+  Use angles, Only : angles_type
+  Use dihedrals, Only : dihedrals_type
+  Use inversions, Only : inversions_type
+  Use three_body, Only : threebody_type
 
   Use mpole, Only : mpole_type,POLARISATION_CHARMM
 
   Use vdw, Only : vdw_type
   Use metal, Only : metal_type
-  Use tersoff, Only : tersoff_type,tersoff_forces
-  Use four_body, Only : four_body_type,four_body_forces
+  Use tersoff, Only : tersoff_type
+  Use four_body, Only : four_body_type
 
   Use kim, Only : kim_type,kim_setup
-  Use plumed, Only : plumed_type,plumed_init,plumed_finalize,plumed_apply
+  Use plumed, Only : plumed_type,plumed_init,plumed_finalize
 
-  Use external_field, Only : external_field_type, external_field_apply, &
-    external_field_correct, &
-    FIELD_NULL, FIELD_ELECTRIC, FIELD_SHEAR_OSCILLATING, &
-    FIELD_SHEAR_CONTINUOUS, FIELD_GRAVITATIONAL, &
-    FIELD_MAGNETIC, FIELD_SPHERE, FIELD_WALL, &
-    FIELD_WALL_PISTON, FIELD_ZRES, FIELD_ZRES_MINUS, &
-    FIELD_ZRES_PLUS, FIELD_ELECTRIC_OSCILLATING, &
-    FIELD_UMBRELLA
+  Use external_field, Only : external_field_type
 
   ! STATISTICS MODULES
 
   Use rdfs, Only : rdf_type
   Use z_density, Only : z_density_type
-  Use statistics, Only : stats_type,statistics_result,statistics_collect, &
-    statistics_connect_set,statistics_connect_frames
-  Use greenkubo, Only : greenkubo_type,vaf_compute,vaf_collect,vaf_write
+  Use statistics, Only : stats_type,statistics_result
+  Use greenkubo, Only : greenkubo_type
 
   ! MSD MODULE
 
-  Use msd, Only : msd_type,msd_write
+  Use msd, Only : msd_type
 
   ! TWO-TEMPERATURE MODEL MODULES
 
   Use drivers, Only : w_md_vv, w_replay_historf,w_replay_history
   Use errors_warnings, Only : init_error_system,info, warning
 
-  Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
-  Use two_body, Only : two_body_forces
   Use ewald, Only : ewald_type
 
   ! IMPACT MODULE
@@ -144,11 +124,11 @@ program dl_poly
   ! DEFECTS MODULE
   Use defects, Only : defects_type
 
-  Use halo, Only : refresh_halo_positions,set_halo_particles
-  Use deport_data, Only : mpoles_rotmat_set_halo,relocate_particles
-  Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
-  Use rsds, Only : rsd_write,rsd_type
-  Use trajectory, Only : trajectory_write,read_history, trajectory_type
+  Use halo, Only : set_halo_particles
+  Use deport_data, Only : mpoles_rotmat_set_halo
+  Use temperature, Only : set_temperature
+  Use rsds, Only : rsd_type
+  Use trajectory, Only : trajectory_write,trajectory_type
   Use system, Only : system_revive,system_expand,system_init
   Use build_excl, Only : build_excl_intra
   Use build_book, Only : build_book_intra
@@ -156,42 +136,19 @@ program dl_poly
   Use bounds, Only : set_bounds
   Use build_tplg, Only : build_tplg_intra
   Use build_chrm, Only : build_chrm_intra
-  Use thermostat, Only : thermostat_type, &
-    ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
-    ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
-    ENS_NVT_GENTLE, ENS_NVT_LANGEVIN_INHOMO, &
-    ENS_NPT_LANGEVIN, ENS_NPT_BERENDSEN, ENS_NPT_NOSE_HOOVER, &
-    ENS_NPT_MTK, ENS_NPT_LANGEVIN_ANISO, ENS_NPT_BERENDSEN_ANISO, &
-    ENS_NPT_NOSE_HOOVER_ANISO,ENS_NPT_MTK_ANISO
-  Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
-  Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
-  Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
-  Use nvt_gst, Only : nvt_g0_vv, nvt_g1_vv, nvt_g0_scl, nvt_g1_scl
-  Use nvt_langevin, Only : nvt_l0_vv, nvt_l1_vv, nvt_l2_vv
-  Use nvt_nose_hoover, Only : nvt_h0_vv, nvt_h1_vv, nvt_h0_scl, nvt_h1_scl
-  Use nst_berendsen, Only : nst_b0_vv,nst_b1_vv
-  Use nst_langevin, Only : nst_l0_vv,nst_l1_vv
-  Use nst_mtk, Only : nst_m0_vv,nst_m1_vv
-  Use nst_nose_hoover, Only : nst_h0_vv,nst_h1_vv, nst_h0_scl, nst_h1_scl
-  Use npt_berendsen, Only : npt_b0_vv,npt_b1_vv
-  Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
-  Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
-  Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
-  Use nve, Only : nve_0_vv, nve_1_vv
-  Use timer, Only  : timer_type, time_elapsed,timer_report,start_timer,stop_timer
+  Use thermostat, Only : thermostat_type
+  Use timer, Only  : timer_type, time_elapsed,timer_report
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
-  Use constraints, Only : constraints_type, constraints_quench
-  Use shared_units, Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
-  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD,ELECTROSTATIC_NULL
-  Use stochastic_boundary, Only : stochastic_boundary_vv
+  Use constraints, Only : constraints_type
+  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD
   Use numerics, Only : seed_type
   Use io, Only : io_type
   Use ttm, Only : ttm_type, ttm_system_init,ttm_system_revive,ttm_table_scan,&
     ttm_table_read,allocate_ttm_arrays
   Use ttm_utils, Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
     peakProfilerElec,peakProfiler
-  Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
+  Use ttm_track, Only : ttm_ion_temperature
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces

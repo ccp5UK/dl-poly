@@ -3,7 +3,6 @@ Module build_book
   Use comms,  Only : comms_type,gcheck,gmax
   Use site, Only : site_type
   Use configuration, Only : configuration_type
-  Use particle,      Only : corePart
   Use core_shell,    Only : core_shell_type 
   Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_setup,rigid_bodies_tags, &
     rigid_bodies_coms,rigid_bodies_widths
@@ -17,7 +16,6 @@ Module build_book
   Use ffield, Only : report_topology
   Use constraints, Only : constraints_type
   Use pmf, Only : pmf_type
-  Use mpole, Only : mpole_type
   Use neighbours, Only : neighbours_type
   Use domains, Only : domains_type
   Use errors_warnings, Only : error,warning,info

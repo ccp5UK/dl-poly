@@ -19,7 +19,6 @@ Module vdw
   Use constants, Only : twopi, zero_plus, ntable, r4pie0, engunit, prsunt, delr_max
   Use site, Only : site_type
   Use configuration, Only : configuration_type
-  Use particle, Only : corePart
   Use potentials,         Only : ab, intRadZBL, intdRadZBL, &
     zbl,zbls,zblb,mlj,mbuck, mlj126, &
     intRadMDF,intdRadMDF,intRadMM3,intRaddMM3

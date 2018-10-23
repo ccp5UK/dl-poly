@@ -1,9 +1,8 @@
 Module nvt_gst
   Use kinds, Only : wp, li
-  Use comms,       Only : comms_type,gmax
-  Use constants,           Only : zero_plus,boltz
+  Use comms,       Only : comms_type
+  Use constants,           Only : boltz
   Use configuration,      Only : configuration_type
-  Use particle,    Only : corePart
   Use domains,     Only : domains_type
   Use kinetics,     Only : kinstress,kinstresf,kinstrest,getkin,getknf,getknt,getknr
   Use constraints, Only : constraints_tags,apply_shake,&

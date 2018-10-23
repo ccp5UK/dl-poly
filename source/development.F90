@@ -19,10 +19,9 @@ Module development
 
   Use kinds, Only : wp
 #ifdef OLDMPI
-  Use comms, Only : mpi_ver,mpi_subver, comms_type,gcheck, gtime, gsync
+  Use comms, Only : mpi_ver,mpi_subver, comms_type,gcheck
 #else
-  Use comms, Only : mpi_ver,mpi_subver,lib_version,comms_type,gcheck, &
-    gtime, gsync
+  Use comms, Only : mpi_ver,mpi_subver,lib_version,comms_type,gcheck
 #endif
   Use parse, Only : get_line,get_word,lower_case,clean_string
   Use filename, Only : file_type,FILE_CONTROL

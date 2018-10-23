@@ -1,17 +1,16 @@
 Module drivers
   Use kinds, Only : wp,wi
-  Use comms, Only : comms_type,gsum,gtime,gmin,gmax,gcheck
-  Use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr, cap_forces
-  Use particle, Only : corePart
-  Use constants, Only : boltz,zero_plus
+  Use comms, Only : comms_type,gsum,gtime,gmax
+  Use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getknr, cap_forces
+  Use constants, Only : boltz
 
   Use impacts, Only : impact_type, impact
-  Use shared_units, Only : update_shared_units,update_shared_units_int, SHARED_UNIT_UPDATE_FORCES
-  Use numerics, Only : local_index,images,dcell,invert,box_mueller_saru3, seed_type
+  Use shared_units, Only : update_shared_units, SHARED_UNIT_UPDATE_FORCES
+  Use numerics, Only : seed_type
   Use parse, Only : strip_blanks,lower_case
   Use langevin, Only : langevin_forces
 
-  Use errors_warnings, Only : error,warning, init_error_system,info 
+  Use errors_warnings, Only : error,warning,info 
 
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
@@ -26,13 +25,9 @@ Module drivers
   Use temperature, Only : scale_temperature,regauss_temperature,set_temperature
   Use rsds, Only : rsd_write,rsd_type
   Use trajectory, Only : trajectory_type, trajectory_write,read_history
-  Use system, Only : system_revive,system_expand,system_init
+  Use system, Only : system_revive
   Use build_excl, Only : build_excl_intra 
   Use build_book, Only : build_book_intra
-  Use ffield, Only : read_field,report_topology
-  Use bounds, Only : set_bounds
-  Use build_tplg, Only : build_tplg_intra
-  Use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type, &
     ENS_NVE, ENS_NVT_EVANS, ENS_NVT_LANGEVIN,  &
     ENS_NVT_ANDERSON, ENS_NVT_BERENDSEN, ENS_NVT_NOSE_HOOVER, &
@@ -43,36 +38,31 @@ Module drivers
     DPD_NULL, DPD_SECOND_ORDER, &
     VV_FIRST_STAGE,VV_SECOND_STAGE
   Use nvt_anderson, Only : nvt_a0_vv, nvt_a1_vv
-  Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv, nvt_b0_scl, nvt_b1_scl
-  Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv, nvt_e0_scl, nvt_e1_scl
-  Use nvt_gst, Only : nvt_g0_vv, nvt_g1_vv, nvt_g0_scl, nvt_g1_scl
+  Use nvt_berendsen, Only : nvt_b0_vv, nvt_b1_vv
+  Use nvt_ekin, Only : nvt_e0_vv, nvt_e1_vv
+  Use nvt_gst, Only : nvt_g0_vv, nvt_g1_vv
   Use nvt_langevin, Only : nvt_l0_vv, nvt_l1_vv, nvt_l2_vv
-  Use nvt_nose_hoover, Only : nvt_h0_vv, nvt_h1_vv, nvt_h0_scl, nvt_h1_scl
+  Use nvt_nose_hoover, Only : nvt_h0_vv, nvt_h1_vv
   Use nst_berendsen, Only : nst_b0_vv,nst_b1_vv
   Use nst_langevin, Only : nst_l0_vv,nst_l1_vv
   Use nst_mtk, Only : nst_m0_vv,nst_m1_vv
-  Use nst_nose_hoover, Only : nst_h0_vv,nst_h1_vv, nst_h0_scl, nst_h1_scl
+  Use nst_nose_hoover, Only : nst_h0_vv,nst_h1_vv
   Use npt_berendsen, Only : npt_b0_vv,npt_b1_vv
   Use npt_langevin, Only : npt_l0_vv,npt_l1_vv
   Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
-  Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv, npt_h0_scl, npt_h1_scl
+  Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv
   Use nve, Only : nve_0_vv, nve_1_vv 
-  Use timer, Only  : timer_type, time_elapsed,timer_report,start_timer,stop_timer
+  Use timer, Only  : timer_type, start_timer,stop_timer
   Use poisson, Only : poisson_type
-  Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type, constraints_quench
-  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD,ELECTROSTATIC_NULL
+  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
   Use stochastic_boundary, Only : stochastic_boundary_vv
   Use io, Only : io_type
-  Use ttm, Only : ttm_type, ttm_system_init,ttm_system_revive,ttm_table_scan,&
-    ttm_table_read,allocate_ttm_arrays
-  Use ttm_utils, Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
-    peakProfilerElec,peakProfiler
+  Use ttm, Only : ttm_type
   Use ttm_track, Only : ttm_ion_temperature,ttm_thermal_diffusion
-  Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS,&
-    FILE_HISTORF,FILE_HISTORY
+  Use filename, Only : file_type,FILE_OUTPUT,FILE_HISTORF,FILE_HISTORY
   Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN
-  Use development, Only : development_type,scan_development,build_info
+  Use development, Only : development_type
 
   ! IO & DOMAINS MODULES
 
@@ -82,8 +72,7 @@ Module drivers
   ! SITE & CONFIG MODULES
 
   Use site, Only : site_type
-  Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
-  Use control, Only : read_control,scan_control_output,scan_control_io
+  Use configuration, Only : configuration_type,check_config, freeze_atoms
 
   ! VNL module
 
@@ -103,34 +92,28 @@ Module drivers
 
   Use rigid_bodies, Only : rigid_bodies_type,rigid_bodies_quench,rigid_bodies_stress, &
     xscale,rigid_bodies_tags, &
-    rigid_bodies_coms, getrotmat
+    rigid_bodies_coms
 
   Use tethers, Only : tethers_type, tethers_forces
 
   Use bonds, Only : bonds_type,bonds_forces
-  Use angles, Only : angles_type,allocate_angles_arrays,angles_forces
+  Use angles, Only : angles_type,angles_forces
   Use dihedrals, Only : dihedrals_type,dihedrals_forces
   Use inversions, Only : inversions_type,inversions_forces
   Use three_body, Only : threebody_type, three_body_forces
 
-  Use mpole, Only : mpole_type,POLARISATION_CHARMM
+  Use mpole, Only : mpole_type
 
   Use vdw, Only : vdw_type
   Use metal, Only : metal_type
   Use tersoff, Only : tersoff_type,tersoff_forces
   Use four_body, Only : four_body_type,four_body_forces
 
-  Use kim, Only : kim_type,kim_setup
-  Use plumed, Only : plumed_type,plumed_init,plumed_finalize,plumed_apply
+  Use kim, Only : kim_type
+  Use plumed, Only : plumed_type,plumed_apply
 
   Use external_field, Only : external_field_type, external_field_apply, &
-    external_field_correct, &
-    FIELD_NULL, FIELD_ELECTRIC, FIELD_SHEAR_OSCILLATING, &
-    FIELD_SHEAR_CONTINUOUS, FIELD_GRAVITATIONAL, &
-    FIELD_MAGNETIC, FIELD_SPHERE, FIELD_WALL, &
-    FIELD_WALL_PISTON, FIELD_ZRES, FIELD_ZRES_MINUS, &
-    FIELD_ZRES_PLUS, FIELD_ELECTRIC_OSCILLATING, &
-    FIELD_UMBRELLA
+    external_field_correct,FIELD_NULL
 
   ! STATISTICS MODULES
 
@@ -138,7 +121,7 @@ Module drivers
   Use z_density, Only : z_density_type
   Use statistics, Only : stats_type,statistics_result,statistics_collect, &
     statistics_connect_set,statistics_connect_frames
-  Use greenkubo, Only : greenkubo_type,vaf_compute,vaf_collect,vaf_write
+  Use greenkubo, Only : greenkubo_type,vaf_collect,vaf_write
 
   ! MSD MODULE
 

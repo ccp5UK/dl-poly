@@ -16,13 +16,12 @@ Module defects
 
   Use kinds,             Only : wp,li, wi
   Use constants,             Only : ndefdt,nrefdt,half_minus,zero_plus
-  Use comms,             Only : comms_type, DefWrite_tag, wp_mpi, DefExport_tag, &
+  Use comms,             Only : comms_type, DefWrite_tag, DefExport_tag, &
     DefRWrite_tag,gsum,gcheck,gsync,gmax,gbcast, &
     gsend,grecv,gwait,girecv,gscatter,gscatterv, &
     gscatter_columns,offset_kind,mode_wronly, &
     comm_self,mode_create,mode_rdonly
   Use configuration,     Only : configuration_type
-  Use particle,          Only : corePart
   Use parse,             Only : tabs_2_blanks,get_word,word_2_real,get_line,strip_blanks
   Use io,                Only : io_type,io_set_parameters,        &
     io_get_parameters,        &

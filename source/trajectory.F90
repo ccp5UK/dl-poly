@@ -1,6 +1,6 @@
 Module trajectory
   Use kinds,         Only : wi,wp,li
-  Use comms,         Only : comms_type,Traject_tag,gsync,wp_mpi,gbcast,gcheck, &
+  Use comms,         Only : comms_type,Traject_tag,gsync,gbcast,gcheck, &
     gsum,gsend,grecv,offset_kind,mode_wronly, &
     mode_rdonly, comm_self
   Use domains,       Only : domains_type
@@ -39,7 +39,7 @@ Module trajectory
     IO_READ_MASTER,                &
     IO_SUBSET_POSITIONS
   Use numerics,        Only : dcell, invert, shellsort2
-  Use errors_warnings, Only : error,warning,info
+  Use errors_warnings, Only : error,info
   Use particle,        Only : corePart
   Use filename, Only : file_type,FILE_CONFIG,FILE_HISTORY
   Use flow_control, Only : RESTART_KEY_OLD

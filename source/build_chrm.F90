@@ -15,7 +15,7 @@ Module build_chrm
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type
 
-  Use mpole, Only : mpole_type,POLARISATION_DEFAULT,POLARISATION_CHARMM
+  Use mpole, Only : mpole_type,POLARISATION_DEFAULT
   Use numerics, Only : local_index,shellsort
   Use build_excl, Only : add_exclusion
   Use constraints, Only : constraints_type

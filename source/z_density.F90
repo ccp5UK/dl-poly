@@ -19,7 +19,6 @@ Module z_density
   Use constants,  Only : nzdndt
   Use site, Only : site_type
   Use configuration, Only : configuration_type
-  Use particle,        Only : corePart
   Use errors_warnings, Only : error,info
   Implicit None
 

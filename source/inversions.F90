@@ -21,7 +21,6 @@ Module inversions
     engunit,zero_plus,ntable
   Use site, Only : site_type
   Use configuration,     Only : configuration_type
-  Use particle, Only : corePart
   Use parse, Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info
   Use numerics, Only : local_index, images

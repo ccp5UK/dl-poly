@@ -1,13 +1,11 @@
 Module mpoles_container
   Use kinds,           Only : wp,wi
-  Use comms,           Only : comms_type
   Use constants,           Only : sqrpi
   Use configuration,   Only : configuration_type
   Use mpole,           Only : mpole_type
   Use ewald,           Only : dtpbsp, ewald_type
   Use errors_warnings, Only : error
   Use numerics,        Only : images_s, local_index
-  Use particle,        Only : corePart
 
   Implicit None
 

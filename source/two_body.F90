@@ -4,14 +4,13 @@ Module two_body
   Use constants, Only : pi, r4pie0
   Use site, Only : site_type
   Use configuration,  Only : configuration_type
-  Use particle,       Only : corePart
   Use neighbours,     Only : neighbours_type,link_cell_pairs
   Use ewald,           Only : ewald_type
   Use mpole,          Only : mpole_type,POLARISATION_CHARMM
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
   Use coul_mpole,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
     coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
-  Use poisson, Only : poisson_type,poisson_forces,poisson_excl_forces,poisson_frzn_forces
+  Use poisson, Only : poisson_type,poisson_forces,poisson_frzn_forces
   Use vdw,     Only : vdw_type,vdw_forces
   Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
   Use kim,     Only : kim_type,kim_energy_and_forces
