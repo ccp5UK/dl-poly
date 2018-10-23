@@ -1,8 +1,6 @@
 Module coul_spole
   Use kinds,           Only : wp
-  Use comms,           Only : comms_type
   Use configuration,   Only : configuration_type     
-  Use particle,         Only : corePart
   Use constants,           Only : r4pie0,zero_plus,sqrpi
   Use errors_warnings, Only : error
   Use numerics,        Only : erfcgen
@@ -10,7 +8,7 @@ Module coul_spole
   Use electrostatic,   Only : electrostatic_type, &
     ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
     ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
-    ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
+    ELECTROSTATIC_COULOMB_REACTION_FIELD
 
   Implicit None
 

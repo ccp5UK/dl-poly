@@ -14,10 +14,9 @@ Module msd
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   Use kinds, Only : wp,li,wi
-  Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,wp_mpi,gsync,gbcast, &
+  Use comms, Only : comms_type, gcheck,MsdWrite_tag,gsum,gsync,gbcast, &
     gsend,grecv,offset_kind,comm_self,mode_wronly
   Use constants, Only : zero_plus, boltz
-  Use site, Only : site_type
   Use configuration,     Only : configuration_type
 
   Use parse,      Only : tabs_2_blanks, get_word, word_2_real

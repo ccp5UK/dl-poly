@@ -1,13 +1,12 @@
 Module system
 
   Use kinds, Only : wp,li
-  Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,wp_mpi,gsync, &
+  Use comms, Only : comms_type, gbcast,SysExpand_tag,Revive_tag,gsync, &
     gsend,grecv,offset_kind,mode_wronly,comm_self,mode_create, &
     gtime,gsum,gcheck
   Use constants, Only : engunit, zero_plus, nmpldt 
   Use site, Only : site_type
   Use configuration,      Only : configuration_type,write_config
-  Use particle,   Only : corePart
   Use statistics, Only : stats_type
   Use rdfs,        Only : rdf_type
   Use z_density,   Only : z_density_type

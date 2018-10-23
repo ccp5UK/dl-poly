@@ -21,7 +21,6 @@ Module three_body
   Use constants, Only : zero_plus, twopi, pi
   Use domains, Only : domains_type
   Use configuration,  Only : configuration_type
-  Use particle,        Only : corePart
   Use errors_warnings, Only : error,warning
   Use numerics, Only : dcell, invert
   Use statistics, Only : stats_type

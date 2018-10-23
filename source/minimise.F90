@@ -19,7 +19,6 @@ Module minimise
   Use constants,           Only : engunit,zero_plus
   Use configuration,   Only : configuration_type, &
     write_config,getcom
-  Use particle,        Only : corePart
   Use rigid_bodies,    Only : rigid_bodies_type,q_setup,getrotmat, &
     rigid_bodies_split_torque,rigid_bodies_move
   Use parse,           Only : strip_blanks,lower_case

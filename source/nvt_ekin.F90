@@ -1,7 +1,6 @@
 Module nvt_ekin
   Use kinds,           Only : wp
-  Use comms,           Only : comms_type,gmax,gsum
-  Use constants,           Only : zero_plus
+  Use comms,           Only : comms_type,gsum
   Use configuration,   Only : configuration_type
   Use domains,         Only : domains_type
   Use kinetics,        Only : kinstress,kinstresf,kinstrest
@@ -15,7 +14,6 @@ Module nvt_ekin
   Use timer, Only : timer_type
   Use thermostat, Only : adjust_timestep,thermostat_type,VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
-  Use particle,   Only : corePart
   Implicit None
 
   Private

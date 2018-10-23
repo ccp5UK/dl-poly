@@ -20,7 +20,6 @@ Module langevin
   Use kinds, Only : wp,wi
   Use constants,      Only : boltz
   Use configuration,     Only : configuration_type
-  Use particle,          Only : corePart
   Use core_shell, Only : core_shell_type
   Use ttm,        Only : ttm_type 
   Use ttm_utils,         Only : Gep

@@ -13,7 +13,6 @@ Module analysis
   Use rdfs,          Only : rdf_type,rdf_compute,usr_compute,calculate_errors, &
     calculate_errors_jackknife
   Use z_density,     Only : z_density_type,z_density_compute
-  Use neighbours,    Only : neighbours_type
   Use comms,         Only : comms_type
   Use thermostat, Only : thermostat_type
   Implicit None

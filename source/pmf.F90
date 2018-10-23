@@ -21,7 +21,6 @@ Module pmf
   Use errors_warnings, Only : error,warning,info
   Use numerics,        Only : images,local_index,dcell
   Use statistics, Only : stats_type
-  Use particle,        Only : corePart
   Implicit None
   Private
 

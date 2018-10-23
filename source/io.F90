@@ -27,7 +27,7 @@ Module io
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
   Use kinds, Only : wp, li
-  Use comms, Only : comms_type, wp_mpi
+  Use comms, Only : comms_type,  wp_mpi
   Use errors_warnings, Only : error
   Use particle, Only: corePart
 #ifdef SERIAL

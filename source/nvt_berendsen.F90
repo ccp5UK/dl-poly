@@ -1,8 +1,7 @@
 Module nvt_berendsen
   Use kinds, Only : wp
-  Use comms,       Only : comms_type,gmax
+  Use comms,       Only : comms_type
   Use configuration,      Only : configuration_type
-  Use particle,    Only : corePart
   Use domains,     Only : domains_type
   Use kinetics,     Only : getvom,getknr,kinstresf,kinstrest,kinstress
   Use constraints, Only : constraints_tags,apply_shake, &

@@ -3,14 +3,13 @@ Module stochastic_boundary
   Use comms, Only : comms_type,gsum
   Use kinetics, Only : kinstresf, kinstrest, kinstress,getknr,getvom, getknr
   Use configuration, Only : configuration_type
-  Use errors_warnings, Only : error,warning,info
+  Use errors_warnings, Only : error
   Use shared_units, Only : update_shared_units,update_shared_units_int
   Use numerics, Only : seed_type,local_index,images,dcell,invert,box_mueller_saru3
   Use thermostat, Only : thermostat_type
   Use statistics, Only : stats_type
   Use domains, Only : domains_type
   Use core_shell,  Only : core_shell_type,SHELL_ADIABATIC 
-  Use particle, Only : corePart
   Use rigid_bodies, Only : rigid_bodies_type,getrotmat
   Use constants, Only : zero_plus,boltz
 

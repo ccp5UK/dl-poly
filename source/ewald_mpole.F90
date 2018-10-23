@@ -2,7 +2,6 @@ Module ewald_mpole
   Use kinds, Only : wp, sp
   Use comms, Only : comms_type, gcheck, gsum
   Use configuration, Only : configuration_type
-  Use particle, Only : corePart
   Use constants, Only :  r4pie0, sqrpi, zero_plus,twopi
   Use ewald,        Only : ewald_type,spl_cexp,bspcoe,bspgen_mpoles,dtpbsp,exchange_grid
   Use numerics, Only : invert,dcell,erfcgen

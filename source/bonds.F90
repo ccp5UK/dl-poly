@@ -22,7 +22,6 @@ Module bonds
     zero_plus,engunit
   Use comms,           Only : comms_type,gsum, gsync, gcheck, gbcast
   Use configuration,   Only : configuration_type
-  Use particle,        Only : corePart
   Use site, Only : site_type
   Use parse,           Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error, warning, info

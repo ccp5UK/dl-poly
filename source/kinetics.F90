@@ -30,8 +30,7 @@ Module kinetics
   Use kinds, Only : wp
   Use comms, Only : comms_type, gsum
   Use constants,  Only : zero_plus,boltz
-  Use configuration, Only : configuration_type,getcom_mol
-  Use particle,     Only : corePart
+  Use configuration, Only : configuration_type
   Use rigid_bodies, Only : rigid_bodies_type
   Implicit None
 

@@ -19,8 +19,7 @@ Module metal
   Use constants, Only :  zero_plus, twopi, fourpi, engunit, ntable, sqrpi 
   Use site, Only : site_type
   Use configuration, Only : configuration_type
-  Use particle, Only : corePart
-  Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag,wp_mpi,gsend, &
+  Use comms,  Only : comms_type,gsum,gcheck,gmax,MetLdExp_tag,gsend, &
     gwait,girecv
   Use parse, Only : get_line,get_word,lower_case,word_2_real
   Use domains, Only : domains_type

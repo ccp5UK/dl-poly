@@ -3,7 +3,6 @@ Module ewald_spole
   Use comms,           Only : comms_type, gcheck, gsum
   Use constants,           Only : r4pie0,sqrpi,twopi,zero_plus
   Use configuration,   Only : configuration_type
-  Use particle,        Only : corePart
   Use numerics,        Only : erfcgen, invert, dcell
   Use errors_warnings, Only : error
   Use ewald,           Only : ewald_type,spl_cexp, bspcoe, bspgen, exchange_grid

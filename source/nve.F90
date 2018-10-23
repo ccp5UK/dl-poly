@@ -1,9 +1,7 @@
 Module nve
   Use kinds,         Only : wp
-  Use comms,         Only : comms_type,gmax
-  Use constants,         Only : zero_plus
+  Use comms,         Only : comms_type
   Use configuration, Only : configuration_type
-  Use particle,      Only : corePart
   Use domains,       Only : domains_type
   Use kinetics,      Only : getknr,kinstresf,kinstrest,kinstress
   Use constraints,   Only : constraints_tags,constraints_type, &

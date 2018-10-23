@@ -1,8 +1,8 @@
 Module deport_data
   Use kinds,            Only : wp
-  Use comms,            Only : comms_type,gcheck,wp_mpi, Deport_tag, &
-    Export_tag, MetLdExp_tag, ExpMplRM_tag, &
-    PassUnit_tag,gsend,gwait,girecv,gmax,gsum
+  Use comms,            Only : comms_type,gcheck, Deport_tag, &
+    Export_tag, ExpMplRM_tag, &
+    gsend,gwait,girecv,gmax,gsum
   Use constants,        Only : half_plus, half_minus 
   Use domains, Only : domains_type
   Use configuration, Only : configuration_type
@@ -18,7 +18,6 @@ Module deport_data
   Use minimise,     Only : minimise_type
   Use ewald,               Only : ewald_type
   Use mpole ,              Only : mpole_type,POLARISATION_CHARMM
-  Use msd, Only : msd_type
   Use greenkubo,    Only : greenkubo_type
   Use core_shell,   Only : core_shell_type 
   Use constraints,  Only : constraints_type 

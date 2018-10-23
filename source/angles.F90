@@ -26,7 +26,6 @@ Module angles
   Use parse, Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : local_index,images
-  Use particle, Only : corePart
 
   Implicit None
 

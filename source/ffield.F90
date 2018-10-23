@@ -42,7 +42,7 @@ Module ffield
   Use four_body, Only : four_body_type
 
   Use external_field, Only : external_field_type, &
-    FIELD_NULL, FIELD_ELECTRIC, FIELD_SHEAR_OSCILLATING, &
+    FIELD_ELECTRIC, FIELD_SHEAR_OSCILLATING, &
     FIELD_SHEAR_CONTINUOUS, FIELD_GRAVITATIONAL, &
     FIELD_MAGNETIC, FIELD_SPHERE, FIELD_WALL, &
     FIELD_WALL_PISTON, FIELD_ZRES, FIELD_ZRES_MINUS, &
@@ -57,7 +57,7 @@ Module ffield
 
   Use parse, Only : word_2_real, get_word, get_line, lower_case, strip_blanks, gcheck
 
-  Use numerics, Only : factorial, shellsort
+  Use numerics, Only :  shellsort
   Use errors_warnings, Only : error,warning,info
   Use thermostat, Only : thermostat_type,ENS_NVE,DPD_NULL
   Use constraints, Only : constraints_type

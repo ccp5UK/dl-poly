@@ -1,10 +1,9 @@
 Module rsds
   Use kinds, Only : wp, li, wi
-  Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,wp_mpi,gsync,gcheck, &
+  Use comms, Only : comms_type,gbcast,RsdWrite_tag,gsum,gsync,gcheck, &
     gsend,grecv,offset_kind,comm_self,mode_wronly
   Use constants, Only : nrsddt
   Use configuration,     Only : configuration_type
-  Use particle,   Only : corePart
   Use core_shell, Only : core_shell_type
   ! this is assymetric with respect to the rest. will need probably rsd defined in this type
 

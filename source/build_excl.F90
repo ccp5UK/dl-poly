@@ -22,7 +22,7 @@ Module build_excl
   Use numerics, Only : local_index,shellsort
   Use constraints, Only : constraints_type
   Use neighbours, Only : neighbours_type
-  Use errors_warnings, Only : error,warning,info
+  Use errors_warnings, Only : error,warning
 
   Implicit None
 

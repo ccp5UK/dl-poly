@@ -24,7 +24,6 @@ Module dihedrals
     ntable
   Use site, Only : site_type
   Use configuration, Only : configuration_type
-  Use particle,      Only : corePart
   Use vdw,    Only : vdw_type
   Use parse,  Only : get_line,get_word,word_2_real
   Use errors_warnings, Only : error,warning,info

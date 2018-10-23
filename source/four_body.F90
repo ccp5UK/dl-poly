@@ -19,7 +19,6 @@ Module four_body
   Use comms,          Only : comms_type,gsum,gcheck
   Use domains, Only : domains_type
   Use configuration,  Only : configuration_type
-  Use particle, Only : corePart
   Use constants, Only : zero_plus
   Use errors_warnings, Only : error, warning
   Use numerics, Only : invert, dcell
