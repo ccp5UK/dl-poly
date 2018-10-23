@@ -1472,9 +1472,9 @@ Contains
 
           ! Print
 
-          Call io_nc_put_var(io, 'config%cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
-          Call io_nc_put_var(io, 'config%cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
-          Call io_nc_put_var(io, 'config%cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+          Call io_nc_put_var(io, 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
+          Call io_nc_put_var(io, 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
+          Call io_nc_put_var(io, 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
 
         End If
 
@@ -2007,9 +2007,9 @@ Contains
 
           ! Print
 
-          Call io_nc_put_var(io, 'config%cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
-          Call io_nc_put_var(io, 'config%cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
-          Call io_nc_put_var(io, 'config%cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
+          Call io_nc_put_var(io, 'cell'        , fh, cell_vecs, (/ 1, 1, jj /), (/ 3, 3, 1 /) )
+          Call io_nc_put_var(io, 'cell_lengths', fh, lengths  , (/    1, jj /), (/    3, 1 /) )
+          Call io_nc_put_var(io, 'cell_angles' , fh, angles   , (/    1, jj /), (/    3, 1 /) )
 
         End If
 

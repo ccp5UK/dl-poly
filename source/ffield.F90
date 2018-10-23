@@ -4776,10 +4776,10 @@ Contains
 
         If (Any([FIELD_SHEAR_OSCILLATING,FIELD_WALL_PISTON] == ext_field%key) .and. &
           (config%imcon /= 1 .and. config%imcon /= 2)) Then
-          Call warning('external field is ignored as only applicable for config%imcon=1,2 (orthorhombic geometry)',.true.)
+          Call warning('external field is ignored as only applicable for imcon=1,2 (orthorhombic geometry)',.true.)
         End If
         If (ext_field%key == FIELD_SHEAR_CONTINUOUS .and. config%imcon /= 6) Then
-          Call warning('external field is ignored as only applicable for config%imcon=6 (SLAB geometry)',.true.)
+          Call warning('external field is ignored as only applicable for imcon=6 (SLAB geometry)',.true.)
         End If
 
         If (ext_field%key == FIELD_WALL_PISTON .and. thermo%ensemble /= ENS_NVE) Call error(7)

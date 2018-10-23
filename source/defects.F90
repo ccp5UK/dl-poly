@@ -663,7 +663,7 @@ Contains
 
       If (imconr == 4 .or. imconr == 5 .or. imconr == 7) Call error(300)
 
-      Call io_nc_get_var(io, 'config%cell'           , fh, cell_vecs, [1, 1, i], [3, 3, 1] )
+      Call io_nc_get_var(io, 'cell', fh, cell_vecs, [1, 1, i], [3, 3, 1] )
       dfcts%celr = Reshape( cell_vecs, [Size( dfcts%celr )] )
 
       ! Close REFERENCE
@@ -1993,9 +1993,9 @@ Contains
 
           ! Print
 
-          Call io_nc_put_var(io, 'config%cell'        , fh, cell_vecs, [1, 1, jj], [3, 3, 1] )
-          Call io_nc_put_var(io, 'config%cell_lengths', fh, lengths  , [   1, jj], [   3, 1] )
-          Call io_nc_put_var(io, 'config%cell_angles' , fh, angles   , [   1, jj], [   3, 1] )
+          Call io_nc_put_var(io, 'cell'        , fh, cell_vecs, [1, 1, jj], [3, 3, 1] )
+          Call io_nc_put_var(io, 'cell_lengths', fh, lengths  , [   1, jj], [   3, 1] )
+          Call io_nc_put_var(io, 'cell_angles' , fh, angles   , [   1, jj], [   3, 1] )
 
         End If
 

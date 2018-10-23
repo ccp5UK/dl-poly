@@ -747,11 +747,11 @@ Contains
     Call gtime(t)
     Write(message,'(a,f12.3,a)') 'time elapsed since job start: ', t, ' sec'
     Call info(message,.true.)
-    Write(messages(1),'(a)') '*** Expanding the MD system by a config%nx*config%ny*config%nz volumetric replication        ***'
-    Write(messages(2),'(a)') '*** of its contents along the MD config%cell lattice vectors, creating         ***'
+    Write(messages(1),'(a)') '*** Expanding the MD system by a nx*ny*nz volumetric replication        ***'
+    Write(messages(2),'(a)') '*** of its contents along the MD cell lattice vectors, creating         ***'
     Write(messages(3),'(a)') '*** a new matching pair of topology-interaction (FIELD) and             ***'
     Write(messages(4),'(a)') "*** crystallographic (CONFIG) files, preserving FIELD's template intact ***"
-    Write(messages(5),'(a,3i5)') '*** Replication dimensions (config%nx,config%ny,config%nz):', config%nx,config%ny,config%nz
+    Write(messages(5),'(a,3i5)') '*** Replication dimensions (nx,ny,nz):', config%nx,config%ny,config%nz
     Call info(messages,5,.true.)
 
     ! Holt or change execution if imcon is unsupported
@@ -760,7 +760,7 @@ Contains
     If (config%imcon == 6 .and. config%nz > 1) Then
       config%nz=1
       Call warning(350,0.0_wp,0.0_wp,0.0_wp)
-      Write(message,'(a,3i5)') '*** Replication dimensions (config%nx,config%ny,config%nz):', config%nx,config%ny,config%nz
+      Write(message,'(a,3i5)') '*** Replication dimensions (nx,ny,nz):', config%nx,config%ny,config%nz
       Call info(message)
     End If
 
@@ -911,9 +911,9 @@ Contains
         angles ( 3 ) = Acos( celprp( 4 ) )
         angles = angles * 180.0_wp / ( 4.0_wp * Atan( 1.0_wp ) ) ! Convert to degrees
 
-        Call io_nc_put_var(io, 'config%cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
-        Call io_nc_put_var(io, 'config%cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
-        Call io_nc_put_var(io, 'config%cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
+        Call io_nc_put_var(io, 'cell'        , fh, cell_vecs, (/ 1, 1, i /), (/ 3, 3, 1 /) )
+        Call io_nc_put_var(io, 'cell_lengths', fh, lengths  , (/    1, i /), (/    3, 1 /) )
+        Call io_nc_put_var(io, 'cell_angles' , fh, angles   , (/    1, i /), (/    3, 1 /) )
 
       Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. &
         io_write == IO_WRITE_SORTED_MASTER ) Then
