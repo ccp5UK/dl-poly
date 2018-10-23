@@ -4759,13 +4759,14 @@ Contains
              ext_field%param(i) = ext_field%param(i)*engunit/ext_field%conv_fact
           End Do
 
-        Else If (Any([FIELD_MAGNETIC] == ext_field%key)) Then
+        Else If (ext_field%key == FIELD_MAGNETIC) Then
         ! Convert units: input values for electrical field are only in units of Tesla
           ext_field%conv_fact=engunit*tesla_to_dl
           Do i=1,3
             ext_field%param(i) = ext_field%param(i)*engunit/ext_field%conv_fact
           End Do
-        Else If (Any([FIELD_GRAVITATIONAL] == ext_field%key)) Then
+
+        Else If (ext_field%key == FIELD_GRAVITATIONAL) Then
           Do i=1,3
             ext_field%param(i) = ext_field%param(i)*engunit
           End Do
