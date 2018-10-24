@@ -254,9 +254,7 @@ Contains
 
         ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-        Call nvt_h0_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-          config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+        Call nvt_h0_scl(qstep,thermo%pmass,thermo%chip0,engke,thermo,config,comm)
 
         ! constraint+pmf virial and stress
 
@@ -265,10 +263,8 @@ Contains
 
         ! integrate and apply nst_h0_scl barostat - 1/2 step
 
-        Call nst_h0_scl &
-          (1,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm, &
-          thermo%h_z,str,stress,         &
-          config%vxx,config%vyy,config%vzz,strkin,engke,thermo,config,comm)
+        Call nst_h0_scl(1,hstep,degfre,thermo%chi_t,str,stress, &
+          strkin,engke,thermo,config,comm)
 
         ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -277,9 +273,7 @@ Contains
 
         ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-        Call nvt_h0_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-          config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+        Call nvt_h0_scl(qstep,thermo%pmass,thermo%chip0,engke,thermo,config,comm)
 
         ! update velocities
 
@@ -318,8 +312,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -412,9 +406,7 @@ Contains
 
       ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-      Call nvt_h0_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-        config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+      Call nvt_h0_scl(qstep,thermo%pmass,thermo%chip0,engke,thermo,config,comm)
 
       ! constraint+pmf virial and stress
 
@@ -423,10 +415,8 @@ Contains
 
       ! integrate and apply nst_h0_scl barostat - 1/2 step
 
-      Call nst_h0_scl &
-        (1,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm, &
-        thermo%h_z,str,stress,         &
-        config%vxx,config%vyy,config%vzz,strkin,engke,thermo,config,comm)
+      Call nst_h0_scl(1,hstep,degfre,thermo%chi_t,str,stress, &
+        strkin,engke,thermo,config,comm)
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -435,9 +425,7 @@ Contains
 
       ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-      Call nvt_h0_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-        config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+      Call nvt_h0_scl(qstep,thermo%pmass,thermo%chip0,engke,thermo,config,comm)
 
       ! conserved quantity less kinetic and potential energy terms
       consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + 0.5_wp*thermo%pmass*thermo%chip0**2 + &
@@ -794,10 +782,7 @@ Contains
 
         ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-        Call nvt_h1_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-          config%vxx,config%vyy,config%vzz,                  &
-          engke,engrot,thermo,rigid,config,comm)
+        Call nvt_h1_scl(qstep,thermo%pmass,thermo%chip0,engke,engrot,thermo,rigid,config,comm)
 
         ! constraint+pmf virial and stress
 
@@ -806,9 +791,8 @@ Contains
 
         ! integrate and apply nst_h1_scl barostat - 1/2 step
 
-        Call nst_h1_scl(1,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
-          thermo%h_z,str,stress,strcom,         &
-          config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
+        Call nst_h1_scl(1,hstep,degfre,degrot,thermo%chi_t,str,stress,strcom, &
+          strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
         ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -817,10 +801,7 @@ Contains
 
         ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-        Call nvt_h1_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-          config%vxx,config%vyy,config%vzz,                  &
-          engke,engrot,thermo,rigid,config,comm)
+        Call nvt_h1_scl(qstep,thermo%pmass,thermo%chip0,engke,engrot,thermo,rigid,config,comm)
 
         ! update velocity of FPs
 
@@ -863,8 +844,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -1324,9 +1305,7 @@ Contains
 
       ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-      Call nvt_h1_scl(qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-        config%vxx,config%vyy,config%vzz,                  &
-        engke,engrot,thermo,rigid,config,comm)
+      Call nvt_h1_scl(qstep,thermo%pmass,thermo%chip0,engke,engrot,thermo,rigid,config,comm)
 
       ! constraint+pmf virial and stress
 
@@ -1335,9 +1314,8 @@ Contains
 
       ! integrate and apply nst_h1_scl barostat - 1/2 step
 
-      Call nst_h1_scl(1,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
-        thermo%h_z,str,stress,strcom,         &
-        config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
+      Call nst_h1_scl(1,hstep,degfre,degrot,thermo%chi_t,str,stress,strcom, &
+        strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -1346,10 +1324,7 @@ Contains
 
       ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-      Call nvt_h1_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-        config%vxx,config%vyy,config%vzz,                  &
-        engke,engrot,thermo,rigid,config,comm)
+      Call nvt_h1_scl(qstep,thermo%pmass,thermo%chip0,engke,engrot,thermo,rigid,config,comm)
 
       ! conserved quantity less kinetic and potential energy terms
 

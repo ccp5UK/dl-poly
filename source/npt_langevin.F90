@@ -13,7 +13,7 @@ Module npt_langevin
   Use numerics,        Only : seed_type,box_mueller_saru1,images
   Use constraints,     Only : constraints_type,constraints_tags, apply_shake, apply_rattle
   Use pmf,             Only : pmf_tags,pmf_type
-  Use npt_nose_hoover, Only : npt_h0_scl,npt_h0_scl,npt_h1_scl
+  Use npt_nose_hoover, Only : npt_h0_scl,npt_h1_scl
   Use langevin,        Only : langevin_forces
   Use thermostat, Only : thermostat_type, adjust_timestep, VV_FIRST_STAGE
   Use core_shell, Only : core_shell_type
@@ -240,9 +240,8 @@ Contains
         ! augment vir to include the random force on the barostat
 
         vir1=vir-3.0_wp*thermo%fpl(1)
-        Call npt_h0_scl &
-          (1,hstep,degfre,thermo%pmass,thermo%tai,config%volm,vir1,virtot, &
-          config%vxx,config%vyy,config%vzz,engke,config,thermo)
+        Call npt_h0_scl(1,hstep,degfre,thermo%tai,vir1,virtot, &
+          engke,config,thermo)
 
         ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -288,8 +287,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -413,9 +412,8 @@ Contains
       ! augment vir to include the random force on the barostat
 
       vir1=vir-3.0_wp*thermo%fpl(1)
-      Call npt_h0_scl &
-        (1,hstep,degfre,thermo%pmass,thermo%tai,config%volm,vir1,virtot, &
-        config%vxx,config%vyy,config%vzz,engke,config,thermo)
+      Call npt_h0_scl(1,hstep,degfre,thermo%tai,vir1,virtot, &
+        engke,config,thermo)
 
       ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -804,9 +802,8 @@ Contains
         ! augment vir to include the random force on the barostat
 
         vir1=vir-3.0_wp*thermo%fpl(1)
-        Call npt_h1_scl &
-          (1,hstep,degfre,degrot,thermo%pmass,thermo%tai,config%volm,vir1,virtot,vircom, &
-          config%vxx,config%vyy,config%vzz,engke,rigid,config,thermo)
+        Call npt_h1_scl(1,hstep,degfre,degrot,thermo%tai,vir1,virtot,vircom, &
+          engke,rigid,config,thermo)
 
         ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -869,8 +866,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -1437,9 +1434,8 @@ Contains
       ! augment vir to include the random force on the barostat
 
       vir1=vir-3.0_wp*thermo%fpl(1)
-      Call npt_h1_scl &
-        (1,hstep,degfre,degrot,thermo%pmass,thermo%tai,config%volm,vir1,virtot,vircom, &
-        config%vxx,config%vyy,config%vzz,engke,rigid,config,thermo)
+      Call npt_h1_scl(1,hstep,degfre,degrot,thermo%tai,vir1,virtot,vircom, &
+        engke,rigid,config,thermo)
 
       ! integrate and apply Langevin thermostat - 1/4 step
 

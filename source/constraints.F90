@@ -26,6 +26,7 @@ Module constraints
   Use statistics, Only : stats_type
   Use timer, Only : timer_type, stop_timer, start_timer
   Use domains, Only : domains_type
+  Use thermostat, Only : thermostat_type
   Implicit None
 
   Private
@@ -1065,10 +1066,8 @@ Contains
     End Do
   End Subroutine apply_rattle
 
-  Subroutine apply_shake(tstep,mxkit,kit,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
-      domain,tmr,config,comm)
-    Integer, Intent( InOut ) :: kit
-    Integer, Intent( In ) :: mxkit
+  Subroutine apply_shake(tstep,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
+      domain,tmr,config,thermo,comm)
     Logical, Intent( In ) :: lstitr(:)
     Real( Kind = wp ),  Intent( InOut ) :: oxt(:),oyt(:),ozt(:)
     Real( Kind = wp ),  Intent( In ) :: tstep
@@ -1077,6 +1076,7 @@ Contains
     Type( constraints_type), Intent( InOut ) :: cons
     Type( domains_type ), Intent( In    ) :: domain
     Type( timer_type ), Intent( InOut ) :: tmr
+    Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( comms_type ), Intent( InOut ) :: comm
 
     Type( configuration_type), Intent( InOut ) :: config
@@ -1091,7 +1091,7 @@ Contains
     ! SHAKE procedures
 
     safe=.false.
-    kit =0
+    thermo%kit =0
 
     ! store integrated positions
 
@@ -1105,8 +1105,8 @@ Contains
       End If
     End Do
 
-    Do While ((.not.safe) .and. kit <= mxkit)
-      kit=kit+1
+    Do While ((.not.safe) .and. thermo%kit <= thermo%mxkit)
+      thermo%kit=thermo%kit+1
 
       If (cons%megcon > 0) Then
 

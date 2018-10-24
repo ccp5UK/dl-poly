@@ -270,8 +270,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
       End Do
@@ -818,8 +818,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
       End Do

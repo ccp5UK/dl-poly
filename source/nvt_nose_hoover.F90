@@ -177,9 +177,7 @@ Contains
 
       ! integrate and apply nvt_h0_scl thermostat - 1/2 step
 
-      Call nvt_h0_scl &
-        (hstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
-        config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+      Call nvt_h0_scl(hstep,0.0_wp,0.0_wp,engke,thermo,config,comm)
 
       ! update velocity and position
 
@@ -199,8 +197,8 @@ Contains
       ! SHAKE procedures
 
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
-          domain,tmr,config,comm)
+        Call apply_shake(tstep,oxt,oyt,ozt,lstitr,stat,pmf,cons, &
+          domain,tmr,config,thermo,comm)
       End If
 
       ! check timestep for variable timestep
@@ -251,9 +249,7 @@ Contains
 
       ! integrate and apply nvt_h0_scl thermostat - 1/2 step
 
-      Call nvt_h0_scl &
-        (hstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
-        config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+      Call nvt_h0_scl(hstep,0.0_wp,0.0_wp,engke,thermo,config,comm)
 
       ! conserved quantity less kinetic and potential energy terms
 
@@ -516,10 +512,7 @@ Contains
 
       ! integrate and apply nvt_h1_scl thermostat - 1/2 step
 
-      Call nvt_h1_scl &
-        (hstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
-        config%vxx,config%vyy,config%vzz,                  &
-        engke,engrot,thermo,rigid,config,comm)
+      Call nvt_h1_scl(hstep,0.0_wp,0.0_wp,engke,engrot,thermo,rigid,config,comm)
 
       ! update velocity and position of FPs
 
@@ -541,8 +534,8 @@ Contains
       ! SHAKE procedures
 
       If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-        Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-          lstitr,stat,pmf,cons,domain,tmr,config,comm)
+        Call apply_shake(tstep,oxt,oyt,ozt,&
+          lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
       End If
 
       ! update velocity and position of RBs
@@ -908,10 +901,7 @@ Contains
 
       ! integrate and apply nvt_h1_scl thermostat - 1/2 step
 
-      Call nvt_h1_scl &
-        (hstep,thermo%ceng,thermo%qmass,0.0_wp,0.0_wp, &
-        config%vxx,config%vyy,config%vzz,                  &
-        engke,engrot,thermo,rigid,config,comm)
+      Call nvt_h1_scl(hstep,0.0_wp,0.0_wp,engke,engrot,thermo,rigid,config,comm)
 
       ! conserved quantity less kinetic and potential energy terms
 
@@ -947,9 +937,7 @@ Contains
 
   End Subroutine nvt_h1_vv
 
-  Subroutine nvt_h0_scl &
-      (tstep,ceng,qmass,pmass,chip, &
-      vxx,vyy,vzz,engke,thermo,config,comm)
+  Subroutine nvt_h0_scl(tstep,pmass,chip,engke,thermo,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -968,9 +956,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-      pmass,chip
-    Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ),                        Intent( In    ) :: tstep,pmass,chip
     Real( Kind = wp ),                        Intent(   Out ) :: engke
     Type( thermostat_type), Intent( InOut ) :: thermo
     Type( configuration_type ), Intent( InOut ) :: config
@@ -992,11 +978,11 @@ Contains
 
     ! calculate kinetic energy
 
-    engke=getkin(config,vxx,vyy,vzz,comm)
+    engke=getkin(config,config%vxx,config%vyy,config%vzz,comm)
 
     ! update thermo%chi_t to 1/2*tstep
 
-    thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*engke + factor - ceng)/qmass
+    thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*engke + factor - thermo%ceng)/thermo%qmass
 
     ! update chi(=thermo%cint) to 3/4*tstep
 
@@ -1006,9 +992,9 @@ Contains
 
     scale=Exp(-tstep*thermo%chi_t)
     Do i=1,config%natms
-      vxx(i)=scale*vxx(i)
-      vyy(i)=scale*vyy(i)
-      vzz(i)=scale*vzz(i)
+      config%vxx(i)=scale*config%vxx(i)
+      config%vyy(i)=scale*config%vyy(i)
+      config%vzz(i)=scale*config%vzz(i)
     End Do
 
     ! thermostat the energy consequently
@@ -1017,7 +1003,7 @@ Contains
 
     ! update thermo%chi_t to full (2/2)*tstep
 
-    thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*engke + factor - ceng)/qmass
+    thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*engke + factor - thermo%ceng)/thermo%qmass
 
     ! update chi(=thermo%cint) to 4/4*tstep
 
@@ -1025,10 +1011,7 @@ Contains
 
   End Subroutine nvt_h0_scl
 
-  Subroutine nvt_h1_scl &
-      (tstep,ceng,qmass,pmass,chip, &
-      vxx,vyy,vzz,                  &
-      engke,engrot,thermo,rigid,config,comm)
+  Subroutine nvt_h1_scl(tstep,pmass,chip,engke,engrot,thermo,rigid,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1048,9 +1031,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ),                        Intent( In    ) :: tstep,ceng,qmass, &
-      pmass,chip
-    Real( Kind = wp ), Dimension( : ), Intent( InOut ) :: vxx,vyy,vzz
+    Real( Kind = wp ),                        Intent( In    ) :: tstep,pmass,chip
     Real( Kind = wp ),                        Intent(   Out ) :: engke,engrot
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
@@ -1073,7 +1054,7 @@ Contains
 
     ! calculate kinetic energy contributions and rotational energy
 
-    engkf=getknf(vxx,vyy,vzz,config,comm)
+    engkf=getknf(config%vxx,config%vyy,config%vzz,config,comm)
     engkt=getknt(rigid,comm)
 
     engke=engkf+engkt
@@ -1082,7 +1063,7 @@ Contains
 
     ! update thermo%chi_t to 1/2*tstep
 
-    thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
+    thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*(engke+engrot) + factor - thermo%ceng)/thermo%qmass
 
     ! update chi(=thermo%cint) to 3/4*tstep
 
@@ -1094,9 +1075,9 @@ Contains
     Do j=1,config%nfree
       i=config%lstfre(j)
 
-      vxx(i)=scale*vxx(i)
-      vyy(i)=scale*vyy(i)
-      vzz(i)=scale*vzz(i)
+      config%vxx(i)=scale*config%vxx(i)
+      config%vyy(i)=scale*config%vyy(i)
+      config%vzz(i)=scale*config%vzz(i)
     End Do
 
     Do irgd=1,rigid%n_types
@@ -1116,7 +1097,7 @@ Contains
 
     ! update thermo%chi_t to full (2/2)*tstep
 
-    thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*(engke+engrot) + factor - ceng)/qmass
+    thermo%chi_t=thermo%chi_t + hstep*(2.0_wp*(engke+engrot) + factor - thermo%ceng)/thermo%qmass
 
     ! update chi(=thermo%cint) to 4/4*tstep
 
