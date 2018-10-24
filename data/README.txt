@@ -187,6 +187,10 @@ TEST 169 -Chain polymer with   6 units and Carboxy Head Group-Test for tether po
 TEST 170 -Chain polymer with   6 units and Carboxy Head Group-Test for tether potentials of restained harmonic (rhrm) type
 TEST 171 -Chain polymer with   6 units and Carboxy Head Group-Test for tether potentials of quartic (quar) type
 
-TEST 173 -Slab of Hf-O-Pt-Zr in vacuum-Test for electric field
-TEST 174 -Slab of Hf-O-Pt-Zr in vacuum-Test for magnetic field
-
+TEST 173 - Slab of Hf-O-Pt-Zr in vacuum (55872 ions) - Test for external electric field, now in units of V/A
+TEST 174 - Ficticious gas of Potassium Chloride at 1000K (only 1372 ions) - Test for external magnetic field, now in units of Tesla 
+TEST 175 - Slab of Hf-O-Pt-Zr in vacuum (55872 ions) - Test for external oscillatory electric field, now in units of V/A
+TEST 176 - Amorphous silicon with tersoff potential 
+TEST 177 - Sodium Chloride (27,000 ions) - Direct calculation of vdW interactions instead of evaluation by splining over tabulated values in memory
+TEST 178 - Sodium Chloride (27,000 ions) - Use of a force-shifting procedure to vdW interactions 
+TEST 179 - Sodium Chloride (27,000 ions) - Direct calculation of vdW interactions (as in TEST177) plus use of a force-shifting procedure (as TEST178) 

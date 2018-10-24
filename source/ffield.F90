@@ -1,7 +1,7 @@
 Module ffield
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type
-  Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz, zero_plus, pi, r4pie0, prsunt, ntable
+  Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz, zero_plus, pi, r4pie0, prsunt, ntable, VA_to_dl, tesla_to_dl
   Use kim,   Only : kim_type,kim_cutoff
 
   ! SITE MODULE
@@ -4751,19 +4751,34 @@ Contains
 
         ! convert to internal units
 
-        If (Any([FIELD_ELECTRIC,FIELD_GRAVITATIONAL,FIELD_MAGNETIC,FIELD_ELECTRIC_OSCILLATING] == ext_field%key)) Then
+        If (Any([FIELD_ELECTRIC,FIELD_ELECTRIC_OSCILLATING ] == ext_field%key)) Then
           If (.not.lunits) Call error(6)
+        ! Convert units: input values for electrical field are only in units of V/A
+            ext_field%conv_fact=engunit*VA_to_dl
+          Do i=1,3
+             ext_field%param(i) = ext_field%param(i)*engunit/ext_field%conv_fact
+          End Do
 
+        Else If (ext_field%key == FIELD_MAGNETIC) Then
+        ! Convert units: input values for electrical field are only in units of Tesla
+          ext_field%conv_fact=engunit*tesla_to_dl
+          Do i=1,3
+            ext_field%param(i) = ext_field%param(i)*engunit/ext_field%conv_fact
+          End Do
+
+        Else If (ext_field%key == FIELD_GRAVITATIONAL) Then
           Do i=1,3
             ext_field%param(i) = ext_field%param(i)*engunit
           End Do
+
         Else If (Any([FIELD_SHEAR_OSCILLATING,FIELD_SPHERE,FIELD_WALL] == ext_field%key)) Then
           If (.not.lunits) Call error(6)
-
           ext_field%param(1) = ext_field%param(1)*engunit
+
         Else If (ext_field%key == FIELD_WALL_PISTON) Then
           ext_field%param(3) = ext_field%param(3)/prsunt ! piston pressure specified in k-atm
           ext_field%param(3) = ext_field%param(3)*config%cell(5)*config%cell(9) ! convert to force
+ 
         Else If (Any([FIELD_ZRES,FIELD_ZRES_MINUS,FIELD_ZRES_PLUS] == ext_field%key)) Then
           If (.not.lunits) Call error(6)
 

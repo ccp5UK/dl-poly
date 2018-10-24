@@ -70,11 +70,16 @@ Module external_field
     !> Mass?
     Real( Kind = wp ) :: mass = 0.0_wp
 
+    !> Conversion factor to handle magnetic and electric units
+    Real( Kind = wp ), Public :: conv_fact
+
     !> Field parameters
     Real( Kind = wp ), Allocatable, Public :: param(:)
     !> Number of parameters
     Integer( Kind = wi ), Public :: max_param
     Logical :: newjob
+
+
   Contains
     Private
 

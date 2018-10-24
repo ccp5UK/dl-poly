@@ -72,6 +72,10 @@ Module constants
   !                                 en_kpb  =     boltz         ! for K/Boltzmann - very rarely used
   Real( Kind = wp ), Save      :: engunit =    1.0_wp         ! for 10 J/mol - internal units == default
 
+ 
+  Real( Kind = wp ), Parameter :: VA_to_dl = 1.037837512e-4_wp
+  Real( Kind = wp ), Parameter :: tesla_to_dl = 1.037837512e4_wp
+
 
   ! conversion factor for pressure from internal units to katm
 
