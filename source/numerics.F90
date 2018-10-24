@@ -642,7 +642,7 @@ Contains
 
   End Subroutine box_mueller_saru3
 
-  Subroutine box_mueller_saru6(seed,i,j,gauss1,gauss2,gauss3,gauss4,gauss5,gauss6)
+  Subroutine box_mueller_saru6(seed,i,j,gauss)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -664,8 +664,7 @@ Contains
 
     Type(seed_type), Intent(InOut) :: seed
     Integer,           Intent( In    ) :: i,j
-    Real( Kind = wp ), Intent(   Out ) :: gauss1,gauss2,gauss3, &
-      gauss4,gauss5,gauss6
+    Real( Kind = wp ), Intent(   Out ) :: gauss(6)
 
     Integer           :: k
     Real( Kind = wp ) :: ran0,ran1,ran2
@@ -687,8 +686,8 @@ Contains
     ! calculate gaussian random numbers 1 & 2
 
     ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss1=ran0*ran1
-    gauss2=ran0*ran2
+    gauss(1)=ran0*ran1
+    gauss(2)=ran0*ran2
 
     ! generate uniform random numbers on [-1, 1)
 
@@ -703,8 +702,8 @@ Contains
     ! calculate gaussian random number 3 & 4
 
     ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss3=ran0*ran1
-    gauss4=ran0*ran2
+    gauss(3)=ran0*ran1
+    gauss(4)=ran0*ran2
 
     ! generate uniform random numbers on [-1, 1)
 
@@ -718,8 +717,8 @@ Contains
 
     ! calculate gaussian random number 5 & 6
     ran0=Sqrt(-2.0_wp*Log(ran0)/ran0)
-    gauss5=ran0*ran1
-    gauss6=ran0*ran2
+    gauss(5)=ran0*ran1
+    gauss(6)=ran0*ran2
 
   End Subroutine box_mueller_saru6
 

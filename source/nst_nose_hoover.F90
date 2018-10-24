@@ -271,9 +271,7 @@ Contains
 
         ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-        Call nvt_h0_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-          config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+        Call nvt_h0_scl(qstep,thermo%pmass,thermo%chip0,engke,thermo,config,comm)
 
         ! constraint+pmf virial and stress
 
@@ -282,10 +280,8 @@ Contains
 
         ! integrate and apply nst_h0_scl barostat - 1/2 step
 
-        Call nst_h0_scl &
-          (0,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm, &
-          thermo%h_z,str,stress,         &
-          config%vxx,config%vyy,config%vzz,strkin,engke,thermo,config,comm)
+        Call nst_h0_scl(0,hstep,degfre,thermo%chi_t,str,stress, &
+          strkin,engke,thermo,config,comm)
 
         ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -295,9 +291,7 @@ Contains
 
         ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-        Call nvt_h0_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-          config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+        Call nvt_h0_scl(qstep,thermo%pmass,thermo%chip0,engke,thermo,config,comm)
 
         ! update velocities
 
@@ -339,8 +333,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -433,9 +427,7 @@ Contains
 
       ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-      Call nvt_h0_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-        config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+      Call nvt_h0_scl(qstep,thermo%pmass,thermo%chip0,engke,thermo,config,comm)
 
       ! constraint+pmf virial and stress
 
@@ -444,10 +436,8 @@ Contains
 
       ! integrate and apply nst_h0_scl barostat - 1/2 step
 
-      Call nst_h0_scl &
-        (0,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm, &
-        thermo%h_z,str,stress,         &
-        config%vxx,config%vyy,config%vzz,strkin,engke,thermo,config,comm)
+      Call nst_h0_scl(0,hstep,degfre,thermo%chi_t,str,stress, &
+        strkin,engke,thermo,config,comm)
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -457,9 +447,7 @@ Contains
 
       ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-      Call nvt_h0_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-        config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+      Call nvt_h0_scl(qstep,thermo%pmass,thermo%chip0,engke,thermo,config,comm)
 
       ! conserved quantity less kinetic and potential energy terms
 
@@ -827,10 +815,7 @@ Contains
 
         ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-        Call nvt_h1_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-          config%vxx,config%vyy,config%vzz,                  &
-          engke,engrot,thermo,rigid,config,comm)
+        Call nvt_h1_scl(qstep,thermo%pmass,thermo%chip0,engke,engrot,thermo,rigid,config,comm)
 
         ! constraint+pmf virial and stress
 
@@ -839,9 +824,8 @@ Contains
 
         ! integrate and apply nst_h1_scl barostat - 1/2 step
 
-        Call nst_h1_scl(0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
-          thermo%h_z,str,stress,strcom,         &
-          config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
+        Call nst_h1_scl(0,hstep,degfre,degrot,thermo%chi_t,str,stress,strcom, &
+          strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
         ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -851,10 +835,7 @@ Contains
 
         ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-        Call nvt_h1_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-          config%vxx,config%vyy,config%vzz,                  &
-          engke,engrot,thermo,rigid,config,comm)
+        Call nvt_h1_scl(qstep,thermo%pmass,thermo%chip0,engke,engrot,thermo,rigid,config,comm)
 
         ! update velocity of FPs
 
@@ -900,8 +881,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -1367,10 +1348,7 @@ Contains
 
       ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-      Call nvt_h1_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-        config%vxx,config%vyy,config%vzz,                  &
-        engke,engrot,thermo,rigid,config,comm)
+      Call nvt_h1_scl(qstep,thermo%pmass,thermo%chip0,engke,engrot,thermo,rigid,config,comm)
 
       ! constraint+pmf virial and stress
 
@@ -1379,9 +1357,8 @@ Contains
 
       ! integrate and apply nst_h1_scl barostat - 1/2 step
 
-      Call nst_h1_scl(0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm, &
-        thermo%h_z,str,stress,strcom,         &
-        config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
+      Call nst_h1_scl(0,hstep,degfre,degrot,thermo%chi_t,str,stress,strcom, &
+        strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
       ! trace[thermo%eta*transpose(thermo%eta)] = trace[thermo%eta*thermo%eta]: thermo%eta is symmetric
 
@@ -1391,10 +1368,7 @@ Contains
 
       ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-      Call nvt_h1_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chip0, &
-        config%vxx,config%vyy,config%vzz,                  &
-        engke,engrot,thermo,rigid,config,comm)
+      Call nvt_h1_scl(qstep,thermo%pmass,thermo%chip0,engke,engrot,thermo,rigid,config,comm)
 
       ! conserved quantity less kinetic and potential energy terms
 
@@ -1467,10 +1441,8 @@ Contains
 
   End Subroutine nst_h1_vv
 
-  Subroutine nst_h0_scl &
-      (sw,tstep,degfre,pmass,chit,volm, &
-      h_z,strcon,stress,       &
-      vxx,vyy,vzz,strkin,engke,thermo,config,comm)
+  Subroutine nst_h0_scl(sw,tstep,degfre,chit,strcon,stress,strkin,engke, &
+      thermo,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1504,29 +1476,20 @@ Contains
     Integer,           Intent( In    ) :: sw
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,h_z
+    Real( Kind = wp ), Intent( In    ) :: tstep,chit
     Real( Kind = wp ), Intent( In    ) :: strcon(1:9),stress(1:9)
-    Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
     Real( Kind = wp ), Intent(   Out ) :: strkin(1:9)
     Real( Kind = wp ), Intent(   Out ) :: engke
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( configuration_type ), Intent( InOut ) :: config
     Type( comms_type ), Intent( InOut) :: comm
 
-
-
     Integer           :: i
-
     Real( Kind = wp ) :: a1,a2,a3,a5,a6,a9,b1,b2,b3,b5,b6,b9, vxt,vyt,vzt
-
-
     ! uni is the diagonal unit matrix
-
     Real( Kind = wp ), Parameter :: &
       uni(1:9) = (/ 1.0_wp,0.0_wp,0.0_wp, 0.0_wp,1.0_wp,0.0_wp, 0.0_wp,0.0_wp,1.0_wp /)
-
     Real( Kind = wp ) :: hstep,qstep
-
 
     ! Initialise thermo%factor and 1/Nf for Nose-Hoover ensembles
 
@@ -1549,7 +1512,7 @@ Contains
 
     ! calculate kinetic contribution to stress tensor
 
-    Call kinstress(vxx,vyy,vzz,strkin,config,comm)
+    Call kinstress(config%vxx,config%vyy,config%vzz,strkin,config,comm)
 
     ! kinetic energy
 
@@ -1563,21 +1526,24 @@ Contains
 
     If (thermo%iso == CONSTRAINT_NONE) Then
       thermo%eta=thermo%eta + hstep*(strcon+stress+strkin + thermo%factor*uni - &
-        (thermo%press*uni+thermo%stress)*volm)/pmass
+        (thermo%press*uni+thermo%stress)*config%volm)/thermo%pmass
     Else
       If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
         thermo%eta(1)=thermo%eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
-          thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*config%volm)/pmass
+          thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/thermo%h_z)* &
+          config%volm)/thermo%pmass
         thermo%eta(5)=thermo%eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
-          thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*config%volm)/pmass
+          thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/thermo%h_z)* &
+          config%volm)/thermo%pmass
       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
         thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp*                        &
-          (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
-          thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*config%volm ) / pmass
+          (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + thermo%factor -  &
+          (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/thermo%h_z)* &
+          config%volm ) / thermo%pmass
         thermo%eta(5)=thermo%eta(1)
       End If
       thermo%eta(9)=thermo%eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + &
-        thermo%factor - (thermo%press+thermo%stress(9))*config%volm)/pmass
+        thermo%factor - (thermo%press+thermo%stress(9))*config%volm)/thermo%pmass
     End If
 
     ! thermostat thermo%eta to 2/4*tstep
@@ -1607,20 +1573,20 @@ Contains
     b9 = (a3*a3 + a6*a6 + a9*a9)*0.5_wp + a9 + 1.0_wp
 
     Do i=1,config%natms
-      vxt=vxx(i)
-      vyt=vyy(i)
-      vzt=vzz(i)
+      vxt=config%vxx(i)
+      vyt=config%vyy(i)
+      vzt=config%vzz(i)
 
-      vxx(i) = b1*vxt + b2*vyt + b3*vzt
-      vyy(i) = b2*vxt + b5*vyt + b6*vzt
-      vzz(i) = b3*vxt + b6*vyt + b9*vzt
+      config%vxx(i) = b1*vxt + b2*vyt + b3*vzt
+      config%vyy(i) = b2*vxt + b5*vyt + b6*vzt
+      config%vzz(i) = b3*vxt + b6*vyt + b9*vzt
     End Do
 
     ! thermostat thermo%eta to 2/4*tstep
 
     ! calculate kinetic contribution to stress tensor
 
-    Call kinstress(vxx,vyy,vzz,strkin,config,comm)
+    Call kinstress(config%vxx,config%vyy,config%vzz,strkin,config,comm)
 
     ! kinetic energy
 
@@ -1638,21 +1604,22 @@ Contains
 
     If (thermo%iso == CONSTRAINT_NONE) Then
       thermo%eta=thermo%eta + hstep*(strcon+stress+strkin + thermo%factor*uni - &
-        (thermo%press*uni+thermo%stress)*volm)/pmass
+        (thermo%press*uni+thermo%stress)*config%volm)/thermo%pmass
     Else
       If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
         thermo%eta(1)=thermo%eta(1) + hstep*(strcon(1)+stress(1)+strkin(1) + &
-          thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/thermo%h_z)*config%volm)/thermo%pmass
         thermo%eta(5)=thermo%eta(5) + hstep*(strcon(5)+stress(5)+strkin(5) + &
-          thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/thermo%h_z)*config%volm)/thermo%pmass
       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
         thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp*                        &
-          (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + &
-          thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
+          (strcon(1)+stress(1)+strkin(1)+strcon(5)+stress(5)+strkin(5)) + thermo%factor -  &
+          (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/thermo%h_z)* &
+          config%volm ) / thermo%pmass
         thermo%eta(5)=thermo%eta(1)
       End If
       thermo%eta(9)=thermo%eta(9) + hstep*(strcon(9)+stress(9)+strkin(9) + &
-        thermo%factor - (thermo%press+thermo%stress(9))*volm)/pmass
+        thermo%factor - (thermo%press+thermo%stress(9))*config%volm)/thermo%pmass
     End If
 
     ! thermostat thermo%eta to full (4/4)*tstep
@@ -1661,9 +1628,8 @@ Contains
 
   End Subroutine nst_h0_scl
 
-  Subroutine nst_h1_scl(sw,tstep,degfre,degrot,pmass,chit,volm,  &
-      h_z,strcon,stress,strcom,        &
-      vxx,vyy,vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
+  Subroutine nst_h1_scl(sw,tstep,degfre,degrot,chit,strcon,stress,strcom, &
+      strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1698,9 +1664,8 @@ Contains
     Integer,           Intent( In    ) :: sw
     Integer(Kind=li),  Intent( In    ) :: degfre,degrot
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,h_z
+    Real( Kind = wp ), Intent( In    ) :: tstep,chit
     Real( Kind = wp ), Intent( In    ) :: strcon(1:9),stress(1:9),strcom(1:9)
-    Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
     Real( Kind = wp ), Intent(   Out ) :: strkin(1:9),strknf(1:9),strknt(1:9)
     Real( Kind = wp ), Intent(   Out ) :: engke
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1744,7 +1709,7 @@ Contains
 
     ! calculate kinetic contributions to stress tensor
 
-    Call kinstresf(vxx,vyy,vzz,strknf,config,comm)
+    Call kinstresf(config%vxx,config%vyy,config%vzz,strknf,config,comm)
     Call kinstrest(rigid,strknt,comm)
 
     strkin=strknf+strknt
@@ -1761,21 +1726,24 @@ Contains
 
     If (thermo%iso == CONSTRAINT_NONE) Then
       thermo%eta=thermo%eta + hstep*(strcom+strcon+stress+strkin + thermo%factor*uni - &
-        (thermo%press*uni+thermo%stress)*volm)/pmass
+        (thermo%press*uni+thermo%stress)*config%volm)/thermo%pmass
     Else
       If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
         thermo%eta(1)=thermo%eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
-          thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/thermo%h_z)* &
+          config%volm)/thermo%pmass
         thermo%eta(5)=thermo%eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
-          thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/thermo%h_z)* &
+          config%volm)/thermo%pmass
       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
         thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp* &
           (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
-          thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
+          thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))- &
+          thermo%tension/thermo%h_z)*config%volm ) / thermo%pmass
         thermo%eta(5)=thermo%eta(1)
       End If
       thermo%eta(9)=thermo%eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + &
-        thermo%factor - (thermo%press+thermo%stress(9))*volm)/pmass
+        thermo%factor - (thermo%press+thermo%stress(9))*config%volm)/thermo%pmass
     End If
 
     ! thermostat thermo%eta to 2/4*tstep
@@ -1807,13 +1775,13 @@ Contains
     Do j=1,config%nfree
       i=config%lstfre(j)
 
-      vxt=vxx(i)
-      vyt=vyy(i)
-      vzt=vzz(i)
+      vxt=config%vxx(i)
+      vyt=config%vyy(i)
+      vzt=config%vzz(i)
 
-      vxx(i) = b1*vxt + b2*vyt + b3*vzt
-      vyy(i) = b2*vxt + b5*vyt + b6*vzt
-      vzz(i) = b3*vxt + b6*vyt + b9*vzt
+      config%vxx(i) = b1*vxt + b2*vyt + b3*vzt
+      config%vyy(i) = b2*vxt + b5*vyt + b6*vzt
+      config%vzz(i) = b3*vxt + b6*vyt + b9*vzt
     End Do
 
     Do irgd=1,rigid%n_types
@@ -1830,7 +1798,7 @@ Contains
 
     ! calculate kinetic contributions to stress tensor
 
-    Call kinstresf(vxx,vyy,vzz,strknf,config,comm)
+    Call kinstresf(config%vxx,config%vyy,config%vzz,strknf,config,comm)
     Call kinstrest(rigid,strknt,comm)
 
     strkin=strknf+strknt
@@ -1850,21 +1818,26 @@ Contains
     ! split anisotropic from semi-isotropic barostats
 
     If (thermo%iso == CONSTRAINT_NONE) Then
-      thermo%eta=thermo%eta + hstep*(strcom+strcon+stress+strkin + thermo%factor*uni - (thermo%press*uni+thermo%stress)*volm)/pmass
+      thermo%eta=thermo%eta + hstep* &
+      (strcom+strcon+stress+strkin + thermo%factor*uni -  &
+        (thermo%press*uni+thermo%stress)*config%volm)/thermo%pmass
     Else
       If      (thermo%iso == CONSTRAINT_SURFACE_TENSION) Then
         thermo%eta(1)=thermo%eta(1) + hstep*(strcom(1)+strcon(1)+stress(1)+strkin(1) + &
-          thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/h_z)*volm)/pmass
+          thermo%factor - (thermo%press+thermo%stress(1)-thermo%tension/thermo%h_z)* &
+          config%volm)/thermo%pmass
         thermo%eta(5)=thermo%eta(5) + hstep*(strcom(5)+strcon(5)+stress(5)+strkin(5) + &
-          thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/h_z)*volm)/pmass
+          thermo%factor - (thermo%press+thermo%stress(5)-thermo%tension/thermo%h_z)* &
+          config%volm)/thermo%pmass
       Else If (thermo%iso == CONSTRAINT_SEMI_ORTHORHOMBIC) Then
         thermo%eta(1)=0.5_wp*(thermo%eta(1)+thermo%eta(5)) + hstep*( 0.5_wp* &
           (strcom(1)+strcon(1)+stress(1)+strkin(1)+strcom(5)+strcon(5)+stress(5)+strkin(5)) + &
-          thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))-thermo%tension/h_z)*volm ) / pmass
+          thermo%factor - (thermo%press+0.5_wp*(thermo%stress(1)+thermo%stress(5))- &
+          thermo%tension/thermo%h_z)*config%volm ) / thermo%pmass
         thermo%eta(5)=thermo%eta(1)
       End If
       thermo%eta(9)=thermo%eta(9) + hstep*(strcom(9)+strcon(9)+stress(9)+strkin(9) + &
-        thermo%factor - (thermo%press+thermo%stress(9))*volm)/pmass
+        thermo%factor - (thermo%press+thermo%stress(9))*config%volm)/thermo%pmass
     End If
 
     ! thermostat thermo%eta to full (4/4)*tstep

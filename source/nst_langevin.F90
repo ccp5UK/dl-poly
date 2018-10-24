@@ -175,8 +175,7 @@ Contains
       ! Langevin tensor force for barostat piston
 
       thermo%fpl=0.0_wp
-      Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,thermo%fpl(1),thermo%fpl(2),&
-        thermo%fpl(3),thermo%fpl(4),thermo%fpl(5),thermo%fpl(6))
+      Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,thermo%fpl(1:6))
       tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
       thermo%fpl(1:6)=thermo%fpl(1:6)*tmp
       thermo%fpl(9)=thermo%fpl(4)                                 ! Distribute independent
@@ -266,10 +265,8 @@ Contains
         ! augment str to include the random tensorial force on the barostat
 
         str1=str+thermo%fpl
-        Call nst_h0_scl &
-          (1,hstep,degfre,thermo%pmass,thermo%tai,config%volm, &
-          thermo%h_z,str1,stress,       &
-          config%vxx,config%vyy,config%vzz,strkin,engke,thermo,config,comm)
+        Call nst_h0_scl(1,hstep,degfre,thermo%tai,str1,stress, &
+          strkin,engke,thermo,config,comm)
 
         ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -318,8 +315,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -403,8 +400,7 @@ Contains
       Call langevin_forces(nstep,thermo%temp_lang,tstep,thermo%chi,thermo%fxl,thermo%fyl,thermo%fzl,cshell,config,seed)
 
       thermo%fpl=0.0_wp
-      Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,thermo%fpl(1),thermo%fpl(2),&
-        thermo%fpl(3),thermo%fpl(4),thermo%fpl(5),thermo%fpl(6))
+      Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,thermo%fpl(1:6))
       tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
       thermo%fpl(1:6)=thermo%fpl(1:6)*tmp
       thermo%fpl(9)=thermo%fpl(4)                                 ! Distribute independent
@@ -451,10 +447,8 @@ Contains
       ! augment str to include the random tensorial force on the barostat
 
       str1=str+thermo%fpl
-      Call nst_h0_scl &
-        (1,hstep,degfre,thermo%pmass,thermo%tai,config%volm, &
-        thermo%h_z,str1,stress,       &
-        config%vxx,config%vyy,config%vzz,strkin,engke,thermo,config,comm)
+      Call nst_h0_scl(1,hstep,degfre,thermo%tai,str1,stress, &
+        strkin,engke,thermo,config,comm)
 
       ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -699,8 +693,7 @@ Contains
       ! Langevin tensor force for barostat piston
 
       thermo%fpl=0.0_wp
-      Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,thermo%fpl(1),thermo%fpl(2),&
-        thermo%fpl(3),thermo%fpl(4),thermo%fpl(5),thermo%fpl(6))
+      Call box_mueller_saru6(seed,Int(degfre/3_li),nstep-1,thermo%fpl(1:6))
       tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
       thermo%fpl(1:6)=thermo%fpl(1:6)*tmp
       thermo%fpl(9)=thermo%fpl(4)                                 ! Distribute independent
@@ -864,9 +857,8 @@ Contains
         ! augment str to include the random tensorial force on the barostat
 
         str1=str+thermo%fpl
-        Call nst_h1_scl(1,hstep,degfre,degrot,thermo%pmass,thermo%tai,config%volm,  &
-          thermo%h_z,str1,stress,strcom,        &
-          config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
+        Call nst_h1_scl(1,hstep,degfre,degrot,thermo%tai,str1,stress,strcom, &
+          strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
         ! integrate and apply Langevin thermostat - 1/4 step
 
@@ -932,8 +924,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -1278,8 +1270,7 @@ Contains
       End If
 
       thermo%fpl=0.0_wp
-      Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,thermo%fpl(1),thermo%fpl(2),&
-        thermo%fpl(3),thermo%fpl(4),thermo%fpl(5),thermo%fpl(6))
+      Call box_mueller_saru6(seed,Int(degfre/3_li),nstep,thermo%fpl(1:6))
       tmp=Sqrt(2.0_wp*thermo%tai*boltz*thermo%temp_lang*thermo%pmass*rstep)
       thermo%fpl(1:6)=thermo%fpl(1:6)*tmp
       thermo%fpl(9)=thermo%fpl(4)                                 ! Distribute independent
@@ -1511,10 +1502,8 @@ Contains
       ! augment str to include the random tensorial force on the barostat
 
       str1=str+thermo%fpl
-      Call nst_h1_scl &
-        (1,hstep,degfre,degrot,thermo%pmass,thermo%tai,config%volm,  &
-        thermo%h_z,str1,stress,strcom,        &
-        config%vxx,config%vyy,config%vzz,strkin,strknf,strknt,engke,thermo,rigid,config,comm)
+      Call nst_h1_scl(1,hstep,degfre,degrot,thermo%tai,str1,stress,strcom, &
+        strkin,strknf,strknt,engke,thermo,rigid,config,comm)
 
       ! integrate and apply Langevin thermostat - 1/4 step
 

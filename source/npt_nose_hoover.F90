@@ -225,9 +225,7 @@ Contains
 
         ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-        Call nvt_h0_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
-          config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+        Call nvt_h0_scl(qstep,thermo%pmass,thermo%chi_p,engke,thermo,config,comm)
 
         ! constraint+pmf virial and stress
 
@@ -236,15 +234,12 @@ Contains
 
         ! integrate and apply npt_h0_scl barostat - 1/2 step
 
-        Call npt_h0_scl &
-          (0,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm,vir,virtot, &
-          config%vxx,config%vyy,config%vzz,engke,config,thermo)
+        Call npt_h0_scl(0,hstep,degfre,thermo%chi_t,vir,virtot, &
+          engke,config,thermo)
 
         ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-        Call nvt_h0_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
-          config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+        Call nvt_h0_scl(qstep,thermo%pmass,thermo%chi_p,engke,thermo,config,comm)
 
         ! update velocities
 
@@ -280,8 +275,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -365,9 +360,7 @@ Contains
 
       ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-      Call nvt_h0_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
-        config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+      Call nvt_h0_scl(qstep,thermo%pmass,thermo%chi_p,engke,thermo,config,comm)
 
       ! constraint+pmf virial and stress
 
@@ -376,15 +369,12 @@ Contains
 
       ! integrate and apply npt_h0_scl barostat - 1/2 step
 
-      Call npt_h0_scl &
-        (0,hstep,degfre,thermo%pmass,thermo%chi_t,config%volm,vir,virtot, &
-        config%vxx,config%vyy,config%vzz,engke,config,thermo)
+      Call npt_h0_scl(0,hstep,degfre,thermo%chi_t,vir,virtot, &
+        engke,config,thermo)
 
       ! integrate and apply nvt_h0_scl thermostat - 1/4 step
 
-      Call nvt_h0_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
-        config%vxx,config%vyy,config%vzz,engke,thermo,config,comm)
+      Call nvt_h0_scl(qstep,thermo%pmass,thermo%chi_p,engke,thermo,config,comm)
 
       ! conserved quantity less kinetic and potential energy terms
       consv = 0.5_wp*thermo%qmass*thermo%chi_t**2 + 0.5_wp*thermo%pmass*thermo%chi_p**2 + &
@@ -726,10 +716,7 @@ Contains
 
         ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-        Call nvt_h1_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
-          config%vxx,config%vyy,config%vzz,                  &
-          engke,engrot,thermo,rigid,config,comm)
+        Call nvt_h1_scl(qstep,thermo%pmass,thermo%chi_p,engke,engrot,thermo,rigid,config,comm)
 
         ! constraint+pmf virial and stress
 
@@ -738,16 +725,12 @@ Contains
 
         ! integrate and apply npt_h1_scl barostat - 1/2 step
 
-        Call npt_h1_scl &
-          (0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm,vir,virtot,vircom, &
-          config%vxx,config%vyy,config%vzz,engke,rigid,config,thermo)
+        Call npt_h1_scl(0,hstep,degfre,degrot,thermo%chi_t,vir,virtot,vircom, &
+          engke,rigid,config,thermo)
 
         ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-        Call nvt_h1_scl &
-          (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
-          config%vxx,config%vyy,config%vzz,                  &
-          engke,engrot,thermo,rigid,config,comm)
+        Call nvt_h1_scl(qstep,thermo%pmass,thermo%chi_p,engke,engrot,thermo,rigid,config,comm)
 
         ! update velocity of FPs
 
@@ -787,8 +770,8 @@ Contains
         ! SHAKE procedures
 
         If (cons%megcon > 0 .or. pmf%megpmf > 0) Then
-          Call apply_shake(tstep,thermo%mxkit,thermo%kit,oxt,oyt,ozt,&
-            lstitr,stat,pmf,cons,domain,tmr,config,comm)
+          Call apply_shake(tstep,oxt,oyt,ozt,&
+            lstitr,stat,pmf,cons,domain,tmr,config,thermo,comm)
         End If
 
         ! restore original integration parameters as well as
@@ -1236,10 +1219,7 @@ Contains
 
       ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-      Call nvt_h1_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
-        config%vxx,config%vyy,config%vzz,                  &
-        engke,engrot,thermo,rigid,config,comm)
+      Call nvt_h1_scl(qstep,thermo%pmass,thermo%chi_p,engke,engrot,thermo,rigid,config,comm)
 
       ! constraint+pmf virial and stress
 
@@ -1248,16 +1228,12 @@ Contains
 
       ! integrate and apply npt_h1_scl barostat - 1/2 step
 
-      Call npt_h1_scl &
-        (0,hstep,degfre,degrot,thermo%pmass,thermo%chi_t,config%volm,vir,virtot,vircom, &
-        config%vxx,config%vyy,config%vzz,engke,rigid,config,thermo)
+      Call npt_h1_scl(0,hstep,degfre,degrot,thermo%chi_t,vir,virtot,vircom, &
+        engke,rigid,config,thermo)
 
       ! integrate and apply nvt_h1_scl thermostat - 1/4 step
 
-      Call nvt_h1_scl &
-        (qstep,thermo%ceng,thermo%qmass,thermo%pmass,thermo%chi_p, &
-        config%vxx,config%vyy,config%vzz,                  &
-        engke,engrot,thermo,rigid,config,comm)
+      Call nvt_h1_scl(qstep,thermo%pmass,thermo%chi_p,engke,engrot,thermo,rigid,config,comm)
 
       ! conserved quantity less kinetic and potential energy terms
 
@@ -1339,9 +1315,7 @@ Contains
 
   End Subroutine npt_h1_vv
 
-  Subroutine npt_h0_scl &
-      (sw,tstep,degfre,pmass,chit,volm,vir,virtot, &
-    vxx,vyy,vzz,engke,config,thermo)
+  Subroutine npt_h0_scl(sw,tstep,degfre,chit,vir,virtot,engke,config,thermo)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1366,18 +1340,13 @@ Contains
     Integer,           Intent( In    ) :: sw
     Integer(Kind=li),  Intent( In    ) :: degfre
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,vir,virtot
-    Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
+    Real( Kind = wp ), Intent( In    ) :: tstep,chit,vir,virtot
     Real( Kind = wp ), Intent( InOut ) :: engke
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( configuration_type ), Intent( InOut ) :: config
 
-
-
     Integer                 :: i
-
     Real( Kind = wp )       :: scale
-
     Real( Kind = wp ) :: hstep,qstep
 
     If (thermo%newjob_npt_scl) Then
@@ -1398,7 +1367,8 @@ Contains
 
     ! barostat thermo%chi_p to 1/2*tstep
 
-    thermo%chi_p = thermo%chi_p + hstep*( (2.0_wp*(1.0_wp+thermo%factor)*engke-vir-virtot) - 3.0_wp*thermo%press*volm ) / pmass
+    thermo%chi_p = thermo%chi_p + hstep*( (2.0_wp*(1.0_wp+thermo%factor)*engke-vir-virtot) - &
+      3.0_wp*thermo%press*config%volm ) / thermo%pmass
 
     ! thermostat thermo%chi_p to 2/4*tstep
 
@@ -1408,9 +1378,9 @@ Contains
 
     scale=Exp(-tstep*(1.0_wp+thermo%factor)*thermo%chi_p)
     Do i=1,config%natms
-      vxx(i)=scale*vxx(i)
-      vyy(i)=scale*vyy(i)
-      vzz(i)=scale*vzz(i)
+      config%vxx(i)=scale*config%vxx(i)
+      config%vyy(i)=scale*config%vyy(i)
+      config%vzz(i)=scale*config%vzz(i)
     End Do
 
     ! barostat the energy consequently
@@ -1423,7 +1393,8 @@ Contains
 
     ! barostat thermo%chi_p to full (1/2 + 1/2)*tstep
 
-    thermo%chi_p = thermo%chi_p + hstep*( (2.0_wp*(1.0_wp+thermo%factor)*engke-vir-virtot) - 3.0_wp*thermo%press*volm ) / pmass
+    thermo%chi_p = thermo%chi_p + hstep*( (2.0_wp*(1.0_wp+thermo%factor)*engke-vir-virtot) - &
+      3.0_wp*thermo%press*config%volm ) / thermo%pmass
 
     ! thermostat thermo%chi_p to full (4/4)*tstep
 
@@ -1431,9 +1402,8 @@ Contains
 
   End Subroutine npt_h0_scl
 
-  Subroutine npt_h1_scl &
-      (sw,tstep,degfre,degrot,pmass,chit,volm,vir,virtot,vircom, &
-    vxx,vyy,vzz,engke,rigid,config,thermo)
+  Subroutine npt_h1_scl(sw,tstep,degfre,degrot,chit,vir,virtot,vircom,engke, &
+      rigid,config,thermo)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1459,8 +1429,7 @@ Contains
     Integer,           Intent( In    ) :: sw
     Integer(Kind=li),  Intent( In    ) :: degfre,degrot
 
-    Real( Kind = wp ), Intent( In    ) :: tstep,pmass,chit,volm,vir,virtot,vircom
-    Real( Kind = wp ), Intent( InOut ) :: vxx(:),vyy(:),vzz(:)
+    Real( Kind = wp ), Intent( In    ) :: tstep,chit,vir,virtot,vircom
     Real( Kind = wp ), Intent( InOut ) :: engke
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -1493,7 +1462,7 @@ Contains
     ! barostat thermo%chi_p to 1/2*tstep
 
     thermo%chi_p = thermo%chi_p + hstep*( (2.0_wp*(1.0_wp+thermo%factor)*engke-vir-virtot-vircom)&
-      - 3.0_wp*thermo%press*volm ) / pmass
+      - 3.0_wp*thermo%press*config%volm ) / thermo%pmass
 
     ! thermostat thermo%chi_p to 2/4*tstep
 
@@ -1505,9 +1474,9 @@ Contains
     Do j=1,config%nfree
       i=config%lstfre(j)
 
-      vxx(i)=scale*vxx(i)
-      vyy(i)=scale*vyy(i)
-      vzz(i)=scale*vzz(i)
+      config%vxx(i)=scale*config%vxx(i)
+      config%vyy(i)=scale*config%vyy(i)
+      config%vzz(i)=scale*config%vzz(i)
     End Do
 
     Do irgd=1,rigid%n_types
@@ -1527,7 +1496,7 @@ Contains
     ! barostat thermo%chi_p to full (1/2 + 1/2)*tstep
 
     thermo%chi_p = thermo%chi_p + hstep*( (2.0_wp*(1.0_wp+thermo%factor)*engke-vir-virtot-vircom) &
-      - 3.0_wp*thermo%press*volm ) / pmass
+      - 3.0_wp*thermo%press*config%volm ) / thermo%pmass
 
     ! thermostat thermo%chi_p to full (4/4)*tstep
 
