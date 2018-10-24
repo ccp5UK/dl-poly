@@ -28,6 +28,22 @@ Module inversions
 
   Private
 
+  ! Inversion potential keys
+  !> Null potential
+  Integer(Kind=wi), Parameter, Public :: INVERSION_NULL = -1
+  !> Tabulated potential
+  Integer(Kind=wi), Parameter, Public :: INVERSION_TAB = 0
+  !> Harmonic potential
+  Integer(Kind=wi), Parameter, Public :: INVERSION_HARMONIC = 1
+  !> Harmonic cosine potential
+  Integer(Kind=wi), Parameter, Public :: INVERSION_HARMONIC_COSINE = 2
+  !> Planar potential
+  Integer(Kind=wi), Parameter, Public :: INVERSION_PLANAR = 3
+  !> Extened planar potential
+  Integer(Kind=wi), Parameter, Public :: INVERSION_EXTENDED_PLANAR = 4
+  !> Calcite four-body potential
+  Integer(Kind=wi), Parameter, Public :: INVERSION_CALCITE = 5
+
   Type, Public :: inversions_type
     Private
 
@@ -44,7 +60,12 @@ Module inversions
     !> Total number of inversion angles (all nodes)
     Integer( Kind = wi ), Public :: total
 
-    Integer( Kind = wi ), Allocatable, Public :: num(:),key(:)
+    Integer( Kind = wi ), Allocatable, Public :: num(:)
+
+    !> Inversion potential keys
+    Integer( Kind = wi ), Allocatable, Public :: key(:)
+    !> Restrained potential flag
+    Logical, Allocatable, Public :: restrained(:)
 
     !> Atom indices (local)
     Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
@@ -99,25 +120,27 @@ Contains
     Class( inversions_type ), Intent( InOut ) :: inversion
     Integer( kind = wi ), Intent( In ) :: mxatdm,mxtmls
 
-    Integer, Dimension( 1:8 ) :: fail
+    Integer, Dimension(9) :: fail
 
     fail = 0
 
-    Allocate (inversion%num(1:mxtmls),          Stat = fail(1))
-    Allocate (inversion%key(1:inversion%max_types),          Stat = fail(2))
-    Allocate (inversion%lst(1:4,1:inversion%max_types),      Stat = fail(3))
-    Allocate (inversion%list(0:4,1:inversion%max_angles),      Stat = fail(4))
-    Allocate (inversion%legend(0:inversion%max_legend,1:mxatdm), Stat = fail(5))
-    Allocate (inversion%param(1:inversion%max_param,1:inversion%max_types), Stat = fail(6))
+    Allocate (inversion%num(1:mxtmls), Stat = fail(1))
+    Allocate (inversion%key(1:inversion%max_types), Stat = fail(2))
+    Allocate (inversion%restrained(1:inversion%max_types), Stat = fail(3))
+    Allocate (inversion%lst(1:4,1:inversion%max_types), Stat = fail(4))
+    Allocate (inversion%list(0:4,1:inversion%max_angles), Stat = fail(5))
+    Allocate (inversion%legend(0:inversion%max_legend,1:mxatdm), Stat = fail(6))
+    Allocate (inversion%param(1:inversion%max_param,1:inversion%max_types), Stat = fail(7))
     If (inversion%l_tab) &
-      Allocate (inversion%ltp(0:inversion%max_types),          Stat = fail(7))
+      Allocate (inversion%ltp(0:inversion%max_types), Stat = fail(8))
     If (inversion%bin_adf > 0) &
-      Allocate (inversion%ldf(0:inversion%max_types),          Stat = fail(8))
+      Allocate (inversion%ldf(0:inversion%max_types), Stat = fail(9))
 
     If (Any(fail > 0)) Call error(1021)
 
     inversion%num  = 0
-    inversion%key  = 0
+    inversion%key  = INVERSION_NULL
+    inversion%restrained = .false.
     inversion%lst  = 0
     inversion%list = 0
     inversion%legend  = 0
@@ -608,9 +631,9 @@ Contains
         ! select potential energy function type
 
         kk=inversion%list(0,i)
-        keyi = Abs(inversion%key(kk))
+        keyi = inversion%key(kk)
 
-        If (keyi == 5) Then
+        If (keyi == INVERSION_CALCITE) Then
           xdac(i)=config%parts(ic)%xxx-config%parts(ib)%xxx
           ydac(i)=config%parts(ic)%yyy-config%parts(ib)%yyy
           zdac(i)=config%parts(ic)%zzz-config%parts(ib)%zzz
@@ -735,7 +758,7 @@ Contains
         kk=inversion%list(0,i)
         keyi=inversion%key(kk)
 
-        If (keyi == 5) Then
+        If (keyi == INVERSION_CALCITE) Then
 
           ! calculate vector normal to plane
 
@@ -844,7 +867,7 @@ Contains
 
         ! calculate potential energy and scalar force term
 
-        If      (keyi == 1) Then
+        If      (keyi == INVERSION_HARMONIC) Then
 
           ! harmonic inversion potential
 
@@ -865,7 +888,7 @@ Contains
           gamd=0.0_wp
           If (Abs(thd) > 1.0e-10_wp) gamd=2.0_wp*k*(thd-th0)/Sin(thd)
 
-        Else If (keyi == 2) Then
+        Else If (keyi == INVERSION_HARMONIC_COSINE) Then
 
           ! harmonic cosine inversion potential
 
@@ -879,7 +902,7 @@ Contains
           gamc=-2.0_wp*k*(cosc-cos0)
           gamd=-2.0_wp*k*(cosd-cos0)
 
-        Else If (keyi == 3) Then
+        Else If (keyi == INVERSION_PLANAR) Then
 
           ! planar inversion potentials
 
@@ -892,7 +915,7 @@ Contains
           gamc=a/3.0_wp
           gamd=a/3.0_wp
 
-        Else If (keyi == 4) Then
+        Else If (keyi == INVERSION_EXTENDED_PLANAR) Then
 
           ! extended planar inversion potentials
 
@@ -914,7 +937,7 @@ Contains
           gamd=0.0_wp
           If (Abs(thd) > 1.0e-10_wp) gamd=k*Sin(m*thd-th0)/Sin(thd)
 
-        Else If (keyi == 5) Then
+        Else If (keyi == INVERSION_CALCITE) Then
 
           ! planar calcite potential
 
@@ -931,7 +954,7 @@ Contains
           gamc=0.0_wp
           gamd=0.0_wp
 
-        Else If (keyi == 20) Then
+        Else If (keyi == INVERSION_TAB) Then
 
           ! TABINV potential
 
@@ -1023,7 +1046,7 @@ Contains
 
         End If
 
-        If (inversion%key(kk) == 5) Then
+        If (inversion%key(kk) == INVERSION_CALCITE) Then
 
           ! calculate atomic forces
 
@@ -1150,7 +1173,7 @@ Contains
 
           ! stress tensor calculation for inversion terms
 
-          If (inversion%key(kk) == 5) Then
+          If (inversion%key(kk) == INVERSION_CALCITE) Then
             strs1 = strs1 + uuu*gamma*uux*uux
             strs2 = strs2 + uuu*gamma*uux*uuy
             strs3 = strs3 + uuu*gamma*uux*uuz

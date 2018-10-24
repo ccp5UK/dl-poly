@@ -23,10 +23,22 @@ Module ffield
 
   Use tethers, Only : tethers_type
 
-  Use bonds, Only : bonds_type,bonds_table_read
-  Use angles, Only : angles_type,angles_table_read
-  Use dihedrals, Only : dihedrals_type,dihedrals_table_read,dihedrals_14_check
-  Use inversions, Only : inversions_type,inversions_table_read
+  Use bonds, Only : bonds_type,bonds_table_read, &
+    BOND_NULL,BOND_TAB,BOND_HARMONIC,BOND_MORSE,BOND_12_6,BOND_LJ,BOND_RESTRAINED, &
+    BOND_QUARTIC,BOND_BUCKINGHAM,BOND_COULOMB,BOND_FENE,BOND_MM3
+  Use angles, Only : angles_type,angles_table_read, &
+    ANGLE_TAB,ANGLE_HARMONIC,ANGLE_QUARTIC,ANGLE_TRUNCATED_HARMONIC, &
+    ANGLE_SCREENED_HARMONIC,ANGLE_SCREENED_VESSAL,ANGLE_TRUNCATED_VESSAL, &
+    ANGLE_HARMONIC_COSINE,ANGLE_COSINE,ANGLE_MM3_STRETCH, &
+    ANGLE_COMPASS_STRETCH_STRETCH,ANGLE_COMPASS_STRETCH_BEND,ANGLE_COMPASS_ALL, &
+    ANGLE_MM3_ANGLE,ANGLE_KKY
+  Use dihedrals, Only : dihedrals_type,dihedrals_table_read,dihedrals_14_check, &
+    DIHEDRAL_TAB,DIHEDRAL_COSINE,DIHEDRAL_HARMONIC,DIHEDRAL_HARMONIC_COSINE, &
+    DIHEDRAL_TRIPLE_COSINE,DIHEDRAL_RYCKAERT_BELLEMANS, &
+    DIHEDRAL_FLUORINATED_RYCKAERT_BELLEMANS,DIHEDRAL_OPLS
+  Use inversions, Only : inversions_type,inversions_table_read, &
+    INVERSION_TAB,INVERSION_HARMONIC,INVERSION_HARMONIC_COSINE, &
+    INVERSION_PLANAR,INVERSION_EXTENDED_PLANAR,INVERSION_CALCITE
   Use three_body, Only : threebody_type
   Use vdw, Only : vdw_type,vdw_table_read,vdw_generate,vdw_direct_fs_generate, &
     MIX_NULL,MIX_LORENTZ_BERTHELOT,MIX_FENDER_HASLEY, &
@@ -1252,49 +1264,60 @@ Contains
                 If (keyword(1:1) /= '-') flow%exclusions=.true.
 
                 If      (keyword == 'tab' ) Then
-                  bond%key(nbonds)=20
+                  bond%key(nbonds)= BOND_TAB
                 Else If (keyword == '-tab') Then
-                  bond%key(nbonds)=-20
+                  bond%key(nbonds)= BOND_TAB
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == 'harm') Then
-                  bond%key(nbonds)=1
+                  bond%key(nbonds)= BOND_HARMONIC
                 Else If (keyword == '-hrm') Then
-                  bond%key(nbonds)=-1
+                  bond%key(nbonds)= BOND_HARMONIC
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == 'mors') Then
-                  bond%key(nbonds)=2
+                  bond%key(nbonds)= BOND_MORSE
                 Else If (keyword == '-mrs') Then
-                  bond%key(nbonds)=-2
+                  bond%key(nbonds)= BOND_MORSE
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == '12-6') Then
-                  bond%key(nbonds)=3
+                  bond%key(nbonds)= BOND_12_6
                 Else If (keyword == '-126') Then
-                  bond%key(nbonds)=-3
+                  bond%key(nbonds)= BOND_12_6
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == 'lj'  ) Then
-                  bond%key(nbonds)=4
+                  bond%key(nbonds)= BOND_LJ
                 Else If (keyword == '-lj' ) Then
-                  bond%key(nbonds)=-4
+                  bond%key(nbonds)= BOND_LJ
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == 'rhrm') Then
-                  bond%key(nbonds)=5
+                  bond%key(nbonds)= BOND_RESTRAINED
                 Else If (keyword == '-rhm') Then
-                  bond%key(nbonds)=-5
+                  bond%key(nbonds)= BOND_RESTRAINED
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == 'quar') Then
-                  bond%key(nbonds)=6
+                  bond%key(nbonds)= BOND_QUARTIC
                 Else If (keyword == '-qur') Then
-                  bond%key(nbonds)=-6
+                  bond%key(nbonds)= BOND_QUARTIC
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == 'buck') Then
-                  bond%key(nbonds)=7
+                  bond%key(nbonds)= BOND_BUCKINGHAM
                 Else If (keyword == '-bck') Then
-                  bond%key(nbonds)=-7
+                  bond%key(nbonds)= BOND_BUCKINGHAM
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == 'coul') Then
-                  bond%key(nbonds)=8
+                  bond%key(nbonds)= BOND_COULOMB
                 Else If (keyword == '-cul') Then
-                  bond%key(nbonds)=-8
+                  bond%key(nbonds)= BOND_COULOMB
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == 'fene') Then
-                  bond%key(nbonds)=9
+                  bond%key(nbonds)= BOND_FENE
                 Else If (keyword == '-fne') Then
-                  bond%key(nbonds)=-9
+                  bond%key(nbonds)= BOND_FENE
+                  bond%restrained(nbonds) = .true.
                 Else If (keyword == 'mmst') Then
-                  bond%key(nbonds)=10
+                  bond%key(nbonds)= BOND_MM3
                 Else If (keyword == '-mst') Then
-                  bond%key(nbonds)=-10
+                  bond%key(nbonds)= BOND_MM3
+                  bond%restrained(nbonds) = .true.
                 Else
                   Call info(keyword,.true.)
                   Call error(444)
@@ -1313,7 +1336,7 @@ Contains
                 isite1 = nsite - sites%num_site(itmols) + iatm1
                 isite2 = nsite - sites%num_site(itmols) + iatm2
 
-                If (Abs(bond%key(nbonds)) /= 20) Then
+                If (bond%key(nbonds) /= BOND_TAB) Then
 
                   Call get_word(record,word)
                   bond%param(1,nbonds)=word_2_real(word)
@@ -1324,7 +1347,7 @@ Contains
                   Call get_word(record,word)
                   bond%param(4,nbonds)=word_2_real(word)
 
-                  If (Abs(bond%key(nbonds)) == 9) Then
+                  If (bond%key(nbonds) == BOND_FENE) Then
                     bond%param(2,nbonds)=Abs(bond%param(2,nbonds))
                     If (Abs(bond%param(3,nbonds)) > bond%param(2,nbonds)/2.0_wp) &
                       bond%param(3,nbonds)=Sign(1.0_wp,bond%param(3,nbonds))*bond%param(2,nbonds)/2.0_wp
@@ -1348,20 +1371,20 @@ Contains
 
                   ! convert energy units to internal units
 
-                  If (Abs(bond%key(nbonds)) /= 8) Then
+                  If (bond%key(nbonds) /= BOND_COULOMB) Then
                     bond%param(1,nbonds)=bond%param(1,nbonds)*engunit
                   End If
 
-                  If (Abs(bond%key(nbonds)) == 3) Then
+                  If (bond%key(nbonds) == BOND_12_6) Then
                     bond%param(2,nbonds)=bond%param(2,nbonds)*engunit
                   End If
 
-                  If (Abs(bond%key(nbonds)) == 6) Then
+                  If (bond%key(nbonds) == BOND_QUARTIC) Then
                     bond%param(3,nbonds)=bond%param(3,nbonds)*engunit
                     bond%param(4,nbonds)=bond%param(4,nbonds)*engunit
                   End If
 
-                  If (Abs(bond%key(nbonds)) == 7) Then
+                  If (bond%key(nbonds) == BOND_BUCKINGHAM) Then
                     bond%param(3,nbonds)=bond%param(3,nbonds)*engunit
                   End If
 
@@ -1483,65 +1506,80 @@ Contains
                 If (keyword(1:1) /= '-') flow%exclusions=.true.
 
                 If      (keyword == 'tab' ) Then
-                  angle%key(nangle)=20
+                  angle%key(nangle)= ANGLE_TAB
                 Else If (keyword == '-tab') Then
-                  angle%key(nangle)=-20
+                  angle%key(nangle)= ANGLE_TAB
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'harm') Then
-                  angle%key(nangle)=1
+                  angle%key(nangle)= ANGLE_HARMONIC
                 Else If (keyword == '-hrm') Then
-                  angle%key(nangle)=-1
+                  angle%key(nangle)= ANGLE_HARMONIC
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'quar') Then
-                  angle%key(nangle)=2
+                  angle%key(nangle)= ANGLE_QUARTIC
                 Else If (keyword == '-qur') Then
-                  angle%key(nangle)=-2
+                  angle%key(nangle)= ANGLE_QUARTIC
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'thrm') Then
-                  angle%key(nangle)=3
+                  angle%key(nangle)= ANGLE_TRUNCATED_HARMONIC
                 Else If (keyword == '-thm') Then
-                  angle%key(nangle)=-3
+                  angle%key(nangle)= ANGLE_TRUNCATED_HARMONIC
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'shrm') Then
-                  angle%key(nangle)=4
+                  angle%key(nangle)= ANGLE_SCREENED_HARMONIC
                 Else If (keyword == '-shm') Then
-                  angle%key(nangle)=-4
+                  angle%key(nangle)= ANGLE_SCREENED_HARMONIC
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'bvs1') Then
-                  angle%key(nangle)=5
+                  angle%key(nangle)= ANGLE_SCREENED_VESSAL
                 Else If (keyword == '-bv1') Then
-                  angle%key(nangle)=-5
+                  angle%key(nangle)= ANGLE_SCREENED_VESSAL
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'bvs2') Then
-                  angle%key(nangle)=6
+                  angle%key(nangle)= ANGLE_TRUNCATED_VESSAL
                 Else If (keyword == '-bv2') Then
-                  angle%key(nangle)=-6
+                  angle%key(nangle)= ANGLE_TRUNCATED_VESSAL
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'hcos') Then
-                  angle%key(nangle)=7
+                  angle%key(nangle)= ANGLE_HARMONIC_COSINE
                 Else If (keyword == '-hcs') Then
-                  angle%key(nangle)=-7
+                  angle%key(nangle)= ANGLE_HARMONIC_COSINE
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'cos' ) Then
-                  angle%key(nangle)=8
+                  angle%key(nangle)= ANGLE_COSINE
                 Else If (keyword == '-cos') Then
-                  angle%key(nangle)=-8
+                  angle%key(nangle)= ANGLE_COSINE
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'mmsb') Then
-                  angle%key(nangle)=9
+                  angle%key(nangle)= ANGLE_MM3_STRETCH
                 Else If (keyword == '-msb') Then
-                  angle%key(nangle)=-9
+                  angle%key(nangle)= ANGLE_MM3_STRETCH
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'stst') Then
-                  angle%key(nangle)=10
+                  angle%key(nangle)= ANGLE_COMPASS_STRETCH_STRETCH
                 Else If (keyword == '-sts') Then
-                  angle%key(nangle)=-10
+                  angle%key(nangle)= ANGLE_COMPASS_STRETCH_STRETCH
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'stbe') Then
-                  angle%key(nangle)=11
+                  angle%key(nangle)= ANGLE_COMPASS_STRETCH_BEND
                 Else If (keyword == '-stb') Then
-                  angle%key(nangle)=-11
+                  angle%key(nangle)= ANGLE_COMPASS_STRETCH_BEND
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'cmps') Then
-                  angle%key(nangle)=12
+                  angle%key(nangle)= ANGLE_COMPASS_ALL
                 Else If (keyword == '-cmp') Then
-                  angle%key(nangle)=-12
+                  angle%key(nangle)= ANGLE_COMPASS_ALL
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'mmbd') Then
-                  angle%key(nangle)=13
+                  angle%key(nangle)= ANGLE_MM3_ANGLE
                 Else If (keyword == '-mbd') Then
-                  angle%key(nangle)=-13
+                  angle%key(nangle)= ANGLE_MM3_ANGLE
+                  angle%restrained(nangle) = .true.
                 Else If (keyword == 'kky' ) Then
-                  angle%key(nangle)=14
+                  angle%key(nangle)= ANGLE_KKY
                 Else If (keyword == '-kky') Then
-                  angle%key(nangle)=-14
+                  angle%restrained(nangle) = .true.
+                  angle%key(nangle)= ANGLE_KKY
                 Else
                   Call info(keyword,.true.)
                   Call error(440)
@@ -1564,7 +1602,7 @@ Contains
                 isite2 = nsite - sites%num_site(itmols) + iatm2
                 isite3 = nsite - sites%num_site(itmols) + iatm3
 
-                If (Abs(angle%key(nangle)) /= 20) Then
+                If (angle%key(nangle) /= ANGLE_TAB) Then
 
                   Call get_word(record,word)
                   angle%param(1,nangle)=word_2_real(word)
@@ -1596,19 +1634,19 @@ Contains
 
                   angle%param(1,nangle) = angle%param(1,nangle)*engunit
 
-                  If      (Abs(angle%key(nangle)) == 2) Then
+                  If      (angle%key(nangle) == ANGLE_QUARTIC) Then
                     angle%param(3,nangle) = angle%param(3,nangle)*engunit
                     angle%param(4,nangle) = angle%param(4,nangle)*engunit
-                  Else If (Abs(angle%key(nangle)) == 12) Then
+                  Else If (angle%key(nangle) == ANGLE_COMPASS_ALL) Then
                     angle%param(2,nangle) = angle%param(2,nangle)*engunit
                     angle%param(3,nangle) = angle%param(3,nangle)*engunit
                   End If
 
                   ! convert angles to radians
 
-                  If      (Abs(angle%key(nangle)) == 12) Then
+                  If      (angle%key(nangle) == ANGLE_COMPASS_ALL) Then
                     angle%param(4,nangle) = angle%param(4,nangle)*(pi/180.0_wp)
-                  Else If (Abs(angle%key(nangle)) /= 10) Then
+                  Else If (angle%key(nangle) /= ANGLE_COMPASS_STRETCH_STRETCH) Then
                     angle%param(2,nangle) = angle%param(2,nangle)*(pi/180.0_wp)
                   End If
 
@@ -1732,37 +1770,45 @@ Contains
                 Call lower_case(word)
                 keyword=word(1:4)
                 If      (keyword == 'tab' ) Then
-                  dihedral%key(ndihed)=20
+                  dihedral%key(ndihed)= DIHEDRAL_TAB
                 Else If (keyword == '-tab') Then
-                  dihedral%key(ndihed)=-20
+                  dihedral%key(ndihed)= DIHEDRAL_TAB
+                  dihedral%restrained(ndihed) = .true.
                 Else If (keyword == 'cos' ) Then
-                  dihedral%key(ndihed)=1
+                  dihedral%key(ndihed)= DIHEDRAL_COSINE
                 Else If (keyword == '-cos') Then
-                  dihedral%key(ndihed)=-1
+                  dihedral%key(ndihed)= DIHEDRAL_COSINE
+                  dihedral%restrained(ndihed) = .true.
                 Else If (keyword == 'harm') Then
-                  dihedral%key(ndihed)=2
+                  dihedral%key(ndihed)= DIHEDRAL_HARMONIC
                 Else If (keyword == '-hrm') Then
-                  dihedral%key(ndihed)=-2
+                  dihedral%key(ndihed)= DIHEDRAL_HARMONIC
+                  dihedral%restrained(ndihed) = .true.
                 Else If (keyword == 'hcos') Then
-                  dihedral%key(ndihed)=3
+                  dihedral%key(ndihed)= DIHEDRAL_HARMONIC_COSINE
                 Else If (keyword == '-hcs') Then
-                  dihedral%key(ndihed)=-3
+                  dihedral%key(ndihed)= DIHEDRAL_HARMONIC_COSINE
+                  dihedral%restrained(ndihed) = .true.
                 Else If (keyword == 'cos3') Then
-                  dihedral%key(ndihed)=4
+                  dihedral%key(ndihed)= DIHEDRAL_TRIPLE_COSINE
                 Else If (keyword == '-cs3') Then
-                  dihedral%key(ndihed)=-4
+                  dihedral%key(ndihed)= DIHEDRAL_TRIPLE_COSINE
+                  dihedral%restrained(ndihed) = .true.
                 Else If (keyword == 'ryck') Then
-                  dihedral%key(ndihed)=5
+                  dihedral%key(ndihed)= DIHEDRAL_RYCKAERT_BELLEMANS
                 Else If (keyword == '-rck') Then
-                  dihedral%key(ndihed)=-5
+                  dihedral%key(ndihed)= DIHEDRAL_RYCKAERT_BELLEMANS
+                  dihedral%restrained(ndihed) = .true.
                 Else If (keyword == 'rbf' ) Then
-                  dihedral%key(ndihed)=6
+                  dihedral%key(ndihed)= DIHEDRAL_FLUORINATED_RYCKAERT_BELLEMANS
                 Else If (keyword == '-rbf') Then
-                  dihedral%key(ndihed)=-6
+                  dihedral%key(ndihed)= DIHEDRAL_FLUORINATED_RYCKAERT_BELLEMANS
+                  dihedral%restrained(ndihed) = .true.
                 Else If (keyword == 'opls') Then
-                  dihedral%key(ndihed)=7
+                  dihedral%key(ndihed)= DIHEDRAL_OPLS
                 Else If (keyword == '-opl') Then
-                  dihedral%key(ndihed)=-7
+                  dihedral%key(ndihed)= DIHEDRAL_OPLS
+                  dihedral%restrained(ndihed) = .true.
                 Else
                   Call info(keyword,.true.)
                   Call error(448)
@@ -1789,7 +1835,7 @@ Contains
                 isite3 = nsite - sites%num_site(itmols) + iatm3
                 isite4 = nsite - sites%num_site(itmols) + iatm4
 
-                If (dihedral%key(ndihed) /= 20) Then
+                If ( dihedral%key(ndihed) /= DIHEDRAL_TAB) Then
 
                   Call get_word(record,word)
                   dihedral%param(1,ndihed)=word_2_real(word)
@@ -1826,10 +1872,10 @@ Contains
 
                   dihedral%param(1,ndihed)=dihedral%param(1,ndihed)*engunit
 
-                  If (dihedral%key(ndihed) == 4) Then
+                  If (dihedral%key(ndihed) == DIHEDRAL_TRIPLE_COSINE) Then
                     dihedral%param(2,ndihed)=dihedral%param(2,ndihed)*engunit
                     dihedral%param(3,ndihed)=dihedral%param(3,ndihed)*engunit
-                  Else If (dihedral%key(ndihed) == 7) Then
+                  Else If (dihedral%key(ndihed) == DIHEDRAL_OPLS) Then
                     dihedral%param(2,ndihed)=dihedral%param(2,ndihed)*engunit
                     dihedral%param(3,ndihed)=dihedral%param(3,ndihed)*engunit
                     dihedral%param(6,ndihed)=dihedral%param(6,ndihed)*engunit
@@ -1988,29 +2034,35 @@ Contains
                 keyword=word(1:4)
 
                 If      (keyword == 'tab' ) Then
-                  inversion%key(ninver)=20
+                  inversion%key(ninver)= INVERSION_TAB
                 Else If (keyword == '-tab') Then
-                  inversion%key(ninver)=-20
+                  inversion%key(ninver)= INVERSION_TAB
+                  inversion%restrained(ninver) = .true.
                 Else If (keyword == 'harm') Then
-                  inversion%key(ninver)=1
+                  inversion%key(ninver)= INVERSION_HARMONIC
                 Else If (keyword == '-hrm') Then
-                  inversion%key(ninver)=-1
+                  inversion%key(ninver)= INVERSION_HARMONIC
+                  inversion%restrained(ninver) = .true.
                 Else If (keyword == 'hcos') Then
-                  inversion%key(ninver)=2
+                  inversion%key(ninver)= INVERSION_HARMONIC_COSINE
                 Else If (keyword == '-hcs') Then
-                  inversion%key(ninver)=-2
+                  inversion%key(ninver)= INVERSION_HARMONIC_COSINE
+                  inversion%restrained(ninver) = .true.
                 Else If (keyword == 'plan') Then
-                  inversion%key(ninver)=3
+                  inversion%key(ninver)= INVERSION_PLANAR
                 Else If (keyword == '-pln') Then
-                  inversion%key(ninver)=-3
+                  inversion%key(ninver)= INVERSION_PLANAR
+                  inversion%restrained(ninver) = .true.
                 Else If (keyword == 'xpln') Then
-                  inversion%key(ninver)=4
+                  inversion%key(ninver)= INVERSION_EXTENDED_PLANAR
                 Else If (keyword == '-xpl') Then
-                  inversion%key(ninver)=-4
+                  inversion%key(ninver)= INVERSION_EXTENDED_PLANAR
+                  inversion%restrained(ninver) = .true.
                 Else If (keyword == 'calc') Then
-                  inversion%key(ninver)=5
+                  inversion%key(ninver)= INVERSION_CALCITE
                 Else If (keyword == '-clc') Then
-                  inversion%key(ninver)=-5
+                  inversion%key(ninver)= INVERSION_CALCITE
+                  inversion%restrained(ninver) = .true.
                 Else
                   Call info(keyword,.true.)
                   Call error(449)
@@ -2037,7 +2089,7 @@ Contains
                 isite3 = nsite - sites%num_site(itmols) + iatm3
                 isite4 = nsite - sites%num_site(itmols) + iatm4
 
-                If (inversion%key(ninver) /= 20) Then
+                If (inversion%key(ninver) /= INVERSION_TAB) Then
 
                   Call get_word(record,word)
                   inversion%param(1,ninver)=word_2_real(word)
@@ -2066,11 +2118,11 @@ Contains
 
                   inversion%param(1,ninver)=inversion%param(1,ninver)*engunit
 
-                  If (inversion%key(ninver) == 5) Then
+                  If (inversion%key(ninver) == INVERSION_CALCITE) Then
                     inversion%param(2,ninver)=inversion%param(2,ninver)*engunit
                   Else
                     inversion%param(2,ninver)=inversion%param(2,ninver)*(pi/180.0_wp)
-                    If (inversion%key(ninver) == 2) &
+                    If (inversion%key(ninver) == INVERSION_HARMONIC_COSINE) &
                       inversion%param(2,ninver)=Cos(inversion%param(2,ninver))
                   End If
 
@@ -2433,7 +2485,7 @@ Contains
             Do iinv=1,inversion%num(itmols)*Merge(1,0,inversion%bin_adf > 0)
               ninver=ninver+1
 
-              If (inversion%key(ninver) /= 5) Cycle ! avoid the calcite OoP potential
+              If (inversion%key(ninver) /= INVERSION_CALCITE) Cycle ! avoid the calcite OoP potential
 
               iatm1=inversion%lst(1,ninver)
               iatm2=inversion%lst(2,ninver)
@@ -2716,7 +2768,7 @@ Contains
             Do iinv=1,inversion%num(itmols)*Merge(1,0,inversion%bin_adf > 0)
               ninver=ninver+1
 
-              If (inversion%key(ninver) /= 5) Cycle ! avoid the calcite OoP potential
+              If (inversion%key(ninver) /= INVERSION_CALCITE) Cycle ! avoid the calcite OoP potential
 
               iatm1=inversion%lst(1,ninver)
               iatm2=inversion%lst(2,ninver)

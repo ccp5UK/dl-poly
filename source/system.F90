@@ -1236,7 +1236,7 @@ Contains
             x=Abs(xm(jatm)-xm(iatm))
             y=Abs(ym(jatm)-ym(iatm))
             z=Abs(zm(jatm)-zm(iatm))
-            If (bond%key(nbonds) > 0) Then
+            If (.not. bond%restrained(nbonds)) Then
               t=c2
             Else
               t=3.0_wp*c1
@@ -1255,7 +1255,7 @@ Contains
                 'possible distance violation: ', r, ' > ', t, ' Angstroms'
               Call info(message,.true.)
 
-              If (bond%key(nbonds) > 0) Then
+              If (.not. bond%restrained(nbonds)) Then
                 t=c3
               Else
                 t=3.0_wp*c2
@@ -1306,7 +1306,7 @@ Contains
                 x=Abs(xm(jatm)-xm(iatm))
                 y=Abs(ym(jatm)-ym(iatm))
                 z=Abs(zm(jatm)-zm(iatm))
-                If (angle%key(nangle) > 0) Then
+                If (.not. angle%restrained(nangle)) Then
                   t=c1*Real(j-i+1,wp)
                 Else
                   t=c3*Real(j-i+1,wp)
@@ -1325,7 +1325,7 @@ Contains
                     'possible distance violation: ', i,j,r, ' > ', t, ' Angstroms'
                   Call info(message,.true.)
 
-                  If (angle%key(nangle) > 0) Then
+                  If (.not. angle%restrained(nangle)) Then
                     t=c2*Real(j-i+1,wp)
                   Else
                     t=c4*Real(j-i+1,wp)

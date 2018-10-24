@@ -10,8 +10,8 @@ Module build_tplg
 
   ! INTERACTION MODULES
 
-  Use bonds, Only : bonds_type
-  Use angles, Only : angles_type
+  Use bonds, Only : bonds_type,BOND_NULL
+  Use angles, Only : angles_type,ANGLE_NULL
   Use dihedrals, Only : dihedrals_type
   Use inversions, Only : inversions_type
 
@@ -68,7 +68,7 @@ Contains
     ! include sites on basis of chemical bonds
 
     Do i=1,bond%n_types
-      If (Abs(bond%key(bond%list(0,i))) > 0) Then
+      If (bond%key(bond%list(0,i)) /= BOND_NULL) Then
         ia=bond%list(1,i)
         ib=bond%list(2,i)
 
@@ -88,7 +88,7 @@ Contains
     ! include sites on basis of bond angles
 
     Do i=1,angle%n_types
-      If (Abs(angle%key(angle%list(0,i))) > 0) Then
+      If (angle%key(angle%list(0,i)) /= ANGLE_NULL) Then
         ia=angle%list(1,i)
         ib=angle%list(2,i)
         ic=angle%list(3,i)
