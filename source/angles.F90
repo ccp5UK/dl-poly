@@ -29,6 +29,40 @@ Module angles
 
   Implicit None
 
+  ! Angle potential keys
+  !> Null potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_NULL = -1
+  !> Tabulated potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_TAB = 0
+  !> Harmonic potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_HARMONIC = 1
+  !> Quaritc potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_QUARTIC = 2
+  !> Truncated harmonic potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_TRUNCATED_HARMONIC = 3
+  !> Screened harmonic potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_SCREENED_HARMONIC = 4
+  !> Screened Vessal potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_SCREENED_VESSAL = 5
+  !> Truncated Vessal potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_TRUNCATED_VESSAL = 6
+  !> Harmonic cosine potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_HARMONIC_COSINE = 7
+  !> Cosine potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_COSINE = 8
+  !> MM3 stretch-bend potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_MM3_STRETCH = 9
+  !> Compass stretch-stretch potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_COMPASS_STRETCH_STRETCH = 10
+  !> Compass stretch-bend potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_COMPASS_STRETCH_BEND = 11
+  !> Compass (all terms) potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_COMPASS_ALL = 12
+  !> MM3 angle-bend potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_MM3_ANGLE = 13
+  !> KKY potential
+  Integer(Kind=wi), Parameter, Public :: ANGLE_KKY = 14
+
   !> Type containing angles variables
   Type, Public :: angles_type
     Private
@@ -44,7 +78,12 @@ Module angles
     !> Total number of angles (all nodes)
     Integer( Kind = wi ), Public :: total
 
-    Integer( Kind = wi ), Allocatable, Public :: num(:),key(:)
+    Integer( Kind = wi ), Allocatable, Public :: num(:)
+
+    !> Angle potential key
+    Integer( Kind = wi ), Allocatable, Public :: key(:)
+    !> Restrained angle flag
+    Logical, Allocatable, Public :: restrained(:)
 
     !> Atom indices (local)
     Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
@@ -100,25 +139,27 @@ Contains
     Class( angles_type ), Intent( InOut ) :: angle
     Integer( Kind =wi ), Intent( In ) :: mxatdm,mxtmls
 
-    Integer, Dimension(8) :: fail
+    Integer, Dimension(9) :: fail
 
     fail = 0
 
-    Allocate (angle%num(1:mxtmls),          Stat = fail(1))
-    Allocate (angle%key(1:angle%max_types),          Stat = fail(2))
-    Allocate (angle%lst(1:3,1:angle%max_types),      Stat = fail(3))
-    Allocate (angle%list(0:3,1:angle%max_angles),     Stat = fail(4))
-    Allocate (angle%legend(0:angle%max_legend,1:mxatdm), Stat = fail(5))
-    Allocate (angle%param(1:angle%max_param,1:angle%max_types), Stat = fail(6))
+    Allocate (angle%num(1:mxtmls), Stat = fail(1))
+    Allocate (angle%key(1:angle%max_types), Stat = fail(2))
+    Allocate (angle%restrained(1:angle%max_types), Stat = fail(3))
+    Allocate (angle%lst(1:3,1:angle%max_types), Stat = fail(4))
+    Allocate (angle%list(0:3,1:angle%max_angles), Stat = fail(5))
+    Allocate (angle%legend(0:angle%max_legend,1:mxatdm), Stat = fail(6))
+    Allocate (angle%param(1:angle%max_param,1:angle%max_types), Stat = fail(7))
     If (angle%l_tab) &
-      Allocate (angle%ltp(0:angle%max_types),          Stat = fail(7))
+      Allocate (angle%ltp(0:angle%max_types), Stat = fail(8))
     If (angle%bin_adf > 0) &
-      Allocate (angle%ldf(0:angle%max_types),          Stat = fail(8))
+      Allocate (angle%ldf(0:angle%max_types), Stat = fail(9))
 
     If (Any(fail > 0)) Call error(1013)
 
     angle%num  = 0
-    angle%key  = 0
+    angle%key  = ANGLE_NULL
+    angle%restrained  = .false.
     angle%lst  = 0
     angle%list = 0
     angle%legend  = 0
@@ -708,7 +749,7 @@ Contains
         ! index of potential function parameters
 
         kk=angle%list(0,i)
-        keya = Abs(angle%key(kk))
+        keya = angle%key(kk)
 
         ! accumulate the histogram (distribution)
 
@@ -720,7 +761,7 @@ Contains
         End If
         If (isw == 0) Cycle
 
-        If      (keya == 1) Then
+        If      (keya == ANGLE_HARMONIC) Then
 
           ! harmonic potential
 
@@ -736,7 +777,7 @@ Contains
           gamsc=0.0_wp
           vterm=0.0_wp
 
-        Else If (keya == 2) Then
+        Else If (keya == ANGLE_QUARTIC) Then
 
           ! quartic potential
 
@@ -752,7 +793,7 @@ Contains
           gamsc=0.0_wp
           vterm=0.0_wp
 
-        Else If (keya == 3) Then
+        Else If (keya == ANGLE_TRUNCATED_HARMONIC) Then
 
           ! truncated Harmonic potential
 
@@ -770,7 +811,7 @@ Contains
           gamsc=pterm*8.0_wp*rbc**7/rho**8
           vterm=pterm*8.0_wp*switch
 
-        Else If (keya == 4) Then
+        Else If (keya == ANGLE_SCREENED_HARMONIC) Then
 
           ! screened Harmonic potential
 
@@ -789,7 +830,7 @@ Contains
           gamsc=pterm/rho2
           vterm=pterm*switch
 
-        Else If (keya == 5) Then
+        Else If (keya == ANGLE_SCREENED_VESSAL) Then
 
           ! screened Vessal potential (type 1)
 
@@ -810,7 +851,7 @@ Contains
           gamsc=pterm/rho2
           vterm=pterm*switch
 
-        Else If (keya == 6) Then
+        Else If (keya == ANGLE_TRUNCATED_VESSAL) Then
 
           ! truncated Vessal potential (type 2)
 
@@ -833,7 +874,7 @@ Contains
           gamsc=pterm*8.0_wp*rbc**7/rho**8
           vterm=pterm*8.0_wp*switch
 
-        Else If (keya == 7) Then
+        Else If (keya == ANGLE_HARMONIC_COSINE) Then
 
           ! harmonic cosine potential (note cancellation of sint in gamma)
 
@@ -849,7 +890,7 @@ Contains
           gamsc=0.0_wp
           vterm=0.0_wp
 
-        Else If (keya == 8) Then
+        Else If (keya == ANGLE_COSINE) Then
 
           ! ordinary cosine potential
 
@@ -864,7 +905,7 @@ Contains
           gamsc=0.0_wp
           vterm=0.0_wp
 
-        Else If (keya == 9) Then
+        Else If (keya == ANGLE_MM3_STRETCH) Then
 
           ! MM3-stretch-bend potential
 
@@ -884,7 +925,7 @@ Contains
           gamsc=-pterm/dr2
           vterm=-(gamsa*rab+gamsc*rbc)
 
-        Else If (keya == 10) Then
+        Else If (keya == ANGLE_COMPASS_STRETCH_STRETCH) Then
 
           ! compass stretch-stretch potential
 
@@ -900,7 +941,7 @@ Contains
           gamsc=-a*dr1
           vterm=-(gamsa*rab+gamsc*rbc)
 
-        Else If (keya == 11) Then
+        Else If (keya == ANGLE_COMPASS_STRETCH_BEND) Then
 
           ! compass stretch-bend potential
 
@@ -918,7 +959,7 @@ Contains
           gamsc=0.0_wp
           vterm=-gamsa*rab
 
-        Else If (keya == 12) Then
+        Else If (keya == ANGLE_COMPASS_ALL) Then
 
           ! combined compass angle potential with 3 coupling terms
 
@@ -940,7 +981,7 @@ Contains
           gamsc=-a*dr1-c*dtheta
           vterm=-(gamsa*rab+gamsc*rbc)
 
-        Else If (keya == 13) Then
+        Else If (keya == ANGLE_MM3_ANGLE) Then
 
           ! MM3-angle-bend potential
 
@@ -956,7 +997,7 @@ Contains
           gamsc=0.0_wp
           vterm=0.0_wp
 
-        Else If (keya == 14) Then
+        Else If (keya == ANGLE_KKY) Then
 
           ! KKY potential
 
@@ -979,7 +1020,7 @@ Contains
           vterm=-(gamsa*rab+gamsc*rbc)
 
 
-        Else If (keya == 20) Then
+        Else If (keya == ANGLE_TAB) Then
 
           ! TABANG potential
 

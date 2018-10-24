@@ -176,7 +176,7 @@ Contains
       ! add sites on basis of bonds to core-shell units
 
       Do kk=1,bond%n_types1
-        If (bond%key(bond%list(0,kk)) > 0) Then
+        If (.not. bond%restrained(bond%list(0,kk))) Then
           ja=bond%list(1,kk)
           jb=bond%list(2,kk)
 
@@ -257,7 +257,7 @@ Contains
       ! add sites on basis of valence angles to core-shell units
 
       Do kk=1,angle%n_types1
-        If (angle%key(angle%list(0,kk)) > 0) Then
+        If (.not. angle%restrained(angle%list(0,kk))) Then
           ja=angle%list(1,kk)
           jb=angle%list(2,kk)
           jc=angle%list(3,kk)
@@ -458,7 +458,7 @@ Contains
       ! add sites on basis of dihedral angles to core-shell units
 
       Do kk=1,dihedral%n_types1
-        If (dihedral%key(dihedral%list(0,kk)) > 0) Then
+        If (.not. dihedral%restrained(dihedral%list(0,kk))) Then
           ja=dihedral%list(1,kk)
           jb=dihedral%list(2,kk)
           jc=dihedral%list(3,kk)
@@ -761,7 +761,7 @@ Contains
       ! add sites on basis of inversion angles to core-shell units
 
       Do kk=1,inversion%n_types1
-        If (inversion%key(inversion%list(0,kk)) > 0) Then
+        If (.not. inversion%restrained(inversion%list(0,kk))) Then
           ja=inversion%list(1,kk)
           jb=inversion%list(2,kk)
           jc=inversion%list(3,kk)

@@ -34,6 +34,32 @@ Module bonds
 
   Private
 
+  ! Bond potential keys
+  !> Null potential
+  Integer(Kind=wi), Parameter, Public :: BOND_NULL = -1
+  !> Tabulated potential
+  Integer(Kind=wi), Parameter, Public :: BOND_TAB = 0
+  !> Harmonic potential
+  Integer(Kind=wi), Parameter, Public :: BOND_HARMONIC = 1
+  !> Morse potential
+  Integer(Kind=wi), Parameter, Public :: BOND_MORSE = 2
+  !> 12-6 potential (Lennard-Jones AB form)
+  Integer(Kind=wi), Parameter, Public :: BOND_12_6 = 3
+  !> Lennard-Jones potential
+  Integer(Kind=wi), Parameter, Public :: BOND_LJ = 4
+  !> Restained harmonic potential
+  Integer(Kind=wi), Parameter, Public :: BOND_RESTRAINED = 5
+  !> Quartic potential
+  Integer(Kind=wi), Parameter, Public :: BOND_QUARTIC = 6
+  !> Buckingham potential
+  Integer(Kind=wi), Parameter, Public :: BOND_BUCKINGHAM = 7
+  !> Coulomb potential
+  Integer(Kind=wi), Parameter, Public :: BOND_COULOMB = 8
+  !> Shifted finitely extendible non-linear elastic potential
+  Integer(Kind=wi), Parameter, Public :: BOND_FENE = 9
+  !> MM3 bond stretch potential
+  Integer(Kind=wi), Parameter, Public :: BOND_MM3 = 10
+
   Type, Public :: bonds_type
     Private
 
@@ -52,7 +78,13 @@ Module bonds
     Real( Kind = wp ), Public :: rcut = 0.0_wp
 
 
-    Integer( Kind = wi ), Allocatable, Public :: num(:),key(:)
+    Integer( Kind = wi ), Allocatable, Public :: num(:)
+
+    !> Bond potential key
+    Integer( Kind = wi ), Allocatable, Public :: key(:)
+
+    !> Restrained bond flag
+    Logical, Allocatable, Public :: restrained(:)
 
     !> Atom indices (local)
     Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
@@ -108,28 +140,30 @@ Contains
     Class( bonds_type ), Intent( InOut ) :: bond
     Integer, Intent( In ) :: mxatdm,mxtmls
 
-    Integer, Dimension( 1:8 ) :: fail
+    Integer :: fail(9)
 
     fail = 0
 
-    Allocate (bond%num(1:mxtmls),        Stat = fail(1))
-    Allocate (bond%key(1:bond%max_types),          Stat = fail(2))
-    Allocate (bond%lst(1:2,1:bond%max_types),      Stat = fail(3))
-    Allocate (bond%list(0:2,1:bond%max_bonds),     Stat = fail(4))
-    Allocate (bond%legend(0:bond%max_legend,1:mxatdm), Stat = fail(5))
-    Allocate (bond%param(1:bond%max_param,1:bond%max_types), Stat = fail(6))
+    Allocate(bond%num(1:mxtmls), Stat = fail(1))
+    Allocate(bond%key(1:bond%max_types), Stat = fail(2))
+    Allocate(bond%restrained(1:bond%max_types), Stat = fail(3))
+    Allocate(bond%lst(1:2,1:bond%max_types), Stat = fail(4))
+    Allocate(bond%list(0:2,1:bond%max_bonds), Stat = fail(5))
+    Allocate(bond%legend(0:bond%max_legend,1:mxatdm), Stat = fail(6))
+    Allocate(bond%param(1:bond%max_param,1:bond%max_types), Stat = fail(7))
     If (bond%l_tab) &
-      Allocate (bond%ltp(0:bond%max_types),          Stat = fail(7))
+      Allocate (bond%ltp(0:bond%max_types), Stat = fail(8))
     If (bond%bin_pdf > 0) &
-      Allocate (bond%ldf(0:bond%max_types),          Stat = fail(8))
+      Allocate (bond%ldf(0:bond%max_types), Stat = fail(9))
 
     If (Any(fail > 0)) Call error(1014)
 
     bond%num = 0
-    bond%key   = 0
-    bond%lst   = 0
-    bond%list  = 0
-    bond%legend   = 0
+    bond%key = BOND_NULL
+    bond%restrained = .false.
+    bond%lst = 0
+    bond%list = 0
+    bond%legend = 0
 
     bond%param   = 0.0_wp
 
@@ -673,7 +707,7 @@ Contains
         ! index of potential function parameters
 
         kk=bond%list(0,i)
-        keyb = Abs(bond%key(kk))
+        keyb = bond%key(kk)
 
         ! accumulate the histogram (distribution)
 
@@ -689,14 +723,14 @@ Contains
 
         ! calculate scalar constant terms
 
-        If      (keyb == 0) Then
+        If      (keyb == BOND_NULL) Then
 
           ! null interaction
 
           omega=0.0_wp
           gamma=0.0_wp
 
-        Else If (keyb == 1) Then
+        Else If (keyb == BOND_HARMONIC) Then
 
           ! harmonic potential
 
@@ -709,7 +743,7 @@ Contains
           omega=term*0.5_wp*dr
           gamma=-term/rab
 
-        Else If (keyb == 2) Then
+        Else If (keyb == BOND_MORSE) Then
 
           ! Morse potential
 
@@ -722,7 +756,7 @@ Contains
           omega=e0*term*(term-2.0_wp)
           gamma=-2.0_wp*e0*k*term*(1.0_wp-term)/rab
 
-        Else If (keyb == 3) Then
+        Else If (keyb == BOND_12_6) Then
 
           ! 12-6 potential
 
@@ -734,7 +768,7 @@ Contains
           omega=term*(a*term-b)
           gamma=6.0_wp*term*(2.0_wp*a*term-b)/rab2
 
-        Else If (keyb == 4) Then
+        Else If (keyb == BOND_LJ) Then
 
           ! Lennard-Jones potential
 
@@ -746,7 +780,7 @@ Contains
           omega=4.0_wp*eps*term*(term-1.0_wp)
           gamma=24.0_wp*eps*term*(2.0_wp*term-1.0_wp)/rab2
 
-        Else If (keyb == 5) Then
+        Else If (keyb == BOND_RESTRAINED) Then
 
           ! restrained harmonic
 
@@ -759,7 +793,7 @@ Contains
           omega=k*(0.5_wp*Min(dra,rc)**2 + rc*Max(dra-rc,0.0_wp))
           gamma=-k*Sign(Min(dra,rc),dr)/rab
 
-        Else If (keyb == 6) Then
+        Else If (keyb == BOND_QUARTIC) Then
 
           ! quartic potential
 
@@ -774,7 +808,7 @@ Contains
           omega=dr2 * (0.5_wp*k2+k3*dr/3.0_wp+0.25_wp*k4*dr2)
           gamma=-dr*(k2+k3*dr+k4*dr2)/rab
 
-        Else If (keyb == 7) Then
+        Else If (keyb == BOND_BUCKINGHAM) Then
 
           ! Buckingham exp-6 potential
 
@@ -788,7 +822,7 @@ Contains
           omega=term1+term2
           gamma=(term1/rho+6.0_wp*term2/rab)/rab
 
-        Else If (keyb == 8) Then
+        Else If (keyb == BOND_COULOMB) Then
 
           omega=0.0_wp
           gamma=0.0_wp
@@ -818,7 +852,7 @@ Contains
             End If
           End If
 
-        Else If (keyb == 9) Then
+        Else If (keyb == BOND_FENE) Then
 
           ! extended FENE (Finite Extensive Non-linear Elastic) potential
 
@@ -837,7 +871,7 @@ Contains
             gamma=0.0_wp
           End If
 
-        Else If (keyb == 10) Then
+        Else If (keyb == BOND_MM3) Then
 
           ! MM3-bond-stretch potential
 
@@ -850,7 +884,7 @@ Contains
           omega=k*dr**2*(1.0_wp-e0*(1.0_wp-(7.0_wp/12.0_wp)*e0))
           gamma=-2.0_wp*k*dr*(1.0_wp-e0*(1.5_wp-7.0_wp/6.0_wp*e0))/rab
 
-        Else If (keyb == 20) Then
+        Else If (keyb == BOND_TAB) Then
 
           ! TABBND potential
 
@@ -896,7 +930,7 @@ Contains
 
         ! calculate forces and virial additions
 
-        If (keyb /= 8) Then
+        If (keyb /= BOND_COULOMB) Then
           fx = gamma*xdab(i)
           fy = gamma*ydab(i)
           fz = gamma*zdab(i)

@@ -37,6 +37,26 @@ Module dihedrals
 
   Private
 
+  ! Dihedral potential keys
+  !> Null potential
+  Integer(Kind=wi), Parameter, Public :: DIHEDRAL_NULL = -1
+  !> Tabulated potential
+  Integer(Kind=wi), Parameter, Public :: DIHEDRAL_TAB = 0
+  !> Cosine potential
+  Integer(Kind=wi), Parameter, Public :: DIHEDRAL_COSINE = 1
+  !> Harmonic potential
+  Integer(Kind=wi), Parameter, Public :: DIHEDRAL_HARMONIC = 2
+  !> Harmonic cosine potential
+  Integer(Kind=wi), Parameter, Public :: DIHEDRAL_HARMONIC_COSINE = 3
+  !> Triple cosine potential
+  Integer(Kind=wi), Parameter, Public :: DIHEDRAL_TRIPLE_COSINE = 4
+  !> Ryckaert--Bellemans potential
+  Integer(Kind=wi), Parameter, Public :: DIHEDRAL_RYCKAERT_BELLEMANS = 5
+  !> Fluorinated Ryckaert--Bellemans potential
+  Integer(Kind=wi), Parameter, Public :: DIHEDRAL_FLUORINATED_RYCKAERT_BELLEMANS = 6
+  !> OPLS potential
+  Integer(Kind=wi), Parameter, Public :: DIHEDRAL_OPLS = 7
+
   Type, Public :: dihedrals_type
     Private
 
@@ -53,7 +73,12 @@ Module dihedrals
     !> Total number of angles (all nodes)
     Integer( Kind = wi ), Public :: total
 
-    Integer( Kind = wi ), Allocatable, Public :: num(:),key(:)
+    Integer( Kind = wi ), Allocatable, Public :: num(:)
+
+    !> Dihedral potential key
+    Integer( Kind = wi ), Allocatable, Public :: key(:)
+    !> Restrained dihedral angle flag
+    Logical, Allocatable, Public :: restrained(:)
 
     !> Atom indices (local)
     Integer( Kind = wi ), Allocatable, Public :: lst(:,:)
@@ -111,26 +136,28 @@ Contains
     Class( dihedrals_type ), Intent( InOut ) :: dihedral
     Integer, Intent( In ) :: mxatdm,mxtmls
 
-    Integer, Dimension( 1:8 ) :: fail
+    Integer, Dimension(9) :: fail
 
     fail = 0
 
-    Allocate (dihedral%num(1:mxtmls),          Stat = fail(1))
-    Allocate (dihedral%key(1:dihedral%max_types),          Stat = fail(2))
-    Allocate (dihedral%lst(1:6,1:dihedral%max_types),      Stat = fail(3))
-    Allocate (dihedral%list(0:6,1:dihedral%max_angles),     Stat = fail(4))
-    Allocate (dihedral%legend(0:dihedral%max_legend,1:mxatdm), Stat = fail(5))
-    Allocate (dihedral%param(1:dihedral%max_param,1:dihedral%max_types), Stat = fail(6))
+    Allocate (dihedral%num(1:mxtmls), Stat = fail(1))
+    Allocate (dihedral%key(1:dihedral%max_types), Stat = fail(2))
+    Allocate (dihedral%restrained(1:dihedral%max_types), Stat = fail(3))
+    Allocate (dihedral%lst(1:6,1:dihedral%max_types), Stat = fail(4))
+    Allocate (dihedral%list(0:6,1:dihedral%max_angles), Stat = fail(5))
+    Allocate (dihedral%legend(0:dihedral%max_legend,1:mxatdm), Stat = fail(6))
+    Allocate (dihedral%param(1:dihedral%max_param,1:dihedral%max_types), Stat = fail(7))
     If (dihedral%l_tab) &
-      Allocate (dihedral%ltp(0:dihedral%max_types),          Stat = fail(7))
+      Allocate (dihedral%ltp(0:dihedral%max_types), Stat = fail(8))
     If (dihedral%bin_adf > 0) &
-      Allocate (dihedral%ldf(0:dihedral%max_types),          Stat = fail(8))
+      Allocate (dihedral%ldf(0:dihedral%max_types), Stat = fail(9))
 
 
     If (Any(fail > 0)) Call error(1020)
 
     dihedral%num  = 0
-    dihedral%key  = 0
+    dihedral%key  = DIHEDRAL_NULL
+    dihedral%restrained = .false.
     dihedral%lst  = 0
     dihedral%list = 0
     dihedral%legend  = 0
@@ -227,7 +254,7 @@ Contains
 
         Do langle=1,angle%num(itmols)
 
-          If (angle%key(langle+kangle) > 0) Then
+          If (.not. angle%restrained(langle+kangle)) Then
 
             iang=angle%lst(1,langle+kangle)
             jang=angle%lst(3,langle+kangle)
@@ -1022,7 +1049,7 @@ Contains
         ! selection of potential energy function type
 
         kk=dihedral%list(0,i)
-        keyd = Abs(dihedral%key(kk))
+        keyd = dihedral%key(kk)
 
         ! accumulate the histogram (distribution)
 
@@ -1036,7 +1063,7 @@ Contains
 
         ! calculate potential energy and scalar force term
 
-        If      (keyd == 1) Then
+        If      (keyd == DIHEDRAL_COSINE) Then
 
           ! torsion dihedral potential
 
@@ -1049,7 +1076,7 @@ Contains
           pterm=a*(1.0_wp+Cos(term))
           gamma=-a*m*Sin(term)*rsint * rpb1*rpc1
 
-        Else If (keyd == 2) Then
+        Else If (keyd == DIHEDRAL_HARMONIC) Then
 
           ! harmonic improper dihedral
 
@@ -1063,7 +1090,7 @@ Contains
           pterm=0.5_wp*term*dtheta
           gamma=term*rsint * rpb1*rpc1
 
-        Else If (keyd == 3) Then
+        Else If (keyd == DIHEDRAL_HARMONIC_COSINE) Then
 
           ! harmonic cosine dihedral (note sint is cancelled)
 
@@ -1076,7 +1103,7 @@ Contains
           pterm=0.5_wp*term*dtheta
           gamma=-term * rpb1*rpc1
 
-        Else If (keyd == 4) Then
+        Else If (keyd == DIHEDRAL_TRIPLE_COSINE) Then
 
           ! 3-term cosine dihedral
 
@@ -1091,7 +1118,7 @@ Contains
             2.0_wp*a2*Sin(2.0_wp*theta) + &
             3.0_wp*a3*Sin(3.0_wp*theta) )*rsint * rpb1*rpc1
 
-        Else If (keyd == 5) Then
+        Else If (keyd == DIHEDRAL_RYCKAERT_BELLEMANS) Then
 
           ! ryckaert-bellemans potential
           !
@@ -1107,7 +1134,7 @@ Contains
           gamma=a*( 1.462_wp       + 3.156_wp*m   - 1.104_wp*m**2 - &
             12.624_wp*m**3 - 18.94_wp*m**4 ) * rpb1*rpc1
 
-        Else If (keyd == 6) Then
+        Else If (keyd == DIHEDRAL_FLUORINATED_RYCKAERT_BELLEMANS) Then
 
           ! fluorinated ryckaert-bellemans potential
           ! reference: Rice at al., JCP 104, p. 2101 (1996)
@@ -1123,7 +1150,7 @@ Contains
           gamma=( a*(2.78_wp       + 7.12_wp*m   + 4.92_wp*m**2 - &
             28.52_wp*m**3 - 64.2_wp*m**4) + term*rsint ) * rpb1*rpc1
 
-        Else If (keyd == 7) Then
+        Else If (keyd == DIHEDRAL_OPLS) Then
 
           ! opls cosine dihedral
 
@@ -1141,7 +1168,7 @@ Contains
             2.0_wp*a2*Sin(2.0_wp*dtheta)  + &
             3.0_wp*a3*Sin(3.0_wp*dtheta))*rsint * rpb1*rpc1
 
-        Else If (keyd == 20) Then
+        Else If (keyd == DIHEDRAL_TAB) Then
 
           ! TABDIH potential
 
