@@ -208,7 +208,7 @@ Contains
 
       ! update kinetic energy and stress
 
-      Call kinstress(config%vxx,config%vyy,config%vzz,strkin,config,comm)
+      Call kinstress(strkin,config,comm)
       engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
     End If
@@ -824,7 +824,7 @@ Contains
 
       ! update kinetic energy and stress
 
-      Call kinstresf(config%vxx,config%vyy,config%vzz,strknf,config,comm)
+      Call kinstresf(strknf,config,comm)
       Call kinstrest(rigid,strknt,comm)
 
       strkin=strknf+strknt
