@@ -262,7 +262,7 @@ Contains
 
       ! kinetic contribution to stress tensor
 
-      Call kinstress(config%vxx,config%vyy,config%vzz,strkin,config,comm)
+      Call kinstress(strkin,config,comm)
 
     End If
 
@@ -929,7 +929,7 @@ Contains
 
       ! update kinetic energy and stress
 
-      Call kinstresf(config%vxx,config%vyy,config%vzz,strknf,config,comm)
+      Call kinstresf(strknf,config,comm)
       Call kinstrest(rigid,strknt,comm)
 
       strkin=strknf+strknt
