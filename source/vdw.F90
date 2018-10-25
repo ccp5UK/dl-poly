@@ -25,6 +25,7 @@ Module vdw
   Use site, Only : site_type
   Use parse, Only : get_line,get_word,word_2_real
   Use neighbours, Only : neighbours_type
+  Use numerics, Only : nequal
   Use errors_warnings, Only : error,warning,info
   Implicit None
 
@@ -1189,10 +1190,11 @@ Contains
             Else                                           ! find epsilon
               If ( (vdws%tab_potential(i-2,ivdw) >= vdws%tab_potential(i-1,ivdw) .and.  &
                 vdws%tab_potential(i-1,ivdw) <= vdws%tab_potential(i  ,ivdw)) .and. &
-                (vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i-1,ivdw) .or.   &
-                vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i  ,ivdw) .or.   &
-                vdws%tab_potential(i-1,ivdw) /= vdws%tab_potential(i  ,ivdw)) )     &
+                (nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i-1,ivdw)) .or. &
+                nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i,ivdw)) .or. &
+                nequal(vdws%tab_potential(i-1,ivdw),vdws%tab_potential(i,ivdw)))) Then
                 vdws%sigeps(2,ivdw)=-vdws%tab_potential(i-1,ivdw)
+              End If
             End If
           End If
         End Do
@@ -1223,9 +1225,10 @@ Contains
                 t2 = vdws%tab_potential(i-2,ivdw) + vdws%tab_force(vdws%max_grid-4,ivdw) * &
                   (Real(i-2,wp)*dlrpot/vdws%cutoff-1.0_wp) - vdws%tab_potential(vdws%max_grid-4,ivdw)
 
-                If ( (t2 >= t1 .and. t1 <= t) .and.         &
-                  (t2 /= t1 .or. t2 /= t .or. t1 /= t) ) &
+                If ( (t2 >= t1 .and. t1 <= t) .and. &
+                  (nequal(t1,t1) .or. nequal(t2,t) .or. nequal(t1,t))) Then
                   vdws%sigeps(2,ivdw)=-t1
+                End If
               End If
             End If
           End Do
@@ -1414,10 +1417,11 @@ Contains
             Else                                           ! find epsilon
               If ( (vdws%tab_potential(i-2,ivdw) >= vdws%tab_potential(i-1,ivdw) .and.  &
                 vdws%tab_potential(i-1,ivdw) <= vdws%tab_potential(i  ,ivdw)) .and. &
-                (vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i-1,ivdw) .or.   &
-                vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i  ,ivdw) .or.   &
-                vdws%tab_potential(i-1,ivdw) /= vdws%tab_potential(i  ,ivdw)) )     &
+                (nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i-1,ivdw)) .or. &
+                nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i,ivdw)) .or. &
+                nequal(vdws%tab_potential(i-1,ivdw),vdws%tab_potential(i,ivdw))))  Then
                 vdws%sigeps(2,ivdw)=-vdws%tab_potential(i-1,ivdw)
+              End If
             End If
           End If
         End Do
@@ -1460,10 +1464,11 @@ Contains
             Else                                           ! find epsilon
               If ( (vdws%tab_potential(i-2,ivdw) >= vdws%tab_potential(i-1,ivdw) .and.  &
                 vdws%tab_potential(i-1,ivdw) <= vdws%tab_potential(i  ,ivdw)) .and. &
-                (vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i-1,ivdw) .or.   &
-                vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i  ,ivdw) .or.   &
-                vdws%tab_potential(i-1,ivdw) /= vdws%tab_potential(i  ,ivdw)) )     &
+                (nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i-1,ivdw)) .or. &
+                nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i,ivdw)) .or. &
+                nequal(vdws%tab_potential(i-1,ivdw),vdws%tab_potential(i,ivdw)))) Then
                 vdws%sigeps(2,ivdw)=-vdws%tab_potential(i-1,ivdw)
+              End If
             End If
           End If
         End Do
@@ -1541,10 +1546,11 @@ Contains
               Else                                           ! find epsilon
                 If ( (vdws%tab_potential(i-2,ivdw) >= vdws%tab_potential(i-1,ivdw) .and.  &
                   vdws%tab_potential(i-1,ivdw) <= vdws%tab_potential(i  ,ivdw)) .and. &
-                  (vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i-1,ivdw) .or.   &
-                  vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i  ,ivdw) .or.   &
-                  vdws%tab_potential(i-1,ivdw) /= vdws%tab_potential(i  ,ivdw)) )     &
+                  (nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i-1,ivdw)) .or. &
+                  nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i,ivdw)) .or. &
+                  nequal(vdws%tab_potential(i-1,ivdw),vdws%tab_potential(i,ivdw)))) Then
                   vdws%sigeps(2,ivdw)=-vdws%tab_potential(i-1,ivdw)
+                End If
               End If
             End If
           End If ! The else condition is satisfied by the vdw initialisation
@@ -1610,10 +1616,11 @@ Contains
               Else                                           ! find epsilon
                 If ( (vdws%tab_potential(i-2,ivdw) >= vdws%tab_potential(i-1,ivdw) .and.  &
                   vdws%tab_potential(i-1,ivdw) <= vdws%tab_potential(i  ,ivdw)) .and. &
-                  (vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i-1,ivdw) .or.   &
-                  vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i  ,ivdw) .or.   &
-                  vdws%tab_potential(i-1,ivdw) /= vdws%tab_potential(i  ,ivdw)) )     &
+                  (nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i-1,ivdw)) .or. &
+                  nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i,ivdw)) .or. &
+                  nequal(vdws%tab_potential(i-1,ivdw),vdws%tab_potential(i,ivdw)))) Then
                   vdws%sigeps(2,ivdw)=-vdws%tab_potential(i-1,ivdw)
+                End If
               End If
             End If
           End If
@@ -1899,10 +1906,11 @@ Contains
             Else                                           ! find epsilon
               If ( (vdws%tab_potential(i-2,ivdw) >= vdws%tab_potential(i-1,ivdw) .and.  &
                 vdws%tab_potential(i-1,ivdw) <= vdws%tab_potential(i  ,ivdw)) .and. &
-                (vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i-1,ivdw) .or.   &
-                vdws%tab_potential(i-2,ivdw) /= vdws%tab_potential(i  ,ivdw) .or.   &
-                vdws%tab_potential(i-1,ivdw) /= vdws%tab_potential(i  ,ivdw)) )     &
+                (nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i-1,ivdw)) .or. &
+                nequal(vdws%tab_potential(i-2,ivdw),vdws%tab_potential(i,ivdw)) .or. &
+                nequal(vdws%tab_potential(i-1,ivdw),vdws%tab_potential(i,ivdw)))) Then
                 vdws%sigeps(2,ivdw)=-vdws%tab_potential(i-1,ivdw)
+              End If
             End If
           End If
         End Do
@@ -1962,9 +1970,10 @@ Contains
               t2 = vdws%tab_potential(i-2,ivdw) + &
                 vdws%tab_force(vdws%max_grid-4,ivdw)*(Real(i-2,wp)*dlrpot/vdws%cutoff-1.0_wp) - &
                 vdws%tab_potential(vdws%max_grid-4,ivdw)
-              If ( (t2 >= t1 .and. t1 <= t) .and.         &
-                (t2 /= t1 .or. t2 /= t .or. t1 /= t) ) &
+              If ( (t2 >= t1 .and. t1 <= t) .and. &
+                (nequal(t2,t1) .or. nequal(t2,t) .or. nequal(t1,t))) Then
                 vdws%sigeps(2,ivdw)=-t1
+              End If
             End If
           End If
         End Do
