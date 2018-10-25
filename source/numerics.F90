@@ -2,7 +2,7 @@ Module numerics
   Use kinds, Only : wp,wi,li
   Use errors_warnings, Only : error
   Use comms, Only : comms_type
-  Use constants, Only : rt3,zero_plus, sqrpi,rt2,half_minus
+  Use constants, Only : rt3,zero_plus,sqrpi,rt2,half_minus,epsilon_wp
   Use particle, Only: corePart
 
   Implicit None
@@ -141,6 +141,16 @@ Module numerics
     Module Procedure pbcshift_parts
     Module Procedure pbcshift_arrays
   End Interface
+
+  Interface equal
+    Module Procedure equal_real_wp
+  End Interface equal
+
+  Interface nequal
+    Module Procedure nequal_real_wp
+  End Interface nequal
+
+  Public :: equal,nequal
 
 Contains
 
@@ -3498,4 +3508,19 @@ Contains
     End If
 
   End Function get_nth_prime
+
+  Pure Function equal_real_wp(a,b) Result(equal)
+    Real(Kind=wp), Intent(In) :: a,b
+    Logical :: equal
+
+    equal = Abs(a-b) < epsilon_wp
+  End Function equal_real_wp
+
+  Pure Function nequal_real_wp(a,b) Result(nequal)
+    Real(Kind=wp), Intent(In) :: a,b
+    Logical :: nequal
+
+    nequal = .not. equal_real_wp(a,b)
+  End Function nequal_real_wp
+
 End Module numerics
