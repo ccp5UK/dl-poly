@@ -24,7 +24,7 @@ endif(COMMAND cmake_policy)
 
 if(WITH_MPI)
   ### if we want MPI check for it and set the internal kitchen
-  find_package(MPI REQUIRED)
+#  find_package(MPI REQUIRED)
   include_directories(${MPI_Fortran_INCLUDE_PATH})
   message(STATUS "MPI_Fortran_INCLUDE_PATH ${MPI_Fortran_INCLUDE_PATH}")
   if(NOT WITH_PHI)

@@ -137,7 +137,6 @@ program dl_poly
   Use build_tplg, Only : build_tplg_intra
   Use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type
-  Use timer, Only  : timer_type, time_elapsed,timer_report
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type
@@ -152,7 +151,7 @@ program dl_poly
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
-
+  Use timer, Only  : timer_type, time_elapsed, start_timer_new, stop_timer_new, timer_report_new
   Implicit None
 
   ! all your simulation variables
@@ -229,6 +228,11 @@ program dl_poly
     End If
   End If
 
+#ifdef CHRONO
+  Call start_timer_new('Main')
+  Call start_timer_new('Initialisation')
+#endif
+  
   ! Set default file names
   Call default_filenames(files)
   ! Rename control file if argument was passed
@@ -363,6 +367,10 @@ program dl_poly
     Call rdf%init_block(flow%run_steps,sites%ntype_atom)
   End If
 
+#ifdef CHRONO
+  Call stop_timer_new('Initialisation')
+#endif
+  
   ! CHECK MD CONFIGURATION
 
   Call check_config(config,electro%key,thermo,sites,flow,comm)
@@ -679,7 +687,8 @@ program dl_poly
   If (plume%l_plumed) Call plumed_finalize()
 
 #ifdef CHRONO
-  Call timer_report(tmr,comm)
+  call stop_timer_new('Main')
+  Call timer_report_new(comm,tmr%proc_detail)
 #endif
   ! Ask for reference in publications
 

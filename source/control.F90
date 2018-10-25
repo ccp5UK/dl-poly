@@ -2847,8 +2847,12 @@ Contains
         If (word(1:4) == 'dens' .or. word(1:6) == 'thresh') Call get_word(record,word)
         neigh%pdplnc = Max(Abs(word_2_real(word)),1.0_wp) ! disallow any less than 1
 
-        ! read machine time for simulation run (in seconds)
+        ! See if detailed processor timing is requested
+      Else If (word(1:8) == 'proctime') Then
 
+        tmr%proc_detail = .true.
+        
+        ! read machine time for simulation run (in seconds)
       Else If (word(1:3) == 'job') Then
 
         Call get_word(record,word1)
