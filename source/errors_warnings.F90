@@ -24,6 +24,7 @@ Module errors_warnings
 
   Public :: warning
   Public :: error
+  Public :: error_alloc, error_dealloc
   Public :: info
   Public :: init_error_system
 
@@ -31,12 +32,12 @@ Module errors_warnings
   Interface warning
     Module Procedure warning_special
     Module Procedure warning_general
-  End Interface
+  End Interface warning
 
   Interface info
     Module Procedure info_sl
     Module Procedure info_ml
-  End Interface
+  End Interface info
 
 Contains
 
@@ -120,7 +121,7 @@ Contains
 
         Write(ounit,'(/,1x,a,f7.3,a,/,1x,a,/)')                &
           '*** warning - DD cutoff is ', a, ' Angstroms !!! ***', &
-          '*** Fennell damping is not recommended for cutoffs shorther than 10-12 Angstroms !!! ***'
+          '*** Fennell damping is not recommended for cutoffs shorter than 10-12 Angstroms !!! ***'
 
       Else If (kode ==   8) Then
 
@@ -2195,6 +2196,8 @@ Contains
 
     End If
 
+    flush(ounit)
+
     ! close all I/O channels
     Call close_unit(ounit)
 
@@ -2203,6 +2206,46 @@ Contains
     Call abort_comms(eworld,kode)
 
   End Subroutine error
+
+  Subroutine error_alloc(array, routine)
+
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for printing standard message for allocation errors
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins october 2018
+    !!
+    !!----------------------------------------------------------------------!
+
+    Character (Len=*) :: array, routine 
+
+    Write(ounit,'(/,1x,a)') 'error - allocation failure in '//trim(routine)//' -> '//trim(array)
+
+    Call close_unit(ounit)
+    Call abort_comms(eworld,1001)
+
+  end Subroutine error_alloc
+
+  Subroutine error_dealloc(array, routine)
+
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for printing standard message for deallocation errors
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins october 2018
+    !!
+    !!----------------------------------------------------------------------!
+    Character (Len=*) :: array, routine 
+
+    Write(ounit,'(/,1x,a)') 'error - deallocation failure in '//trim(routine)//' -> '//trim(array)
+
+    Call close_unit(ounit)
+    Call abort_comms(eworld,1002)
+
+  end Subroutine error_dealloc
+
 
   !> Close all open file units
   Subroutine close_unit(i)

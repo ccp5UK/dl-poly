@@ -158,7 +158,7 @@ program dl_poly
   ! all your simulation variables
   Type(comms_type), Allocatable :: dlp_world(:),comm
   Type(thermostat_type) :: thermo
-  Type(ewald_type) :: ewld
+  Class(ewald_type), allocatable :: ewld
   Type(timer_type) :: tmr
   Type(development_type) :: devel
   Type(stats_type) :: stats
@@ -187,7 +187,7 @@ program dl_poly
   Type( rdf_type ) :: rdf
   Type( netcdf_param ) :: netcdf
   Type( minimise_type ) :: minim
-  Type( mpole_type ) :: mpoles
+!  Type( mpole_type ) :: mpoles
   Type( external_field_type ) :: ext_field
   Type( rigid_bodies_type ) :: rigid
   Type( electrostatic_type ) :: electro
@@ -285,7 +285,7 @@ program dl_poly
   Call set_bounds ( &
     sites,ttms,ios,core_shells,cons,pmfs,stats, &
     thermo,green,devel,msd_data,met,pois,bond,angle,dihedral,inversion, &
-    tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,mpoles,ext_field, &
+    tether,threebody,zdensity,neigh,vdws,tersoffs,fourbody,rdf,electro%mpoles,ext_field, &
     rigid,electro,domain,config,ewld,kim_data,files,flow,comm)
 
   Call info('',.true.)
@@ -318,7 +318,9 @@ program dl_poly
   Call dihedral%init(config%mxatdm,sites%mxtmls)
   Call inversion%init(config%mxatms,sites%mxtmls)
 
-  Call mpoles%init(sites%max_site,neigh%max_exclude,config%mxatdm,ewld%bspline,config%mxatms)
+  !! JW952
+  ! Hack Bsplines
+  Call electro%mpoles%init(sites%max_site,neigh%max_exclude,config%mxatdm,12,config%mxatms)
 
   ! ALLOCATE INTER-LIKE INTERACTION ARRAYS
 
@@ -349,14 +351,14 @@ program dl_poly
 
   Call read_control(lfce,impa,ttms,dfcts,rigid,rsdsc,core_shells,cons,pmfs, &
     stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral, &
-    inversion,zdensity,neigh,vdws,rdf, minim,mpoles,electro,ewld, &
+    inversion,zdensity,neigh,vdws,rdf, minim,electro%mpoles,electro,ewld, &
     seed,traj,files,tmr,config,flow,comm)
 
   ! READ SIMULATION FORCE FIELD
 
   Call read_field(neigh%cutoff,core_shells,pmfs,cons,thermo,met,bond,angle, &
     dihedral,inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf, &
-    mpoles,ext_field,rigid,electro,config,kim_data,files,flow,comm)
+    electro%mpoles,ext_field,rigid,electro,config,kim_data,files,flow,comm)
 
   ! If computing rdf errors, we need to initialise the arrays.
   If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -434,7 +436,7 @@ program dl_poly
   ! SET domain borders and link-config%cells as default for new jobs
   ! exchange atomic data and positions in border regions
 
-  Call set_halo_particles(electro%key,neigh,sites,mpoles,domain,config,ewld,kim_data,comm)
+  Call set_halo_particles(electro%key,neigh,sites,electro%mpoles,domain,config,ewld,kim_data,comm)
 
   Call info('',.true.)
   Call info("*** initialisation and haloing DONE ***",.true.)
@@ -447,15 +449,15 @@ program dl_poly
     Call build_book_intra(flow%strict,flow%print_topology,flow%simulation, &
       flow,core_shells,cons,pmfs,bond,angle,dihedral,inversion,tether, &
       neigh,sites,rigid,domain,config,comm)
-    If (mpoles%max_mpoles > 0) Then
+    If (electro%mpoles%max_mpoles > 0) Then
       Call build_tplg_intra(neigh%max_exclude,bond,angle,dihedral,inversion, &
-        mpoles,config,comm)
+        electro%mpoles,config,comm)
       ! multipoles topology for internal coordinate system
-      If (mpoles%key == POLARISATION_CHARMM) Then
+      If (electro%mpoles%key == POLARISATION_CHARMM) Then
         Call build_chrm_intra(neigh%max_exclude,core_shells,cons,bond,angle, &
-          dihedral,inversion,mpoles,rigid,config,comm)
+          dihedral,inversion,electro%mpoles,rigid,config,comm)
       End If
-      ! CHARMM core-shell screened electrostatic induction interactions
+       ! CHARMM core-shell screened electrostatic induction interactions
     End If
     If (flow%exclusions) Then
       Call build_excl_intra(electro%lecx,core_shells,cons,bond,angle,dihedral, &
@@ -485,14 +487,13 @@ program dl_poly
 
   ! set and halo rotational matrices and their infinitesimal rotations
 
-  If (mpoles%max_mpoles > 0) Then
-    Call mpoles_rotmat_set_halo(mpoles,domain,config,comm)
+  If (electro%mpoles%max_mpoles > 0) Then
+    Call mpoles_rotmat_set_halo(electro%mpoles,domain,config,comm)
   End If
 
   ! SET initial system temperature
 
-  Call set_temperature               &
-    (flow%restart_key,flow%step,flow%run_steps, &
+  Call set_temperature (flow%restart_key,flow%step,flow%run_steps, &
     stats%engrot,sites%dof_site,core_shells,stats,cons,pmfs,thermo,minim, &
     rigid,domain,config,seed,comm)
 
@@ -577,20 +578,20 @@ program dl_poly
   If (flow%simulation) Then
     Call w_md_vv(config,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo, &
       plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
-      netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,minim, &
+      netcdf,electro%mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,minim, &
       impa,green,ewld,electro,dfcts,msd_data,tersoffs,tether,threebody,vdws, &
       devel,met,comm)
   Else
     If (lfce) Then
       Call w_replay_historf(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
         thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh, &
-        sites,vdws,tersoffs,fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid, &
+        sites,vdws,tersoffs,fourbody,rdf,netcdf,minim,electro%mpoles,ext_field,rigid, &
         electro,domain,seed,traj,kim_data,files,dfcts,tmr,tether,threebody, &
         pois,green,ewld,devel,met,comm)
     Else
       Call w_replay_history(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
         thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh, &
-        sites,vdws,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain, &
+        sites,vdws,rdf,netcdf,minim,electro%mpoles,ext_field,rigid,electro,domain, &
         seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,comm)
     End If
   End If
@@ -699,7 +700,7 @@ program dl_poly
     Write(banner(3),fmt1) '****     https://doi.org/10.1016/j.cpc.2006.05.001            ****'
     Call info(banner,3,.true.)
   End If
-  If (mpoles%max_mpoles > 0) Then
+  If (electro%mpoles%max_mpoles > 0) Then
     Write(banner(1),fmt1) '****   - H.A. Boateng & I.T. Todorov,                         ****'
     Write(banner(2),fmt1) '****     J. Chem. Phys., 142, 034117 (2015),                  ****'
     Write(banner(3),fmt1) '****     https://doi.org/10.1063/1.4905952                    ****'

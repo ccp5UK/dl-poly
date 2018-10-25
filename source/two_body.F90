@@ -5,21 +5,28 @@ Module two_body
   Use site, Only : site_type
   Use configuration,  Only : configuration_type
   Use neighbours,     Only : neighbours_type,link_cell_pairs
-  Use ewald,           Only : ewald_type
+  Use spme,  Only : init_spme_data, spme_self_interaction
+  Use ewald,           Only : ewald_type, ewald_spme_type
   Use mpole,          Only : mpole_type,POLARISATION_CHARMM
   Use coul_spole,     Only : coul_fscp_forces, coul_rfp_forces, coul_cp_forces, coul_dddp_forces
   Use coul_mpole,    Only : coul_fscp_mforces, coul_rfp_mforces, coul_cp_mforces, &
     coul_dddp_mforces, coul_chrm_forces, d_ene_trq_mpoles
-  Use poisson, Only : poisson_type,poisson_forces,poisson_frzn_forces
-  Use vdw,     Only : vdw_type,vdw_forces
+  Use poisson, Only : poisson_type,poisson_forces,poisson_excl_forces,poisson_frzn_forces
+  Use vdw,     Only : vdw_type,vdw_forces, &
+    VDW_NULL, VDW_TAB, VDW_12_6, VDW_LENNARD_JONES, VDW_N_M, &
+    VDW_BUCKINGHAM, VDW_BORN_HUGGINS_MEYER, VDW_HYDROGEN_BOND, &
+    VDW_N_M_SHIFT, VDW_MORSE, VDW_WCA, VDW_DPD, VDW_AMOEBA, &
+    VDW_LENNARD_JONES_COHESIVE, VDW_MORSE_12, VDW_RYDBERG, VDW_ZBL, &
+    VDW_ZBL_SWITCH_MORSE, VDW_ZBL_SWITCH_BUCKINGHAM
+
   Use metal,   Only : metal_type,metal_forces,metal_ld_compute,metal_lrc
   Use kim,     Only : kim_type,kim_energy_and_forces
   Use rdfs,    Only : rdf_type,rdf_collect,rdf_excl_collect,rdf_frzn_collect, &
     rdf_increase_block_number
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error,error_alloc,error_dealloc
   Use ewald_spole, Only : ewald_spme_forces,ewald_real_forces,ewald_frzn_forces, ewald_excl_forces
-  Use ewald_mpole, Only : ewald_spme_mforces, ewald_real_mforces,ewald_frzn_mforces,ewald_excl_mforces, &
-    ewald_spme_mforces_d,ewald_real_mforces_d,ewald_excl_mforces_d,ewald_excl_mforces
+  ! Use ewald_mpole, Only : ewald_spme_mforces, ewald_real_mforces,ewald_frzn_mforces,ewald_excl_mforces, &
+  !                        ewald_spme_mforces_d,ewald_real_mforces_d,ewald_excl_mforces_d,ewald_excl_mforces
 
   Use timer,  Only : timer_type,start_timer,stop_timer
   Use development, Only : development_type
@@ -76,7 +83,7 @@ Contains
       nsteql,nstep
     Type( core_shell_type ), Intent( InOut ) :: cshell
     Type( stats_type ), Intent( InOut )                       :: stats
-    Type( ewald_type ),                       Intent( InOut ) :: ewld
+    Class( ewald_type ),                      Intent( InOut ) :: ewld
     Type( development_type ),                 Intent( In    ) :: devel
     Type( metal_type ),                       Intent( InOut ) :: met
     Type( poisson_type ),                     Intent( InOut ) :: pois
@@ -104,6 +111,11 @@ Contains
       engden,virden,engmet,virmet,             &
       engvdw,virvdw,engkim,virkim,             &
       engacc,viracc,tmp,buffer(0:19)
+    !! JW952
+    ! Array to remap charge/disp to 2D array
+    Real( kind = wp ), dimension( : ), allocatable :: coul_coeffs
+
+    Logical, save :: newjob = .true.
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
 
@@ -111,11 +123,9 @@ Contains
 
     safe = .True. 
     fail=0
+
     Allocate (xxt(1:neigh%max_list),yyt(1:neigh%max_list),zzt(1:neigh%max_list),rrt(1:neigh%max_list), Stat=fail)
-    If (fail > 0) Then
-      Write(message,'(a)') 'two_body_forces allocation failure'
-      Call error(0,message)
-    End If
+    If (fail > 0) call error_alloc('distance arrays','two_body_forces')
 
     l_do_rdf = (rdf%l_collect .and. ((.not.leql) .or. nstep >= nsteql) .and. Mod(nstep,rdf%freq) == 0)
 
@@ -125,9 +135,32 @@ Contains
     ! evaluation.  Repeat the same but only for the SPME k-space
     ! frozen-frozen evaluations in constant volume ensembles only.
 
-    If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) Then
-      Call ewld%check(ensemble,megfrz,nsteql,electro%nstfce,nstep,config%mxatms)
-    End If
+    ! Coulomb
+    if (ewld%active) then
+      allocate(coul_coeffs(config%mxatms), stat=fail)
+      if (fail>0) call error_alloc('coul_coeffs','two_body_forces')
+      coul_coeffs = config%parts(:)%chge
+    end if
+
+    if ( newjob .and. ewld%active ) then
+      select type ( ewld )
+      type is (ewald_spme_type)
+        
+        if ( electro%key == ELECTROSTATIC_EWALD ) then
+          allocate ( ewld%spme_data(0:ewld%num_pots), stat=fail )
+          if ( fail > 0 ) call error_alloc('ewld%spme_data','two_body_forces')
+          ewld%spme_data(0)%scaling = r4pie0/electro%eps
+          call init_spme_data( ewld%spme_data(0), 1 )
+          
+          call spme_self_interaction(electro, ewld%alpha, config%natms, coul_coeffs, comm, ewld%spme_data(0))
+        else
+          allocate ( ewld%spme_data(1:ewld%num_pots), stat=fail )
+          if ( fail > 0 ) call error_alloc('ewld%spme_data','two_body_forces')
+        end if
+        newjob = .false.
+      end select
+      
+    end if
 
     ! initialise energy and virial accumulators
 
@@ -201,19 +234,18 @@ Contains
     Call start_timer(tmr%t_longrange)
 #endif
 
-    If (electro%key == ELECTROSTATIC_EWALD .and. ewld%l_fce) Then
-      If (mpoles%max_mpoles > 0) Then
-        If (mpoles%max_order <= 2) Then
-          Call ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stats%stress,ewld,mpoles, &
-            electro,domain,config,comm)
-        Else
-          Call ewald_spme_mforces(engcpe_rc,vircpe_rc,stats%stress,ewld,mpoles, &
-            electro,domain,config,comm)
-        End If
-      Else
-        Call ewald_spme_forces(engcpe_rc,vircpe_rc,stats%stress,ewld,electro, &
-          domain,config,comm)
-      End If
+    If (electro%key == ELECTROSTATIC_EWALD) Then
+
+      select type ( ewld )
+      type is ( ewald_spme_type )
+
+        call ewald_spme_forces(ewld,ewld%spme_data(0),electro,domain,config,comm, &
+          coul_coeffs,nstep,engcpe_rc,vircpe_rc,stats%stress)
+      class default
+
+        call error(0,'Fatal type error in two_body_forces')
+      end select
+
     End If
 #ifdef CHRONO
     Call stop_timer(tmr%t_longrange)
@@ -280,13 +312,16 @@ Contains
 
           ! calculate coulombic forces, Ewald sum - real space contribution
 
-          If (mpoles%max_order <= 2) Then
-            Call ewald_real_mforces_d(i,xxt,yyt,zzt,rrt,engacc, &
-              viracc,stats%stress,ewld,neigh,mpoles,electro,config)
-          Else
-            Call ewald_real_mforces(i,xxt,yyt,zzt,rrt,engacc, &
-              viracc,stats%stress,neigh,mpoles,electro,config)
-          End If
+          select type (ewld )
+          type is ( ewald_spme_type )
+
+
+            Call ewald_real_forces(ewld,ewld%spme_data(0),ewld%spme_data(0)%g_p, &
+              electro,neigh,config,i,coul_coeffs,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+          class default
+
+            call error(0,'Fatal type error in two_body_forces')
+          end select
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -335,7 +370,14 @@ Contains
 
           ! calculate coulombic forces, Ewald sum - real space contribution
 
-          Call ewald_real_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
+          select type ( ewld )
+          type is (ewald_spme_type)
+            Call ewald_real_forces(ewld,ewld%spme_data(0),ewld%spme_data(0)%g_p, &
+              electro,neigh,config,i,coul_coeffs,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+          class default
+
+            call error(0,'Fatal type error in two_body_forces')
+          end select
 
           engcpe_rl=engcpe_rl+engacc
           vircpe_rl=vircpe_rl+viracc
@@ -389,7 +431,7 @@ Contains
     ! Poisson solver alternative to Ewald
 
     If (electro%key == ELECTROSTATIC_POISSON) Then
-      Call poisson_forces(engacc,viracc,stats%stress,pois,electro,domain,config,ewld,comm)
+      Call poisson_forces(engacc,viracc,stats%stress,pois,electro,domain,config,comm)
       engcpe_rl=engcpe_rl+engacc
       vircpe_rl=vircpe_rl+viracc
     End If
@@ -440,17 +482,17 @@ Contains
           If (l_do_rdf) Call rdf_excl_collect(i,rrt,neigh,config,rdf)
 
           If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald corrections
-            If (mpoles%max_mpoles > 0) Then
-              If (mpoles%max_order <= 2) Then
-                Call ewald_excl_mforces_d(i,xxt,yyt,zzt,rrt,engacc,viracc, &
-                  stats%stress,neigh,mpoles,electro,config)
-              Else
-                Call ewald_excl_mforces(i,xxt,yyt,zzt,rrt,engacc,viracc, &
-                  stats%stress,neigh,mpoles,electro,config)
-              End If
-            Else
-              Call ewald_excl_forces(i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress,neigh,electro,config)
-            End If
+
+            select type ( ewld )
+            type is ( ewald_spme_type )
+
+              Call ewald_excl_forces(ewld,ewld%spme_data(0),neigh,electro,config,coul_coeffs, &
+                i,xxt,yyt,zzt,rrt,engacc,viracc,stats%stress)
+
+            class default
+
+              call error(0,'Fatal type error in two_body_forces')
+            end select
 
             engcpe_ex=engcpe_ex+engacc
             vircpe_ex=vircpe_ex+viracc
@@ -519,10 +561,7 @@ Contains
     End If
 
     Deallocate (xxt,yyt,zzt,rrt, Stat=fail)
-    If (fail > 0) Then
-      Write(message,'(a)') 'two_body_forces deallocation failure'
-      Call error(0,message)
-    End If
+    If (fail > 0) call error_dealloc('distance arrays','two_body_forces')
 
     !Increase rdf%block_number when required
     If (l_do_rdf) Then
@@ -532,36 +571,13 @@ Contains
     ! Further Ewald/Poisson Solver corrections or an infrequent refresh
 
     If (Any([ELECTROSTATIC_EWALD,ELECTROSTATIC_POISSON] == electro%key)) Then
-      If (ewld%l_fce) Then
-
-        ! frozen pairs corrections to coulombic forces
-
-        If (megfrz /= 0) Then
-          If (electro%key == ELECTROSTATIC_EWALD) Then ! Ewald
-            If (mpoles%max_mpoles > 0) Then
-              Call ewald_frzn_mforces(engcpe_fr,vircpe_fr,stats%stress,ewld, &
-                neigh,mpoles,electro,config,comm)
-            Else
-              Call ewald_frzn_forces(engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,electro,config,comm)
-            End If
-          Else !If (electro%key == ELECTROSTATIC_POISSON) Then ! Poisson Solver
-            Call poisson_frzn_forces(electro%eps,engcpe_fr,vircpe_fr,stats%stress,ewld,neigh,config,comm)
-          End If
-        End If
-
-      Else
-
-        ! Refresh all Ewald k-space contributions
-
-        Call ewld%refresh(engcpe_rc,vircpe_rc,engcpe_fr,vircpe_fr,stats%stress,config)
-
-      End If
+      deallocate(coul_coeffs,stat=fail)
+      if (fail>0) call error_dealloc('coul_coeffs','two_body_forces')
 
       ! non-zero total system charge correction (for the whole system)
       ! ( Fuchs, Proc. R. Soc., A, 151, (585),1935 )
-
       If (Abs(config%sumchg) > 1.0e-6_wp) Then
-        factor_nz = -0.5_wp * (pi*r4pie0/electro%eps) * (config%sumchg/electro%alpha)**2
+        factor_nz = -0.5_wp * (pi*r4pie0/electro%eps) * (config%sumchg/electro%damping)**2
 
         engcpe_nz=factor_nz/config%volm
         vircpe_nz=-3.0_wp*engcpe_nz
@@ -628,11 +644,11 @@ Contains
 
     ! Self-interaction is constant for the default charges only SPME
 
-    If (electro%key == ELECTROSTATIC_EWALD) Then ! Sum it up for multipolar SPME
-      If (mpoles%max_mpoles > 0 .and. mpoles%max_order <= 2) Call gsum(comm,ewld%engsic)
-      !Write(message,'(a,1p,e18.10)') 'Self-interaction term: ',engsic
-      !Call info(message,.true.)
-    End If
+    ! If (electro%key == ELECTROSTATIC_EWALD) Then ! Sum it up for multipolar SPME
+    !    If (mpoles%max_mpoles > 0 .and. mpoles%max_order <= 2) Call gsum(comm,ewld%spme_data(0)%self_interaction)
+    !Write(message,'(a,1p,e18.10)') 'Self-interaction term: ',engsic
+    !Call info(message,.true.)
+    ! End If
 
     ! Globalise coulombic contributions: cpe
 

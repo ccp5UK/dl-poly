@@ -14,7 +14,7 @@ Module drivers
 
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
-  Use ewald, Only : ewald_type
+  Use ewald, Only : ewald_type, ewald_spme_type
 
 
   ! DEFECTS MODULE
@@ -222,7 +222,7 @@ Contains
     Type( msd_type ), Intent( InOut ) :: msd_data
     Type( timer_type ), Intent( InOut ) :: tmr
     Type( development_type ), Intent( InOut ) :: devel
-    Type( ewald_type ), Intent( InOut ) :: ewld
+    Class( ewald_type ), Intent( InOut ) :: ewld
     Type( metal_type ), Intent( InOut ) :: met
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( greenkubo_type ), Intent( InOut ) :: green
@@ -475,7 +475,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( domains_type ), Intent( In    ) :: domain
     Type( kim_type ), Intent( InOut ) :: kim_data
-    Type( ewald_type), Intent( InOut ) :: ewld
+    Class( ewald_type), Intent( InOut ) :: ewld
     Type( greenkubo_type), Intent( InOut ) :: green
     Type( minimise_type), Intent( InOut ) :: minim
     Type( thermostat_type ), Intent( InOut ) :: thermo
@@ -492,7 +492,9 @@ Contains
 
     ! Check VNL conditioning
 
-    Call vnl_check(flow%strict,cnfig%width,neigh,stat,domain,cnfig,ewld%bspline,kim_data,comm)
+    !! JW952
+    ! Hack
+    Call vnl_check(flow%strict,cnfig%width,neigh,stat,domain,cnfig,12,kim_data,comm)
 
     If (neigh%update) Then
 
@@ -1379,7 +1381,7 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( defects_type), Intent( InOut) :: dfcts(:)
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type( ewald_type), Intent ( InOut ) :: ewld
+    Class( ewald_type), Intent ( InOut ) :: ewld
     Type( greenkubo_type ), Intent( InOut ) :: green
     Type( impact_type ), Intent( InOut ) :: impa
     Type( minimise_type ), Intent( InOut ) :: minim
@@ -1620,7 +1622,7 @@ Contains
     Type( timer_type), Intent( InOut ) :: tmr
     Type( tethers_type), Intent( InOut ) :: tether
     Type( greenkubo_type), Intent( InOut ) :: green
-    Type( ewald_type), Intent( InOut ) :: ewld
+    Class( ewald_type), Intent( InOut ) :: ewld
     Type( development_type), Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm
 
@@ -2042,7 +2044,7 @@ Contains
     Type( threebody_type ), Intent( InOut ) :: threebody
     Type( greenkubo_type), Intent( InOut ) :: green
     Type( poisson_type), Intent( InOut ) :: pois
-    Type( ewald_type), Intent( InOut ) :: ewld
+    Class( ewald_type), Intent( InOut ) :: ewld
     Type( metal_type), Intent( InOut ) :: met
     Type( development_type) , Intent( InOut ) :: devel
     Type( comms_type ), Intent( InOut ) :: comm

@@ -5,7 +5,6 @@ Module poisson
   Use domains,         Only : domains_type
   Use constants,           Only : fourpi,r4pie0,half_minus,zero_plus
   Use configuration,   Only : configuration_type
-  Use ewald,           Only : ewald_type
   Use errors_warnings, Only : error,info
   Use numerics,        Only : dcell,invert
   Use parallel_fft,    Only : adjust_kmax
@@ -18,6 +17,13 @@ Module poisson
   !> Type containing poisson data
   Type, Public :: poisson_type
     Private
+
+    Logical, Public :: active = .false.
+
+    !> Damping constant
+    Real( Kind = wp ), Public :: delta
+    Integer( Kind = wi ), dimension(3), Public :: grid_dimensions
+    Integer( Kind = wi ), Public :: halo_size, halo_size1
 
     Logical :: debug =.true.
     Logical :: initialized=.false.
@@ -43,7 +49,6 @@ Module poisson
     !> Solver tolerance
     Real( Kind = wp ), Public :: eps
     !> Solver spacing
-    Real( Kind = wp ) :: delta
     Real( Kind = wp ) :: celprp(1:10)
     Real( Kind = wp ) :: normb
     Real( Kind = wp ) :: normphi0,normphi1
@@ -68,7 +73,7 @@ Module poisson
 
 Contains
 
-  Subroutine poisson_forces(engcpe,vircpe,stress,pois,electro,domain,config,ewld,comm)
+  Subroutine poisson_forces(engcpe,vircpe,stress,pois,electro,domain,config,comm)
 
     Real( Kind = wp ), Intent(   Out ) :: engcpe,vircpe
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
@@ -76,7 +81,6 @@ Contains
     Type( electrostatic_type ), Intent( In    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ), Intent( InOut )     :: config
-    Type( ewald_type ), Intent( InOut ) :: ewld
     Type(comms_type), Intent( InOut )     :: comm
 
     Real( Kind = wp ) :: eng,virr
@@ -86,8 +90,8 @@ Contains
 
       pois%converged=.false.
       pois%maxbicgst =0 ! the number of steps to solve eq. without a guess (pois%phi=0)
-      pois%delta=1.0_wp/electro%alpha
-      Call biCGStab_init(pois,config,domain,ewld)
+      pois%delta=1.0_wp/pois%delta
+      Call biCGStab_init(pois,config,domain)
 
       Call biCGStab_charge_density(pois,electro,config,comm)
 
@@ -107,7 +111,7 @@ Contains
 
     If (pois%normb > zero_plus) Then
       Call P_solver_omp(pois,comm)
-      Call biCGStab_calc_forces(eng,virr,strs,pois,config,ewld,comm)
+      Call biCGStab_calc_forces(eng,virr,strs,pois,config,comm)
     Else
       Call error(0,'pois%normb too small')
     End If
@@ -118,11 +122,11 @@ Contains
 
   End Subroutine poisson_forces
 
-  Subroutine biCGStab_init(pois,config,domain,ewld)
+  Subroutine biCGStab_init(pois,config,domain)
+    !! This routine has no header !
     Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ),     Intent( InOut ) :: config
     Type( poisson_type ), Intent( InOut ) :: pois
-    Type( ewald_type ), Intent( InOut ) :: ewld
 
     ! calculates preambles
     ! copy DD mapping
@@ -148,32 +152,32 @@ Contains
 
     Call dcell(config%cell,pois%celprp)
 
-    ewld%fft_dim_a=Nint(pois%celprp(7)/pois%delta)
-    ewld%fft_dim_b=Nint(pois%celprp(8)/pois%delta)
-    ewld%fft_dim_c=Nint(pois%celprp(9)/pois%delta)
+    pois%grid_dimensions(1)=Nint(pois%celprp(7)/pois%delta)
+    pois%grid_dimensions(2)=Nint(pois%celprp(8)/pois%delta)
+    pois%grid_dimensions(3)=Nint(pois%celprp(9)/pois%delta)
 
     ! adjust accordingly to processor grid restrictions
 
-    Call adjust_kmax(ewld%fft_dim_a, domain%nx)
-    Call adjust_kmax(ewld%fft_dim_b, domain%ny)
-    Call adjust_kmax(ewld%fft_dim_c, domain%nz)
+    Call adjust_kmax(pois%grid_dimensions(1), domain%nx)
+    Call adjust_kmax(pois%grid_dimensions(2), domain%ny)
+    Call adjust_kmax(pois%grid_dimensions(3), domain%nz)
 
     ! 3D charge array construction (bottom and top) indices and block size
 
-    pois%ixb=domain%idx*(ewld%fft_dim_a/domain%nx)+1
-    pois%ixt=(domain%idx+1)*(ewld%fft_dim_a/domain%nx)
-    pois%iyb=domain%idy*(ewld%fft_dim_b/domain%ny)+1
-    pois%iyt=(domain%idy+1)*(ewld%fft_dim_b/domain%ny)
-    pois%izb=domain%idz*(ewld%fft_dim_c/domain%nz)+1
-    pois%izt=(domain%idz+1)*(ewld%fft_dim_c/domain%nz)
+    pois%ixb=domain%idx*(pois%grid_dimensions(1)/domain%nx)+1
+    pois%ixt=(domain%idx+1)*(pois%grid_dimensions(1)/domain%nx)
+    pois%iyb=domain%idy*(pois%grid_dimensions(2)/domain%ny)+1
+    pois%iyt=(domain%idy+1)*(pois%grid_dimensions(2)/domain%ny)
+    pois%izb=domain%idz*(pois%grid_dimensions(3)/domain%nz)+1
+    pois%izt=(domain%idz+1)*(pois%grid_dimensions(3)/domain%nz)
 
-    pois%kmaxa_r=Real(ewld%fft_dim_a, wp)
-    pois%kmaxb_r=Real(ewld%fft_dim_b, wp)
-    pois%kmaxc_r=Real(ewld%fft_dim_c, wp)
+    pois%kmaxa_r=Real(pois%grid_dimensions(1), wp)
+    pois%kmaxb_r=Real(pois%grid_dimensions(2), wp)
+    pois%kmaxc_r=Real(pois%grid_dimensions(3), wp)
 
-    pois%block_x=ewld%fft_dim_a/domain%nx
-    pois%block_y=ewld%fft_dim_b/domain%ny
-    pois%block_z=ewld%fft_dim_c/domain%nz
+    pois%block_x=pois%grid_dimensions(1)/domain%nx
+    pois%block_y=pois%grid_dimensions(2)/domain%ny
+    pois%block_z=pois%grid_dimensions(3)/domain%nz
 
     ! new 1 grid link halo inclusive object per domain distributed sizes
 
@@ -186,7 +190,7 @@ Contains
 
     ! extra halo on top of the one grid cell halo, according to size of differentiation stencil
 
-    pois%xhalo=2+ewld%bspline1-ewld%bspline
+    pois%xhalo=2+pois%halo_size1-pois%halo_size
 
     ! allocate vectors for biCGStab
 
@@ -224,7 +228,7 @@ Contains
 
   Subroutine biCGStab_charge_density(pois,electro,config,comm)
 
-    ! calculates charge dansity at 0th order
+    !! calculates charge dansity at 0th order
 
     Type( poisson_type ), Intent( InOut ) :: pois
     Type( electrostatic_type ), Intent( In    ) :: electro
@@ -234,7 +238,7 @@ Contains
     Integer           :: i,j,k,n
     Real( Kind = wp ) :: reps0dv, txx,tyy,tzz, det,rcell(9)
 
-    reps0dv=fourpi*r4pie0*electro%alpha/electro%eps ! dv collapsed to dr=pois%delta=1/electro%alpha
+    reps0dv=fourpi*r4pie0*pois%delta/electro%eps ! dv collapsed to dr=pois%delta=1/pois%delta
 
     ! get reciprocal config%cell
     Call invert(config%cell,rcell,det)
@@ -346,13 +350,14 @@ Contains
 
   Recursive Subroutine P_solver_omp(pois,comm)
 
+    !! This routine has no header !
     Type( poisson_type ), Intent( InOut ) :: pois
     Type(comms_type), Intent( InOut )   :: comm
 
     Real( Kind = wp ) :: normphi0_local, normphi1_local
     Real( Kind = wp ) :: Totstart, Totend, dphi
     Integer           :: mmm, i,j,k
-    Real( Kind = wp ) :: element,  sm1,sm2,sm3,sm4 ! SM stands for Stoyan Markov (long live!!!)
+    Real( Kind = wp ) :: element,  sm1,sm2,sm3,sm4 !! SM stands for Stoyan Markov (long live!!)
     Character ( Len = 80 ) :: message
 
     Call gtime(Totstart)
@@ -450,6 +455,7 @@ Contains
 
   Recursive Subroutine biCGStab_solver_omp(pois,comm)
 
+    !! This routine has no header !
     Type( poisson_type ), Intent( InOut ) :: pois
     Type(comms_type), Intent( InOut )  :: comm
 
@@ -624,6 +630,7 @@ Contains
 
   Subroutine biCGStab_exchange_halo(vec,xtra,pois,comm)
 
+    !! This routine has no header !
     Integer,           Intent( In    ) :: xtra
     Type( poisson_type ), Intent( InOut ) :: pois
     Real( Kind = wp ), Intent( InOut ) :: vec( pois%lnxl-xtra:pois%lnxu+xtra, &
@@ -682,9 +689,10 @@ Contains
   Contains
 
     Subroutine exchange_grid_halo(     from,       to,           &
-        xlb, xlt, ylb, ylt, zlb, zlt, &
-        xdb, xdt, ydb, ydt, zdb, zdt,comm )
+      xlb, xlt, ylb, ylt, zlb, zlt, &
+      xdb, xdt, ydb, ydt, zdb, zdt,comm )
 
+      !! This routine has no header !
       Integer, Intent( In    ) :: from, to
       Integer, Intent( In    ) :: xlb, ylb, zlb
       Integer, Intent( In    ) :: xlt, ylt, zlt
@@ -775,6 +783,7 @@ Contains
 
   Subroutine Adot_omp(vec,vx,res,rx,pois)
 
+    !! This routine has no header !
     Integer          , Intent( In    ) :: vx,rx
     Type( poisson_type ), Intent( InOut ) :: pois
     Real( Kind = wp ), Intent( In    ) :: vec(pois%lnxl-vx:pois%lnxu+vx, &
@@ -814,12 +823,12 @@ Contains
 
   End Subroutine Adot_omp
 
-  Subroutine biCGStab_calc_forces(cenergy,vir,stress,pois,config,ewld,comm)
+  Subroutine biCGStab_calc_forces(cenergy,vir,stress,pois,config,comm)
 
+    !! This routine has no header !
     Real( Kind = wp ), Intent( InOut ) :: cenergy, vir, stress(1:9)
     Type( poisson_type ), Intent( InOut ) :: pois
     Type( configuration_type ),  Intent( InOut ) :: config
-    Type( ewald_type ), Intent( In    ) :: ewld
     Type( comms_type), Intent( InOut ) :: comm
 
     Integer       :: i,j,k,n, ii,jj,kk
@@ -849,11 +858,11 @@ Contains
     Do n=1,config%natms
       If (Abs(config%parts(n)%chge) < Abs(half_minus)) Cycle
 
-      txx=Real(ewld%fft_dim_a,wp)*(rcell(1)*config%parts(n)%xxx+rcell(4)*config%parts(n)%yyy+&
+      txx=Real(pois%grid_dimensions(1),wp)*(rcell(1)*config%parts(n)%xxx+rcell(4)*config%parts(n)%yyy+&
         rcell(7)*config%parts(n)%zzz+half_minus)
-      tyy=Real(ewld%fft_dim_b,wp)*(rcell(2)*config%parts(n)%xxx+rcell(5)*config%parts(n)%yyy+&
+      tyy=Real(pois%grid_dimensions(2),wp)*(rcell(2)*config%parts(n)%xxx+rcell(5)*config%parts(n)%yyy+&
         rcell(8)*config%parts(n)%zzz+half_minus)
-      tzz=Real(ewld%fft_dim_c,wp)*(rcell(3)*config%parts(n)%xxx+rcell(6)*config%parts(n)%yyy+&
+      tzz=Real(pois%grid_dimensions(3),wp)*(rcell(3)*config%parts(n)%xxx+rcell(6)*config%parts(n)%yyy+&
         rcell(9)*config%parts(n)%zzz+half_minus)
 
       ! global indeces
@@ -902,11 +911,10 @@ Contains
 
   End Subroutine biCGStab_calc_forces
 
-  Subroutine Write_potential(pois,domain,ewld)
+  Subroutine Write_potential(pois,domain)
+    !! This routine has no header !
     Type( poisson_type ), Intent( InOut ) :: pois
     Type( domains_type ), Intent( In    ) :: domain
-    Type( ewald_type ), Intent( In    ) :: ewld
-
     Integer :: ounit, kpkp,kk,kpk,tt
     character(len=128) :: filename, line
 
@@ -916,9 +924,9 @@ Contains
     Open(Unit=ounit, File=Trim(Adjustl(filename)), Status='replace')
     Write(ounit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", pois%block_x,pois%block_y,pois%block_z
     Write(ounit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
-      Real(domain%idx*(ewld%fft_dim_a/domain%nx),wp)*pois%delta, &
-      Real(domain%idy*(ewld%fft_dim_b/domain%ny),wp)*pois%delta, &
-      Real(domain%idz*(ewld%fft_dim_c/domain%nz),wp)*pois%delta
+      Real(domain%idx*(pois%grid_dimensions(1)/domain%nx),wp)*pois%delta, &
+      Real(domain%idy*(pois%grid_dimensions(2)/domain%ny),wp)*pois%delta, &
+      Real(domain%idz*(pois%grid_dimensions(3)/domain%nz),wp)*pois%delta
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/pois%delta, 0.0_wp,0.0_wp/)
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0_wp,pois%delta, 0.0_wp/)
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0_wp,0.0_wp, pois%delta/)
@@ -953,10 +961,10 @@ Contains
 
   End Subroutine Write_potential
 
-  Subroutine Write_b(pois,domain,ewld)
+  Subroutine Write_b(pois,domain)
+    !! This routine has no header !
     Type( poisson_type ), Intent( InOut ) :: pois
     Type( domains_type ), Intent( In    ) :: domain
-    Type( ewald_type ), Intent( In    ) :: ewld
 
     Integer :: ounit, kpkp,kk,kpk,tt
     character(len=128) :: filename, line
@@ -966,9 +974,9 @@ Contains
     Open(Unit=ounit, File=Trim(Adjustl(filename)), Status='replace')
     Write(ounit,'(a,1x,I7,1x,I7,1x,I7)') "object 1 class gridpositions counts ", pois%block_x,pois%block_y,pois%block_z
     Write(ounit,'(a,1x,f9.3,1x,f9.3,1x,f9.3)') "origin ", &
-      Real(domain%idx*(ewld%fft_dim_a/domain%nx),wp)*pois%delta, &
-      Real(domain%idy*(ewld%fft_dim_b/domain%ny),wp)*pois%delta, &
-      Real(domain%idz*(ewld%fft_dim_c/domain%nz),wp)*pois%delta
+      Real(domain%idx*(pois%grid_dimensions(1)/domain%nx),wp)*pois%delta, &
+      Real(domain%idy*(pois%grid_dimensions(2)/domain%ny),wp)*pois%delta, &
+      Real(domain%idz*(pois%grid_dimensions(3)/domain%nz),wp)*pois%delta
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/Real(pois%delta), 0.0,0.0/)
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/ 0.0,Real(pois%delta), 0.0/)
     Write(ounit,'(a,1x,f9.6,1x,f9.6,1x,f9.6)') "pois%delta ", (/0.0,0.0, Real(pois%delta)/)
@@ -1258,7 +1266,7 @@ Contains
 
   End Subroutine poisson_excl_forces
 
-  Subroutine poisson_frzn_forces(eps,engcpe_fr,vircpe_fr,stress,ewld,neigh,config,comm)
+  Subroutine poisson_frzn_forces(eps,engcpe_fr,vircpe_fr,stress,neigh,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -1286,7 +1294,6 @@ Contains
     Real( Kind = wp ),                   Intent( In    ) :: eps
     Real( Kind = wp ),                   Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp ), Dimension( 1:9 ), Intent( InOut ) :: stress
-    Type(ewald_type), Intent( InOut )                    :: ewld
     Type( neighbours_type ), Intent( In    )             :: neigh
     Type( configuration_type ),          Intent( InOut ) :: config
     Type(comms_type), Intent( InOut )                    :: comm
@@ -1302,31 +1309,31 @@ Contains
     Real( Kind = wp ), Dimension( : ), Allocatable :: xxt,yyt,zzt,rrt
     Character( Len = 256 ) :: message
 
-    If (.not.ewld%lf_fce) Then ! All's been done but needs copying
-      Do i=1,config%natms
-        config%parts(i)%fxx=config%parts(i)%fxx+ewld%ffx(i)
-        config%parts(i)%fyy=config%parts(i)%fyy+ewld%ffy(i)
-        config%parts(i)%fzz=config%parts(i)%fzz+ewld%ffz(i)
-      End Do
+    ! If (.not.ewld%lf_fce) Then ! All's been done but needs copying
+    !    Do i=1,config%natms
+    !       config%parts(i)%fxx=config%parts(i)%fxx+ewld%ffx(i)
+    !       config%parts(i)%fyy=config%parts(i)%fyy+ewld%ffy(i)
+    !       config%parts(i)%fzz=config%parts(i)%fzz+ewld%ffz(i)
+    !    End Do
 
-      engcpe_fr=ewld%ef_fr
-      vircpe_fr=ewld%vf_fr
-      stress=stress+ewld%sf_fr
+    !    engcpe_fr=ewld%ef_fr
+    !    vircpe_fr=ewld%vf_fr
+    !    stress=stress+ewld%sf_fr
 
-      If (ewld%l_cp) Then
-        Do i=1,config%natms
-          ewld%fcx(i)=ewld%fcx(i)+ewld%ffx(i)
-          ewld%fcy(i)=ewld%fcy(i)+ewld%ffy(i)
-          ewld%fcz(i)=ewld%fcz(i)+ewld%ffz(i)
-        End Do
+    !    If (ewld%l_cp) Then
+    !       Do i=1,config%natms
+    !          ewld%fcx(i)=ewld%fcx(i)+ewld%ffx(i)
+    !          ewld%fcy(i)=ewld%fcy(i)+ewld%ffy(i)
+    !          ewld%fcz(i)=ewld%fcz(i)+ewld%ffz(i)
+    !       End Do
 
-        ewld%e_fr=ewld%ef_fr
-        ewld%v_fr=ewld%vf_fr
-        ewld%s_fr=ewld%sf_fr
-      End If
+    !       ewld%e_fr=ewld%ef_fr
+    !       ewld%v_fr=ewld%vf_fr
+    !       ewld%s_fr=ewld%sf_fr
+    !    End If
 
-      Return
-    End If
+    !    Return
+    ! End If
 
 
     fail=0
@@ -1430,19 +1437,19 @@ Contains
 
           ! redundant calculations copying
 
-          If (ewld%lf_cp) Then
-            ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-fx
-            ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-fy
-            ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-fz
-          End If
+          !              If (ewld%lf_cp) Then
+          !                 ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-fx
+          !                 ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-fy
+          !                 ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-fz
+          !              End If
 
-          ! infrequent calculations copying
+          ! ! infrequent calculations copying
 
-          If (ewld%l_cp) Then
-            ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-fx
-            ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-fy
-            ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-fz
-          End If
+          !              If (ewld%l_cp) Then
+          !                 ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-fx
+          !                 ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-fy
+          !                 ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-fz
+          !              End If
         End Do
 
         Do j=i+1,nz_fr(comm%idnode+1) ! =, node=idnode (OVERLAP but no SELF)!
@@ -1492,27 +1499,27 @@ Contains
 
           ! redundant calculations copying
 
-          If (ewld%lf_cp) Then
-            ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-fx
-            ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-fy
-            ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-fz
+          !              If (ewld%lf_cp) Then
+          !                 ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-fx
+          !                 ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-fy
+          !                 ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-fz
 
-            ewld%ffx(l_ind(j))=ewld%ffx(l_ind(j))+fx
-            ewld%ffy(l_ind(j))=ewld%ffy(l_ind(j))+fy
-            ewld%ffz(l_ind(j))=ewld%ffz(l_ind(j))+fz
-          End If
+          !                 ewld%ffx(l_ind(j))=ewld%ffx(l_ind(j))+fx
+          !                 ewld%ffy(l_ind(j))=ewld%ffy(l_ind(j))+fy
+          !                 ewld%ffz(l_ind(j))=ewld%ffz(l_ind(j))+fz
+          !              End If
 
-          ! infrequent calculations copying
+          ! ! infrequent calculations copying
 
-          If (ewld%l_cp) Then
-            ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-fx
-            ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-fy
-            ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-fz
+          !              If (ewld%l_cp) Then
+          !                 ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-fx
+          !                 ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-fy
+          !                 ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-fz
 
-            ewld%fcx(l_ind(j))=ewld%fcx(l_ind(j))+fx
-            ewld%fcy(l_ind(j))=ewld%fcy(l_ind(j))+fy
-            ewld%fcz(l_ind(j))=ewld%fcz(l_ind(j))+fz
-          End If
+          !                 ewld%fcx(l_ind(j))=ewld%fcx(l_ind(j))+fx
+          !                 ewld%fcy(l_ind(j))=ewld%fcy(l_ind(j))+fy
+          !                 ewld%fcz(l_ind(j))=ewld%fcz(l_ind(j))+fz
+          !              End If
 
           ! calculate potential energy
 
@@ -1567,19 +1574,19 @@ Contains
 
           ! redundant calculations copying
 
-          If (ewld%lf_cp) Then
-            ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-fx
-            ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-fy
-            ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-fz
-          End If
+          !              If (ewld%lf_cp) Then
+          !                 ewld%ffx(l_ind(i))=ewld%ffx(l_ind(i))-fx
+          !                 ewld%ffy(l_ind(i))=ewld%ffy(l_ind(i))-fy
+          !                 ewld%ffz(l_ind(i))=ewld%ffz(l_ind(i))-fz
+          !              End If
 
-          ! infrequent calculations copying
+          ! ! infrequent calculations copying
 
-          If (ewld%l_cp) Then
-            ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-fx
-            ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-fy
-            ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-fz
-          End If
+          !              If (ewld%l_cp) Then
+          !                 ewld%fcx(l_ind(i))=ewld%fcx(l_ind(i))-fx
+          !                 ewld%fcy(l_ind(i))=ewld%fcy(l_ind(i))-fy
+          !                 ewld%fcz(l_ind(i))=ewld%fcz(l_ind(i))-fz
+          !              End If
 
           ! calculate potential energy
 
@@ -1666,19 +1673,19 @@ Contains
 
               ! redundant calculations copying
 
-              If (ewld%lf_cp) Then
-                ewld%ffx(i)=ewld%ffx(i)-fx
-                ewld%ffy(i)=ewld%ffy(i)-fy
-                ewld%ffz(i)=ewld%ffz(i)-fz
-              End If
+              !                    If (ewld%lf_cp) Then
+              !                       ewld%ffx(i)=ewld%ffx(i)-fx
+              !                       ewld%ffy(i)=ewld%ffy(i)-fy
+              !                       ewld%ffz(i)=ewld%ffz(i)-fz
+              !                    End If
 
-              ! infrequent calculations copying
+              ! ! infrequent calculations copying
 
-              If (ewld%l_cp) Then
-                ewld%fcx(i)=ewld%fcx(i)-fx
-                ewld%fcy(i)=ewld%fcy(i)-fy
-                ewld%fcz(i)=ewld%fcz(i)-fz
-              End If
+              !                    If (ewld%l_cp) Then
+              !                       ewld%fcx(i)=ewld%fcx(i)-fx
+              !                       ewld%fcy(i)=ewld%fcy(i)-fy
+              !                       ewld%fcz(i)=ewld%fcz(i)-fz
+              !                    End If
 
               If (j <= config%natms) Then
 
@@ -1688,19 +1695,19 @@ Contains
 
                 ! redundant calculations copying
 
-                If (ewld%lf_cp) Then
-                  ewld%ffx(j)=ewld%ffx(j)+fx
-                  ewld%ffy(j)=ewld%ffy(j)+fy
-                  ewld%ffz(j)=ewld%ffz(j)+fz
-                End If
+                !                       If (ewld%lf_cp) Then
+                !                          ewld%ffx(j)=ewld%ffx(j)+fx
+                !                          ewld%ffy(j)=ewld%ffy(j)+fy
+                !                          ewld%ffz(j)=ewld%ffz(j)+fz
+                !                       End If
 
-                ! infrequent calculations copying
+                ! ! infrequent calculations copying
 
-                If (ewld%l_cp) Then
-                  ewld%fcx(j)=ewld%fcx(j)+fx
-                  ewld%fcy(j)=ewld%fcy(j)+fy
-                  ewld%fcz(j)=ewld%fcz(j)+fz
-                End If
+                !                       If (ewld%l_cp) Then
+                !                          ewld%fcx(j)=ewld%fcx(j)+fx
+                !                          ewld%fcy(j)=ewld%fcy(j)+fy
+                !                          ewld%fcz(j)=ewld%fcz(j)+fz
+                !                       End If
 
               End If
 
@@ -1752,37 +1759,37 @@ Contains
 
     ! redundant calculations copying
 
-    If (ewld%lf_cp) Then
-      ewld%ef_fr=engcpe_fr
-      ewld%vf_fr=vircpe_fr
+    !     If (ewld%lf_cp) Then
+    !        ewld%ef_fr=engcpe_fr
+    !        ewld%vf_fr=vircpe_fr
 
-      ewld%sf_fr(1) = strs1
-      ewld%sf_fr(2) = strs2
-      ewld%sf_fr(3) = strs3
-      ewld%sf_fr(4) = strs2
-      ewld%sf_fr(5) = strs5
-      ewld%sf_fr(6) = strs6
-      ewld%sf_fr(7) = strs3
-      ewld%sf_fr(8) = strs6
-      ewld%sf_fr(9) = strs9
-    End If
+    !        ewld%sf_fr(1) = strs1
+    !        ewld%sf_fr(2) = strs2
+    !        ewld%sf_fr(3) = strs3
+    !        ewld%sf_fr(4) = strs2
+    !        ewld%sf_fr(5) = strs5
+    !        ewld%sf_fr(6) = strs6
+    !        ewld%sf_fr(7) = strs3
+    !        ewld%sf_fr(8) = strs6
+    !        ewld%sf_fr(9) = strs9
+    !     End If
 
-    ! infrequent calculations copying
+    ! ! infrequent calculations copying
 
-    If (ewld%l_cp) Then
-      ewld%e_fr=engcpe_fr
-      ewld%v_fr=vircpe_fr
+    !     If (ewld%l_cp) Then
+    !        ewld%e_fr=engcpe_fr
+    !        ewld%v_fr=vircpe_fr
 
-      ewld%s_fr(1) = strs1
-      ewld%s_fr(2) = strs2
-      ewld%s_fr(3) = strs3
-      ewld%s_fr(4) = strs2
-      ewld%s_fr(5) = strs5
-      ewld%s_fr(6) = strs6
-      ewld%s_fr(7) = strs3
-      ewld%s_fr(8) = strs6
-      ewld%s_fr(9) = strs9
-    End If
+    !        ewld%s_fr(1) = strs1
+    !        ewld%s_fr(2) = strs2
+    !        ewld%s_fr(3) = strs3
+    !        ewld%s_fr(4) = strs2
+    !        ewld%s_fr(5) = strs5
+    !        ewld%s_fr(6) = strs6
+    !        ewld%s_fr(7) = strs3
+    !        ewld%s_fr(8) = strs6
+    !        ewld%s_fr(9) = strs9
+    !     End If
 
     Deallocate (l_ind,nz_fr, Stat=fail)
     If (fail > 0) Then

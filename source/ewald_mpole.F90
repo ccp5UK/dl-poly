@@ -1,18 +1,20 @@
 Module ewald_mpole
-  Use kinds, Only : wp, sp
-  Use comms, Only : comms_type, gcheck, gsum
-  Use configuration, Only : configuration_type
-  Use constants, Only :  r4pie0, sqrpi, zero_plus,twopi
-  Use ewald,        Only : ewald_type,spl_cexp,bspcoe,bspgen_mpoles,dtpbsp,exchange_grid
-  Use numerics, Only : invert,dcell,erfcgen
-  Use mpoles_container, Only : ewald_deriv,explicit_ewald_real_loops,&
-    explicit_spme_loops,limit_erfr_deriv
-  Use domains, Only : domains_type
-  Use parallel_fft, Only: initialize_fft, pfft, pfft_indices
-  Use errors_warnings, Only : error
-  Use mpole, Only : mpole_type
-  Use neighbours, Only : neighbours_type
-  Use electrostatic, Only : electrostatic_type
+  !! This module has no header !
+  use bspline,          Only : bspline_type, bspline_coeffs_gen, bspline_splines_gen
+  Use comms,            Only : comms_type, gcheck, gsum
+  Use configuration,    Only : configuration_type
+  Use domains,          Only : domains_type,exchange_grid
+  Use electrostatic,    Only : electrostatic_type
+  Use errors_warnings,  Only : error, error_alloc, error_dealloc
+  Use ewald,            Only : ewald_spme_type,dtpbsp
+  Use kinds,            Only : wp, sp
+  Use mpole,            Only : mpole_type
+  Use mpoles_container, Only : ewald_deriv,explicit_ewald_real_loops,explicit_spme_loops,limit_erfr_deriv
+  Use neighbours,       Only : neighbours_type
+  Use numerics,         Only : invert,dcell,erfcgen, erfc, erfc_deriv
+  Use parallel_fft,     Only : initialize_fft, pfft, pfft_indices
+  Use particle,         Only : corePart
+  Use constants,        Only : sqrpi,zero_plus,twopi, r4pie0
   Implicit None
 
   Private
@@ -23,32 +25,30 @@ Module ewald_mpole
 Contains
 
   Subroutine ewald_real_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl,stress, &
-    neigh,mpoles,electro,config)
+    ewld,neigh,mpoles,electro,domain,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! in a periodic system using multipoles with the ewald real space
-    ! kernel
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng & i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! in a periodic system using multipoles with the ewald real space
+    !! kernel
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng & i.t.todorov february 2016
+    !!
+    !!----------------------------------------------------------------------!
 
-    Integer,                                  Intent( In    ) :: iatm
-    Type( neighbours_type ), Intent( In    ) :: neigh
+    Integer,                                          Intent( In    ) :: iatm
+    Type( neighbours_type ),                          Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
-    Real( Kind = wp ),                        Intent(   Out ) :: engcpe_rl,vircpe_rl
-    Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
-    Type( mpole_type ), Intent( InOut ) :: mpoles
-    Type( electrostatic_type ), Intent( InOut    ) :: electro
-    Type( configuration_type ),               Intent( InOut ) :: config
+    Real( Kind = wp ),                                Intent(   Out ) :: engcpe_rl,vircpe_rl
+    Real( Kind = wp ), Dimension( 1:9 ),              Intent( InOut ) :: stress
+    Type( mpole_type ),                               Intent( InOut ) :: mpoles
+    Type( electrostatic_type ),                       Intent( InOut ) :: electro
+    Type( ewald_spme_type ),                          Intent( In    ) :: ewld
+    Type( domains_type ),                             Intent( In    ) :: domain
+    Type( comms_type ),                               Intent( In    ) :: comm
+    Type( configuration_type ),                       Intent( InOut ) :: config
 
 
     Integer           :: fail,idi,jatm,k1,k2,k3,s1,s2,s3,m,n, &
@@ -65,29 +65,13 @@ Contains
     Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
+    Logical, save :: newjob
     Character( Len = 256 ) :: message
 
-    If (electro%newjob_mpoles) Then
-      electro%newjob_mpoles = .false.
+    If (newjob) Then
+      newjob = .false.
 
-      fail=0
-      Allocate (electro%erc_mpoles(0:electro%ewald_exclusion_grid),electro%fer_mpoles(0:electro%ewald_exclusion_grid), Stat=fail)
-      If (fail > 0) Then
-        Write(message,'(a)') 'ewald_real_mforces allocation failure'
-        Call error(0,message)
-      End If
-
-      ! interpolation interval
-
-      electro%drewd_mpoles = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
-
-      ! reciprocal of interpolation interval
-
-      electro%rdrewd_mpoles = 1.0_wp/electro%drewd_mpoles
-
-      ! generate error function complement tables for ewald sum
-
-      Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mpoles,electro%fer_mpoles)
+      Call erfcgen(neigh%cutoff,ewld%alpha,erfc,erfc_deriv)
     End If
 
     ! initialise potential energy and virial
@@ -124,7 +108,7 @@ Contains
 
       ! multipole scaler
 
-      scl=2.0_wp*electro%alpha*r4pie0/(sqrpi*electro%eps)
+      scl=2.0_wp*ewld%alpha*r4pie0/(sqrpi*electro%eps)
 
       ! scale imp multipoles
 
@@ -168,22 +152,13 @@ Contains
 
           ! get the value of the kernel using 3pt interpolation
 
-          k   = Int(rrr*electro%rdrewd_mpoles)
-          ppp = rrr*electro%rdrewd_mpoles - Real(k,wp)
-
-          vk0 = electro%erc_mpoles(k)
-          vk1 = electro%erc_mpoles(k+1)
-          vk2 = electro%erc_mpoles(k+2)
-
-          t1 = vk0 + (vk1 - vk0)*ppp
-          t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-
-          erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/electro%alpha
+          ! erfcr = (t1 + (t2-t1)*ppp*0.5_wp)/ewld%alpha
+          erfcr = three_p_interp(erfc,rrr)/ewld%alpha
 
           ! compute derivatives of kernel
 
-          Call ewald_deriv(0,2*mpoles%max_order+1,1,erfcr,electro%alpha*xxt(m), &
-            electro%alpha*yyt(m),electro%alpha*zzt(m),electro%alpha*rrr,mpoles%max_order,d1)
+          Call ewald_deriv(0,2*mpoles%max_order+1,1,erfcr,ewld%alpha*xxt(m), &
+            ewld%alpha*yyt(m),ewld%alpha*zzt(m),ewld%alpha*rrr,mpoles%max_order,d1)
 
           ! calculate forces
 
@@ -205,7 +180,7 @@ Contains
                   jj = mpoles%map(k1,k2,k3)
 
                   If (Abs(jmp(jj)) > zero_plus) Call explicit_ewald_real_loops &
-                    ( 0,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,               &
+                    ( 0,2*mpoles%max_order+1, k1,k2,k3, ewld%alpha, d1,               &
                     imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                     kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
                     engmpl,fx,fy,fz,mpoles)
@@ -252,7 +227,7 @@ Contains
                           ks1=k1+s1; ks11=ks1+1
 
                           n      = ks1+ks2+ks3
-                          alphan = electro%alpha**n
+                          alphan = ewld%alpha**n
 
                           ii     = mpoles%map(s1,s2,s3)
 
@@ -269,7 +244,7 @@ Contains
 
                           ! force
 
-                          t1      = t1*electro%alpha
+                          t1      = t1*ewld%alpha
 
                           fx      = fx      - t1*d1(ks11,ks2,ks3)
                           fy      = fy      - t1*d1(ks1,ks21,ks3)
@@ -382,35 +357,30 @@ Contains
   End Subroutine ewald_real_mforces
 
   Subroutine ewald_real_mforces_d(iatm,xxt,yyt,zzt,rrt,engcpe_rl,vircpe_rl, &
-    stress,ewld,neigh,mpoles,electro,config)
+    stress,ewld,neigh,mpoles,electro,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! in a periodic system using multipoles with the ewald real space
-    ! kernel
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng february 2014
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! in a periodic system using multipoles with the ewald real space
+    !! kernel
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng february 2014
+    !! amended   - i.t.todorov february 2016
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                                          Intent( In    ) :: iatm
     Type( neighbours_type ),                          Intent( In    ) :: neigh
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                                Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),              Intent( InOut ) :: stress
-    Type( ewald_type ),                               Intent( InOut ) :: ewld
+    Type( ewald_spme_type ),                          Intent( InOut ) :: ewld
     Type( mpole_type ),                               Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut    ) :: electro
+    Type( comms_type ),                               Intent( In    ) :: comm
     Type( configuration_type ),                       Intent( InOut ) :: config
-
 
     Integer           :: fail,idi,jatm,k,m
 
@@ -454,34 +424,20 @@ Contains
     Real( Kind = wp ) :: imp(1:mpoles%max_mpoles),jmp(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: impx(1:mpoles%max_mpoles),impy(1:mpoles%max_mpoles),impz(1:mpoles%max_mpoles)
     Real( Kind = wp ) :: jmpx(1:mpoles%max_mpoles),jmpy(1:mpoles%max_mpoles),jmpz(1:mpoles%max_mpoles)
+    Logical, save :: newjob
     Character( Len = 256 ) :: message
 
-    If (electro%newjob_mpolesd) Then
-      electro%newjob_mpolesd = .false.
-
-      fail=0
-      Allocate (electro%erc_mpolesd(0:electro%ewald_exclusion_grid),electro%fer_mpolesd(0:electro%ewald_exclusion_grid), Stat=fail)
-      If (fail > 0) Then
-        Write(message,'(a)') 'ewald_real_mforces allocation failure'
-        Call error(0,message)
-      End If
-
-      ! interpolation interval
-
-      electro%drewd_mpolesd = neigh%cutoff/Real(electro%ewald_exclusion_grid-4,wp)
-
-      ! reciprocal of interpolation interval
-
-      electro%rdrewd_mpolesd = 1.0_wp/electro%drewd_mpolesd
+    If (newjob) Then
+      newjob = .false.
 
       ! generate error function complement tables for ewald sum
 
-      Call erfcgen(neigh%cutoff,electro%alpha,electro%ewald_exclusion_grid,electro%erc_mpolesd,electro%fer_mpolesd)
+      Call erfcgen(neigh%cutoff,ewld%alpha,erfc,erfc_deriv)
 
       ! coefficients for exponential in recurrence relation
 
-      talp2 = 2.0_wp*electro%alpha*electro%alpha
-      alpsqrpi = 1.0_wp/(electro%alpha*sqrpi)
+      talp2 = 2.0_wp*ewld%alpha*ewld%alpha
+      alpsqrpi = 1.0_wp/(ewld%alpha*sqrpi)
 
       electro%co1 = talp2*alpsqrpi
       electro%co2 = talp2*electro%co1
@@ -489,13 +445,13 @@ Contains
       electro%co4 = talp2*electro%co3
       electro%co5 = talp2*electro%co4
 
-      electro%alp2 = electro%alpha*electro%alpha
+      electro%alp2 = ewld%alpha*ewld%alpha
 
-      electro%exclcoef = r4pie0*electro%alpha /sqrpi/electro%eps
+      electro%exclcoef = r4pie0*ewld%alpha /sqrpi/electro%eps
 
-      electro%twzz=-2.0_wp*electro%alpha**3 *r4pie0/(3.0_wp*sqrpi*electro%eps)
-      electro%twtwz=4.0_wp*electro%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
-      electro%fozz=12.0_wp*electro%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
+      electro%twzz=-2.0_wp*ewld%alpha**3 *r4pie0/(3.0_wp*sqrpi*electro%eps)
+      electro%twtwz=4.0_wp*ewld%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
+      electro%fozz=12.0_wp*ewld%alpha**5 *r4pie0/(5.0_wp*sqrpi*electro%eps)
     End If
 
     ! initialise potential energy and virial
@@ -683,19 +639,10 @@ Contains
 
           ! get the value of the kernel using 3pt interpolation
 
-          k   = Int(rrr*electro%rdrewd_mpolesd)
-          ppp = rrr*electro%rdrewd_mpolesd - Real(k,wp)
-
-          vk0 = electro%erc_mpolesd(k)
-          vk1 = electro%erc_mpolesd(k+1)
-          vk2 = electro%erc_mpolesd(k+2)
-
-          t1 = vk0 + (vk1 - vk0)*ppp
-          t2 = vk1 + (vk2 - vk1)*(ppp - 1.0_wp)
-
           ! compute recurrence terms
 
-          b0 = (t1 + (t2-t1)*ppp*0.5_wp)
+          ! b0 = (t1 + (t2-t1)*ppp*0.5_wp)
+          b0 = three_p_interp(erfc, rrr)
           b1 = (b0        + electro%co1*exparr)/rsq
           b2 = (3.0_wp*b1 + electro%co2*exparr)/rsq
           b3 = (5.0_wp*b2 + electro%co3*exparr)/rsq
@@ -1079,32 +1026,27 @@ Contains
   End Subroutine ewald_real_mforces_d
 
   Subroutine ewald_spme_mforces(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro, &
-      domain,config,comm)
+    domain,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! due to multipolar interactions in a periodic system using the smooth
-    ! particle mesh ewald method for multipoles
-    !
-    ! This version allows for extension to arbitrary order
-    !
-    ! Note: (fourier) reciprocal space terms
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng february 2016
-    ! amended   - i.t.todorov march 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! due to multipolar interactions in a periodic system using the smooth
+    !! particle mesh ewald method for multipoles
+    !!
+    !! This version allows for extension to arbitrary order
+    !!
+    !! Note: (fourier) reciprocal space terms
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng february 2016
+    !! amended   - i.t.todorov march 2016
+    !!
+    !!----------------------------------------------------------------------!
 
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
-    Type( ewald_type ), Intent( InOut ) :: ewld
+    Type( ewald_spme_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
@@ -1152,24 +1094,25 @@ Contains
     ! DaFT arrays local indices
 
     Integer              :: j_local, k_local, l_local
+    Logical,  save :: newjob
     Character( Len = 256 ) :: message
 
     llspl=.true.
 
 
     fail=0
-    If (electro%newjob_fmpoles) Then
-      electro%newjob_fmpoles = .false.
+    If (newjob) Then
+      newjob = .false.
 
-      !!! BEGIN DD SPME VARIABLES
+!!! BEGIN DD SPME VARIABLES
       ! 3D charge array construction (bottom and top) indices
 
-      electro%ixb_mf=domain%idx*(ewld%fft_dim_a/domain%nx)+1
-      electro%ixt_mf=(domain%idx+1)*(ewld%fft_dim_a/domain%nx)
-      electro%iyb_mf=domain%idy*(ewld%fft_dim_b/domain%ny)+1
-      electro%iyt_mf=(domain%idy+1)*(ewld%fft_dim_b/domain%ny)
-      electro%izb_mf=domain%idz*(ewld%fft_dim_c/domain%nz)+1
-      electro%izt_mf=(domain%idz+1)*(ewld%fft_dim_c/domain%nz)
+      electro%ixb_mf=domain%idx*(ewld%kspace%k_vec_dim(1)/domain%nx)+1
+      electro%ixt_mf=(domain%idx+1)*(ewld%kspace%k_vec_dim(1)/domain%nx)
+      electro%iyb_mf=domain%idy*(ewld%kspace%k_vec_dim(2)/domain%ny)+1
+      electro%iyt_mf=(domain%idy+1)*(ewld%kspace%k_vec_dim(2)/domain%ny)
+      electro%izb_mf=domain%idz*(ewld%kspace%k_vec_dim(3)/domain%nz)+1
+      electro%izt_mf=(domain%idz+1)*(ewld%kspace%k_vec_dim(3)/domain%nz)
 
       electro%ixbm1_r=Real(electro%ixb_mf-1,wp)
       electro%ixtm0_r_mf=Nearest( Real(electro%ixt_mf,wp) , -1.0_wp )
@@ -1180,60 +1123,29 @@ Contains
 
       ! Real values of kmax vectors
 
-      electro%kmaxa_r_mf=Real(ewld%fft_dim_a,wp)
-      electro%kmaxb_r_mf=Real(ewld%fft_dim_b,wp)
-      electro%kmaxc_r_mf=Real(ewld%fft_dim_c,wp)
+      electro%kmaxa_r_mf=Real(ewld%kspace%k_vec_dim(1),wp)
+      electro%kmaxb_r_mf=Real(ewld%kspace%k_vec_dim(2),wp)
+      electro%kmaxc_r_mf=Real(ewld%kspace%k_vec_dim(3),wp)
 
       !!! END DD SPME VARIABLES
 
       !!! BEGIN CARDINAL B-SPLINES SET-UP
       ! allocate the complex exponential arrays
 
-      Allocate (ww1(1:ewld%fft_dim_a),ww2(1:ewld%fft_dim_b),ww3(1:ewld%fft_dim_c), Stat = fail(1))
-      If (fail(1) > 0) Then
-        Write(message,'(a)') 'ww arrays allocation failure'
-        Call error(0,message)
-      End If
+      call bspline_coeffs_gen(ewld%kspace,ewld%bspline)
 
-      ! initialise the complex exponential arrays
-
-      Call spl_cexp(ewld%fft_dim_a,ewld%fft_dim_b,ewld%fft_dim_c,ww1,ww2,ww3)
-
-      ! allocate the global B-spline coefficients and the helper array
-
-      Allocate (electro%bscx_mf(1:ewld%fft_dim_a),electro%bscy_mf(1:ewld%fft_dim_b),electro%bscz_mf(1:ewld%fft_dim_c), &
-        Stat = fail(1))
-      Allocate (csp(1:ewld%bspline),                              Stat = fail(2))
-      If (Any(fail > 0)) Then
-        Write(message,'(a)') 'bsc and cse arrays allocation failure'
-        Call error(0,message)
-      End If
-
-      ! calculate the global B-spline coefficients
-
-      Call bspcoe(ewld,csp,electro%bscx_mf,electro%bscy_mf,electro%bscz_mf,ww1,ww2,ww3)
-
-      ! deallocate the helper array and complex exponential arrays
-
-      Deallocate (csp,         Stat = fail(1))
-      Deallocate (ww1,ww2,ww3, Stat = fail(2))
-      If (Any(fail > 0)) Then
-        Write(message,'(a)') 'cse and ww arrays deallocation failure'
-        Call error(0,message)
-      End If
-
-      !!! END CARDINAL B-SPLINES SET-UP
+!!! END CARDINAL B-SPLINES SET-UP
 
       !!! BEGIN DAFT SET-UP
       ! domain local block limits of kmax space
 
-      electro%block_x_mf = ewld%fft_dim_a / domain%nx
-      electro%block_y_mf = ewld%fft_dim_b / domain%ny
-      electro%block_z_mf = ewld%fft_dim_c / domain%nz
+      electro%block_x_mf = ewld%kspace%k_vec_dim(1) / domain%nx
+      electro%block_y_mf = ewld%kspace%k_vec_dim(2) / domain%ny
+      electro%block_z_mf = ewld%kspace%k_vec_dim(3) / domain%nz
 
       ! set up the parallel fft and useful related quantities
 
-      Call initialize_fft( 3, (/ ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c /), &
+      Call initialize_fft( 3, (/ ewld%kspace%k_vec_dim(1), ewld%kspace%k_vec_dim(2), ewld%kspace%k_vec_dim(3) /), &
         (/ domain%nx, domain%ny, domain%nz /), (/ domain%idx, domain%idy, domain%idz /),   &
         (/ electro%block_x_mf, electro%block_y_mf, electro%block_z_mf /),               &
         comm%comm, electro%context_mf )
@@ -1248,9 +1160,9 @@ Contains
         Call error(0,message)
       End If
 
-      Call pfft_indices( ewld%fft_dim_a, electro%block_x_mf, domain%idx, domain%nx, electro%index_x_mf )
-      Call pfft_indices( ewld%fft_dim_b, electro%block_y_mf, domain%idy, domain%ny, electro%index_y_mf )
-      Call pfft_indices( ewld%fft_dim_c, electro%block_z_mf, domain%idz, domain%nz, electro%index_z_mf )
+      Call pfft_indices( ewld%kspace%k_vec_dim(1), electro%block_x_mf, domain%idx, domain%nx, electro%index_x_mf )
+      Call pfft_indices( ewld%kspace%k_vec_dim(2), electro%block_y_mf, domain%idy, domain%ny, electro%index_y_mf )
+      Call pfft_indices( ewld%kspace%k_vec_dim(3), electro%block_z_mf, domain%idz, domain%nz, electro%index_z_mf )
 
       ! workspace arrays for DaFT
 
@@ -1270,16 +1182,21 @@ Contains
 
       ! compute derivatives of kernel
 
-      Call limit_erfr_deriv(8,electro%alpha,electro%d1_mf)
+      Call limit_erfr_deriv(8,ewld%alpha,electro%d1_mf)
     End If
 
     Allocate (txx(1:config%mxatms),tyy(1:config%mxatms),tzz(1:config%mxatms),                            Stat = fail(1))
     Allocate (ixx(1:config%mxatms),iyy(1:config%mxatms),izz(1:config%mxatms),it(1:config%mxatms),               Stat = fail(2))
-    Allocate (bdx(0:ewld%bspline),bsddx(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
-      bdy(0:ewld%bspline),bsddy(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
-      bdz(0:ewld%bspline),bsddz(0:ewld%bspline,1:ewld%bspline,1:config%mxatms),                         Stat = fail(3))
-    Allocate (bspx(1:ewld%bspline,1:config%mxatms),&
-      bspy(1:ewld%bspline,1:config%mxatms),bspz(1:ewld%bspline,1:config%mxatms), Stat = fail(4))
+    Allocate ( &
+      & bdx(0:ewld%bspline%num_splines),bsddx(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+      & bdy(0:ewld%bspline%num_splines),bsddy(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+      & bdz(0:ewld%bspline%num_splines),bsddz(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+      & Stat = fail(3))
+    Allocate ( &
+      & bspx(1:ewld%bspline%num_splines,1:config%mxatms), &
+      & bspy(1:ewld%bspline%num_splines,1:config%mxatms), &
+      & bspz(1:ewld%bspline%num_splines,1:config%mxatms), Stat = fail(4))
+    ! Allocate ( ewld%bspline%derivs(3, 0:2, ewld%bspline%num_splines, config%mxatms, stat = fail(4))
     If (Any(fail > 0)) Then
       Write(message,'(a)') 'ewald_spme_mforces allocation failure'
       Call error(0,message)
@@ -1383,7 +1300,7 @@ Contains
     ! set working parameters
 
     rvolm=twopi/config%volm
-    ralph=-0.25_wp/electro%alpha**2
+    ralph=-0.25_wp/ewld%alpha**2
 
     ! set scaling constant
 
@@ -1415,9 +1332,9 @@ Contains
       tzz(i)=electro%kmaxc_r_mf*(rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+&
         rcell(9)*config%parts(i)%zzz+0.5_wp)
 
-      ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
+      ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline%num_spline_pad == ewld%bspline%num_splines)
 
-      If (ewld%bspline1 == ewld%bspline .and. i <= config%natms) Then
+      If (ewld%bspline%num_spline_pad == ewld%bspline%num_splines .and. i <= config%natms) Then
         If (txx(i) < electro%ixbm1_r .or. txx(i) > electro%ixtm0_r_mf .or. &
           tyy(i) < electro%iybm1_r_mf .or. tyy(i) > electro%iytm0_r_mf .or. &
           tzz(i) < electro%izbm1_r_mf .or. tzz(i) > electro%iztm0_r_mf) llspl=.false.
@@ -1442,15 +1359,15 @@ Contains
 
     ! Check for breakage of llspl when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
 
-    ewld%bspline2=ewld%bspline1
-    If (ewld%bspline1 == ewld%bspline) Then
+    ewld%bspline%num_spline_padded=ewld%bspline%num_spline_pad
+    If (ewld%bspline%num_spline_pad == ewld%bspline%num_splines) Then
       Call gcheck(comm,llspl)
-      If (.not.llspl) ewld%bspline2=ewld%bspline+1
+      If (.not.llspl) ewld%bspline%num_spline_padded=ewld%bspline%num_splines+1
     End If
 
     ! construct B-splines for atoms
 
-    Call bspgen_mpoles(config%nlast,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld)
+    ! Call bspgen_mpoles(config%nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -1481,13 +1398,13 @@ Contains
 
           imp=mpoles%global_frame(:,i)
 
-          llb = Max( electro%izb_mf, izz(i) - ewld%bspline + 2 )
+          llb = Max( electro%izb_mf, izz(i) - ewld%bspline%num_splines + 2 )
           llt = Min( electro%izt_mf, izz(i) + 1 )
 
-          kkb = Max( electro%iyb_mf, iyy(i) - ewld%bspline + 2 )
+          kkb = Max( electro%iyb_mf, iyy(i) - ewld%bspline%num_splines + 2 )
           kkt = Min( electro%iyt_mf, iyy(i) + 1 )
 
-          jjb = Max( electro%ixb_mf, ixx(i) - ewld%bspline + 2 )
+          jjb = Max( electro%ixb_mf, ixx(i) - ewld%bspline%num_splines + 2 )
           jjt = Min( electro%ixt_mf, ixx(i) + 1 )
 
           jjtjjb = jjt - jjb + 1
@@ -1589,13 +1506,13 @@ Contains
 
           imp=mpoles%global_frame(:,i)
 
-          llb = Max( electro%izb_mf, izz(i) - ewld%bspline + 2 )
+          llb = Max( electro%izb_mf, izz(i) - ewld%bspline%num_splines + 2 )
           llt = Min( electro%izt_mf, izz(i) + 1 )
 
-          kkb = Max( electro%iyb_mf, iyy(i) - ewld%bspline + 2 )
+          kkb = Max( electro%iyb_mf, iyy(i) - ewld%bspline%num_splines + 2 )
           kkt = Min( electro%iyt_mf, iyy(i) + 1 )
 
-          jjb = Max( electro%ixb_mf, ixx(i) - ewld%bspline + 2 )
+          jjb = Max( electro%ixb_mf, ixx(i) - ewld%bspline%num_splines + 2 )
           jjt = Min( electro%ixt_mf, ixx(i) + 1 )
 
           jjtjjb = jjt - jjb + 1
@@ -1736,7 +1653,7 @@ Contains
       l=electro%index_z_mf(l_local)
 
       ll=l-1
-      If (l > ewld%fft_dim_c/2) ll=ll-ewld%fft_dim_c
+      If (l > ewld%kspace%k_vec_dim(3)/2) ll=ll-ewld%kspace%k_vec_dim(3)
       tmp=twopi*Real(ll,wp)
 
       rkx1=tmp*rcell(3)
@@ -1749,7 +1666,7 @@ Contains
         k=electro%index_y_mf(k_local)
 
         kk=k-1
-        If (k > ewld%fft_dim_b/2) kk=kk-ewld%fft_dim_b
+        If (k > ewld%kspace%k_vec_dim(2)/2) kk=kk-ewld%kspace%k_vec_dim(2)
         tmp=twopi*Real(kk,wp)
 
         rkx2=rkx1+tmp*rcell(2)
@@ -1762,7 +1679,7 @@ Contains
           j=electro%index_x_mf(j_local)
 
           jj=j-1
-          If (j > ewld%fft_dim_a/2) jj=jj-ewld%fft_dim_a
+          If (j > ewld%kspace%k_vec_dim(1)/2) jj=jj-ewld%kspace%k_vec_dim(1)
           tmp=twopi*Real(jj,wp)
 
           rkx3=rkx2+tmp*rcell(1)
@@ -1915,34 +1832,29 @@ Contains
   Contains
 
     Subroutine spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz, &
-        qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles,domain)
+      qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles,domain)
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !
-      ! dl_poly_4 subroutine for calculating coulombic forces due to
-      ! multipolar interactions in a periodic system using smooth particle
-      ! mesh ewald method (fourier part)
-      !
-      ! Note: qqc_local is shifted from its definition from above
-      !       and therefore there is no need for periodic images (!!)
-      !
-      ! copyright - daresbury laboratory
-      ! author    - w.smith & i.t.todorov february 2016
-      ! amended   - h.a.boateng may 2014
-      ! refactoring:
-      !           - a.m.elena march-october 2018
-      !           - j.madge march-october 2018
-      !           - a.b.g.chalk march-october 2018
-      !           - i.scivetti march-october 2018
-      !
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!----------------------------------------------------------------------!
+      !!
+      !! dl_poly_4 subroutine for calculating coulombic forces due to
+      !! multipolar interactions in a periodic system using smooth particle
+      !! mesh ewald method (fourier part)
+      !!
+      !! Note: qqc_local is shifted from its definition from above
+      !!       and therefore there is no need for periodic images (!!)
+      !!
+      !! copyright - daresbury laboratory
+      !! author    - w.smith & i.t.todorov february 2016
+      !! amended   - h.a.boateng may 2014
+      !!
+      !!----------------------------------------------------------------------!
 
       Integer,           Intent( In    ) :: ixx(1:config%mxatms),iyy(1:config%mxatms),izz(1:config%mxatms), &
         ixb,ixt, iyb,iyt, izb,izt
       Real( Kind = wp ), Intent( In    ) :: scale,rcell(1:9),                &
-        bsddx(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
-        bsddy(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
-        bsddz(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+        bsddx(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+        bsddy(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+        bsddz(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
         qqc_local( ixb:ixt, iyb:iyt, izb:izt )
       Type( mpole_type ), Intent( InOut ) :: mpoles
       Type( domains_type ), Intent( In    ) :: domain
@@ -1960,18 +1872,19 @@ Contains
 
       ! Define extended ranges for the domain = local + halo slice and allocate
 
-      ixdb = ixb - ewld%bspline2
-      iydb = iyb - ewld%bspline2
-      izdb = izb - ewld%bspline2
+      ixdb = ixb - ewld%bspline%num_spline_padded
+      iydb = iyb - ewld%bspline%num_spline_padded
+      izdb = izb - ewld%bspline%num_spline_padded
 
-      delspl = ewld%bspline2 - ewld%bspline
+      delspl = ewld%bspline%num_spline_padded - ewld%bspline%num_splines
 
       ixdt = ixt + delspl
       iydt = iyt + delspl
       izdt = izt + delspl
 
       fail=0
-      Allocate (bdx(0:ewld%bspline),bdy(0:ewld%bspline),bdz(0:ewld%bspline),        Stat = fail(1))
+      Allocate (bdx(0:ewld%bspline%num_splines),bdy(0:ewld%bspline%num_splines),&
+        & bdz(0:ewld%bspline%num_splines), Stat = fail(1))
       Allocate (qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt ), Stat = fail(2))
       If (Any(fail > 0)) Then
         Write(message,'(a)') 'spme_mforces allocation failure'
@@ -1980,7 +1893,7 @@ Contains
 
       Call exchange_grid(ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
         ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
-        domain, ewld, comm)
+        domain, comm) !, ewld
 
       tmp=-2.0_wp*scale
 
@@ -2011,17 +1924,17 @@ Contains
             fix=0.0_wp ; fiy=0.0_wp ; fiz=0.0_wp
             tix=0.0_wp ; tiy=0.0_wp ; tiz=0.0_wp
 
-            Do l=1,ewld%bspline
+            Do l=1,ewld%bspline%num_splines
               ll=izz(i)-l+2
 
               bdz=bsddz(:,l,i)
 
-              Do k=1,ewld%bspline
+              Do k=1,ewld%bspline%num_splines
                 kk=iyy(i)-k+2
 
                 bdy=bsddy(:,k,i)
 
-                Do j=1,ewld%bspline
+                Do j=1,ewld%bspline%num_splines
                   jj=ixx(i)-j+2
 
                   bdx=bsddx(:,j,i)
@@ -2103,17 +2016,17 @@ Contains
             fix=0.0_wp ; fiy=0.0_wp ; fiz=0.0_wp
             tix=0.0_wp ; tiy=0.0_wp ; tiz=0.0_wp
 
-            Do l=1,ewld%bspline
+            Do l=1,ewld%bspline%num_splines
               ll=izz(i)-l+2
 
               bdz=bsddz(:,l,i)
 
-              Do k=1,ewld%bspline
+              Do k=1,ewld%bspline%num_splines
                 kk=iyy(i)-k+2
 
                 bdy=bsddy(:,k,i)
 
-                Do j=1,ewld%bspline
+                Do j=1,ewld%bspline%num_splines
                   jj=ixx(i)-j+2
 
                   bdx=bsddx(:,j,i)
@@ -2217,32 +2130,27 @@ Contains
   End Subroutine ewald_spme_mforces
 
   Subroutine ewald_spme_mforces_d(engcpe_rc,vircpe_rc,stress,ewld,mpoles,electro, &
-      domain,config,comm)
+    domain,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! due to multipolar interactions in a periodic system using the smooth
-    ! particle mesh ewald method for multipoles
-    !
-    ! This version allows for extension to arbitrary order
-    !
-    ! Note: (fourier) reciprocal space terms
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng february 2016
-    ! amended   - i.t.todorov february 2015
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! due to multipolar interactions in a periodic system using the smooth
+    !! particle mesh ewald method for multipoles
+    !!
+    !! This version allows for extension to arbitrary order
+    !!
+    !! Note: (fourier) reciprocal space terms
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng february 2016
+    !! amended   - i.t.todorov february 2015
+    !!
+    !!----------------------------------------------------------------------!
 
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
-    Type( ewald_type ), Intent( InOut ) :: ewld
+    Type( ewald_spme_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
@@ -2298,15 +2206,15 @@ Contains
     If (electro%newjob_mfd) Then
       electro%newjob_mfd = .false.
 
-      !!! BEGIN DD SPME VARIABLES
+!!! BEGIN DD SPME VARIABLES
       ! 3D charge array construction (bottom and top) indices
 
-      electro%ixb_mfd=domain%idx*(ewld%fft_dim_a/domain%nx)+1
-      electro%ixt_mfd=(domain%idx+1)*(ewld%fft_dim_a/domain%nx)
-      electro%iyb_mfd=domain%idy*(ewld%fft_dim_b/domain%ny)+1
-      electro%iyt_mfd=(domain%idy+1)*(ewld%fft_dim_b/domain%ny)
-      electro%izb_mfd=domain%idz*(ewld%fft_dim_c/domain%nz)+1
-      electro%izt_mfd=(domain%idz+1)*(ewld%fft_dim_c/domain%nz)
+      electro%ixb_mfd=domain%idx*(ewld%kspace%k_vec_dim(1)/domain%nx)+1
+      electro%ixt_mfd=(domain%idx+1)*(ewld%kspace%k_vec_dim(1)/domain%nx)
+      electro%iyb_mfd=domain%idy*(ewld%kspace%k_vec_dim(2)/domain%ny)+1
+      electro%iyt_mfd=(domain%idy+1)*(ewld%kspace%k_vec_dim(2)/domain%ny)
+      electro%izb_mfd=domain%idz*(ewld%kspace%k_vec_dim(3)/domain%nz)+1
+      electro%izt_mfd=(domain%idz+1)*(ewld%kspace%k_vec_dim(3)/domain%nz)
 
       electro%ixbm1_r_mfd=Real(electro%ixb_mfd-1,wp)
       electro%ixtm0_r_mfd=Nearest( Real(electro%ixt_mfd,wp) , -1.0_wp )
@@ -2317,60 +2225,19 @@ Contains
 
       ! Real values of kmax vectors
 
-      electro%kmaxa_r_mfd=Real(ewld%fft_dim_a,wp)
-      electro%kmaxb_r_mfd=Real(ewld%fft_dim_b,wp)
-      electro%kmaxc_r_mfd=Real(ewld%fft_dim_c,wp)
+      electro%kmaxa_r_mfd=Real(ewld%kspace%k_vec_dim(1),wp)
+      electro%kmaxb_r_mfd=Real(ewld%kspace%k_vec_dim(2),wp)
+      electro%kmaxc_r_mfd=Real(ewld%kspace%k_vec_dim(3),wp)
 
-      !!! END DD SPME VARIABLES
+!!! END DD SPME VARIABLES
 
-      !!! BEGIN CARDINAL B-SPLINES SET-UP
-      ! allocate the complex exponential arrays
-
-      Allocate (ww1(1:ewld%fft_dim_a),ww2(1:ewld%fft_dim_b),ww3(1:ewld%fft_dim_c), Stat = fail(1))
-      If (fail(1) > 0) Then
-        Write(message,'(a)') 'ww arrays allocation failure'
-        Call error(0,message)
-      End If
-
-      ! initialise the complex exponential arrays
-
-      Call spl_cexp(ewld%fft_dim_a,ewld%fft_dim_b,ewld%fft_dim_c,ww1,ww2,ww3)
-
-      ! allocate the global B-spline coefficients and the helper array
-
-      Allocate (electro%bscx_mfd(1:ewld%fft_dim_a),electro%bscy_mfd(1:ewld%fft_dim_b),&
-        electro%bscz_mfd(1:ewld%fft_dim_c), Stat = fail(1))
-      Allocate (csp(1:ewld%bspline),                              Stat = fail(2))
-      If (Any(fail > 0)) Then
-        Write(message,'(a)') 'bsc and cse arrays allocation failure'
-        Call error(0,message)
-      End If
-
-      ! calculate the global B-spline coefficients
-
-      Call bspcoe(ewld,csp,electro%bscx_mfd,electro%bscy_mfd,electro%bscz_mfd,ww1,ww2,ww3)
-
-      ! deallocate the helper array and complex exponential arrays
-
-      Deallocate (csp,         Stat = fail(1))
-      Deallocate (ww1,ww2,ww3, Stat = fail(2))
-      If (Any(fail > 0)) Then
-        Write(message,'(a)') 'cse and ww arrays deallocation failure'
-        Call error(0,message)
-      End If
-
-      !!! END CARDINAL B-SPLINES SET-UP
-
-      !!! BEGIN DAFT SET-UP
-      ! domain local block limits of kmax space
-
-      electro%block_x_mfd = ewld%fft_dim_a / domain%nx
-      electro%block_y_mfd = ewld%fft_dim_b / domain%ny
-      electro%block_z_mfd = ewld%fft_dim_c / domain%nz
+!!! BEGIN CARDINAL B-SPLINES SET-UP
+      call bspline_coeffs_gen(ewld%kspace, ewld%bsplne)
+!!! END CARDINAL B-SPLINES SET-UP
 
       ! set up the parallel fft and useful related quantities
 
-      Call initialize_fft( 3, (/ ewld%fft_dim_a, ewld%fft_dim_b, ewld%fft_dim_c /), &
+      Call initialize_fft( 3, (/ ewld%kspace%k_vec_dim(1), ewld%kspace%k_vec_dim(2), ewld%kspace%k_vec_dim(3) /), &
         (/ domain%nx, domain%ny, domain%nz /), (/ domain%idx, domain%idy, domain%idz /),   &
         (/ electro%block_x_mfd, electro%block_y_mfd, electro%block_z_mfd /),               &
         comm%comm, electro%context_mfd )
@@ -2385,39 +2252,42 @@ Contains
         Call error(0,message)
       End If
 
-      Call pfft_indices( ewld%fft_dim_a, electro%block_x_mfd, domain%idx, domain%nx, electro%index_x_mfd )
-      Call pfft_indices( ewld%fft_dim_b, electro%block_y_mfd, domain%idy, domain%ny, electro%index_y_mfd )
-      Call pfft_indices( ewld%fft_dim_c, electro%block_z_mfd, domain%idz, domain%nz, electro%index_z_mfd )
+      Call pfft_indices( ewld%kspace%k_vec_dim(1), electro%block_x_mfd, domain%idx, domain%nx, electro%index_x_mfd )
+      Call pfft_indices( ewld%kspace%k_vec_dim(2), electro%block_y_mfd, domain%idy, domain%ny, electro%index_y_mfd )
+      Call pfft_indices( ewld%kspace%k_vec_dim(3), electro%block_z_mfd, domain%idz, domain%nz, electro%index_z_mfd )
 
       ! workspace arrays for DaFT
 
-      Allocate ( electro%qqc_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), Stat = fail(1) )
-      Allocate ( electro%qqq_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), Stat = fail(2) )
-      Allocate ( electro%qtc_local_mfd( 1:3, 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), &
-        electro%qt1_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ),      &
-        electro%qt2_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ),      &
-        electro%qt3_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), Stat = fail(3) )
+      Allocate ( electro%qqc_local_mfd(1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), &
+        & Stat = fail(1) )
+      Allocate ( electro%qqq_local_mfd(1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), &
+        & Stat = fail(2) )
+      Allocate ( electro%qtc_local_mfd(1:3, 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), &
+        & electro%qt1_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ),      &
+        & electro%qt2_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ),      &
+        & electro%qt3_local_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), Stat = fail(3) )
       Allocate ( electro%pfft_work_mfd( 1:electro%block_x_mfd, 1:electro%block_y_mfd, 1:electro%block_z_mfd ), Stat = fail(4) )
-      If (Any(fail > 0)) Then
-        Write(message,'(a)') 'SPME DaFT workspace arrays allocation failure'
-        Call error(0,message)
-      End If
+      If (Any(fail > 0)) call error_alloc('SPME DaFT workspace arrays','ewald_spme_mforces_d')
 
       !!! END DAFT SET-UP
     End If
 
     Allocate (txx(1:config%mxatms),tyy(1:config%mxatms),tzz(1:config%mxatms),                            Stat = fail(1))
     Allocate (ixx(1:config%mxatms),iyy(1:config%mxatms),izz(1:config%mxatms),it(1:config%mxatms),               Stat = fail(2))
-    Allocate (bdx(0:ewld%bspline),bsddx(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
-      bdy(0:ewld%bspline),bsddy(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
-      bdz(0:ewld%bspline),bsddz(0:ewld%bspline,1:ewld%bspline,1:config%mxatms),                         Stat = fail(3))
-    Allocate (bspx(1:ewld%bspline,1:config%mxatms),bspy(1:ewld%bspline,1:config%mxatms),bspz(1:ewld%bspline,1:config%mxatms), &
-      Stat = fail(4))
-    If (Any(fail > 0)) Then
-      Write(message,'(a)') 'ewald_spme_mforces allocation failure'
-      Call error(0,message)
-    End If
-
+    Allocate ( &
+      & bdx(0:ewld%bspline%num_splines),&
+      & bsddx(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+      & bdy(0:ewld%bspline%num_splines),&
+      & bsddy(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+      & bdz(0:ewld%bspline%num_splines),&
+      & bsddz(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+      & Stat = fail(3))
+    Allocate ( &
+      & bspx(1:ewld%bspline%num_splines,1:config%mxatms), &
+      & bspy(1:ewld%bspline%num_splines,1:config%mxatms), &
+      & bspz(1:ewld%bspline%num_splines,1:config%mxatms), &
+      & Stat = fail(4))
+    If (Any(fail > 0)) call error_alloc('SPME arrays','ewald_spme_mforces_d')
     ! initialise coulombic potential energy and virial
 
     ewld%engsic    = 0.0_wp
@@ -2427,7 +2297,7 @@ Contains
     ! set working parameters
 
     rvolm=twopi/config%volm
-    ralph=-0.25_wp/electro%alpha**2
+    ralph=-0.25_wp/ewld%alpha**2
 
     ! set scaling constant
 
@@ -2459,9 +2329,9 @@ Contains
       tzz(i)=electro%kmaxc_r_mfd*(rcell(3)*config%parts(i)%xxx+rcell(6)*config%parts(i)%yyy+&
         rcell(9)*config%parts(i)%zzz+0.5_wp)
 
-      ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
+      ! If not DD bound in kmax grid space when .not.neigh%unconditional_update = (ewld%bspline%num_spline_pad == ewld%bspline)
 
-      If (ewld%bspline1 == ewld%bspline .and. i <= config%natms) Then
+      If (ewld%bspline%num_spline_pad == ewld%bspline%num_splines .and. i <= config%natms) Then
         If (txx(i) < electro%ixbm1_r_mfd .or. txx(i) > electro%ixtm0_r_mfd .or. &
           tyy(i) < electro%iybm1_r_mfd .or. tyy(i) > electro%iytm0_r_mfd .or. &
           tzz(i) < electro%izbm1_r_mfd .or. tzz(i) > electro%iztm0_r_mfd) llspl=.false.
@@ -2484,17 +2354,17 @@ Contains
       End If
     End Do
 
-    ! Check for breakage of llspl when .not.neigh%unconditional_update = (ewld%bspline1 == ewld%bspline)
+    ! Check for breakage of llspl when .not.neigh%unconditional_update = (ewld%bspline%num_spline_pad == ewld%bspline)
 
-    ewld%bspline2=ewld%bspline1
-    If (ewld%bspline1 == ewld%bspline) Then
+    ewld%bspline%num_spline_padded=ewld%bspline%num_spline_pad
+    If (ewld%bspline%num_spline_pad == ewld%bspline%num_splines) Then
       Call gcheck(comm,llspl)
-      If (.not.llspl) ewld%bspline2=ewld%bspline+1
+      If (.not.llspl) ewld%bspline%num_spline_padded=ewld%bspline%num_splines+1
     End If
 
     ! construct B-splines for atoms
 
-    Call bspgen_mpoles(config%nlast,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld)
+    ! Call bspgen_mpoles(config%nlast,txx,tyy,tzz,bspx,bspy,bspz,bsddx,bsddy,bsddz,mpoles%n_choose_k,config,ewld,comm)
 
     Deallocate (txx,tyy,tzz,    Stat = fail(1))
     Deallocate (bspx,bspy,bspz, Stat = fail(2))
@@ -2542,13 +2412,13 @@ Contains
           imp8=imp(8) ; imp9=imp(9) ; imp10=imp(10)
         End If
 
-        llb = Max( electro%izb_mfd, izz(i) - ewld%bspline + 2 )
+        llb = Max( electro%izb_mfd, izz(i) - ewld%bspline%num_splines + 2 )
         llt = Min( electro%izt_mfd, izz(i) + 1 )
 
-        kkb = Max( electro%iyb_mfd, iyy(i) - ewld%bspline + 2 )
+        kkb = Max( electro%iyb_mfd, iyy(i) - ewld%bspline%num_splines + 2 )
         kkt = Min( electro%iyt_mfd, iyy(i) + 1 )
 
-        jjb = Max( electro%ixb_mfd, ixx(i) - ewld%bspline + 2 )
+        jjb = Max( electro%ixb_mfd, ixx(i) - ewld%bspline%num_splines + 2 )
         jjt = Min( electro%ixt_mfd, ixx(i) + 1 )
 
         Select Case( jjt - jjb + 1 )
@@ -4008,7 +3878,7 @@ Contains
       l=electro%index_z_mfd(l_local)
 
       ll=l-1
-      If (l > ewld%fft_dim_c/2) ll=ll-ewld%fft_dim_c
+      If (l > ewld%kspace%k_vec_dim(3)/2) ll=ll-ewld%kspace%k_vec_dim(3)
       tmp=twopi*Real(ll,wp)
 
       rkx1=tmp*rcell(3)
@@ -4021,7 +3891,7 @@ Contains
         k=electro%index_y_mfd(k_local)
 
         kk=k-1
-        If (k > ewld%fft_dim_b/2) kk=kk-ewld%fft_dim_b
+        If (k > ewld%kspace%k_vec_dim(2)/2) kk=kk-ewld%kspace%k_vec_dim(2)
         tmp=twopi*Real(kk,wp)
 
         rkx2=rkx1+tmp*rcell(2)
@@ -4034,7 +3904,7 @@ Contains
           j=electro%index_x_mfd(j_local)
 
           jj=j-1
-          If (j > ewld%fft_dim_a/2) jj=jj-ewld%fft_dim_a
+          If (j > ewld%kspace%k_vec_dim(1)/2) jj=jj-ewld%kspace%k_vec_dim(1)
           tmp=twopi*Real(jj,wp)
 
           rkx3=rkx2+tmp*rcell(1)
@@ -4187,34 +4057,29 @@ Contains
   Contains
 
     Subroutine spme_mforces(rcell,scale,ixx,iyy,izz,bsddx,bsddy,bsddz, &
-        qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles)
+      qqc_local,ixb,ixt,iyb,iyt,izb,izt,mpoles)
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !
-      ! dl_poly_4 subroutine for calculating coulombic forces due to
-      ! multipolar interactions in a periodic system using smooth particle
-      ! mesh ewald method (fourier part)
-      !
-      ! Note: qqc_local is shifted from its definition from above
-      !       and therefore there is no need for periodic images (!!)
-      !
-      ! copyright - daresbury laboratory
-      ! author    - w.smith & i.t.todorov february 2016
-      ! amended   - h.a.boateng may 2014
-      ! refactoring:
-      !           - a.m.elena march-october 2018
-      !           - j.madge march-october 2018
-      !           - a.b.g.chalk march-october 2018
-      !           - i.scivetti march-october 2018
-      !
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      !!----------------------------------------------------------------------!
+      !!
+      !! dl_poly_4 subroutine for calculating coulombic forces due to
+      !! multipolar interactions in a periodic system using smooth particle
+      !! mesh ewald method (fourier part)
+      !!
+      !! Note: qqc_local is shifted from its definition from above
+      !!       and therefore there is no need for periodic images (!!)
+      !!
+      !! copyright - daresbury laboratory
+      !! author    - w.smith & i.t.todorov february 2016
+      !! amended   - h.a.boateng may 2014
+      !!
+      !!----------------------------------------------------------------------!
 
       Integer,           Intent( In    ) :: ixx(1:config%mxatms),iyy(1:config%mxatms),izz(1:config%mxatms), &
         ixb,ixt, iyb,iyt, izb,izt
       Real( Kind = wp ), Intent( In    ) :: scale,rcell(1:9),                &
-        bsddx(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
-        bsddy(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
-        bsddz(0:ewld%bspline,1:ewld%bspline,1:config%mxatms), &
+        bsddx(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+        bsddy(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
+        bsddz(0:ewld%bspline%num_splines,1:ewld%bspline%num_splines,1:config%mxatms), &
         qqc_local( ixb:ixt, iyb:iyt, izb:izt )
       Type( mpole_type ), Intent( InOut ) :: mpoles
 
@@ -4238,18 +4103,21 @@ Contains
 
       ! Define extended ranges for the domain = local + halo slice and allocate
 
-      ixdb = ixb - ewld%bspline2
-      iydb = iyb - ewld%bspline2
-      izdb = izb - ewld%bspline2
+      ixdb = ixb - ewld%bspline%num_spline_padded
+      iydb = iyb - ewld%bspline%num_spline_padded
+      izdb = izb - ewld%bspline%num_spline_padded
 
-      delspl = ewld%bspline2 - ewld%bspline
+      delspl = ewld%bspline%num_spline_padded - ewld%bspline%num_splines
 
       ixdt = ixt + delspl
       iydt = iyt + delspl
       izdt = izt + delspl
 
       fail=0
-      Allocate (bdx(0:ewld%bspline),bdy(0:ewld%bspline),bdz(0:ewld%bspline),        Stat = fail(1))
+      Allocate ( &
+        & bdx(0:ewld%bspline%num_splines), &
+        & bdy(0:ewld%bspline%num_splines), &
+        & bdz(0:ewld%bspline%num_splines), Stat = fail(1))
       Allocate (qqc_domain( ixdb:ixdt, iydb:iydt, izdb:izdt ), Stat = fail(2))
       If (Any(fail > 0)) Then
         Write(message,'(a)') 'spme_mforces allocation failure'
@@ -4258,13 +4126,13 @@ Contains
 
       Call exchange_grid( ixb , ixt , iyb , iyt , izb , izt , qqc_local, &
         ixdb, iydb, izdb, ixdt, iydt, izdt, qqc_domain, &
-        domain, ewld, comm)
+        domain, comm)! , ewld
 
       ! Real values of kmax vectors
 
-      ka11 = Real(ewld%fft_dim_a,wp)*rcell(1)
-      kb22 = Real(ewld%fft_dim_b,wp)*rcell(5)
-      kc33 = Real(ewld%fft_dim_c,wp)*rcell(9)
+      ka11 = Real(ewld%kspace%k_vec_dim(1),wp)*rcell(1)
+      kb22 = Real(ewld%kspace%k_vec_dim(2),wp)*rcell(5)
+      kc33 = Real(ewld%kspace%k_vec_dim(3),wp)*rcell(9)
 
       ka11sq=ka11*ka11; ka11cu=ka11sq*ka11; kb22sq=kb22*kb22; kb22cu=kb22sq*kb22
       kc33sq=kc33*kc33; kc33cu=kc33sq*kc33; kakb=ka11*kb22; kakc=ka11*kc33
@@ -4320,17 +4188,17 @@ Contains
           fix=0.0_wp ; fiy=0.0_wp ; fiz=0.0_wp
           tix=0.0_wp ; tiy=0.0_wp ; tiz=0.0_wp
 
-          Do l=1,ewld%bspline
+          Do l=1,ewld%bspline%num_splines
             ll=izz(i)-l+2
 
             bdz=bsddz(:,l,i)
 
-            Do k=1,ewld%bspline
+            Do k=1,ewld%bspline%num_splines
               kk=iyy(i)-k+2
 
               bdy=bsddy(:,k,i)
 
-              Do j=1,ewld%bspline
+              Do j=1,ewld%bspline%num_splines
                 jj=ixx(i)-j+2
 
                 bdx=bsddx(:,j,i)
@@ -4465,26 +4333,21 @@ Contains
   End Subroutine ewald_spme_mforces_d
 
   Subroutine ewald_excl_mforces(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex,stress, &
-      neigh,mpoles,electro,config)
+    ewld,neigh,mpoles,electro,domain,config)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! in a periodic system using multipoles with the ewald real space
-    ! kernel
-    !
-    ! Note: exclusion correction term
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng june 2016
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! in a periodic system using multipoles with the ewald real space
+    !! kernel
+    !!
+    !! Note: exclusion correction term
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng june 2016
+    !! amended   - i.t.todorov february 2016
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                                  Intent( In    ) :: iatm
     Type( neighbours_type ), Intent( In    ) :: neigh
@@ -4492,7 +4355,9 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( ewald_spme_type ), Intent( In    ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ),                       Intent( InOut ) :: config
 
     Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
@@ -4555,7 +4420,7 @@ Contains
 
       ! multipole scaler
 
-      scl=2.0_wp*electro%alpha*r4pie0/(sqrpi*electro%eps)
+      scl=2.0_wp*ewld%alpha*r4pie0/(sqrpi*electro%eps)
 
       ! scale imp multipoles
 
@@ -4603,7 +4468,7 @@ Contains
 
           ! get the value of the kernel using 3pt interpolation
 
-          alpr =rrr*electro%alpha
+          alpr =rrr*ewld%alpha
           alpr2=alpr*alpr
 
           ! calculate error function and derivative
@@ -4619,28 +4484,28 @@ Contains
 
             If (rrr < rreg) Then
               Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr, &
-                electro%alpha*xxt(m),electro%alpha*yyt(m),electro%alpha*zzt(m), &
-                electro%alpha*sqrt(rrr**2+rreg**2),mpoles%max_order,d1)
+                ewld%alpha*xxt(m),ewld%alpha*yyt(m),ewld%alpha*zzt(m), &
+                ewld%alpha*sqrt(rrr**2+rreg**2),mpoles%max_order,d1)
             Else
               Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr, &
-                electro%alpha*xxt(m),electro%alpha*yyt(m),electro%alpha*zzt(m), &
-                electro%alpha*rrr,mpoles%max_order,d1)
+                ewld%alpha*xxt(m),ewld%alpha*yyt(m),ewld%alpha*zzt(m), &
+                ewld%alpha*rrr,mpoles%max_order,d1)
             End If
 
           Else
 
             ! distant particles - traditional
 
-            exp1=Exp(-(electro%alpha*rrr)**2)
-            tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
+            exp1=Exp(-(ewld%alpha*rrr)**2)
+            tt  =1.0_wp/(1.0_wp+pp*ewld%alpha*rrr)
 
-            erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
+            erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(ewld%alpha*rrr)
 
             ! compute derivatives of kernel
 
             Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr, &
-              electro%alpha*xxt(m),electro%alpha*yyt(m),electro%alpha*zzt(m), &
-              electro%alpha*rrr,mpoles%max_order,d1)
+              ewld%alpha*xxt(m),ewld%alpha*yyt(m),ewld%alpha*zzt(m), &
+              ewld%alpha*rrr,mpoles%max_order,d1)
 
           End If
 
@@ -4664,7 +4529,7 @@ Contains
                   jj = mpoles%map(k1,k2,k3)
 
                   If (Abs(jmp(jj)) > zero_plus) Call explicit_ewald_real_loops &
-                    (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,               &
+                    (-2,2*mpoles%max_order+1, k1,k2,k3, ewld%alpha, d1,               &
                     imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                     kx*jmp(jj),jmpx(jj),jmpy(jj),jmpz(jj),tjx,tjy,tjz, &
                     engmpl,fx,fy,fz,mpoles)
@@ -4711,7 +4576,7 @@ Contains
                           ks1=k1+s1; ks11=ks1+1
 
                           n      = ks1+ks2+ks3
-                          alphan = electro%alpha**n
+                          alphan = ewld%alpha**n
 
                           ii     = mpoles%map(s1,s2,s3)
 
@@ -4728,7 +4593,7 @@ Contains
 
                           ! force
 
-                          t1      = t1*electro%alpha
+                          t1      = t1*ewld%alpha
 
                           fx      = fx      - t1*d1(ks11,ks2,ks3)
                           fy      = fy      - t1*d1(ks1,ks21,ks3)
@@ -4841,26 +4706,21 @@ Contains
   End Subroutine ewald_excl_mforces
 
   Subroutine ewald_excl_mforces_d(iatm,xxt,yyt,zzt,rrt,engcpe_ex,vircpe_ex, &
-      stress,neigh,mpoles,electro,config)
+    stress,ewld,neigh,mpoles,electro,config)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating coulombic energy and force terms
-    ! in a periodic system using multipoles with the ewald real space
-    ! kernel
-    !
-    ! Note: exclusion correction term
-    !
-    ! copyright - daresbury laboratory
-    ! author    - h.a.boateng june 2016
-    ! amended   - i.t.todorov march 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating coulombic energy and force terms
+    !! in a periodic system using multipoles with the ewald real space
+    !! kernel
+    !!
+    !! Note: exclusion correction term
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - h.a.boateng june 2016
+    !! amended   - i.t.todorov march 2016
+    !!
+    !!----------------------------------------------------------------------!
 
     Integer,                                  Intent( In    ) :: iatm
     Type( neighbours_type ), Intent( In    ) :: neigh
@@ -4868,6 +4728,7 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( InOut    ) :: electro
+    Type( ewald_spme_type ), Intent ( In    ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( configuration_type ),                       Intent( InOut ) :: config
 
@@ -4929,8 +4790,8 @@ Contains
 
       ! coefficients for exponential in recurrence relation
 
-      talp2    = 2.0_wp*electro%alpha*electro%alpha
-      alpsqrpi = 1.0_wp/(electro%alpha*sqrpi)
+      talp2    = 2.0_wp*ewld%alpha*ewld%alpha
+      alpsqrpi = 1.0_wp/(ewld%alpha*sqrpi)
 
       electro%co1_emf = talp2*alpsqrpi
       electro%co2_emf = talp2*electro%co1_emf
@@ -4939,7 +4800,7 @@ Contains
       electro%co5_emf = talp2*electro%co4_emf
       electro%co6_emf = talp2*electro%co5_emf
 
-      electro%alp2_emf= electro%alpha*electro%alpha
+      electro%alp2_emf= ewld%alpha*ewld%alpha
     End If
 
     ! initialise potential energy and virial
@@ -5081,9 +4942,9 @@ Contains
 
           exparr = Exp(-electro%alp2_emf*rsq)
 
-          ! get the value of the kernel-erf(electro%alpha*r)/r
+          ! get the value of the kernel-erf(ewld%alpha*r)/r
 
-          alpr =rrr*electro%alpha
+          alpr =rrr*ewld%alpha
           alpr2=alpr*alpr
 
           ! calculate error function and derivative
@@ -5092,7 +4953,7 @@ Contains
 
             ! close particles (core-shell units) - small distances limit
 
-            b0 = 2.0_wp*(electro%alpha/sqrpi) * &
+            b0 = 2.0_wp*(ewld%alpha/sqrpi) * &
               (1.0_wp+alpr2*(-rr3+alpr2*(r10+alpr2*(-r42+alpr2*r216))))
 
             b1 = electro%co2_emf*(1.0_wp/3.0_wp-alpr2*(1.0_wp/5.0_wp-alpr2 * &
@@ -5504,36 +5365,32 @@ Contains
   End Subroutine ewald_excl_mforces_d
 
   Subroutine ewald_frzn_mforces(engcpe_fr,vircpe_fr,stress,ewld,neigh,mpoles, &
-    electro,config,comm)
+    electro,domain,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 subroutine for calculating corrections to coulombic forces
-    ! in a periodic system arising from multipoles on frozen pairs
-    !
-    ! Note: Forces (as well as velocities) on frozen atoms are zeroed at the
-    !       end (and any COM drift removed) but corrections to the stress
-    !       and the virial are important as they feed into the system
-    !       pressure response.  Constant volume ensembles (ensemble < 20)
-    !       need this calculation just once! - controlled by lf_fce in
-    !       ewald_check<-two_body_forces
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov & h.a.boateng february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for calculating corrections to coulombic forces
+    !! in a periodic system arising from multipoles on frozen pairs
+    !!
+    !! Note: Forces (as well as velocities) on frozen atoms are zeroed at the
+    !!       end (and any COM drift removed) but corrections to the stress
+    !!       and the virial are important as they feed into the system
+    !!       pressure response.  Constant volume ensembles (ensemble < 20)
+    !!       need this calculation just once! - controlled by lf_fce in
+    !!       ewald_check<-two_body_forces
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov & h.a.boateng february 2016
+    !!
+    !!----------------------------------------------------------------------!
 
     Real( Kind = wp ),                     Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp ), Dimension( 1:9 ),   Intent( InOut ) :: stress
-    Type( ewald_type ),                    Intent( InOut ) :: ewld
+    Type( ewald_spme_type ),                    Intent( InOut ) :: ewld
     Type( neighbours_type ),               Intent( In    ) :: neigh
     Type( mpole_type ),                    Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro
+    Type( domains_type ), Intent( In    ) :: domain
     Type( comms_type ),                    Intent( InOut ) :: comm
     Type( configuration_type ),                       Intent( InOut ) :: config
 
@@ -5635,7 +5492,7 @@ Contains
     Call gsum(comm, nz_fr)
     nz_fr(0) = Sum(nz_fr(0:comm%idnode)) ! Offset
 
-    scl=2.0_wp*electro%alpha*r4pie0/(sqrpi*electro%eps)
+    scl=2.0_wp*ewld%alpha*r4pie0/(sqrpi*electro%eps)
     nzfr = Sum(nz_fr(1:comm%mxnode))     ! Total
     If (nzfr <= 10*config%mxatms) Then
 
@@ -5722,15 +5579,15 @@ Contains
 
           ! calculate error function and derivative
 
-          exp1=Exp(-(electro%alpha*rrr)**2)
-          tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
+          exp1=Exp(-(ewld%alpha*rrr)**2)
+          tt  =1.0_wp/(1.0_wp+pp*ewld%alpha*rrr)
 
-          erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
+          erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(ewld%alpha*rrr)
 
           ! compute derivatives of kernel
 
-          Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,electro%alpha*xrr,electro%alpha*yrr, &
-            electro%alpha*zrr,electro%alpha*rrr,mpoles%max_order,d1)
+          Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,ewld%alpha*xrr,ewld%alpha*yrr, &
+            ewld%alpha*zrr,ewld%alpha*rrr,mpoles%max_order,d1)
 
           ! calculate forces
 
@@ -5753,7 +5610,7 @@ Contains
 
                   If (Abs(jmp(nn)) > zero_plus) Then
                     Call explicit_ewald_real_loops &
-                      (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1, &
+                      (-2,2*mpoles%max_order+1, k1,k2,k3, ewld%alpha, d1, &
                       imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                       kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
                       engmpl,fx,fy,fz,mpoles)
@@ -5801,7 +5658,7 @@ Contains
                           ks1=k1+s1; ks11=ks1+1
 
                           n       = ks1+ks2+ks3
-                          alphan  = electro%alpha**n
+                          alphan  = ewld%alpha**n
 
                           mm      = mpoles%map(s1,s2,s3)
 
@@ -5815,7 +5672,7 @@ Contains
                           ! energy
                           engmpl  = engmpl  + t1*d1(ks1,ks2,ks3)
 
-                          t1      = t1*electro%alpha
+                          t1      = t1*ewld%alpha
 
                           ! force
 
@@ -5918,15 +5775,15 @@ Contains
 
           ! calculate error function and derivative
 
-          exp1=Exp(-(electro%alpha*rrr)**2)
-          tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
+          exp1=Exp(-(ewld%alpha*rrr)**2)
+          tt  =1.0_wp/(1.0_wp+pp*ewld%alpha*rrr)
 
-          erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
+          erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(ewld%alpha*rrr)
 
           ! compute derivatives of kernel
 
-          Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,electro%alpha*xrr, &
-            electro%alpha*yrr,electro%alpha*zrr,electro%alpha*rrr,mpoles%max_order,d1)
+          Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,ewld%alpha*xrr, &
+            ewld%alpha*yrr,ewld%alpha*zrr,ewld%alpha*rrr,mpoles%max_order,d1)
 
           ! calculate forces
 
@@ -5948,7 +5805,7 @@ Contains
                   nn = mpoles%map(k1,k2,k3)
 
                   If (Abs(jmp(nn)) > zero_plus) Call explicit_ewald_real_loops &
-                    (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1, &
+                    (-2,2*mpoles%max_order+1, k1,k2,k3, ewld%alpha, d1, &
                     imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                     kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
                     engmpl,fx,fy,fz,mpoles)
@@ -5995,7 +5852,7 @@ Contains
                           ks1=k1+s1; ks11=ks1+1
 
                           n       = ks1+ks2+ks3
-                          alphan  = electro%alpha**n
+                          alphan  = ewld%alpha**n
 
                           mm      = mpoles%map(s1,s2,s3)
 
@@ -6009,7 +5866,7 @@ Contains
                           ! energy
                           engmpl  = engmpl  + t1*d1(ks1,ks2,ks3)
 
-                          t1      = t1*electro%alpha
+                          t1      = t1*ewld%alpha
 
                           ! force
 
@@ -6140,15 +5997,15 @@ Contains
 
           ! calculate error function and derivative
 
-          exp1=Exp(-(electro%alpha*rrr)**2)
-          tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
+          exp1=Exp(-(ewld%alpha*rrr)**2)
+          tt  =1.0_wp/(1.0_wp+pp*ewld%alpha*rrr)
 
-          erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
+          erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(ewld%alpha*rrr)
 
           ! compute derivatives of kernel
 
-          Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,electro%alpha*xrr, &
-            electro%alpha*yrr,electro%alpha*zrr,electro%alpha*rrr,mpoles%max_order,d1)
+          Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,ewld%alpha*xrr, &
+            ewld%alpha*yrr,ewld%alpha*zrr,ewld%alpha*rrr,mpoles%max_order,d1)
 
           ! calculate forces
 
@@ -6170,7 +6027,7 @@ Contains
                   nn = mpoles%map(k1,k2,k3)
 
                   If (Abs(jmp(nn)) > zero_plus) Call explicit_ewald_real_loops &
-                    (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1,               &
+                    (-2,2*mpoles%max_order+1, k1,k2,k3, ewld%alpha, d1,               &
                     imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                     kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
                     engmpl,fx,fy,fz,mpoles)
@@ -6217,7 +6074,7 @@ Contains
                           ks1=k1+s1; ks11=ks1+1
 
                           n       = ks1+ks2+ks3
-                          alphan  = electro%alpha**n
+                          alphan  = ewld%alpha**n
 
                           mm      = mpoles%map(s1,s2,s3)
 
@@ -6231,7 +6088,7 @@ Contains
                           ! energy
                           engmpl  = engmpl  + t1*d1(ks1,ks2,ks3)
 
-                          t1      = t1*electro%alpha
+                          t1      = t1*ewld%alpha
 
                           ! force
 
@@ -6393,15 +6250,15 @@ Contains
 
               ! calculate error function and derivative
 
-              exp1=Exp(-(electro%alpha*rrr)**2)
-              tt  =1.0_wp/(1.0_wp+pp*electro%alpha*rrr)
+              exp1=Exp(-(ewld%alpha*rrr)**2)
+              tt  =1.0_wp/(1.0_wp+pp*ewld%alpha*rrr)
 
-              erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(electro%alpha*rrr)
+              erfr=(1.0_wp-tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1)/(ewld%alpha*rrr)
 
               ! compute derivatives of kernel
 
-              Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,electro%alpha*xxt(k), &
-                electro%alpha*yyt(k),electro%alpha*zzt(k),electro%alpha*rrr,mpoles%max_order,d1)
+              Call ewald_deriv(-2,2*mpoles%max_order+1,2,erfr,ewld%alpha*xxt(k), &
+                ewld%alpha*yyt(k),ewld%alpha*zzt(k),ewld%alpha*rrr,mpoles%max_order,d1)
 
               ! calculate forces
 
@@ -6424,7 +6281,7 @@ Contains
 
                       If (Abs(jmp(nn)) > zero_plus) Then
                         Call explicit_ewald_real_loops &
-                          (-2,2*mpoles%max_order+1, k1,k2,k3, electro%alpha, d1, &
+                          (-2,2*mpoles%max_order+1, k1,k2,k3, ewld%alpha, d1, &
                           imp,       impx,    impy,    impz,    tix,tiy,tiz, &
                           kx*jmp(nn),jmpx(nn),jmpy(nn),jmpz(nn),tjx,tjy,tjz, &
                           engmpl,fx,fy,fz,mpoles)
@@ -6472,7 +6329,7 @@ Contains
                               ks1=k1+s1; ks11=ks1+1
 
                               n      = ks1+ks2+ks3
-                              alphan = electro%alpha**n
+                              alphan = ewld%alpha**n
 
                               mm     = mpoles%map(s1,s2,s3)
 
@@ -6489,7 +6346,7 @@ Contains
 
                               ! force
 
-                              t1      = t1*electro%alpha
+                              t1      = t1*ewld%alpha
 
                               fx      = fx      - t1*d1(ks11,ks2,ks3)
                               fy      = fy      - t1*d1(ks1,ks21,ks3)

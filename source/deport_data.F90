@@ -329,32 +329,6 @@ Contains
           imove=imove+3
         End If
 
-        ! pack frozen-frozen k-space SPME forces arrays
-
-        If (ewld%lf_cp) Then
-          If (imove+3 <= iblock) Then
-            buffer(imove+1)=ewld%ffx(i)
-            buffer(imove+2)=ewld%ffy(i)
-            buffer(imove+3)=ewld%ffz(i)
-          Else
-            safe=.false.
-          End If
-          imove=imove+3
-        End If
-
-        ! pack k-space SPME forces arrays
-
-        If (ewld%l_cp) Then
-          If (imove+3 <= iblock) Then
-            buffer(imove+1)=ewld%fcx(i)
-            buffer(imove+2)=ewld%fcy(i)
-            buffer(imove+3)=ewld%fcz(i)
-          Else
-            safe=.false.
-          End If
-          imove=imove+3
-        End If
-
         ! pack initial velocities for VAF calculations
 
         If (green%samp > 0) Then
@@ -838,18 +812,6 @@ Contains
         minim%ozz(keep)=minim%ozz(i)
       End If
 
-      If (ewld%lf_cp) Then
-        ewld%ffx(keep)=ewld%ffx(i)
-        ewld%ffy(keep)=ewld%ffy(i)
-        ewld%ffz(keep)=ewld%ffz(i)
-      End If
-
-      If (ewld%l_cp) Then
-        ewld%fcx(keep)=ewld%fcx(i)
-        ewld%fcy(keep)=ewld%fcy(i)
-        ewld%fcz(keep)=ewld%fcz(i)
-      End If
-
       If (green%samp > 0) Then
         green%vxi(keep,1:green%samp)=green%vxi(i,1:green%samp)
         green%vyi(keep,1:green%samp)=green%vyi(i,1:green%samp)
@@ -1001,26 +963,6 @@ Contains
         minim%oxx(newatm)=buffer(kmove+1)
         minim%oyy(newatm)=buffer(kmove+2)
         minim%ozz(newatm)=buffer(kmove+3)
-
-        kmove=kmove+3
-      End If
-
-      ! unpack frozen-frozen k-space SPME forces arrays
-
-      If (ewld%lf_cp) Then
-        ewld%ffx(newatm)=buffer(kmove+1)
-        ewld%ffy(newatm)=buffer(kmove+2)
-        ewld%ffz(newatm)=buffer(kmove+3)
-
-        kmove=kmove+3
-      End If
-
-      ! unpack k-space SPME forces arrays
-
-      If (ewld%l_cp) Then
-        ewld%fcx(newatm)=buffer(kmove+1)
-        ewld%fcy(newatm)=buffer(kmove+2)
-        ewld%fcz(newatm)=buffer(kmove+3)
 
         kmove=kmove+3
       End If
@@ -1657,23 +1599,21 @@ Contains
 
   Subroutine export_atomic_data(mdir,domain,config,kim_data,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine to export atomic data in domain boundary regions
-    ! for halo formation
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov december 2016
-    ! contrib   - i.j.bush february 2016
-    ! contrib   - h.a.boateng february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    !!----------------------------------------------------------------------!    !!
+    !! dl_poly_4 routine to export atomic data in domain boundary regions
+    !! for halo formation
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov december 2016
+    !! contrib   - i.j.bush february 2016
+    !! contrib   - h.a.boateng february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
     Integer,            Intent( In    ) :: mdir
     Type( domains_type ), Intent( In    ) :: domain
     Type( kim_type ), Intent( InOut ) :: kim_data
@@ -1940,21 +1880,19 @@ Contains
 
   Subroutine export_atomic_positions(mdir,mlast,ixyz0,domain,config,kim_data,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine to export atomic positions in domain boundary regions
-    ! for halo refresh
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov march 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    !!----------------------------------------------------------------------!    !!
+    !! dl_poly_4 routine to export atomic positions in domain boundary regions
+    !! for halo refresh
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov march 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
     Integer, Intent( In    ) :: mdir,ixyz0(:)
     Integer, Intent( InOut ) :: mlast
     Type( domains_type ), Intent( In    ) :: domain
@@ -2197,21 +2135,19 @@ Contains
 
   Subroutine mpoles_rotmat_export(mdir,mlast,mxatms,ixyz0,mpoles,domain,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine to export multipoles rotation and infinitesimally
-    ! rotated matrices in the halo
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov march 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    !!----------------------------------------------------------------------!    !!
+    !! dl_poly_4 routine to export multipoles rotation and infinitesimally
+    !! rotated matrices in the halo
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov march 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
     Integer, Intent( In    ) :: mdir,mxatms
     Integer, Intent( InOut ) :: mlast,ixyz0(:)
     Type( mpole_type ), Intent( InOut ) :: mpoles
@@ -2433,23 +2369,21 @@ Contains
 
   Subroutine mpoles_rotmat_set_halo(mpoles,domain,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine to set and infinitesimally rotate native multipoles
-    ! rotation matrices and then arrange exchange of halo data between
-    ! neighbouring domains/nodes
-    !
-    ! copyright - daresbury laboratory
-    ! author    - i.t.todorov february 2016
-    ! contrib   - h.a.boateng february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    !!----------------------------------------------------------------------!    !!
+    !! dl_poly_4 routine to set and infinitesimally rotate native multipoles
+    !! rotation matrices and then arrange exchange of halo data between
+    !! neighbouring domains/nodes
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov february 2016
+    !! contrib   - h.a.boateng february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ), Intent( InOut ) :: config
@@ -2515,25 +2449,23 @@ Contains
   End Subroutine mpoles_rotmat_set_halo
 
   Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flow,cshell,cons, &
-      pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
-      neigh,sites,minim,mpoles,rigid,domain,config,comm)
+    pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
+    neigh,sites,minim,mpoles,rigid,domain,config,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine to arrange relocation of data between neighbouring
-    ! domains/nodes after positions updates
-    !
-    ! copyright - daresbury laboratory
-    ! author    - w.smith august 1998
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
+    !!----------------------------------------------------------------------!    !!
+    !! dl_poly_4 routine to arrange relocation of data between neighbouring
+    !! domains/nodes after positions updates
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith august 1998
+    !! amended   - i.t.todorov february 2016
+    !! refactoring:
+    !!           - a.m.elena march-october 2018
+    !!           - j.madge march-october 2018
+    !!           - a.b.g.chalk march-october 2018
+    !!           - i.scivetti march-october 2018
+    !!
+    !!----------------------------------------------------------------------!
 
     Real( Kind = wp ), Intent( In    ) :: dvar,cutoff_extended
     Logical,           Intent( In    ) :: lbook

@@ -1,7 +1,8 @@
 Module ffield
   Use kinds, Only : wp,wi
   Use comms, Only : comms_type
-  Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz, zero_plus, pi, r4pie0, prsunt, ntable, VA_to_dl, tesla_to_dl
+  Use constants, Only : engunit, eu_ev, eu_kcpm, eu_kjpm, boltz, zero_plus, pi, r4pie0, prsunt, ntable, nmpldt, &
+    & VA_to_dl, tesla_to_dl
   Use kim,   Only : kim_type,kim_cutoff
 
   ! SITE MODULE
@@ -17,7 +18,7 @@ Module ffield
   ! INTERACTION MODULES
 
   Use core_shell, Only : core_shell_type,SHELL_ADIABATIC, SHELL_RELAXED
-  Use mpole, Only : mpole_type,read_mpoles,POLARISATION_DEFAULT,POLARISATION_CHARMM
+  Use mpole, Only : mpole_type,POLARISATION_DEFAULT,POLARISATION_CHARMM
 
   Use rigid_bodies, Only : rigid_bodies_type
 
@@ -69,7 +70,7 @@ Module ffield
 
   Use parse, Only : word_2_real, get_word, get_line, lower_case, strip_blanks, gcheck
 
-  Use numerics, Only :  shellsort
+  Use numerics, Only : factorial, shellsort
   Use errors_warnings, Only : error,warning,info
   Use thermostat, Only : thermostat_type,ENS_NVE,DPD_NULL
   Use constraints, Only : constraints_type
@@ -1622,10 +1623,12 @@ Contains
                   If (flow%print_topology) Then
                     If (sites%freeze_site(isite1)*sites%freeze_site(isite2)*sites%freeze_site(isite3) /= 0) Then
                       write(rfmt,'(a,i0,a)') '(2x,i10,a8,3i10,',angle%max_param,'f15.6,2x,a8)'
-                      write(message,rfmt) iang,keyword,angle%lst(1:3,nangle),angle%param(1:angle%max_param,nangle),'*frozen*'
+                      write(message,rfmt) iang,keyword,angle%lst(1:3,nangle),&
+                        & angle%param(1:angle%max_param,nangle),'*frozen*'
                     Else
                       write(rfmt,'(a,i0,a)') '(2x,i10,a8,3i10,',angle%max_param,'f15.6)'
-                      write(message,rfmt) iang,keyword,angle%lst(1:3,nangle),angle%param(1:angle%max_param,nangle)
+                      write(message,rfmt) iang,keyword,angle%lst(1:3,nangle),&
+                        & angle%param(1:angle%max_param,nangle)
                     End If
                     Call info(message,.true.)
                   End If
@@ -6109,4 +6112,510 @@ Contains
     Call error(24)
 
   End Subroutine scan_field
+
+  Subroutine read_mpoles(l_top,sumchg,cshell,sites,mpoles,comm) 
+
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for reading in the molecular mulitpole
+    !! specifications of the system to be simulated
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - i.t.todorov february 2017
+    !!
+    !!----------------------------------------------------------------------!
+
+    Logical,            Intent( In    ) :: l_top
+    Real( Kind = wp ),  Intent( InOut ) :: sumchg
+    Type( site_type ), Intent( InOut ) :: sites
+    Type( core_shell_type ), Intent( InOut ) :: cshell
+    Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( comms_type ), Intent( InOut ) :: comm
+
+    Logical                :: safe,l_rsh,l_ord=.false.
+
+    Character( Len = 200 ) :: record,record1,record2
+    Character( Len = 40  ) :: word
+    Character( Len = 8   ) :: atom
+
+    Integer                :: itmols,nrept,i,j,k,l,                 &
+      isite,jsite,ksite,lsite,nsite,sitmpl, &
+      ishls,nshels,kshels,isite2,           &
+      ordmpl,ordmpl_start,ordmpl_next,      &
+      ordmpl_min,ordmpl_max,                &
+      indmpl,indmpl_start,indmpl_final
+
+    Real( Kind = wp )      :: charge,scl,polarity,dumping
+
+    Character( Len = 256 ) :: message,messages(3)
+
+    ! open MPOLES data file
+
+    If (comm%idnode == 0) Then
+      Open(Unit=nmpldt, File = 'MPOLES', Status = 'old')
+    End If
+    Call info('electrostatics multipoles specification',.true.)
+    If (.not.l_top) Then
+      Call info('detailed specification opted out',.true.)
+    End If
+
+
+    Call get_line(safe,nmpldt,record,comm)
+    If (.not.safe) Go To 2000
+
+    ! omit first line
+
+    nsite  = 0
+    nshels = 0
+    sumchg = 0.0_wp
+
+    ordmpl_min = 4
+    ordmpl_max = 0
+
+    ! read and process directives from mpols/field file
+
+    Do
+
+      word(1:1)='#'
+      Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+        Call get_line(safe,nmpldt,record,comm)
+        If (.not.safe) Go To 2000
+        Call get_word(record,word) ; Call lower_case(word)
+      End Do
+
+      ! specify molecular species
+
+      If (word(1:7) == 'molecul') Then
+
+        Call get_word(record,word) ; Call lower_case(word)
+        If (word(1:4) == 'type') Call get_word(record,word)
+
+        If (sites%ntype_mol == Nint(word_2_real(word))) Then
+          Write(message,'(a,i10)') 'number of molecular types ',sites%ntype_mol
+          Call info(message,.true.)
+        Else
+          Write(message,'(2(a,i0),a)') &
+            'number of molecular types mismatch between FIELD(',sites%ntype_mol, &
+            ') and MPOLES(',Nint(word_2_real(word)),')'
+          Call warning(message,.true.)
+          Call error(623)
+        End If
+
+        ! read in molecular characteristics for every molecule
+
+        Do itmols=1,sites%ntype_mol
+
+          If (l_top) Then
+            Write(message,'(a,i10)') 'molecular species type ',itmols
+            Call info(message,.true.)
+          End If
+
+          ! name of molecular species
+
+          word(1:1)='#'
+          Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+            Call get_line(safe,nmpldt,record,comm)
+            If (.not.safe) Go To 2000
+            Call get_word(record,word)
+          End Do
+          Call strip_blanks(record)
+          record1=word(1:Len_Trim(word)+1)//record ; Call lower_case(record1)
+          record2=sites%mol_name(itmols) ;                   Call lower_case(record2)
+
+          If (record1 == record2) Then
+            If (l_top) Then
+              Write(message,'(2a)') 'name of species: ',Trim(sites%mol_name(itmols))
+              Call info(message,.true.)
+            End If
+          Else
+            Call warning('molecular names mismatch between FIELD and MPOLES for type',.true.)
+            Call error(623)
+          End If
+
+          ! read molecular data
+
+          Do
+
+            word(1:1)='#'
+            Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+              Call get_line(safe,nmpldt,record,comm)
+              If (.not.safe) Go To 2000
+              Call get_word(record,word) ; Call lower_case(word)
+            End Do
+
+            ! number of molecules of this type
+
+            If (word(1:6) == 'nummol') Then
+
+              Call get_word(record,word)
+
+              If (sites%num_mols(itmols) == Nint(word_2_real(word))) Then
+                If (l_top) Then
+                  Write(message,'(a,i10)') 'number of molecules ',sites%num_mols(itmols)
+                  Call info(message,.true.)
+                End If
+              Else
+                Write(message,'(2(a,i0),a)') &
+                  'number of molecular types mismatch between FIELD(',sites%ntype_mol, &
+                  ') and MPOLES(',Nint(word_2_real(word)),')'
+                Call warning(message,.true.)
+                Call error(623)
+              End If
+
+              ! read in atomic details
+
+            Else If (word(1:5) == 'atoms') Then
+
+              Call get_word(record,word)
+
+              If (sites%num_site(itmols) == Nint(word_2_real(word))) Then
+                If (l_top) Then
+                  Write(messages(1),'(a,i10)') 'number of atoms/sites ',sites%num_site(itmols)
+                  Write(messages(2),'(a)') 'atomic characteristics:'
+                  Write(messages(3),'(8x,a4,4x,a4,2x,a16,2x,a6)') &
+                    'site','name','multipolar order','repeat'
+                  Call info(messages,3,.true.)
+                End If
+              Else
+                Write(message,'(2(a,i0),a)') &
+                  'number of molecular types mismatch between FIELD(',sites%ntype_mol, &
+                  ') and MPOLES(',Nint(word_2_real(word)),')'
+                Call warning(message,.true.)
+                Call error(623)
+              End If
+
+              ! for every molecule of this type get site and atom description
+
+              ksite=0 ! reference point
+              Do isite=1,sites%num_site(itmols)
+                If (ksite < sites%num_site(itmols)) Then
+
+                  ! read atom name, highest pole order supplied, repeat
+
+                  word(1:1)='#'
+                  Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                    Call get_line(safe,nmpldt,record,comm)
+                    If (.not.safe) Go To 2000
+                    Call get_word(record,word)
+                  End Do
+
+                  atom=word(1:8)
+
+                  ! read supplied pole order
+
+                  Call get_word(record,word)
+                  ordmpl=Abs(Nint(word_2_real(word)))
+                  indmpl=(ordmpl+3)*(ordmpl+2)*(ordmpl+1)/6
+
+                  ! read supplied repetition
+
+                  Call get_word(record,word)
+                  nrept=Abs(Nint(word_2_real(word)))
+                  If (nrept == 0) nrept=1
+
+                  jsite=nsite+1
+                  lsite=jsite+nrept-1
+
+                  Do i=jsite,lsite
+                    If (sites%site_name(i) /= atom) Then ! detect mish-mash
+                      Write(message,'(a,i0)') &
+                        'site names mismatch between FIELD and MPOLES for site ',ksite+1+i-jsite
+                      Call warning(message,.true.)
+                      Call error(623)
+                    End If
+                  End Do
+
+                  ! read supplied site polarisation and dumping factor
+
+                  Call get_word(record,word) ; polarity=Abs(word_2_real(word,0.0_wp))
+                  Call get_word(record,word) ; dumping =Abs(word_2_real(word,0.0_wp))
+
+                  l_rsh=.true. ! regular or no shelling (Drude)
+                  kshels=nshels
+                  Do ishls=1,cshell%numshl(itmols) ! detect beyond charge shelling
+                    kshels=kshels+1
+
+                    isite2=nsite+cshell%lstshl(2,kshels)
+                    If ((isite2 >= jsite .and. isite2 <= lsite)) Then
+                      l_rsh=.false.
+                      If (comm%idnode == 0) Then
+                        If (ordmpl > 0) Then
+                          Call warning( &
+                            'a shell (of a polarisable multipolar ion)' &
+                            //'can only bear a charge to emulate a' &
+                            //'self-iduced dipole',.true.)
+                        End If
+                        If (polarity > zero_plus) Then
+                          Call warning( &
+                            'a shell (of a polarisable multipolar ion)' &
+                            //'cannot have its own associated polarisability', &
+                            .true.)
+                        End If
+                        If (dumping  > zero_plus) Then
+                          Call warning( &
+                            'a shell (of a polarisable multipolar ion)' &
+                            //'cannot have its own associated dumping factor', &
+                            .true.)
+                        End IF
+                      End If
+                    End If
+                  End Do
+
+                  ! get the min and max order defined for cores/nucleus, ignore irregular shells
+
+                  If (l_rsh) Then
+                    ordmpl_min=Min(ordmpl_min,ordmpl)
+                    ordmpl_max=Max(ordmpl_max,ordmpl)
+                  End If
+
+                  If (l_top) Then
+                    If (l_rsh) Then
+                      Write(message,'(2x,i10,4x,a8,4x,i2,5x,i10,2f7.3)') &
+                        ksite+1,atom,ordmpl,nrept,polarity,dumping
+                    Else
+                      Write(message,'(2x,i10,4x,a8,4x,i2,5x,i10,2a)') &
+                        ksite+1,atom,ordmpl,nrept,polarity,dumping, &
+                        Merge(' *ignored* ','           ',polarity>zero_plus), &
+                        Merge(' *ignored* ','           ',dumping >zero_plus)
+                    End If
+                  End If
+
+                  ! monopole=charge
+
+                  word(1:1)='#'
+                  Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                    Call get_line(safe,nmpldt,record,comm)
+                    If (.not.safe) Go To 2000
+                    Call get_word(record,word)
+                  End Do
+
+                  sitmpl = 1
+
+                  charge=word_2_real(word)
+
+                  sites%charge_site(jsite:lsite)=charge
+                  mpoles%local_frame(sitmpl,jsite:lsite)=charge
+                  If (l_rsh) Then
+                    mpoles%polarisation_site(jsite:lsite)=polarity
+                    mpoles%dump_site(jsite:lsite)=dumping
+                    !                      Else ! initilised to zero in mpoles_module
+                  End If
+
+                  ! sum absolute charges
+
+                  sumchg=sumchg+Abs(charge)
+
+                  ! report
+
+                  If (l_top) Then
+                    Write(message,'(2x,a,f10.5)') 'charge ',charge
+                    Call info(message,.true.)
+                  End If
+
+                  ! higher poles counters
+
+                  ordmpl_start = 0
+                  ordmpl_next  = ordmpl_start+1
+                  indmpl_start = sitmpl+1
+                  indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
+
+                  Do While (ordmpl_next <= ordmpl)
+
+                    ! read line per pole order
+
+                    word(1:1)='#'
+                    Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+                      Call get_line(safe,nmpldt,record,comm)
+                      If (.not.safe) Go To 2000
+                      Call get_word(record,word)
+                    End Do
+
+                    ! Only assign what FIELD says is needed or it is a shell
+
+                    If (ordmpl_next <= Merge(mpoles%max_order,1,l_rsh)) Then
+
+                      Do i=indmpl_start,indmpl_final
+                        sitmpl = sitmpl+1
+                        mpoles%local_frame(sitmpl,jsite:lsite)=word_2_real(word)
+                        Call get_word(record,word)
+                      End Do
+
+                      ! report
+
+                      If (l_top) Then
+                        If      (ordmpl_next == 1) Then
+                          Write(message,'(2x,a12,1x,3f10.5)') 'dipole', &
+                            mpoles%local_frame(indmpl_start:indmpl_final,jsite)
+                        Else If (ordmpl_next == 2) Then
+                          Write(message,'(2x,a12,1x,6f10.5)') 'quadrupole', &
+                            mpoles%local_frame(indmpl_start:indmpl_final,jsite)
+                        Else If (ordmpl_next == 3) Then
+                          Write(message,'(2x,a12,1x,10f10.5)') 'octupole', &
+                            mpoles%local_frame(indmpl_start:indmpl_final,jsite)
+                        Else If (ordmpl_next == 4) Then
+                          Write(message,'(2x,a12,1x,15f10.5)') 'hexadecapole', &
+                            mpoles%local_frame(indmpl_start:indmpl_final,jsite)
+                        End If
+                        Call info(message,.true.)
+                      End If
+
+                      ! rescale poles values by their degeneracy
+
+                      If (ordmpl_next > 1) Then
+                        sitmpl=sitmpl-(indmpl_final-indmpl_start+1) ! rewind
+                        Do i=ordmpl_next,0,-1
+                          l=ordmpl_next-i
+                          Do j=l,0,-1
+                            k=l-j
+
+                            scl=Exp(factorial(ordmpl_next)-factorial(k)-factorial(j)-factorial(i))
+                            sitmpl = sitmpl+1 ! forward and apply scaling if degeneracy exists
+                            If (Nint(scl) /= 1) Then
+                              mpoles%local_frame(sitmpl,jsite:lsite)= &
+                                mpoles%local_frame(sitmpl,jsite:lsite)/scl
+                            End If
+                          End Do
+                        End Do
+                      End If
+
+                    Else
+
+                      l_ord=.true.
+
+                      ! update actual order marker
+
+                      sitmpl=indmpl_final
+
+                      ! report
+
+                      If (l_top) Then
+                        If (l_rsh) Then
+                          If      (ordmpl_next == 1) Then
+                            Write(message,'(2x,a12,1x,a)') &
+                              'dipole',' supplied but not required'
+                          Else If (ordmpl_next == 2) Then
+                            Write(message,'(2x,a12,1x,a)') &
+                              'quadrupole',' supplied but not required'
+                          Else If (ordmpl_next == 3) Then
+                            Write(message,'(2x,a12,1x,a)') &
+                              'octupole',' supplied but not required'
+                          Else If (ordmpl_next == 4) Then
+                            Write(message,'(2x,a12,1x,a)') &
+                              'hexadecapole',' supplied but not required'
+                          Else
+                            Write(message,'(2x,a12,i0,a)') &
+                              'pole order ',ordmpl_next,' supplied but not required'
+                          End If
+                        Else
+                          If      (ordmpl_next == 1) Then
+                            Write(message,'(2x,a12,1x,a)') &
+                              'dipole',' supplied but ignored as invalid'
+                          Else If (ordmpl_next == 2) Then
+                            Write(message,'(2x,a12,1x,a)') &
+                              'quadrupole',' supplied but ignored as invalid'
+                          Else If (ordmpl_next == 3) Then
+                            Write(message,'(2x,a12,1x,a)') &
+                              'octupole',' supplied but ignored as invalid'
+                          Else If (ordmpl_next == 4) Then
+                            Write(message,'(2x,a12,1x,a)') &
+                              'hexadecapole',' supplied but ignored as invalid'
+                          Else
+                            Write(message,'(2x,a11,i0,a)') &
+                              'pole order ',ordmpl_next,' supplied but ignored as invalid'
+                          End If
+                        End If
+                        Call info(message,.true.)
+                      End If
+
+                    End If
+
+                    ! update poles counters
+
+                    ordmpl_next  = ordmpl_next+1
+                    indmpl_start = sitmpl+1
+                    indmpl_final = (ordmpl_next+3)*(ordmpl_next+2)*(ordmpl_next+1)/6
+
+                  End Do
+
+                  nsite=nsite+nrept
+                  ksite=ksite+nrept
+
+                  If (ksite == sites%num_site(itmols)) nshels=kshels
+
+                End If
+              End Do
+
+              ! finish of data for one molecular type
+
+            Else If (word(1:6) == 'finish') Then
+
+              Write(message,'(3(a,i0))') &
+                'multipolar electrostatics requested up to order ', &
+                mpoles%max_order, ' with specified interactions up order ',  &
+                ordmpl_max,' and least order ', ordmpl_min
+              Call warning(message,.true.)
+
+              If (ordmpl_max*mpoles%max_order == 0) Then
+                Call warning( &
+                  'multipolar electrostatics machinery to be used for monompoles ' &
+                  //'only electrostatic interactions (point charges only)', &
+                  .true.)
+              End If
+              If (ordmpl_max > 4) Then
+                Call warning( &
+                  'electrostatic interactions beyond hexadecapole order can ' &
+                  //'not be considered and are thus ignored',.true.)
+              End If
+
+              Go To 1000
+
+            Else
+
+              ! error exit for unidentified directive in molecular data
+
+              Call strip_blanks(record)
+              Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+              Call info(message,.true.)
+              Call error(12)
+
+            End If
+
+          End Do
+
+          ! just finished with this type molecule data
+
+1000      Continue
+
+        End Do
+
+        ! close MPOLES data file
+
+      Else If (word(1:5) == 'close') Then
+
+        If (comm%idnode == 0) Close(Unit=nmpldt)
+
+        ! EXIT IF ALL IS OK
+
+        Return
+
+      Else
+
+        ! error exit for unidentified directive
+
+        Call info(word(1:Len_Trim(word)),.true.)
+        Call error(4)
+
+      End If
+
+    End Do
+
+    Return
+
+2000 Continue
+
+    If (comm%idnode == 0) Close(Unit=nmpldt)
+    Call error(52)
+
+  End Subroutine read_mpoles
+
 End Module ffield

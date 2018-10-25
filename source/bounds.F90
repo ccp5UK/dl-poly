@@ -19,7 +19,7 @@ Module bounds
   Use greenkubo,       Only : greenkubo_type
   Use mpole,           Only : mpole_type,POLARISATION_CHARMM
   Use ttm,             Only : ttm_type
-  Use numerics,        Only : dcell
+  Use numerics,        Only : dcell, erfc, erfc_deriv
   Use control,         Only : scan_control, scan_control_pre
   Use ffield,          Only : scan_field
   Use errors_warnings, Only : error,warning,info
@@ -39,7 +39,7 @@ Module bounds
   Use external_field, Only : external_field_type
   Use rigid_bodies, Only : rigid_bodies_type
   Use electrostatic, Only : electrostatic_type
-  Use ewald, Only : ewald_type
+  Use ewald, Only : ewald_type, ewald_spme_type
   Use io, Only : io_type
   Use filename, Only : file_type
   Use site, Only : site_type
@@ -106,7 +106,7 @@ Contains
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( configuration_type ), Intent( InOut ) :: config
     Type( domains_type ), Intent( InOut ) :: domain
-    Type( ewald_type ), Intent( InOut ) :: ewld
+    Class( ewald_type ), Allocatable, Intent( InOut ) :: ewld
     Type( kim_type ), Intent( InOut ) :: kim_data
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( flow_type ), Intent( InOut ) :: flow
@@ -436,7 +436,8 @@ Contains
 
     ! maximum number of grid points for electrostatics
 
-    electro%ewald_exclusion_grid = Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4),electro%no_elec)
+    erfc%nsamples = Merge(-1,Max(1004,Nint(neigh%cutoff/delr_max)+4),electro%no_elec)
+    erfc_deriv%nsamples = erfc%nsamples
 
     ! maximum number of grid points for vdw interactions - overwritten
 
@@ -453,9 +454,7 @@ Contains
     ! maximum of all maximum numbers of grid points for all grids - used for mxbuff
 
     mxgrid = Max(mxgrid,bond%bin_tab,angle%bin_tab,dihedral%bin_tab, &
-      inversion%bin_tab,electro%ewald_exclusion_grid,vdws%max_grid,met%maxgrid,tersoffs%max_grid)
-
-
+      inversion%bin_tab,erfc%nsamples,vdws%max_grid,met%maxgrid,tersoffs%max_grid)
 
     !!! INTER-LIKE POTENTIAL PARAMETERS !!!
 
@@ -535,7 +534,7 @@ Contains
 
 
     ! DD PARAMETERS - by hypercube mapping of MD cell onto machine resources
-    ! Dependences: MD cell config%widths (explicit) and machine resources (implicit)
+    ! Dependences: MD cell widths (explicit) and machine resources (implicit)
 
     Call map_domains(config%imc_n,celprp(7),celprp(8),celprp(9),domain,comm)
 
@@ -675,7 +674,12 @@ Contains
     Call info(message,.true.)
 
     tol=Min(0.05_wp,0.005_wp*neigh%cutoff)                                        ! tolerance
-    test = 0.02_wp * Merge( 1.0_wp, 2.0_wp, ewld%bspline > 0)                    ! 2% (w/ SPME/PS) or 4% (w/o SPME/PS)
+    if (ewld%active) then
+      test = 0.02_wp
+    else if (pois%active) then
+      test = 0.04_wp
+    end if
+
     cut=Min(domain%nx_recip*celprp(7),domain%ny_recip*celprp(8),domain%nz_recip*celprp(9))-1.0e-6_wp ! domain size
 
     If (ilx*ily*ilz == 0) Then
@@ -687,7 +691,7 @@ Contains
         Go To 10
       Else
         If (cut < neigh%cutoff) Then
-          Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
+          Write(message,'(a)') 'neigh%cutoff <= Min(domain width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
           Call warning(message,.true.)
           Call error(307)
         Else ! neigh%padding is defined & in 'no strict' mode
@@ -698,7 +702,7 @@ Contains
             If (neigh%padding < tol) neigh%padding = 0.0_wp ! Don't bother
             Go To 10
           Else
-            Write(message,'(a)') 'neigh%cutoff <= Min(domain config%width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
+            Write(message,'(a)') 'neigh%cutoff <= Min(domain width) < neigh%cutoff_extended = neigh%cutoff + neigh%padding'
             Call warning(message,.true.)
             Call error(307)
           End If
@@ -794,72 +798,103 @@ Contains
     ! that is not on the immediate neighbouring nodes in negative
     ! directions but beyond them (which may mean self-halo in some cases)
 
-    ewld%fft_dim_a = ewld%fft_dim_a1
-    ewld%fft_dim_b = ewld%fft_dim_b1
-    ewld%fft_dim_c = ewld%fft_dim_c1
+    if (ewld%active) then
+      select type ( ewld )
+      type is ( ewald_spme_type )
 
-    qlx = ilx
-    qly = ily
-    qlz = ilz
+        ewld%kspace%k_vec_dim(1) = ewld%kspace%k_vec_dim_cont(1)
+        ewld%kspace%k_vec_dim(2) = ewld%kspace%k_vec_dim_cont(2)
+        ewld%kspace%k_vec_dim(3) = ewld%kspace%k_vec_dim_cont(3)
 
-    ! ewld%bspline = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
+        qlx = ilx
+        qly = ily
+        qlz = ilz
 
-    If (ewld%bspline /= 0) Then
 
-      ! ensure (ewld%fft_dim_a,ewld%fft_dim_b,ewld%fft_dim_c) consistency between the DD
+        ! ensure (ewld%kspace%k_vec_dim(1),ewld%kspace%k_vec_dim(2),ewld%kspace%k_vec_dim(3)) consistency between the DD
+        ! processor grid (map_domains is already called) and the grid
+        ! method or comment out adjustments if using ewald_spme_force~
+
+        Call adjust_kmax( ewld%kspace%k_vec_dim(1), domain%nx )
+        Call adjust_kmax( ewld%kspace%k_vec_dim(2), domain%ny )
+        Call adjust_kmax( ewld%kspace%k_vec_dim(3), domain%nz )
+
+        ! Calculate and check ql.
+
+        qlx = Min(qlx , ewld%kspace%k_vec_dim(1)/(ewld%bspline%num_splines*domain%nx))
+        qly = Min(qly , ewld%kspace%k_vec_dim(2)/(ewld%bspline%num_splines*domain%ny))
+        qlz = Min(qlz , ewld%kspace%k_vec_dim(3)/(ewld%bspline%num_splines*domain%nz))
+
+        If (.not.neigh%unconditional_update) Then
+          ewld%bspline%num_spline_pad=ewld%bspline%num_splines
+        Else
+          ewld%bspline%num_spline_pad=&
+            & ewld%bspline%num_splines+Ceiling((neigh%padding*Real(ewld%bspline%num_splines,wp))/neigh%cutoff)
+
+          ! Redifine ql.
+
+          qlx = Min(ilx , ewld%kspace%k_vec_dim(1)/(ewld%bspline%num_spline_pad*domain%nx))
+          qly = Min(ily , ewld%kspace%k_vec_dim(2)/(ewld%bspline%num_spline_pad*domain%ny))
+          qlz = Min(ilz , ewld%kspace%k_vec_dim(3)/(ewld%bspline%num_spline_pad*domain%nz))
+        End If
+
+        ! Hard luck, giving up
+
+        If (qlx*qly*qlz == 0) Then
+          Write(message,'(a,i6,a,2(i0,","),i0,a)') &
+            & 'SPME driven limit on largest possible decomposition:',  &
+            & product(ewld%kspace%k_vec_dim/ewld%bspline%num_spline_pad), &
+            & ' nodes/domains (', ewld%kspace%k_vec_dim/ewld%bspline%num_spline_pad,')'
+          Call info(message)
+          Call error(308)
+        End If
+
+      class default
+        write (message, '(a)') "Fatal type error in set_bounds"
+        call error(0, message)
+
+      end select
+
+      qlx = ilx
+      qly = ily
+      qlz = ilz
+
+      ! ensure (pois%grid_dimensions(1),pois%grid_dimensions(2),pois%grid_dimensions(3)) consistency between the DD
       ! processor grid (map_domains is already called) and the grid
       ! method or comment out adjustments if using ewald_spme_force~
 
-      Call adjust_kmax( ewld%fft_dim_a, domain%nx )
-      Call adjust_kmax( ewld%fft_dim_b, domain%ny )
-      Call adjust_kmax( ewld%fft_dim_c, domain%nz )
+    Else if (pois%active) Then
+      Call adjust_kmax( pois%grid_dimensions(1), domain%nx )
+      Call adjust_kmax( pois%grid_dimensions(2), domain%ny )
+      Call adjust_kmax( pois%grid_dimensions(3), domain%nz )
 
       ! Calculate and check ql.
 
-      qlx = Min(qlx , ewld%fft_dim_a/(ewld%bspline*domain%nx))
-      qly = Min(qly , ewld%fft_dim_b/(ewld%bspline*domain%ny))
-      qlz = Min(qlz , ewld%fft_dim_c/(ewld%bspline*domain%nz))
+      qlx = Min(qlx , pois%grid_dimensions(1)/(pois%halo_size*domain%nx))
+      qly = Min(qly , pois%grid_dimensions(2)/(pois%halo_size*domain%ny))
+      qlz = Min(qlz , pois%grid_dimensions(3)/(pois%halo_size*domain%nz))
 
       If (.not.neigh%unconditional_update) Then
-        ewld%bspline1=ewld%bspline
+        pois%halo_size1=pois%halo_size
       Else
-        ewld%bspline1=ewld%bspline+Ceiling((neigh%padding*Real(ewld%bspline,wp))/neigh%cutoff)
+        pois%halo_size1=&
+          & pois%halo_size+Ceiling((neigh%padding*Real(pois%halo_size,wp))/neigh%cutoff)
 
         ! Redifine ql.
 
-        qlx = Min(ilx , ewld%fft_dim_a/(ewld%bspline1*domain%nx))
-        qly = Min(ily , ewld%fft_dim_b/(ewld%bspline1*domain%ny))
-        qlz = Min(ilz , ewld%fft_dim_c/(ewld%bspline1*domain%nz))
+        qlx = Min(ilx , pois%grid_dimensions(1)/(pois%halo_size1*domain%nx))
+        qly = Min(ily , pois%grid_dimensions(2)/(pois%halo_size1*domain%ny))
+        qlz = Min(ilz , pois%grid_dimensions(3)/(pois%halo_size1*domain%nz))
       End If
 
       ! Hard luck, giving up
 
       If (qlx*qly*qlz == 0) Then
-        If ((lrpad0 .eqv. flow%reset_padding) .and. neigh%padding > zero_plus) Then ! defaulted padding must be removed
-          neigh%padding = 0.0_wp
-          lrpad0 = .true.
-          Go To 5
-        Else
-          test = Min( Real(ewld%fft_dim_a1,wp)/Real(domain%nx,wp), &
-            Real(ewld%fft_dim_b1,wp)/Real(domain%ny,wp), &
-            Real(ewld%fft_dim_c1,wp)/Real(domain%nz,wp) ) / Real(ewld%bspline,wp)
-          tol  = Min( Real(ewld%fft_dim_a,wp)/Real(domain%nx,wp), &
-            Real(ewld%fft_dim_b,wp)/Real(domain%ny,wp), &
-            Real(ewld%fft_dim_c,wp)/Real(domain%nz,wp) ) / Real(ewld%bspline1,wp)
-
-
-          Write(messages(1),'(a,i6,a,3(i0,a))') &
-            'SPME driven limit on largest possible decomposition:',  &
-            (ewld%fft_dim_a/ewld%bspline1)*(ewld%fft_dim_b/ewld%bspline1)*(ewld%fft_dim_c/ewld%bspline1) ,           &
-            ' nodes/domains (', ewld%fft_dim_a/ewld%bspline1,',',ewld%fft_dim_b/ewld%bspline1,',',ewld%fft_dim_c/ewld%bspline1,')'
-          Write(messages(2),'(a,f6.2,a)') &
-            'SPME suggested factor to decrease currently specified cutoff (with padding) by: ', &
-            1.0_wp/test, ' for currently speccified Ewald precision & domain decomposition'
-          Write(messages(3),'(a,f6.2,a)') &
-            'SPME suggested factor to increase current Ewald precision by: ',                   &
-            (1.0_wp-tol)*100.0_wp, ' for currently specified cutoff (with padding) & domain decomposition'
-          Call info(messages,3,.true.)
-        End If
+        Write(message,'(a,i6,a,2(i0,","),i0,a)') &
+          & 'Pois driven limit on largest possible decomposition:',  &
+          & product(pois%grid_dimensions/pois%halo_size1), &
+          & ' nodes/domains (', pois%grid_dimensions/pois%halo_size1,')'
+        Call info(message)
         Call error(308)
       End If
     End If
@@ -973,11 +1008,30 @@ Contains
     domain%mxbfsh = Merge( 1, 0, comm%mxnode > 1) * &
       Nint(Real(Max(2*cshell%mxshl,2*cons%mxcons,rigid%max_list*rigid%max_rigid),wp) * dens0)
 
-    config%mxbuff = Max(domain%mxbfdp, 35*domain%mxbfxp, 4*domain%mxbfsh, &
-      2*(ewld%fft_dim_a/domain%nx)*(ewld%fft_dim_b/domain%ny)*(ewld%fft_dim_c/domain%nz)+10, &
-      stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,  &
-      rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
-      rigid%max_type*(4+3*rigid%max_list), 10000 )
+
+    if (pois%active) then
+      config%mxbuff = Max(domain%mxbfdp, 35*domain%mxbfxp, 4*domain%mxbfsh, &
+        2*(pois%grid_dimensions(1)/domain%nx)* &
+        & (pois%grid_dimensions(2)/domain%ny)* &
+        & (pois%grid_dimensions(3)/domain%nz)+10, &
+        stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,  &
+        rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
+        rigid%max_type*(4+3*rigid%max_list), 10000 )
+    else if (ewld%active) then
+      config%mxbuff = Max(domain%mxbfdp, 35*domain%mxbfxp, 4*domain%mxbfsh, &
+        2*(ewld%kspace%k_vec_dim(1)/domain%nx)* &
+        & (ewld%kspace%k_vec_dim(2)/domain%ny)* &
+        & (ewld%kspace%k_vec_dim(3)/domain%nz)+10, &
+        stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,  &
+        rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
+        rigid%max_type*(4+3*rigid%max_list), 10000 )
+    else
+      config%mxbuff = Max(domain%mxbfdp, 35*domain%mxbfxp, 4*domain%mxbfsh, &
+        stats%mxnstk*stats%mxstak, mxgrid, rdf%max_grid,  &
+        rigid%max_list*Max(rigid%max_rigid,rigid%max_type),  &
+        rigid%max_type*(4+3*rigid%max_list), 10000 )
+    end if
+
 
     ! reset (increase) link-cell maximum (neigh%max_cell)
     ! if tersoff or three- or four-body potentials exist

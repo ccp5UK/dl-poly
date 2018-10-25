@@ -1,9 +1,83 @@
 Module numerics
+  !!------------------------ THIS IS NUMERIC_CONTAINER ---------------------!
+  !!
+  !! Function uni - two seeded random number generator
+  !!
+  !! Function sarurnd - three seeded random number generator based on SARU
+  !!
+  !! Subroutine box_mueller_saru - generates gaussian random numbers of unit
+  !!                               variance (with zero mean and standard
+  !!                               variation of 1)
+  !!
+  !! Subroutine box_mueller_uni - generates gaussian random numbers of unit
+  !!                              variance (with zero mean and standard
+  !!                              variation of 1)
+  !!
+  !! Subroutine gauss_1 - constructs velocity arrays with a gaussian
+  !!                      distribution of unit variance (zero mean) by
+  !!                      an approximation of the Central Limit Theorem
+  !!
+  !! Subroutine gauss_2 - constructs velocity arrays with a gaussian
+  !!                      distribution of unit variance (zero mean) using
+  !!                      the box-mueller method
+  !!
+  !! Subroutine erfcgen - generates interpolation tables for erfc and erfc/r
+  !!                      derivative
+  !!
+  !! Function match - determines a match between integer value 'n' and an
+  !!                  array of integers in ascending order
+  !!
+  !! Subroutine shellsort - sorts an integer array in ascending order
+  !!
+  !! Subroutine shellsort2 - sorts an integer array in ascending order,
+  !!                         keeping the original ranking of the array
+  !!
+  !! Function local_index - finds the local atom number given the global
+  !!                        atom number
+  !!
+  !! Subroutine dcell - calculates the dimensional properties of a
+  !!                    simulation cell
+  !!
+  !! Subroutine invert - calculates the inverse of a 3x3 matrix using
+  !!                     cofactors
+  !!
+  !! Subroutine images - calculates the minimum image distance of
+  !!                     atom pairs within a specified MD cell
+  !!
+  !! Subroutine images_s - calculates the minimum image distance of
+  !!                       a single atom pair within a specified MD cell
+  !!
+  !! Subroutine pbcshift - calculates the minimum image of atoms within
+  !!                       a specified MD cell in accordance with the DD
+  !!                       boundary convention
+  !!
+  !! Subroutine pbcshfrc - calculates the minimum image of atoms within
+  !!                       a specified MD cell in accordance with the DD
+  !!                       boundary convention and returns reduced coordinates
+  !!
+  !! Subroutine pbcshfrl - calculates the minimum image of atoms within
+  !!                       a specified MD cell in accordance with the DD
+  !!                       boundary convention from reduced coordinates and
+  !!                       returns real coordinates
+  !!
+  !! Subroutine jacobi - diagonalises real symmetric matrices by the
+  !!                     Jacobi method
+  !!
+  !! Subroutine mat_mul - calculates product of two 3x3 matrices written
+  !!                     in a DL_POLY format as vectors
+  !!
+  !! Function Factorial - computes the factorial (n!) of an input n
+  !!
+  !! MM3_Module - a module to calculate LTC due to AMOEBA 14-7 buffered vdw
+  !!              interactions
+  !!
+  !!------------------------------------------------------------------------!
   Use kinds, Only : wp,wi,li
-  Use errors_warnings, Only : error
+  Use errors_warnings, Only : error, error_alloc, error_dealloc
+  Use constants, Only : zero_plus
   Use comms, Only : comms_type
-  Use constants, Only : rt3,zero_plus, sqrpi,rt2,half_minus
-  Use particle, Only: corePart
+  Use particle, Only : corepart
+  Use constants, Only : rt3,zero_plus, sqrpi,rt2,half_minus! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
 
   Implicit None
   Private
@@ -27,79 +101,23 @@ Module numerics
     Procedure, Public :: init => init_seed
   End Type seed_type
 
-  !!!!!!!!!!!!!!!!!!!!!!!! THIS IS NUMERIC_CONTAINER !!!!!!!!!!!!!!!!!!!!!
-  !
-  ! Function uni - two seeded random number generator
-  !
-  ! Function sarurnd - three seeded random number generator based on SARU
-  !
-  ! Subroutine box_mueller_saru - generates gaussian random numbers of unit
-  !                               variance (with zero mean and standard
-  !                               variation of 1)
-  !
-  ! Subroutine box_mueller_uni - generates gaussian random numbers of unit
-  !                              variance (with zero mean and standard
-  !                              variation of 1)
-  !
-  ! Subroutine gauss_1 - constructs velocity arrays with a gaussian
-  !                      distribution of unit variance (zero mean) by
-  !                      an approximation of the Central Limit Theorem
-  !
-  ! Subroutine gauss_2 - constructs velocity arrays with a gaussian
-  !                      distribution of unit variance (zero mean) using
-  !                      the box-mueller method
-  !
-  ! Subroutine erfcgen - generates interpolation tables for erfc and erfc/r
-  !                      derivative
-  !
-  ! Function match - determines a match between integer value 'n' and an
-  !                  array of integers in ascending order
-  !
-  ! Subroutine shellsort - sorts an integer array in ascending order
-  !
-  ! Subroutine shellsort2 - sorts an integer array in ascending order,
-  !                         keeping the original ranking of the array
-  !
-  ! Function local_index - finds the local atom number given the global
-  !                        atom number
-  !
-  ! Subroutine dcell - calculates the dimensional properties of a
-  !                    simulation cell
-  !
-  ! Subroutine invert - calculates the inverse of a 3x3 matrix using
-  !                     cofactors
-  !
-  ! Subroutine images - calculates the minimum image distance of
-  !                     atom pairs within a specified MD cell
-  !
-  ! Subroutine images_s - calculates the minimum image distance of
-  !                       a single atom pair within a specified MD cell
-  !
-  ! Subroutine pbcshift - calculates the minimum image of atoms within
-  !                       a specified MD cell in accordance with the DD
-  !                       boundary convention
-  !
-  ! Subroutine pbcshfrc - calculates the minimum image of atoms within
-  !                       a specified MD cell in accordance with the DD
-  !                       boundary convention and returns reduced coordinates
-  !
-  ! Subroutine pbcshfrl - calculates the minimum image of atoms within
-  !                       a specified MD cell in accordance with the DD
-  !                       boundary convention from reduced coordinates and
-  !                       returns real coordinates
-  !
-  ! Subroutine jacobi - diagonalises real symmetric matrices by the
-  !                     Jacobi method
-  !
-  ! Subroutine mat_mul - calculates product of two 3x3 matrices written
-  !                     in a DL_POLY format as vectors
-  !
-  ! Function Factorial - computes the factorial (n!) of an input n
-  !
-  ! MM3_Module - a module to calculate LTC due to AMOEBA 14-7 buffered vdw
-  !              interactions
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  Type, public :: interp_table
+    !> Interpolation table for use with three_p_interp
+    real( kind = wp ), dimension(:), allocatable :: table
+    real( kind = wp )                            :: spacing
+    real( kind = wp )                            :: recip_spacing
+    integer                                      :: nsamples
+    logical                                      :: initialised
+  end type interp_table
+
+  !! Jw952
+  ! Cannot specify protected as certain things need to be read in outside of this module
+  !> Erfc tables
+  type ( interp_table ), Save, Public :: erfc, erfc_deriv
+  !> n choose k values
+  Real ( Kind = wp ), Save, Allocatable, Public :: n_choose_k(:,:)
+
+
   Public :: uni
   Public :: sarurnd
   Public :: match
@@ -126,6 +144,11 @@ Module numerics
   Public :: mat_mul
   Public :: factor
   Public :: get_nth_prime
+  Public :: calc_erf
+  Public :: calc_erf_deriv
+  Public :: calc_erfc
+  Public :: calc_erfc_deriv
+  Public :: three_p_interp
 
   Interface pbcshfrc
     Module Procedure pbcshfrc_parts
@@ -140,7 +163,7 @@ Module numerics
   Interface pbcshift
     Module Procedure pbcshift_parts
     Module Procedure pbcshift_arrays
-  End Interface
+  End Interface pbcshift
 
 Contains
 
@@ -885,60 +908,6 @@ Contains
     End Do
 
   End Subroutine gauss_2
-
-  Subroutine erfcgen(rcut,alpha,ewald_exclusion_grid,erc,fer)
-
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    !
-    ! dl_poly_4 routine for generating interpolation tables for erfc and its
-    ! derivative - for use with Ewald sum
-    !
-    ! copyright - daresbury laboratory
-    ! author    - t.forester december 1994
-    ! amended   - i.t.todorov february 2016
-    ! refactoring:
-    !           - a.m.elena march-october 2018
-    !           - j.madge march-october 2018
-    !           - a.b.g.chalk march-october 2018
-    !           - i.scivetti march-october 2018
-    !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-    Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
-    Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
-    Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
-    Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
-    Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
-    Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
-
-    Integer,                                  Intent( In    ) :: ewald_exclusion_grid
-    Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha
-    Real( Kind = wp ), Dimension( 0:ewald_exclusion_grid ), Intent(   Out ) :: erc,fer
-
-    Integer           :: i
-    Real( Kind = wp ) :: drewd,exp1,rrr,rsq,tt
-
-    ! look-up tables for real space part of ewald sum
-
-    drewd = rcut/Real(ewald_exclusion_grid-4,wp)
-
-    Do i=1,ewald_exclusion_grid
-      rrr = Real(i,wp)*drewd
-      rsq = rrr*rrr
-
-      tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
-      exp1 = Exp(-(alpha*rrr)**2)
-
-      erc(i) = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr
-      fer(i) = (erc(i) + 2.0_wp*(alpha/sqrpi)*exp1)/rsq
-    End Do
-
-    ! extrapolation for grid point 0 at distances close to 0
-
-    erc(0) = Huge(1.0_wp)
-    fer(0) = Huge(1.0_wp+2.0_wp*(alpha/sqrpi))
-
-  End Subroutine erfcgen
 
   Function match(n,ind_top,list)
 
@@ -3498,4 +3467,234 @@ Contains
     End If
 
   End Function get_nth_prime
+
+  function three_p_interp(samples, point)
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 routine to calculate 3 point interpolation of points
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - w.smith & i.t.todorov august 2015
+    !! functionalised - j.s.wilkins august 2018
+    !!----------------------------------------------------------------------!
+    implicit none
+    Real( Kind = wp )                 :: three_p_interp
+
+    Type( interp_table )              :: samples              !! Either erfc, erf, erfc_deriv, etc.
+    Real( Kind = wp )                 :: point                !! Point to evaluate
+
+    Real( Kind = wp ), Dimension( 2 ) :: temp                 !! Intermediate variables
+    Real( Kind = wp ), Dimension( 3 ) :: points               !! Sample points (assumed evenly spaced)
+    Real( Kind = wp )                 :: difference           !! Difference between closest sample and exact
+    Integer                           :: nearest_sample_index !! Index of closest sample
+
+    nearest_sample_index = int(point*samples%recip_spacing)
+    if (nearest_sample_index > samples%nsamples - 2) call error(0,'Error - Interpolation beyond table limit in three_p_interp')
+
+    difference  = point*samples%recip_spacing - Real(nearest_sample_index,wp)
+    points = samples%table(nearest_sample_index:nearest_sample_index+2)
+
+    ! Catch minimum interp
+    if (nearest_sample_index == 0) points(1) = points(1)*point
+
+    temp(1) = points(1) + (points(2) - points(1))*difference
+    temp(2) = points(2) + (points(3) - points(2))*(difference - 1.0_wp)
+    three_p_interp = (temp(1) + (temp(2)-temp(1))*difference*0.5_wp)
+
+  end function three_p_interp
+
+  Subroutine erfcgen(rcut,alpha,erc,fer)
+
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for generating interpolation tables for erfc and its
+    !! derivative - for use with Ewald sum
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - t.forester december 1994
+    !! amended   - i.t.todorov february 2016
+    !! amended   - j.s.wilkins october  2018
+    !!-----------------------------------------------------------------------
+
+    Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
+    Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
+    Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
+    Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
+    Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
+    Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
+
+    Real( Kind = wp ),                        Intent( In    ) :: rcut,alpha
+    Type( interp_table ),                     Intent( InOut ) :: erc, fer
+
+    Integer           :: i
+    Real( Kind = wp ) :: exp1,rrr,rsq,tt
+    Integer           :: fail
+
+    if (erc%initialised .and. fer%initialised) return
+
+    allocate(erc%table(0:erc%nsamples), stat=fail)
+    if (fail > 0) call error_alloc('erc%table','erfcgen')
+    allocate(fer%table(0:fer%nsamples), stat=fail)
+    if (fail > 0) call error_alloc('fer%table','erfcgen')
+
+    ! look-up tables for real space part of ewald sum
+
+    erc%spacing = rcut/Real(erc%nsamples-4,wp)
+    fer%spacing = erc%spacing
+
+    erc%recip_spacing = 1.0_wp / erc%spacing
+    fer%recip_spacing = 1.0_wp / fer%spacing
+
+    Do i=1,erc%nsamples
+      rrr = Real(i,wp)*erc%spacing
+      rsq = rrr*rrr
+
+      tt = 1.0_wp/(1.0_wp + pp*alpha*rrr)
+      exp1 = Exp(-(alpha*rrr)**2)
+
+      erc%table(i) = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp1/rrr
+      fer%table(i) = (erc%table(i) + 2.0_wp*(alpha/sqrpi)*exp1)/rsq
+    End Do
+
+    ! extrapolation for grid point 0 at distances close to 0
+
+    erc%table(0) = Huge(1.0_wp)
+    fer%table(0) = Huge(1.0_wp+2.0_wp*(alpha/sqrpi))
+
+    erc%initialised = .true.
+    fer%initialised = .true.
+
+  End Subroutine erfcgen
+
+  subroutine init_interp_table(table_in, range, func)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for generating interpolation tables
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !!
+    !!-----------------------------------------------------------------------
+    implicit none
+
+    type( interp_table ),        intent( inout ) :: table_in
+    real( Kind = wp ),           intent( in    ) :: range
+    real( Kind = wp ),           external        :: func
+
+    real( Kind = wp ) :: x
+    integer :: i
+    integer :: fail
+
+    allocate(table_in%table(table_in%nsamples), stat=fail)
+    if (fail > 0) call error_alloc('table_in%table','init_interp_table')
+    table_in%spacing = range/Real(table_in%nsamples-4,wp)
+    table_in%recip_spacing = 1.0_wp / table_in%spacing
+
+    Do i=1,table_in%nsamples
+      x = Real(i,wp)*table_in%spacing
+      table_in%table = func(x)
+    End Do
+
+    table_in%initialised = .true.
+
+  end subroutine init_interp_table
+
+  function calc_erfc(x) result(erfc)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for calculating a point on the complementary error function
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !! based on  - erfcgen
+    !!
+    !!-----------------------------------------------------------------------
+    implicit none
+    Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
+    Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
+    Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
+    Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
+    Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
+    Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
+
+    real( kind = wp ), intent ( in    ) :: x
+    real( kind = wp )                   :: erfc
+
+    real( kind = wp ) :: tt
+
+    tt = 1.0_wp/(1.0_wp + pp*x)
+    erfc = tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*exp(-(x**2))
+
+  end function calc_erfc
+
+  function calc_erfc_deriv(x) result(d_erfc)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for calculating a point on the complementary error function derivative
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !! based on  - erfcgen
+    !!
+    !!-----------------------------------------------------------------------
+    use constants, only : sqrpi
+
+    implicit none
+
+    real( kind = wp ), intent ( in    ) :: x
+    real( kind = wp )                   :: d_erfc
+
+    d_erfc = 2.0_wp*exp(-(x**2))/sqrpi
+
+  end function calc_erfc_deriv
+
+  function calc_erf(x) result(erf)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for calculating a point on the error function
+    !!  and its derivative
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !! based on  - erfcgen
+    !!
+    !!-----------------------------------------------------------------------
+    use constants, only : sqrpi
+
+    implicit none
+    Real( Kind = wp ), Parameter :: a1 =  0.254829592_wp
+    Real( Kind = wp ), Parameter :: a2 = -0.284496736_wp
+    Real( Kind = wp ), Parameter :: a3 =  1.421413741_wp
+    Real( Kind = wp ), Parameter :: a4 = -1.453152027_wp
+    Real( Kind = wp ), Parameter :: a5 =  1.061405429_wp
+    Real( Kind = wp ), Parameter :: pp =  0.3275911_wp
+
+    real( kind = wp ), intent ( in    ) :: x
+    real( kind = wp )                   :: erf
+
+    real( kind = wp ) :: tt
+
+    tt = 1.0_wp/(1.0_wp + pp*x)
+    erf = (1.0_wp - tt*(a1+tt*(a2+tt*(a3+tt*(a4+tt*a5))))*Exp(-(x**2)))
+
+  end function calc_erf
+
+  function calc_erf_deriv(x) result(d_erf)
+    !!-----------------------------------------------------------------------
+    !!
+    !! dl_poly_4 routine for calculating a point on the error function
+    !!  and its derivative
+    !! copyright - daresbury laboratory
+    !! author    - j.wilkins september 2018
+    !! based on  - erfcgen
+    !!
+    !!-----------------------------------------------------------------------
+    use constants, only : sqrpi
+
+    implicit none
+
+    real( kind = wp ), intent ( in    ) :: x
+    real( kind = wp )                   :: d_erf
+
+    d_erf = 2.0_wp*Exp(-(x**2))/sqrpi
+
+  end function calc_erf_deriv
+
+
 End Module numerics
