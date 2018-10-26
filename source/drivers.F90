@@ -52,7 +52,7 @@ Module drivers
   Use npt_mtk, Only : npt_m0_vv,npt_m1_vv
   Use npt_nose_hoover, Only : npt_h0_vv,npt_h1_vv
   Use nve, Only : nve_0_vv, nve_1_vv 
-  Use timer, Only  : timer_type, time_elapsed,timer_report_new,start_timer_new,stop_timer_new
+  Use timer, Only  : timer_type, time_elapsed,timer_report_new,start_timer_new_tree,stop_timer_new_tree
   Use poisson, Only : poisson_type
   Use constraints, Only : constraints_type, constraints_quench
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
@@ -283,7 +283,7 @@ Contains
     ! Calculate four-body forces
 
     If (fourbody%n_potential > 0) Call four_body_forces(fourbody,stat,neigh,domain,cnfig,comm)
-    call start_timer_new('Bonded Forces')
+    call start_timer_new_tree('Bonded Forces')
     ! Calculate shell model forces
 
     If (cshell%megshl > 0) Call core_shell_forces(cshell,stat,cnfig,comm)
@@ -338,7 +338,7 @@ Contains
       switch = 1 + Merge(1,0,ltmp)
       Call inversions_forces(switch,stat%enginv,stat%virinv,stat%stress,inversion,cnfig,comm)
     End If
-    call stop_timer_new('Bonded Forces')
+    call stop_timer_new_tree('Bonded Forces')
 
     ! Apply external field
 
