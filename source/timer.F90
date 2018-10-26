@@ -83,7 +83,7 @@ Contains
     Character ( Len = * ) :: name
 
     if ( name /= calls%name(calls%depth)) &
-      & call timer_error('Child timer ended before parent')
+      & call timer_error('Child timer '//name//' ended before parent')
     calls%name(calls%depth) = ''
     calls%depth = calls%depth - 1
 
@@ -238,7 +238,7 @@ Contains
         & trim(timer%time%name)//' still running')
 
       if ( associated(timer%child) ) then
-        depth_symb = repeat(" ",depth)//char(92)
+        depth_symb = repeat(" ",depth)//"|v"
       else
         depth_symb = repeat(" ",depth)//"|-"
       end if
@@ -308,7 +308,7 @@ Contains
               nullify(call_tree%parent)
               
               if ( associated(timer%child) ) then
-                depth_symb = repeat(" ",depth)//char(92)
+                depth_symb = repeat(" ",depth)//"|v"
               else
                 depth_symb = repeat(" ",depth)//"|-"
               end if
