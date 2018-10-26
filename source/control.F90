@@ -542,8 +542,6 @@ Contains
 
         ! read DEVELOPMENT options
 
-      Else If (word(1:5) == 'l_scr') Then
-        !        l_scr = .true. ! done in scan_development
         Call info('%%% OUTPUT redirected to the default output (screen) !!! %%%',.true.)
       Else If (word(1:6) == 'l_fast') Then
         !        l_fast = .true. ! done in scan_development
