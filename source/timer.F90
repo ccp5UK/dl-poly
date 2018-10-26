@@ -1,8 +1,7 @@
 Module timer
   !! This module has no header !
   Use kinds, Only : wp
-  Use comms, Only : comms_type,gtime,mtime,gmin,gmax,gsum,gsync,gsend,grecv,timer_tag, abort_comms
-  Use errors_warnings, Only : info, error
+  Use comms, Only : comms_type,gtime,mtime,gmin,gmax,gsum,gsync,gsend,grecv,timer_tag,abort_comms
   Implicit None
 
   Private
@@ -40,6 +39,14 @@ Module timer
   Type( node ), target,                            save :: call_tree
   Integer, save :: id = 1
 
+  Type ( comms_type ), save :: timer_comm
+  Integer, save :: out_unit
+
+  interface timer_write
+    module procedure timer_write_sing
+    module procedure timer_write_mul
+  end interface timer_write
+      
   Public :: timer_report
   Public :: timer_last_time
   Public :: start_timer
@@ -53,9 +60,11 @@ Contains
 
   Subroutine dump_call_stack ( )
     integer :: i
-    call info('Process stack:',.true.)
+
+    call timer_write('')
+    call timer_write('Process stack:')
     do i = 1, calls%depth
-      call info(calls%name(i),.true.)
+      call timer_write(calls%name(i))
     end do
     
   end Subroutine dump_call_stack
@@ -80,8 +89,13 @@ Contains
 
   end Subroutine pop_stack
 
-  subroutine init_timer_system ( )
+  subroutine init_timer_system ( nrite, comm )
 
+    Type ( comms_type ), intent ( in ) :: comm
+    Integer, intent ( in ) :: nrite
+
+    timer_comm = comm
+    out_unit = nrite
     call init_timer ( call_tree%time, 'Main')
     Call start_timer('Main')
 
@@ -213,13 +227,14 @@ Contains
     call_tree%parent => call_tree
     timer => call_tree
     total_elapsed = timer%time%total
-
+    call gmax(comm,total_elapsed)
+    
     i = 0
     depth = 0
 
     do while (associated(timer%parent))
       nullify(call_tree%parent)
-      if (timer%time%running) Call timer_error('Program terminated while timer '//&
+      if (timer%time%running) Call timer_write('Program terminated while timer '//&
         & trim(timer%time%name)//' still running')
 
       if ( associated(timer%child) ) then
@@ -268,16 +283,16 @@ Contains
     write(message(i), 103) "Untimed           ", & 
          & total_elapsed - sum_timed , 100.0_wp - sum_timed*100.0_wp/total_elapsed
     write(message(i+1), 100)
-    call info(message,i+4,.true.)
+    call timer_write(message(-2:i+1))
 
-    call info('',.true.)
+    call timer_write('')
 
 
     if (present(node_detail)) then
       if (node_detail) then
         write(message(-2),200)
         write(message(-1),201)
-        call info(message,2,.true.)
+        call timer_write(message(-2:-1))
         
         depth = 0 
 
@@ -331,9 +346,9 @@ Contains
           end if
           if (comm%idnode == 0 .and. proc > 0) then
             call grecv(comm, message, proc, timer_tag)
-            call info(message(0:),i+1,.true.)
+            call timer_write(message(0:i))
           else if (proc == 0) then
-            call info(message(0:),i+1,.true.)
+            call timer_write(message(0:i))
           end if
 
           call gsync(comm)
@@ -385,7 +400,7 @@ Contains
       write(*,*) timer%time%name, timer%time%calls, timer%time%last
     else
       write(message,'(a,2(1X,i0))') timer%time%name, timer%time%calls, timer%time%last
-      call info(message,.true.)
+      call timer_write(message)
     end if
   end Subroutine timer_last_time
 
@@ -397,13 +412,37 @@ Contains
 
     Call gtime(time)
     Write(message,'(a,f12.3,a)') "time elapsed since job start: ", time, " sec"
-    Call info(message,.true.)
+    Call timer_write(message)
   End Subroutine time_elapsed
 
+  Subroutine timer_write_sing(message)
+    Character( Len = * ), intent(in) :: message
+
+    if ( timer_comm%idnode == 0 ) &
+      write(out_unit,*) message
+        
+  end Subroutine timer_write_sing
+
+  Subroutine timer_write_mul(message)
+    Character( Len = * ), dimension(:), intent(in) :: message
+    Integer :: i
+    
+    if ( timer_comm%idnode == 0 ) then
+      do i = 1, size(message)
+        write(out_unit,*) message(i)
+      end do
+    end if
+        
+  end Subroutine timer_write_mul
+
+  
   Subroutine timer_error(message)
     Character ( len = * ) :: message
-    write(*,*) message
-    write(*,*)
+
+    call timer_write('')
+    call timer_report(timer_comm, .false.)
+    call timer_write(message)
+    call timer_write('')
     call dump_call_stack()
     
     stop

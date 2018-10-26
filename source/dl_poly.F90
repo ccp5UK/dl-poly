@@ -229,11 +229,6 @@ program dl_poly
     End If
   End If
 
-#ifdef CHRONO
-  Call init_timer_system()
-  Call start_timer('Initialisation')
-#endif
-  
   ! Set default file names
   Call default_filenames(files)
   ! Rename control file if argument was passed
@@ -248,6 +243,12 @@ program dl_poly
   Else
     files(FILE_OUTPUT)%unit_no = error_unit
   End If
+
+#ifdef CHRONO
+  Call init_timer_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
+  Call start_timer('Initialisation')
+#endif
+
   dlp_world(0)%ou=files(FILE_OUTPUT)%unit_no
   Call init_error_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
 
