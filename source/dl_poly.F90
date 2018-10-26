@@ -151,8 +151,8 @@ program dl_poly
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
-  Use timer, Only  : timer_type, time_elapsed, start_timer_new_tree, stop_timer_new_tree, timer_report_new_tree &
-    & , init_timer_tree
+  Use timer, Only  : timer_type, time_elapsed, start_timer, stop_timer, timer_report &
+    & , init_timer_system
   Implicit None
 
   ! all your simulation variables
@@ -230,8 +230,8 @@ program dl_poly
   End If
 
 #ifdef CHRONO
-  Call init_timer_tree()
-  Call start_timer_new_tree('Initialisation')
+  Call init_timer_system()
+  Call start_timer('Initialisation')
 #endif
   
   ! Set default file names
@@ -369,7 +369,7 @@ program dl_poly
   End If
 
 #ifdef CHRONO
-  Call stop_timer_new_tree('Initialisation')
+  Call stop_timer('Initialisation')
 #endif
   
   ! CHECK MD CONFIGURATION
@@ -583,7 +583,10 @@ program dl_poly
 
   If (devel%l_fast) Call gsync(comm,devel%l_fast)
 
-  call start_timer_new_tree('Main Calc')
+#ifdef CHRONO
+  call start_timer('Main Calc')
+#endif
+  
   If (flow%simulation) Then
     Call w_md_vv(config,ttms,ios,rsdsc,flow,core_shells,cons,pmfs,stats,thermo, &
       plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
@@ -604,13 +607,16 @@ program dl_poly
         seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,comm)
     End If
   End If
-  call stop_timer_new_tree('Main Calc')
 
+#ifdef CHRONO
+  call stop_timer('Main Calc')
+  call start_timer('Termination')
+#endif
+  
   !Close the statis file if we used it.
   If (stats%statis_file_open) Call files(FILE_STATS)%close()
 
   ! Report termination of the MD simulation
-  call start_timer_new_tree('Termination')
 
   Write(message,'(3(a,f12.3),a)') 'run terminating... elapsed  cpu time: ', &
     tmr%elapsed , ' sec, job time: ', tmr%job, ' sec, close time: ', tmr%clear_screen, ' sec'
@@ -690,10 +696,9 @@ program dl_poly
 
   If (plume%l_plumed) Call plumed_finalize()
 
-  call stop_timer_new_tree('Termination')
-
 #ifdef CHRONO
-  Call timer_report_new_tree(comm,tmr%proc_detail)
+  call stop_timer('Termination')
+  Call timer_report(comm,tmr%proc_detail)
 #endif
   ! Ask for reference in publications
 
