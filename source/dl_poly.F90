@@ -154,7 +154,7 @@ program dl_poly
   Implicit None
 
   ! all your simulation variables
-  Type(comms_type), Allocatable :: dlp_world(:),comm(:)
+  Type(comms_type), Allocatable :: dlp_world(:)
   Type(thermostat_type), Allocatable :: thermo(:)
   Type(ewald_type), Allocatable :: ewld(:)
   Type(timer_type), Allocatable :: tmr(:)
@@ -219,11 +219,11 @@ program dl_poly
 
   ! Select metasimulation method
   !If (simulation_method = SIMPLE)
-  Call molecular_dynamics(dlp_world,comm,thermo,ewld,tmr,devel,stats,green,plume, &
-      msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
-      threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
-      fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
-      seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
+  Call molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
+    green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
+    threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
+    rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
+    kim_data,config,ios,ttms,rsdsc,files,control_filename)
   !Else If (simulation_method = FFS)
   !  Call forward_flux_sampling()
   !Else If ...
@@ -232,7 +232,7 @@ program dl_poly
   ! Terminate job
 
   Call gsync(dlp_world(0))
-  Call exit_comms(comm)
+  Call exit_comms(dlp_world)
 
   ! Create wrappers for the MD cycle in VV, and replay history
   Deallocate(dlp_world)

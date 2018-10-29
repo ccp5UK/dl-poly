@@ -80,14 +80,13 @@ Module meta
 Contains
 
   !> A 'simple', single MD simulation
-  Subroutine molecular_dynamics(dlp_world,comm,thermo,ewld,tmr,devel,stats, &
+  Subroutine molecular_dynamics(dlp_world,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
       seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
 
     Type(comms_type), Intent(InOut) :: dlp_world(0:)
-    Type(comms_type), Allocatable, Intent(InOut) :: comm(:)
     Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
     Type(ewald_type), Allocatable, Intent(InOut) :: ewld(:)
     Type(timer_type), Allocatable, Intent(InOut) :: tmr(:)
@@ -132,9 +131,10 @@ Contains
     Type( ttm_type), Allocatable, Intent(InOut) :: ttms(:)
     Type( rsd_type ), Allocatable, Target, Intent(InOut) :: rsdsc(:)
     Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
+
+    Type(comms_type) :: comm
     Character( Len = 1024 ) :: control_filename
 
-    Allocate(comm(1))
     Allocate(thermo(1))
     Allocate(ewld(1))
     Allocate(tmr(1))
@@ -182,7 +182,7 @@ Contains
 
     comm=dlp_world(0) ! this shall vanish asap w_ are proper things
 
-    Call molecular_dynamics_driver(dlp_world(0:),comm(1),thermo(1),ewld(1), &
+    Call molecular_dynamics_driver(dlp_world(0:),comm,thermo(1),ewld(1), &
       tmr(1),devel(1),stats(1),green(1),plume(1),msd_data(1),met(1),pois(1), &
       impa(1),dfcts(1,:),bond(1),angle(1),dihedral(1),inversion(1),tether(1), &
       threebody(1),zdensity(1),cons(1),neigh(1),pmfs(1),sites(1), &
