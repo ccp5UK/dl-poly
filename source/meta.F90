@@ -7,11 +7,11 @@ Module meta
   Use, Intrinsic :: iso_fortran_env, Only : error_unit
   Use kinds, Only : wi,wp
   Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
-  Use constants, Only : DLP_RELEASE,DLP_VERSION
   Use development, Only : development_type,scan_development,build_info
   Use netcdf_wrap, Only : netcdf_param
   Use domains, Only : domains_type
   Use site, Only : site_type
+  Use constants, Only : DLP_RELEASE,DLP_VERSION
   Use configuration, Only : configuration_type,check_config, scale_config, origin_config, freeze_atoms
   Use control, Only : read_control,scan_control_output,scan_control_io
   Use neighbours, Only : neighbours_type
@@ -243,22 +243,6 @@ Contains
 
 
     ! Somewhere around this point determine which metasimulation method to call
-
-    Write(banner(1),fmt1)  Repeat("*",66)
-    Write(banner(2),fmt1)  "*************  stfc/ccp5  program  library  package  ** D ********"
-    Write(banner(3),fmt1)  "*************  daresbury laboratory general purpose  *** L *******"
-    Write(banner(4),fmt1)  "**         **  classical molecular dynamics program  **** \ ******"
-    Write(banner(5),fmt1)  "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****"
-    Write(banner(6),fmt2)  "**         **  version:  ", DLP_VERSION, " /  ", DLP_RELEASE, "  ****** O ****"
-    Write(banner(7),fmt3)  "*************  execution on  ",dlp_world(0)%mxnode," process(es)  ******* L ***"
-    Write(banner(8),fmt1)  "*************  contributors' list:                   ******** Y **"
-    Write(banner(9),fmt1)  "*************  ------------------------------------  *************"
-    Write(banner(10),fmt1) "*************  i.j.bush, h.a.boateng, r.davidchak,   *************"
-    Write(banner(11),fmt1) "*************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
-    Write(banner(12),fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
-    Write(banner(13),fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti        *************"
-    Write(banner(14),fmt1) "******************************************************************"
-    Call info(banner,14,.true.)
 
     Call build_info()
 
@@ -617,45 +601,7 @@ Contains
     Call timer_report(tmr,comm)
 #endif
 
-    Call info('',.true.)
-    Write(banner(1),fmt1) Repeat("*",66)
-    Write(banner(2),fmt1) "****  Please do cite `J. Mater. Chem.', 16, 1911-1918 (2006)  ****"
-    Write(banner(3),fmt1) "****  when publishing research data obtained using DL_POLY_4  ****"
-    Write(banner(4),fmt1) Repeat("*",66)
-    Call info(banner,4,.true.)
-
-    ! Ask for reference in publications
-
-    Call info('',.true.)
-    Write(banner(1),fmt1) Repeat("*",66)
-    Write(banner(2),fmt1) '**** Thank you for using the DL_POLY_4 package in your work.  ****'
-    Write(banner(3),fmt1) '**** Please, acknowledge our efforts by including the         ****'
-    Write(banner(4),fmt1) '**** following references when publishing data obtained using ****'
-    Write(banner(5),fmt1) '**** DL_POLY_4:                                               ****'
-    Write(banner(6),fmt1) '****   - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,    ****'
-    Write(banner(7),fmt1) '****     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
-    Write(banner(8),fmt1) '****     https://doi.org/10.1039/B517931A                     ****'
-    Call info(banner,8,.true.)
-    If (electro%key == ELECTROSTATIC_EWALD) Then
-      Write(banner(1),fmt1) '****   - I.J. Bush, I.T. Todorov & W. Smith,                  ****'
-      Write(banner(2),fmt1) '****     Comp. Phys. Commun., 175, 323-329 (2006),            ****'
-      Write(banner(3),fmt1) '****     https://doi.org/10.1016/j.cpc.2006.05.001            ****'
-      Call info(banner,3,.true.)
-    End If
-    If (mpoles%max_mpoles > 0) Then
-      Write(banner(1),fmt1) '****   - H.A. Boateng & I.T. Todorov,                         ****'
-      Write(banner(2),fmt1) '****     J. Chem. Phys., 142, 034117 (2015),                  ****'
-      Write(banner(3),fmt1) '****     https://doi.org/10.1063/1.4905952                    ****'
-      Call info(banner,3,.true.)
-    End If
-    If (ttms%l_ttm) Then
-      Write(banner(1),fmt1) '****   - E. Zarkadoula, S.L. Daraszewicz, D.M. Duffy,         ****'
-      Write(banner(2),fmt1) '****     M.A. Seaton, I.T. Todorov, K. Nordlund, M.T. Dove &  ****'
-      Write(banner(3),fmt1) '****     K. Trachenko                                         ****'
-      Write(banner(4),fmt1) '****     J. Phys.: Condens. Matter, 24, 085401 (2014),        ****'
-      Call info(banner,4,.true.)
-    End If
-    Call info(Repeat("*",66),.true.)
+    Call print_citations(electro,mpoles,ttms)
 
     ! Get just the one number to compare against
 
@@ -769,4 +715,78 @@ Contains
     Allocate(rsdsc(array_size))
     Allocate(files(array_size,FILENAME_SIZE))
   End Subroutine allocate_types_uniform
+
+  Subroutine print_banner(dlp_world)
+    Type(comms_type), Intent(In) :: dlp_world(0:)
+
+    Character(Len=*), Parameter :: fmt1 = '(a)', &
+      fmt2 = '(a25,a8,a4,a14,a15)', &
+      fmt3 = '(a,i10,a)'
+    Character(Len=66)  :: banner(14)
+
+    Write(banner(1),fmt1)  Repeat("*",66)
+    Write(banner(2),fmt1)  "*************  stfc/ccp5  program  library  package  ** D ********"
+    Write(banner(3),fmt1)  "*************  daresbury laboratory general purpose  *** L *******"
+    Write(banner(4),fmt1)  "**         **  classical molecular dynamics program  **** \ ******"
+    Write(banner(5),fmt1)  "** DL_POLY **  authors:   i.t.todorov   &   w.smith  ***** P *****"
+    Write(banner(6),fmt2)  "**         **  version:  ", DLP_VERSION, " /  ", DLP_RELEASE, "  ****** O ****"
+    Write(banner(7),fmt3)  "*************  execution on  ",dlp_world(0)%mxnode," process(es)  ******* L ***"
+    Write(banner(8),fmt1)  "*************  contributors' list:                   ******** Y **"
+    Write(banner(9),fmt1)  "*************  ------------------------------------  *************"
+    Write(banner(10),fmt1) "*************  i.j.bush, h.a.boateng, r.davidchak,   *************"
+    Write(banner(11),fmt1) "*************  m.a.seaton, a.v.brukhno, a.m.elena,   *************"
+    Write(banner(12),fmt1) "*************  s.l.daraszewicz,g.khara,s.t.murphy    *************"
+    Write(banner(13),fmt1) "*************  j.madge,a.b.g.chalk,i.scivetti        *************"
+    Write(banner(14),fmt1) "******************************************************************"
+    Call info(banner,14,.true.)
+  End Subroutine print_banner
+
+  Subroutine print_citations(electro,mpoles,ttms)
+    Type(electrostatic_type), Intent(In) :: electro
+    Type(mpole_type), Intent(In) :: mpoles
+    Type(ttm_type), Intent(In) :: ttms
+
+    Character(Len=*), Parameter :: fmt1 = '(a)'
+    Character(Len=66)  :: banner(14)
+
+    Call info('',.true.)
+    Write(banner(1),fmt1) Repeat("*",66)
+    Write(banner(2),fmt1) "****  Please do cite `J. Mater. Chem.', 16, 1911-1918 (2006)  ****"
+    Write(banner(3),fmt1) "****  when publishing research data obtained using DL_POLY_4  ****"
+    Write(banner(4),fmt1) Repeat("*",66)
+    Call info(banner,4,.true.)
+
+    ! Ask for reference in publications
+
+    Call info('',.true.)
+    Write(banner(1),fmt1) Repeat("*",66)
+    Write(banner(2),fmt1) '**** Thank you for using the DL_POLY_4 package in your work.  ****'
+    Write(banner(3),fmt1) '**** Please, acknowledge our efforts by including the         ****'
+    Write(banner(4),fmt1) '**** following references when publishing data obtained using ****'
+    Write(banner(5),fmt1) '**** DL_POLY_4:                                               ****'
+    Write(banner(6),fmt1) '****   - I.T. Todorov, W. Smith, K. Trachenko & M.T. Dove,    ****'
+    Write(banner(7),fmt1) '****     J. Mater. Chem., 16, 1911-1918 (2006),               ****'
+    Write(banner(8),fmt1) '****     https://doi.org/10.1039/B517931A                     ****'
+    Call info(banner,8,.true.)
+    If (electro%key == ELECTROSTATIC_EWALD) Then
+      Write(banner(1),fmt1) '****   - I.J. Bush, I.T. Todorov & W. Smith,                  ****'
+      Write(banner(2),fmt1) '****     Comp. Phys. Commun., 175, 323-329 (2006),            ****'
+      Write(banner(3),fmt1) '****     https://doi.org/10.1016/j.cpc.2006.05.001            ****'
+      Call info(banner,3,.true.)
+    End If
+    If (mpoles%max_mpoles > 0) Then
+      Write(banner(1),fmt1) '****   - H.A. Boateng & I.T. Todorov,                         ****'
+      Write(banner(2),fmt1) '****     J. Chem. Phys., 142, 034117 (2015),                  ****'
+      Write(banner(3),fmt1) '****     https://doi.org/10.1063/1.4905952                    ****'
+      Call info(banner,3,.true.)
+    End If
+    If (ttms%l_ttm) Then
+      Write(banner(1),fmt1) '****   - E. Zarkadoula, S.L. Daraszewicz, D.M. Duffy,         ****'
+      Write(banner(2),fmt1) '****     M.A. Seaton, I.T. Todorov, K. Nordlund, M.T. Dove &  ****'
+      Write(banner(3),fmt1) '****     K. Trachenko                                         ****'
+      Write(banner(4),fmt1) '****     J. Phys.: Condens. Matter, 24, 085401 (2014),        ****'
+      Call info(banner,4,.true.)
+    End If
+    Call info(Repeat("*",66),.true.)
+  End Subroutine print_citations
 End Module meta
