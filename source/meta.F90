@@ -452,39 +452,7 @@ Contains
     If (plume%l_plumed) Call plumed_init(config%megatm,thermo%tstep,thermo%temp,plume,comm)
 
     ! Print out sample of initial configuration on node zero
-    Call info('',.true.)
-    Call info('sample of starting configuration on node zero:',.true.)
-    If (config%levcfg <= 1) Then
-      Write(message,'(7x,a1,7x,a4,2(8x,a4),3(7x,a5))') &
-        'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)'
-      Call info(message,.true.)
-    End If
-
-    If (config%levcfg == 2) Then
-      Write(message,'(7x,a1,7x,a4,2(8x,a4),6(7x,a5))') &
-        'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)', &
-        'fx(i)', 'fy(i)', 'fz(i)'
-      Call info(message,.true.)
-    End If
-
-    j=(config%natms+19)/20
-    If (j > 0) Then
-      Do i=1,config%natms,j
-        If (config%levcfg <= 1) Then
-          Write(message,'(i8,1p,6e12.4)') &
-            config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),config%vzz(i)
-        End If
-
-        If (config%levcfg == 2) Then
-          Write(message,"(i8,1p,9e12.4)") &
-            config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,&
-            config%vxx(i),config%vyy(i),config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,&
-            config%parts(i)%fzz
-        End If
-        Call info(message,.true.)
-      End Do
-    End If
-    Call info('',.true.)
+    Call print_initial_configuration(config)
 
     ! Indicate nodes mapped on vacuum (no particles)
     j=0
@@ -531,29 +499,7 @@ Contains
     Call info(message,.true.)
 
     ! Print out sample of final configuration on node zero
-    Call info('',.true.)
-    Call info("sample of final configuration on node zero",.true.)
-    Write(message,'(7x,a1,7x,a4,2(8x,a4),6(7x,a5))') &
-      'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)', &
-      'fx(i)', 'fy(i)', 'fz(i)'
-    Call info(message,.true.)
-    j=(config%natms+19)/20
-    If (j > 0) Then
-      Do i=1,config%natms,j
-        If (config%levcfg <= 1) Then
-          Write(message,'(i8,1p,6e12.4)') &
-            config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),config%vzz(i)
-        End If
-
-        If (config%levcfg == 2) Then
-          Write(message,"(i8,1p,9e12.4)") &
-            config%ltg(i),config%parts(i)%xxx,config%parts(i)%yyy,config%parts(i)%zzz,config%vxx(i),config%vyy(i),&
-            config%vzz(i),config%parts(i)%fxx,config%parts(i)%fyy,config%parts(i)%fzz
-        End If
-        Call info(message,.true.)
-      End Do
-    End If
-    Call info('',.true.)
+    Call print_final_configuration(config)
 
     ! Two-temperature model simulations: calculate final ionic temperatures and 
     !print statistics to files (final)
@@ -789,4 +735,68 @@ Contains
     End If
     Call info(Repeat("*",66),.true.)
   End Subroutine print_citations
+
+
+  Subroutine print_initial_configuration(config)
+    Type(configuration_type), Intent(In) :: config
+
+    ! Print out sample of initial configuration on node zero
+    Call info('',.true.)
+    Call info('sample of starting configuration on node zero:',.true.)
+
+    Call print_configuration_sample(config)
+
+    Call info('',.true.)
+  End Subroutine print_initial_configuration
+
+  Subroutine print_final_configuration(config)
+    Type(configuration_type), Intent(In) :: config
+
+    ! Print out sample of initial configuration on node zero
+    Call info('',.true.)
+    Call info("sample of final configuration on node zero",.true.)
+
+    Call print_configuration_sample(config)
+
+    Call info('',.true.)
+  End Subroutine print_final_configuration
+
+  Subroutine print_configuration_sample(config)
+    Type(configuration_type), Intent(In) :: config
+
+    Integer(Kind=wi) :: atom, span
+    Character(Len=256) :: message
+
+    If (config%levcfg <= 1) Then
+      Write(message,'(7x,a1,7x,a4,2(8x,a4),3(7x,a5))') &
+        'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)'
+      Call info(message,.true.)
+    End If
+
+    If (config%levcfg == 2) Then
+      Write(message,'(7x,a1,7x,a4,2(8x,a4),6(7x,a5))') &
+        'i', 'x(i)', 'y(i)', 'z(i)', 'vx(i)', 'vy(i)', 'vz(i)', &
+        'fx(i)', 'fy(i)', 'fz(i)'
+      Call info(message,.true.)
+    End If
+
+    span=(config%natms+19)/20
+    If (span > 0) Then
+      Do atom=1,config%natms,span
+        If (config%levcfg <= 1) Then
+          Write(message,'(i8,1p,6e12.4)') config%ltg(atom), &
+            config%parts(atom)%xxx,config%parts(atom)%yyy,config%parts(atom)%zzz, &
+            config%vxx(atom),config%vyy(atom),config%vzz(atom)
+        End If
+
+        If (config%levcfg == 2) Then
+          Write(message,"(i8,1p,9e12.4)") config%ltg(atom), &
+            config%parts(atom)%xxx,config%parts(atom)%yyy,config%parts(atom)%zzz,&
+            config%vxx(atom),config%vyy(atom),config%vzz(atom), &
+            config%parts(atom)%fxx,config%parts(atom)%fyy,config%parts(atom)%fzz
+        End If
+        Call info(message,.true.)
+      End Do
+    End If
+  End Subroutine print_configuration_sample
 End Module meta
