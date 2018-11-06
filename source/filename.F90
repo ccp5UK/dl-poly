@@ -46,7 +46,7 @@ Module filename
   Integer, Parameter, Public :: FILE_REVCON = 10
 
   !> Size of filename array
-  Integer(Kind=wi), Parameter :: FILENAME_SIZE = 10
+  Integer(Kind=wi), Parameter, Public :: FILENAME_SIZE = 10
 
   Public :: default_filenames
 
@@ -62,7 +62,7 @@ Contains
 
   !> Allocate filename array and set defaults
   Subroutine default_filenames(filenames)
-    Type(file_type), Allocatable :: filenames(:)
+    Type(file_type) :: filenames(FILENAME_SIZE)
 
     !> Default file names array
     Character(Len=1024), Dimension(FILENAME_SIZE) :: default_names
@@ -80,12 +80,6 @@ Contains
     default_names(FILE_REVIVE) = "REVIVE"
     default_names(FILE_REVOLD) = "REVOLD"
     default_names(FILE_REVCON) = "REVCON"
-
-    ! Allocate filenames array
-    If (Allocated(filenames)) Then
-      Deallocate(filenames)
-    End If
-    Allocate(filenames(FILENAME_SIZE))
 
     ! Set default filenames
     Do file_no = 1, FILENAME_SIZE
