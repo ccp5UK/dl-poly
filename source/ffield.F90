@@ -3435,9 +3435,9 @@ Contains
         ntpcrd=Nint(word_2_real(word))
          crd%ncoordpairs = ntpcrd
          call crd%init()
-         If (comm%idnode == 0) Then
-           Write(message,"(/,/,1x,'number of connetivity pairs to be looked at    ',i10)") ntpcrd
-         End If
+!         If (comm%idnode == 0) Then
+!           Write(message,"(/,/,1x,'number of connetivity pairs to be looked at    ',i10)") ntpcrd
+!         End If
 
          Do itpcrd=1,ntpcrd
 

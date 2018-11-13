@@ -56,6 +56,9 @@ contains
     if (allocated(T%arraycuts)) then
       deallocate(T%arraycuts)
     end if
+    if (allocated(T%coordlist)) then
+      deallocate(T%coordlist)
+    end if
   end subroutine clean_coord
 
   subroutine init_coord_list(config,neigh,crd,sites,flow,comm)
@@ -76,7 +79,6 @@ contains
     If(crd%coordon .Eqv. .False.)Return
     If(crd%ncoordpairs==0)Return
     If(mod(flow%step,crd%coordinterval).NE.0)Return
-    call crd%init_coordlist(neigh%max_list,config%mxatms)
     crd%coordlist(0,:)=0
     ncb=0
     nicrdt=2323
@@ -251,7 +253,6 @@ contains
       endif
     endif
     deallocate(coordbuff)
-
 
   end subroutine init_coord_list
 

@@ -1447,6 +1447,7 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
       ! get inital coordination before any md
+      call crd%init_coordlist(neigh%max_list,cnfig%mxatms)
       call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
 
     ! START OF MOLECULAR DYNAMICS CALCULATIONS
