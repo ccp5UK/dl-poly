@@ -149,6 +149,7 @@ program dl_poly
   Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
+  Use coord, Only : coord_type
   Use meta, Only : molecular_dynamics
 
   Implicit None
@@ -199,6 +200,7 @@ program dl_poly
   Type( ttm_type), Allocatable :: ttms(:)
   Type( rsd_type ), Allocatable, Target :: rsdsc(:)
   Type( file_type ), Allocatable :: files(:,:)
+  Type( coord_type ), Allocatable :: crd(:)
 
   ! Local Variables
   character( len = 1024 ) :: control_filename
@@ -223,7 +225,7 @@ program dl_poly
     green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion,tether, &
     threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs,fourbody, &
     rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow,seed,traj, &
-    kim_data,config,ios,ttms,rsdsc,files,control_filename)
+    kim_data,config,ios,ttms,rsdsc,files,control_filename,crd)
   !Else If (simulation_method = FFS)
   !  Call forward_flux_sampling()
   !Else If ...

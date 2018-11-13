@@ -72,6 +72,7 @@ Module meta
     FILE_STATS,FILENAME_SIZE
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
+  Use coord, Only : coord_type
   Implicit None
   Private
 
@@ -84,7 +85,7 @@ Contains
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
-      seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
+      seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename,crd)
 
     Type(comms_type), Intent(InOut) :: dlp_world(0:)
     Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
@@ -131,6 +132,7 @@ Contains
     Type( ttm_type), Allocatable, Intent(InOut) :: ttms(:)
     Type( rsd_type ), Allocatable, Target, Intent(InOut) :: rsdsc(:)
     Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
+    Type( coord_type), Allocatable, Intent(InOut) :: crd(:)
 
     Integer( Kind = wi ), Parameter :: TYPE_SIZE = 1
     Type(comms_type) :: comm
@@ -141,7 +143,7 @@ Contains
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
-      seed,traj,kim_data,config,ios,ttms,rsdsc,files)
+      seed,traj,kim_data,config,ios,ttms,rsdsc,files,crd)
 
     comm=dlp_world(0) ! this shall vanish asap w_ are proper things
 
@@ -152,7 +154,7 @@ Contains
       core_shells(1),vdws(1),tersoffs(1),fourbody(1),rdf(1),netcdf(1), &
       minim(1),mpoles(1),ext_field(1),rigid(1),electro(1),domain(1),flow(1), &
       seed(1),traj(1),kim_data(1),config(1),ios(1),ttms(1),rsdsc(1),files(1,:), &
-      control_filename)
+      control_filename,crd(1))
   End Subroutine molecular_dynamics
 
   !> Simple MD driver
@@ -160,7 +162,7 @@ Contains
       stats,green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral, &
       inversion,tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells, &
       vdws,tersoffs,fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro, &
-      domain,flow,seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename)
+      domain,flow,seed,traj,kim_data,config,ios,ttms,rsdsc,files,control_filename,crd)
 
     Type(comms_type), Intent(InOut) :: dlp_world(0:),comm
     Type(thermostat_type), Intent(InOut) :: thermo
@@ -206,6 +208,7 @@ Contains
     Type( io_type), Intent(InOut) :: ios
     Type( ttm_type), Intent(InOut) :: ttms
     Type( rsd_type ), Target, Intent(InOut) :: rsdsc
+    Type( coord_type), Intent(InOut) :: crd
     Type( file_type ), Intent(InOut) :: files(FILENAME_SIZE)
     character( len = 1024 ), Intent(In) :: control_filename
 
@@ -305,12 +308,12 @@ Contains
     Call read_control(lfce,impa,ttms,dfcts,rigid,rsdsc,core_shells,cons,pmfs, &
       stats,thermo,green,devel,plume,msd_data,met,pois,bond,angle,dihedral, &
       inversion,zdensity,neigh,vdws,rdf, minim,mpoles,electro,ewld, &
-      seed,traj,files,tmr,config,flow,comm)
+      seed,traj,files,tmr,config,flow,crd,comm)
 
     ! READ SIMULATION FORCE FIELD
     Call read_field(neigh%cutoff,core_shells,pmfs,cons,thermo,met,bond,angle, &
       dihedral,inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf, &
-      mpoles,ext_field,rigid,electro,config,kim_data,files,flow,comm)
+      mpoles,ext_field,rigid,electro,config,kim_data,files,flow,crd,comm)
 
     ! If computing rdf errors, we need to initialise the arrays.
     If(rdf%l_errors_jack .or. rdf%l_errors_block) then
@@ -474,7 +477,7 @@ Contains
         plume,pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
         netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,minim, &
         impa,green,ewld,electro,dfcts,msd_data,tersoffs,tether,threebody,vdws, &
-        devel,met,comm)
+        devel,met,crd,comm)
     Else
       If (lfce) Then
         Call w_replay_historf(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
@@ -567,7 +570,7 @@ Contains
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
-      seed,traj,kim_data,config,ios,ttms,rsdsc,files)
+      seed,traj,kim_data,config,ios,ttms,rsdsc,files,crd)
 
     Integer( Kind = wi ), Intent( In    ) :: array_size
     Type(comms_type), Intent(InOut) :: dlp_world(0:)
@@ -615,6 +618,7 @@ Contains
     Type( ttm_type), Allocatable, Intent(InOut) :: ttms(:)
     Type( rsd_type ), Allocatable, Target, Intent(InOut) :: rsdsc(:)
     Type( file_type ), Allocatable, Intent(InOut) :: files(:,:)
+    Type( coord_type), Allocatable, Intent(InOut) :: crd(:)
 
     Allocate(thermo(array_size))
     Allocate(ewld(array_size))
@@ -660,6 +664,7 @@ Contains
     Allocate(ttms(array_size))
     Allocate(rsdsc(array_size))
     Allocate(files(array_size,FILENAME_SIZE))
+    Allocate(crd(array_size))
   End Subroutine allocate_types_uniform
 
   Subroutine print_banner(dlp_world)

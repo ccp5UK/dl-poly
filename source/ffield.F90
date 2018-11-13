@@ -77,7 +77,7 @@ Module ffield
   Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_NULL
   Use filename, Only : file_type,FILE_FIELD
   Use flow_control, Only : flow_type
-
+  Use coord, Only : coord_type
   Implicit None
 
   Private
@@ -90,7 +90,7 @@ Contains
 
   Subroutine read_field(rcut,cshell,pmf,cons,thermo,met,bond,angle,dihedral, &
       inversion,tether,threebody,sites,vdws,tersoffs,fourbody,rdf,mpoles, &
-      ext_field,rigid,electro,config,kim_data,files,flow,comm)
+      ext_field,rigid,electro,config,kim_data,files,flow,crd,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -149,7 +149,7 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( flow_type ), Intent( InOut ) :: flow
     Type( comms_type), Intent( InOut ) :: comm
-
+    Type( coord_type), Intent( InOut ) :: crd
     Logical                :: safe,lunits,lmols,atmchk,                        &
       l_shl,l_con,l_rgd,l_tet,l_bnd,l_ang,l_dih,l_inv, &
       lshl_one,lshl_all,lshl_abort,lpmf,               &
@@ -173,7 +173,8 @@ Contains
       itprdf,keyrdf,itpvdw,keyvdw,itpmet,keymet,          &
       itpter,keyter,icross,                               &
       itbp,itptbp,keytbp,ktbp,                            &
-      ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld,itmp
+      ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld,itmp,      &
+      ntpcrd,itpcrd
     Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp,        &
       sig(0:2),eps(0:2),del(0:2),                         &
       q_core_p, q_core_s , q_core,                        &
@@ -3427,6 +3428,44 @@ Contains
         End Do
 
         ! read in the vdw potential energy parameters
+
+        ! reads in coord pairs
+             Else If (word(1:3) == 'crd') Then
+        Call get_word(record,word)
+        ntpcrd=Nint(word_2_real(word))
+         crd%ncoordpairs = ntpcrd
+         call crd%init()
+         If (comm%idnode == 0) Then
+           Write(message,"(/,/,1x,'number of connetivity pairs to be looked at    ',i10)") ntpcrd
+         End If
+
+         Do itpcrd=1,ntpcrd
+
+           word(1:1)='#'
+           Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+             Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
+             If (.not.safe) Go To 2000
+             Call get_word(record,word)
+           End Do
+
+           crd%arraypairs(itpcrd,1)=word(1:8)
+           Call get_word(record,word)
+           crd%arraypairs(itpcrd,2)=word(1:8)
+
+           Call get_word(record,word)
+           crd%arraycuts(itpcrd)=Abs(word_2_real(word))
+           katom0=0
+           katom1=0
+           atom0 =  crd%arraypairs(itpcrd,1)
+           atom1 =  crd%arraypairs(itpcrd,2)
+           Do jtpatm=1,ntpcrd
+             If (atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
+             If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+           End do
+           crd%ltype(itpcrd,1)=katom0
+           crd%ltype(itpcrd,2)=katom1
+         enddo    
+ 
 
       Else If (word(1:3) == 'vdw') Then
 

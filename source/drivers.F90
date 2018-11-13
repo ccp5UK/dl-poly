@@ -127,6 +127,10 @@ Module drivers
 
   Use msd, Only : msd_type,msd_write
 
+  ! COORD MODULE
+
+  Use coord, Only : coord_type,init_coord_list
+
   Implicit None
   Private
 
@@ -1344,7 +1348,7 @@ Contains
       pois,bond,angle,dihedral,inversion,zdensity,neigh,sites,fourbody,rdf, &
       netcdf,mpoles,ext_field,rigid,domain,seed,traj,kim_data,files,tmr,&
       minim,impa,green,ewld,electro,dfcts,&
-      msd_data,tersoffs,tether,threebody,vdws,devel,met,comm)
+      msd_data,tersoffs,tether,threebody,vdws,devel,met,crd,comm)
 
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( ttm_type ), Intent( InOut ) :: ttm
@@ -1390,7 +1394,8 @@ Contains
     Type( vdw_type ), Intent( InOut ) :: vdws
     Type( comms_type )    ,   Intent( InOut ) :: comm
     Type( development_type ), Intent( InOut ) :: devel
-    Type( metal_type ), Intent( InOut ) :: met 
+    Type( metal_type ), Intent( InOut ) :: met
+    Type( coord_type ), Intent( InOut ) :: crd 
 
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!  W_MD_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
@@ -1441,7 +1446,8 @@ Contains
 
 
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
-
+      ! get inital coordination before any md
+      call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
 
     ! START OF MOLECULAR DYNAMICS CALCULATIONS
 
@@ -1560,6 +1566,9 @@ Contains
       1000 Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
 
       ! Refresh output
+      
+      !calls coordination after intial step
+      Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
 
       Call w_refresh_output(files,flow,tmr,comm)
 

@@ -74,6 +74,7 @@ Module control
   Use flow_control, Only : flow_type,RESTART_KEY_OLD,RESTART_KEY_CLEAN, &
     RESTART_KEY_NOSCALE,RESTART_KEY_SCALE
   Use rigid_bodies, Only : rigid_bodies_type
+  Use coord, Only : coord_type
   Implicit None
 
   Private
@@ -89,7 +90,7 @@ Contains
   Subroutine read_control( lfce,impa,ttm,dfcts,rigid, &
     rsdc,cshell,cons,pmf,stats,thermo,green,devel,plume,msd_data,met, &
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws, &
-    rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,comm)
+    rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,crd,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -149,7 +150,7 @@ Contains
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( flow_type ), Intent( InOut ) :: flow
     Type( comms_type ),     Intent( InOut )  :: comm
-
+    Type( coord_type ), Intent( InOut ) :: crd
     Integer( Kind = wi ) :: tmp_seed(1:3)
 
 
@@ -431,6 +432,11 @@ Contains
     rdf%l_collect   = .false.
     rdf%freq = 1
     rdf%l_print  = .false.
+     ! default switch for calculation for coordination, defualt number of steps
+    crd%coordon = .false.
+    crd%coordinterval = 1
+    
+
 
     ! default switch for calculation of z-density profile, default number of steps
     ! when to be collected and default switch for printing it
@@ -2604,6 +2610,15 @@ Contains
         rdf%freq = Abs(Nint(word_2_real(word,1.0_wp)))
 
         ! read z-density profile option
+        ! coordination reading from control file
+      Else If (word(1:5) == 'coord')then
+        crd%coordon = .true.
+        call get_word(record,word)
+          crd%coordinterval= abs(Nint(word_2_real(word,1.0_wp)))
+
+
+
+
 
       Else If (word(1:4) == 'zden') Then
 
