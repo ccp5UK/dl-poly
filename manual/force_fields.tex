@@ -290,9 +290,9 @@ U(\theta_{jik}) = {k\over 2} (\theta_{jik} - \theta_0)^{2}
 \end{equation}
 \item Screened Vessal \cite{vessal-94a}:  ({\bf bvs1})
 \begin{eqnarray}
-U(\theta_{jik})&=&{k \over 8(\theta_{jik}-\pi)^{2}} \left[ (\theta_0
+U(\theta_{jik})&=&{k \over 8(\theta_{0}-\pi)^{2}} \left[ (\theta_{0}
 -\pi)^{2} -(\theta_{jik}-\pi)^{2}\right]^{2} \times \nonumber \\
-              & &  \exp[-(r_{ij} / \rho_1 + r_{ik} / \rho_2)]
+              & &  \exp[-(r_{ij} / \rho_{1} + r_{ik} / \rho_{2})]
 \end{eqnarray}
 \item Truncated Vessal \cite{smith-95a}:  ({\bf bvs2 })
 \begin{eqnarray}
@@ -333,8 +333,8 @@ U(\theta_{jik}) = k~(\theta_{jik}-\theta_{0})^{2}[1 &-& 1.4 \cdot 10^{-2}(\theta
 \end{eqnarray}
 \item KKY \cite{kumagai-94a}:  ({\bf kky})
 \begin{eqnarray}
-U(\theta_{jik}) &=& f_{k}~\sin\left[2(\theta_{jik}-\theta_{0})\right] \cdot \sqrt{K_{ij} \cdot K_{ik}} \nonumber \\
-K_{ij} &=& \frac{1}{\exp\left[g_{r}(r_{ij}-r_{o})\right]}
+U(\theta_{jik}) &=& 2~f_{k}~\sqrt{K_{ij} \cdot K_{ik}}~\sin^{2}\left[(\theta_{jik}-\theta_{0})\right] \nonumber \\
+K_{ij} &=& \frac{1}{\exp\left[g_{r}(r_{ij}-r_{o})\right]+1}
 \end{eqnarray}
 \item Tabulated potential:  ({\bf tab}).  The potential is defined numerically in TABANG (see Section~\ref{bonded-tables} and Section~\ref{intra-tables}).
 \end{enumerate}
@@ -1142,8 +1142,7 @@ position of the minimum and shifted to eliminate discontinuity
 (includes the effect of excluded volume).  It is usually used in
 combination with the FENE, equation~(\ref{FENE}), bond potential.  This
 implementation allows for a radius shift of up to half a $\sigma$
-($|\Delta| \le 0.5~\sigma$) with a default of zero
-($\Delta_{default} = 0$).
+($|\Delta| \le 0.5~\sigma$) with a default of zero ($\Delta_{default} = 0$).
 \item Standard DPD potential:  ({\bf dpd})
 \begin{equation}
 U(r_{ij}) = \left\{ \begin{array} {l@{\quad:\quad}l}
@@ -1159,73 +1158,77 @@ U(r_{ij}) = \epsilon\left(\frac{1.07}{(r_{ij}/r_{o})+0.07}\right)^{7}\left(\frac
   \begin{equation}
     U\left(r_{ij}\right) = E_{0}~\{\left[1-\exp\left(-k\left(r_{ij}-r_{0}\right)\right)\right]^{2}-1\}+\frac{c}{r_{ij}^{12}}
   \end{equation}
-\item Rydberg: ({\bf ryd})  
+\item Rydberg: ({\bf ryd})
   \begin{equation}
     U\left(r_{ij}\right) = \left(a+br_{ij}\right)\exp\left(-r_{ij}/\rho\right)
-  \end{equation} 
-\item Ziegler-Biersack-Littmark (ZBL): \cite{ziegler1985} ({\bf zbl} )
+  \end{equation}
+\item Ziegler-Biersack-Littmark (ZBL): \cite{ziegler1985} ({\bf zbl})
+  \begin{equation}
+      U(r_{ij}) = \frac{Z_{1} Z_{2}e^{2}}{4 \pi \varepsilon_{0} \varepsilon_{r}}
+                  \sum_{i=1}^{4} b_{i} \exp\left(-c_{i}r/a\right)~~,
+  \end{equation}
+  where
   \begin{equation}
     \begin{split}
-      U(r_{ij}) =& \frac{Z_1Z_2e^2}{4\pi\varepsilon_0\varepsilon_r}\sum_{i=1}^{4}b_i \exp\left(-c_ir/a\right) \\
-               a=&\frac{0.88534a_B}{Z_1^{0.23}+Z_2^{0.23}}\\
-               b=&[0.18175,0.50986,0.28022,0.02817]\\
-               c=&[3.1998,0.94229,0.40290,0.20162] \\
-               a_B =& 0.52917721067~\textrm{\AA}
+      a=&~\frac{0.88534 \cdot a_{B}}{Z_{1}^{0.23}+Z_{2}^{0.23}} \\
+      b=&~[0.18175,0.50986,0.28022,0.02817] \\
+      c=&~[3.1998,0.94229,0.40290,0.20162] \\
+  a_{B}=&~ 0.52917721067~\textrm{\AA}~~. \nonumber
     \end{split}
   \end{equation}
 \item ZBL mixed with Morse, \cite{trachenko2003}: ({\bf zbls})
   \begin{equation}
-    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{morse}\left(r_{ij}\right)
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{morse}\left(r_{ij}\right)~~,
   \end{equation}
   with $f\left(r\right)$ defined by
   \begin{equation*}
      f\left(r\right) = \left\{
        \begin{array}{ll}
-         1-e^{-\left(r_m-r\right)/\xi}/2 & r<r_m \\
-         e^{-\left(r-r_m\right)/\xi}/2 & r\geq r_m\\
+         1-e^{-\left(r_m-r\right)/\xi}/2 & ~~:~~ r<r_m \\
+         e^{-\left(r-r_m\right)/\xi}/2 & ~~:~~ r\geq r_m~~. \\
        \end{array}
        \right.
   \end{equation*}
 
-\item ZBL mixed with Buckingham, \cite{trachenko2003}: ({\bf zblb}) 
+\item ZBL mixed with Buckingham, \cite{trachenko2003}: ({\bf zblb})
   \begin{equation}
-    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{buckingham}\left(r_{ij}\right)
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{ZBL}\left(r_{ij}\right)+\left(1-f\left(r_{ij}\right)\right)U_{buckingham}\left(r_{ij}\right)~~,
   \end{equation}
   with $f\left(r\right)$ defined by
   \begin{equation*}
      f\left(r\right) = \left\{
        \begin{array}{ll}
-         1-e^{-\left(r_m-r\right)/\xi}/2 & r<r_m \\
-         e^{-\left(r-r_m\right)/\xi}/2 & r\geq r_m\\
+         1-e^{-\left(r_m-r\right)/\xi}/2 & ~~:~~ r<r_m \\
+         e^{-\left(r-r_m\right)/\xi}/2 & ~~:~~ r\geq r_m~~. \\
        \end{array}
        \right.
   \end{equation*}
 \item Lennard-Jones tapered with Mei-Davenport-Fernando taper (MDF), \cite{Raiteri2010}: ({\bf mlj})
   \begin{equation}
-    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{LJ}\left(r_{ij}\right)
+    U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{LJ}\left(r_{ij}\right)~~,
   \end{equation}
 
-  where 
+  where
 
-    \begin{equation}                                                                                                                    
-    f(r)=                                                                                                                    
-     \begin{cases}                                                                                                                     
-       1 & r<r_i\\                                                                                                                     
-   \frac{\left(r_c-r\right)^3\left(10r_i^2-5r_cr_i-15rr_i+r_c^2+3rr_c+6r^2\right)}{\left(r_c-r_i\right)^5} & r_i \leq r \leq r_c \\    
-       0 & r>r_c\\                                                                                                                     
-     \end{cases}                                                                                                                       
-   \end{equation}  
-  $r_c$ is set to $r_{vdw}$ and controled by {\bf rvdw}
+    \begin{equation}
+    f(r)=
+     \begin{cases}
+       1 & ~~:~~ r<r_i \\
+   \frac{\left(r_c-r\right)^3\left(10r_i^2-5r_cr_i-15rr_i+r_c^2+3rr_c+6r^2\right)}{\left(r_c-r_i\right)^5} & ~~:~~ r_i \leq r \leq r_c \\
+       0 & ~~:~~ r>r_c~~.\\
+     \end{cases}
+   \end{equation}
+  $r_c$ is set to $r_{vdw}$ and controled by {\bf rvdw}.
 \item Buckingham tapered with MDF: ({\bf mbuc})
   \begin{equation}
     U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{Buckingham}\left(r_{ij}\right)
   \end{equation}
-  see {\bf mlj} for more details
+  See {\bf mlj} for more details.
 \item 12-6 Lennard-Jones tapered with Mei-Davenport-Fernando taper (MDF): ({\bf m126})
   \begin{equation}
     U\left(r_{ij}\right) = f\left(r_{ij}\right)U_{12-6}\left(r_{ij}\right)
   \end{equation}
-  see {\bf mlj} for more details
+  See {\bf mlj} for more details.
 \item Tabulation:  ({\bf tab}).  The potential is defined
 numerically only.
 \end{enumerate}
@@ -2278,9 +2281,9 @@ U(\theta_{jik}) = {k \over 2} (\theta_{jik} - \theta_{0})^{2}
 \end{equation}
 \item Screened Vessal \cite{vessal-94a}:  ({\bf bvs1})
 \begin{eqnarray}
-U(\theta_{jik}) &=& {k \over 8(\theta_{jik}-\pi)^{2}} \left\{ \left[
+U(\theta_{jik}) &=& {k \over 8(\theta_{0}-\pi)^{2}} \left\{ \left[
 (\theta_{0} -\pi)^{2} -(\theta_{jik}-\pi)^{2} \right]^{2} \right\} \times \nonumber \\
-& & \exp[-(r_{ij} / \rho_1 + r_{ik} / \rho_2)]
+& & \exp[-(r_{ij} / \rho_{1} + r_{ik} / \rho_{2})]
 \end{eqnarray}
 \item Truncated Vessal \cite{smith-95a}:  ({\bf bvs2})
 \begin{eqnarray}
@@ -3211,8 +3214,9 @@ available include:
 \end{equation}
 \item Repulsive wall:  ({\bf zbnd})
 \begin{equation}
-\vek{F}_{z}=A~(z_{o}-z)~~~~~: p \cdot z > p \cdot z_{o}
+\vek{F}_{z}=A~(z_{o}-z)~~~~~: f \cdot z > f \cdot z_{o}~~,
 \end{equation}
+where $f=+/-1$ with default of $1$.
 \item X-Piston:  ({\bf xpis})
 \begin{equation}
 \vek{F}_{x} = \frac{m_{k}}{\sum_{k=i}^{j}m_{k}}
