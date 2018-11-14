@@ -149,7 +149,7 @@ contains
     If (comm%idnode==0) Then
       Open(Unit=nicrdt, File='ICOORD', Form='formatted')
       Write(Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
-      Write(Unit=nicrdt, Fmt='(a72)')'Initial coordination between atoms'
+      Write(Unit=nicrdt, Fmt='(a60,I10)')'Initial coordination between atoms',flow%step
       Do i=1,config%natms
         m=crd%coordlist(0,i)
         write (nicrdt,Fmt='(i12,1x,i12,1x)',advance="no") &

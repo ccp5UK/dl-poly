@@ -1564,7 +1564,7 @@ Contains
             stat,devel,green,thermo,bond,angle,dihedral,inversion,zdensity,rdf, &
             netcdf,cnfig,files,comm)
         End If
-
+         Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
       End If ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
 
       1000 Continue ! Escape forces evaluation at t=0 when flow%step=flow%run_steps=0 and flow%newjob=.false.
@@ -1572,7 +1572,8 @@ Contains
       ! Refresh output
       
       !calls coordination after intial step
-      Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
+!       call crd%init_coordlist(neigh%max_list,cnfig%mxatms)
+!      Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
 
       Call w_refresh_output(files,flow,tmr,comm)
 
