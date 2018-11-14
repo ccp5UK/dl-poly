@@ -540,22 +540,16 @@ Contains
 
       If (word(1:1) == '#' .or. word(1:1) == ' ') Then
 
-        ! read DEVELOPMENT options
-
-        Call info('%%% OUTPUT redirected to the default output (screen) !!! %%%',.true.)
-      Else If (word(1:6) == 'l_fast') Then
-        !        l_fast = .true. ! done in scan_development
-        Call info('%%% speed up by avoiding global safety checks !!! %%%',.true.)
-      Else If (word(1:5) == 'devel%l_eng') Then
+      Else If (word(1:5) == 'l_eng') Then
         devel%l_eng = .true.
         Call info('%%% OUTPUT contains an extra last line with E_tot !!! %%%',.true.)
-      Else If (word(1:6) == 'devel%l_rout') Then
+      Else If (word(1:6) == 'l_rout') Then
         devel%l_rout = .true.
         Call info('%%% REVIVE writing in ASCII opted !!! %%%',.true.)
-      Else If (word(1:5) == 'devel%l_rin') Then
+      Else If (word(1:5) == 'l_rin') Then
         devel%l_rin = .true.
         Call info('%%% REVOLD reading in ASCII opted !!! %%%',.true.)
-      Else If (word(1:5) == 'devel%l_org') Then
+      Else If (word(1:5) == 'l_org') Then
         devel%l_org = .true.
         devel%l_trm  = .true.
 
@@ -577,7 +571,7 @@ Contains
         Write(messages(3),'(a,i0,a)') '%%% CFGORG level ', devel%lvcforg, ' %%%'
         Call info(messages,3,.true.)
 
-      Else If (word(1:5) == 'devel%l_scl') Then
+      Else If (word(1:5) == 'l_scl') Then
         Call info('%%% rescale CONFIG to CFGSCL, after reading input & terminate !!! %%%',.true.)
         Call info('%%% config level and new cell vectors to rescale to (read in a CONFIG-like manner): %%%',.true.)
 
@@ -612,20 +606,20 @@ Contains
           Call info('%%% OPTION ABORTED DUE TO ZERO VOLUME !!! %%%',.true.)
           devel%l_trm  = .true.
         End If
-      Else If (word(1:5) == 'devel%l_his') Then
+      Else If (word(1:5) == 'l_his') Then
         devel%l_his = .true.
         devel%l_trm = .true.
         Call info('%%% generate HISTORY after reading input & terminate !!! %%%',.true.)
       Else If (word(1:5) == 'l_tim') Then
         !        l_tim = .true.  ! done in scan_development
         Call info('%%% generate detailed timing !!! %%%',.true.)
-      Else If (word(1:5) == 'devel%l_tor') Then
+      Else If (word(1:5) == 'l_tor') Then
         devel%l_tor = .true.
         Call info('%%% Turn off production of REVCON & REVIVE !!! %%%',.true.)
-      Else If (word(1:5) == 'devel%l_trm') Then
+      Else If (word(1:5) == 'l_trm') Then
         devel%l_trm = .true.
         Call info('%%% Terminate gracefully before initialisation !!! %%%',.true.)
-      Else If (word(1:5) == 'devel%l_dis') Then
+      Else If (word(1:5) == 'l_dis') Then
         devel%l_dis = .true.
         devel%r_dis = Min( devel%r_dis , word_2_real(word,0.1_wp) )
         Call info('%%% Turn on the check on minimum separation distance between VNL pairs at re/start !!! %%%',.true.)
