@@ -19,8 +19,8 @@ Module coord
     Integer :: ncoordpairs,coordinterval,coordstart
     real(wp), allocatable :: arraycuts(:)
     character( Len = 8 ), allocatable :: arraypairs(:,:)!,coordatoms(:)
-    Integer, allocatable :: coordlist(:,:),newcoordlist(:,:),defectlist(:,:)
-    integer,allocatable :: ltype(:,:),cstat(:,:)
+    Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:)
+    integer, allocatable :: ltype(:,:),cstat(:,:)
     Logical :: coordon 
   contains
     procedure :: init=>init_coord
@@ -28,7 +28,7 @@ Module coord
     final :: clean_coord
   end type coord_type
   private
-  public :: coord_hello,init_coord_list
+  public :: init_coord_list,checkcoord
 
 contains
 
@@ -44,6 +44,8 @@ contains
     class(coord_type) :: T
     Integer, Intent(In) :: n,m
     allocate(T%coordlist(0:n,1:m))
+    allocate(T%icoordlist(0:n,1:m))
+    allocate(T%defectlist(0:n))
   end subroutine init_coordlist
 
   subroutine clean_coord(T)
@@ -54,6 +56,12 @@ contains
     end if
     if (allocated(T%coordlist)) then
       deallocate(T%coordlist)
+    end if
+    if (allocated(T%icoordlist)) then
+      deallocate(T%icoordlist)
+    end if
+    if (allocated(T%defectlist)) then
+      deallocate(T%defectlist)
     end if
   end subroutine clean_coord
 
@@ -250,87 +258,60 @@ contains
 
   end subroutine init_coord_list
 
-!  subroutine checkcoord(config,neigh,crd,sites,comm)
+  subroutine checkcoord(config,neigh,crd,sites,flow,comm)
 !    Integer , Intent(Out):: newcrd%coordlist(0:neigh%max_list,1:config%mxatms),defectlist(0:neigh%max_list,0:config%mxatms)
-  
-!    Type(neighbours_type), Intent(In) :: neigh
-!    Type(configuration_type), Intent(In)  :: config
-!    Type(comms_type), Intent(InOut) :: comm
-!    Type(flow_type), Intent(In) :: flow
-!    Type(site_type), Intent(In) :: sites
-!    Type(coord_type), Intent(InOut) :: crd
-!
-!    integer :: i,ii,j,jj,k,kk, oldnum, newnum,defectcnt
-!    real :: rcut,rab
-!    logical :: coordchange,coordfound
-!    If(crd%coordon .Eqv. .False.)Return
-!    Open(Unit=ncrdcdt, File='CCOORD', Form='formatted')
-!    If(flow%step.eq.1)then
-!      Write(Unit=ncrdcdt, Fmt='(a72)') cfgname(1:72)
-!      Write(Unit=ncrdcdt, Fmt='(a72)')'File showing change in coordination between atoms'
-!    endif
-!    If(mod(flow%step,crd%coordinterval).NE.0)Return
-!    write(*,*)"Runs check coord",flow%step,crd%coordinterval,crd%ncoordpairs
-!
-!    newcrd%coordlist(0,:)=0
-!    do j = 1, config%natms
-!      k=neigh%list(0,j)
-!      Do i=1,k
-!        kk=neigh%list(i,j)
-!         rab = (config%parts(j)%xxx-config%parts(kk)%xxx)**2+(config%parts(j)%yyy-config%parts(kk)%yyy)**2 &
-!              + (config%parts(j)%zzz-config%parts(kk)%zzz)**2
+ 
+    Type(neighbours_type), Intent(In) :: neigh
+    Type(configuration_type), Intent(In)  :: config
+    Type(comms_type), Intent(InOut) :: comm
+    Type(flow_type), Intent(In) :: flow
+    Type(site_type), Intent(In) :: sites
+    Type(coord_type), Intent(InOut) :: crd
 
-!        rcut=0.00
+    integer :: i,ii,j,jj,k,kk,defectcnt
+    real :: rcut,rab
+    logical :: coordchange,coordfound,thisopen
 
-!        Do ii= 1 , crd%ncoordpairs
-!          if (((config%ltype(j)==crd%ltype(ii,1)) .and. (config%ltype(kk)==crd%ltype(ii,2)))&
-!            .or.&
-!            ((config%ltype(j)==crd%ltype(ii,2)) .and. (config%ltype(kk)==crd%ltype(ii,1)))) Then
-!            rcut=crd%arraycuts(ii)*crd%arraycuts(ii)
-!          endif
-!        end Do 
-!           if (rab <= rcut) Then
-!          coordlist(0,j)=coordlist(0,j)+1
-!          coordlist(coordlist(0,j),j)=kk
-!          if (kk<=n) Then
-!            coordlist(0,kk)=coordlist(0,kk)+1
-!            coordlist(coordlist(0,kk),kk)=j
-!          endif
-!        End if
-!      End Do
-!    End Do
+    if (flow%step==0) then
+      crd%icoordlist=crd%coordlist
+    end if
     
-!    write(*,*) crd%coordlist(0:crd%coordlist(0,1),1)
-!    write(*,*) crd%newcoordlist(0:crd%newcoordlist(0,1),1)
+    If(mod(flow%step,crd%coordinterval).NE.0)Return
 
-!    defectcnt=0
-!    defectlist(:,:)=0
+    defectcnt=0
+    crd%defectlist(:)=0
 
-!   do i = 1, config%natms 
-!     coordchange=.False.
-!     coordfound=.False.
-!     newnum = crd%newcoordlist(0,i)
-!     do j = 1, newnum
-!      coordfound=.False.
-!      oldnum = crd%coordlist(0,i)
-!       do k=1, oldnum
-!         if (crd%newcoordlist(j,i) .eq. crd%coordlist(k,i)) Then
-!           coordfound=.True.
-!          endif
-!        enddo
-!        if (coordfound .eqv. .False.) Then
-!          coordchange = .True.
-!        endif
-!
-!      enddo
-!
-!      if (coordchange .eqv. .True.) Then
-!        defectcnt=defectcnt+1
-!        defectlist(0,0)=defectcnt
-!        defectlist(1,defectcnt)=i
-!      endif
-!    enddo
-!    Write(ncrdcdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',defectcnt,nstep,time
+   do i = 1, config%natms 
+     coordchange=.False.
+     coordfound=.False.
+     if (crd%coordlist(0,i) /= crd%icoordlist(0,i)) then
+      coordchange=.true.
+     else
+       do j = 1, crd%coordlist(0,i)
+        coordfound=.False.
+         do k=1, crd%icoordlist(0,i)
+           if (crd%coordlist(j,i) == crd%icoordlist(k,i)) Then
+             coordfound=.True.
+            endif
+          enddo
+          if (coordfound .eqv. .False.) Then
+            coordchange = .True.
+          endif
+        enddo
+      end if
+      if (coordchange .eqv. .True.) Then
+        defectcnt=defectcnt+1
+        crd%defectlist(0)=defectcnt
+        crd%defectlist(defectcnt)=i
+      endif
+    enddo
+
+    If (comm%idnode==0) Then
+      inquire(Unit=nccrdt, opened=thisopen)
+      if ( .not. thisopen ) Then
+        Open(Unit=nccrdt, File='CCOORD', Form='formatted')
+      end if
+      Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',defectcnt
 !    Do i = 0, 2
 !      Write(ncrdcdt, Fmt='(3f20.10)') &
 !        cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 )
@@ -343,10 +324,6 @@ contains
 !    crd%coordlist = newcrd%coordlist
 !
 !!close(unit=ncrdcdt)
-!  end subroutine check_coord
-
-  subroutine coord_hello
-    write (*,*) "Olly says hi..."
-
-  end subroutine coord_hello
+    End if
+  end subroutine checkcoord
 end Module coord
