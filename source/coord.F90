@@ -111,7 +111,6 @@ contains
         End if
       End Do
     End Do
-     write(*,*)crd%coordlist(0,1:10) 
     crd%cstat(-3:,:)=0
     Do i=1,crd%ncoordpairs
       crd%cstat(-3,(2*i)-1)=crd%ltype(i,1)
@@ -144,7 +143,6 @@ contains
       ncb=ncb+(crd%cstat(-1,i)+4)
     End do
 
-    write(*,*),"NCB:",ncb
 
     allocate(buff(2*config%mxatms))
     allocate(cbuff(config%mxatms))
@@ -210,10 +208,8 @@ contains
 
       do j=1,comm%mxnode-1
         Call grecv(comm,ncb,j,j)
-          write(*,*),"NCB:",ncb
         if (ncb>1) then
           Call grecv(comm,coordbuff,j,j)
-          write(*,*) coordbuff(1:10)
           jj=1
           do ii=1,2*crd%ncoordpairs
             nmax=coordbuff(jj)
@@ -221,7 +217,7 @@ contains
               crd%cstat(-1,ii)=nmax
             end if
             if (crd%cstat(-3,ii)/=coordbuff(jj+1) .or. crd%cstat(-2,ii)/=coordbuff(jj+2)) then
-              write(*,*), "ERROR: coord pairs do not match in MPI"
+              write(*,*) "ERROR: coord pairs do not match in MPI"
             end if
             do kk=0,nmax
               crd%cstat(kk,ii)=crd%cstat(kk,ii)+coordbuff(jj+3+kk)
@@ -231,10 +227,10 @@ contains
         end if
       enddo
 
-      write(nicrdt,*),"Coordination distribution statistics"
+      write(nicrdt,*)"Coordination distribution statistics"
       Do i=1,2*crd%ncoordpairs
         Do j=0,crd%cstat(-1,i)
-          write(nicrdt,*),sites%unique_atom(crd%cstat(-3,i)),sites%unique_atom(crd%cstat(-2,i)),j,crd%cstat(j,i)
+          write(nicrdt,*)sites%unique_atom(crd%cstat(-3,i)),sites%unique_atom(crd%cstat(-2,i)),j,crd%cstat(j,i)
         End Do
       End Do
     else
