@@ -3430,7 +3430,7 @@ Contains
         ! read in the vdw potential energy parameters
 
         ! reads in coord pairs
-             Else If (word(1:3) == 'crd') Then
+        Else If (word(1:3) == 'crd') Then
         Call get_word(record,word)
         ntpcrd=Nint(word_2_real(word))
          crd%ncoordpairs = ntpcrd
@@ -3438,7 +3438,7 @@ Contains
 !         If (comm%idnode == 0) Then
 !           Write(message,"(/,/,1x,'number of connetivity pairs to be looked at    ',i10)") ntpcrd
 !         End If
-
+         write(*,*) "ntpcrd ", ntpcrd
          Do itpcrd=1,ntpcrd
 
            word(1:1)='#'
@@ -3447,23 +3447,30 @@ Contains
              If (.not.safe) Go To 2000
              Call get_word(record,word)
            End Do
-
+           
+           write(*,*), "word ", word(1:8)
            crd%arraypairs(itpcrd,1)=word(1:8)
            Call get_word(record,word)
+           write(*,*), "word ", word(1:8)
            crd%arraypairs(itpcrd,2)=word(1:8)
 
            Call get_word(record,word)
            crd%arraycuts(itpcrd)=Abs(word_2_real(word))
+           write(*,*)crd%arraycuts(itpcrd)
            katom0=0
            katom1=0
            atom0 =  crd%arraypairs(itpcrd,1)
            atom1 =  crd%arraypairs(itpcrd,2)
-           Do jtpatm=1,ntpcrd
+           write(*,*), "atom ",atom0,atom1
+           Do jtpatm=1,sites%ntype_atom
              If (atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
              If (atom1 == sites%unique_atom(jtpatm)) katom1=jtpatm
+           write(*,*), "katom ", katom0,katom1
            End do
            crd%ltype(itpcrd,1)=katom0
+           write(*,*), "katom0 ", katom0
            crd%ltype(itpcrd,2)=katom1
+           write(*,*), "katom1 ", katom1
          enddo    
  
 
