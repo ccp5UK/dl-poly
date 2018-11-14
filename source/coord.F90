@@ -193,10 +193,10 @@ contains
           cbuff(i)=trim(cbuff(i))//" "//trim(aux)
         enddo 
       enddo
-      Call gsend(comm,en,0,j)
+      Call gsend(comm,en,0,comm%idnode)
       if (en>0) then
-        Call gsend(comm,buff,0,j)
-        Call gsend(comm,cbuff,0,j)
+        Call gsend(comm,buff,0,comm%idnode)
+        Call gsend(comm,cbuff,0,comm%idnode)
       endif
     endif
     deallocate(buff)
