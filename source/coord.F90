@@ -64,12 +64,12 @@ contains
     Type(flow_type), Intent(In) :: flow
     Type(site_type), Intent(In) :: sites
     Type(coord_type), Intent(InOut) :: crd 
-    integer :: i,ii,j,jj,k,kk, ncoord,en,ierr,m,mcoord,lgcoord,nmax,ncb,nicrdt !ncb size coordbuff
+    integer :: i,ii,j,jj,k,kk, ncoord,en,ierr,m,mcoord,lgcoord,nmax,ncb !ncb size coordbuff
     real :: rcut,rab
     Character(len=8) :: aux 
     Character(len=1000),allocatable :: cbuff(:)
     integer, allocatable :: buff(:),coordbuff(:)
-    Logical :: newatom
+    Logical :: newatom,itsopen
     If(crd%coordon .Eqv. .False.)Return
     If(crd%ncoordpairs==0)Return
     If(mod(flow%step,crd%coordinterval).NE.0)Return
@@ -140,7 +140,10 @@ contains
     allocate(buff(2*config%mxatms))
     allocate(cbuff(config%mxatms))
     If (comm%idnode==0) Then
-      Open(Unit=nicrdt, File='ICOORD', Form='formatted')
+      inquire(Unit=nicrdt, opened=itsopen)
+      if ( .not. itsopen ) Then
+        Open(Unit=nicrdt, File='ICOORD', Form='formatted')
+      end if
       Write(Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
       Write(Unit=nicrdt, Fmt='(a60,I10)')'Initial coordination between atoms',flow%step
       Do i=1,config%natms
