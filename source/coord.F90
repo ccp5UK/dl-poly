@@ -19,7 +19,7 @@ Module coord
     Integer :: ncoordpairs,coordinterval,coordstart
     real(wp), allocatable :: arraycuts(:)
     character( Len = 8 ), allocatable :: arraypairs(:,:)!,coordatoms(:)
-    Integer, allocatable :: coordlist(:,:)
+    Integer, allocatable :: coordlist(:,:),newcoordlist(:,:),defectlist(:,:)
     integer,allocatable :: ltype(:,:),cstat(:,:)
     Logical :: coordon 
   contains
@@ -27,10 +27,6 @@ Module coord
     procedure :: init_coordlist
     final :: clean_coord
   end type coord_type
-!  type, public :: coord_type2
-!    Integer :: coordinterval,coordstart
-!    Logical :: coordon
-!  end type coord_type2
   private
   public :: coord_hello,init_coord_list
 
@@ -62,13 +58,11 @@ contains
   end subroutine clean_coord
 
   subroutine init_coord_list(config,neigh,crd,sites,flow,comm)
-!    Use setup_module,  only: nicrdt
     Type(neighbours_type), Intent(In) :: neigh
     Type(configuration_type), Intent(In)  :: config
     Type(comms_type), Intent(InOut) :: comm
     Type(flow_type), Intent(In) :: flow
     Type(site_type), Intent(In) :: sites
-!    Integer, Intent(Out) :: crd%coordlist(0:neigh%max_list,1:config%mxatms)
     Type(coord_type), Intent(InOut) :: crd 
     integer :: i,ii,j,jj,k,kk, ncoord,en,ierr,m,mcoord,lgcoord,nmax,ncb,nicrdt !ncb size coordbuff
     real :: rcut,rab
@@ -89,7 +83,7 @@ contains
         kk=neigh%list(i,j)
         rab = (config%parts(j)%xxx-config%parts(kk)%xxx)**2+(config%parts(j)%yyy-config%parts(kk)%yyy)**2 &
               + (config%parts(j)%zzz-config%parts(kk)%zzz)**2
-!        rab = (x(j)-x(kk))**2+(y(j)-y(kk))**2+(z(j)-z(kk))**2
+
         rcut=0.00
 
         Do ii= 1 , crd%ncoordpairs
@@ -254,94 +248,87 @@ contains
 
   end subroutine init_coord_list
 
-
-!  subroutine check_coord(x,y,z,n,neigh%max_list,config%mxatms,list,config%ltg,crd%coordlist,newcrd%coordlist,defectlist,adfv,nstep,time,adfw)
-!    use config_module, only: atmnam,cfgname,cell
-!    Use setup_module,  only: ncrdcdt
-!    Real(kind=wp) , Intent(In) :: x(:)
-!    Real(kind=wp) , Intent(In) :: y(:)
-!    Real(kind=wp) , Intent(In) :: z(:)
-!    Integer , Intent(Out) :: crd%coordlist(0:neigh%max_list,1:config%mxatms)
+  subroutine checkcoord(config,neigh,crd,sites,comm)
 !    Integer , Intent(Out):: newcrd%coordlist(0:neigh%max_list,1:config%mxatms),defectlist(0:neigh%max_list,0:config%mxatms)
-!    Integer, Intent(In) :: list(-3:neigh%max_list,1:config%mxatms)
-!    Integer , Intent(In) :: n,neigh%max_list,config%mxatms
-!    Integer, Intent(In) :: config%ltg(:)
-!    Type(coord_type), Intent(In) :: adfv
-!    type(coord_type2), Intent(In) :: adfw
-!    Integer,           Intent( In    ) :: nstep
+  
+    Type(neighbours_type), Intent(In) :: neigh
+    Type(configuration_type), Intent(In)  :: config
+    Type(comms_type), Intent(InOut) :: comm
+    Type(flow_type), Intent(In) :: flow
+    Type(site_type), Intent(In) :: sites
+    Type(coord_type), Intent(InOut) :: crd
 !
-!    Real( Kind = wp ), Intent( In    ) :: time
-!    integer :: i,ii,j,jj,k,kk, oldnum, newnum,defectcnt
-!    real :: rcut,rab
-!    logical :: coordchange,coordfound
-!    If(adfw%coordon .Eqv. .False.)Return
-!    Open(Unit=ncrdcdt, File='CCOORD', Form='formatted')
-!    If(nstep.eq.1)then
-!      Write(Unit=ncrdcdt, Fmt='(a72)') cfgname(1:72)
-!      Write(Unit=ncrdcdt, Fmt='(a72)')'File showing change in coordination between atoms'
-!    endif
-!    If(mod(nstep,adfw%coordinterval).NE.0)Return
-!    write(*,*)"Runs check coord",nstep,adfw%coordinterval,crd%ncoordpairs
+    integer :: i,ii,j,jj,k,kk, oldnum, newnum,defectcnt
+    real :: rcut,rab
+    logical :: coordchange,coordfound
+    If(crd%coordon .Eqv. .False.)Return
+    Open(Unit=ncrdcdt, File='CCOORD', Form='formatted')
+    If(flow%step.eq.1)then
+      Write(Unit=ncrdcdt, Fmt='(a72)') cfgname(1:72)
+      Write(Unit=ncrdcdt, Fmt='(a72)')'File showing change in coordination between atoms'
+    endif
+    If(mod(flow%step,crd%coordinterval).NE.0)Return
+    write(*,*)"Runs check coord",flow%step,crd%coordinterval,crd%ncoordpairs
 !
-!    newcrd%coordlist(0,:)=0
-!    do j = 1, n
-!      k=list(0,j)
-!      Do i=1,k
-!        kk=list(i,j)
-!        rab = (x(j)-x(kk))**2+(y(j)-y(kk))**2+(z(j)-z(kk))**2
+    newcrd%coordlist(0,:)=0
+    do j = 1, config%natms
+      k=neigh%list(0,j)
+      Do i=1,k
+        kk=neigh%list(i,j)
+         rab = (config%parts(j)%xxx-config%parts(kk)%xxx)**2+(config%parts(j)%yyy-config%parts(kk)%yyy)**2 &
+              + (config%parts(j)%zzz-config%parts(kk)%zzz)**2
+
+        rcut=0.00
+
+        Do ii= 1 , crd%ncoordpairs
+          if (((config%ltype(j)==crd%ltype(ii,1)) .and. (config%ltype(kk)==crd%ltype(ii,2)))&
+            .or.&
+            ((config%ltype(j)==crd%ltype(ii,2)) .and. (config%ltype(kk)==crd%ltype(ii,1)))) Then
+            rcut=crd%arraycuts(ii)*crd%arraycuts(ii)
+          endif
+        end Do 
+           if (rab <= rcut) Then
+          coordlist(0,j)=coordlist(0,j)+1
+          coordlist(coordlist(0,j),j)=kk
+          if (kk<=n) Then
+            coordlist(0,kk)=coordlist(0,kk)+1
+            coordlist(coordlist(0,kk),kk)=j
+          endif
+        End if
+      End Do
+    End Do
+    
+    write(*,*) crd%coordlist(0:crd%coordlist(0,1),1)
+    write(*,*) crd%newcoordlist(0:crd%newcoordlist(0,1),1)
+
+    defectcnt=0
+    defectlist(:,:)=0
+
+    do i = 1, config%natms 
+      coordchange=.False.
+      coordfound=.False.
+      newnum = crd%newcoordlist(0,i)
+      do j = 1, newnum
+       coordfound=.False.
+       oldnum = crd%coordlist(0,i)
+        do k=1, oldnum
+          if (crd%newcoordlist(j,i) .eq. crd%coordlist(k,i)) Then
+            coordfound=.True.
+          endif
+        enddo
+        if (coordfound .eqv. .False.) Then
+          coordchange = .True.
+        endif
 !
-!        rcut=0.00
+      enddo
 !
-!        Do ii= 1 , crd%ncoordpairs
-!          if ((atmnam(config%ltg(j))==crd%arraypairs(ii,1)) .and. (atmnam(config%ltg(kk))==adfv%arraypairs(ii,2))) Then
-!            rcut=crd%arraycuts(ii)*adfv%arraycuts(ii)
-!          else if ((atmnam(config%ltg(j))==crd%arraypairs(ii,2)) .and. (atmnam(config%ltg(kk))==adfv%arraypairs(ii,1))) Then
-!            rcut=crd%arraycuts(ii)*adfv%arraycuts(ii)
-!          endif
-!        end Do
-!
-!        if (rab <= rcut) Then
-!          newcrd%coordlist(0,j)=newcrd%coordlist(0,j)+1
-!          newcrd%coordlist(newcrd%coordlist(0,j),j)=config%ltg(kk)
-!          if (kk<=n) Then
-!            newcrd%coordlist(0,kk)=newcrd%coordlist(0,kk)+1
-!            newcrd%coordlist(newcrd%coordlist(0,kk),kk)=config%ltg(j)
-!          endif
-!
-!        End if
-!      End Do
-!    enddo
-!    write(*,*) crd%coordlist(0:crd%coordlist(0,1),1)
-!    write(*,*) newcrd%coordlist(0:newcrd%coordlist(0,1),1)
-!
-!    defectcnt=0
-!    defectlist(:,:)=0
-!
-!    do i = 1, n
-!      coordchange=.False.
-!      coordfound=.False.
-!      newnum = newcrd%coordlist(0,i)
-!      do j = 1, newnum
-!        coordfound=.False.
-!        oldnum = crd%coordlist(0,i)
-!        do k=1, oldnum
-!          if (newcrd%coordlist(j,i) .eq. crd%coordlist(k,i)) Then
-!            coordfound=.True.
-!          endif
-!        enddo
-!        if (coordfound .eqv. .False.) Then
-!          coordchange = .True.
-!        endif
-!
-!      enddo
-!
-!      if (coordchange .eqv. .True.) Then
-!        defectcnt=defectcnt+1
-!        defectlist(0,0)=defectcnt
-!        defectlist(1,defectcnt)=i
-!      endif
-!    enddo
-!    Write(ncrdcdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',defectcnt,nstep,time
+      if (coordchange .eqv. .True.) Then
+        defectcnt=defectcnt+1
+        defectlist(0,0)=defectcnt
+        defectlist(1,defectcnt)=i
+      endif
+    enddo
+    Write(ncrdcdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',defectcnt,nstep,time
 !    Do i = 0, 2
 !      Write(ncrdcdt, Fmt='(3f20.10)') &
 !        cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 )
