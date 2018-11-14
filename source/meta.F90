@@ -241,8 +241,7 @@ Contains
     ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
     Call scan_control_output(files,comm)
 
-
-    ! Somewhere around this point determine which metasimulation method to call
+    Call print_banner(dlp_world)
 
     Call build_info()
 
