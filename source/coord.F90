@@ -111,7 +111,7 @@ contains
         End if
       End Do
     End Do
-    write(*,*)crd%coordlist(1:10,1000)
+     write(*,*)crd%coordlist(0,1:10) 
     crd%cstat(-3:,:)=0
     Do i=1,crd%ncoordpairs
       crd%cstat(-3,(2*i)-1)=crd%ltype(i,1)
@@ -120,7 +120,6 @@ contains
       crd%cstat(-2,(2*i))=crd%ltype(i,1)
     End Do
 
-    write(*,*),"cstat1",crd%cstat(-3:12,1000)
     
     Do i=1,config%natms
       Do j=1,2*crd%ncoordpairs
@@ -139,7 +138,7 @@ contains
       End do 
     End do
 
-    write(*,*)"cstat2"crd%cstat(-3:12,1000)
+   
 !Set coordbuff size
     Do i=1,2*crd%ncoordpairs
       ncb=ncb+(crd%cstat(-1,i)+4)

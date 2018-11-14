@@ -1447,8 +1447,8 @@ Contains
 
     !!!!!!!!!!!!!!!!!!!!!!!  W_AT_START_VV INCLUSION  !!!!!!!!!!!!!!!!!!!!!!
       ! get inital coordination before any md
-      call crd%init_coordlist(neigh%max_list,cnfig%mxatms)
-      call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
+      
+      
 
     ! START OF MOLECULAR DYNAMICS CALCULATIONS
 
@@ -1516,6 +1516,9 @@ Contains
       If (flow%step == 0) Then
         Call w_statistics_report(cnfig,cshell,cons,pmf,stat,msd_data,zdensity, &
           sites,rdf,domain,flow,files,thermo,tmr,green,minim,comm)
+       call crd%init_coordlist(neigh%max_list,cnfig%mxatms)
+       Call init_coord_list(cnfig,neigh,crd,sites,flow,comm)
+       
       End If
 
       ! DO THAT ONLY IF 0<flow%step<=flow%run_steps AND THIS IS AN OLD JOB (flow%newjob=.false.)
