@@ -75,7 +75,6 @@ contains
     If(mod(flow%step,crd%coordinterval).NE.0)Return
     crd%coordlist(0,:)=0
     ncb=0
-!    nicrdt=2323
     do j = 1, config%natms
       ncoord = 0
       k=neigh%list(0,j)
