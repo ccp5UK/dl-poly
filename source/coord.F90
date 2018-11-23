@@ -316,10 +316,11 @@ contains
 !      Write(ncrdcdt, Fmt='(3f20.10)') &
 !        cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 )
 !    enddo
-!    Do i=1, defectcnt
-!      write(ncrdcdt,Fmt='(a6,I10,3f20.10)') &
-!        atmnam(defectlist(1,i)),defectlist(1,i),x(defectlist(1,i)),y(defectlist(1,i)),z(defectlist(1,i))
-!    enddo
+      Do i=1, defectcnt
+        write(Unit=nccrdt,Fmt='(a6,I10,3f20.10)') &
+          "Temp",crd%defectlist(i),config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy, &
+          config%parts(crd%defectlist(i))%zzz
+      enddo
 !
 !    crd%coordlist = newcrd%coordlist
 !
