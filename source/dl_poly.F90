@@ -44,10 +44,7 @@ program dl_poly
 
   ! SETUP MODULES
 
-  Use kinds, Only : wp,wi
   Use comms, Only : comms_type, init_comms, exit_comms, gsync, gtime,gsum
-  Use constants, Only : DLP_RELEASE,DLP_VERSION
-
 
   ! DEVELOPMENT MODULE
 
@@ -85,7 +82,7 @@ program dl_poly
   Use inversions, Only : inversions_type
   Use three_body, Only : threebody_type
 
-  Use mpole, Only : mpole_type,POLARISATION_CHARMM
+  Use mpole, Only : mpole_type
 
   Use vdw, Only : vdw_type
   Use metal, Only : metal_type
@@ -138,7 +135,7 @@ program dl_poly
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type
-  Use electrostatic, Only : electrostatic_type,ELECTROSTATIC_EWALD
+  Use electrostatic, Only : electrostatic_type
   Use numerics, Only : seed_type
   Use io, Only : io_type
   Use ttm, Only : ttm_type, ttm_system_init,ttm_system_revive,ttm_table_scan,&
@@ -146,7 +143,7 @@ program dl_poly
   Use ttm_utils, Only : printElecLatticeStatsToFile,printLatticeStatsToFile,&
     peakProfilerElec,peakProfiler
   Use ttm_track, Only : ttm_ion_temperature
-  Use filename, Only : file_type,default_filenames,FILE_CONTROL,FILE_OUTPUT,FILE_STATS
+  Use filename, Only : file_type,default_filenames
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
   Use coord, Only : coord_type

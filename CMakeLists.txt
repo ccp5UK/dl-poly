@@ -76,7 +76,6 @@ else()
   message(STATUS "Build without netcdf support")
 endif()
 
-
 if(WITH_KIM)
   find_package(PkgConfig REQUIRED)
   pkg_check_modules(KIM REQUIRED libkim-api-v2>=2.0.0)
@@ -242,7 +241,7 @@ if(BUILD_TESTING)
   foreach(test RANGE 169 171 1)
     do_test("TEST${test}")
   endforeach()
-  foreach(test RANGE 173 175 1)
+  foreach(test RANGE 173 179 1)
     do_test("TEST${test}")
   endforeach()
 
