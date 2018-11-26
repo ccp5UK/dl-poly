@@ -139,7 +139,7 @@ Contains
     Character( Len = 1024 ) :: control_filename
 
     ! Allocate type arrays
-    Call allocate_types_uniform(TYPE_SIZE,dlp_world,thermo,ewld,tmr,devel,stats, &
+    Call allocate_types_uniform(TYPE_SIZE,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
@@ -213,13 +213,8 @@ Contains
     character( len = 1024 ), Intent(In) :: control_filename
 
     character( len = 256 ) :: message
-    character( len = 66 )  :: banner(14)
 
-    character( len = * ), parameter :: fmt1 = '(a)', &
-      fmt2 = '(a25,a8,a4,a14,a15)', &
-      fmt3 = '(a,i10,a)'
-
-    Integer( Kind = wi ) :: i,j
+    Integer( Kind = wi ) :: vacuum
     Logical :: lfce
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
@@ -244,8 +239,7 @@ Contains
     ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
     Call scan_control_output(files,comm)
 
-
-    ! Somewhere around this point determine which metasimulation method to call
+    Call print_banner(dlp_world)
 
     Call build_info()
 
@@ -458,13 +452,15 @@ Contains
     Call print_initial_configuration(config)
 
     ! Indicate nodes mapped on vacuum (no particles)
-    j=0
+    vacuum = 0
     If (config%natms == 0) Then
-      j=1
+      vacuum = 1
       Call warning('mapped on vacuum (no particles)')
     End If
-    Call gsum(comm,j)
-    If (j > 0) Call warning(2,Real(j,wp),Real(comm%mxnode,wp),0.0_wp)
+    Call gsum(comm,vacuum)
+    If (vacuum > 0) Then
+      Call warning(2,Real(vacuum,wp),Real(comm%mxnode,wp),0.0_wp)
+    End If
 
     ! start-up time when forces are not recalculated
     Call time_elapsed(tmr%elapsed)
@@ -566,14 +562,13 @@ Contains
   End Subroutine molecular_dynamics_driver
 
   !> Allocate all types uniformly, _i.e._ N of every type
-  Subroutine allocate_types_uniform(array_size,dlp_world,thermo,ewld,tmr,devel,stats, &
+  Subroutine allocate_types_uniform(array_size,thermo,ewld,tmr,devel,stats, &
       green,plume,msd_data,met,pois,impa,dfcts,bond,angle,dihedral,inversion, &
       tether,threebody,zdensity,cons,neigh,pmfs,sites,core_shells,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,flow, &
       seed,traj,kim_data,config,ios,ttms,rsdsc,files,crd)
 
     Integer( Kind = wi ), Intent( In    ) :: array_size
-    Type(comms_type), Intent(InOut) :: dlp_world(0:)
     Type(thermostat_type), Allocatable, Intent(InOut) :: thermo(:)
     Type(ewald_type), Allocatable, Intent(InOut) :: ewld(:)
     Type(timer_type), Allocatable, Intent(InOut) :: tmr(:)

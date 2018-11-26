@@ -138,21 +138,15 @@ Contains
         ! read DEVELOPMENT option: OUTPUT to screen
 
         If      (word(1:5) == 'l_scr') Then
-
           devel%l_scr = .true.
-
+          Call info('%%% OUTPUT redirected to the default output (screen) !!! %%%',.true.)
         Else If (word(1:6) == 'l_fast') Then
-
           devel%l_fast=.true.
-
+          Call info('%%% speed up by avoiding global safety checks !!! %%%',.true.)
         Else If (word(1:5) == 'l_tim') Then
-
           devel%l_tim=.true.
-
         Else If (word(1:6) == 'finish') Then
-
           carry=.false.
-
         End If
 
       End Do
