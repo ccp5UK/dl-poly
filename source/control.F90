@@ -3715,6 +3715,8 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
   rdf%l_collect  = (rdf%max_rdf > 0)
   l_n_r = .not.rdf%l_collect
 
+  lzdn = .false.
+
   lvdw  = (vdws%max_vdw > 0)
   vdws%no_vdw = .false.
   lrvdw = .false. ! Even though it vdws%cutoff may have been read from TABLE
