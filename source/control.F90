@@ -432,12 +432,7 @@ Contains
     rdf%l_collect   = .false.
     rdf%freq = 1
     rdf%l_print  = .false.
-     ! default switch for calculation for coordination, defualt number of steps
-    crd%coordon = .false.
-    crd%coordinterval = 1
     
-
-
     ! default switch for calculation of z-density profile, default number of steps
     ! when to be collected and default switch for printing it
 
@@ -490,6 +485,16 @@ Contains
     rsdc%nsrsd  = 0
     rsdc%isrsd  = 1
     rsdc%rrsd   = 0.15_wp
+
+    ! Defauly swith for coordination outputting and defaults for 
+    ! (i) step to start, (ii) every step to be collected
+    ! (iii) options for what is collected 
+
+     crd%coordon =.false.
+     crd%coordstart= 0
+     crd%coordinterval= 100
+     crd%coordops= 0
+
 
     ! default value for data dumping interval
 
@@ -2608,7 +2613,11 @@ Contains
       Else If (word(1:5) == 'coord')then
         crd%coordon = .true.
         call get_word(record,word)
-          crd%coordinterval= abs(Nint(word_2_real(word,1.0_wp)))
+                  crd%coordstart= abs(Nint(word_2_real(word)))
+        call get_word(record,word)
+          crd%coordinterval= abs(Nint(word_2_real(word)))
+        call get_word(record,word)
+                crd%coordops= abs(Nint(word_2_real(word,1.0_wp)))  
 
 
 

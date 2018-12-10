@@ -16,7 +16,7 @@ Module coord
   Implicit None
 
   type, public :: coord_type
-    Integer :: ncoordpairs,coordinterval,coordstart
+    Integer :: ncoordpairs,coordinterval,coordstart,coordops
     real(wp), allocatable :: arraycuts(:)
     character( Len = 8 ), allocatable :: arraypairs(:,:)!,coordatoms(:)
     Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:)
@@ -80,6 +80,7 @@ contains
     Logical :: newatom,itsopen
     If(crd%coordon .Eqv. .False.)Return
     If(crd%ncoordpairs==0)Return
+    If(crd%coordstart>flow%step)Return
     If(mod(flow%step,crd%coordinterval).NE.0)Return
     crd%coordlist(0,:)=0
     ncb=0
@@ -154,6 +155,7 @@ contains
       end if
       Write(Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
       Write(Unit=nicrdt, Fmt='(a60,I10)')'Initial coordination between atoms',flow%step
+      If(crd%coordops .eq.0) then
       Do i=1,config%natms
         m=crd%coordlist(0,i)
         write (nicrdt,Fmt='(i12,1x,i12,1x)',advance="no") &
@@ -179,8 +181,9 @@ contains
           enddo
         endif
       enddo
-!      Close(Unit=nicrdt)
+      endif
     else
+     If(crd%coordops .eq.0) then
       en=2*config%natms
       do i=1,config%natms
         buff(2*i-1) = config%ltg(i)
@@ -201,10 +204,11 @@ contains
         Call gsend(comm,cbuff,0,comm%idnode)
       endif
     endif
+    endif
     deallocate(buff)
     deallocate(cbuff)
 
-
+    
     allocate(coordbuff(ncb))
 
     If (comm%idnode==0) Then
@@ -271,10 +275,12 @@ contains
     integer :: i,ii,j,jj,k,kk,defectcnt
     real :: rcut,rab
     logical :: coordchange,coordfound,thisopen
-
-    if (flow%step==0) then
+     If(crd%coordon .Eqv. .False.)Return
+     If(crd%ncoordpairs==0)Return
+     If(crd%coordstart>flow%step)Return
+     if (flow%step==crd%coordstart) then
       crd%icoordlist=crd%coordlist
-    end if
+     end if
     
     If(mod(flow%step,crd%coordinterval).NE.0)Return
 
