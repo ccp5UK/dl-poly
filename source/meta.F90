@@ -480,7 +480,7 @@ Contains
           thermo,plume,msd_data,bond,angle,dihedral,inversion,zdensity,neigh, &
           sites,vdws,tersoffs,fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid, &
           electro,domain,seed,traj,kim_data,files,dfcts,tmr,tether,threebody, &
-          pois,green,ewld,devel,met,comm)
+          pois,green,ewld,devel,met,crd,comm)
       Else
         Call w_replay_history(config,ios,rsdsc,flow,core_shells,cons,pmfs,stats, &
           thermo,msd_data,met,pois,bond,angle,dihedral,inversion,zdensity,neigh, &

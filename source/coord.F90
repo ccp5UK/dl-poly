@@ -277,6 +277,7 @@ contains
     logical :: coordchange,coordfound,thisopen
      If(crd%coordon .Eqv. .False.)Return
      If(crd%ncoordpairs==0)Return
+     If(crd%coordops .eq.1)Return
      If(crd%coordstart>flow%step)Return
      if (flow%step==crd%coordstart) then
       crd%icoordlist=crd%coordlist

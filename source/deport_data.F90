@@ -30,6 +30,7 @@ Module deport_data
   Use thermostat, Only : thermostat_type
   Use neighbours, Only : neighbours_type
   Use kim, Only : kim_type
+  Use coord, Only :coord_type
   Implicit None
 
   Public :: deport_atomic_data, export_atomic_data
@@ -38,7 +39,7 @@ Contains
 
   Subroutine deport_atomic_data(mdir,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo,&
       green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid,domain, &
-      config,comm)
+      config,crd,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -80,6 +81,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( configuration_type ), Intent( InOut ) :: config
     Type( domains_type ), Intent( In    ) :: domain
+    Type(coord_type), Intent( In ) :: crd
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -2516,7 +2518,7 @@ Contains
 
   Subroutine relocate_particles(dvar,cutoff_extended,lbook,lmsd,megatm,flow,cshell,cons, &
       pmf,stats,ewld,thermo,green,bond,angle,dihedral,inversion,tether, &
-      neigh,sites,minim,mpoles,rigid,domain,config,comm)
+      neigh,sites,minim,mpoles,rigid,domain,config,crd,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -2559,6 +2561,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( configuration_type ), Intent( InOut ) :: config
     Type( domains_type ), Intent( In    ) :: domain
+    Type(coord_type), Intent( In   ) :: crd
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp ) :: cut
 
@@ -2676,28 +2679,28 @@ Contains
 
       Call deport_atomic_data(-1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
         green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-        domain,config,comm)
+        domain,config,crd,comm)
       Call deport_atomic_data( 1,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
         green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-        domain,config,comm)
+        domain,config,crd,comm)
 
       ! exchange atom data in -/+ y directions
 
       Call deport_atomic_data(-2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
         green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-        domain,config,comm)
+        domain,config,crd,comm)
       Call deport_atomic_data( 2,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
         green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-        domain,config,comm)
+        domain,config,crd,comm)
 
       ! exchange atom data in -/+ z directions
 
       Call deport_atomic_data(-3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
         green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-        domain,config,comm)
+        domain,config,crd,comm)
       Call deport_atomic_data( 3,lbook,lmsd,cshell,cons,pmf,stats,ewld,thermo, &
         green,bond,angle,dihedral,inversion,tether,neigh,minim,mpoles,rigid, &
-        domain,config,comm)
+        domain,config,crd,comm)
 
       ! check system for loss of atoms
 

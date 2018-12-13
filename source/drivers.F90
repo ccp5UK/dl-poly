@@ -192,7 +192,7 @@ Contains
   Subroutine w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
       inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
       minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,&
-      green,devel,ewld,met,seed,thermo,comm)
+      green,devel,ewld,met,seed,thermo,crd,comm)
 
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
@@ -232,6 +232,7 @@ Contains
     Type( greenkubo_type ), Intent( InOut ) :: green
     Type( seed_type ), Intent( InOut ) :: seed
     Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type(coord_type), Intent( In ) :: crd
     Type(comms_type)    ,   Intent( InOut ) :: comm
 
     Logical :: ltmp
@@ -250,7 +251,7 @@ Contains
       ! Refresh mappings
 
       Call w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
-        dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,comm)
+        dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,crd,comm)
     End If
 
     100  Continue ! Only used when relaxed is false
@@ -407,7 +408,7 @@ Contains
 
       If (.not.(cshell%relaxed .and. minim%relaxed)) Then
         Call w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,comm)
+          dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,crd,comm)
         Go To 100
       End If
     End If
@@ -460,7 +461,7 @@ Contains
 
   Subroutine w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
       dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,&
-      electro,comm)
+      electro,crd,comm)
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( flow_type ), Intent( InOut ) :: flow
     Type( constraints_type ), Intent( InOut ) :: cons
@@ -484,6 +485,7 @@ Contains
     Type( minimise_type), Intent( InOut ) :: minim
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( electrostatic_type ), Intent( InOut ) :: electro
+    Type(coord_type), Intent( In)  :: crd
     Type(comms_type)    ,   Intent( InOut ) :: comm
 
 
@@ -505,7 +507,7 @@ Contains
       Call relocate_particles(cnfig%dvar,neigh%cutoff_extended,flow%book, &
         msd_data%l_msd,cnfig%megatm,flow,cshell,cons,pmf,stat,ewld,thermo,green, &
         bond,angle,dihedral,inversion,tether,neigh,sites,minim,mpoles, &
-        rigid,domain,cnfig,comm)
+        rigid,domain,cnfig,crd,comm)
 
       ! Exchange atomic data in border regions
 
@@ -1501,7 +1503,7 @@ Contains
         ! Refresh mappings
 
         Call w_refresh_mappings(cnfig,flow,cshell,cons,pmf,stat,msd_data,bond,angle, &
-          dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,comm)        
+          dihedral,inversion,tether,neigh,sites,mpoles,rigid,domain,kim_data,ewld,green,minim,thermo,electro,crd,comm)        
 
       End If ! DO THAT ONLY IF 0<=flow%step<flow%run_steps AND FORCES ARE PRESENT (cnfig%levcfg=2)
 
@@ -1509,7 +1511,7 @@ Contains
 
       Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral,&
         inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf,netcdf, &
-        minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,comm)
+        minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,green,devel,ewld,met,seed,thermo,crd,comm)
 
       ! Calculate physical quantities, collect statistics and report at t=0
 
@@ -2017,7 +2019,7 @@ Contains
   Subroutine w_replay_historf(cnfig,io,rsdc,flow,cshell,cons,pmf,stat,thermo,plume, &
       msd_data,bond,angle,dihedral,inversion,zdensity,neigh,sites,vdws,tersoffs, &
       fourbody,rdf,netcdf,minim,mpoles,ext_field,rigid,electro,domain,seed,traj, &
-      kim_data,files,dfcts,tmr,tether,threebody,pois,green,ewld,devel,met,comm)
+      kim_data,files,dfcts,tmr,tether,threebody,pois,green,ewld,devel,met,crd,comm)
 
     Type( configuration_type), Intent( InOut  )  :: cnfig
     Type( io_type ), Intent( InOut ) :: io
@@ -2061,6 +2063,7 @@ Contains
     Type( ewald_type), Intent( InOut ) :: ewld
     Type( metal_type), Intent( InOut ) :: met
     Type( development_type) , Intent( InOut ) :: devel
+    Type( coord_type), Intent(In) :: crd
     Type( comms_type ), Intent( InOut ) :: comm
 
     Real(Kind=wp) :: tsths
@@ -2203,7 +2206,7 @@ Contains
           Call w_calculate_forces(cnfig,flow,io,cshell,cons,pmf,stat,plume,pois,bond,angle,dihedral, &
             inversion,tether,threebody,neigh,sites,vdws,tersoffs,fourbody,rdf, &
             netcdf,minim,mpoles,ext_field,rigid,electro,domain,kim_data,msd_data,tmr,files,&
-            green,devel,ewld,met,seed,thermo,comm)
+            green,devel,ewld,met,seed,thermo,crd,comm)
 
 
           ! Evaluate kinetics if available
