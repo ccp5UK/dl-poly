@@ -81,7 +81,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( configuration_type ), Intent( InOut ) :: config
     Type( domains_type ), Intent( In    ) :: domain
-    Type(coord_type), Intent( In ) :: crd
+    Type(coord_type), Intent( InOut ) :: crd
     Type( comms_type ), Intent( InOut ) :: comm
 
     Logical           :: safe,lsx,lsy,lsz,lex,ley,lez,lwrap, &
@@ -101,7 +101,7 @@ Contains
     Integer,           Dimension( : ), Allocatable :: lrgd
     Integer,           Dimension( : ), Allocatable :: ind_on,ind_off
     Integer,           Dimension( : ), Allocatable :: i1pmf,i2pmf
-
+   
     Character( Len = 256 ) :: message
     fail=0
     Allocate (buffer(1:domain%mxbfdp),                   Stat=fail(1))
@@ -111,7 +111,7 @@ Contains
       Write(message,'(a)') 'deport_atomic_data allocation failure 1'
       Call error(0,message)
     End If
-
+   
     ! Set buffer limit (half for outgoing data - half for incoming)
 
     iblock=domain%mxbfdp/2
@@ -786,6 +786,14 @@ Contains
           End If
 
         End If
+        If(crd%coordon)then
+          buffer(imove+1)=crd%coordlist(0,i)
+          imove=imove+1
+
+          write(0,*)buffer(imove),real(crd%coordlist(0,i))
+          write(0,*)config%ltg(i),i
+          
+        endif  
 
       End If
     End Do
@@ -901,6 +909,9 @@ Contains
         dihedral%legend(:,keep)=dihedral%legend(:,i)
         inversion%legend(:,keep)=inversion%legend(:,i)
       End If
+      If(crd%coordon)then
+         crd%coordlist(0,keep)=crd%coordlist(0,i)
+      end if
     End Do
     keep=k ! How many particles are to be kept
 
@@ -1638,6 +1649,10 @@ Contains
         inversion%n_types =jinver
 
       End If
+      IF(crd%coordon)then
+       crd%coordlist(0,newatm)=buffer(kmove+1)
+       kmove=kmove+1
+      endif        
     End Do
 
     ! check error flags
@@ -2561,7 +2576,7 @@ Contains
     Type( rigid_bodies_type ), Intent( InOut ) :: rigid
     Type( configuration_type ), Intent( InOut ) :: config
     Type( domains_type ), Intent( In    ) :: domain
-    Type(coord_type), Intent( In   ) :: crd
+    Type(coord_type), Intent( InOut   ) :: crd
     Type( comms_type ), Intent( InOut ) :: comm
     Real( Kind = wp ) :: cut
 

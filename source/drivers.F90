@@ -232,7 +232,7 @@ Contains
     Type( greenkubo_type ), Intent( InOut ) :: green
     Type( seed_type ), Intent( InOut ) :: seed
     Type( thermostat_type ), Intent( InOut ) :: thermo
-    Type(coord_type), Intent( In ) :: crd
+    Type(coord_type), Intent( InOut ) :: crd
     Type(comms_type)    ,   Intent( InOut ) :: comm
 
     Logical :: ltmp
@@ -485,7 +485,7 @@ Contains
     Type( minimise_type), Intent( InOut ) :: minim
     Type( thermostat_type ), Intent( InOut ) :: thermo
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Type(coord_type), Intent( In)  :: crd
+    Type(coord_type), Intent( InOut)  :: crd
     Type(comms_type)    ,   Intent( InOut ) :: comm
 
 
@@ -2063,7 +2063,7 @@ Contains
     Type( ewald_type), Intent( InOut ) :: ewld
     Type( metal_type), Intent( InOut ) :: met
     Type( development_type) , Intent( InOut ) :: devel
-    Type( coord_type), Intent(In) :: crd
+    Type( coord_type), Intent(InOut) :: crd
     Type( comms_type ), Intent( InOut ) :: comm
 
     Real(Kind=wp) :: tsths
