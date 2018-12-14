@@ -78,6 +78,9 @@ contains
     Character(len=1000),allocatable :: cbuff(:)
     integer, allocatable :: buff(:),coordbuff(:)
     Logical :: newatom,itsopen
+
+    !Check whether option is called
+
     If(crd%coordon .Eqv. .False.)Return
     If(crd%ncoordpairs==0)Return
     If(crd%coordstart>flow%step)Return
@@ -113,6 +116,11 @@ contains
         End if
       End Do
     End Do
+     !Create icoordlist
+     if (flow%step==crd%coordstart) then
+      crd%icoordlist=crd%coordlist
+     end if
+
     crd%cstat(-3:,:)=0
     Do i=1,crd%ncoordpairs
       crd%cstat(-3,(2*i)-1)=crd%ltype(i,1)
@@ -279,9 +287,6 @@ contains
      If(crd%ncoordpairs==0)Return
      If(crd%coordops .eq.1)Return
      If(crd%coordstart>flow%step)Return
-     if (flow%step==crd%coordstart) then
-      crd%icoordlist=crd%coordlist
-     end if
     
     If(mod(flow%step,crd%coordinterval).NE.0)Return
 
