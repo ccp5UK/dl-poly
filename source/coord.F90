@@ -283,6 +283,8 @@ contains
     integer :: i,ii,j,jj,k,kk,defn,defectcnt,totdefectcnt
     real :: rcut,rab
     integer, allocatable :: buff(:)
+    character(len=60) :: aux
+    character(len=60), allocatable :: rbuff(:)
     logical :: coordchange,coordfound,thisopen
     
     If(crd%coordon .Eqv. .False.)Return
@@ -319,6 +321,7 @@ contains
       endif
     enddo
   allocate(buff(2*crd%defectlist(0))) 
+  allocate(rbuff(crd%defectlist(0)))
     If (comm%idnode==0) Then
       totdefectcnt=0
       do j=1,comm%mxnode-1
@@ -346,8 +349,10 @@ contains
         Call grecv(comm,defectcnt,j,j)
         if (defectcnt>0) Then
           Call grecv(comm,buff,j,j)
+          Call grecv(comm,rbuff,j,j)
           do i=1,defectcnt
-            write(nccrdt,Fmt='(a6,I10)') trim(sites%unique_atom(buff(2*i-1))),buff(2*i)
+            write(nccrdt,Fmt='(a6,I10,a)') trim(sites%unique_atom(buff(2*i-1))),buff(2*i),  &
+            rbuff(i)
           end do
         end if
       end do
@@ -359,13 +364,18 @@ contains
       do i =1, defectcnt
         buff(2*i-1)=config%ltype(crd%defectlist(i))
         buff(2*i)=config%ltg(crd%defectlist(i))
+        write(aux,'(3f20.10)')config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,  &
+        config%parts(crd%defectlist(i))%zzz
+        rbuff(i)=aux
       End do
       Call gsend(comm,defectcnt,0,comm%idnode)
       if (defectcnt>0) then
         Call gsend(comm,buff,0,comm%idnode)
+        Call gsend(comm,rbuff,0,comm%idnode)
       End if
     End if
     deallocate(buff)
+    deallocate(rbuff)
 
   end subroutine checkcoord
 
