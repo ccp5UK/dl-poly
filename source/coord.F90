@@ -280,8 +280,9 @@ contains
     Type(site_type), Intent(In) :: sites
     Type(coord_type), Intent(InOut) :: crd
 
-    integer :: i,ii,j,jj,k,kk,defectcnt
+    integer :: i,ii,j,jj,k,kk,defn,defectcnt,totdefectcnt
     real :: rcut,rab
+    integer, allocatable :: buff(:)
     logical :: coordchange,coordfound,thisopen
     
     If(crd%coordon .Eqv. .False.)Return
@@ -317,22 +318,55 @@ contains
         crd%defectlist(defectcnt)=i
       endif
     enddo
-
+  allocate(buff(2*crd%defectlist(0))) 
     If (comm%idnode==0) Then
+      totdefectcnt=0
+      do j=1,comm%mxnode-1
+        Call grecv(comm,defn,j,j)
+        totdefectcnt=totdefectcnt+defn
+      end do
+      totdefectcnt=totdefectcnt+crd%defectlist(0)
+
       inquire(Unit=nccrdt, opened=thisopen)
       if ( .not. thisopen ) Then
         Open(Unit=nccrdt, File='CCOORD', Form='formatted')
       end if
-      Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',defectcnt
+      Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',totdefectcnt
 !    Do i = 0, 2
 !      Write(ncrdcdt, Fmt='(3f20.10)') &
 !        cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 )
 !    enddo
-      Do i=1, defectcnt
+      Do i=1, crd%defectlist(0)
         write(Unit=nccrdt,Fmt='(a6,I10,3f20.10)') &
           trim(sites%unique_atom(config%ltype(crd%defectlist(i)))),config%ltg(crd%defectlist(i)), &
           config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz
       enddo
+
+      do j=1,comm%mxnode-1
+        Call grecv(comm,defectcnt,j,j)
+        if (defectcnt>0) Then
+          Call grecv(comm,buff,j,j)
+          do i=1,defectcnt
+            write(nccrdt,Fmt='(a6,I10)') trim(sites%unique_atom(buff(2*i-1))),buff(2*i)
+          end do
+        end if
+      end do
+
+    else
+      defectcnt=crd%defectlist(0)
+      defn=crd%defectlist(0)
+      Call gsend(comm,defn,0,comm%idnode)
+      do i =1, defectcnt
+        buff(2*i-1)=config%ltype(crd%defectlist(i))
+        buff(2*i)=config%ltg(crd%defectlist(i))
+      End do
+      Call gsend(comm,defectcnt,0,comm%idnode)
+      if (defectcnt>0) then
+        Call gsend(comm,buff,0,comm%idnode)
+      End if
     End if
+    deallocate(buff)
+
   end subroutine checkcoord
+
 end Module coord
