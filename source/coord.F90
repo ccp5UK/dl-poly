@@ -108,10 +108,10 @@ contains
 
         if (rab <= rcut) Then
           crd%coordlist(0,j)=crd%coordlist(0,j)+1
-          crd%coordlist(crd%coordlist(0,j),j)=kk
+          crd%coordlist(crd%coordlist(0,j),j)=config%ltg(kk)
           if (kk<=config%natms) Then
             crd%coordlist(0,kk)=crd%coordlist(0,kk)+1
-            crd%coordlist(crd%coordlist(0,kk),kk)=j
+            crd%coordlist(crd%coordlist(0,kk),kk)=config%ltg(j)
           endif
         End if
       End Do
@@ -312,6 +312,7 @@ contains
         enddo
       end if
       if (coordchange .eqv. .True.) Then
+        write(0,*)crd%coordlist(0:10,i),crd%icoordlist(0:10,i)
         defectcnt=defectcnt+1
         crd%defectlist(0)=defectcnt
         crd%defectlist(defectcnt)=i
@@ -330,7 +331,7 @@ contains
 !    enddo
       Do i=1, defectcnt
         write(Unit=nccrdt,Fmt='(a6,I10,3f20.10)') &
-          "Temp",crd%defectlist(i),config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy, &
+          "Temp",config%ltg(crd%defectlist(i)),config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy, &
           config%parts(crd%defectlist(i))%zzz
       enddo
 !
