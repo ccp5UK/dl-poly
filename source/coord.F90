@@ -87,7 +87,7 @@ contains
     If(mod(flow%step,crd%coordinterval).NE.0)Return
     crd%coordlist(0,:)=0
     ncb=0
-    do j = 1, config%natms
+    Do j = 1, config%natms
       ncoord = 0
       k=neigh%list(0,j)
       Do i=1,k
@@ -105,7 +105,6 @@ contains
           endif
         end Do
 
-
         if (rab <= rcut) Then
           crd%coordlist(0,j)=crd%coordlist(0,j)+1
           crd%coordlist(crd%coordlist(0,j),j)=config%ltg(kk)
@@ -116,11 +115,13 @@ contains
         End if
       End Do
     End Do
+
      !Create icoordlist
      if (flow%step==crd%coordstart) then
       crd%icoordlist=crd%coordlist
      end if
 
+    !Create coordination statistics array
     crd%cstat(-3:,:)=0
     Do i=1,crd%ncoordpairs
       crd%cstat(-3,(2*i)-1)=crd%ltype(i,1)
@@ -129,7 +130,7 @@ contains
       crd%cstat(-2,(2*i))=crd%ltype(i,1)
     End Do
 
-    
+    !Collect coordination statistics
     Do i=1,config%natms
       Do j=1,2*crd%ncoordpairs
       mcoord=0
@@ -270,9 +271,8 @@ contains
 
   end subroutine init_coord_list
 
-  subroutine checkcoord(config,neigh,crd,sites,flow,comm)
-!    Integer , Intent(Out):: newcrd%coordlist(0:neigh%max_list,1:config%mxatms),defectlist(0:neigh%max_list,0:config%mxatms)
- 
+
+  subroutine checkcoord(config,neigh,crd,sites,flow,comm) 
     Type(neighbours_type), Intent(In) :: neigh
     Type(configuration_type), Intent(In)  :: config
     Type(comms_type), Intent(InOut) :: comm
@@ -283,11 +283,11 @@ contains
     integer :: i,ii,j,jj,k,kk,defectcnt
     real :: rcut,rab
     logical :: coordchange,coordfound,thisopen
-     If(crd%coordon .Eqv. .False.)Return
-     If(crd%ncoordpairs==0)Return
-     If(crd%coordops .eq.1)Return
-     If(crd%coordstart>flow%step)Return
     
+    If(crd%coordon .Eqv. .False.)Return
+    If(crd%ncoordpairs==0)Return
+    If(crd%coordops .eq.1)Return
+    If(crd%coordstart>flow%step)Return    
     If(mod(flow%step,crd%coordinterval).NE.0)Return
 
     defectcnt=0
@@ -312,7 +312,6 @@ contains
         enddo
       end if
       if (coordchange .eqv. .True.) Then
-        write(0,*)crd%coordlist(0:10,i),crd%icoordlist(0:10,i)
         defectcnt=defectcnt+1
         crd%defectlist(0)=defectcnt
         crd%defectlist(defectcnt)=i
@@ -331,13 +330,9 @@ contains
 !    enddo
       Do i=1, defectcnt
         write(Unit=nccrdt,Fmt='(a6,I10,3f20.10)') &
-          "Temp",config%ltg(crd%defectlist(i)),config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy, &
-          config%parts(crd%defectlist(i))%zzz
+          trim(sites%unique_atom(config%ltype(crd%defectlist(i)))),config%ltg(crd%defectlist(i)), &
+          config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz
       enddo
-!
-!    crd%coordlist = newcrd%coordlist
-!
-!!close(unit=ncrdcdt)
     End if
   end subroutine checkcoord
 end Module coord

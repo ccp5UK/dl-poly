@@ -94,7 +94,8 @@ Contains
       jshels,kshels,jconst,kconst,jpmf,kpmf, &
       jrigid,krigid,jteths,kteths,           &
       jbonds,kbonds,jangle,kangle,           &
-      jdihed,kdihed,jinver,kinver
+      jdihed,kdihed,jinver,kinver,            &
+      jcrd
     Real( Kind = wp ) :: uuu,vvv,www,xadd,yadd,zadd
 
     Real( Kind = wp ), Dimension( : ), Allocatable :: buffer
@@ -787,10 +788,13 @@ Contains
 
         End If
         If(crd%coordon)then
-          buffer(imove+1)=crd%coordlist(0,i)
+          buffer(imove+1)=crd%icoordlist(0,i)
           imove=imove+1
-
-          write(0,*)buffer(imove),real(crd%coordlist(0,i))
+          do jcrd = 1, crd%icoordlist(0,i)
+            buffer(imove+1)=crd%icoordlist(jcrd,i)
+            imove=imove+1
+          end do
+          write(0,*)buffer(imove),real(crd%icoordlist(0,i))
           write(0,*)config%ltg(i),i
           
         endif  
@@ -910,7 +914,10 @@ Contains
         inversion%legend(:,keep)=inversion%legend(:,i)
       End If
       If(crd%coordon)then
-         crd%coordlist(0,keep)=crd%coordlist(0,i)
+         crd%icoordlist(0,keep)=crd%icoordlist(0,i)
+          do jcrd = 1, crd%icoordlist(0,i)
+            crd%icoordlist(jcrd,keep)=crd%icoordlist(jcrd,i)
+          end do
       end if
     End Do
     keep=k ! How many particles are to be kept
@@ -1649,9 +1656,13 @@ Contains
         inversion%n_types =jinver
 
       End If
-      IF(crd%coordon)then
-       crd%coordlist(0,newatm)=buffer(kmove+1)
+      If(crd%coordon)then
+       crd%icoordlist(0,newatm)=buffer(kmove+1)
        kmove=kmove+1
+          do jcrd = 1, crd%icoordlist(0,newatm)
+            crd%icoordlist(jcrd,newatm)=buffer(kmove+1)
+            kmove=kmove+1
+          end do
       endif        
     End Do
 
