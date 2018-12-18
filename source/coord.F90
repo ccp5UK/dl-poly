@@ -45,7 +45,7 @@ contains
     Integer, Intent(In) :: n,m
     allocate(T%coordlist(0:n,1:m))
     allocate(T%icoordlist(0:n,1:m))
-    allocate(T%defectlist(0:n))
+    allocate(T%defectlist(0:m))
   end subroutine init_coordlist
 
   subroutine clean_coord(T)
