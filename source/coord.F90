@@ -108,19 +108,19 @@ contains
 
         if (rab <= rcut) Then
           crd%coordlist(0,j)=crd%coordlist(0,j)+1
-          crd%coordlist(crd%coordlist(0,j),j)=config%ltg(kk)
+          crd%coordlist(crd%coordlist(0,j),j)=kk
           if (kk<=config%natms) Then
             crd%coordlist(0,kk)=crd%coordlist(0,kk)+1
-            crd%coordlist(crd%coordlist(0,kk),kk)=config%ltg(j)
+            crd%coordlist(crd%coordlist(0,kk),kk)=j
           endif
         End if
       End Do
     End Do
 
-     !Create icoordlist
-     if (flow%step==crd%coordstart) then
-      crd%icoordlist=crd%coordlist
-     end if
+!     !Create icoordlist
+!     if (flow%step==crd%coordstart) then
+!      crd%icoordlist=crd%coordlist
+!     end if
 
     !Create coordination statistics array
     crd%cstat(-3:,:)=0
@@ -269,6 +269,16 @@ contains
       endif
     endif
     deallocate(coordbuff)
+
+    do i=1,config%natms
+      do j=1,crd%coordlist(0,i)
+        crd%coordlist(j,i)=config%ltg(crd%coordlist(j,i))
+      end do
+    end do
+     !Create icoordlist
+     if (flow%step==crd%coordstart) then
+      crd%icoordlist=crd%coordlist
+     end if
 
   end subroutine init_coord_list
 
