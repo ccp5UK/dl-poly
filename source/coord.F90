@@ -21,7 +21,8 @@ Module coord
     character( Len = 8 ), allocatable :: arraypairs(:,:)!,coordatoms(:)
     Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:)
     integer, allocatable :: ltype(:,:),cstat(:,:)
-    Logical :: coordon 
+    Logical :: coordon
+    real(wp) :: coordis 
   contains
     procedure :: init=>init_coord
     procedure :: init_coordlist
@@ -164,7 +165,7 @@ contains
       end if
       Write(Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
       Write(Unit=nicrdt, Fmt='(a60,I10)')'Initial coordination between atoms',flow%step
-      If(crd%coordops .eq.0) then
+      If((crd%coordops ==2) .or. crd%coordstart==flow%step)then
       Do i=1,config%natms
         m=crd%coordlist(0,i)
         write (nicrdt,Fmt='(i12,1x,i12,1x)',advance="no") &
@@ -192,7 +193,7 @@ contains
       enddo
       endif
     else
-     If(crd%coordops .eq.0) then
+     If((crd%coordops ==2) .or. crd%coordstart==flow%step)then
       en=2*config%natms
       do i=1,config%natms
         buff(2*i-1) = config%ltg(i)
@@ -289,7 +290,7 @@ contains
     
     If(crd%coordon .Eqv. .False.)Return
     If(crd%ncoordpairs==0)Return
-    If(crd%coordops .eq.1)Return
+    If(crd%coordops .eq.0)Return
     If(crd%coordstart>flow%step)Return    
     If(mod(flow%step,crd%coordinterval).NE.0)Return
 

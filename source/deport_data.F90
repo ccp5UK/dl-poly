@@ -793,10 +793,7 @@ Contains
           do jcrd = 1, crd%icoordlist(0,i)
             buffer(imove+1)=crd%icoordlist(jcrd,i)
             imove=imove+1
-          end do
-          write(0,*)buffer(imove),real(crd%icoordlist(0,i))
-          write(0,*)config%ltg(i),i
-          
+          end do         
         endif  
 
       End If
