@@ -1,0 +1,57 @@
+DL_POLY : Base glass with wang potential
+units eV
+molecular types 6
+
+Boron atoms
+nummols 5928
+atoms 1
+B              10.81    1.4175    1     0    1
+finish
+
+Sodium atoms
+nummols 11856
+atoms 1
+Na             22.99    0.4725    1     0    1
+finish
+
+Aluminium atoms
+nummols 3952
+atoms 1
+Al             26.98    1.4175    1     0    1
+finish
+
+Calcium atoms
+nummols 2305
+atoms 1
+Ca             40.08    0.945    1     0    1
+finish
+
+Silicon atoms
+nummols 17635
+atoms 1
+Si             28.09    1.89    1     0    1
+finish
+
+Oxygen atoms
+nummols 58323
+atoms 1
+O              16.00   -0.945   1     0    1
+finish
+
+vdw        8
+Al      O       buck   28538.4200 0.172000   34.5778
+Si      O       buck   50306.1000 0.161000   46.2978
+Na      O       buck  120303.8000 0.170000    0.0000 
+O       O       buck    9022.7900 0.265000   85.0921
+B       O       buck  206941.8100 0.124000   35.0018
+Ca      O       buck  155667.7000 0.178000   42.2597
+B       B       buck     484.4000 0.350000    0.0000
+Si      B       buck     337.7000 0.290000    0.0000
+crd 5
+B       O       1.9
+Na      O       3.5
+Al      O       2.3
+Ca      O       3.1
+Si      O       2.0
+close 
+
