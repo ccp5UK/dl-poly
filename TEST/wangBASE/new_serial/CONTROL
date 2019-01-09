@@ -1,0 +1,25 @@
+DL_POLY :  BASE glass dengdu+GS
+temperature            300
+#pressure               0.001
+#equilibration          20000
+steps                   100
+#scale every 1
+timestep               0.001 ps
+#ensemble npt ber 1.0 1.0
+ensemble nve
+#ensemble nvt ber 1.0
+cutoff                 10.0 angstrom
+rvdw                   10.0 angstrom 
+delr                   1.0 angstrom
+ewald precision 0.00001
+
+print 100
+coord  0 50 1 
+
+binsize 0.01
+rdf 10
+print rdf
+
+job time  28800 seconds
+close time     10000 seconds
+finish
