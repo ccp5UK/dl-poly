@@ -219,14 +219,14 @@ contains
     deallocate(cbuff)
 
     
-    allocate(coordbuff(ncb))
 
     If (comm%idnode==0) Then
       Open(Unit=nicrdt, File='ICOORD', Form='formatted')
 
       do j=1,comm%mxnode-1
         Call grecv(comm,ncb,j,j)
-        if (ncb>1) then
+        if (ncb>0) then
+          allocate(coordbuff(ncb))
           Call grecv(comm,coordbuff,j,j)
           jj=1
           do ii=1,2*crd%ncoordpairs
@@ -242,6 +242,7 @@ contains
             end do
             jj=jj+nmax+4
           end do
+          deallocate(coordbuff)
         end if
       enddo
 
@@ -252,7 +253,8 @@ contains
         End Do
       End Do
     else
-    k=1
+      allocate(coordbuff(ncb))
+      k=1
       Do i=1,2*crd%ncoordpairs
         coordbuff(k)=crd%cstat(-1,i)
         k=k+1
@@ -267,8 +269,9 @@ contains
       if (ncb>0) then
         Call gsend(comm,coordbuff,0,comm%idnode)
       endif
-    endif
     deallocate(coordbuff)
+    endif
+
 
     do i=1,config%natms
       do j=1,crd%coordlist(0,i)
@@ -331,8 +334,6 @@ contains
         crd%defectlist(defectcnt)=i
       endif
     enddo
-  allocate(buff(2*crd%defectlist(0))) 
-  allocate(rbuff(crd%defectlist(0)))
     If (comm%idnode==0) Then
       totdefectcnt=0
       do j=1,comm%mxnode-1
@@ -359,18 +360,24 @@ contains
       do j=1,comm%mxnode-1
         Call grecv(comm,defectcnt,j,j)
         if (defectcnt>0) Then
+          allocate(buff(2*defectcnt)) 
+          allocate(rbuff(defectcnt))
           Call grecv(comm,buff,j,j)
           Call grecv(comm,rbuff,j,j)
           do i=1,defectcnt
             write(nccrdt,Fmt='(a6,I10,a)') trim(sites%unique_atom(buff(2*i-1))),buff(2*i),  &
             rbuff(i)
           end do
+          deallocate(buff)
+          deallocate(rbuff)
         end if
       end do
 
     else
       defectcnt=crd%defectlist(0)
       defn=crd%defectlist(0)
+      allocate(buff(2*crd%defectlist(0))) 
+      allocate(rbuff(crd%defectlist(0)))
       Call gsend(comm,defn,0,comm%idnode)
       do i =1, defectcnt
         buff(2*i-1)=config%ltype(crd%defectlist(i))
@@ -384,9 +391,9 @@ contains
         Call gsend(comm,buff,0,comm%idnode)
         Call gsend(comm,rbuff,0,comm%idnode)
       End if
-    End if
     deallocate(buff)
     deallocate(rbuff)
+    End if
 
   end subroutine checkcoord
 
