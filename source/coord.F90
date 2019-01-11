@@ -11,13 +11,13 @@ Module coord
   Use kinds, only : wp
   Use comms, Only : comms_type,grecv,gsend
   Use constants, Only : nicrdt,nccrdt
-
+  Use statistics, Only : stats_type
 
   Implicit None
 
   type, public :: coord_type
     Integer :: ncoordpairs,coordinterval,coordstart,coordops
-    real(wp), allocatable :: arraycuts(:)
+    real(wp), allocatable :: arraycuts(:),discuts(:)
     character( Len = 8 ), allocatable :: arraypairs(:,:)!,coordatoms(:)
     Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:)
     integer, allocatable :: ltype(:,:),cstat(:,:)
@@ -36,6 +36,7 @@ contains
   subroutine init_coord(T)
     class(coord_type) :: T
     allocate(T%arraycuts(1:T%ncoordpairs))
+    allocate(T%discuts(1:T%ncoordpairs))
     allocate(T%arraypairs(1:T%ncoordpairs,1:2))
     allocate(T%ltype(1:T%ncoordpairs,1:2))
     allocate(T%cstat(-3:1000,1:(2*T%ncoordpairs)))
@@ -54,6 +55,9 @@ contains
 
     if (allocated(T%arraycuts)) then
       deallocate(T%arraycuts)
+    end if   
+    if (allocated(T%discuts)) then
+       deallocate(T%discuts)
     end if
     if (allocated(T%coordlist)) then
       deallocate(T%coordlist)
@@ -286,16 +290,16 @@ contains
   end subroutine init_coord_list
 
 
-  subroutine checkcoord(config,neigh,crd,sites,flow,comm) 
+  subroutine checkcoord(config,neigh,crd,sites,flow,stats,comm) 
     Type(neighbours_type), Intent(In) :: neigh
     Type(configuration_type), Intent(In)  :: config
     Type(comms_type), Intent(InOut) :: comm
     Type(flow_type), Intent(In) :: flow
     Type(site_type), Intent(In) :: sites
     Type(coord_type), Intent(InOut) :: crd
-
+    Type(stats_type), Intent(InOUT) :: stats    
     integer :: i,ii,j,jj,k,kk,defn,defectcnt,totdefectcnt
-    real :: rcut,rab
+    real :: rcut,rab,rdis
     integer, allocatable :: buff(:)
     character(len=60) :: aux
     character(len=60), allocatable :: rbuff(:)
@@ -310,30 +314,39 @@ contains
     defectcnt=0
     crd%defectlist(:)=0
 
-   do i = 1, config%natms 
-     coordchange=.False.
-     coordfound=.False.
-     if (crd%coordlist(0,i) /= crd%icoordlist(0,i)) then
+   do i = 1, config%natms
+        Do ii= 1 , crd%ncoordpairs
+          if ((config%ltype(i)==crd%ltype(ii,1)) .or. (config%ltype(i)==crd%ltype(ii,2)))then
+           rdis=crd%discuts(ii)
+          endif
+        end Do
+
+    if(stats%rsd(i).gt.rdis)then
+      coordchange=.False.
+      coordfound=.False.
+      if (crd%coordlist(0,i) /= crd%icoordlist(0,i)) then
       coordchange=.true.
-     else
-       do j = 1, crd%coordlist(0,i)
-        coordfound=.False.
-         do k=1, crd%icoordlist(0,i)
-           if (crd%coordlist(j,i) == crd%icoordlist(k,i)) Then
-             coordfound=.True.
+      else
+        do j = 1, crd%coordlist(0,i)
+         coordfound=.False.
+          do k=1, crd%icoordlist(0,i)
+            if (crd%coordlist(j,i) == crd%icoordlist(k,i)) Then
+              coordfound=.True.
             endif
           enddo
           if (coordfound .eqv. .False.) Then
             coordchange = .True.
           endif
-        enddo
-      end if
-      if (coordchange .eqv. .True.) Then
-        defectcnt=defectcnt+1
-        crd%defectlist(0)=defectcnt
-        crd%defectlist(defectcnt)=i
-      endif
-    enddo
+         enddo
+       end if
+       if (coordchange .eqv. .True.) Then
+         defectcnt=defectcnt+1
+         crd%defectlist(0)=defectcnt
+         crd%defectlist(defectcnt)=i
+       endif
+    endif   
+   enddo
+
     If (comm%idnode==0) Then
       totdefectcnt=0
       do j=1,comm%mxnode-1
@@ -352,9 +365,10 @@ contains
 !        cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 )
 !    enddo
       Do i=1, crd%defectlist(0)
-        write(Unit=nccrdt,Fmt='(a6,I10,3f20.10)') &
+        write(Unit=nccrdt,Fmt='(a2,I10,3f20.10,1x,f8.5)') &
           trim(sites%unique_atom(config%ltype(crd%defectlist(i)))),config%ltg(crd%defectlist(i)), &
-          config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz
+          config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz, &
+          stats%rsd(crd%defectlist(i))
       enddo
 
       do j=1,comm%mxnode-1
