@@ -3454,6 +3454,10 @@ Contains
 
            Call get_word(record,word)
            crd%arraycuts(itpcrd)=Abs(word_2_real(word))
+           write(0,*)crd%arraycuts(itpcrd)
+           Call get_word(record,word)
+           crd%discuts(itpcrd)=Abs(word_2_real(word))
+           write(0,*)crd%discuts(itpcrd)
            katom0=0
            katom1=0
            atom0 =  crd%arraypairs(itpcrd,1)
