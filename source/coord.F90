@@ -359,16 +359,20 @@ contains
       if ( .not. thisopen ) Then
         Open(Unit=nccrdt, File='CCOORD', Form='formatted')
       end if
+
+      Do i = 0, 2
+          write(Unit=nccrdt,fmt= '( 3f20.10 )' ) &
+             config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 )
+      enddo
       Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',totdefectcnt
 !    Do i = 0, 2
 !      Write(ncrdcdt, Fmt='(3f20.10)') &
 !        cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 )
 !    enddo
       Do i=1, crd%defectlist(0)
-        write(Unit=nccrdt,Fmt='(a2,I10,3f20.10,1x,f8.5)') &
+        write(Unit=nccrdt,Fmt='(a2,I10,3f20.10)') &
           trim(sites%unique_atom(config%ltype(crd%defectlist(i)))),config%ltg(crd%defectlist(i)), &
-          config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz, &
-          stats%rsd(crd%defectlist(i))
+          config%parts(crd%defectlist(i))%xxx,config%parts(crd%defectlist(i))%yyy,config%parts(crd%defectlist(i))%zzz
       enddo
 
       do j=1,comm%mxnode-1
