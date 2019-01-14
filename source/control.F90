@@ -494,7 +494,6 @@ Contains
      crd%coordstart= 0
      crd%coordinterval= 100
      crd%coordops= 0
-     crd%coordis= 0.75
 
     ! default value for data dumping interval
 
@@ -2618,12 +2617,6 @@ Contains
           crd%coordinterval= abs(Nint(word_2_real(word)))
         call get_word(record,word)
                 crd%coordops= abs(Nint(word_2_real(word,1.0_wp)))  
-        call get_word(record,word)
-                crd%coordis=abs(word_2_real(word,1.0_wp))
-         write(0,*)crd%coordis
-
-
-
 
       Else If (word(1:4) == 'zden') Then
 
