@@ -175,7 +175,7 @@ Contains
       itpter,keyter,icross,                               &
       itbp,itptbp,keytbp,ktbp,                            &
       ifbp,itpfbp,keyfbp,ka1,ka2,ka3,kfbp,nfld,itmp,      &
-      ntpcrd,itpcrd
+      ntpcrd,ntpcrd2,itpcrd
     Real( Kind = wp )      :: weight,charge,pmf_tmp(1:2),parpot(1:30),tmp,        &
       sig(0:2),eps(0:2),del(0:2),                         &
       q_core_p, q_core_s , q_core,                        &
@@ -3435,6 +3435,9 @@ Contains
         Call get_word(record,word)
         ntpcrd=Nint(word_2_real(word))
          crd%ncoordpairs = ntpcrd
+         Call get_word(record,word)
+         ntpcrd2=Nint(word_2_real(word))
+         crd%ncoorddis = ntpcrd2 
          call crd%init()
 !         If (comm%idnode == 0) Then
 !           Write(message,"(/,/,1x,'number of connetivity pairs to be looked at    ',i10)") ntpcrd
@@ -3454,8 +3457,6 @@ Contains
 
            Call get_word(record,word)
            crd%arraycuts(itpcrd)=Abs(word_2_real(word))
-           Call get_word(record,word)
-           crd%discuts(itpcrd)=Abs(word_2_real(word))
            katom0=0
            katom1=0
            atom0 =  crd%arraypairs(itpcrd,1)
@@ -3467,7 +3468,30 @@ Contains
            crd%ltype(itpcrd,1)=katom0
            crd%ltype(itpcrd,2)=katom1
          enddo    
- 
+            write(0,*)ntpcrd2 
+           Do itpcrd=1,ntpcrd2
+
+             word(1:1)='#'
+             Do While (word(1:1) == '#' .or. word(1:1) == ' ')
+              Call get_line(safe,files(FILE_FIELD)%unit_no,record,comm)
+              If (.not.safe) Go To 2000
+              Call get_word(record,word)
+             End Do
+             
+             atom0=word(1:8)
+             call get_word(record,word)
+             crd%discuts(itpcrd)=Abs(word_2_real(word))
+             katom0=0
+            Do jtpatm=1,sites%ntype_atom
+               if(atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
+            enddo
+            crd%disltype(itpcrd)=katom0
+            write(0,*)crd%disltype(itpcrd)
+          enddo
+          
+
+
+
 
       Else If (word(1:3) == 'vdw') Then
 

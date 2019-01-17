@@ -16,11 +16,11 @@ Module coord
   Implicit None
 
   type, public :: coord_type
-    Integer :: ncoordpairs,coordinterval,coordstart,coordops
+    Integer :: ncoordpairs,coordinterval,coordstart,coordops,ncoorddis
     real(wp), allocatable :: arraycuts(:),discuts(:)
-    character( Len = 8 ), allocatable :: arraypairs(:,:)!,coordatoms(:)
+    character( Len = 8 ), allocatable :: arraypairs(:,:),disatms(:)
     Integer, allocatable :: coordlist(:,:),icoordlist(:,:),defectlist(:)
-    integer, allocatable :: ltype(:,:),cstat(:,:)
+    integer, allocatable :: ltype(:,:),cstat(:,:),disltype(:)
     Logical :: coordon
     real(wp) :: coordis 
   contains
@@ -36,10 +36,11 @@ contains
   subroutine init_coord(T)
     class(coord_type) :: T
     allocate(T%arraycuts(1:T%ncoordpairs))
-    allocate(T%discuts(1:T%ncoordpairs))
+    allocate(T%discuts(1:T%ncoorddis))
     allocate(T%arraypairs(1:T%ncoordpairs,1:2))
     allocate(T%ltype(1:T%ncoordpairs,1:2))
     allocate(T%cstat(-3:1000,1:(2*T%ncoordpairs)))
+    allocate(T%disltype(1:T%ncoorddis))
 !   allocate(T%coordatoms(0:2*T%ncoordpairs))
   end subroutine init_coord
   subroutine init_coordlist(T,n,m)
@@ -315,8 +316,8 @@ contains
     crd%defectlist(:)=0
 
    do i = 1, config%natms
-        Do ii= 1 , crd%ncoordpairs
-          if ((config%ltype(i)==crd%ltype(ii,1)) .or. (config%ltype(i)==crd%ltype(ii,2)))then
+        Do ii= 1 , crd%ncoorddis
+          if ((config%ltype(i)==crd%disltype(ii)))then
            rdis=crd%discuts(ii)
           endif
         end Do
