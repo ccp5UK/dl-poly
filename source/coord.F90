@@ -12,7 +12,7 @@ Module coord
   Use comms, Only : comms_type,grecv,gsend
   Use constants, Only : nicrdt,nccrdt
   Use statistics, Only : stats_type
-
+  Use impacts,     Only : impact_type
   Implicit None
 
   type, public :: coord_type
@@ -168,8 +168,10 @@ contains
       if ( .not. itsopen ) Then
         Open(Unit=nicrdt, File='ICOORD', Form='formatted')
       end if
-      Write(Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
-      Write(Unit=nicrdt, Fmt='(a60,I10)')'Initial coordination between atoms',flow%step
+      If(flow%step==crd%coordstart)then
+         Write(Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
+       Endif
+      Write(Unit=nicrdt, Fmt='(a40,I10,F10.7)')'Initial coordination between atoms',flow%step,flow%time
       If((crd%coordops ==2) .or. crd%coordstart==flow%step)then
       Do i=1,config%natms
         m=crd%coordlist(0,i)
@@ -291,14 +293,15 @@ contains
   end subroutine init_coord_list
 
 
-  subroutine checkcoord(config,neigh,crd,sites,flow,stats,comm) 
+  subroutine checkcoord(config,neigh,crd,sites,flow,stats,impa,comm) 
     Type(neighbours_type), Intent(In) :: neigh
     Type(configuration_type), Intent(In)  :: config
     Type(comms_type), Intent(InOut) :: comm
     Type(flow_type), Intent(In) :: flow
     Type(site_type), Intent(In) :: sites
     Type(coord_type), Intent(InOut) :: crd
-    Type(stats_type), Intent(InOUT) :: stats    
+    Type(stats_type), Intent(InOUT) :: stats
+    Type(impact_type), Intent(In) :: impa    
     integer :: i,ii,j,jj,k,kk,defn,defectcnt,totdefectcnt
     real :: rcut,rab,rdis
     integer, allocatable :: buff(:)
@@ -360,16 +363,26 @@ contains
       if ( .not. thisopen ) Then
         Open(Unit=nccrdt, File='CCOORD', Form='formatted')
       end if
+        if(flow%step<=crd%coordstart)then
+        Write(Unit=nccrdt, Fmt='(a60)') config%cfgname(1:60)
+        Write(Unit=nccrdt, Fmt='(a20,I10)')'Number of frames',(flow%run_steps-crd%coordstart)/crd%coordinterval+1
+        endif
 
+        If(impa%imd>0)then
+         Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',totdefectcnt+1,flow%step,flow%time
+        else
+         Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',totdefectcnt,flow%step,flow%time
+        endif
       Do i = 0, 2
           write(Unit=nccrdt,fmt= '( 3f20.10 )' ) &
              config%cell( 1 + i * 3 ), config%cell( 2 + i * 3 ), config%cell( 3 + i * 3 )
       enddo
-      Write(Unit=nccrdt,Fmt='(A30,I10,I10,f20.6)')'Number of coordination changes',totdefectcnt
-!    Do i = 0, 2
-!      Write(ncrdcdt, Fmt='(3f20.10)') &
-!        cell( 1 + i * 3 ), cell( 2 + i * 3 ), cell( 3 + i * 3 )
-!    enddo
+  
+      If(impa%imd>0)then
+       write(Unit=nccrdt,Fmt='(a2,I10,3f20.10)') &
+         trim(sites%unique_atom(config%ltype(impa%imd))),config%ltg(impa%imd), &
+         config%parts(impa%imd)%xxx,config%parts(impa%imd)%yyy,config%parts(impa%imd)%zzz
+      endif
       Do i=1, crd%defectlist(0)
         write(Unit=nccrdt,Fmt='(a2,I10,3f20.10)') &
           trim(sites%unique_atom(config%ltype(crd%defectlist(i)))),config%ltg(crd%defectlist(i)), &
