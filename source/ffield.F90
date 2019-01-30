@@ -3468,7 +3468,7 @@ Contains
            crd%ltype(itpcrd,1)=katom0
            crd%ltype(itpcrd,2)=katom1
          enddo    
-            write(0,*)ntpcrd2 
+           
            Do itpcrd=1,ntpcrd2
 
              word(1:1)='#'
@@ -3486,7 +3486,7 @@ Contains
                if(atom0 == sites%unique_atom(jtpatm)) katom0=jtpatm
             enddo
             crd%disltype(itpcrd)=katom0
-            write(0,*)crd%disltype(itpcrd)
+           
           enddo
           
 
