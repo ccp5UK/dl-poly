@@ -48,7 +48,7 @@ program dl_poly
 
   ! DEVELOPMENT MODULE
 
-  Use development, Only : development_type,scan_development,build_info
+  Use development, Only : development_type
 
   ! IO & DOMAINS MODULES
 
