@@ -7,7 +7,7 @@ before_script:
 stages:
   - build
   - test
-  - manual 
+#  - manual 
 
 build-serial:
   stage: build
@@ -65,11 +65,11 @@ build-intel:
   script:
     - sh utils/build-intel.sh
 
-build-manual:
-  stage: manual
-  script:
-    - cd manual
-    - ./makedoc MANUAL_USR
+#build-manual:
+#  stage: manual
+#  script:
+#    - cd manual
+#    - ./makedoc MANUAL_USR
       
 build-win32-serial:
   stage: build
