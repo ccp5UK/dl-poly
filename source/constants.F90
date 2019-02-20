@@ -135,4 +135,6 @@ Module constants
   Real( Kind = wp ), Parameter :: half_plus = Nearest(0.5_wp,+1.0_wp)
   !> Nearest number to 0.5, less than 0.5, in working precision
   Real( Kind = wp ), Parameter :: half_minus = Nearest(0.5_wp,-1.0_wp)
+  !> Smallest difference between floats of kind wp
+  Real( Kind = wp), Parameter :: epsilon_wp = Epsilon(epsilon_wp)
 End Module constants

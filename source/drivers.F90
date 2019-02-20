@@ -169,14 +169,14 @@ Contains
       ! Correct kinetic stress and energy
 
       If (rigid%total > 0) Then
-        Call kinstresf(config%vxx,config%vyy,config%vzz,stats%strknf,config,comm)
+        Call kinstresf(stats%strknf,config,comm)
         Call kinstrest(rigid,stats%strknt,comm)
 
         stats%strkin=stats%strknf+stats%strknt
 
         stats%engrot=getknr(rigid,comm)
       Else
-        Call kinstress(config%vxx,config%vyy,config%vzz,stats%strkin,config,comm)
+        Call kinstress(stats%strkin,config,comm)
       End If
       stats%engke = 0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
     End If
@@ -1022,14 +1022,14 @@ Contains
       ! Correct kinetic stress and energy
 
       If (rigid%total > 0) Then
-        Call kinstresf(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strknf,cnfig,comm)
+        Call kinstresf(stat%strknf,cnfig,comm)
         Call kinstrest(rigid,stat%strknt,comm)
 
         stat%strkin=stat%strknf+stat%strknt
 
         stat%engrot=getknr(rigid,comm)
       Else
-        Call kinstress(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strkin,cnfig,comm)
+        Call kinstress(stat%strkin,cnfig,comm)
       End If
       stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
     End If
@@ -1064,14 +1064,14 @@ Contains
       ! Correct kinetic stress and energy
 
       If (rigid%total > 0) Then
-        Call kinstresf(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strknf,cnfig,comm)
+        Call kinstresf(stat%strknf,cnfig,comm)
         Call kinstrest(rigid,stat%strknt,comm)
 
         stat%strkin=stat%strknf+stat%strknt
 
         stat%engrot=getknr(rigid,comm)
       Else
-        Call kinstress(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strkin,cnfig,comm)
+        Call kinstress(stat%strkin,cnfig,comm)
       End If
       stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
     End If
@@ -1405,12 +1405,12 @@ Contains
     ! Calculate kinetic tensor and energy at restart
 
     If (rigid%total > 0) Then
-      Call kinstresf(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strknf,cnfig,comm)
+      Call kinstresf(stat%strknf,cnfig,comm)
       Call kinstrest(rigid,stat%strknt,comm)
 
       stat%strkin=stat%strknf+stat%strknt
     Else
-      Call kinstress(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strkin,cnfig,comm)
+      Call kinstress(stat%strkin,cnfig,comm)
     End If
     stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
@@ -1698,12 +1698,12 @@ Contains
     ! Calculate kinetic tensor and energy at restart as it may not exists later
 
     If (rigid%total > 0) Then
-      Call kinstresf(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strknf,cnfig,comm)
+      Call kinstresf(stat%strknf,cnfig,comm)
       Call kinstrest(rigid,stat%strknt,comm)
 
       stat%strkin=stat%strknf+stat%strknt
     Else
-      Call kinstress(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strkin,cnfig,comm)
+      Call kinstress(stat%strkin,cnfig,comm)
     End If
     stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
@@ -1828,7 +1828,7 @@ Contains
             If (rigid%total > 0) Then
               Call rigid_bodies_quench(rigid,domain,cnfig,comm)
 
-              Call kinstresf(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strknf,cnfig,comm)
+              Call kinstresf(stat%strknf,cnfig,comm)
               Call kinstrest(rigid,stat%strknt,comm)
 
               stat%strkin=stat%strknf+stat%strknt
@@ -1839,7 +1839,7 @@ Contains
                 stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
               End If
             Else
-              Call kinstress(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strkin,cnfig,comm)
+              Call kinstress(stat%strkin,cnfig,comm)
             End If
             stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
@@ -2100,12 +2100,12 @@ Contains
     ! Calculate kinetic tensor and energy at restart as it may not exists later
 
     If (rigid%total > 0) Then
-      Call kinstresf(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strknf,cnfig,comm)
+      Call kinstresf(stat%strknf,cnfig,comm)
       Call kinstrest(rigid,stat%strknt,comm)
 
       stat%strkin=stat%strknf+stat%strknt
     Else
-      Call kinstress(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strkin,cnfig,comm)
+      Call kinstress(stat%strkin,cnfig,comm)
     End If
     stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 
@@ -2208,7 +2208,7 @@ Contains
             If (rigid%total > 0) Then
               Call rigid_bodies_quench(rigid,domain,cnfig,comm)
 
-              Call kinstresf(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strknf,cnfig,comm)
+              Call kinstresf(stat%strknf,cnfig,comm)
               Call kinstrest(rigid,stat%strknt,comm)
 
               stat%strkin=stat%strknf+stat%strknt
@@ -2217,7 +2217,7 @@ Contains
               Call rigid_bodies_stress(stat%strcom,rigid,cnfig,comm)
               stat%vircom=-(stat%strcom(1)+stat%strcom(5)+stat%strcom(9))
             Else
-              Call kinstress(cnfig%vxx,cnfig%vyy,cnfig%vzz,stat%strkin,cnfig,comm)
+              Call kinstress(stat%strkin,cnfig,comm)
             End If
             stat%engke = 0.5_wp*(stat%strkin(1)+stat%strkin(5)+stat%strkin(9))
 

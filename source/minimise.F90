@@ -909,7 +909,7 @@ Contains
 
       ! Subtract COM velocity
 
-      Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
+      Call getvom(vom,rigid,config,comm)
 
       ! remove centre of mass motion
 
@@ -946,7 +946,7 @@ Contains
 
       ! update kinetic energy and stress
 
-      Call kinstresf(config%vxx,config%vyy,config%vzz,stats%strknf,config,comm)
+      Call kinstresf(stats%strknf,config,comm)
       Call kinstrest(rigid,stats%strknt,comm)
 
       stats%strkin=stats%strknf+stats%strknt
@@ -988,7 +988,7 @@ Contains
 
       ! Subtract COM velocity
 
-      Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
+      Call getvom(vom,config,comm)
 
       Do i=1,config%natms
         If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
@@ -1000,7 +1000,7 @@ Contains
 
       ! Update kinetic stress and energy
 
-      Call kinstress(config%vxx,config%vyy,config%vzz,stats%strkin,config,comm)
+      Call kinstress(stats%strkin,config,comm)
       stats%engke=0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
     End If
 
@@ -1382,7 +1382,7 @@ Contains
 
         ! update kinetic energy and stress
 
-        Call kinstresf(config%vxx,config%vyy,config%vzz,stats%strknf,config,comm)
+        Call kinstresf(stats%strknf,config,comm)
         Call kinstrest(rigid,stats%strknt,comm)
 
         stats%strkin=stats%strknf+stats%strknt
@@ -1403,7 +1403,7 @@ Contains
 
         ! Update kinetic stress and energy
 
-        Call kinstress(config%vxx,config%vyy,config%vzz,stats%strkin,config,comm)
+        Call kinstress(stats%strkin,config,comm)
         stats%engke=0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
       End If
     Else ! zero them and let's see if we can crash

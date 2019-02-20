@@ -558,7 +558,7 @@ Contains
 
           ! remove thermo%system centre of mass config%velocity (random momentum walk)
 
-          Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
+          Call getvom(vom,rigid,config,comm)
 
           Do j=1,config%nfree
             i=config%lstfre(j)
@@ -805,7 +805,7 @@ Contains
 
           ! remove thermo%system centre of mass config%velocity (random momentum walk)
 
-          Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
+          Call getvom(vom,config,comm)
 
           Do i=1,config%natms
             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
@@ -971,7 +971,7 @@ Contains
 
         If (rigid%total > 0) Then
 
-          Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
+          Call getvom(vom,rigid,config,comm)
 
           Do j=1,config%nfree
             i=config%lstfre(j)
@@ -1006,7 +1006,7 @@ Contains
 
         Else
 
-          Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
+          Call getvom(vom,config,comm)
 
           Do i=1,config%natms
             If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
@@ -1023,7 +1023,7 @@ Contains
       ! Update total kinetic stress and energy
 
       If (rigid%total > 0) Then
-        Call kinstresf(config%vxx,config%vyy,config%vzz,stats%strknf,config,comm)
+        Call kinstresf(stats%strknf,config,comm)
         Call kinstrest(rigid,stats%strknt,comm)
 
         stats%strkin=stats%strknf+stats%strknt
@@ -1032,7 +1032,7 @@ Contains
 
         stats%engrot=getknr(rigid,comm)
       Else
-        Call kinstress(config%vxx,config%vyy,config%vzz,stats%strkin,config,comm)
+        Call kinstress(stats%strkin,config,comm)
       End If
       stats%engke = 0.5_wp*(stats%strkin(1)+stats%strkin(5)+stats%strkin(9))
 

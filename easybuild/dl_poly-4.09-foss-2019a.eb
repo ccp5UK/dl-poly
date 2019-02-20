@@ -1,0 +1,19 @@
+easyblock = 'CMakeMake'
+name =  "DL_POLY_4"
+version = "4.09"
+homepage = "https://www.scd.stfc.ac.uk/Pages/DL_POLY.aspx"
+description = "classical md"
+
+toolchain = {'name':'foss','version':'2019a'}
+
+sources = [{'filename': 'dl_poly_%(version)s.zip',
+'source_urls':['https://www.ccp5.ac.uk/sites/www.ccp5.ac.uk/files/DL_POLY/data/4.09/'],
+'extract_cmd':'unzip -P $DLP_PASS %s'
+}]
+
+sanity_check_paths = {
+    'files': ['bin/DLPOLY.Z'],
+    'dirs':[]
+}
+
+moduleclass = 'chem'
