@@ -11,6 +11,7 @@ Module timer
   Type, Public :: timer_type
     Real( Kind = wp) :: elapsed,job,clear_screen
     Logical :: proc_detail = .false.
+    Integer :: max_depth = 1
   End Type timer_type
 
   Type :: timer_type_new
@@ -205,7 +206,7 @@ Contains
 
   End Subroutine stop_timer
 
-  Subroutine timer_report(comm,node_detail)
+  Subroutine timer_report(tmr,comm,node_detail)
     !! This routine has no header !
     Type( comms_type ), Intent( InOut ) :: comm
     Logical, optional,  Intent( In    ) :: node_detail
@@ -261,7 +262,7 @@ Contains
         & call_min, call_max, call_av,  &
         & total_min, total_max, total_av, total_av*100.0_wp/total_elapsed
 
-      if (associated(timer%child)) then
+      if (associated(timer%child) .and. depth < tmr%max_depth) then
         timer => timer%child
         depth = depth + 1
       else if (associated(timer%next_sibling)) then
@@ -320,7 +321,7 @@ Contains
               write(message(i), 202 ) depth_symb,timer%time%name, proc, timer%time%calls, &
                 & call_min, call_max, call_av, total_av, total_av*100.0_wp/total_elapsed
 
-              if (associated(timer%child)) then
+              if (associated(timer%child) .and. depth < tmr%max_depth) then
                 timer => timer%child
                 depth = depth + 1
                           
@@ -342,7 +343,7 @@ Contains
 
             End do
             write(message(i), 200)
-            if (proc > 0 ) call gsend(comm, message, 0, timer_tag)
+            if (proc > 0) call gsend(comm, message, 0, timer_tag)
           end if
           if (comm%idnode == 0 .and. proc > 0) then
             call grecv(comm, message, proc, timer_tag)
