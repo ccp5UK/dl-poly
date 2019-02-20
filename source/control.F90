@@ -498,7 +498,7 @@ Contains
 
     tmr%job = 0.0_wp ; l_timjob=.false.
     tmr%clear_screen = 0.0_wp ; l_timcls=.false.
-    tmr%max_depth = 1
+    tmr%max_depth = 2
     
     ! major cutoff, padding and vdw cutoff defaults
 
@@ -2849,7 +2849,7 @@ Contains
         tmr%max_depth = Int(word_2_real(word))
                 
         ! See if detailed processor timing is requested
-      Else If (word(1:8) == 'proctime') Then
+      Else If (word(1:12) == 'time_per_mpi') Then
 
         tmr%proc_detail = .true.
         

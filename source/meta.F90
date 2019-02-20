@@ -56,7 +56,7 @@ Module meta
   Use build_tplg, Only : build_tplg_intra
   Use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type
-  Use timer, Only  : timer_type, time_elapsed,timer_report
+  Use timer, Only  : timer_type, time_elapsed,timer_report, start_timer, stop_timer, init_timer_system
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type
@@ -214,11 +214,6 @@ Contains
     Integer( Kind = wi ) :: vacuum
     Logical :: lfce
 
-#ifdef CHRONO
-    ! Start main timer
-    Call init_timer_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
-    Call start_timer('Initialisation')
-#endif
     Call gtime(tmr%elapsed) ! Initialise wall clock time
     
     ! Set default file names
@@ -237,6 +232,13 @@ Contains
     End If
     dlp_world(0)%ou=files(FILE_OUTPUT)%unit_no
     Call init_error_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
+
+#ifdef CHRONO
+    ! Start main timer
+    Call init_timer_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
+    Call start_timer('Initialisation')
+#endif
+
 
     ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
     Call scan_control_output(files,comm)
