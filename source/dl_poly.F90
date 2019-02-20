@@ -699,7 +699,7 @@ program dl_poly
 
 #ifdef CHRONO
   call stop_timer('Termination')
-  Call timer_report(comm,tmr%proc_detail)
+  Call timer_report(tmr, comm)
 #endif
   ! Ask for reference in publications
 
