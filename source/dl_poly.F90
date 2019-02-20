@@ -131,7 +131,6 @@ program dl_poly
   Use build_tplg, Only : build_tplg_intra
   Use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type
-  Use timer, Only  : timer_type, time_elapsed,timer_report
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type
@@ -146,6 +145,8 @@ program dl_poly
   Use filename, Only : file_type,default_filenames
   Use flow_control, Only : flow_type
   Use kinetics, Only : cap_forces
+  Use timer, Only  : timer_type, time_elapsed, start_timer, stop_timer, timer_report &
+    & , init_timer_system
   Use meta, Only : molecular_dynamics
 
   Implicit None
@@ -212,7 +213,6 @@ program dl_poly
       Call get_command_argument(1, control_filename)
     End If
   End If
-
 
   ! Select metasimulation method
   !If (simulation_method = SIMPLE)

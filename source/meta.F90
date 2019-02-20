@@ -56,7 +56,7 @@ Module meta
   Use build_tplg, Only : build_tplg_intra
   Use build_chrm, Only : build_chrm_intra
   Use thermostat, Only : thermostat_type
-  Use timer, Only  : timer_type, time_elapsed,timer_report
+  Use timer, Only  : timer_type, time_elapsed,timer_report, start_timer, stop_timer, init_timer_system
   Use poisson, Only : poisson_type
   Use analysis, Only : analysis_result
   Use constraints, Only : constraints_type
@@ -215,7 +215,7 @@ Contains
     Logical :: lfce
 
     Call gtime(tmr%elapsed) ! Initialise wall clock time
-
+    
     ! Set default file names
     Call default_filenames(files)
     ! Rename control file if argument was passed
@@ -232,6 +232,13 @@ Contains
     End If
     dlp_world(0)%ou=files(FILE_OUTPUT)%unit_no
     Call init_error_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
+
+#ifdef CHRONO
+    ! Start main timer
+    Call init_timer_system(files(FILE_OUTPUT)%unit_no,dlp_world(0))
+    Call start_timer('Initialisation')
+#endif
+
 
     ! OPEN MAIN OUTPUT CHANNEL & PRINT HEADER AND MACHINE RESOURCES
     Call scan_control_output(files,comm)
@@ -311,12 +318,17 @@ Contains
       Call rdf%init_block(flow%run_steps,sites%ntype_atom)
     End If
 
+
     ! CHECK MD CONFIGURATION
     Call check_config(config,electro%key,thermo,sites,flow,comm)
 
     Call info('',.true.)
     Call info("*** all reading and connectivity checks DONE ***",.true.)
     Call time_elapsed(tmr%elapsed)
+
+#ifdef CHRONO
+    Call stop_timer('Initialisation')
+#endif
 
     ! devel%l_org: translate CONFIG into CFGORG and exit gracefully
     If (devel%l_org) Then
@@ -347,7 +359,7 @@ Contains
 
       Call traj%init(key=0,freq=1,start=0)
       flow%step  = 0                            ! no steps done
-      flow%time   = 0.0_wp                       ! time is not relevant
+      flow%time  = 0.0_wp                       ! time is not relevant
       Call trajectory_write(flow%restart_key,flow%step,thermo%tstep,flow%time,ios,stats%rsd,netcdf,config,traj,files,comm)
 
       Call info("*** ALL DONE ***",.true.)
@@ -462,6 +474,10 @@ Contains
     ! start-up time when forces are not recalculated
     Call time_elapsed(tmr%elapsed)
 
+#ifdef CHRONO
+  call start_timer('Main Calc')
+#endif
+
     ! Now you can run fast, boy
     If (devel%l_fast) Call gsync(comm,devel%l_fast)
 
@@ -485,6 +501,12 @@ Contains
           seed,traj,kim_data,dfcts,files,tmr,tether,green,ewld,devel,comm)
       End If
     End If
+
+
+#ifdef CHRONO
+    call stop_timer('Main Calc')
+    call start_timer('Termination')
+#endif
 
     !Close the statis file if we used it.
     If (stats%statis_file_open) Call files(FILE_STATS)%close()
@@ -540,8 +562,11 @@ Contains
     If (plume%l_plumed) Call plumed_finalize()
 
 #ifdef CHRONO
-    Call timer_report(tmr,comm)
+    Call stop_timer('Termination')
+    Call timer_report(tmr, comm)
 #endif
+
+    ! Ask for reference in publications
 
     Call print_citations(electro,mpoles,ttms)
 

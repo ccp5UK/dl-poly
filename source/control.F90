@@ -498,7 +498,8 @@ Contains
 
     tmr%job = 0.0_wp ; l_timjob=.false.
     tmr%clear_screen = 0.0_wp ; l_timcls=.false.
-
+    tmr%max_depth = 2
+    
     ! major cutoff, padding and vdw cutoff defaults
 
     rcut1 = 0.0_wp
@@ -2841,8 +2842,18 @@ Contains
         If (word(1:4) == 'dens' .or. word(1:6) == 'thresh') Call get_word(record,word)
         neigh%pdplnc = Max(Abs(word_2_real(word)),1.0_wp) ! disallow any less than 1
 
-        ! read machine time for simulation run (in seconds)
+        ! Set maximum tree depth printed
+      Else If (word(1:10) == 'time_depth') Then
 
+        Call get_word(record,word)
+        tmr%max_depth = Int(word_2_real(word))
+                
+        ! See if detailed processor timing is requested
+      Else If (word(1:12) == 'time_per_mpi') Then
+
+        tmr%proc_detail = .true.
+        
+        ! read machine time for simulation run (in seconds)
       Else If (word(1:3) == 'job') Then
 
         Call get_word(record,word1)

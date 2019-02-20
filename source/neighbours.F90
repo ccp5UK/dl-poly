@@ -15,7 +15,7 @@ Module neighbours
   Use development, Only : development_type
   Use errors_warnings, Only : error,warning,info
   Use numerics, Only : dcell,images,invert,match
-  Use timer,  Only : timer_type,start_timer,stop_timer
+  Use timer,     Only : timer_type, start_timer, stop_timer
   Use statistics, Only : stats_type
   Use kim, Only : kim_type
   Implicit None
@@ -320,7 +320,7 @@ Contains
     ! Get the dimensional properties of the MD config%cell
 
 #ifdef CHRONO
-    Call start_timer(tmr%t_linkcell)
+    Call start_timer('Linked Cells')
 #endif
     Call dcell(config%cell,celprp)
 
@@ -1143,7 +1143,7 @@ Contains
       Call error(0,message)
     End If
 #ifdef CHRONO
-    Call stop_timer(tmr%t_linkcell)
+    Call stop_timer('Linked Cells')
 #endif
 
   End Subroutine link_cell_pairs

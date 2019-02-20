@@ -12,9 +12,10 @@
 
 Module errors_warnings
   Use, intrinsic :: iso_fortran_env, only : error_unit,input_unit,output_unit
+  Use timer, Only : dump_call_stack
   Use kinds, Only : wp
   Use comms, Only : comms_type,abort_comms
-
+  
   Implicit None
 
   Private
@@ -2195,6 +2196,8 @@ Contains
 
     End If
 
+    Call dump_call_stack ()
+    
     ! close all I/O channels
     Call close_unit(ounit)
 
