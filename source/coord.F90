@@ -170,8 +170,9 @@ contains
       end if
       If(flow%step==crd%coordstart)then
          Write(Unit=nicrdt, Fmt='(a72)') config%cfgname(1:72)
+         Write(Unit=nicrdt, Fmt='(a40)')'Initial coordination between atoms'
        Endif
-      Write(Unit=nicrdt, Fmt='(a40,I10,F10.7)')'Initial coordination between atoms',flow%step,flow%time
+     
       If((crd%coordops ==2) .or. crd%coordstart==flow%step)then
       Do i=1,config%natms
         m=crd%coordlist(0,i)
@@ -253,7 +254,7 @@ contains
         end if
       enddo
 
-      write(nicrdt,*)"Coordination distribution statistics"
+      write(nicrdt,'(A36,I10,F20.6)')"Coordination distribution statistics",flow%step,flow%time
       Do i=1,2*crd%ncoordpairs
         Do j=0,crd%cstat(-1,i)
           write(nicrdt,*)sites%unique_atom(crd%cstat(-3,i)),sites%unique_atom(crd%cstat(-2,i)),j,crd%cstat(j,i)
@@ -397,7 +398,7 @@ contains
           Call grecv(comm,buff,j,j)
           Call grecv(comm,rbuff,j,j)
           do i=1,defectcnt
-            write(nccrdt,Fmt='(a6,I10,a)') trim(sites%unique_atom(buff(2*i-1))),buff(2*i),  &
+            write(nccrdt,Fmt='(a2,I10,a)') trim(sites%unique_atom(buff(2*i-1))),buff(2*i),  &
             rbuff(i)
           end do
           deallocate(buff)
