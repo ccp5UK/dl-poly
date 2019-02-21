@@ -141,7 +141,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
-    !
+    ! amended   - a.m.elena february 2019, cherry pick from 4.09.1
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( tersoff_type ), Intent( InOut )  :: tersoffs
@@ -733,16 +733,20 @@ Contains
                         gamma=0.0_wp
                         If (flag3) Then
                           gam_ij = tersoffs%param2(iter,1)*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei) ! gamma_{ij}
-                          gamma  = eat(jj) * tersoffs%param2(iter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
-                            0.5_wp*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
+                          If (Abs(eat(jj) * tersoffs%param2(iter,1) * bi * eterm) > zero_plus) Then 
+                            ! possible division by zero, eterm=0 & ei<1
+                            gamma  = eat(jj) * tersoffs%param2(iter,1) * bi*(bi*eterm)**(ei-1.0_wp) * &
+                              0.5_wp*(1.0_wp+(bi*eterm)**ei)**(-0.5_wp/ei - 1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
+                          End If
                         End If
                       Else If (tersoffs%key_pot == 2) Then ! KIHS
                         gam_ij=1.0_wp
                         gamma=0.0_wp
                         If (flag3) Then
                           gam_ij = (1.0_wp+eterm**ei)**(-di) ! gamma_{ij}
-                          gamma  = eat(jj) * ei * eterm**(ei-1.0_wp) * &
-                            di * (1.0_wp+eterm**ei)**(-di-1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
+                          If (Abs(eat(jj) * ei * eterm) > zero_plus) & ! possible division by zero, eterm=0 & ei<1
+                            gamma  = eat(jj) * ei * eterm**(ei-1.0_wp) * &
+                              di * (1.0_wp+eterm**ei)**(-di-1.0_wp) ! -FcFa[d/dr gamma_{ij}]/[d/dr Lij]
                         End If
                       End If
 
