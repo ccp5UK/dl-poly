@@ -73,6 +73,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     ! contrib   - a.m.elena february 2019 (cherry pick 4.09.2)
+    ! contrib   - a.m.elena february 2019 (get back to 4.08 magic numbers for mxnode=1)
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -915,7 +916,7 @@ Contains
 
     config%mxatms = Max(1 , Nint(test * Real((ilx+3)*(ily+3)*(ilz+3),wp)))
     If (comm%mxnode == 1 .or. config%imcon == 0) Then ! ilx >= 2 && ily >= 2 && ilz >= 2
-      config%mxatms = Nint(Min(Real(config%mxatms,wp),9.5_wp*fdvar*Real(megatm,wp)))
+      config%mxatms = Nint(Min(Real(config%mxatms,wp),27_wp*fdvar*Real(megatm,wp)))
     Else If (config%imcon == 6 .or. config%imc_n == 6)   Then ! comm%mxnode >= 4 .or. (ilx >= 2 && ily >= 2)
       config%mxatms = Nint(Min(Real(config%mxatms,wp),6.3_wp*fdvar*Real(megatm,wp)))
     Else If (ilx*ily*ilz < 2) Then ! comm%mxnode >= 8
