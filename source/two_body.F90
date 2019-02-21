@@ -28,7 +28,7 @@ Module two_body
   ! Use ewald_mpole, Only : ewald_spme_mforces, ewald_real_mforces,ewald_frzn_mforces,ewald_excl_mforces, &
   !                        ewald_spme_mforces_d,ewald_real_mforces_d,ewald_excl_mforces_d,ewald_excl_mforces
 
-  Use timer,  Only : timer_type,start_timer,stop_timer
+  Use timer,      Only : timer_type, start_timer, stop_timer
   Use development, Only : development_type
   Use statistics, Only : stats_type
   Use core_shell, Only : core_shell_type
@@ -231,7 +231,7 @@ Contains
 
     ! calculate coulombic forces, Ewald sum - fourier contribution
 #ifdef CHRONO
-    Call start_timer(tmr%t_longrange)
+    Call start_timer('Long Range')
 #endif
 
     If (electro%key == ELECTROSTATIC_EWALD) Then
@@ -248,11 +248,11 @@ Contains
 
     End If
 #ifdef CHRONO
-    Call stop_timer(tmr%t_longrange)
+    Call stop_timer('Long Range')
 #endif
 
 #ifdef CHRONO
-    Call start_timer(tmr%t_shortrange)
+    Call start_timer('Short Range')
 #endif
     ! outer loop over atoms
 
@@ -677,7 +677,7 @@ Contains
     stats%stress(9) = stats%stress(9) + tmp
 
 #ifdef CHRONO
-    Call stop_timer(tmr%t_shortrange)
+    Call stop_timer('Short Range')
 #endif
 
   End Subroutine two_body_forces

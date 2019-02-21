@@ -15,7 +15,7 @@ Module comms
   !
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-  Use kinds, Only : wp,sp,dp,qp,si
+  Use kinds, Only : wi,wp,sp,dp,qp,si
   Use particle, Only : corePart
   Use iso_fortran_env, Only : CHARACTER_STORAGE_SIZE
 #ifdef SERIAL
@@ -65,7 +65,8 @@ Module comms
     Grid1_tag     = 3300, &
     Grid2_tag     = 3311, &
     Grid3_tag     = 3322, &
-    Grid4_tag     = 3333
+    Grid4_tag     = 3333, &
+    Timer_tag     = 4000
 
   ! MPI operations
   Integer, Parameter, Public :: op_sum = MPI_SUM, &
@@ -227,6 +228,7 @@ Module comms
     Module Procedure gallreduce_logical_vector
   End Interface gallreduce
 
+
 Contains
 
   Subroutine init_comms(comm)
@@ -353,15 +355,19 @@ Contains
     !           - i.scivetti march-october 2018
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    Type(comms_type), Intent (InOut) :: comm
+    Type(comms_type), Intent (InOut) :: comm(:)
 
-    Call MPI_TYPE_FREE(comm%part_array_type,comm%ierr)
-    Call MPI_TYPE_FREE(comm%part_type,comm%ierr)
-    Call MPI_TYPE_FREE(comm%part_array_type_positions,comm%ierr)
-    Call MPI_TYPE_FREE(comm%part_type_positions,comm%ierr)
-    Call MPI_TYPE_FREE(comm%part_array_type_forces,comm%ierr)
-    Call MPI_TYPE_FREE(comm%part_type_forces,comm%ierr)
-    Call MPI_FINALIZE(comm%ierr)
+    Integer(Kind=wi) :: i
+
+    Do i = 1, size(comm,dim=1)
+      Call MPI_TYPE_FREE(comm(i)%part_array_type,comm(i)%ierr)
+      Call MPI_TYPE_FREE(comm(i)%part_type,comm(i)%ierr)
+      Call MPI_TYPE_FREE(comm(i)%part_array_type_positions,comm(i)%ierr)
+      Call MPI_TYPE_FREE(comm(i)%part_type_positions,comm(i)%ierr)
+      Call MPI_TYPE_FREE(comm(i)%part_array_type_forces,comm(i)%ierr)
+      Call MPI_TYPE_FREE(comm(i)%part_type_forces,comm(i)%ierr)
+      Call MPI_FINALIZE(comm(i)%ierr)
+    End Do
 
   End Subroutine exit_comms
 

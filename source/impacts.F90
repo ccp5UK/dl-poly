@@ -70,7 +70,7 @@ Contains
     ! remove centre of mass motion
 
     If (rigid%total > 0) Then
-      Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
+      Call getvom(vom,rigid,config,comm)
 
       Do j=1,config%nfree
         i=config%lstfre(j)
@@ -103,7 +103,7 @@ Contains
         End If
       End Do
     Else
-      Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
+      Call getvom(vom,config,comm)
 
       Do i=1,config%natms
         If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then

@@ -74,10 +74,9 @@ Module numerics
   !!------------------------------------------------------------------------!
   Use kinds, Only : wp,wi,li
   Use errors_warnings, Only : error, error_alloc, error_dealloc
-  Use constants, Only : zero_plus
   Use comms, Only : comms_type
-  Use particle, Only : corepart
-  Use constants, Only : rt3,zero_plus, sqrpi,rt2,half_minus! Sqrt(3.0_wp), Nearest(0.0_wp,+1.0_wp)
+  Use constants, Only : rt3,zero_plus,sqrpi,rt2,half_minus,epsilon_wp
+  Use particle, Only: corePart
 
   Implicit None
   Private
@@ -164,6 +163,16 @@ Module numerics
     Module Procedure pbcshift_parts
     Module Procedure pbcshift_arrays
   End Interface pbcshift
+
+  Interface equal
+    Module Procedure equal_real_wp
+  End Interface equal
+
+  Interface nequal
+    Module Procedure nequal_real_wp
+  End Interface nequal
+
+  Public :: equal,nequal
 
 Contains
 
@@ -3696,5 +3705,18 @@ Contains
 
   end function calc_erf_deriv
 
+  Pure Function equal_real_wp(a,b) Result(equal)
+    Real(Kind=wp), Intent(In) :: a,b
+    Logical :: equal
+
+    equal = Abs(a-b) < epsilon_wp
+  End Function equal_real_wp
+
+  Pure Function nequal_real_wp(a,b) Result(nequal)
+    Real(Kind=wp), Intent(In) :: a,b
+    Logical :: nequal
+
+    nequal = .not. equal_real_wp(a,b)
+  End Function nequal_real_wp
 
 End Module numerics

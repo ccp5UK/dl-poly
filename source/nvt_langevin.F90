@@ -309,7 +309,7 @@ Contains
 
       ! remove system centre of mass velocity
 
-      Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
+      Call getvom(vom,config,comm)
 
       Do i=1,config%natms
         If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
@@ -321,7 +321,7 @@ Contains
 
       ! update kinetic energy and stress
 
-      Call kinstress(config%vxx,config%vyy,config%vzz,strkin,config,comm)
+      Call kinstress(strkin,config,comm)
       engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
     End If
@@ -1113,7 +1113,7 @@ Contains
 
       ! remove system centre of mass velocity
 
-      Call getvom(vom,config%vxx,config%vyy,config%vzz,rigid,config,comm)
+      Call getvom(vom,rigid,config,comm)
 
       Do j=1,config%nfree
         i=config%lstfre(j)
@@ -1148,7 +1148,7 @@ Contains
 
       ! update kinetic energy and stress
 
-      Call kinstresf(config%vxx,config%vyy,config%vzz,strknf,config,comm)
+      Call kinstresf(strknf,config,comm)
       Call kinstrest(rigid,strknt,comm)
 
       strkin=strknf+strknt
@@ -1672,7 +1672,7 @@ Contains
 
       ! remove system centre of mass velocity
 
-      Call getvom(vom,config%vxx,config%vyy,config%vzz,config,comm)
+      Call getvom(vom,config,comm)
 
       Do i=1,config%natms
         If (config%lfrzn(i) == 0 .and. config%weight(i) > 1.0e-6_wp) Then
@@ -1684,7 +1684,7 @@ Contains
 
       ! update kinetic energy and stress
 
-      Call kinstress(config%vxx,config%vyy,config%vzz,strkin,config,comm)
+      Call kinstress(strkin,config,comm)
       engke=0.5_wp*(strkin(1)+strkin(5)+strkin(9))
 
     End If

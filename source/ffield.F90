@@ -113,6 +113,7 @@ Contains
     ! contrib   - a.m.elena december 2017 (zblb)
     ! contrib   - a.m.elena april 2018 (mlj/mbuc)
     ! contrib   - a.m.elena may 2018 (m126)
+    ! amended   - i.t.todorov november 2018 (external field wall default)
     ! refactoring:
     !           - a.m.elena march-october 2018
     !           - j.madge march-october 2018
@@ -4850,6 +4851,12 @@ Contains
         End If
         If (ext_field%key == FIELD_SHEAR_CONTINUOUS .and. config%imcon /= 6) Then
           Call warning('external field is ignored as only applicable for imcon=6 (SLAB geometry)',.true.)
+        End If
+
+        If (ext_field%key == FIELD_WALL .and. Abs(Abs(ext_field%param(3))-1.0_wp) > zero_plus) Then
+          ext_field%param(3)=Sign(1.0_wp,ext_field%param(3))
+          Write(message,'(a,i0)') "repulsive wall parameter f reset to ", Anint(ext_field%param(3))
+          Call warning(message,.true.)
         End If
 
         If (ext_field%key == FIELD_WALL_PISTON .and. thermo%ensemble /= ENS_NVE) Call error(7)

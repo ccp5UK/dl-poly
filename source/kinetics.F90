@@ -218,7 +218,7 @@ Contains
 
   End Function getknr
 
-  Subroutine kinstress(vxx,vyy,vzz,strkin,config,comm)
+  Subroutine kinstress(strkin,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -235,7 +235,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: strkin
     Type( configuration_type ),          Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut )                   :: comm
@@ -246,12 +245,12 @@ Contains
 
     Do i=1,config%natms
       If (config%lfrzn(i) == 0) Then
-        strkin(1) = strkin(1) + config%weight(i)*vxx(i)*vxx(i)
-        strkin(2) = strkin(2) + config%weight(i)*vxx(i)*vyy(i)
-        strkin(3) = strkin(3) + config%weight(i)*vxx(i)*vzz(i)
-        strkin(5) = strkin(5) + config%weight(i)*vyy(i)*vyy(i)
-        strkin(6) = strkin(6) + config%weight(i)*vyy(i)*vzz(i)
-        strkin(9) = strkin(9) + config%weight(i)*vzz(i)*vzz(i)
+        strkin(1) = strkin(1) + config%weight(i)*config%vxx(i)*config%vxx(i)
+        strkin(2) = strkin(2) + config%weight(i)*config%vxx(i)*config%vyy(i)
+        strkin(3) = strkin(3) + config%weight(i)*config%vxx(i)*config%vzz(i)
+        strkin(5) = strkin(5) + config%weight(i)*config%vyy(i)*config%vyy(i)
+        strkin(6) = strkin(6) + config%weight(i)*config%vyy(i)*config%vzz(i)
+        strkin(9) = strkin(9) + config%weight(i)*config%vzz(i)*config%vzz(i)
       End If
     End Do
 
@@ -265,7 +264,7 @@ Contains
 
   End Subroutine kinstress
 
-  Subroutine kinstresf(vxx,vyy,vzz,strknf,config,comm)
+  Subroutine kinstresf(strknf,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -282,7 +281,6 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Real( Kind = wp ), Dimension( 1:* ), Intent( In    ) :: vxx,vyy,vzz
     Real( Kind = wp ), Dimension( 1:9 ), Intent(   Out ) :: strknf
     Type( configuration_type ),          Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut )                   :: comm
@@ -295,12 +293,12 @@ Contains
       i=config%lstfre(j)
 
       If (config%lfrzn(i) == 0) Then
-        strknf(1) = strknf(1) + config%weight(i)*vxx(i)*vxx(i)
-        strknf(2) = strknf(2) + config%weight(i)*vxx(i)*vyy(i)
-        strknf(3) = strknf(3) + config%weight(i)*vxx(i)*vzz(i)
-        strknf(5) = strknf(5) + config%weight(i)*vyy(i)*vyy(i)
-        strknf(6) = strknf(6) + config%weight(i)*vyy(i)*vzz(i)
-        strknf(9) = strknf(9) + config%weight(i)*vzz(i)*vzz(i)
+        strknf(1) = strknf(1) + config%weight(i)*config%vxx(i)*config%vxx(i)
+        strknf(2) = strknf(2) + config%weight(i)*config%vxx(i)*config%vyy(i)
+        strknf(3) = strknf(3) + config%weight(i)*config%vxx(i)*config%vzz(i)
+        strknf(5) = strknf(5) + config%weight(i)*config%vyy(i)*config%vyy(i)
+        strknf(6) = strknf(6) + config%weight(i)*config%vyy(i)*config%vzz(i)
+        strknf(9) = strknf(9) + config%weight(i)*config%vzz(i)*config%vzz(i)
       End If
     End Do
 
@@ -369,7 +367,7 @@ Contains
 
 
 
-  Subroutine getvom(vom,vxx,vyy,vzz,config,comm)
+  Subroutine getvom(vom,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -386,7 +384,6 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
-    Real( Kind = wp ), Intent( In    ) :: vxx(:),vyy(:),vzz(:)
     Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut ) :: comm
 
@@ -415,9 +412,9 @@ Contains
 
     Do i=1,config%natms
       If (config%lfrzn(i) == 0) Then
-        vom(1) = vom(1) + config%weight(i)*vxx(i)
-        vom(2) = vom(2) + config%weight(i)*vyy(i)
-        vom(3) = vom(3) + config%weight(i)*vzz(i)
+        vom(1) = vom(1) + config%weight(i)*config%vxx(i)
+        vom(2) = vom(2) + config%weight(i)*config%vyy(i)
+        vom(3) = vom(3) + config%weight(i)*config%vzz(i)
       End If
     End Do
 
@@ -426,7 +423,7 @@ Contains
 
   End Subroutine getvom
 
-  Subroutine getvom_rgd(vom,vxx,vyy,vzz,rigid,config,comm)
+  Subroutine getvom_rgd(vom,rigid,config,comm)
 
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
@@ -443,7 +440,6 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Real( Kind = wp ), Intent(   Out ) :: vom(1:3)
-    Real( Kind = wp ), Intent( In    ) :: vxx(:),vyy(:),vzz(:)
     Type( rigid_bodies_type ), Intent( In    ) :: rigid
     Type( configuration_type ), Intent( InOut ) :: config
     Type(comms_type), Intent ( InOut ) :: comm
@@ -492,9 +488,9 @@ Contains
 
       If (config%lfrzn(i) == 0) Then
         tmp=config%weight(i)
-        vom(1) = vom(1) + tmp*vxx(i)
-        vom(2) = vom(2) + tmp*vyy(i)
-        vom(3) = vom(3) + tmp*vzz(i)
+        vom(1) = vom(1) + tmp*config%vxx(i)
+        vom(2) = vom(2) + tmp*config%vyy(i)
+        vom(3) = vom(3) + tmp*config%vzz(i)
       End If
     End Do
 

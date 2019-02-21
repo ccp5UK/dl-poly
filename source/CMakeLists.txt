@@ -1,6 +1,7 @@
 include_directories("${CMAKE_BINARY_DIR}/source")
 
 set(dlpoly_SRCS
+  meta.F90
   build_book.F90
   build_chrm.F90
   build_excl.F90
