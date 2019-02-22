@@ -110,6 +110,7 @@ Contains
     !           - j.madge march-october 2018
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
+    ! contrib   - a.m.elena february 2019, cherry pick 4.09.2
     !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -815,13 +816,14 @@ Contains
 
         Call get_word(record,word)
         l_0 = (word(1:4) == 'fire')
+        If (l_0) Call get_word(record,word)
         thermo%freq_zero = Max(1,Abs(Nint(word_2_real(word,0.0_wp))))
 
         If (word(1:5) == 'every') Call get_word(record,word)
         thermo%freq_zero = Max(thermo%freq_zero,Abs(Nint(word_2_real(word,0.0_wp))))
 
         Call info('zero K optimisation on (during equilibration)',.true.)
-        Write(message,'(a,i10)') 'temperature regaussing interval',thermo%freq_zero
+        Write(message,'(a,i10)') 'zero K application interval',thermo%freq_zero
 
         If (l_0) Then
           If (comm%idnode == 0) &
@@ -830,7 +832,7 @@ Contains
         Else
           ltemp  = .true.
           thermo%temp = 10.0_wp
-          Call info('fire option off - actual temperature reset to 10 Kelvin',.true.)
+          Call info('fire option off - target temperature reset to 10 Kelvin',.true.)
         End If
 
         ! read pressure
