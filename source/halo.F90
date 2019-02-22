@@ -11,7 +11,7 @@ Module halo
   Use mpole, Only : mpole_type
   Use neighbours,       Only : neighbours_type,vnl_set_check
   Use electrostatic, Only : ELECTROSTATIC_EWALD
-  Use ewald, Only : ewald_type, ewald_spme_type
+  Use ewald, Only : ewald_type, ewald_type
   Use kim, Only : kim_type
   Use errors_warnings,  Only : error
 
@@ -159,7 +159,7 @@ Contains
 
     If (electro_key == ELECTROSTATIC_EWALD) Then
       select type (ewld)
-      type is (ewald_spme_type)
+      type is (ewald_type)
         ecwx=Real(ewld%bspline%num_spline_pad,wp)/Real(ewld%kspace%k_vec_dim(1),wp)
         ecwy=Real(ewld%bspline%num_spline_pad,wp)/Real(ewld%kspace%k_vec_dim(2),wp)
         ecwz=Real(ewld%bspline%num_spline_pad,wp)/Real(ewld%kspace%k_vec_dim(3),wp)

@@ -48,7 +48,7 @@ Module mpoles_container
   Use mpole,           Only : mpole_type
   Use errors_warnings, Only : error
   Use numerics,        Only : images_s, local_index
-  Use ewald,           Only : ewald_spme_type
+  Use ewald,           Only : ewald_type
 
   Implicit None
 
@@ -3767,7 +3767,7 @@ Contains
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( mpole_type ), Intent( In    ) :: mpoles
-    Type( ewald_spme_type ), Intent( In    ) :: ewld
+    Type( ewald_type ), Intent( In    ) :: ewld
     Type( configuration_type), Intent( InOut ) :: config
     Integer,          Intent( In    ) :: flag
     Real( Kind = wp), Intent( In    ) :: rcell(1:9)
@@ -4852,7 +4852,7 @@ Contains
     !
     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-    Type( ewald_spme_type ), Intent( In    ) :: ewld
+    Type( ewald_type ), Intent( In    ) :: ewld
     Type( mpole_type ), Intent( In    ) :: mpoles
     Type( configuration_type ), Intent( InOut ) :: config
     Real( Kind = wp), Intent( In    ) :: rcell(1:9)
@@ -6464,7 +6464,7 @@ Contains
 
     Real( Kind = wp ) :: Dtpbsp
 
-    Type( ewald_spme_type ), Intent( In    ) :: ewld
+    Type( ewald_type ), Intent( In    ) :: ewld
     Integer,                                 Intent( In   ) :: s1,s2,s3
     Real( Kind = wp ),                       Intent( In   ) :: rcell(9)
     Real( Kind = wp ), Dimension( 0:ewld%bspline%num_splines ), Intent( In   ) :: bsddx,bsddy,bsddz

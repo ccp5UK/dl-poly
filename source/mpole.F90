@@ -22,6 +22,17 @@ Module mpole
   !> - $k_\text{CHARMM} = 1000 \, \mathrm{kcal} \mathrm{mol}^−1 \mathrm{Å}^−2
   Integer( Kind = wi ), Parameter, Public :: POLARISATION_CHARMM = 1
 
+
+  Integer,           Dimension(3,35),    Parameter       :: mpole_derivs  = reshape([& !! Mpole derivs in mpole_module order
+    & [0,0,0], &
+    & [1,0,0], [0,1,0], [0,0,1], &
+    & [2,0,0], [1,1,0], [1,0,1], [0,2,0], [0,1,1], [0,0,2], &
+    & [3,0,0], [2,1,0], [2,0,1], [1,2,0], [1,1,1], [1,0,2], [0,3,0], [0,2,1], [0,1,2], [0,0,3], &
+    & [4,0,0], [3,1,0], [3,0,1], [2,2,0], [2,1,1], [2,0,2], [1,3,0], [1,2,1], [1,1,2], [1,0,3], &
+    & [0,4,0], [0,3,1], [0,2,2], [0,1,3], [0,0,4]&
+    & ], [3, 35])
+  Integer,           Dimension(0:4),     Parameter       :: nmpole_derivs = [1,3,6,10,15]
+  
   !> Type containing multipole data
   Type, Public :: mpole_type
     Private
@@ -78,9 +89,16 @@ Module mpole
     !> n choose k values, used in computing the reciprocal space Ewald sum field
     Real ( Kind = wp ), Allocatable, Public :: n_choose_k(:,:)
 
-    !> Maxmimum number of multipoles
+    !> How many mpole derivatives
+    Integer, Dimension(0:0), Public :: nmpole_derivs = [1]
+    !> My mpole derivatives
+    Integer, Dimension(3,1,0:0), Public :: mpole_derivs = reshape([0,0,0],[3,1,1])
+
+    Integer, Public :: num_mpoles = 0
+    
+    !> Maximum number of multipoles
     Integer( Kind = wi ), Public :: max_mpoles
-    !> Maxmimum multipolar order
+    !> Maximum multipolar order
     Integer( Kind = wi ), Public :: max_order
 
   Contains

@@ -39,7 +39,7 @@ Module bounds
   Use external_field, Only : external_field_type
   Use rigid_bodies, Only : rigid_bodies_type
   Use electrostatic, Only : electrostatic_type
-  Use ewald, Only : ewald_type, ewald_spme_type
+  Use ewald, Only : ewald_type, ewald_type
   Use io, Only : io_type
   Use filename, Only : file_type
   Use site, Only : site_type
@@ -106,7 +106,7 @@ Contains
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( configuration_type ), Intent( InOut ) :: config
     Type( domains_type ), Intent( InOut ) :: domain
-    Class( ewald_type ), Allocatable, Intent( InOut ) :: ewld
+    Type( ewald_type ), Intent( InOut ) :: ewld
     Type( kim_type ), Intent( InOut ) :: kim_data
     Type( file_type ), Intent( InOut ) :: files(:)
     Type( flow_type ), Intent( InOut ) :: flow
@@ -799,9 +799,6 @@ Contains
     ! directions but beyond them (which may mean self-halo in some cases)
 
     if (ewld%active) then
-      select type ( ewld )
-      type is ( ewald_spme_type )
-
         ewld%kspace%k_vec_dim(1) = ewld%kspace%k_vec_dim_cont(1)
         ewld%kspace%k_vec_dim(2) = ewld%kspace%k_vec_dim_cont(2)
         ewld%kspace%k_vec_dim(3) = ewld%kspace%k_vec_dim_cont(3)
@@ -848,12 +845,6 @@ Contains
           Call info(message)
           Call error(308)
         End If
-
-      class default
-        write (message, '(a)') "Fatal type error in set_bounds"
-        call error(0, message)
-
-      end select
 
       qlx = ilx
       qly = ily

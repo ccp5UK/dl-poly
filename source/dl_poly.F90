@@ -154,7 +154,7 @@ program dl_poly
   ! all your simulation variables
   Type(comms_type), Allocatable :: dlp_world(:)
   Type(thermostat_type), Allocatable :: thermo(:)
-  Class(ewald_type), Allocatable :: ewld(:)
+  Type(ewald_type), Allocatable :: ewld(:)
   Type(timer_type), Allocatable :: tmr(:)
   Type(development_type), Allocatable :: devel(:)
   Type(stats_type), Allocatable :: stats(:)

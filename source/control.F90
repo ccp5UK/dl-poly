@@ -65,7 +65,7 @@ Module control
     ELECTROSTATIC_EWALD,ELECTROSTATIC_DDDP, &
     ELECTROSTATIC_COULOMB,ELECTROSTATIC_COULOMB_FORCE_SHIFT, &
     ELECTROSTATIC_COULOMB_REACTION_FIELD,ELECTROSTATIC_POISSON
-  Use ewald, Only : ewald_type, ewald_spme_type
+  Use ewald, Only : ewald_type, ewald_type
   Use trajectory, Only : trajectory_type
   Use errors_warnings, Only : error,info,warning
   Use filename, Only : file_type,FILE_CONTROL,FILE_OUTPUT,FILE_CONFIG,FILE_FIELD, &
@@ -91,7 +91,7 @@ Contains
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws, &
     rdf,minim,mpoles,electro,ewld,seed,traj,files,tmr,config,flow,comm)
 
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     !
     ! dl_poly_4 subroutine for reading in the simulation control parameters
     !
@@ -111,7 +111,7 @@ Contains
     !           - a.b.g.chalk march-october 2018
     !           - i.scivetti march-october 2018
     !
-    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     Type( ttm_type ), Intent( InOut ) :: ttm
     Logical,                Intent(   Out ) :: lfce
@@ -142,7 +142,7 @@ Contains
     Type( timer_type ),      Intent( InOut ) :: tmr
     Type( defects_type ),    Intent( InOut ) :: dfcts(:)
     Type( electrostatic_type ), Intent( InOut ) :: electro
-    Class( ewald_type ), Intent( InOut ) :: ewld
+    Type( ewald_type ), Intent( InOut ) :: ewld
     Type( seed_type ), Intent( InOut ) :: seed
     Type( trajectory_type ), Intent( InOut ) :: traj
     Type( configuration_type ), Intent( InOut ) :: config
@@ -499,7 +499,7 @@ Contains
     tmr%job = 0.0_wp ; l_timjob=.false.
     tmr%clear_screen = 0.0_wp ; l_timcls=.false.
     tmr%max_depth = 2
-    
+
     ! major cutoff, padding and vdw cutoff defaults
 
     rcut1 = 0.0_wp
@@ -1805,11 +1805,8 @@ Contains
             Call info(messages,1,.true.)
           End If
 
-          select type ( ewld )
-          type is ( ewald_spme_type )
-            Write(message,'(a,1p,i5)') 'B-spline interpolation order ',ewld%bspline%num_splines
-            Call info(message,.true.)
-          end select
+          Write(message,'(a,1p,i5)') 'B-spline interpolation order ',ewld%bspline%num_splines
+          Call info(message,.true.)
 
           ! Print infrequent k-space SPME evaluation
 
@@ -2834,7 +2831,7 @@ Contains
 
         Call warning(36,0.0_wp,0.0_wp,0.0_wp)
 
-        !!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2/Classic !!!!
+!!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2/Classic !!!!
         ! read primary cutoff option for multiple timestepping
 
       Else If (word(1:4) == 'prim') Then
@@ -2847,7 +2844,7 @@ Contains
 
         Call warning(37,0.0_wp,0.0_wp,0.0_wp)
 
-        !!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2/Classic !!!!
+!!!! OTHER NON-TRANSFERABLE OPTIONS FROM DL_POLY_2/Classic !!!!
 
         ! read data dumping interval
 
@@ -2873,12 +2870,12 @@ Contains
 
         Call get_word(record,word)
         tmr%max_depth = Int(word_2_real(word))
-                
+
         ! See if detailed processor timing is requested
       Else If (word(1:12) == 'time_per_mpi') Then
 
         tmr%proc_detail = .true.
-        
+
         ! read machine time for simulation run (in seconds)
       Else If (word(1:3) == 'job') Then
 
@@ -2985,30 +2982,30 @@ Contains
 
     ! unexpected end of file
 
-    1000 Continue
+1000 Continue
 
-         If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
-         Call error(53)
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
+    Call error(53)
 
-         ! safe termination of reading CONTROL
+    ! safe termination of reading CONTROL
 
 2000 Continue
-     If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
-     !!! FIXES !!!
-     ! fix on step-dependent options
+!!! FIXES !!!
+    ! fix on step-dependent options
 
-     If (minim%freq  == 0) minim%freq  = flow%equil_steps+1
-     If (thermo%freq_zero == 0) thermo%freq_zero = flow%equil_steps+1
-     If (thermo%freq_tgaus == 0) thermo%freq_tgaus = flow%equil_steps+1
-     If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps+1
+    If (minim%freq  == 0) minim%freq  = flow%equil_steps+1
+    If (thermo%freq_zero == 0) thermo%freq_zero = flow%equil_steps+1
+    If (thermo%freq_tgaus == 0) thermo%freq_tgaus = flow%equil_steps+1
+    If (thermo%freq_tscale == 0) thermo%freq_tscale = flow%equil_steps+1
 
-     !!! REPORTS !!!
-     ! report restart
+!!! REPORTS !!!
+    ! report restart
 
-     If (flow%restart_key == RESTART_KEY_CLEAN) Then
-       Call info('clean start requested',.true.)
-     Else If (config%levcfg == 0) Then
+    If (flow%restart_key == RESTART_KEY_CLEAN) Then
+      Call info('clean start requested',.true.)
+    Else If (config%levcfg == 0) Then
       Call warning(200,0.0_wp,0.0_wp,0.0_wp)
       flow%restart_key = RESTART_KEY_CLEAN
     End If
@@ -3405,7 +3402,7 @@ Contains
       End If
     End If
 
-    !!! RESORT TO DEFAULTS IF NEED BE !!!
+!!! RESORT TO DEFAULTS IF NEED BE !!!
 
     If      (flow%run_steps == 0) Then !!! DRY RUN
       ltemp = .true. ! zero is ok
@@ -3466,7 +3463,7 @@ Contains
     thermo%vel_es2 = thermo%vel_es2 * thermo%vel_es2 ! square of cutoff velocity for inhomogeneous Langevin thermostat and ttm
     ttm%amin = Max (ttm%amin, 1)        ! minimum number of atoms for ttm ionic temperature cell
 
-    !!! ERROR CHECKS !!!
+!!! ERROR CHECKS !!!
     ! Temperature
 
     If ((.not.ltemp) .or. (flow%run_steps > 0 .and. thermo%temp < 1.0_wp)) Call error(380)
@@ -3605,852 +3602,840 @@ Contains
     End Select
 
     Select Case (ttm%KeType)
-    ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
-    ! to kB ps^-1 A^-1
-  Case (1,2)
-    If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
-    ttm%Ka0 = ttm%Ka0*ttm%JKms_to_kBAps
-  End Select
+      ! constant and Drude thermal conductivity: convert from W m^-1 K^-1
+      ! to kB ps^-1 A^-1
+    Case (1,2)
+      If (ttm%isMetal .and. Abs(ttm%Ka0) <= zero_plus) Call error(682)
+      ttm%Ka0 = ttm%Ka0*ttm%JKms_to_kBAps
+    End Select
 
-  Select Case (ttm%DeType)
-  Case (1)
-    ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
-    ttm%Diff0 = ttm%Diff0*1.0e8_wp
-  Case (2)
-    ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
-    ! and ttm%Diff0 scaled with system temperature
-    If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
-    ttm%Diff0 = ttm%Diff0*thermo%temp*1.0e8_wp
-  End Select
+    Select Case (ttm%DeType)
+    Case (1)
+      ! constant thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+      If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus) Call error(683)
+      ttm%Diff0 = ttm%Diff0*1.0e8_wp
+    Case (2)
+      ! reciprocal thermal diffusivity: convert from m^2 s^-1 to A^2 ps^-1
+      ! and ttm%Diff0 scaled with system temperature
+      If (.not. ttm%isMetal .and. Abs(ttm%Diff0) <= zero_plus .or. Abs(ttm%Tfermi) <= zero_plus) Call error(683)
+      ttm%Diff0 = ttm%Diff0*thermo%temp*1.0e8_wp
+    End Select
 
-  ! spatial deposition (gaussian) standard deviation: convert from nm to A
-  ttm%sig = ttm%sig*10.0_wp
+    ! spatial deposition (gaussian) standard deviation: convert from nm to A
+    ttm%sig = ttm%sig*10.0_wp
 
-  ! penetration depth: convert from nm to A
-  If ((ttm%sdepoType == 2 .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth-1.0_wp)<=zero_plus) .or. &
-    (ttm%sdepoType == 3 .and. Abs(ttm%pdepth-1.0_wp) <= zero_plus)) &
-    Call warning(510,0.0_wp,0.0_wp,0.0_wp)
-  ttm%pdepth = 10.0_wp*ttm%pdepth
+    ! penetration depth: convert from nm to A
+    If ((ttm%sdepoType == 2 .and. Abs(ttm%dEdX) <= zero_plus .and. Abs(ttm%pdepth-1.0_wp)<=zero_plus) .or. &
+      (ttm%sdepoType == 3 .and. Abs(ttm%pdepth-1.0_wp) <= zero_plus)) &
+      Call warning(510,0.0_wp,0.0_wp,0.0_wp)
+    ttm%pdepth = 10.0_wp*ttm%pdepth
 
 
-  ! electronic stopping power: convert from eV/nm to eV/A
-  ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
-  If (ttm%sdepoType>0 .and. ttm%sdepoType<3 .and. (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence)<zero_plus)) &
-    Call warning(515,0.0_wp,0.0_wp,0.0_wp)
+    ! electronic stopping power: convert from eV/nm to eV/A
+    ! ttm%fluence: convert from mJ cm^-2 to eV A^-2
+    If (ttm%sdepoType>0 .and. ttm%sdepoType<3 .and. (Abs(ttm%dEdx) <= zero_plus .or. Abs(ttm%fluence)<zero_plus)) &
+      Call warning(515,0.0_wp,0.0_wp,0.0_wp)
 
-  ttm%fluence = ttm%fluence*ttm%mJcm2_to_eVA2
-  ttm%dEdX = 0.1_wp*ttm%dEdX
+    ttm%fluence = ttm%fluence*ttm%mJcm2_to_eVA2
+    ttm%dEdX = 0.1_wp*ttm%dEdX
 
-End Subroutine read_control
+  End Subroutine read_control
 
-Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
+  Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
     l_n_r,lzdn,l_ind,nstfce,ttm,cshell,stats,thermo,green,devel,msd_data,met, &
     pois,bond,angle,dihedral,inversion,zdensity,neigh,vdws,tersoffs,rdf,mpoles, &
     electro,ewld,kim_data,files,flow,comm)
 
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for raw scanning the contents of the control file
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov february 2017
-  ! contrib   - i.j.bush february 2014
-  ! contrib   - a.v.brukhno & i.t.todorov april 2014 (intramolecular TPs & PDFs)
-  ! contrib   - m.a.seaton june 2014 (VAF)
-  ! contrib   - p.s.petkov february 2015
-  ! contrib   - a.m.elena february 2017
-  ! contrib   - m.a.seaton march 2017 (TTM)
-  ! contrib   - a.b.g.chalk march 2017
-  ! refactoring:
-  !           - a.m.elena march-october 2018
-  !           - j.madge march-october 2018
-  !           - a.b.g.chalk march-october 2018
-  !           - i.scivetti march-october 2018
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  Type( ttm_type ), Intent( InOut ) :: ttm
-  Logical,           Intent(   Out ) :: l_n_r,lzdn,l_ind
-  Integer,           Intent( In    ) :: max_rigid,imcon
-  Integer,           Intent( InOut ) :: imc_n
-  Integer,           Intent(   Out ) :: mxgana,nstfce
-  Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
-  Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
-  Type( core_shell_type ), Intent (   In  )   :: cshell
-  Type( stats_type ), Intent( InOut ) :: stats
-  Type( thermostat_type ), Intent( InOut ) :: thermo
-  Type( development_type ), Intent( InOut ) :: devel
-  Type( greenkubo_type ), Intent( InOut ) :: green
-  Type( msd_type ), Intent( InOut ) :: msd_data
-  Type( metal_type ), Intent( InOut ) :: met
-  Type( poisson_type ), Intent( InOut ) :: pois
-  Type( bonds_type ), Intent( InOut ) :: bond
-  Type( angles_type ), Intent( InOut ) :: angle
-  Type( dihedrals_type ), Intent( InOut ) :: dihedral
-  Type( inversions_type ), Intent( InOut ) :: inversion
-  Type( z_density_type ), Intent( InOut ) :: zdensity
-  Type( neighbours_type ), Intent( InOut ) :: neigh
-  Type( vdw_type ), Intent( InOut ) :: vdws
-  Type( tersoff_type ), Intent( In    )  :: tersoffs
-  Type( rdf_type ), Intent( InOut ) :: rdf
-  Type( mpole_type ), Intent( InOut ) :: mpoles
-  Type( electrostatic_type ), Intent( InOut ) :: electro
-  Class( ewald_type ), allocatable, Intent( InOut ) :: ewld
-  Type( kim_type), Intent( InOut ) :: kim_data
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( flow_type ), Intent( InOut ) :: flow
-  Type( comms_type ), Intent( InOut ) :: comm
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for raw scanning the contents of the control file
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2017
+    ! contrib   - i.j.bush february 2014
+    ! contrib   - a.v.brukhno & i.t.todorov april 2014 (intramolecular TPs & PDFs)
+    ! contrib   - m.a.seaton june 2014 (VAF)
+    ! contrib   - p.s.petkov february 2015
+    ! contrib   - a.m.elena february 2017
+    ! contrib   - m.a.seaton march 2017 (TTM)
+    ! contrib   - a.b.g.chalk march 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
+    !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    Type( ttm_type ), Intent( InOut ) :: ttm
+    Logical,           Intent(   Out ) :: l_n_r,lzdn,l_ind
+    Integer,           Intent( In    ) :: max_rigid,imcon
+    Integer,           Intent( InOut ) :: imc_n
+    Integer,           Intent(   Out ) :: mxgana,nstfce
+    Real( Kind = wp ), Intent( In    ) :: xhi,yhi,zhi,rcter
+    Real( Kind = wp ), Intent( InOut ) :: cell(1:9)
+    Type( core_shell_type ), Intent (   In  )   :: cshell
+    Type( stats_type ), Intent( InOut ) :: stats
+    Type( thermostat_type ), Intent( InOut ) :: thermo
+    Type( development_type ), Intent( InOut ) :: devel
+    Type( greenkubo_type ), Intent( InOut ) :: green
+    Type( msd_type ), Intent( InOut ) :: msd_data
+    Type( metal_type ), Intent( InOut ) :: met
+    Type( poisson_type ), Intent( InOut ) :: pois
+    Type( bonds_type ), Intent( InOut ) :: bond
+    Type( angles_type ), Intent( InOut ) :: angle
+    Type( dihedrals_type ), Intent( InOut ) :: dihedral
+    Type( inversions_type ), Intent( InOut ) :: inversion
+    Type( z_density_type ), Intent( InOut ) :: zdensity
+    Type( neighbours_type ), Intent( InOut ) :: neigh
+    Type( vdw_type ), Intent( InOut ) :: vdws
+    Type( tersoff_type ), Intent( In    )  :: tersoffs
+    Type( rdf_type ), Intent( InOut ) :: rdf
+    Type( mpole_type ), Intent( InOut ) :: mpoles
+    Type( electrostatic_type ), Intent( InOut ) :: electro
+    Type( ewald_type ), Intent( InOut ) :: ewld
+    Type( kim_type), Intent( InOut ) :: kim_data
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( flow_type ), Intent( InOut ) :: flow
+    Type( comms_type ), Intent( InOut ) :: comm
 
-  Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
-    lrcut,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
-  Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word,word1,akey
-  Integer                :: i,itmp,nstrun,bspline_local
-  Real( Kind = wp )      :: celprp(1:10),cut,eps0,fac,tol,tol1
+    Logical                :: carry,safe,la_ana,la_bnd,la_ang,la_dih,la_inv, &
+      lrcut,lrvdw,lrmet,lelec,lvdw,lmet,l_n_m,lter,l_exp
+    Character( Len = 200 ) :: record
+    Character( Len = 40  ) :: word,word1,akey
+    Integer                :: i,itmp,nstrun,bspline_local
+    Real( Kind = wp )      :: celprp(1:10),cut,eps0,fac,tol,tol1
 
-  Integer,           Parameter :: mxspl_def = 8,        & ! default spline for SPME (4 & 6 possible)
-    mxspl_min = 3           ! minimum spline order, needed for derivatives of forces
-  Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp  , & ! minimum real space cutoff
-    rbin_def  = 0.05_wp , & ! default bin size (RDF/USR & z-density)
-    rcbnd_def = 2.5_wp      ! minimum bond length for bond analysis
+    Integer,           Parameter :: mxspl_def = 8,        & ! default spline for SPME (4 & 6 possible)
+      mxspl_min = 3           ! minimum spline order, needed for derivatives of forces
+    Real( Kind = wp ), Parameter :: rcut_def  = 1.0_wp  , & ! minimum real space cutoff
+      rbin_def  = 0.05_wp , & ! default bin size (RDF/USR & z-density)
+      rcbnd_def = 2.5_wp      ! minimum bond length for bond analysis
 
-  Character ( len = 256 ) :: message
+    Character ( len = 256 ) :: message
 
-  ! default reading indices options
+    ! default reading indices options
 
-  l_ind=.true.
+    l_ind=.true.
 
-  ! strict flag
+    ! strict flag
 
-  flow%strict = .true.
+    flow%strict = .true.
 
-  ! replay history option (real dynamics = no replay)
+    ! replay history option (real dynamics = no replay)
 
-  flow%simulation = .true. ! don't replay history
+    flow%simulation = .true. ! don't replay history
 
-  ! slab option default
+    ! slab option default
 
-  imc_n = imcon
+    imc_n = imcon
 
-  ! default switches for intramolecular analysis grids
+    ! default switches for intramolecular analysis grids
 
-  la_ana = .false. ; mxgana  = 0
-  la_bnd = .false. ; bond%bin_pdf = 0
-  la_ang = .false. ; angle%bin_adf = 0
-  la_dih = .false. ; dihedral%bin_adf = 0
-  la_inv = .false. ; inversion%bin_adf = 0
+    la_ana = .false. ; mxgana  = 0
+    la_bnd = .false. ; bond%bin_pdf = 0
+    la_ang = .false. ; angle%bin_adf = 0
+    la_dih = .false. ; dihedral%bin_adf = 0
+    la_inv = .false. ; inversion%bin_adf = 0
 
-  ! electrostatics and no electrostatics, rdf and no rdf, vdw and no vdws,
-  ! metal and no metal, tersoff and no tersoff interactions,
-  ! cutoff and padding, and binsize defaults
+    ! electrostatics and no electrostatics, rdf and no rdf, vdw and no vdws,
+    ! metal and no metal, tersoff and no tersoff interactions,
+    ! cutoff and padding, and binsize defaults
 
-  lelec = .false.
-  ! electro%no_elec is now first determined in scan_field electro%no_elec = (.false.)
+    lelec = .false.
+    ! electro%no_elec is now first determined in scan_field electro%no_elec = (.false.)
 
-  rdf%l_collect  = (rdf%max_rdf > 0)
-  l_n_r = .not.rdf%l_collect
+    rdf%l_collect  = (rdf%max_rdf > 0)
+    l_n_r = .not.rdf%l_collect
 
-  lvdw  = (vdws%max_vdw > 0)
-  vdws%no_vdw = .false.
-  lrvdw = .false. ! Even though it vdws%cutoff may have been read from TABLE
+    lvdw  = (vdws%max_vdw > 0)
+    vdws%no_vdw = .false.
+    lrvdw = .false. ! Even though it vdws%cutoff may have been read from TABLE
 
-  lmet  = (met%max_metal > 0)
-  l_n_m = .not.lmet
-  lrmet = (met%rcut > 1.0e-6_wp)
+    lmet  = (met%max_metal > 0)
+    l_n_m = .not.lmet
+    lrmet = (met%rcut > 1.0e-6_wp)
 
-  lter  = (tersoffs%max_ter > 0)
+    lter  = (tersoffs%max_ter > 0)
 
-  lrcut = .false.
-  neigh%cutoff  = 0.0_wp
+    lrcut = .false.
+    neigh%cutoff  = 0.0_wp
 
-  flow%reset_padding = .false.
-  neigh%padding  = 0.0_wp
+    flow%reset_padding = .false.
+    neigh%padding  = 0.0_wp
 
-  rdf%rbin  = rbin_def
+    rdf%rbin  = rbin_def
 
-  ! Default ewald to base ewald type
+    ! Frequency of the SPME k-space evaluation
 
-  allocate ( ewald_type :: ewld )
-
-  ! Frequency of the SPME k-space evaluation
-
-  nstfce = -1 ! None defined
+    nstfce = -1 ! None defined
 
 
-  ! default number of steps and expansion option
+    ! default number of steps and expansion option
 
-  nstrun = 0
-  l_exp = .false.
+    nstrun = 0
+    l_exp = .false.
 
-  ! default stack size
+    ! default stack size
 
-  stats%mxstak = 1
+    stats%mxstak = 1
 
-  ! default switch for two-temperature model (ttm)
+    ! default switch for two-temperature model (ttm)
 
-  ttm%l_ttm = .false.
+    ttm%l_ttm = .false.
 
-  ! default switch for redistribution of energy from
-  ! deactivated electronic cells for ttm
+    ! default switch for redistribution of energy from
+    ! deactivated electronic cells for ttm
 
-  ttm%redistribute = .false.
+    ttm%redistribute = .false.
 
-  ! default switches for removing centre-of-mass motion
-  ! when applying inhomogeneous Langevin thermostat with ttm
+    ! default switches for removing centre-of-mass motion
+    ! when applying inhomogeneous Langevin thermostat with ttm
 
-  ttm%ttmthvel  = .true.
-  ttm%ttmthvelz = .false.
+    ttm%ttmthvel  = .true.
+    ttm%ttmthvelz = .false.
 
-  ! default values for ttm ionic and electronic voxel grid sizes
+    ! default values for ttm ionic and electronic voxel grid sizes
 
-  ttm%ntsys(3)  = 10
-  ttm%eltsys(1) = 50
-  ttm%eltsys(2) = 50
-  ttm%eltsys(3) = 50
+    ttm%ntsys(3)  = 10
+    ttm%eltsys(1) = 50
+    ttm%eltsys(2) = 50
+    ttm%eltsys(3) = 50
 
-  ! default ttm heat capacity, conductivity and diffusivity types
+    ! default ttm heat capacity, conductivity and diffusivity types
 
-  ttm%CeType = 0
-  ttm%KeType = 0
-  ttm%DeType = 0
+    ttm%CeType = 0
+    ttm%KeType = 0
+    ttm%DeType = 0
 
-  ! default ttm electron-phonon coupling type
+    ! default ttm electron-phonon coupling type
 
-  ttm%gvar = 0
+    ttm%gvar = 0
 
-  ! Set safe flag
+    ! Set safe flag
 
-  safe=.true.
+    safe=.true.
 
-  ! Open the simulation input file
+    ! Open the simulation input file
 
-  If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
-  Call gcheck(comm,safe,"enforce")
-  If (.not.safe) Then
-    Go To 10
-  Else
-    If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
-  End If
+    If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
+    Call gcheck(comm,safe,"enforce")
+    If (.not.safe) Then
+      Go To 10
+    Else
+      If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
+    End If
 
-  ! First Pass.  Get cutoff distances, stacksize and density variation.
-
-  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
-  If (.not.safe) Go To 20
-
-  carry = .true.
-  Do While (carry)
+    ! First Pass.  Get cutoff distances, stacksize and density variation.
 
     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
     If (.not.safe) Go To 20
 
-    Call lower_case(record)
-    Call get_word(record,word)
+    carry = .true.
+    Do While (carry)
 
-    ! record is commented out
+      Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
+      If (.not.safe) Go To 20
 
-    If      (word(1:1) == '#' .or. word(1:1) == ' ') Then
-
-      ! read slab option (limiting DD slicing in z direction to 2)
-
-    Else If (word(1:4) == 'slab') Then
-
-      If (imcon /= 0 .and. imcon /= 6) imc_n=6
-
-      ! read real space cut off
-
-    Else If (word(1:3) == 'cut' .or. word(1:4) == 'rcut') Then
-
-      lrcut = .true.
+      Call lower_case(record)
       Call get_word(record,word)
-      neigh%cutoff = Abs(word_2_real(word))
-      lrcut = (neigh%cutoff > zero_plus) ! if zero or nothing is entered
 
-      ! read real space cut off
+      ! record is commented out
 
-    Else If (word(1:3) == 'pad' .or. word(1:4) == 'rpad') Then
+      If      (word(1:1) == '#' .or. word(1:1) == ' ') Then
 
-      flow%reset_padding = .true.
-      Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
-      neigh%padding = Max(neigh%padding,Abs(word_2_real(word)))
+        ! read slab option (limiting DD slicing in z direction to 2)
 
-      ! read vdw cutoff
+      Else If (word(1:4) == 'slab') Then
 
-    Else If (word(1:4) == 'rvdw') Then
+        If (imcon /= 0 .and. imcon /= 6) imc_n=6
 
-      lrvdw=.true.
-      Call get_word(record,word)
-      If (word(1:3) == 'cut') Call get_word(record,word)
-      If (vdws%cutoff > 1.0e-6_wp) Then
-        vdws%cutoff = Min(vdws%cutoff,word_2_real(word))
-      Else
-        vdws%cutoff = Abs(word_2_real(word))
-      End If
-      lrvdw = (vdws%cutoff > zero_plus) ! if zero or nothing is entered
+        ! read real space cut off
 
-      ! read binsize option
+      Else If (word(1:3) == 'cut' .or. word(1:4) == 'rcut') Then
 
-    Else If (word(1:7) == 'binsize') Then
-
-      Call get_word(record,word)
-      rdf%rbin = Abs(word_2_real(word))
-      zdensity%bin_width = rdf%rbin
-
-      ! read dpd ensembles option
-
-    Else If (word(1:8) == 'ensemble') Then
-
-      Call get_word(record,word)
-      If (word(1:3) == 'nvt') Then
+        lrcut = .true.
         Call get_word(record,word)
-        If (word(1:3) == 'dpd') Then
-          If      (word(1:5) == 'dpds1') Then
-            thermo%key_dpd = DPD_FIRST_ORDER
-          Else If (word(1:5) == 'dpds2') Then
-            thermo%key_dpd = DPD_SECOND_ORDER
+        neigh%cutoff = Abs(word_2_real(word))
+        lrcut = (neigh%cutoff > zero_plus) ! if zero or nothing is entered
+
+        ! read real space cut off
+
+      Else If (word(1:3) == 'pad' .or. word(1:4) == 'rpad') Then
+
+        flow%reset_padding = .true.
+        Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
+        neigh%padding = Max(neigh%padding,Abs(word_2_real(word)))
+
+        ! read vdw cutoff
+
+      Else If (word(1:4) == 'rvdw') Then
+
+        lrvdw=.true.
+        Call get_word(record,word)
+        If (word(1:3) == 'cut') Call get_word(record,word)
+        If (vdws%cutoff > 1.0e-6_wp) Then
+          vdws%cutoff = Min(vdws%cutoff,word_2_real(word))
+        Else
+          vdws%cutoff = Abs(word_2_real(word))
+        End If
+        lrvdw = (vdws%cutoff > zero_plus) ! if zero or nothing is entered
+
+        ! read binsize option
+
+      Else If (word(1:7) == 'binsize') Then
+
+        Call get_word(record,word)
+        rdf%rbin = Abs(word_2_real(word))
+        zdensity%bin_width = rdf%rbin
+
+        ! read dpd ensembles option
+
+      Else If (word(1:8) == 'ensemble') Then
+
+        Call get_word(record,word)
+        If (word(1:3) == 'nvt') Then
+          Call get_word(record,word)
+          If (word(1:3) == 'dpd') Then
+            If      (word(1:5) == 'dpds1') Then
+              thermo%key_dpd = DPD_FIRST_ORDER
+            Else If (word(1:5) == 'dpds2') Then
+              thermo%key_dpd = DPD_SECOND_ORDER
+            End If
           End If
         End If
-      End If
 
-      ! read replay history option
+        ! read replay history option
 
-    Else If (word(1:6) == 'replay') Then
+      Else If (word(1:6) == 'replay') Then
 
-      flow%simulation = .false.
+        flow%simulation = .false.
 
-      ! read number of timesteps
+        ! read number of timesteps
 
-    Else If (word(1:5) == 'steps') Then
-
-      Call get_word(record,word)
-      nstrun = Nint(Abs(word_2_real(word)))
-
-      ! read expansion option
-
-    Else If (word(1:5) == 'nfold') Then
-
-      l_exp = .true.
-
-      ! read stack size
-
-    Else If (word(1:5) == 'stack') Then
-
-      Call get_word(record,word)
-      If (word(1:4) == 'size') Call get_word(record,word)
-
-      stats%mxstak = Nint(Abs(word_2_real(word)))
-
-      ! read MSD option
-
-    Else If (word(1:6) == 'msdtmp') Then
-
-      msd_data%l_msd = .true.
-
-      ! read VAF option and sample frequency and binsize - defaults in greenkubo_module
-
-    Else If (word(1:3) == 'vaf') Then
-
-      Call get_word(record,word)
-      If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-      If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-      If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-      green%freq = Abs(Nint(word_2_real(word,0.0_wp)))
-      If (green%freq == 0) green%freq=50
-
-      Call get_word(record,word)
-      If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
-      If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
-      green%binsize = Abs(Nint(word_2_real(word,0.0_wp)))
-
-      If (green%binsize == 0) green%binsize=Merge(2*green%freq,100,green%freq >= 100)
-      green%samp = Ceiling(Real(green%binsize,wp)/Real(green%freq,wp))
-
-      ! read DL_POLY_2/Classic delr Verlet shell strip cutoff option (compatibility)
-      ! as DL_POLY_4 real space cutoff padding option
-
-    Else If (word(1:4) == 'delr') Then
-
-      flow%reset_padding = .true.
-      Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
-      neigh%padding = Max(neigh%padding,0.25_wp*Abs(word_2_real(word)))
-
-      ! read DL_POLY_2/Classic multiple timestep option (compatibility)
-      ! as DL_POLY_4 infrequent k-space SPME evaluation option
-
-    Else If (word(1:4) == 'mult') Then
-
-      Call get_word(record,word)
-      If (word(1:5) == 'times' .or. word(1:4) == 'step') Call get_word(record,word)
-      nstfce=Max(nstfce,Nint(Abs(word_2_real(word))))
-
-      ! read electrostatics
-
-    Else If (word(1:5) == 'ewald' .or. word(1:4) == 'spme') Then
-
-      Call get_word(record,word)
-
-      If (word(1:5) == 'evalu') Then
-
-        ! infrequent k-space SPME evaluation
+      Else If (word(1:5) == 'steps') Then
 
         Call get_word(record,word)
-        If (word(1:5) == 'every') Call get_word(record,word)
+        nstrun = Nint(Abs(word_2_real(word)))
+
+        ! read expansion option
+
+      Else If (word(1:5) == 'nfold') Then
+
+        l_exp = .true.
+
+        ! read stack size
+
+      Else If (word(1:5) == 'stack') Then
+
+        Call get_word(record,word)
+        If (word(1:4) == 'size') Call get_word(record,word)
+
+        stats%mxstak = Nint(Abs(word_2_real(word)))
+
+        ! read MSD option
+
+      Else If (word(1:6) == 'msdtmp') Then
+
+        msd_data%l_msd = .true.
+
+        ! read VAF option and sample frequency and binsize - defaults in greenkubo_module
+
+      Else If (word(1:3) == 'vaf') Then
+
+        Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        green%freq = Abs(Nint(word_2_real(word,0.0_wp)))
+        If (green%freq == 0) green%freq=50
+
+        Call get_word(record,word)
+        If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
+        If (word(1:3) == 'bin' .or. word(1:5) == 'size') Call get_word(record,word)
+        green%binsize = Abs(Nint(word_2_real(word,0.0_wp)))
+
+        If (green%binsize == 0) green%binsize=Merge(2*green%freq,100,green%freq >= 100)
+        green%samp = Ceiling(Real(green%binsize,wp)/Real(green%freq,wp))
+
+        ! read DL_POLY_2/Classic delr Verlet shell strip cutoff option (compatibility)
+        ! as DL_POLY_4 real space cutoff padding option
+
+      Else If (word(1:4) == 'delr') Then
+
+        flow%reset_padding = .true.
+        Call get_word(record,word) ; If (word(1:5) == 'width') Call get_word(record,word)
+        neigh%padding = Max(neigh%padding,0.25_wp*Abs(word_2_real(word)))
+
+        ! read DL_POLY_2/Classic multiple timestep option (compatibility)
+        ! as DL_POLY_4 infrequent k-space SPME evaluation option
+
+      Else If (word(1:4) == 'mult') Then
+
+        Call get_word(record,word)
+        If (word(1:5) == 'times' .or. word(1:4) == 'step') Call get_word(record,word)
         nstfce=Max(nstfce,Nint(Abs(word_2_real(word))))
 
-      Else
+        ! read electrostatics
+
+      Else If (word(1:5) == 'ewald' .or. word(1:4) == 'spme') Then
+
+        Call get_word(record,word)
+
+        If (word(1:5) == 'evalu') Then
+
+          ! infrequent k-space SPME evaluation
+
+          Call get_word(record,word)
+          If (word(1:5) == 'every') Call get_word(record,word)
+          nstfce=Max(nstfce,Nint(Abs(word_2_real(word))))
+
+        Else
+
+          lelec = .true.
+
+        End If
+
+      Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv') Then
 
         lelec = .true.
 
+      Else If (word(1:6) == 'distan') Then
+
+        lelec = .true.
+
+      Else If (word(1:4) == 'coul') Then
+
+        lelec = .true.
+
+      Else If (word(1:5) == 'shift') Then
+
+        lelec = .true.
+
+      Else If (word(1:8) == 'reaction') Then
+
+        lelec = .true.
+
+        ! read "no vdw", "no elec" and "no str" options
+
+      Else If (word(1:5) == 'polar') Then
+
+        Call get_word(record,word)
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
+        If (word(1:6) == 'charmm' .and. cshell%mxshl > 0) mpoles%key=POLARISATION_CHARMM
+
+      Else If (word(1:2) == 'no') Then
+
+        Call get_word(record,word)
+
+        If (word(1:3) == 'vdw') Then
+
+          vdws%no_vdw = .true.
+
+        Else If (word(1:4) == 'elec') Then
+
+          electro%no_elec = .true.
+
+        Else If (word(1:3) == 'ind' ) Then
+
+          l_ind=.false.
+          Call info('no index (reading in CONFIG) option on',.true.)
+
+        Else If (word(1:3) == 'str' ) Then
+
+          flow%strict=.false.
+
+        End If
+
+        ! read analysis (intramolecular distribution calculation) option
+
+      Else If (word(1:3) == 'ana') Then
+
+        la_ana = .true.
+
+        Call get_word(record,word)
+        akey = word(1:3)
+
+        Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+        If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
+
+        Call get_word(record,word)
+        If (word(1:5) == 'nbins' .or. word(1:5) == 'ngrid' .or. word(1:4) == 'grid') Call get_word(record,word)
+
+        If      (akey == 'all') Then
+          la_bnd = .true.
+          la_ang = .true.
+          la_dih = .true.
+          la_inv = .true.
+
+          mxgana = Abs(Nint(word_2_real(word)))
+          bond%bin_pdf = Max(bond%bin_pdf,mxgana)
+          angle%bin_adf = Max(angle%bin_adf,mxgana)
+          dihedral%bin_adf = Max(dihedral%bin_adf,mxgana)
+          inversion%bin_adf = Max(inversion%bin_adf,mxgana)
+
+          Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
+          If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
+          bond%rcut=Max(bond%rcut,word_2_real(word,0.0_wp))
+        Else If (akey == 'bon') Then
+          la_bnd = .true.
+
+          bond%bin_pdf = Max(bond%bin_pdf,Abs(Nint(word_2_real(word))))
+
+          Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
+          If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
+          bond%rcut=Max(bond%rcut,word_2_real(word,0.0_wp))
+        Else If (akey == 'ang') Then
+          la_ang = .true.
+
+          angle%bin_adf = Max(angle%bin_adf,Abs(Nint(word_2_real(word))))
+        Else If (akey == 'dih') Then
+          la_dih = .true.
+
+          dihedral%bin_adf = Max(dihedral%bin_adf,Abs(Nint(word_2_real(word))))
+        Else If (akey == 'inv') Then
+          la_inv = .true.
+
+          inversion%bin_adf = Max(inversion%bin_adf,Abs(Nint(word_2_real(word))))
+        End If
+
+        ! read rdf calculation option
+
+      Else If (word(1:3) == 'rdf') Then
+
+        rdf%l_collect = .true.
+        l_n_r = .not.rdf%l_collect
+
+        ! read z-density profile option
+
+      Else If (word(1:4) == 'zden') Then
+
+        lzdn = .true.
+
+        ! read two-temperature model options
+
+      Else If (word(1:3) == 'ttm') Then
+
+        ttm%l_ttm = .true.
+
+        Call get_word(record,word)
+
+        If (word(1:4) == 'ncit') Then
+
+          ! number of coarse-grained ion temperature cells (CIT)
+          ! in z-direction: geometry of system determines 
+          ! CITs in x- and y-directions
+
+          Call get_word(record,word)
+          ttm%ntsys(3) = Abs(Nint(word_2_real(word)))
+
+        Else If (word(1:4) == 'ncet') Then
+
+          ! number of coarse-grained electronic temperature cells
+          ! (CET) in x-, y- and z-directions
+
+          Call get_word(record,word)
+          ttm%eltsys(1) = Abs(Nint(word_2_real(word)))
+          Call get_word(record,word)
+          ttm%eltsys(2) = Abs(Nint(word_2_real(word)))
+          Call get_word(record,word)
+          ttm%eltsys(3) = Abs(Nint(word_2_real(word)))
+
+        Else If (word1(1:5) == 'metal') Then
+
+          ! sets properties of electronic subsystem as a metal
+
+          ttm%isMetal = .true.
+
+        Else If (word1(1:8) == 'nonmetal') Then
+
+          ! sets properties of electronic subsystem as a non-metal
+
+          ttm%isMetal = .false.
+
+        Else If (word(1:7) == 'ceconst') Then
+
+          ! electronic specific heat capacity given as constant value
+
+          ttm%CeType = 0
+
+        Else If (word(1:6) == 'cetanh') Then
+
+          ! electronic specific heat capacity given as tanh function
+
+          ttm%CeType = 1
+
+        Else If (word(1:5) == 'celin') Then
+
+          ! electronic specific heat capacity given as linear function
+          ! up to Fermi temperature, constant afterwards
+
+          ttm%CeType = 2
+
+        Else If (word(1:5) == 'cetab') Then
+
+          ! electronic ttm%volumetric heat capacity given in tabulated form
+
+          ttm%CeType = 3
+
+        Else If (word(1:5) == 'keinf') Then
+
+          ! infinite electronic thermal conductivity
+
+          ttm%DeType = 0
+          ttm%KeType = 0
+          ttm%isMetal = .true.
+
+        Else If (word(1:7) == "keconst") Then
+
+          ! electronic thermal conductivity given as constant value
+
+          ttm%DeType = 0
+          ttm%KeType = 1
+          ttm%isMetal = .true.
+
+        Else If (word(1:7) == 'kedrude') Then
+
+          ! electronic thermal conductivity given as drude model (propertional to
+          ! electronic temperature, giving t.c. at system temperature)
+
+          ttm%DeType = 0
+          ttm%KeType = 2
+          ttm%isMetal = .true.
+
+        Else If (word(1:5) == 'ketab') Then
+
+          ! electronic thermal conductivity given in tabulated form
+
+          ttm%DeType = 0
+          ttm%KeType = 3
+          ttm%isMetal = .true.
+
+        Else If (word(1:4) == 'diff' .or. word(1:7)=='deconst') Then
+
+          ! electronic thermal diffusivity given as constant value
+          ! (for non-metal systems)
+
+          ttm%KeType = 1
+          ttm%DeType = 1
+          ttm%isMetal = .false.
+
+        Else If (word(1:7) == 'derecip') Then
+
+          ! electronic thermal diffusivity given as reciprocal function
+          ! of temperature (up to Fermi temperature), constant afterwards
+
+          ttm%KeType = 1
+          ttm%DeType = 2
+          ttm%isMetal = .false.
+
+        Else If (word(1:4) == 'detab') Then
+
+          ! electronic thermal diffusivity given in tabulated form
+
+          ttm%KeType = 1
+          ttm%DeType = 3
+          ttm%isMetal = .false.
+
+        Else If (word(1:4) == 'varg') Then
+
+          ! variable electron-phonon coupling constant (thermo%chi_ep) based on
+          ! tabular electronic stopping terms (in g.dat file): option to
+          ! apply value homogeneously across system (based on average 
+          ! electronic temperature) or heterogeneously (using local 
+          ! electronic temperature for each voxel)
+
+          Call get_word(record,word)
+          If (word(1:4) == 'homo') Then
+            ttm%gvar = 1
+          Else If (word(1:6) == 'hetero') Then
+            ttm%gvar = 2
+          End If
+
+        Else If (word(1:7) == 'nothvel') Then
+
+          ! option to switch off centre-of-mass motion correction to
+          ! velocities used in inhomogeneous Langevin thermostat
+
+          ttm%ttmthvel = .false.
+          ttm%ttmthvelz = .false.
+
+        Else If (word(1:6) == 'thvelz') Then
+
+          ! option to only apply centre-of-mass motion corrections to
+          ! z components of velocities, when used in inhomogeneous
+          ! Langevin thermostat
+
+          ttm%ttmthvelz = .true.
+          ttm%ttmthvel = .true.
+
+        Else If (word(1:6) == 'redist') Then
+
+          ! ttm%redistribute electronic energy from any deactivated cells
+          ! to active neighbouring cells: note that this requires overlap
+          ! of electronic and ionic temperature grids in at least
+          ! x- and y-directions
+
+          ttm%redistribute = .true.
+
+        End If
+
+        ! read finish
+
+      Else If (word(1:6) == 'finish') Then
+
+        carry=.false.
+
       End If
 
-    Else If (word(1:5) == 'poiss' .or. word(1:5) == 'psolv') Then
+    End Do
 
-      lelec = .true.
+    ! in case of intramolecular distribution analysis
 
-    Else If (word(1:6) == 'distan') Then
-
-      lelec = .true.
-
-    Else If (word(1:4) == 'coul') Then
-
-      lelec = .true.
-
-    Else If (word(1:5) == 'shift') Then
-
-      lelec = .true.
-
-    Else If (word(1:8) == 'reaction') Then
-
-      lelec = .true.
-
-      ! read "no vdw", "no elec" and "no str" options
-
-    Else If (word(1:5) == 'polar') Then
-
-      Call get_word(record,word)
-      If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
-      If (word(1:6) == 'scheme' .or. word(1:4) == 'type') Call get_word(record,word)
-      If (word(1:6) == 'charmm' .and. cshell%mxshl > 0) mpoles%key=POLARISATION_CHARMM
-
-    Else If (word(1:2) == 'no') Then
-
-      Call get_word(record,word)
-
-      If (word(1:3) == 'vdw') Then
-
-        vdws%no_vdw = .true.
-
-      Else If (word(1:4) == 'elec') Then
-
-        electro%no_elec = .true.
-
-      Else If (word(1:3) == 'ind' ) Then
-
-        l_ind=.false.
-        Call info('no index (reading in CONFIG) option on',.true.)
-
-      Else If (word(1:3) == 'str' ) Then
-
-        flow%strict=.false.
-
-      End If
-
-      ! read analysis (intramolecular distribution calculation) option
-
-    Else If (word(1:3) == 'ana') Then
-
-      la_ana = .true.
-
-      Call get_word(record,word)
-      akey = word(1:3)
-
-      Call get_word(record,word)
-      If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-      If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-      If (word(1:7) == 'collect' .or. word(1:5) == 'sampl' .or. word(1:5) == 'every') Call get_word(record,word)
-
-      Call get_word(record,word)
-      If (word(1:5) == 'nbins' .or. word(1:5) == 'ngrid' .or. word(1:4) == 'grid') Call get_word(record,word)
-
-      If      (akey == 'all') Then
-        la_bnd = .true.
-        la_ang = .true.
-        la_dih = .true.
-        la_inv = .true.
-
-        mxgana = Abs(Nint(word_2_real(word)))
+    If (la_ana) Then
+      If (mxgana > 0) Then
         bond%bin_pdf = Max(bond%bin_pdf,mxgana)
         angle%bin_adf = Max(angle%bin_adf,mxgana)
         dihedral%bin_adf = Max(dihedral%bin_adf,mxgana)
         inversion%bin_adf = Max(inversion%bin_adf,mxgana)
-
-        Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
-        If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-        bond%rcut=Max(bond%rcut,word_2_real(word,0.0_wp))
-      Else If (akey == 'bon') Then
-        la_bnd = .true.
-
-        bond%bin_pdf = Max(bond%bin_pdf,Abs(Nint(word_2_real(word))))
-
-        Call get_word(record,word) ! AB: for "rbnd"/"rmax"/"max"/figure
-        If (word(1:4) == 'rbnd' .or. word(1:4) == 'rmax' .or. word(1:3) == 'max') Call get_word(record,word)
-        bond%rcut=Max(bond%rcut,word_2_real(word,0.0_wp))
-      Else If (akey == 'ang') Then
-        la_ang = .true.
-
-        angle%bin_adf = Max(angle%bin_adf,Abs(Nint(word_2_real(word))))
-      Else If (akey == 'dih') Then
-        la_dih = .true.
-
-        dihedral%bin_adf = Max(dihedral%bin_adf,Abs(Nint(word_2_real(word))))
-      Else If (akey == 'inv') Then
-        la_inv = .true.
-
-        inversion%bin_adf = Max(inversion%bin_adf,Abs(Nint(word_2_real(word))))
       End If
 
-      ! read rdf calculation option
-
-    Else If (word(1:3) == 'rdf') Then
-
-      rdf%l_collect = .true.
-      l_n_r = .not.rdf%l_collect
-
-      ! read z-density profile option
-
-    Else If (word(1:4) == 'zden') Then
-
-      lzdn = .true.
-
-      ! read two-temperature model options
-
-    Else If (word(1:3) == 'ttm') Then
-
-      ttm%l_ttm = .true.
-
-      Call get_word(record,word)
-
-      If (word(1:4) == 'ncit') Then
-
-        ! number of coarse-grained ion temperature cells (CIT)
-        ! in z-direction: geometry of system determines 
-        ! CITs in x- and y-directions
-
-        Call get_word(record,word)
-        ttm%ntsys(3) = Abs(Nint(word_2_real(word)))
-
-      Else If (word(1:4) == 'ncet') Then
-
-        ! number of coarse-grained electronic temperature cells
-        ! (CET) in x-, y- and z-directions
-
-        Call get_word(record,word)
-        ttm%eltsys(1) = Abs(Nint(word_2_real(word)))
-        Call get_word(record,word)
-        ttm%eltsys(2) = Abs(Nint(word_2_real(word)))
-        Call get_word(record,word)
-        ttm%eltsys(3) = Abs(Nint(word_2_real(word)))
-
-      Else If (word1(1:5) == 'metal') Then
-
-        ! sets properties of electronic subsystem as a metal
-
-        ttm%isMetal = .true.
-
-      Else If (word1(1:8) == 'nonmetal') Then
-
-        ! sets properties of electronic subsystem as a non-metal
-
-        ttm%isMetal = .false.
-
-      Else If (word(1:7) == 'ceconst') Then
-
-        ! electronic specific heat capacity given as constant value
-
-        ttm%CeType = 0
-
-      Else If (word(1:6) == 'cetanh') Then
-
-        ! electronic specific heat capacity given as tanh function
-
-        ttm%CeType = 1
-
-      Else If (word(1:5) == 'celin') Then
-
-        ! electronic specific heat capacity given as linear function
-        ! up to Fermi temperature, constant afterwards
-
-        ttm%CeType = 2
-
-      Else If (word(1:5) == 'cetab') Then
-
-        ! electronic ttm%volumetric heat capacity given in tabulated form
-
-        ttm%CeType = 3
-
-      Else If (word(1:5) == 'keinf') Then
-
-        ! infinite electronic thermal conductivity
-
-        ttm%DeType = 0
-        ttm%KeType = 0
-        ttm%isMetal = .true.
-
-      Else If (word(1:7) == "keconst") Then
-
-        ! electronic thermal conductivity given as constant value
-
-        ttm%DeType = 0
-        ttm%KeType = 1
-        ttm%isMetal = .true.
-
-      Else If (word(1:7) == 'kedrude') Then
-
-        ! electronic thermal conductivity given as drude model (propertional to
-        ! electronic temperature, giving t.c. at system temperature)
-
-        ttm%DeType = 0
-        ttm%KeType = 2
-        ttm%isMetal = .true.
-
-      Else If (word(1:5) == 'ketab') Then
-
-        ! electronic thermal conductivity given in tabulated form
-
-        ttm%DeType = 0
-        ttm%KeType = 3
-        ttm%isMetal = .true.
-
-      Else If (word(1:4) == 'diff' .or. word(1:7)=='deconst') Then
-
-        ! electronic thermal diffusivity given as constant value
-        ! (for non-metal systems)
-
-        ttm%KeType = 1
-        ttm%DeType = 1
-        ttm%isMetal = .false.
-
-      Else If (word(1:7) == 'derecip') Then
-
-        ! electronic thermal diffusivity given as reciprocal function
-        ! of temperature (up to Fermi temperature), constant afterwards
-
-        ttm%KeType = 1
-        ttm%DeType = 2
-        ttm%isMetal = .false.
-
-      Else If (word(1:4) == 'detab') Then
-
-        ! electronic thermal diffusivity given in tabulated form
-
-        ttm%KeType = 1
-        ttm%DeType = 3
-        ttm%isMetal = .false.
-
-      Else If (word(1:4) == 'varg') Then
-
-        ! variable electron-phonon coupling constant (thermo%chi_ep) based on
-        ! tabular electronic stopping terms (in g.dat file): option to
-        ! apply value homogeneously across system (based on average 
-        ! electronic temperature) or heterogeneously (using local 
-        ! electronic temperature for each voxel)
-
-        Call get_word(record,word)
-        If (word(1:4) == 'homo') Then
-          ttm%gvar = 1
-        Else If (word(1:6) == 'hetero') Then
-          ttm%gvar = 2
-        End If
-
-      Else If (word(1:7) == 'nothvel') Then
-
-        ! option to switch off centre-of-mass motion correction to
-        ! velocities used in inhomogeneous Langevin thermostat
-
-        ttm%ttmthvel = .false.
-        ttm%ttmthvelz = .false.
-
-      Else If (word(1:6) == 'thvelz') Then
-
-        ! option to only apply centre-of-mass motion corrections to
-        ! z components of velocities, when used in inhomogeneous
-        ! Langevin thermostat
-
-        ttm%ttmthvelz = .true.
-        ttm%ttmthvel = .true.
-
-      Else If (word(1:6) == 'redist') Then
-
-        ! ttm%redistribute electronic energy from any deactivated cells
-        ! to active neighbouring cells: note that this requires overlap
-        ! of electronic and ionic temperature grids in at least
-        ! x- and y-directions
-
-        ttm%redistribute = .true.
-
+      ! switch indicators for set_bounds
+
+      If (la_bnd) Then
+        If (bond%bin_pdf == 0) bond%bin_pdf = -1
+        bond%rcut=Max(bond%rcut,rcbnd_def)
+        Call warning('bond PDF analisys cutoff check: bond%rcut=Max(bond%rcut,rcbnd_def)',.true.)
+        Call warning(40,bond%rcut,0.0_wp,0.0_wp)
+      End If
+      If (la_ang .and. angle%bin_adf == 0) angle%bin_adf = -1
+      If (la_dih .and. dihedral%bin_adf == 0) dihedral%bin_adf = -1
+      If (la_inv .and. inversion%bin_adf == 0) inversion%bin_adf = -1
+
+      ! mxgana by construction equals the largest possible grid
+      ! or 1 (positive) as an indicator for analysis
+
+      mxgana=Max(1,bond%bin_pdf,angle%bin_adf,dihedral%bin_adf,inversion%bin_adf)
+    End If
+
+    ! Sort electrostatics
+
+    If (lelec) Then
+      If (electro%no_elec) lelec = .not.electro%no_elec
+    Else
+      electro%no_elec = .true.
+    End If
+
+    ! reinitialise multipolar electrostatics indicators
+
+    If (electro%no_elec) Then
+      mpoles%max_mpoles = 0
+      mpoles%max_order = 0
+      mpoles%key = POLARISATION_DEFAULT
+    End If
+
+    ! Sort vdw
+
+    If (lvdw) Then
+      If (.not.lrvdw) Then
+        lrvdw = (vdws%cutoff > 1.0e-6_wp)
+        vdws%cutoff = Min(vdws%cutoff,Max(neigh%cutoff,rcut_def))
+        Call warning( &
+          'short-ranged interaction cutoff check: vdws%cutoff = Min(vdws%cutoff,Max(neigh%cutoff,rcut_def))', &
+          .true.)
+        Call warning(40,vdws%cutoff,0.0_wp,0.0_wp)
       End If
 
-      ! read finish
-
-    Else If (word(1:6) == 'finish') Then
-
-      carry=.false.
-
+      If (vdws%no_vdw) lvdw = .not.vdws%no_vdw
+    Else
+      vdws%no_vdw = .true.
     End If
 
-  End Do
+    ! Sort neigh%cutoff as the maximum of all valid cutoffs
 
-  ! in case of intramolecular distribution analysis
-
-  If (la_ana) Then
-    If (mxgana > 0) Then
-      bond%bin_pdf = Max(bond%bin_pdf,mxgana)
-      angle%bin_adf = Max(angle%bin_adf,mxgana)
-      dihedral%bin_adf = Max(dihedral%bin_adf,mxgana)
-      inversion%bin_adf = Max(inversion%bin_adf,mxgana)
+    neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, &
+      2.0_wp*rcter+1.0e-6_wp)
+    Call warning( &
+      'DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+      .true.)
+    Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
+    ! If KIM model requires
+    If (kim_data%padding_neighbours_required) Then
+      If (neigh%cutoff < kim_data%influence_distance) Then
+        neigh%cutoff = kim_data%influence_distance
+      End If
     End If
 
-    ! switch indicators for set_bounds
+    If (comm%idnode == 0) Rewind(files(FILE_CONTROL)%unit_no)
 
-    If (la_bnd) Then
-      If (bond%bin_pdf == 0) bond%bin_pdf = -1
-      bond%rcut=Max(bond%rcut,rcbnd_def)
-      Call warning('bond PDF analisys cutoff check: bond%rcut=Max(bond%rcut,rcbnd_def)',.true.)
-      Call warning(40,bond%rcut,0.0_wp,0.0_wp)
-    End If
-    If (la_ang .and. angle%bin_adf == 0) angle%bin_adf = -1
-    If (la_dih .and. dihedral%bin_adf == 0) dihedral%bin_adf = -1
-    If (la_inv .and. inversion%bin_adf == 0) inversion%bin_adf = -1
-
-    ! mxgana by construction equals the largest possible grid
-    ! or 1 (positive) as an indicator for analysis
-
-    mxgana=Max(1,bond%bin_pdf,angle%bin_adf,dihedral%bin_adf,inversion%bin_adf)
-  End If
-
-  ! Sort electrostatics
-
-  If (lelec) Then
-    If (electro%no_elec) lelec = .not.electro%no_elec
-  Else
-    electro%no_elec = .true.
-  End If
-
-  ! reinitialise multipolar electrostatics indicators
-
-  If (electro%no_elec) Then
-    mpoles%max_mpoles = 0
-    mpoles%max_order = 0
-    mpoles%key = POLARISATION_DEFAULT
-  End If
-
-  ! Sort vdw
-
-  If (lvdw) Then
-    If (.not.lrvdw) Then
-      lrvdw = (vdws%cutoff > 1.0e-6_wp)
-      vdws%cutoff = Min(vdws%cutoff,Max(neigh%cutoff,rcut_def))
-      Call warning( &
-        'short-ranged interaction cutoff check: vdws%cutoff = Min(vdws%cutoff,Max(neigh%cutoff,rcut_def))', &
-        .true.)
-      Call warning(40,vdws%cutoff,0.0_wp,0.0_wp)
-    End If
-
-    If (vdws%no_vdw) lvdw = .not.vdws%no_vdw
-  Else
-    vdws%no_vdw = .true.
-  End If
-
-  ! Sort neigh%cutoff as the maximum of all valid cutoffs
-
-  neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, &
-    2.0_wp*rcter+1.0e-6_wp)
-  Call warning( &
-    'DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
-    .true.)
-  Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
-  ! If KIM model requires
-  If (kim_data%padding_neighbours_required) Then
-    If (neigh%cutoff < kim_data%influence_distance) Then
-      neigh%cutoff = kim_data%influence_distance
-    End If
-  End If
-
-  If (comm%idnode == 0) Rewind(files(FILE_CONTROL)%unit_no)
-
-  ! Second Pass.  Sort out cutoffs, cell parameters and Ewald/Poisson Solver precision.
-
-  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
-  If (.not.safe) Go To 20
-
-  carry = .true.
-  Do While (carry)
+    ! Second Pass.  Sort out cutoffs, cell parameters and Ewald/Poisson Solver precision.
 
     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
     If (.not.safe) Go To 20
 
-    Call lower_case(record)
-    Call get_word(record,word)
+    carry = .true.
+    Do While (carry)
 
-    ! record is commented out
+      Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
+      If (.not.safe) Go To 20
 
-    If      (word(1:1) == '#' .or. word(1:1) == ' ') Then
-
-    Else If (lelec .and. ((word(1:5) == 'ewald' .or. word(1:4) == 'spme') .or. &
-      (word(1:5) == 'poiss' .or. word(1:5) == 'psolv'))) Then
-
-      ! Double the kmax size if specified "ewald sum" instead of "spme sum"
-
-      itmp=0
-      If       (word(1:5) == 'ewald') Then
-        itmp=2
-      Else If  (word(1:4) == 'spme' ) Then
-        itmp=1
-      End If
-
+      Call lower_case(record)
       Call get_word(record,word)
 
-      If      (word(1:5) == 'evalu')     Then
+      ! record is commented out
 
-      Else
+      If      (word(1:1) == '#' .or. word(1:1) == ' ') Then
 
-        ! neigh%cutoff MUST be >= rcut_def
+      Else If (lelec .and. ((word(1:5) == 'ewald' .or. word(1:4) == 'spme') .or. &
+        (word(1:5) == 'poiss' .or. word(1:5) == 'psolv'))) Then
 
-        If (neigh%cutoff < rcut_def) neigh%cutoff=rcut_def
+        ! Double the kmax size if specified "ewald sum" instead of "spme sum"
 
-        ! define cut
-
-        cut=neigh%cutoff+1.0e-6_wp
-
-        ! fix cell vectors for image conditions with discontinuities
-
-        If (imcon == 0) Then
-
-          cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
-          cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
-          cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-
-          cell(2) = 0.0_wp
-          cell(3) = 0.0_wp
-          cell(4) = 0.0_wp
-          cell(6) = 0.0_wp
-          cell(7) = 0.0_wp
-          cell(8) = 0.0_wp
-
-        Else If (imcon == 6) Then
-
-          cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-
+        itmp=0
+        If       (word(1:5) == 'ewald') Then
+          itmp=2
+        Else If  (word(1:4) == 'spme' ) Then
+          itmp=1
         End If
 
-        If (itmp > 0) Then ! Ewald or SPME
+        Call get_word(record,word)
 
-          ! Retype ewald as SPME
-          deallocate( ewld )
-          allocate ( ewald_spme_type :: ewld )
+        If      (word(1:5) == 'evalu')     Then
 
+        Else
 
-          select type (ewld)
-          type is (ewald_spme_type)
+          ! neigh%cutoff MUST be >= rcut_def
+
+          If (neigh%cutoff < rcut_def) neigh%cutoff=rcut_def
+
+          ! define cut
+
+          cut=neigh%cutoff+1.0e-6_wp
+
+          ! fix cell vectors for image conditions with discontinuities
+
+          If (imcon == 0) Then
+
+            cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
+            cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
+            cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+            cell(2) = 0.0_wp
+            cell(3) = 0.0_wp
+            cell(4) = 0.0_wp
+            cell(6) = 0.0_wp
+            cell(7) = 0.0_wp
+            cell(8) = 0.0_wp
+
+          Else If (imcon == 6) Then
+
+            cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+          End If
+
+          If (itmp > 0) Then ! Ewald or SPME
 
             ewld%active = .true.
             ! Ewald sum parameters defaults
@@ -4525,1004 +4510,995 @@ Subroutine scan_control(rcter,max_rigid,imcon,imc_n,cell,xhi,yhi,zhi,mxgana, &
             End If
             ewld%bspline%num_splines=2*Ceiling(0.5_wp*Real(ewld%bspline%num_splines,wp))
             ewld%bspline%num_splines=Max(ewld%bspline%num_splines,bspline_local)
-          end select
 
-        Else !If (itmp == 0) Then ! Poisson Solver
+          Else !If (itmp == 0) Then ! Poisson Solver
 
-          pois%active = .true. 
-          Do i=1,4
-            If (word(1:5) == 'delta') Then   ! spacing
+            pois%active = .true. 
+            Do i=1,4
+              If (word(1:5) == 'delta') Then   ! spacing
+                Call get_word(record,word)
+                pois%delta=1.0_wp/Abs(word_2_real(word))
+              End If
+
+              If (word(1:3) == 'eps') Then     ! tolerance
+                Call get_word(record,word)
+                pois%eps=Abs(word_2_real(word))
+              End If
+
+              If (word(1:6) == 'maxits') Then  ! max number of iteration
+                Call get_word(record,word)
+                pois%mxitcg=Nint(Abs(word_2_real(word)))
+              End If
+
+              If (word(1:7) == 'jmaxits') Then ! max number Jacobian iterations
+                Call get_word(record,word)
+                pois%mxitjb=Nint(Abs(word_2_real(word)))
+              End If
+
               Call get_word(record,word)
-              pois%delta=1.0_wp/Abs(word_2_real(word))
-            End If
+            End Do
 
-            If (word(1:3) == 'eps') Then     ! tolerance
-              Call get_word(record,word)
-              pois%eps=Abs(word_2_real(word))
-            End If
+            ! Check for undefined and ill defined parameters
 
-            If (word(1:6) == 'maxits') Then  ! max number of iteration
-              Call get_word(record,word)
-              pois%mxitcg=Nint(Abs(word_2_real(word)))
-            End If
+            ! 0.1 Angs <= delta=1/pois%delta <= Min(3 Angs,neigh%cutoff/3) - 3 grid points within a link-cell
+            If (pois%delta > 10.0_wp)                       pois%delta = 10.0_wp
+            If (pois%delta < 1.0_wp/Min(3.0_wp,cut/3.0_wp)) pois%delta = 1.0_wp/Min(3.0_wp,cut/3.0_wp)
 
-            If (word(1:7) == 'jmaxits') Then ! max number Jacobian iterations
-              Call get_word(record,word)
-              pois%mxitjb=Nint(Abs(word_2_real(word)))
-            End If
+            If (pois%mxitcg == 0) pois%mxitcg = 1000 ! default
+            If (pois%mxitjb == 0) pois%mxitjb = 1000 ! default
 
-            Call get_word(record,word)
-          End Do
+            ! Derive grid spacing represented as a k-vector
 
-          ! Check for undefined and ill defined parameters
+            Call dcell(cell,celprp)
+            pois%grid_dimensions = Nint(celprp(7:9)*pois%delta)
 
-          ! 0.1 Angs <= delta=1/pois%delta <= Min(3 Angs,neigh%cutoff/3) - 3 grid points within a link-cell
-          If (pois%delta > 10.0_wp)                       pois%delta = 10.0_wp
-          If (pois%delta < 1.0_wp/Min(3.0_wp,cut/3.0_wp)) pois%delta = 1.0_wp/Min(3.0_wp,cut/3.0_wp)
+            ! Define stencil halo size (7) as a spline order (7/2==3)
 
-          If (pois%mxitcg == 0) pois%mxitcg = 1000 ! default
-          If (pois%mxitjb == 0) pois%mxitjb = 1000 ! default
+            pois%halo_size = 3
 
-          ! Derive grid spacing represented as a k-vector
-
-          Call dcell(cell,celprp)
-          pois%grid_dimensions = Nint(celprp(7:9)*pois%delta)
-
-          ! Define stencil halo size (7) as a spline order (7/2==3)
-
-          pois%halo_size = 3
+          End If
 
         End If
 
-      End If
+      Else If (word(1:6) == 'finish') Then
 
-    Else If (word(1:6) == 'finish') Then
+        ! Sort vdws%cutoff
 
-      ! Sort vdws%cutoff
-
-      If ((.not.lrvdw) .and. lvdw) Then
-        If (lrcut) Then
-          lrvdw=.true.
-          vdws%cutoff=neigh%cutoff
-        Else
-          Call error(402)
+        If ((.not.lrvdw) .and. lvdw) Then
+          If (lrcut) Then
+            lrvdw=.true.
+            vdws%cutoff=neigh%cutoff
+          Else
+            Call error(402)
+          End If
         End If
-      End If
 
-      ! Sort met%rcut
+        ! Sort met%rcut
 
-      If ((.not.lrmet) .and. lmet) Then
-        If (lrcut .or. lrvdw) Then
-          lrmet=.true.
-          met%rcut=Max(neigh%cutoff,vdws%cutoff)
-          Call warning('metal interaction cutoff check: met%rcut=Max(neigh%cutoff,vdws%cutoff)',.true.)
-          Call warning(40,met%rcut,0.0_wp,0.0_wp)
-        Else
-          Call error(382)
+        If ((.not.lrmet) .and. lmet) Then
+          If (lrcut .or. lrvdw) Then
+            lrmet=.true.
+            met%rcut=Max(neigh%cutoff,vdws%cutoff)
+            Call warning('metal interaction cutoff check: met%rcut=Max(neigh%cutoff,vdws%cutoff)',.true.)
+            Call warning(40,met%rcut,0.0_wp,0.0_wp)
+          Else
+            Call error(382)
+          End If
         End If
-      End If
 
-      ! Sort neigh%cutoff by a reset sequence
-      ! neigh%cutoff may be >= rcut_def but lrcut may still be .false.
-      ! ewld%bspline = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
+        ! Sort neigh%cutoff by a reset sequence
+        ! neigh%cutoff may be >= rcut_def but lrcut may still be .false.
+        ! ewld%bspline = 0 is an indicator for no SPME or Poisson Solver electrostatics in CONTROL
 
-      If (ewld%active .or. pois%active) Then ! SPME or Poisson Solver
+        If (ewld%active .or. pois%active) Then ! SPME or Poisson Solver
 
-        ! (1) to Max(neigh%cutoff,Max(cell_width*ewld%bspline/kmax),ewld%bspline*delta) satisfying SPME b-splines
-        ! propagation width or the Poisson Solver extra halo relation to cutoff
-        ! delta=1/ewld%alpha is the grid spacing and ewld%bspline is the grid length needed for the
-        ! 3 haloed stencil of differentiation
+          ! (1) to Max(neigh%cutoff,Max(cell_width*ewld%bspline/kmax),ewld%bspline*delta) satisfying SPME b-splines
+          ! propagation width or the Poisson Solver extra halo relation to cutoff
+          ! delta=1/ewld%alpha is the grid spacing and ewld%bspline is the grid length needed for the
+          ! 3 haloed stencil of differentiation
 
-        If (.not.lrcut) Then
-          lrcut=.true.
+          If (.not.lrcut) Then
+            lrcut=.true.
 
-          Call dcell(cell,celprp)
-          if (ewld%active) then
-            select type ( ewld )
-            type is ( ewald_spme_type )
-
+            Call dcell(cell,celprp)
+            if (ewld%active) then
               neigh%cutoff=Max(neigh%cutoff, maxval(&
                 & celprp(7:9)*real(ewld%bspline%num_splines,wp)/real(ewld%kspace%k_vec_dim_cont(1:3),wp)))
-            class default
 
-              write (message,'(a)') 'Fatal type error in scan_control'
-              call error(0,message)
-            end select
+            else if (pois%active) then
 
-          else if (pois%active) then
+              neigh%cutoff=Max(neigh%cutoff, &
+                & maxval(celprp(7:9)*real(pois%halo_size,wp)/real(pois%grid_dimensions(1:3),wp)))
 
-            neigh%cutoff=Max(neigh%cutoff, &
-              & maxval(celprp(7:9)*real(pois%halo_size,wp)/real(pois%grid_dimensions(1:3),wp)))
+            end if
 
-          end if
+          End If
 
-        End If
+          ! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
 
-        ! Reset vdws%cutoff, met%rcut and neigh%cutoff when only tersoff potentials are opted for
-
-        If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. l_n_r) Then
-          vdws%cutoff=0.0_wp
-          met%rcut=0.0_wp
-          If (.not.flow%strict) Then
-            If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-              neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
-            Else
-              neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. l_n_r) Then
+            vdws%cutoff=0.0_wp
+            met%rcut=0.0_wp
+            If (.not.flow%strict) Then
+              If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
+                neigh%cutoff=2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp
+              Else
+                neigh%cutoff=Max(neigh%cutoff,2.0_wp*Max(bond%rcut,rcter)+1.0e-6_wp)
+              End If
             End If
           End If
-        End If
 
-      Else
+        Else
 
-        ! no SPME electrostatics is specified but neigh%cutoff is still needed for
-        ! domain decompositioning and link-celling
-        ! It is needed for the rest of the types of electrostatics
+          ! no SPME electrostatics is specified but neigh%cutoff is still needed for
+          ! domain decompositioning and link-celling
+          ! It is needed for the rest of the types of electrostatics
 
-        If ((.not.lrcut) .and. lelec) Call error(382)
+          If ((.not.lrcut) .and. lelec) Call error(382)
 
-        ! So there is neigh%cutoff and some kind of electrostatics(-: or neither
+          ! So there is neigh%cutoff and some kind of electrostatics(-: or neither
 
-        ! Reset neigh%cutoff to something sensible if sensible is an option
+          ! Reset neigh%cutoff to something sensible if sensible is an option
 
-        If ( ((.not.lrcut) .or. (.not.flow%strict)) .and. &
-          (lrvdw .or. lrmet .or. lter .or. kim_data%active) ) Then
-          lrcut=.true.
-          If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-            neigh%cutoff=Max(vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, &
-              2.0_wp*rcter+1.0e-6_wp)
-            Call warning('DD cutoff check: neigh%cutoff = Max(vdws%cutoff,'// &
-              'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
-              .true.)
-            Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
-          Else
-            neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut, &
-              kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp)
-            Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,'// &
-              'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
-              .true.)
-            Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
-          End If
-        End If
-
-        ! Reset vdws%cutoff and met%rcut when only tersoff potentials are opted for and
-        ! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
-
-        If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. l_n_r .and. &
-          kim_data%active) Then
-          vdws%cutoff=0.0_wp
-          met%rcut=0.0_wp
-          If (.not.flow%strict) Then
+          If ( ((.not.lrcut) .or. (.not.flow%strict)) .and. &
+            (lrvdw .or. lrmet .or. lter .or. kim_data%active) ) Then
             lrcut=.true.
             If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
-              neigh%cutoff=Max(bond%rcut,2.0_wp*rcter+1.0e-6_wp)
-              Call warning('DD cutoff check: neigh%cutoff = Max('// &
-                'bond%rcut,2.0_wp*rcter+1.0e-6_wp',.true.)
+              neigh%cutoff=Max(vdws%cutoff,met%rcut,kim_data%cutoff,bond%rcut, &
+                2.0_wp*rcter+1.0e-6_wp)
+              Call warning('DD cutoff check: neigh%cutoff = Max(vdws%cutoff,'// &
+                'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+                .true.)
               Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
             Else
-              neigh%cutoff=Max(neigh%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp)
-              Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff'// &
-                'bond%rcut,2.0_wp*rcter+1.0e-6_wp',.true.)
+              neigh%cutoff=Max(neigh%cutoff,vdws%cutoff,met%rcut, &
+                kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp)
+              Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff,vdws%cutoff,'// &
+                'met%rcut,kim_data%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp', &
+                .true.)
               Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
             End If
           End If
+
+          ! Reset vdws%cutoff and met%rcut when only tersoff potentials are opted for and
+          ! possibly reset neigh%cutoff to 2.0_wp*rcter+1.0e-6_wp (leaving room for failure)
+
+          If (lter .and. electro%no_elec .and. vdws%no_vdw .and. l_n_m .and. l_n_r .and. &
+            kim_data%active) Then
+            vdws%cutoff=0.0_wp
+            met%rcut=0.0_wp
+            If (.not.flow%strict) Then
+              lrcut=.true.
+              If (max_rigid == 0) Then ! compensate for Max(Size(RBs))>vdws%cutoff
+                neigh%cutoff=Max(bond%rcut,2.0_wp*rcter+1.0e-6_wp)
+                Call warning('DD cutoff check: neigh%cutoff = Max('// &
+                  'bond%rcut,2.0_wp*rcter+1.0e-6_wp',.true.)
+                Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
+              Else
+                neigh%cutoff=Max(neigh%cutoff,bond%rcut,2.0_wp*rcter+1.0e-6_wp)
+                Call warning('DD cutoff check: neigh%cutoff = Max(neigh%cutoff'// &
+                  'bond%rcut,2.0_wp*rcter+1.0e-6_wp',.true.)
+                Call warning(40,neigh%cutoff,0.0_wp,0.0_wp)
+              End If
+            End If
+          End If
+
+          ! neigh%cutoff must exist
+
+          If (.not.lrcut) Call error(382)
+
+          ! Set cutoff^2 now that cutoff won't change
+          neigh%cutoff_2 = neigh%cutoff**2
+
+          ! define cut
+
+          cut=neigh%cutoff+1.0e-6_wp
+
+          ! fix cell vectors for image conditions with discontinuities
+
+          If (imcon == 0) Then
+
+            cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
+            cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
+            cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+            cell(2) = 0.0_wp
+            cell(3) = 0.0_wp
+            cell(4) = 0.0_wp
+            cell(6) = 0.0_wp
+            cell(7) = 0.0_wp
+            cell(8) = 0.0_wp
+
+          Else If (imcon == 6) Then
+
+            cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
+
+          End If
+
         End If
 
-        ! neigh%cutoff must exist
+        ! Sort met%rcut=neigh%cutoff if metal interactions are in play, even if
+        ! they are defined by EAM since met%rcut can be /= neigh%cutoff in such
+        ! instances, this can break the NLAST check in metal_ld_set_halo
 
-        If (.not.lrcut) Call error(382)
-
-        ! Set cutoff^2 now that cutoff won't change
-        neigh%cutoff_2 = neigh%cutoff**2
-
-        ! define cut
-
-        cut=neigh%cutoff+1.0e-6_wp
-
-        ! fix cell vectors for image conditions with discontinuities
-
-        If (imcon == 0) Then
-
-          cell(1) = Max(2.0_wp*xhi+cut,3.0_wp*cut,cell(1))
-          cell(5) = Max(2.0_wp*yhi+cut,3.0_wp*cut,cell(5))
-          cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-
-          cell(2) = 0.0_wp
-          cell(3) = 0.0_wp
-          cell(4) = 0.0_wp
-          cell(6) = 0.0_wp
-          cell(7) = 0.0_wp
-          cell(8) = 0.0_wp
-
-        Else If (imcon == 6) Then
-
-          cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
-
+        If (lmet) Then
+          met%rcut = neigh%cutoff
+          Call warning('metal interactions cutoff check: met%rcut = neigh%cutoff',.true.)
+          Call warning(40,met%rcut,0.0_wp,0.0_wp)
         End If
 
+        ! Sort vdws%cutoff=neigh%cutoff if VDW interactions are in play
+
+        If (lvdw .and. vdws%cutoff > neigh%cutoff) Then
+          vdws%cutoff = neigh%cutoff
+          Call warning('short-ranged interactions cutoff check: vdws%cutoff = neigh%cutoff',.true.)
+          Call warning(40,vdws%cutoff,0.0_wp,0.0_wp)
+        End If
+
+        ! Sort rbin as now neigh%cutoff is already pinned down
+
+        If (rdf%rbin < 1.0e-05_wp .or. rdf%rbin > neigh%cutoff/4.0_wp) Then
+          rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)
+          Call warning('bin size cutoff check: rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)',.true.)
+          Call warning(40,rdf%rbin,0.0_wp,0.0_wp)
+        End If
+
+        carry=.false.
+
       End If
 
-      ! Sort met%rcut=neigh%cutoff if metal interactions are in play, even if
-      ! they are defined by EAM since met%rcut can be /= neigh%cutoff in such
-      ! instances, this can break the NLAST check in metal_ld_set_halo
+    End Do
 
-      If (lmet) Then
-        met%rcut = neigh%cutoff
-        Call warning('metal interactions cutoff check: met%rcut = neigh%cutoff',.true.)
-        Call warning(40,met%rcut,0.0_wp,0.0_wp)
-      End If
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
 
-      ! Sort vdws%cutoff=neigh%cutoff if VDW interactions are in play
+    ! When not having dynamics or prepared to terminate
+    ! expanding and not running the small system prepare to exit gracefully
 
-      If (lvdw .and. vdws%cutoff > neigh%cutoff) Then
-        vdws%cutoff = neigh%cutoff
-        Call warning('short-ranged interactions cutoff check: vdws%cutoff = neigh%cutoff',.true.)
-        Call warning(40,vdws%cutoff,0.0_wp,0.0_wp)
-      End If
+    devel%l_trm = (l_exp .and. nstrun == 0)
+    If (((.not.flow%simulation) .or. devel%l_trm) .and. flow%reset_padding) neigh%padding=0.0_wp
 
-      ! Sort rbin as now neigh%cutoff is already pinned down
+    Return
 
-      If (rdf%rbin < 1.0e-05_wp .or. rdf%rbin > neigh%cutoff/4.0_wp) Then
-        rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)
-        Call warning('bin size cutoff check: rdf%rbin = Min(rbin_def,neigh%cutoff/4.0_wp)',.true.)
-        Call warning(40,rdf%rbin,0.0_wp,0.0_wp)
-      End If
+    ! CONTROL file does not exist
 
-      carry=.false.
+10  Continue
+    Call error(126)
+    Return
 
+    ! No finish in CONTROL file or unexpected break
+
+20  Continue
+    Call error(17)
+
+  End Subroutine scan_control
+
+  Subroutine scan_control_pre(imc_n,dvar,files,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for scanning the imc_n & dvar options in the
+    ! control file
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2014
+    ! contrib   - a.m.elena february 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
+    !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Integer,           Intent( InOut ) :: imc_n
+    Real( Kind = wp ), Intent(   Out ) :: dvar
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( comms_type ), Intent( InOut ) :: comm
+
+    Logical                :: carry,safe
+    Character( Len = 200 ) :: record
+    Character( Len = 40  ) :: word
+
+    safe   = .true.  ! all is safe
+
+    ! density variation parameter default
+
+    dvar = 1.0_wp
+
+    If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
+    Call gcheck(comm,safe,"enforce")
+    If (.not.safe) Then
+      Go To 10
+    Else
+      If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
     End If
 
-  End Do
-
-  If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
-
-  ! When not having dynamics or prepared to terminate
-  ! expanding and not running the small system prepare to exit gracefully
-
-  devel%l_trm = (l_exp .and. nstrun == 0)
-  If (((.not.flow%simulation) .or. devel%l_trm) .and. flow%reset_padding) neigh%padding=0.0_wp
-
-  Return
-
-  ! CONTROL file does not exist
-
-  10 Continue
-  Call error(126)
-  Return
-
-  ! No finish in CONTROL file or unexpected break
-
-  20 Continue
-  Call error(17)
-
-End Subroutine scan_control
-
-Subroutine scan_control_pre(imc_n,dvar,files,comm)
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for scanning the imc_n & dvar options in the
-  ! control file
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov february 2014
-  ! contrib   - a.m.elena february 2017
-  ! refactoring:
-  !           - a.m.elena march-october 2018
-  !           - j.madge march-october 2018
-  !           - a.b.g.chalk march-october 2018
-  !           - i.scivetti march-october 2018
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Integer,           Intent( InOut ) :: imc_n
-  Real( Kind = wp ), Intent(   Out ) :: dvar
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( comms_type ), Intent( InOut ) :: comm
-
-  Logical                :: carry,safe
-  Character( Len = 200 ) :: record
-  Character( Len = 40  ) :: word
-
-  safe   = .true.  ! all is safe
-
-  ! density variation parameter default
-
-  dvar = 1.0_wp
-
-  If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
-  Call gcheck(comm,safe,"enforce")
-  If (.not.safe) Then
-    Go To 10
-  Else
-    If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
-  End If
-
-  ! Read TITLE record
-
-  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
-  If (.not.safe) Go To 20
-
-  carry = .true.
-  Do While (carry)
+    ! Read TITLE record
 
     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
     If (.not.safe) Go To 20
 
-    Call lower_case(record)
-    Call get_word(record,word)
+    carry = .true.
+    Do While (carry)
 
-    ! read density variation option
-    ! this is really a pre-scan in order to get the MD box dimensions
-    ! from scan_config giving it failure estimates for when reading
+      Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
+      If (.not.safe) Go To 20
 
-    If      (word(1:7) == 'densvar') Then
-
+      Call lower_case(record)
       Call get_word(record,word)
-      dvar = Abs(word_2_real(word))
-      dvar = 1.0_wp + Abs(dvar)/100.0_wp
 
-      ! read slab option
-      ! limiting DD slicing in z direction to 2 for load balancing purposes
+      ! read density variation option
       ! this is really a pre-scan in order to get the MD box dimensions
-      ! from scan_config before the option is read again in scan_control
+      ! from scan_config giving it failure estimates for when reading
 
-    Else If (word(1:4) == 'slab') Then
+      If      (word(1:7) == 'densvar') Then
 
-      imc_n=6
+        Call get_word(record,word)
+        dvar = Abs(word_2_real(word))
+        dvar = 1.0_wp + Abs(dvar)/100.0_wp
+
+        ! read slab option
+        ! limiting DD slicing in z direction to 2 for load balancing purposes
+        ! this is really a pre-scan in order to get the MD box dimensions
+        ! from scan_config before the option is read again in scan_control
+
+      Else If (word(1:4) == 'slab') Then
+
+        imc_n=6
+
+        ! io options
+
+        ! read finish
+
+      Else If (word(1:6) == 'finish') Then
+
+        carry=.false.
+
+      End If
+
+    End Do
+
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
+
+    Return
+
+    ! CONTROL file does not exist
+
+10  Continue
+    Call error(126)
+    Return
+
+    ! No finish in CONTROL file or unexpected break
+
+20  Continue
+    Call error(17)
+
+  End Subroutine scan_control_pre
+
+  Subroutine scan_control_io(io,netcdf,files,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for scanning the I/O options in the control file
+    !
+    ! copyright - daresbury laboratory
+    ! author    - i.t.todorov february 2014
+    ! amended   - i.j.bush october 2010
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
+    !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( io_type ), Intent( InOut ) :: io
+    Type( netcdf_param ), Intent( InOut ) :: netcdf
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( comms_type ), Intent( InOut ) :: comm
+
+    Logical                :: carry,safe
+    Character( Len = 200 ) :: record,record1
+    Character( Len = 40  ) :: word,word1
+    Real( Kind = wp )      :: tmp
+
+    ! Some parameters and variables needed for dealing with I/O options
+
+    Integer            :: io_read,io_write,itmp, err_r
+    Logical            :: l_io_r,l_io_w,l_tmp
+    Integer, Parameter :: MAX_BATCH_SIZE  = 10000000 !~1GB memory per writer
+    Integer, Parameter :: MAX_BUFFER_SIZE =   100000 !~1GB memory per node/domain
+
+    Character( Len = 256 ) :: message
+
+
+    ! flags
+
+    l_io_r = .false. ! io read  not specified
+    l_io_w = .false. ! io write not specified
+
+    safe   = .true.  ! all is safe
+
+    ! Open the simulation input file
+
+    If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
+    Call gcheck(comm,safe,"enforce")
+    If (.not.safe) Then
+      Go To 10
+    Else
+      If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
+    End If
+
+    ! Read TITLE record
+
+    Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
+    If (.not.safe) Go To 20
+
+    carry = .true.
+    Do While (carry)
+
+      Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
+      If (.not.safe) Go To 20
+
+      Call lower_case(record)
+      Call get_word(record,word)
 
       ! io options
 
-      ! read finish
+      If      (word(1:2) == 'io' ) Then
 
-    Else If (word(1:6) == 'finish') Then
-
-      carry=.false.
-
-    End If
-
-  End Do
-
-  If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
-
-  Return
-
-  ! CONTROL file does not exist
-
-  10 Continue
-  Call error(126)
-  Return
-
-  ! No finish in CONTROL file or unexpected break
-
-  20 Continue
-  Call error(17)
-
-End Subroutine scan_control_pre
-
-Subroutine scan_control_io(io,netcdf,files,comm)
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for scanning the I/O options in the control file
-  !
-  ! copyright - daresbury laboratory
-  ! author    - i.t.todorov february 2014
-  ! amended   - i.j.bush october 2010
-  ! refactoring:
-  !           - a.m.elena march-october 2018
-  !           - j.madge march-october 2018
-  !           - a.b.g.chalk march-october 2018
-  !           - i.scivetti march-october 2018
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Type( io_type ), Intent( InOut ) :: io
-  Type( netcdf_param ), Intent( InOut ) :: netcdf
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( comms_type ), Intent( InOut ) :: comm
-
-  Logical                :: carry,safe
-  Character( Len = 200 ) :: record,record1
-  Character( Len = 40  ) :: word,word1
-  Real( Kind = wp )      :: tmp
-
-  ! Some parameters and variables needed for dealing with I/O options
-
-  Integer            :: io_read,io_write,itmp, err_r
-  Logical            :: l_io_r,l_io_w,l_tmp
-  Integer, Parameter :: MAX_BATCH_SIZE  = 10000000 !~1GB memory per writer
-  Integer, Parameter :: MAX_BUFFER_SIZE =   100000 !~1GB memory per node/domain
-
-  Character( Len = 256 ) :: message
-
-
-  ! flags
-
-  l_io_r = .false. ! io read  not specified
-  l_io_w = .false. ! io write not specified
-
-  safe   = .true.  ! all is safe
-
-  ! Open the simulation input file
-
-  If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
-  Call gcheck(comm,safe,"enforce")
-  If (.not.safe) Then
-    Go To 10
-  Else
-    If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
-  End If
-
-  ! Read TITLE record
-
-  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
-  If (.not.safe) Go To 20
-
-  carry = .true.
-  Do While (carry)
-
-    Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
-    If (.not.safe) Go To 20
-
-    Call lower_case(record)
-    Call get_word(record,word)
-
-    ! io options
-
-    If      (word(1:2) == 'io' ) Then
-
-      Call get_word( record, word )
-
-      If      (word(1:4) == 'read') Then
-
-        l_io_r  = .true.
-        io_read = IO_READ_MPIIO
-
-        ! get read method
-
-        Call info('',.true.)
-        word1=' ' ; word1=word
         Call get_word( record, word )
-        If      ( word( 1:5 ) == 'mpiio'  ) Then
+
+        If      (word(1:4) == 'read') Then
+
+          l_io_r  = .true.
           io_read = IO_READ_MPIIO
-          Call info('I/O read method: parallel by using MPI-I/O',.true.)
-        Else If ( word( 1:6 ) == 'direct' ) Then
-          io_read = IO_READ_DIRECT
-          Call info('I/O read method: parallel by using direct access',.true.)
-        Else If ( word( 1:6 ) == 'netcdf' ) Then
-          io_read = IO_READ_NETCDF
-          Call info('I/O read method: parallel by using netCDF',.true.)
-        Else If ( word( 1:6 ) == 'master' ) Then
-          io_read = IO_READ_MASTER
-          Call info('I/O read method: serial by using a single master process',.true.)
-        Else
-          Call strip_blanks(record)
-          Write(message,'(4a)') 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
-          Call info(message,.true.)
-          Call error(3)
-        End If
 
-        Call io_set_parameters(io, user_method_read = io_read )
+          ! get read method
 
-        ! get number of readers
-        ! 1 <= readers <= mxnode or be wise, default = 8 or 1 when master
-        ! Note set the default number of readers to 1/4 the number of writers using some (limited)
-        ! empirical evidence from HECToR
-
-        If      (io_read == IO_READ_MPIIO  .or. &
-          io_read == IO_READ_DIRECT .or. &
-          io_read == IO_READ_NETCDF) Then
-
+          Call info('',.true.)
+          word1=' ' ; word1=word
           Call get_word( record, word )
-          itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
-          If (itmp == 0) Then
-            tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-            itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
-            Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-              itmp = itmp - 1
-            End Do
-            Write(message,'(a,i10)') 'I/O readers (assumed) ',itmp
-            Call info(message,.true.)
+          If      ( word( 1:5 ) == 'mpiio'  ) Then
+            io_read = IO_READ_MPIIO
+            Call info('I/O read method: parallel by using MPI-I/O',.true.)
+          Else If ( word( 1:6 ) == 'direct' ) Then
+            io_read = IO_READ_DIRECT
+            Call info('I/O read method: parallel by using direct access',.true.)
+          Else If ( word( 1:6 ) == 'netcdf' ) Then
+            io_read = IO_READ_NETCDF
+            Call info('I/O read method: parallel by using netCDF',.true.)
+          Else If ( word( 1:6 ) == 'master' ) Then
+            io_read = IO_READ_MASTER
+            Call info('I/O read method: serial by using a single master process',.true.)
           Else
-            If (itmp > comm%mxnode) Then
+            Call strip_blanks(record)
+            Write(message,'(4a)') 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
+            Call info(message,.true.)
+            Call error(3)
+          End If
+
+          Call io_set_parameters(io, user_method_read = io_read )
+
+          ! get number of readers
+          ! 1 <= readers <= mxnode or be wise, default = 8 or 1 when master
+          ! Note set the default number of readers to 1/4 the number of writers using some (limited)
+          ! empirical evidence from HECToR
+
+          If      (io_read == IO_READ_MPIIO  .or. &
+            io_read == IO_READ_DIRECT .or. &
+            io_read == IO_READ_NETCDF) Then
+
+            Call get_word( record, word )
+            itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
+            If (itmp == 0) Then
               tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
               itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
               Do While ( Mod( comm%mxnode, itmp ) /= 0 )
                 itmp = itmp - 1
               End Do
-              Write(message,'(a,i10)') 'I/O readers (enforced) ',itmp
+              Write(message,'(a,i10)') 'I/O readers (assumed) ',itmp
               Call info(message,.true.)
             Else
-              Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-                itmp = itmp - 1
-              End Do
-              Write(message,'(a,i10)') 'I/O readers set to ',itmp
+              If (itmp > comm%mxnode) Then
+                tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+                itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
+                Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+                  itmp = itmp - 1
+                End Do
+                Write(message,'(a,i10)') 'I/O readers (enforced) ',itmp
+                Call info(message,.true.)
+              Else
+                Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+                  itmp = itmp - 1
+                End Do
+                Write(message,'(a,i10)') 'I/O readers set to ',itmp
+                Call info(message,.true.)
+              End If
+            End If
+
+            ! the number of readers is now ready to set
+
+            Call io_set_parameters(io, user_n_io_procs_read = itmp )
+
+            ! get read batch size
+            ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
+            ! Note zero or negative values indicate use the default
+
+            Call get_word( record, word )
+            itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
+            If (itmp == 0) Then
+              Call io_get_parameters(io, user_batch_size_read = itmp )
+              Write(message,'(a,i10)') 'I/O read batch size (assumed) ', itmp
+              Call info(message,.true.)
+            Else
+              itmp = Min( itmp, MAX_BATCH_SIZE )
+              Call io_set_parameters(io, user_batch_size_read = itmp )
+              Write(message,'(a,i10)') 'I/O read batch size set to ', itmp
               Call info(message,.true.)
             End If
+          Else If (io_read == IO_READ_MASTER) Then
+            Write(message,'(a,i10)') 'I/O readers (enforced) ', 1
+            Call info(message,.true.)
+          Else
+            tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+            itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
+            Write(message,'(a,i10)') 'I/O readers (enforced) ', itmp
+            Call info(message,.true.)
+            ! the number of readers is now ready to set
+            Call io_set_parameters(io, user_n_io_procs_read = itmp )
           End If
 
-          ! the number of readers is now ready to set
-
-          Call io_set_parameters(io, user_n_io_procs_read = itmp )
-
-          ! get read batch size
-          ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
+          ! get read buffer size
+          ! 100 <= buffer <= MAX_BUFFER_SIZE, default 20000
           ! Note zero or negative values indicate use the default
 
           Call get_word( record, word )
           itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
           If (itmp == 0) Then
-            Call io_get_parameters(io, user_batch_size_read = itmp )
-            Write(message,'(a,i10)') 'I/O read batch size (assumed) ', itmp
+            Call io_get_parameters(io, user_buffer_size_read = itmp )
+            Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
             Call info(message,.true.)
           Else
-            itmp = Min( itmp, MAX_BATCH_SIZE )
-            Call io_set_parameters(io, user_batch_size_read = itmp )
-            Write(message,'(a,i10)') 'I/O read batch size set to ', itmp
+            itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
+            Call io_set_parameters(io, user_buffer_size_read = itmp )
+            Write(message,'(a,i10)') 'I/O read buffer size set to ',itmp
             Call info(message,.true.)
           End If
-        Else If (io_read == IO_READ_MASTER) Then
-          Write(message,'(a,i10)') 'I/O readers (enforced) ', 1
-          Call info(message,.true.)
-        Else
-          tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-          itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
-          Write(message,'(a,i10)') 'I/O readers (enforced) ', itmp
-          Call info(message,.true.)
-          ! the number of readers is now ready to set
-          Call io_set_parameters(io, user_n_io_procs_read = itmp )
-        End If
 
-        ! get read buffer size
-        ! 100 <= buffer <= MAX_BUFFER_SIZE, default 20000
-        ! Note zero or negative values indicate use the default
+          ! switch error checking flag for reading
 
-        Call get_word( record, word )
-        itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
-        If (itmp == 0) Then
-          Call io_get_parameters(io, user_buffer_size_read = itmp )
-          Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
-          Call info(message,.true.)
-        Else
-          itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
-          Call io_set_parameters(io, user_buffer_size_read = itmp )
-          Write(message,'(a,i10)') 'I/O read buffer size set to ',itmp
-          Call info(message,.true.)
-        End If
-
-        ! switch error checking flag for reading
-
-        If (io_read /= IO_READ_MASTER) Then
-          Call get_word( record, word )
-          l_tmp = ( word( 1:1 ) == 'Y' .or. word( 1:1 ) == 'y' )
-          If (.not.l_tmp) Then
-            Call info('I/O parallel read error checking off',.true.)
-          Else
-            Call info('I/O parallel read error checking on',.true.)
+          If (io_read /= IO_READ_MASTER) Then
+            Call get_word( record, word )
+            l_tmp = ( word( 1:1 ) == 'Y' .or. word( 1:1 ) == 'y' )
+            If (.not.l_tmp) Then
+              Call info('I/O parallel read error checking off',.true.)
+            Else
+              Call info('I/O parallel read error checking on',.true.)
+            End If
+            Call io_set_parameters(io, user_error_check = l_tmp )
           End If
-          Call io_set_parameters(io, user_error_check = l_tmp )
-        End If
 
-      Else If (word(1:4) == 'writ'  .or. &
-        word(1:5) == 'mpiio' .or. word(1:6) == 'direct' .or. word(1:6) == 'netcdf' .or. word(1:6) == 'master') Then
+        Else If (word(1:4) == 'writ'  .or. &
+          word(1:5) == 'mpiio' .or. word(1:6) == 'direct' .or. word(1:6) == 'netcdf' .or. word(1:6) == 'master') Then
 
-        l_io_w   = .true.
-        io_write = IO_WRITE_SORTED_MPIIO
-
-        ! for backwards compatibility
-        ! see the second line of the "Else If" above
-
-        If (word(1:4) /= 'writ') Then
-          word1=' ' ; word1='write'
-        Else
-          word1=' ' ; word1=word
-          Call get_word( record, word )
-        End If
-
-        ! get write method
-
-        Call info('',.true.)
-        If      ( word( 1:5 ) == 'mpiio'  ) Then
+          l_io_w   = .true.
           io_write = IO_WRITE_SORTED_MPIIO
-          Call info('I/O write method: parallel by using MPI-I/O',.true.)
-        Else If ( word( 1:6 ) == 'direct' ) Then
-          io_write = IO_WRITE_SORTED_DIRECT
-          Call info('I/O write method: parallel by using direct access',.true.)
-          Call warning('in parallel this I/O write method has portability issues',.true.)
-        Else If ( word( 1:6 ) == 'netcdf' ) Then
-          io_write = IO_WRITE_SORTED_NETCDF
-          Call get_word( record, word ) ! Check if the user wants the "amber-like/32-bit" format
-          If ( word( 1:5 ) == 'amber' .or. word( 1:5 ) == '32bit' ) Then
-            ! Use 32-bit quantities in output for real numbers
-            If (comm%idnode == 0) &
-              Call info('I/O write method: parallel by using netCDF in the amber-like/32-bit format',.true.)
-            Call io_nc_set_real_precision( sp, netcdf, err_r )
+
+          ! for backwards compatibility
+          ! see the second line of the "Else If" above
+
+          If (word(1:4) /= 'writ') Then
+            word1=' ' ; word1='write'
           Else
-            ! Use 64-bit quantities in output for real numbers
-            Call info('I/O write method: parallel by using netCDF in 64-bit format',.true.)
-            Call io_nc_set_real_precision( dp, netcdf, err_r )
-            record1=' '
-            record1=word(1:Len_Trim(word)+1) // record ! back up
-            record=record1
+            word1=' ' ; word1=word
+            Call get_word( record, word )
           End If
-        Else If ( word( 1:6 ) == 'master' ) Then
-          io_write = IO_WRITE_SORTED_MASTER
-          Call info('I/O write method: serial by using a single master process',.true.)
-        Else
-          Call strip_blanks(record)
-          Write(message,'(4a)') 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
-          Call info(message,.true.)
-          Call error(3)
-        End If
 
-        ! get write type
+          ! get write method
 
-        Call get_word( record, word )
-        If      ( word( 1:6 ) == 'unsort' ) Then
-          Call info('I/O write type: data sorting off',.true.)
-          Select Case( io_write )
-          Case( IO_WRITE_SORTED_MPIIO  )
-            io_write = IO_WRITE_UNSORTED_MPIIO
-          Case( IO_WRITE_SORTED_DIRECT )
-            io_write = IO_WRITE_UNSORTED_DIRECT
-          Case( IO_WRITE_SORTED_MASTER )
-            io_write = IO_WRITE_UNSORTED_MASTER
-          End Select
-        Else
-          If ( word( 1:6 ) == 'sorted' ) Then
-            Call info('I/O write type: data sorting on',.true.)
+          Call info('',.true.)
+          If      ( word( 1:5 ) == 'mpiio'  ) Then
+            io_write = IO_WRITE_SORTED_MPIIO
+            Call info('I/O write method: parallel by using MPI-I/O',.true.)
+          Else If ( word( 1:6 ) == 'direct' ) Then
+            io_write = IO_WRITE_SORTED_DIRECT
+            Call info('I/O write method: parallel by using direct access',.true.)
+            Call warning('in parallel this I/O write method has portability issues',.true.)
+          Else If ( word( 1:6 ) == 'netcdf' ) Then
+            io_write = IO_WRITE_SORTED_NETCDF
+            Call get_word( record, word ) ! Check if the user wants the "amber-like/32-bit" format
+            If ( word( 1:5 ) == 'amber' .or. word( 1:5 ) == '32bit' ) Then
+              ! Use 32-bit quantities in output for real numbers
+              If (comm%idnode == 0) &
+                Call info('I/O write method: parallel by using netCDF in the amber-like/32-bit format',.true.)
+              Call io_nc_set_real_precision( sp, netcdf, err_r )
+            Else
+              ! Use 64-bit quantities in output for real numbers
+              Call info('I/O write method: parallel by using netCDF in 64-bit format',.true.)
+              Call io_nc_set_real_precision( dp, netcdf, err_r )
+              record1=' '
+              record1=word(1:Len_Trim(word)+1) // record ! back up
+              record=record1
+            End If
+          Else If ( word( 1:6 ) == 'master' ) Then
+            io_write = IO_WRITE_SORTED_MASTER
+            Call info('I/O write method: serial by using a single master process',.true.)
           Else
-            record1=' '
-            record1=word(1:Len_Trim(word)+1) // record ! back up
-            record=record1
-            Call info('I/O write type: data sorting on (assumed)',.true.)
+            Call strip_blanks(record)
+            Write(message,'(4a)') 'io ',word1(1:Len_Trim(word1)+1),word(1:Len_Trim(word)+1),record
+            Call info(message,.true.)
+            Call error(3)
           End If
-        End If
 
-        ! the write method and type are now ready to set
-
-        Call io_set_parameters(io, user_method_write = io_write )
-
-        ! get number of writers
-        ! 1 <= writers <= mxnode or be wise, default = 8 or 1 when master
-
-        If      (io_write == IO_WRITE_SORTED_MPIIO  .or. &
-          io_write == IO_WRITE_SORTED_DIRECT .or. &
-          io_write == IO_WRITE_SORTED_NETCDF ) Then
+          ! get write type
 
           Call get_word( record, word )
-          itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
-          If (itmp == 0) Then
-            tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-            itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
-            Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-              itmp = itmp - 1
-            End Do
-            Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
-            Call info(message,.true.)
+          If      ( word( 1:6 ) == 'unsort' ) Then
+            Call info('I/O write type: data sorting off',.true.)
+            Select Case( io_write )
+            Case( IO_WRITE_SORTED_MPIIO  )
+              io_write = IO_WRITE_UNSORTED_MPIIO
+            Case( IO_WRITE_SORTED_DIRECT )
+              io_write = IO_WRITE_UNSORTED_DIRECT
+            Case( IO_WRITE_SORTED_MASTER )
+              io_write = IO_WRITE_UNSORTED_MASTER
+            End Select
           Else
-            If (itmp > comm%mxnode) Then
+            If ( word( 1:6 ) == 'sorted' ) Then
+              Call info('I/O write type: data sorting on',.true.)
+            Else
+              record1=' '
+              record1=word(1:Len_Trim(word)+1) // record ! back up
+              record=record1
+              Call info('I/O write type: data sorting on (assumed)',.true.)
+            End If
+          End If
+
+          ! the write method and type are now ready to set
+
+          Call io_set_parameters(io, user_method_write = io_write )
+
+          ! get number of writers
+          ! 1 <= writers <= mxnode or be wise, default = 8 or 1 when master
+
+          If      (io_write == IO_WRITE_SORTED_MPIIO  .or. &
+            io_write == IO_WRITE_SORTED_DIRECT .or. &
+            io_write == IO_WRITE_SORTED_NETCDF ) Then
+
+            Call get_word( record, word )
+            itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
+            If (itmp == 0) Then
               tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
               itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
               Do While ( Mod( comm%mxnode, itmp ) /= 0 )
                 itmp = itmp - 1
               End Do
-              Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
+              Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
               Call info(message,.true.)
             Else
-              Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-                itmp = itmp - 1
-              End Do
-              Write(message,'(a,i10)') 'I/O writers set to ',itmp
+              If (itmp > comm%mxnode) Then
+                tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+                itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
+                Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+                  itmp = itmp - 1
+                End Do
+                Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
+                Call info(message,.true.)
+              Else
+                Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+                  itmp = itmp - 1
+                End Do
+                Write(message,'(a,i10)') 'I/O writers set to ',itmp
+                Call info(message,.true.)
+              End If
+            End If
+
+            ! the number of writers is now ready to set
+
+            Call io_set_parameters(io, user_n_io_procs_write = itmp )
+
+            ! get write batch size
+            ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
+            ! Note zero or negative values indicate use the default
+
+            Call get_word( record, word )
+            itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
+            If (itmp == 0) Then
+              Call io_get_parameters(io, user_batch_size_write = itmp )
+              Write(message,'(a,i10)') 'I/O write batch size (assumed) ',itmp
+              Call info(message,.true.)
+            Else
+              itmp = Min( itmp, MAX_BATCH_SIZE )
+              Call io_set_parameters(io, user_batch_size_write = itmp )
+              Write(message,'(a,i10)') 'I/O write batch size set to ',itmp
               Call info(message,.true.)
             End If
+          Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. io_write == IO_WRITE_SORTED_MASTER) Then
+            Write(message,'(a,i10)') 'I/O writers (enforced) ',1
+            Call info(message,.true.)
+          Else
+            tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+            itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
+            Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
+            Call info(message,.true.)
+            ! the number of writers is now ready to set
+            Call io_set_parameters(io, user_n_io_procs_write = itmp )
           End If
 
-          ! the number of writers is now ready to set
-
-          Call io_set_parameters(io, user_n_io_procs_write = itmp )
-
-          ! get write batch size
-          ! 1 <= batch <= MAX_BATCH_SIZE, default 2000000
+          ! get write buffer size
+          ! 100 <= buffer <= MAX_BUFFER_SIZE, default 20000
           ! Note zero or negative values indicate use the default
 
           Call get_word( record, word )
           itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
           If (itmp == 0) Then
-            Call io_get_parameters(io, user_batch_size_write = itmp )
-            Write(message,'(a,i10)') 'I/O write batch size (assumed) ',itmp
+            Call io_get_parameters(io, user_buffer_size_write = itmp )
+            Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
             Call info(message,.true.)
           Else
-            itmp = Min( itmp, MAX_BATCH_SIZE )
-            Call io_set_parameters(io, user_batch_size_write = itmp )
-            Write(message,'(a,i10)') 'I/O write batch size set to ',itmp
+            itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
+            Call io_set_parameters(io, user_buffer_size_write = itmp )
+            Write(message,'(a,i10)') 'I/O write buffer size set to ',itmp
             Call info(message,.true.)
           End If
-        Else If (io_write == IO_WRITE_UNSORTED_MASTER .or. io_write == IO_WRITE_SORTED_MASTER) Then
-          Write(message,'(a,i10)') 'I/O writers (enforced) ',1
-          Call info(message,.true.)
-        Else
-          tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-          itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
-          Write(message,'(a,i10)') 'I/O writers (enforced) ',itmp
-          Call info(message,.true.)
-          ! the number of writers is now ready to set
-          Call io_set_parameters(io, user_n_io_procs_write = itmp )
-        End If
 
-        ! get write buffer size
-        ! 100 <= buffer <= MAX_BUFFER_SIZE, default 20000
-        ! Note zero or negative values indicate use the default
+          ! switch error checking flag for writing
 
-        Call get_word( record, word )
-        itmp = Nint( Abs( word_2_real(word, 0.0_wp ) ) )
-        If (itmp == 0) Then
-          Call io_get_parameters(io, user_buffer_size_write = itmp )
-          Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
-          Call info(message,.true.)
-        Else
-          itmp = Min( Max( itmp,100 ),Min( itmp,MAX_BUFFER_SIZE ))
-          Call io_set_parameters(io, user_buffer_size_write = itmp )
-          Write(message,'(a,i10)') 'I/O write buffer size set to ',itmp
-          Call info(message,.true.)
-        End If
-
-        ! switch error checking flag for writing
-
-        If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
-          Call get_word( record, word )
-          l_tmp = ( word( 1:1 ) == 'Y' .or. word( 1:1 ) == 'y' )
-          If (.not.l_tmp) Then
-            Call info('I/O parallel write error checking off',.true.)
-          Else
-            Call info('I/O parallel write error checking on',.true.)
+          If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
+            Call get_word( record, word )
+            l_tmp = ( word( 1:1 ) == 'Y' .or. word( 1:1 ) == 'y' )
+            If (.not.l_tmp) Then
+              Call info('I/O parallel write error checking off',.true.)
+            Else
+              Call info('I/O parallel write error checking on',.true.)
+            End If
+            Call io_set_parameters(io, user_error_check = l_tmp )
           End If
-          Call io_set_parameters(io, user_error_check = l_tmp )
+
+        Else If ((word(1:6) == 'output') .or. (word(1:6) == 'config') .or. &
+          (word(1:5) == 'field') .or. (word(1:7) == 'statis') .or. (word(1:7) == 'history') &
+          .or. (word(1:7) == 'historf') .or. (word(1:6) == 'revive') .or. &
+          (word(1:6) == 'revcon') .or. (word(1:6) == 'revold')) Then
+
+          If (word(1:6) == 'output') Then
+            Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
+          Else If (word(1:6) == 'config') Then
+            Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
+          Else If (word(1:5) == 'field') Then
+            Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
+          Else If (word(1:6) == 'statis') Then
+            Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
+          Else If (word(1:7) == 'history') Then
+            Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
+          Else If (word(1:7) == 'historf') Then
+            Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
+          Else If (word(1:6) == 'revive') Then
+            Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
+          Else If (word(1:6) == 'revcon') Then
+            Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
+          Else If (word(1:6) == 'revold') Then
+            Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
+          End If
+          ! close control file
+
+        Else
+          Call strip_blanks(record)
+          Write(message,'(2a)') word(1:Len_Trim(word)+1),record
+          Call info(message,.true.)
+          Call error(3)
         End If
 
-      Else If ((word(1:6) == 'output') .or. (word(1:6) == 'config') .or. &
-        (word(1:5) == 'field') .or. (word(1:7) == 'statis') .or. (word(1:7) == 'history') &
-        .or. (word(1:7) == 'historf') .or. (word(1:6) == 'revive') .or. &
-        (word(1:6) == 'revcon') .or. (word(1:6) == 'revold')) Then
+        ! read finish
 
-        If (word(1:6) == 'output') Then
-          Call info('OUTPUT file is '//files(FILE_OUTPUT)%filename,.true.)
-        Else If (word(1:6) == 'config') Then
-          Call info('CONFIG file is '//files(FILE_CONFIG)%filename,.true.)
-        Else If (word(1:5) == 'field') Then
-          Call info('FIELD file is '//files(FILE_FIELD)%filename,.true.)
-        Else If (word(1:6) == 'statis') Then
-          Call info('STATIS file is '//files(FILE_STATS)%filename,.true.)
-        Else If (word(1:7) == 'history') Then
-          Call info('HISTORY file is '//files(FILE_HISTORY)%filename,.true.)
-        Else If (word(1:7) == 'historf') Then
-          Call info('HISTORF file is '//files(FILE_HISTORF)%filename,.true.)
-        Else If (word(1:6) == 'revive') Then
-          Call info('REVIVE file is '//files(FILE_REVIVE)%filename,.true.)
-        Else If (word(1:6) == 'revcon') Then
-          Call info('REVCON file is '//files(FILE_REVCON)%filename,.true.)
-        Else If (word(1:6) == 'revold') Then
-          Call info('REVOLD file is '//files(FILE_REVOLD)%filename,.true.)
-        End If
-        ! close control file
+      Else If (word(1:6) == 'finish') Then
+        carry=.false.
+      End If
+    End Do
 
-      Else
-        Call strip_blanks(record)
-        Write(message,'(2a)') word(1:Len_Trim(word)+1),record
-        Call info(message,.true.)
-        Call error(3)
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
+
+!!! IO DEFAULTS
+
+    ! io option defaults
+
+    If (.not.l_io_r) Then
+
+      ! read method
+
+      Call io_set_parameters(io, user_method_read = IO_READ_MPIIO ) ; io_read = IO_READ_MPIIO
+      Call info('',.true.)
+      Call info('I/O read method: parallel by using MPI-I/O (assumed)',.true.)
+
+      ! number of readers
+
+      tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+      itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
+      Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+        itmp = itmp - 1
+      End Do
+      Call io_set_parameters(io, user_n_io_procs_read = itmp )
+      Write(message,'(a,i10)') 'I/O readers (assumed) ',itmp
+      Call info(message,.true.)
+
+      ! read batch size
+
+      Call io_get_parameters(io, user_batch_size_read = itmp )
+      Write(message,'(a,i10)') 'I/O read batch size (assumed) ',itmp
+      Call info(message,.true.)
+
+      ! read buffer size
+
+      Call io_get_parameters(io, user_buffer_size_read = itmp )
+      Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
+      Call info(message,.true.)
+
+      ! error checking flag for reading
+
+      If (io_read /= IO_READ_MASTER) Then
+        Call io_set_parameters(io, user_error_check = .false. )
+        Call info('I/O parallel read error checking off (assumed)',.true.)
       End If
 
-      ! read finish
-
-    Else If (word(1:6) == 'finish') Then
-      carry=.false.
-    End If
-  End Do
-
-  If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
-
-  !!! IO DEFAULTS
-
-  ! io option defaults
-
-  If (.not.l_io_r) Then
-
-    ! read method
-
-    Call io_set_parameters(io, user_method_read = IO_READ_MPIIO ) ; io_read = IO_READ_MPIIO
-    Call info('',.true.)
-    Call info('I/O read method: parallel by using MPI-I/O (assumed)',.true.)
-
-    ! number of readers
-
-    tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-    itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
-    Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-      itmp = itmp - 1
-    End Do
-    Call io_set_parameters(io, user_n_io_procs_read = itmp )
-    Write(message,'(a,i10)') 'I/O readers (assumed) ',itmp
-    Call info(message,.true.)
-
-    ! read batch size
-
-    Call io_get_parameters(io, user_batch_size_read = itmp )
-    Write(message,'(a,i10)') 'I/O read batch size (assumed) ',itmp
-    Call info(message,.true.)
-
-    ! read buffer size
-
-    Call io_get_parameters(io, user_buffer_size_read = itmp )
-    Write(message,'(a,i10)') 'I/O read buffer size (assumed) ',itmp
-    Call info(message,.true.)
-
-    ! error checking flag for reading
-
-    If (io_read /= IO_READ_MASTER) Then
-      Call io_set_parameters(io, user_error_check = .false. )
-      Call info('I/O parallel read error checking off (assumed)',.true.)
     End If
 
-  End If
+    If (.not.l_io_w) Then
 
-  If (.not.l_io_w) Then
+      ! write method
 
-    ! write method
+      Call io_set_parameters(io, user_method_write = IO_WRITE_SORTED_MPIIO ) ; io_write = IO_WRITE_SORTED_MPIIO
+      call info('',.true.)
+      Call info('I/O write method: parallel by using MPI-I/O (assumed)',.true.)
 
-    Call io_set_parameters(io, user_method_write = IO_WRITE_SORTED_MPIIO ) ; io_write = IO_WRITE_SORTED_MPIIO
-    call info('',.true.)
-    Call info('I/O write method: parallel by using MPI-I/O (assumed)',.true.)
+      ! write type
 
-    ! write type
+      Call info('I/O write type: data sorting on (assumed)',.true.)
 
-    Call info('I/O write type: data sorting on (assumed)',.true.)
+      ! number of writers
 
-    ! number of writers
+      tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
+      itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
+      Do While ( Mod( comm%mxnode, itmp ) /= 0 )
+        itmp = itmp - 1
+      End Do
+      Call io_set_parameters(io, user_n_io_procs_write = itmp )
+      Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
+      Call info(message,.true.)
 
-    tmp = Min( Real(comm%mxnode,wp), 8.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-    itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
-    Do While ( Mod( comm%mxnode, itmp ) /= 0 )
-      itmp = itmp - 1
-    End Do
-    Call io_set_parameters(io, user_n_io_procs_write = itmp )
-    Write(message,'(a,i10)') 'I/O writers (assumed) ',itmp
-    Call info(message,.true.)
+      ! batch size
 
-    ! batch size
+      Call io_get_parameters(io, user_batch_size_write = itmp )
+      Write(message,'(a,i10)') 'I/O write batch size (assumed) ',itmp
+      Call info(message,.true.)
 
-    Call io_get_parameters(io, user_batch_size_write = itmp )
-    Write(message,'(a,i10)') 'I/O write batch size (assumed) ',itmp
-    Call info(message,.true.)
+      ! write buffer size
 
-    ! write buffer size
+      Call io_get_parameters(io, user_buffer_size_write = itmp )
+      Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
+      Call info(message,.true.)
 
-    Call io_get_parameters(io, user_buffer_size_write = itmp )
-    Write(message,'(a,i10)') 'I/O write buffer size (assumed) ',itmp
-    Call info(message,.true.)
+      ! error checking flag for writing
 
-    ! error checking flag for writing
+      If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
+        Call io_set_parameters(io, user_error_check = .false. )
+        Call info('I/O parallel write error checking off (assumed)',.true.)
+      End If
 
-    If (io_write /= IO_WRITE_UNSORTED_MASTER .and. io_write /= IO_WRITE_SORTED_MASTER) Then
-      Call io_set_parameters(io, user_error_check = .false. )
-      Call info('I/O parallel write error checking off (assumed)',.true.)
     End If
 
-  End If
+    If (io_write == IO_WRITE_SORTED_NETCDF .or. io_read == IO_READ_NETCDF) Call io_nc_compiled()
+    Return
 
-  If (io_write == IO_WRITE_SORTED_NETCDF .or. io_read == IO_READ_NETCDF) Call io_nc_compiled()
-  Return
+    ! CONTROL file does not exist
 
-  ! CONTROL file does not exist
-
-  10 Continue
-  Call error(126)
-  Return
-
-  ! No finish in CONTROL file or unexpected break
-
-  20 Continue
-  Call error(17)
-
-End Subroutine scan_control_io
-
-Subroutine scan_control_output(files,comm)
-
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  !
-  ! dl_poly_4 subroutine for scanning the I/O filenames in the control file
-  !
-  ! copyright - daresbury laboratory
-  ! author    - a.m.elena february 2017
-  ! refactoring:
-  !           - a.m.elena march-october 2018
-  !           - j.madge march-october 2018
-  !           - a.b.g.chalk march-october 2018
-  !           - i.scivetti march-october 2018
-  !
-  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-  Type( file_type ), Intent( InOut ) :: files(:)
-  Type( comms_type ), Intent( InOut ) :: comm
-  Logical                :: carry,safe
-  Character( Len = 200 ) :: record,rec_case_sensitive
-  Character( Len = 40  ) :: word,word1,wordo
-
-  safe   = .true.  ! all is safe
-
-  ! Open the simulation input file
-
-  If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
-  Call gcheck(comm,safe,"enforce")
-  If (.not.safe) Then
-    !Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
+10  Continue
     Call error(126)
-  Else
-    If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
-  End If
+    Return
 
-  ! Read TITLE record
+    ! No finish in CONTROL file or unexpected break
 
-  Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
-  If (.not.safe) Then
-    !Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
+20  Continue
     Call error(17)
-  End If
 
-  carry = .true.
-  Do While (carry)
+  End Subroutine scan_control_io
+
+  Subroutine scan_control_output(files,comm)
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    !
+    ! dl_poly_4 subroutine for scanning the I/O filenames in the control file
+    !
+    ! copyright - daresbury laboratory
+    ! author    - a.m.elena february 2017
+    ! refactoring:
+    !           - a.m.elena march-october 2018
+    !           - j.madge march-october 2018
+    !           - a.b.g.chalk march-october 2018
+    !           - i.scivetti march-october 2018
+    !
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+    Type( file_type ), Intent( InOut ) :: files(:)
+    Type( comms_type ), Intent( InOut ) :: comm
+    Logical                :: carry,safe
+    Character( Len = 200 ) :: record,rec_case_sensitive
+    Character( Len = 40  ) :: word,word1,wordo
+
+    safe   = .true.  ! all is safe
+
+    ! Open the simulation input file
+
+    If (comm%idnode == 0) Inquire(File=files(FILE_CONTROL)%filename, Exist=safe)
+    Call gcheck(comm,safe,"enforce")
+    If (.not.safe) Then
+      !Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
+      Call error(126)
+    Else
+      If (comm%idnode == 0) Open(Newunit=files(FILE_CONTROL)%unit_no, File=files(FILE_CONTROL)%filename, Status='old')
+    End If
+
+    ! Read TITLE record
+
     Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
     If (.not.safe) Then
+      !Open(Newunit=files(FILE_OUTPUT)%unit_no, File=files(FILE_OUTPUT)%filename, Status='replace')
       Call error(17)
     End If
-    rec_case_sensitive = record
-    Call lower_case(record)
 
-    Call get_word( record, word )
-    Call get_word( rec_case_sensitive, wordo )
-    If      (word(1:2) == 'io' ) Then
-
-      Call get_word( record, word1 )
-      Call get_word( rec_case_sensitive, wordo )
-      If (word1(1:6) == 'output') Then
-        Call get_word( rec_case_sensitive, files(FILE_OUTPUT)%filename )
-
-      Else If (word1(1:6) == 'config') Then
-        Call get_word( rec_case_sensitive, files(FILE_CONFIG)%filename )
-
-      Else If (word1(1:5) == 'field') Then
-        Call get_word( rec_case_sensitive, files(FILE_FIELD)%filename )
-
-      Else If (word1(1:6) == 'statis') Then
-        Call get_word( rec_case_sensitive, files(FILE_STATS)%filename )
-
-      Else If (word1(1:7) == 'history') Then
-        Call get_word( rec_case_sensitive, files(FILE_HISTORY)%filename )
-
-      Else If (word1(1:7) == 'historf') Then
-        Call get_word( rec_case_sensitive, files(FILE_HISTORF)%filename )
-
-      Else If (word1(1:6) == 'revive') Then
-        Call get_word( rec_case_sensitive, files(FILE_REVIVE)%filename )
-
-      Else If (word1(1:6) == 'revcon') Then
-        Call get_word( rec_case_sensitive, files(FILE_REVCON)%filename )
-
-      Else If (word1(1:6) == 'revold') Then
-        Call get_word( rec_case_sensitive, files(FILE_REVOLD)%filename )
+    carry = .true.
+    Do While (carry)
+      Call get_line(safe,files(FILE_CONTROL)%unit_no,record,comm)
+      If (.not.safe) Then
+        Call error(17)
       End If
-      ! read finish
+      rec_case_sensitive = record
+      Call lower_case(record)
 
-    Else If (word(1:6) == 'finish') Then
+      Call get_word( record, word )
+      Call get_word( rec_case_sensitive, wordo )
+      If      (word(1:2) == 'io' ) Then
 
-      carry=.false.
+        Call get_word( record, word1 )
+        Call get_word( rec_case_sensitive, wordo )
+        If (word1(1:6) == 'output') Then
+          Call get_word( rec_case_sensitive, files(FILE_OUTPUT)%filename )
 
-    End If
+        Else If (word1(1:6) == 'config') Then
+          Call get_word( rec_case_sensitive, files(FILE_CONFIG)%filename )
 
-  End Do
+        Else If (word1(1:5) == 'field') Then
+          Call get_word( rec_case_sensitive, files(FILE_FIELD)%filename )
 
-  If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
+        Else If (word1(1:6) == 'statis') Then
+          Call get_word( rec_case_sensitive, files(FILE_STATS)%filename )
 
-End Subroutine scan_control_output
+        Else If (word1(1:7) == 'history') Then
+          Call get_word( rec_case_sensitive, files(FILE_HISTORY)%filename )
+
+        Else If (word1(1:7) == 'historf') Then
+          Call get_word( rec_case_sensitive, files(FILE_HISTORF)%filename )
+
+        Else If (word1(1:6) == 'revive') Then
+          Call get_word( rec_case_sensitive, files(FILE_REVIVE)%filename )
+
+        Else If (word1(1:6) == 'revcon') Then
+          Call get_word( rec_case_sensitive, files(FILE_REVCON)%filename )
+
+        Else If (word1(1:6) == 'revold') Then
+          Call get_word( rec_case_sensitive, files(FILE_REVOLD)%filename )
+        End If
+        ! read finish
+
+      Else If (word(1:6) == 'finish') Then
+
+        carry=.false.
+
+      End If
+
+    End Do
+
+    If (comm%idnode == 0) Call files(FILE_CONTROL)%close()
+
+  End Subroutine scan_control_output
 
 End Module control

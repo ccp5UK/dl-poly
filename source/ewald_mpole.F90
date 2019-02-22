@@ -6,7 +6,7 @@ Module ewald_mpole
   Use domains,          Only : domains_type,exchange_grid
   Use electrostatic,    Only : electrostatic_type
   Use errors_warnings,  Only : error, error_alloc, error_dealloc
-  Use ewald,            Only : ewald_spme_type,dtpbsp
+  Use ewald,            Only : ewald_type,dtpbsp
   Use kinds,            Only : wp, sp
   Use mpole,            Only : mpole_type
   Use mpoles_container, Only : ewald_deriv,explicit_ewald_real_loops,explicit_spme_loops,limit_erfr_deriv
@@ -45,7 +45,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:9 ),              Intent( InOut ) :: stress
     Type( mpole_type ),                               Intent( InOut ) :: mpoles
     Type( electrostatic_type ),                       Intent( InOut ) :: electro
-    Type( ewald_spme_type ),                          Intent( In    ) :: ewld
+    Type( ewald_type ),                          Intent( In    ) :: ewld
     Type( domains_type ),                             Intent( In    ) :: domain
     Type( comms_type ),                               Intent( In    ) :: comm
     Type( configuration_type ),                       Intent( InOut ) :: config
@@ -376,7 +376,7 @@ Contains
     Real( Kind = wp ), Dimension( 1:neigh%max_list ), Intent( In    ) :: xxt,yyt,zzt,rrt
     Real( Kind = wp ),                                Intent(   Out ) :: engcpe_rl,vircpe_rl
     Real( Kind = wp ), Dimension( 1:9 ),              Intent( InOut ) :: stress
-    Type( ewald_spme_type ),                          Intent( InOut ) :: ewld
+    Type( ewald_type ),                          Intent( InOut ) :: ewld
     Type( mpole_type ),                               Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( comms_type ),                               Intent( In    ) :: comm
@@ -1046,7 +1046,7 @@ Contains
 
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
-    Type( ewald_spme_type ), Intent( InOut ) :: ewld
+    Type( ewald_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
@@ -2150,7 +2150,7 @@ Contains
 
     Real( Kind = wp ), Intent(   Out ) :: engcpe_rc,vircpe_rc
     Real( Kind = wp ), Intent( InOut ) :: stress(1:9)
-    Type( ewald_spme_type ), Intent( InOut ) :: ewld
+    Type( ewald_type ), Intent( InOut ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( InOut    ) :: electro
     Type( domains_type ), Intent( In    ) :: domain
@@ -4355,7 +4355,7 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( In    ) :: electro
-    Type( ewald_spme_type ), Intent( In    ) :: ewld
+    Type( ewald_type ), Intent( In    ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( domains_type ), Intent( In    ) :: domain
     Type( configuration_type ),                       Intent( InOut ) :: config
@@ -4728,7 +4728,7 @@ Contains
     Real( Kind = wp ),                        Intent(   Out ) :: engcpe_ex,vircpe_ex
     Real( Kind = wp ), Dimension( 1:9 ),      Intent( InOut ) :: stress
     Type( electrostatic_type ), Intent( InOut    ) :: electro
-    Type( ewald_spme_type ), Intent ( In    ) :: ewld
+    Type( ewald_type ), Intent ( In    ) :: ewld
     Type( mpole_type ), Intent( InOut ) :: mpoles
     Type( configuration_type ),                       Intent( InOut ) :: config
 
@@ -5386,7 +5386,7 @@ Contains
 
     Real( Kind = wp ),                     Intent(   Out ) :: engcpe_fr,vircpe_fr
     Real( Kind = wp ), Dimension( 1:9 ),   Intent( InOut ) :: stress
-    Type( ewald_spme_type ),                    Intent( InOut ) :: ewld
+    Type( ewald_type ),                    Intent( InOut ) :: ewld
     Type( neighbours_type ),               Intent( In    ) :: neigh
     Type( mpole_type ),                    Intent( InOut ) :: mpoles
     Type( electrostatic_type ), Intent( In    ) :: electro

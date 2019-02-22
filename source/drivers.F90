@@ -14,7 +14,7 @@ Module drivers
 
   Use minimise, Only : minimise_type,minimise_relax,zero_k_optimise
   Use two_body, Only : two_body_forces
-  Use ewald, Only : ewald_type, ewald_spme_type
+  Use ewald, Only : ewald_type, ewald_type
 
 
   ! DEFECTS MODULE
