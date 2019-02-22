@@ -27,7 +27,8 @@ Module errors_warnings
   Public :: error
   Public :: info
   Public :: init_error_system
-
+  Public :: error_alloc, error_dealloc
+  
 
   Interface warning
     Module Procedure warning_special
@@ -2206,6 +2207,49 @@ Contains
     Call abort_comms(eworld,kode)
 
   End Subroutine error
+
+  Subroutine error_alloc(array, routine)
+
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for printing standard message for allocation errors
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins october 2018
+    !!
+    !!----------------------------------------------------------------------!
+
+    Character (Len=*) :: array, routine 
+
+    Write(ounit,'(/,1x,a)') 'error - allocation failure in '//trim(routine)//' -> '//trim(array)
+
+    Call dump_call_stack ()
+
+    Call close_unit(ounit)
+    Call abort_comms(eworld,1001)
+
+  end Subroutine error_alloc
+
+  Subroutine error_dealloc(array, routine)
+
+    !!----------------------------------------------------------------------!
+    !!
+    !! dl_poly_4 subroutine for printing standard message for deallocation errors
+    !!
+    !! copyright - daresbury laboratory
+    !! author    - j.s.wilkins october 2018
+    !!
+    !!----------------------------------------------------------------------!
+    Character (Len=*) :: array, routine 
+
+    Write(ounit,'(/,1x,a)') 'error - deallocation failure in '//trim(routine)//' -> '//trim(array)
+
+    Call dump_call_stack ()
+
+    Call close_unit(ounit)
+    Call abort_comms(eworld,1002)
+
+  end Subroutine error_dealloc
 
   !> Close all open file units
   Subroutine close_unit(i)
