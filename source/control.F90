@@ -17,7 +17,7 @@ Module control
   Use poisson,    Only : poisson_type
   Use msd,        Only : msd_type
   Use plumed,   Only : plumed_type
-  Use constants,       Only : pi,zero_plus,prsunt,tenunt
+  Use constants,       Only : pi,zero_plus,prsunt,tenunt,epsilon_wp
   Use parse,       Only : get_line,get_word,lower_case,word_2_real,strip_blanks
   Use kim,         Only : kim_type
   Use greenkubo,   Only : greenkubo_type
@@ -4436,8 +4436,8 @@ Contains
             cell(9) = Max(2.0_wp*zhi+cut,3.0_wp*cut,cell(9))
 
           End If
-
-          If (itmp > 0) Then ! Ewald or SPME
+          
+          If (itmp > 0) Then ! SPME
 
             ewld%active = .true.
             ! Ewald sum parameters defaults
@@ -5315,7 +5315,7 @@ Contains
       ! number of readers
 
       tmp = Min( Real(comm%mxnode,wp), 2.0_wp*Real(comm%mxnode,wp)**0.5_wp )
-      itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) , +1.0_wp ))
+      itmp = 2**Int(Nearest( Log(tmp)/Log(2.0_wp) + epsilon_wp , +1.0_wp ))
       Do While ( Mod( comm%mxnode, itmp ) /= 0 )
         itmp = itmp - 1
       End Do

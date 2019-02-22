@@ -601,7 +601,6 @@ Contains
     ttm%sysrho = Real(megatm,Kind=wp)/(config%cell(1)*config%cell(5)*config%cell(9))
 
     ! Linked cell and Verlet neighbour list
-    5 Continue
 
     If (neigh%padding > zero_plus) Then
 
@@ -804,7 +803,6 @@ Contains
         ewld%kspace%k_vec_dim(1) = ewld%kspace%k_vec_dim_cont(1)
         ewld%kspace%k_vec_dim(2) = ewld%kspace%k_vec_dim_cont(2)
         ewld%kspace%k_vec_dim(3) = ewld%kspace%k_vec_dim_cont(3)
-
         qlx = ilx
         qly = ily
         qlz = ilz

@@ -82,7 +82,8 @@ contains
             & bspline%num_deriv,'Bspline order: ',bspline%num_splines
        Call error(0, message)
     End If
-    
+
+    print*, kspace%k_vec_dim
     allocate (ww1(1:kspace%k_vec_dim(1)),ww2(1:kspace%k_vec_dim(2)),ww3(1:kspace%k_vec_dim(3)), stat = fail)
     if (fail > 0) call error_alloc('ww arrays','bspline_coeffs_gen')
 

@@ -1288,6 +1288,7 @@ Contains
     
     fail = 0
 
+    print*, "hi"
     call setup_kspace(kspace, domain, kspace%k_vec_dim)
     
 !!! begin cardinal b-splines set-up
